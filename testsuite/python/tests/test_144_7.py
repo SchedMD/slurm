@@ -33,6 +33,7 @@ def setup():
     )
     atf.require_nodes(2, [("Gres", "gpu:4"), ("CPUs", 8)])
 
+    atf.require_accounting()
     atf.require_slurm_running()
 
     job_file = Path(atf.module_tmp_path) / "job_file"
@@ -87,9 +88,7 @@ def test_gpus_per_node_parallel_1_delayed():
         len(re.findall(r"STEP_ID:\d+ CUDA_VISIBLE_DEVICES:\d+", output)) == 3
     ), "A GPU was not used 3 times"
     # Verify one step was delayed
-    assert atf.check_steps_delayed(
-        job_id, output, 1
-    ), "One step should have been delayed"
+    assert atf.check_steps_delayed(job_id, 1), "One step should have been delayed"
 
     if constrain_devices:
         # Verify all GPUs are CUDA_VISIBLE_DEVICES:0 (with ConstrainDevices)
@@ -278,7 +277,7 @@ def test_gpus_per_node_with_gpus_per_task():
     ), "Not all steps have 2 GPUs"
     # Verify two steps were delayed, one of them twice
     assert atf.check_steps_delayed(
-        job_id, output, 2
+        job_id, 2
     ), "Two steps were not delayed or one of them was not delayed twice"
 
 
@@ -339,7 +338,7 @@ def test_gpus_per_node_with_gpus():
         len(re.findall(r"STEP_ID:2 CUDA_VISIBLE_DEVICES:\d+", output)) == 2
     ), "Step 2 did not have access to 2 GPUs"
     # Verify one step was delayed
-    assert atf.check_steps_delayed(job_id, output, 1), "One step was not delayed"
+    assert atf.check_steps_delayed(job_id, 1), "One step was not delayed"
 
     if constrain_devices:
         # Verify all GPUs are CUDA_VISIBLE_DEVICES:0 due to ConstrainDevices
@@ -424,7 +423,7 @@ def test_gpus_per_node_with_gpus_2_nodes():
     ), "Step 2 did not use 2 nodes"
     # Verify two steps were delayed, one of them twice
     assert atf.check_steps_delayed(
-        job_id, output, 2
+        job_id, 2
     ), "Two steps were not delayed or one of them was not delayed twice"
 
 
@@ -484,8 +483,11 @@ def test_gpus_per_node_with_gpus_per_task_3():
     assert (
         len(re.findall(r"STEP_ID:2 CUDA_VISIBLE_DEVICES:\d+,\d+", output)) == 3
     ), "Step 2 does not have 3 tasks and 2 GPUs per task"
-    # Verify one step was delayed
-    assert atf.check_steps_delayed(job_id, output, 1), "One step was not delayed"
+    # Verify one step was delayed (step 0 is the sequential pre-step,
+    # parallel batch starts at step 1)
+    assert atf.check_steps_delayed(
+        job_id, 1, first_parallel_step=1
+    ), "One step was not delayed"
 
 
 def test_gpus_per_node_with_gpus_per_task_5():
@@ -539,4 +541,4 @@ def test_gpus_per_node_with_gpus_per_task_5():
         len(re.findall(r"STEP_ID:\d+ CUDA_VISIBLE_DEVICES:\d+,\d+", output)) == 5
     ), "Not all 5 steps have access to 2 GPUs"
     # Verify one step was delayed
-    assert atf.check_steps_delayed(job_id, output, 1), "One step was not delayed"
+    assert atf.check_steps_delayed(job_id, 1), "One step was not delayed"

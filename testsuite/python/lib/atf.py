@@ -3,6 +3,7 @@
 # Copyright (C) SchedMD LLC.
 ##############################################################################
 import collections
+import datetime
 import errno
 
 # import glob
@@ -4749,103 +4750,87 @@ def wait_for_job_state(
     return False
 
 
-def check_steps_delayed(job_id, job_output, expected_delayed):
-    """Check the output file of a job for expected delayed steps.
+def check_steps_delayed(
+    job_id,
+    expected_delayed,
+    first_parallel_step=0,
+    min_delay_seconds=2,
+    **repeat_until_kwargs,
+):
+    """Verify that job steps were delayed waiting for resources.
 
-    This function checks that the output file for a job contains the expected
-    pattern of delayed job steps. Note that at the time of writing, this
-    requires srun steps to have at least a verbosity level of "-vv" to log
-    their f"srun: Step completed in JobId={job_id}, retrying" notification.
+    Reads per-step Start timestamps from sacct after the job ends. A step is
+    considered "delayed" if its Start is at least min_delay_seconds after the
+    earliest start within the parallel-batch group. The count of such steps
+    must equal expected_delayed.
 
     Args:
         job_id (integer): The job ID that we're interested in.
-        job_output (string): The content of the output file of the job.
-        expected_delayed (integer): The initial number of delayed job steps. It
-            is verified that this initial number of job steps are delayed and
-            then this number of delayed job steps decrements one by one as
-            running job steps finish.
+        expected_delayed (integer): The number of steps that should have been
+            delayed waiting for resources.
+        first_parallel_step (integer): The step ID at which the parallel
+            batch begins. Steps with a lower ID (typically sequential
+            pre-steps in the job script) are ignored. Defaults to 0, which
+            considers all steps as part of the parallel batch.
+        min_delay_seconds (integer): A step is "delayed" if its Start is at
+            least this many seconds after the earliest step Start of the
+            considered set. Default 2 — fits between sub-second
+            parallel-batch jitter and the >=3s gap created by typical test
+            step sleeps.
 
     Returns:
-        True if steps were delayed in the correct amounts and order, else False.
-
-    Example:
-        >>> check_steps_delayed(123, "srun: Received task exit notification for 1 task of StepId=1.0 (status=0x0000).\nsrun: node1: task 0: Completed\nsrun: debug:  task 0 done\nsrun: Step completed in JobId=1, retrying\nsrun: Step completed in JobId=1, retrying\nsrun: Step created for StepId=1.1\nsrun: Received task exit notification for 1 task of StepId=1.1 (status=0x0000).\nsrun: node2: task 1: Completed\nsrun: debug:  task 1 done\nsrun: debug:  IO thread exiting\nsrun: Step completed in JobId=1, retrying\nsrun: Step created for StepId=1.2", 2)
-        True
-        >>> check_steps_delayed(456, "srun: Received task exit notification for 1 task of StepId=1.0 (status=0x0000).\nsrun: node1: task 0: Completed\nsrun: debug:  task 0 done\nsrun: Step completed in JobId=1, retrying\nsrun: Step completed in JobId=1, retrying\nsrun: Step created for StepId=1.1\nsrun: Received task exit notification for 1 task of StepId=1.1 (status=0x0000).\nsrun: node2: task 1: Completed\nsrun: debug:  task 1 done\nsrun: debug:  IO thread exiting", 2)
-        False
+        True if exactly expected_delayed steps were delayed, else False.
     """
 
-    # Iterate through each group of expected delayed steps. For example,
-    # if there was a job that had 5 steps that could run in parallel but, due to
-    # resource constrains, only allowed 3 steps to run at a time, we would
-    # expect a group of 2 delayed job steps followed by a group of 1 delayed job
-    # steps. For this example job, expected_delayed=2.
-    #
-    # The idea of the for loop below is to iterate through each group of delayed
-    # job steps and replace the expected output as we go with re.sub. This
-    # ensures that the delayed job step groups occur in the correct order.
-    #
-    # Each regex pattern matches part of the pattern we'd expect to see in the
-    # output, replaces the matched text (see previous paragraph), and then makes
-    # sure there is still text left to match for the rest of the pattern. If the
-    # regex pattern doesn't match anything, then re.sub will match and replace
-    # all the rest of the output and leave job_output empty.
-    for delayed_grp_size in range(expected_delayed, 0, -1):
-        # Match all lines before receiving an exit notification. This regex
-        # pattern will match any line that doesn't contain "srun: Received task
-        # exit notification".
-        before_start_pattern = r"(^((?!srun: Received task exit notification).)*$\n)*"
-        job_output = re.sub(before_start_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {before_start_pattern}")
+    # End being recorded implies all step rows have flushed (steps end before their parent job).
+    if not wait_for_job_accounted(job_id, field="End", **repeat_until_kwargs):
+        logging.error(f"check_steps_delayed: job {job_id} End not in accounting")
+        return False
+
+    # -n omits header, -P pipe-separates, -j scopes to this job only.
+    out = run_command_output(f"sacct -nPj {job_id} -o jobid,start", quiet=True)
+
+    # Numeric step IDs only — skips ".batch" and ".extern" rows.
+    step_re = re.compile(rf"^{job_id}\.(\d+)\|(\S+)$")
+    parsed = []
+    for line in out.splitlines():
+        m = step_re.match(line.strip())
+        if not m:
+            continue
+        stepnum = int(m.group(1))
+        # Skip sequential pre-steps that aren't part of the parallel batch.
+        if stepnum < first_parallel_step:
+            continue
+        ts = m.group(2)
+        try:
+            parsed.append(
+                (stepnum, datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S"))
+            )
+        except ValueError:
+            logging.error(f"check_steps_delayed: step {stepnum} has bad Start {ts!r}")
             return False
 
-        # Match receiving the next exit notification. This regex pattern will
-        # match the line where the exit notification is received when a step
-        # that was already running finishes.
-        exit_pattern = rf"srun: Received task exit notification for \[0-9]+ task of StepId={job_id}\.[0-9]+ \(status=0x[0-9A-Fa-f]+\)\.\n"
-        job_output = re.sub(exit_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {exit_pattern}")
-            return False
+    if not parsed:
+        logging.error(
+            f"check_steps_delayed: no step rows for job {job_id} at or "
+            f"after step {first_parallel_step}"
+        )
+        return False
 
-        # Match lines we don't want before a step completion. After the exit
-        # notification, we now match all lines that don't contain "srun: Step
-        # completed". Sometimes an exit notification can be received multiple
-        # times and any redundant exit notifications are also matched by this
-        # pattern.
-        before_completed_pattern = r"(^((?!srun: Step completed).)*$\n)*"
-        job_output = re.sub(before_completed_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {before_completed_pattern}")
-            return False
+    # Sort by start time; tie-break on step number for stable ordering.
+    parsed.sort(key=lambda x: (x[1], x[0]))
+    earliest = parsed[0][1]
+    threshold = datetime.timedelta(seconds=min_delay_seconds)
+    delayed_count = sum(1 for _, ts in parsed if ts - earliest >= threshold)
 
-        # Match number of lines retrying to start a delayed job step. Note that
-        # this pattern searched for steps retrying "delayed_grp_size" number of
-        # times. This is because every step that is delayed retries every time a
-        # previously running step finishes.
-        completed_pattern = rf"(srun: Step completed in JobId={job_id}, retrying\n){{{delayed_grp_size}}}"
-        job_output = re.sub(completed_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {completed_pattern}")
-            return False
-
-        # Match lines we don't want before a step creation. Due to steps running
-        # in parallel, other lines of text can be output from already running
-        # steps before we're told a new step has been created. This regex
-        # pattern matches all lines that don't contain "srun: Step created".
-        before_created_pattern = r"(^((?!srun: Step created).)*$\n)*"
-        job_output = re.sub(before_created_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {before_created_pattern}")
-            return False
-
-        # Match the step creation line for the delayed step
-        created_pattern = rf"srun: Step created for StepId={job_id}\.[0-9]+"
-        job_output = re.sub(created_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {created_pattern}")
-            return False
+    if delayed_count != expected_delayed:
+        summary = ", ".join(f"{n}@{t.isoformat()}" for n, t in parsed)
+        logging.error(
+            f"check_steps_delayed: expected {expected_delayed} delayed "
+            f"step(s), got {delayed_count} (>= {min_delay_seconds}s after "
+            f"earliest start). Step starts: {summary}"
+        )
+        return False
 
     return True
 
