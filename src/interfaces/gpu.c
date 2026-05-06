@@ -344,20 +344,17 @@ extern int gpu_plugin_init(node_config_load_t *node_conf)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
-		goto done;
-
-	if ((gres_get_autodetect_flags() & GRES_AUTODETECT_GPU_FULL) &&
+	if (!g_context &&
+	    (gres_get_autodetect_flags() & GRES_AUTODETECT_GPU_FULL) &&
 	    node_conf && node_conf->in_slurmd) {
 		_gpu_plugin_init_full(node_conf);
-		if (g_context)
-			goto done;
 		/* Probe found no devices; fall through to gpu/generic. */
 	}
 
-	_gpu_create_plugin_context(true);
+	if (!g_context) {
+		_gpu_create_plugin_context(true);
+	}
 
-done:
 	slurm_mutex_unlock(&g_context_lock);
 
 	return g_context ? SLURM_SUCCESS : SLURM_ERROR;
