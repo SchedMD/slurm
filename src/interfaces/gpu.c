@@ -286,12 +286,28 @@ static void _gpu_clear_plugin_locked(void)
 	}
 }
 
+static char *_gpu_create_plugin_context(bool error_on_failure)
+{
+	const char *plugin_type = "gpu";
+	char *type = NULL;
+
+	type = _get_gpu_type();
+	g_context = plugin_context_create(
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+
+	if (!g_context) {
+		error("cannot create %s context for %s",
+			plugin_type, type);
+	}
+
+	return type;
+}
+
 /*
  * Try init'ing GPU plugins in order until hardware is found (Autodetect=full).
  */
 static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 {
-	const char *plugin_type = "gpu";
 	char *type;
 	static const uint32_t probe_order[] = {
 		GRES_AUTODETECT_GPU_NVML,
@@ -305,9 +321,7 @@ static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 		list_t *gres_list_system;
 
 		gres_autodetect_flags_set_gpu(probe_order[i]);
-		type = _get_gpu_type();
-		g_context = plugin_context_create(
-			plugin_type, type, (void **)&ops, syms, sizeof(syms));
+		type = _gpu_create_plugin_context(false);
 		if (!g_context) {
 			_gpu_clear_plugin_locked();
 			continue;
@@ -327,9 +341,6 @@ static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 
 extern int gpu_plugin_init(node_config_load_t *node_conf)
 {
-	int retval = SLURM_SUCCESS;
-	const char *plugin_type = "gpu";
-	char *type = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -344,21 +355,12 @@ extern int gpu_plugin_init(node_config_load_t *node_conf)
 		/* Probe found no devices; fall through to gpu/generic. */
 	}
 
-	type = _get_gpu_type();
-
-	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
-
-	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
-		retval = SLURM_ERROR;
-		goto done;
-	}
+	_gpu_create_plugin_context(true);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
 
-	return retval;
+	return g_context ? SLURM_SUCCESS : SLURM_ERROR;
 }
 
 extern int gpu_plugin_fini(void)
