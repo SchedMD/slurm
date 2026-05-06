@@ -14,6 +14,7 @@
 <li><a href="#MPS_Management">MPS Management</a></li>
 <li><a href="#MIG_Management">MIG Management</a></li>
 <li><a href="#Sharding">Sharding</a></li>
+<li><a href="#Shared_GRES_Usage">Shared GRES Usage</a></li>
 </ul>
 
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
@@ -792,5 +793,38 @@ which would be the same as if it were a GPU.
 
 <p>Steps with shards have<code class="commandline">SLURM_SHARDS_ON_NODE</code>
 set indicating the number of shards allocated.</p>
+
+<h2 id="Shared_GRES_Usage">Shared GRES Usage
+<a class="slurm_link" href="#Shared_GRES_Usage"></a>
+</h2>
+
+<p>Commands that display node GRES usage, such as <code>sinfo -O GresUsed</code>
+and <code>scontrol show node -d</code>, list each allocated GRES.
+Shared GRES entries (MPS and shards) show the total allocated count
+followed by one entry per device (GPU):</p>
+
+<pre>
+$ sinfo -O NodeList:10,Gres:20,GresUsed:0
+NODELIST  GRES                GRES_USED
+node0     gpu:4,shard:20      gpu:1(IDX:0),shard:8(-/5,5/5,3/5,0/5)
+</pre>
+
+<p>In this example, the GRES_USED column shows that 1 GPU and 8 shards are
+allocated. Since shards are an alternate form of GPUs, both entries represent
+usage of the same underlying GPU devices:</p>
+
+<ul>
+<li><code>gpu:1(IDX:0)</code> shows that GPU 0 is allocated as a whole GPU.</li>
+<li><code>shard:8(-/5,5/5,3/5,0/5)</code> shows that 8 shards are allocated
+across the four GPUs:
+<ul><li><code>-/5</code> means GPU 0 is unavailable for shards because it is
+allocated as a whole GPU.</li>
+<li><code>5/5</code> means GPU 1 has all 5 shards allocated.</li>
+<li><code>3/5</code> means GPU 2 has 3 of 5 shards allocated, and up to 2
+more shards can still be allocated.</li>
+<li><code>0/5</code> means GPU 3 has no shards allocated, and is available to be
+allocated as either a whole GPU or up to 5 shards.</li>
+</ul></li>
+</ul>
 
 <!--#include virtual="footer.txt"-->
