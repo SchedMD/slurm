@@ -222,8 +222,9 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 				.last_update = node_info_ptr->last_update,
 			};
 
-			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc, argv,
-				      NULL, mime_type, data_parser, rc);
+			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, orig_argc,
+				      orig_argv, NULL, mime_type, data_parser,
+				      rc);
 
 			if (rc)
 				exit_code = 1;
@@ -283,8 +284,9 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 			msg.record_count = count;
 
-			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc, argv,
-				      NULL, mime_type, data_parser, rc);
+			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, orig_argc,
+				      orig_argv, NULL, mime_type, data_parser,
+				      rc);
 
 			if (rc)
 				exit_code = 1;
