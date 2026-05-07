@@ -57,9 +57,6 @@ extern void config_power_mgr_fini(void);
 extern void power_save_init(void);
 extern void power_save_fini(void);
 
-/* Report if node power saving is enabled */
-extern bool power_save_test(void);
-
 /*
  * Check if a power action is valid from name or check default action for type.
  *

@@ -1604,21 +1604,6 @@ extern void power_save_init(void)
 	slurm_mutex_unlock(&power_mutex);
 }
 
-/* Report if node power saving is enabled */
-extern bool power_save_test(void)
-{
-	bool rc;
-
-	slurm_mutex_lock(&power_mutex);
-	while (!power_save_config) {
-		slurm_cond_wait(&power_cond, &power_mutex);
-	}
-	rc = power_save_enabled;
-	slurm_mutex_unlock(&power_mutex);
-
-	return rc;
-}
-
 /* Free module's allocated memory */
 extern void power_save_fini(void)
 {

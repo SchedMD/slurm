@@ -244,7 +244,6 @@ typedef struct {
 	node_record_t *node_ptr;
 	int node_inx;
 	time_t now;
-	bool power_save_on;
 } foreach_purge_missing_jobs_t;
 
 typedef struct {
@@ -15884,12 +15883,6 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		       foreach_purge_missing_jobs->node_inx)))
 		return 0;
 
-	if (job_ptr->batch_flag &&
-	    foreach_purge_missing_jobs->power_save_on &&
-	    (job_ptr->start_time <
-	     foreach_purge_missing_jobs->node_boot_time))
-		startup_time -= slurm_conf.resume_timeout;
-
 	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	if (job_ptr->batch_flag &&
 	    !job_ptr->het_job_offset &&
@@ -15952,20 +15945,11 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
  * but are not found. */
 static void _purge_missing_jobs(int node_inx, time_t now)
 {
-	static bool power_save_on = false;
-	static time_t sched_update = 0;
 	foreach_purge_missing_jobs_t foreach_purge_missing_jobs = {
 		.node_inx = node_inx,
 		.node_ptr = node_record_table_ptr[node_inx],
 		.now = now,
 	};
-
-	if (sched_update != slurm_conf.last_update) {
-		power_save_on = power_save_test();
-		sched_update = slurm_conf.last_update;
-	}
-
-	foreach_purge_missing_jobs.power_save_on = power_save_on;
 
 	if (foreach_purge_missing_jobs.node_ptr->boot_time >
 	    (slurm_conf.msg_timeout + 5)) {
