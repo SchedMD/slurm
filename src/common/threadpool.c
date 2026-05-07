@@ -739,7 +739,8 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 			slurm_mutex_lock(&threadpool.mutex);
 
 			if (thread) {
-				xassert(!thread->id || (thread->id == id));
+				xassert(!thread->id ||
+					pthread_equal(thread->id, id));
 				thread->id = id;
 			}
 
