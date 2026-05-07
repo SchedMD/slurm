@@ -177,7 +177,7 @@ static int _match_tid(void *object, void *key)
 	pthread_t tid0 = ((track_script_rec_t *)object)->tid;
 	pthread_t tid1 = *(pthread_t *)key;
 
-	return (tid0 == tid1);
+	return (pthread_equal(tid0, tid1));
 }
 
 static int _reset_cpid(void *object, void *key)
