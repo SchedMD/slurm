@@ -149,7 +149,7 @@ static const int nodes_in_page = (4064 - sizeof(list_t)) / sizeof(list_node_t);
 	 * If I am on the same thread and already locked,		\
 	 * don't lock again.						\
 	 */ \
-		if (l->tid != tid) { \
+		if (!pthread_equal(l->tid, tid)) { \
 			if (write_lock) { \
 				slurm_rwlock_wrlock(&l->mutex); \
 				/* Only set tid under a write lock */ \
