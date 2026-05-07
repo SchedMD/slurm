@@ -3235,7 +3235,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool orig_node_avail;
-	bool update_db = false;
 	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
 	static int node_features_cnt = -1;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -3573,54 +3572,73 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 						      now);
 	}
 
-	if (reg_msg->extra) {
-		data_t *data = NULL;
+	/*
+	 * Apply slurmd-supplied fields (extra, instance_id, instance_type)
+	 * when slurmd's reported boot_time is later than the
+	 * last time we successfully heard from the node. This fires on the
+	 * first registration (last_response == 0) and on an actual node
+	 * reboot (the same condition the reboot-detection branch below
+	 * uses to mark the node "unexpectedly rebooted"). Steady-state
+	 * pings and slurmd restarts without an actual reboot have
+	 * boot_time < last_response and are skipped, so admin overrides
+	 * via scontrol update node ... are not clobbered. last_response is
+	 * state-saved, so the gate also survives slurmctld restart.
+	 */
+	if (node_ptr->boot_time > node_ptr->last_response) {
+		bool update_db = false;
 
-		if (extra_constraints_enabled() && reg_msg->extra[0] &&
-		    serialize_g_string_to_data(&data, reg_msg->extra,
-					       strlen(reg_msg->extra),
-					       MIME_TYPE_JSON)) {
-			info("Failed to decode extra \"%s\" for node %s",
-			      reg_msg->extra, node_ptr->name);
-		}
-		FREE_NULL_DATA(node_ptr->extra_data);
-		node_ptr->extra_data = data;
+		if (reg_msg->extra) {
+			data_t *data = NULL;
 
-		/*
-		 * Always set the extra field from the registration message,
-		 * even if decoding failed.
-		 */
-		xfree(node_ptr->extra);
-		if (reg_msg->extra[0]) {
-			node_ptr->extra = xstrdup(reg_msg->extra);
+			if (extra_constraints_enabled() && reg_msg->extra[0] &&
+			    serialize_g_string_to_data(&data, reg_msg->extra,
+						       strlen(reg_msg->extra),
+						       MIME_TYPE_JSON)) {
+				info("Failed to decode extra \"%s\" for node %s",
+				     reg_msg->extra, node_ptr->name);
+			}
+			FREE_NULL_DATA(node_ptr->extra_data);
+			node_ptr->extra_data = data;
+
 			/*
-			 * Skip db updates for extra field changes,
-			 * otherwise we'll overwhelm it with event records
-			 * if someone is updating these constantly.
+			 * Always set the extra field from the registration
+			 * message, even if decoding failed.
 			 */
-			// update_db = true;
+			xfree(node_ptr->extra);
+			if (reg_msg->extra[0]) {
+				node_ptr->extra = xstrdup(reg_msg->extra);
+				/*
+				 * Skip db updates for extra field changes,
+				 * otherwise we'll overwhelm it with event
+				 * records if someone is updating these
+				 * constantly.
+				 */
+				// update_db = true;
+			}
 		}
-	}
 
-	if (reg_msg->instance_id) {
-		xfree(node_ptr->instance_id);
-		if (reg_msg->instance_id[0]) {
-			node_ptr->instance_id = xstrdup(reg_msg->instance_id);
-			update_db = true;
+		if (reg_msg->instance_id) {
+			xfree(node_ptr->instance_id);
+			if (reg_msg->instance_id[0]) {
+				node_ptr->instance_id =
+					xstrdup(reg_msg->instance_id);
+				update_db = true;
+			}
 		}
-	}
 
-	if (reg_msg->instance_type) {
-		xfree(node_ptr->instance_type);
-		if (reg_msg->instance_type[0]) {
-			node_ptr->instance_type =
-				xstrdup(reg_msg->instance_type);
-			update_db = true;
+		if (reg_msg->instance_type) {
+			xfree(node_ptr->instance_type);
+			if (reg_msg->instance_type[0]) {
+				node_ptr->instance_type =
+					xstrdup(reg_msg->instance_type);
+				update_db = true;
+			}
 		}
-	}
 
-	if (update_db)
-		clusteracct_storage_g_node_update(acct_db_conn, node_ptr);
+		if (update_db)
+			clusteracct_storage_g_node_update(acct_db_conn,
+							  node_ptr);
+	}
 
 	if (IS_NODE_CLOUD(node_ptr) && (was_powering_up || was_powered_down) &&
 	    xstrcasestr(reg_msg->dynamic_conf, "topology=")) {
