@@ -42,10 +42,8 @@ def test_modify_job_tres_in_accounting():
     job_id = atf.submit_job_srun("-N1 -n1 hostname", fatal=True)
     atf.wait_for_job_state(job_id, "DONE")
 
-    # Wait for AllocTres in the DB, without the energy value
-    atf.wait_for_job_accounted(
-        job_id, field="AllocTRES", value="billing=1,cpu=1", fatal=True
-    )
+    # Wait for job done also in the DB
+    atf.wait_for_job_accounted(job_id, field="End", fatal=True)
     energy = next(
         alloc_tres["count"]
         for alloc_tres in atf.get_jobs(dbd=True)[job_id]["tres"]["allocated"]
