@@ -816,7 +816,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	 */
 	while (!thread->id) {
 		xassert(thread->magic == THREAD_MAGIC);
-		xassert(thread->requester == pthread_self());
+		xassert(pthread_equal(thread->requester, pthread_self()));
 		xassert(threadpool.idle > 0);
 
 		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
@@ -827,7 +827,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	}
 
 	xassert(thread->magic == THREAD_MAGIC);
-	xassert(thread->requester == pthread_self());
+	xassert(pthread_equal(thread->requester, pthread_self()));
 	xassert(thread->id);
 
 	thread->requester = 0;
