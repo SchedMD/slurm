@@ -143,27 +143,27 @@ static const int nodes_in_page = (4064 - sizeof(list_t)) / sizeof(list_node_t);
  ****************/
 #define LIST_THREAD_LOCK_DEF pthread_t tid = pthread_self(); bool locked = false;
 
-#define LIST_THREAD_LOCK(l, write_lock)					\
-do {									\
-	/*								\
+#define LIST_THREAD_LOCK(l, write_lock) \
+	do { \
+		/*								\
 	 * If I am on the same thread and already locked,		\
 	 * don't lock again.						\
-	 */								\
-	if (l->tid != tid) {						\
-		if (write_lock) {					\
-			slurm_rwlock_wrlock(&l->mutex);			\
-			/* Only set tid under a write lock */		\
-			l->tid = tid;					\
-		} else {						\
-			slurm_rwlock_rdlock(&l->mutex);			\
-			xassert(!l->tid);				\
-		}							\
-		locked = true;						\
-	} else {							\
-		debug3("%s: list lock already held by this thread",	\
-		       __func__);					\
-	}								\
-} while (0)
+	 */ \
+		if (l->tid != tid) { \
+			if (write_lock) { \
+				slurm_rwlock_wrlock(&l->mutex); \
+				/* Only set tid under a write lock */ \
+				l->tid = tid; \
+			} else { \
+				slurm_rwlock_rdlock(&l->mutex); \
+				xassert(!l->tid); \
+			} \
+			locked = true; \
+		} else { \
+			debug3("%s: list lock already held by this thread",	\
+		       __func__); \
+		} \
+	} while (0)
 
 #define LIST_THREAD_UNLOCK(l, write_lock)				\
 do {									\
