@@ -3650,8 +3650,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	/*
-	 * Apply slurmd-supplied fields (extra, instance_id, instance_type)
-	 * when slurmd's reported boot_time is later than the
+	 * Apply slurmd-supplied fields (extra, instance_id, instance_type,
+	 * topology) when slurmd's reported boot_time is later than the
 	 * last time we successfully heard from the node. This fires on the
 	 * first registration (last_response == 0) and on an actual node
 	 * reboot (the same condition the reboot-detection branch below
@@ -3715,29 +3715,46 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (update_db)
 			clusteracct_storage_g_node_update(acct_db_conn,
 							  node_ptr);
-	}
 
-	if (IS_NODE_CLOUD(node_ptr) && (was_powering_up || was_powered_down) &&
-	    xstrcasestr(reg_msg->dynamic_conf, "topology=")) {
-		int rc = SLURM_SUCCESS;
-		char *tmp_conf = NULL;
-		slurm_conf_node_t *conf_node = NULL;
-		s_p_hashtbl_t *node_hashtbl = NULL;
+		if (reg_msg->dynamic_conf &&
+		    xstrcasestr(reg_msg->dynamic_conf, "topology=")) {
+			int rc = SLURM_SUCCESS;
+			char *tmp_conf = NULL;
+			slurm_conf_node_t *conf_node = NULL;
+			s_p_hashtbl_t *node_hashtbl = NULL;
 
-		tmp_conf = xstrdup_printf("NodeName=%s %s", node_ptr->name,
-					  reg_msg->dynamic_conf);
-		if (!(conf_node = slurm_conf_parse_nodeline(tmp_conf,
-							    &node_hashtbl))) {
-			error("Failed to parse dynamic nodeline '%s'",
-			      reg_msg->dynamic_conf);
-			error_code = EINVAL;
-		} else if (conf_node->topology_str &&
-			   ((rc = node_mgr_set_node_topology(
-				     node_ptr, conf_node->topology_str)))) {
-			error_code = rc;
+			if (!xstrncasecmp(reg_msg->dynamic_conf,
+					  "NodeName=", 9))
+				tmp_conf = xstrdup(reg_msg->dynamic_conf);
+			else
+				tmp_conf =
+					xstrdup_printf("NodeName=%s %s",
+						       node_ptr->name,
+						       reg_msg->dynamic_conf);
+
+			if (!(conf_node = slurm_conf_parse_nodeline(
+				      tmp_conf, &node_hashtbl))) {
+				error("Failed to parse dynamic nodeline '%s'",
+				      reg_msg->dynamic_conf);
+				error_code = EINVAL;
+				xstrfmtcat(reason_down,
+					   "%sFailed to parse dynamic_conf nodeline",
+					   reason_down ? ", " : "");
+			} else if (conf_node->topology_str &&
+				   xstrcmp(conf_node->topology_str,
+					   node_ptr->topology_str) &&
+				   ((rc = node_mgr_set_node_topology(
+					     node_ptr,
+					     conf_node->topology_str)))) {
+				error_code = rc;
+				xstrfmtcat(reason_down,
+					   "%sFailed to set topology '%s'",
+					   reason_down ? ", " : "",
+					   conf_node->topology_str);
+			}
+			s_p_hashtbl_destroy(node_hashtbl);
+			xfree(tmp_conf);
 		}
-		s_p_hashtbl_destroy(node_hashtbl);
-		xfree(tmp_conf);
 	}
 
 	was_invalid_reg = IS_NODE_INVALID_REG(node_ptr);
