@@ -234,7 +234,7 @@ static int _match_thread_id(void *x, void *key)
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(*id_ptr > 0);
 
-	return ((thread->id == *id_ptr) ? 1 : 0);
+	return (pthread_equal(thread->id, *id_ptr) ? 1 : 0);
 }
 
 #ifndef NDEBUG
