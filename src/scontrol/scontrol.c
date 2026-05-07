@@ -85,6 +85,8 @@ int verbosity = 0;	/* count of "-v" options */
 uint32_t euid = SLURM_AUTH_NOBODY; /* proxy request as user */
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
 const char *data_parser = NULL; /* data_parser args */
+int orig_argc; /* used when dumping meta data */
+char **orig_argv;
 
 job_info_msg_t *old_job_info_ptr = NULL;
 node_info_msg_t *old_node_info_ptr = NULL;
@@ -155,6 +157,12 @@ int main(int argc, char **argv)
 		{"yaml", optional_argument, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
+
+	/* Copy order of argv here since getopt_long() may reorder it */
+	orig_argc = argc;
+	orig_argv = xcalloc((argc + 1), sizeof(*orig_argv));
+	for (int i = 0; i < argc; i++)
+		orig_argv[i] = argv[i];
 
 	command_name = argv[0];
 	slurm_init(NULL);
@@ -299,8 +307,9 @@ int main(int argc, char **argv)
 		 * "list".
 		 * TODO: After Bug 18109 is fixed, replace this logic:
 		 */
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, NULL, argc, argv,
-				     NULL, mime_type, data_parser, exit_code);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, NULL, orig_argc,
+				     orig_argv, NULL, mime_type, data_parser,
+				     exit_code);
 	} else {
 		/* We are running interactively multiple commands */
 		int input_field_count = 0;
@@ -332,6 +341,7 @@ int main(int argc, char **argv)
 	slurm_free_reservation_info_msg(old_res_info_ptr);
 	slurm_free_conf(old_slurm_conf_ptr);
 
+	xfree(orig_argv);
 #endif /* MEMORY_LEAK_DEBUG */
 
 	exit(exit_code);
@@ -529,8 +539,8 @@ static void _dump_config(int argc, char **argv,
 		.slurm_conf = slurm_ctl_conf_ptr,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_CONF_RESP, resp, argc, argv, NULL, mime_type,
-		      data_parser, exit_code);
+	DATA_DUMP_CLI(OPENAPI_CONF_RESP, resp, orig_argc, orig_argv, NULL,
+		      mime_type, data_parser, exit_code);
 }
 
 /*
@@ -602,8 +612,9 @@ static void _print_ping(int argc, char **argv)
 	controller_ping_t *pings = ping_all_controllers();
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings, argc, argv,
-				     NULL, mime_type, data_parser, exit_code);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings, orig_argc,
+				     orig_argv, NULL, mime_type, data_parser,
+				     exit_code);
 		xfree(pings);
 		return;
 	}

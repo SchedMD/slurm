@@ -1466,8 +1466,8 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			resp.last_backfill = job_buffer_ptr->last_backfill;
 		}
 
-		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv, NULL,
-			      mime_type, data_parser, error_code);
+		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, orig_argc, orig_argv,
+			      NULL, mime_type, data_parser, error_code);
 
 		if (error_code)
 			exit_code = 1;
@@ -1604,8 +1604,9 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 				resp.last_update =
 					job_step_info_ptr->last_update;
 
-			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv,
-				      NULL, mime_type, data_parser, error_code);
+			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, orig_argc,
+				      orig_argv, NULL, mime_type, data_parser,
+				      error_code);
 
 			if (error_code)
 				exit_code = 1;
@@ -1658,8 +1659,8 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (job_step_info_ptr)
 			resp.last_update = job_step_info_ptr->last_update;
 
-		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv, NULL,
-			      mime_type, data_parser, error_code);
+		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, orig_argc, orig_argv,
+			      NULL, mime_type, data_parser, error_code);
 	} else if (steps) {
 		int i = 0;
 
@@ -1755,8 +1756,8 @@ static void _dump_listjobs(list_t *listjobs_list, int argc, char **argv)
 		.listjobs_list = listjobs_list,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_LISTJOBS_INFO_RESP, resp, argc, argv, NULL,
-		      mime_type, data_parser, rc);
+	DATA_DUMP_CLI(OPENAPI_LISTJOBS_INFO_RESP, resp, orig_argc, orig_argv,
+		      NULL, mime_type, data_parser, rc);
 
 	if (rc != SLURM_SUCCESS)
 		exit_code = 1;
@@ -1905,8 +1906,8 @@ static void _dump_listpids(list_t *listpids_list, int argc, char **argv)
 		.listpids_list = listpids_list,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_LISTPIDS_INFO_RESP, resp, argc, argv, NULL,
-		      mime_type, data_parser, rc);
+	DATA_DUMP_CLI(OPENAPI_LISTPIDS_INFO_RESP, resp, orig_argc, orig_argv,
+		      NULL, mime_type, data_parser, rc);
 
 	if (rc != SLURM_SUCCESS)
 		exit_code = 1;
@@ -2161,8 +2162,8 @@ static void _dump_liststeps(list_t *liststeps_list, int argc, char **argv)
 		.liststeps_list = liststeps_list,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_LISTSTEPS_INFO_RESP, resp, argc, argv, NULL,
-		      mime_type, data_parser, rc);
+	DATA_DUMP_CLI(OPENAPI_LISTSTEPS_INFO_RESP, resp, orig_argc, orig_argv,
+		      NULL, mime_type, data_parser, rc);
 
 	if (rc != SLURM_SUCCESS)
 		exit_code = 1;
@@ -2668,9 +2669,9 @@ extern void scontrol_print_resources(int argc, char **argv)
 	if (mime_type) {
 		list_t *nodes = (resp ? resp->nodes : NULL);
 
-		DATA_DUMP_CLI_SINGLE(OPENAPI_RESOURCE_LAYOUT_RESP, nodes, argc,
-				     argv, NULL, mime_type, data_parser,
-				     error_code);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_RESOURCE_LAYOUT_RESP, nodes,
+				     orig_argc, orig_argv, NULL, mime_type,
+				     data_parser, error_code);
 
 		slurm_free_resource_layout_msg(resp);
 
