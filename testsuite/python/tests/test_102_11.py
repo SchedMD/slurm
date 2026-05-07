@@ -28,6 +28,10 @@ def setup():
 # Ticket 24753: Verify that `sacctmgr archive dump` succeeds when a data type
 # is given with no duration on the command line. Expected behavior is that
 # slurmdbd falls back to the Purge<Type>After value from slurmdbd.conf.
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmdbd") < (26, 5),
+    reason="Ticket 24753: 'sacctmgr archive dump' failed without duration before 26.05",
+)
 @pytest.mark.parametrize("keyword,cfg_param", purge_types)
 def test_archive_dump_uses_configured_purge(keyword, cfg_param):
     result = atf.run_command(
