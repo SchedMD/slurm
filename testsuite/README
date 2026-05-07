@@ -1094,3 +1094,7 @@ test_160_1   Test memory reduction on running jobs (scontrol and --mem-update)
 test_161_#   Testing topology/torus3d.
 ========================================
 test_161_1   Test topology/torus3d placements, constraints, and --segment
+
+test_162_#   Testing of swait.
+==============================
+test_162_1   Test swait against a stepmgr-enabled cluster
