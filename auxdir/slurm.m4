@@ -96,7 +96,10 @@ AC_DEFUN([X_AC_LIBSLURM], [
     # You will notice " or ' each does something different when resolving
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
-    LIB_SLURM="-Wl,-rpath=$libdir/slurm"
+    case $host_os in
+      darwin*) LIB_SLURM="-Wl,-rpath,$libdir/slurm" ;;
+      *)       LIB_SLURM="-Wl,-rpath=$libdir/slurm" ;;
+    esac
     LIB_SLURM=$LIB_SLURM' -L$(top_builddir)/src/api/.libs -lslurmfull'
     AC_MSG_RESULT([shared]);
   fi

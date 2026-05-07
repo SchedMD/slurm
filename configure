@@ -837,6 +837,8 @@ CLANG_FALSE
 CLANG_TRUE
 SUCMD
 SLEEP_CMD
+DARWIN_FALSE
+DARWIN_TRUE
 WITH_GNU_LD_FALSE
 WITH_GNU_LD_TRUE
 WITH_CXX_FALSE
@@ -20972,6 +20974,14 @@ else
   WITH_GNU_LD_FALSE=
 fi
 
+ if case "$host_os" in darwin*) true ;; *) false ;; esac; then
+  DARWIN_TRUE=
+  DARWIN_FALSE='#'
+else
+  DARWIN_TRUE='#'
+  DARWIN_FALSE=
+fi
+
 
 # Extract the first word of "sleep", so it can be a program name with args.
 set dummy sleep; ac_word=$2
@@ -22357,7 +22367,10 @@ printf "%s\n" "static" >&6; };
     # You will notice " or ' each does something different when resolving
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
-    LIB_SLURM="-Wl,-rpath=$libdir/slurm"
+    case $host_os in
+      darwin*) LIB_SLURM="-Wl,-rpath,$libdir/slurm" ;;
+      *)       LIB_SLURM="-Wl,-rpath=$libdir/slurm" ;;
+    esac
     LIB_SLURM=$LIB_SLURM' -L$(top_builddir)/src/api/.libs -lslurmfull'
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: shared" >&5
 printf "%s\n" "shared" >&6; };
@@ -30794,6 +30807,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_GNU_LD_TRUE}" && test -z "${WITH_GNU_LD_FALSE}"; then
   as_fn_error $? "conditional \"WITH_GNU_LD\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${DARWIN_TRUE}" && test -z "${DARWIN_FALSE}"; then
+  as_fn_error $? "conditional \"DARWIN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CLANG_TRUE}" && test -z "${CLANG_FALSE}"; then

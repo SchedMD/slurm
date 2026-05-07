@@ -38,7 +38,9 @@
 
 #define _GNU_SOURCE		/* For POLLRDHUP, O_CLOEXEC on older glibc */
 #include <poll.h>
+#ifndef __APPLE__
 #include <sys/eventfd.h>
+#endif
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

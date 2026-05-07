@@ -37,6 +37,9 @@
 #include <limits.h>
 #include <math.h>
 #include <signal.h>
+#ifndef SIGRTMAX
+#  define SIGRTMAX 32
+#endif
 #include <stdint.h>
 #include <unistd.h>
 

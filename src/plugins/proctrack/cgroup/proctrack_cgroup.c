@@ -42,9 +42,11 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
+#ifndef __APPLE__
 #include <sys/eventfd.h>
 #include <sys/inotify.h>
 #include <sys/signalfd.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 
