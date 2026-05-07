@@ -1732,7 +1732,7 @@ extern void *watch(void *arg)
 {
 	slurm_mutex_lock(&mgr.mutex);
 
-	xassert(mgr.watch_thread == pthread_self());
+	xassert(pthread_equal(mgr.watch_thread, pthread_self()));
 
 	if (mgr.shutdown_requested) {
 		slurm_mutex_unlock(&mgr.mutex);
@@ -1781,7 +1781,7 @@ extern void *watch(void *arg)
 		 __func__, BOOL_CHARIFY(mgr.shutdown_requested),
 		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
-	xassert(mgr.watch_thread == pthread_self());
+	xassert(pthread_equal(mgr.watch_thread, pthread_self()));
 	mgr.watch_thread = 0;
 
 	EVENT_BROADCAST(&mgr.watch_return);
