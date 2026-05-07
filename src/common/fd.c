@@ -200,6 +200,8 @@ extern void closeall_init(void)
 			if (errno == ENOSYS) /* errno should be EINVAL */
 				close_range_f = NULL;
 		}
+
+		dlclose(self);
 	}
 
 	if (!close_range_f) {
