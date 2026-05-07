@@ -197,7 +197,7 @@ cset influx	"/usr/bin/influx"
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
 #cset use_pmi	1
 # OR for other versions of MPICH, use this
-cset mpicc	"/usr/local/bin/mpicc"
+cset mpicc	"/usr/bin/mpicc"
 cset nvcc	"/usr/bin/nvcc"
 cset use_pmi	0
 #cset upcc       "/usr/local/bin/upcc"
