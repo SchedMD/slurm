@@ -8,7 +8,7 @@ import logging
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_version((26, 5), "sbin/slurmctld")
+    atf.require_version((25, 11), "sbin/slurmctld")
     atf.require_nodes(4)
     atf.require_slurm_running()
 

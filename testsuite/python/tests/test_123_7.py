@@ -197,8 +197,8 @@ def _bring_node_up(node: str):
             ("now+8day"),
             True,
             marks=pytest.mark.xfail(
-                atf.get_version() < (26, 5),
-                reason="Ticket 24838: Pre 26.05 we were not distinguishing based on start date",
+                atf.get_version() < (25, 11),
+                reason="Ticket 24838: Pre 25.11 we were not distinguishing based on start date",
             ),
         ),
     ],
