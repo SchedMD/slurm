@@ -1781,6 +1781,14 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
     Returns:
         A tuple representing the version. E.g. (25.05.0).
     """
+    # TODO: Ticket 25155 - Remove fatal=False once 25.11 is not supported
+    fatal = True
+    if component == "bin/sh5util":
+        logging.warning(
+            "Ticket 25155: Exit code of 'sh5util -V' is incorrect for versions older than 26.05"
+        )
+        fatal = False
+
     if component == "config.h":
         if slurm_prefix == "":
             slurm_prefix = properties["slurm-build-dir"]
@@ -1798,7 +1806,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
 
         version_str = (
             run_command_output(
-                f"{slurm_prefix}/{component} -V", quiet=True, user="root", fatal=True
+                f"{slurm_prefix}/{component} -V", quiet=True, user="root", fatal=fatal
             )
             .strip()
             .replace("slurm ", "")
