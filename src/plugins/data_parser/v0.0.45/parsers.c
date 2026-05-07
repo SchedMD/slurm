@@ -12272,7 +12272,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(STRING, cred_type, "CredType", "Credential signature plugin"),
 	add_parse(STRING, data_parser_parameters, "DataParserParameters", "Data parser parameters"),
 	add_parse(DEBUG_FLAGS, debug_flags, "DebugFlags", "Subsystems which provide more detailed event logging"),
-	add_parse(UINT64, def_mem_per_cpu, "DefMemPerCPU", "Default MB memory per allocated CPU"),
+	add_parse(MEM_PER_CPUS, def_mem_per_cpu, "DefMemPerCPU", "Default MB memory per allocated CPU"),
 	add_parse(CSV_STRING, dependency_params, "DependencyParameters", "Options controlling job dependency behavior"),
 	add_parse(UINT16, eio_timeout, "EioTimeout", "Seconds srun waits for slurmstepd to close the TCP/IP connection"),
 	add_parse(ENFORCE_PART_LIMITS, enforce_part_limits, "EnforcePartLimits", "Controls whether partition limits are enforced at job submission time"),
