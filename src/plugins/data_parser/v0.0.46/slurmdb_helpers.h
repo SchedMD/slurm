@@ -84,6 +84,13 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 		       data_t *parent_path, const char *caller,
 		       bool ignore_failure);
 
+/* Attempt to resolve association that matches key */
+extern int resolve_assoc(parse_op_t op, const parser_t *const parser,
+			 slurmdb_assoc_rec_t **assoc_ptr,
+			 slurmdb_assoc_rec_t *key, args_t *args,
+			 data_t *parent_path, const char *caller,
+			 bool ignore_failure);
+
 extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 				 args_t *args, const char *func_name);
 #define load_prereqs(op, parser, args) \

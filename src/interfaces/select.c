@@ -379,15 +379,6 @@ extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
 }
 
 /*
- * packs the select plugin_id for backwards compatibility
- * Remove when 24.11 is no longer supported.
- */
-extern void select_plugin_id_pack(buf_t *buffer)
-{
-	pack32(*(ops.plugin_id), buffer);
-}
-
-/*
  * Note reconfiguration or change in partition configuration
  */
 extern int select_g_reconfigure (void)

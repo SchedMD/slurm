@@ -92,6 +92,13 @@ typedef struct {
 	data_t *path;
 } parse_marray_args_t;
 
+#define MARRAY_PATH_ARGS_MAGIC 0xeddb9fff
+
+typedef struct {
+	int magic; /* MARRAY_PATH_ARGS_MAGIC */
+	data_t *dst;
+} marray_path_args_t;
+
 static void _set_flag_bit(const parser_t *const parser, void *dst,
 			  const flag_bit_t *bit, bool matched, const char *path,
 			  data_t *src)
@@ -635,6 +642,33 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 	FREE_NULL_DATA(ppath);
 }
 
+static int _on_marray_append_path(const char *entry, bool template, void *arg)
+{
+	marray_path_args_t *args = arg;
+
+	xassert(args->magic == MARRAY_PATH_ARGS_MAGIC);
+	xassert(!template);
+
+	(void) data_set_string(data_list_append(args->dst), entry);
+	return SLURM_SUCCESS;
+}
+
+static bool _match_array_path(const parser_t *const parser, data_t *path)
+{
+	bool match;
+	data_t *fpath = data_set_list(data_new());
+	marray_path_args_t args = {
+		.magic = MARRAY_PATH_ARGS_MAGIC,
+		.dst = fpath,
+	};
+
+	(void) url_path_walk(parser->key, false, _on_marray_append_path, &args);
+	match = data_check_match(fpath, path, false);
+
+	FREE_NULL_DATA(fpath);
+	return match;
+}
+
 static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 						 void *arg)
 {
@@ -658,7 +692,6 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 	for (int i = 0; i < array->field_count; i++) {
 		bool match;
 		const parser_t *const parser = &array->fields[i];
-		data_t *fpath;
 
 		if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD)
 			continue;
@@ -689,12 +722,7 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 			}
 		}
 
-		fpath = data_new();
-		(void) data_list_split_str(fpath, parser->key, "/");
-		match = data_check_match(fpath, cargs.path, false);
-		FREE_NULL_DATA(fpath);
-
-		if (match) {
+		if ((match = _match_array_path(parser, cargs.path))) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
 				char *p = NULL;
 				data_list_join_str(&p, cargs.path, "/");
@@ -1371,8 +1399,8 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 			return SLURM_SUCCESS;
 
 		for (int i = 0; !rc && array[i]; i++) {
-			rc = dump(array[i], NO_VAL,
-				  NULL, find_parser_by_type(parser->array_type),
+			rc = dump((array + i), NO_VAL, NULL,
+				  find_parser_by_type(parser->array_type),
 				  data_list_append(dst), args);
 		}
 	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
@@ -1668,8 +1696,8 @@ extern int dump(void *src, ssize_t src_bytes,
 		 * they are only used to OpenAPI typing and are ignored here.
 		 */
 
-		rc = parser->dump(parser, src, dst, args);
-		_check_dump(parser, dst, args);
+		if (!(rc = parser->dump(parser, src, dst, args)))
+			_check_dump(parser, dst, args);
 		break;
 	case PARSER_MODEL_ALIAS:
 		rc = dump(src, src_bytes, NULL,

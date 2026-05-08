@@ -778,9 +778,6 @@ extern int gres_node_count(list_t *gres_list, int arr_len,
  */
 extern void gres_prep_pack(void *in, uint16_t protocol_version, buf_t *buffer);
 
-extern int gres_prep_pack_legacy(list_t *gres_list, buf_t *buffer,
-				 uint16_t protocol_version);
-
 /*
  * Unpack a job's allocated gres information for use by prolog/epilog
  * OUT gres_list - restored state stored by gres_prep_pack()
@@ -788,9 +785,6 @@ extern int gres_prep_pack_legacy(list_t *gres_list, buf_t *buffer,
  */
 extern int gres_prep_unpack_list(list_t **gres_list, buf_t *buffer,
 				 uint16_t protocol_version);
-
-extern int gres_prep_unpack_legacy(list_t **gres_list, buf_t *buffer,
-				   uint16_t protocol_version);
 
 /*
  * Build List of information needed to set job's Prolog or Epilog environment

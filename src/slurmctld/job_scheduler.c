@@ -2448,8 +2448,9 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	 * logic fills in the default stdout path in the batch launch message so
 	 * that slurmstepd can handle the paths correctly as they now expect
 	 * stdout path to be set.
+	 * Remove this when 25.05 is no longer supported.
 	 */
-	if ((job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) &&
+	if ((job_ptr->start_protocol_ver < SLURM_25_11_PROTOCOL_VERSION) &&
 	    !launch_msg_ptr->std_out) {
 		if (!job_ptr->array_job_id) {
 			launch_msg_ptr->std_out =
