@@ -800,7 +800,7 @@ test_112_1   /commands/slurmrestd/test_options.py
 test_112_42  Test slurmrestd v0.0.42 requests
 test_112_43  Test slurmrestd v0.0.43 requests
 test_112_44  Test slurmrestd v0.0.44 requests
-test_112_44  Test slurmrestd v0.0.45 requests
+test_112_45  Test slurmrestd v0.0.45 requests
 
 test_113_#   Testing of sprio options.
 ======================================
