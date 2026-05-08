@@ -781,137 +781,105 @@ coordinator of, but can only see themselves when listing users.
 
 .TP
 \fBPurgeEventAfter\fR
-Events are purged from the database after this amount of time has passed since
-they ended.
+Automatically purge cluster event records older than the stated time.
 This includes node down times and such.
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then event records are never purged.
 .IP
 
 .TP
 \fBPurgeJobAfter\fR
-Individual job records are purged from the database after this amount of time
-has passed since they ended.
+Automatically purge job records older than the stated time (based on end time).
 Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then job records are never purged.
-NOTE: if PurgeJobScriptAfter or PurgeJobEnvAfter is not specified, job scripts
-and job environments will be also purged at the frequency specified here.
+
+\fBNOTE\fR: This includes job scripts and job environments if their specific
+purge options (\fBPurgeJobScriptAfter\fR and \fBPurgeJobEnvAfter\fR) are not set.
 .IP
 
 .TP
 \fBPurgeJobScriptAfter\fR
-Individual job script records are purged from the database after this amount of time
-has passed since they ended.
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Automatically purge job script records older than the stated time
+(based on end time).
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then job script records are purged according to
 \fBPurgeJobAfter\fR.
 .IP
 
 .TP
 \fBPurgeJobEnvAfter\fR
-Individual job environment records are purged from the database after this amount of time
-has passed since they ended.
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Automatically purge job environment records older than the stated time
+(based on end time).
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then job environment records are purged according to
 \fBPurgeJobAfter\fR.
 .IP
 
 .TP
 \fBPurgeResvAfter\fR
-Individual reservation records are purged from the database after this amount
-of time has passed since they ended.
-Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Automatically purge reservation records older than the stated time (based on
+end time). Aggregated information will be preserved to "PurgeUsageAfter".
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then reservation records are never purged.
 .IP
 
 .TP
 \fBPurgeStepAfter\fR
-Individual job step records are purged from the database after this amount of
-time has passed since they ended.
-Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Automatically purge job step records older than the stated time (based on
+end time). Aggregated information will be preserved to "PurgeUsageAfter".
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then job step records are never purged.
 .IP
 
 .TP
 \fBPurgeSuspendAfter\fR
-Individual job suspend records are purged from the database after this amount
-of time has passed since they ended.
-Aggregated information will be preserved to "PurgeUsageAfter".
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Automatically purge job suspend records older than the stated time (based on
+end time). Aggregated information will be preserved to "PurgeUsageAfter".
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then suspend records are never purged.
 .IP
 
 .TP
 \fBPurgeTXNAfter\fR
-Individual transaction records are purged from the database after this amount
-of time has passed since they occurred.
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Automatically purge transaction records older than the stated time.
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then transaction records are never purged.
 .IP
 
 .TP
 \fBPurgeUsageAfter\fR
-Usage records (Cluster, Association, QOS and WCKey) are purged from the database
-after this amount of time has passed since they were created or last modified.
+Automatically purge usage records (Cluster, Association, QOS and WCKey) older
+than the stated time (based on creation or last modified time).
 These tables are the source for reports generated by the sreport(1) command.
-The time is a numeric value and is a number of months. If you want to purge
-more often you can include "hours", or "days" behind the numeric value to get
-those more frequent purges (i.e. a value of "12hours" would purge
-everything older than 12 hours).
-The purge takes place at the start of the each purge interval.
-For example, if the purge time is 2 months, the purge would happen at the
-beginning of each month.
+Units are months (default), days, or hours. The purge occurs at the start of
+each month, day, or hour, depending on which unit is used.
+For example, the values "2months" and "60days" would  affect roughly the same
+records, but the latter would execute the purge daily instead of monthly.
 If not set (default), then usage records are never purged.
 .IP
 
