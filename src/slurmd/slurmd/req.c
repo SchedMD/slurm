@@ -295,22 +295,6 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 		goto done;
 	}
 
-	if (protocol_version < SLURM_25_05_PROTOCOL_VERSION) {
-		log_flag(NET, "Relaying message %s to stepd stepmgr for %ps running version %d on fd %d",
-			 rpc_num2string(msg->msg_type), step_id,
-			 protocol_version, stepmgr_fd);
-
-		if (stepd_relay_msg(stepmgr_fd, msg, protocol_version)) {
-			error("%s: Failed to relay message %s to older stepmgr for %ps running version %d on fd %d",
-			      __func__, rpc_num2string(msg->msg_type), step_id,
-			      protocol_version, stepmgr_fd);
-			rc = SLURM_ERROR;
-			goto done;
-		}
-		/* stepd will reply back directly. */
-		goto done;
-	}
-
 	if (stepd_proxy_send_recv_to_stepd(msg, &resp_buf, step_id, stepmgr_fd,
 					   reply)) {
 		error("%s: Failed to send/recv message %s to stepmgr for %ps",
