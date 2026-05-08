@@ -27,9 +27,9 @@
 #include "src/common/xassert.h"
 
 #if HTTP_PARSER_STRICT
-# define T(v) 0
+#define T(v) 0
 #else
-# define T(v) v
+#define T(v) v
 #endif
 
 static const uint8_t normal_url_char[32] = {
@@ -64,586 +64,589 @@ static const uint8_t normal_url_char[32] = {
 /* 112  p   113  q   114  r   115  s   116  t   117  u   118  v   119  w  */
         1    |   2    |   4    |   8    |   16   |   32   |   64   |  128,
 /* 120  x   121  y   122  z   123  {   124  |   125  }   126  ~   127 del */
-        1    |   2    |   4    |   8    |   16   |   32   |   64   |   0, };
+        1    |   2    |   4    |   8    |   16   |   32   |   64   |   0,
+};
 
 #undef T
 
-#define LOWER(c)            (unsigned char)(c | 0x20)
-#define IS_ALPHA(c)         (LOWER(c) >= 'a' && LOWER(c) <= 'z')
-#define IS_NUM(c)           ((c) >= '0' && (c) <= '9')
-#define IS_ALPHANUM(c)      (IS_ALPHA(c) || IS_NUM(c))
-#define IS_ALPHA(c)         (LOWER(c) >= 'a' && LOWER(c) <= 'z')
-# define BIT_AT(a, i)                                                \
-  (!!((unsigned int) (a)[(unsigned int) (i) >> 3] &                  \
-   (1 << ((unsigned int) (i) & 7))))
-#define IS_HEX(c)           (IS_NUM(c) || (LOWER(c) >= 'a' && LOWER(c) <= 'f'))
-#define IS_MARK(c)          ((c) == '-' || (c) == '_' || (c) == '.' || \
-  (c) == '!' || (c) == '~' || (c) == '*' || (c) == '\'' || (c) == '(' || \
-  (c) == ')')
-#define IS_USERINFO_CHAR(c) (IS_ALPHANUM(c) || IS_MARK(c) || (c) == '%' || \
-  (c) == ';' || (c) == ':' || (c) == '&' || (c) == '=' || (c) == '+' || \
-  (c) == '$' || (c) == ',')
+#define LOWER(c) (unsigned char) (c | 0x20)
+#define IS_ALPHA(c) (LOWER(c) >= 'a' && LOWER(c) <= 'z')
+#define IS_NUM(c) ((c) >= '0' && (c) <= '9')
+#define IS_ALPHANUM(c) (IS_ALPHA(c) || IS_NUM(c))
+
+#define IS_ALPHA(c) (LOWER(c) >= 'a' && LOWER(c) <= 'z')
+#define BIT_AT(a, i) \
+	(!!((unsigned int) (a)[(unsigned int) (i) >> 3] & \
+	    (1 << ((unsigned int) (i) & 7))))
+#define IS_HEX(c) (IS_NUM(c) || (LOWER(c) >= 'a' && LOWER(c) <= 'f'))
+#define IS_MARK(c) \
+	((c) == '-' || (c) == '_' || (c) == '.' || (c) == '!' || (c) == '~' || \
+	 (c) == '*' || (c) == '\'' || (c) == '(' || (c) == ')')
+#define IS_USERINFO_CHAR(c) \
+	(IS_ALPHANUM(c) || IS_MARK(c) || (c) == '%' || (c) == ';' || \
+	 (c) == ':' || (c) == '&' || (c) == '=' || (c) == '+' || (c) == '$' || \
+	 (c) == ',')
 
 #if HTTP_PARSER_STRICT
-#define IS_URL_CHAR(c)      (BIT_AT(normal_url_char, (unsigned char)c))
-#define IS_HOST_CHAR(c)     (IS_ALPHANUM(c) || (c) == '.' || (c) == '-')
+#define IS_URL_CHAR(c) (BIT_AT(normal_url_char, (unsigned char) c))
+#define IS_HOST_CHAR(c) (IS_ALPHANUM(c) || (c) == '.' || (c) == '-')
 #else
-#define IS_URL_CHAR(c)                                                         \
-  (BIT_AT(normal_url_char, (unsigned char)c) || ((c) & 0x80))
-#define IS_HOST_CHAR(c)                                                        \
-  (IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
+#define IS_URL_CHAR(c) \
+	(BIT_AT(normal_url_char, (unsigned char) c) || ((c) & 0x80))
+#define IS_HOST_CHAR(c) \
+	(IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
 #endif
 
-
-enum http_parser_url_fields
-  { UF_SCHEMA           = 0
-  , UF_HOST             = 1
-  , UF_PORT             = 2
-  , UF_PATH             = 3
-  , UF_QUERY            = 4
-  , UF_FRAGMENT         = 5
-  , UF_USERINFO         = 6
-  , UF_MAX              = 7
-  };
+enum http_parser_url_fields {
+	UF_SCHEMA = 0,
+	UF_HOST = 1,
+	UF_PORT = 2,
+	UF_PATH = 3,
+	UF_QUERY = 4,
+	UF_FRAGMENT = 5,
+	UF_USERINFO = 6,
+	UF_MAX = 7,
+};
 
 struct http_parser_url {
-  uint16_t field_set;           /* Bitmask of (1 << UF_*) values */
-  uint16_t port;                /* Converted UF_PORT string */
-  struct {
-    uint16_t off;               /* Offset into buffer in which field starts */
-    uint16_t len;               /* Length of run in buffer */
-  } field_data[UF_MAX];
+	uint16_t field_set; /* Bitmask of (1 << UF_*) values */
+	uint16_t port; /* Converted UF_PORT string */
+
+	struct {
+		uint16_t off; /* Offset into buffer in which field starts */
+		uint16_t len; /* Length of run in buffer */
+	} field_data[UF_MAX];
 };
 
-enum state
-  { s_dead = 1 /* important that this is > 0 */
-
-  , s_start_req_or_res
-  , s_res_or_resp_H
-  , s_start_res
-  , s_res_H
-  , s_res_HT
-  , s_res_HTT
-  , s_res_HTTP
-  , s_res_http_major
-  , s_res_http_dot
-  , s_res_http_minor
-  , s_res_http_end
-  , s_res_first_status_code
-  , s_res_status_code
-  , s_res_status_start
-  , s_res_status
-  , s_res_line_almost_done
-
-  , s_start_req
-
-  , s_req_method
-  , s_req_spaces_before_url
-  , s_req_schema
-  , s_req_schema_slash
-  , s_req_schema_slash_slash
-  , s_req_server_start
-  , s_req_server
-  , s_req_server_with_at
-  , s_req_path
-  , s_req_query_string_start
-  , s_req_query_string
-  , s_req_fragment_start
-  , s_req_fragment
-  , s_req_http_start
-  , s_req_http_H
-  , s_req_http_HT
-  , s_req_http_HTT
-  , s_req_http_HTTP
-  , s_req_http_I
-  , s_req_http_IC
-  , s_req_http_major
-  , s_req_http_dot
-  , s_req_http_minor
-  , s_req_http_end
-  , s_req_line_almost_done
-
-  , s_header_field_start
-  , s_header_field
-  , s_header_value_discard_ws
-  , s_header_value_discard_ws_almost_done
-  , s_header_value_discard_lws
-  , s_header_value_start
-  , s_header_value
-  , s_header_value_lws
-
-  , s_header_almost_done
-
-  , s_chunk_size_start
-  , s_chunk_size
-  , s_chunk_parameters
-  , s_chunk_size_almost_done
-
-  , s_headers_almost_done
-  , s_headers_done
-
-  /* Important: 's_headers_done' must be the last 'header' state. All
-   * states beyond this must be 'body' states. It is used for overflow
-   * checking. See the PARSING_HEADER() macro.
-   */
-
-  , s_chunk_data
-  , s_chunk_data_almost_done
-  , s_chunk_data_done
-
-  , s_body_identity
-  , s_body_identity_eof
-
-  , s_message_done
+enum state {
+	s_dead = 1, /* important that this is > 0 */
+	s_start_req_or_res,
+	s_res_or_resp_H,
+	s_start_res,
+	s_res_H,
+	s_res_HT,
+	s_res_HTT,
+	s_res_HTTP,
+	s_res_http_major,
+	s_res_http_dot,
+	s_res_http_minor,
+	s_res_http_end,
+	s_res_first_status_code,
+	s_res_status_code,
+	s_res_status_start,
+	s_res_status,
+	s_res_line_almost_done,
+	s_start_req,
+	s_req_method,
+	s_req_spaces_before_url,
+	s_req_schema,
+	s_req_schema_slash,
+	s_req_schema_slash_slash,
+	s_req_server_start,
+	s_req_server,
+	s_req_server_with_at,
+	s_req_path,
+	s_req_query_string_start,
+	s_req_query_string,
+	s_req_fragment_start,
+	s_req_fragment,
+	s_req_http_start,
+	s_req_http_H,
+	s_req_http_HT,
+	s_req_http_HTT,
+	s_req_http_HTTP,
+	s_req_http_I,
+	s_req_http_IC,
+	s_req_http_major,
+	s_req_http_dot,
+	s_req_http_minor,
+	s_req_http_end,
+	s_req_line_almost_done,
+	s_header_field_start,
+	s_header_field,
+	s_header_value_discard_ws,
+	s_header_value_discard_ws_almost_done,
+	s_header_value_discard_lws,
+	s_header_value_start,
+	s_header_value,
+	s_header_value_lws,
+	s_header_almost_done,
+	s_chunk_size_start,
+	s_chunk_size,
+	s_chunk_parameters,
+	s_chunk_size_almost_done,
+	s_headers_almost_done,
+	/* Important: 's_headers_done' must be the last 'header' state. All
+	 * states beyond this must be 'body' states. It is used for overflow
+	 * checking. See the PARSING_HEADER() macro.
+	 */
+	s_headers_done,
+	s_chunk_data,
+	s_chunk_data_almost_done,
+	s_chunk_data_done,
+	s_body_identity,
+	s_body_identity_eof,
+	s_message_done,
 };
 
-enum http_host_state
-  {
-    s_http_host_dead = 1
-  , s_http_userinfo_start
-  , s_http_userinfo
-  , s_http_host_start
-  , s_http_host_v6_start
-  , s_http_host
-  , s_http_host_v6
-  , s_http_host_v6_end
-  , s_http_host_v6_zone_start
-  , s_http_host_v6_zone
-  , s_http_host_port_start
-  , s_http_host_port
+enum http_host_state {
+	s_http_host_dead = 1,
+	s_http_userinfo_start,
+	s_http_userinfo,
+	s_http_host_start,
+	s_http_host_v6_start,
+	s_http_host,
+	s_http_host_v6,
+	s_http_host_v6_end,
+	s_http_host_v6_zone_start,
+	s_http_host_v6_zone,
+	s_http_host_port_start,
+	s_http_host_port,
 };
 
-static enum http_host_state
-http_parse_host_char(enum http_host_state s, const char ch) {
-  switch(s) {
-    case s_http_userinfo:
-    case s_http_userinfo_start:
-      if (ch == '@') {
-        return s_http_host_start;
-      }
-
-      if (IS_USERINFO_CHAR(ch)) {
-        return s_http_userinfo;
-      }
-      break;
-
-    case s_http_host_start:
-      if (ch == '[') {
-        return s_http_host_v6_start;
-      }
-
-      if (IS_HOST_CHAR(ch)) {
-        return s_http_host;
-      }
-
-      break;
-
-    case s_http_host:
-      if (IS_HOST_CHAR(ch)) {
-        return s_http_host;
-      }
-
-    /* fall through */
-    case s_http_host_v6_end:
-      if (ch == ':') {
-        return s_http_host_port_start;
-      }
-
-      break;
-
-    case s_http_host_v6:
-      if (ch == ']') {
-        return s_http_host_v6_end;
-      }
-
-    /* fall through */
-    case s_http_host_v6_start:
-      if (IS_HEX(ch) || ch == ':' || ch == '.') {
-        return s_http_host_v6;
-      }
-
-      if (s == s_http_host_v6 && ch == '%') {
-        return s_http_host_v6_zone_start;
-      }
-      break;
-
-    case s_http_host_v6_zone:
-      if (ch == ']') {
-        return s_http_host_v6_end;
-      }
-
-    /* fall through */
-    case s_http_host_v6_zone_start:
-      /* RFC 6874 Zone ID consists of 1*( unreserved / pct-encoded) */
-      if (IS_ALPHANUM(ch) || ch == '%' || ch == '.' || ch == '-' || ch == '_' ||
-          ch == '~') {
-        return s_http_host_v6_zone;
-      }
-      break;
-
-    case s_http_host_port:
-    case s_http_host_port_start:
-      if (IS_NUM(ch)) {
-        return s_http_host_port;
-      }
-
-      break;
-
-    default:
-      break;
-  }
-  return s_http_host_dead;
-}
-
-static int
-http_parse_host(const char * buf, struct http_parser_url *u, int found_at) {
-  enum http_host_state s;
-
-  const char *p;
-  size_t buflen = u->field_data[UF_HOST].off + u->field_data[UF_HOST].len;
-
-  xassert(u->field_set & (1 << UF_HOST));
-
-  u->field_data[UF_HOST].len = 0;
-
-  s = found_at ? s_http_userinfo_start : s_http_host_start;
-
-  for (p = buf + u->field_data[UF_HOST].off; p < buf + buflen; p++) {
-    enum http_host_state new_s = http_parse_host_char(s, *p);
-
-    if (new_s == s_http_host_dead) {
-      return 1;
-    }
-
-    switch(new_s) {
-      case s_http_host:
-        if (s != s_http_host) {
-          u->field_data[UF_HOST].off = (uint16_t)(p - buf);
-        }
-        u->field_data[UF_HOST].len++;
-        break;
-
-      case s_http_host_v6:
-        if (s != s_http_host_v6) {
-          u->field_data[UF_HOST].off = (uint16_t)(p - buf);
-        }
-        u->field_data[UF_HOST].len++;
-        break;
-
-      case s_http_host_v6_zone_start:
-      case s_http_host_v6_zone:
-        u->field_data[UF_HOST].len++;
-        break;
-
-      case s_http_host_port:
-        if (s != s_http_host_port) {
-          u->field_data[UF_PORT].off = (uint16_t)(p - buf);
-          u->field_data[UF_PORT].len = 0;
-          u->field_set |= (1 << UF_PORT);
-        }
-        u->field_data[UF_PORT].len++;
-        break;
-
-      case s_http_userinfo:
-        if (s != s_http_userinfo) {
-          u->field_data[UF_USERINFO].off = (uint16_t)(p - buf);
-          u->field_data[UF_USERINFO].len = 0;
-          u->field_set |= (1 << UF_USERINFO);
-        }
-        u->field_data[UF_USERINFO].len++;
-        break;
-
-      default:
-        break;
-    }
-    s = new_s;
-  }
-
-  /* Make sure we don't end somewhere unexpected */
-  switch (s) {
-    case s_http_host_start:
-    case s_http_host_v6_start:
-    case s_http_host_v6:
-    case s_http_host_v6_zone_start:
-    case s_http_host_v6_zone:
-    case s_http_host_port_start:
-    case s_http_userinfo:
-    case s_http_userinfo_start:
-      return 1;
-    default:
-      break;
-  }
-
-  return 0;
-}
-
-static enum state
-parse_url_char(enum state s, const char ch)
+static enum http_host_state http_parse_host_char(enum http_host_state s,
+						 const char ch)
 {
-  if (ch == ' ' || ch == '\r' || ch == '\n') {
-    return s_dead;
-  }
+	switch (s) {
+	case s_http_userinfo:
+	case s_http_userinfo_start:
+		if (ch == '@') {
+			return s_http_host_start;
+		}
+
+		if (IS_USERINFO_CHAR(ch)) {
+			return s_http_userinfo;
+		}
+		break;
+
+	case s_http_host_start:
+		if (ch == '[') {
+			return s_http_host_v6_start;
+		}
+
+		if (IS_HOST_CHAR(ch)) {
+			return s_http_host;
+		}
+
+		break;
+
+	case s_http_host:
+		if (IS_HOST_CHAR(ch)) {
+			return s_http_host;
+		}
+
+	/* fall through */
+	case s_http_host_v6_end:
+		if (ch == ':') {
+			return s_http_host_port_start;
+		}
+
+		break;
+
+	case s_http_host_v6:
+		if (ch == ']') {
+			return s_http_host_v6_end;
+		}
+
+	/* fall through */
+	case s_http_host_v6_start:
+		if (IS_HEX(ch) || ch == ':' || ch == '.') {
+			return s_http_host_v6;
+		}
+
+		if (s == s_http_host_v6 && ch == '%') {
+			return s_http_host_v6_zone_start;
+		}
+		break;
+
+	case s_http_host_v6_zone:
+		if (ch == ']') {
+			return s_http_host_v6_end;
+		}
+
+	/* fall through */
+	case s_http_host_v6_zone_start:
+		/* RFC 6874 Zone ID consists of 1*( unreserved / pct-encoded) */
+		if (IS_ALPHANUM(ch) || ch == '%' || ch == '.' || ch == '-' ||
+		    ch == '_' || ch == '~') {
+			return s_http_host_v6_zone;
+		}
+		break;
+
+	case s_http_host_port:
+	case s_http_host_port_start:
+		if (IS_NUM(ch)) {
+			return s_http_host_port;
+		}
+
+		break;
+
+	default:
+		break;
+	}
+	return s_http_host_dead;
+}
+
+static int http_parse_host(const char *buf, struct http_parser_url *u,
+			   int found_at)
+{
+	enum http_host_state s;
+
+	const char *p;
+	size_t buflen = u->field_data[UF_HOST].off + u->field_data[UF_HOST].len;
+
+	xassert(u->field_set & (1 << UF_HOST));
+
+	u->field_data[UF_HOST].len = 0;
+
+	s = found_at ? s_http_userinfo_start : s_http_host_start;
+
+	for (p = buf + u->field_data[UF_HOST].off; p < buf + buflen; p++) {
+		enum http_host_state new_s = http_parse_host_char(s, *p);
+
+		if (new_s == s_http_host_dead) {
+			return 1;
+		}
+
+		switch (new_s) {
+		case s_http_host:
+			if (s != s_http_host) {
+				u->field_data[UF_HOST].off =
+					(uint16_t) (p - buf);
+			}
+			u->field_data[UF_HOST].len++;
+			break;
+
+		case s_http_host_v6:
+			if (s != s_http_host_v6) {
+				u->field_data[UF_HOST].off =
+					(uint16_t) (p - buf);
+			}
+			u->field_data[UF_HOST].len++;
+			break;
+
+		case s_http_host_v6_zone_start:
+		case s_http_host_v6_zone:
+			u->field_data[UF_HOST].len++;
+			break;
+
+		case s_http_host_port:
+			if (s != s_http_host_port) {
+				u->field_data[UF_PORT].off =
+					(uint16_t) (p - buf);
+				u->field_data[UF_PORT].len = 0;
+				u->field_set |= (1 << UF_PORT);
+			}
+			u->field_data[UF_PORT].len++;
+			break;
+
+		case s_http_userinfo:
+			if (s != s_http_userinfo) {
+				u->field_data[UF_USERINFO].off =
+					(uint16_t) (p - buf);
+				u->field_data[UF_USERINFO].len = 0;
+				u->field_set |= (1 << UF_USERINFO);
+			}
+			u->field_data[UF_USERINFO].len++;
+			break;
+
+		default:
+			break;
+		}
+		s = new_s;
+	}
+
+	/* Make sure we don't end somewhere unexpected */
+	switch (s) {
+	case s_http_host_start:
+	case s_http_host_v6_start:
+	case s_http_host_v6:
+	case s_http_host_v6_zone_start:
+	case s_http_host_v6_zone:
+	case s_http_host_port_start:
+	case s_http_userinfo:
+	case s_http_userinfo_start:
+		return 1;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static enum state parse_url_char(enum state s, const char ch)
+{
+	if (ch == ' ' || ch == '\r' || ch == '\n') {
+		return s_dead;
+	}
 
 #if HTTP_PARSER_STRICT
-  if (ch == '\t' || ch == '\f') {
-    return s_dead;
-  }
+	if (ch == '\t' || ch == '\f') {
+		return s_dead;
+	}
 #endif
 
-  switch (s) {
-    case s_req_spaces_before_url:
-      /* Proxied requests are followed by scheme of an absolute URI (alpha).
-       * All methods except CONNECT are followed by '/' or '*'.
-       */
+	switch (s) {
+	case s_req_spaces_before_url:
+		/*
+		 * Proxied requests are followed by scheme of an absolute URI
+		 * (alpha). All methods except CONNECT are followed by '/' or
+		 * '*'.
+		 */
 
-      if (ch == '/' || ch == '*') {
-        return s_req_path;
-      }
+		if (ch == '/' || ch == '*') {
+			return s_req_path;
+		}
 
-      if (IS_ALPHA(ch)) {
-        return s_req_schema;
-      }
+		if (IS_ALPHA(ch)) {
+			return s_req_schema;
+		}
 
-      break;
+		break;
 
-    case s_req_schema:
-      if (IS_ALPHA(ch)) {
-        return s;
-      }
+	case s_req_schema:
+		if (IS_ALPHA(ch)) {
+			return s;
+		}
 
-      if (ch == ':') {
-        return s_req_schema_slash;
-      }
+		if (ch == ':') {
+			return s_req_schema_slash;
+		}
 
-      break;
+		break;
 
-    case s_req_schema_slash:
-      if (ch == '/') {
-        return s_req_schema_slash_slash;
-      }
+	case s_req_schema_slash:
+		if (ch == '/') {
+			return s_req_schema_slash_slash;
+		}
 
-      break;
+		break;
 
-    case s_req_schema_slash_slash:
-      if (ch == '/') {
-        return s_req_server_start;
-      }
+	case s_req_schema_slash_slash:
+		if (ch == '/') {
+			return s_req_server_start;
+		}
 
-      break;
+		break;
 
-    case s_req_server_with_at:
-      if (ch == '@') {
-        return s_dead;
-      }
+	case s_req_server_with_at:
+		if (ch == '@') {
+			return s_dead;
+		}
 
-    /* fall through */
-    case s_req_server_start:
-    case s_req_server:
-      if (ch == '/') {
-        return s_req_path;
-      }
+	/* fall through */
+	case s_req_server_start:
+	case s_req_server:
+		if (ch == '/') {
+			return s_req_path;
+		}
 
-      if (ch == '?') {
-        return s_req_query_string_start;
-      }
+		if (ch == '?') {
+			return s_req_query_string_start;
+		}
 
-      if (ch == '@') {
-        return s_req_server_with_at;
-      }
+		if (ch == '@') {
+			return s_req_server_with_at;
+		}
 
-      if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
-        return s_req_server;
-      }
+		if (IS_USERINFO_CHAR(ch) || ch == '[' || ch == ']') {
+			return s_req_server;
+		}
 
-      break;
+		break;
 
-    case s_req_path:
-      if (IS_URL_CHAR(ch)) {
-        return s;
-      }
+	case s_req_path:
+		if (IS_URL_CHAR(ch)) {
+			return s;
+		}
 
-      switch (ch) {
-        case '?':
-          return s_req_query_string_start;
+		switch (ch) {
+		case '?':
+			return s_req_query_string_start;
 
-        case '#':
-          return s_req_fragment_start;
-      }
+		case '#':
+			return s_req_fragment_start;
+		}
 
-      break;
+		break;
 
-    case s_req_query_string_start:
-    case s_req_query_string:
-      if (IS_URL_CHAR(ch)) {
-        return s_req_query_string;
-      }
+	case s_req_query_string_start:
+	case s_req_query_string:
+		if (IS_URL_CHAR(ch)) {
+			return s_req_query_string;
+		}
 
-      switch (ch) {
-        case '?':
-          /* allow extra '?' in query string */
-          return s_req_query_string;
+		switch (ch) {
+		case '?':
+			/* allow extra '?' in query string */
+			return s_req_query_string;
 
-        case '#':
-          return s_req_fragment_start;
-      }
+		case '#':
+			return s_req_fragment_start;
+		}
 
-      break;
+		break;
 
-    case s_req_fragment_start:
-      if (IS_URL_CHAR(ch)) {
-        return s_req_fragment;
-      }
+	case s_req_fragment_start:
+		if (IS_URL_CHAR(ch)) {
+			return s_req_fragment;
+		}
 
-      switch (ch) {
-        case '?':
-          return s_req_fragment;
+		switch (ch) {
+		case '?':
+			return s_req_fragment;
 
-        case '#':
-          return s;
-      }
+		case '#':
+			return s;
+		}
 
-      break;
+		break;
 
-    case s_req_fragment:
-      if (IS_URL_CHAR(ch)) {
-        return s;
-      }
+	case s_req_fragment:
+		if (IS_URL_CHAR(ch)) {
+			return s;
+		}
 
-      switch (ch) {
-        case '?':
-        case '#':
-          return s;
-      }
+		switch (ch) {
+		case '?':
+		case '#':
+			return s;
+		}
 
-      break;
+		break;
 
-    default:
-      break;
-  }
+	default:
+		break;
+	}
 
-  /* We should never fall out of the switch above unless there's an error */
-  return s_dead;
+	/* We should never fall out of the switch above unless there's an error */
+	return s_dead;
 }
 
-int
-http_parser_parse_url(const char *buf, size_t buflen, int is_connect,
-                      struct http_parser_url *u)
+int http_parser_parse_url(const char *buf, size_t buflen, int is_connect,
+			  struct http_parser_url *u)
 {
-  enum state s;
-  const char *p;
-  enum http_parser_url_fields uf, old_uf;
-  int found_at = 0;
+	enum state s;
+	const char *p;
+	enum http_parser_url_fields uf, old_uf;
+	int found_at = 0;
 
-  if (buflen == 0) {
-    return 1;
-  }
+	if (buflen == 0) {
+		return 1;
+	}
 
-  u->port = u->field_set = 0;
-  s = is_connect ? s_req_server_start : s_req_spaces_before_url;
-  old_uf = UF_MAX;
+	u->port = u->field_set = 0;
+	s = is_connect ? s_req_server_start : s_req_spaces_before_url;
+	old_uf = UF_MAX;
 
-  for (p = buf; p < buf + buflen; p++) {
-    s = parse_url_char(s, *p);
+	for (p = buf; p < buf + buflen; p++) {
+		s = parse_url_char(s, *p);
 
-    /* Figure out the next field that we're operating on */
-    switch (s) {
-      case s_dead:
-        return 1;
+		/* Figure out the next field that we're operating on */
+		switch (s) {
+		case s_dead:
+			return 1;
 
-      /* Skip delimiters */
-      case s_req_schema_slash:
-      case s_req_schema_slash_slash:
-      case s_req_server_start:
-      case s_req_query_string_start:
-      case s_req_fragment_start:
-        continue;
+		/* Skip delimiters */
+		case s_req_schema_slash:
+		case s_req_schema_slash_slash:
+		case s_req_server_start:
+		case s_req_query_string_start:
+		case s_req_fragment_start:
+			continue;
 
-      case s_req_schema:
-        uf = UF_SCHEMA;
-        break;
+		case s_req_schema:
+			uf = UF_SCHEMA;
+			break;
 
-      case s_req_server_with_at:
-        found_at = 1;
+		case s_req_server_with_at:
+			found_at = 1;
 
-      /* fall through */
-      case s_req_server:
-        uf = UF_HOST;
-        break;
+		/* fall through */
+		case s_req_server:
+			uf = UF_HOST;
+			break;
 
-      case s_req_path:
-        uf = UF_PATH;
-        break;
+		case s_req_path:
+			uf = UF_PATH;
+			break;
 
-      case s_req_query_string:
-        uf = UF_QUERY;
-        break;
+		case s_req_query_string:
+			uf = UF_QUERY;
+			break;
 
-      case s_req_fragment:
-        uf = UF_FRAGMENT;
-        break;
+		case s_req_fragment:
+			uf = UF_FRAGMENT;
+			break;
 
-      default:
-        xassert(!"Unexpected state");
-        return 1;
-    }
+		default:
+			xassert(!"Unexpected state");
+			return 1;
+		}
 
-    /* Nothing's changed; soldier on */
-    if (uf == old_uf) {
-      u->field_data[uf].len++;
-      continue;
-    }
+		/* Nothing's changed; soldier on */
+		if (uf == old_uf) {
+			u->field_data[uf].len++;
+			continue;
+		}
 
-    u->field_data[uf].off = (uint16_t)(p - buf);
-    u->field_data[uf].len = 1;
+		u->field_data[uf].off = (uint16_t) (p - buf);
+		u->field_data[uf].len = 1;
 
-    u->field_set |= (1 << uf);
-    old_uf = uf;
-  }
+		u->field_set |= (1 << uf);
+		old_uf = uf;
+	}
 
-  /* host must be present if there is a schema */
-  /* parsing http:///toto will fail */
-  if ((u->field_set & (1 << UF_SCHEMA)) &&
-      (u->field_set & (1 << UF_HOST)) == 0) {
-    return 1;
-  }
+	/*
+	 * host must be present if there is a schema
+	 * parsing http:///toto will fail
+	 */
+	if ((u->field_set & (1 << UF_SCHEMA)) &&
+	    (u->field_set & (1 << UF_HOST)) == 0) {
+		return 1;
+	}
 
-  if (u->field_set & (1 << UF_HOST)) {
-    if (http_parse_host(buf, u, found_at) != 0) {
-      return 1;
-    }
-  }
+	if (u->field_set & (1 << UF_HOST)) {
+		if (http_parse_host(buf, u, found_at) != 0) {
+			return 1;
+		}
+	}
 
-  /* CONNECT requests can only contain "hostname:port" */
-  if (is_connect && u->field_set != ((1 << UF_HOST)|(1 << UF_PORT))) {
-    return 1;
-  }
+	/* CONNECT requests can only contain "hostname:port" */
+	if (is_connect && u->field_set != ((1 << UF_HOST) | (1 << UF_PORT))) {
+		return 1;
+	}
 
-  if (u->field_set & (1 << UF_PORT)) {
-    uint16_t off;
-    uint16_t len;
-    const char* p;
-    const char* end;
-    unsigned long v;
+	if (u->field_set & (1 << UF_PORT)) {
+		uint16_t off;
+		uint16_t len;
+		const char *p;
+		const char *end;
+		unsigned long v;
 
-    off = u->field_data[UF_PORT].off;
-    len = u->field_data[UF_PORT].len;
-    end = buf + off + len;
+		off = u->field_data[UF_PORT].off;
+		len = u->field_data[UF_PORT].len;
+		end = buf + off + len;
 
-    /* NOTE: The characters are already validated and are in the [0-9] range */
-    xassert((size_t) (off + len) <= buflen && "Port number overflow");
-    v = 0;
-    for (p = buf + off; p < end; p++) {
-      v *= 10;
-      v += *p - '0';
+		/*
+		 * NOTE: The characters are already validated and are in the
+		 * [0-9] range
+		 */
+		xassert((size_t) (off + len) <= buflen &&
+			"Port number overflow");
+		v = 0;
+		for (p = buf + off; p < end; p++) {
+			v *= 10;
+			v += *p - '0';
 
-      /* Ports have a max value of 2^16 */
-      if (v > 0xffff) {
-        return 1;
-      }
-    }
+			/* Ports have a max value of 2^16 */
+			if (v > 0xffff) {
+				return 1;
+			}
+		}
 
-    u->port = (uint16_t) v;
-  }
+		u->port = (uint16_t) v;
+	}
 
-  return 0;
+	return 0;
 }
