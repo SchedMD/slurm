@@ -75,6 +75,8 @@
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
+#define SLURM_24_11_PROTOCOL_VERSION MAKE_SLURM_VER(42)
+
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
 #define IS_NO_VAL(x) is_overloaded_NO_VAL(&(x), sizeof(x), false)
 /* Force evaluation against (32bit) NO_VAL cast to value */

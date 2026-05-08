@@ -1413,8 +1413,7 @@ extern int job_record_calc_arbitrary_tpn(job_record_t *job_ptr,
 		 * loaded. This prevents all jobs being lost during an
 		 * upgrade. Reallocate the arbitrary_tasks_np array to prevent
 		 * an invalid read if the number of tasks > num_names. This
-		 * can be removed when upgrading from
-		 * SLURM_25_05_PROTOCOL_VERSION is not supported, and the
+		 * can be removed when 25.05 is no longer supported, and the
 		 * protocol_version parameter to this function can be removed.
 		 */
 		if (num_names < job_ptr->details->num_tasks)

@@ -604,7 +604,7 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 
 	log_flag(SWITCH, "%s: Starting %pJ", __func__, job_ptr);
 
-	if (job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) {
+	if (job_ptr->start_protocol_ver < SLURM_25_11_PROTOCOL_VERSION) {
 		/*
 		 * Remove this case when 25.05 support is no longer supported.
 		 *
