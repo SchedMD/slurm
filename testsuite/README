@@ -710,6 +710,7 @@ test_101_#   Testing of sacct options.
 test_101_1   Test --help and --helpformat
 test_101_2   Test sacct SLUID support including resizes and OriginalSLUID
 test_101_3   Test sacct OverSubscribe and Exclusive reporting from slurmdbd
+test_101_4   /commands/sacct/test_--json.py
 
 test_102_#   Testing of sacctmgr options.
 =========================================
