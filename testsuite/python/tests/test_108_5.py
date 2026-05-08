@@ -28,7 +28,13 @@ def setup():
     ],
 )
 def test_json(action):
-    """Verify scontrol --json has the correct format"""
+    """Verify scontrol --json has the correct format and meta data command"""
+
+    expected_command = ["scontrol", "--json"]
+    expected_command.extend(action.split())
 
     output = atf.run_command_output(f"scontrol --json {action}", fatal=True)
-    assert json.loads(output) is not None
+    json_data = json.loads(output)
+    assert json_data is not None
+    if atf.get_version("bin/scontrol") >= (26, 5):
+        assert json_data["meta"]["command"] == expected_command
