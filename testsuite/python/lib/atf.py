@@ -290,6 +290,20 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             failures.append(reason)
         else:
             xfailures.append(reason)
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/accounting_storage.c" in bt
+        and "clusteracct_storage_g_node_up" in bt
+        and "plugin_inited != PLUGIN_NOT_INITED" in bt
+    ):
+        # TODO: An initial fix landed in 25.11.4+, but it seems not fully fixed.
+        if get_version(component) >= (25, 11, 4):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
         return
 
     reason = "Ticket 24822: Known issue shutting down slurmd with OpenSSL"
