@@ -8,7 +8,8 @@ Pre-fix (Slurm < 26.05): slurmctld aggregates TRES across all components
 that share the same association and validates once using the first component's
 partition and QoS. With DenyOnLimit: valid het jobs are rejected at submit.
 Without DenyOnLimit: aggregate limit is not enforced at submit or at schedule,
-so the job is accepted and often runs to COMPLETED (or may stay PENDING).
+so the job is accepted; on an idle cluster these het jobs typically run to
+COMPLETED.
 
 Post-fix (Slurm >= 26.05): TRES are aggregated only per (assoc, job QOS,
 partition) group. With or without DenyOnLimit, the same het jobs are accepted
@@ -17,7 +18,8 @@ and run.
 Coverage (grouped by scenario; several tests skip if the case only applies before
 or from Slurm 26.05—see skipif reason strings on those tests).
 
-- Job-level --qos=: without DenyOnLimit → accept (pending or completed); post-fix DenyOnLimit
+- Job-level --qos=: without DenyOnLimit → accept and complete on idle cluster (pre- and post-fix);
+  post-fix DenyOnLimit
   → accept and run (skipif on Slurm < 26.05); without Deny → run to completion on all versions;
   GPU partition fully busy → het stays PENDING (scheduling).
 - Partition DefaultQOS (no job --qos=): no-Deny pending; post-fix Deny → accept and run
@@ -543,25 +545,12 @@ def setup_het_dup_group_reject(setup):
     )
 
 
-def _wait_job_pending_then_settled_or_done(job_id, observe_timeout=20):
-    """
-    Wait for PENDING, poll briefly for COMPLETED (exit early if job runs), then
-    if RUNNING/COMPLETING wait for DONE. Replaces a fixed ~35s sleep while
-    keeping the same allowed final states (PENDING or COMPLETED).
-    """
-    atf.wait_for_job_state(job_id, "PENDING", fatal=True)
-    atf.repeat_until(
-        lambda: atf.get_job_parameter(job_id, "JobState", quiet=True),
-        lambda s: s == "COMPLETED",
-        timeout=observe_timeout,
-        poll_interval=0.5,
-        fatal=False,
-    )
-    state = atf.get_job_parameter(job_id, "JobState", quiet=True)
-    if state in ("RUNNING", "COMPLETING", "CONFIGURING"):
-        atf.wait_for_job_state(job_id, "DONE", timeout=120, fatal=True)
-        state = atf.get_job_parameter(job_id, "JobState", quiet=True)
-    return state
+def _expect_submit_accept_het_done(job_id):
+    """After submit acceptance, expect the het leader to finish in COMPLETED on an idle cluster."""
+    atf.wait_for_job_state(job_id, "DONE", timeout=120, fatal=True)
+    assert (
+        atf.get_job_parameter(job_id, "JobState", quiet=True) == "COMPLETED"
+    ), "Het leader should finish in COMPLETED on idle cluster"
 
 
 def set_partition_default_qos(qos_cpu, qos_gpu):
@@ -619,7 +608,7 @@ def cancel_jobs():
 
 def test_het_job_without_deny_on_limit_accepted(setup_account_and_qos, cancel_jobs):
     """
-    No DenyOnLimit; same het shape (1+2 nodes). Submit succeeds; job may be PENDING or COMPLETED.
+    No DenyOnLimit; same het shape (1+2 nodes). Submit succeeds; on idle cluster the het completes.
     """
     atf.make_bash_script(
         "het_nodeny.in",
@@ -627,16 +616,12 @@ def test_het_job_without_deny_on_limit_accepted(setup_account_and_qos, cancel_jo
 #SBATCH -p {p_cpu} --qos={qos_cpu_nodeny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_gpu_nodeny} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_nodeny.in", fatal=False)
     assert job_id != 0, "Without DenyOnLimit, het job should be accepted at submit"
-    state = _wait_job_pending_then_settled_or_done(job_id)
-    assert state in (
-        "PENDING",
-        "COMPLETED",
-    ), f"Job should be PENDING (post-fix) or COMPLETED (pre-fix). Got {state}"
+    _expect_submit_accept_het_done(job_id)
 
 
 def test_het_job_pending_when_gpu_partition_busy(setup_account_and_qos, cancel_jobs):
@@ -659,7 +644,7 @@ def test_het_job_pending_when_gpu_partition_busy(setup_account_and_qos, cancel_j
 #SBATCH -p {p_cpu} --qos={qos_cpu_nodeny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_gpu_nodeny} -N2 -t1
-sleep 1
+true
 """,
     )
     het_jid = atf.submit_job_sbatch("het_gpu_busy.in", fatal=False)
@@ -690,7 +675,7 @@ sleep 1
 def test_partition_level_nodeny_pending(setup_account_and_qos, cancel_jobs):
     """
     Partition DefaultQOS, no DenyOnLimit; same het shape as het_part_nodeny. Submit succeeds;
-    job may be PENDING or COMPLETED.
+    on idle cluster the het completes.
     """
     set_partition_default_qos(qos_p_cpu_def_nodeny, qos_p_gpu_def_nodeny)
     atf.make_bash_script(
@@ -699,18 +684,14 @@ def test_partition_level_nodeny_pending(setup_account_and_qos, cancel_jobs):
 #SBATCH -p {p_cpu} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_part_nodeny.in", fatal=False)
     assert (
         job_id != 0
     ), "Partition-level without DenyOnLimit, het job should be accepted"
-    state = _wait_job_pending_then_settled_or_done(job_id)
-    assert state in (
-        "PENDING",
-        "COMPLETED",
-    ), f"Job should be PENDING (post-fix) or COMPLETED (pre-fix). Got {state}"
+    _expect_submit_accept_het_done(job_id)
 
 
 # --- Post-fix behavior: skipif on Slurm < 26.05 ---
@@ -732,7 +713,7 @@ def test_het_job_with_deny_on_limit_accepted_and_runs(
 #SBATCH -p {p_cpu} --qos={qos_cpu_deny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_gpu_deny} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_deny.in", fatal=False)
@@ -755,7 +736,7 @@ def test_het_job_without_deny_on_limit_accepted_and_runs(
 #SBATCH -p {p_cpu} --qos={qos_cpu_nodeny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_gpu_nodeny} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_nodeny.in", fatal=False)
@@ -781,7 +762,7 @@ def test_partition_level_deny_accepted_and_runs(setup_account_and_qos, cancel_jo
 #SBATCH -p {p_cpu} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_part_deny.in", fatal=False)
@@ -802,7 +783,7 @@ def test_partition_level_nodeny_accepted_and_runs(setup_account_and_qos, cancel_
 #SBATCH -p {p_cpu} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_part_nodeny.in", fatal=False)
@@ -815,7 +796,7 @@ sleep 1
 
 def test_tres_nodeny_pending(setup_account_and_qos_tres, cancel_jobs):
     """
-    No DenyOnLimit; same Min/Max gres/r1 het. Submit succeeds; job may be PENDING or COMPLETED.
+    No DenyOnLimit; same Min/Max gres/r1 het. Submit succeeds; on idle cluster the job completes.
     """
     atf.make_bash_script(
         "het_tres_nodeny.in",
@@ -824,18 +805,14 @@ def test_tres_nodeny_pending(setup_account_and_qos_tres, cancel_jobs):
 #SBATCH -p {p_cpu} --qos={qos_tres_cpu_nodeny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_tres_gpu_nodeny} -N2 -t1 --gres=r1:2
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_tres_nodeny.in", fatal=False)
     assert (
         job_id != 0
     ), "Min/Max TRES het job without DenyOnLimit should be accepted at submit"
-    state = _wait_job_pending_then_settled_or_done(job_id)
-    assert state in (
-        "PENDING",
-        "COMPLETED",
-    ), f"Job should be PENDING (post-fix) or COMPLETED (pre-fix). Got {state}"
+    _expect_submit_accept_het_done(job_id)
 
 
 @pytest.mark.skipif(
@@ -854,7 +831,7 @@ def test_tres_deny_accepted_and_runs(setup_account_and_qos_tres, cancel_jobs):
 #SBATCH -p {p_cpu} --qos={qos_tres_cpu_deny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_tres_gpu_deny} -N2 -t1 --gres=r1:2
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_tres_deny.in", fatal=False)
@@ -875,7 +852,7 @@ def test_tres_nodeny_accepted_and_runs(setup_account_and_qos_tres, cancel_jobs):
 #SBATCH -p {p_cpu} --qos={qos_tres_cpu_nodeny} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_tres_gpu_nodeny} -N2 -t1 --gres=r1:2
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_tres_nodeny.in", fatal=False)
@@ -898,7 +875,7 @@ def test_het_job_assoc_total_over_limit_rejected(setup_assoc_limit_het, cancel_j
 #SBATCH -p {p_cpu} --qos={qos_assoc_cpu} -N2 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_assoc_gpu} -N2 -t1
-sleep 1
+true
 """,
     )
     assert atf.submit_job_sbatch("het_assoc_total.in", fatal=False) == 0, (
@@ -912,7 +889,7 @@ def test_het_job_two_assoc_grp_tres_2plus2_accepted(
 ):
     """
     GrpTRES=node=3 per association; different -A per het component (2+2 nodes total). Each association
-    sees 2 ≤ 3 at submit—not four nodes on one association. Submit succeeds; job may be PENDING or COMPLETED.
+    sees 2 ≤ 3 at submit—not four nodes on one association. Submit succeeds; on idle cluster the job completes.
     """
     atf.make_bash_script(
         "het_assoc_two_acct.in",
@@ -922,7 +899,7 @@ def test_het_job_two_assoc_grp_tres_2plus2_accepted(
 #SBATCH hetjob
 #SBATCH -A {acct_assoc2_b}
 #SBATCH -p {p_gpu} --qos={qos_assoc2_gpu} -N2 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_assoc_two_acct.in", fatal=False)
@@ -930,11 +907,7 @@ sleep 1
         "Het job (2+2 nodes) with GrpTRES=node=3 on two different associations "
         "should be accepted at submit (2 per association, not 4 on one)."
     )
-    state = _wait_job_pending_then_settled_or_done(job_id)
-    assert state in (
-        "PENDING",
-        "COMPLETED",
-    ), f"Job should be PENDING or COMPLETED. Got {state}"
+    _expect_submit_accept_het_done(job_id)
 
 
 @pytest.mark.skipif(
@@ -966,7 +939,7 @@ def test_het_job_grp_tres_pend_with_running_alloc_same_account(
 #SBATCH -p {p_cpu} --qos={qos_grp_tres_run} -N1 -t1 --exclusive
 #SBATCH hetjob
 #SBATCH -p {p_cpu} --qos={qos_grp_tres_run} -N1 -t1 --exclusive
-sleep 1
+true
 """,
     )
     het_jid = atf.submit_job_sbatch("het_grp_tres_contend.in", fatal=False)
@@ -1020,7 +993,7 @@ def test_het_job_grp_tres_runs_after_running_alloc_completes_same_account(
 #SBATCH -p {p_cpu} --qos={qos_grp_tres_run} -N1 -t1 --exclusive
 #SBATCH hetjob
 #SBATCH -p {p_cpu} --qos={qos_grp_tres_run} -N1 -t1 --exclusive
-sleep 1
+true
 """,
     )
     het_jid = atf.submit_job_sbatch("het_grp_tres_after_block.in", fatal=False)
@@ -1077,7 +1050,7 @@ sleep 600
 #SBATCH -p {p_cpu} --qos={qos_assoc_cpu} -N1 -t1 --exclusive
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_assoc_gpu} -N1 -t1 --exclusive
-sleep 1
+true
 """,
     )
     second_jid = atf.submit_job_sbatch("het_grp3_sat_second.in", fatal=False)
@@ -1123,7 +1096,7 @@ def test_het_job_assoc_total_over_limit_rejected_partition_default_qos(
 #SBATCH -p {p_cpu} -N2 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} -N2 -t1
-sleep 1
+true
 """,
     )
     assert atf.submit_job_sbatch("het_assoc_total_partqos.in", fatal=False) == 0, (
@@ -1137,7 +1110,7 @@ def test_het_job_assoc_total_same_partition_default_qos(
 ):
     """
     GrpTRES=node=3; partition DefaultQOS; both het components on p_cpu (1+1 nodes, 2 ≤ 3). Submit succeeds;
-    job may be PENDING or COMPLETED.
+    on idle cluster the job completes.
     """
     set_partition_default_qos(qos_assoc_cpu, qos_assoc_gpu)
     atf.make_bash_script(
@@ -1147,7 +1120,7 @@ def test_het_job_assoc_total_same_partition_default_qos(
 #SBATCH -p {p_cpu} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_cpu} -N1 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_assoc_total_samepart.in", fatal=False)
@@ -1155,11 +1128,7 @@ sleep 1
         "Same partition + partition DefaultQOS: 1+1 het on p_cpu with "
         "GrpTRES=node=3 should be accepted (2 nodes in one assoc/qos/part group)."
     )
-    state = _wait_job_pending_then_settled_or_done(job_id)
-    assert state in (
-        "PENDING",
-        "COMPLETED",
-    ), f"Job should be PENDING or COMPLETED. Got {state}"
+    _expect_submit_accept_het_done(job_id)
 
 
 def test_het_job_duplicate_same_qos_partition_accept(
@@ -1167,7 +1136,7 @@ def test_het_job_duplicate_same_qos_partition_accept(
 ):
     """
     DenyOnLimit; duplicate (assoc, job QoS, partition) on p_cpu; MaxTresPerUser=node=2; 1+1 het stacks
-    2 ≤ 2 in one group → accepted at submit; job may be PENDING or COMPLETED.
+    2 ≤ 2 in one group → accepted at submit; on idle cluster the job completes.
     """
     atf.make_bash_script(
         "het_dup_qos_accept.in",
@@ -1176,7 +1145,7 @@ def test_het_job_duplicate_same_qos_partition_accept(
 #SBATCH -p {p_cpu} --qos={qos_dup_accept} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_cpu} --qos={qos_dup_accept} -N1 -t1
-sleep 1
+true
 """,
     )
     job_id = atf.submit_job_sbatch("het_dup_qos_accept.in", fatal=False)
@@ -1184,11 +1153,7 @@ sleep 1
         "Duplicate (assoc, qos, partition): 1+1 nodes with MaxTresPerUser=2 "
         "should be accepted at submit."
     )
-    state = _wait_job_pending_then_settled_or_done(job_id)
-    assert state in (
-        "PENDING",
-        "COMPLETED",
-    ), f"Job should be PENDING or COMPLETED. Got {state}"
+    _expect_submit_accept_het_done(job_id)
 
 
 def test_het_job_duplicate_same_qos_partition_rejected(
@@ -1204,7 +1169,7 @@ def test_het_job_duplicate_same_qos_partition_rejected(
 #SBATCH -p {p_cpu} --qos={qos_dup_reject} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_cpu} --qos={qos_dup_reject} -N1 -t1
-sleep 1
+true
 """,
     )
     assert atf.submit_job_sbatch("het_dup_qos_reject.in", fatal=False) == 0, (
@@ -1230,7 +1195,7 @@ def test_het_job_limit_factor_combined_limit_rejected(
 #SBATCH -p {p_cpu} --qos={qos_lf} -N2 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_lf} -N2 -t1
-sleep 1
+true
 """,
     )
     assert atf.submit_job_sbatch("het_lf.in", fatal=False) == 0, (
@@ -1251,7 +1216,7 @@ def test_het_job_qos_combined_limit_rejected(setup_qos_combined_limit_het, cance
 #SBATCH -p {p_cpu} --qos={qos_combined_limit} -N2 -t1
 #SBATCH hetjob
 #SBATCH -p {p_gpu} --qos={qos_combined_limit} -N2 -t1
-sleep 1
+true
 """,
     )
     assert atf.submit_job_sbatch("het_qos_combined_limit.in", fatal=False) == 0, (
@@ -1274,7 +1239,7 @@ def test_het_job_partition_combined_limit_rejected(
 #SBATCH -p {p_cpu} --qos={qos_job_a} -N1 -t1
 #SBATCH hetjob
 #SBATCH -p {p_cpu} --qos={qos_job_b} -N1 -t1
-sleep 1
+true
 """,
     )
     assert atf.submit_job_sbatch("het_part_combined_limit.in", fatal=False) == 0, (
