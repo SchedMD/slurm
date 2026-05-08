@@ -482,6 +482,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/data_parser/v0.0.43/Makefile
 		 src/plugins/data_parser/v0.0.44/Makefile
 		 src/plugins/data_parser/v0.0.45/Makefile
+		 src/plugins/data_parser/v0.0.46/Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
