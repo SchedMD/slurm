@@ -3700,7 +3700,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		clusteracct_storage_g_node_update(acct_db_conn, node_ptr);
 
 	if (IS_NODE_CLOUD(node_ptr) && (was_powering_up || was_powered_down) &&
-	    xstrstr(reg_msg->dynamic_conf, "topology=")) {
+	    xstrcasestr(reg_msg->dynamic_conf, "topology=")) {
 		int rc = SLURM_SUCCESS;
 		char *tmp_conf = NULL;
 		slurm_conf_node_t *conf_node = NULL;
