@@ -803,6 +803,40 @@ static uint32_t _morton_encode(uint16_t x, uint16_t y, uint16_t z)
 	return result;
 }
 
+static void _find_starting_coords(torus3d_record_t *torus,
+				  bitstr_t *node_bitmap, uint16_t *x_start,
+				  uint16_t *y_start, uint16_t *z_start,
+				  uint16_t *x_span, uint16_t *y_span,
+				  uint16_t *z_span)
+{
+	bitstr_t *x_bitmap, *y_bitmap, *z_bitmap;
+
+	x_bitmap = bit_alloc(torus->x);
+	y_bitmap = bit_alloc(torus->y);
+	z_bitmap = bit_alloc(torus->z);
+
+	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		uint32_t node_idx = torus->nodes_map[idx];
+		uint16_t x, y, z;
+		if (node_idx == NO_VAL)
+			continue;
+		if (!bit_test(node_bitmap, node_idx))
+			continue;
+		torus3d_index_to_coord(torus, idx, &x, &y, &z);
+		bit_set(x_bitmap, x);
+		bit_set(y_bitmap, y);
+		bit_set(z_bitmap, z);
+	}
+
+	_min_wrap_span(x_bitmap, x_start, x_span);
+	_min_wrap_span(y_bitmap, y_start, y_span);
+	_min_wrap_span(z_bitmap, z_start, z_span);
+
+	FREE_NULL_BITMAP(x_bitmap);
+	FREE_NULL_BITMAP(y_bitmap);
+	FREE_NULL_BITMAP(z_bitmap);
+}
+
 extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			       uint32_t *size, void *tctx)
 {
@@ -828,7 +862,6 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 
 	for (int t = 0; t < ctx->record_count; t++) {
 		torus3d_record_t *torus = &ctx->records[t];
-		bitstr_t *x_bitmap, *y_bitmap, *z_bitmap;
 		uint16_t x_start, y_start, z_start;
 		uint16_t x_span, y_span, z_span;
 		uint32_t rank_idx = 0;
@@ -843,34 +876,12 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			x_span = torus->x;
 			y_span = torus->y;
 			z_span = torus->z;
-			goto whole_torus;
+		} else {
+			_find_starting_coords(torus, node_bitmap, &x_start,
+					      &y_start, &z_start, &x_span,
+					      &y_span, &z_span);
 		}
 
-		x_bitmap = bit_alloc(torus->x);
-		y_bitmap = bit_alloc(torus->y);
-		z_bitmap = bit_alloc(torus->z);
-
-		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-			uint32_t node_idx = torus->nodes_map[idx];
-			uint16_t x, y, z;
-			if (node_idx == NO_VAL)
-				continue;
-			if (!bit_test(node_bitmap, node_idx))
-				continue;
-			torus3d_index_to_coord(torus, idx, &x, &y, &z);
-			bit_set(x_bitmap, x);
-			bit_set(y_bitmap, y);
-			bit_set(z_bitmap, z);
-		}
-
-		_min_wrap_span(x_bitmap, &x_start, &x_span);
-		_min_wrap_span(y_bitmap, &y_start, &y_span);
-		_min_wrap_span(z_bitmap, &z_start, &z_span);
-
-		FREE_NULL_BITMAP(x_bitmap);
-		FREE_NULL_BITMAP(y_bitmap);
-		FREE_NULL_BITMAP(z_bitmap);
-whole_torus:
 		for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
 			if (!bit_test(torus->nodes_bitmap, i)) {
 				rank_idx++;
