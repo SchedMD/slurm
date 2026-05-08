@@ -186,6 +186,11 @@ typedef struct {
 	char **environment; /* MailProg environment variables */
 } mail_info_t;
 
+typedef struct {
+	time_t queue_time;
+	slurm_step_id_t step_id;
+} srun_no_resp_t;
+
 static void _agent_defer(void);
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
@@ -198,6 +203,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr);
 static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		int no_resp_cnt, int retry_cnt);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
+static void _queue_srun_no_resp(slurm_msg_t *msg);
 static void _queue_update_node(char *node_name);
 static void _queue_update_srun(slurm_step_id_t *step_id);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
@@ -227,6 +233,8 @@ static pthread_cond_t update_nodes_cond = PTHREAD_COND_INITIALIZER;
 static list_t *update_srun_list = NULL;
 static pthread_mutex_t update_srun_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t update_srun_cond = PTHREAD_COND_INITIALIZER;
+
+static list_t *srun_no_resp_list = NULL;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -946,7 +954,7 @@ static void *_thread_per_group_rpc(void *args)
 	thd_t           *thread_ptr         = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
-	bool is_kill_msg, srun_agent, sack_agent;
+	bool is_kill_msg, srun_agent, srun_no_resp_msg, sack_agent;
 	list_t *ret_list = NULL;
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
@@ -977,6 +985,10 @@ static void *_thread_per_group_rpc(void *args)
 			(msg_type == SRUN_USER_MSG)		||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
+	srun_no_resp_msg =
+		((msg_type == RESPONSE_HET_JOB_ALLOCATION) ||
+		 (msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
+		 (msg_type == SRUN_PING) || (msg_type == SRUN_TIMEOUT));
 	sack_agent = (msg_type == REQUEST_RECONFIGURE_SACKD);
 
 	thread_ptr->start_time = time(NULL);
@@ -1009,6 +1021,9 @@ static void *_thread_per_group_rpc(void *args)
 		      rpc_num2string(msg_type), tmp_str);
 		xfree(tmp_str);
 	}
+
+	if (srun_no_resp_msg)
+		_queue_srun_no_resp(&msg);
 
 	if (task_ptr->get_reply) {
 		if (thread_ptr->addr) {
@@ -1566,6 +1581,17 @@ static int _foreach_srun_response(void *x, void *arg)
 	return 1;
 }
 
+static int _foreach_srun_no_resp(void *x, void *arg)
+{
+	srun_no_resp_t *req = x;
+	job_record_t *job_ptr = find_job(&req->step_id);
+
+	if (job_ptr && !job_ptr->srun_no_resp_time)
+		job_ptr->srun_no_resp_time = req->queue_time;
+
+	return 1;
+}
+
 /* Start a thread to manage queued agent requests */
 static void *_agent_srun_update(void *arg)
 {
@@ -1580,11 +1606,13 @@ static void *_agent_srun_update(void *arg)
 		if (slurmctld_config.shutdown_time)
 			break;
 
-		if (!list_count(update_srun_list))
+		if (!list_count(update_srun_list) &&
+		    !list_count(srun_no_resp_list))
 			continue;
 
 		lock_slurmctld(job_write_lock);
 		list_delete_all(update_srun_list, _foreach_srun_response, NULL);
+		list_delete_all(srun_no_resp_list, _foreach_srun_no_resp, NULL);
 		unlock_slurmctld(job_write_lock);
 	}
 	slurm_mutex_unlock(&update_srun_mutex);
@@ -1610,6 +1638,51 @@ static void _queue_update_srun(slurm_step_id_t *step_id)
 	slurm_cond_signal(&update_srun_cond);
 }
 
+/*
+ * Stamp all RPCs that drive srun_response() upon a successful reply so the
+ * request and response sides of the no-response check stay symmetric.
+ * Captured at dispatch time so job_time_limit() can tell a genuinely
+ * unresponsive srun apart from one whose reply is merely delayed by
+ * controller congestion.
+ */
+static void _queue_srun_no_resp(slurm_msg_t *msg)
+{
+	srun_no_resp_t *req;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
+	if (msg->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
+		list_t *het_list = msg->data;
+		resource_allocation_response_msg_t *alloc_msg;
+
+		if (!het_list || !list_count(het_list))
+			return;
+		alloc_msg = list_peek(het_list);
+		step_id.job_id = alloc_msg->step_id.job_id;
+		step_id.sluid = alloc_msg->step_id.sluid;
+	} else if (msg->msg_type == RESPONSE_RESOURCE_ALLOCATION) {
+		resource_allocation_response_msg_t *alloc_msg = msg->data;
+		step_id.job_id = alloc_msg->step_id.job_id;
+		step_id.sluid = alloc_msg->step_id.sluid;
+	} else if (msg->msg_type == SRUN_PING) {
+		step_id.job_id = ((srun_ping_msg_t *) msg->data)->job_id;
+	} else if (msg->msg_type == SRUN_TIMEOUT) {
+		step_id = ((srun_timeout_msg_t *) msg->data)->step_id;
+	} else {
+		error("%s: invalid msg_type %s",
+		      __func__, rpc_num2string(msg->msg_type));
+		return;
+	}
+
+	req = xmalloc(sizeof(*req));
+	req->queue_time = time(NULL);
+	req->step_id = step_id;
+
+	list_append(srun_no_resp_list, req);
+
+	/* Don't hold update_srun_mutex; see _queue_update_srun(). */
+	slurm_cond_signal(&update_srun_cond);
+}
+
 extern void agent_init(void)
 {
 	if (pending_thread_tid) {
@@ -1618,6 +1691,7 @@ extern void agent_init(void)
 	}
 
 	update_srun_list = list_create(xfree_ptr);
+	srun_no_resp_list = list_create(xfree_ptr);
 
 	slurm_thread_create(NULL, &pending_thread_tid, _agent_init, NULL);
 	slurm_thread_create(NULL, &nodes_update_tid, _agent_nodes_update, NULL);
@@ -1672,6 +1746,7 @@ extern void agent_fini(void)
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	FREE_NULL_LIST(update_srun_list);
+	FREE_NULL_LIST(srun_no_resp_list);
 }
 
 /*
