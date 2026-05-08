@@ -6388,7 +6388,7 @@ extern int sort_key_pairs(void *v1, void *v2)
 /*
  * Return the pathname of the extra .conf file
  */
-extern char *get_extra_conf_path(char *conf_name)
+extern char *get_extra_conf_path(const char *conf_name)
 {
 	char *val = getenv("SLURM_CONF");
 	config_file_t *cached_config;
@@ -6410,7 +6410,7 @@ extern char *get_extra_conf_path(char *conf_name)
 	 */
 	if (config_files &&
 	    (cached_config = list_find_first(config_files, find_conf_by_name,
-					     conf_name)) &&
+					     (void *) conf_name)) &&
 	    cached_config->exists)
 		return xstrdup(cached_config->memfd_path);
 
