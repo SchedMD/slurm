@@ -166,12 +166,6 @@ extern int select_g_select_nodeinfo_set_all(void);
 	 && SELECT_IS_PREEMPT_SET(_X))
 
 /*
- * packs the select plugin_id for backwards compatibility
- * Remove when 24.11 is no longer supported.
- */
-extern void select_plugin_id_pack(buf_t *buffer);
-
-/*
  * Select the "best" nodes for given job from those available
  * IN/OUT job_ptr - pointer to job being considered for initiation,
  *                  set's start_time when job expected to start
