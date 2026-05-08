@@ -295,38 +295,22 @@ static void _set_slurm_ns_conf_defaults()
 
 static int _read_slurm_ns_conf(void)
 {
-	char *conf_path = NULL;
-	struct stat stat_buf;
-	buf_t *conf_buf = NULL;
 	int rc = SLURM_SUCCESS;
 	ns_full_conf_t *ns_full_conf = NULL;
 
 	xassert(conf->node_name);
 
-	conf_path = get_extra_conf_path(ns_conf_file);
+	debug("Reading %s", ns_conf_file);
 
-	if (stat(conf_path, &stat_buf) == -1) {
-		error("Could not find %s file", ns_conf_file);
-		rc = ENOENT;
-		goto end_it;
-	}
-
-	debug("Reading %s file %s", ns_conf_file, conf_path);
-
-	serializer_required(MIME_TYPE_YAML);
-
-	if (!(conf_buf = create_mmap_buf(conf_path))) {
-		error("could not load %s, and thus cannot create namespace context",
-		      conf_path);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	if ((rc = SERCLI_PARSE_STR(NAMESPACE_FULL_CONF_PTR, NULL, ns_full_conf,
-				   get_buf_data(conf_buf), size_buf(conf_buf),
-				   MIME_TYPE_YAML)))
+	if ((rc = CONF_PARSE(NAMESPACE_FULL_CONF_PTR, ns_conf_file,
+			     ns_full_conf))) {
+		if (rc == ENOENT) {
+			error("Could not find %s file", ns_conf_file);
+			goto end_it;
+		}
 		fatal("Something wrong with reading %s: %s",
-		      conf_path, slurm_strerror(rc));
+		      ns_conf_file, slurm_strerror(rc));
+	}
 
 	if (!ns_full_conf ||
 	    (!ns_full_conf->defaults && !ns_full_conf->node_confs))
@@ -392,8 +376,6 @@ static int _read_slurm_ns_conf(void)
 	list_for_each(slurm_ns_conf.dir_confs, _expand_dir_base_path, NULL);
 
 end_it:
-	xfree(conf_path);
-	FREE_NULL_BUFFER(conf_buf);
 	slurm_free_ns_full_conf(ns_full_conf);
 	return rc;
 }
