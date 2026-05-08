@@ -2819,15 +2819,6 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack_time(lic->last_update, buffer);
 		pack8(lic->mode, buffer);
 		packstr(lic->nodes, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(lic->name, buffer);
-		pack32(lic->total, buffer);
-		pack32(lic->used, buffer);
-		pack32(lic->reserved, buffer);
-		pack8(lic->remote, buffer);
-		pack32(lic->last_consumed, buffer);
-		pack32(lic->last_deficit, buffer);
-		pack_time(lic->last_update, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
