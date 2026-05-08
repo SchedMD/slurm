@@ -959,6 +959,10 @@ test_130_1   /parameters/slurm/PriorityType/basic/test_priority.py
 test_130_2   multifactor plugin algo test for fairshare=parent
 test_130_3   /parameters/slurm/PriorityType/multifactor/test_priority.py
 
+test_131_#   Testing of sshare options.
+========================================
+test_131_1   Test basic sshare --json
+
 test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
