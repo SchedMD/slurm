@@ -674,7 +674,7 @@ typedef enum {
 	DATA_PARSER_NAMESPACE_DIR_CONF_LIST, /* list_t* of ns_dir_t* */
 	DATA_PARSER_NODE_REASON_USER_ID, /* Remove when 26.05 is no longer supported: node_info_t->reason_uid */
 	DATA_PARSER_SINFO_REASON_USER_ID, /* sinfo_data_t->reason_uid */
-	DATA_PARSER_TOPOLOGY_RING, /* topology_ctx_t topology/flat plugin */
+	DATA_PARSER_TOPOLOGY_RING, /* topology_ctx_t topology/ring plugin */
 	DATA_PARSER_TOPOLOGY_RING_CONFIG, /* topology_ring_config_t */
 	DATA_PARSER_TOPOLOGY_RING_CONFIG_PTR, /* topology_ring_config_t* */
 	DATA_PARSER_TOPOLOGY_RING_CONFIG_ARRAY, /* topology_ring_config_t->ring_configs,config_cnt */
