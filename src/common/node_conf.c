@@ -1789,7 +1789,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		(void) gres_node_state_pack(object->gres_list, buffer,
 					    protocol_version);
 		pack32(object->weight, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(object->cert_last_renewal, buffer);
 
 		if (pack_secrets)
@@ -1963,7 +1963,7 @@ extern int node_record_unpack(void **out,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&object->cert_last_renewal, buffer);
 		safe_unpackstr(&object->cert_token, buffer);
 		safe_unpackstr(&object->comm_name, buffer);

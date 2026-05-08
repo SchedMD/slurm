@@ -2808,7 +2808,7 @@ extern void license_set_job_tres_cnt(list_t *license_list,
 static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);
 		pack32(lic->total, buffer);
 		pack32(lic->used, buffer);

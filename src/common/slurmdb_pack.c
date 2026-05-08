@@ -1768,7 +1768,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 					 buf_t *buffer)
 {
 	slurmdb_reservation_rec_t *object = (slurmdb_reservation_rec_t *)in;
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
@@ -1821,7 +1821,7 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object_ptr->assocs, buffer);
 		safe_unpackstr(&object_ptr->cluster, buffer);
 		safe_unpackstr(&object_ptr->comment, buffer);
@@ -3491,7 +3491,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->wckey, buffer);
 		pack32(job->wckeyid, buffer);
 		packstr(job->work_dir, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		packstr(job->admin_comment, buffer);
 		pack32(job->alloc_nodes, buffer);
@@ -3691,7 +3691,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->wckey, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr(&job_ptr->work_dir, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
@@ -3995,7 +3995,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 				  uint16_t protocol_version, buf_t *buffer)
 {
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(step->container, buffer);
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
@@ -4042,7 +4042,7 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 
 	*step = step_ptr;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&step_ptr->container, buffer);
 		safe_unpack32(&step_ptr->elapsed, buffer);
 		safe_unpack_time(&step_ptr->end, buffer);

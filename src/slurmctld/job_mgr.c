@@ -10709,7 +10709,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		 */
 		_pack_pending_job_details(dump_job_ptr->details,
 					  buffer, protocol_version);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, false, buffer,
 				       protocol_version);
 

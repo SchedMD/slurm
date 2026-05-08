@@ -444,7 +444,7 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
-	} else if (args->proto_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 
@@ -631,7 +631,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->x11_magic_cookie, buffer);
 		packstr(detail_ptr->x11_target, buffer);
 		pack16(detail_ptr->x11_target_port, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_record_pack_details_common(detail_ptr, buffer,
 					       protocol_version);
 
@@ -808,7 +808,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 			step_req_msg.data = step_ptr->step_req;
 			pack_job_step_create_request_msg(&step_req_msg, buffer);
 		}
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
 		pack16(0, buffer);
@@ -1058,7 +1058,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 				goto unpack_error;
 			step_req = step_req_msg.data;
 		}
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
 		safe_unpack16(&cyclic_alloc, buffer);
@@ -1573,7 +1573,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&x11_magic_cookie, buffer);
 		safe_unpackstr(&x11_target, buffer);
 		safe_unpack16(&x11_target_port, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* job_record_pack_details_common */
 		safe_unpack_time(&accrue_time, buffer);
 		safe_unpack_time(&begin_time, buffer);
@@ -1905,7 +1905,7 @@ extern void job_record_pack_details_common(
 	job_details_t *detail_ptr, buf_t *buffer, uint16_t protocol_version)
 {
 	xassert(detail_ptr);
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(detail_ptr->accrue_time, buffer);
 		pack_time(detail_ptr->begin_time, buffer);
 		packstr(detail_ptr->cluster_features, buffer);
@@ -2110,7 +2110,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		pack32(dump_job_ptr->wait4switch, buffer);
 		packstr(dump_job_ptr->wckey, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->alloc_node, buffer);
@@ -2400,7 +2400,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpackstr(&job_ptr->wckey, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
@@ -2768,7 +2768,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		} else {
 			packbool(false, buffer);
 		}
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
 
@@ -3233,7 +3233,7 @@ extern int job_record_unpack(job_record_t **out,
 			assoc_mgr_set_uid(job_ptr->user_id,
 					  job_ptr->id->pw_name);
 		}
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 
 		/* validity test as possible */

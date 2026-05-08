@@ -590,7 +590,7 @@ extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
 	uint32_t cert_len;
 	int rc = SLURM_SUCCESS;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int)); /* needs to be first */
 
 		if (cert) {

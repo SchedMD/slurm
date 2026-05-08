@@ -987,7 +987,7 @@ extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
  */
 void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else

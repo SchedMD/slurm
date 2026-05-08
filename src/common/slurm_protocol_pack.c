@@ -771,7 +771,7 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->resume_after, buffer);
 		packstr(msg->topology_str, buffer);
 		pack32(msg->weight, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -817,7 +817,7 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->resume_after, buffer);
 		safe_unpackstr(&msg->topology_str, buffer);
 		safe_unpack32(&msg->weight, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->cert_token, buffer);
 		safe_unpackstr(&msg->comment, buffer);
 		safe_unpack32(&msg->cpu_bind, buffer);
@@ -997,7 +997,7 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 		pack8(msg->dynamic_type, buffer);
 		packstr(msg->dynamic_conf, buffer);
 		packstr(msg->dynamic_feature, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
@@ -1116,7 +1116,7 @@ static int _unpack_node_registration_status_msg(slurm_msg_t *smsg,
 		safe_unpack8(&node_reg_ptr->dynamic_type, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_conf, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
@@ -1239,7 +1239,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		} else {
 			pack8(0, buffer);
 		}
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 
 		packstr(msg->batch_host, buffer);
@@ -1340,7 +1340,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 				(void **) &msg->working_cluster_rec,
 				smsg->protocol_version, buffer);
 		}
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpackstr(&msg->account, buffer);
 		safe_unpackstr(&msg->batch_host, buffer);
@@ -1664,7 +1664,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 		safe_unpackstr(&node->topology_str, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);
 		safe_unpackstr(&node->node_addr, buffer);
@@ -1744,7 +1744,7 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	update_part_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
@@ -1786,7 +1786,7 @@ static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	update_part_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->allow_accounts, buffer);
 		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
 		safe_unpackstr(&msg->allow_groups, buffer);
@@ -2357,7 +2357,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->tres_per_task, buffer);
 		_pack_launch_params(msg->launch_params, buffer,
 				    smsg->protocol_version);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
@@ -2469,7 +2469,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (_unpack_launch_params(&msg->launch_params, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->array_task_id, buffer);
@@ -2534,7 +2534,7 @@ static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	kill_job_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
 			slurm_cred_pack(msg->cred, buffer,
@@ -2565,7 +2565,7 @@ static int _unpack_kill_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint8_t uint8_tmp;
 	kill_job_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			msg->cred = slurm_cred_unpack(buffer,
@@ -2775,7 +2775,7 @@ static int
 _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 			       uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&part->name, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1); /* part->name = "" implicit */
@@ -3001,7 +3001,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->tres_per_node, buffer);
 		safe_unpackstr(&step->tres_per_socket, buffer);
 		safe_unpackstr(&step->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		safe_unpack_step_id_members(&step->step_id, buffer,
@@ -3636,7 +3636,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			job->ntasks_per_core = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
 		}
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		job->step_id = SLURM_STEP_ID_INITIALIZER;
 		/* job_record_pack_common */
 		safe_unpackstr(&job->account, buffer);
@@ -4392,7 +4392,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 
 		pack16(conf->wait_time, buffer);
 		packstr(conf->x11_params, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(conf->last_update, buffer);
 
 		pack16(conf->accounting_storage_enforce, buffer);
@@ -5240,7 +5240,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 
 		safe_unpack16(&conf->wait_time, buffer);
 		safe_unpackstr(&conf->x11_params, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&conf->last_update, buffer);
 
@@ -6195,7 +6195,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack_cron_entry(msg->crontab_entry, smsg->protocol_version,
 				buffer);
 		pack16(msg->segment_size, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->site_factor, buffer);
 		packstr(msg->batch_features, buffer);
 		packstr(msg->cluster_features, buffer);
@@ -6687,7 +6687,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&msg->segment_size, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpack32(&msg->site_factor, buffer);
 		safe_unpackstr(&msg->batch_features, buffer);
@@ -7227,7 +7227,7 @@ static void _pack_reattach_tasks_request_msg(const slurm_msg_t *smsg,
 {
 	reattach_tasks_request_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->tls_cert, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->io_key, buffer);
@@ -7244,7 +7244,7 @@ static int _unpack_reattach_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	reattach_tasks_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->tls_cert, buffer);
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
@@ -7406,7 +7406,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
@@ -7535,7 +7535,7 @@ static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 	launch_tasks_request_msg_t *msg = xmalloc(sizeof(*msg));
 	slurm_cred_arg_t *cred_arg = NULL;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 
@@ -8139,7 +8139,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		} else {
 			packbool(false, buffer);
 		}
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->alloc_tls_cert, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
@@ -8217,7 +8217,7 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 					       smsg->protocol_version))
 				goto unpack_error;
 		}
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t uint32_tmp;
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
@@ -9148,7 +9148,7 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->deprecated.job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
@@ -9288,7 +9288,7 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->cpu_freq_max, buffer);
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackbool(&msg->oom_kill_step, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer); /* was job_id */
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
@@ -9432,7 +9432,7 @@ static void _pack_config_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	config_request_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
 	}
@@ -9442,7 +9442,7 @@ static int _unpack_config_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	config_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->flags, buffer);
 		safe_unpack16(&msg->port, buffer);
 	}
@@ -10947,7 +10947,7 @@ static void _pack_topo_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	topo_info_request_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
 	}
 }
@@ -10956,7 +10956,7 @@ static int _unpack_topo_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	topo_info_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->name, buffer);
 	}
 
@@ -10972,7 +10972,7 @@ static void _pack_topo_config_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	topo_config_response_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->config, buffer);
 	}
 }
@@ -10981,7 +10981,7 @@ static int _unpack_topo_config_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	topo_config_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->config, buffer);
 	}
 
@@ -11231,7 +11231,7 @@ static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	license_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);
 		safe_unpack_time(&msg->last_update, buffer);
 

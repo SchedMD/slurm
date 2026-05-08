@@ -137,7 +137,7 @@ extern void part_record_pack(part_record_t *part_ptr,
 			     buf_t *buffer,
 			     uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(part_ptr->cpu_bind, buffer);
 		packstr(part_ptr->name, buffer);
 		pack32(part_ptr->grace_time, buffer);
@@ -180,7 +180,7 @@ extern int part_record_unpack(part_record_t **part,
 
 	*part = part_ptr;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&part_ptr->cpu_bind, buffer);
 		safe_unpackstr(&part_ptr->name, buffer);
 		safe_unpack32(&part_ptr->grace_time, buffer);

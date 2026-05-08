@@ -504,7 +504,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		packstr(msg->work_dir, buffer);
 		packstr(msg->env_hash, buffer);
 		packstr(msg->script_hash, buffer);
-	} else if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_nodes, buffer);
 		pack32(msg->array_job_id, buffer);
@@ -619,7 +619,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->work_dir, buffer);
 		safe_unpackstr(&msg_ptr->env_hash, buffer);
 		safe_unpackstr(&msg_ptr->script_hash, buffer);
-	} else if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->account, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->array_job_id, buffer);
@@ -1101,7 +1101,7 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 		pack32(msg->time_limit, buffer);
 		pack32(msg->total_tasks, buffer);
 		packstr(msg->tres_alloc_str, buffer);
-	} else if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		pack64(msg->db_index, buffer);
 		packstr(msg->container, buffer);
@@ -1161,7 +1161,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->time_limit, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
-	} else if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpackstr(&msg_ptr->container, buffer);
