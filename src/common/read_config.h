@@ -663,7 +663,7 @@ extern int sort_key_pairs(void *v1, void *v2);
  * Return the pathname of the extra .conf file
  * return value must be xfreed
  */
-extern char *get_extra_conf_path(char *conf_name);
+extern char *get_extra_conf_path(const char *conf_name);
 
 /* Translate a job constraint specification into a node feature specification
  * RET - String MUST be xfreed */
