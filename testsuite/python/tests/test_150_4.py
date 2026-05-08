@@ -15,7 +15,7 @@ nnodes = len(register_order)
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("Wants to set required dynamic node parameters")
-    atf.require_version((26, 5), "sbin/slurmctld")
+    atf.require_version((26, 5), "sbin/slurmd")
     # Bootstrap with one static node; dynamic nodes register on top.
     atf.require_nodes(1)
     atf.require_config_parameter("MaxNodeCount", nnodes + 1)
