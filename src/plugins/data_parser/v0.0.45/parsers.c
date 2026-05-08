@@ -4513,24 +4513,6 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-PARSE_DISABLED(CONTROLLER_PING_MODE)
-
-static int DUMP_FUNC(CONTROLLER_PING_MODE)(const parser_t *const parser,
-					   void *obj, data_t *dst, args_t *args)
-{
-	int *mode_ptr = obj;
-	int mode = *mode_ptr;
-
-	if (mode == 0)
-		data_set_string(dst, "primary");
-	else if ((mode == 1) && (slurm_conf.control_cnt == 2))
-		data_set_string(dst, "backup");
-	else
-		data_set_string_fmt(dst, "backup%u", mode);
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(CONTROLLER_PING_PRIMARY)
 
 static int DUMP_FUNC(CONTROLLER_PING_PRIMARY)(const parser_t *const parser,
@@ -4540,23 +4522,6 @@ static int DUMP_FUNC(CONTROLLER_PING_PRIMARY)(const parser_t *const parser,
 	bool primary = (*mode_ptr == 0);
 
 	return DUMP(BOOL, primary, dst, args);
-}
-
-PARSE_DISABLED(CONTROLLER_PING_RESULT)
-
-static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
-					     void *obj, data_t *dst,
-					     args_t *args)
-{
-	bool *ping_ptr = obj;
-	int ping = *ping_ptr;
-
-	if (ping)
-		data_set_string(dst, "UP");
-	else
-		data_set_string(dst, "DOWN");
-
-	return SLURM_SUCCESS;
 }
 
 PARSE_DISABLED(STEP_INFO_MSG)
@@ -9316,7 +9281,6 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, nnodes, "nodes/count", "Number of nodes in the job step"),
 	add_parse(STRING, nodes, "nodes/range", "Node(s) allocated to the job step"),
 	add_parse(UINT32, ntasks, "tasks/count", "Total number of tasks"),
-	add_parse_deprec(STRING, pid_str, 0, "pid", "Deprecated; Process ID", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(UINT32_NO_VAL, req_cpufreq_min, "CPU/requested_frequency/min", "Minimum requested CPU frequency in kHz"),
 	add_parse(UINT32_NO_VAL, req_cpufreq_max, "CPU/requested_frequency/max", "Maximum requested CPU frequency in kHz"),
 	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", "Requested CPU frequency governor in kHz"),
@@ -9501,7 +9465,6 @@ static const parser_t PARSER_ARRAY(ASSOC_USAGE)[] = {
 #define add_removed(mtype, path, desc, deprec) \
 	add_parser_removed(stats_info_response_msg_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
-	add_removed(UINT32, "parts_packed", "Zero if only RPC statistic included", SLURM_25_11_PROTOCOL_VERSION),
 	add_parse(TIMESTAMP_NO_VAL, req_time, "req_time", "When the request was made (UNIX timestamp)"),
 	add_parse(TIMESTAMP_NO_VAL, req_time_start, "req_time_start", "When the data in the report started (UNIX timestamp)"),
 	add_parse(UINT32, server_thread_count, "server_thread_count", "Number of current active slurmctld threads"),
@@ -9709,7 +9672,6 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, alloc_cpus, "alloc_cpus", "Total number of CPUs currently allocated for jobs"),
 	add_cparse(NODE_SELECT_ALLOC_IDLE_CPUS, "alloc_idle_cpus", "Total number of idle CPUs"),
 	add_parse(STRING, alloc_tres_fmt_str, "tres_used", "Trackable resources currently allocated for jobs"),
-	add_removed(NODE_SELECT_TRES_WEIGHTED, "tres_weighted", "Ignored. Was weighted number of billable trackable resources allocated", SLURM_25_05_PROTOCOL_VERSION),
 	add_parse(TIMESTAMP_NO_VAL, slurmd_start_time, "slurmd_start_time", "Time when the slurmd started (UNIX timestamp)"),
 	add_parse(UINT16, sockets, "sockets", "Number of physical processor sockets/chips on the node"),
 	add_parse(UINT16, threads, "threads", "Number of logical threads in a single physical core"),
@@ -10110,22 +10072,20 @@ static const parser_t PARSER_ARRAY(LISTSTEPS_INFO)[] = {
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(controller_ping_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(controller_ping_t, mtype, true, field, 0, path, desc)
 #define add_deprec(mtype, field, overloads, path, desc, deprec)		\
 	add_parser_deprec(controller_ping_t, mtype, false, field, overloads, path, desc, deprec)
-#define add_overload_req(mtype, field, overloads, path, desc)		\
-	add_parser(controller_ping_t, mtype, true, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname", "Target for ping"),
-	add_deprec(CONTROLLER_PING_RESULT, pinged, 1, "pinged", "Ping result", SLURM_24_11_PROTOCOL_VERSION),
-	add_overload_req(BOOL, pinged, 1, "responding", "If ping RPC responded with pong from controller"),
+	add_parse_req(BOOL, pinged, "responding", "If ping RPC responded with pong from controller"),
 	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
-	add_deprec(CONTROLLER_PING_MODE, offset, 1, "mode", "The operating mode of the responding slurmctld", SLURM_24_11_PROTOCOL_VERSION),
-	add_overload_req(CONTROLLER_PING_PRIMARY, offset, 1, "primary", "Is responding slurmctld the primary controller"),
+	add_parse_req(CONTROLLER_PING_PRIMARY, offset, "primary", "Is responding slurmctld the primary controller"),
 	add_parse(ERROR, rc, "status", "Ping status code"),
 };
 #undef add_parse
+#undef add_parse_req
 #undef add_deprec
-#undef add_overload_req
 
 #define add_parse_req(mtype, field, path, desc)				\
 	add_parser(slurmdbd_ping_t, mtype, true, field, 0, path, desc)
@@ -10517,7 +10477,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
 	add_flag_equal(CPU_BIND_TO_SOCKETS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_SOCKETS"),
 	add_flag_equal(CPU_BIND_TO_LDOMS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_LDOMS"),
 	add_flag_equal(CPU_BIND_NONE, CPU_BIND_T_MASK, "CPU_BIND_NONE"),
-	add_flag_removed("CPU_BIND_RANK", SLURM_24_11_PROTOCOL_VERSION),
 	add_flag_equal(CPU_BIND_MAP, CPU_BIND_T_MASK, "CPU_BIND_MAP"),
 	add_flag_equal(CPU_BIND_MASK, CPU_BIND_T_MASK, "CPU_BIND_MASK"),
 	add_flag_equal(CPU_BIND_LDRANK, CPU_BIND_T_MASK, "CPU_BIND_LDRANK"),
@@ -10844,7 +10803,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
 static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
 	add_parse(CSV_STRING_LIST, extra_list, "extra", "CSV extra list"),
-	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(CSV_STRING_LIST, instance_id_list, "instance_id", "CSV instance_id list"),
 	add_parse(CSV_STRING_LIST, instance_type_list, "instance_type", "CSV instance_type list"),
 	add_parse(STRING, node_list, "node_list", "Ranged node string"),
@@ -10926,7 +10884,6 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 	add_flags(JOB_CONDITION_DB_FLAGS, db_flags),
 	add_parse(INT32, exitcode, "exit_code", "Job exit code (numeric)"),
 	add_flags(JOB_CONDITION_FLAGS, flags),
-	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(GROUP_ID_STRING_LIST, groupid_list, "groups", "CSV group list"),
 	add_parse(CSV_STRING_LIST, jobname_list, "job_name", "CSV job name list"),
 	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "Maximum number of nodes"),
@@ -10964,7 +10921,6 @@ static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, description_list, "description", "CSV description list"),
 	add_parse_bit_eflag_array(slurmdb_qos_cond_t, QOS_CONDITION_FLAGS, flags, "Query flags"),
 	add_parse(QOS_ID_STRING_CSV_LIST, id_list, "id", "CSV QOS id list"),
-	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(QOS_NAME_CSV_LIST, name_list, "name", "CSV QOS name list"),
 	add_parse(QOS_PREEMPT_MODES, preempt_mode, "preempt_mode", "PreemptMode used when jobs in this QOS are preempted"),
 };
@@ -11036,7 +10992,6 @@ static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
 	add_parse(QOS_ID_STRING_CSV_LIST, def_qos_id_list, "default_qos", "CSV QOS list"),
 	add_parse_bit_eflag_array(slurmdb_assoc_cond_t, ASSOC_CONDITION_FLAGS, flags, "Query flags"),
-	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV ID list"),
 	add_parse(CSV_STRING_LIST, parent_acct_list, "parent_account", "CSV names of parent account"),
 	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
@@ -11100,7 +11055,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_WCKEY_PARAM)[] = {
 	add_parser_deprec(slurmdb_wckey_cond_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(WCKEY_CONDITION)[] = {
 	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV cluster name list"),
-	add_parse_deprec(CSV_STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(CSV_STRING_LIST, id_list, "id", "CSV ID list"),
 	add_parse(CSV_STRING_LIST, name_list, "name", "CSV name list"),
 	add_parse(BOOL16, only_defs, "only_defaults", "Only query defaults"),
@@ -11161,7 +11115,6 @@ static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
 	add_parse(STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
 	add_parse(STRING_LIST, federation_list, "federation", "CSV federation list"),
 	add_parse(CLUSTER_REC_FLAGS, flags, "flags", "Query flags"),
-	add_parse_deprec(STRING_LIST, format_list, 0, "format", "Ignored; process JSON manually to control output format", SLURM_24_11_PROTOCOL_VERSION),
 	add_parse(STRING_LIST, rpc_version_list, "rpc_version", "CSV RPC version list"),
 	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end (UNIX timestamp)"),
 	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start (UNIX timestamp)"),
@@ -12967,7 +12920,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	add_parse(QOS_LIST, qos, "qos", "QOS"),
 	add_parse(WCKEY_LIST, wckeys, "wckeys", "WCKeys"),
 	add_parse(ASSOC_LIST, associations, "associations", "Associations"),
-	add_deprec(INSTANCE_LIST, instances, 0, "instances", NULL, SLURM_25_05_PROTOCOL_VERSION),
 	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
@@ -13418,8 +13370,6 @@ static const parser_t parsers[] = {
 	addps(NICE, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addpsp(MEM_PER_CPUS, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addpsp(MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
-	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t *, NEED_NONE, NULL),
 	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
 	addps(HOSTLIST_STRING_TO_STRING, char *, NEED_NONE, STRING, NULL, NULL, "Hostlist expression string"),
