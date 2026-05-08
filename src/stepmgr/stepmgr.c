@@ -871,10 +871,6 @@ static int _wake_steps(void *x, void *arg)
 
 			step_resp->stepmgr = xstrdup(job_ptr->batch_host);
 			step_resp->cred = slurm_cred;
-			if (new_step_ptr->switch_step)
-				switch_g_stepinfo_duplicate(
-					new_step_ptr->switch_step,
-					&step_resp->switch_step);
 			step_resp->use_protocol_ver =
 				job_ptr->start_protocol_ver;
 
@@ -5471,7 +5467,6 @@ end_it:
 		}
 	} else {
 		slurm_step_layout_t *step_layout = NULL;
-		dynamic_plugin_data_t *switch_step = NULL;
 
 		log_flag(STEPS, "%s: %pS %s %s",
 			 __func__, step_rec, req_step_msg->node_list,
@@ -5492,11 +5487,6 @@ end_it:
 		}
 		job_step_resp.cred = slurm_cred;
 		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
-
-		if (step_rec->switch_step)
-			switch_g_stepinfo_duplicate(step_rec->switch_step,
-						    &switch_step);
-		job_step_resp.switch_step = switch_step;
 
 		if (job_ptr->bit_flags & STEPMGR_ENABLED)
 			job_step_resp.stepmgr = job_ptr->batch_host;
@@ -5558,7 +5548,6 @@ end_it:
 
 		slurm_cred_destroy(slurm_cred);
 		slurm_step_layout_destroy(step_layout);
-		switch_g_stepinfo_free(switch_step);
 	}
 
 	xfree(err_msg);
