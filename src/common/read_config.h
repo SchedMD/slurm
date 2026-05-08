@@ -50,6 +50,8 @@
 #include "src/common/parse_config.h"
 #include "src/common/run_in_daemon.h"
 
+#include "src/interfaces/data_parser.h"
+
 extern slurm_conf_t slurm_conf;
 extern char *default_slurm_config_file;
 extern char *default_plugin_path;
@@ -701,5 +703,23 @@ extern void slurm_conf_remove_node(char *node_name);
  * RET xmalloc()'d string after the delimiter, and before next ","
  */
 extern char *conf_get_opt_str(const char *opts, const char *arg);
+
+/*
+ * Parse YAML configuration
+ * NOTE: Use CONF_PARSE() macro instead of calling directly
+ * IN type - expected data_parser type of obj
+ * IN conf - name or abs path to configuration file
+ * IN dst - ptr to struct/scalar to populate
+ *	This *must* be a pointer to the object and not just a value of the
+ *	object.
+ * IN dst_bytes - size of object pointed to by dst
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int conf_parse(data_parser_type_t type, const char *conf, void *dst,
+		      ssize_t dst_bytes, const char *caller);
+
+#define CONF_PARSE(type, conf, dst) \
+	conf_parse(DATA_PARSER_##type, conf, &dst, sizeof(dst), __func__)
 
 #endif /* !_READ_CONFIG_H */

@@ -72,11 +72,14 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
+#include "src/common/openapi.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
 #include "src/common/power_action.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/sercli.h"
+#include "src/common/serdes.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_resolv.h"
@@ -89,6 +92,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/node_features.h"
 
 #include "src/interfaces/hash.h"
@@ -6539,4 +6543,125 @@ extern char *conf_get_opt_str(const char *opts, const char *arg)
 	xfree(str);
 
 	return ret;
+}
+
+/*
+ * list_for_each() callback: log a single data_parser error.
+ * IN  x   - openapi_resp_error_t *
+ * IN  arg - const char * config file path (for log prefix)
+ * RET SLURM_SUCCESS
+ */
+static int _error_log_foreach(void *x, void *arg)
+{
+	openapi_resp_error_t *error_ptr = x;
+	const char *conf = arg;
+
+	xassert(error_ptr);
+
+	error("[%s] source: %s, description: %s, rc: %d",
+	      conf, error_ptr->source, error_ptr->description, error_ptr->num);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * list_for_each() callback: log a single data_parser warning.
+ * IN  x   - openapi_resp_warning_t *
+ * IN  arg - const char * config file path (for log prefix)
+ * RET SLURM_SUCCESS
+ */
+static int _warn_log_foreach(void *x, void *arg)
+{
+	openapi_resp_warning_t *warn = x;
+	const char *conf = arg;
+
+	xassert(warn);
+
+	debug("[%s] source: %s, description: %s",
+	      conf, warn->source, warn->description);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Parse a YAML buffer with the given data_parser type.
+ * IN  type      - data_parser type identifier
+ * IN  dst       - pointer to destination struct/scalar to populate
+ * IN  dst_bytes - size of object pointed to by dst
+ * IN  buf       - YAML buffer to parse
+ * IN  conf      - config file path (used as log prefix)
+ * IN  caller    - __func__ from outer caller (for log breadcrumbs)
+ * RET SLURM_SUCCESS or error
+ */
+static int _conf_parse_yaml(data_parser_type_t type, void *dst,
+			    ssize_t dst_bytes, buf_t *buf, const char *conf,
+			    const char *caller)
+{
+	const char *mime_type = MIME_TYPE_YAML;
+	int rc = EINVAL;
+	data_parser_t *parser = NULL;
+	data_parser_dump_cli_ctxt_t ctxt = {
+		.magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC,
+		.data_parser = SLURM_DATA_PARSER_VERSION,
+	};
+
+	serializer_required(MIME_TYPE_YAML);
+
+	set_buf_offset(buf, 0);
+
+	ctxt.errors = list_create(free_openapi_resp_error);
+	ctxt.warnings = list_create(free_openapi_resp_warning);
+
+	if (!(parser = data_parser_cli_parser(ctxt.data_parser, &ctxt))) {
+		debug("%s->%s: %s parsing of %s not supported by %s",
+		      caller, __func__, mime_type,
+		      XSTRINGIFY(DATA_PARSER_##type),
+		      ctxt.data_parser);
+		rc = ESLURM_DATA_INVALID_PARSER;
+	} else if ((rc = serdes_parse_buf(parser, type, dst, dst_bytes, buf,
+					  mime_type))) {
+		debug("%s->%s: %s parsing failed: %s",
+		      caller, __func__, mime_type, slurm_strerror(rc));
+	}
+
+	(void) list_for_each(ctxt.warnings, _warn_log_foreach, (void *) conf);
+	(void) list_for_each(ctxt.errors, _error_log_foreach, (void *) conf);
+
+	FREE_NULL_LIST(ctxt.errors);
+	FREE_NULL_LIST(ctxt.warnings);
+	FREE_NULL_DATA_PARSER(parser);
+	return rc;
+}
+
+extern int conf_parse(data_parser_type_t type, const char *conf, void *dst,
+		      ssize_t dst_bytes, const char *caller)
+{
+	char *conf_path = NULL;
+	const char *path = conf;
+	buf_t *buf = NULL;
+	int rc = EINVAL;
+	struct stat stat_buf = { 0 };
+
+	xassert(conf && conf[0]);
+
+	if (conf[0] != '/')
+		path = conf_path = get_extra_conf_path(conf);
+
+	/* Ignoring TOCTOU of stat()->open() */
+	if (stat(path, &stat_buf)) {
+		rc = errno;
+		debug("%s: stat(%s) failed: %s",
+		      __func__, path, slurm_strerror(rc));
+	} else if (!(buf = create_mmap_buf(path))) {
+		debug("%s: Unable to load %s", __func__, path);
+		rc = ESLURM_FILE_UNREADABLE;
+	} else if ((rc = _conf_parse_yaml(type, dst, dst_bytes, buf, path,
+					  caller))) {
+		debug("%s: Unable to parse %s: %s",
+		      __func__, path, slurm_strerror(rc));
+	}
+
+	FREE_NULL_BUFFER(buf);
+	xfree(conf_path);
+	return rc;
 }
