@@ -42,6 +42,7 @@
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/sercli.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
@@ -228,47 +229,30 @@ static int _cmp_tctx(const void *x, const void *y)
 	return 0;
 }
 
-static int _parse_yaml(char *topo_conf)
+/*
+ * Sort a populated topology context array and resolve plugin indices.
+ * IN/OUT tctx_array - topology context array; .tctx entries are sorted and
+ *                     each .idx is populated on success
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+static int _process_conf(topology_ctx_array_t *tctx_array)
 {
-	int retval = SLURM_SUCCESS;
-	buf_t *conf_buf = NULL;
-	topology_ctx_array_t tctx_array = {
-		.tctx_num = -1,
-	};
-
-	serializer_required(MIME_TYPE_YAML);
-
-	if (!(conf_buf = create_mmap_buf(topo_conf))) {
-		error("could not load %s, and thus cannot create topo contexts",
-		      topo_conf);
-		retval = SLURM_ERROR;
-		plugin_inited = PLUGIN_NOT_INITED;
-		goto done;
-	}
-
-	if ((retval = SERCLI_PARSE_STR(TOPOLOGY_CONF_ARRAY, NULL, tctx_array,
-				       get_buf_data(conf_buf),
-				       size_buf(conf_buf), MIME_TYPE_YAML)))
-		fatal("Something wrong with reading %s: %s",
-		      topo_conf, slurm_strerror(retval));
-
-	qsort(tctx_array.tctx, tctx_array.tctx_num, sizeof(topology_ctx_t),
+	qsort(tctx_array->tctx, tctx_array->tctx_num, sizeof(topology_ctx_t),
 	      _cmp_tctx);
-	for (int i = 0; i < tctx_array.tctx_num; i++) {
-		debug("Plugin: %s, Topology Name:%s", tctx_array.tctx[i].plugin,
-		     tctx_array.tctx[i].name);
-		if ((tctx_array.tctx[i].idx =
-			     _get_plugin_index_by_type(tctx_array.tctx[i]
+	for (int i = 0; i < tctx_array->tctx_num; i++) {
+		debug("Plugin: %s, Topology Name:%s",
+		      tctx_array->tctx[i].plugin, tctx_array->tctx[i].name);
+		if ((tctx_array->tctx[i].idx =
+			     _get_plugin_index_by_type(tctx_array->tctx[i]
 							       .plugin)) < 0) {
-			retval = SLURM_ERROR;
-			goto done;
+			return SLURM_ERROR;
 		}
 	}
 
 	if (get_log_level() > LOG_LEVEL_DEBUG2) {
 		char *dump_str = NULL;
 
-		if (!(SERCLI_DUMP_STR(TOPOLOGY_CONF_ARRAY, NULL, tctx_array,
+		if (!(SERCLI_DUMP_STR(TOPOLOGY_CONF_ARRAY, NULL, (*tctx_array),
 				      dump_str, MIME_TYPE_YAML,
 				      SER_FLAGS_NO_TAG)))
 			debug2("%s", dump_str);
@@ -276,13 +260,7 @@ static int _parse_yaml(char *topo_conf)
 		xfree(dump_str);
 	}
 
-	tctx_num = tctx_array.tctx_num;
-	tctx = tctx_array.tctx;
-
-done:
-
-	FREE_NULL_BUFFER(conf_buf);
-	return retval;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -294,20 +272,33 @@ done:
 extern int topology_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	struct stat st;
-	char *yaml_config_path = NULL;
+	topology_ctx_array_t tctx_array = {
+		.tctx_num = -1,
+	};
 
 	slurm_mutex_lock(&g_context_lock);
 
 	if (plugin_inited)
 		goto done;
 
-	yaml_config_path = get_extra_conf_path("topology.yaml");
-	if (!stat(yaml_config_path, &st)) {
-		retval = _parse_yaml(yaml_config_path);
+	retval = CONF_PARSE(TOPOLOGY_CONF_ARRAY, "topology.yaml", tctx_array);
+	if (!retval) {
+		if (!(retval = _process_conf(&tctx_array))) {
+			tctx_num = tctx_array.tctx_num;
+			tctx = tctx_array.tctx;
+		}
 		plugin_inited = PLUGIN_INITED;
 		goto done;
 	}
+	if (retval != ENOENT) {
+		error("Failed to load topology.yaml: %s",
+		      slurm_strerror(retval));
+		plugin_inited = PLUGIN_NOT_INITED;
+		goto done;
+	}
+
+	/* ENOENT: topology.yaml absent, fall through to plugrack */
+	retval = SLURM_SUCCESS;
 
 	xassert(slurm_conf.topology_plugin);
 
@@ -327,7 +318,6 @@ extern int topology_g_init(void)
 done:
 
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(yaml_config_path);
 	return retval;
 }
 
