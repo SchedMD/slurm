@@ -837,6 +837,15 @@ static void _find_starting_coords(torus3d_record_t *torus,
 	FREE_NULL_BITMAP(z_bitmap);
 }
 
+/*
+ * Generate node ranks using a Z-order curve (Morton order).
+ * This maps each node's (x, y, z) coordinates into a single integer (node
+ * rank) that approximates spatial locality - nodes that are close together in
+ * the torus are also close together in rank.
+ *
+ * These node ranks aren't task IDs. They drive a sort in _task_layout_topo()
+ * (slurm_step_layout.c), which assigns task IDs in rank order.
+ */
 extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			       uint32_t *size, void *tctx)
 {
@@ -870,6 +879,7 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			continue;
 
 		if (bit_super_set(torus->nodes_bitmap, node_bitmap)) {
+			/* The whole torus is used; use absolute coordinates */
 			x_start = 0;
 			y_start = 0;
 			z_start = 0;
@@ -877,6 +887,17 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			y_span = torus->y;
 			z_span = torus->z;
 		} else {
+			/*
+			 * Not all nodes in the torus are used. Set a starting
+			 * "anchor" on each axis - the start of the smallest
+			 * wrap-aware arc covering the used coordinates - so
+			 * that adjacent nodes across a wrap encode to adjacent
+			 * relative coordinates. Without this, for an axis of
+			 * length 4, nodes at positions 0 and 3 would encode
+			 * far apart.
+			 *
+			 * The span is the length of this arc.
+			 */
 			_find_starting_coords(torus, node_bitmap, &x_start,
 					      &y_start, &z_start, &x_span,
 					      &y_span, &z_span);
