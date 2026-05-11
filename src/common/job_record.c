@@ -4744,7 +4744,7 @@ extern time_t soft_job_end(job_record_t *job_ptr, time_t now)
 	time_t end_time;
 
 	if (!(slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) ||
-	    !job_ptr->time_min)
+	    !job_ptr->time_min || (job_ptr->end_time <= now))
 		return job_ptr->end_time;
 
 	end_time = job_ptr->start_time + job_ptr->time_min * 60;
