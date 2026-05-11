@@ -938,6 +938,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_STEP_QUEUED),
 		"Step queued as pending",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_EXTERNAL_JOB),
+		"Invalid configuration for external job",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{
