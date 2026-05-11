@@ -271,7 +271,7 @@ The ring position must be 0 when creating a new ring.</p>
 
 <p>The <b>topology/torus3d</b> plugin models the cluster as one or more 3D torus
 networks. Jobs are allocated contiguous sub-cubes of nodes within a torus,
-enforcing placement shapes defined by the administrator.
+enforcing placement shapes defined by the administrator.</p>
 
 <p>Each torus is defined with X, Y, and Z dimensions. Nodes are mapped into
 the 3D coordinate space either directly (via a flat node list in x-major order)
