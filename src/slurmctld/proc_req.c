@@ -3885,11 +3885,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	} else {
 		/* Create new job allocation */
 		job_desc_msg->het_job_offset = NO_VAL;
-		error_code = job_allocate(job_desc_msg,
-					  job_desc_msg->immediate,
-					  false, NULL, 0, msg->auth_uid, false,
-					  &job_ptr, &err_msg,
-					  msg->protocol_version);
+		error_code =
+			job_allocate(job_desc_msg, job_desc_msg->immediate,
+				     false, NULL, false, msg->auth_uid, false,
+				     &job_ptr, &err_msg, msg->protocol_version);
 		if (!job_ptr ||
 		    (error_code && job_ptr->job_state == JOB_FAILED))
 			reject_job = true;
@@ -3960,7 +3959,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	list_itr_t *iter;
-	int error_code = SLURM_SUCCESS, alloc_only = 0;
+	int error_code = SLURM_SUCCESS;
+	bool alloc_only = false;
 	DEF_TIMERS;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	uint32_t het_job_offset = 0;
@@ -4157,7 +4157,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 				step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 				step_id.step_id = SLURM_BATCH_SCRIPT;
 				first_job_ptr = job_ptr;
-				alloc_only = 1;
+				alloc_only = true;
 			}
 			snprintf(tmp_str, sizeof(tmp_str), "%u",
 				 job_ptr->job_id);
@@ -6774,6 +6774,7 @@ static void _slurm_rpc_node_alias_addrs(slurm_msg_t *msg)
 	hostlist2bitmap(hl, true, &node_bitmap);
 	FREE_NULL_HOSTLIST(hl);
 
+	bit_and_not(node_bitmap, external_node_bitmap);
 	if (bit_ffs(node_bitmap) != -1) {
 		int addr_index = 0;
 		alias_addrs.node_list = bitmap2node_name_sortable(node_bitmap,
