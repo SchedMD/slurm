@@ -1247,6 +1247,18 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_ptr->flags &= (~PART_FLAG_EXCLUSIVE_TOPO);
 	}
 
+	/*
+	 * Exclusive=[USER|TOPO] are mutually exclusive. If both will end up
+	 * being set only set Exclusive=TOPO since it is the more restrictive
+	 * option since it implies Exclusive=NODE.
+	 */
+	if ((part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO) &&
+	    (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)) {
+		part_ptr->flags |= ~PART_FLAG_EXCLUSIVE_USER;
+		warning("%s: Exclusive=USER and Exclusive=TOPO are mutually exclusive, ignoring Exclusive=USER (partition %s)",
+			__func__, part_desc->name);
+	}
+
 	if (part_desc->flags & PART_FLAG_LLN) {
 		info("%s: setting LLN for partition %s", __func__,
 		     part_desc->name);

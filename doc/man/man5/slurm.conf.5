@@ -7880,6 +7880,9 @@ If unset, no partition\-level exclusivity is added beyond \fBOverSubscribe\fR.
 
 This replaces the deprecated options \fBOverSubscribe=EXCLUSIVE\fR,
 \fBExclusiveUser\fR, and \fBExclusiveTopo\fR.
+\fBExclusiveUser=YES\fR and \fBExclusiveTopo=YES\fR are mutually exclusive.
+If both deprecated options are set for the same partition, \fBExclusiveUser\fR
+will be ignored.
 
 .TP
 \fBGraceTime\fR
