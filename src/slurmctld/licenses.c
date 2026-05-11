@@ -41,7 +41,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -727,51 +726,45 @@ static bool _sufficient_licenses(licenses_t *request, licenses_t *match,
 
 static void _parse_hierarchical_resources(list_t **license_list_ptr)
 {
-	char *resources_conf = get_extra_conf_path("resources.yaml");
-	struct stat stat_buf;
+	int rc = EINVAL;
+	bool allocated_here = false;
 
 	xassert(license_list_ptr);
 
-	/* Parse hierarchical resources from resources.yaml if config exists */
-	if (!stat(resources_conf, &stat_buf)) {
-		int rc;
-		buf_t *conf_buf = NULL;
-
-		if (!*license_list_ptr)
-			*license_list_ptr = list_create(license_free_rec);
-
-		if (!(conf_buf = create_mmap_buf(resources_conf))) {
-			fatal("Hierarchical resources could not be loaded from %s",
-			      resources_conf);
-		}
-
-		if ((rc = SERCLI_PARSE_STR(H_RESOURCES_AS_LICENSE_LIST, NULL,
-					   *license_list_ptr,
-					   get_buf_data(conf_buf),
-					   size_buf(conf_buf), MIME_TYPE_YAML)))
-			fatal("Something wrong with reading %s: %s",
-			      resources_conf, slurm_strerror(rc));
-
-		if ((slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)) {
-			char *dump_str = NULL;
-			int rc_dump = EINVAL;
-
-			if ((rc_dump = SERCLI_DUMP_STR(
-				     H_RESOURCES_AS_LICENSE_LIST, NULL,
-				     *license_list_ptr, dump_str,
-				     MIME_TYPE_YAML, SER_FLAGS_NO_TAG)))
-				log_flag(LICENSE, "%s: Hierarchical resources dump failed: %s",
-				      __func__, slurm_strerror(rc_dump));
-			else
-				log_flag(LICENSE, "%s: Dump hierarchical resources:\n %s",
-					 __func__, dump_str);
-
-			xfree(dump_str);
-		}
-		FREE_NULL_BUFFER(conf_buf);
+	if (!*license_list_ptr) {
+		*license_list_ptr = list_create(license_free_rec);
+		allocated_here = true;
 	}
 
-	xfree(resources_conf);
+	if ((rc = CONF_PARSE(H_RESOURCES_AS_LICENSE_LIST, "resources.yaml",
+			     *license_list_ptr))) {
+		if (rc == ENOENT) {
+			if (allocated_here)
+				FREE_NULL_LIST(*license_list_ptr);
+			return;
+		}
+		fatal("Something wrong with reading resources.yaml: %s",
+		      slurm_strerror(rc));
+	}
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)) {
+		char *dump_str = NULL;
+		int rc_dump = EINVAL;
+
+		if ((rc_dump =
+			     SERCLI_DUMP_STR(H_RESOURCES_AS_LICENSE_LIST, NULL,
+					     *license_list_ptr, dump_str,
+					     MIME_TYPE_YAML, SER_FLAGS_NO_TAG)))
+			log_flag(LICENSE,
+				 "%s: Hierarchical resources dump failed: %s",
+				 __func__, slurm_strerror(rc_dump));
+		else
+			log_flag(LICENSE,
+				 "%s: Dump hierarchical resources:\n %s",
+				 __func__, dump_str);
+
+		xfree(dump_str);
+	}
 }
 
 /* Initialize licenses on this system based upon slurm.conf */
