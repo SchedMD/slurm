@@ -990,7 +990,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 		g_user_assoc_count++;
 		if (assoc->uid == NO_VAL || assoc->uid == INFINITE ||
 				assoc->uid == 0) {
-			if (uid_from_string(assoc->user, &pw_uid) !=
+			if (uid_from_string_cached(assoc->user, &pw_uid) !=
 			    SLURM_SUCCESS)
 				assoc->uid = NO_VAL;
 			else
@@ -1200,7 +1200,8 @@ static int _post_user_list(list_t *user_list)
 		*/
 		if (!user->default_wckey)
 			user->default_wckey = xstrdup("");
-		if (uid_from_string(user->name, &pw_uid) != SLURM_SUCCESS) {
+		if (uid_from_string_cached(user->name, &pw_uid) !=
+		    SLURM_SUCCESS) {
 			debug("%s: couldn't get a uid for user: %s",
 			      __func__, user->name);
 			user->uid = NO_VAL;
@@ -1225,7 +1226,8 @@ static int _post_wckey_list(list_t *wckey_list)
 
 	while ((wckey = list_next(itr))) {
 		uid_t pw_uid;
-		if (uid_from_string(wckey->user, &pw_uid) != SLURM_SUCCESS) {
+		if (uid_from_string_cached(wckey->user, &pw_uid) !=
+		    SLURM_SUCCESS) {
 			if (slurmdbd_conf)
 				debug("post wckey: couldn't get a uid "
 				      "for user %s",
@@ -2141,33 +2143,34 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	if (db_conn_errno != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
+	uid_from_string_cache_enable();
+
 	/* get tres before association and qos since it is used there */
-	if ((!assoc_mgr_tres_list)
-	    && (init_setup.cache_level & ASSOC_MGR_CACHE_TRES)) {
+	if ((!assoc_mgr_tres_list) &&
+	    (init_setup.cache_level & ASSOC_MGR_CACHE_TRES))
 		if (_get_assoc_mgr_tres_list(db_conn, init_setup.enforce)
 		    == SLURM_ERROR)
-			return SLURM_ERROR;
-	}
+			goto error;
 
 	/* get qos before association since it is used there */
 	if ((!assoc_mgr_qos_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_QOS))
 		if (_get_assoc_mgr_qos_list(db_conn, init_setup.enforce) ==
 		    SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	/* get user before association/wckey since it is used there */
 	if ((!assoc_mgr_user_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_USER))
 		if (_get_assoc_mgr_user_list(db_conn, init_setup.enforce) ==
 		    SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	if ((!assoc_mgr_assoc_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_ASSOC))
 		if (_get_assoc_mgr_assoc_list(db_conn, init_setup.enforce)
 		    == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	if (assoc_mgr_assoc_list && !setup_children) {
 		slurmdb_assoc_rec_t *assoc = NULL;
@@ -2183,15 +2186,20 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_WCKEY))
 		if (_get_assoc_mgr_wckey_list(db_conn, init_setup.enforce) ==
 		    SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	if ((!assoc_mgr_res_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_RES))
 		if (_get_assoc_mgr_res_list(db_conn, init_setup.enforce) ==
 		    SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
+	uid_from_string_cache_disable();
 
 	return SLURM_SUCCESS;
+
+error:
+	uid_from_string_cache_disable();
+	return SLURM_ERROR;
 }
 
 extern int assoc_mgr_fini(bool save_state)
@@ -3987,6 +3995,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		return SLURM_SUCCESS;
 	}
 
+	uid_from_string_cache_enable();
+
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
 		if (object->cluster && !slurmdbd_conf) {
@@ -4515,6 +4525,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	} else if (resort)
 		slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list);
 
+	uid_from_string_cache_disable();
+
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
@@ -4558,6 +4570,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 			assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
 	}
+
+	uid_from_string_cache_enable();
 
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((object = list_pop(update->objects))) {
@@ -4625,7 +4639,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if (uid_from_string(object->user, &pw_uid) !=
+			if (uid_from_string_cached(object->user, &pw_uid) !=
 			    SLURM_SUCCESS) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",
@@ -4660,6 +4674,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 		slurmdb_destroy_wckey_rec(object);
 	}
 	list_iterator_destroy(itr);
+	uid_from_string_cache_disable();
+
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
@@ -4684,6 +4700,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 			assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
 	}
+
+	uid_from_string_cache_enable();
 
 	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((object = list_pop(update->objects))) {
@@ -4744,7 +4762,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if (uid_from_string(object->name, &pw_uid) !=
+			if (uid_from_string_cached(object->name, &pw_uid) !=
 			    SLURM_SUCCESS) {
 				debug("user add couldn't get a uid for user %s",
 				      object->name);
@@ -4790,6 +4808,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 		slurmdb_destroy_user_rec(object);
 	}
 	list_iterator_destroy(itr);
+	uid_from_string_cache_disable();
+
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
@@ -6238,6 +6258,8 @@ extern int load_assoc_mgr_state(void)
 		return EFAULT;
 	}
 
+	uid_from_string_cache_enable();
+
 	safe_unpack_time(&buf_time, buffer);
 	while (remaining_buf(buffer) > 0) {
 		safe_unpack16(&type, buffer);
@@ -6344,6 +6366,8 @@ extern int load_assoc_mgr_state(void)
 		}
 	}
 
+	uid_from_string_cache_disable();
+
 	if (init_setup.running_cache)
 		*init_setup.running_cache = RUNNING_CACHE_STATE_RUNNING;
 
@@ -6352,6 +6376,7 @@ extern int load_assoc_mgr_state(void)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	uid_from_string_cache_disable();
 	if (!ignore_state_errors)
 		fatal("Incomplete assoc mgr state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete assoc mgr state file");
@@ -6371,43 +6396,50 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 		partial_list = 0;
 	}
 
+	uid_from_string_cache_enable();
+
 	/* get tres before association and qos since it is used there */
 	if (cache_level & ASSOC_MGR_CACHE_TRES) {
 		if (_refresh_assoc_mgr_tres_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 	}
 
 	/* get qos before association since it is used there */
 	if (cache_level & ASSOC_MGR_CACHE_QOS)
 		if (_refresh_assoc_mgr_qos_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	/* get user before association/wckey since it is used there */
 	if (cache_level & ASSOC_MGR_CACHE_USER)
 		if (_refresh_assoc_mgr_user_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	if (cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if (_refresh_assoc_mgr_assoc_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 	}
 	if (cache_level & ASSOC_MGR_CACHE_WCKEY)
 		if (_refresh_assoc_wckey_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 	if (cache_level & ASSOC_MGR_CACHE_RES)
 		if (_refresh_assoc_mgr_res_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
-			return SLURM_ERROR;
+			goto error;
 
 	if (!partial_list && _running_cache())
 		*init_setup.running_cache = RUNNING_CACHE_STATE_LISTS_REFRESHED;
 
+	uid_from_string_cache_disable();
 	return SLURM_SUCCESS;
+
+error:
+	uid_from_string_cache_disable();
+	return SLURM_ERROR;
 }
 
 static int _each_assoc_set_uid(void *x, void *arg)
@@ -6509,7 +6541,7 @@ static int _for_each_assoc_missing_uids(void *x, void *arg)
 	if (!object->user || (object->uid != NO_VAL))
 		return 1;
 
-	if (uid_from_string(object->user, &pw_uid) != SLURM_SUCCESS) {
+	if (uid_from_string_cached(object->user, &pw_uid) != SLURM_SUCCESS) {
 		debug2("%s: refresh association couldn't get a uid for user %s",
 		       __func__, object->user);
 	} else {
@@ -6538,7 +6570,7 @@ static int _for_each_wckey_missing_uids(void *x, void *arg)
 	if (!object->user || (object->uid != NO_VAL))
 		return 1;
 
-	if (uid_from_string(object->user, &pw_uid) != SLURM_SUCCESS) {
+	if (uid_from_string_cached(object->user, &pw_uid) != SLURM_SUCCESS) {
 		debug2("%s: refresh wckey couldn't get a uid for user %s",
 		       __func__, object->user);
 	} else {
@@ -6561,7 +6593,7 @@ static int _for_each_user_missing_uids(void *x, void *arg)
 	if (!object->name || (object->uid != NO_VAL))
 		return 1;
 
-	if (uid_from_string(object->name, &pw_uid) != SLURM_SUCCESS) {
+	if (uid_from_string_cached(object->name, &pw_uid) != SLURM_SUCCESS) {
 		debug2("%s: refresh user couldn't get uid for user %s",
 		       __func__, object->name);
 	} else {
@@ -6582,6 +6614,7 @@ extern int assoc_mgr_set_missing_uids(bool *uid_set)
 				   .wckey = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
+	uid_from_string_cache_enable();
 	if (assoc_mgr_assoc_list) {
 		list_for_each(assoc_mgr_assoc_list,
 			      _for_each_assoc_missing_uids, uid_set);
@@ -6596,6 +6629,7 @@ extern int assoc_mgr_set_missing_uids(bool *uid_set)
 		list_for_each(assoc_mgr_user_list,
 			      _for_each_user_missing_uids, uid_set);
 	}
+	uid_from_string_cache_disable();
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
