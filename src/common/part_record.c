@@ -69,7 +69,6 @@ static void _init_part_record(part_record_t *part_ptr)
 	part_ptr->magic = PART_MAGIC;
 	if (slurm_conf.conf_flags & CONF_FLAG_DRJ)
 		part_ptr->flags |= PART_FLAG_NO_ROOT;
-	part_ptr->max_nodes_orig = INFINITE;
 	part_ptr->min_nodes = 1;
 
 	/* sync with slurm_conf_partition_t */
@@ -144,7 +143,7 @@ extern void part_record_pack(part_record_t *part_ptr,
 		pack32(part_ptr->default_time, buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
 		pack32(part_ptr->max_cpus_per_socket, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->max_nodes, buffer);
 		pack32(part_ptr->min_nodes, buffer);
 
 		pack32(part_ptr->flags, buffer);
@@ -176,7 +175,7 @@ extern void part_record_pack(part_record_t *part_ptr,
 		pack32(part_ptr->default_time, buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
 		pack32(part_ptr->max_cpus_per_socket, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->max_nodes, buffer);
 		pack32(part_ptr->min_nodes, buffer);
 
 		pack32(part_ptr->flags, buffer);
