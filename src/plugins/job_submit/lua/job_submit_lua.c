@@ -1197,7 +1197,7 @@ static int _part_rec_field(const part_record_t *part_ptr, const char *name)
 	} else if (!xstrcmp(name, "max_nodes")) {
 		lua_pushnumber(L, part_ptr->max_nodes);
 	} else if (!xstrcmp(name, "max_nodes_orig")) {
-		lua_pushnumber(L, part_ptr->max_nodes_orig);
+		lua_pushnumber(L, part_ptr->max_nodes);
 	} else if (!xstrcmp(name, "max_share") ||
 		   !xstrcmp(name, "max_oversubscribe")) {
 		lua_pushnumber(L, part_ptr->max_share);
