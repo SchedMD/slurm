@@ -1635,6 +1635,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	}
 
 	if ((max_powered_nodes != NO_VAL) &&
+	    (update_node_msg->node_state != NO_VAL) &&
 	    (update_node_msg->node_state & NODE_STATE_POWER_UP)) {
 		bitstr_t *bmp = NULL;
 		int count;
