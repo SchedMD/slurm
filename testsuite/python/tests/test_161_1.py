@@ -1,5 +1,5 @@
 ############################################################################
-# "Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 ############################################################################
 import atf
 import itertools
