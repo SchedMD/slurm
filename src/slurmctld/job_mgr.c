@@ -6782,8 +6782,7 @@ static int _foreach_valid_part(void *x, void *arg)
 		foreach_valid_part->rc = SLURM_SUCCESS;
 
 	foreach_valid_part->min_nodes_orig =
-		MIN(foreach_valid_part->min_nodes_orig,
-		    part_ptr->min_nodes_orig);
+		MIN(foreach_valid_part->min_nodes_orig, part_ptr->min_nodes);
 	foreach_valid_part->max_nodes_orig =
 		MAX(foreach_valid_part->max_nodes_orig,
 		    part_ptr->max_nodes_orig);
@@ -6845,7 +6844,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		max_time = foreach_valid_part.max_time;
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
-		min_nodes_orig = part_ptr->min_nodes_orig;
+		min_nodes_orig = part_ptr->min_nodes;
 		max_nodes_orig = part_ptr->max_nodes_orig;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,

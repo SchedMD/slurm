@@ -896,8 +896,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->max_mem_per_cpu = part->max_mem_per_cpu;
 	part_ptr->max_nodes      = part->max_nodes;
 	part_ptr->max_nodes_orig = part->max_nodes;
-	part_ptr->min_nodes      = part->min_nodes;
-	part_ptr->min_nodes_orig = part->min_nodes;
+	part_ptr->min_nodes = part->min_nodes;
 	part_ptr->over_time_limit = part->over_time_limit;
 	part_ptr->preempt_mode   = part->preempt_mode;
 	part_ptr->priority_job_factor = part->priority_job_factor;
