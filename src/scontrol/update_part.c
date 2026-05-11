@@ -515,6 +515,13 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			return SLURM_ERROR;
 		}
 	}
+
+	if ((part_msg_ptr->flags & PART_FLAG_EXCLUSIVE_USER) &&
+	    (part_msg_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)) {
+		warning("Exclusive=USER and Exclusive=TOPO are mutually exclusive, ignoring Exclusive=USER");
+		part_msg_ptr->flags |= ~PART_FLAG_EXCLUSIVE_USER;
+	}
+
 	return SLURM_SUCCESS;
 }
 
