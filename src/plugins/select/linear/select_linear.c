@@ -1905,8 +1905,10 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
-top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
-	    (exp_cr = _dup_cr(cr_ptr))) {
+top:
+	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
+	    (exp_cr = _dup_cr(cr_ptr)) &&
+	    !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
