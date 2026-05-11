@@ -1174,12 +1174,16 @@ def test_jobs(slurm, slurmdb):
         assert len(resp.warnings) == 0
         assert len(resp.errors) == 0
         assert resp.jobs
+        updated_job_found = False
         for job in resp.jobs:
             if job.name == "updated test job":
                 assert job.job_id == jobid
                 assert job.name == "updated test job"
                 assert job.partition == partition_name
+                updated_job_found = True
                 break
+        if updated_job_found:
+            break
     else:
         assert False, "Updated job should reach the DB"
 
