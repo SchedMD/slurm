@@ -252,7 +252,7 @@ static void *_worker(void *arg)
 	slurm_mutex_lock(&mgr.mutex);
 
 	_check_magic_worker(worker);
-	xassert(worker->tid == pthread_self());
+	xassert(pthread_equal(worker->tid, pthread_self()));
 
 	mgr.workers.total++;
 	/*
