@@ -91,8 +91,7 @@ typedef struct part_record {
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t num_sched_jobs; /* number of jobs scheduled on a scheduling
 				  * iteration, internal use only, NO NOT PACK */
-	uint32_t min_nodes;	/* per job */
-	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
+	uint32_t min_nodes; /* per job */
 	char *name;		/* name of the partition */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 	char *nodes;		/* expanded nodelist from orig_nodes */
