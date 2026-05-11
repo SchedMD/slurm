@@ -234,7 +234,7 @@ static int _match_thread_id(void *x, void *key)
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(*id_ptr > 0);
 
-	return ((thread->id == *id_ptr) ? 1 : 0);
+	return (pthread_equal(thread->id, *id_ptr) ? 1 : 0);
 }
 
 #ifndef NDEBUG
@@ -536,7 +536,7 @@ static void _threadpool_prerun(thread_t *thread)
 	if (!thread->id)
 		thread->id = pthread_self();
 	else
-		xassert(thread->id == pthread_self());
+		xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.idle--;
 	threadpool.running++;
@@ -553,7 +553,7 @@ static void _threadpool_prerun(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_postrun(thread_t *thread)
 {
-	xassert(thread->id == pthread_self());
+	xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.running--;
 	threadpool.idle++;
@@ -739,7 +739,8 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 			slurm_mutex_lock(&threadpool.mutex);
 
 			if (thread) {
-				xassert(!thread->id || (thread->id == id));
+				xassert(!thread->id ||
+					pthread_equal(thread->id, id));
 				thread->id = id;
 			}
 
@@ -815,7 +816,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	 */
 	while (!thread->id) {
 		xassert(thread->magic == THREAD_MAGIC);
-		xassert(thread->requester == pthread_self());
+		xassert(pthread_equal(thread->requester, pthread_self()));
 		xassert(threadpool.idle > 0);
 
 		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
@@ -826,7 +827,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	}
 
 	xassert(thread->magic == THREAD_MAGIC);
-	xassert(thread->requester == pthread_self());
+	xassert(pthread_equal(thread->requester, pthread_self()));
 	xassert(thread->id);
 
 	thread->requester = 0;
