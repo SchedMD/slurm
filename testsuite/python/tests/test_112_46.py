@@ -36,6 +36,11 @@ def setup():
     global slurmrestd_url, token, slurmrestd
     global local_cluster_name, partition_name
 
+    atf.require_version((26, 11), "sbin/slurmdbd")
+    atf.require_version((26, 11), "sbin/slurmctld")
+    atf.require_version((26, 11), "sbin/slurmrestd")
+    atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.46")
+
     atf.require_accounting(modify=True)
     atf.require_nodes(req_node_count)
     atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
@@ -43,10 +48,6 @@ def setup():
     atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
-    atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.46")
-    atf.require_version((26, 5), "sbin/slurmdbd")
-    atf.require_version((26, 5), "sbin/slurmctld")
-    atf.require_version((26, 5), "sbin/slurmrestd")
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
@@ -277,6 +278,7 @@ def test_loaded_versions():
     spec = r.json()
 
     # verify older plugins are not loaded
+    assert "/slurm/v0.0.45/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.44/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.43/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.42/jobs" not in spec["paths"].keys()
@@ -297,12 +299,12 @@ def test_loaded_versions():
 
 
 @pytest.mark.skipif(
-    atf.get_version() <= (26, 5, 0), reason="Specs may change until .0 is released"
+    atf.get_version() <= (26, 11, 0), reason="Specs may change until .0 is released"
 )
 @pytest.mark.parametrize("openapi_spec", ["46"], indirect=True)
 def test_specification(openapi_spec):
-    if atf.get_version("sbin/slurmrestd") >= (27, 11):
-        # This is expected to be deprecated in 27.11+
+    if atf.get_version("sbin/slurmrestd") >= (28, 5):
+        # This is expected to be deprecated in 28.05+
         patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
         patch.apply(openapi_spec, in_place=True)
 
