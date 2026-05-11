@@ -407,6 +407,22 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "src/plugins/tls/s2n/tls_s2n.c" in bt
+        and "src/interfaces/conn.c" in bt
+        and "in _on_s2n_error" in bt
+        and "in _negotiate" in bt
+        and "in tls_p_create_conn" in bt
+        and "s2n_connection_get_delay" in bt
+    ):
+        # TODO: Add version when t25135 is fixed
+        failures.append(reason)
+        return
+
     reason = "Ticket 25193: Known issue with slurmd: SIGABRT: double free or corruption (fasttop)"
     component = "sbin/slurmd"
     if (
