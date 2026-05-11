@@ -2,6 +2,7 @@
 # "Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 ############################################################################
 import atf
+import itertools
 import pytest
 
 
@@ -15,7 +16,13 @@ topology_yaml = """
           x: 4
           y: 4
           z: 2
-        nodes: node[1-32]
+        regions:
+          - anchor: {x: 0, y: 0, z: 0}
+            dims: {x: 4, y: 4, z: 1}
+            nodes: node[1-16]
+          - anchor: {x: 0, y: 0, z: 1}
+            dims: {x: 4, y: 4, z: 1}
+            nodes: node[17-32]
         placements:
           - dims:
               x: 2
@@ -30,6 +37,39 @@ topology_yaml = """
               y: 4
               z: 2
 """
+
+# All valid anchored 2x2x1 sub-cubes in the 4x4x2 torus (anchor_spacing=dims)
+VALID_4NODE = [
+    {"node1", "node2", "node5", "node6"},
+    {"node3", "node4", "node7", "node8"},
+    {"node9", "node10", "node13", "node14"},
+    {"node11", "node12", "node15", "node16"},
+    {"node17", "node18", "node21", "node22"},
+    {"node19", "node20", "node23", "node24"},
+    {"node25", "node26", "node29", "node30"},
+    {"node27", "node28", "node31", "node32"},
+]
+
+# All valid anchored 2x2x2 sub-cubes
+VALID_8NODE = [
+    {"node1", "node2", "node5", "node6", "node17", "node18", "node21", "node22"},
+    {"node3", "node4", "node7", "node8", "node19", "node20", "node23", "node24"},
+    {"node9", "node10", "node13", "node14", "node25", "node26", "node29", "node30"},
+    {"node11", "node12", "node15", "node16", "node27", "node28", "node31", "node32"},
+]
+
+# Valid 16-node allocations under --segment=8: union of any two distinct
+# 8-node placements (C(4, 2) = 6 pairs)
+VALID_16NODE_SEGMENT = [a | b for a, b in itertools.combinations(VALID_8NODE, 2)]
+
+
+def assert_valid_placement(job_id, valid_sets):
+    """Assert that the job's NodeList matches one of the valid placement sets."""
+    node_list = atf.get_job_parameter(job_id, "NodeList")
+    nodes = set(atf.node_range_to_list(node_list))
+    assert any(
+        nodes == v for v in valid_sets
+    ), f"Job {job_id} allocated {node_list} which is not a valid placement"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -51,9 +91,8 @@ def test_basic_placement():
 
     job_id = atf.submit_job_sbatch('-N 4 --exclusive --mem=1 --wrap="hostname"')
     assert job_id != 0, "Job should be accepted"
-    assert atf.wait_for_job_state(
-        job_id, "DONE", fatal=True, timeout=10
-    ), "4-node job should run"
+    atf.wait_for_job_state(job_id, "DONE", fatal=True, timeout=10)
+    assert_valid_placement(job_id, VALID_4NODE)
 
 
 def test_8_node_placement():
@@ -61,9 +100,8 @@ def test_8_node_placement():
 
     job_id = atf.submit_job_sbatch('-N 8 --exclusive --mem=1 --wrap="hostname"')
     assert job_id != 0, "Job should be accepted"
-    assert atf.wait_for_job_state(
-        job_id, "DONE", fatal=True, timeout=10
-    ), "8-node job should run"
+    atf.wait_for_job_state(job_id, "DONE", fatal=True, timeout=10)
+    assert_valid_placement(job_id, VALID_8NODE)
 
 
 def test_full_torus():
@@ -163,9 +201,8 @@ def test_segment():
         '-N 16 --segment=8 --exclusive --mem=1 --wrap="hostname"'
     )
     assert job_id != 0, "Segmented job should be accepted"
-    assert atf.wait_for_job_state(
-        job_id, "DONE", fatal=True, timeout=10
-    ), "Segmented job should run"
+    atf.wait_for_job_state(job_id, "DONE", fatal=True, timeout=10)
+    assert_valid_placement(job_id, VALID_16NODE_SEGMENT)
 
 
 def test_segment_bad_divisor():
