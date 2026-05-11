@@ -4206,6 +4206,14 @@ static int _kill_step_on_node(void *x, void *arg)
 	if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 		return 0;
 
+	/*
+	 * Don't let the batch step go through partial completion and get marked
+	 * for deallocation while the job is still running. The batch step will
+	 * be cleaned up when the job completes or is requeued.
+	 */
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+		return 0;
+
 	/* Remove step allocation from the job's allocation */
 	step_node_inx = bit_set_count_range(step_ptr->step_node_bitmap, 0,
 					    bit_position);
