@@ -612,11 +612,16 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 	}
 }
 
+/* Close the slurmctld -> slurmdbd persistent connection. */
 static void _close_acct_storage_conn(void)
 {
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
+}
 
+/* Unload the accounting_storage plugin. */
+static void _fini_acct_storage(void)
+{
 	acct_storage_g_fini();
 	slurm_persist_conn_recv_server_fini();
 }
@@ -1149,6 +1154,7 @@ int main(int argc, char **argv)
 
 		/* Save any pending state save RPCs */
 		_close_acct_storage_conn();
+		_fini_acct_storage();
 		power_save_fini();
 
 		/* attempt reconfig here */
@@ -2658,6 +2664,7 @@ static void *_slurmctld_background(void *no_data)
 			 * responding.
 			 */
 			_close_acct_storage_conn();
+			_fini_acct_storage();
 
 			/*
 			 * Wait for all already accepted connection work to
