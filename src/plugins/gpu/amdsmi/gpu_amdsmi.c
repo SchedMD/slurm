@@ -1553,8 +1553,11 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
                     have_watts = true;
                     info("AMDSMI: GPU[%u] energy-derived power = %u W (dt=%.1fs)",
                            dv_ind, watts, dt);
-                    debug2("AMDSMI: GPU[%u] I found watts, %s", dv_ind,
-                           (have_watts ? "success" : "failure"));
+                    gpu->last_update_watt = watts;
+                    gpu->energy.current_watts = watts;
+                    gpu -> previous_update_time = gpu -> last_update_time;
+                    gpu->last_update_time = time(NULL);
+                    return SLURM_SUCCESS;
                 }
             }
         }
