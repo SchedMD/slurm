@@ -1169,21 +1169,19 @@ def test_jobs(slurm, slurmdb):
     resp = slurmdb.slurmdb_v0043_get_jobs()
     assert len(resp.errors) == 0
 
-    requery = True
-    while requery:
+    for t in atf.timer():
         resp = slurmdb.slurmdb_v0043_get_job(str(jobid))
         assert len(resp.warnings) == 0
         assert len(resp.errors) == 0
         assert resp.jobs
         for job in resp.jobs:
-            if job.name != "updated test job":
-                # job change hasn't settled at slurmdbd yet
-                requery = True
-            else:
-                requery = False
+            if job.name == "updated test job":
                 assert job.job_id == jobid
                 assert job.name == "updated test job"
                 assert job.partition == partition_name
+                break
+    else:
+        assert False, "Updated job should reach the DB"
 
     resp = slurmdb.slurmdb_v0043_get_jobs(users=local_user_name)
     assert len(resp.warnings) == 0

@@ -36,6 +36,11 @@ def setup():
     global slurmrestd_url, token, slurmrestd
     global local_cluster_name, partition_name
 
+    atf.require_version((26, 11), "sbin/slurmdbd")
+    atf.require_version((26, 11), "sbin/slurmctld")
+    atf.require_version((26, 11), "sbin/slurmrestd")
+    atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.46")
+
     atf.require_accounting(modify=True)
     atf.require_nodes(req_node_count)
     atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
@@ -43,10 +48,6 @@ def setup():
     atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
-    atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.46")
-    atf.require_version((26, 5), "sbin/slurmdbd")
-    atf.require_version((26, 5), "sbin/slurmctld")
-    atf.require_version((26, 5), "sbin/slurmrestd")
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
@@ -277,6 +278,7 @@ def test_loaded_versions():
     spec = r.json()
 
     # verify older plugins are not loaded
+    assert "/slurm/v0.0.45/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.44/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.43/jobs" not in spec["paths"].keys()
     assert "/slurm/v0.0.42/jobs" not in spec["paths"].keys()
@@ -297,12 +299,12 @@ def test_loaded_versions():
 
 
 @pytest.mark.skipif(
-    atf.get_version() <= (26, 5, 0), reason="Specs may change until .0 is released"
+    atf.get_version() <= (26, 11, 0), reason="Specs may change until .0 is released"
 )
 @pytest.mark.parametrize("openapi_spec", ["46"], indirect=True)
 def test_specification(openapi_spec):
-    if atf.get_version("sbin/slurmrestd") >= (27, 11):
-        # This is expected to be deprecated in 27.11+
+    if atf.get_version("sbin/slurmrestd") >= (28, 5):
+        # This is expected to be deprecated in 28.05+
         patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
         patch.apply(openapi_spec, in_place=True)
 
@@ -1251,21 +1253,19 @@ def test_jobs(slurm, slurmdb, non_admin):
     resp = slurmdb.slurmdb_v0046_get_jobs()
     assert len(resp.errors) == 0
 
-    requery = True
-    while requery:
+    for t in atf.timer():
         resp = slurmdb.slurmdb_v0046_get_job(str(jobid3))
         assert len(resp.warnings) == 0
         assert len(resp.errors) == 0
         assert resp.jobs
         for job in resp.jobs:
-            if job.name != "updated test job":
-                # job change hasn't settled at slurmdbd yet
-                requery = True
-            else:
-                requery = False
+            if job.name == "updated test job":
                 assert job.job_id == jobid3
                 assert job.name == "updated test job"
                 assert job.partition == partition_name
+                break
+    else:
+        assert False, "Updated job should reach the DB"
 
     resp = slurmdb.slurmdb_v0046_get_jobs(users=local_user_name)
     assert len(resp.warnings) == 0
