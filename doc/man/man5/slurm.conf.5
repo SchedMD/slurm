@@ -7324,8 +7324,9 @@ See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .TP
 \fBSuspendExcStates\fR
 Specifies node states that are not to be powered down automatically.
-Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
-INVALID_REG, MAINTENANCE, NOT_RESPONDING, PLANNED, and RESERVED.
+Valid states include CLOUD, DEGRADED, DOWN, DRAIN, DYNAMIC_FUTURE,
+DYNAMIC_NORM, FAIL, INVALID_REG, MAINTENANCE, NOT_RESPONDING, PLANNED, and
+RESERVED.
 By default, any of these states, if idle for \fBSuspendTime\fR, would be
 powered down.
 Nodes explicitly requested to power down, including nodes allocated from a

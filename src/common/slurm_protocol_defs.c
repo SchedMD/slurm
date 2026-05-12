@@ -136,6 +136,8 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_CLOUD, "CLOUD" },
 	{ NODE_STATE_COMPLETING, "COMPLETING" },
 	{ NODE_STATE_DRAIN, "DRAIN" },
+	/* After DRAIN, so the abbreviation "D" still means DRAIN */
+	{ NODE_STATE_DEGRADED, "DEGRADED" },
 	{ NODE_STATE_DYNAMIC_FUTURE, "DYNAMIC_FUTURE" },
 	{ NODE_STATE_DYNAMIC_NORM, "DYNAMIC_NORM" },
 	{ NODE_STATE_EXTERNAL, "EXTERNAL" },
@@ -3769,6 +3771,7 @@ extern char *node_state_string(uint32_t inx)
 	int  base            = (inx & NODE_STATE_BASE);
 	bool blocked_flag = (inx & NODE_STATE_BLOCKED);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool degraded_flag = (inx & NODE_STATE_DEGRADED);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
@@ -3828,6 +3831,8 @@ extern char *node_state_string(uint32_t inx)
 				return "DRAINING!";
 			if (no_resp_flag)
 				return "DRAINING*";
+			if (degraded_flag)
+				return "DRAINING?";
 			return "DRAINING";
 		} else {
 			if (maint_flag)
@@ -3846,6 +3851,8 @@ extern char *node_state_string(uint32_t inx)
 				return "DRAINED!";
 			if (no_resp_flag)
 				return "DRAINED*";
+			if (degraded_flag)
+				return "DRAINED?";
 			return "DRAINED";
 		}
 	}
@@ -3854,10 +3861,14 @@ extern char *node_state_string(uint32_t inx)
 		    (base == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "FAILING*";
+			if (degraded_flag)
+				return "FAILING?";
 			return "FAILING";
 		} else {
 			if (no_resp_flag)
 				return "FAIL*";
+			if (degraded_flag)
+				return "FAIL?";
 			return "FAIL";
 		}
 	}
@@ -3903,6 +3914,8 @@ extern char *node_state_string(uint32_t inx)
 			return "DOWN!";
 		if (no_resp_flag)
 			return "DOWN*";
+		if (degraded_flag)
+			return "DOWN?";
 		return "DOWN";
 	}
 
@@ -3925,6 +3938,8 @@ extern char *node_state_string(uint32_t inx)
 			return "ALLOCATED*";
 		if (comp_flag)
 			return "ALLOCATED+";
+		if (degraded_flag)
+			return "ALLOCATED?";
 		return "ALLOCATED";
 	}
 	if (comp_flag) {
@@ -3944,6 +3959,8 @@ extern char *node_state_string(uint32_t inx)
 			return "COMPLETING!";
 		if (no_resp_flag)
 			return "COMPLETING*";
+		if (degraded_flag)
+			return "COMPLETING?";
 		return "COMPLETING";
 	}
 	if (base == NODE_STATE_IDLE) {
@@ -3963,6 +3980,15 @@ extern char *node_state_string(uint32_t inx)
 			return "IDLE!";
 		if (no_resp_flag)
 			return "IDLE*";
+		if (degraded_flag) {
+			if (res_flag)
+				return "RESERVED?";
+			if (blocked_flag)
+				return "BLOCKED?";
+			if (planned_flag)
+				return "PLANNED?";
+			return "DEGRADED";
+		}
 		if (res_flag)
 			return "RESERVED";
 		if (blocked_flag)
@@ -3990,6 +4016,8 @@ extern char *node_state_string(uint32_t inx)
 			return "MIXED*";
 		if (planned_flag)
 			return "MIXED-";
+		if (degraded_flag)
+			return "MIXED?";
 		return "MIXED";
 	}
 	if (base == NODE_STATE_FUTURE) {
@@ -4009,6 +4037,8 @@ extern char *node_state_string(uint32_t inx)
 			return "FUTURE!";
 		if (no_resp_flag)
 			return "FUTURE*";
+		if (degraded_flag)
+			return "FUTURE?";
 		return "FUTURE";
 	}
 	if (resume_flag)
@@ -4016,6 +4046,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
+		if (degraded_flag)
+			return "UNKNOWN?";
 		return "UNKNOWN";
 	}
 	return "?";
@@ -4025,6 +4057,7 @@ extern char *node_state_string_compact(uint32_t inx)
 {
 	bool blocked_flag = (inx & NODE_STATE_BLOCKED);
 	bool comp_flag       = (inx & NODE_STATE_COMPLETING);
+	bool degraded_flag = (inx & NODE_STATE_DEGRADED);
 	bool drain_flag      = (inx & NODE_STATE_DRAIN);
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
@@ -4089,6 +4122,8 @@ extern char *node_state_string_compact(uint32_t inx)
 				return "DRNG!";
 			if (no_resp_flag)
 				return "DRNG*";
+			if (degraded_flag)
+				return "DRNG?";
 			return "DRNG";
 		} else {
 			if (maint_flag)
@@ -4107,6 +4142,8 @@ extern char *node_state_string_compact(uint32_t inx)
 				return "DRAIN!";
 			if (no_resp_flag)
 				return "DRAIN*";
+			if (degraded_flag)
+				return "DRAIN?";
 			return "DRAIN";
 		}
 	}
@@ -4115,10 +4152,14 @@ extern char *node_state_string_compact(uint32_t inx)
 		    (inx == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "FAILG*";
+			if (degraded_flag)
+				return "FAILG?";
 			return "FAILG";
 		} else {
 			if (no_resp_flag)
 				return "FAIL*";
+			if (degraded_flag)
+				return "FAIL?";
 			return "FAIL";
 		}
 	}
@@ -4158,6 +4199,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "DOWN!";
 		if (no_resp_flag)
 			return "DOWN*";
+		if (degraded_flag)
+			return "DOWN?";
 		return "DOWN";
 	}
 
@@ -4180,6 +4223,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "ALLOC*";
 		if (comp_flag)
 			return "ALLOC+";
+		if (degraded_flag)
+			return "ALLOC?";
 		return "ALLOC";
 	}
 	if (comp_flag) {
@@ -4199,6 +4244,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "COMP!";
 		if (no_resp_flag)
 			return "COMP*";
+		if (degraded_flag)
+			return "COMP?";
 		return "COMP";
 	}
 	if (inx == NODE_STATE_IDLE) {
@@ -4218,6 +4265,15 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "IDLE!";
 		if (no_resp_flag)
 			return "IDLE*";
+		if (degraded_flag) {
+			if (res_flag)
+				return "RESV?";
+			if (blocked_flag)
+				return "BLOCK?";
+			if (planned_flag)
+				return "PLND?";
+			return "DEG";
+		}
 		if (res_flag)
 			return "RESV";
 		if (blocked_flag)
@@ -4245,6 +4301,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "MIX*";
 		if (planned_flag)
 			return "MIX-";
+		if (degraded_flag)
+			return "MIX?";
 		return "MIX";
 	}
 	if (inx == NODE_STATE_FUTURE) {
@@ -4264,6 +4322,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "FUTR!";
 		if (no_resp_flag)
 			return "FUTR*";
+		if (degraded_flag)
+			return "FUTR?";
 		return "FUTR";
 	}
 	if (resume_flag)
@@ -4271,6 +4331,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNK*";
+		if (degraded_flag)
+			return "UNK?";
 		return "UNK";
 	}
 	return "?";

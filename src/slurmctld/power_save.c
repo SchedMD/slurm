@@ -283,6 +283,7 @@ static void _parse_exc_states(void)
 	char *buf, *tok, *saveptr;
 	/* Flags in _node_state_suspendable() are already excluded */
 	uint32_t excludable_state_flags = NODE_STATE_CLOUD |
+					  NODE_STATE_DEGRADED |
 					  NODE_STATE_DRAIN |
 					  NODE_STATE_DYNAMIC_FUTURE |
 					  NODE_STATE_DYNAMIC_NORM |

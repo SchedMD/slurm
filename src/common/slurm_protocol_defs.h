@@ -167,6 +167,8 @@
 	(_X->node_state & NODE_STATE_BLOCKED)
 #define IS_NODE_CLOUD(_X)		\
 	(_X->node_state & NODE_STATE_CLOUD)
+#define IS_NODE_DEGRADED(_X)		\
+	(_X->node_state & NODE_STATE_DEGRADED)
 #define IS_NODE_DRAIN(_X)		\
 	(_X->node_state & NODE_STATE_DRAIN)
 #define IS_NODE_DRAINING(_X)		\

@@ -978,10 +978,10 @@ cannot opt out).
 .TP
 \fBSTATE\fR
 State of the nodes.
-Possible states include: allocated, blocked, completing, down,
+Possible states include: allocated, blocked, completing, degraded, down,
 drained, draining, fail, failing, future, idle, maint, mixed,
 planned, power_down, power_up, reserved, and unknown.
-Their abbreviated forms are: alloc, block, comp, down, drain, drng,
+Their abbreviated forms are: alloc, block, comp, deg, down, drain, drng,
 fail, failg, futr, idle, maint, mix, plnd, pow_dn, pow_up, resv,
 and unk respectively.
 
@@ -1050,6 +1050,13 @@ The node reboot was issued.
 The node is planned by the backfill scheduler for a higher priority job.
 .IP
 
+.TP
+\fB?\fR
+The node is degraded (i.e. one or more of its TRES have been drained and are
+unavailable due to degraded hardware or administrator action). The rest of the
+node stays schedulable.
+.IP
+
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -1076,6 +1083,14 @@ the COMPLETING state, it is not eligible for new job placement
 and no jobs will be scheduled on it. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR(5) man page for
 more information.
+.IP
+
+.TP
+\fBDEGRADED\fR
+The node has one or more TRES that have been drained and are
+unavailable due to degraded hardware or administrator action;
+the rest of the node stays schedulable. The \fBDrainedTRES\fR field of
+\fBscontrol show node\fR lists what is drained.
 .IP
 
 .TP
