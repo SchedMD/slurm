@@ -423,6 +423,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdUser", S_P_STRING},
 	{"SlurmSchedLogFile", S_P_STRING},
 	{"SlurmSchedLogLevel", S_P_UINT16},
+	{"SlurmstepdParameters", S_P_STRING},
 	{"SlurmUser", S_P_STRING},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunPortRange", S_P_STRING},
@@ -2859,6 +2860,7 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->slurmd_pidfile);
 	xfree(conf->slurmd_spooldir);
 	xfree(conf->slurmd_user_name);
+	xfree(conf->slurmstepd_params);
 	xfree(conf->srun_epilog);
 	xfree(conf->srun_port_range);
 	xfree(conf->srun_prolog);
@@ -3051,6 +3053,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->slurmd_port = NO_VAL;
 	xfree(conf->slurmd_spooldir);
 	conf->slurmd_timeout = NO_VAL16;
+	xfree(conf->slurmstepd_params);
 	xfree(conf->srun_prolog);
 	xfree(conf->srun_epilog);
 	xfree(conf->state_save_location);
@@ -5232,6 +5235,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint16(&conf->slurmd_timeout, "SlurmdTimeout", hashtbl))
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
+
+	(void) s_p_get_string(&conf->slurmstepd_params, "SlurmstepdParameters",
+			      hashtbl);
 
 	(void) s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
 	if (s_p_get_string(&temp_str, "SrunPortRange", hashtbl)) {

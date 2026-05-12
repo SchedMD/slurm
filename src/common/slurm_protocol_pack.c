@@ -4094,6 +4094,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->slurmd_spooldir, buffer);
 		pack16(conf->slurmd_syslog_debug, buffer);
 		pack16(conf->slurmd_timeout, buffer);
+		packstr(conf->slurmstepd_params, buffer);
 		packstr(conf->srun_epilog, buffer);
 		pack16(conf->srun_port_range[0], buffer);
 		pack16(conf->srun_port_range[1], buffer);
@@ -5187,6 +5188,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->slurmd_spooldir, buffer);
 		safe_unpack16(&conf->slurmd_syslog_debug, buffer);
 		safe_unpack16(&conf->slurmd_timeout, buffer);
+		safe_unpackstr(&conf->slurmstepd_params, buffer);
 
 		safe_unpackstr(&conf->srun_epilog, buffer);
 
