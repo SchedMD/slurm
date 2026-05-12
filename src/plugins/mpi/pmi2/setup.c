@@ -291,6 +291,7 @@ static int
 _setup_stepd_sockets(const stepd_step_rec_t *step, char ***env)
 {
 	struct sockaddr_un sa;
+	socklen_t blen;
 	int i;
 	char *spool;
 
@@ -339,7 +340,8 @@ _setup_stepd_sockets(const stepd_step_rec_t *step, char ***env)
 
 	unlink(sa.sun_path);    /* remove possible old socket */
 
-	if (bind(tree_sock, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) {
+	blen = sockaddr_fixlen((struct sockaddr *) &sa, (socklen_t) sizeof(sa));
+	if (bind(tree_sock, (struct sockaddr *) &sa, blen) < 0) {
 		error("mpi/pmi2: failed to bind tree socket: %m");
 		unlink(sa.sun_path);
 		return SLURM_ERROR;
