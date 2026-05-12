@@ -358,6 +358,13 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
+static void _slurm_rpc_stepmgr_resize_kill_steps(slurm_msg_t *msg)
+{
+	resize_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
+}
+
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
@@ -5523,6 +5530,10 @@ slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = SRUN_NODE_FAIL,
 		.func = _slurm_rpc_srun_node_fail,
+	},
+	{
+		.msg_type = REQUEST_STEPMGR_RESIZE_KILL_STEPS,
+		.func = _slurm_rpc_stepmgr_resize_kill_steps,
 	},
 	{
 		.msg_type = SRUN_TIMEOUT,
