@@ -391,9 +391,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
-    reason = (
-        "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage"
-    )
+    reason = "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage fixed in 25.11.6"
     component = "sbin/slurmctld"
     if (
         component in bin_path
@@ -403,8 +401,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "in slurmdb_destroy_assoc_usage" in bt
         and "in slurmdb_free_assoc_rec_members" in bt
     ):
-        # TODO: Add version when t25095 is fixed
-        failures.append(reason)
+        if get_version(component) >= (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error"
