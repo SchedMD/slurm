@@ -1897,10 +1897,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	}
 
 	/*
-	 * Since job could have been killed while the prolog was
-	 * running (especially on BlueGene, which can take minutes
-	 * for partition booting). Test if the credential has since
-	 * been revoked and exit as needed.
+	 * Since job could have been killed while the prolog was running.
+	 * Test if the credential has since been revoked and exit as needed.
 	 */
 	if (cred_revoked(req->cred)) {
 		info("%pI already killed, do not launch extern step",

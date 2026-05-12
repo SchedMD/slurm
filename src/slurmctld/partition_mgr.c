@@ -534,9 +534,7 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		part_ptr->max_cpus_per_socket =
 			part_rec_state->max_cpus_per_socket;
 		part_ptr->max_nodes = part_rec_state->max_nodes;
-		part_ptr->max_nodes_orig = part_rec_state->max_nodes;
 		part_ptr->min_nodes = part_rec_state->min_nodes;
-		part_ptr->min_nodes_orig = part_rec_state->min_nodes;
 		part_ptr->max_share = part_rec_state->max_share;
 		part_ptr->grace_time = part_rec_state->grace_time;
 		part_ptr->over_time_limit = part_rec_state->over_time_limit;
@@ -998,8 +996,8 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		pack32(part_ptr->grace_time, buffer);
 		pack32(part_ptr->max_time, buffer);
 		pack32(part_ptr->default_time, buffer);
-		pack32(part_ptr->max_nodes_orig, buffer);
-		pack32(part_ptr->min_nodes_orig, buffer);
+		pack32(part_ptr->max_nodes, buffer);
+		pack32(part_ptr->min_nodes, buffer);
 		pack32(part_ptr->total_nodes, buffer);
 		pack32(part_ptr->total_cpus, buffer);
 		pack64(part_ptr->def_mem_per_cpu, buffer);
@@ -1164,15 +1162,13 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	if (part_desc->max_nodes != NO_VAL) {
 		info("%s: setting max_nodes to %u for partition %s", __func__,
 		     part_desc->max_nodes, part_desc->name);
-		part_ptr->max_nodes      = part_desc->max_nodes;
-		part_ptr->max_nodes_orig = part_desc->max_nodes;
+		part_ptr->max_nodes = part_desc->max_nodes;
 	}
 
 	if (part_desc->min_nodes != NO_VAL) {
 		info("%s: setting min_nodes to %u for partition %s", __func__,
 		     part_desc->min_nodes, part_desc->name);
-		part_ptr->min_nodes      = part_desc->min_nodes;
-		part_ptr->min_nodes_orig = part_desc->min_nodes;
+		part_ptr->min_nodes = part_desc->min_nodes;
 	}
 
 	if (part_desc->grace_time != NO_VAL) {
