@@ -2661,10 +2661,10 @@ static void *_slurmctld_background(void *no_data)
 			 * before conmgr quiesce to avoid possible deadlocks
 			 * where slurmdbd is waiting on slurmctld but
 			 * slurmctld will wait until quiesce to finish before
-			 * responding.
+			 * responding. The plugin itself is unloaded later, in
+			 * main().
 			 */
 			_close_acct_storage_conn();
-			_fini_acct_storage();
 
 			/*
 			 * Wait for all already accepted connection work to
