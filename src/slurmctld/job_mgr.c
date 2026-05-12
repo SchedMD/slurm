@@ -13672,7 +13672,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_desc->num_tasks < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
-		else {
+		else if (job_desc->num_tasks < detail_ptr->min_nodes) {
+			info("%s: num_tasks (%u) less than min_nodes (%u) for %pJ",
+			     __func__, job_desc->num_tasks,
+			     detail_ptr->min_nodes, job_ptr);
+			error_code = ESLURM_BAD_TASK_COUNT;
+		} else {
 			detail_ptr->num_tasks = job_desc->num_tasks;
 			/*
 			 * Once you actually requested ntasks you will get
