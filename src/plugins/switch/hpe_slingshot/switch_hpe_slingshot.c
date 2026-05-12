@@ -735,15 +735,13 @@ extern void switch_p_stepinfo_pack(switch_stepinfo_t *switch_job, buf_t *buffer,
 	xassert(buffer);
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		/* nothing to pack, pack special "null" version number */
-		if (!stepinfo ||
-		    (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
+		if (!stepinfo) {
 			debug("Nothing to pack");
-			pack32(SLINGSHOT_JOBINFO_NULL_VERSION, buffer);
+			packbool(false, buffer);
 			return;
 		}
 
-		pack32(protocol_version, buffer);
+		packbool(true, buffer);
 		pack16_array(stepinfo->vnis, stepinfo->num_vnis, buffer);
 		pack32(stepinfo->tcs, buffer);
 		_pack_slingshot_limits(&stepinfo->limits.txqs, buffer);
@@ -852,15 +850,12 @@ extern int switch_p_stepinfo_unpack(switch_stepinfo_t **switch_job,
 	*switch_job = (switch_stepinfo_t *) stepinfo;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		safe_unpack32(&stepinfo->version, buffer);
-		if (stepinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {
+		bool has_data;
+
+		safe_unpackbool(&has_data, buffer);
+		if (!has_data) {
 			debug("Nothing to unpack");
 			return SLURM_SUCCESS;
-		}
-		if (stepinfo->version != protocol_version) {
-			error("SLINGSHOT stepinfo version %"PRIu32" != %d",
-			      stepinfo->version, protocol_version);
-			goto error;
 		}
 
 		safe_unpack16_array(&stepinfo->vnis, &stepinfo->num_vnis,
