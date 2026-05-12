@@ -2723,6 +2723,10 @@ static void *_slurmctld_background(void *no_data)
 			}
 			slurm_mutex_unlock(&sched_mutex);
 
+			/* kill all scripts running by the slurmctld */
+			track_script_flush();
+			slurmscriptd_flush();
+
 			/*
 			 * Persistent connection to slurmdbd must be closed
 			 * before conmgr quiesce to avoid possible deadlocks
