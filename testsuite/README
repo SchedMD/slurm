@@ -1098,3 +1098,4 @@ test_161_1   Test topology/torus3d placements, constraints, and --segment
 test_162_#   Testing of swait.
 ==============================
 test_162_1   Test swait against a stepmgr-enabled cluster
+test_162_2   Test swait's steps-drained push path
