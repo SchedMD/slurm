@@ -6,11 +6,6 @@
 import atf
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    atf.get_version() < (26, 5),
-    reason="PMIx graceful termination via SIG_TERM_KILL added in 26.05",
-)
-
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
@@ -48,6 +43,10 @@ def run_pmix_failure(mpi_program, mode, trap):
     return stdout, stderr
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Ticket 24022: PMIx graceful termination via SIG_TERM_KILL added in 26.05",
+)
 @pytest.mark.parametrize("mpi_program", ["mpi_signal_test"], indirect=True)
 @pytest.mark.parametrize("mode", ["exit", "abort"])
 @pytest.mark.parametrize("trap", [False, True])
