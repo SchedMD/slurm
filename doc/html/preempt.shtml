@@ -74,6 +74,11 @@ reaching its new end time.
 is configured or when suspending jobs with <i>scontrol suspend</i>. For
 setting the preemption grace time in these cases, see
 <a href="slurm.conf.html#OPT_suspend_grace_time">suspend_grace_time</a>.
+<br><b>NOTE</b>: A job selected for preemption that exits before
+<i>GraceTime</i> expires will be handled according to <i>PreemptMode</i>
+regardless of why it exited (most visible if <i>PreemptMode=REQUEUE</i>).
+Slurm cannot distinguish between an exit caused by the preemption signal
+and an unrelated exit that occurs within <i>GraceTime</i>.
 </LI>
 
 <LI>
