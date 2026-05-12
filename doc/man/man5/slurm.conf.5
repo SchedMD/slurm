@@ -7888,6 +7888,12 @@ See also the global \fBKillWait\fR configuration parameter.
 \fBNOTE\fR: This parameter does not apply to \fBPreemptMode=SUSPEND\fR.
 For setting the preemption grace time when using \fBPreemptMode=SUSPEND\fR,
 see \fBPreemptParameters=suspend_grace_time\fR.
+
+\fBNOTE\fR: A job selected for preemption that exits before \fBGraceTime\fR
+expires will be handled according to \fBPreemptMode\fR regardless of why
+it exited (most visible if \fBPreemptMode=REQUEUE\fR).  Slurm cannot
+distinguish between an exit caused by the preemption signal and an
+unrelated exit that occurs within \fBGraceTime\fR.
 .IP
 
 .TP
