@@ -499,7 +499,7 @@ extern char *fd_resolve_peer(int fd)
 		return NULL;
 	}
 
-	peer = sockaddr_to_string(&addr, size);
+	peer = sockaddr_to_string(&addr, size, true);
 
 	errno = err;
 	return peer;

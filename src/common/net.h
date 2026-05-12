@@ -75,9 +75,14 @@ extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
  * dump sockaddr into a string
  * IN addr address to dump
  * IN addrlen size of addr
+ * IN resolve - true to attempt reverse DNS hostname resolution; false to
+ *	use the IP literal (via inet_ntop()). Reverse DNS lookups are
+ *	synchronous and may block, so prefer false on hot paths and reserve
+ *	true for debug/logging contexts where the resolved name is read.
  * RET ptr to string (must xfree) or NULL
  */
-extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen);
+extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen,
+				bool resolve);
 
 /*
  * dump addrinfo into a string
