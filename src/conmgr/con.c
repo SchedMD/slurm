@@ -364,10 +364,12 @@ static char *_resolve_fd(int fd, struct stat *stat_ptr)
 
 	if (S_ISSOCK(stat_ptr->st_mode)) {
 		slurm_addr_t addr = {0};
+		const bool resolve =
+			(slurm_conf.debug_flags & DEBUG_FLAG_CONMGR);
 
 		if (!slurm_get_stream_addr(fd, &addr) &&
 		    (addr.ss_family != AF_UNSPEC) &&
-		    (name = sockaddr_to_string(&addr, sizeof(addr), true)))
+		    (name = sockaddr_to_string(&addr, sizeof(addr), resolve)))
 			return name;
 	}
 
