@@ -328,6 +328,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	packstr(slurm_conf.slurmd_spooldir, buffer);
 	/* slurmd_syslog_debug */
 	/* slurmd_timeout */
+	packstr(slurm_conf.slurmstepd_params, buffer);
 	/* srun_epilog */
 	if (slurm_conf.srun_port_range) {
 		pack16(slurm_conf.srun_port_range[0], buffer);
@@ -564,6 +565,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	safe_unpackstr(&slurm_conf.slurmd_spooldir, buffer);
 	/* slurmd_syslog_debug */
 	/* slurmd_timeout */
+	safe_unpackstr(&slurm_conf.slurmstepd_params, buffer);
 	/* srun_epilog */
 	safe_unpack16(&srun_port_min, buffer);
 	safe_unpack16(&srun_port_max, buffer);
