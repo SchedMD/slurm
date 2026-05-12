@@ -1197,7 +1197,7 @@ static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
 			    addr->ai_protocol);
 		if (fd < 0)
 			fatal("%s: [%s] Unable to create socket: %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		/*
 		 * activate socket reuse to avoid annoying timing issues
@@ -1206,18 +1206,18 @@ static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
 		if (setsockopt(fd, addr->ai_socktype, SO_REUSEADDR,
 			       &one, sizeof(one)))
 			fatal("%s: [%s] setsockopt(SO_REUSEADDR) failed: %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		if (bind(fd, addr->ai_addr, addr->ai_addrlen) != 0)
 			fatal("%s: [%s] Unable to bind socket: %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		fd_set_oob(fd, 0);
 
 		rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
 		if (rc < 0)
 			fatal("%s: [%s] unable to listen(): %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		rc = add_connection(type, timeouts, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,

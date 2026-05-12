@@ -87,9 +87,11 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen,
 /*
  * dump addrinfo into a string
  * IN addr address to dump
+ * IN resolve - true to attempt reverse DNS hostname resolution; false to
+ *	use the IP literal. See sockaddr_to_string() for guidance.
  * RET ptr to string (must xfree) or NULL
  */
-extern char *addrinfo_to_string(const struct addrinfo *addr);
+extern char *addrinfo_to_string(const struct addrinfo *addr, bool resolve);
 
 /*
  * Initialize socket address for named unix socket
