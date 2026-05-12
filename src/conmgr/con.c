@@ -367,7 +367,7 @@ static char *_resolve_fd(int fd, struct stat *stat_ptr)
 
 		if (!slurm_get_stream_addr(fd, &addr) &&
 		    (addr.ss_family != AF_UNSPEC) &&
-		    (name = sockaddr_to_string(&addr, sizeof(addr))))
+		    (name = sockaddr_to_string(&addr, sizeof(addr), true)))
 			return name;
 	}
 
