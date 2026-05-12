@@ -4289,6 +4289,26 @@ extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	}
 }
 
+extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
+{
+	hostlist_t *hl;
+	char *node_name;
+
+	log_flag(STEPS, "%s: %pJ removed_nodes=%s",
+		 __func__, job_ptr, node_list);
+
+	hl = hostlist_create(node_list);
+	while ((node_name = hostlist_shift(hl))) {
+		node_record_t *node_ptr = find_node_record(node_name);
+		if (node_ptr)
+			kill_step_on_node(job_ptr, node_ptr, false);
+		free(node_name);
+	}
+	hostlist_destroy(hl);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * step_partial_comp - Note the completion of a job step on at least
  *	some of its nodes

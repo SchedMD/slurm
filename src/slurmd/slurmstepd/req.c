@@ -604,6 +604,33 @@ done:
 	return rc;
 }
 
+static int _handle_stepmgr_resize_kill_steps(int fd, uid_t uid,
+					     pid_t remote_pid)
+{
+	int rc;
+	slurm_msg_t msg;
+	resize_msg_t *request;
+	return_code_msg_t rc_msg = { 0 };
+
+	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
+					    REQUEST_STEPMGR_RESIZE_KILL_STEPS,
+					    true)))
+		goto done;
+
+	request = msg.data;
+
+	slurm_mutex_lock(&stepmgr_mutex);
+	rc = stepmgr_kill_steps_on_resize(job_step_ptr, request->nodelist);
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+	rc_msg.return_code = rc;
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
+	slurm_free_msg_members(&msg);
+
+done:
+	return rc;
+}
+
 static int _handle_srun_job_complete(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
@@ -2665,6 +2692,10 @@ slurmstepd_rpc_t stepd_proxy_rpcs[] = {
 	{
 		.msg_type = SRUN_NODE_FAIL,
 		.func = _handle_srun_node_fail,
+	},
+	{
+		.msg_type = REQUEST_STEPMGR_RESIZE_KILL_STEPS,
+		.func = _handle_stepmgr_resize_kill_steps,
 	},
 	{
 		.msg_type = SRUN_TIMEOUT,
