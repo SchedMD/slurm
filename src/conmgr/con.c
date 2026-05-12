@@ -418,8 +418,12 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	}
 
 	/* grab socket peer if possible */
-	if (con_flag(con, FLAG_IS_SOCKET) && has_out)
-		out_str = fd_resolve_peer(con->output_fd);
+	if (con_flag(con, FLAG_IS_SOCKET) && has_out) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+			out_str = fd_resolve_peer(con->output_fd);
+		else
+			out_str = fd_get_peer(con->output_fd);
+	}
 
 	if (has_out && !out_str)
 		out_str = _resolve_fd(con->output_fd, out_stat);
