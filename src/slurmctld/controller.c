@@ -2657,6 +2657,39 @@ static void *_slurmctld_background(void *no_data)
 			listeners_quiesce();
 
 			/*
+			 * Wait for backfill to release locks. Release the
+			 * lock once bf_active is 0: the backfill thread has
+			 * exited its main loop (it checks shutdown_time and
+			 * won't re-enter) and holding this past here would
+			 * deadlock conmgr_quiesce() against any in-flight
+			 * RPC handler that wants check_bf_running_lock.
+			 */
+			slurm_mutex_lock(&check_bf_running_lock);
+			while (slurmctld_diag_stats.bf_active) {
+				slurm_cond_wait(&check_bf_running_cond,
+						&check_bf_running_lock);
+			}
+			slurm_mutex_unlock(&check_bf_running_lock);
+
+			/*
+			 * Wait for main sched to release locks. Same as
+			 * above: release sched_mutex once sched_alive is 0,
+			 * or an in-flight RPC handler that ends up in
+			 * schedule() (e.g. _slurm_rpc_epilog_complete) will
+			 * deadlock conmgr_quiesce() below.
+			 */
+			slurm_mutex_lock(&sched_mutex);
+			while (sched_alive) {
+				/*
+				 * Wake up _sched_agent() if it is sleeping
+				 * before waiting for it to change state
+				 */
+				slurm_cond_broadcast(&sched_cond);
+				slurm_cond_wait(&sched_cond, &sched_mutex);
+			}
+			slurm_mutex_unlock(&sched_mutex);
+
+			/*
 			 * Persistent connection to slurmdbd must be closed
 			 * before conmgr quiesce to avoid possible deadlocks
 			 * where slurmdbd is waiting on slurmctld but
@@ -2688,35 +2721,12 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			xassert(!acct_db_conn);
 
-			/* Wait for backfill to release locks */
-			slurm_mutex_lock(&check_bf_running_lock);
-			while (slurmctld_diag_stats.bf_active) {
-				slurm_cond_wait(&check_bf_running_cond,
-						&check_bf_running_lock);
-			}
-
-			/* Wait for main sched to release locks */
-			slurm_mutex_lock(&sched_mutex);
-			while (sched_alive) {
-				/*
-				 * Wake up _sched_agent() if it is sleeping
-				 * before waiting for it to change state
-				 */
-				slurm_cond_broadcast(&sched_cond);
-				slurm_cond_wait(&sched_cond, &sched_mutex);
-			}
-
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
 			} else {
 				error("Semaphores still set after flushing RPCs, and finish scheduling. Can not save state");
 			}
-
-			/* Unblock main sched thread, so that it can shutdown */
-			slurm_mutex_unlock(&sched_mutex);
-			/* Unblock backfill thread, so that it can shutdown */
-			slurm_mutex_unlock(&check_bf_running_lock);
 
 			/*
 			 * Allow other connections to start processing again as
