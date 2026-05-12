@@ -167,6 +167,20 @@ extern char *fd_resolve_path(int fd);
 extern char *fd_resolve_peer(int fd);
 
 /*
+ * Get peer address for a given socket (fd) as a string.
+ *
+ * Unlike fd_resolve_peer(), this does not perform a reverse DNS lookup;
+ * the result is an IP literal (or unix path) only. Prefer this on hot
+ * paths where the resolved hostname is not actually consumed.
+ *
+ * Explicitly preserves value of errno.
+ *
+ * IN fd - file descriptor to query
+ * RET ptr to a peer address (must xfree()) or NULL on failure
+ */
+extern char *fd_get_peer(int fd);
+
+/*
  * Set inline Out of Band (OOB) data on socket fd
  */
 extern void fd_set_oob(int fd, int value);
