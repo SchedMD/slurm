@@ -283,7 +283,7 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     driver[0] = '\0';
 
-    if (processor_handle_count == 0) {
+    if (gpu_count == 0) {
         debug("AMDSMI: No GPU processor handles available for driver query");
         return;
     }
@@ -293,7 +293,7 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     const char *status_string = NULL;
     amdsmi_status_t rc =
-        amdsmi_get_gpu_driver_info(processor_handles[0], &dinfo);
+        amdsmi_get_gpu_driver_info(gpus[0].handle, &dinfo);
 
     if (rc != AMDSMI_STATUS_SUCCESS) {
         amdsmi_status_code_to_string(rc, &status_string);
@@ -328,9 +328,9 @@ static bool _amdsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
         return false;
     }
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return false;
     }
 
@@ -338,7 +338,7 @@ static bool _amdsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
 
     DEF_TIMERS;
     START_TIMER;
-    amdsmi_rc = amdsmi_get_clk_freq(processor_handles[dv_ind],
+    amdsmi_rc = amdsmi_get_clk_freq(gpus[dv_ind].handle,
                                     AMDSMI_CLK_TYPE_MEM,
                                     &amdsmi_freqs);
     END_TIMER;
@@ -1004,7 +1004,7 @@ extern void gpu_p_get_device_count(uint32_t *device_count)
         return;
     }
 
-    /* Ensure AMD-SMI is initialized and processor_handles[] is populated */
+    /* Ensure AMD-SMI is initialized and gpus[] is populated */
     _amdsmi_init();
 
     *device_count = gpu_count;
