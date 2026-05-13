@@ -66,8 +66,8 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 }
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
-if {$nb_nodes < 2} {
-	skip "Need 2 or more nodes in default partition"
+if {$nb_nodes < 4} {
+	skip "Need 4 or more nodes in default partition"
 }
 
 proc cleanup {} {
@@ -227,18 +227,7 @@ foreach comp_count {2 3 4} {
 	run_pmix_het_job $comp_count
 }
 
-#
-# OpenMPI can only run in multi-slurmd mode if no more than one node has
-# more than one task. Individual nodes with more than one task use shared
-# memory for communications and if more than one node is doing that, their
-# shared memory use collides. That means these MPI tests will work if five
-# nodes or more are available, otherwise some tests will fail. See test1.116
-# for a variation of this test that will work with OpenMPI and multi-slurmd
-# mode.
-#
-if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
-	skip "This test is incompatible with multiple slurmd systems"
-}
+log_warn "In commit dd4ac0ae0a6 (2019) we skipped the following test cases if using multi-slurmd, but test seems to be passing now."
 
 log_info "TEST OF HET GROUP 0,1"
 

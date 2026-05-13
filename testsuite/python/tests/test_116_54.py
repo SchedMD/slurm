@@ -12,7 +12,6 @@ covered here.
 import atf
 import os
 import pytest
-import shutil
 
 pytestmark = pytest.mark.skipif(
     atf.get_version() < (26, 5),
@@ -20,26 +19,11 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def find_mpich_mpicc():
-    """Locate MPICH's mpicc with `mpichversion`."""
-
-    mpichversion = shutil.which("mpichversion")
-    if mpichversion:
-        return os.path.join(os.path.dirname(mpichversion), "mpicc")
-    return None
-
-
-MPICH_MPICC = find_mpich_mpicc()
-
-
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    if not MPICH_MPICC or not os.path.isfile(MPICH_MPICC):
-        pytest.skip(
-            "Requires MPICH (mpichversion not found)",
-            allow_module_level=True,
-        )
-    atf.require_mpi("pmi2", MPICH_MPICC)
+    atf.require_lmod()
+    atf.module_load("mpich")
+    atf.require_mpi("pmi2", "mpicc")
     atf.require_auto_config("needs MPI/PMI2 configuration")
     atf.require_config_parameter("MpiDefault", "pmi2")
     atf.require_config_parameter("KillWait", "5")
@@ -52,7 +36,7 @@ def mpich_program():
     """Compile mpi_signal_test.c with MPICH's mpicc."""
     src = atf.properties["testsuite_scripts_dir"] + "/mpi_signal_test.c"
     bin_path = os.getcwd() + "/mpi_signal_test_pmi2"
-    atf.run_command(f"{MPICH_MPICC} -o {bin_path} {src}", fatal=True)
+    atf.run_command(f"mpicc -o {bin_path} {src}", fatal=True)
     return bin_path
 
 

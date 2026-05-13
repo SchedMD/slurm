@@ -57,11 +57,8 @@ log_debug "$env(PATH)"
 #
 # Test for existence of mpi compiler and totalview
 #
-if {[info exists mpicc] == 0} {
-	skip "mpicc not defined, can't perform mpi testing"
-}
-if {[file executable $mpicc] == 0} {
-	skip "$mpicc does not exist"
+if {[run_command_status "$mpicc --version"]} {
+	skip "This test requires $mpicc"
 }
 if {[info exists totalviewcli] == 0} {
 	skip "totalviewcli not defined, can't perform mpi testing"

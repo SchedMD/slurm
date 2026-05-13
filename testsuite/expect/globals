@@ -193,11 +193,7 @@ cset bkill     	 "${slurm_dir}/bin/bkill"
 cset bsub     	 "${slurm_dir}/bin/bsub"
 
 cset influx	"/usr/bin/influx"
-# If using MPICH-2 or other version of MPI requiring pmi libary, use this
-#cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
-#cset use_pmi	1
-# OR for other versions of MPICH, use this
-cset mpicc	"/usr/bin/mpicc"
+cset mpicc	"mpicc"
 cset nvcc	"/usr/bin/nvcc"
 cset use_pmi	0
 #cset upcc       "/usr/local/bin/upcc"
@@ -3102,7 +3098,7 @@ proc check_mpi {desired_mpi} {
 	global srun eol mpicc
 	set output [run_command_output -fail "$srun --mpi=list"]
 
-	return [regexp "${desired_mpi}${eol}" $output] && [file executable $mpicc]
+	return [expr {[regexp "${desired_mpi}${eol}" $output] && ![run_command_status "$mpicc --version"]}]
 }
 
 ################################################################
