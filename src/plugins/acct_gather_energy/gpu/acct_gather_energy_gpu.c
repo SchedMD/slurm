@@ -192,9 +192,6 @@ static void _update_energy(gpu_status_t *gpu, uint32_t readings)
 					e->current_watts);
 		e->previous_consumed_energy = e->consumed_energy;
 		e->consumed_energy += e->base_consumed_energy;
-		info("consumed energy: %"PRIu64" Joules, base consumed energy: %"PRIu64" Joules, ave watts: %u W, current watts: %u W",
-		       e->consumed_energy, e->base_consumed_energy,
-		       e->ave_watts, e->current_watts);
 	} else {
 		e->consumed_energy = 0;
 		e->ave_watts = 0;
@@ -221,6 +218,10 @@ static int _thread_update_node_energy(void)
 		rc = gpu_g_energy_read(i, &gpus[i]);
 		if (rc == SLURM_SUCCESS) {
 			_update_energy(&gpus[i], readings);
+			info("GPU %u: current watts: %u W, consumed energy: %"PRIu64" Joules, ave watts: %u W",
+			     i, gpus[i].energy.current_watts,
+			     gpus[i].energy.consumed_energy,
+			     gpus[i].energy.ave_watts);
 		} else {
 			error("%s: gpu_g_energy_read(%u) failed: %s",
 			      __func__, i, slurm_strerror(rc));
@@ -331,7 +332,6 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	 * track, just return.
 	 */
 	if (!saved_usable_gpus)
-		info("no saved GPUs for this job, can't update energy");
 		return;
 
 	log_flag(ENERGY, "%s: computing node energy from %u GPU(s)",
