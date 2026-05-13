@@ -192,14 +192,14 @@ static void _update_energy(gpu_status_t *gpu, uint32_t readings)
 					e->current_watts);
 		e->previous_consumed_energy = e->consumed_energy;
 		e->consumed_energy += e->base_consumed_energy;
-		debug2("consumed energy: %"PRIu64" Joules, base consumed energy: %"PRIu64" Joules, ave watts: %u W, current watts: %u W",
+		info("consumed energy: %"PRIu64" Joules, base consumed energy: %"PRIu64" Joules, ave watts: %u W, current watts: %u W",
 		       e->consumed_energy, e->base_consumed_energy,
 		       e->ave_watts, e->current_watts);
 	} else {
 		e->consumed_energy = 0;
 		e->ave_watts = 0;
 		e->current_watts = gpu->last_update_watt;
-		debug2("current watts: %u, no previous watts, can't calculate energy",
+		info("current watts: %u, no previous watts, can't calculate energy",
 		        e->current_watts);
 	}
 	e->poll_time = time(NULL);
@@ -251,7 +251,7 @@ static void *_thread_gpu_run(void *no_data)
 	struct timespec abs;
 
 	flag_energy_accounting_shutdown = false;
-
+	
 	slurm_mutex_lock(&gpu_mutex);
 	if (gpus_len && gpus) {
 		log_flag(ENERGY, "%s thread init: %u GPU(s) available",
