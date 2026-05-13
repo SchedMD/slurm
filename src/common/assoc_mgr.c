@@ -573,12 +573,25 @@ static int _foreach_rename_user_assoc(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_rename_user_wckey(void *x, void *arg)
+{
+	slurmdb_wckey_rec_t *wckey = x;
+	slurmdb_user_rec_t *user = arg;
+
+	if (xstrcmp(user->old_name, wckey->user))
+		return 0;
+
+	xfree(wckey->user);
+	wckey->user = xstrdup(user->name);
+	wckey->uid = user->uid;
+	debug3("changing wckey %d", wckey->id);
+	return 0;
+}
+
 /* Locks should be in place before calling this. */
 static int _change_user_name(slurmdb_user_rec_t *user)
 {
 	int rc = SLURM_SUCCESS;
-	list_itr_t *itr = NULL;
-	slurmdb_wckey_rec_t *wckey = NULL;
 	uid_t pw_uid;
 
 	xassert(user->name);
@@ -595,18 +608,9 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 		list_for_each_ro(assoc_mgr_assoc_list,
 				 _foreach_rename_user_assoc, user);
 
-	if (assoc_mgr_wckey_list) {
-		itr = list_iterator_create(assoc_mgr_wckey_list);
-		while ((wckey = list_next(itr))) {
-			if (!xstrcmp(user->old_name, wckey->user)) {
-				xfree(wckey->user);
-				wckey->user = xstrdup(user->name);
-				wckey->uid = user->uid;
-				debug3("changing wckey %d", wckey->id);
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_wckey_list)
+		list_for_each_ro(assoc_mgr_wckey_list,
+				 _foreach_rename_user_wckey, user);
 
 	return rc;
 }
