@@ -474,34 +474,33 @@ static int _clear_used_assoc_info(slurmdb_assoc_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_clear_used_limits(void *x, void *arg)
+{
+	slurmdb_used_limits_t *used_limits = x;
+	uint32_t *tres_cnt = arg;
+
+	used_limits->accrue_cnt = 0;
+	used_limits->jobs = 0;
+	if (used_limits->node_bitmap)
+		bit_clear_all(used_limits->node_bitmap);
+	if (used_limits->node_job_cnt) {
+		memset(used_limits->node_job_cnt, 0,
+		       sizeof(uint16_t) * node_record_count);
+	}
+	used_limits->submit_jobs = 0;
+	for (int i = 0; i < *tres_cnt; i++) {
+		used_limits->tres[i] = 0;
+		used_limits->tres_run_secs[i] = 0;
+	}
+	return 0;
+}
+
 static void _clear_qos_used_limit_list(list_t *used_limit_list, uint32_t tres_cnt)
 {
-	slurmdb_used_limits_t *used_limits = NULL;
-	list_itr_t *itr = NULL;
-	int i;
-
 	if (!used_limit_list || !list_count(used_limit_list))
 		return;
 
-	itr = list_iterator_create(used_limit_list);
-	while ((used_limits = list_next(itr))) {
-		used_limits->accrue_cnt = 0;
-		used_limits->jobs = 0;
-		if (used_limits->node_bitmap)
-			bit_clear_all(used_limits->node_bitmap);
-		if (used_limits->node_job_cnt) {
-			memset(used_limits->node_job_cnt, 0,
-			       sizeof(uint16_t) * node_record_count);
-		}
-		used_limits->submit_jobs = 0;
-		for (i=0; i<tres_cnt; i++) {
-			used_limits->tres[i] = 0;
-			used_limits->tres_run_secs[i] = 0;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	return;
+	list_for_each_ro(used_limit_list, _foreach_clear_used_limits, &tres_cnt);
 }
 
 static void _clear_qos_acct_limit_info(slurmdb_qos_rec_t *qos_ptr)
