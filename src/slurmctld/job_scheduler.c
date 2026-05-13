@@ -4402,7 +4402,7 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 		return;
 	part_node_cnt = job_ptr->part_ptr->total_nodes;
 	part_cpu_cnt = job_ptr->part_ptr->total_cpus;
-	if (part_cpu_cnt == 0)
+	if (!part_node_cnt || !part_cpu_cnt)
 		return;
 	if (part_cpu_cnt > part_node_cnt)
 		delay_start.part_cpus_per_node = part_cpu_cnt / part_node_cnt;
