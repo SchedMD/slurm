@@ -604,11 +604,18 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 	return rc;
 }
 
+static int _foreach_qos_append_xstrdup(void *x, void *arg)
+{
+	char *qos_char = x;
+	list_t *dst = arg;
+
+	list_append(dst, xstrdup(qos_char));
+	return 0;
+}
+
 static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 {
 	slurmdb_assoc_rec_t *parent_assoc = NULL;
-	char *qos_char = NULL;
-	list_itr_t *itr = NULL;
 
 	if (!assoc)
 		return SLURM_ERROR;
@@ -624,10 +631,8 @@ static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 	    || !list_count(parent_assoc->qos_list))
 		return SLURM_SUCCESS;
 
-	itr = list_iterator_create(parent_assoc->qos_list);
-	while ((qos_char = list_next(itr)))
-		list_append(assoc->qos_list, xstrdup(qos_char));
-	list_iterator_destroy(itr);
+	list_for_each_ro(parent_assoc->qos_list, _foreach_qos_append_xstrdup,
+		      assoc->qos_list);
 
 	return SLURM_SUCCESS;
 }
