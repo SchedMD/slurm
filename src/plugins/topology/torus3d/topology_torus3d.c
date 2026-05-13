@@ -792,13 +792,70 @@ static void _min_wrap_span(bitstr_t *axis_bitmap, uint16_t *start,
 	*span = axis_size - max_gap;
 }
 
-static uint32_t _morton_encode(uint16_t x, uint16_t y, uint16_t z)
+static uint16_t _bits_needed(uint16_t span)
+{
+	uint16_t bits = 0;
+
+	xassert(span);
+
+	span--;
+	while (span) {
+		bits++;
+		span >>= 1;
+	}
+
+	return bits;
+}
+
+/*
+ * Pre-compute per-axis bit budgets and scale factors for Morton encoding.
+ * Total interleaved bits are capped at TOPO_RANK_ID_SHIFT. When the
+ * natural bit widths exceed the budget, the largest axes are scaled down
+ * first (right-shifted), losing only fine-grained spatial resolution.
+ */
+static void _morton_scale(uint16_t x_span, uint16_t y_span, uint16_t z_span,
+			  uint16_t *bx, uint16_t *by, uint16_t *bz,
+			  uint16_t *sx, uint16_t *sy, uint16_t *sz)
+{
+	uint16_t bx_orig = _bits_needed(x_span);
+	uint16_t by_orig = _bits_needed(y_span);
+	uint16_t bz_orig = _bits_needed(z_span);
+
+	*bx = bx_orig;
+	*by = by_orig;
+	*bz = bz_orig;
+
+	while ((*bx + *by + *bz) > TOPO_RANK_ID_SHIFT) {
+		if ((*bx >= *by) && (*bx >= *bz))
+			(*bx)--;
+		else if (*by >= *bz)
+			(*by)--;
+		else
+			(*bz)--;
+	}
+
+	*sx = bx_orig - *bx;
+	*sy = by_orig - *by;
+	*sz = bz_orig - *bz;
+}
+
+/*
+ * Coordinates must be scaled (right-shifted) to fit their bit budgets.
+ */
+static uint32_t _morton_encode(uint16_t x, uint16_t y, uint16_t z, uint16_t bx,
+			       uint16_t by, uint16_t bz)
 {
 	uint32_t result = 0;
-	for (int i = 0; i < 5; i++) {
-		result |= ((uint32_t) ((x >> i) & 1)) << (3 * i);
-		result |= ((uint32_t) ((y >> i) & 1)) << (3 * i + 1);
-		result |= ((uint32_t) ((z >> i) & 1)) << (3 * i + 2);
+	int pos = 0;
+	uint16_t max_bits = MAX(bx, MAX(by, bz));
+
+	for (int i = 0; i < max_bits; i++) {
+		if (i < bx)
+			result |= ((uint32_t) ((x >> i) & 1)) << pos++;
+		if (i < by)
+			result |= ((uint32_t) ((y >> i) & 1)) << pos++;
+		if (i < bz)
+			result |= ((uint32_t) ((z >> i) & 1)) << pos++;
 	}
 	return result;
 }
@@ -843,6 +900,10 @@ static void _find_starting_coords(torus3d_record_t *torus,
  * rank) that approximates spatial locality - nodes that are close together in
  * the torus are also close together in rank.
  *
+ * Bit budget per axis is computed from the allocation's span and capped at
+ * TOPO_RANK_ID_SHIFT (16) bits total. Axes that don't fit are scaled down
+ * (right-shifted), losing only fine-grained spatial resolution.
+ *
  * These node ranks aren't task IDs. They drive a sort in _task_layout_topo()
  * (slurm_step_layout.c), which assigns task IDs in rank order.
  */
@@ -874,6 +935,7 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 		uint16_t x_start, y_start, z_start;
 		uint16_t x_span, y_span, z_span;
 		uint32_t rank_idx = 0;
+		uint16_t bx, by, bz, sx, sy, sz;
 
 		if (!bit_overlap_any(torus->nodes_bitmap, node_bitmap))
 			continue;
@@ -903,6 +965,9 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 					      &y_span, &z_span);
 		}
 
+		_morton_scale(x_span, y_span, z_span, &bx, &by, &bz, &sx, &sy,
+			      &sz);
+
 		for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
 			if (!bit_test(torus->nodes_bitmap, i)) {
 				rank_idx++;
@@ -920,7 +985,8 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 				(*node_rank)[rank_idx] =
 					((uint32_t) (t + 1)
 					 << TOPO_RANK_ID_SHIFT) |
-					_morton_encode(rx, ry, rz);
+					_morton_encode(rx >> sx, ry >> sy,
+						       rz >> sz, bx, by, bz);
 				break;
 			}
 			rank_idx++;
