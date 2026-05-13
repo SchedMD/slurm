@@ -1298,39 +1298,39 @@ static int _post_qos_list(list_t *qos_list)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_post_res(void *x, void *arg)
+{
+	slurmdb_res_rec_t *object = x;
+
+	if (object->clus_res_list && list_count(object->clus_res_list)) {
+		xassert(!object->clus_res_rec);
+
+		while ((object->clus_res_rec =
+			list_pop(object->clus_res_list))) {
+			/*
+			 * Only update the local cluster's res, only one per
+			 * res record, so throw the others away.
+			 */
+			if (!xstrcasecmp(object->clus_res_rec->cluster,
+					 slurm_conf.cluster_name))
+				break;
+			slurmdb_destroy_clus_res_rec(object->clus_res_rec);
+		}
+		FREE_NULL_LIST(object->clus_res_list);
+	}
+
+	if (!object->clus_res_rec) {
+		error("Bad resource given %s@%s", object->name, object->server);
+		return 1;
+	}
+
+	return 0;
+}
+
 static int _post_res_list(list_t *res_list)
 {
-	if (res_list && !slurmdbd_conf) {
-		slurmdb_res_rec_t *object = NULL;
-		list_itr_t *itr = list_iterator_create(res_list);
-		while ((object = list_next(itr))) {
-			if (object->clus_res_list
-			    && list_count(object->clus_res_list)) {
-				xassert(!object->clus_res_rec);
-
-				while ((object->clus_res_rec =
-					list_pop(object->clus_res_list))) {
-					/* only update the local clusters
-					 * res, only one per res
-					 * record, so throw the others away. */
-					if (!xstrcasecmp(
-						object->clus_res_rec->cluster,
-						slurm_conf.cluster_name))
-						break;
-					slurmdb_destroy_clus_res_rec(
-						object->clus_res_rec);
-				}
-				FREE_NULL_LIST(object->clus_res_list);
-			}
-
-			if (!object->clus_res_rec) {
-				error("Bad resource given %s@%s",
-				      object->name, object->server);
-				list_delete_item(itr);
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+	if (res_list && !slurmdbd_conf)
+		list_delete_all(res_list, _foreach_post_res, NULL);
 
 	if (init_setup.sync_license_notify)
 		init_setup.sync_license_notify(res_list);
