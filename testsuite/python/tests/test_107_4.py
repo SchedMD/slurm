@@ -5,6 +5,8 @@ import re
 import pytest
 import atf
 
+pytestmark = pytest.mark.slow
+
 
 def setup_module():
     atf.require_nodes(4, [("CPUs", 2)])
