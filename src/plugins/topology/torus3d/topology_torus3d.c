@@ -242,16 +242,23 @@ static void _add_node_to_placements(torus3d_record_t *torus,
 		bit_set(ctx->placement_nodes_bitmap, node_idx);
 }
 
+static uint32_t _find_torus_index(torus3d_record_t *torus, uint32_t node_idx)
+{
+	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		if (torus->nodes_map[idx] == node_idx)
+			return idx;
+	}
+	return NO_VAL;
+}
+
 static void _remove_node_from_torus(torus3d_record_t *torus,
 				    torus3d_context_t *ctx,
 				    node_record_t *node_ptr)
 {
-	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-		if (torus->nodes_map[idx] == node_ptr->index) {
-			torus->nodes_map[idx] = NO_VAL;
-			break;
-		}
-	}
+	uint32_t idx = _find_torus_index(torus, node_ptr->index);
+
+	if (idx != NO_VAL)
+		torus->nodes_map[idx] = NO_VAL;
 
 	bit_clear(torus->nodes_bitmap, node_ptr->index);
 
@@ -362,12 +369,10 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	}
 
 	if (in_torus) {
-		for (uint32_t idx = 0; idx < torus_dst->node_count; idx++) {
-			if (torus_dst->nodes_map[idx] == node_ptr->index) {
-				torus_dst->nodes_map[idx] = NO_VAL;
-				break;
-			}
-		}
+		uint32_t old_idx =
+			_find_torus_index(torus_dst, node_ptr->index);
+		if (old_idx != NO_VAL)
+			torus_dst->nodes_map[old_idx] = NO_VAL;
 	}
 
 	torus_dst->nodes_map[linear_idx] = node_ptr->index;
@@ -457,13 +462,13 @@ extern int topology_p_get_node_addr(char *node_name, char **paddr,
 		return SLURM_ERROR;
 
 	for (int i = 0; i < ctx->record_count; i++) {
+		uint32_t idx;
 		torus3d_record_t *torus = &ctx->records[i];
 		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
 			continue;
-		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		idx = _find_torus_index(torus, node_ptr->index);
+		if (idx != NO_VAL) {
 			uint16_t x, y, z;
-			if (torus->nodes_map[idx] != node_ptr->index)
-				continue;
 			torus3d_index_to_coord(torus, idx, &x, &y, &z);
 			*paddr = xstrdup_printf("%s:%u:%u:%u.%s", torus->name,
 						x, y, z, node_name);
@@ -969,26 +974,25 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			      &sz);
 
 		for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+			uint16_t x, y, z, rx, ry, rz;
+			uint32_t idx;
+
 			if (!bit_test(torus->nodes_bitmap, i)) {
 				rank_idx++;
 				continue;
 			}
-			for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-				uint16_t x, y, z, rx, ry, rz;
 
-				if (torus->nodes_map[idx] != (uint32_t) i)
-					continue;
-				torus3d_index_to_coord(torus, idx, &x, &y, &z);
-				rx = (x + torus->x - x_start) % torus->x;
-				ry = (y + torus->y - y_start) % torus->y;
-				rz = (z + torus->z - z_start) % torus->z;
-				(*node_rank)[rank_idx] =
-					((uint32_t) (t + 1)
-					 << TOPO_RANK_ID_SHIFT) |
-					_morton_encode(rx >> sx, ry >> sy,
-						       rz >> sz, bx, by, bz);
-				break;
-			}
+			idx = _find_torus_index(torus, i);
+			xassert(idx != NO_VAL);
+
+			torus3d_index_to_coord(torus, idx, &x, &y, &z);
+			rx = (x + torus->x - x_start) % torus->x;
+			ry = (y + torus->y - y_start) % torus->y;
+			rz = (z + torus->z - z_start) % torus->z;
+			(*node_rank)[rank_idx] =
+				((uint32_t) (t + 1) << TOPO_RANK_ID_SHIFT) |
+				_morton_encode(rx >> sx, ry >> sy, rz >> sz, bx,
+					       by, bz);
 			rank_idx++;
 		}
 	}
@@ -1006,18 +1010,20 @@ extern void topology_p_get_topology_str(node_record_t *node_ptr,
 		return;
 
 	for (int i = 0; i < ctx->record_count; i++) {
+		uint32_t idx;
+		uint16_t x, y, z;
 		torus3d_record_t *torus = &ctx->records[i];
+
 		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
 			continue;
-		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-			uint16_t x, y, z;
-			if (torus->nodes_map[idx] != node_ptr->index)
-				continue;
-			torus3d_index_to_coord(torus, idx, &x, &y, &z);
-			xstrfmtcat(*topology_str_ptr, "%s%s:%s:%u:%u:%u",
-				   *topology_str_ptr ? "," : "", tctx->name,
-				   torus->name, x, y, z);
-			return;
-		}
+
+		idx = _find_torus_index(torus, node_ptr->index);
+
+		xassert(idx != NO_VAL);
+		torus3d_index_to_coord(torus, idx, &x, &y, &z);
+		xstrfmtcat(*topology_str_ptr, "%s%s:%s:%u:%u:%u",
+			   *topology_str_ptr ? "," : "", tctx->name,
+			   torus->name, x, y, z);
+		return;
 	}
 }
