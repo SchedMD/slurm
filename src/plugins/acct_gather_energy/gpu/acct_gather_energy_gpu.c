@@ -251,7 +251,7 @@ static void *_thread_gpu_run(void *no_data)
 	struct timespec abs;
 
 	flag_energy_accounting_shutdown = false;
-	
+
 	slurm_mutex_lock(&gpu_mutex);
 	if (gpus_len && gpus) {
 		log_flag(ENERGY, "%s thread init: %u GPU(s) available",
@@ -408,6 +408,7 @@ static int _get_joules_task(uint16_t delta)
 
 	/* If there are no gres then there is no energy to get, just return. */
 	if (!gres_get_gres_cnt())
+		info("no GPU gres, can't get energy");
 		return SLURM_SUCCESS;
 
 	log_flag(ENERGY, "%s: requesting job energy from slurmd (delta=%u, first=%s)",
