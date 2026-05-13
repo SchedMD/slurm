@@ -3213,14 +3213,53 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	return SLURM_SUCCESS;
 }
 
+static int _list_find_wckey(void *x, void *key)
+{
+	slurmdb_wckey_rec_t *found_wckey = x;
+	slurmdb_wckey_rec_t *wckey = key;
+
+	/* only and always check for on the slurmdbd */
+	if (slurmdbd_conf) {
+		if (!wckey->cluster) {
+			error("No cluster name was given to check against, we need one to get a wckey.");
+			return 0;
+		}
+
+		if (xstrcasecmp(wckey->cluster, found_wckey->cluster)) {
+			debug4("not the right cluster");
+			return 0;
+		}
+	}
+
+	if (wckey->id)
+		return (wckey->id == found_wckey->id);
+
+	if (wckey->uid != NO_VAL) {
+		if (wckey->uid != found_wckey->uid) {
+			debug4("not the right user %u != %u",
+			       wckey->uid, found_wckey->uid);
+			return 0;
+		}
+	} else if (wckey->user &&
+		   xstrcasecmp(wckey->user, found_wckey->user))
+		return 0;
+
+	if (wckey->name &&
+	    (!found_wckey->name ||
+	     xstrcasecmp(wckey->name, found_wckey->name))) {
+		debug4("not the right name %s != %s",
+		       wckey->name, found_wckey->name);
+		return 0;
+	}
+	return 1;
+}
+
 extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				   int enforce,
 				   slurmdb_wckey_rec_t **wckey_pptr,
 				   bool locked)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_wckey_rec_t * found_wckey = NULL;
-	slurmdb_wckey_rec_t * ret_wckey = NULL;
+	slurmdb_wckey_rec_t *ret_wckey = NULL;
 	assoc_mgr_lock_t locks = { .wckey = READ_LOCK };
 
 	if (wckey_pptr)
@@ -3307,53 +3346,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 
 	xassert(verify_assoc_lock(WCKEY_LOCK, READ_LOCK));
 
-	itr = list_iterator_create(assoc_mgr_wckey_list);
-	while ((found_wckey = list_next(itr))) {
-		/* only and always check for on the slurmdbd */
-		if (slurmdbd_conf) {
-			if (!wckey->cluster) {
-				error("No cluster name was given "
-				      "to check against, "
-				      "we need one to get a wckey.");
-				continue;
-			}
-
-			if (xstrcasecmp(wckey->cluster, found_wckey->cluster)) {
-				debug4("not the right cluster");
-				continue;
-			}
-		}
-
-		if (wckey->id) {
-			if (wckey->id == found_wckey->id) {
-				ret_wckey = found_wckey;
-				break;
-			}
-			continue;
-		} else {
-			if (wckey->uid != NO_VAL) {
-				if (wckey->uid != found_wckey->uid) {
-					debug4("not the right user %u != %u",
-					       wckey->uid, found_wckey->uid);
-					continue;
-				}
-			} else if (wckey->user &&
-				   xstrcasecmp(wckey->user, found_wckey->user))
-				continue;
-
-			if (wckey->name
-			    && (!found_wckey->name
-				|| xstrcasecmp(wckey->name,
-					       found_wckey->name))) {
-				debug4("not the right name %s != %s",
-				       wckey->name, found_wckey->name);
-				continue;
-			}
-		}
-		ret_wckey = found_wckey;
-		break;
-	}
-	list_iterator_destroy(itr);
+	ret_wckey = list_find_first_ro(assoc_mgr_wckey_list, _list_find_wckey,
+				    wckey);
 
 	if (!ret_wckey) {
 		if (!locked)
