@@ -1057,32 +1057,37 @@ static void _set_assoc_norm_priority(slurmdb_assoc_rec_t *assoc)
 			(double)assoc->priority / (double)g_assoc_max_priority;
 }
 
+static int _foreach_track_max_assoc_prio(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	if ((assoc->priority != INFINITE) &&
+	    (assoc->priority > g_assoc_max_priority))
+		g_assoc_max_priority = assoc->priority;
+	return 0;
+}
+
+static int _foreach_set_assoc_norm_priority(void *x, void *arg)
+{
+	_set_assoc_norm_priority(x);
+	return 0;
+}
+
 static void _calculate_assoc_norm_priorities(bool new_max)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc;
-
 	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
 	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
 	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
 	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-
 	if (new_max) {
 		g_assoc_max_priority = 0;
-		while ((assoc = list_next(itr))) {
-			if ((assoc->priority != INFINITE) &&
-			    assoc->priority > g_assoc_max_priority)
-				g_assoc_max_priority = assoc->priority;
-		}
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_track_max_assoc_prio, NULL);
 	}
 
-	list_iterator_reset(itr);
-	while ((assoc = list_next(itr)))
-		_set_assoc_norm_priority(assoc);
-
-	list_iterator_destroy(itr);
+	list_for_each_ro(assoc_mgr_assoc_list,
+			 _foreach_set_assoc_norm_priority, NULL);
 }
 
 static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
