@@ -78,6 +78,13 @@ typedef struct {
 } foreach_assoc_filter_t;
 
 typedef struct {
+	buf_t *buffer;
+	foreach_assoc_filter_t filter;
+	uint16_t protocol_version;
+	list_t *qos_list;
+} foreach_info_pack_msg_t;
+
+typedef struct {
 	bool flushed;
 	list_t *qos_list;
 } foreach_update_qos_t;
@@ -3664,223 +3671,173 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	 */
 }
 
+static int _foreach_filter_assoc_for_info(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc_rec = x;
+	foreach_info_pack_msg_t *state = arg;
+
+	if (_assoc_passes_filter(assoc_rec, &state->filter))
+		list_append(state->filter.ret_list, assoc_rec);
+
+	return 0;
+}
+
+static int _foreach_pack_assoc_with_usage(void *x, void *arg)
+{
+	foreach_info_pack_msg_t *state = arg;
+
+	slurmdb_pack_assoc_rec_with_usage(x, state->protocol_version,
+					  state->buffer);
+	return 0;
+}
+
+static int _foreach_filter_qos_for_info(void *x, void *arg)
+{
+	char *qos_name = x;
+	foreach_info_pack_msg_t *state = arg;
+	slurmdb_qos_rec_t *qos_rec;
+
+	qos_rec = list_find_first_ro(assoc_mgr_qos_list,
+				     slurmdb_find_qos_in_list_by_name,
+				     qos_name);
+	if (qos_rec)
+		list_append(state->filter.ret_list, qos_rec);
+	return 0;
+}
+
+static int _foreach_pack_qos_with_usage(void *x, void *arg)
+{
+	foreach_info_pack_msg_t *state = arg;
+
+	slurmdb_pack_qos_rec_with_usage(x, state->protocol_version,
+					state->buffer);
+	return 0;
+}
+
+static int _foreach_filter_user_for_info(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user_rec = x;
+	foreach_info_pack_msg_t *state = arg;
+
+	if (!state->filter.is_admin &&
+	    (slurm_conf.private_data & PRIVATE_DATA_USERS) &&
+	    xstrcasecmp(user_rec->name, state->filter.user->name))
+		return 0;
+
+	if (state->filter.user_list &&
+	    !list_find_first_ro(state->filter.user_list,
+				slurm_find_char_in_list, user_rec->name))
+		return 0;
+
+	list_append(state->filter.ret_list, user_rec);
+	return 0;
+}
+
+static int _foreach_pack_user(void *x, void *arg)
+{
+	foreach_info_pack_msg_t *state = arg;
+
+	slurmdb_pack_user_rec(x, state->protocol_version, state->buffer);
+	return 0;
+}
+
 extern buf_t *assoc_mgr_info_get_pack_msg(
 	assoc_mgr_info_request_msg_t *msg, uid_t uid,
 	void *db_conn, uint16_t protocol_version)
 {
-	list_itr_t *itr = NULL;
-	list_itr_t *user_itr = NULL, *acct_itr = NULL, *qos_itr = NULL;
-	slurmdb_qos_rec_t *qos_rec = NULL;
-	slurmdb_assoc_rec_t *assoc_rec = NULL;
-	list_t *ret_list = NULL, *tmp_list;
-	char *tmp_char = NULL;
+	list_t *tmp_list;
 	slurmdb_user_rec_t user = { .uid = uid };
-	slurmdb_user_rec_t *user_rec = NULL;
-	int is_admin=1;
-	void *object;
+	foreach_info_pack_msg_t state = {
+		.filter = { .is_admin = true, .user = &user },
+		.protocol_version = protocol_version,
+	};
 	uint32_t flags = 0;
-
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK };
 	buf_t *buffer = NULL;
 
 	if (msg) {
 		if (msg->user_list && list_count(msg->user_list))
-			user_itr = list_iterator_create(msg->user_list);
+			state.filter.user_list = msg->user_list;
 
 		if (msg->acct_list && list_count(msg->acct_list))
-			acct_itr = list_iterator_create(msg->acct_list);
+			state.filter.acct_list = msg->acct_list;
 
 		if (msg->qos_list && list_count(msg->qos_list))
-			qos_itr = list_iterator_create(msg->qos_list);
+			state.qos_list = msg->qos_list;
 		flags = msg->flags;
 	}
 
 	if (slurm_conf.private_data &
 	    (PRIVATE_DATA_USAGE | PRIVATE_DATA_USERS)) {
-		is_admin = 0;
-		/* Check permissions of the requesting user.
-		 */
-		if ((uid == slurm_conf.slurm_user_id || uid == 0)
-		    || assoc_mgr_get_admin_level(db_conn, uid)
-		    >= SLURMDB_ADMIN_OPERATOR)
-			is_admin = 1;
-		else {
-			if (assoc_mgr_fill_in_user(
-				    db_conn, &user,
-				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false)
-			    == SLURM_ERROR) {
-				debug3("User %u not found", user.uid);
-				goto end_it;
-			}
+		state.filter.is_admin = false;
+		/* Check permissions of the requesting user. */
+		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
+		    (assoc_mgr_get_admin_level(db_conn, uid) >=
+		     SLURMDB_ADMIN_OPERATOR))
+			state.filter.is_admin = true;
+		else if (assoc_mgr_fill_in_user(db_conn, &user,
+						ACCOUNTING_ENFORCE_ASSOCS, NULL,
+						false) == SLURM_ERROR) {
+			debug3("User %u not found", user.uid);
+			return NULL;
 		}
 	}
 
 	/* This is where we start to pack */
 	buffer = init_buf(BUF_SIZE);
+	state.buffer = buffer;
 
 	packstr_array(assoc_mgr_tres_name_array, g_tres_count, buffer);
 
-	ret_list = list_create(NULL);
+	state.filter.ret_list = list_create(NULL);
 
 	assoc_mgr_lock(&locks);
 
-	if (!(flags & ASSOC_MGR_INFO_FLAG_ASSOC))
-		goto no_assocs;
-
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	while ((assoc_rec = list_next(itr))) {
-		if (user_itr && assoc_rec->user) {
-			while ((tmp_char = list_next(user_itr))) {
-				if (!xstrcasecmp(tmp_char, assoc_rec->user))
-					break;
-			}
-			list_iterator_reset(user_itr);
-			/* not correct user */
-			if (!tmp_char)
-				continue;
-		}
-
-		if (acct_itr) {
-			while ((tmp_char = list_next(acct_itr))) {
-				if (!xstrcasecmp(tmp_char, assoc_rec->acct))
-					break;
-			}
-			list_iterator_reset(acct_itr);
-			/* not correct account */
-			if (!tmp_char)
-				continue;
-		}
-
-		if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
-			if (!is_admin) {
-				list_itr_t *itr = NULL;
-				slurmdb_coord_rec_t *coord = NULL;
-
-				if (assoc_rec->user &&
-				    !xstrcmp(assoc_rec->user, user.name))
-					goto is_user;
-
-				if (!user.coord_accts) {
-					debug4("This user isn't a coord.");
-					goto bad_user;
-				}
-
-				if (!assoc_rec->acct) {
-					debug("No account name given "
-					      "in association.");
-					goto bad_user;
-				}
-
-				itr = list_iterator_create(user.coord_accts);
-				while ((coord = list_next(itr))) {
-					if (!xstrcasecmp(coord->name,
-							 assoc_rec->acct))
-						break;
-				}
-				list_iterator_destroy(itr);
-
-				if (coord)
-					goto is_user;
-
-			bad_user:
-				continue;
-			}
-		}
-	is_user:
-
-		list_append(ret_list, assoc_rec);
-	}
-	list_iterator_destroy(itr);
-
-no_assocs:
+	if (flags & ASSOC_MGR_INFO_FLAG_ASSOC)
+		list_for_each(assoc_mgr_assoc_list,
+			      _foreach_filter_assoc_for_info, &state);
 
 	/* pack the associations requested/allowed */
-	pack32(list_count(ret_list), buffer);
-	itr = list_iterator_create(ret_list);
-	while ((object = list_next(itr)))
-		slurmdb_pack_assoc_rec_with_usage(
-			object, protocol_version, buffer);
-	list_iterator_destroy(itr);
-	list_flush(ret_list);
-
-	if (!(flags & ASSOC_MGR_INFO_FLAG_QOS)) {
-		tmp_list = ret_list;
-		goto no_qos;
-	}
+	pack32(list_count(state.filter.ret_list), buffer);
+	list_for_each(state.filter.ret_list, _foreach_pack_assoc_with_usage,
+		      &state);
+	list_flush(state.filter.ret_list);
 
 	/* now filter out the qos */
-	if (qos_itr) {
-		while ((tmp_char = list_next(qos_itr)))
-			if ((qos_rec = list_find_first(
-				     assoc_mgr_qos_list,
-				     slurmdb_find_qos_in_list_by_name,
-				     tmp_char)))
-				list_append(ret_list, qos_rec);
-		tmp_list = ret_list;
-	} else
+	if (!(flags & ASSOC_MGR_INFO_FLAG_QOS)) {
+		tmp_list = state.filter.ret_list;
+	} else if (state.qos_list) {
+		list_for_each(state.qos_list, _foreach_filter_qos_for_info,
+			      &state);
+		tmp_list = state.filter.ret_list;
+	} else {
 		tmp_list = assoc_mgr_qos_list;
+	}
 
-no_qos:
 	/* pack the qos requested */
 	if (tmp_list) {
 		pack32(list_count(tmp_list), buffer);
-		itr = list_iterator_create(tmp_list);
-		while ((object = list_next(itr)))
-			slurmdb_pack_qos_rec_with_usage(
-				object, protocol_version, buffer);
-		list_iterator_destroy(itr);
-	} else
+		list_for_each(tmp_list, _foreach_pack_qos_with_usage, &state);
+	} else {
 		pack32(0, buffer);
-
-	if (qos_itr)
-		list_flush(ret_list);
-
-	if (!(flags & ASSOC_MGR_INFO_FLAG_USERS) || !assoc_mgr_user_list)
-		goto no_users;
-
-	/* now filter out the users */
-	itr = list_iterator_create(assoc_mgr_user_list);
-	while ((user_rec = list_next(itr))) {
-		if (!is_admin &&
-		    (slurm_conf.private_data & PRIVATE_DATA_USERS) &&
-		    xstrcasecmp(user_rec->name, user.name))
-			continue;
-
-		if (user_itr) {
-			while ((tmp_char = list_next(user_itr)))
-				if (!xstrcasecmp(tmp_char, user_rec->name))
-					break;
-			list_iterator_reset(user_itr);
-			/* not correct user */
-			if (!tmp_char)
-				continue;
-		}
-
-		list_append(ret_list, user_rec);
 	}
 
-no_users:
+	if (state.qos_list)
+		list_flush(state.filter.ret_list);
+
+	/* now filter out the users */
+	if ((flags & ASSOC_MGR_INFO_FLAG_USERS) && assoc_mgr_user_list)
+		list_for_each(assoc_mgr_user_list,
+			      _foreach_filter_user_for_info, &state);
 
 	/* pack the users requested/allowed */
-	pack32(list_count(ret_list), buffer);
-	itr = list_iterator_create(ret_list);
-	while ((object = list_next(itr)))
-		slurmdb_pack_user_rec(object, protocol_version, buffer);
-	list_iterator_destroy(itr);
-//	list_flush(ret_list);
+	pack32(list_count(state.filter.ret_list), buffer);
+	list_for_each(state.filter.ret_list, _foreach_pack_user, &state);
 
-	FREE_NULL_LIST(ret_list);
+	FREE_NULL_LIST(state.filter.ret_list);
 
 	assoc_mgr_unlock(&locks);
-
-end_it:
-	if (user_itr)
-		list_iterator_destroy(user_itr);
-	if (acct_itr)
-		list_iterator_destroy(acct_itr);
-	if (qos_itr)
-		list_iterator_destroy(qos_itr);
 
 	return buffer;
 }
