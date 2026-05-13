@@ -529,9 +529,14 @@ def run_command(
                     allow_module_level=True,
                 )
             # Use su to honor ulimits, specially core
+            preserve = [
+                "PATH",
+                "SLURM_TESTSUITE_CONF",
+                *sorted(properties["lmod-touched-vars"]),
+            ]
             cmd = [
                 "sudo",
-                "--preserve-env=PATH",
+                f"--preserve-env={','.join(preserve)}",
                 "-u",
                 user,
                 "/bin/bash",
@@ -1892,11 +1897,18 @@ def run_expect_test(test_num=None):
             .replace("_", ".")
         )
 
-    # Most expect tests assume that are run by SlurmUser
+    # Most expect tests assume that are run by SlurmUser.
+    # We need to preserve any env vars that module_load/unload/purge touched, so the lmod-loaded
+    # and SLURM_TESTSUITE_CONF.
+    preserve = [
+        "PATH",
+        "SLURM_TESTSUITE_CONF",
+        *sorted(properties["lmod-touched-vars"]),
+    ]
     cmd = (
         f"sudo"
         f" -u {properties['slurm-user']}"
-        f" --preserve-env=SLURM_TESTSUITE_CONF"
+        f" --preserve-env={','.join(preserve)}"
         f" SLURM_LOCAL_GLOBALS_FILE={properties['expect_globals_file']}"
         f" {properties['expect_dir']}/test{test_num}"
     )
@@ -2678,6 +2690,66 @@ def require_mpi(mpi_option="pmix", mpi_compiler="mpicc"):
             f"This test needs to be able to use --mpi={mpi_option}",
             allow_module_level=True,
         )
+
+
+def require_lmod():
+    """
+    Skips if Lmod (environment modules) is not available.
+    """
+
+    require_tool("lmod")
+
+
+def _module(action, *modules):
+    """
+    Run `lmod python <action> [<modules>...]` and apply env changes
+    to the current Python process's os.environ.
+    """
+
+    # Lmod's `python` shell emits Python code that mutates os.environ.
+    output = run_command_output(
+        f"lmod python {action} {' '.join(modules)}", fatal=True, quiet=True
+    )
+
+    # Applying the module and saving the difference so we can preserve them
+    # in sudo commands
+    before = dict(os.environ)
+    exec(output, {"os": os})
+    for k in set(before) | set(os.environ):
+        if before.get(k) != os.environ.get(k):
+            properties["lmod-touched-vars"].add(k)
+
+
+def module_load(*modules):
+    """
+    Load Lmod environment module(s) into the current process's env.
+
+    Args:
+        *modules: Module name(s) to load (e.g. "openmpi/5.0.10").
+
+    Example:
+        >>> require_lmod()
+        >>> module_load("openmpi/5.0.10")
+    """
+
+    _module("load", *modules)
+
+
+def module_unload(*modules):
+    """
+    Unload Lmod environment module(s) from the current process's env.
+
+    Args:
+        *modules: Module name(s) to unload.
+    """
+
+    _module("unload", *modules)
+
+
+def module_purge():
+    """Unload all currently loaded Lmod environment modules."""
+
+    _module("purge")
 
 
 def require_influxdb(influx_client="influx", jobacct_gather="jobacct_gather/cgroup"):
@@ -5906,6 +5978,7 @@ else:
             properties["slurm-user"] = match.group(1)
 
 properties["submitted-jobs"] = []
+properties["lmod-touched-vars"] = set()
 if "slurmtestuser" in testsuite_config:
     properties["test-user"] = testsuite_config["slurmtestuser"]
     properties["test-user-set"] = True
