@@ -40,6 +40,9 @@
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/threadpool.h"
+
+#include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gpu.h"
@@ -404,10 +407,8 @@ static int _get_joules_task(uint16_t delta)
 	xassert(context_id != -1);
 
 	/* If there are no gres then there is no energy to get, just return. */
-	if (!gres_get_gres_cnt()) {
-		info("no GPU gres, can't get energy");
+	if (!gres_get_gres_cnt())
 		return SLURM_SUCCESS;
-	}
 
 	log_flag(ENERGY, "%s: requesting job energy from slurmd (delta=%u, first=%s)",
 		 __func__, delta, stepd_first ? "yes" : "no");
