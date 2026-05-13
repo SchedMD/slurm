@@ -5847,11 +5847,25 @@ static int _foreach_pack_assoc_usage(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_pack_qos_usage(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+	buf_t *buffer = arg;
+	char *tmp_char;
+
+	pack32(qos->id, buffer);
+	packlongdouble(qos->usage->usage_raw, buffer);
+	tmp_char = _make_usage_tres_raw_str(qos->usage->usage_tres_raw);
+	packstr(tmp_char, buffer);
+	xfree(tmp_char);
+	pack32(qos->usage->grp_used_wall, buffer);
+	return 0;
+}
+
 extern int dump_assoc_mgr_state(void)
 {
 	static uint32_t high_buffer_size = (1024 * 1024);
 	int error_code = 0;
-	char *tmp_char = NULL;
 	buf_t *buffer = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .file = WRITE_LOCK,
 				   .qos = READ_LOCK, .res = READ_LOCK,
@@ -5951,21 +5965,9 @@ extern int dump_assoc_mgr_state(void)
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
-	if (assoc_mgr_qos_list) {
-		list_itr_t *itr = NULL;
-		slurmdb_qos_rec_t *qos = NULL;
-		itr = list_iterator_create(assoc_mgr_qos_list);
-		while ((qos = list_next(itr))) {
-			pack32(qos->id, buffer);
-			packlongdouble(qos->usage->usage_raw, buffer);
-			tmp_char = _make_usage_tres_raw_str(
-				qos->usage->usage_tres_raw);
-			packstr(tmp_char, buffer);
-			xfree(tmp_char);
-			pack32(qos->usage->grp_used_wall, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_qos_list)
+		list_for_each_ro(assoc_mgr_qos_list, _foreach_pack_qos_usage,
+				 buffer);
 
 	error_code = save_buf_to_state("qos_usage", buffer, NULL);
 	assoc_mgr_unlock(&locks);
