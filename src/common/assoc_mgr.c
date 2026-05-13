@@ -2064,6 +2064,22 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 /* This only gets a new list if available dropping the old one if
  * needed
  */
+static int _foreach_qos_steal_usage(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *curr_qos = x;
+	list_t *old_qos_list = arg;
+	slurmdb_qos_rec_t *qos_rec;
+
+	if (!(qos_rec = list_find_first_ro(old_qos_list,
+					   slurmdb_find_qos_in_list,
+					   &curr_qos->id)))
+		return 0;
+	slurmdb_destroy_qos_usage(curr_qos->usage);
+	curr_qos->usage = qos_rec->usage;
+	qos_rec->usage = NULL;
+	return 0;
+}
+
 static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	list_t *current_qos = NULL;
@@ -2084,19 +2100,8 @@ static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 	/* move usage from old list over to the new one */
 	if (assoc_mgr_qos_list) {
-		slurmdb_qos_rec_t *curr_qos = NULL, *qos_rec = NULL;
-		list_itr_t *itr = list_iterator_create(current_qos);
-
-		while ((curr_qos = list_next(itr))) {
-			if (!(qos_rec = list_find_first(assoc_mgr_qos_list,
-							slurmdb_find_qos_in_list,
-							&curr_qos->id)))
-				continue;
-			slurmdb_destroy_qos_usage(curr_qos->usage);
-			curr_qos->usage = qos_rec->usage;
-			qos_rec->usage = NULL;
-		}
-		list_iterator_destroy(itr);
+		list_for_each_ro(current_qos, _foreach_qos_steal_usage,
+			      assoc_mgr_qos_list);
 		FREE_NULL_LIST(assoc_mgr_qos_list);
 	}
 
