@@ -2193,7 +2193,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		    == SLURM_ERROR)
 			goto error;
 
-	if (assoc_mgr_assoc_list && !setup_children)
+	if (assoc_mgr_assoc_list && !setup_children &&
+	    (get_log_level() >= LOG_LEVEL_DEBUG2))
 		list_for_each_ro(assoc_mgr_assoc_list, _foreach_log_assoc_rec,
 				 assoc_mgr_qos_list);
 
