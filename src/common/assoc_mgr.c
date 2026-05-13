@@ -5829,6 +5829,24 @@ extern void assoc_mgr_update_qos_usage(slurmdb_qos_rec_t *qos,
 	}
 }
 
+static int _foreach_pack_assoc_usage(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	buf_t *buffer = arg;
+	char *tmp_char;
+
+	if (!assoc->leaf_usage)
+		return 0;
+
+	pack32(assoc->id, buffer);
+	packlongdouble(assoc->leaf_usage->usage_raw, buffer);
+	tmp_char = _make_usage_tres_raw_str(assoc->leaf_usage->usage_tres_raw);
+	packstr(tmp_char, buffer);
+	xfree(tmp_char);
+	pack32(assoc->leaf_usage->grp_used_wall, buffer);
+	return 0;
+}
+
 extern int dump_assoc_mgr_state(void)
 {
 	static uint32_t high_buffer_size = (1024 * 1024);
@@ -5919,24 +5937,9 @@ extern int dump_assoc_mgr_state(void)
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
-	if (assoc_mgr_assoc_list) {
-		list_itr_t *itr = NULL;
-		slurmdb_assoc_rec_t *assoc = NULL;
-		itr = list_iterator_create(assoc_mgr_assoc_list);
-		while ((assoc = list_next(itr))) {
-			if (!assoc->leaf_usage)
-				continue;
-
-			pack32(assoc->id, buffer);
-			packlongdouble(assoc->leaf_usage->usage_raw, buffer);
-			tmp_char = _make_usage_tres_raw_str(
-				assoc->leaf_usage->usage_tres_raw);
-			packstr(tmp_char, buffer);
-			xfree(tmp_char);
-			pack32(assoc->leaf_usage->grp_used_wall, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_assoc_list)
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_pack_assoc_usage, buffer);
 
 	error_code = save_buf_to_state("assoc_usage", buffer, NULL);
 
