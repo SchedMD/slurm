@@ -1191,10 +1191,32 @@ static int _post_assoc_list(void)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_post_user(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user = x;
+	uid_t pw_uid;
+
+	/*
+	 * Just to make sure we have a default_wckey since it might not be
+	 * set up yet.
+	 */
+	if (!user->default_wckey)
+		user->default_wckey = xstrdup("");
+	if (uid_from_string_cached(user->name, &pw_uid) != SLURM_SUCCESS) {
+		debug("%s: couldn't get a uid for user: %s",
+		      __func__, user->name);
+		user->uid = NO_VAL;
+	} else
+		user->uid = pw_uid;
+
+	if (user->coord_accts && list_count(user->coord_accts))
+		list_append(assoc_mgr_coord_list, user);
+
+	return 0;
+}
+
 static int _post_user_list(list_t *user_list)
 {
-	slurmdb_user_rec_t *user = NULL;
-	list_itr_t *itr = list_iterator_create(user_list);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -1204,25 +1226,8 @@ static int _post_user_list(list_t *user_list)
 	else
 		assoc_mgr_coord_list = list_create(NULL);
 
-	while ((user = list_next(itr))) {
-		uid_t pw_uid;
-		/* Just to make sure we have a default_wckey since it
-		   might not be set up yet.
-		*/
-		if (!user->default_wckey)
-			user->default_wckey = xstrdup("");
-		if (uid_from_string_cached(user->name, &pw_uid) !=
-		    SLURM_SUCCESS) {
-			debug("%s: couldn't get a uid for user: %s",
-			      __func__, user->name);
-			user->uid = NO_VAL;
-		} else
-			user->uid = pw_uid;
+	list_for_each_ro(user_list, _foreach_post_user, NULL);
 
-		if (user->coord_accts && list_count(user->coord_accts))
-			list_append(assoc_mgr_coord_list, user);
-	}
-	list_iterator_destroy(itr);
 	END_TIMER2(__func__);
 	return SLURM_SUCCESS;
 }
