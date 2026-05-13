@@ -4667,12 +4667,18 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 	return rc;
 }
 
+static int _list_find_user_case(void *x, void *key)
+{
+	slurmdb_user_rec_t *user = x;
+
+	return !xstrcasecmp(user->name, key);
+}
+
 extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 {
-	slurmdb_user_rec_t * rec = NULL;
-	slurmdb_user_rec_t * object = NULL;
+	slurmdb_user_rec_t *rec;
+	slurmdb_user_rec_t *object = NULL;
 
-	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .user = WRITE_LOCK,
@@ -4688,18 +4694,12 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 
 	uid_from_string_cache_enable();
 
-	itr = list_iterator_create(assoc_mgr_user_list);
 	while ((object = list_pop(update->objects))) {
-		list_iterator_reset(itr);
-		while ((rec = list_next(itr))) {
-			char *name;
-			if (object->old_name)
-				name = object->old_name;
-			else
-				name = object->name;
-			if (!xstrcasecmp(name, rec->name))
-				break;
-		}
+		char *name = object->old_name ? object->old_name : object->name;
+
+		rec = list_find_first_ro(assoc_mgr_user_list,
+					 _list_find_user_case,
+				      name);
 
 		//info("%d user %s", update->type, object->name);
 		switch(update->type) {
@@ -4765,7 +4765,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 			}
 			list_delete_first(assoc_mgr_coord_list,
 					  slurm_find_ptr_in_list, rec);
-			list_delete_item(itr);
+			list_delete_ptr(assoc_mgr_user_list, rec);
 			break;
 		case SLURMDB_ADD_COORD:
 			/* same as SLURMDB_REMOVE_COORD */
@@ -4792,7 +4792,6 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 
 		slurmdb_destroy_user_rec(object);
 	}
-	list_iterator_destroy(itr);
 	uid_from_string_cache_disable();
 
 	if (!locked)
