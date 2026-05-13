@@ -1148,11 +1148,37 @@ static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 	list_for_each_ro(children, _foreach_set_level_shares, &level_shares);
 }
 
+static int _foreach_post_assoc_setup(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	_set_assoc_parent_and_user(assoc);
+	_add_assoc_hash(assoc);
+	assoc_mgr_set_assoc_tres_cnt(assoc);
+	return 0;
+}
+
+static int _foreach_post_assoc_set_shares(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	if (!assoc->usage->children_list ||
+	    list_is_empty(assoc->usage->children_list))
+		return 0;
+
+	_set_children_level_shares(assoc, _get_children_level_shares(assoc));
+	return 0;
+}
+
+static int _foreach_post_assoc_normalize_shares(void *x, void *arg)
+{
+	assoc_mgr_normalize_assoc_shares(x);
+	return 0;
+}
+
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
 static int _post_assoc_list(void)
 {
-	slurmdb_assoc_rec_t *assoc = NULL;
-	list_itr_t *itr = NULL;
 	g_assoc_max_priority = 0;
 	//DEF_TIMERS;
 
@@ -1167,34 +1193,18 @@ static int _post_assoc_list(void)
 	xfree(assoc_hash_id);
 	xfree(assoc_hash);
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-
 	//START_TIMER;
 	g_user_assoc_count = 0;
-	while ((assoc = list_next(itr))) {
-		_set_assoc_parent_and_user(assoc);
-		_add_assoc_hash(assoc);
-		assoc_mgr_set_assoc_tres_cnt(assoc);
-	}
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_post_assoc_setup, NULL);
 
 	if (setup_children) {
 		/* Now set the shares on each level */
-		list_iterator_reset(itr);
-		while ((assoc = list_next(itr))) {
-			if (!assoc->usage->children_list
-			    || list_is_empty(assoc->usage->children_list))
-				continue;
-
-			_set_children_level_shares(
-				assoc,
-				_get_children_level_shares(assoc));
-		}
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_post_assoc_set_shares, NULL);
 		/* Now normalize the static shares */
-		list_iterator_reset(itr);
-		while ((assoc = list_next(itr)))
-			assoc_mgr_normalize_assoc_shares(assoc);
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_post_assoc_normalize_shares, NULL);
 	}
-	list_iterator_destroy(itr);
 
 	_calculate_assoc_norm_priorities(true);
 
