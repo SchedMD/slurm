@@ -1279,44 +1279,49 @@ static int _post_wckey_list(list_t *wckey_list)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_post_qos_setup(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+
+	if (qos->flags & QOS_FLAG_NOTSET)
+		qos->flags = 0;
+
+	if (!qos->usage)
+		qos->usage = slurmdb_create_qos_usage(g_tres_count);
+	/* get the highest qos value to create bitmaps from */
+	if (qos->id > g_qos_count)
+		g_qos_count = qos->id;
+
+	if (qos->priority > g_qos_max_priority)
+		g_qos_max_priority = qos->priority;
+
+	assoc_mgr_set_qos_tres_cnt(qos);
+	return 0;
+}
+
+static int _foreach_set_qos_norm_priority(void *x, void *arg)
+{
+	_set_qos_norm_priority(x);
+	return 0;
+}
+
 /* NOTE QOS write lock needs to be set before calling this. */
 static int _post_qos_list(list_t *qos_list)
 {
-	slurmdb_qos_rec_t *qos = NULL;
-	list_itr_t *itr = list_iterator_create(qos_list);
-
 	g_qos_count = 0;
 	g_qos_max_priority = 0;
 
-	while ((qos = list_next(itr))) {
-		if (qos->flags & QOS_FLAG_NOTSET)
-			qos->flags = 0;
+	list_for_each_ro(qos_list, _foreach_post_qos_setup, NULL);
 
-		if (!qos->usage)
-			qos->usage = slurmdb_create_qos_usage(g_tres_count);
-		/* get the highest qos value to create bitmaps from */
-		if (qos->id > g_qos_count)
-			g_qos_count = qos->id;
-
-		if (qos->priority > g_qos_max_priority)
-			g_qos_max_priority = qos->priority;
-
-		assoc_mgr_set_qos_tres_cnt(qos);
-	}
-	/* Since in the database id's don't start at 1
-	   instead of 0 we need to ignore the 0 bit and start
-	   with 1 so increase the count by 1.
-	*/
+	/*
+	 * Since in the database id's don't start at 1 instead of 0 we need to
+	 * ignore the 0 bit and start with 1 so increase the count by 1.
+	 */
 	if (g_qos_count > 0)
 		g_qos_count++;
 
-	if (g_qos_max_priority) {
-		list_iterator_reset(itr);
-
-		while ((qos = list_next(itr)))
-			_set_qos_norm_priority(qos);
-	}
-	list_iterator_destroy(itr);
+	if (g_qos_max_priority)
+		list_for_each_ro(qos_list, _foreach_set_qos_norm_priority, NULL);
 
 	return SLURM_SUCCESS;
 }
