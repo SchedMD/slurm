@@ -4520,6 +4520,12 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	if (job_ptr->part_ptr_list)
 		job_ptr->part_ptr = part_ptr;
 
+	if (!part_ptr->node_bitmap || !part_ptr->total_nodes ||
+	    !part_ptr->total_cpus) {
+		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		return 0;
+	}
+
 	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
 		if (node_name2bitmap(job_ptr->details->req_nodes, false,
 				     &avail_bitmap, NULL)) {
@@ -4532,10 +4538,7 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	}
 
 	/* Consider only nodes in this job's partition */
-	if (part_ptr->node_bitmap)
-		bit_and(avail_bitmap, part_ptr->node_bitmap);
-	else
-		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	bit_and(avail_bitmap, part_ptr->node_bitmap);
 	if (job_req_node_filter(job_ptr, avail_bitmap, true))
 		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
