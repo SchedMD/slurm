@@ -331,6 +331,7 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	 * track, just return.
 	 */
 	if (!saved_usable_gpus)
+		info("no saved GPUs for this job, can't update energy");
 		return;
 
 	log_flag(ENERGY, "%s: computing node energy from %u GPU(s)",

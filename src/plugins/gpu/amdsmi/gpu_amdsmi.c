@@ -1545,14 +1545,14 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
             double dt = (double)(time(NULL) - last_energy_time[dv_ind]);
             if (dt >= 1.0) {
                 double dj = now_j - last_energy_joules[dv_ind];
-                info("AMDSMI: GPU[%u] energy delta = %f J over %.1f s",
-                       dv_ind, dj, dt);
+                /*info("AMDSMI: GPU[%u] energy delta = %f J over %.1f s",
+                       dv_ind, dj, dt);*/
                 
                 if (dj > 0) {
                     watts = (uint32_t)(dj / dt);
                     have_watts = true;
-                    info("AMDSMI: GPU[%u] energy-derived power = %u W (dt=%.1fs)",
-                           dv_ind, watts, dt);
+                    /*info("AMDSMI: GPU[%u] energy-derived power = %u W (dt=%.1fs)",
+                           dv_ind, watts, dt);*/
                     gpu->last_update_watt = watts;
                     gpu->energy.current_watts = watts;
                     gpu -> previous_update_time = gpu -> last_update_time;
