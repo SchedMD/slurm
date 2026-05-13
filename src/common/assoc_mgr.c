@@ -1232,28 +1232,27 @@ static int _post_user_list(list_t *user_list)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_post_wckey(void *x, void *arg)
+{
+	slurmdb_wckey_rec_t *wckey = x;
+	uid_t pw_uid;
+
+	if (uid_from_string_cached(wckey->user, &pw_uid) != SLURM_SUCCESS) {
+		if (slurmdbd_conf)
+			debug("%s: couldn't get a uid for user %s",
+			      __func__, wckey->user);
+		wckey->uid = NO_VAL;
+	} else
+		wckey->uid = pw_uid;
+	_set_user_default_wckey(wckey, NULL);
+	return 0;
+}
+
 static int _post_wckey_list(list_t *wckey_list)
 {
-	slurmdb_wckey_rec_t *wckey = NULL;
-	list_itr_t *itr = list_iterator_create(wckey_list);
-	//START_TIMER;
-
 	xassert(assoc_mgr_user_list);
 
-	while ((wckey = list_next(itr))) {
-		uid_t pw_uid;
-		if (uid_from_string_cached(wckey->user, &pw_uid) !=
-		    SLURM_SUCCESS) {
-			if (slurmdbd_conf)
-				debug("post wckey: couldn't get a uid "
-				      "for user %s",
-				      wckey->user);
-			wckey->uid = NO_VAL;
-		} else
-			wckey->uid = pw_uid;
-		_set_user_default_wckey(wckey, NULL);
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(wckey_list, _foreach_post_wckey, NULL);
 	return SLURM_SUCCESS;
 }
 
