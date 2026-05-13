@@ -233,9 +233,22 @@ static void _amdsmi_init(void)
     info("AMDSMI: Discovered %u GPU processor handle(s)", gpu_count);
     /* Initialize energy counters for tracking */
     for (int i = 0; i < gpu_count; i++) {
-        gpu_p_energy_read(gpus[i].gpu_index, &gpus[i]);
-        last_energy_joules[i] = 0.0;
-        last_energy_time[i] = 0;
+        amdsmi_status_t rc = amdsmi_get_energy_count(gpus[i].handle,
+                                                  &gpus[i].energy_start);
+        if (rc != AMDSMI_STATUS_SUCCESS) {
+            const char *rc_str = NULL;
+            amdsmi_status_code_to_string(rc, &rc_str);
+            error("AMDSMI: Failed to read initial energy count for GPU %d: %s",
+                  i, rc_str ? rc_str : "unknown error");
+            gpus[i].energy_start = 0;
+        } else {
+            debug("AMDSMI: GPU%d initial energy count: %" PRIu64 " Joules",
+                  i, gpus[i].energy_start);
+        last_energy_joules[i] = gpus[i].energy_start;
+        last_energy_time[i] = time(NULL);
+        info("AMDSMI: GPU%d initial energy count: %" PRIu64 " Joules",
+             i, gpus[i].energy_start);
+        }
     }
 
     if (gpu_count == 0) {
