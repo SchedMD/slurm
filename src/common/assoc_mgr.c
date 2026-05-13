@@ -5289,15 +5289,22 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	return rc;
 }
 
+static int _list_find_res_id(void *x, void *key)
+{
+	slurmdb_res_rec_t *rec = x;
+	uint32_t *id = key;
+
+	return (rec->id == *id);
+}
+
 /*
  * NOTE: This function does not currently work for the slurmdbd.
  */
 extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 {
-	slurmdb_res_rec_t *rec = NULL;
+	slurmdb_res_rec_t *rec;
 	slurmdb_res_rec_t *object = NULL;
 
-	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
@@ -5309,7 +5316,6 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 		return SLURM_SUCCESS;
 	}
 
-	itr = list_iterator_create(assoc_mgr_res_list);
 	while ((object = list_pop(update->objects))) {
 		/* If this doesn't already have a clus_res_rec and no
 		   clus_res_list then the resource it self changed so
@@ -5329,16 +5335,14 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 			}
 		}
 
-		/* just get rid of clus_res_list if it exists (we only
-		   look at objects with clus_res_rec or none
-		*/
+		/*
+		 * just get rid of clus_res_list if it exists (we only look at
+		 * objects with clus_res_rec or none
+		 */
 		FREE_NULL_LIST(object->clus_res_list);
 
-		list_iterator_reset(itr);
-		while ((rec = list_next(itr))) {
-			if (object->id == rec->id)
-				break;
-		}
+		rec = list_find_first_ro(assoc_mgr_res_list, _list_find_res_id,
+				      &object->id);
 		switch(update->type) {
 		case SLURMDB_ADD_RES:
 			if (rec) {
@@ -5432,7 +5436,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 				break;
 			}
 
-			list_delete_item(itr);
+			list_delete_ptr(assoc_mgr_res_list, rec);
 			break;
 		default:
 			break;
@@ -5440,7 +5444,6 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 
 		slurmdb_destroy_res_rec(object);
 	}
-	list_iterator_destroy(itr);
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 	return rc;
