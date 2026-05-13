@@ -69,6 +69,11 @@ typedef struct {
 	uint64_t **tres_cnt;
 } foreach_tres_pos_t;
 
+typedef struct {
+	bool flushed;
+	list_t *qos_list;
+} foreach_update_qos_t;
+
 slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_assoc_max_priority = 0;
@@ -648,12 +653,40 @@ static int _grab_parents_qos(slurmdb_assoc_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_update_assoc_qos(void *x, void *arg)
+{
+	char *new_qos = x;
+	foreach_update_qos_t *state = arg;
+
+	if (new_qos[0] == '-') {
+		list_delete_first(state->qos_list,
+				  slurm_find_char_exact_in_list,
+				  new_qos + 1);
+	} else if (new_qos[0] == '+') {
+		if (!list_find_first_ro(state->qos_list,
+					slurm_find_char_exact_in_list,
+					new_qos + 1))
+			list_append(state->qos_list, xstrdup(new_qos + 1));
+	} else if (new_qos[0] == '=') {
+		if (!state->flushed)
+			list_flush(state->qos_list);
+		list_append(state->qos_list, xstrdup(new_qos + 1));
+		state->flushed = true;
+	} else if (new_qos[0]) {
+		if (!state->flushed)
+			list_flush(state->qos_list);
+		list_append(state->qos_list, xstrdup(new_qos));
+		state->flushed = true;
+	}
+	return 0;
+}
+
 static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 					list_t *new_qos_list)
 {
-	list_itr_t *new_qos_itr = NULL, *curr_qos_itr = NULL;
-	char *new_qos = NULL, *curr_qos = NULL;
-	int flushed = 0;
+	foreach_update_qos_t state = {
+		.flushed = false,
+	};
 
 	if (!assoc || !new_qos_list) {
 		error("need both new qos_list and an association to update");
@@ -665,47 +698,13 @@ static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 		return SLURM_SUCCESS;
 	}
 
-	/* Even though we only use the valid_qos bitstr for things we
-	   need to keep the list around for now since we don't pack the
-	   bitstr for state save.
-	*/
-	new_qos_itr = list_iterator_create(new_qos_list);
-	curr_qos_itr = list_iterator_create(assoc->qos_list);
-
-	while ((new_qos = list_next(new_qos_itr))) {
-		if (new_qos[0] == '-') {
-			while ((curr_qos = list_next(curr_qos_itr))) {
-				if (!xstrcmp(curr_qos, new_qos+1)) {
-					list_delete_item(curr_qos_itr);
-					break;
-				}
-			}
-
-			list_iterator_reset(curr_qos_itr);
-		} else if (new_qos[0] == '+') {
-			while ((curr_qos = list_next(curr_qos_itr)))
-				if (!xstrcmp(curr_qos, new_qos+1))
-					break;
-
-			if (!curr_qos) {
-				list_append(assoc->qos_list,
-					    xstrdup(new_qos+1));
-				list_iterator_reset(curr_qos_itr);
-			}
-		} else if (new_qos[0] == '=') {
-			if (!flushed)
-				list_flush(assoc->qos_list);
-			list_append(assoc->qos_list, xstrdup(new_qos+1));
-			flushed = 1;
-		} else if (new_qos[0]) {
-			if (!flushed)
-				list_flush(assoc->qos_list);
-			list_append(assoc->qos_list, xstrdup(new_qos));
-			flushed = 1;
-		}
-	}
-	list_iterator_destroy(curr_qos_itr);
-	list_iterator_destroy(new_qos_itr);
+	/*
+	 * Even though we only use the valid_qos bitstr for things we need to
+	 * keep the list around for now since we don't pack the bitstr for
+	 * state save.
+	 */
+	state.qos_list = assoc->qos_list;
+	list_for_each_ro(new_qos_list, _foreach_update_assoc_qos, &state);
 
 	return SLURM_SUCCESS;
 }
