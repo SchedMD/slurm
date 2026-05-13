@@ -6164,7 +6164,6 @@ extern int load_qos_usage(void)
 	char *state_file, *tmp_str = NULL;
 	buf_t *buffer = NULL;
 	time_t buf_time;
-	list_itr_t *itr = NULL;
 	assoc_mgr_lock_t locks = { .file = READ_LOCK, .qos = WRITE_LOCK };
 
 	if (!assoc_mgr_qos_list)
@@ -6199,21 +6198,19 @@ extern int load_qos_usage(void)
 
 	safe_unpack_time(&buf_time, buffer);
 
-	itr = list_iterator_create(assoc_mgr_qos_list);
 	while (remaining_buf(buffer) > 0) {
 		uint32_t qos_id = 0;
 		uint32_t grp_used_wall = 0;
 		long double usage_raw = 0;
-		slurmdb_qos_rec_t *qos = NULL;
+		slurmdb_qos_rec_t *qos;
 
 		safe_unpack32(&qos_id, buffer);
 		safe_unpacklongdouble(&usage_raw, buffer);
 		safe_unpackstr(&tmp_str, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
 
-		while ((qos = list_next(itr)))
-			if (qos->id == qos_id)
-				break;
+		qos = list_find_first_ro(assoc_mgr_qos_list,
+					 slurmdb_find_qos_in_list, &qos_id);
 		if (qos) {
 			qos->usage->grp_used_wall = grp_used_wall;
 			qos->usage->usage_raw = usage_raw;
@@ -6222,9 +6219,7 @@ extern int load_qos_usage(void)
 		}
 
 		xfree(tmp_str);
-		list_iterator_reset(itr);
 	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	FREE_NULL_BUFFER(buffer);
@@ -6237,8 +6232,6 @@ unpack_error:
 
 	FREE_NULL_BUFFER(buffer);
 
-	if (itr)
-		list_iterator_destroy(itr);
 	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
