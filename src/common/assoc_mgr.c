@@ -4542,11 +4542,37 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	return rc;
 }
 
+static int _list_find_wckey_update(void *x, void *key)
+{
+	slurmdb_wckey_rec_t *rec = x;
+	slurmdb_wckey_rec_t *object = key;
+
+	/* only and always check for on the slurmdbd */
+	if (slurmdbd_conf &&
+	    xstrcasecmp(object->cluster, rec->cluster)) {
+		debug4("not the right cluster");
+		return 0;
+	}
+	if (object->id)
+		return (object->id == rec->id);
+
+	if (object->uid != rec->uid) {
+		debug4("not the right user");
+		return 0;
+	}
+
+	if (object->name &&
+	    (!rec->name || xstrcasecmp(object->name, rec->name))) {
+		debug4("not the right wckey");
+		return 0;
+	}
+	return 1;
+}
+
 extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 {
-	slurmdb_wckey_rec_t * rec = NULL;
-	slurmdb_wckey_rec_t * object = NULL;
-	list_itr_t *itr = NULL;
+	slurmdb_wckey_rec_t *rec;
+	slurmdb_wckey_rec_t *object = NULL;
 	int rc = SLURM_SUCCESS;
 	uid_t pw_uid;
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
@@ -4561,7 +4587,6 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 
 	uid_from_string_cache_enable();
 
-	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((object = list_pop(update->objects))) {
 		if (object->cluster && !slurmdbd_conf) {
 			/* only update the local clusters assocs */
@@ -4571,40 +4596,13 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 				continue;
 			}
 		} else if (!slurmdbd_conf) {
-			error("We don't have a cluster here, no "
-			      "idea if this is our wckey.");
+			error("We don't have a cluster here, no idea if this is our wckey.");
 			continue;
 		}
 
-		list_iterator_reset(itr);
-		while ((rec = list_next(itr))) {
-			/* only and always check for on the slurmdbd */
-			if (slurmdbd_conf &&
-			    xstrcasecmp(object->cluster, rec->cluster)) {
-				debug4("not the right cluster");
-				continue;
-			}
-			if (object->id) {
-				if (object->id == rec->id) {
-					break;
-				}
-				continue;
-			} else {
-				if (object->uid != rec->uid) {
-					debug4("not the right user");
-					continue;
-				}
+		rec = list_find_first_ro(assoc_mgr_wckey_list,
+					 _list_find_wckey_update, object);
 
-				if (object->name
-				    && (!rec->name
-					|| xstrcasecmp(object->name,
-						       rec->name))) {
-					debug4("not the right wckey");
-					continue;
-				}
-				break;
-			}
-		}
 		//info("%d WCKEY %u", update->type, object->id);
 		switch(update->type) {
 		case SLURMDB_MODIFY_WCKEY:
@@ -4629,16 +4627,16 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 			}
 			if (uid_from_string_cached(object->user, &pw_uid) !=
 			    SLURM_SUCCESS) {
-				debug("wckey add couldn't get a uid "
-				      "for user %s",
+				debug("wckey add couldn't get a uid for user %s",
 				      object->user);
 				object->uid = NO_VAL;
 			} else
 				object->uid = pw_uid;
 
-			/* If is_def is uninitialized the value will
-			   be NO_VAL, so if it isn't 1 make it 0.
-			*/
+			/*
+			 * If is_def is uninitialized the value will be NO_VAL,
+			 * so if it isn't 1 make it 0.
+			 */
 			if (object->is_def == 1)
 				_set_user_default_wckey(object, NULL);
 			else
@@ -4653,7 +4651,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 			}
 			if (rec->is_def == 1)
 				_clear_user_default_wckey(rec);
-			list_delete_item(itr);
+			list_delete_ptr(assoc_mgr_wckey_list, rec);
 			break;
 		default:
 			break;
@@ -4661,7 +4659,6 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 
 		slurmdb_destroy_wckey_rec(object);
 	}
-	list_iterator_destroy(itr);
 	uid_from_string_cache_disable();
 
 	if (!locked)
