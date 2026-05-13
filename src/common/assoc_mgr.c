@@ -549,12 +549,35 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_rename_user_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	slurmdb_user_rec_t *user = arg;
+
+	if (!assoc->user)
+		return 0;
+	if (xstrcmp(user->old_name, assoc->user))
+		return 0;
+
+	/*
+	 * Since the uid changed the hash as well will change.  Remove the
+	 * assoc from the hash before the change or you won't find it.
+	 */
+	_delete_assoc_hash(assoc);
+
+	xfree(assoc->user);
+	assoc->user = xstrdup(user->name);
+	assoc->uid = user->uid;
+	_add_assoc_hash(assoc);
+	debug3("changing assoc %d", assoc->id);
+	return 0;
+}
+
 /* Locks should be in place before calling this. */
 static int _change_user_name(slurmdb_user_rec_t *user)
 {
 	int rc = SLURM_SUCCESS;
 	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	uid_t pw_uid;
 
@@ -568,28 +591,9 @@ static int _change_user_name(slurmdb_user_rec_t *user)
 	} else
 		user->uid = pw_uid;
 
-	if (assoc_mgr_assoc_list) {
-		itr = list_iterator_create(assoc_mgr_assoc_list);
-		while ((assoc = list_next(itr))) {
-			if (!assoc->user)
-				continue;
-			if (!xstrcmp(user->old_name, assoc->user)) {
-				/* Since the uid changed the
-				   hash as well will change.  Remove
-				   the assoc from the hash before the
-				   change or you won't find it.
-				*/
-				_delete_assoc_hash(assoc);
-
-				xfree(assoc->user);
-				assoc->user = xstrdup(user->name);
-				assoc->uid = user->uid;
-				_add_assoc_hash(assoc);
-				debug3("changing assoc %d", assoc->id);
-			}
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_assoc_list)
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_rename_user_assoc, user);
 
 	if (assoc_mgr_wckey_list) {
 		itr = list_iterator_create(assoc_mgr_wckey_list);
