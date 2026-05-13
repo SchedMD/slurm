@@ -38,11 +38,8 @@ set job_id             0
 #
 # Test for existence of mpi compiler
 #
-if {[info exists mpicc] == 0} {
-	skip "mpicc not defined, can't perform mpi testing"
-}
-if {[file executable $mpicc] == 0} {
-	skip "$mpicc does not exist"
+if {[run_command_status "$mpicc --version"]} {
+	skip "This test requires $mpicc"
 }
 
 proc cleanup {} {
