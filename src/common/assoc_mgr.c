@@ -95,6 +95,8 @@ static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
 static slurmdb_assoc_rec_t **assoc_hash = NULL;
 static int *assoc_mgr_tres_old_pos = NULL;
 
+static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc);
+
 static bool _running_cache(void)
 {
 	if (init_setup.running_cache &&
@@ -1086,24 +1088,27 @@ static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 		(double)qos->priority / (double)g_qos_max_priority;
 }
 
+static int _foreach_sum_level_shares(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *child = x;
+	uint32_t *sum = arg;
+
+	if (child->shares_raw == SLURMDB_FS_USE_PARENT)
+		*sum += _get_children_level_shares(child);
+	else
+		*sum += child->shares_raw;
+	return 0;
+}
+
 static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc)
 {
 	list_t *children = assoc->usage->children_list;
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *child;
 	uint32_t sum = 0;
 
 	if (!children || list_is_empty(children))
 		return 0;
 
-	itr = list_iterator_create(children);
-	while ((child = list_next(itr))) {
-		if (child->shares_raw == SLURMDB_FS_USE_PARENT)
-			sum += _get_children_level_shares(child);
-		else
-			sum += child->shares_raw;
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(children, _foreach_sum_level_shares, &sum);
 
 	return sum;
 }
