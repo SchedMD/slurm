@@ -2129,6 +2129,12 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_log_assoc_rec(void *x, void *arg)
+{
+	log_assoc_rec(x, arg);
+	return 0;
+}
+
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 			  int db_conn_errno)
 {
@@ -2187,15 +2193,9 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args,
 		    == SLURM_ERROR)
 			goto error;
 
-	if (assoc_mgr_assoc_list && !setup_children) {
-		slurmdb_assoc_rec_t *assoc = NULL;
-		list_itr_t *itr =
-			list_iterator_create(assoc_mgr_assoc_list);
-		while ((assoc = list_next(itr))) {
-			log_assoc_rec(assoc, assoc_mgr_qos_list);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_assoc_list && !setup_children)
+		list_for_each_ro(assoc_mgr_assoc_list, _foreach_log_assoc_rec,
+				 assoc_mgr_qos_list);
 
 	if ((!assoc_mgr_wckey_list)
 	    && (init_setup.cache_level & ASSOC_MGR_CACHE_WCKEY))
