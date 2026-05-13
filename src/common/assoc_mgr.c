@@ -5452,10 +5452,9 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 
 extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 {
-	slurmdb_tres_rec_t *rec = NULL;
+	slurmdb_tres_rec_t *rec;
 	slurmdb_tres_rec_t *object = NULL;
 
-	list_itr_t *itr = NULL;
 	list_t *tmp_list;
 	bool changed = false, freeit = false;
 	int rc = SLURM_SUCCESS;
@@ -5468,20 +5467,17 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 		tmp_list = list_create(slurmdb_destroy_tres_rec);
 		freeit = true;
 	} else {
-		/* Since assoc_mgr_tres_list gets freed later we need
-		 * to swap things out to avoid memory corruption.
+		/*
+		 * Since assoc_mgr_tres_list gets freed later we need to swap
+		 * things out to avoid memory corruption.
 		 */
 		tmp_list = assoc_mgr_tres_list;
 		assoc_mgr_tres_list = NULL;
 	}
 
-	itr = list_iterator_create(tmp_list);
 	while ((object = list_pop(update->objects))) {
-		list_iterator_reset(itr);
-		while ((rec = list_next(itr))) {
-			if (object->id == rec->id)
-				break;
-		}
+		rec = list_find_first_ro(tmp_list, slurmdb_find_tres_in_list,
+				      &object->id);
 
 		switch (update->type) {
 		case SLURMDB_ADD_TRES:
@@ -5490,8 +5486,7 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 				break;
 			}
 			if (!object->id) {
-				error("trying to add resource without an id!  "
-				      "This should never happen.");
+				error("trying to add resource without an id!  This should never happen.");
 				break;
 			}
 			list_append(tmp_list, object);
@@ -5504,7 +5499,6 @@ extern int assoc_mgr_update_tres(slurmdb_update_object_t *update, bool locked)
 
 		slurmdb_destroy_tres_rec(object);
 	}
-	list_iterator_destroy(itr);
 	if (changed) {
 		/* We want to run this on the assoc_mgr_tres_list, but we need
 		 * to make a tmp variable since assoc_mgr_post_tres_list will
