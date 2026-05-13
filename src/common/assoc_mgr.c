@@ -1299,6 +1299,15 @@ static int _post_qos_list(list_t *qos_list)
 	return SLURM_SUCCESS;
 }
 
+static int _find_cluster_in_clus_res_list(void *x, void *key)
+{
+	slurmdb_res_rec_t *object = x;
+	char *cluster_name = key;
+
+	return !xstrcasecmp(object->clus_res_rec->cluster,
+			    cluster_name) ? 1 : 0;
+}
+
 static int _foreach_post_res(void *x, void *arg)
 {
 	slurmdb_res_rec_t *object = x;
@@ -1306,17 +1315,14 @@ static int _foreach_post_res(void *x, void *arg)
 	if (object->clus_res_list && list_count(object->clus_res_list)) {
 		xassert(!object->clus_res_rec);
 
-		while ((object->clus_res_rec =
-			list_pop(object->clus_res_list))) {
-			/*
-			 * Only update the local cluster's res, only one per
-			 * res record, so throw the others away.
-			 */
-			if (!xstrcasecmp(object->clus_res_rec->cluster,
-					 slurm_conf.cluster_name))
-				break;
-			slurmdb_destroy_clus_res_rec(object->clus_res_rec);
-		}
+		/*
+		 * Only update the local cluster's res, only one per
+		 * res record, so throw the others away.
+		 */
+		object->clus_res_rec = list_remove_first(
+			object->clus_res_list,
+			_find_cluster_in_clus_res_list,
+			slurm_conf.cluster_name);
 		FREE_NULL_LIST(object->clus_res_list);
 	}
 
