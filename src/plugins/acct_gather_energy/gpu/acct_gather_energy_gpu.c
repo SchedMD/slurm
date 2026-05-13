@@ -329,10 +329,14 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 
 	/*
 	 * If saved_usable_gpus doesn't exist it means we don't have any gpus to
-	 * track, just return.
+	 * track for this step, just return.  Log this so we can diagnose why
+	 * per-job aggregation may be skipped.
 	 */
-	if (!saved_usable_gpus)
+	if (!saved_usable_gpus) {
+		log_flag(ENERGY, "%s: saved_usable_gpus is NULL, no GPUs tracked for this step",
+				 __func__);
 		return;
+	}
 
 	log_flag(ENERGY, "%s: computing node energy from %u GPU(s)",
 		 __func__, gpus_len);
@@ -407,8 +411,11 @@ static int _get_joules_task(uint16_t delta)
 	xassert(context_id != -1);
 
 	/* If there are no gres then there is no energy to get, just return. */
-	if (!gres_get_gres_cnt())
+	if (!gres_get_gres_cnt()) {
+		log_flag(ENERGY, "%s: no GRES configured on node (gres_get_gres_cnt==0)",
+				 __func__);
 		return SLURM_SUCCESS;
+	}
 
 	log_flag(ENERGY, "%s: requesting job energy from slurmd (delta=%u, first=%s)",
 		 __func__, delta, stepd_first ? "yes" : "no");
@@ -489,6 +496,8 @@ static int _get_joules_task(uint16_t delta)
 	}
 
 	acct_gather_energy_destroy(energies);
+
+	log_flag(ENERGY, "%s: updated %u GPU(s) from slurmd", __func__, gpu_cnt);
 
 	stepd_first = false;
 
