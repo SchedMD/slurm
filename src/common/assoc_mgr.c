@@ -2668,13 +2668,30 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+static int _list_find_tres(void *x, void *key)
+{
+	slurmdb_tres_rec_t *found_tres = x;
+	slurmdb_tres_rec_t *tres = key;
+
+	if (tres->id)
+		return (tres->id == found_tres->id);
+
+	if (!tres->type || xstrcasecmp(tres->type, found_tres->type))
+		return 0;
+	if (!tres->name && !found_tres->name)
+		return 1;
+	if (tres->name && found_tres->name &&
+	    !xstrcasecmp(tres->name, found_tres->name))
+		return 1;
+	return 0;
+}
+
 extern int assoc_mgr_fill_in_tres(void *db_conn,
 				  slurmdb_tres_rec_t *tres,
 				  int enforce,
 				  slurmdb_tres_rec_t **tres_pptr,
 				  bool locked)
 {
-	list_itr_t *itr;
 	slurmdb_tres_rec_t *found_tres = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -2725,19 +2742,8 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 
 	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
 
-	itr = list_iterator_create(assoc_mgr_tres_list);
-	while ((found_tres = list_next(itr))) {
-		if (tres->id) {
-			if (tres->id == found_tres->id)
-				break;
-		} else if ((tres->type
-			    && !xstrcasecmp(tres->type, found_tres->type))
-			   && ((!tres->name && !found_tres->name)
-			       || ((tres->name && found_tres->name) &&
-				   !xstrcasecmp(tres->name, found_tres->name))))
-			break;
-	}
-	list_iterator_destroy(itr);
+	found_tres = list_find_first_ro(assoc_mgr_tres_list, _list_find_tres,
+					tres);
 
 	if (!found_tres) {
 		if (!locked)
