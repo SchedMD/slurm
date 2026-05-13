@@ -40,10 +40,6 @@
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
-	if (!saved_usable_gpus) {
-		info("no saved GPUs for this job, can't update energy");
-		return;
-	}
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gpu.h"
