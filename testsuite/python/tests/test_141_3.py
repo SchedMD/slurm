@@ -7,6 +7,8 @@ import time
 import atf
 import pytest
 
+pytestmark = pytest.mark.slow
+
 suspend_timeout = 100
 resume_timeout = 100
 suspend_time = -1
