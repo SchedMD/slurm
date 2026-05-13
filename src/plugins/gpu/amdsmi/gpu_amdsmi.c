@@ -230,6 +230,14 @@ static void _amdsmi_init(void)
         }
     }
 
+    info("AMDSMI: Discovered %u GPU processor handle(s)", gpu_count);
+    /* Initialize energy counters for tracking */
+    for (int i = 0; i < gpu_count; i++) {
+        gpu_p_energy_read(gpus[i].gpu_index, &gpus[i]);
+        last_energy_joules[i] = 0.0;
+        last_energy_time[i] = 0;
+    }
+
     if (gpu_count == 0) {
         error("AMDSMI: No GPU processors discovered on any socket");
         amdsmi_shut_down();
@@ -275,7 +283,7 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     driver[0] = '\0';
 
-    if (gpu_count == 0) {
+    if (processor_handle_count == 0) {
         debug("AMDSMI: No GPU processor handles available for driver query");
         return;
     }
@@ -285,7 +293,7 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     const char *status_string = NULL;
     amdsmi_status_t rc =
-        amdsmi_get_gpu_driver_info(gpus[0].handle, &dinfo);
+        amdsmi_get_gpu_driver_info(processor_handles[0], &dinfo);
 
     if (rc != AMDSMI_STATUS_SUCCESS) {
         amdsmi_status_code_to_string(rc, &status_string);
@@ -320,9 +328,9 @@ static bool _amdsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
         return false;
     }
 
-    if (dv_ind >= gpu_count) {
+    if (dv_ind >= processor_handle_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, gpu_count);
+              dv_ind, processor_handle_count);
         return false;
     }
 
@@ -330,7 +338,7 @@ static bool _amdsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
 
     DEF_TIMERS;
     START_TIMER;
-    amdsmi_rc = amdsmi_get_clk_freq(gpus[dv_ind].handle,
+    amdsmi_rc = amdsmi_get_clk_freq(processor_handles[dv_ind],
                                     AMDSMI_CLK_TYPE_MEM,
                                     &amdsmi_freqs);
     END_TIMER;
