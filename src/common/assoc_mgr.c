@@ -1113,24 +1113,26 @@ static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc)
 	return sum;
 }
 
+static int _foreach_set_level_shares(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *child = x;
+	uint32_t *level_shares = arg;
+
+	/* info("%d %s %s has %d shares", */
+	/*      child->id, child->acct, child->user, level_shares); */
+	child->usage->level_shares = *level_shares;
+	return 0;
+}
 
 static void _set_children_level_shares(slurmdb_assoc_rec_t *assoc,
 				       uint32_t level_shares)
 {
 	list_t *children = assoc->usage->children_list;
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *child;
 
 	if (!children || list_is_empty(children))
 		return;
 	//info("parent %d %s %s", assoc->id, assoc->acct, assoc->user);
-	itr = list_iterator_create(children);
-	while ((child = list_next(itr))) {
-		/* info("%d %s %s has %d shares", */
-		/*      child->id, child->acct, child->user, level_shares); */
-		child->usage->level_shares = level_shares;
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(children, _foreach_set_level_shares, &level_shares);
 }
 
 /* transfer slurmdb assoc list to be assoc_mgr assoc list */
