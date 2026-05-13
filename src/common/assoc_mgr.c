@@ -3960,12 +3960,116 @@ extern int assoc_mgr_update(list_t *update_list, bool locked)
 	return rc;
 }
 
+static int _foreach_flush_assoc_children(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	if (assoc->usage->children_list)
+		list_flush(assoc->usage->children_list);
+	return 0;
+}
+
+static int _foreach_reset_assoc_set_parent(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	bool addit = false;
+
+	/*
+	 * reset the limits because since a parent changed we could have
+	 * different usage
+	 */
+	if (!assoc->user) {
+		_clear_used_assoc_info(assoc);
+		assoc->usage->usage_raw = 0;
+		for (int i = 0; i < assoc->usage->tres_cnt; i++)
+			assoc->usage->usage_tres_raw[i] = 0;
+		assoc->usage->grp_used_wall = 0;
+	}
+
+	/*
+	 * This means we were just added, so we need to be added to the hash
+	 * after the uid is set.
+	 */
+	if (assoc->uid == INFINITE)
+		addit = true;
+	/*
+	 * _set_assoc_parent_and_user() may change the uid if unset which
+	 * changes the hash value.
+	 */
+	if (assoc->user && (assoc->uid == NO_VAL || assoc->uid == 0)) {
+		_delete_assoc_hash(assoc);
+		addit = true;
+	}
+
+	_set_assoc_parent_and_user(assoc);
+
+	if (addit)
+		_add_assoc_hash(assoc);
+	return 0;
+}
+
+static int _foreach_add_coord_and_aggregate(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	slurmdb_assoc_rec_t *parent;
+
+	/*
+	 * This needs to run for all since we could had removed some that
+	 * need to be added back (different clusters have different paths).
+	 */
+	_add_potential_coord_children(assoc);
+
+	if (setup_children) {
+		list_t *children = assoc->usage->children_list;
+
+		if (children && !list_is_empty(children))
+			_set_children_level_shares(
+				assoc, _get_children_level_shares(assoc));
+	}
+
+	if (!assoc->leaf_usage)
+		return 0;
+
+	/* Add usage of formerly deleted child assocs */
+	if (assoc->leaf_usage != assoc->usage)
+		_addto_used_info(assoc->usage, assoc->leaf_usage);
+
+	/*
+	 * look for a parent since we are starting at the parent instead of
+	 * the child
+	 */
+	parent = assoc->usage->parent_assoc_ptr;
+	while (parent) {
+		_addto_used_info(parent->usage, assoc->leaf_usage);
+		parent = parent->usage->parent_assoc_ptr;
+	}
+	return 0;
+}
+
+static int _foreach_normalize_and_log_assoc(void *x, void *arg)
+{
+	assoc_mgr_normalize_assoc_shares(x);
+	log_assoc_rec(x, assoc_mgr_qos_list);
+	return 0;
+}
+
+static int _foreach_remove_assoc_notify(void *x, void *arg)
+{
+	init_setup.remove_assoc_notify(x);
+	return 0;
+}
+
+static int _foreach_update_assoc_notify(void *x, void *arg)
+{
+	init_setup.update_assoc_notify(x);
+	return 0;
+}
+
 extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 {
-	slurmdb_assoc_rec_t * rec = NULL;
-	slurmdb_assoc_rec_t * object = NULL;
-	list_itr_t *itr = NULL;
-	int rc = SLURM_SUCCESS, i;
+	slurmdb_assoc_rec_t *rec;
+	slurmdb_assoc_rec_t *object = NULL;
+	int rc = SLURM_SUCCESS;
 	int parents_changed = 0;
 	int run_update_resvs = 0;
 	int resort = 0;
@@ -4417,99 +4521,26 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		g_user_assoc_count = 0;
 		slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list);
 
-		itr = list_iterator_create(assoc_mgr_assoc_list);
 		/* flush the children lists */
-		if (setup_children) {
-			while ((object = list_next(itr))) {
-				if (object->usage->children_list)
-					list_flush(object->usage->
-						   children_list);
-			}
-			list_iterator_reset(itr);
-		}
-		while ((object = list_next(itr))) {
-			bool addit = false;
-			/* reset the limits because since a parent
-			   changed we could have different usage
-			*/
-			if (!object->user) {
-				_clear_used_assoc_info(object);
-				object->usage->usage_raw = 0;
-				for (i=0; i<object->usage->tres_cnt; i++)
-					object->usage->usage_tres_raw[i] = 0;
-				object->usage->grp_used_wall = 0;
-			}
+		if (setup_children)
+			list_for_each_ro(assoc_mgr_assoc_list,
+					 _foreach_flush_assoc_children, NULL);
 
-			/* This means we were just added, so we need
-			   to be added to the hash after the uid is set.
-			*/
-			if (object->uid == INFINITE)
-				addit = true;
-			/* _set_assoc_parent_and_user() may change the uid if
-			 * unset which changes the hash value. */
-			if (object->user &&
-			    (object->uid == NO_VAL || object->uid == 0)) {
-				_delete_assoc_hash(object);
-				addit = true;
-			}
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_reset_assoc_set_parent, NULL);
 
-			_set_assoc_parent_and_user(object);
+		/*
+		 * Now that we have set up the parents correctly we can update
+		 * the used limits
+		 */
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_add_coord_and_aggregate, NULL);
 
-			if (addit)
-				_add_assoc_hash(object);
-		}
-		/* Now that we have set up the parents correctly we
-		   can update the used limits
-		*/
-		list_iterator_reset(itr);
-		while ((object = list_next(itr))) {
-			/*
-			 * This needs to run for all since we could had removed
-			 * some that need to be added back (different clusters
-			 * have different paths).
-			 */
-			_add_potential_coord_children(object);
-
-			if (setup_children) {
-				list_t *children = object->usage->children_list;
-				if (!children || list_is_empty(children))
-					goto is_user;
-
-				_set_children_level_shares(
-					object,
-					_get_children_level_shares(object));
-			}
-		is_user:
-			if (!object->leaf_usage)
-				continue;
-
-			/* Add usage of formerly deleted child assocs*/
-			if (object->leaf_usage != object->usage)
-				_addto_used_info(object->usage,
-						 object->leaf_usage);
-			rec = object;
-			/* look for a parent since we are starting at
-			   the parent instead of the child
-			*/
-			while (object->usage->parent_assoc_ptr) {
-				/* we need to get the parent first
-				   here since we start at the child
-				*/
-				object = object->usage->parent_assoc_ptr;
-
-				_addto_used_info(object->usage,
-						 rec->leaf_usage);
-			}
-		}
-		if (setup_children) {
+		if (setup_children)
 			/* Now normalize the static shares */
-			list_iterator_reset(itr);
-			while ((object = list_next(itr))) {
-				assoc_mgr_normalize_assoc_shares(object);
-				log_assoc_rec(object, assoc_mgr_qos_list);
-			}
-		}
-		list_iterator_destroy(itr);
+			list_for_each_ro(assoc_mgr_assoc_list,
+					 _foreach_normalize_and_log_assoc,
+					 NULL);
 	} else if (resort)
 		slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list);
 
@@ -4518,21 +4549,14 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
-	/* This needs to happen outside of the
-	   assoc_mgr_lock */
+	/* This needs to happen outside of the assoc_mgr_lock */
 	if (remove_list) {
-		itr = list_iterator_create(remove_list);
-		while ((rec = list_next(itr)))
-			init_setup.remove_assoc_notify(rec);
-		list_iterator_destroy(itr);
+		list_for_each(remove_list, _foreach_remove_assoc_notify, NULL);
 		FREE_NULL_LIST(remove_list);
 	}
 
 	if (update_list) {
-		itr = list_iterator_create(update_list);
-		while ((rec = list_next(itr)))
-			init_setup.update_assoc_notify(rec);
-		list_iterator_destroy(itr);
+		list_for_each(update_list, _foreach_update_assoc_notify, NULL);
 		FREE_NULL_LIST(update_list);
 	}
 
