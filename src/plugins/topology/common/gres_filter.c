@@ -304,6 +304,8 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 
 	if (!sock_gres->gres_state_job)
 		return 0;
+	if (sock_gres->gres_state_job->config_flags & GRES_CONF_COUNT_ONLY)
+		return 0;
 	gres_js = sock_gres->gres_state_job->gres_data;
 
 	if (!(args->cr_type & SELECT_SOCKET) &&
