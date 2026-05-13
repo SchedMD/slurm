@@ -74,6 +74,17 @@ typedef struct {
 	list_t *qos_list;
 } foreach_update_qos_t;
 
+typedef struct {
+	int array_size;
+	bool changed_pos;
+	bool changed_size;
+	int d_array_size;
+	int i;
+	slurmdb_tres_rec_t **new_array;
+	char **new_name_array;
+	int new_cnt;
+} foreach_new_tres_t;
+
 slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_assoc_max_priority = 0;
@@ -1444,73 +1455,200 @@ static void _resize_assoc_usage_tres_arrays(slurmdb_assoc_usage_t *usage,
 	}
 }
 
+static int _foreach_new_tres(void *x, void *arg)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+	foreach_new_tres_t *state = arg;
+
+	state->new_array[state->i] = tres_rec;
+
+	state->new_name_array[state->i] = xstrdup_printf(
+		"%s%s%s",
+		tres_rec->type,
+		tres_rec->name ? "/" : "",
+		tres_rec->name ? tres_rec->name : "");
+
+	/* This can happen when a new static or dynamic TRES is added. */
+	if (assoc_mgr_tres_array && (state->i < g_tres_count) &&
+	    (tres_rec->id != assoc_mgr_tres_array[state->i]->id))
+		state->changed_pos = true;
+
+	state->i++;
+	return 0;
+}
+
+static int _foreach_resize_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc_rec = x;
+	foreach_new_tres_t *state = arg;
+
+	assoc_mgr_set_assoc_tres_cnt(assoc_rec);
+
+	if (!assoc_rec->usage)
+		return 0;
+
+	_resize_assoc_usage_tres_arrays(assoc_rec->usage, state->new_cnt,
+					state->changed_size,
+					state->changed_pos);
+
+	if (assoc_rec->leaf_usage &&
+	    (assoc_rec->leaf_usage != assoc_rec->usage))
+		_resize_assoc_usage_tres_arrays(assoc_rec->leaf_usage,
+						state->new_cnt,
+						state->changed_size,
+						state->changed_pos);
+	return 0;
+}
+
+static int _foreach_resize_used_limits(void *x, void *arg)
+{
+	slurmdb_used_limits_t *used_limits = x;
+	int *array_size = arg;
+
+	xrealloc(used_limits->tres, *array_size);
+	xrealloc(used_limits->tres_run_secs, *array_size);
+	return 0;
+}
+
+static int _foreach_remap_used_limits(void *x, void *arg)
+{
+	slurmdb_used_limits_t *used_limits = x;
+	foreach_new_tres_t *state = arg;
+	uint64_t tmp_tres[state->new_cnt];
+	uint64_t tmp_tres_run_secs[state->new_cnt];
+
+	memset(tmp_tres, 0, state->array_size);
+	memset(tmp_tres_run_secs, 0, state->array_size);
+
+	for (int i = 0; i < state->new_cnt; i++) {
+		int old_pos = assoc_mgr_tres_old_pos[i];
+
+		if (old_pos == -1)
+			continue;
+		tmp_tres[i] = used_limits->tres[old_pos];
+		tmp_tres_run_secs[i] = used_limits->tres_run_secs[old_pos];
+	}
+	memcpy(used_limits->tres, tmp_tres, state->array_size);
+	memcpy(used_limits->tres_run_secs, tmp_tres_run_secs,
+	       state->array_size);
+	return 0;
+}
+
+static int _foreach_post_tres_qos(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos_rec = x;
+	foreach_new_tres_t *state = arg;
+
+	assoc_mgr_set_qos_tres_cnt(qos_rec);
+
+	if (!qos_rec->usage)
+		return 0;
+
+	/* Need to increase the size of the usage counts. */
+	if (state->changed_size) {
+		qos_rec->usage->tres_cnt = state->new_cnt;
+		xrealloc(qos_rec->usage->grp_used_tres, state->array_size);
+		xrealloc(qos_rec->usage->grp_used_tres_run_secs,
+			 state->array_size);
+		xrealloc(qos_rec->usage->usage_tres_raw, state->d_array_size);
+		if (qos_rec->usage->user_limit_list) {
+			list_for_each_ro(qos_rec->usage->user_limit_list,
+					 _foreach_resize_used_limits,
+					 &state->array_size);
+		}
+	}
+
+	/*
+	 * If for some reason the position changed (new static) we need to
+	 * move it to it's new place.
+	 */
+	if (state->changed_pos) {
+		uint64_t grp_used_tres[state->new_cnt];
+		uint64_t grp_used_tres_run_secs[state->new_cnt];
+		long double usage_tres_raw[state->new_cnt];
+
+		memset(grp_used_tres, 0, state->array_size);
+		memset(grp_used_tres_run_secs, 0, state->array_size);
+		memset(usage_tres_raw, 0, state->d_array_size);
+
+		for (int i = 0; i < state->new_cnt; i++) {
+			int old_pos = assoc_mgr_tres_old_pos[i];
+
+			if (old_pos == -1)
+				continue;
+
+			grp_used_tres[i] =
+				qos_rec->usage->grp_used_tres[old_pos];
+			grp_used_tres_run_secs[i] =
+				qos_rec->usage->grp_used_tres_run_secs[old_pos];
+			usage_tres_raw[i] =
+				qos_rec->usage->usage_tres_raw[old_pos];
+		}
+		memcpy(qos_rec->usage->grp_used_tres, grp_used_tres,
+		       state->array_size);
+		memcpy(qos_rec->usage->grp_used_tres_run_secs,
+		       grp_used_tres_run_secs, state->array_size);
+		memcpy(qos_rec->usage->usage_tres_raw, usage_tres_raw,
+		       state->d_array_size);
+		if (qos_rec->usage->user_limit_list) {
+			list_for_each_ro(qos_rec->usage->user_limit_list,
+					 _foreach_remap_used_limits, state);
+		}
+	}
+	return 0;
+}
+
 /* assoc, qos and tres write lock should be locked before calling this
  * return 1 if callback is needed */
 extern int assoc_mgr_post_tres_list(list_t *new_list)
 {
-	list_itr_t *itr;
-	slurmdb_tres_rec_t *tres_rec, **new_array;
-	char **new_name_array;
-	bool changed_size = false, changed_pos = false;
+	foreach_new_tres_t new_state = { 0 };
 	int i;
-	int new_cnt;
 
 	xassert(new_list);
 
-	new_cnt = list_count(new_list);
+	new_state.new_cnt = list_count(new_list);
 
-	xassert(new_cnt > 0);
+	xassert(new_state.new_cnt > 0);
 
-	new_array = xcalloc(new_cnt, sizeof(slurmdb_tres_rec_t *));
-	new_name_array = xcalloc(new_cnt, sizeof(char *));
+	new_state.array_size = sizeof(uint64_t) * new_state.new_cnt;
+	new_state.d_array_size = sizeof(long double) * new_state.new_cnt;
+	new_state.new_array =
+		xcalloc(new_state.new_cnt, sizeof(slurmdb_tres_rec_t *));
+	new_state.new_name_array = xcalloc(new_state.new_cnt, sizeof(char *));
 
 	list_sort(new_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
 
 	/* we don't care if it gets smaller */
-	if (new_cnt > g_tres_count)
-		changed_size = true;
+	if (new_state.new_cnt > g_tres_count)
+		new_state.changed_size = true;
 
-	/* Set up the new array to see if we need to update any other
-	   arrays with current values.
-	*/
-	i = 0;
-	itr = list_iterator_create(new_list);
-	while ((tres_rec = list_next(itr))) {
-
-		new_array[i] = tres_rec;
-
-		new_name_array[i] = xstrdup_printf(
-			"%s%s%s",
-			tres_rec->type,
-			tres_rec->name ? "/" : "",
-			tres_rec->name ? tres_rec->name : "");
-
-		/*
-		 * This can happen when a new static or dynamic TRES is added.
-		 */
-		if (assoc_mgr_tres_array && (i < g_tres_count) &&
-		    (new_array[i]->id != assoc_mgr_tres_array[i]->id))
-			changed_pos = true;
-		i++;
-	}
-	list_iterator_destroy(itr);
+	/*
+	 * Set up the new array to see if we need to update any other arrays
+	 * with current values.
+	 */
+	list_for_each_ro(new_list, _foreach_new_tres, &new_state);
 
 	/* If for some reason the position changed
 	 * (new static) we need to move it to it's new place.
 	 */
 	xfree(assoc_mgr_tres_old_pos);
-	if (changed_pos) {
+	if (new_state.changed_pos) {
 		int pos;
 
-		assoc_mgr_tres_old_pos = xcalloc(new_cnt, sizeof(int));
-		for (i=0; i<new_cnt; i++) {
-			if (!new_array[i]) {
+		assoc_mgr_tres_old_pos =
+			xcalloc(new_state.new_cnt, sizeof(int));
+		for (i=0; i < new_state.new_cnt; i++) {
+			if (!new_state.new_array[i]) {
 				assoc_mgr_tres_old_pos[i] = -1;
 				continue;
 			}
 
-			pos = _get_old_tres_pos(new_array, assoc_mgr_tres_array,
-						i, g_tres_count);
+			pos = _get_old_tres_pos(
+				new_state.new_array,
+				assoc_mgr_tres_array,
+				i,
+				g_tres_count);
 
 			if (pos == NO_VAL)
 				assoc_mgr_tres_old_pos[i] = -1;
@@ -1521,164 +1659,35 @@ extern int assoc_mgr_post_tres_list(list_t *new_list)
 
 
 	xfree(assoc_mgr_tres_array);
-	assoc_mgr_tres_array = new_array;
-	new_array = NULL;
+	assoc_mgr_tres_array = new_state.new_array;
+	new_state.new_array = NULL;
 
 	if (assoc_mgr_tres_name_array) {
 		for (i=0; i<g_tres_count; i++)
 			xfree(assoc_mgr_tres_name_array[i]);
 		xfree(assoc_mgr_tres_name_array);
 	}
-	assoc_mgr_tres_name_array = new_name_array;
-	new_name_array = NULL;
+	assoc_mgr_tres_name_array = new_state.new_name_array;
+	new_state.new_name_array = NULL;
 
 	FREE_NULL_LIST(assoc_mgr_tres_list);
 	assoc_mgr_tres_list = new_list;
 	new_list = NULL;
 
-	g_tres_count = new_cnt;
+	g_tres_count = new_state.new_cnt;
 
-	if ((changed_size || changed_pos) &&
+	if ((new_state.changed_size || new_state.changed_pos) &&
 	    assoc_mgr_assoc_list && assoc_mgr_qos_list) {
-		uint64_t grp_used_tres[new_cnt],
-			grp_used_tres_run_secs[new_cnt];
-		long double usage_tres_raw[new_cnt];
-		slurmdb_assoc_rec_t *assoc_rec;
-		slurmdb_qos_rec_t *qos_rec;
-		int array_size = sizeof(uint64_t) * new_cnt;
-		int d_array_size = sizeof(long double) * new_cnt;
-		slurmdb_used_limits_t *used_limits;
-		list_itr_t *itr_user;
-
 		/* update the associations and such here */
-		itr = list_iterator_create(assoc_mgr_assoc_list);
-		while ((assoc_rec = list_next(itr))) {
-
-			assoc_mgr_set_assoc_tres_cnt(assoc_rec);
-
-			if (!assoc_rec->usage)
-				continue;
-
-			_resize_assoc_usage_tres_arrays(assoc_rec->usage,
-							new_cnt, changed_size,
-							changed_pos);
-
-			if (assoc_rec->leaf_usage &&
-			    (assoc_rec->leaf_usage != assoc_rec->usage))
-				_resize_assoc_usage_tres_arrays(
-					assoc_rec->leaf_usage, new_cnt,
-					changed_size, changed_pos);
-		}
-		list_iterator_destroy(itr);
+		list_for_each_ro(assoc_mgr_assoc_list, _foreach_resize_assoc,
+				 &new_state);
 
 		/* update the qos and such here */
-		itr = list_iterator_create(assoc_mgr_qos_list);
-		while ((qos_rec = list_next(itr))) {
-
-			assoc_mgr_set_qos_tres_cnt(qos_rec);
-
-			if (!qos_rec->usage)
-				continue;
-
-			/* Need to increase the size of the usage counts. */
-			if (changed_size) {
-				qos_rec->usage->tres_cnt = new_cnt;
-				xrealloc(qos_rec->usage->
-					 grp_used_tres,
-					 array_size);
-				xrealloc(qos_rec->usage->
-					 grp_used_tres_run_secs,
-					 array_size);
-				xrealloc(qos_rec->usage->
-					 usage_tres_raw,
-					 d_array_size);
-				if (qos_rec->usage->user_limit_list) {
-					itr_user = list_iterator_create(
-						qos_rec->usage->
-						user_limit_list);
-					while ((used_limits = list_next(
-							itr_user))) {
-						xrealloc(used_limits->
-							 tres,
-							 array_size);
-						xrealloc(used_limits->
-							 tres_run_secs,
-							 array_size);
-					}
-					list_iterator_destroy(itr_user);
-				}
-			}
-
-			/* If for some reason the position changed
-			 * (new static) we need to move it to it's new place.
-			 */
-			if (changed_pos) {
-				memset(grp_used_tres, 0, array_size);
-				memset(grp_used_tres_run_secs, 0, array_size);
-				memset(usage_tres_raw, 0, d_array_size);
-
-				for (i=0; i<new_cnt; i++) {
-					int old_pos = assoc_mgr_tres_old_pos[i];
-					if (old_pos == -1)
-						continue;
-
-					grp_used_tres[i] = qos_rec->
-						usage->grp_used_tres[old_pos];
-					grp_used_tres_run_secs[i] = qos_rec->
-						usage->grp_used_tres_run_secs
-						[old_pos];
-					usage_tres_raw[i] =
-						qos_rec->usage->usage_tres_raw
-						[old_pos];
-				}
-				memcpy(qos_rec->usage->grp_used_tres,
-				       grp_used_tres, array_size);
-				memcpy(qos_rec->usage->grp_used_tres_run_secs,
-				       grp_used_tres_run_secs, array_size);
-				memcpy(qos_rec->usage->usage_tres_raw,
-				       usage_tres_raw, d_array_size);
-				if (qos_rec->usage->user_limit_list) {
-					itr_user = list_iterator_create(
-						qos_rec->usage->
-						user_limit_list);
-					while ((used_limits = list_next(
-							itr_user))) {
-						memset(grp_used_tres, 0,
-						       array_size);
-						memset(grp_used_tres_run_secs,
-						       0, array_size);
-						for (i=0; i<new_cnt; i++) {
-							int old_pos =
-								assoc_mgr_tres_old_pos[i];
-							if (old_pos == -1)
-								continue;
-
-							grp_used_tres[i] =
-								used_limits->
-								tres[old_pos];
-							grp_used_tres_run_secs
-								[i] =
-								used_limits->
-								tres_run_secs
-								[old_pos];
-						}
-
-						memcpy(used_limits->tres,
-						       grp_used_tres,
-						       array_size);
-						memcpy(used_limits->
-						       tres_run_secs,
-						       grp_used_tres_run_secs,
-						       array_size);
-					}
-					list_iterator_destroy(itr_user);
-				}
-			}
-		}
-		list_iterator_destroy(itr);
+		list_for_each_ro(assoc_mgr_qos_list, _foreach_post_tres_qos,
+				 &new_state);
 	}
 
-	return (changed_size || changed_pos) ? 1 : 0;
+	return (new_state.changed_size || new_state.changed_pos) ? 1 : 0;
 }
 
 static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
