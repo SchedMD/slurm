@@ -70,6 +70,14 @@ typedef struct {
 } foreach_tres_pos_t;
 
 typedef struct {
+	list_t *acct_list;
+	bool is_admin;
+	list_t *ret_list;
+	slurmdb_user_rec_t *user;
+	list_t *user_list;
+} foreach_assoc_filter_t;
+
+typedef struct {
 	bool flushed;
 	list_t *qos_list;
 } foreach_update_qos_t;
@@ -3496,19 +3504,105 @@ extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
 	return false;
 }
 
+static int _foreach_get_share(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	foreach_assoc_filter_t *state = arg;
+	assoc_shares_object_t *share;
+
+	if (state->user_list && assoc->user &&
+	    !list_find_first_ro(state->user_list, slurm_find_char_in_list,
+				assoc->user))
+		return 0;
+
+	if (state->acct_list &&
+	    !list_find_first_ro(state->acct_list, slurm_find_char_in_list,
+				assoc->acct))
+		return 0;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_USAGE) && !state->is_admin) {
+		if (assoc->user && !xstrcmp(assoc->user, state->user->name))
+			goto is_user;
+
+		if (!state->user->coord_accts) {
+			debug4("This user isn't a coord.");
+			return 0;
+		}
+
+		if (!assoc->acct) {
+			debug("No account name given in association.");
+			return 0;
+		}
+
+		if (!list_find_first_ro(state->user->coord_accts,
+					assoc_mgr_find_coord_in_user,
+					assoc->acct))
+			return 0;
+	}
+is_user:
+	share = xmalloc(sizeof(assoc_shares_object_t));
+	list_append(state->ret_list, share);
+
+	share->assoc_id = assoc->id;
+	share->cluster = xstrdup(assoc->cluster);
+
+	if (assoc == assoc_mgr_root_assoc)
+		share->shares_raw = NO_VAL;
+	else
+		share->shares_raw = assoc->shares_raw;
+
+	share->shares_norm = assoc->usage->shares_norm;
+	share->usage_raw = (uint64_t)assoc->usage->usage_raw;
+
+	share->usage_tres_raw = xcalloc(g_tres_count, sizeof(long double));
+	memcpy(share->usage_tres_raw, assoc->usage->usage_tres_raw,
+	       sizeof(long double) * g_tres_count);
+
+	share->tres_grp_mins = xcalloc(g_tres_count, sizeof(uint64_t));
+	memcpy(share->tres_grp_mins, assoc->grp_tres_mins_ctld,
+	       sizeof(uint64_t) * g_tres_count);
+	share->tres_run_secs = xcalloc(g_tres_count, sizeof(uint64_t));
+	memcpy(share->tres_run_secs, assoc->usage->grp_used_tres_run_secs,
+	       sizeof(uint64_t) * g_tres_count);
+	share->level_fs = assoc->usage->level_fs;
+
+	if (assoc->partition)
+		share->partition = xstrdup(assoc->partition);
+	else
+		share->partition = NULL;
+
+	if (assoc->user) {
+		/*
+		 * We only calculate user effective usage when we need it
+		 */
+		if (fuzzy_equal(assoc->usage->usage_efctv, NO_VAL))
+			priority_g_set_assoc_usage(assoc);
+
+		share->name = xstrdup(assoc->user);
+		share->parent = xstrdup(assoc->acct);
+		share->user = 1;
+	} else {
+		share->name = xstrdup(assoc->acct);
+		if (!assoc->parent_acct && assoc->usage->parent_assoc_ptr)
+			share->parent =
+				xstrdup(assoc->usage->parent_assoc_ptr->acct);
+		else
+			share->parent = xstrdup(assoc->parent_acct);
+	}
+
+	/* These can all be set in priority_g_set_assoc_usage */
+	share->usage_norm = (double)assoc->usage->usage_norm;
+	share->usage_efctv = (double)assoc->usage->usage_efctv;
+	share->fs_factor = assoc->usage->fs_factor;
+	return 0;
+}
+
 extern void assoc_mgr_get_shares(void *db_conn,
 				 uid_t uid, shares_request_msg_t *req_msg,
 				 shares_response_msg_t *resp_msg)
 {
-	list_itr_t *itr = NULL;
-	list_itr_t *user_itr = NULL;
-	list_itr_t *acct_itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	assoc_shares_object_t *share = NULL;
-	list_t *ret_list = NULL;
-	char *tmp_char = NULL;
 	slurmdb_user_rec_t user = { .uid = uid };
-	int is_admin=1;
+	foreach_assoc_filter_t state = { .user = &user, .is_admin = 1 };
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .tres = READ_LOCK };
 
 	xassert(resp_msg);
@@ -3518,176 +3612,48 @@ extern void assoc_mgr_get_shares(void *db_conn,
 
 	if (req_msg) {
 		if (req_msg->user_list && list_count(req_msg->user_list))
-			user_itr = list_iterator_create(req_msg->user_list);
+			state.user_list = req_msg->user_list;
 
 		if (req_msg->acct_list && list_count(req_msg->acct_list))
-			acct_itr = list_iterator_create(req_msg->acct_list);
+			state.acct_list = req_msg->acct_list;
 	}
 
 	if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
-		is_admin = 0;
-		/* Check permissions of the requesting user.
-		 */
-		if ((uid == slurm_conf.slurm_user_id || uid == 0)
-		    || assoc_mgr_get_admin_level(db_conn, uid)
-		    >= SLURMDB_ADMIN_OPERATOR)
-			is_admin = 1;
-		else {
-			if (assoc_mgr_fill_in_user(
-				    db_conn, &user,
-				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false)
-			    == SLURM_ERROR) {
-				debug3("User %u not found", user.uid);
-				goto end_it;
-			}
+		state.is_admin = false;
+		/* Check permissions of the requesting user. */
+		if ((uid == slurm_conf.slurm_user_id || uid == 0) ||
+		    (assoc_mgr_get_admin_level(db_conn, uid) >=
+		     SLURMDB_ADMIN_OPERATOR))
+			state.is_admin = true;
+		else if (assoc_mgr_fill_in_user(db_conn, &user,
+						ACCOUNTING_ENFORCE_ASSOCS, NULL,
+						false) == SLURM_ERROR) {
+			debug3("User %u not found", user.uid);
+			return;
 		}
 	}
 
-	resp_msg->assoc_shares_list = ret_list =
+	resp_msg->assoc_shares_list = state.ret_list =
 		list_create(slurm_destroy_assoc_shares_object);
 
 	assoc_mgr_lock(&locks);
 
 	resp_msg->tres_cnt = g_tres_count;
 
-	/* DON'T FREE, since this shouldn't change while the slurmctld
-	 * is running we should be ok.
-	*/
+	/*
+	 * DON'T FREE, since this shouldn't change while the slurmctld is
+	 * running we should be ok.
+	 */
 	resp_msg->tres_names = assoc_mgr_tres_name_array;
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	while ((assoc = list_next(itr))) {
-		if (user_itr && assoc->user) {
-			while ((tmp_char = list_next(user_itr))) {
-				if (!xstrcasecmp(tmp_char, assoc->user))
-					break;
-			}
-			list_iterator_reset(user_itr);
-			/* not correct user */
-			if (!tmp_char)
-				continue;
-		}
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_get_share, &state);
 
-		if (acct_itr) {
-			while ((tmp_char = list_next(acct_itr))) {
-				if (!xstrcasecmp(tmp_char, assoc->acct))
-					break;
-			}
-			list_iterator_reset(acct_itr);
-			/* not correct account */
-			if (!tmp_char)
-				continue;
-		}
-
-		if (slurm_conf.private_data & PRIVATE_DATA_USAGE) {
-			if (!is_admin) {
-				list_itr_t *itr = NULL;
-				slurmdb_coord_rec_t *coord = NULL;
-
-				if (assoc->user &&
-				    !xstrcmp(assoc->user, user.name))
-					goto is_user;
-
-				if (!user.coord_accts) {
-					debug4("This user isn't a coord.");
-					goto bad_user;
-				}
-
-				if (!assoc->acct) {
-					debug("No account name given "
-					      "in association.");
-					goto bad_user;
-				}
-
-				itr = list_iterator_create(user.coord_accts);
-				while ((coord = list_next(itr))) {
-					if (!xstrcasecmp(coord->name,
-							 assoc->acct))
-						break;
-				}
-				list_iterator_destroy(itr);
-
-				if (coord)
-					goto is_user;
-
-			bad_user:
-				continue;
-			}
-		}
-	is_user:
-
-		share = xmalloc(sizeof(assoc_shares_object_t));
-		list_append(ret_list, share);
-
-		share->assoc_id = assoc->id;
-		share->cluster = xstrdup(assoc->cluster);
-
-		if (assoc == assoc_mgr_root_assoc)
-			share->shares_raw = NO_VAL;
-		else
-			share->shares_raw = assoc->shares_raw;
-
-		share->shares_norm = assoc->usage->shares_norm;
-		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
-
-		share->usage_tres_raw = xcalloc(g_tres_count,
-						sizeof(long double));
-		memcpy(share->usage_tres_raw,
-		       assoc->usage->usage_tres_raw,
-		       sizeof(long double) * g_tres_count);
-
-		share->tres_grp_mins = xcalloc(g_tres_count, sizeof(uint64_t));
-		memcpy(share->tres_grp_mins, assoc->grp_tres_mins_ctld,
-		       sizeof(uint64_t) * g_tres_count);
-		share->tres_run_secs = xcalloc(g_tres_count, sizeof(uint64_t));
-		memcpy(share->tres_run_secs,
-		       assoc->usage->grp_used_tres_run_secs,
-		       sizeof(uint64_t) * g_tres_count);
-		share->level_fs = assoc->usage->level_fs;
-
-		if (assoc->partition) {
-			share->partition =  xstrdup(assoc->partition);
-		} else {
-			share->partition = NULL;
-		}
-
-		if (assoc->user) {
-			/* We only calculate user effective usage when
-			 * we need it
-			 */
-			if (fuzzy_equal(assoc->usage->usage_efctv, NO_VAL))
-				priority_g_set_assoc_usage(assoc);
-
-			share->name = xstrdup(assoc->user);
-			share->parent = xstrdup(assoc->acct);
-			share->user = 1;
-		} else {
-			share->name = xstrdup(assoc->acct);
-			if (!assoc->parent_acct
-			    && assoc->usage->parent_assoc_ptr)
-				share->parent = xstrdup(
-					assoc->usage->parent_assoc_ptr->acct);
-			else
-				share->parent = xstrdup(assoc->parent_acct);
-		}
-
-		/* These can all be set in priority_g_set_assoc_usage */
-		share->usage_norm = (double)assoc->usage->usage_norm;
-		share->usage_efctv = (double)assoc->usage->usage_efctv;
-		share->fs_factor = assoc->usage->fs_factor;
-	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
-end_it:
-	if (user_itr)
-		list_iterator_destroy(user_itr);
-	if (acct_itr)
-		list_iterator_destroy(acct_itr);
 
-	/* The ret_list should already be sorted correctly, so no need
-	   to do it again.
-	*/
-	return;
+	/*
+	 * The ret_list should already be sorted correctly, so no need to do
+	 * it again.
+	 */
 }
 
 extern buf_t *assoc_mgr_info_get_pack_msg(
