@@ -3061,12 +3061,23 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 
 }
 
+static int _list_find_qos(void *x, void *key)
+{
+	slurmdb_qos_rec_t *found_qos = x;
+	slurmdb_qos_rec_t *qos = key;
+
+	if (qos->id == found_qos->id)
+		return 1;
+	if (qos->name && !xstrcasecmp(qos->name, found_qos->name))
+		return 1;
+	return 0;
+}
+
 extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 				 int enforce,
 				 slurmdb_qos_rec_t **qos_pptr, bool locked)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_qos_rec_t * found_qos = NULL;
+	slurmdb_qos_rec_t *found_qos = NULL;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
 	if (qos_pptr)
@@ -3100,14 +3111,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 		return SLURM_SUCCESS;
 	}
 
-	itr = list_iterator_create(assoc_mgr_qos_list);
-	while ((found_qos = list_next(itr))) {
-		if (qos->id == found_qos->id)
-			break;
-		else if (qos->name && !xstrcasecmp(qos->name, found_qos->name))
-			break;
-	}
-	list_iterator_destroy(itr);
+	found_qos = list_find_first_ro(assoc_mgr_qos_list, _list_find_qos, qos);
 
 	if (!found_qos) {
 		if (!locked)
