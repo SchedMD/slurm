@@ -29,6 +29,9 @@ def setup():
 
     atf.require_slurm_running()
 
+    atf.require_lmod()
+    atf.module_load("openmpi")
+
 
 def test_mpi_basic_functionality(mpi_program):
     """Test basic MPI functionality via srun with different distributions."""
