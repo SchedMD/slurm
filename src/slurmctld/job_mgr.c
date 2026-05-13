@@ -282,9 +282,9 @@ typedef struct {
 	bool any_check;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_desc_msg_t *job_desc;
-	uint32_t max_nodes_orig;
+	uint32_t max_nodes;
 	uint32_t max_time;
-	uint32_t min_nodes_orig;
+	uint32_t min_nodes;
 	slurmdb_qos_rec_t *qos_ptr;
 	list_t *qos_ptr_list;
 	int rc;
@@ -6781,12 +6781,10 @@ static int _foreach_valid_part(void *x, void *arg)
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
 		foreach_valid_part->rc = SLURM_SUCCESS;
 
-	foreach_valid_part->min_nodes_orig =
-		MIN(foreach_valid_part->min_nodes_orig,
-		    part_ptr->min_nodes_orig);
-	foreach_valid_part->max_nodes_orig =
-		MAX(foreach_valid_part->max_nodes_orig,
-		    part_ptr->max_nodes_orig);
+	foreach_valid_part->min_nodes =
+		MIN(foreach_valid_part->min_nodes, part_ptr->min_nodes);
+	foreach_valid_part->max_nodes =
+		MAX(foreach_valid_part->max_nodes, part_ptr->max_nodes);
 	foreach_valid_part->max_time =
 		MAX(foreach_valid_part->max_time, part_ptr->max_time);
 
@@ -6801,7 +6799,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			   list_t *qos_ptr_list)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
+	uint32_t part_min_nodes = INFINITE, part_max_nodes = 1;
 	uint32_t max_time = 0;
 	bool any_check = false;
 
@@ -6814,9 +6812,9 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			.any_check = any_check,
 			.assoc_ptr = assoc_ptr,
 			.job_desc = job_desc,
-			.max_nodes_orig = 1,
+			.max_nodes = 1,
 			.max_time = 0,
-			.min_nodes_orig = INFINITE,
+			.min_nodes = INFINITE,
 			.qos_ptr = qos_ptr,
 			.qos_ptr_list = qos_ptr_list,
 			.req_bitmap = req_bitmap,
@@ -6840,13 +6838,13 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			goto fini;
 		}
 		any_check = foreach_valid_part.any_check;
-		min_nodes_orig = foreach_valid_part.min_nodes_orig;
-		max_nodes_orig = foreach_valid_part.max_nodes_orig;
+		part_min_nodes = foreach_valid_part.min_nodes;
+		part_max_nodes = foreach_valid_part.max_nodes;
 		max_time = foreach_valid_part.max_time;
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
-		min_nodes_orig = part_ptr->min_nodes_orig;
-		max_nodes_orig = part_ptr->max_nodes_orig;
+		part_min_nodes = part_ptr->min_nodes;
+		part_max_nodes = part_ptr->max_nodes;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
 					submit_uid, qos_ptr, qos_ptr_list,
@@ -6865,36 +6863,48 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 	/* Check Partition with the highest limits when there are multiple */
 	if (job_desc->min_nodes == NO_VAL) {
 		/* Avoid setting the job request to 0 nodes unless requested */
-		if (!min_nodes_orig)
+		if (!part_min_nodes ||
+		    (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))
 			job_desc->min_nodes = 1;
 		else
-			job_desc->min_nodes = min_nodes_orig;
-	} else if ((job_desc->min_nodes > max_nodes_orig) &&
-	           slurm_conf.enforce_part_limits &&
-	           (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-	                                      QOS_FLAG_PART_MAX_NODE)))) {
+			job_desc->min_nodes = part_min_nodes;
+	} else if ((job_desc->min_nodes > part_max_nodes) &&
+		   slurm_conf.enforce_part_limits &&
+		   (!qos_ptr ||
+		    (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE)))) {
 		info("%s: job's min nodes greater than "
 		     "partition's max nodes (%u > %u)",
-		     __func__, job_desc->min_nodes, max_nodes_orig);
+		     __func__, job_desc->min_nodes, part_max_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
-	} else if ((job_desc->min_nodes < min_nodes_orig) &&
+	} else if ((job_desc->min_nodes < part_min_nodes) &&
 		   ((job_desc->max_nodes == NO_VAL) ||
-		    (job_desc->max_nodes >= min_nodes_orig))) {
-		job_desc->min_nodes = min_nodes_orig;
+		    (job_desc->max_nodes >= part_min_nodes)) &&
+		   (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))) {
+		job_desc->min_nodes = part_min_nodes;
 	}
 
-	if ((job_desc->max_nodes != NO_VAL) &&
-	    slurm_conf.enforce_part_limits &&
-	    (job_desc->max_nodes < min_nodes_orig) &&
-	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-	                               & QOS_FLAG_PART_MIN_NODE)))) {
+	if ((job_desc->max_nodes != NO_VAL) && slurm_conf.enforce_part_limits &&
+	    (job_desc->max_nodes < part_min_nodes) &&
+	    (!qos_ptr ||
+	     (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) {
 		info("%s: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
-		     __func__, job_desc->max_nodes, min_nodes_orig);
+		     __func__, job_desc->max_nodes, part_min_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
+
+	if ((job_desc->num_tasks != NO_VAL) && slurm_conf.enforce_part_limits &&
+	    (job_desc->num_tasks < part_min_nodes) &&
+	    (!qos_ptr ||
+	     (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) {
+		info("%s: job's ntasks less than partition's min nodes (%u < %u)",
+		     __func__, job_desc->num_tasks, part_min_nodes);
+		rc = ESLURM_BAD_TASK_COUNT;
+		goto fini;
+	}
+
 	/* Zero node count OK for persistent burst buffer create or destroy */
 	if ((job_desc->min_nodes == 0) &&
 	    (job_desc->array_inx || (job_desc->het_job_offset != NO_VAL) ||
@@ -7575,6 +7585,14 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 		info("%s: Job's max_nodes(%u) < min_nodes(%u)",
 		     __func__, job_desc->max_nodes, job_desc->min_nodes);
 		error_code = ESLURM_INVALID_NODE_COUNT;
+		goto cleanup_fail;
+	}
+
+	if ((job_desc->num_tasks != NO_VAL) && (job_desc->num_tasks != 0) &&
+	    (job_desc->num_tasks < job_desc->min_nodes)) {
+		info("%s: Job's num_tasks(%u) < min_nodes(%u)",
+		     __func__, job_desc->num_tasks, job_desc->min_nodes);
+		error_code = ESLURM_BAD_TASK_COUNT;
 		goto cleanup_fail;
 	}
 
@@ -8577,6 +8595,12 @@ static int _unroll_min_max_node(job_record_t *job_ptr)
 	job_details_t *detail_ptr = job_ptr->details;
 	int i;
 
+	/*
+	 * JOB_IMPLICIT_MAX_NODES jobs are scheduled as min_nodes only
+	 */
+	if (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES)
+		return SLURM_SUCCESS;
+
 	if (topo_update != slurm_conf.last_update) {
 		char *tmp_ptr;
 		topo_update = slurm_conf.last_update;
@@ -8963,6 +8987,11 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 			detail_ptr->min_nodes = 1;
 		detail_ptr->max_nodes = MIN(active_node_record_count,
 					    detail_ptr->num_tasks);
+	} else if ((detail_ptr->max_nodes == 0) &&
+		   (detail_ptr->num_tasks != 0) &&
+		   (detail_ptr->num_tasks != NO_VAL)) {
+		detail_ptr->max_nodes = detail_ptr->num_tasks;
+		job_ptr->bit_flags |= JOB_IMPLICIT_MAX_NODES;
 	}
 
 	job_ptr->selinux_context = xstrdup(job_desc->selinux_context);
@@ -13721,6 +13750,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else {
 			save_max_nodes = detail_ptr->max_nodes;
 			detail_ptr->max_nodes = job_desc->max_nodes;
+			job_ptr->bit_flags &= ~JOB_IMPLICIT_MAX_NODES;
 		}
 	}
 	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
@@ -13798,7 +13828,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_desc->num_tasks < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
-		else {
+		else if (job_desc->num_tasks < detail_ptr->min_nodes) {
+			info("%s: num_tasks (%u) less than min_nodes (%u) for %pJ",
+			     __func__, job_desc->num_tasks,
+			     detail_ptr->min_nodes, job_ptr);
+			error_code = ESLURM_BAD_TASK_COUNT;
+		} else {
 			detail_ptr->num_tasks = job_desc->num_tasks;
 			/*
 			 * Once you actually requested ntasks you will get
@@ -13807,6 +13842,20 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 */
 			if (job_desc->bitflags & JOB_NTASKS_SET)
 				job_ptr->bit_flags |= JOB_NTASKS_SET;
+
+			if ((job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
+			    (detail_ptr->max_nodes != detail_ptr->num_tasks)) {
+				info("%s: setting max_nodes from %u to %u for %pJ",
+				     __func__, detail_ptr->max_nodes,
+				     detail_ptr->num_tasks, job_ptr);
+				detail_ptr->max_nodes = detail_ptr->num_tasks;
+				job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
+					acct_policy_limit_set
+						.tres[TRES_ARRAY_NODE];
+				update_accounting = true;
+				FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+			}
+
 			info("%s: setting num_tasks to %u for %pJ",
 			     __func__, job_desc->num_tasks, job_ptr);
 		}
