@@ -85,6 +85,11 @@ typedef struct {
 	int new_cnt;
 } foreach_new_tres_t;
 
+typedef struct {
+	slurmdb_assoc_rec_t *assoc;
+	list_t *assoc_list;
+} foreach_user_assocs_t;
+
 slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_assoc_max_priority = 0;
@@ -2595,7 +2600,29 @@ extern void assoc_mgr_unlock(assoc_mgr_lock_t *locks)
 		slurm_rwlock_unlock(&assoc_mgr_locks[ASSOC_LOCK]);
 }
 
-/* Since the returned assoc_list is full of pointers from the
+static int _foreach_get_user_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *found_assoc = x;
+	foreach_user_assocs_t *state = arg;
+
+	if (state->assoc->uid != found_assoc->uid) {
+		debug4("not the right user %u != %u",
+		       state->assoc->uid, found_assoc->uid);
+		return 0;
+	}
+	if (state->assoc->acct &&
+	    xstrcmp(state->assoc->acct, found_assoc->acct)) {
+		debug4("not the right acct %s != %s",
+		       state->assoc->acct, found_assoc->acct);
+		return 0;
+	}
+
+	list_append(state->assoc_list, found_assoc);
+	return 0;
+}
+
+/*
+ * Since the returned assoc_list is full of pointers from the
  * assoc_mgr_assoc_list assoc_mgr_lock_t READ_LOCK on
  * assocs must be set before calling this function and while
  * handling it after a return.
@@ -2605,9 +2632,11 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 				     int enforce,
 				     list_t *assoc_list)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *found_assoc = NULL;
-	int set = 0;
+	foreach_user_assocs_t state = {
+		.assoc = assoc,
+		.assoc_list = assoc_list,
+	};
+	int set;
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 
@@ -2623,25 +2652,10 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 
 	xassert(assoc_mgr_assoc_list);
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	while ((found_assoc = list_next(itr))) {
-		if (assoc->uid != found_assoc->uid) {
-			debug4("not the right user %u != %u",
-			       assoc->uid, found_assoc->uid);
-			continue;
-		}
-		if (assoc->acct && xstrcmp(assoc->acct, found_assoc->acct)) {
-			debug4("not the right acct %s != %s",
-			       assoc->acct, found_assoc->acct);
-			continue;
-		}
+	set = list_count(assoc_list);
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_get_user_assoc, &state);
 
-		list_append(assoc_list, found_assoc);
-		set = 1;
-	}
-	list_iterator_destroy(itr);
-
-	if (!set) {
+	if (list_count(assoc_list) == set) {
 		if (assoc->acct)
 			debug("UID %u Acct %s has no associations", assoc->uid,
 			      assoc->acct);
