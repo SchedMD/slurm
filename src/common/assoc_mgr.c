@@ -5657,29 +5657,30 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	return SLURM_ERROR;
 }
 
+static int _foreach_clear_used_assoc_info(void *x, void *arg)
+{
+	_clear_used_assoc_info(x);
+	return 0;
+}
+
+static int _foreach_clear_used_qos_info(void *x, void *arg)
+{
+	_clear_used_qos_info(x);
+	return 0;
+}
+
 extern void assoc_mgr_clear_used_info(void)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t * found_assoc = NULL;
-	slurmdb_qos_rec_t * found_qos = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
-	if (assoc_mgr_assoc_list) {
-		itr = list_iterator_create(assoc_mgr_assoc_list);
-		while ((found_assoc = list_next(itr))) {
-			_clear_used_assoc_info(found_assoc);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_assoc_list)
+		list_for_each_ro(assoc_mgr_assoc_list,
+				 _foreach_clear_used_assoc_info, NULL);
 
-	if (assoc_mgr_qos_list) {
-		itr = list_iterator_create(assoc_mgr_qos_list);
-		while ((found_qos = list_next(itr))) {
-			_clear_used_qos_info(found_qos);
-		}
-		list_iterator_destroy(itr);
-	}
+	if (assoc_mgr_qos_list)
+		list_for_each_ro(assoc_mgr_qos_list,
+				 _foreach_clear_used_qos_info, NULL);
 
 	assoc_mgr_unlock(&locks);
 }
