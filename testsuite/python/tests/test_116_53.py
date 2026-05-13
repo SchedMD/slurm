@@ -9,7 +9,8 @@ import pytest
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_auto_config("needs MPI/PMIx configuration")
+    atf.require_lmod()
+    atf.module_load("openmpi")
     atf.require_config_parameter("MpiDefault", "pmix")
     atf.require_config_parameter("KillWait", "5")
     atf.require_nodes(1, [("CPUs", 4)])
