@@ -233,8 +233,10 @@ static void _amdsmi_init(void)
     info("AMDSMI: Discovered %u GPU processor handle(s)", gpu_count);
     /* Initialize energy counters for tracking */
     for (int i = 0; i < gpu_count; i++) {
-        amdsmi_status_t rc = amdsmi_get_energy_count(gpus[i].handle,
-                                                  &gpus[i].energy_start);
+        float    counter_res = 0.0f;
+        uint64_t ts = 0;
+        amdsmi_status_t e_rc = amdsmi_get_energy_count(gpus[i].handle, &gpus[i].energy_start,
+                                                    &counter_res, &ts);
         if (rc != AMDSMI_STATUS_SUCCESS) {
             const char *rc_str = NULL;
             amdsmi_status_code_to_string(rc, &rc_str);
