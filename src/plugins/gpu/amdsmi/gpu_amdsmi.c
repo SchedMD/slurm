@@ -237,11 +237,11 @@ static void _amdsmi_init(void)
         uint64_t ts = 0;
         amdsmi_status_t e_rc = amdsmi_get_energy_count(gpus[i].handle, &gpus[i].energy_start,
                                                     &counter_res, &ts);
-        if (rc != AMDSMI_STATUS_SUCCESS) {
-            const char *rc_str = NULL;
-            amdsmi_status_code_to_string(rc, &rc_str);
+        if (e_rc != AMDSMI_STATUS_SUCCESS) {
+            const char *e_rc_str = NULL;
+            amdsmi_status_code_to_string(e_rc, &e_rc_str);
             error("AMDSMI: Failed to read initial energy count for GPU %d: %s",
-                  i, rc_str ? rc_str : "unknown error");
+                  i, e_rc_str ? e_rc_str : "unknown error");
             gpus[i].energy_start = 0;
         } else {
             debug("AMDSMI: GPU%d initial energy count: %" PRIu64 " Joules",
