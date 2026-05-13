@@ -1538,7 +1538,7 @@ slurm_errtab_t slurm_errtab[] = {
 	},
 	{
 		ERRTAB_ENTRY(ESLURM_HTTP_MISSING_LF),
-		"Expected LF character but not found",
+		"Missing an expected LF character",
 	},
 	{
 		ERRTAB_ENTRY(ESLURM_HTTP_INVALID_CHARACTER),
