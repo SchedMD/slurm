@@ -4812,14 +4812,63 @@ static int _for_each_qos_clear_preempt_bit(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_clear_qos_from_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	uint32_t *qos_id = arg;
+
+	if (assoc->def_qos_id == *qos_id)
+		assoc->def_qos_id = 0;
+
+	if (!assoc->usage->valid_qos)
+		return 0;
+
+	if (bit_size(assoc->usage->valid_qos) > *qos_id)
+		bit_clear(assoc->usage->valid_qos, *qos_id);
+	return 0;
+}
+
+static int _foreach_resize_qos_preempt(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+	uint32_t *qos_count = arg;
+
+	if (!qos->preempt_bitstr)
+		return 0;
+
+	bit_realloc(qos->preempt_bitstr, *qos_count);
+	return 0;
+}
+
+static int _foreach_resize_assoc_valid_qos(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	uint32_t *qos_count = arg;
+
+	if (!assoc->usage->valid_qos)
+		return 0;
+
+	bit_realloc(assoc->usage->valid_qos, *qos_count);
+	return 0;
+}
+
+static int _foreach_remove_qos_notify(void *x, void *arg)
+{
+	init_setup.remove_qos_notify(x);
+	return 0;
+}
+
+static int _foreach_update_qos_notify(void *x, void *arg)
+{
+	init_setup.update_qos_notify(x);
+	return 0;
+}
+
 extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 {
-	slurmdb_qos_rec_t *rec = NULL;
+	slurmdb_qos_rec_t *rec;
 	slurmdb_qos_rec_t *object = NULL;
 
-	list_itr_t *itr = NULL, *assoc_itr = NULL;
-
-	slurmdb_assoc_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 	bool resize_qos_bitstr = 0;
 	int redo_priority = 0;
@@ -4839,17 +4888,12 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 		return SLURM_SUCCESS;
 	}
 
-	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
 		bool relative = false;
 
-		list_iterator_reset(itr);
-		while ((rec = list_next(itr))) {
-			if (object->id == rec->id) {
-				break;
-			}
-		}
+		rec = list_find_first_ro(assoc_mgr_qos_list,
+				      slurmdb_find_qos_in_list, &object->id);
 
 		//info("%d qos %s", update->type, object->name);
 		switch(update->type) {
@@ -5171,47 +5215,34 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				redo_priority = 2;
 
 			if (init_setup.remove_qos_notify) {
-				/* since there are some deadlock
-				   issues while inside our lock here
-				   we have to process a notify later
-				*/
+				/*
+				 * since there are some deadlock issues while
+				 * inside our lock here we have to process a
+				 * notify later
+				 */
 				if (!remove_list)
 					remove_list = list_create(
 						slurmdb_destroy_qos_rec);
-				list_remove(itr);
+				list_remove_first(assoc_mgr_qos_list,
+						  slurm_find_ptr_in_list, rec);
 				list_append(remove_list, rec);
 			} else
-				list_delete_item(itr);
+				list_delete_ptr(assoc_mgr_qos_list, rec);
 
-			/*
-			 * Remove this qos from preempt lists
-			 */
-			list_for_each(assoc_mgr_qos_list,
-				      _for_each_qos_clear_preempt_bit,
-				      &object->id);
+			/* Remove this qos from preempt lists */
+			list_for_each_ro(assoc_mgr_qos_list,
+					 _for_each_qos_clear_preempt_bit,
+					 &object->id);
 
 			if (!assoc_mgr_assoc_list)
 				break;
-			/* Remove this qos from all the associations
-			   on this cluster.
-			*/
-			assoc_itr = list_iterator_create(
-				assoc_mgr_assoc_list);
-			while ((assoc = list_next(assoc_itr))) {
-
-				if (assoc->def_qos_id == object->id)
-					assoc->def_qos_id = 0;
-
-				if (!assoc->usage->valid_qos)
-					continue;
-
-				if (bit_size(assoc->usage->valid_qos)
-				    > object->id)
-					bit_clear(assoc->usage->valid_qos,
-						  object->id);
-			}
-			list_iterator_destroy(assoc_itr);
-
+			/*
+			 * Remove this qos from all the associations on this
+			 * cluster.
+			 */
+			list_for_each_ro(assoc_mgr_assoc_list,
+					 _foreach_clear_qos_from_assoc,
+					 &object->id);
 			break;
 		case SLURMDB_UPDATE_QOS_USAGE:
 		{
@@ -5231,55 +5262,32 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	}
 
 	if (resize_qos_bitstr) {
-		/* we need to resize all bitstring's that represent
-		   qos' */
-		list_iterator_reset(itr);
-		while ((object = list_next(itr))) {
-			if (!object->preempt_bitstr)
-				continue;
-
-			bit_realloc(object->preempt_bitstr, g_qos_count);
-		}
-		if (assoc_mgr_assoc_list) {
-			assoc_itr = list_iterator_create(
-				assoc_mgr_assoc_list);
-			while ((assoc = list_next(assoc_itr))) {
-				if (!assoc->usage->valid_qos)
-					continue;
-				bit_realloc(assoc->usage->valid_qos,
-					    g_qos_count);
-			}
-			list_iterator_destroy(assoc_itr);
-		}
+		/* we need to resize all bitstring's that represent qos' */
+		list_for_each_ro(assoc_mgr_qos_list,
+				 _foreach_resize_qos_preempt, &g_qos_count);
+		if (assoc_mgr_assoc_list)
+			list_for_each_ro(assoc_mgr_assoc_list,
+					 _foreach_resize_assoc_valid_qos,
+					 &g_qos_count);
 	}
 
-	if (redo_priority == 1) {
-		list_iterator_reset(itr);
-		while ((object = list_next(itr)))
-			_set_qos_norm_priority(object);
-	} else if (redo_priority == 2)
+	if (redo_priority == 1)
+		list_for_each_ro(assoc_mgr_qos_list,
+				 _foreach_set_qos_norm_priority, NULL);
+	else if (redo_priority == 2)
 		_post_qos_list(assoc_mgr_qos_list);
-
-	list_iterator_destroy(itr);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
-	/* This needs to happen outside of the
-	   assoc_mgr_lock */
+	/* This needs to happen outside of the assoc_mgr_lock */
 	if (remove_list) {
-		itr = list_iterator_create(remove_list);
-		while ((rec = list_next(itr)))
-			init_setup.remove_qos_notify(rec);
-		list_iterator_destroy(itr);
+		list_for_each(remove_list, _foreach_remove_qos_notify, NULL);
 		FREE_NULL_LIST(remove_list);
 	}
 
 	if (update_list) {
-		itr = list_iterator_create(update_list);
-		while ((rec = list_next(itr)))
-			init_setup.update_qos_notify(rec);
-		list_iterator_destroy(itr);
+		list_for_each(update_list, _foreach_update_qos_notify, NULL);
 		FREE_NULL_LIST(update_list);
 	}
 
