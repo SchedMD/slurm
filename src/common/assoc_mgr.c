@@ -1939,13 +1939,33 @@ static int _refresh_assoc_mgr_tres_list(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_refresh_assoc_used_info(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *curr_assoc = x;
+	slurmdb_assoc_rec_t *assoc;
+
+	if (!curr_assoc->leaf_usage)
+		return 0;
+
+	if (!(assoc = _find_assoc_rec_id(curr_assoc->id, curr_assoc->cluster)))
+		return 0;
+
+	while (assoc) {
+		_addto_used_info(assoc->usage, curr_assoc->leaf_usage);
+		/*
+		 * get the parent last since this pointer is different than
+		 * the one we are updating from
+		 */
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+	return 0;
+}
+
 static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
 	slurmdb_assoc_cond_t assoc_q = {0};
 	list_t *current_assocs = NULL;
 	uid_t uid = getuid();
-	list_itr_t *curr_itr = NULL;
-	slurmdb_assoc_rec_t *curr_assoc = NULL, *assoc = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 //	DEF_TIMERS;
@@ -1985,27 +2005,11 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		return SLURM_SUCCESS;
 	}
 
-	curr_itr = list_iterator_create(current_assocs);
-
-	/* add used limits We only look for the user associations to
-	 * do the parents since a parent may have moved */
-	while ((curr_assoc = list_next(curr_itr))) {
-		if (!curr_assoc->leaf_usage)
-			continue;
-
-		if (!(assoc = _find_assoc_rec_id(curr_assoc->id,
-						 curr_assoc->cluster)))
-			continue;
-
-		while (assoc) {
-			_addto_used_info(assoc->usage, curr_assoc->leaf_usage);
-			/* get the parent last since this pointer is
-			   different than the one we are updating from */
-			assoc = assoc->usage->parent_assoc_ptr;
-		}
-	}
-
-	list_iterator_destroy(curr_itr);
+	/*
+	 * add used limits We only look for the user associations to do the
+	 * parents since a parent may have moved
+	 */
+	list_for_each_ro(current_assocs, _foreach_refresh_assoc_used_info, NULL);
 
 	assoc_mgr_unlock(&locks);
 
