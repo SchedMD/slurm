@@ -704,9 +704,9 @@ static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 static int _list_find_uid(void *x, void *key)
 {
 	slurmdb_user_rec_t *user = (slurmdb_user_rec_t *) x;
-	uint32_t uid = *(uint32_t *) key;
+	uint32_t *uid = key;
 
-	if (user->uid == uid)
+	if (user->uid == *uid)
 		return 1;
 	return 0;
 }
