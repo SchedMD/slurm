@@ -1028,6 +1028,11 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (sropt.async && ((sropt.jobid == NO_VAL) || sropt.no_alloc)) {
+		error("--async is only valid for steps submitted within an existing job allocation.");
+		verified = false;
+	}
+
 	if (!_validate_ignore_signals())
 		verified = false;
 

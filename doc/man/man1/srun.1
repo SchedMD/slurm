@@ -137,8 +137,8 @@ step's exit code and does not forward signals (e.g., SIGINT from Ctrl\-C) to the
 running tasks. Use \fBscancel <jobid>.<stepid>\fR to signal or terminate
 an asynchronous step.
 
-This option can only be used in a job allocation that has the step manager
-enabled (see \fB\-\-stepmgr\fR in \fBsalloc\fR(1)/\fBsbatch\fR(1) and
+This option can only be used in an existing job allocation that has the step
+manager enabled (see \fB\-\-stepmgr\fR in \fBsalloc\fR(1)/\fBsbatch\fR(1) and
 \fBSlurmctldParameters=enable_stepmgr\fR in \fBslurm.conf\fR(5)).
 
 This option is mutually exclusive with \fB\-\-pty\fR and \fB\-\-immediate\fR.
