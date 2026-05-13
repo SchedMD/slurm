@@ -96,6 +96,7 @@ static slurmdb_assoc_rec_t **assoc_hash = NULL;
 static int *assoc_mgr_tres_old_pos = NULL;
 
 static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc);
+static void _reset_children_usages(list_t *children_list);
 
 static bool _running_cache(void)
 {
@@ -5614,31 +5615,31 @@ extern void assoc_mgr_clear_used_info(void)
 	assoc_mgr_unlock(&locks);
 }
 
+static int _foreach_reset_assoc_usage(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	assoc->usage->usage_raw = 0.0;
+	assoc->usage->grp_used_wall = 0.0;
+	for (int i = 0; i < assoc->usage->tres_cnt; i++)
+		assoc->usage->usage_tres_raw[i] = 0;
+
+	if (assoc->user)
+		return 0;
+
+	slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+	assoc->leaf_usage = NULL;
+
+	_reset_children_usages(assoc->usage->children_list);
+	return 0;
+}
+
 static void _reset_children_usages(list_t *children_list)
 {
-	slurmdb_assoc_rec_t *assoc = NULL;
-	list_itr_t *itr = NULL;
-	int i;
-
 	if (!children_list || !list_count(children_list))
 		return;
 
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		assoc->usage->usage_raw = 0.0;
-		assoc->usage->grp_used_wall = 0.0;
-		for (i=0; i<assoc->usage->tres_cnt; i++)
-			assoc->usage->usage_tres_raw[i] = 0;
-
-		if (assoc->user)
-			continue;
-
-		slurmdb_destroy_assoc_usage(assoc->leaf_usage);
-		assoc->leaf_usage = NULL;
-
-		_reset_children_usages(assoc->usage->children_list);
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(children_list, _foreach_reset_assoc_usage, NULL);
 }
 
 /* tres read lock needs to be locked before calling this. */
