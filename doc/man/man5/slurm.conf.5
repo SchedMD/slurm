@@ -6982,7 +6982,7 @@ MessageTimeout, otherwise it can lead to unexpected draining of nodes.
 .TP
 \fBUrlParserType\fR
 Specify the url_parser implementation that will be used. Default is
-\fIurl_parser/libhttp_parser\fR.
+\fIurl_parser/libhttp_parser\fR if found, otherwise \fIurl_parser/internal\fR.
 Acceptable values at present:
 .IP
 .RS
