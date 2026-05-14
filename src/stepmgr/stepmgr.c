@@ -4300,11 +4300,27 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 	hl = hostlist_create(node_list);
 	while ((node_name = hostlist_shift(hl))) {
 		node_record_t *node_ptr = find_node_record(node_name);
-		if (node_ptr)
+		if (node_ptr) {
 			kill_step_on_node(job_ptr, node_ptr, false);
+			/*
+			 * Excise the removed node from the stepmgr's local
+			 * view of the job so subsequent step launches against
+			 * this job are allowed only in surviving nodes.
+			 */
+			if (job_ptr->node_bitmap &&
+			    bit_test(job_ptr->node_bitmap, node_ptr->index)) {
+				bit_clear(job_ptr->node_bitmap,
+					  node_ptr->index);
+				if (job_ptr->node_cnt)
+					job_ptr->node_cnt--;
+			}
+		}
 		free(node_name);
 	}
 	hostlist_destroy(hl);
+
+	xfree(job_ptr->nodes);
+	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
 
 	return SLURM_SUCCESS;
 }
@@ -4845,6 +4861,14 @@ static int _rebuild_bitmaps(void *x, void *arg)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
 	if (step_ptr->state < JOB_RUNNING)
+		return 0;
+
+	/*
+	 * The rest of this function rebuilds the core_bitmap_job from
+	 * job_resrcs which is a slurmctld-only structure. In stepmgr
+	 * job_resrcs is not populated so we stop here.
+	 */
+	if (!job_ptr->job_resrcs)
 		return 0;
 
 	gres_stepmgr_step_state_rebase(step_ptr->gres_list_alloc,
