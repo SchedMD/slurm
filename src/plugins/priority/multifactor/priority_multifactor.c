@@ -142,6 +142,7 @@ typedef struct {
 
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
 static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc);
+static void _set_norm_shares(list_t *children_list);
 
 static void _destroy_priority_factors_obj_light(void *object)
 {
@@ -1603,25 +1604,26 @@ static void _internal_setup(void)
 }
 
 
+static int _foreach_norm_shares(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	assoc_mgr_normalize_assoc_shares(assoc);
+	if (!assoc->user)
+		_set_norm_shares(assoc->usage->children_list);
+
+	return 0;
+}
+
 /* Recursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
  * children of an assoc
  */
 static void _set_norm_shares(list_t *children_list)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-
 	if (!children_list || list_is_empty(children_list))
 		return;
 
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		assoc_mgr_normalize_assoc_shares(assoc);
-		if (!assoc->user)
-			_set_norm_shares(assoc->usage->children_list);
-	}
-
-	list_iterator_destroy(itr);
+	list_for_each_ro(children_list, _foreach_norm_shares, NULL);
 }
 
 /* We need to set up some global variables that are needed outside of the
