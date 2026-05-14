@@ -7816,7 +7816,8 @@
                 "STEPMGR_ENABLED",
                 "SPREAD_SEGMENTS",
                 "CONSOLIDATE_SEGMENTS",
-                "EXPEDITED_REQUEUE"
+                "EXPEDITED_REQUEUE",
+                "JOB_IMPLICIT_MAX_NODES"
               ],
               "type": "string"
             }
@@ -8717,7 +8718,8 @@
                 "STEPMGR_ENABLED",
                 "SPREAD_SEGMENTS",
                 "CONSOLIDATE_SEGMENTS",
-                "EXPEDITED_REQUEUE"
+                "EXPEDITED_REQUEUE",
+                "JOB_IMPLICIT_MAX_NODES"
               ],
               "type": "string"
             }
