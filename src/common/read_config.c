@@ -4265,8 +4265,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->health_check_timeout,
 			conf->health_check_interval);
 
-	if (!s_p_get_string(&conf->http_parser_type, "HttpParserType", hashtbl))
-		conf->http_parser_type = xstrdup(DEFAULT_HTTP_PARSER_TYPE);
+	s_p_get_string(&conf->http_parser_type, "HttpParserType", hashtbl);
 
 	conf->metrics_auth = 0;
 	if (s_p_get_string(&conf->metrics_auth_users, "MetricsAuthUsers",
