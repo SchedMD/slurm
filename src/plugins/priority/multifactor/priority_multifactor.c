@@ -138,6 +138,12 @@ typedef struct {
 	uint64_t *tres_run_delta;
 } init_grp_used_args_t;
 
+typedef struct {
+	create_prio_list_t *prio_list;
+	time_t start_time;
+	uid_t uid;
+} priority_factors_args_t;
+
 /* variables defined in priority_multifactor.h */
 
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
@@ -1959,81 +1965,84 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 		_priority_p_set_assoc_usage_debug(assoc);
 }
 
+static int _foreach_priority_factor_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	priority_factors_args_t *args = arg;
+	time_t use_time;
+
+	if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
+	    !IS_JOB_PENDING(job_ptr))
+		return 0;
+
+	/* Job is not active on this cluster. */
+	if (IS_JOB_REVOKED(job_ptr))
+		return 0;
+
+	/*
+	 * This means the job is not eligible yet
+	 */
+	if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		use_time = job_ptr->details->submit_time;
+	else
+		use_time = job_ptr->details->begin_time;
+
+	if (!use_time || (use_time > args->start_time))
+		return 0;
+
+	/*
+	 * 0 means the job is held
+	 */
+	if (job_ptr->priority == 0)
+		return 0;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != args->uid) &&
+	    !validate_operator(args->uid) &&
+	    (((slurm_mcs_get_privatedata() == 0) &&
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, args->uid,
+					    job_ptr->account, false)) ||
+	     ((slurm_mcs_get_privatedata() == 1) &&
+	      (mcs_g_check_mcs_label(args->uid, job_ptr->mcs_label,
+				     false) != 0))))
+		return 0;
+
+	/*
+	 * Job is not in any partition, so there is nothing to return. This can
+	 * happen if the Partition was deleted, CALCULATE_RUNNING is enabled,
+	 * and this job is still waiting out MinJobAge before being removed
+	 * from the system.
+	 */
+	if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
+		return 0;
+
+	args->prio_list->job_ptr = job_ptr;
+
+	/* Job in one partition */
+	if (!job_ptr->part_ptr_list)
+		_create_prio_list_part(NULL, args->prio_list);
+	else
+		list_for_each_ro(job_ptr->part_ptr_list,
+				 _create_prio_list_part, args->prio_list);
+
+	return 0;
+}
+
 extern list_t *priority_p_get_priority_factors_list(uid_t uid)
 {
-	list_itr_t *itr;
-	job_record_t *job_ptr = NULL;
-	time_t start_time = time(NULL);
 	create_prio_list_t prio_list = { 0 };
+	priority_factors_args_t args = {
+		.prio_list = &prio_list,
+		.start_time = time(NULL),
+		.uid = uid,
+	};
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	if (job_list && list_count(job_list)) {
-		time_t use_time;
-
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
-			    !IS_JOB_PENDING(job_ptr))
-				continue;
-
-			/* Job is not active on this cluster. */
-			if (IS_JOB_REVOKED(job_ptr))
-				continue;
-
-			/*
-			 * This means the job is not eligible yet
-			 */
-			if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
-				use_time = job_ptr->details->submit_time;
-			else
-				use_time = job_ptr->details->begin_time;
-
-			if (!use_time || (use_time > start_time))
-				continue;
-
-			/*
-			 * 0 means the job is held
-			 */
-			if (job_ptr->priority == 0)
-				continue;
-
-			if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-			    (job_ptr->user_id != uid) &&
-			    !validate_operator(uid) &&
-			    (((slurm_mcs_get_privatedata() == 0) &&
-			      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-			                                    job_ptr->account,
-							    false)) ||
-			     ((slurm_mcs_get_privatedata() == 1) &&
-			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label,
-						     false) != 0))))
-				continue;
-
-			/*
-			 * Job is not in any partition, so there is nothing to
-			 * return. This can happen if the Partition was deleted,
-			 * CALCULATE_RUNNING is enabled, and this job is still
-			 * waiting out MinJobAge before being removed from the
-			 * system.
-			 */
-			if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
-				continue;
-
-			prio_list.job_ptr = job_ptr;
-
-			/* Job in one partition */
-			if (!job_ptr->part_ptr_list) {
-				_create_prio_list_part(NULL, &prio_list);
-			} else {
-				list_for_each(job_ptr->part_ptr_list,
-					      _create_prio_list_part,
-					      &prio_list);
-			}
-		}
-		list_iterator_destroy(itr);
+		list_for_each_ro(job_list, _foreach_priority_factor_job, &args);
 		if (!list_count(prio_list.ret_list))
 			FREE_NULL_LIST(prio_list.ret_list);
 	}
