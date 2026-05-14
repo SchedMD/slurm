@@ -4200,21 +4200,21 @@ static int _het_job_find_rec(void *x, void *key)
  * history so that heterogeneous jobs do not keep getting deferred based
  * upon old system state
  */
+static int _delete_or_reset_het_job_map(void *x, void *key)
+{
+	het_job_map_t *map = x;
+
+	if (map->prev_start == 0)
+		return 1;
+
+	map->prev_start = 0;
+	list_flush(map->het_job_rec_list);
+	return 0;
+}
+
 static void _het_job_start_clear(void)
 {
-	het_job_map_t *map;
-	list_itr_t *iter;
-
-	iter = list_iterator_create(het_job_list);
-	while ((map = list_next(iter))) {
-		if (map->prev_start == 0) {
-			list_delete_item(iter);
-		} else {
-			map->prev_start = 0;
-			list_flush(map->het_job_rec_list);
-		}
-	}
-	list_iterator_destroy(iter);
+	list_delete_all(het_job_list, _delete_or_reset_het_job_map, NULL);
 }
 
 /*
