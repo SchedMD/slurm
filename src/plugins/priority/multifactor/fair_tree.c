@@ -47,6 +47,11 @@
 static int  _ft_decay_apply_new_usage(job_record_t *job, time_t *start);
 static void _apply_priority_fs(void);
 
+typedef struct {
+	size_t i;
+	slurmdb_assoc_rec_t **merged;
+} append_array_args_t;
+
 /* Fair Tree code called from the decay thread loop */
 extern void fair_tree_decay(list_t *jobs, time_t start)
 {
@@ -205,38 +210,44 @@ static void _calc_assoc_fs(slurmdb_assoc_rec_t *assoc)
 		assoc->usage->level_fs = S / U;
 }
 
+static int _foreach_append_to_array(void *x, void *arg)
+{
+	append_array_args_t *args = arg;
+
+	args->merged[args->i++] = x;
+
+	return 0;
+}
+
 /* Append list of associations to array
  * IN list - list of associations
  * IN merged - array of associations to append to
  * IN/OUT merged_size - number of associations in merged array
  * RET - New array. Must be freed.
  */
-static slurmdb_assoc_rec_t** _append_list_to_array(
-	list_t *list, slurmdb_assoc_rec_t** merged,
-	size_t *merged_size)
+static slurmdb_assoc_rec_t **_append_list_to_array(list_t *list,
+						   slurmdb_assoc_rec_t **merged,
+						   size_t *merged_size)
 {
-	list_itr_t *itr;
-	slurmdb_assoc_rec_t *next;
 	size_t bytes;
-	size_t i = *merged_size;
+	append_array_args_t args = {
+		.i = *merged_size,
+	};
 
 	if (!list) {
 		error("%s: unable to append NULL list to assoc list.",
 		      __func__);
-
 		return merged;
 	}
 
 	*merged_size += list_count(list);
 
 	/* must be null-terminated, so add one extra slot */
-	bytes = sizeof(slurmdb_assoc_rec_t*) * (*merged_size + 1);
+	bytes = sizeof(slurmdb_assoc_rec_t *) * (*merged_size + 1);
 	merged = xrealloc(merged, bytes);
+	args.merged = merged;
 
-	itr = list_iterator_create(list);
-	while ((next = list_next(itr)))
-		merged[i++] = next;
-	list_iterator_destroy(itr);
+	list_for_each_ro(list, _foreach_append_to_array, &args);
 
 	/* null terminate the array */
 	merged[*merged_size] = NULL;
