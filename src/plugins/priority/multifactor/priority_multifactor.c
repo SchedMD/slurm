@@ -156,12 +156,43 @@ static void _destroy_priority_factors_obj_light(void *object)
  * time from last application..
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
+static int _foreach_decay_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	double real_decay = *(double *) arg;
+
+	assoc->usage->usage_raw *= real_decay;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		assoc->usage->usage_tres_raw[i] *= real_decay;
+	assoc->usage->grp_used_wall *= real_decay;
+
+	if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
+		assoc->leaf_usage->usage_raw *= real_decay;
+		for (int i = 0; i < slurmctld_tres_cnt; i++)
+			assoc->leaf_usage->usage_tres_raw[i] *= real_decay;
+		assoc->leaf_usage->grp_used_wall *= real_decay;
+	}
+
+	return 0;
+}
+
+static int _foreach_decay_qos(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+	double real_decay = *(double *) arg;
+
+	if (qos->flags & QOS_FLAG_NO_DECAY)
+		return 0;
+	qos->usage->usage_raw *= real_decay;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		qos->usage->usage_tres_raw[i] *= real_decay;
+	qos->usage->grp_used_wall *= real_decay;
+
+	return 0;
+}
+
 static int _apply_decay(double real_decay)
 {
-	int i;
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -178,36 +209,13 @@ static int _apply_decay(double real_decay)
 	xassert(assoc_mgr_assoc_list);
 	xassert(assoc_mgr_qos_list);
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	/* We want to do this to all associations including root.
-	   All usage_raws are calculated from the bottom up.
-	*/
-	while ((assoc = list_next(itr))) {
-		assoc->usage->usage_raw *= real_decay;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			assoc->usage->usage_tres_raw[i] *= real_decay;
-		assoc->usage->grp_used_wall *= real_decay;
+	/*
+	 * We want to do this to all associations including root.
+	 * All usage_raws are calculated from the bottom up.
+	 */
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_decay_assoc, &real_decay);
+	list_for_each_ro(assoc_mgr_qos_list, _foreach_decay_qos, &real_decay);
 
-		if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
-			assoc->leaf_usage->usage_raw *= real_decay;
-			for (i = 0; i < slurmctld_tres_cnt; i++)
-				assoc->leaf_usage->usage_tres_raw[i] *=
-					real_decay;
-			assoc->leaf_usage->grp_used_wall *= real_decay;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	itr = list_iterator_create(assoc_mgr_qos_list);
-	while ((qos = list_next(itr))) {
-		if (qos->flags & QOS_FLAG_NO_DECAY)
-			continue;
-		qos->usage->usage_raw *= real_decay;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			qos->usage->usage_tres_raw[i] *= real_decay;
-		qos->usage->grp_used_wall *= real_decay;
-	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
