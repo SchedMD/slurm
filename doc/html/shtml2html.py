@@ -30,7 +30,7 @@ page_title_regex = re.compile(page_title_pat)
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
 
-first_header_pat = r'<[hH]1>\s*(<a name="top">)?\s*(?P<title>[a-zA-Z0-9_ ()\'/-]+)[:]*.*\s*[</a>]?\s*</[hH]1>'
+first_header_pat = r' {0,2}<[hH]1>\s*(<a (?:name|id)="top">)?\s*(?P<title>[a-zA-Z0-9_ ()\'"/-]+)[:]*.*\s*[</a>]?\s*</[hH]1>'
 first_header_regex = re.compile(first_header_pat)
 
 version_pat = r"(@SLURM_VERSION@)"
