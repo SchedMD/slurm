@@ -219,8 +219,8 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 				char ***account_list, bool *account_not);
-static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
-			    bool *user_not, bool strict);
+static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
+			   bool *user_not, bool strict, char ***username_list);
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static int _cmp_resv_id(void *x, void *y);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
@@ -692,6 +692,11 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 					   sizeof(uid_t));
 	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
+	resv_copy_ptr->username_list =
+		xcalloc(resv_orig_ptr->user_cnt, sizeof(char *));
+	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
+		resv_copy_ptr->username_list[i] =
+			xstrdup(resv_orig_ptr->username_list[i]);
 
 	return resv_copy_ptr;
 }
@@ -868,6 +873,9 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->tres_fmt_str);
 		xfree(resv_ptr->users);
 		xfree(resv_ptr->user_list);
+		for (i = 0; i < resv_ptr->user_cnt; i++)
+			xfree(resv_ptr->username_list[i]);
+		xfree(resv_ptr->username_list);
 		xfree(resv_ptr);
 	}
 }
@@ -2383,14 +2391,18 @@ inval:
  * OUT user_not  - true of user_list is that of users to be blocked
  *                 from reservation access
  * IN strict     - true if an invalid user invalidates the reservation
+ * OUT username_list - a list of the usernames, CALLER MUST XFREE this
+ *		       plus each individual record
  * RETURN 0 on success
  */
 static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
-			   bool *user_not, bool strict)
+			   bool *user_not, bool strict, char ***username_list)
 {
 	char *last = NULL, *tmp = NULL, *tok;
 	int u_cnt = 0, i;
 	uid_t *u_list, u_tmp;
+	char **uname_list;
+	*username_list = (char **) NULL;
 
 	*user_cnt = 0;
 	*user_list = (uid_t *) NULL;
@@ -2401,6 +2413,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 
 	i = strlen(users);
 	u_list = xcalloc((i + 2), sizeof(uid_t));
+	uname_list = xcalloc((i + 2), sizeof(char *));
 	tmp = xstrdup(users);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
@@ -2421,7 +2434,8 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 			if (strict)
 				goto inval;
 		} else {
-			u_list[u_cnt++] = u_tmp;
+			u_list[u_cnt] = u_tmp;
+			uname_list[u_cnt++] = NULL;
 		}
 		tok = strtok_r(NULL, ",", &last);
 	}
@@ -2431,15 +2445,22 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 	if (u_cnt > 0) {
 		*user_cnt  = u_cnt;
 		*user_list = u_list;
+		*username_list = uname_list;
 		return SLURM_SUCCESS;
 	}
 
 	xfree(u_list);
+	for (i = 0; i < u_cnt; i++)
+		xfree(uname_list[i]);
+	xfree(uname_list);
 	info("Reservation request has no valid users");
 	return ESLURM_USER_ID_MISSING;
 
  inval:	xfree(tmp);
 	xfree(u_list);
+	for (i = 0; i < u_cnt; i++)
+		xfree(uname_list[i]);
+	xfree(uname_list);
 	return SLURM_ERROR;
 }
 
@@ -3684,6 +3705,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	int account_cnt = 0, user_cnt = 0;
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
+	char **username_list = NULL;
 	list_t *license_list = NULL;
 	uint32_t total_node_cnt = 0;
 	bool account_not = false, user_not = false, qos_not = false,
@@ -3861,8 +3883,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			goto bad_parse;
 	}
 	if (resv_desc_ptr->users) {
-		rc = _build_uid_list(resv_desc_ptr->users,
-				     &user_cnt, &user_list, &user_not, true);
+		rc = _build_uid_list(resv_desc_ptr->users, &user_cnt,
+				     &user_list, &user_not, true,
+				     &username_list);
 		if (rc)
 			goto bad_parse;
 	}
@@ -3870,7 +3893,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	if (resv_desc_ptr->groups) {
 		user_list =
 			get_groups_members(resv_desc_ptr->groups, &user_cnt);
-
 		if (!user_list) {
 			rc = ESLURM_GROUP_ID_MISSING;
 			goto bad_parse;
@@ -4170,8 +4192,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr->groups = resv_desc_ptr->groups;
 	resv_desc_ptr->groups = NULL;
 	resv_ptr->user_cnt	= user_cnt;
+	user_cnt = 0;
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
+	resv_ptr->username_list = username_list;
+	username_list = NULL;
 	resv_ptr->qos = resv_desc_ptr->qos;
 	resv_desc_ptr->qos = NULL;
 	resv_ptr->qos_list = qos_list;
@@ -4218,6 +4243,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	FREE_NULL_LIST(qos_list);
 	FREE_NULL_LIST(allowed_parts_list);
 	_free_resv_select_members(&resv_select);
+	for (i = 0; i < user_cnt; i++)
+		xfree(username_list[i]);
+	xfree(username_list);
 	xfree(user_list);
 	return rc;
 }
@@ -5195,10 +5223,11 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		}
 	}
 	if (resv_ptr->users) {
-		int rc, user_cnt = 0;
+		int i, rc, user_cnt = 0;
 		uid_t *user_list = NULL;
-		rc = _build_uid_list(resv_ptr->users,
-				     &user_cnt, &user_list, &user_not, false);
+		char **username_list = NULL;
+		rc = _build_uid_list(resv_ptr->users, &user_cnt, &user_list,
+				     &user_not, false, &username_list);
 		if (rc == SLURM_ERROR) {
 			error("Reservation %s has invalid users specification (%s)",
 			      resv_ptr->name, resv_ptr->users);
@@ -5208,8 +5237,12 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			      resv_ptr->name, resv_ptr->users);
 		} else {
 			xfree(resv_ptr->user_list);
+			for (i = 0; i < resv_ptr->user_cnt; i++)
+				xfree(resv_ptr->username_list[i]);
+			xfree(resv_ptr->username_list);
 			resv_ptr->user_cnt = user_cnt;
 			resv_ptr->user_list = user_list;
+			resv_ptr->username_list = username_list;
 			if (user_not)
 				resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
 			else

@@ -409,6 +409,7 @@ typedef struct slurmctld_resv {
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
+	char **username_list; /* array of usernames permitted to use */
 } slurmctld_resv_t;
 
 typedef struct {
