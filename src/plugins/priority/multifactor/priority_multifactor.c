@@ -133,6 +133,11 @@ typedef struct {
 	list_t *ret_list;
 } create_prio_list_t;
 
+typedef struct {
+	time_t last_ran;
+	uint64_t *tres_run_delta;
+} init_grp_used_args_t;
+
 /* variables defined in priority_multifactor.h */
 
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
@@ -986,6 +991,44 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 	}
 }
 
+static int _foreach_init_grp_used_tres_run_secs(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	init_grp_used_args_t *args = arg;
+	double usage_factor = 1.0;
+
+	log_flag(PRIO, "job: %u", job_ptr->job_id);
+
+	/*
+	 * If end_time_exp is NO_VAL we have already ran the end for this job.
+	 * We don't want to do it again, so just exit.
+	 */
+	if (job_ptr->end_time_exp == (time_t) NO_VAL)
+		return 0;
+
+	if (!IS_JOB_RUNNING(job_ptr))
+		return 0;
+
+	if (job_ptr->start_time > args->last_ran)
+		return 0;
+
+	/* apply usage factor */
+	if (job_ptr->qos_ptr && (job_ptr->qos_ptr->usage_factor >= 0))
+		usage_factor = job_ptr->qos_ptr->usage_factor;
+	usage_factor *= (double) (args->last_ran - job_ptr->start_time);
+
+	for (int i = 0; i < slurmctld_tres_cnt; i++) {
+		if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
+			continue;
+		args->tres_run_delta[i] =
+			job_ptr->tres_alloc_cnt[i] * usage_factor;
+	}
+
+	_handle_tres_run_secs(args->tres_run_delta, job_ptr);
+
+	return 0;
+}
+
 /*
  * Remove previously used time from qos and assocs grp_used_tres_run_secs.
  *
@@ -999,14 +1042,15 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
  */
 static void _init_grp_used_tres_run_secs(time_t last_ran)
 {
-	job_record_t *job_ptr = NULL;
-	list_itr_t *itr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
-	int i;
+	init_grp_used_args_t args = {
+		.last_ran = last_ran,
+		.tres_run_delta = tres_run_delta,
+	};
 
 	log_flag(PRIO, "Initializing grp_used_tres_run_secs");
 
@@ -1017,42 +1061,9 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
 		return;
 
 	lock_slurmctld(job_read_lock);
-	itr = list_iterator_create(job_list);
-
 	assoc_mgr_lock(&locks);
-	while ((job_ptr = list_next(itr))) {
-		double usage_factor = 1.0;
-		log_flag(PRIO, "job: %u", job_ptr->job_id);
-
-		/* If end_time_exp is NO_VAL we have already ran the end for
-		 * this job.  We don't want to do it again, so just exit.
-		 */
-		if (job_ptr->end_time_exp == (time_t)NO_VAL)
-			continue;
-
-		if (!IS_JOB_RUNNING(job_ptr))
-			continue;
-
-		if (job_ptr->start_time > last_ran)
-			continue;
-
-		/* apply usage factor */
-		if (job_ptr->qos_ptr &&
-		    (job_ptr->qos_ptr->usage_factor >= 0))
-			usage_factor = job_ptr->qos_ptr->usage_factor;
-		usage_factor *= (double)(last_ran - job_ptr->start_time);
-
-		for (i=0; i<slurmctld_tres_cnt; i++) {
-			if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
-				continue;
-			tres_run_delta[i] =
-				job_ptr->tres_alloc_cnt[i] * usage_factor;
-		}
-
-		_handle_tres_run_secs(tres_run_delta, job_ptr);
-	}
+	list_for_each_ro(job_list, _foreach_init_grp_used_tres_run_secs, &args);
 	assoc_mgr_unlock(&locks);
-	list_iterator_destroy(itr);
 	unlock_slurmctld(job_read_lock);
 }
 
