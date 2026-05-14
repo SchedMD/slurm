@@ -50,6 +50,7 @@
 #include "../common/http_parser_common.h"
 
 #include "src/interfaces/http_parser.h"
+#include "src/interfaces/url_parser.h"
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "Slurm http_parser libhttp_parser plugin";
@@ -545,7 +546,7 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 		return PARSE_ERROR_AT(ESLURM_HTTP_UNEXPECTED_URL, state, at,
 				      length);
 
-	if ((rc = url_parser_p_parse(state->name, &buffer, &state->url)))
+	if ((rc = url_parser_g_parse(state->name, &buffer, &state->url)))
 		return PARSE_ERROR_AT(rc, state, at, length);
 
 	return rc;
