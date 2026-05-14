@@ -389,6 +389,8 @@ cleanup:
 	fwd_ptr->alias_addrs.node_list = NULL;
 	destroy_forward(fwd_ptr);
 	FREE_NULL_BUFFER(buffer);
+	fwd_struct->thread_count--;
+	xassert(fwd_struct->thread_count >= 0);
 	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
 	xfree(fwd_msg);
@@ -679,6 +681,14 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		thread_count++;
 		xassert(thread_count > 0);
 		slurm_mutex_unlock(&global_forward_mutex);
+
+		/*
+		 * Track the new thread on fwd_struct so forward_wait() can tell
+		 * when it is safe to destroy it
+		 */
+		slurm_mutex_lock(&fwd_struct->forward_mutex);
+		fwd_struct->thread_count++;
+		slurm_mutex_unlock(&fwd_struct->forward_mutex);
 
 		log_flag(NET, "%s: BEGIN: tree forwarding %s from %pA to %s",
 			 __func__, rpc_num2string(fwd_msg->header.msg_type),
@@ -977,7 +987,19 @@ extern void forward_wait(slurm_msg_t * msg)
 			count = list_count(msg->ret_list);
 
 		debug2("Got back %d", count);
-		while ((count < msg->forward_struct->fwd_cnt)) {
+
+		/*
+		 * Wait for the expected number of returns and for all the
+		 * threads with a reference to forward_struct to exit
+		 */
+		while ((count < msg->forward_struct->fwd_cnt) ||
+		       (msg->forward_struct->thread_count > 0)) {
+			log_flag(NET, "%s: [%pA] %s RPC waiting on %d/%d replies forwarded by %d threads",
+				 __func__, &msg->address,
+				 rpc_num2string(msg->msg_type), count,
+				 msg->forward_struct->fwd_cnt,
+				 msg->forward_struct->thread_count);
+
 			slurm_cond_wait(&msg->forward_struct->notify,
 					&msg->forward_struct->forward_mutex);
 

@@ -1,4 +1,4 @@
-.TH "oci.conf" "5" "Slurm Configuration File" "Slurm 26.05" "Slurm Configuration File"
+.TH "oci.conf" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
 
 .SH "NAME"
 oci.conf \- Slurm configuration file for containers.
@@ -277,6 +277,11 @@ Replace as user name.
 .TP
 \fB%U\fR
 Replace as numeric user id.
+.IP
+
+.TP
+\fB%Z\fR
+Replace as the job's working directory (the value of \fB\-\-chdir\fR).
 .IP
 
 .SH "COPYING"

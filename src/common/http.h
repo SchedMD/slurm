@@ -218,7 +218,8 @@ extern int url_path_walk(const char *path, bool allow_templates,
  * IN ptr - pointing to % character
  * RET \0 on error or decoded character
  */
-extern unsigned char url_decode_escape_seq(const char *ptr);
+extern unsigned char url_decode_escape_seq(const char *ptr,
+					   const char *ptr_end);
 
 typedef struct {
 	url_scheme_t scheme;

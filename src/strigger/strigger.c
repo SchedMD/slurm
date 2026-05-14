@@ -99,9 +99,12 @@ static int _clear_trigger(void)
 	slurm_init_trigger_msg(&ti);
 	ti.trig_id	= params.trigger_id;
 	ti.user_id	= params.user_id;
-	if (params.job_id) {
+	if (params.job_id || params.sluid) {
 		ti.res_type = TRIGGER_RES_TYPE_JOB;
-		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
+		if (params.sluid)
+			print_sluid(params.sluid, tmp_c, sizeof(tmp_c));
+		else
+			snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
 		ti.res_id   = tmp_c;
 	}
 	if (slurm_clear_trigger(&ti)) {
@@ -127,9 +130,12 @@ static int _set_trigger(void)
 	char tmp_c[128];
 
 	slurm_init_trigger_msg (&ti);
-	if (params.job_id) {
+	if (params.job_id || params.sluid) {
 		ti.res_type = TRIGGER_RES_TYPE_JOB;
-		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
+		if (params.sluid)
+			print_sluid(params.sluid, tmp_c, sizeof(tmp_c));
+		else
+			snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
 		ti.res_id = tmp_c;
 		if (params.job_fini)
 			ti.trig_type |= TRIGGER_TYPE_FINI;
@@ -247,14 +253,20 @@ static int _get_trigger(void)
 					!= TRIGGER_TYPE_FINI)
 				continue;
 		}
-		if (params.job_id) {
-			long jid;
+		if (params.job_id || params.sluid) {
+			char *res_id = trig_msg->trigger_array[i].res_id;
 			if (trig_msg->trigger_array[i].res_type
 					!= TRIGGER_RES_TYPE_JOB)
 				continue;
-			jid = atol(trig_msg->trigger_array[i].res_id);
-			if (jid != params.job_id)
-				continue;
+			if (params.sluid) {
+				sluid_t sluid = res_id ? str2sluid(res_id) : 0;
+				if (sluid != params.sluid)
+					continue;
+			} else {
+				long jid = res_id ? atol(res_id) : 0;
+				if (jid != params.job_id)
+					continue;
+			}
 		}
 		if (params.node_down) {
 			if ((trig_msg->trigger_array[i].res_type

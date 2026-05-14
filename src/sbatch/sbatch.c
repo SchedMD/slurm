@@ -68,6 +68,7 @@
 
 #define MAX_RETRIES 15
 #define MAX_WAIT_SLEEP_TIME 32
+#define DEF_ENV_EXCLUDE "^SLURM_JWT="
 
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
@@ -129,10 +130,10 @@ int main(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (sbopt.wrap != NULL) {
-		script_body = _script_wrap(sbopt.wrap);
-	} else if (opt.job_flags & EXTERNAL_JOB) {
+	if (opt.job_flags & EXTERNAL_JOB) {
 		script_body = NULL;
+	} else if (sbopt.wrap) {
+		script_body = _script_wrap(sbopt.wrap);
 	} else {
 		script_body = _get_script_buffer(script_name, &script_size);
 		if (!script_body)
@@ -451,7 +452,19 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 			exit(1);
 	}
 	if (opt.export_env == NULL) {
-		env_array_merge(&desc->environment, (const char **) environ);
+		regex_t exclude = { 0 };
+		char **env = NULL;
+
+		if (regcomp(&exclude, DEF_ENV_EXCLUDE, REG_EXTENDED))
+			fatal_abort("regex compile failed");
+
+		env_array_merge(&env, (const char **) environ);
+
+		desc->environment =
+			env_array_exclude((const char **) env, &exclude);
+
+		regfree(&exclude);
+		env_array_free(env);
 	} else if (!xstrcasecmp(opt.export_env, "ALL")) {
 		env_array_merge(&desc->environment, (const char **) environ);
 	} else if (!xstrcasecmp(opt.export_env, "NIL")) {

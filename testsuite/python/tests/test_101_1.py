@@ -44,3 +44,11 @@ def test_helpformat(opt):
     assert re.search(r"Timelimit", output) is not None
     assert re.search(r"User", output) is not None
     assert re.search(r"WorkDir", output) is not None
+
+    if atf.get_version("bin/sacct") >= (26, 5):
+        assert (
+            re.search(r"\bExclusive\b", output) is not None
+        ), "sacct --helpformat should advertise the Exclusive field (ticket 23303)"
+        assert (
+            re.search(r"\bOverSubscribe\b", output) is not None
+        ), "sacct --helpformat should advertise the OverSubscribe field (ticket 23303)"

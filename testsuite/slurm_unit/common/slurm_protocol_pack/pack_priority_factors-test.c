@@ -29,7 +29,8 @@ void setup()
 {
 	pack_req.prio_factors = &pack_f_req;
 	pack_req.cluster_name = xstrdup("blah");
-	pack_req.job_id = 12345;
+	pack_req.step_id.job_id = 12345;
+	pack_req.step_id.sluid = 0xbc064b4483ea1000;
 	pack_req.partition = xstrdup("part");
 	pack_req.user_id = 1111;
 
@@ -80,7 +81,10 @@ void compare_test(priority_factors_response_msg_t *unpack_resp,
 	ck_assert(unpack_req != NULL);
 	prio_factors = unpack_req->prio_factors;
 	ck_assert(!unpack_req->cluster_name);
-	ck_assert(unpack_req->job_id == pack_req.job_id);
+	ck_assert(unpack_req->step_id.job_id == pack_req.step_id.job_id);
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION)
+		ck_assert(unpack_req->step_id.sluid == pack_req.step_id.sluid);
 
 	ck_assert(!xstrcmp(pack_req.partition, unpack_req->partition));
 	ck_assert(pack_req.user_id == unpack_req->user_id);

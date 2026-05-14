@@ -89,19 +89,13 @@ static int _unpack_node(void **x, uint16_t protocol_version, buf_t *buffer)
 	uint64_t time_tmp;
 	sackd_node_t *node = xmalloc(sizeof(*node));
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&node->protocol_version, buffer);
 		safe_unpack64(&time_tmp, buffer);
 		node->last_update = time_tmp;
 		safe_unpackstr(&node->hostname, buffer);
 		safe_unpackstr(&node->nodeaddr, buffer);
 		safe_unpack16(&node->port, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&node->protocol_version, buffer);
-		safe_unpack64(&time_tmp, buffer);
-		node->last_update = time_tmp;
-		safe_unpackstr(&node->hostname, buffer);
-		safe_unpackstr(&node->nodeaddr, buffer);
 	}
 
 	*x = node;

@@ -334,6 +334,10 @@ extern char *process_options_first_pass(int argc, char **argv)
 		error("Script arguments not permitted with --external option");
 		exit(error_exit);
 	}
+	if (sbopt.wrap && (opt.job_flags & EXTERNAL_JOB)) {
+		error("--wrap option not permitted with --external option");
+		exit(error_exit);
+	}
 	if (local_argc > optind) {
 		int i;
 		char **leftover;

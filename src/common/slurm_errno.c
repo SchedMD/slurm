@@ -59,6 +59,7 @@
 #define ERRTAB_ENTRY(_e) _e, #_e
 
 /* Add new error values to slurm/slurm_errno.h, and their descriptions to this table */
+// clang-format off
 slurm_errtab_t slurm_errtab[] = {
 	{
 		ERRTAB_ENTRY(SLURM_SUCCESS),
@@ -149,6 +150,26 @@ slurm_errtab_t slurm_errtab[] = {
 	{
 		ERRTAB_ENTRY(SLURM_BLOCKED_ON_WRITE),
 		"Write would block",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_REJECTED),
+		"Connection rejected by handler",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_QUIESCE_TIMEOUT),
+		"Connection forced closed by quiesce timeout",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_CONNECT_TIMEOUT),
+		"Connection timed out establishing",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_WRITE_TIMEOUT),
+		"Connection timed out writing",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_READ_TIMEOUT),
+		"Connection timed out reading",
 	},
 
 	/* communication failures to/from slurmctld */
@@ -360,6 +381,10 @@ slurm_errtab_t slurm_errtab[] = {
 	{
 		ERRTAB_ENTRY(ESLURM_BATCH_ONLY),
 		"Only batch jobs are accepted or processed",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_EXTERN_ONLY),
+		"Requested operation requires extern step",
 	},
 	{
 		ERRTAB_ENTRY(ESLURM_LICENSES_UNAVAILABLE),
@@ -902,20 +927,54 @@ slurm_errtab_t slurm_errtab[] = {
 		"Invalid job state",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_BREAK_EVAL),
-		"Break common_topo_choose_nodes",
-	},
-	{
-		ERRTAB_ENTRY(ESLURM_RETRY_EVAL),
-		"Remove nodes and retry eval_nodes",
-	},
-	{
-		ERRTAB_ENTRY(ESLURM_RETRY_EVAL_HINT),
-		"Remove one node and retry eval_nodes",
-	},
-	{
 		ERRTAB_ENTRY(ESLURM_INVALID_SLUID),
 		"SLUID is invalid",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_POWER_ACTION),
+		"Invalid power action",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_STEP_QUEUED),
+		"Step queued as pending",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_EXTERNAL_JOB),
+		"Invalid configuration for external job",
+	},
+
+	/* Topology eval_nodes rejection reasons */
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_REQ_NODES_NOT_AVAIL),
+		"Required nodes lack available resources",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO),
+		"Required nodes do not fit topology",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_NO_FIT),
+		"No suitable topology unit found",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_SEGMENT_NO_FIT),
+		"No suitable topology unit found for segment",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_INSUFFICIENT_RESOURCES),
+		"Insufficient resources in topology unit",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_WEIGHT_NO_FIT),
+		"Weight-based selection could not satisfy request within topology unit",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_MAX_NODE_LIMIT),
+		"Exceeded maximum node limit during topology allocation",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_EMPTY_NODE_MAP),
+		"No available nodes in topology",
 	},
 
 	/* SPANK errors */
@@ -1173,6 +1232,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_NO_RPC_STATS),
 		"No RPC stats are available",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_SHARED_POOL_ALLOWED),
+		"Invalid value for Allowed field when SharedPool enabled, must be 0 or 100% (without Absolute) or Count (with Absolute).",
+	},
 
 	/* Federation Errors */
 	{
@@ -1320,6 +1383,10 @@ slurm_errtab_t slurm_errtab[] = {
 	{
 		ERRTAB_ENTRY(ESLURM_REST_AUTH_FAIL),
 		"Authentication failure",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_REST_BAD_REQUEST),
+		"Query requirements not met",
 	},
 
 	/* data_t errors */
@@ -1536,6 +1603,7 @@ slurm_errtab_t slurm_errtab[] = {
 		"TLS missing but required for connection",
 	},
 };
+// clang-format on
 
 unsigned int slurm_errtab_size = sizeof(slurm_errtab) / sizeof(slurm_errtab_t);
 

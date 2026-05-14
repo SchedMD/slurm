@@ -697,6 +697,20 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 	return net_stream_listen_ports(&fd, &port, ports, false);
 }
 
+extern int slurm_init_msg_engine_srun_ports(int *listen_fd, uint16_t *port)
+{
+	uint16_t *srun_ports = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if ((srun_ports = slurm_get_srun_port_range()))
+		rc = net_stream_listen_ports(listen_fd, port, srun_ports,
+					     false);
+	else
+		rc = net_stream_listen(listen_fd, port);
+
+	return ((rc < 0) ? SLURM_ERROR : SLURM_SUCCESS);
+}
+
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
 \**********************************************************************/

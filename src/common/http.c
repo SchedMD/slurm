@@ -167,6 +167,7 @@ static const struct {
 	T(ESLURM_DATA_PATH_NOT_FOUND, HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT),
 	T(ESLURM_DATA_PARSE_BAD_INPUT, HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT),
 	T(EPERM, HTTP_STATUS_CODE_ERROR_FORBIDDEN),
+	T(ESLURM_REST_BAD_REQUEST, HTTP_STATUS_CODE_ERROR_BAD_REQUEST),
 	// clang-format on
 };
 
@@ -271,9 +272,10 @@ static bool _is_valid_url_char(char buffer)
 		buffer == '-' || buffer == '.' || buffer == '_');
 }
 
-extern unsigned char url_decode_escape_seq(const char *ptr)
+extern unsigned char url_decode_escape_seq(const char *ptr, const char *ptr_end)
 {
-	if (isxdigit(*(ptr + 1)) && isxdigit(*(ptr + 2))) {
+	if ((ptr + 2 < ptr_end) && isxdigit(*(ptr + 1)) &&
+	    isxdigit(*(ptr + 2))) {
 		/* using uint16_t char to catch any overflows */
 		uint16_t high = *(ptr + 1);
 		uint16_t low = *(ptr + 2);
@@ -297,9 +299,9 @@ extern unsigned char url_decode_escape_seq(const char *ptr)
 
 		return (unsigned char) decoded;
 	} else {
-		log_flag_hex(DATA, ptr, strnlen(ptr, 3),
-			     "%s: invalid URL escape sequence: %s", __func__,
-			     ptr);
+		log_flag_hex(DATA, ptr, strnlen(ptr, MIN(3, ptr_end - ptr)),
+			     "%s: invalid URL escape sequence: %.*s", __func__,
+			     (int) (ptr_end - ptr), ptr);
 		return '\0';
 	}
 }
@@ -349,10 +351,13 @@ extern int url_path_walk(const char *path, bool allow_templates,
 {
 	int rc = SLURM_SUCCESS;
 	char *buffer = NULL, *buffer_at = NULL;
+	const char *path_end = NULL;
 
 	/* Skip empty path strings */
 	if (!path || !path[0])
 		return SLURM_SUCCESS;
+
+	path_end = path + strlen(path) + 1;
 
 	/* extract each word */
 	for (const char *ptr = path; !rc && (*ptr != '\0'); ptr++) {
@@ -390,7 +395,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 			break;
 		case '%': /* rfc3986 */
 		{
-			const char c = url_decode_escape_seq(ptr);
+			const char c = url_decode_escape_seq(ptr, path_end);
 			if (c != '\0') {
 				char str[2] = { c, '\0' };
 

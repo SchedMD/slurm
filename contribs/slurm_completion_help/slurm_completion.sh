@@ -1097,6 +1097,24 @@ function __slurm_signals() {
 	echo "${output}"
 }
 
+# Slurm helper function to return allowed --ignore-signals list
+#
+# RET: signals
+function __slurm_srun_ignorable_signals() {
+	local signals=(
+		"SIGINT"
+		"SIGQUIT"
+		"SIGTERM"
+		"SIGHUP"
+		"SIGUSR1"
+		"SIGUSR2"
+	)
+	local output="${signals[*]}"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
+}
+
 # Slurm helper function to get TRES list
 #
 # RET: space delimited list
@@ -1314,6 +1332,7 @@ function __slurm_comp_common_flags() {
 		"S"
 	)
 	local exclusive_types=(
+		"allocation"
 		"exclusive"
 		"mcs"
 		"oversubscribe"
@@ -1466,6 +1485,7 @@ function __slurm_comp_common_flags() {
 	--gres-flag?(s)) __slurm_compreply "${gres_flags[*]}" ;;
 	--hint) __slurm_compreply "${hints[*]}" ;;
 	-i | --input) _filedir ;;
+	--ignore-signals) __slurm_compreply_list "$(__slurm_srun_ignorable_signals)" ;;
 	--jobid) __slurm_compreply "$(__slurm_jobs)" ;;
 	-K)
 		# warning: salloc and srun overload -K
@@ -3413,6 +3433,7 @@ function __scontrol_pidinfo() {
 # completion handler for: scontrol power up *
 function __scontrol_power_up() {
 	local parameters=(
+		"action="
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
@@ -3420,7 +3441,8 @@ function __scontrol_power_up() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	up) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	up) __slurm_compreply_list "$(__slurm_nodes)" "ALL force" "true" ;;
+	force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -3432,6 +3454,7 @@ function __scontrol_power_up() {
 function __scontrol_power_down() {
 	local parameters=(
 		"reason="
+		"action="
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
@@ -3479,8 +3502,10 @@ function __scontrol_listpids() {
 function __scontrol_reboot() {
 	local parameters=(
 		"asap"
+		"force"
 		"nextstate="
 		"reason="
+		"action="
 	)
 	local states=(
 		"down"
@@ -3493,7 +3518,8 @@ function __scontrol_reboot() {
 
 	case "${prev}" in
 	nextstate) __slurm_compreply "${states[*]}" ;;
-	reboot) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	reboot) __slurm_compreply_list "$(__slurm_nodes)" "ALL force" "true" ;;
+	force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -4121,7 +4147,7 @@ function __scontrol_update_partitionname() {
 		"denyaccounts="
 		"denyqos="
 		"disablerootjobs="
-		"exclusiveuser="
+		"exclusive="
 		"gracetime="
 		"hidden="
 		"jobdefaults="
@@ -4157,10 +4183,15 @@ function __scontrol_update_partitionname() {
 		"defmempergpu="
 	)
 	local oversubscribe_types=(
-		"exclusive"
 		"force"
 		"no"
 		"yes"
+	)
+	local part_exclusive_types=(
+		"no"
+		"node"
+		"topo"
+		"user"
 	)
 	local states=(
 		"down"
@@ -4190,7 +4221,7 @@ function __scontrol_update_partitionname() {
 	denyaccount?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	denyqos) __slurm_compreply_list "$(__slurm_qos)" ;;
 	disablerootjob?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
-	exclusiveuser) __slurm_compreply "$(__slurm_boolean)" ;;
+	exclusive) __slurm_compreply "${part_exclusive_types[*]}" ;;
 	hidden) __slurm_compreply "$(__slurm_boolean)" ;;
 	jobdefault?(s)) __slurm_compreply "${job_defaults[*]}" ;;
 	lln) __slurm_compreply "$(__slurm_boolean)" ;;
@@ -4479,6 +4510,7 @@ function _scontrol() {
 		"delete"
 		"errnumstr"
 		"fsdampeningfactor"
+		"getent"
 		"help"
 		"hold"
 		"notify"

@@ -110,4 +110,12 @@ extern uint32_t node_features_g_boot_time(void);
 /* Get node features plugin configuration */
 extern list_t *node_features_g_get_config(void);
 
+/*
+ * Check if any features in a list require a node reboot or not.
+ * IN features - one or multiple feature names to check
+ * RET true if any plugin reports a non-rebootless feature in the list, or there
+ *     are no node_features plugins; false if every plugin reports none.
+ */
+extern bool node_features_g_job_features_need_reboot(char *features);
+
 #endif

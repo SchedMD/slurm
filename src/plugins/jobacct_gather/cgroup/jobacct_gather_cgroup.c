@@ -249,3 +249,28 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	return rc;
 }
+
+extern void jobacct_gather_p_stat_job(jobacctinfo_t *jobacct)
+{
+	cgroup_acct_t *cg_data;
+
+	if (!jobacct)
+		return;
+
+	if (!(cg_data = cgroup_g_job_get_acct_data()))
+		return;
+
+	if (cg_data->total_rss != NO_VAL64)
+		jobacct->tres_usage_in_tot[TRES_ARRAY_MEM] = cg_data->total_rss;
+	if (cg_data->total_vmem != NO_VAL64)
+		jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM] =
+			cg_data->total_vmem;
+	if (cg_data->total_pgmajfault != NO_VAL64)
+		jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES] =
+			cg_data->total_pgmajfault;
+	if (cg_data->memory_peak != INFINITE64)
+		jobacct->tres_usage_in_max[TRES_ARRAY_MEM] =
+			cg_data->memory_peak;
+
+	xfree(cg_data);
+}

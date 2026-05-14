@@ -112,6 +112,8 @@ int _print_job_core_spec(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
 int _print_job_delay_boot(job_info_t * job, int width, bool right_justify,
 			  char* suffix);
+int _print_job_exclusive(job_info_t *job, int width, bool right_justify,
+			 char *suffix);
 int _print_job_job_id(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_job_id2(job_info_t * job, int width, bool right_justify,

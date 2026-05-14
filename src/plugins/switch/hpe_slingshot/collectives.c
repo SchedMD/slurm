@@ -151,7 +151,8 @@ static void *_cleanup_thread(void *data)
 extern bool slingshot_init_collectives(void)
 {
 	/* Enable Hardware Collectives only if fm_url is configured */
-	if (!slingshot_config.fm_url)
+	if (!slingshot_config.fm_url ||
+	    (!running_in_slurmctld() && !running_with_stepmgr()))
 		return true;
 
 	if (running_in_slurmctld() &&
@@ -308,7 +309,7 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 					uint32_t step_id)
 {
 	long status = 0;
-	json_object *respjson = NULL;
+	json_object *respjson = NULL, *tokjson = NULL;
 	char *jobid_str = NULL, *url;
 	const char *token = NULL;
 	bool rc = false;
@@ -336,12 +337,13 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 
 	if (status == HTTP_NOT_FOUND) {
 		/* If the job object doesn't exist, create it */
+		json_object_put(respjson);
 		respjson = _post_job_to_fabric_manager(job_id);
 	}
 
 	/* Get per-job session token out of response */
-	if (!(token = json_object_get_string(
-			json_object_object_get(respjson, "sessionToken")))) {
+	if (!json_object_object_get_ex(respjson, "sessionToken", &tokjson) ||
+	    !(token = json_object_get_string(tokjson))) {
 		error("Couldn't extract sessionToken from fabric manager response");
 		goto out;
 	}

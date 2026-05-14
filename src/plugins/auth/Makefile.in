@@ -208,7 +208,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = none munge jwt slurm
+DIST_SUBDIRS = common none munge jwt slurm
 ACLOCAL = @ACLOCAL@
 AMDSMI_CPPFLAGS = @AMDSMI_CPPFLAGS@
 AMDSMI_LIBS = @AMDSMI_LIBS@
@@ -472,7 +472,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = none $(am__append_1) $(am__append_2)
+SUBDIRS = common none $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

@@ -72,16 +72,15 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
-#include "src/interfaces/node_features.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
+#include "src/common/power_action.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_resolv.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
@@ -89,6 +88,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/node_features.h"
 
 #include "src/interfaces/hash.h"
 
@@ -168,6 +169,9 @@ static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
 static void _destroy_downnodes(void *ptr);
+static int _parse_power_action(void **dest, slurm_parser_enum_t type,
+			       const char *key, const char *value,
+			       const char *line, char **leftover);
 static int _parse_nodeset(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover);
@@ -281,6 +285,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckNodeState", S_P_STRING},
 	{"HealthCheckProgram", S_P_STRING},
+	{"HealthCheckTimeout", S_P_UINT16},
 	{"HttpParserType", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"InteractiveStepOptions", S_P_STRING},
@@ -306,6 +311,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillWait", S_P_UINT16},
 	{"LaunchParameters", S_P_STRING},
 	{"LaunchType", S_P_STRING},
+	{"LicenseParameters", S_P_STRING},
 	{"Licenses", S_P_STRING},
 	{"LogTimeFormat", S_P_STRING},
 	{"MailDomain", S_P_STRING},
@@ -323,6 +329,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"MCSParameters", S_P_STRING},
 	{"MCSPlugin", S_P_STRING},
 	{"MessageTimeout", S_P_UINT16},
+	{"MetricsAuthUsers", S_P_STRING},
+	{"MetricsParameters", S_P_STRING},
 	{"MetricsType", S_P_STRING},
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
@@ -390,6 +398,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmctldAddr", S_P_STRING},
 	{"SlurmctldDebug", S_P_STRING},
+	{"SlurmctldHttpAuthParameters", S_P_STRING},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldParameters", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
@@ -399,6 +408,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldSyslogDebug", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
 	{"SlurmdDebug", S_P_STRING},
+	{"SlurmdHttpAuthParameters", S_P_STRING},
 	{"SlurmdLogFile", S_P_STRING},
 	{"SlurmdParameters", S_P_STRING},
 	{"SlurmdPidFile",  S_P_STRING},
@@ -446,6 +456,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
 	{"NodeSet", S_P_ARRAY, _parse_nodeset, _destroy_nodeset},
+	{"PowerAction", S_P_ARRAY, _parse_power_action, power_action_destroy},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
 	{"SlurmctldHost", S_P_ARRAY, _parse_slurmctld_host,
@@ -1174,6 +1185,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"ExclusiveUser", S_P_BOOLEAN}, /* YES or NO */
 		{"ExclusiveTopo", S_P_BOOLEAN}, /* YES or NO */
+		{ "Exclusive", S_P_STRING }, /* NO, NODE, USER, TOPO */
 		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"LLN", S_P_BOOLEAN}, /* YES or NO */
@@ -1369,6 +1381,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		s_p_get_boolean((bool *)&p->exclusive_topo, "ExclusiveTopo",
 				tbl);
+		if (p->exclusive_topo) {
+			/* TOPO implies Exclusive=NODE */
+			p->max_share = 0;
+		}
 
 		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl))
 			s_p_get_boolean(&p->hidden_flag, "Hidden", dflt);
@@ -1500,7 +1516,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			if (xstrcasecmp(tmp, "NO") == 0)
 				p->max_share = 1;
 			else if (xstrcasecmp(tmp, "EXCLUSIVE") == 0)
-				p->max_share = 0;
+				p->max_share = 0; /* Exclusive=NODE */
 			else if (xstrncasecmp(tmp, "YES:", 4) == 0) {
 				int i = strtol(&tmp[4], (char **) NULL, 10);
 				if (i <= 1) {
@@ -1522,8 +1538,42 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			} else if (xstrcasecmp(tmp, "FORCE") == 0)
 				p->max_share = 4 | SHARED_FORCE;
 			else {
-				error("Bad value \"%s\" for OverSubscribe",
+				error("Bad value \"%s\" for OverSubscribe (use NO, YES, FORCE)",
 				      tmp);
+				goto fail;
+			}
+			xfree(tmp);
+		}
+
+		/*
+		 * Exclusive=NO|NODE|USER|TOPO (default NO when absent).
+		 * Single token only.
+		 */
+		if (s_p_get_string(&tmp, "Exclusive", tbl) ||
+		    s_p_get_string(&tmp, "Exclusive", dflt)) {
+			p->exclusive_user = false;
+			p->exclusive_topo = false;
+			if ((xstrcasecmp(tmp, "NO") == 0) ||
+			    (xstrcasecmp(tmp, "NONE") == 0)) {
+				/*
+				 * Drop node-exclusive if a prior
+				 * OverSubscribe=EXCLUSIVE set max_share to 0.
+				 * Leave non-zero OverSubscribe values alone.
+				 */
+				if (p->max_share == 0)
+					p->max_share = 1;
+			} else if (xstrcasecmp(tmp, "NODE") == 0) {
+				p->max_share = 0;
+			} else if (xstrcasecmp(tmp, "USER") == 0) {
+				p->exclusive_user = true;
+			} else if (xstrcasecmp(tmp, "TOPO") == 0) {
+				p->exclusive_topo = true;
+				/* TOPO implies NODE */
+				p->max_share = 0;
+			} else {
+				error("Bad value \"%s\" for Exclusive= (use NO, NODE, USER, TOPO)",
+				      tmp);
+				xfree(tmp);
 				goto fail;
 			}
 			xfree(tmp);
@@ -1898,6 +1948,92 @@ extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
 		*ptr_array = NULL;
 		return 0;
 	}
+}
+
+extern int slurm_conf_power_action_list(list_t **power_action_list)
+{
+	list_t *list;
+	power_action_t **action_arr = NULL;
+	int count = 0;
+	if (!s_p_get_array((void ***) &action_arr, &count, "PowerAction",
+			   conf_hashtbl)) {
+		debug3("no power actions found in slurm.conf");
+		*power_action_list = list_create(power_action_destroy);
+		return SLURM_SUCCESS;
+	}
+	list = list_create(power_action_destroy);
+	for (int i = 0; i < count; i++) {
+		power_action_t *conf_action = action_arr[i];
+		list_append(list, power_action_copy(conf_action));
+		debug3("power action entry %s added (on_slurmctld=%d, program=%s)",
+		       conf_action->name, conf_action->on_slurmctld,
+		       conf_action->program);
+	}
+	*power_action_list = list;
+	return SLURM_SUCCESS;
+}
+
+static int _parse_power_action(void **dest, slurm_parser_enum_t type,
+			       const char *key, const char *value,
+			       const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl;
+	char *location = NULL;
+	char *program = NULL;
+	bool on_slurmctld = false;
+	power_action_t *action = NULL;
+	static s_p_options_t _power_action_options[] = {
+		{ "Program", S_P_STRING },
+		{ "Location", S_P_STRING },
+		{ NULL },
+	};
+	tbl = s_p_hashtbl_create(_power_action_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+
+	if (!s_p_get_string(&location, "Location", tbl) || !location) {
+		error("PowerAction '%s' requires Location=slurmctld or Location=slurmd",
+		      value);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+	if (!xstrcasecmp(location, "slurmctld")) {
+		on_slurmctld = true;
+	} else if (!xstrcasecmp(location, "slurmd")) {
+		on_slurmctld = false;
+	} else {
+		error("Invalid Location '%s' for PowerAction '%s', valid values are 'slurmctld' and 'slurmd'",
+		      location, value);
+		xfree(location);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+	xfree(location);
+
+	s_p_get_string(&program, "Program", tbl);
+	if (!program || !program[0]) {
+		error("PowerAction '%s' requires Program= with a non-empty path",
+		      value);
+		xfree(program);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+
+	if (power_action_create(value, program, on_slurmctld, &action)) {
+		error("Failed to create power action %s", value);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+
+	if (!power_action_valid_prog(action)) {
+		error("invalid power action %s (%s)",
+		      action->name, action->program);
+		power_action_destroy(action);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+	*dest = (void *) action;
+	s_p_hashtbl_destroy(tbl);
+	return 1;
 }
 
 static int _parse_nodeset(void **dest, slurm_parser_enum_t type,
@@ -2654,11 +2790,14 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	FREE_NULL_LIST(conf->job_defaults_list);
 	xfree(conf->job_submit_plugins);
 	xfree(conf->launch_params);
+	xfree(conf->license_params);
 	xfree(conf->licenses);
 	xfree(conf->mail_domain);
 	xfree(conf->mail_prog);
 	xfree(conf->mcs_plugin);
 	xfree(conf->mcs_plugin_params);
+	xfree(conf->metrics_auth_users);
+	xfree(conf->metrics_params);
 	xfree(conf->metrics_type);
 	FREE_NULL_LIST(conf->mpi_conf);
 	xfree(conf->mpi_default);
@@ -2795,6 +2934,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->hash_val = NO_VAL;
 	conf->health_check_interval = 0;
 	xfree(conf->health_check_program);
+	conf->health_check_timeout = DEFAULT_HEALTH_CHECK_TIMEOUT;
 	xfree(conf->http_parser_type);
 	conf->inactive_limit = NO_VAL16;
 	xfree(conf->interactive_step_opts);
@@ -2829,6 +2969,9 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->max_step_cnt = NO_VAL;
 	xfree(conf->mcs_plugin);
 	xfree(conf->mcs_plugin_params);
+	conf->metrics_auth = 0;
+	xfree(conf->metrics_auth_users);
+	xfree(conf->metrics_params);
 	xfree(conf->metrics_type);
 	conf->job_acct_oom_kill = false;
 	conf->min_job_age = NO_VAL;
@@ -2878,6 +3021,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->slurmd_user_id = SLURM_AUTH_NOBODY;
 	xfree(conf->slurmd_user_name);
 	conf->slurmctld_debug = NO_VAL16;
+	xfree(conf->slurmctld_http_auth_params);
 	xfree(conf->slurmctld_logfile);
 	conf->slurmctld_syslog_debug = NO_VAL16;
 	xfree(conf->sched_logfile);
@@ -2891,6 +3035,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->slurmctld_timeout = NO_VAL16;
 	xfree(conf->slurmctld_params);
 	conf->slurmd_debug = NO_VAL16;
+	xfree(conf->slurmd_http_auth_params);
 	xfree(conf->slurmd_logfile);
 	xfree(conf->slurmd_params);
 	conf->slurmd_syslog_debug = NO_VAL16;
@@ -3389,6 +3534,9 @@ static uint16_t _health_node_state(char *state_str)
 		} else if (!xstrcasecmp(token, "NONDRAINED_IDLE")) {
 			state_num |= HEALTH_CHECK_NODE_NONDRAINED_IDLE;
 			state_set = true;
+		} else if (!xstrcasecmp(token, "REBOOT_ONLY")) {
+			state_num |= HEALTH_CHECK_REBOOT_ONLY;
+			state_set = true;
 		} else if (!xstrcasecmp(token, "START_ONLY")) {
 			state_num |= HEALTH_CHECK_START_ONLY;
 			state_set = true;
@@ -3400,6 +3548,14 @@ static uint16_t _health_node_state(char *state_str)
 	}
 	if (!state_set)
 		state_num |= HEALTH_CHECK_NODE_ANY;
+
+	if ((state_num & HEALTH_CHECK_START_ONLY) &&
+	    (state_num != HEALTH_CHECK_START_ONLY))
+		fatal("HealthCheckNodeState=START_ONLY cannot be combined with other options.");
+	if ((state_num & HEALTH_CHECK_REBOOT_ONLY) &&
+	    (state_num != HEALTH_CHECK_REBOOT_ONLY))
+		fatal("HealthCheckNodeState=REBOOT_ONLY cannot be combined with other options.");
+
 	xfree(tmp_str);
 
 	return state_num;
@@ -3443,16 +3599,9 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_QOS;
 		} else if (!xstrcasecmp(tok, "all")) {
-			conf->accounting_storage_enforce = 0xffff;
+			conf->accounting_storage_enforce =
+				ACCOUNTING_ENFORCE_ALL;
 			conf->conf_flags |= CONF_FLAG_WCKEY;
-			/*
-			 * If all is used, nojobs and nosteps aren't
-			 * part of it.  They must be requested as well.
-			 */
-			conf->accounting_storage_enforce
-				&= (~ACCOUNTING_ENFORCE_NO_JOBS);
-			conf->accounting_storage_enforce
-				&= (~ACCOUNTING_ENFORCE_NO_STEPS);
 			/*
 			 * Everything that "all" doesn't mean should be put
 			 * below here.
@@ -3551,7 +3700,10 @@ static int _parse_select_type_param(
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= SELECT_ONE_TASK_PER_CORE;
 		} else if (!xstrcasecmp(str_parameters,
-				       "CR_CORE_DEFAULT_DIST_BLOCK")) {
+					"CR_NO_DIST_TOPO_BLOCK")) {
+			*param |= SELECT_NO_DIST_TOPO_BLOCK;
+		} else if (!xstrcasecmp(str_parameters,
+					"CR_CORE_DEFAULT_DIST_BLOCK")) {
 			*param |= SELECT_CORE_DEFAULT_DIST_BLOCK;
 		} else if (!xstrcasecmp(str_parameters, "CR_LLN")) {
 			*param |= SELECT_LLN;
@@ -3940,6 +4092,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
+	else if (conf->epilog_msg_time > EPILOG_MSG_TIME_MAX) {
+		error("EpilogMsgTime can not exceed %d, resetting value",
+		      EPILOG_MSG_TIME_MAX);
+		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
+	}
 
 	_load_script(&conf->epilog_slurmctld, &conf->epilog_slurmctld_cnt,
 		     "EpilogSlurmctld");
@@ -4090,8 +4247,34 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
 			      hashtbl);
 
+	if (s_p_get_uint16(&conf->health_check_timeout, "HealthCheckTimeout",
+			   hashtbl)) {
+		if (conf->health_check_timeout == 0) {
+			error_in_daemon(
+				"HealthCheckTimeout %u invalid, resetting to default (%u).",
+				conf->health_check_timeout,
+				DEFAULT_HEALTH_CHECK_TIMEOUT);
+			conf->health_check_timeout =
+				DEFAULT_HEALTH_CHECK_TIMEOUT;
+		}
+	}
+	if ((conf->health_check_interval > 0) &&
+	    (conf->health_check_timeout >= conf->health_check_interval))
+		error_in_daemon(
+			"HealthCheckTimeout (%u) must be less than HealthCheckInterval (%u), please review.",
+			conf->health_check_timeout,
+			conf->health_check_interval);
+
 	if (!s_p_get_string(&conf->http_parser_type, "HttpParserType", hashtbl))
 		conf->http_parser_type = xstrdup(DEFAULT_HTTP_PARSER_TYPE);
+
+	conf->metrics_auth = 0;
+	if (s_p_get_string(&conf->metrics_auth_users, "MetricsAuthUsers",
+			   hashtbl))
+		conf->metrics_auth = 1;
+
+	(void) s_p_get_string(&conf->metrics_params, "MetricsParameters",
+			      hashtbl);
 
 	(void) s_p_get_string(&conf->metrics_type, "MetricsType", hashtbl);
 
@@ -4153,6 +4336,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (xstrcasestr(conf->launch_params, "enable_nss_slurm") &&
 	    xstrcasestr(conf->launch_params, "disable_send_gids"))
 		fatal("LaunchParameters options enable_nss_slurm and disable_send_gids are mutually exclusive.");
+
+	(void) s_p_get_string(&conf->license_params, "LicenseParameters",
+			      hashtbl);
 
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
@@ -4682,6 +4868,31 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		if (xstrcasestr(temp_str, "all"))
 			conf->private_data = 0xffff;
 		xfree(temp_str);
+
+		if (conf->private_data)
+			conf->metrics_auth = 1;
+	}
+
+	/* This configuration needs to be done here as we need PrivateData */
+	if (conf->metrics_params) {
+		char *save_ptr = NULL;
+		char *tmp = xstrdup(conf->metrics_params);
+		char *tok = strtok_r(tmp, ",", &save_ptr);
+
+		while (tok) {
+			/*
+			 * By default, if PrivateData, metrics_auth=1.
+			 * But if no metrics_auth_users and ignore_private_data,
+			 * we still want metrics open to world.
+			 */
+			if (!conf->metrics_auth_users && conf->private_data &&
+			    !xstrcasecmp(tok, "ignore_private_data")) {
+				conf->metrics_auth = 0;
+				break;
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
 	}
 
 	_load_script(&conf->prolog, &conf->prolog_cnt, "Prolog");
@@ -4897,6 +5108,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			    "SlurmctldPidFile", hashtbl))
 		conf->slurmctld_pidfile = xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
 
+	(void) s_p_get_string(&conf->slurmctld_http_auth_params,
+			      "SlurmctldHttpAuthParameters", hashtbl);
+
 	(void )s_p_get_string(&conf->slurmctld_logfile, "SlurmctldLogFile",
 			      hashtbl);
 
@@ -4969,6 +5183,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		_normalize_debug_level(&conf->slurmd_debug);
 	} else
 		conf->slurmd_debug = LOG_LEVEL_INFO;
+
+	(void) s_p_get_string(&conf->slurmd_http_auth_params,
+			      "SlurmdHttpAuthParameters", hashtbl);
 
 	(void) s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
 

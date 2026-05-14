@@ -3,6 +3,7 @@
 # Copyright (C) SchedMD LLC.
 ##############################################################################
 import collections
+import datetime
 import errno
 
 # import glob
@@ -210,7 +211,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             or "(service_conn->conn->callback_fini)" in bt
         )
     ):
-        if get_version(component) >= (25, 11, 4):
+        if get_version(component) >= (26, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -275,6 +276,20 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             failures.append(reason)
         else:
             xfailures.append(reason)
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/accounting_storage.c" in bt
+        and "clusteracct_storage_g_node_up" in bt
+        and "plugin_inited != PLUGIN_NOT_INITED" in bt
+    ):
+        # TODO: An initial fix landed in 25.11.4+, but it seems not fully fixed.
+        if get_version(component) >= (25, 11, 4):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
         return
 
     reason = "Ticket 24822: Known issue shutting down slurmd with OpenSSL"
@@ -282,7 +297,6 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     if (
         component in bin_path
         and "Program terminated with signal SIGABRT" in bt
-        and "OPENSSL_sk_free" in bt
         and "OPENSSL_cleanup" in bt
         and "_int_free_maybe_consolidate" in bt
     ):
@@ -301,8 +315,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_spawn_job_container" in bt
         and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
     ):
-        # TODO: Add version when t24905 is fixed
-        failures.append(reason)
+        if get_version(component) >= (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
@@ -315,8 +331,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "step_partial_comp" in bt
         and "dest=0x0" in bt
     ):
-        # TODO: Add version when t24907 is fixed
-        failures.append(reason)
+        if get_version(component) > (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 24952: Known issue with slurmctld auth_g_destroy(): Assertion (g_context_num > 0)"
@@ -345,6 +363,78 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "___pthread_mutex_lock" in bt
     ):
         # TODO: Add version when t24991 is fixed
+        failures.append(reason)
+        return
+
+    reason = "Ticket 25013: Known issue with slurmctld: Assertion (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)) "
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/conmgr/con.c" in bt
+        and "in close_con" in bt
+        and "con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)" in bt
+    ):
+        # TODO: Add version when t25013 is fixed
+        failures.append(reason)
+        return
+
+    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock(): Invalid argument"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/log.c" in bt
+        and "in fatal_abort" in bt
+        and "in _forward_thread" in bt
+        and "%s: pthread_mutex_lock(): %m" in bt
+    ):
+        # TODO: Add version when t25070 is fixed
+        failures.append(reason)
+        return
+
+    reason = "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage fixed in 25.11.6"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/slurmdb_defs.c" in bt
+        and "in slurm_xfree" in bt
+        and "in slurmdb_destroy_assoc_usage" in bt
+        and "in slurmdb_free_assoc_rec_members" in bt
+    ):
+        if get_version(component) >= (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
+    reason = "Ticket 25135: Known issue with slurmctld with s2n: SIGSEGV: _on_s2n_error"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "src/plugins/tls/s2n/tls_s2n.c" in bt
+        and "src/interfaces/conn.c" in bt
+        and "in _on_s2n_error" in bt
+        and "in _negotiate" in bt
+        and "in tls_p_create_conn" in bt
+        and "s2n_connection_get_delay" in bt
+    ):
+        # TODO: Add version when t25135 is fixed
+        failures.append(reason)
+        return
+
+    reason = "Ticket 25193: Known issue with slurmd: SIGABRT: double free or corruption (fasttop)"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "malloc/malloc.c" in bt
+        and "in malloc_printerr" in bt
+        and "double free or corruption (fasttop)" in bt
+    ):
+        # TODO: Add version when t25193 is fixed
         failures.append(reason)
         return
 
@@ -441,9 +531,14 @@ def run_command(
                     allow_module_level=True,
                 )
             # Use su to honor ulimits, specially core
+            preserve = [
+                "PATH",
+                "SLURM_TESTSUITE_CONF",
+                *sorted(properties["lmod-touched-vars"]),
+            ]
             cmd = [
                 "sudo",
-                "--preserve-env=PATH",
+                f"--preserve-env={','.join(preserve)}",
                 "-u",
                 user,
                 "/bin/bash",
@@ -664,6 +759,7 @@ def timer(
     poll_interval=None,
     fatal=False,
     xfail=False,
+    quiet=False,
 ):
     """A timer to do-while a timeout is not triggered.
 
@@ -678,6 +774,7 @@ def timer(
         fatal (bool): If True, call pytest.fail() on timeout. Otherwise the
             caller should use the for-else to detect the timeout.
         xfail (bool): If True, a timeout is expected.
+        quiet (bool): If True, no progress is log.
 
     Example:
         >>> running = False
@@ -701,7 +798,7 @@ def timer(
     while True:
 
         # Run the caller loop (at least once, like a do-while)
-        yield remaining_time
+        yield int(remaining_time)
 
         # Check for timeout
         remaining_time = timeout - (time.time() - start)
@@ -719,7 +816,8 @@ def timer(
             return
 
         # Wait for the next attempt
-        logging.debug(message + f", remaining time: {remaining_time:.0f}s")
+        if not quiet:
+            logging.debug(message + f", remaining time: {remaining_time:.0f}s")
         time.sleep(poll_interval)
 
 
@@ -817,7 +915,9 @@ def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
     """
 
     return repeat_until(
-        lambda: run_command(command, quiet=quiet), condition, **repeat_until_kwargs
+        lambda: run_command(command, quiet=quiet),
+        condition,
+        **repeat_until_kwargs,
     )
 
 
@@ -938,11 +1038,49 @@ def gcore(component, pid=None, sbin=True):
 
     if not pids:
         logging.warning(f"Process {prefix}/{component} not found")
-    logging.debug(f"Getting gcores for PIDs: {pids}")
+
+    logging.debug(f"Getting gcores and sending SIGPROF to PIDs: {pids}")
     for pid in pids:
+        run_command(f"kill -SIGPROF {pid}", user="root")
         run_command(
             f"sudo gcore -o {properties['slurm-logs-dir']}/{component}.core {pid}"
         )
+
+
+def start_slurmd(slurmd_name, quiet=False):
+    """Starts slurmd for node.
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+    logging.debug(f"Starting slurmd for {slurmd_name}...")
+    # Check whether slurmd is running
+    slurmd_pgrep = run_command(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
+    if slurmd_pgrep["exit_code"] != 0:
+        # Start slurmd
+        results = run_command(
+            f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
+            user="root",
+            quiet=quiet,
+        )
+        if results["exit_code"] != 0:
+            pytest.fail(
+                f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+            )
+
+        # Verify that the slurmd is running
+        if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
+            pytest.fail(f"Slurmd -N {slurmd_name} is not running")
+    else:
+        logging.warning(f"slurmd for {slurmd_name} already running")
+        logging.warning(f"slurmd_pgrep['stdout']: {slurmd_pgrep['stdout']}")
+        logging.warning(f"slurmd_pgrep['stderr']: {slurmd_pgrep['stderr']}")
+        logging.warning(f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}")
 
 
 def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
@@ -1009,47 +1147,19 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
 
         # (Multi)Slurmds
         for slurmd_name in slurmd_list:
-            logging.debug(f"Starting slurmd for {slurmd_name}...")
-            # Check whether slurmd is running
-            slurmd_pgrep = run_command(
-                f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet
-            )
-            if slurmd_pgrep["exit_code"] != 0:
-                # Start slurmd
-                results = run_command(
-                    f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
-                    user="root",
-                    quiet=quiet,
-                )
-                if results["exit_code"] != 0:
-                    pytest.fail(
-                        f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
-                    )
-
-                # Verify that the slurmd is running
-                if (
-                    run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-                    != 0
-                ):
-                    pytest.fail(f"Slurmd -N {slurmd_name} is not running")
-            else:
-                logging.warning(f"slurmd for {slurmd_name} already running")
-                logging.warning(f"slurmd_pgrep['stdout']: {slurmd_pgrep['stdout']}")
-                logging.warning(f"slurmd_pgrep['stderr']: {slurmd_pgrep['stderr']}")
-                logging.warning(
-                    f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}"
-                )
-
+            start_slurmd(slurmd_name, quiet)
         # Verify that the slurmd is registered correctly
         timeout = 30 + 5 * len(slurmd_list)
         if not repeat_until(
             lambda: get_nodes(quiet=True),
-            lambda nodes: all(nodes[name]["state"] == ["IDLE"] for name in slurmd_list),
+            lambda nodes: all(
+                nodes[name]["state"][0] == "IDLE" for name in slurmd_list
+            ),
             timeout=timeout,
         ):
             nodes = get_nodes(quiet=True)
             non_idle = [
-                name for name in slurmd_list if nodes[name]["state"] != ["IDLE"]
+                name for name in slurmd_list if nodes[name]["state"][0] != "IDLE"
             ]
             logging.warning(
                 f"Getting the core files of the still not IDLE slurmds ({non_idle})"
@@ -1113,6 +1223,35 @@ def start_slurmdbd(clean=False, quiet=False):
             logging.debug("Slurmdbd started successfully")
 
 
+def clean_slurm_conf_nodes(quiet=False):
+    """Cleans the Slurm configuration file from unnecessary default node0.
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+
+    if not properties["auto-config"]:
+        require_auto_config("wants to start slurmds")
+
+    # Remove unnecessary default node0 from config to avoid being used or reserved
+    output = run_command_output(
+        f"cat {properties['slurm-config-dir']}/slurm.conf",
+        user=properties["slurm-user"],
+        quiet=quiet,
+    )
+    if len(re.findall(r"NodeName=", output)) > 1:
+        run_command(
+            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
+            user=properties["slurm-user"],
+            quiet=quiet,
+        )
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
@@ -1143,18 +1282,7 @@ def start_slurm(clean=False, quiet=False):
     ):
         start_slurmdbd(clean, quiet)
 
-    # Remove unnecessary default node0 from config to avoid being used or reserved
-    output = run_command_output(
-        f"cat {properties['slurm-config-dir']}/slurm.conf",
-        user=properties["slurm-user"],
-        quiet=quiet,
-    )
-    if len(re.findall(r"NodeName=", output)) > 1:
-        run_command(
-            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
-            user=properties["slurm-user"],
-            quiet=quiet,
-        )
+    clean_slurm_conf_nodes(quiet)
 
     # Start slurmctld
     start_slurmctld(clean, quiet, also_slurmds=True)
@@ -1197,7 +1325,7 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
 
     results = run_command(command, user=properties["slurm-user"], quiet=quiet)
     if results["exit_code"] != 0:
-        failures.append(f"Command {command} failed with rc={results['exit_code']}")
+        failures.append(f"Command {command} failed: {results}")
 
     # Verify that slurmctld is not running
     if not repeat_until(
@@ -1689,6 +1817,14 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
     Returns:
         A tuple representing the version. E.g. (25.05.0).
     """
+    # TODO: Ticket 25155 - Remove fatal=False once 25.11 is not supported
+    fatal = True
+    if component == "bin/sh5util":
+        logging.warning(
+            "Ticket 25155: Exit code of 'sh5util -V' is incorrect for versions older than 26.05"
+        )
+        fatal = False
+
     if component == "config.h":
         if slurm_prefix == "":
             slurm_prefix = properties["slurm-build-dir"]
@@ -1706,13 +1842,13 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
 
         version_str = (
             run_command_output(
-                f"{slurm_prefix}/{component} -V", quiet=True, user="root"
+                f"{slurm_prefix}/{component} -V", quiet=True, user="root", fatal=fatal
             )
             .strip()
             .replace("slurm ", "")
         )
 
-    return tuple(int(part) if part.isdigit() else 0 for part in version_str.split("."))
+    return tuple(int(n) for p in version_str.split(".") for n in [p.split("-")[0]])
 
 
 def require_expect():
@@ -1763,11 +1899,18 @@ def run_expect_test(test_num=None):
             .replace("_", ".")
         )
 
-    # Most expect tests assume that are run by SlurmUser
+    # Most expect tests assume that are run by SlurmUser.
+    # We need to preserve any env vars that module_load/unload/purge touched, so the lmod-loaded
+    # and SLURM_TESTSUITE_CONF.
+    preserve = [
+        "PATH",
+        "SLURM_TESTSUITE_CONF",
+        *sorted(properties["lmod-touched-vars"]),
+    ]
     cmd = (
         f"sudo"
         f" -u {properties['slurm-user']}"
-        f" --preserve-env=SLURM_TESTSUITE_CONF"
+        f" --preserve-env={','.join(preserve)}"
         f" SLURM_LOCAL_GLOBALS_FILE={properties['expect_globals_file']}"
         f" {properties['expect_dir']}/test{test_num}"
     )
@@ -1855,15 +1998,38 @@ def require_version(
     pytest.skip(reason)
 
 
-def request_slurmctld(request):
+def request_slurmctld(request, user=None):
     """
     Returns the slurmctld response of a given request.
     It needs slurmctld >= 25.11 listening HTTP requests.
     """
 
-    return requests.get(
+    token = None
+    if user is not None:
+        token = "".join(
+            run_command_output(
+                f"scontrol token username={user}",
+                fatal=True,
+                quiet=True,
+                user=properties["slurm-user"],
+            )
+            .strip()
+            .split("\n")[-1]
+            .split("=")[1:]
+        )
+
+    headers = None
+    # run_command_output worked and returned in time, set JWT headers
+    if user is not None and token is not None:
+        headers = {"X-SLURM-USER-NAME": user, "X-SLURM-USER-TOKEN": token}
+
+    logging.debug(f"HTTP request to slurmctld with user: {user}, token: {token}")
+    resp = requests.get(
         f"http://{properties['slurmctld_host']}:{properties['slurmctld_port']}/{request}",
+        headers=headers,
     )
+    logging.debug(f"HTTP request to slurmctld returned: {resp.text}")
+    return resp
 
 
 def request_slurmrestd(request):
@@ -2517,11 +2683,75 @@ def require_mpi(mpi_option="pmix", mpi_compiler="mpicc"):
 
     require_tool(mpi_compiler)
     output = run_command_output("srun --mpi=list", fatal=True)
-    if re.search(rf"plugin versions available: .*{mpi_option}", output) is None:
+    name = re.escape(mpi_option)
+    if (
+        re.search(rf"^\s+{name}\s*$", output, re.MULTILINE) is None
+        and re.search(rf"plugin versions available:.*\b{name}\b", output) is None
+    ):
         pytest.skip(
             f"This test needs to be able to use --mpi={mpi_option}",
             allow_module_level=True,
         )
+
+
+def require_lmod():
+    """
+    Skips if Lmod (environment modules) is not available.
+    """
+
+    require_tool("lmod")
+
+
+def _module(action, *modules):
+    """
+    Run `lmod python <action> [<modules>...]` and apply env changes
+    to the current Python process's os.environ.
+    """
+
+    # Lmod's `python` shell emits Python code that mutates os.environ.
+    output = run_command_output(
+        f"lmod python {action} {' '.join(modules)}", fatal=True, quiet=True
+    )
+
+    # Applying the module and saving the difference so we can preserve them
+    # in sudo commands
+    before = dict(os.environ)
+    exec(output, {"os": os})
+    for k in set(before) | set(os.environ):
+        if before.get(k) != os.environ.get(k):
+            properties["lmod-touched-vars"].add(k)
+
+
+def module_load(*modules):
+    """
+    Load Lmod environment module(s) into the current process's env.
+
+    Args:
+        *modules: Module name(s) to load (e.g. "openmpi/5.0.10").
+
+    Example:
+        >>> require_lmod()
+        >>> module_load("openmpi/5.0.10")
+    """
+
+    _module("load", *modules)
+
+
+def module_unload(*modules):
+    """
+    Unload Lmod environment module(s) from the current process's env.
+
+    Args:
+        *modules: Module name(s) to unload.
+    """
+
+    _module("unload", *modules)
+
+
+def module_purge():
+    """Unload all currently loaded Lmod environment modules."""
+
+    _module("purge")
 
 
 def require_influxdb(influx_client="influx", jobacct_gather="jobacct_gather/cgroup"):
@@ -3069,8 +3299,6 @@ def cancel_jobs(
     job_list,
     timeout=default_polling_timeout,
     poll_interval=0.1,
-    fatal=False,
-    quiet=False,
     **run_command_kwargs,
 ):
     """Cancels a list of jobs and waits for them to complete.
@@ -3081,8 +3309,6 @@ def cancel_jobs(
             timing out.
         poll_interval (float): Number of seconds to wait between job state
             polls.
-        fatal (boolean): If True, a timeout will result in the test failing.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
         True if all jobs were successfully cancelled and completed within
@@ -3095,6 +3321,10 @@ def cancel_jobs(
         False
     """
 
+    # Get the quiet and fatal values but don't forward them
+    quiet = run_command_kwargs.pop("quiet", None)
+    fatal = run_command_kwargs.pop("fatal", None)
+
     # Filter list to ignore job_ids being 0
     job_list = [i for i in job_list if i != 0]
     job_list_string = " ".join(str(i) for i in job_list)
@@ -3106,23 +3336,41 @@ def cancel_jobs(
         f"scancel {job_list_string}", fatal=fatal, quiet=quiet, **run_command_kwargs
     )
 
-    for job_id in job_list:
-        status = wait_for_job_state(
-            job_id,
-            "DONE",
-            timeout=timeout,
-            poll_interval=poll_interval,
-            fatal=fatal,
-            quiet=quiet,
-        )
-        if not status:
-            if fatal:
-                pytest.fail(
-                    f"Job ({job_id}) was not cancelled within the {timeout} second timeout"
-                )
-            return status
+    for t in timer(timeout=timeout, poll_interval=poll_interval):
+        jobs = get_jobs(quiet=True, use_json=True, **run_command_kwargs)
 
-    return True
+        jobs_not_in_system, jobs_not_done = [], []
+        for job_id in job_list:
+            if job_id not in jobs:
+                jobs_not_in_system.append(job_id)
+                continue
+
+            job_state = jobs[job_id]["job_state"]
+            if not job_state:
+                pytest.fail(f"JobState info not found for job {job_id}: {jobs[job_id]}")
+
+            for state in job_state:
+                if not is_job_state_done(state):
+                    jobs_not_done.append(job_id)
+                    break
+
+        if jobs_not_in_system and not quiet:
+            logging.warning(
+                f"Cancelled job(s) {jobs_not_in_system} not anymore in the system"
+            )
+
+        if not jobs_not_done:
+            if not quiet:
+                logging.debug(f"Jobs {job_list} successfully cancelled")
+            return True
+
+        if not quiet:
+            logging.debug(f"Cancelled job(s) {jobs_not_done} still not DONE")
+    else:
+        if fatal:
+            pytest.fail("Unable to cancel all jobs")
+
+    return False
 
 
 def cancel_all_jobs(
@@ -3147,7 +3395,7 @@ def cancel_all_jobs(
         False
     """
 
-    jobs = get_jobs()
+    jobs = get_jobs(quiet=True, use_json=True, user=properties["slurm-user"])
 
     if not jobs:
         logging.debug("No jobs to cancel")
@@ -3966,7 +4214,7 @@ def get_qos(name=None, **run_command_kwargs):
     return qos_dict
 
 
-def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
+def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
     """Returns the jobs in the system as a dictionary of dictionaries.
 
     Args:
@@ -4001,10 +4249,36 @@ def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
             jobs_dict[job["job_id"]] = job
 
     else:
+
+        # TODO: We should always use --json to properly parse Slurm parameters.
+        #       This is still optional because using it means that the keys
+        #       of the jobs_dict will be different in all existing tests.
+        if use_json:
+            command = "scontrol --json -d -a show jobs"
+            if job_id is not None:
+                command += f" {job_id}"
+            output = run_command_output(command, **run_command_kwargs)
+
+            try:
+                jobs_list = json.loads(output)["jobs"]
+            except json.JSONDecodeError as e:
+                msg = f"Error parsing scontrol output: {output}\n{e}"
+                if "fatal" in run_command_kwargs and run_command_kwargs["fatal"]:
+                    pytest.fail(msg)
+                else:
+                    logging.warning(msg)
+                    return jobs_dict
+
+            for job in jobs_list:
+                jobs_dict[job["job_id"]] = job
+
+            return jobs_dict
+
         command = "scontrol -d -o show jobs"
         if job_id is not None:
             command += f" {job_id}"
-        # TODO: Remove extra debug info for t22858 instead of fatal
+        # TODO: Remove extra debug info for t22858 instead of forwarding fatal
+        run_command_kwargs.pop("fatal", None)
         result = run_command(command, fatal=False, **run_command_kwargs)
         if result["exit_code"]:
             logging.debug(
@@ -4131,14 +4405,13 @@ def get_job(job_id, quiet=False):
     return jobs_dict[job_id] if job_id in jobs_dict else {}
 
 
-def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
+def get_job_parameter(job_id, parameter_name, default=None, **run_command_kwargs):
     """Returns the value of a specific parameter for a given job.
 
     Args:
         job_id (integer): The id of the job for which the parameter value is requested.
         parameter_name (string): The name of the parameter whose value is to be obtained.
         default (string or None): The value to be returned if the parameter is not found.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
         The value of the specified job parameter, or the default value if the
@@ -4151,7 +4424,7 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
         'primary'
     """
 
-    jobs_dict = get_jobs(quiet=quiet)
+    jobs_dict = get_jobs(**run_command_kwargs)
 
     if job_id in jobs_dict:
         job_dict = jobs_dict[job_id]
@@ -4409,10 +4682,28 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
     if not value:
         value = r"."
     return repeat_until(
-        lambda: run_command_output(f"sacct -Xnj {job_id} -o {field}"),
+        lambda: run_command_output(f"sacct -XPnj {job_id} -o {field}"),
         lambda out: re.search(value, out.strip()) is not None,
         **repeat_until_kwargs,
     )
+
+
+def is_job_state_done(job_state):
+    """Return True if job_state is one of the final JobStates, or False otherwise"""
+    done_states = [
+        "NOT_FOUND",
+        "BOOT_FAIL",
+        "CANCELLED",
+        "COMPLETED",
+        "DEADLINE",
+        "FAILED",
+        "NODE_FAIL",
+        "OUT_OF_MEMORY",
+        "TIMEOUT",
+        "PREEMPTED",
+    ]
+
+    return job_state in done_states
 
 
 def wait_for_job_state(
@@ -4421,9 +4712,7 @@ def wait_for_job_state(
     desired_reason=None,
     timeout=default_polling_timeout,
     poll_interval=None,
-    fatal=False,
-    quiet=False,
-    xfail=False,
+    **run_command_kwargs,
 ):
     """Wait for the specified job to reach the desired state.
 
@@ -4443,9 +4732,6 @@ def wait_for_job_state(
         desired_reason (string): Optional reason to also match.
         timeout (integer): The number of seconds to poll before timing out.
         poll_interval (float): Time (in seconds) between job state polls.
-        fatal (boolean): If True, a timeout will cause the test to fail.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
-        xfail (boolean): If True, state (or reason) are not expected to be reached.
 
     Returns:
         Boolean value indicating whether the job reached the desired state.
@@ -4464,6 +4750,11 @@ def wait_for_job_state(
             poll_interval = 0.2
         else:
             poll_interval = 1
+
+    # Get the quiet, fatal and xfail values but don't forward them
+    quiet = run_command_kwargs.pop("quiet", None)
+    fatal = run_command_kwargs.pop("fatal", None)
+    xfail = run_command_kwargs.pop("xfail", None)
 
     if quiet:
         log_level = logging.TRACE
@@ -4486,26 +4777,19 @@ def wait_for_job_state(
     begin_time = time.time()
     while time.time() < begin_time + timeout:
         job_state = get_job_parameter(
-            job_id, "JobState", default="NOT_FOUND", quiet=True
+            job_id, "JobState", default="NOT_FOUND", quiet=True, **run_command_kwargs
         )
 
         message = f"Job ({job_id}) is in state {job_state}, but we are waiting for {desired_job_state}"
-        if job_state in [
-            "NOT_FOUND",
-            "BOOT_FAIL",
-            "CANCELLED",
-            "COMPLETED",
-            "DEADLINE",
-            "FAILED",
-            "NODE_FAIL",
-            "OUT_OF_MEMORY",
-            "TIMEOUT",
-            "PREEMPTED",
-        ]:
+        if is_job_state_done(job_state):
             if desired_job_state == "DONE" or job_state == desired_job_state:
                 message = f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
                 reason = get_job_parameter(
-                    job_id, "Reason", default="NOT_FOUND", quiet=True
+                    job_id,
+                    "Reason",
+                    default="NOT_FOUND",
+                    quiet=True,
+                    **run_command_kwargs,
                 )
                 if desired_reason is None or reason == desired_reason:
                     if desired_reason is not None:
@@ -4535,7 +4819,7 @@ def wait_for_job_state(
                 f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
             )
             reason = get_job_parameter(
-                job_id, "Reason", default="NOT_FOUND", quiet=True
+                job_id, "Reason", default="NOT_FOUND", quiet=True, **run_command_kwargs
             )
             if desired_reason is None or reason == desired_reason:
                 if desired_reason is not None:
@@ -4568,103 +4852,87 @@ def wait_for_job_state(
     return False
 
 
-def check_steps_delayed(job_id, job_output, expected_delayed):
-    """Check the output file of a job for expected delayed steps.
+def check_steps_delayed(
+    job_id,
+    expected_delayed,
+    first_parallel_step=0,
+    min_delay_seconds=2,
+    **repeat_until_kwargs,
+):
+    """Verify that job steps were delayed waiting for resources.
 
-    This function checks that the output file for a job contains the expected
-    pattern of delayed job steps. Note that at the time of writing, this
-    requires srun steps to have at least a verbosity level of "-vv" to log
-    their f"srun: Step completed in JobId={job_id}, retrying" notification.
+    Reads per-step Start timestamps from sacct after the job ends. A step is
+    considered "delayed" if its Start is at least min_delay_seconds after the
+    earliest start within the parallel-batch group. The count of such steps
+    must equal expected_delayed.
 
     Args:
         job_id (integer): The job ID that we're interested in.
-        job_output (string): The content of the output file of the job.
-        expected_delayed (integer): The initial number of delayed job steps. It
-            is verified that this initial number of job steps are delayed and
-            then this number of delayed job steps decrements one by one as
-            running job steps finish.
+        expected_delayed (integer): The number of steps that should have been
+            delayed waiting for resources.
+        first_parallel_step (integer): The step ID at which the parallel
+            batch begins. Steps with a lower ID (typically sequential
+            pre-steps in the job script) are ignored. Defaults to 0, which
+            considers all steps as part of the parallel batch.
+        min_delay_seconds (integer): A step is "delayed" if its Start is at
+            least this many seconds after the earliest step Start of the
+            considered set. Default 2 — fits between sub-second
+            parallel-batch jitter and the >=3s gap created by typical test
+            step sleeps.
 
     Returns:
-        True if steps were delayed in the correct amounts and order, else False.
-
-    Example:
-        >>> check_steps_delayed(123, "srun: Received task exit notification for 1 task of StepId=1.0 (status=0x0000).\nsrun: node1: task 0: Completed\nsrun: debug:  task 0 done\nsrun: Step completed in JobId=1, retrying\nsrun: Step completed in JobId=1, retrying\nsrun: Step created for StepId=1.1\nsrun: Received task exit notification for 1 task of StepId=1.1 (status=0x0000).\nsrun: node2: task 1: Completed\nsrun: debug:  task 1 done\nsrun: debug:  IO thread exiting\nsrun: Step completed in JobId=1, retrying\nsrun: Step created for StepId=1.2", 2)
-        True
-        >>> check_steps_delayed(456, "srun: Received task exit notification for 1 task of StepId=1.0 (status=0x0000).\nsrun: node1: task 0: Completed\nsrun: debug:  task 0 done\nsrun: Step completed in JobId=1, retrying\nsrun: Step completed in JobId=1, retrying\nsrun: Step created for StepId=1.1\nsrun: Received task exit notification for 1 task of StepId=1.1 (status=0x0000).\nsrun: node2: task 1: Completed\nsrun: debug:  task 1 done\nsrun: debug:  IO thread exiting", 2)
-        False
+        True if exactly expected_delayed steps were delayed, else False.
     """
 
-    # Iterate through each group of expected delayed steps. For example,
-    # if there was a job that had 5 steps that could run in parallel but, due to
-    # resource constrains, only allowed 3 steps to run at a time, we would
-    # expect a group of 2 delayed job steps followed by a group of 1 delayed job
-    # steps. For this example job, expected_delayed=2.
-    #
-    # The idea of the for loop below is to iterate through each group of delayed
-    # job steps and replace the expected output as we go with re.sub. This
-    # ensures that the delayed job step groups occur in the correct order.
-    #
-    # Each regex pattern matches part of the pattern we'd expect to see in the
-    # output, replaces the matched text (see previous paragraph), and then makes
-    # sure there is still text left to match for the rest of the pattern. If the
-    # regex pattern doesn't match anything, then re.sub will match and replace
-    # all the rest of the output and leave job_output empty.
-    for delayed_grp_size in range(expected_delayed, 0, -1):
-        # Match all lines before receiving an exit notification. This regex
-        # pattern will match any line that doesn't contain "srun: Received task
-        # exit notification".
-        before_start_pattern = r"(^((?!srun: Received task exit notification).)*$\n)*"
-        job_output = re.sub(before_start_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {before_start_pattern}")
+    # End being recorded implies all step rows have flushed (steps end before their parent job).
+    if not wait_for_job_accounted(job_id, field="End", **repeat_until_kwargs):
+        logging.error(f"check_steps_delayed: job {job_id} End not in accounting")
+        return False
+
+    # -n omits header, -P pipe-separates, -j scopes to this job only.
+    out = run_command_output(f"sacct -nPj {job_id} -o jobid,start", quiet=True)
+
+    # Numeric step IDs only — skips ".batch" and ".extern" rows.
+    step_re = re.compile(rf"^{job_id}\.(\d+)\|(\S+)$")
+    parsed = []
+    for line in out.splitlines():
+        m = step_re.match(line.strip())
+        if not m:
+            continue
+        stepnum = int(m.group(1))
+        # Skip sequential pre-steps that aren't part of the parallel batch.
+        if stepnum < first_parallel_step:
+            continue
+        ts = m.group(2)
+        try:
+            parsed.append(
+                (stepnum, datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S"))
+            )
+        except ValueError:
+            logging.error(f"check_steps_delayed: step {stepnum} has bad Start {ts!r}")
             return False
 
-        # Match receiving the next exit notification. This regex pattern will
-        # match the line where the exit notification is received when a step
-        # that was already running finishes.
-        exit_pattern = rf"srun: Received task exit notification for \[0-9]+ task of StepId={job_id}\.[0-9]+ \(status=0x[0-9A-Fa-f]+\)\.\n"
-        job_output = re.sub(exit_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {exit_pattern}")
-            return False
+    if not parsed:
+        logging.error(
+            f"check_steps_delayed: no step rows for job {job_id} at or "
+            f"after step {first_parallel_step}"
+        )
+        return False
 
-        # Match lines we don't want before a step completion. After the exit
-        # notification, we now match all lines that don't contain "srun: Step
-        # completed". Sometimes an exit notification can be received multiple
-        # times and any redundant exit notifications are also matched by this
-        # pattern.
-        before_completed_pattern = r"(^((?!srun: Step completed).)*$\n)*"
-        job_output = re.sub(before_completed_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {before_completed_pattern}")
-            return False
+    # Sort by start time; tie-break on step number for stable ordering.
+    parsed.sort(key=lambda x: (x[1], x[0]))
+    earliest = parsed[0][1]
+    threshold = datetime.timedelta(seconds=min_delay_seconds)
+    delayed_count = sum(1 for _, ts in parsed if ts - earliest >= threshold)
 
-        # Match number of lines retrying to start a delayed job step. Note that
-        # this pattern searched for steps retrying "delayed_grp_size" number of
-        # times. This is because every step that is delayed retries every time a
-        # previously running step finishes.
-        completed_pattern = rf"(srun: Step completed in JobId={job_id}, retrying\n){{{delayed_grp_size}}}"
-        job_output = re.sub(completed_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {completed_pattern}")
-            return False
-
-        # Match lines we don't want before a step creation. Due to steps running
-        # in parallel, other lines of text can be output from already running
-        # steps before we're told a new step has been created. This regex
-        # pattern matches all lines that don't contain "srun: Step created".
-        before_created_pattern = r"(^((?!srun: Step created).)*$\n)*"
-        job_output = re.sub(before_created_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {before_created_pattern}")
-            return False
-
-        # Match the step creation line for the delayed step
-        created_pattern = rf"srun: Step created for StepId={job_id}\.[0-9]+"
-        job_output = re.sub(created_pattern, "", job_output, 1, re.MULTILINE)
-        if not job_output:
-            logging.error(f"Pattern not found: {created_pattern}")
-            return False
+    if delayed_count != expected_delayed:
+        summary = ", ".join(f"{n}@{t.isoformat()}" for n, t in parsed)
+        logging.error(
+            f"check_steps_delayed: expected {expected_delayed} delayed "
+            f"step(s), got {delayed_count} (>= {min_delay_seconds}s after "
+            f"earliest start). Step starts: {summary}"
+        )
+        return False
 
     return True
 
@@ -5020,7 +5288,7 @@ def make_bash_script(script_name, script_contents):
         f.write("#!/bin/bash\n")
         f.write(script_contents)
 
-    run_command(f"chmod 777 {script_name}", user="root", fatal=True, quiet=True)
+    run_command(f"chmod 755 {script_name}", user="root", fatal=True, quiet=True)
 
     if properties["test-user-set"]:
         run_command(
@@ -5234,11 +5502,13 @@ def run_check_test(source_file, build_args=""):
     )
     xml_test = check_test + ".xml"
 
+    build_args = " ".join([build_args, "-lcheck -lm -lsubunit"])
+
     compile_against_libslurm(
         f"{properties['testsuite_check_dir']}/{source_file}",
         check_test,
         full=True,
-        build_args=build_args + "-lcheck -lm -lsubunit",
+        build_args=build_args,
         fatal=True,
         quiet=True,
     )
@@ -5535,6 +5805,14 @@ def default_partition():
             return partition_name
 
 
+def get_run_dir_path():
+    if "slurm-run-dir" not in properties:
+        properties["slurm-run-dir"] = get_config_parameter(
+            "SlurmdPidFile", live=False, quiet=True
+        )
+    return os.path.dirname(properties["slurm-run-dir"])
+
+
 # This is supplied for ease-of-use in test development only.
 # Tests should not use this permanently. Use logging.debug() instead.
 def log_debug(msg):
@@ -5631,7 +5909,7 @@ testsuite_config_file = os.getenv(
 )
 if not os.path.isfile(testsuite_config_file):
     pytest.fail(
-        f"The unified testsuite configuration file (testsuite.conf) was not found. This file can be created from a copy of the autogenerated sample found in BUILDDIR/testsuite/testsuite.conf.sample. By default, this file is expected to be found in SRCDIR/testsuite ({properties['testsuite_base_dir']}). If placed elsewhere, set the SLURM_TESTSUITE_CONF environment variable to the full path of your testsuite.conf file."
+        f"The unified testsuite configuration file (testsuite.conf) was not found. This file can be created from a copy of the sample provided in the source tree at SRCDIR/testsuite/testsuite.conf.sample. By default, this file is expected to be found in SRCDIR/testsuite ({properties['testsuite_base_dir']}). If placed elsewhere, set the SLURM_TESTSUITE_CONF environment variable to the full path of your testsuite.conf file."
     )
 with open(testsuite_config_file, "r") as f:
     for line in f.readlines():
@@ -5702,6 +5980,7 @@ else:
             properties["slurm-user"] = match.group(1)
 
 properties["submitted-jobs"] = []
+properties["lmod-touched-vars"] = set()
 if "slurmtestuser" in testsuite_config:
     properties["test-user"] = testsuite_config["slurmtestuser"]
     properties["test-user-set"] = True

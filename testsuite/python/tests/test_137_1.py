@@ -21,6 +21,7 @@ def setup():
     for i in range(2):
         feature_helpers_dict[f"f{i+1}"] = {"Helper": helper_script}
     atf.require_config_parameter("Feature", feature_helpers_dict, source="helpers")
+    atf.require_config_parameter("DebugFlags", "POWER")
     atf.require_config_parameter("RebootProgram", f"{atf.module_tmp_path}/rebooter.sh")
     atf.require_slurm_running()
 
@@ -57,15 +58,12 @@ def make_rebooter_script(node_name, out_file):
     atf.make_bash_script(
         reboot_file,
         f"""
-slurmd_pid=$(ps -p $PPID -o ppid:1=)
+slurmd_pid=$(<"{atf.get_run_dir_path()}/slurmd.{node_name}.pid")
 slurmd_start_cmd=$(ps -p $slurmd_pid -o cmd=)
-kill -9 $slurmd_pid
-while [ $SECONDS -lt 10 ]; do
-    if ! ps -p $slurmd_pid; then
-        break
-    fi
-done
-$($slurmd_start_cmd -b)
+kill $slurmd_pid
+echo "slurmd_start_cmd: $slurmd_start_cmd"
+($slurmd_start_cmd -b)
+sleep 5
 while [ $SECONDS -lt 10 ]; do
     if ps -p $(pgrep -f '{slurmd_path}'); then
         echo 'done' > {out_file}
@@ -75,7 +73,7 @@ done
 """,
     )
 
-    atf.run_command(f"chmod 0777 {reboot_file}", user="root", fatal=True, quiet=True)
+    atf.run_command(f"chmod 0755 {reboot_file}", user="root", fatal=True, quiet=True)
 
 
 @pytest.fixture(scope="module")

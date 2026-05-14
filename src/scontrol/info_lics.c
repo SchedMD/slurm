@@ -135,49 +135,83 @@ extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 	return;
 }
 
+static int _match_license_name(const char *query, const char *name, bool fuzzy)
+{
+	if (fuzzy)
+		return slurm_remote_license_fuzzy_match(query, name);
+	return xstrcmp(query, name) == 0;
+}
+
 /* _print_license_info()
  *
  * Print the license information.
  */
 static void _print_license_info(const char *name, license_info_msg_t *msg)
 {
-	int cc;
+	int cc, disp_num_lic = 0, fuzzy_num_lic = 0;
+	bool use_fuzzy_match = false;
 	slurm_license_info_t **sorted_lic = NULL;
+	slurm_license_info_t **display_lic = NULL;
 
 	if (!msg->num_lic) {
 		printf("No licenses configured in Slurm.\n");
 		return;
 	}
 
-	sorted_lic = _license_sort(msg);
+	display_lic = xcalloc(sizeof(slurm_license_info_t *), msg->num_lic);
+	if (xstrcasestr(slurm_conf.license_params, "RemoteFuzzyMatch"))
+		use_fuzzy_match = true;
 
+	sorted_lic = _license_sort(msg);
 	for (cc = 0; cc < msg->num_lic; cc++) {
-		if (name && xstrcmp((sorted_lic[cc])->name, name))
-			continue;
+		if (name) {
+			switch (_match_license_name(name, sorted_lic[cc]->name,
+						    use_fuzzy_match)) {
+			case LIC_NO_MATCH:
+				continue;
+			case LIC_FUZZY_MATCH:
+				fuzzy_num_lic++;
+			}
+		}
+		display_lic[disp_num_lic++] = sorted_lic[cc];
+	}
+
+	if (name && fuzzy_num_lic > 1) {
+		/* fuzzy matching should never over-match */
+		error("query \"%s\" matched more than one result, exiting.", name);
+		exit_code = 1;
+		goto cleanup;
+	} else if (name && disp_num_lic == 0) {
+		error("query \"%s\" matched zero licenses.", name);
+		exit_code = 1;
+		goto cleanup;
+	}
+
+	for (cc = 0; cc < disp_num_lic; cc++) {
 		printf("LicenseName=%s%sTotal=%u Used=%u Free=%u Reserved=%u Remote=%s",
-		       (sorted_lic[cc])->name,
-		       one_liner ? " " : "\n    ",
-		       (sorted_lic[cc])->total,
-		       (sorted_lic[cc])->in_use,
-		       (sorted_lic[cc])->available,
-		       (sorted_lic[cc])->reserved,
-		       (sorted_lic[cc])->remote ? "yes" : "no");
-		if (sorted_lic[cc]->mode) {
+		       (display_lic[cc])->name, one_liner ? " " : "\n    ",
+		       (display_lic[cc])->total, (display_lic[cc])->in_use,
+		       (display_lic[cc])->available,
+		       (display_lic[cc])->reserved,
+		       (display_lic[cc])->remote ? "yes" : "no");
+		if (display_lic[cc]->mode) {
 			printf("%sNodes=%s Mode=%u\n",
 			       one_liner ? " " : "\n    ",
-			       sorted_lic[cc]->nodes, sorted_lic[cc]->mode);
-		} else if (sorted_lic[cc]->remote) {
+			       display_lic[cc]->nodes, display_lic[cc]->mode);
+		} else if (display_lic[cc]->remote) {
 			char time_str[256];
-			slurm_make_time_str(&sorted_lic[cc]->last_update,
+			slurm_make_time_str(&display_lic[cc]->last_update,
 					    time_str, sizeof(time_str));
 			printf("%sLastConsumed=%u LastDeficit=%u LastUpdate=%s\n",
 			       one_liner ? " " : "\n    ",
-			       sorted_lic[cc]->last_consumed,
-			       sorted_lic[cc]->last_deficit, time_str);
+			       display_lic[cc]->last_consumed,
+			       display_lic[cc]->last_deficit, time_str);
 		} else {
 			printf("\n");
 		}
 	}
 
+cleanup:
 	xfree(sorted_lic);
+	xfree(display_lic);
 }

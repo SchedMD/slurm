@@ -277,8 +277,7 @@ extern bool running_configless;
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
 \*****************************************************************************/
-extern bool ping_nodes_now;		/* if set, ping nodes immediately */
-extern bool want_nodes_reboot;		/* if set, check for idle nodes */
+extern bool ping_nodes_now; /* if set, ping nodes immediately */
 extern bool ignore_state_errors;
 
 extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
@@ -618,12 +617,6 @@ extern int dump_all_part_state ( void );
  */
 extern void dump_job_desc(job_desc_msg_t *job_desc);
 
-/*
- * dump_step_desc - dump the incoming step initiate request message
- * IN step_spec - job step request specification from RPC
- */
-extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
-
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(job_record_t *job_ptr,
 				 node_record_t *node_ptr);
@@ -905,7 +898,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - resource allocation request only if set, batch job if zero
+ * IN allocate - resource allocation request if true, batch job if false
  * IN submit_uid -uid of user issuing the request
  * IN cron - true if cron
  * OUT job_pptr - set to pointer to job record
@@ -922,10 +915,9 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  *	default_part_loc - pointer to default partition
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
-			int will_run, will_run_response_msg_t **resp,
-			int allocate, uid_t submit_uid, bool cron,
-			job_record_t **job_pptr,
+extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
+			will_run_response_msg_t **resp, bool allocate,
+			uid_t submit_uid, bool cron, job_record_t **job_pptr,
 			char **err_msg, uint16_t protocol_version);
 
 /* If this is a job array meta-job, prepare it for being scheduled */
@@ -1034,6 +1026,22 @@ extern void job_pre_resize_acctg(job_record_t *job_ptr);
 
 /* Record accounting information for a job immediately after changing size */
 extern void job_post_resize_acctg(job_record_t *job_ptr);
+
+/*
+ * Complete a memory reduction after the agent confirms slurmd applied
+ * the new cgroup limits. Updates select plugin accounting and creates
+ * a new SlurmDBD record with the reduced memory.
+ */
+extern void job_mem_resize_complete(job_record_t *job_ptr);
+
+/*
+ * Begin memory reduction for a running job. Validates that new_mem is
+ * a strict reduction, then updates pn_min_memory and marks JOB_RESIZING.
+ * IN job_ptr - running job to reduce
+ * IN new_mem - new per-node memory limit in MB (must not have MEM_PER_CPU)
+ * RET SLURM_SUCCESS or ESLURM error code
+ */
+extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem);
 
 /*
  * job_signal - signal the specified job, access checks already done
@@ -1636,6 +1644,9 @@ extern int on_backup_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
  * IN active_controller - true if active controller, false if backup
  */
 extern int ping_controllers(bool active_controller);
+
+/* Spawn health check function for a single node */
+extern void run_health_check_individual(node_record_t *node_ptr);
 
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void);
@@ -2312,6 +2323,11 @@ extern void listeners_unquiesce(void);
 
 /* Stop listener sockets from accept()ing new incoming requests */
 extern void listeners_quiesce(void);
+
+/*
+ * True when the controller is in run_backup() standby
+ */
+extern bool slurmctld_listeners_in_standby(void);
 
 /* Set/update a node's topology */
 extern int node_mgr_set_node_topology(node_record_t *node_ptr,

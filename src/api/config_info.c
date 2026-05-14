@@ -319,11 +319,21 @@ void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
 		if (p[i].flags & PART_FLAG_NO_ROOT)
 			fprintf(fp, " DisableRootJobs=YES");
 
-		if (p[i].flags & PART_FLAG_EXCLUSIVE_USER)
-			fprintf(fp, " ExclusiveUser=YES");
+		force = p[i].max_share & SHARED_FORCE;
+		val = p[i].max_share & (~SHARED_FORCE);
 
+		/*
+		 * Exclusive= matches slurm_sprint_partition_info (partition_info.c).
+		 * Not legacy ExclusiveUser=/ExclusiveTopo= lines.
+		 */
 		if (p[i].flags & PART_FLAG_EXCLUSIVE_TOPO)
-			fprintf(fp, " ExclusiveTopo=YES");
+			fprintf(fp, " Exclusive=TOPO");
+		else if (val == 0)
+			fprintf(fp, " Exclusive=NODE");
+		else if (p[i].flags & PART_FLAG_EXCLUSIVE_USER)
+			fprintf(fp, " Exclusive=USER");
+		else
+			fprintf(fp, " Exclusive=NO");
 
 		if (p[i].grace_time)
 			fprintf(fp, " GraceTime=%u", p[i].grace_time);
@@ -395,14 +405,12 @@ void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
 		if (p[i].flags & PART_FLAG_PDOI)
 			fprintf(fp, " PowerDownOnIdle=YES");
 
-		force = p[i].max_share & SHARED_FORCE;
-		val = p[i].max_share & (~SHARED_FORCE);
 		if (val == 0)
-		        fprintf(fp, " OverSubscribe=EXCLUSIVE");
-		else if (force) {
-		        fprintf(fp, " OverSubscribe=FORCE:%u", val);
-		} else if (val != 1)
-		        fprintf(fp, " OverSubscribe=YES:%u", val);
+			fprintf(fp, " OverSubscribe=NO");
+		else if (force)
+			fprintf(fp, " OverSubscribe=FORCE:%u", val);
+		else if (val != 1)
+			fprintf(fp, " OverSubscribe=YES:%u", val);
 
 		if (p[i].state_up == PARTITION_UP)
 	                fprintf(fp, " State=UP");
@@ -777,6 +785,10 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "HealthCheckProgram", "%s",
 		     conf->health_check_program);
+
+	add_key_pair(ret_list, "HealthCheckTimeout", "%u sec",
+		     conf->health_check_timeout);
+
 	add_key_pair(ret_list, "HttpParserType", "%s", conf->http_parser_type);
 
 	add_key_pair(ret_list, "InactiveLimit", "%u sec",
@@ -826,6 +838,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "LaunchParameters", "%s", conf->launch_params);
 
+	add_key_pair(ret_list, "LicenseParameters", "%s", conf->license_params);
+
 	add_key_pair(ret_list, "Licenses", "%s", conf->licenses);
 
 	add_key_pair_own(ret_list, "LogTimeFormat", _logfmtstr(conf->log_fmt));
@@ -869,6 +883,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "MCSParameters", "%s", conf->mcs_plugin_params);
 
 	add_key_pair(ret_list, "MessageTimeout", "%u sec", conf->msg_timeout);
+
+	add_key_pair(ret_list, "MetricsAuthUsers", "%s",
+		     conf->metrics_auth_users);
+
+	add_key_pair(ret_list, "MetricsParameters", "%s", conf->metrics_params);
 
 	add_key_pair(ret_list, "MetricsType", "%s", conf->metrics_type);
 
@@ -1091,6 +1110,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 		xfree(key);
 	}
 
+	add_key_pair(ret_list, "SlurmctldHttpAuthParameters", "%s",
+		     conf->slurmctld_http_auth_params);
+
 	add_key_pair(ret_list, "SlurmctldLogFile", "%s",
 		     conf->slurmctld_logfile);
 
@@ -1121,6 +1143,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "SlurmdDebug", "%s",
 		     log_num2string(conf->slurmd_debug));
+
+	add_key_pair(ret_list, "SlurmdHttpAuthParameters", "%s",
+		     conf->slurmd_http_auth_params);
 
 	add_key_pair(ret_list, "SlurmdLogFile", "%s", conf->slurmd_logfile);
 

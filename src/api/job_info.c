@@ -1152,14 +1152,14 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		bool found_job = false, local_cluster = false;
 		if (i++ < local_job_cnt) {
 			local_cluster = true;
-		} else if (_test_local_job(prio_obj->job_id)) {
+		} else if (_test_local_job(prio_obj->step_id.job_id)) {
 			list_delete_item(iter);
 			continue;
 		}
 
 		if (show_flags & SHOW_SIBLING)
 			continue;
-		hash_job_inx = prio_obj->job_id % JOB_HASH_SIZE;
+		hash_job_inx = prio_obj->step_id.job_id % JOB_HASH_SIZE;
 		if (prio_obj->partition) {
 			HASH_FCN(prio_obj->partition,
 				 strlen(prio_obj->partition), hash_part_inx);
@@ -1169,7 +1169,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		for (j = 0;
 		     ((j < hash_tbl_size[hash_job_inx]) &&
 		      hash_job_id[hash_job_inx][j]); j++) {
-			if ((prio_obj->job_id ==
+			if ((prio_obj->step_id.job_id ==
 			     hash_job_id[hash_job_inx][j]) &&
 			    (hash_part_inx == hash_part_id[hash_job_inx][j])) {
 				found_job = true;
@@ -1189,7 +1189,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 			xrealloc(hash_job_id[hash_job_inx],
 				 sizeof(uint32_t) * hash_tbl_size[hash_job_inx]);
 		}
-		hash_job_id[hash_job_inx][j]  = prio_obj->job_id;
+		hash_job_id[hash_job_inx][j] = prio_obj->step_id.job_id;
 		hash_part_id[hash_job_inx][j] = hash_part_inx;
 	}
 	list_iterator_destroy(iter);

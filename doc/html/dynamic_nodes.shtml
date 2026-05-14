@@ -109,6 +109,26 @@ scontrol create NodeName=d[1-100] CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSoc
 </ol>
 </p>
 
+<h2 id="gres">Automatic GPU Detection
+<a class="slurm_link" href="#gres"></a>
+</h2>
+<p>
+When a dynamic node is created with <a href="slurmd.html#OPT_-Z">slurmd -Z</a>,
+the slurmd will automatically detect and register GPUs when:
+</p>
+<ul>
+<li><b>--conf</b> does not specify any GPU GRES</li>
+<li><b>gres.conf</b> does not contain explicit GPU GRES records for the node</li>
+<li><b>gres.conf</b> does not contain <b>AutoDetect=off</b></li>
+</ul>
+<p>
+If <a hreg="gres.conf.html#OPT_AutoDetect"><b>AutoDetect</b></a> in
+<b>gres.conf</b> specifies a particular detection mechanism (e.g.,
+<b>NVML</b>, <b>NVIDIA</b>, <b>RSMI</b>, <b>oneAPI</b>, <b>NRT</b>), it will
+use that mechanism to try to detect a GPU. Otherwise, <b>slurmd</b> defaults
+to the <a href="gres.conf.html#OPT_AutoDetect">full</a> gpu detection method.
+</p>
+
 <h2 id="delete">Deleting Nodes
 <a class="slurm_link" href="#delete"></a>
 </h2>

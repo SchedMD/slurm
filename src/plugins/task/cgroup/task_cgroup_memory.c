@@ -319,3 +319,44 @@ extern int task_cgroup_memory_add_extern_pid(pid_t pid)
 	/* Only in the extern step we will not create specific tasks */
 	return cgroup_g_step_addto(CG_MEMORY, &pid, 1);
 }
+
+extern int task_cgroup_memory_update_limit(stepd_step_rec_t *step,
+					   uint64_t new_job_mem,
+					   uint64_t new_step_mem)
+{
+	if (!constrain_ram_space && !constrain_swap_space) {
+		debug("memory constraints not configured, nothing to update");
+		return SLURM_SUCCESS;
+	}
+
+	if (new_job_mem > step->job_mem) {
+		error("cannot increase job memory limit from %"PRIu64"MB to %"PRIu64"MB",
+		      step->job_mem, new_job_mem);
+		return SLURM_ERROR;
+	}
+
+	if (new_step_mem > step->step_mem) {
+		error("cannot increase step memory limit from %"PRIu64"MB to %"PRIu64"MB",
+		      step->step_mem, new_step_mem);
+		return SLURM_ERROR;
+	}
+
+	info("updating job memory limit from %"PRIu64"MB to %"PRIu64"MB",
+	     step->job_mem, new_job_mem);
+
+	if (_memcg_initialize(step, new_job_mem, false) != SLURM_SUCCESS) {
+		error("failed to update job memory cgroup limit");
+		return SLURM_ERROR;
+	}
+
+	info("updating step memory limit from %"PRIu64"MB to %"PRIu64"MB",
+	     step->step_mem, new_step_mem);
+
+	if (_memcg_initialize(step, new_step_mem, true) != SLURM_SUCCESS) {
+		error("failed to update step memory cgroup limit; job cgroup already reduced to %"PRIu64"MB",
+		      new_job_mem);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}

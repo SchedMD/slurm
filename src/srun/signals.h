@@ -44,6 +44,10 @@ extern void srun_sig_init(void);
  * destroy srun. Otherwise, this will be set to 0.
  */
 extern int srun_destroy_sig;
+
+/* Set when SRUN_JOB_COMPLETE is received. */
+extern bool srun_job_complete_recvd;
+
 extern pthread_mutex_t srun_destroy_sig_lock;
 
 extern int srun_sig_eventfd;
@@ -54,5 +58,11 @@ extern int srun_sig_eventfd;
  */
 extern bool srun_sig_forward;
 extern pthread_mutex_t srun_sig_forward_lock;
+
+/* Returns true if signo is a signal handled by srun */
+extern bool srun_sig_is_handled(int signo);
+
+/* Returns true if signo may be specified to --ignore-signals */
+extern bool srun_sig_is_ignorable(int signo);
 
 #endif /* _SRUN_SIGNALS_H */

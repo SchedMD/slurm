@@ -55,8 +55,13 @@ static int _validate_each_resv_create_desc(resv_desc_msg_t *resv_msg,
 					   openapi_ctxt_t *ctxt)
 {
 	char *error_msg;
+	uint32_t res_free_flags = 0;
 
-	if (validate_resv_create_desc(resv_msg, &error_msg, NULL))
+	/* validate_resv_create_desc() may replace node_list string */
+	if (resv_msg->node_list)
+		res_free_flags |= RESV_FREE_STR_NODES;
+
+	if (validate_resv_create_desc(resv_msg, &error_msg, &res_free_flags))
 		return resp_error(ctxt, ESLURM_RESERVATION_INVALID,
 				  "validate_resv_create_desc", "%s", error_msg);
 

@@ -326,6 +326,27 @@ void ping_nodes (void)
 	}
 }
 
+extern void run_health_check_individual(node_record_t *node_ptr)
+{
+	agent_arg_t *check_agent_args = NULL;
+
+	check_agent_args = xmalloc(sizeof(agent_arg_t));
+	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	check_agent_args->retry = 0;
+	check_agent_args->protocol_version = node_ptr->protocol_version;
+	check_agent_args->hostlist = hostlist_create(NULL);
+
+	hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
+	check_agent_args->node_count++;
+	if (PACK_FANOUT_ADDRS(node_ptr))
+		check_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+
+	debug("Spawning health check agent for %s", node_ptr->node_hostname);
+	ping_begin();
+	set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(check_agent_args);
+}
+
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void)
 {

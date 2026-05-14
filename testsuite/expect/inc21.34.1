@@ -27,7 +27,7 @@
 
 # Test GrpCPUmins
 proc inc21_34_1 { qostest wait_reason } {
-	global salloc srun nthreads acct bin_sleep grpcpumin_num number
+	global salloc srun nthreads acct bin_true grpcpumin_num number
 	global totcpus test_node
 
 	log_info "Starting $wait_reason test"
@@ -45,13 +45,12 @@ proc inc21_34_1 { qostest wait_reason } {
 
 		set timeout [expr $grpcpumin_num * 120]
 		set timelimit [expr $grpcpumin_num / $nthreads]
-		# Since GrpCpuMins is a decayed variable lets reset it to make sure
-		# the test gets exactly what we would expect.
+		# Reset it to make sure the test gets exactly what we would expect.
 		if [reset_qos_usage "" $qostest] {
 			error "Unable to reset QOS usage"
 		}
 
-		set job_id1 [submit_job -fail "--account=$acct -w$test_node -n$nthreads -t$timelimit -o none --wrap '$srun $bin_sleep 1'"]
+		set job_id1 [submit_job -fail "--account=$acct -w$test_node -n$nthreads -t$timelimit -o none --wrap '$srun $bin_true'"]
 		subtest {![wait_for_job $job_id1 "DONE"]} "Job should run $wait_reason"
 		cancel_job $job_id1
 
@@ -59,7 +58,7 @@ proc inc21_34_1 { qostest wait_reason } {
 			error "Unable to reset QOS usage"
 		}
 
-		set job_id2 [submit_job -fail "--account=$acct -w$test_node -n$nthreads -t[expr $timelimit + 1] -o none --wrap '$srun $bin_sleep 11'"]
+		set job_id2 [submit_job -fail "--account=$acct -w$test_node -n$nthreads -t[expr $timelimit + 1] -o none --wrap '$srun $bin_true'"]
 		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have wait reason $wait_reason"
 		cancel_job $job_id2
 

@@ -66,6 +66,8 @@ typedef struct slurmd_task_ops {
 					     stepd_step_task_info_t *task);
 	int	(*post_step)		    (stepd_step_rec_t *step);
 	int	(*add_pid)	    	    (pid_t pid);
+	int (*update_mem_limit)(stepd_step_rec_t *step, uint64_t new_job_mem,
+				uint64_t new_step_mem);
 } slurmd_task_ops_t;
 
 /*
@@ -80,6 +82,7 @@ static const char *syms[] = {
 	"task_p_post_term",
 	"task_p_post_step",
 	"task_p_add_pid",
+	"task_p_update_mem_limit",
 };
 
 static slurmd_task_ops_t *ops = NULL;
@@ -403,6 +406,36 @@ extern int task_g_add_pid(pid_t pid)
 	slurm_mutex_unlock( &g_task_context_lock );
 
 	return (rc);
+}
+
+/*
+ * Update the memory limit for a running job/step.
+ *
+ * RET - slurm error code
+ */
+extern int task_g_update_mem_limit(stepd_step_rec_t *step, uint64_t new_job_mem,
+				   uint64_t new_step_mem)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	xassert(g_task_context_num >= 0);
+
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&g_task_context_lock);
+	for (i = 0; i < g_task_context_num; i++) {
+		rc = (*(ops[i].update_mem_limit))(step, new_job_mem,
+						  new_step_mem);
+		if (rc != SLURM_SUCCESS) {
+			error("%s: %s: %s", __func__,
+			      g_task_context[i]->type, slurm_strerror(rc));
+			break;
+		}
+	}
+	slurm_mutex_unlock(&g_task_context_lock);
+
+	return rc;
 }
 
 extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,

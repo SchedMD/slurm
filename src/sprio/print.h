@@ -76,6 +76,8 @@ int job_format_add_function(list_t *list, int width, bool right_justify,
  *****************************************************************************/
 int _print_account(priority_factors_object_t *job, int width,
 		   bool right_justify, char *suffix);
+int _print_job_sluid(priority_factors_object_t *job, int width,
+		     bool right_justify, char *suffix);
 int _print_job_job_id(priority_factors_object_t * job, int width,
 		      bool right_justify, char* suffix);
 int _print_job_prefix(priority_factors_object_t * job, int width,

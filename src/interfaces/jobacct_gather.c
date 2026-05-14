@@ -90,6 +90,7 @@ typedef struct slurm_jobacct_gather_ops {
 	void (*poll_data) (list_t *task_list, uint64_t cont_id, bool profile);
 	int (*endpoll)    ();
 	int (*add_task)   (pid_t pid, jobacct_id_t *jobacct_id);
+	void (*stat_job)(jobacctinfo_t *jobacct);
 } slurm_jobacct_gather_ops_t;
 
 /*
@@ -100,6 +101,7 @@ static const char *syms[] = {
 	"jobacct_gather_p_poll_data",
 	"jobacct_gather_p_endpoll",
 	"jobacct_gather_p_add_task",
+	"jobacct_gather_p_stat_job",
 };
 
 static slurm_jobacct_gather_ops_t ops;
@@ -735,6 +737,16 @@ extern void jobacct_gather_stat_all_task(jobacctinfo_t *ret_jobacct)
 error:
 	slurm_mutex_unlock(&task_list_lock);
 	return;
+}
+
+extern void jobacct_gather_stat_job(jobacctinfo_t *ret_jobacct)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if ((plugin_inited == PLUGIN_NOOP) || _jobacct_shutdown_test())
+		return;
+
+	(*(ops.stat_job))(ret_jobacct);
 }
 
 static int _jobacct_gather_find_task_by_pid(void *x, void *key)

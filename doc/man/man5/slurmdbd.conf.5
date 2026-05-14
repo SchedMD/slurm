@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "Slurm 26.05" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -613,6 +613,14 @@ slurmdbd interactions.
 .IP
 
 .TP
+\fBDisableRollups\fR
+Disable automatic rollups of job usage data. This will prevent sreport from
+having any usage data to show but will reduce load on the database. Re-enabling
+rollups will not generate any previously skipped rollups.
+Accepted values are yes or no. The default value is no.
+.IP
+
+.TP
 \fBHashPlugin\fR
 Identifies the type of hash plugin to use for network communication.
 Acceptable values include:
@@ -679,7 +687,7 @@ ill\-formed queries from causing performance problems within SlurmDBD.
 Default value is INFINITE which allows any queries to proceed.
 Accepted time formats are the same as the MaxTime option in slurm.conf.
 Operator and higher privileged users are exempt from this restriction.
-Note that queries which attempt to return over 3GB of data will still
+Note that queries which attempt to return over 3GiB of data will still
 fail to complete with ESLURM_RESULT_TOO_LARGE.
 .IP
 
@@ -697,7 +705,12 @@ the slurmdbd.
 .RS
 .TP
 \fBPreserveCaseUser\fR
-When defining users do not force lower case which is the default behavior.
+When defining users, preserve case on the username.
+Otherwise, the name is forced to lowercase.
+.TP
+\fBPreserveCaseResource\fR
+When defining resources, preserve case on the resource name.
+Otherwise, the name is forced to lowercase.
 .RE
 .IP
 
@@ -925,6 +938,7 @@ to store the data. This can be viewed as a backup solution when the
 StorageHost is not responding. It is up to the backup solution to enforce the
 coherency of the accounting information between the two hosts. With clustered
 database solutions (active/passive HA), you would not need to use this feature.
+Can be a UNIX socket, e.g., "unix:/path/to/socket".
 Default is none.
 .IP
 
@@ -934,6 +948,8 @@ Define the name of the host the database is running where we are going
 to store the data.
 This can be the host on which slurmdbd executes, but for larger systems, we
 recommend keeping the database on a separate machine.
+Can be a UNIX socket, e.g., "unix:/path/to/socket".
+Default is "localhost".
 .IP
 
 .TP

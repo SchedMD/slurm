@@ -174,7 +174,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			ctx->switch_table[sw].nodes =
 				bitmap2node_name(ctx->switch_table[sw]
 							 .node_bitmap);
-			switch_record_update_block_config(tctx, sw);
+			switch_record_update_switch_config(tctx, sw);
 			sw = ctx->switch_table[sw].parent;
 		}
 	}
@@ -182,6 +182,11 @@ fini:
 	xfree(added);
 	xfree(tmp_str);
 	return rc;
+}
+
+extern bool topology_p_allow_one_node(void *tctx)
+{
+	return true;
 }
 
 /*
@@ -205,6 +210,11 @@ extern int topology_p_destroy_config(topology_ctx_t *tctx)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_eval_node(topology_eval_t *topo_eval, int node_idx)
+{
+	return common_test_node(topo_eval, node_idx);
+}
+
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
 	topo_eval->eval_nodes = eval_nodes_tree;
@@ -224,6 +234,50 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 			bit_or(node_mask, ctx->switch_table[i].node_bitmap);
 		}
 	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, void *tctx)
+{
+	uint32_t count = 0;
+	tree_context_t *ctx = tctx;
+
+	xassert(node_rank);
+	xassert(size);
+
+	*node_rank = NULL;
+	*size = 0;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+
+	if (!count)
+		return SLURM_SUCCESS;
+
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+	*size = count;
+
+	count = 0;
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		switch_record_t *switch_ptr = ctx->switch_table;
+		uint32_t switch_rank = 1;
+
+		for (int j = 0; j < ctx->switch_count; j++, switch_ptr++) {
+			if (switch_ptr->level != 0)
+				continue;
+			if (bit_test(switch_ptr->node_bitmap, i)) {
+				(*node_rank)[count] = switch_rank
+						      << TOPO_RANK_ID_SHIFT;
+				break;
+			}
+			switch_rank++;
+		}
+		count++;
+	}
+
 	return SLURM_SUCCESS;
 }
 

@@ -29,6 +29,9 @@ def setup():
 
     atf.require_slurm_running()
 
+    atf.require_lmod()
+    atf.module_load("openmpi")
+
 
 def test_mpi_basic_functionality(mpi_program):
     """Test basic MPI functionality via srun with different distributions."""
@@ -136,4 +139,12 @@ echo TEST_COMPLETE
         failure_message = f"Invalid rank values ({rank_sum} != {expected_sum})"
 
     if failure_message:
+        # TODO: Remove xfail once versions older than 25.05 are not supported
+        if (
+            atf.get_version("sbin/slurmd") < (25, 5)
+            and failure_message == f"Unexpected output ({matches} of {expected_msg})"
+        ):
+            pytest.xfail(
+                f"Known issue for versions older than 25.05: {failure_message}"
+            )
         pytest.fail(failure_message)

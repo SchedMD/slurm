@@ -1031,7 +1031,7 @@ int _print_oversubscribe(sinfo_data_t * sinfo_data, int width,
 		bool force = sinfo_data->part_info->max_share & SHARED_FORCE;
 		uint16_t val = sinfo_data->part_info->max_share & (~SHARED_FORCE);
 		if (val == 0)
-			snprintf(id, sizeof(id), "EXCLUSIVE");
+			snprintf(id, sizeof(id), "NO");
 		else if (force)
 			snprintf(id, sizeof(id), "FORCE:%u", val);
 		else if (val == 1)

@@ -50,10 +50,15 @@ def test_const1():
         job_id_3, "RUNNING", timeout=5, xfail=True
     ), "Verify that job #3 is not run"
 
-    assert atf.wait_for_job_state(
-        job_id_3, "PENDING", "Resources"
-    ), "Verify that job #3 is not run due resources"
-    atf.cancel_all_jobs(quiet=True)
+    if atf.get_version() >= (26, 5):
+        # Ticket 23990: Observability for block scheduling improved in 26.05+
+        assert atf.wait_for_job_state(
+            job_id_3, "PENDING", "No_suitable_topology_unit_found"
+        ), "Verify that job #3 is pending due to topology rejection"
+    else:
+        assert atf.wait_for_job_state(
+            job_id_3, "PENDING", "Resources"
+        ), "Verify that job #3 is not run due resources"
 
 
 def test_const2():
@@ -63,7 +68,6 @@ def test_const2():
     job_id_2 = atf.submit_job_sbatch('-N 5 --exclusive --mem=1 --wrap="sleep 20"')
     atf.wait_for_job_state(job_id_1, "RUNNING", fatal=True, timeout=5)
     atf.wait_for_job_state(job_id_2, "RUNNING", fatal=True, timeout=5)
-    atf.cancel_all_jobs(quiet=True)
 
 
 def test_segment1():
@@ -79,4 +83,3 @@ def test_segment1():
         )
         == 0
     ), "Job should fail -- 5%2 "
-    atf.cancel_all_jobs(quiet=True)

@@ -305,8 +305,8 @@ void parse_command_line(int argc, char **argv)
 			if (selected_step->step_id.step_id != NO_VAL)
 				debug("\t: %ps\n", &selected_step->step_id);
 			else
-				debug("\t: All steps for job %u\n",
-				      selected_step->step_id.job_id);
+				debug("\t: All steps for %pI\n",
+				      &selected_step->step_id);
 		}
 		list_iterator_destroy(itr);
 	}

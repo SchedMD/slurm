@@ -47,6 +47,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
@@ -683,6 +684,20 @@ end_it:
 	return rc;
 }
 
+static void _apply_purge_default(uint32_t *purge, uint32_t conf_purge)
+{
+	if (*purge == NO_VAL)
+		*purge = conf_purge;
+	else if (!(*purge & SLURMDB_PURGE_BASE))
+		/*
+		 * When `sacctmgr archive dump` is given a bare keyword like
+		 * "Jobs" but no duration, *purge has a value of 0 with
+		 * SLURMDB_PURGE_ARCHIVE set. Use the configured default in that
+		 * case too.
+		 */
+		*purge |= conf_purge;
+}
+
 static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			 buf_t **out_buffer)
 {
@@ -712,24 +727,24 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		arch_cond->archive_script =
 			xstrdup(slurmdbd_conf->archive_script);
 
-	if (arch_cond->purge_event == NO_VAL)
-		arch_cond->purge_event = slurmdbd_conf->purge_event;
-	if (arch_cond->purge_job == NO_VAL)
-		arch_cond->purge_job = slurmdbd_conf->purge_job;
-	if (arch_cond->purge_resv == NO_VAL)
-		arch_cond->purge_resv = slurmdbd_conf->purge_resv;
-	if (arch_cond->purge_step == NO_VAL)
-		arch_cond->purge_step = slurmdbd_conf->purge_step;
-	if (arch_cond->purge_suspend == NO_VAL)
-		arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
-	if (arch_cond->purge_txn == NO_VAL)
-		arch_cond->purge_txn = slurmdbd_conf->purge_txn;
-	if (arch_cond->purge_usage == NO_VAL)
-		arch_cond->purge_usage = slurmdbd_conf->purge_usage;
-	if (arch_cond->purge_jobscript == NO_VAL)
-		arch_cond->purge_jobscript = slurmdbd_conf->purge_jobscript;
-	if (arch_cond->purge_jobenv == NO_VAL)
-		arch_cond->purge_jobenv = slurmdbd_conf->purge_jobenv;
+	/*
+	 * Use purge durations from slurmdbd.conf when the RPC from sacctmgr
+	 * didn't specify them.
+	 */
+	_apply_purge_default(&arch_cond->purge_event,
+			     slurmdbd_conf->purge_event);
+	_apply_purge_default(&arch_cond->purge_job, slurmdbd_conf->purge_job);
+	_apply_purge_default(&arch_cond->purge_resv, slurmdbd_conf->purge_resv);
+	_apply_purge_default(&arch_cond->purge_step, slurmdbd_conf->purge_step);
+	_apply_purge_default(&arch_cond->purge_suspend,
+			     slurmdbd_conf->purge_suspend);
+	_apply_purge_default(&arch_cond->purge_txn, slurmdbd_conf->purge_txn);
+	_apply_purge_default(&arch_cond->purge_usage,
+			     slurmdbd_conf->purge_usage);
+	_apply_purge_default(&arch_cond->purge_jobscript,
+			     slurmdbd_conf->purge_jobscript);
+	_apply_purge_default(&arch_cond->purge_jobenv,
+			     slurmdbd_conf->purge_jobenv);
 
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
 	if (rc != SLURM_SUCCESS) {
@@ -985,33 +1000,44 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
+static int _get_config_keypair(slurmdbd_conn_t *slurmdbd_conn,
+			       persist_msg_t *msg, buf_t **out_buffer)
+{
+	dbd_list_msg_t list_msg = { NULL };
+
+	list_msg.my_list = slurmdb_config_get_keypairs(slurmdbd_conf);
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+			       DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
+	FREE_NULL_LIST(list_msg.my_list);
+
+	return SLURM_SUCCESS;
+}
+
 static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		       buf_t **out_buffer)
 {
-	char *config_name = msg->data;
-	dbd_list_msg_t list_msg = { NULL };
+	int rc = EINVAL;
 
-	if (config_name == NULL ||
-	    xstrcmp(config_name, "slurmdbd.conf") == 0)
-		list_msg.my_list = dump_config();
-	else if ((list_msg.my_list = acct_storage_g_get_config(
-			  slurmdbd_conn->db_conn, config_name)) == NULL) {
-		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
-							errno,
-							slurm_strerror(errno),
-							DBD_GET_CONFIG);
-		xfree(config_name);
-		return SLURM_ERROR;
+	if (slurmdbd_conn->pcon->version < SLURM_26_05_PROTOCOL_VERSION) {
+		rc = _get_config_keypair(slurmdbd_conn, msg, out_buffer);
+	} else {
+		persist_msg_t resp = {
+			.data = slurmdbd_conf,
+			.pcon = slurmdbd_conn->pcon,
+			.msg_type = DBD_GOT_CONFIG,
+		};
+
+		xassert(!*out_buffer);
+		if ((*out_buffer =
+			     pack_slurmdbd_msg(&resp,
+					       slurmdbd_conn->pcon->version)))
+			rc = SLURM_SUCCESS;
 	}
 
-	*out_buffer = init_buf(1024);
-	pack16((uint16_t) DBD_GOT_CONFIG, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_CONFIG, *out_buffer);
-	FREE_NULL_LIST(list_msg.my_list);
-	xfree(config_name);
-
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
@@ -2192,12 +2218,8 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	array_recs.max_run_tasks = job_start_msg->array_max_tasks;
 	array_recs.task_cnt = job_start_msg->array_task_pending;
 	job.assoc_id = job_start_msg->assoc_id;
-	/*
-	 * When 24.11 is no longer supported this check will go away, the
-	 * db_index will not be NO_VAL64 then.
-	 */
-	if (job_start_msg->db_index != NO_VAL64)
-		job.db_index = job_start_msg->db_index;
+	job.db_index = job_start_msg->db_index;
+	job.step_id.sluid = job_start_msg->sluid;
 	details.begin_time = job_start_msg->eligible_time;
 	details.env_hash = job_start_msg->env_hash;
 	job.user_id = job_start_msg->uid;
@@ -2225,6 +2247,9 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_protocol_ver = slurmdbd_conn->pcon->version;
 	job.start_time = job_start_msg->start_time;
 	details.segment_size = job_start_msg->segment_size;
+	job.exclusive = job_exclusive_display_string(job_start_msg->exclusive);
+	job.oversubscribe =
+		job_oversubscribe_string(job_start_msg->oversubscribe);
 	details.std_err = job_start_msg->std_err;
 	details.std_in = job_start_msg->std_in;
 	details.std_out = job_start_msg->std_out;
@@ -2974,6 +2999,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	step.cpu_freq_max = step_start_msg->req_cpufreq_max;
 	step.cpu_freq_gov = step_start_msg->req_cpufreq_gov;
 	step.cwd = step_start_msg->cwd;
+	step.state = step_start_msg->state;
 	step.std_err = step_start_msg->std_err;
 	step.std_in = step_start_msg->std_in;
 	step.std_out = step_start_msg->std_out;

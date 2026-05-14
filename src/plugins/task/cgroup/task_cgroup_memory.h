@@ -56,4 +56,9 @@ extern int task_cgroup_memory_add_pid(stepd_step_rec_t *step, pid_t pid,
 /* add a pid to extern step cgroup. This one doesn't go at task_x level. */
 extern int task_cgroup_memory_add_extern_pid(pid_t pid);
 
+/* update memory limits for a running job/step (only reduction supported) */
+extern int task_cgroup_memory_update_limit(stepd_step_rec_t *step,
+					   uint64_t new_job_mem,
+					   uint64_t new_step_mem);
+
 #endif

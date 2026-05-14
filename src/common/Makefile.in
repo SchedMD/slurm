@@ -166,30 +166,32 @@ libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	callerid.lo cbuf.lo core_array.lo cpu_frequency.lo cron.lo \
 	daemonize.lo data.lo duplex_relay.lo dynamic_plugin_data.lo \
-	eio.lo env.lo extra_constraints.lo events.lo fd.lo \
-	fetch_config.lo forward.lo global_defaults.lo group_cache.lo \
-	half_duplex.lo hostlist.lo http.lo http_con.lo http_mime.lo \
-	http_router.lo http_switch.lo identity.lo id_util.lo io_hdr.lo \
-	job_features.lo job_options.lo job_record.lo job_resources.lo \
+	eio.lo env.lo events.lo extra_constraints.lo fd.lo \
+	fetch_config.lo file_bcast.lo forward.lo global_defaults.lo \
+	group_cache.lo half_duplex.lo hostlist.lo http.lo http_con.lo \
+	http_mime.lo http_request.lo http_router.lo http_switch.lo \
+	id_util.lo identity.lo io_hdr.lo job_features.lo \
+	job_options.lo job_record.lo job_resources.lo \
 	job_state_reason.lo list.lo log.lo msg_type.lo net.lo \
 	node_conf.lo node_features.lo oci_config.lo openapi.lo optz.lo \
 	pack.lo parse_config.lo parse_time.lo parse_value.lo \
 	part_record.lo persist_conn.lo plugin.lo plugrack.lo \
-	port_mgr.lo print_fields.lo probes.lo proc_args.lo \
-	read_config.lo reverse_tree.lo run_command.lo run_in_daemon.lo \
-	sack_api.lo sercli.lo serdes.lo setproctitle.lo sluid.lo \
-	slurm_errno.lo slurm_opt.lo slurm_protocol_api.lo \
-	slurm_protocol_defs.lo slurm_protocol_pack.lo \
-	slurm_protocol_util.lo slurm_protocol_socket.lo \
-	slurm_resolv.lo slurm_resource_info.lo slurm_rlimits_info.lo \
-	slurm_step_layout.lo slurm_time.lo slurmdb_defs.lo \
-	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
-	state_save.lo stepd_api.lo stepd_proxy.lo strlcpy.lo \
-	strnatcmp.lo threadpool.lo timers.lo track_script.lo \
-	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
-	working_cluster.lo write_labelled_message.lo x11_util.lo \
-	xassert.lo xahash.lo xhash.lo xmalloc.lo xrandom.lo xregex.lo \
-	xsched.lo xsystemd.lo xsignal.lo xstring.lo
+	port_mgr.lo power_action.lo print_fields.lo probes.lo \
+	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo sack_api.lo sercli.lo serdes.lo \
+	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
+	slurm_protocol_api.lo slurm_protocol_defs.lo \
+	slurm_protocol_pack.lo slurm_protocol_socket.lo \
+	slurm_protocol_util.lo slurm_resolv.lo slurm_resource_info.lo \
+	slurm_rlimits_info.lo slurm_step_layout.lo slurm_time.lo \
+	slurmdb_defs.lo slurmdb_pack.lo slurmdbd_defs.lo \
+	slurmdbd_pack.lo spank.lo state_save.lo step_ctx.lo \
+	stepd_api.lo stepd_proxy.lo strlcpy.lo strnatcmp.lo \
+	threadpool.lo timers.lo track_script.lo tres_bind.lo \
+	tres_frequency.lo uid.lo util-net.lo working_cluster.lo \
+	write_labelled_message.lo x11_util.lo xahash.lo xassert.lo \
+	xhash.lo xmalloc.lo xrandom.lo xregex.lo xsched.lo xsignal.lo \
+	xstring.lo xsystemd.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -225,11 +227,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/dynamic_plugin_data.Plo ./$(DEPDIR)/eio.Plo \
 	./$(DEPDIR)/env.Plo ./$(DEPDIR)/events.Plo \
 	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
-	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/forward.Plo \
-	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/group_cache.Plo \
-	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hostlist.Plo \
-	./$(DEPDIR)/http.Plo ./$(DEPDIR)/http_con.Plo \
-	./$(DEPDIR)/http_mime.Plo ./$(DEPDIR)/http_router.Plo \
+	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/file_bcast.Plo \
+	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
+	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
+	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/http.Plo \
+	./$(DEPDIR)/http_con.Plo ./$(DEPDIR)/http_mime.Plo \
+	./$(DEPDIR)/http_request.Plo ./$(DEPDIR)/http_router.Plo \
 	./$(DEPDIR)/http_switch.Plo ./$(DEPDIR)/id_util.Plo \
 	./$(DEPDIR)/identity.Plo ./$(DEPDIR)/io_hdr.Plo \
 	./$(DEPDIR)/job_features.Plo ./$(DEPDIR)/job_options.Plo \
@@ -243,14 +246,15 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
 	./$(DEPDIR)/part_record.Plo ./$(DEPDIR)/persist_conn.Plo \
 	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
-	./$(DEPDIR)/port_mgr.Plo ./$(DEPDIR)/print_fields.Plo \
-	./$(DEPDIR)/probes.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
-	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
-	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/sercli.Plo \
-	./$(DEPDIR)/serdes.Plo ./$(DEPDIR)/setproctitle.Plo \
-	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
-	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/port_mgr.Plo ./$(DEPDIR)/power_action.Plo \
+	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/probes.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
+	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/sack_api.Plo \
+	./$(DEPDIR)/sercli.Plo ./$(DEPDIR)/serdes.Plo \
+	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/sluid.Plo \
+	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
+	./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -262,12 +266,13 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/slurmdb_defs.Plo ./$(DEPDIR)/slurmdb_pack.Plo \
 	./$(DEPDIR)/slurmdbd_defs.Plo ./$(DEPDIR)/slurmdbd_pack.Plo \
 	./$(DEPDIR)/spank.Plo ./$(DEPDIR)/state_save.Plo \
-	./$(DEPDIR)/stepd_api.Plo ./$(DEPDIR)/stepd_proxy.Plo \
-	./$(DEPDIR)/strlcpy.Plo ./$(DEPDIR)/strnatcmp.Plo \
-	./$(DEPDIR)/threadpool.Plo ./$(DEPDIR)/timers.Plo \
-	./$(DEPDIR)/track_script.Plo ./$(DEPDIR)/tres_bind.Plo \
-	./$(DEPDIR)/tres_frequency.Plo ./$(DEPDIR)/uid.Plo \
-	./$(DEPDIR)/util-net.Plo ./$(DEPDIR)/working_cluster.Plo \
+	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/stepd_api.Plo \
+	./$(DEPDIR)/stepd_proxy.Plo ./$(DEPDIR)/strlcpy.Plo \
+	./$(DEPDIR)/strnatcmp.Plo ./$(DEPDIR)/threadpool.Plo \
+	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
+	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
+	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
+	./$(DEPDIR)/working_cluster.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xahash.Plo \
 	./$(DEPDIR)/xassert.Plo ./$(DEPDIR)/xhash.Plo \
@@ -612,14 +617,16 @@ libcommon_la_SOURCES = \
 	eio.h					\
 	env.c					\
 	env.h					\
-	extra_constraints.c			\
-	extra_constraints.h			\
 	events.c				\
 	events.h				\
+	extra_constraints.c			\
+	extra_constraints.h			\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\
 	fetch_config.h				\
+	file_bcast.c				\
+	file_bcast.h				\
 	forward.c				\
 	forward.h				\
 	global_defaults.c			\
@@ -629,20 +636,22 @@ libcommon_la_SOURCES = \
 	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
-	http.h					\
 	http.c					\
-	http_con.h				\
+	http.h					\
 	http_con.c				\
-	http_mime.h				\
+	http_con.h				\
 	http_mime.c				\
-	http_router.h				\
+	http_mime.h				\
+	http_request.c				\
+	http_request.h				\
 	http_router.c				\
-	http_switch.h				\
+	http_router.h				\
 	http_switch.c				\
-	identity.h				\
-	identity.c				\
-	id_util.h				\
+	http_switch.h				\
 	id_util.c				\
+	id_util.h				\
+	identity.c				\
+	identity.h				\
 	io_hdr.c				\
 	io_hdr.h				\
 	job_features.c				\
@@ -692,6 +701,8 @@ libcommon_la_SOURCES = \
 	plugrack.h				\
 	port_mgr.c				\
 	port_mgr.h				\
+	power_action.c				\
+	power_action.h				\
 	print_fields.c				\
 	print_fields.h				\
 	probes.c				\
@@ -727,10 +738,10 @@ libcommon_la_SOURCES = \
 	slurm_protocol_defs.h			\
 	slurm_protocol_pack.c			\
 	slurm_protocol_pack.h			\
-	slurm_protocol_util.c			\
-	slurm_protocol_util.h			\
 	slurm_protocol_socket.c			\
 	slurm_protocol_socket.h			\
+	slurm_protocol_util.c			\
+	slurm_protocol_util.h			\
 	slurm_resolv.c				\
 	slurm_resolv.h				\
 	slurm_resource_info.c			\
@@ -754,6 +765,8 @@ libcommon_la_SOURCES = \
 	spank.h					\
 	state_save.c				\
 	state_save.h				\
+	step_ctx.c				\
+	step_ctx.h				\
 	stepd_api.c				\
 	stepd_api.h				\
 	stepd_proxy.c				\
@@ -783,10 +796,10 @@ libcommon_la_SOURCES = \
 	write_labelled_message.h		\
 	x11_util.c				\
 	x11_util.h				\
-	xassert.c				\
-	xassert.h				\
 	xahash.c				\
 	xahash.h				\
+	xassert.c				\
+	xassert.h				\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\
@@ -797,12 +810,12 @@ libcommon_la_SOURCES = \
 	xregex.h				\
 	xsched.c				\
 	xsched.h				\
-	xsystemd.c				\
-	xsystemd.h				\
 	xsignal.c				\
 	xsignal.h				\
 	xstring.c				\
-	xstring.h
+	xstring.h				\
+	xsystemd.c				\
+	xsystemd.h
 
 libcommon_la_LIBADD = $(libselinux_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
@@ -884,6 +897,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/extra_constraints.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fetch_config.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_bcast.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_cache.Plo@am__quote@ # am--include-marker
@@ -892,6 +906,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_con.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_mime.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_request.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_router.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_switch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/id_util.Plo@am__quote@ # am--include-marker
@@ -920,6 +935,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_mgr.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_action.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print_fields.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probes.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@ # am--include-marker
@@ -950,6 +966,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_pack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_proxy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@ # am--include-marker
@@ -1117,6 +1134,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/extra_constraints.Plo
 	-rm -f ./$(DEPDIR)/fd.Plo
 	-rm -f ./$(DEPDIR)/fetch_config.Plo
+	-rm -f ./$(DEPDIR)/file_bcast.Plo
 	-rm -f ./$(DEPDIR)/forward.Plo
 	-rm -f ./$(DEPDIR)/global_defaults.Plo
 	-rm -f ./$(DEPDIR)/group_cache.Plo
@@ -1125,6 +1143,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/http_con.Plo
 	-rm -f ./$(DEPDIR)/http_mime.Plo
+	-rm -f ./$(DEPDIR)/http_request.Plo
 	-rm -f ./$(DEPDIR)/http_router.Plo
 	-rm -f ./$(DEPDIR)/http_switch.Plo
 	-rm -f ./$(DEPDIR)/id_util.Plo
@@ -1153,6 +1172,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/plugin.Plo
 	-rm -f ./$(DEPDIR)/plugrack.Plo
 	-rm -f ./$(DEPDIR)/port_mgr.Plo
+	-rm -f ./$(DEPDIR)/power_action.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
 	-rm -f ./$(DEPDIR)/probes.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
@@ -1183,6 +1203,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
 	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_save.Plo
+	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/stepd_proxy.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
@@ -1270,6 +1291,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/extra_constraints.Plo
 	-rm -f ./$(DEPDIR)/fd.Plo
 	-rm -f ./$(DEPDIR)/fetch_config.Plo
+	-rm -f ./$(DEPDIR)/file_bcast.Plo
 	-rm -f ./$(DEPDIR)/forward.Plo
 	-rm -f ./$(DEPDIR)/global_defaults.Plo
 	-rm -f ./$(DEPDIR)/group_cache.Plo
@@ -1278,6 +1300,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/http_con.Plo
 	-rm -f ./$(DEPDIR)/http_mime.Plo
+	-rm -f ./$(DEPDIR)/http_request.Plo
 	-rm -f ./$(DEPDIR)/http_router.Plo
 	-rm -f ./$(DEPDIR)/http_switch.Plo
 	-rm -f ./$(DEPDIR)/id_util.Plo
@@ -1306,6 +1329,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/plugin.Plo
 	-rm -f ./$(DEPDIR)/plugrack.Plo
 	-rm -f ./$(DEPDIR)/port_mgr.Plo
+	-rm -f ./$(DEPDIR)/power_action.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
 	-rm -f ./$(DEPDIR)/probes.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
@@ -1336,6 +1360,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
 	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_save.Plo
+	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/stepd_proxy.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo

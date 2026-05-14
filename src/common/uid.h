@@ -64,13 +64,53 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 			     char **buf_malloc, size_t *bufsize,
 			     struct passwd **result);
 /*
- * Return validated uid_t for string in ``name'' which contains
- *  either the UID number or user name
+ * uid_from_string() - given a string with either a username or a uid in it
+ *      populate the passed uid pointer with the correct uid and return an
+ *      integer indicated the degree of success.  This function is sanitizing
+ *      inputs against current system state and provides UIDs that the Slurm
+ *      daemons use in a security sensitive manner.
  *
- * Returns uid int uidp after verifying presence in /etc/passwd, or
- *  -1 on failure.
+ * IN name: string with either a provided username or provided string uid
+ *          ownership of the username pointer
+ * IN/OUT uidp: pointer to the caller's uid_t memory, will be populated with
+ *          the identified uid, though degree of success is communicated via
+ *          the return code.
+ *
+ * Returns:
+ *     SLURM_SUCCESS: uid was successfully looked up, uidp populated with
+ *                    the passwd database version of the uid
+ *     SLURM_ERROR: the name string was not a username nor was it a valid
+ *                    number that *might* be a uid. uidp is NOT populated,
+ *                    caller should NOT proceed with the results
+ *     ESLURM_USER_ID_UNKNOWN: the name string had an encoded number but was
+ *                    not in the user database accessible to the system.
+ *                    uidp is populated with the parsed uid number. caller
+ *                    should proceed with care.
+ *     SLURM_AUTH_NOBODY: requested name matches SLURM_AUTH_NOBODY_NAME,
+ *     		      the in/out variables are untouched.
  */
 extern int uid_from_string(const char *name, uid_t *uidp);
+
+/*
+ * Same interface in/out as uid_from_string() with the proviso that it uses
+ * a cache layer to speed interactions. The cache must be explicitly enabled
+ * with uid_from_string_cache_enable() and then explicitly disabled with
+ * uid_from_string_cache_disable() setting boundary points around cache
+ * survival.  These are meant to represent discrete periods in time when a
+ * single run of many repeated lookups may occur (for example during daemon
+ * startup).
+ */
+extern int uid_from_string_cached(const char *name, uid_t *uidp);
+
+/*
+ * Enable the uid_from_string cache explicitly.
+ */
+extern void uid_from_string_cache_enable(void);
+
+/*
+ * Disable the uid_from_string cache explicitly.
+ */
+extern void uid_from_string_cache_disable(void);
 
 /*
  * Return the primary group id for a given user id, or
@@ -97,7 +137,7 @@ extern char *uid_to_string_or_null(uid_t uid);
  */
 extern char *uid_to_string(uid_t uid);
 
-/* Free any memory allocated by uid_to_string_cached() */
+/* Empty the uid cache and free any memory */
 extern void uid_cache_clear(void);
 
 /*

@@ -548,7 +548,7 @@ alone in its own delegated cgroup.</p>
 also delegated where all slurmstepd and user jobs will reside. The slurmstepd
 is migrated initially in the waiting area for new stepds, <i>system</i>
 directory, and immediately, when it initializes the job hierarchy, it will move
-itself into the corresponding <i>job_x/step_y/slurm_processes</i> directory.
+itself into the corresponding <i>SLUID/step_y/slurm_processes</i> directory.
 </p>
 <p>User processes will be spawned by slurmstepd and moved into the appropriate
 task directory.</p>
@@ -564,7 +564,7 @@ are running in a slurmstepd scope by issuing this command:</p>
      Memory: 18.7M
         CPU: 141ms
      CGroup: /system.slice/slurmstepd.scope
-             ├─job_3385
+             ├─s5K1KKYAYG5D00
              │ ├─step_0
              │ │ ├─slurm
              │ │ │ └─113630 slurmstepd: [3385.0]

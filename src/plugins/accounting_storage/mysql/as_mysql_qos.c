@@ -522,6 +522,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", priority");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", priority=NULL");
+		qos->priority = 0;
 	} else if ((qos->priority != NO_VAL)
 		   && ((int32_t)qos->priority >= 0)) {
 		xstrcat(*cols, ", priority");

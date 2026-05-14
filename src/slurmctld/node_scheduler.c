@@ -1572,6 +1572,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool licenses_unavailable = false;
 	int shared = 0, select_mode;
 	list_t *preemptee_cand = NULL;
+	int avail_pick_code = SLURM_SUCCESS;
 
 	/*
 	 * Since you could potentially have multiple features and the
@@ -1703,7 +1704,11 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	 * Accumulate resources for this job based upon its required
 	 * features (possibly with node counts).
 	 */
+	job_ptr->bit_flags |= NEED_MORE_FEATURES;
 	for (j = min_feature; j <= max_feature; j++) {
+		if (j >= max_feature) {
+			job_ptr->bit_flags &= ~NEED_MORE_FEATURES;
+		}
 		if (job_ptr->details->req_node_bitmap) {
 			bool missing_required_nodes = false;
 			bool feature_found = false;
@@ -1912,11 +1917,6 @@ try_sched:
 
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
-				if (bit_set_count(avail_bitmap) > max_nodes) {
-					/* end of tests for this feature */
-					avail_nodes = 0;
-					break;
-				}
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -1955,8 +1955,7 @@ try_sched:
 						smallest_min_mem;
 			}
 
-			if ((pick_code == SLURM_SUCCESS) &&
-			     (bit_set_count(avail_bitmap) <= max_nodes)) {
+			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -1966,6 +1965,8 @@ try_sched:
 
 		if (pick_code == ESLURM_LICENSES_UNAVAILABLE)
 			licenses_unavailable = true;
+
+		avail_pick_code = pick_code;
 
 		/* determine if job could possibly run (if all configured
 		 * nodes available) */
@@ -2007,9 +2008,7 @@ try_sched:
 
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
-					if (bit_set_count(avail_bitmap) <=
-					     max_nodes)
-						runable_avail = true;
+					runable_avail = true;
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = avail_bitmap;
 					avail_bitmap = NULL;
@@ -2111,11 +2110,15 @@ try_sched:
 					  idle_node_bitmap)) {
 			error_code = ESLURM_NODES_BUSY;
 			/* Note: IDLE nodes are not COMPLETING */
+		} else if (IS_TOPO_ERROR(avail_pick_code)) {
+			error_code = avail_pick_code;
 		}
 	} else if (job_ptr->details->req_node_bitmap &&
 		   bit_overlap_any(job_ptr->details->req_node_bitmap,
 				   cg_node_bitmap)) {
 		error_code = ESLURM_NODES_BUSY;
+	} else if (IS_TOPO_ERROR(avail_pick_code)) {
+		error_code = avail_pick_code;
 	}
 
 	if (error_code == SLURM_SUCCESS) {
@@ -2866,6 +2869,9 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
+			if (IS_TOPO_ERROR(error_code))
+				job_ptr->state_desc =
+					xstrdup(slurm_strerror(error_code));
 		}
 		goto cleanup;
 	}
@@ -3017,7 +3023,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 	allocate_nodes(job_ptr);
 	job_array_start(job_ptr);
-	build_node_details(job_ptr, true);
+	build_node_details(job_ptr);
 	rebuild_job_part_list(job_ptr);
 
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
@@ -3055,7 +3061,8 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		}
 	}
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
-	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
+	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap) ||
+	    pick_batch_host(job_ptr)) {
 		/* This handles nodes explicitly requesting node reboot */
 		job_state_set_flag(job_ptr, JOB_CONFIGURING);
 	}
@@ -3190,7 +3197,8 @@ extern int get_node_cnts(job_record_t *job_ptr, uint32_t qos_flags,
 
 	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
 	    job_ptr->details->max_nodes &&
-	    !(job_ptr->bit_flags & USE_MIN_NODES))
+	    !((job_ptr->bit_flags & USE_MIN_NODES) ||
+	      (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES)))
 		*req_nodes = *max_nodes;
 	else
 		*req_nodes = *min_nodes;
@@ -4314,11 +4322,10 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 }
 
 /*
- * build_node_details - sets addresses for allocated nodes
+ * build_node_details - sets node_cnt
  * IN job_ptr - pointer to a job record
- * IN new_alloc - set if new job allocation, cleared if state recovery
  */
-extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
+extern void build_node_details(job_record_t *job_ptr)
 {
 	hostlist_t *host_list = NULL;
 	node_record_t *node_ptr;
@@ -4331,12 +4338,9 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 		return;
 	}
 
-	/* Use hostlist here to ensure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
-
-	xfree(job_ptr->batch_host);
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
@@ -4344,14 +4348,6 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 		} else {
 			error("Invalid node %s in %pJ",
 			      this_node_name, job_ptr);
-		}
-		if (!job_ptr->batch_host && !job_ptr->batch_features) {
-			/*
-			 * Do not select until launch_job() as node features
-			 * might be changed by node_features plugin between
-			 * allocation time (now) and launch.
-			 */
-			job_ptr->batch_host = xstrdup(this_node_name);
 		}
 		free(this_node_name);
 	}

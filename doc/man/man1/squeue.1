@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "Slurm 26.05" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -166,7 +166,7 @@ reflect the current number of CPUs allocated.
 
 .TP
 \fB%d\fR
-Minimum size of temporary disk space (in MB) requested by the job.
+Minimum size of temporary disk space (in MiB) requested by the job.
 (Valid for jobs only)
 .IP
 
@@ -225,16 +225,11 @@ Group ID of the job.
 
 .TP
 \fB%h\fR
-Can the compute resources allocated to the job be over subscribed by other jobs.
-The resources to be over subscribed can be nodes, sockets, cores, or
-hyperthreads depending upon configuration.
-The value will be "YES" if the job was submitted with the oversubscribe option
-or the partition is configured with OverSubscribe=Force,
-"NO" if the job requires exclusive node access,
-"USER" if the allocated compute nodes are dedicated to a single user,
-"MCS" if the allocated compute nodes are dedicated to a single security class
-(See MCSPlugin and MCSParameters configuration parameters for more information),
-"OK" otherwise (typically allocated dedicated CPUs),
+Oversubscribe disposition for the job (\fBOVER_SUBSCRIBE\fR column): "YES" if
+the job requested \fB\-\-oversubscribe\fR; "NO" otherwise; "OK" if the
+partition allows oversubscription (without the job disabling it) when the job
+did not request \fB\-\-oversubscribe\fR.
+This does not encode exclusivity; see the \fBExclusive\fR field below.
 (Valid for jobs only)
 .IP
 
@@ -313,7 +308,7 @@ The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
 
 .TP
 \fB%m\fR
-Minimum size of memory (in MB) requested by the job.
+Minimum size of memory (in MiB) requested by the job.
 (Valid for jobs only)
 If memory was request per CPU, or per GPU the value is shown
 with the assumption that at least one CPU, GPU will be allocated
@@ -838,7 +833,7 @@ Prints the MCS_label of the job.
 
 .TP
 \fBmem\-per\-tres\fR
-Print the memory (in MB) required per trackable resources allocated to the job
+Print the memory (in MiB) required per trackable resources allocated to the job
 or job step.
 .IP
 
@@ -852,7 +847,7 @@ default value of zero.
 
 .TP
 \fBMinMemory\fR
-Minimum size of memory (in MB) requested by the job.
+Minimum size of memory (in MiB) requested by the job.
 (Valid for jobs only)
 .IP
 
@@ -864,7 +859,7 @@ Minimum time limit of the job
 
 .TP
 \fBMinTmpDisk\fR
-Minimum size of temporary disk space (in MB) requested by the job.
+Minimum size of temporary disk space (in MiB) requested by the job.
 (Valid for jobs only)
 .IP
 
@@ -966,18 +961,34 @@ Cluster ID where federated job originated from.
 
 .TP
 \fBOverSubscribe\fR
-Can the compute resources allocated to the job be over subscribed by other jobs.
-The resources to be over subscribed can be nodes, sockets, cores, or
-hyperthreads depending upon configuration.
-The value will be "YES" if the job was submitted with the oversubscribe option
-or the partition is configured with OverSubscribe=Force,
-"NO" if the job requires exclusive node access,
-"USER" if the allocated compute nodes are dedicated to a single user,
-"MCS" if the allocated compute nodes are dedicated to a single security class
-(See MCSPlugin and MCSParameters configuration parameters for more information),
-"OK" otherwise (typically allocated dedicated CPUs),
+Same values as \fB%h\fR / \fBOVER_SUBSCRIBE\fR: "YES", "NO", or "OK".
+See \fB%h\fR above.
 (Valid for jobs only)
 .IP
+
+.TP
+\fBExclusive\fR
+Exclusive disposition for the job (\fBEXCLUSIVE\fR column).
+.RS
+.TP
+\fBNO\fR: no exclusivity.
+.TP
+\fBNODE\fR: whole-node allocation (job submitted with \fB\-\-exclusive\fR, or
+partition \fBExclusive=NODE\fR).
+.TP
+\fBUSER\fR: only one user's jobs may share a node (job submitted with
+\fB\-\-exclusive=user\fR, or partition \fBExclusive=USER\fR).
+.TP
+\fBMCS\fR: only jobs with the same MCS label may share a node (job submitted
+with \fB\-\-exclusive=mcs\fR).
+.TP
+\fBTOPO\fR: only one job per topology segment (job submitted with
+\fB\-\-exclusive=topo\fR, or partition \fBExclusive=TOPO\fR).
+Same tokens as the \fBExclusive\fR field in \fBscontrol show job\fR.
+.TP
+(Valid for jobs only)
+.IP
+.RS
 
 .TP
 \fBPartition\fR
@@ -1139,6 +1150,14 @@ Cluster names of where federated sibling jobs are viable to run.
 \fBSiblingsViableRaw\fR
 Cluster IDs of where federated sibling jobs viable to run.
 (Valid for federated jobs only)
+.IP
+
+.TP
+\fBSluid\fR
+The Slurm Lexicographically\-sortable Unique Identifier assigned to the job.
+This value remains constant during the lifetime of the job, even after a resize.
+Note that the accounting database tracks a separate SLUID per accounting record
+that changes on resize or requeue.
 .IP
 
 .TP
@@ -1360,7 +1379,8 @@ they are on hidden partitions. Since this option's argument is optional,
 for proper parsing the single letter option must be followed immediately
 with the value and not include a space between them. For example "\-j1008"
 and not "\-j 1008".
-The job ID format is "job_id[_array_id]".
+The job ID format is "job_id[_array_id]". A SLUID may also be used in place
+of a numeric job ID.
 Performance of the command can be measurably improved for systems with large
 numbers of jobs when a single job ID is specified.
 By default, this field size will be limited to 64 bytes.

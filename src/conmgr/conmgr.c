@@ -107,7 +107,6 @@ static void _atfork_child(void)
 	mgr = CONMGR_DEFAULT;
 	mgr.initialized = true;
 	mgr.shutdown_requested = true;
-	mgr.error = ESHUTDOWN;
 }
 
 static void _at_exit(void)
@@ -213,6 +212,11 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 
 	conmgr_timeouts_init_default(&mgr.timeouts);
 
+	if (timespec_is_infinite(mgr.timeouts.quiesce))
+		warning("%s%s could result in this process hanging during a quiesce due to slow network I/O",
+			CONMGR_PARAM_QUIESCE_TIMEOUT,
+			TIMESPEC_STR(mgr.timeouts.quiesce, false));
+
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
 	mgr.listen_conns = list_create(NULL);
@@ -309,7 +313,6 @@ extern void conmgr_fini(void)
 
 extern int conmgr_run(bool blocking)
 {
-	int rc = SLURM_SUCCESS;
 	bool running = false;
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -318,12 +321,9 @@ extern int conmgr_run(bool blocking)
 		log_flag(CONMGR, "%s: refusing to run when conmgr is shutdown",
 			 __func__);
 
-		rc = mgr.error;
 		slurm_mutex_unlock(&mgr.mutex);
-		return rc;
+		return ESHUTDOWN;
 	}
-
-	xassert(!mgr.error || !mgr.exit_on_error);
 
 	if (mgr.watch_thread)
 		running = true;
@@ -341,11 +341,7 @@ extern int conmgr_run(bool blocking)
 			(void) watch(NULL);
 	}
 
-	slurm_mutex_lock(&mgr.mutex);
-	rc = mgr.error;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern void conmgr_request_shutdown(void)
@@ -358,35 +354,6 @@ extern void conmgr_request_shutdown(void)
 		EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 	slurm_mutex_unlock(&mgr.mutex);
-}
-
-extern void conmgr_set_exit_on_error(bool exit_on_error)
-{
-	slurm_mutex_lock(&mgr.mutex);
-	mgr.exit_on_error = exit_on_error;
-	slurm_mutex_unlock(&mgr.mutex);
-}
-
-extern bool conmgr_get_exit_on_error(void)
-{
-	bool exit_on_error;
-
-	slurm_mutex_lock(&mgr.mutex);
-	exit_on_error = mgr.exit_on_error;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return exit_on_error;
-}
-
-extern int conmgr_get_error(void)
-{
-	int rc;
-
-	slurm_mutex_lock(&mgr.mutex);
-	rc = mgr.error;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return rc;
 }
 
 extern bool conmgr_enabled(void)

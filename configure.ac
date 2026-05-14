@@ -421,7 +421,6 @@ AC_CONFIG_FILES([Makefile
 		 etc/Makefile
 		 src/Makefile
 		 src/api/Makefile
-		 src/bcast/Makefile
 		 src/common/Makefile
 		 src/conmgr/Makefile
 		 src/curl/Makefile
@@ -451,6 +450,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_profile/hdf5/sh5util/Makefile
 		 src/plugins/acct_gather_profile/influxdb/Makefile
 		 src/plugins/auth/Makefile
+		 src/plugins/auth/common/Makefile
 		 src/plugins/auth/jwt/Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
@@ -472,15 +472,18 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cli_filter/lua/Makefile
 		 src/plugins/cli_filter/syslog/Makefile
 		 src/plugins/cli_filter/user_defaults/Makefile
+		 src/plugins/compress/Makefile
+		 src/plugins/compress/none/Makefile
+		 src/plugins/compress/lz4/Makefile
 		 src/plugins/cred/Makefile
 		 src/plugins/cred/common/Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
 		 src/plugins/data_parser/Makefile
-		 src/plugins/data_parser/v0.0.42/Makefile
 		 src/plugins/data_parser/v0.0.43/Makefile
 		 src/plugins/data_parser/v0.0.44/Makefile
 		 src/plugins/data_parser/v0.0.45/Makefile
+		 src/plugins/data_parser/v0.0.46/Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
@@ -580,6 +583,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/common/Makefile
 		 src/plugins/topology/flat/Makefile
 		 src/plugins/topology/ring/Makefile
+		 src/plugins/topology/torus3d/Makefile
 		 src/plugins/topology/tree/Makefile
 		 src/sacct/Makefile
 		 src/sackd/Makefile
@@ -619,7 +623,6 @@ AC_CONFIG_FILES([Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
 		 testsuite/Makefile
-		 testsuite/testsuite.conf.sample
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile
 		 testsuite/slurm_unit/backfill/Makefile

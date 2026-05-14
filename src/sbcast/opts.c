@@ -91,13 +91,13 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 
 	if ((rc = slurm_load_job(job_info_msg, params.selected_step->step_id,
 				 SHOW_ALL)) != SLURM_SUCCESS) {
-		error("Failed to load JobId=%u: '%s'",
-		      params.selected_step->step_id.job_id,
+		error("Failed to load %pI: '%s'",
+		      &params.selected_step->step_id,
 		      slurm_strerror(rc));
 		exit(1);
 	} else if (!*job_info_msg || (((*job_info_msg)->record_count) <= 0)) {
-		error("Failed to load JobId=%u: No jobs returned.",
-		      params.selected_step->step_id.job_id);
+		error("Failed to load %pI: No jobs returned.",
+		      &params.selected_step->step_id);
 		exit(1);
 	}
 
@@ -338,11 +338,13 @@ extern void parse_command_line(int argc, char **argv)
 	}
 
 	if ((!params.selected_step ||
-	     (params.selected_step->step_id.job_id == NO_VAL)) &&
+	     ((params.selected_step->step_id.job_id == NO_VAL) &&
+	      !params.selected_step->step_id.sluid)) &&
 	    !(params.flags & BCAST_FLAG_NO_JOB)) {
 		_fill_in_selected_step_from_env();
 	} else if ((params.selected_step &&
-		    params.selected_step->step_id.job_id != NO_VAL) &&
+		    ((params.selected_step->step_id.job_id != NO_VAL) ||
+		     params.selected_step->step_id.sluid)) &&
 		   !(params.flags & BCAST_FLAG_NO_JOB)) {
 		_fill_in_selected_step_from_controller();
 	}

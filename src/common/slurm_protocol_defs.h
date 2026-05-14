@@ -207,9 +207,10 @@
 #define HOUR_SECONDS (HOUR_MINUTES * MINUTE_SECONDS)
 #define DAY_HOURS 24
 #define DAY_MINUTES (DAY_HOURS * HOUR_MINUTES)
+#define DAY_SECONDS (DAY_HOURS * HOUR_SECONDS)
 #define YEAR_DAYS 365
-#define YEAR_MINUTES (YEAR_DAYS * DAY_HOURS * HOUR_MINUTES)
-#define YEAR_SECONDS (YEAR_DAYS * DAY_HOURS * HOUR_SECONDS)
+#define YEAR_MINUTES (YEAR_DAYS * DAY_MINUTES)
+#define YEAR_SECONDS (YEAR_DAYS * DAY_SECONDS)
 
 /* Read as 'how many X are in a Y' */
 #define MSEC_IN_SEC 1000
@@ -281,6 +282,7 @@ typedef struct forward_struct {
 	char *buf;
 	int buf_len;
 	uint16_t fwd_cnt;
+	int thread_count;
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
 	list_t *ret_list;
@@ -541,6 +543,29 @@ typedef struct signal_tasks_msg {
 	slurm_step_id_t step_id;
 } signal_tasks_msg_t;
 
+typedef struct {
+	slurm_step_id_t step_id;
+} job_mem_usage_msg_t;
+
+typedef struct {
+	slurm_step_id_t step_id;
+	uint64_t mem_usage; /* total RSS in MB for this job on this node */
+} job_mem_usage_resp_msg_t;
+
+typedef struct update_job_mem_msg {
+	bool notify_ctld;
+	uint64_t job_mem_per_node; /* new memory limit per node in MB */
+	slurm_step_id_t step_id;
+} update_job_mem_msg_t;
+
+typedef struct response_update_job_mem_msg {
+	bool all_nodes;
+	uint64_t job_mem_per_node; /* new memory limit per node in MB */
+	char *node_name;
+	uint32_t return_code;
+	slurm_step_id_t step_id;
+} response_update_job_mem_msg_t;
+
 typedef struct epilog_complete_msg {
 	slurm_step_id_t step_id;
 	uint32_t return_code;
@@ -548,13 +573,22 @@ typedef struct epilog_complete_msg {
 } epilog_complete_msg_t;
 
 #define REBOOT_FLAGS_ASAP 0x0001	/* Drain to reboot ASAP */
+#define REBOOT_FLAGS_FORCE 0x0002 /* Force reboot */
 typedef struct reboot_msg {
 	char *features;
 	uint16_t flags;
 	uint32_t next_state;		/* state after reboot */
 	char *node_list;
+	char *power_action_name;
 	char *reason;
 } reboot_msg_t;
+
+/* Message for slurmctld->slurmd: run power action script (Location=slurmd) */
+typedef struct run_power_action_msg {
+	char *action_name;
+	char *file_content;
+	char *file_env_name;
+} run_power_action_msg_t;
 
 typedef struct shutdown_msg {
 	uint16_t options;
@@ -597,6 +631,7 @@ typedef struct job_step_specs {
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
+	slurm_step_launch_params_t *launch_params;
 	uint64_t pn_min_memory; /* minimum real memory per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
@@ -651,25 +686,29 @@ typedef struct job_step_create_response_msg {
                                            * step is laid out */
 	char *stepmgr;
 	slurm_cred_t *cred;    	  /* slurm job credential */
-	dynamic_plugin_data_t *switch_step; /* switch opaque data type
-					     * Remove 3 versions after 24.11 */
 	uint16_t use_protocol_ver;   /* This is no longer used and can be
 				      * removed when 25.05 is no longer
 				      * supported. */
+	uint32_t state; /* JOB_RUNNING or JOB_PENDING; must be
+			 * set on every populated response
+			 * since JOB_PENDING == 0 is the
+			 * memset default — the immediate-
+			 * launch path assigns JOB_RUNNING. */
 } job_step_create_response_msg_t;
 
-#define LAUNCH_PARALLEL_DEBUG	SLURM_BIT(0)
-#define LAUNCH_MULTI_PROG	SLURM_BIT(1)
-#define LAUNCH_PTY		SLURM_BIT(2)
-#define LAUNCH_BUFFERED_IO	SLURM_BIT(3)
-#define LAUNCH_LABEL_IO		SLURM_BIT(4)
-#define LAUNCH_EXT_LAUNCHER	SLURM_BIT(5)
-#define LAUNCH_NO_ALLOC 	SLURM_BIT(6)
-#define LAUNCH_OVERCOMMIT 	SLURM_BIT(7)
-#define LAUNCH_NO_SIG_FAIL 	SLURM_BIT(8)
+#define LAUNCH_PARALLEL_DEBUG SLURM_BIT(0)
+#define LAUNCH_MULTI_PROG SLURM_BIT(1)
+#define LAUNCH_PTY SLURM_BIT(2)
+#define LAUNCH_BUFFERED_IO SLURM_BIT(3)
+#define LAUNCH_LABEL_IO SLURM_BIT(4)
+#define LAUNCH_EXT_LAUNCHER SLURM_BIT(5)
+#define LAUNCH_NO_ALLOC SLURM_BIT(6)
+#define LAUNCH_OVERCOMMIT SLURM_BIT(7)
+#define LAUNCH_NO_SIG_FAIL SLURM_BIT(8)
 #define LAUNCH_GRES_ALLOW_TASK_SHARING SLURM_BIT(9)
 #define LAUNCH_WAIT_FOR_CHILDREN SLURM_BIT(10)
 #define LAUNCH_KILL_ON_BAD_EXIT SLURM_BIT(11)
+#define LAUNCH_LOCAL_IO SLURM_BIT(12)
 
 typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */
@@ -756,8 +795,6 @@ typedef struct launch_tasks_request_msg {
 
 	uint16_t cred_version;	/* job credential protocol_version */
 	slurm_cred_t *cred;	/* job credential            */
-	dynamic_plugin_data_t *switch_step; /* switch credential for the job
-					     * Remove 3 versions after 24.11 */
 	list_t *options;  /* Arbitrary job options */
 	char *complete_nodelist;
 	char **spank_job_env;
@@ -1489,7 +1526,8 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 					int32_t *i_last_p);
 
 /*
- * Take a string identifying any part of a job and parses it into an id
+ * Parse a single job/step identifier token into a slurm_selected_step_t.
+ * Does not handle comma-separated lists; callers must tokenize first.
  *
  * Formats parsed:
  *      0000 - JobId
@@ -1499,10 +1537,16 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
  *      0000_0000.0000 - Array Job Step
  *      0000.0000 - Job Step
  *      0000.0000+0000 - Job HetStep
+ *      s<sluid> - SLUID
+ *      s<sluid>.0000 - SLUID Step
+ *      s<sluid>.name - SLUID Step (by name)
  *
  * Rejected formats:
- *      0000_0000+0000 Array HetJob (not permitted)
- *      0000+0000.0000+0000 HetJob with HetStep (not permitted)
+ *      0000_0000+0000 - Array HetJob (not permitted)
+ *      0000+0000.0000+0000 - HetJob with HetStep (not permitted)
+ *      s<sluid>_0000 - SLUID Array (not permitted)
+ *      s<sluid>+0000 - SLUID HetJob (not permitted)
+ *      s<sluid>.0000+0000 - SLUID HetStep (not permitted)
  *
  * IN src - identifier string
  * IN/OUT id - ptr to id to be populated.
@@ -1602,6 +1646,7 @@ extern void slurm_free_step_id(slurm_step_id_t *msg);
 extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
+extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg);
 extern void slurm_free_update_part_msg(update_part_msg_t * msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);
 extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
@@ -1610,6 +1655,7 @@ extern void slurm_free_resv_desc_members(resv_desc_msg_t *msg);
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
 extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg);
+extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params);
 extern void slurm_free_job_step_create_request_msg(
 		job_step_create_request_msg_t * msg);
 extern void slurm_free_job_step_create_response_msg(
@@ -1626,6 +1672,11 @@ extern void slurm_free_launch_tasks_response_msg(
 		launch_tasks_response_msg_t * msg);
 extern void slurm_free_task_exit_msg(task_exit_msg_t * msg);
 extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t * msg);
+extern void slurm_free_job_mem_usage_msg(job_mem_usage_msg_t *msg);
+extern void slurm_free_job_mem_usage_resp_msg(job_mem_usage_resp_msg_t *msg);
+extern void slurm_free_update_job_mem_msg(update_job_mem_msg_t *msg);
+extern void slurm_free_response_update_job_mem_msg(response_update_job_mem_msg_t
+							   *msg);
 extern void slurm_free_reattach_tasks_request_msg(
 		reattach_tasks_request_msg_t * msg);
 extern void slurm_free_reattach_tasks_response_msg(
@@ -1745,6 +1796,8 @@ extern uint16_t bb_state_num(char *tok);
 extern char *health_check_node_state_str(uint32_t node_state);
 
 extern char *job_share_string(uint16_t shared);
+extern char *job_oversubscribe_string(uint16_t val);
+extern char *job_exclusive_display_string(uint16_t val);
 extern char *job_state_string(uint32_t inx);
 extern char *job_state_string_compact(uint32_t inx);
 /* Caller must xfree() the return value */
@@ -1925,6 +1978,22 @@ extern int slurm_get_rep_count_inx(
  */
 extern void slurm_format_tres_string(char **s, char *tres_type);
 
+enum {
+	LIC_NO_MATCH = 0,
+	LIC_EXACT_MATCH,
+	LIC_FUZZY_MATCH,
+	LIC_MAX_MATCH
+};
+
+/*
+ * Fuzzy name comparison for remote licenses
+ * query IN - query string
+ * name IN - license name
+ * RET rc - 0 for no match, 1 for exact match, 2 for fuzzy match
+ */
+extern int slurm_remote_license_fuzzy_match(const char *query,
+					    const char *name);
+
 /*
  * Reentrant TRES specification parse logic
  * tres_type IN/OUT - type of tres we are looking for, If *tres_type is NULL we
@@ -2007,6 +2076,16 @@ extern bool validate_slurmd_user(uid_t uid);
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
+
+/*
+ * Oversubscribe display value for cred/env: JOB_OVERSUBSCRIBE_NO/YES/OK.
+ */
+extern uint16_t get_job_oversubscribe_value(job_record_t *job_ptr);
+
+/*
+ * Exclusive display for cred/env: JOB_EXCLUSIVE_* (NO/NODE/USER/MCS/TOPO).
+ */
+extern uint16_t get_job_exclusive_display_value(job_record_t *job_ptr);
 
 /*
  * Free stepmgr_job_info_t

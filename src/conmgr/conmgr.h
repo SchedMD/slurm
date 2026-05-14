@@ -237,7 +237,7 @@ typedef struct {
 	 * Called once per timeout triggering or being detected.
 	 *
 	 * If on_read_timeout=NULL is treated same as returning
-	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 *	SLURM_COMMUNICATIONS_READ_TIMEOUT
 	 *
 	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
@@ -249,8 +249,8 @@ typedef struct {
 	 * Call back when write timeout occurs
 	 * Called once per timeout triggering or being detected.
 	 *
-	 * If on_read_timeout=NULL is treated same as returning
-	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 * If on_write_timeout=NULL is treated same as returning
+	 *	SLURM_COMMUNICATIONS_WRITE_TIMEOUT
 	 *
 	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
@@ -262,8 +262,8 @@ typedef struct {
 	 * Call back when connect timeout occurs
 	 * Called once per timeout triggering or being detected.
 	 *
-	 * If on_read_timeout=NULL is treated same as returning
-	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 * If on_connect_timeout=NULL is treated same as returning
+	 *	SLURM_COMMUNICATIONS_CONNECT_TIMEOUT
 	 *
 	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
@@ -328,6 +328,13 @@ typedef struct conmgr_callback_args_s {
 	 *	of doing the work.
 	 */
 	conmgr_work_status_t status;
+	/*
+	 * Latest non-SLURM_ERROR error observed on this connection so far.
+	 * SLURM_SUCCESS if no error. SLURM_ERROR, EAGAIN, and EWOULDBLOCK
+	 * never overwrite a more specific code. Always valid; check
+	 * against SLURM_SUCCESS to branch on error state.
+	 */
+	slurm_err_t status_code;
 } conmgr_callback_args_t;
 
 /*
@@ -784,17 +791,6 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 			.on_signal_number = signal_number, \
 			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
 		}, __func__)
-
-/*
- * Control if conmgr will exit on any error
- */
-extern void conmgr_set_exit_on_error(bool exit_on_error);
-extern bool conmgr_get_exit_on_error(void);
-
-/*
- * Get last error code from conmgr
- */
-extern int conmgr_get_error(void);
 
 /*
  * Get assigned connection name - stays same for life of connection

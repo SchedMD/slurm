@@ -6,10 +6,8 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
 bin_PROGRAMS = sbcast
 
-depend_libs = $(top_builddir)/src/bcast/libfile_bcast.la
-
-sbcast_LDADD = 	$(depend_libs) $(LIB_SLURM)
-sbcast_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
+sbcast_LDADD = 	$(LIB_SLURM)
+sbcast_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = sbcast.h
 sbcast_SOURCES = sbcast.c opts.c

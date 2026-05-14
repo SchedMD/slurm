@@ -266,7 +266,7 @@ static int _unpack_cert_and_key(char **cert_ptr, char **key_ptr,
 
 	safe_unpack16(&version, buffer);
 
-	if (version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(last_renewal, buffer);
 		safe_unpackstr(cert_ptr, buffer);
 		safe_unpackstr(key_ptr, buffer);

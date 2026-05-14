@@ -783,6 +783,20 @@ extern void print_fields(type_t type, void *object)
 					     &tmp_uint64,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_ORIGINAL_SLUID:
+			switch (type) {
+			case JOB:
+				tmp_uint64 = job->sluid;
+				break;
+			case JOBSTEP:
+				tmp_uint64 = step->job_ptr->sluid;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, &tmp_uint64,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_DERIVED_EC:
 			tmp_int = tmp_int2 = 0;
 			switch (type) {
@@ -1884,6 +1898,28 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field, &tmp_uint16,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_EXCLUSIVE:
+			switch (type) {
+			case JOB:
+				tmp_char = job->exclusive;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_OVERSUBSCRIBE:
+			switch (type) {
+			case JOB:
+				tmp_char = job->oversubscribe;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, tmp_char,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_START:

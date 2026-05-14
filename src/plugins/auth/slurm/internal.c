@@ -51,6 +51,7 @@
 
 #include "src/interfaces/serializer.h"
 
+#include "src/plugins/auth/common/auth_common.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
 typedef struct {
@@ -400,8 +401,9 @@ extern int verify_internal(auth_cred_t *cred, uid_t decoder_uid)
 	if (use_client_ids) {
 		char *json_id;
 		if ((json_id = jwt_get_grants_json(jwt, "id"))) {
-			cred->id = extract_identity(json_id, cred->uid,
-						    cred->gid);
+			cred->id =
+				auth_common_extract_identity(json_id, cred->uid,
+							     cred->gid);
 			free(json_id);
 			if (!cred->id)
 				goto fail;

@@ -112,6 +112,11 @@ instance of slurmdbd running these versions.</p>
 <td>May 2029 (18 months)</td>
 <td>26.05, 25.11, 25.05</td>
 </tr>
+<tr>
+<td>27.05</td>
+<td>November 2029 (18 months)</td>
+<td>26.11, 26.05, 25.11</td>
+</tr>
 </tbody>
 </table>
 <br>

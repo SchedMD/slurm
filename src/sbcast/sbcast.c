@@ -55,14 +55,17 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
-#include "src/sbcast/sbcast.h"
-#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/compress.h"
+#include "src/interfaces/cred.h"
+
+#include "src/sbcast/sbcast.h"
 
 /* global variables */
 struct bcast_parameters params = {0};	/* program parameters */
@@ -73,8 +76,8 @@ static int _foreach_bcast_file(void *x, void *arg)
 	params.selected_step = x;
 
 	if ((*rc = bcast_file(&params) != SLURM_SUCCESS)) {
-		error("Failed to broadcast to JobId=%u nodes",
-		      params.selected_step->step_id.job_id);
+		error("Failed to broadcast to %pI nodes",
+		      &params.selected_step->step_id);
 		return -1;
 	}
 
@@ -88,6 +91,8 @@ int main(int argc, char **argv)
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	slurm_init(NULL);
+	if (compress_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize compress plugin");
 
 	parse_command_line(argc, argv);
 	if (params.verbose) {
@@ -103,6 +108,12 @@ int main(int argc, char **argv)
 	} else {
 		rc = bcast_file(&params);
 	}
+
+#ifdef MEMORY_LEAK_DEBUG
+	compress_g_fini();
+	slurm_fini();
+	log_fini();
+#endif /* MEMORY_LEAK_DEBUG */
 
 	return rc;
 }

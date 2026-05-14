@@ -44,6 +44,8 @@ scontrol [<OPTION>] [<COMMAND>]
                               descriptive string.
      exit                     terminate scontrol
      fsdampeningfactor <factor> Set the FairShareDampeningFactor in slurmctld
+     getent [<NodeName>]      List entities associated with each step present
+                              on the host.
      help                     print this description of use.
      hold <job_list>          prevent specified job from starting. <job_list>
 			      is either a space separate list of job IDs or
@@ -70,7 +72,7 @@ scontrol [<OPTION>] [<COMMAND>]
                               FORCE and optionally set node Reason field.
      quiet                    print no messages other than error messages.
      quit                     terminate this command.
-     reboot [ASAP] [nextstate=] [reason=] <ALL|nodelist>
+     reboot [ASAP] [FORCE] [nextstate=] [reason=] [action=] <ALL|nodelist>
 			      reboot the nodes when they become idle.
      reconfigure              re-read configuration files.
      release <job_list>       permit specified job to start (see hold)

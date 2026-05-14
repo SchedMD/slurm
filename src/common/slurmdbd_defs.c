@@ -230,6 +230,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 	} else if (!xstrcasecmp(msg_type, "Get Config")) {
 		return DBD_GET_CONFIG;
 	} else if (!xstrcasecmp(msg_type, "Got Config")) {
+		return DBD_GOT_CONFIG_KEYPAIRS;
+	} else if (!xstrcasecmp(msg_type, "Got Config Response")) {
 		return DBD_GOT_CONFIG;
 	} else if (!xstrcasecmp(msg_type, "Send Multiple Job Starts")) {
 		return DBD_SEND_MULT_JOB_START;
@@ -791,9 +793,9 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Config";
 		break;
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 		if (get_enum) {
-			return "DBD_GOT_CONFIG";
+			return "DBD_GOT_CONFIG_KEYPAIRS";
 		} else
 			return "Got Config";
 		break;
@@ -845,6 +847,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Shutdown daemon";
 		break;
+	case DBD_GOT_CONFIG:
+		if (get_enum) {
+			return "DBD_GOT_CONFIG";
+		} else
+			return "Got Config Response";
+		break;
 	case SLURM_PERSIST_INIT:
 		if (get_enum) {
 			return "SLURM_PERSIST_INIT";
@@ -868,6 +876,27 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 /****************************************************************************\
  * Free data structures
 \****************************************************************************/
+
+extern void slurmdbd_free_conf(slurmdbd_conf_t *conf)
+{
+	if (!conf)
+		return;
+
+	xfree(conf->archive_dir);
+	xfree(conf->archive_script);
+	xfree(conf->dbd_addr);
+	xfree(conf->dbd_backup);
+	xfree(conf->dbd_host);
+	xfree(conf->default_qos);
+	xfree(conf->log_file);
+	xfree(conf->parameters);
+	xfree(conf->pid_file);
+	xfree(conf->storage_loc);
+	xfree(conf->storage_pass_script);
+	xfree(conf->storage_user);
+	xfree(conf);
+}
+
 extern void slurmdbd_free_buffer(void *x)
 {
 	buf_t *buffer = (buf_t *) x;
@@ -920,13 +949,16 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 	case DBD_SEND_MULT_JOB_START:
 	case DBD_GOT_MULT_JOB_START:
 	case DBD_SEND_MULT_MSG:
 	case DBD_GOT_MULT_MSG:
 	case DBD_FIX_RUNAWAY_JOB:
 		slurmdbd_free_list_msg(msg->data);
+		break;
+	case DBD_GOT_CONFIG:
+		slurmdbd_free_conf(msg->data);
 		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:

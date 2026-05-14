@@ -62,23 +62,50 @@ set job_id [submit_job -fail "--oversubscribe --hold -t1 $file_in"]
 #
 set matches 0
 spawn $scontrol show job $job_id
-expect {
-	-re "OverSubscribe=YES" {
-		incr matches
-		exp_continue
-	}
-	-re "Contiguous=($number)" {
-		set cont_val $expect_out(1,string)
-		if {$cont_val == 0} {
+# 26.05+ (20588): jobs may show OverSubscribe=OK instead of YES.
+if {[package vcompare [get_version] "26.05.0"] >= 0} {
+	expect {
+		-re "OverSubscribe=YES" {
 			incr matches
+			exp_continue
 		}
-		exp_continue
+		-re "OverSubscribe=OK" {
+			incr matches
+			exp_continue
+		}
+		-re "Contiguous=($number)" {
+			set cont_val $expect_out(1,string)
+			if {$cont_val == 0} {
+				incr matches
+			}
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
+} else {
+	expect {
+		-re "OverSubscribe=YES" {
+			incr matches
+			exp_continue
+		}
+		-re "Contiguous=($number)" {
+			set cont_val $expect_out(1,string)
+			if {$cont_val == 0} {
+				incr matches
+			}
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
 	}
 }
 subtest {$matches == 2} "Confirm oversubscribe and contiguous flag values" "$matches != 2"

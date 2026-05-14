@@ -58,6 +58,7 @@
 #define CONFIG_MAGIC	0xc065eded
 #define NODE_MAGIC	0x0de575ed
 
+/* NOTE: when adding to this struct, add check to _is_dup_config_record() */
 typedef struct {
 	uint16_t boards;	/* count of boards configured */
 	uint16_t core_spec_cnt;	/* number of specialized cores */
@@ -173,6 +174,7 @@ struct node_record {
 	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/
 	uint16_t port;			/* TCP port number of the slurmd */
+	char *power_action_name; /* PowerAction name for power up/down */
 	time_t power_save_req_time;	/* Time of power_save request */
 	uint16_t protocol_version;	/* Slurm version number */
 	uint64_t real_memory;		/* MB real memory on the node */
@@ -224,6 +226,16 @@ extern int active_node_record_count;	/* non-null node count in
 					 * node_record_table_ptr */
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
+
+/*
+ * Old-to-new node index mapping.  map[old_index] == new_index, or -1
+ * if the node was removed.  Built by slurmctld during load_all_node_state().
+ * When the mapping is an identity (!is_node_table_changed) the array is freed
+ * early and callers can skip remapping.
+ */
+extern int *node_old_to_new_map;
+extern uint32_t old_node_record_count;
+extern bool is_node_table_changed;
 
 extern uint16_t *cr_node_num_cores;
 extern uint32_t *cr_node_cores_offset;

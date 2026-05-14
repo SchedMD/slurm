@@ -220,6 +220,11 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	return SLURM_SUCCESS;
 }
 
+extern bool topology_p_allow_one_node(void *tctx)
+{
+	return true;
+}
+
 /*
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
@@ -240,6 +245,11 @@ extern int topology_p_destroy_config(topology_ctx_t *tctx)
 	xfree(tctx->plugin_ctx);
 
 	return SLURM_SUCCESS;
+}
+
+extern int topology_p_eval_node(topology_eval_t *topo_eval, int node_idx)
+{
+	return common_test_node(topo_eval, node_idx);
 }
 
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
@@ -275,6 +285,45 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 			       ctx->block_record_table[i].node_bitmap);
 		}
 	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, void *tctx)
+{
+	uint32_t count = 0;
+	block_context_t *ctx = tctx;
+
+	xassert(node_rank);
+	xassert(size);
+
+	*node_rank = NULL;
+	*size = 0;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+
+	if (!count)
+		return SLURM_SUCCESS;
+
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+	*size = count;
+
+	count = 0;
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		block_record_t *block_ptr = ctx->block_record_table;
+		for (int j = 0; j < ctx->block_count; j++, block_ptr++) {
+			if (bit_test(block_ptr->node_bitmap, i)) {
+				(*node_rank)[count] = block_ptr->block_index
+						      << TOPO_RANK_ID_SHIFT;
+				break;
+			}
+		}
+		count++;
+	}
+
 	return SLURM_SUCCESS;
 }
 

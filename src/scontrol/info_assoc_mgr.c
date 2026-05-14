@@ -551,12 +551,7 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			       preempt_mode_string(qos_rec->preempt_mode),
 			       one_liner ? " " : "\n    ");
 
-			if (qos_rec->priority == INFINITE ||
-			    qos_rec->priority == NO_VAL)
-				printf("Priority=NONE");
-			else
-				printf("Priority=%u",
-				       qos_rec->priority);
+			printf("Priority=%u", qos_rec->priority);
 
 			/* NEW LINE */
 			printf("%s", new_line_char);

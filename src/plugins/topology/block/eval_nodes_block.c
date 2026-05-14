@@ -289,6 +289,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	block_context_t *ctx = topo_eval->tctx->plugin_ctx;
 
 	int segment_cnt = 1, rem_segment_cnt = 0;
+	uint16_t segment_size = details_ptr->segment_size;
 	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
 	bitstr_t *alloc_node_map = NULL;
 	uint32_t orig_max_nodes = topo_eval->max_nodes;
@@ -318,19 +319,24 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		goto fini;
 	}
 
-	if (details_ptr->segment_size &&
-	    (rem_nodes % details_ptr->segment_size)) {
-		info("%s: segment_size (%u) does not fit the job size (%d)",
-		     __func__, details_ptr->segment_size, rem_nodes);
+	if (segment_size > rem_nodes) {
+		info("Ignoring segment_size (%u): larger than job size (%u)",
+		     segment_size, rem_nodes);
+		segment_size = 0;
+	}
+
+	if (segment_size && (rem_nodes % segment_size)) {
+		info("segment_size (%u) does not fit the job size (%d)",
+		     segment_size, rem_nodes);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
 
-	if (details_ptr->segment_size) {
+	if (segment_size) {
 		as_rem_nodes = rem_nodes;
-		segment_cnt = rem_nodes / details_ptr->segment_size;
+		segment_cnt = rem_nodes / segment_size;
 		rem_segment_cnt = segment_cnt;
-		rem_nodes = details_ptr->segment_size;
+		rem_nodes = segment_size;
 		if (segment_cnt > 1)
 			req_nodes = req_nodes / segment_cnt;
 	}
@@ -353,12 +359,10 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	llblock_size = bblock_per_llblock * ctx->bblock_node_cnt;
 	max_llblock = ROUNDUP(rem_nodes, llblock_size);
 
-	if (details_ptr->segment_size &&
-	    job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
+	if (segment_size && job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
 		int asblock_level;
 		if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
-			int tmp = ROUNDUP(details_ptr->segment_size,
-					  ctx->bblock_node_cnt);
+			int tmp = ROUNDUP(segment_size, ctx->bblock_node_cnt);
 
 			tmp *= ctx->bblock_node_cnt;
 			tmp *= segment_cnt;
@@ -389,7 +393,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
 			     job_ptr);
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
 		}
 
@@ -397,7 +402,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				   ctx->blocks_nodes_bitmap)) {
 			info("%pJ requires nodes which are not in blocks",
 			     job_ptr);
-			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			rc = ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
 		}
 
@@ -405,14 +411,16 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		if (req_node_cnt == 0) {
 			info("%pJ required node list has no nodes",
 			     job_ptr);
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
 		}
 		if (req_node_cnt > topo_eval->max_nodes) {
 			info("%pJ requires more nodes than currently available (%u>%u)",
 			     job_ptr, req_node_cnt,
 			     topo_eval->max_nodes);
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_MAX_NODE_LIMIT;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
 		}
 		if (segment_cnt > 1) {
@@ -458,7 +466,7 @@ next_segment:
 	 * build list of node bitmaps, sorted by weight
 	 */
 	if (rem_segment_cnt) {
-		rem_nodes = details_ptr->segment_size;
+		rem_nodes = segment_size;
 		min_rem_nodes = min_nodes / segment_cnt;
 		topo_eval->max_nodes = orig_max_nodes / segment_cnt;
 		rem_cpus = details_ptr->min_cpus / segment_cnt;
@@ -480,9 +488,12 @@ next_segment:
 		      job_ptr);
 		if (alloc_node_map) {
 			bit_or(topo_eval->node_map, alloc_node_map);
-			rc = ESLURM_RETRY_EVAL_HINT;
-		} else
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
+			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
+		} else {
+			rc = ESLURM_TOPO_EMPTY_NODE_MAP;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
+		}
 		goto fini;
 	}
 	if (!avail_cpu_per_node)
@@ -502,7 +513,8 @@ next_segment:
 			if (topo_eval->avail_cpus == 0) {
 				debug2("%pJ insufficient resources on required node",
 				       job_ptr);
-				rc = ESLURM_BREAK_EVAL;
+				rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
+				topo_eval->eval_action = EVAL_ACTION_BREAK;
 				goto fini;
 			}
 			avail_cpu_per_node[i] = topo_eval->avail_cpus;
@@ -538,8 +550,8 @@ next_segment:
 		nodes_on_llblock = xcalloc(llblock_cnt, sizeof(uint32_t));
 	}
 
-	log_flag(SELECT_TYPE, "%s: bblock_per_block:%u rem_nodes:%u llblock_cnt:%u max_llblock:%d llblock_level:%d",
-		 __func__, bblock_per_block, rem_nodes, llblock_cnt,
+	log_flag(SELECT_TYPE, "bblock_per_block:%u rem_nodes:%u llblock_cnt:%u max_llblock:%d llblock_level:%d",
+		 bblock_per_block, rem_nodes, llblock_cnt,
 		 max_llblock, llblock_level);
 
 	if (!bblock_required)
@@ -675,18 +687,19 @@ next_segment:
 	if (block_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to find block",
 			 job_ptr);
-		if (alloc_node_map && !block_per_asblock) {
-			bit_or(topo_eval->node_map, alloc_node_map);
-			rc = ESLURM_RETRY_EVAL_HINT;
-		} else
-			rc = ESLURM_BREAK_EVAL;
+		if (segment_cnt > 1)
+			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
+		else
+			rc = ESLURM_TOPO_NO_FIT;
+		topo_eval->eval_action = EVAL_ACTION_BREAK;
 		goto fini;
 	}
 
 	/* Check that all specifically required nodes are in one block  */
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap, block_node_bitmap[block_inx])) {
-		rc = ESLURM_BREAK_EVAL;
+		rc = ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO;
+		topo_eval->eval_action = EVAL_ACTION_BREAK;
 		info("%pJ requires nodes that do not have shared block",
 		     job_ptr);
 		goto fini;
@@ -734,7 +747,8 @@ next_segment:
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_MAX_NODE_LIMIT;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			info("%pJ requires nodes exceed maximum node limit",
 			     job_ptr);
 			goto fini;
@@ -835,7 +849,8 @@ next_segment:
 	if (!sufficient) {
 		log_flag(SELECT_TYPE, "insufficient resources currently available for %pJ",
 			 job_ptr);
-		rc = SLURM_ERROR;
+		rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+		topo_eval->eval_action = EVAL_ACTION_RETRY_DEFAULT;
 		goto fini;
 	}
 
@@ -880,7 +895,8 @@ next_segment:
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = ESLURM_RETRY_EVAL_HINT;
+			rc = ESLURM_TOPO_MAX_NODE_LIMIT;
+			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
 			debug("%pJ reached maximum node limit",
 			      job_ptr);
 			goto fini;
@@ -906,7 +922,8 @@ next_segment:
 	}
 
 	if (max_llblock < 0) {
-		rc = SLURM_ERROR;
+		rc = ESLURM_TOPO_WEIGHT_NO_FIT;
+		topo_eval->eval_action = EVAL_ACTION_RETRY_DEFAULT;
 		info("%pJ requires nodes exceed maximum llblock limit due to node weights",
 		     job_ptr);
 		goto fini;
@@ -1012,14 +1029,14 @@ next_segment:
 					    &best_same_block, &best_fit,
 					    &best_bblock_inx, ctx);
 		}
-		log_flag(SELECT_TYPE, "%s: rem_nodes:%d  best_bblock_inx:%d",
-			 __func__, rem_nodes, best_bblock_inx);
+		log_flag(SELECT_TYPE, "rem_nodes:%d  best_bblock_inx:%d",
+			 rem_nodes, best_bblock_inx);
 		if (best_bblock_inx == -1)
 			break;
 
 		if ((max_llblock <= 0) && !best_same_block) {
-			log_flag(SELECT_TYPE, "%s: min_rem_nodes:%d can't add more bblocks due to llblock limit",
-				 __func__, min_rem_nodes);
+			log_flag(SELECT_TYPE, "min_rem_nodes:%d can't add more bblocks due to llblock limit",
+				 min_rem_nodes);
 			break;
 		}
 
@@ -1066,7 +1083,8 @@ next_segment:
 		goto fini;
 	}
 
-	rc = ESLURM_RETRY_EVAL_HINT;
+	rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+	topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
 	if (alloc_node_map)
 		bit_or(topo_eval->node_map, alloc_node_map);
 
@@ -1105,8 +1123,8 @@ fini:
 			}
 			bit_copybits(topo_eval->node_map, orig_node_map);
 			bit_and_not(topo_eval->node_map, alloc_node_map);
-			log_flag(SELECT_TYPE, "%s: rem_segment_cnt:%d",
-				 __func__, rem_segment_cnt);
+			log_flag(SELECT_TYPE, "rem_segment_cnt:%d",
+				 rem_segment_cnt);
 			goto next_segment;
 		} else if (alloc_node_map) {
 			bit_or(topo_eval->node_map, alloc_node_map);
@@ -1121,7 +1139,8 @@ fini:
 				bit_or(topo_eval->node_map,
 				       ctx->block_record_table[i].node_bitmap);
 		}
-		rc = ESLURM_RETRY_EVAL;
+		rc = ESLURM_TOPO_SEGMENT_NO_FIT;
+		topo_eval->eval_action = EVAL_ACTION_RETRY;
 	}
 
 	if (rc == SLURM_SUCCESS)

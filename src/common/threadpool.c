@@ -234,7 +234,7 @@ static int _match_thread_id(void *x, void *key)
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(*id_ptr > 0);
 
-	return ((thread->id == *id_ptr) ? 1 : 0);
+	return (pthread_equal(thread->id, *id_ptr) ? 1 : 0);
 }
 
 #ifndef NDEBUG
@@ -536,7 +536,7 @@ static void _threadpool_prerun(thread_t *thread)
 	if (!thread->id)
 		thread->id = pthread_self();
 	else
-		xassert(thread->id == pthread_self());
+		xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.idle--;
 	threadpool.running++;
@@ -553,7 +553,7 @@ static void _threadpool_prerun(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_postrun(thread_t *thread)
 {
-	xassert(thread->id == pthread_self());
+	xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.running--;
 	threadpool.idle++;
@@ -739,7 +739,8 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 			slurm_mutex_lock(&threadpool.mutex);
 
 			if (thread) {
-				xassert(!thread->id || (thread->id == id));
+				xassert(!thread->id ||
+					pthread_equal(thread->id, id));
 				thread->id = id;
 			}
 
@@ -815,7 +816,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	 */
 	while (!thread->id) {
 		xassert(thread->magic == THREAD_MAGIC);
-		xassert(thread->requester == pthread_self());
+		xassert(pthread_equal(thread->requester, pthread_self()));
 		xassert(threadpool.idle > 0);
 
 		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
@@ -826,7 +827,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	}
 
 	xassert(thread->magic == THREAD_MAGIC);
-	xassert(thread->requester == pthread_self());
+	xassert(pthread_equal(thread->requester, pthread_self()));
 	xassert(thread->id);
 
 	thread->requester = 0;
@@ -898,15 +899,15 @@ static void _parse_params(const int default_count, const char *params)
 			const char *value = (tok + strlen(THREADPOOL_PARAM));
 
 			if (!xstrcasecmp(value, "enabled"))
-				; /* ignore as enabled by default */
+				threadpool.enabled = true;
 			else if (!xstrcasecmp(value, "disabled"))
-				threadpool.shutdown = true;
+				threadpool.enabled = false;
 			else
 				fatal("Invalid parameter %s", tok);
 
 			log_flag(THREAD, "%s: threadpool is %s",
-				 __func__, (threadpool.shutdown ? "disabled" :
-					    "enabled"));
+				 __func__,
+				 (threadpool.enabled ? "enabled" : "disabled"));
 		} else if (
 			!xstrncasecmp(tok, THREADPOOL_PARAM_PREALLOCATE,
 				      strlen(THREADPOOL_PARAM_PREALLOCATE))) {
@@ -1039,14 +1040,13 @@ extern void threadpool_init(const int default_count, const char *params)
 
 	slurm_mutex_lock(&threadpool.mutex);
 
-	if (threadpool.enabled || threadpool.shutdown) {
+	if (threadpool.pending || threadpool.shutdown || !threadpool.enabled) {
 		slurm_mutex_unlock(&threadpool.mutex);
 		return;
 	}
 
 	xassert(!threadpool.shutdown);
-
-	threadpool.enabled = true;
+	xassert(threadpool.enabled);
 
 	xassert(!threadpool.pending);
 	threadpool.pending = list_create(NULL);

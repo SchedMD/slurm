@@ -529,6 +529,7 @@ rwfail:
 extern int main(int argc, char **argv)
 {
 	probe_init();
+	closeall_init();
 
 	main_argv = argv;
 	_parse_args(argc, argv);

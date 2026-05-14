@@ -707,7 +707,7 @@ Partition and node specifications use node range expressions to identify
 nodes in a concise fashion. This configuration file defines a 1154-node cluster
 for Slurm, but it might be used for a much larger cluster by just changing a few
 node range expressions. Specify the minimum processor count (CPUs), real memory
-space (RealMemory, megabytes), and temporary disk space (TmpDisk, megabytes) that
+space (RealMemory, mebibytes), and temporary disk space (TmpDisk, mebibytes) that
 a node should have to be considered available for use. Any node lacking these
 minimum configuration values will be considered DOWN and not scheduled.
 Note that a more extensive sample configuration file is provided in

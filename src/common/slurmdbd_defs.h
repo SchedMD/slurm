@@ -124,7 +124,7 @@ typedef enum {
 	DBD_GET_RESVS,    	/* Get reservation information  	*/
 	DBD_GOT_RESVS,		/* Response to DBD_GET_RESV		*/
 	DBD_GET_CONFIG,  	/* Get configuration information	*/
-	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
+	DBD_GOT_CONFIG_KEYPAIRS, /* Response to DBD_GET_CONFIG (deprecated) */
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
 	DBD_GET_EVENTS, 	/* #1470, Get event information		*/
@@ -168,6 +168,7 @@ typedef enum {
 	DBD_GOT_QOS_USAGE,  	/* Response to DBD_GET_QOS_USAGE */
 	DBD_GET_ASSOC_NG_USAGE, /* Get non-grouped assoc usage
 				 * (this is used for sreport user topuser) */
+	DBD_GOT_CONFIG, /* Response to DBD_GET_CONFIG */
 	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
 					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
@@ -280,6 +281,7 @@ typedef struct dbd_job_start_msg {
 	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
 	char *env_hash;         /* hash value of env */
+	uint8_t exclusive; /* JOB_EXCLUSIVE_* value */
 	uint32_t gid;	        /* group ID */
 	uint32_t het_job_id;	/* ID of hetjob leader or 0 */
 	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */
@@ -291,6 +293,7 @@ typedef struct dbd_job_start_msg {
 	char *   nodes;		/* hosts allocated to the job */
 	char *   node_inx;      /* ranged bitmap string of hosts
 				 * allocated to the job */
+	uint8_t oversubscribe; /* JOB_OVERSUBSCRIBE_* value */
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */
@@ -302,6 +305,7 @@ typedef struct dbd_job_start_msg {
 	char *resv_req;		/* original requested reservations */
 	char *script_hash;      /* hash value of script */
 	uint16_t segment_size;	/* requested segment size */
+	uint64_t sluid; /* sluid from first submission, never changes */
 	time_t   start_time;	/* job start time */
 	uint32_t state_reason_prev; /* Last reason of blocking before job
 				     * started */
@@ -425,6 +429,7 @@ typedef struct dbd_step_start_msg {
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
 	slurm_step_id_t step_id;
 	char *cwd;              /* Current work dir of the step */
+	uint32_t state; /* state of the step */
 	char *std_err;          /* The stderr file path of the step */
 	char *std_in;           /* The stdin file path of the step */
 	char *std_out;          /* The stdout file path of the step */

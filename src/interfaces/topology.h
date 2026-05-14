@@ -69,6 +69,34 @@ typedef struct slurm_conf_ring {
 	char *nodes; /* names of nodes in this ring */
 } slurm_conf_ring_t;
 
+typedef struct slurm_conf_torus3d_dims {
+	uint16_t x;
+	uint16_t y;
+	uint16_t z;
+} slurm_conf_torus3d_dims_t;
+
+typedef struct slurm_conf_torus3d_placement {
+	slurm_conf_torus3d_dims_t anchor_seed;
+	slurm_conf_torus3d_dims_t anchor_spacing;
+	slurm_conf_torus3d_dims_t dims;
+} slurm_conf_torus3d_placement_t;
+
+typedef struct slurm_conf_torus3d_region {
+	slurm_conf_torus3d_dims_t anchor;
+	slurm_conf_torus3d_dims_t dims;
+	char *nodes; /* nodes for this region */
+} slurm_conf_torus3d_region_t;
+
+typedef struct slurm_conf_torus3d {
+	slurm_conf_torus3d_dims_t dims;
+	char *name; /* name of this torus */
+	char *nodes; /* names of nodes in this torus */
+	int placement_count;
+	slurm_conf_torus3d_placement_t *placements;
+	int region_count;
+	slurm_conf_torus3d_region_t *regions;
+} slurm_conf_torus3d_t;
+
 typedef struct slurm_conf_switches {
 	uint32_t link_speed; /* link speed, arbitrary units */
 	char *nodes; /* names of nodes directly connect to
@@ -80,8 +108,7 @@ typedef struct slurm_conf_switches {
 
 typedef struct topology_ctx {
 	bool cluster_default; /* topo used when operation not tied with part */
-	void *config; /* topology_tree_config_t*, topology_block_config_t*, or
-		       * NULL based on plugin value. */
+	void *config; /* topology_*_config_t* or NULL based on plugin value. */
 	int idx;
 	char *name;
 	char *plugin;
@@ -101,14 +128,31 @@ typedef struct {
 
 typedef struct {
 	int config_cnt; /* size of config array */
+	slurm_conf_torus3d_t *torus3d_configs; /* array of torus configs */
+} topology_torus3d_config_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
 	slurm_conf_block_t *block_configs; /* array of block configs */
 	list_t *block_sizes; /* list of int* */
 } topology_block_config_t;
 
 typedef struct {
+	bool alpha_step_rank; /* sort step nodes alphabetically by name */
+} topology_flat_config_t;
+
+typedef struct {
 	topology_ctx_t *tctx; /* array of topology_ctx_t */
 	int tctx_num; /* size of array */
 } topology_ctx_array_t;
+
+typedef enum {
+	EVAL_ACTION_NONE = 0,
+	EVAL_ACTION_BREAK,
+	EVAL_ACTION_RETRY,
+	EVAL_ACTION_RETRY_HINT,
+	EVAL_ACTION_RETRY_DEFAULT,
+} eval_action_t;
 
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
@@ -117,6 +161,8 @@ typedef struct topology_eval {
 					* UPDATED */
 	uint16_t cr_type; /* allocation type (sockets, cores, etc.) */
 	bool enforce_binding; /* Enforce GPU Binding or not */
+	eval_action_t eval_action; /* retry loop directive for
+				    * common_topo_choose_nodes() */
 	int (*eval_nodes)(struct topology_eval *topo_eval);
 	bool first_pass; /* First pass through eval_nodes() or not */
 	bool gres_per_job; /* if gres_per_job was requested */
@@ -131,6 +177,9 @@ typedef struct topology_eval {
 			    * algorithms. Only use ->eval_nodes. */
 	topology_ctx_t *tctx;
 } topology_eval_t;
+
+/* Upper bits of node_rank represent the topology unit id */
+#define TOPO_RANK_ID_SHIFT 16
 
 /*****************************************************************************\
  *  Slurm topology functions
@@ -172,6 +221,16 @@ extern int topology_get_plugin_id(void);
 extern int topology_g_add_rm_node(node_record_t *node_ptr);
 
 /*
+ * topology_g_allow_one_node - Check if topology plugin allows the single-node
+ *                             fast path that bypasses topology evaluation.
+ *
+ * IN idx - topology context index
+ * RET true if the fast path is allowed, false if full topology evaluation
+ *     is required even for single-node jobs.
+ */
+extern bool topology_g_allow_one_node(int idx);
+
+/*
  * topology_g_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
@@ -186,6 +245,8 @@ extern char *topology_g_get_config(void);
  *                         selecting nodes in the select plugin.
  */
 extern int topology_g_eval_nodes(topology_eval_t *topo_eval);
+
+extern int topology_g_eval_node(topology_eval_t *topo_eval, int node_inx);
 
 extern int topology_g_whole_topo(bitstr_t *node_mask, int idx);
 
@@ -320,6 +381,8 @@ extern int topology_g_jobinfo_get(
  */
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask);
 
+extern int topology_g_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, int idx);
 /*
  * topology_g_get_topology_str - return the node's topology_str according to
  * the current topology configuration
@@ -334,13 +397,19 @@ extern void free_topology_ctx(topology_ctx_t *tctx_ptr);
 
 extern void free_topology_block_config(topology_block_config_t *config);
 
+extern void free_topology_flat_config(topology_flat_config_t *config);
+
 extern void free_topology_ring_config(topology_ring_config_t *config);
+
+extern void free_topology_torus3d_config(topology_torus3d_config_t *config);
 
 extern void free_topology_tree_config(topology_tree_config_t *config);
 
 extern void free_block_conf(slurm_conf_block_t *config);
 
 extern void free_ring_conf(slurm_conf_ring_t *config);
+
+extern void free_torus3d_conf(slurm_conf_torus3d_t *config);
 
 extern void free_switch_conf(slurm_conf_switches_t *config);
 #endif
