@@ -666,15 +666,17 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 extern void acct_gather_energy_p_conf_set(int context_id_in,
 					  s_p_hashtbl_t *tbl)
 {
-	static bool flag_init = false;
+	static pid_t init_pid = 0;
+	pid_t my_pid = getpid();
 
 	context_id = context_id_in;
 
 	if (!running_in_slurmd_stepd())
 		return;
 
-	if (!flag_init) {
-		flag_init = true;
+	/* Reinitialize if PID changed (fork from slurmd to stepd) */
+	if (init_pid != my_pid) {
+		init_pid = my_pid;
 		if (running_in_slurmd()) {
 			log_flag(ENERGY, "%s: running in slurmd, probing GPU count", __func__);
 			if (gres_get_gres_cnt())
