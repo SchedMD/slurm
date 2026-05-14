@@ -215,6 +215,14 @@ typedef struct {
 	time_t latest_start;
 } het_job_start_compute_args_t;
 
+typedef struct {
+	het_job_map_t *map;
+	node_space_map_t *node_space;
+	time_t now;
+	int rc;
+	bitstr_t *used_bitmap;
+} het_job_start_now_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -4510,109 +4518,110 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 	return runnable;
 }
 
+static int _foreach_het_job_start_now(void *x, void *arg)
+{
+	het_job_rec_t *rec = x;
+	het_job_start_now_args_t *args = arg;
+	job_record_t *job_ptr = rec->job_ptr;
+	bitstr_t *avail_bitmap = NULL;
+	bool reset_time = false;
+	bool resv_overlap = false;
+	time_t start_res = args->now;
+	uint32_t hard_limit;
+	resv_exc_t resv_exc = { 0 };
+
+	job_ptr->part_ptr = rec->part_ptr;
+	if (rec->resv_ptr) {
+		job_ptr->resv_ptr = rec->resv_ptr;
+		job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+	}
+
+	/*
+	 * Identify the nodes which this job can use
+	 */
+	args->rc = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
+				 &resv_exc, &resv_overlap, false);
+	reservation_delete_resv_exc_parts(&resv_exc);
+	if (args->rc != SLURM_SUCCESS) {
+		error("%pJ failed to start due to reservation", job_ptr);
+		FREE_NULL_BITMAP(avail_bitmap);
+		return -1;
+	}
+	bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
+	bit_and(avail_bitmap, up_node_bitmap);
+	if (args->used_bitmap)
+		bit_and_not(avail_bitmap, args->used_bitmap);
+	if (job_ptr->details->exc_node_bitmap)
+		bit_and_not(avail_bitmap, job_ptr->details->exc_node_bitmap);
+
+	if (fed_mgr_job_lock(job_ptr)) {
+		error("%pJ failed to start due to fed job lock", job_ptr);
+		FREE_NULL_BITMAP(avail_bitmap);
+		return 0;
+	}
+
+	bit_not(avail_bitmap);
+	args->rc = _start_job(job_ptr, avail_bitmap);
+	FREE_NULL_BITMAP(avail_bitmap);
+	if (args->rc == SLURM_SUCCESS) {
+		/*
+		 * If the following fails because of network connectivity, the
+		 * origin cluster should ask when it comes back up if the
+		 * cluster_lock cluster actually started the job
+		 */
+		fed_mgr_job_start(job_ptr, job_ptr->start_time);
+		log_flag(HETJOB, "%pJ started", job_ptr);
+		if (!args->used_bitmap && job_ptr->node_bitmap)
+			args->used_bitmap = bit_copy(job_ptr->node_bitmap);
+		else if (job_ptr->node_bitmap)
+			bit_or(args->used_bitmap, job_ptr->node_bitmap);
+	} else {
+		fed_mgr_job_unlock(job_ptr);
+		return -1;
+	}
+	if (job_ptr->time_min) {
+		/* Set time limit as high as possible */
+		acct_policy_alter_job(job_ptr, args->map->comp_time_limit);
+		job_ptr->time_limit = args->map->comp_time_limit;
+		reset_time = true;
+	}
+	if (job_ptr->start_time) {
+		if (job_ptr->time_limit == INFINITE)
+			hard_limit = YEAR_SECONDS;
+		else
+			hard_limit = job_ptr->time_limit * 60;
+		job_ptr->end_time = job_ptr->start_time + hard_limit;
+		/*
+		 * Only set if start_time. end_time must be set beforehand for
+		 * _reset_job_time_limit.
+		 */
+		if (reset_time)
+			_reset_job_time_limit(job_ptr, args->now,
+					      args->node_space);
+	}
+	if (reset_time)
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+	return 0;
+}
+
 /*
  * Start all components of a hetjob now
  */
 static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 {
-	job_record_t *job_ptr;
-	bitstr_t *avail_bitmap = NULL;
-	bitstr_t *resv_bitmap = NULL, *used_bitmap = NULL;
-	het_job_rec_t *rec;
-	list_itr_t *iter;
-	int rc = SLURM_SUCCESS;
-	bool resv_overlap = false;
-	time_t now = time(NULL), start_res;
-	uint32_t hard_limit;
-	resv_exc_t resv_exc = { 0 };
+	het_job_start_now_args_t args = {
+		.map = map,
+		.node_space = node_space,
+		.now = time(NULL),
+		.rc = SLURM_SUCCESS,
+	};
 
-	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = list_next(iter))) {
-		bool reset_time = false;
-		job_ptr = rec->job_ptr;
-		job_ptr->part_ptr = rec->part_ptr;
-		if (rec->resv_ptr) {
-			job_ptr->resv_ptr = rec->resv_ptr;
-			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
-		}
+	list_for_each_ro(map->het_job_rec_list, _foreach_het_job_start_now,
+			 &args);
+	FREE_NULL_BITMAP(args.used_bitmap);
 
-		/*
-		 * Identify the nodes which this job can use
-		 */
-		start_res = now;
-		rc = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
-				   &resv_exc, &resv_overlap, false);
-		reservation_delete_resv_exc_parts(&resv_exc);
-		if (rc != SLURM_SUCCESS) {
-			error("%pJ failed to start due to reservation",
-			      job_ptr);
-			FREE_NULL_BITMAP(avail_bitmap);
-			break;
-		}
-		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
-		bit_and(avail_bitmap, up_node_bitmap);
-		if (used_bitmap)
-			bit_and_not(avail_bitmap, used_bitmap);
-		if (job_ptr->details->exc_node_bitmap) {
-			bit_and_not(avail_bitmap,
-				job_ptr->details->exc_node_bitmap);
-		}
-
-		if (fed_mgr_job_lock(job_ptr)) {
-			error("%pJ failed to start due to fed job lock",
-			      job_ptr);
-			FREE_NULL_BITMAP(avail_bitmap);
-			continue;
-		}
-
-		resv_bitmap = avail_bitmap;
-		avail_bitmap = NULL;
-		bit_not(resv_bitmap);
-		rc = _start_job(job_ptr, resv_bitmap);
-		FREE_NULL_BITMAP(resv_bitmap);
-		if (rc == SLURM_SUCCESS) {
-			/*
-			 * If the following fails because of network
-			 * connectivity, the origin cluster should ask
-			 * when it comes back up if the cluster_lock
-			 * cluster actually started the job
-			 */
-			fed_mgr_job_start(job_ptr, job_ptr->start_time);
-			log_flag(HETJOB, "%pJ started", job_ptr);
-			if (!used_bitmap && job_ptr->node_bitmap)
-				used_bitmap = bit_copy(job_ptr->node_bitmap);
-			else if (job_ptr->node_bitmap)
-				bit_or(used_bitmap, job_ptr->node_bitmap);
-		} else {
-			fed_mgr_job_unlock(job_ptr);
-			break;
-		}
-		if (job_ptr->time_min) {
-			/* Set time limit as high as possible */
-			acct_policy_alter_job(job_ptr, map->comp_time_limit);
-			job_ptr->time_limit = map->comp_time_limit;
-			reset_time = true;
-		}
-		if (job_ptr->start_time) {
-			if (job_ptr->time_limit == INFINITE)
-				hard_limit = YEAR_SECONDS;
-			else
-				hard_limit = job_ptr->time_limit * 60;
-			job_ptr->end_time = job_ptr->start_time + hard_limit;
-			/*
-			 * Only set if start_time. end_time must be set
-			 * beforehand for _reset_job_time_limit.
-			 */
-			if (reset_time)
-				_reset_job_time_limit(job_ptr, now, node_space);
-		}
-		if (reset_time)
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	}
-	list_iterator_destroy(iter);
-	FREE_NULL_BITMAP(used_bitmap);
-
-	return rc;
+	return args.rc;
 }
 
 /*
