@@ -77,32 +77,47 @@ extern int http_parser_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = HTTP_PARSER_MAJOR_TYPE;
-	char *http_parser_type = NULL;
+	const char *http_parser_type = NULL;
+	char *default_http_parser_types[] = {
+		HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN,
+		HTTP_PARSER_PREFIX LLHTTP_PARSER_PLUGIN,
+	};
+	char *failed_types = NULL;
 
 	slurm_rwlock_wrlock(&context_lock);
 
 	if (plugin_inited != PLUGIN_NOT_INITED)
 		goto done;
 
-	if (!(http_parser_type = xstrdup(slurm_conf.http_parser_type))) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
+	for (int i = 0; i < ARRAY_SIZE(default_http_parser_types); i++) {
+		if (slurm_conf.http_parser_type)
+			http_parser_type = slurm_conf.http_parser_type;
+		else
+			http_parser_type = default_http_parser_types[i];
+
+		if ((g_context = plugin_context_create(plugin_type,
+						       http_parser_type,
+						       (void **) &ops, syms,
+						       sizeof(syms)))) {
+			plugin_inited = PLUGIN_INITED;
+			break;
+		}
+
+		xstrfmtcat(failed_types, "%s%s", (failed_types ? ", " : ""),
+			   http_parser_type);
+
+		if (slurm_conf.http_parser_type)
+			break;
 	}
 
-	if (!(g_context = plugin_context_create(plugin_type, http_parser_type,
-						(void **) &ops, syms,
-						sizeof(syms)))) {
-		error("cannot create %s context for %s",
-		      plugin_type, http_parser_type);
+	if (plugin_inited != PLUGIN_INITED) {
+		error("cannot create %s context for %s", plugin_type,
+		      failed_types);
 		rc = SLURM_ERROR;
-		plugin_inited = PLUGIN_NOT_INITED;
-		goto done;
 	}
-
-	plugin_inited = PLUGIN_INITED;
 
 done:
-	xfree(http_parser_type);
+	xfree(failed_types);
 	slurm_rwlock_unlock(&context_lock);
 	return rc;
 }
