@@ -93,8 +93,9 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_RSMI_TRUE@am__append_1 = rsmi
-@BUILD_NVML_TRUE@am__append_2 = nvml
-@BUILD_ONEAPI_TRUE@am__append_3 = oneapi
+@BUILD_AMDSMI_TRUE@am__append_2 = amdsmi
+@BUILD_NVML_TRUE@am__append_3 = nvml
+@BUILD_ONEAPI_TRUE@am__append_4 = oneapi
 subdir = src/plugins/gpu
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -112,6 +113,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
 	$(top_srcdir)/auxdir/slurmrestd.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
+	$(top_srcdir)/auxdir/x_ac_asmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_bashcomp.m4 \
 	$(top_srcdir)/auxdir/x_ac_c99.m4 \
 	$(top_srcdir)/auxdir/x_ac_cgroup.m4 \
@@ -208,8 +210,10 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = common generic nrt nvidia rsmi nvml oneapi
+DIST_SUBDIRS = common generic nrt nvidia rsmi amdsmi nvml oneapi
 ACLOCAL = @ACLOCAL@
+AMDSMI_CPPFLAGS = @AMDSMI_CPPFLAGS@
+AMDSMI_LIBS = @AMDSMI_LIBS@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
@@ -471,7 +475,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = common generic nrt nvidia $(am__append_1) $(am__append_2) \
-	$(am__append_3)
+	$(am__append_3) $(am__append_4)
 all: all-recursive
 
 .SUFFIXES:

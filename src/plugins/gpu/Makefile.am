@@ -6,6 +6,10 @@ if BUILD_RSMI
 SUBDIRS += rsmi
 endif
 
+if BUILD_AMDSMI
+SUBDIRS += amdsmi
+endif
+
 if BUILD_NVML
 SUBDIRS += nvml
 endif

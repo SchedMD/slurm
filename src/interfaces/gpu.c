@@ -241,7 +241,19 @@ static char *_get_gpu_type(void)
 #else
 		info("We were configured to autodetect nvml functionality, but we weren't able to find that lib when Slurm was configured.");
 #endif
-	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI) {
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_AMDSMI) {
+#ifdef HAVE_AMDSMI
+		(void) dlerror();
+		if (!(ext_lib_handle = dlopen("libamd_smi.so",
+					      RTLD_NOW | RTLD_GLOBAL)))
+			info("Configured with amdsmi, but that lib wasn't found. %s",
+			     dlerror());
+		else
+			return "gpu/amdsmi";
+#else
+		info("Configured with amdsmi, but amdsmi isn't enabled during the build.");
+#endif
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI){
 #ifdef HAVE_RSMI
 		(void) dlerror();
 		if (!(ext_lib_handle = dlopen("librocm_smi64.so",
@@ -269,7 +281,7 @@ static char *_get_gpu_type(void)
 		return "gpu/nrt";
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NVIDIA) {
 		return "gpu/nvidia";
-	}
+	} 
 
 	return "gpu/generic";
 }
@@ -316,6 +328,7 @@ static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 	static const uint32_t probe_order[] = {
 		GRES_AUTODETECT_GPU_NVML,
 		GRES_AUTODETECT_GPU_NVIDIA,
+		GRES_AUTODETECT_GPU_AMDSMI,
 		GRES_AUTODETECT_GPU_RSMI,
 		GRES_AUTODETECT_GPU_ONEAPI,
 		GRES_AUTODETECT_GPU_NRT,

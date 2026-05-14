@@ -131,15 +131,15 @@ typedef struct {
 #define GRES_CONF_HAS_TYPE   SLURM_BIT(2) /* Type= is configured */
 #define GRES_CONF_COUNT_ONLY SLURM_BIT(3) /* GRES lacks plugin to load */
 #define GRES_CONF_LOADED     SLURM_BIT(4) /* used to avoid loading a plugin
-					   * multiple times */
+								multiple times */
 #define GRES_CONF_ENV_NVML   SLURM_BIT(5) /* Set CUDA_VISIBLE_DEVICES */
 #define GRES_CONF_ENV_RSMI   SLURM_BIT(6) /* Set ROCR_VISIBLE_DEVICES */
+#define GRES_CONF_ENV_AMDSMI SLURM_BIT(18) /* Set GPU_DEVICE_ORDINAL */
 #define GRES_CONF_ENV_OPENCL SLURM_BIT(7) /* Set GPU_DEVICE_ORDINAL */
 #define GRES_CONF_ENV_DEF    SLURM_BIT(8) /* Env flags were set to defaults */
 
 #define GRES_CONF_SHARED     SLURM_BIT(9) /* Treat this as a shared GRES */
-#define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES
-					     * on one of the sharing GRES */
+#define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES on one of the sharing GRES */
 
 #define GRES_CONF_ENV_ONEAPI SLURM_BIT(11) /* Set ZE_AFFINITY_MASK */
 #define GRES_CONF_EXPLICIT   SLURM_BIT(12) /* Don't allocate as part of
@@ -152,7 +152,7 @@ typedef struct {
 #define GRES_CONF_UPDATE_CONFIG SLURM_BIT(16) /* Flag to update gres config */
 #define GRES_CONF_MIG SLURM_BIT(17) /* GRES configuration is for NVIDIA MIG */
 
-#define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
+#define GRES_CONF_ENV_SET    0x000408E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
 
 /* GRES AutoDetect options */
@@ -164,6 +164,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_NRT 0x00000010
 #define GRES_AUTODETECT_GPU_NVIDIA 0x00000020
 #define GRES_AUTODETECT_GPU_FULL 0x00000040 /* try all gpu plugins in order */
+#define GRES_AUTODETECT_GPU_AMDSMI 0x00000080
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */

@@ -8,6 +8,7 @@
 *.bino
 .cache
 .deps
+.vscode
 .libs
 __pycache__
 Makefile
