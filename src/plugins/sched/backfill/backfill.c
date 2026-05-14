@@ -228,6 +228,15 @@ typedef struct {
 	time_t now;
 } het_job_kill_now_args_t;
 
+typedef struct {
+	deadlock_job_struct_t *dl_job_ptr;
+	deadlock_job_struct_t *dl_job_ptr_conflict;
+	deadlock_part_struct_t *dl_part_ptr;
+	deadlock_part_struct_t *dl_part_ptr_conflict;
+	bool have_deadlock;
+	job_record_t *job_ptr;
+} deadlock_check_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -4843,9 +4852,78 @@ static void _het_job_deadlock_fini(void)
 	FREE_NULL_LIST(deadlock_global_list);
 }
 
+static int _foreach_log_deadlock_job(void *x, void *arg)
+{
+	deadlock_job_struct_t *dl_job = x;
+
+	log_flag(HETJOB, "   Hetjob %u to start at %"PRIu64,
+		 dl_job->het_job_id, (uint64_t) dl_job->start_time);
+
+	return 0;
+}
+
+static int _foreach_log_deadlock_part(void *x, void *arg)
+{
+	deadlock_part_struct_t *dl_part = x;
+
+	log_flag(HETJOB, "Partition %s Hetjobs:", dl_part->part_ptr->name);
+	list_for_each_ro(dl_part->deadlock_job_list, _foreach_log_deadlock_job,
+			 NULL);
+
+	return 0;
+}
+
+static int _foreach_check_inner_deadlock(void *x, void *arg)
+{
+	deadlock_job_struct_t *dl_job = x;
+	deadlock_check_args_t *args = arg;
+	deadlock_job_struct_t *match;
+
+	if (dl_job->het_job_id == args->dl_job_ptr->het_job_id)
+		return -1; /* Self */
+
+	match = list_find_first_ro(args->dl_part_ptr_conflict->deadlock_job_list,
+				   _deadlock_part_list_srch2, dl_job);
+	if (match && (match->start_time < args->dl_job_ptr->start_time)) {
+		args->have_deadlock = true;
+		args->dl_job_ptr_conflict = match;
+		return -1;
+	}
+
+	return 0;
+}
+
+static int _foreach_check_outer_deadlock(void *x, void *arg)
+{
+	deadlock_part_struct_t *dl_part = x;
+	deadlock_check_args_t *args = arg;
+
+	if (dl_part == args->dl_part_ptr) /* Current partition, skip it */
+		return 0;
+	if (!list_find_first_ro(dl_part->deadlock_job_list,
+				_deadlock_part_list_srch, args->job_ptr))
+		return 0; /* Hetjob not in this partition, no check */
+
+	args->dl_part_ptr_conflict = dl_part;
+	list_for_each_ro(args->dl_part_ptr->deadlock_job_list,
+			 _foreach_check_inner_deadlock, args);
+
+	if (args->have_deadlock) {
+		log_flag(HETJOB, "Hetjob %u in partition %s would deadlock with hetjob %u in partition %s, skipping it",
+			 args->dl_job_ptr->het_job_id,
+			 args->dl_part_ptr->part_ptr->name,
+			 args->dl_job_ptr_conflict->het_job_id,
+			 args->dl_part_ptr_conflict->part_ptr->name);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Determine if job can run at it's "start_time" or later.
- * job_ptr IN - job to test, set reason to "HET_JOB_DEADLOCK" if it will deadlock
+ * job_ptr IN - job to test, set reason to "HET_JOB_DEADLOCK" if it will
+ *              deadlock
  * RET true if the job can not run due to possible deadlock with other hetjob
  *
  * NOTE: If there are a large number of hetjobs this will be painfully slow
@@ -4853,11 +4931,9 @@ static void _het_job_deadlock_fini(void)
  */
 static bool _het_job_deadlock_test(job_record_t *job_ptr)
 {
-	deadlock_job_struct_t  *dl_job_ptr  = NULL, *dl_job_ptr2 = NULL;
-	deadlock_job_struct_t  *dl_job_ptr3 = NULL;
-	deadlock_part_struct_t *dl_part_ptr = NULL, *dl_part_ptr2 = NULL;
-	list_itr_t *job_iter, *part_iter;
-	bool have_deadlock = false;
+	deadlock_job_struct_t *dl_job_ptr = NULL;
+	deadlock_part_struct_t *dl_part_ptr = NULL;
+	deadlock_check_args_t check_args = { 0 };
 
 	if (!job_ptr->het_job_id || !job_ptr->part_ptr)
 		return false;
@@ -4896,66 +4972,23 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	/*
 	 * Log current table of hetjob start times by partition
 	 */
-	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
-		part_iter = list_iterator_create(deadlock_global_list);
-		while ((dl_part_ptr2 = list_next(part_iter))){
-			log_flag(HETJOB, "Partition %s Hetjobs:",
-				 dl_part_ptr2->part_ptr->name);
-			job_iter = list_iterator_create(dl_part_ptr2->
-							deadlock_job_list);
-			while ((dl_job_ptr2 = list_next(job_iter))) {
-				log_flag(HETJOB,
-					 "   Hetjob %u to start at %"PRIu64,
-					 dl_job_ptr2->het_job_id,
-					 (uint64_t) dl_job_ptr2->start_time);
-			}
-			list_iterator_destroy(job_iter);
-		}
-		list_iterator_destroy(part_iter);
-	}
+	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
+		list_for_each_ro(deadlock_global_list,
+				 _foreach_log_deadlock_part, NULL);
 
 	/*
 	 * Determine if any hetjobs scheduled to start earlier than this job
 	 * in this partition are scheduled to start after it in some other
 	 * partition
 	 */
-	part_iter = list_iterator_create(deadlock_global_list);
-	while ((dl_part_ptr2 = list_next(part_iter))){
-		if (dl_part_ptr2 == dl_part_ptr) /* Current partition, skip it */
-			continue;
-		dl_job_ptr2 = list_find_first(dl_part_ptr2->deadlock_job_list,
-					      _deadlock_part_list_srch,
-					      job_ptr);
-		if (!dl_job_ptr2) /* Hetjob not in this partition, no check */
-			continue;
-		job_iter = list_iterator_create(dl_part_ptr->deadlock_job_list);
-		while ((dl_job_ptr2 = list_next(job_iter))) {
-			if (dl_job_ptr2->het_job_id == dl_job_ptr->het_job_id)
-				break;	/* Self */
-			dl_job_ptr3 = list_find_first(
-						dl_part_ptr2->deadlock_job_list,
-						_deadlock_part_list_srch2,
-						dl_job_ptr2);
-			if (dl_job_ptr3 &&
-			    (dl_job_ptr3->start_time < dl_job_ptr->start_time)){
-				have_deadlock = true;
-				break;
-			}
-		}
-		list_iterator_destroy(job_iter);
+	check_args.dl_job_ptr = dl_job_ptr;
+	check_args.dl_part_ptr = dl_part_ptr;
+	check_args.job_ptr = job_ptr;
 
-		if (have_deadlock)
-			log_flag(HETJOB, "Hetjob %u in partition %s would deadlock with hetjob %u in partition %s, skipping it",
-				 dl_job_ptr->het_job_id,
-				 dl_part_ptr->part_ptr->name,
-				 dl_job_ptr3->het_job_id,
-				 dl_part_ptr2->part_ptr->name);
-		if (have_deadlock)
-			break;
-	}
-	list_iterator_destroy(part_iter);
+	list_for_each_ro(deadlock_global_list, _foreach_check_outer_deadlock,
+			 &check_args);
 
-	return have_deadlock;
+	return check_args.have_deadlock;
 }
 
 static void _set_bf_exit(bf_exit_t code)
