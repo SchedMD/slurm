@@ -202,32 +202,126 @@ static void _check_torus(torus3d_record_t *torus, topology_eval_t *topo_eval,
 	}
 }
 
+static int _select_placements(topology_eval_t *topo_eval, int rem_nodes,
+			      int rem_cpus, int segment_cnt)
+{
+	int rc;
+	int64_t rem_max_cpus;
+	uint64_t maxtasks;
+	bool size_overlap = false;
+	int rem_segment_cnt = segment_cnt;
+	job_record_t *job_ptr = topo_eval->job_ptr;
+	job_details_t *details_ptr = job_ptr->details;
+	torus3d_candidate_t best = { 0 };
+	int *avail_cpu_per_node = NULL;
+	bitstr_t *avail_cpu_set = NULL, *selected_bitmap = NULL;
+	torus3d_context_t *ctx = topo_eval->tctx->plugin_ctx;
+
+	if (!bit_set_count(topo_eval->node_map)) {
+		debug("%pJ node_map is empty", job_ptr);
+		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
+		topo_eval->eval_action = EVAL_ACTION_BREAK;
+		goto fini;
+	}
+
+	avail_cpu_per_node =
+		xcalloc(node_record_count, sizeof(*avail_cpu_per_node));
+	avail_cpu_set = bit_alloc(node_record_count);
+	selected_bitmap = bit_alloc(node_record_count);
+
+	do {
+		rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr,
+							   rem_nodes);
+		maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
+						    rem_nodes);
+
+		memset(&best, 0, sizeof(best));
+
+		for (int i = 0; i < ctx->record_count; i++) {
+			_check_torus(&ctx->records[i], topo_eval, rem_nodes,
+				     topo_eval->gres_per_job,
+				     avail_cpu_per_node, avail_cpu_set, &best);
+		}
+
+		if (!best.valid) {
+			log_flag(SELECT_TYPE, "%pJ unable to find torus3d placement",
+				 job_ptr);
+			if (size_overlap) {
+				bit_copybits(topo_eval->node_map,
+					     selected_bitmap);
+				rc = ESLURM_TOPO_SEGMENT_NO_FIT;
+				topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
+			} else {
+				rc = ESLURM_TOPO_NO_FIT;
+				topo_eval->eval_action = EVAL_ACTION_BREAK;
+			}
+			goto fini;
+		}
+
+		if (!size_overlap)
+			size_overlap = best.placement->has_overlap;
+
+		for (int node_idx = 0;
+		     next_node_bitmap(best.nodes_bitmap, &node_idx);
+		     node_idx++) {
+			topo_eval->avail_cpus = avail_cpu_per_node[node_idx];
+			eval_nodes_cpus_to_use(topo_eval, node_idx,
+					       rem_max_cpus, rem_nodes,
+					       &maxtasks, true);
+			if (topo_eval->avail_cpus <= 0) {
+				rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+				topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
+				goto fini;
+			}
+			rem_cpus -= topo_eval->avail_cpus;
+			rem_max_cpus -= topo_eval->avail_cpus;
+			rem_nodes--;
+		}
+
+		if ((rem_nodes > 0) || (rem_cpus > 0) ||
+		    (topo_eval->gres_per_job &&
+		     !gres_sched_test(job_ptr->gres_list_req,
+				      job_ptr->job_id))) {
+			rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
+			goto fini;
+		}
+
+		bit_or(selected_bitmap, best.nodes_bitmap);
+
+		if (rem_segment_cnt && (--rem_segment_cnt > 0)) {
+			bit_and_not(topo_eval->node_map, best.nodes_bitmap);
+			rem_nodes = details_ptr->segment_size;
+			rem_cpus = details_ptr->min_cpus / segment_cnt;
+		}
+	} while (rem_segment_cnt > 0);
+
+	rc = SLURM_SUCCESS;
+	bit_copybits(topo_eval->node_map, selected_bitmap);
+fini:
+	xfree(avail_cpu_per_node);
+	FREE_NULL_BITMAP(avail_cpu_set);
+	FREE_NULL_BITMAP(selected_bitmap);
+	return rc;
+}
+
 extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 {
 	int rc = SLURM_ERROR;
-	int64_t rem_max_cpus;
-	uint64_t maxtasks;
 	int rem_cpus, rem_nodes;
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
-	int *avail_cpu_per_node = NULL;
-	bitstr_t *avail_cpu_set = NULL;
-	bitstr_t *selected_bitmap = NULL;
 	uint32_t min_nodes = topo_eval->min_nodes;
 	uint32_t req_nodes = topo_eval->req_nodes;
 	torus3d_context_t *ctx = topo_eval->tctx->plugin_ctx;
-	torus3d_candidate_t best = { 0 };
 	bool size_supported = false;
-	bool check_gres = false;
 	uint16_t segment_size = details_ptr->segment_size;
-	int segment_cnt = 0, rem_segment_cnt = 0;
+	int segment_cnt = 0;
 	bitstr_t *req_nodes_bitmap = NULL;
-	bool size_overlap = false;
 
 	if (details_ptr->arbitrary_tpn) {
 		info("topology torus3d does not support arbitrary tasks distribution");
-		rc = ESLURM_NOT_SUPPORTED;
-		goto fini;
+		return ESLURM_NOT_SUPPORTED;
 	}
 
 	topo_eval->avail_cpus = 0;
@@ -253,7 +347,6 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 		segment_cnt = rem_nodes / details_ptr->segment_size;
 		rem_nodes = details_ptr->segment_size;
 		rem_cpus /= segment_cnt;
-		rem_segment_cnt = segment_cnt;
 	}
 
 	for (int i = 0; i < ctx->record_count; i++) {
@@ -280,7 +373,7 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 			     job_ptr);
 			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
-			goto fini;
+			return rc;
 		}
 
 		if (ctx->placement_nodes_bitmap &&
@@ -290,7 +383,7 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 			     job_ptr);
 			rc = ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
-			goto fini;
+			return rc;
 		}
 
 		req_node_cnt = bit_set_count(job_ptr->details->req_node_bitmap);
@@ -299,7 +392,7 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 			     job_ptr);
 			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
-			goto fini;
+			return rc;
 		}
 		if (req_node_cnt > topo_eval->max_nodes) {
 			info("%pJ requires more nodes than currently available (%u>%u)",
@@ -307,14 +400,14 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 			     topo_eval->max_nodes);
 			rc = ESLURM_TOPO_MAX_NODE_LIMIT;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
-			goto fini;
+			return rc;
 		}
 		if (segment_cnt > 1) {
 			if (min_nodes > req_node_cnt) {
 				info("%pJ requires less nodes than job size with segment are not supported",
 				     job_ptr);
 				rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-				goto fini;
+				return rc;
 			}
 			bit_and(topo_eval->node_map,
 				job_ptr->details->req_node_bitmap);
@@ -323,92 +416,12 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 		}
 	}
 
-	if (!bit_set_count(topo_eval->node_map)) {
-		debug("%pJ node_map is empty", job_ptr);
-		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
-		topo_eval->eval_action = EVAL_ACTION_BREAK;
-		goto fini;
-	}
+	rc = _select_placements(topo_eval, rem_nodes, rem_cpus, segment_cnt);
 
-	if (topo_eval->gres_per_job)
-		check_gres = true;
-
-	avail_cpu_per_node =
-		xcalloc(node_record_count, sizeof(*avail_cpu_per_node));
-	avail_cpu_set = bit_alloc(node_record_count);
-	selected_bitmap = bit_alloc(node_record_count);
-
-next_segment:
-
-	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, rem_nodes);
-	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus, rem_nodes);
-
-	memset(&best, 0, sizeof(best));
-
-	for (int i = 0; i < ctx->record_count; i++) {
-		_check_torus(&ctx->records[i], topo_eval, rem_nodes, check_gres,
-			     avail_cpu_per_node, avail_cpu_set, &best);
-	}
-
-	if (!best.valid) {
-		log_flag(SELECT_TYPE, "%pJ unable to find torus3d placement",
-			 job_ptr);
-		if (size_overlap) {
-			bit_copybits(topo_eval->node_map, selected_bitmap);
-			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
-			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
-		} else {
-			rc = ESLURM_TOPO_NO_FIT;
-			topo_eval->eval_action = EVAL_ACTION_BREAK;
-		}
-		goto fini;
-	}
-
-	if (!size_overlap)
-		size_overlap = best.placement->has_overlap;
-
-	for (int node_idx = 0; next_node_bitmap(best.nodes_bitmap, &node_idx);
-	     node_idx++) {
-		topo_eval->avail_cpus = avail_cpu_per_node[node_idx];
-		eval_nodes_cpus_to_use(topo_eval, node_idx, rem_max_cpus,
-				       rem_nodes, &maxtasks, true);
-		if (topo_eval->avail_cpus <= 0) {
-			rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
-			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
-			goto fini;
-		}
-		rem_cpus -= topo_eval->avail_cpus;
-		rem_max_cpus -= topo_eval->avail_cpus;
-		rem_nodes--;
-	}
-
-	if ((rem_nodes > 0) || (rem_cpus > 0) ||
-	    (topo_eval->gres_per_job &&
-	     !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id))) {
-		rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
-		topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
-		goto fini;
-	}
-
-	bit_or(selected_bitmap, best.nodes_bitmap);
-
-	if (--rem_segment_cnt > 0) {
-		bit_and_not(topo_eval->node_map, best.nodes_bitmap);
-		rem_nodes = details_ptr->segment_size;
-		rem_cpus = details_ptr->min_cpus / segment_cnt;
-		goto next_segment;
-	}
-
-	rc = SLURM_SUCCESS;
-	bit_copybits(topo_eval->node_map, selected_bitmap);
-
-fini:
 	if (req_nodes_bitmap)
 		job_ptr->details->req_node_bitmap = req_nodes_bitmap;
 	if (rc == SLURM_SUCCESS)
 		eval_nodes_clip_socket_cores(topo_eval);
-	xfree(avail_cpu_per_node);
-	FREE_NULL_BITMAP(avail_cpu_set);
-	FREE_NULL_BITMAP(selected_bitmap);
+
 	return rc;
 }
