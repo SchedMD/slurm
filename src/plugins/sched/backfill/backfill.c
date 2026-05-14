@@ -199,6 +199,12 @@ typedef struct {
 	time_t start_time;
 } filter_exclusive_args_t;
 
+typedef struct {
+	int count;
+	bool *has_mor;
+	bool *has_xand;
+} feature_count_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -394,31 +400,39 @@ static bool _many_pending_rpcs(void)
  * OUT has_mor - true if features are MORed together
  * RET Total count for ALL job features, even counts with XAND separator
  */
+static int _foreach_count_feature(void *x, void *arg)
+{
+	job_feature_t *feat_ptr = x;
+	feature_count_args_t *args = arg;
+
+	if (feat_ptr->count)
+		args->count++;
+	if (feat_ptr->op_code == FEATURE_OP_XAND)
+		*args->has_xand = true;
+	if (feat_ptr->op_code == FEATURE_OP_MOR)
+		*args->has_mor = true;
+
+	return 0;
+}
+
 static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			      bool *has_mor)
 {
 	job_details_t *detail_ptr = job_ptr->details;
-	int rc = 0;
-	list_itr_t *feat_iter;
-	job_feature_t *feat_ptr;
+	feature_count_args_t args = {
+		.has_mor = has_mor,
+		.has_xand = has_xand,
+	};
 
 	*has_xand = false;
 	*has_mor = false;
 	if (detail_ptr->feature_list_use == NULL)	/* no constraints */
-		return rc;
+		return 0;
 
-	feat_iter = list_iterator_create(detail_ptr->feature_list_use);
-	while ((feat_ptr = list_next(feat_iter))) {
-		if (feat_ptr->count)
-			rc++;
-		if (feat_ptr->op_code == FEATURE_OP_XAND)
-			*has_xand = true;
-		if (feat_ptr->op_code == FEATURE_OP_MOR)
-			*has_mor = true;
-	}
-	list_iterator_destroy(feat_iter);
+	list_for_each_ro(detail_ptr->feature_list_use, _foreach_count_feature,
+			 &args);
 
-	return rc;
+	return args.count;
 }
 
 static int _clear_qos_blocked_times(void *x, void *arg)
