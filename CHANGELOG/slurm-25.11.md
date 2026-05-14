@@ -1,3 +1,39 @@
+## Changes in 25.11.6
+
+* scontrol - Allow updating InstanceId for batches of nodes as is possible for updating NodeAddr and NodeHosts.
+* scontrol - Allow updating InstanceType for batches of nodes as is possible for updating NodeAddr and NodeHosts.
+* Fix problem when using sacctmgr to remove a default account for a user when more than one is set.
+* Fix sacctmgr silently ignoring trailing characters in numeric options.
+* Fix sbcast with auth/slurm when user doesn't exist on slurmctld.
+* Fix stepmgr crash with using sbcast with auth/slurm.
+* Fix memory leak in stepmgr stepd.
+* Reject untrusted REQUEST_COMPLETE_PROLOG.
+* Fix jobs getting stuck in COMPLETING state when PrologFlags=RunInJob is configured by passing EpilogMsgTime to slurmstepd.
+* Fix external nodes incorrectly marked as not responding after state transitions such as drain/undrain or resume.
+* slurmstepd - Prevent crash when UnkillableStepTimeout is reached and Slurm is configured with --enable-memory-leak-debug.
+* slurmctld - Fix possible hang during reconfigure due to slow client I/O due to timeout not being enforced.
+* slurmctld - Fix possible hang during shutdown due to slow client I/O due to timeout not being enforced.
+* slurmctld - Avoid race condition during shutdown that could cause a crash while attempting to read from a connection.
+* Fix parsing issue for GRES resources that contain a hyphen ("-") in their name when using sacctmgr.
+* Ensure that a request for zero licenses does not prevent a job from running when all licenses are in-use or reserved.
+* slurmctld - Fix crash on startup due to race condition when I/O is processed before the connection (conn) plugin finishes initialization.
+* slurmdbd - Fix crash from race condition during shutdown when a persistent connection closes its database connection after the accounting_storage plugin has already unloaded.
+* slurmrestd - Fixed memory leak resulting from specifying an empty node_list in the request body of the following endpoints: 'POST /slurm/v0.0.4[3-5]/reservation' 'POST /slurm/v0.0.4[3-5]/reservations'
+* Prevent deadlock when replacing nodes in reservations.
+* Fix slow scheduling for multi-segment jobs with topology/block when blocks have fewer available nodes than the requested segment size.
+* serializer/url-encoded - Allow non-NULL terminated strings to be passed to serialize_p_string_to_data().
+* serializer/yaml - Prevent fataling if the size of a yaml configuration file is a multiple of 4096 bytes.
+* Fix archive dump jobs "No records archived...but some found"
+* Fix gcc-16 build errors.
+* Fix slurmstepd crash in jobacctinfo_aggregate() handling when SlurmctldParameters=enable_stepmgr and JobAcctGatherType=jobacct_gather/none are set.
+* Fix slurmd >= 25.05 crash on HetJob step launches from srun <= 24.11.
+* Set the in-memory QOS priority to 0 after INFINITY is handled by slurmdbd.
+* Do not allocate maintenance nodes to new reservations.
+* slurmd - fix a potential crash during message forwarding
+* Fix out-of-bounds array errors by resizing leaf_usage when tres_cnt changes.
+* All features will be tested before jobs are preempted.
+* slurmstepd - when a node fails on which the batch step is running, don't deallocate the batch step until after the job completes or is requeued.
+
 ## Changes in 25.11.5
 
 * slurmctld - Prevent crash when deleting the only node in the cluster which also belongs to an inactive reservation.
