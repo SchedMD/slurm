@@ -223,6 +223,11 @@ typedef struct {
 	bitstr_t *used_bitmap;
 } het_job_start_now_args_t;
 
+typedef struct {
+	int cred_lifetime;
+	time_t now;
+} het_job_kill_now_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -4624,46 +4629,51 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	return args.rc;
 }
 
+static int _foreach_het_job_kill_now(void *x, void *arg)
+{
+	het_job_rec_t *rec = x;
+	het_job_kill_now_args_t *args = arg;
+	job_record_t *job_ptr = rec->job_ptr;
+	uint32_t save_bitflags;
+
+	if (IS_JOB_PENDING(job_ptr))
+		return 0;
+
+	log_flag(HETJOB, "Deallocate %pJ due to hetjob start failure", job_ptr);
+	job_ptr->details->begin_time = args->now + args->cred_lifetime + 1;
+	job_ptr->end_time = args->now;
+	job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
+	last_job_update = args->now;
+	build_cg_bitmap(job_ptr);
+	job_completion_logger(job_ptr, false);
+	deallocate_nodes(job_ptr, false, false, false);
+	/*
+	 * Since the job_completion_logger() removes the submit, we need to add
+	 * it again, but don't stage-out burst buffer
+	 */
+	save_bitflags = job_ptr->bit_flags;
+	job_ptr->bit_flags |= JOB_KILL_HURRY;
+	acct_policy_add_job_submit(job_ptr, false);
+	job_ptr->bit_flags = save_bitflags;
+	if (!job_ptr->node_bitmap_cg ||
+	    (bit_set_count(job_ptr->node_bitmap_cg) == 0))
+		batch_requeue_fini(job_ptr);
+
+	return 0;
+}
+
 /*
  * Deallocate all components if failed hetjob start
  */
 static void _het_job_kill_now(het_job_map_t *map)
 {
-	job_record_t *job_ptr;
-	het_job_rec_t *rec;
-	list_itr_t *iter;
-	time_t now = time(NULL);
-	int cred_lifetime = 1200;
-	uint32_t save_bitflags;
+	het_job_kill_now_args_t args = {
+		.cred_lifetime = cred_expiration(),
+		.now = time(NULL),
+	};
 
-	cred_lifetime = cred_expiration();
-	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = list_next(iter))) {
-		job_ptr = rec->job_ptr;
-		if (IS_JOB_PENDING(job_ptr))
-			continue;
-		log_flag(HETJOB, "Deallocate %pJ due to hetjob start failure",
-			 job_ptr);
-		job_ptr->details->begin_time = now + cred_lifetime + 1;
-		job_ptr->end_time   = now;
-		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
-		last_job_update     = now;
-		build_cg_bitmap(job_ptr);
-		job_completion_logger(job_ptr, false);
-		deallocate_nodes(job_ptr, false, false, false);
-		/*
-		 * Since the job_completion_logger() removes the submit,
-		 * we need to add it again, but don't stage-out burst buffer
-		 */
-		save_bitflags = job_ptr->bit_flags;
-		job_ptr->bit_flags |= JOB_KILL_HURRY;
-		acct_policy_add_job_submit(job_ptr, false);
-		job_ptr->bit_flags = save_bitflags;
-		if (!job_ptr->node_bitmap_cg ||
-		    (bit_set_count(job_ptr->node_bitmap_cg) == 0))
-			batch_requeue_fini(job_ptr);
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(map->het_job_rec_list, _foreach_het_job_kill_now,
+			 &args);
 }
 
 /*
