@@ -64,6 +64,10 @@ def setup():
     )
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 11, 6),
+    reason="Ticket 24158: Jobs must not be preempted before all features are tested. Fixed in 25.11.6",
+)
 def test_jobs_with_constraints_do_not_preempt():
     """Submit two jobs with constraints and verify that the second job does not
     preempt the first job"""
