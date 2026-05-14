@@ -6228,7 +6228,6 @@ of a \fBPowerAction\fR.
 This program is expected to place the node into some power save mode.
 This can be used to reduce the frequency and voltage of a node or
 completely power the node off.
-The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
 be placed into power savings mode (using Slurm's hostlist
 expression format).
@@ -8388,24 +8387,44 @@ Refer to the TRES page for more details: <https://slurm.schedmd.com/tres.html>
 .IP
 
 .SH "POWERACTION CONFIGURATION"
-The PowerAction configuration creates a named script to execute a node
-reboot, power up (Resume), or power down (Suspend). It includes the following
-parameters:
+The PowerAction configuration creates a named program to execute a node
+reboot, power up (Resume), or power down (Suspend). A \fBPowerAction\fR name
+may be used in place of a program path for \fBResumeProgram\fR,
+\fBResumeFailProgram\fR, \fBSuspendProgram\fR, or \fBRebootProgram\fR, and can
+be selected for individual requests with the "action" option to "scontrol
+power" and "scontrol reboot".
+.LP
+.nf
+PowerAction=<name> Location=<slurmctld|slurmd> Program="<path> [arguments...]"
+.fi
+.LP
+It includes the following parameters:
 
 .TP
 \fBPowerAction\fR
-Unique name for the PowerAction.
+Unique name for the action. This is the name referenced by \fBResumeProgram\fR,
+\fBResumeFailProgram\fR, \fBSuspendProgram\fR, \fBRebootProgram\fR, or the
+"action" option to scontrol.
 .IP
 
 .TP
 \fBLocation\fR
-Specifies where to run the script, supporting values "slurmd" and "slurmctld".
+Specifies where to run the program, supporting values "slurmd" and
+"slurmctld". A value of "slurmctld" runs the program on the controller as
+\fBSlurmUser\fR. A value of "slurmd" runs the program on each affected compute
+node as \fBSlurmdUser\fR.
+
+\fBNOTE\fR: Power up actions must use "slurmctld", since powered down nodes
+cannot run a "slurmd" action.
 .IP
 
 .TP
 \fBProgram\fR
-Program to be executed to perform the task of power up, power down, or reboot.
+Program to perform the task of power up, power down, or reboot.
 Arguments to be passed to the program can be included in this field.
+Slurm passes the affected node name(s) as an argument after any user-specified
+arguments. With \fBLocation=slurmd\fR, \fBSLURM_NODE_NAME\fR is also set in the
+environment.
 .IP
 
 .SH "PROLOG AND EPILOG SCRIPTS"
