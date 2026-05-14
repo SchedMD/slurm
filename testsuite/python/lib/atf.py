@@ -331,8 +331,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "step_partial_comp" in bt
         and "dest=0x0" in bt
     ):
-        # TODO: Add version when t24907 is fixed
-        failures.append(reason)
+        if get_version(component) > (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 24952: Known issue with slurmctld auth_g_destroy(): Assertion (g_context_num > 0)"
