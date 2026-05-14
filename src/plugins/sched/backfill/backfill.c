@@ -4347,6 +4347,24 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 	}
 }
 
+static int _foreach_het_job_full(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	het_job_map_t *map = arg;
+
+	if ((job_ptr->magic != JOB_MAGIC) ||
+	    (job_ptr->het_job_id != map->het_job_id))
+		return -1; /* bad job pointer */
+	if (IS_JOB_RUNNING(job_ptr))
+		return 0;
+	if (!list_find_first_ro(map->het_job_rec_list, _het_job_find_rec,
+				&job_ptr->job_id) ||
+	    !_job_runnable_now(job_ptr))
+		return -1;
+
+	return 0;
+}
+
 /*
  * Return TRUE if we have expected start times for all components of a hetjob
  * and all components are valid and runable.
@@ -4356,36 +4374,16 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
  */
 static bool _het_job_full(het_job_map_t *map)
 {
-	job_record_t *het_job_ptr, *job_ptr;
-	list_itr_t *iter;
-	bool rc = true;
+	job_record_t *het_job_ptr;
 
 	het_job_ptr = find_job_record(map->het_job_id);
 	if (!het_job_ptr || !het_job_ptr->het_job_list ||
 	    (!IS_JOB_RUNNING(het_job_ptr) &&
-	     !_job_runnable_now(het_job_ptr))) {
+	     !_job_runnable_now(het_job_ptr)))
 		return false;
-	}
 
-	iter = list_iterator_create(het_job_ptr->het_job_list);
-	while ((job_ptr = list_next(iter))) {
-		if ((job_ptr->magic != JOB_MAGIC) ||
-		    (job_ptr->het_job_id != map->het_job_id)) {
-			rc = false;	/* bad job pointer */
-			break;
-		}
-		if (IS_JOB_RUNNING(job_ptr))
-			continue;
-		if (!list_find_first(map->het_job_rec_list, _het_job_find_rec,
-				     &job_ptr->job_id) ||
-		    !_job_runnable_now(job_ptr)) {
-			rc = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
+	return (list_for_each_ro(het_job_ptr->het_job_list,
+				 _foreach_het_job_full, map) >= 0);
 }
 
 /*
