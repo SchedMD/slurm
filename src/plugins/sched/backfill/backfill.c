@@ -210,6 +210,11 @@ typedef struct {
 	uint32_t prio;
 } hetjob_prio_args_t;
 
+typedef struct {
+	uint32_t exclude_job_id;
+	time_t latest_start;
+} het_job_start_compute_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -4217,6 +4222,18 @@ static void _het_job_start_clear(void)
 	list_delete_all(het_job_list, _delete_or_reset_het_job_map, NULL);
 }
 
+static int _foreach_max_latest_start(void *x, void *arg)
+{
+	het_job_rec_t *rec = x;
+	het_job_start_compute_args_t *args = arg;
+
+	if (rec->job_id == args->exclude_job_id)
+		return 0;
+	args->latest_start = MAX(args->latest_start, rec->latest_start);
+
+	return 0;
+}
+
 /*
  * For a given het_job_map_t record, determine the earliest that it can start,
  * which is the time at which it's latest starting component begins. The
@@ -4226,19 +4243,14 @@ static void _het_job_start_clear(void)
 static time_t _het_job_start_compute(het_job_map_t *map,
 				     uint32_t exclude_job_id)
 {
-	list_itr_t *iter;
-	het_job_rec_t *rec;
-	time_t latest_start = map->prev_start;
+	het_job_start_compute_args_t args = {
+		.exclude_job_id = exclude_job_id,
+		.latest_start = map->prev_start,
+	};
 
-	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = list_next(iter))) {
-		if (rec->job_id == exclude_job_id)
-			continue;
-		latest_start = MAX(latest_start, rec->latest_start);
-	}
-	list_iterator_destroy(iter);
+	list_for_each(map->het_job_rec_list, _foreach_max_latest_start, &args);
 
-	return latest_start;
+	return args.latest_start;
 }
 
 /*
