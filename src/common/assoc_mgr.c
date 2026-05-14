@@ -79,6 +79,7 @@ typedef struct {
 
 typedef struct {
 	buf_t *buffer;
+	uint32_t count;
 	foreach_assoc_filter_t filter;
 	uint16_t protocol_version;
 	list_t *qos_list;
@@ -3671,50 +3672,37 @@ extern void assoc_mgr_get_shares(void *db_conn,
 	 */
 }
 
-static int _foreach_filter_assoc_for_info(void *x, void *arg)
+static int _foreach_pack_assoc_for_info(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *assoc_rec = x;
 	foreach_info_pack_msg_t *state = arg;
 
-	if (_assoc_passes_filter(assoc_rec, &state->filter))
-		list_append(state->filter.ret_list, assoc_rec);
+	if (!_assoc_passes_filter(assoc_rec, &state->filter))
+		return 0;
 
-	return 0;
-}
-
-static int _foreach_pack_assoc_with_usage(void *x, void *arg)
-{
-	foreach_info_pack_msg_t *state = arg;
-
-	slurmdb_pack_assoc_rec_with_usage(x, state->protocol_version,
+	slurmdb_pack_assoc_rec_with_usage(assoc_rec, state->protocol_version,
 					  state->buffer);
+	state->count++;
 	return 0;
 }
 
-static int _foreach_filter_qos_for_info(void *x, void *arg)
+static int _foreach_pack_qos_for_info(void *x, void *arg)
 {
-	char *qos_name = x;
-	foreach_info_pack_msg_t *state = arg;
-	slurmdb_qos_rec_t *qos_rec;
-
-	qos_rec = list_find_first_ro(assoc_mgr_qos_list,
-				     slurmdb_find_qos_in_list_by_name,
-				     qos_name);
-	if (qos_rec)
-		list_append(state->filter.ret_list, qos_rec);
-	return 0;
-}
-
-static int _foreach_pack_qos_with_usage(void *x, void *arg)
-{
+	slurmdb_qos_rec_t *qos_rec = x;
 	foreach_info_pack_msg_t *state = arg;
 
-	slurmdb_pack_qos_rec_with_usage(x, state->protocol_version,
+	if (state->qos_list &&
+	    !list_find_first_ro(state->qos_list, slurm_find_char_in_list,
+				qos_rec->name))
+		return 0;
+
+	slurmdb_pack_qos_rec_with_usage(qos_rec, state->protocol_version,
 					state->buffer);
+	state->count++;
 	return 0;
 }
 
-static int _foreach_filter_user_for_info(void *x, void *arg)
+static int _foreach_pack_user_for_info(void *x, void *arg)
 {
 	slurmdb_user_rec_t *user_rec = x;
 	foreach_info_pack_msg_t *state = arg;
@@ -3729,23 +3717,35 @@ static int _foreach_filter_user_for_info(void *x, void *arg)
 				slurm_find_char_in_list, user_rec->name))
 		return 0;
 
-	list_append(state->filter.ret_list, user_rec);
+	slurmdb_pack_user_rec(user_rec, state->protocol_version, state->buffer);
+	state->count++;
 	return 0;
 }
 
-static int _foreach_pack_user(void *x, void *arg)
+/*
+ * Reserve a slot in the buffer for a count, run [packer] over [list], then
+ * backpatch the slot with state->count.
+ */
+static void _pack_filtered_section(list_t *list, ListForF packer,
+				   foreach_info_pack_msg_t *state)
 {
-	foreach_info_pack_msg_t *state = arg;
+	uint32_t count_offset = get_buf_offset(state->buffer);
+	uint32_t end_offset;
 
-	slurmdb_pack_user_rec(x, state->protocol_version, state->buffer);
-	return 0;
+	pack32(0, state->buffer);
+	state->count = 0;
+	if (list)
+		list_for_each_ro(list, packer, state);
+	end_offset = get_buf_offset(state->buffer);
+	set_buf_offset(state->buffer, count_offset);
+	pack32(state->count, state->buffer);
+	set_buf_offset(state->buffer, end_offset);
 }
 
 extern buf_t *assoc_mgr_info_get_pack_msg(
 	assoc_mgr_info_request_msg_t *msg, uid_t uid,
 	void *db_conn, uint16_t protocol_version)
 {
-	list_t *tmp_list;
 	slurmdb_user_rec_t user = { .uid = uid };
 	foreach_info_pack_msg_t state = {
 		.filter = { .is_admin = true, .user = &user },
@@ -3790,52 +3790,23 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 
 	packstr_array(assoc_mgr_tres_name_array, g_tres_count, buffer);
 
-	state.filter.ret_list = list_create(NULL);
-
 	assoc_mgr_lock(&locks);
 
-	if (flags & ASSOC_MGR_INFO_FLAG_ASSOC)
-		list_for_each(assoc_mgr_assoc_list,
-			      _foreach_filter_assoc_for_info, &state);
-
 	/* pack the associations requested/allowed */
-	pack32(list_count(state.filter.ret_list), buffer);
-	list_for_each(state.filter.ret_list, _foreach_pack_assoc_with_usage,
-		      &state);
-	list_flush(state.filter.ret_list);
-
-	/* now filter out the qos */
-	if (!(flags & ASSOC_MGR_INFO_FLAG_QOS)) {
-		tmp_list = state.filter.ret_list;
-	} else if (state.qos_list) {
-		list_for_each(state.qos_list, _foreach_filter_qos_for_info,
-			      &state);
-		tmp_list = state.filter.ret_list;
-	} else {
-		tmp_list = assoc_mgr_qos_list;
-	}
+	_pack_filtered_section((flags & ASSOC_MGR_INFO_FLAG_ASSOC) ?
+			       assoc_mgr_assoc_list : NULL,
+			       _foreach_pack_assoc_for_info, &state);
 
 	/* pack the qos requested */
-	if (tmp_list) {
-		pack32(list_count(tmp_list), buffer);
-		list_for_each(tmp_list, _foreach_pack_qos_with_usage, &state);
-	} else {
-		pack32(0, buffer);
-	}
-
-	if (state.qos_list)
-		list_flush(state.filter.ret_list);
-
-	/* now filter out the users */
-	if ((flags & ASSOC_MGR_INFO_FLAG_USERS) && assoc_mgr_user_list)
-		list_for_each(assoc_mgr_user_list,
-			      _foreach_filter_user_for_info, &state);
+	_pack_filtered_section((flags & ASSOC_MGR_INFO_FLAG_QOS) ?
+			       assoc_mgr_qos_list : NULL,
+			       _foreach_pack_qos_for_info, &state);
 
 	/* pack the users requested/allowed */
-	pack32(list_count(state.filter.ret_list), buffer);
-	list_for_each(state.filter.ret_list, _foreach_pack_user, &state);
-
-	FREE_NULL_LIST(state.filter.ret_list);
+	_pack_filtered_section(((flags & ASSOC_MGR_INFO_FLAG_USERS) &&
+				assoc_mgr_user_list) ?
+			       assoc_mgr_user_list : NULL,
+			       _foreach_pack_user_for_info, &state);
 
 	assoc_mgr_unlock(&locks);
 
