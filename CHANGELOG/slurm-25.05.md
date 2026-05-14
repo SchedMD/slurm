@@ -1,3 +1,27 @@
+## Changes in 25.05.8
+
+* slurmctld - Correct race condition during reconfigure and creating new cluster in slurmdbd that could cause both daemons to deadlock.
+* slurmctld - Reject all job submissions as reserved user or group nobody(99).
+* sbatch,srun,salloc - Reject arg --uid=99.
+* sbatch,srun,salloc - Reject arg --gid=99.
+* slurmctld - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmd - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmstepd - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* srun - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmdbd - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmctld - Wait for forwarding threads to complete before shutdown to avoid crashing due to NULL dereferences or using unloaded plugins.
+* cons_tres - Prevent slurmctld SIGFPE during node selection.
+* slurmctld - Fix possible hang during reconfigure due to slow client I/O due to timeout not being enforced.
+* slurmctld - Fix possible hang during shutdown due to slow client I/O due to timeout not being enforced.
+* slurmctld - Avoid race condition during shutdown that could cause a crash while attempting to read from a connection.
+* slurmctld - Fix crash on startup due to race condition when I/O is processed before the connection (conn) plugin finishes initialization.
+* slurmdbd - Fix crash from race condition during shutdown when a persistent connection closes its database connection after the accounting_storage plugin has already unloaded.
+* Prevent deadlock when replacing nodes in reservations.
+* Fix gcc-16 build errors.
+* Fix build errors with recent versions of libcurl (8.16+).
+* Fix catching invalid gpu-freq numbered values.
+* Fix slurmd >= 25.05 crash on HetJob step launches from srun <= 24.11.
+
 ## Changes in 25.05.7
 
 * Fix regression from af2c0bd which caused usercpu and systemcpu to be missing for job steps.
