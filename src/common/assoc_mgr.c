@@ -3504,40 +3504,49 @@ extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
 	return false;
 }
 
+static bool _assoc_passes_filter(slurmdb_assoc_rec_t *assoc,
+				 foreach_assoc_filter_t *filter)
+{
+	if (filter->user_list && assoc->user &&
+	    !list_find_first_ro(filter->user_list, slurm_find_char_in_list,
+				assoc->user))
+		return false;
+
+	if (filter->acct_list &&
+	    !list_find_first_ro(filter->acct_list, slurm_find_char_in_list,
+				assoc->acct))
+		return false;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_USAGE) &&
+	    !filter->is_admin &&
+	    (!assoc->user || xstrcmp(assoc->user, filter->user->name))) {
+		if (!filter->user->coord_accts) {
+			debug4("This user isn't a coord.");
+			return false;
+		}
+
+		if (!assoc->acct) {
+			debug("No account name given in association.");
+			return false;
+		}
+
+		if (!list_find_first_ro(filter->user->coord_accts,
+					assoc_mgr_find_coord_in_user,
+					assoc->acct))
+			return false;
+	}
+	return true;
+}
+
 static int _foreach_get_share(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *assoc = x;
 	foreach_assoc_filter_t *state = arg;
 	assoc_shares_object_t *share;
 
-	if (state->user_list && assoc->user &&
-	    !list_find_first_ro(state->user_list, slurm_find_char_in_list,
-				assoc->user))
+	if (!_assoc_passes_filter(assoc, state))
 		return 0;
 
-	if (state->acct_list &&
-	    !list_find_first_ro(state->acct_list, slurm_find_char_in_list,
-				assoc->acct))
-		return 0;
-
-	if ((slurm_conf.private_data & PRIVATE_DATA_USAGE) &&
-	    !state->is_admin &&
-	    (!assoc->user || xstrcmp(assoc->user, state->user->name))) {
-		if (!state->user->coord_accts) {
-			debug4("This user isn't a coord.");
-			return 0;
-		}
-
-		if (!assoc->acct) {
-			debug("No account name given in association.");
-			return 0;
-		}
-
-		if (!list_find_first_ro(state->user->coord_accts,
-					assoc_mgr_find_coord_in_user,
-					assoc->acct))
-			return 0;
-	}
 
 	share = xmalloc(sizeof(assoc_shares_object_t));
 	list_append(state->ret_list, share);
