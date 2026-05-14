@@ -1672,12 +1672,21 @@ static void _init_decay_vars()
 	_read_last_decay_ran(&g_last_ran, &g_last_reset);
 }
 
+static int _foreach_sum_sibling_usage_norm(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *sibling = x;
+	long double *ratio_s = arg;
+
+	if (sibling->shares_raw != SLURMDB_FS_USE_PARENT)
+		*ratio_s += sibling->usage->usage_norm;
+
+	return 0;
+}
+
 static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	long double ratio_p, ratio_l, k, f, ratio_s;
 	slurmdb_assoc_rec_t *parent_assoc = NULL;
-	list_itr_t *sib_itr = NULL;
-	slurmdb_assoc_rec_t *sibling = NULL;
 	char *child;
 	char *child_str;
 
@@ -1725,13 +1734,8 @@ static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 			   parent_assoc->usage->shares_norm);
 
 		ratio_s = 0;
-		sib_itr = list_iterator_create(
-			parent_assoc->usage->children_list);
-		while ((sibling = list_next(sib_itr))) {
-			if(sibling->shares_raw != SLURMDB_FS_USE_PARENT)
-				ratio_s += sibling->usage->usage_norm;
-		}
-		list_iterator_destroy(sib_itr);
+		list_for_each_ro(parent_assoc->usage->children_list,
+				 _foreach_sum_sibling_usage_norm, &ratio_s);
 		ratio_s /= parent_assoc->usage->shares_norm;
 
 		ratio_l = (assoc->usage->usage_norm /
