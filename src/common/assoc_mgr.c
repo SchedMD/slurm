@@ -3520,10 +3520,9 @@ static int _foreach_get_share(void *x, void *arg)
 				assoc->acct))
 		return 0;
 
-	if ((slurm_conf.private_data & PRIVATE_DATA_USAGE) && !state->is_admin) {
-		if (assoc->user && !xstrcmp(assoc->user, state->user->name))
-			goto is_user;
-
+	if ((slurm_conf.private_data & PRIVATE_DATA_USAGE) &&
+	    !state->is_admin &&
+	    (!assoc->user || xstrcmp(assoc->user, state->user->name))) {
 		if (!state->user->coord_accts) {
 			debug4("This user isn't a coord.");
 			return 0;
@@ -3539,7 +3538,7 @@ static int _foreach_get_share(void *x, void *arg)
 					assoc->acct))
 			return 0;
 	}
-is_user:
+
 	share = xmalloc(sizeof(assoc_shares_object_t));
 	list_append(state->ret_list, share);
 
