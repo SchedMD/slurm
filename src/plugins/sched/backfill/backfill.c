@@ -1302,24 +1302,11 @@ static int _yield_locks(int64_t usec)
  * available partitions may have changed when locks were released */
 static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr)
 {
-	part_record_t *avail_part_ptr;
-	list_itr_t *part_iterator;
-	bool rc = false;
+	if (job_ptr->part_ptr_list)
+		return list_find_first_ro(job_ptr->part_ptr_list,
+					  slurm_find_ptr_in_list, part_ptr);
 
-	if (job_ptr->part_ptr_list) {
-		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-		while ((avail_part_ptr = list_next(part_iterator))) {
-			if (avail_part_ptr == part_ptr) {
-				rc = true;
-				break;
-			}
-		}
-		list_iterator_destroy(part_iterator);
-	} else if (job_ptr->part_ptr == part_ptr) {
-		rc = true;
-	}
-
-	return rc;
+	return (job_ptr->part_ptr == part_ptr);
 }
 
 /* Determine if job in the backfill queue is still runnable.
