@@ -226,12 +226,37 @@ static int _apply_decay(double real_decay)
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
+static int _foreach_reset_assoc_usage(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	assoc->usage->usage_raw = 0;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		assoc->usage->usage_tres_raw[i] = 0;
+	assoc->usage->grp_used_wall = 0;
+
+	if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
+		slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+		assoc->leaf_usage = NULL;
+	}
+
+	return 0;
+}
+
+static int _foreach_reset_qos_usage(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+
+	qos->usage->usage_raw = 0;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		qos->usage->usage_tres_raw[i] = 0;
+	qos->usage->grp_used_wall = 0;
+
+	return 0;
+}
+
 static int _reset_usage(void)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
-	int i;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -242,31 +267,13 @@ static int _reset_usage(void)
 
 	xassert(assoc_mgr_assoc_list);
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	/* We want to do this to all associations including root.
+	/*
+	 * We want to do this to all associations including root.
 	 * All usage_raws are calculated from the bottom up.
 	 */
-	while ((assoc = list_next(itr))) {
-		assoc->usage->usage_raw = 0;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			assoc->usage->usage_tres_raw[i] = 0;
-		assoc->usage->grp_used_wall = 0;
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_reset_assoc_usage, NULL);
+	list_for_each_ro(assoc_mgr_qos_list, _foreach_reset_qos_usage, NULL);
 
-		if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
-			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
-			assoc->leaf_usage = NULL;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	itr = list_iterator_create(assoc_mgr_qos_list);
-	while ((qos = list_next(itr))) {
-		qos->usage->usage_raw = 0;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			qos->usage->usage_tres_raw[i] = 0;
-		qos->usage->grp_used_wall = 0;
-	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
