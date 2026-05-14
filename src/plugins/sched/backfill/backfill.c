@@ -1436,47 +1436,58 @@ static uint32_t _hetjob_calc_prio(job_record_t *het_leader)
 	return args.prio;
 }
 
+static int _foreach_calc_prio_tier_part(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	hetjob_prio_args_t *args = arg;
+
+	_adjust_hetjob_prio(&args->prio, part_ptr->priority_tier);
+	args->cnt++;
+
+	return 0;
+}
+
+static int _foreach_hetjob_calc_prio_tier(void *x, void *arg)
+{
+	job_record_t *het_comp = x;
+	hetjob_prio_args_t *args = arg;
+
+	if (het_comp->part_ptr_list &&
+	    list_count(het_comp->part_ptr_list)) {
+		list_for_each_ro(het_comp->part_ptr_list,
+				 _foreach_calc_prio_tier_part, args);
+	} else {
+		_adjust_hetjob_prio(&args->prio,
+				    het_comp->part_ptr->priority_tier);
+		args->cnt++;
+	}
+	if ((bf_hetjob_prio & HETJOB_PRIO_MIN) && (args->prio == 0))
+		return -1; /* Minimum found. */
+	if ((bf_hetjob_prio & HETJOB_PRIO_MAX) &&
+	    (args->prio == (NO_VAL16 - 1)))
+		return -1; /* Maximum found. */
+
+	return 0;
+}
+
 /*
  * IN: job_record pointer of a hetjob leader (caller responsible)
  * RET: [min|max|avg] PriorityTier of all components from same hetjob
  */
 static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader)
 {
-	job_record_t *het_comp = NULL;
-	part_record_t *part_ptr = NULL;
-	uint32_t prio_tier = 0, tmp = 0, cnt = 0;
-	list_itr_t *iter = NULL, *iter2 = NULL;
+	hetjob_prio_args_t args = { 0 };
 
 	if (bf_hetjob_prio & HETJOB_PRIO_MIN)
-		prio_tier = NO_VAL16 - 1;
+		args.prio = NO_VAL16 - 1;
 
-	iter = list_iterator_create(het_leader->het_job_list);
-	while ((het_comp = list_next(iter))) {
-		if (het_comp->part_ptr_list &&
-		    list_count(het_comp->part_ptr_list)) {
-			iter2 = list_iterator_create(het_comp->part_ptr_list);
-			while ((part_ptr = list_next(iter2))) {
-				tmp = part_ptr->priority_tier;
-				_adjust_hetjob_prio(&prio_tier, tmp);
-				cnt++;
-			}
-			list_iterator_destroy(iter2);
-		} else {
-			tmp = het_comp->part_ptr->priority_tier;
-			_adjust_hetjob_prio(&prio_tier, tmp);
-			cnt++;
-		}
-		if ((bf_hetjob_prio & HETJOB_PRIO_MIN) && (prio_tier == 0))
-			break; /* Minimum found. */
-		if ((bf_hetjob_prio & HETJOB_PRIO_MAX) &&
-		    (prio_tier == (NO_VAL16 - 1)))
-			break; /* Maximum found. */
-	}
-	list_iterator_destroy(iter);
-	if (prio_tier && cnt && (bf_hetjob_prio & HETJOB_PRIO_AVG))
-		prio_tier /= cnt;
+	list_for_each_ro(het_leader->het_job_list,
+			 _foreach_hetjob_calc_prio_tier, &args);
 
-	return prio_tier;
+	if (args.prio && args.cnt && (bf_hetjob_prio & HETJOB_PRIO_AVG))
+		args.prio /= args.cnt;
+
+	return args.prio;
 }
 
 /*
