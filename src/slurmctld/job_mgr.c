@@ -16766,6 +16766,13 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->resv_ports);
 
+	/*
+	 * Rebuild license_list from the request (licenses_allocated was cleared
+	 * above). validate=true checks configured licenses and holds if the
+	 * request is invalid; busy licenses pend later with WAIT_LICENSES.
+	 */
+	restore_job_licenses(job_ptr, true);
+
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;
 
