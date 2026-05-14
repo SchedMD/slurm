@@ -4972,7 +4972,8 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	/*
 	 * Log current table of hetjob start times by partition
 	 */
-	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) &&
+	    (slurm_conf.debug_flags & DEBUG_FLAG_HETJOB))
 		list_for_each_ro(deadlock_global_list,
 				 _foreach_log_deadlock_part, NULL);
 
