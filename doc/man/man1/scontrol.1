@@ -206,6 +206,17 @@ Get IP addresses of <\fINODES\fR> from slurmctld.
 .IP
 
 .TP
+\fBgetent\fR [<\fINodeName\fR>]
+Print entities (users and groups) associated with each step
+running on the host that invokes this command. This contacts any
+slurmstepd's running locally, and does not contact slurmctld.
+Use <\fINodeName\fR> if using \-\-enable\-multiple\-slurmd.
+
+\fBNOTE\fR: This command will not work for any steps launched while
+\fBLaunchParameters=disable_send_gids\fR is set in slurm.conf.
+.IP
+
+.TP
 \fBhelp\fR
 Display a description of scontrol options and commands.
 .IP
@@ -237,7 +248,7 @@ Use <\fINodeName\fR> if using --enable-multiple-slurmd.
 
 .TP
 \fBlistpids\fR [<\fIjob_id\fR>[.<\fIstep_id\fR>]] [<\fINodeName\fR>]
-Print a listing of the process IDs in a job step (if JOBID.STEPID is provided),
+Print process IDs in a job step (if JOBID.STEPID is provided),
 or all of the job steps in a job (if \fIjob_id\fP is provided), or all of the job
 steps in all of the jobs on the local node (if \fIjob_id\fP is not provided
 or \fIjob_id\fP is "*"). This will work only with processes on the node on
