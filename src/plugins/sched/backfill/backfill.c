@@ -1490,24 +1490,21 @@ static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader)
 	return args.prio;
 }
 
+static int _find_hetcomp_with_resv(void *x, void *key)
+{
+	job_record_t *het_comp = x;
+
+	return (het_comp->resv_id != 0);
+}
+
 /*
  * IN: job_record pointer of a hetjob leader (caller responsible)
  * RET: true if any component from same hetjob has a reservation
  */
 static bool _hetjob_any_resv(job_record_t *het_leader)
 {
-	job_record_t *het_comp = NULL;
-	list_itr_t *iter = NULL;
-	bool any_resv = false;
-
-	iter = list_iterator_create(het_leader->het_job_list);
-	while (!any_resv && (het_comp = list_next(iter))) {
-		if (het_comp->resv_id != 0)
-			any_resv = true;
-	}
-	list_iterator_destroy(iter);
-
-	return any_resv;
+	return list_find_first_ro(het_leader->het_job_list,
+				  _find_hetcomp_with_resv, NULL);
 }
 
 static int _foreach_het_job_details(void *x, void *arg)
