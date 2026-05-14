@@ -5461,8 +5461,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		error_in_daemon("UnkillableStepTimeout must be at least 5 times greater than MessageTimeout, otherwise nodes may go down with the reason \"KillTaskFailed\". Current values: UnkillableStepTimeout=%u, MessageTimeout=%u",
 				conf->unkillable_timeout, conf->msg_timeout);
 
-	if (!s_p_get_string(&conf->url_parser_type, "UrlParserType", hashtbl))
-		conf->url_parser_type = xstrdup(DEFAULT_URL_PARSER_TYPE);
+	s_p_get_string(&conf->url_parser_type, "UrlParserType", hashtbl);
 
 	(void) s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
 
