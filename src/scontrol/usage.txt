@@ -44,6 +44,8 @@ scontrol [<OPTION>] [<COMMAND>]
                               descriptive string.
      exit                     terminate scontrol
      fsdampeningfactor <factor> Set the FairShareDampeningFactor in slurmctld
+     getent [<NodeName>]      List entities associated with each step present
+                              on the host.
      help                     print this description of use.
      hold <job_list>          prevent specified job from starting. <job_list>
 			      is either a space separate list of job IDs or
