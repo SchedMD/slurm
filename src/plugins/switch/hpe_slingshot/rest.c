@@ -67,7 +67,7 @@ static void _log_rest_detail(const char *name, const char *method,
 {
 	json_object *detail = NULL;
 
-	if (!(detail = json_object_object_get(respjson, "detail"))) {
+	if (!json_object_object_get_ex(respjson, "detail", &detail)) {
 		error("%s %s %s status %ld no error details",
 			name, method, url, status);
 	} else {
@@ -458,8 +458,9 @@ static bool _get_auth_header(slingshot_rest_conn_t *conn,
 		}
 
 		/* Create an authentication header from the access_token */
-		tokjson = json_object_object_get(respjson, "access_token");
-		if (!tokjson || !(token = json_object_get_string(tokjson))) {
+		if (!json_object_object_get_ex(respjson, "access_token",
+					       &tokjson) ||
+		    !(token = json_object_get_string(tokjson))) {
 			error("Couldn't get auth token from OAUTH service: json='%s'",
 			      json_object_to_json_string(respjson));
 			goto err;
