@@ -205,6 +205,11 @@ typedef struct {
 	bool *has_xand;
 } feature_count_args_t;
 
+typedef struct {
+	uint32_t cnt;
+	uint32_t prio;
+} hetjob_prio_args_t;
+
 /*********************** local variables *********************/
 static bool stop_backfill = false;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1377,53 +1382,58 @@ static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val)
 		*prio += val;
 }
 
+static int _foreach_hetjob_calc_prio(void *x, void *arg)
+{
+	job_record_t *het_comp = x;
+	hetjob_prio_args_t *args = arg;
+	uint32_t tmp, nparts;
+
+	if (het_comp->part_ptr_list &&
+	    het_comp->prio_mult &&
+	    het_comp->prio_mult->priority_array &&
+	    (nparts = list_count(het_comp->part_ptr_list))) {
+		for (uint32_t i = 0; i < nparts; i++) {
+			tmp = het_comp->prio_mult->priority_array[i];
+			if (tmp == 0) { /* job held */
+				args->prio = 0;
+				return -1;
+			}
+			_adjust_hetjob_prio(&args->prio, tmp);
+			args->cnt++;
+		}
+	} else {
+		tmp = het_comp->priority;
+		if (tmp == 0) { /* job held */
+			args->prio = 0;
+			return -1;
+		}
+		_adjust_hetjob_prio(&args->prio, tmp);
+		args->cnt++;
+	}
+	if ((bf_hetjob_prio & HETJOB_PRIO_MIN) && (args->prio == 1))
+		return -1; /* Can not get lower */
+
+	return 0;
+}
+
 /*
  * IN: job_record pointer of a hetjob leader (caller responsible)
  * RET: [min|max|avg] Priority of all components from same hetjob
  */
 static uint32_t _hetjob_calc_prio(job_record_t *het_leader)
 {
-	job_record_t *het_comp = NULL;
-	uint32_t prio = 0, tmp = 0, cnt = 0, i = 0, nparts = 0;
-	list_itr_t *iter = NULL;
+	hetjob_prio_args_t args = { 0 };
 
 	if (bf_hetjob_prio & HETJOB_PRIO_MIN)
-		prio = INFINITE;
+		args.prio = INFINITE;
 
-	iter = list_iterator_create(het_leader->het_job_list);
-	while ((het_comp = list_next(iter))) {
-		if (het_comp->part_ptr_list &&
-		    het_comp->prio_mult &&
-		    het_comp->prio_mult->priority_array &&
-		    (nparts = list_count(het_comp->part_ptr_list))) {
-			for (i = 0; i < nparts; i++) {
-				tmp = het_comp->prio_mult->priority_array[i];
-				if (tmp == 0) { /* job held */
-					prio = 0;
-					break;
-				}
-				_adjust_hetjob_prio(&prio, tmp);
-				cnt++;
-			}
-			if (prio == 0) /* job held */
-				break;
-		} else {
-			tmp = het_comp->priority;
-			if (tmp == 0) { /* job held */
-				prio = 0;
-				break;
-			}
-			_adjust_hetjob_prio(&prio, tmp);
-			cnt++;
-		}
-		if ((bf_hetjob_prio & HETJOB_PRIO_MIN) && (prio == 1))
-			break; /* Can not get lower */
-	}
-	list_iterator_destroy(iter);
-	if (prio && cnt && (bf_hetjob_prio & HETJOB_PRIO_AVG))
-		prio /= cnt;
+	list_for_each_ro(het_leader->het_job_list, _foreach_hetjob_calc_prio,
+			 &args);
 
-	return prio;
+	if (args.prio && args.cnt && (bf_hetjob_prio & HETJOB_PRIO_AVG))
+		args.prio /= args.cnt;
+
+	return args.prio;
 }
 
 /*
