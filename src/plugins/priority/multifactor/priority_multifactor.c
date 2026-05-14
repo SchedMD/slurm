@@ -351,24 +351,29 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
  *
  * NOTE: acct_mgr_assoc_lock must be locked before this is called.
  */
+static int _set_children_usage_efctv(list_t *children_list);
+
+static int _foreach_set_usage_efctv(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	if (assoc->user) {
+		assoc->usage->usage_efctv = (long double) NO_VAL;
+		return 0;
+	}
+	priority_p_set_assoc_usage(assoc);
+	_set_children_usage_efctv(assoc->usage->children_list);
+
+	return 0;
+}
+
 static int _set_children_usage_efctv(list_t *children_list)
 {
-	slurmdb_assoc_rec_t *assoc = NULL;
-	list_itr_t *itr = NULL;
-
 	if (!children_list || !list_count(children_list))
 		return SLURM_SUCCESS;
 
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		if (assoc->user) {
-			assoc->usage->usage_efctv = (long double)NO_VAL;
-			continue;
-		}
-		priority_p_set_assoc_usage(assoc);
-		_set_children_usage_efctv(assoc->usage->children_list);
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(children_list, _foreach_set_usage_efctv, NULL);
+
 	return SLURM_SUCCESS;
 }
 
