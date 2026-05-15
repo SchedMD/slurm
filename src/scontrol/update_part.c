@@ -187,25 +187,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			 * Exact "Exclusive" (not ExclusiveUser/ExclusiveTopo).
 			 * Single token only: NO, NODE, USER, or TOPO.
 			 */
-			if ((xstrcasecmp(val, "NO") == 0) ||
-			    (xstrcasecmp(val, "NONE") == 0)) {
-				part_msg_ptr->max_share = 1;
-				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			} else if (xstrcasecmp(val, "NODE") == 0) {
-				part_msg_ptr->max_share = 0;
-				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			} else if (xstrcasecmp(val, "USER") == 0) {
-				part_msg_ptr->max_share = 1;
-				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
-				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			} else if (xstrcasecmp(val, "TOPO") == 0) {
-				/* TOPO implies NODE */
-				part_msg_ptr->max_share = 0;
-				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
-			} else {
+			if (parse_partition_exclusive(val,
+						      (partition_info_t *)
+							      part_msg_ptr) !=
+			    SLURM_SUCCESS) {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable Exclusive values are NO, NODE, USER, TOPO");

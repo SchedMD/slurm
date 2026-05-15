@@ -1801,3 +1801,30 @@ extern bool valid_runtime_directory(char *runtime_dir)
 
 	return true;
 }
+
+extern int parse_partition_exclusive(const char *val, partition_info_t *part)
+{
+	xassert(val);
+	xassert(part);
+
+	if ((xstrcasecmp(val, "NO") == 0) || (xstrcasecmp(val, "NONE") == 0)) {
+		part->max_share = 1;
+		part->flags |= PART_FLAG_EXC_USER_CLR;
+		part->flags |= PART_FLAG_EXC_TOPO_CLR;
+	} else if (xstrcasecmp(val, "NODE") == 0) {
+		part->max_share = 0;
+		part->flags |= PART_FLAG_EXC_USER_CLR;
+		part->flags |= PART_FLAG_EXC_TOPO_CLR;
+	} else if (xstrcasecmp(val, "USER") == 0) {
+		part->max_share = 1;
+		part->flags |= PART_FLAG_EXCLUSIVE_USER;
+		part->flags |= PART_FLAG_EXC_TOPO_CLR;
+	} else if (xstrcasecmp(val, "TOPO") == 0) {
+		part->max_share = 0;
+		part->flags |= PART_FLAG_EXC_USER_CLR;
+		part->flags |= PART_FLAG_EXCLUSIVE_TOPO;
+	} else
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
