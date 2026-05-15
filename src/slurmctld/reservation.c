@@ -819,7 +819,14 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->users = src_resv->users;
 	src_resv->users = NULL;
 
+	for (i = 0; i < dest_resv->user_cnt; i++)
+		xfree(dest_resv->username_list[i]);
+	xfree(dest_resv->username_list);
+	dest_resv->username_list = src_resv->username_list;
+	src_resv->username_list = NULL;
+
 	dest_resv->user_cnt = src_resv->user_cnt;
+	src_resv->user_cnt = 0;
 	xfree(dest_resv->user_list);
 	dest_resv->user_list = src_resv->user_list;
 	src_resv->user_list = NULL;
@@ -2166,9 +2173,15 @@ static int _handle_add_remove_names(
 			for (j=0; j < *object_cnt; j++) {
 				switch (not_flag) {
 				case RESV_CTLD_USER_NOT:
-					found_it = _check_uid(
-						resv_ptr->user_list[j],
-						uid_list[i]);
+					if (resv_ptr->user_list[j] != NO_VAL)
+						found_it = _check_uid(
+							resv_ptr->user_list[j],
+							uid_list[i]);
+					else
+						found_it = _check_char(
+							resv_ptr->username_list
+								[j],
+							alter_list[i]);
 					break;
 				case RESV_CTLD_ACCT_NOT:
 					found_it = _check_char(
@@ -2194,6 +2207,8 @@ static int _handle_add_remove_names(
 				case RESV_CTLD_USER_NOT:
 					resv_ptr->user_list[k] =
 						resv_ptr->user_list[k+1];
+					resv_ptr->username_list[k] =
+						resv_ptr->username_list[k + 1];
 					break;
 				case RESV_CTLD_ACCT_NOT:
 					resv_ptr->account_list[k] =
@@ -2214,9 +2229,15 @@ static int _handle_add_remove_names(
 			for (j=0; j<*object_cnt; j++) {
 				switch (not_flag) {
 				case RESV_CTLD_USER_NOT:
-					found_it = _check_uid(
-						resv_ptr->user_list[j],
-						uid_list[i]);
+					if (resv_ptr->user_list[j] != NO_VAL)
+						found_it = _check_uid(
+							resv_ptr->user_list[j],
+							uid_list[i]);
+					else
+						found_it = _check_char(
+							resv_ptr->username_list
+								[j],
+							alter_list[i]);
 					break;
 				case RESV_CTLD_ACCT_NOT:
 					found_it = _check_char(
@@ -2242,8 +2263,12 @@ static int _handle_add_remove_names(
 			case RESV_CTLD_USER_NOT:
 				xrecalloc(resv_ptr->user_list,
 					  (*object_cnt + 1), sizeof(uid_t));
-				resv_ptr->user_list[(*object_cnt)++] =
+				resv_ptr->user_list[(*object_cnt)] =
 					uid_list[i];
+				xrecalloc(resv_ptr->username_list,
+					  (*object_cnt + 1), sizeof(char *));
+				resv_ptr->username_list[(*object_cnt)++] =
+					xstrdup(alter_list[i]);
 				break;
 			case RESV_CTLD_ACCT_NOT:
 				xrecalloc(resv_ptr->account_list,
@@ -2537,11 +2562,14 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			u_type[u_cnt] = 3;	/* set */
 
 		if (uid_from_string(tok, &u_tmp) != SLURM_SUCCESS) {
-			info("Reservation request has invalid user %s", tok);
-			goto inval;
+			if (!_is_username_valid(tok)) {
+				info("Reservation request has invalid user %s", tok);
+				goto inval;
+			}
+			u_tmp = (uid_t) NO_VAL;
 		}
 
-		u_name[u_cnt] = tok;
+		u_name[u_cnt] = xstrdup(tok);
 		u_list[u_cnt++] = u_tmp;
 		tok = strtok_r(NULL, ",", &last);
 	}
@@ -2550,13 +2578,16 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		/* Just a reset of user list */
 		xfree(resv_ptr->users);
 		xfree(resv_ptr->user_list);
+		for (i = 0; i < resv_ptr->user_cnt; i++)
+			xfree(resv_ptr->username_list[i]);
+		xfree(resv_ptr->username_list);
 		if (users[0] != '\0')
 			resv_ptr->users = xstrdup(users);
 		resv_ptr->user_cnt  = u_cnt;
 		resv_ptr->user_list = u_list;
+		resv_ptr->username_list = u_name;
 		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 		xfree(u_cpy);
-		xfree(u_name);
 		xfree(u_type);
 		return SLURM_SUCCESS;
 	}
@@ -2567,6 +2598,8 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 inval:
 	xfree(u_cpy);
 	xfree(u_list);
+	for (i = 0; i < u_cnt; i++)
+		xfree(u_name[i]);
 	xfree(u_name);
 	xfree(u_type);
 
