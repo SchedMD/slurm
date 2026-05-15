@@ -13,11 +13,6 @@ import atf
 import os
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    atf.get_version() < (26, 5),
-    reason="PMI2 graceful termination via SIG_TERM_KILL added in 26.05",
-)
-
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
@@ -40,6 +35,10 @@ def mpich_program():
     return bin_path
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Ticket 24022: PMI2 graceful termination via SIG_TERM_KILL added in 26.05",
+)
 @pytest.mark.parametrize("trap", [False, True])
 def test_pmi2_abort_kills_failed_step(mpich_program, trap):
     """Surviving ranks are killed when an MPICH/PMI2 rank calls MPI_Abort().
