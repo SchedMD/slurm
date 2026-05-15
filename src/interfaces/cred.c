@@ -726,7 +726,7 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 	file_bcast_msg_t *bmsg = msg;
 	bool verify = false;
 
-	if (bmsg && (bmsg->block_no == 1) && !(bmsg->flags & FILE_BCAST_SO))
+	if (bmsg && (bmsg->block_no == 1))
 		verify = true;
 
 	return (*(ops.sbcast_unpack))(buffer, verify, protocol_version);
