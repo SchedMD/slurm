@@ -107,9 +107,8 @@ static bool _is_better_candidate(torus3d_candidate_t *cand,
 static void _check_anchor(torus3d_placement_t *placement, int anchor_idx,
 			  torus3d_placement_t *next_placement,
 			  topology_eval_t *topo_eval, uint32_t rem_nodes,
-			  bool check_gres, int *avail_cpu_per_node,
-			  bitstr_t *avail_cpu_set, uint32_t torus_idle_nodes,
-			  torus3d_candidate_t *best)
+			  int *avail_cpu_per_node, bitstr_t *avail_cpu_set,
+			  uint32_t torus_idle_nodes, torus3d_candidate_t *best)
 {
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	uint64_t group_weight = 0;
@@ -146,7 +145,7 @@ static void _check_anchor(torus3d_placement_t *placement, int anchor_idx,
 			break;
 		}
 
-		if (check_gres) {
+		if (topo_eval->gres_per_job) {
 			gres_sched_consec(&torus_gres, job_ptr->gres_list_req,
 					  topo_eval->avail_res_array[node_idx]
 						  ->sock_gres_list);
@@ -157,7 +156,7 @@ static void _check_anchor(torus3d_placement_t *placement, int anchor_idx,
 	}
 
 	if (candidate_valid &&
-	    (!check_gres ||
+	    (!topo_eval->gres_per_job ||
 	     gres_sched_sufficient(job_ptr->gres_list_req, torus_gres))) {
 		torus3d_candidate_t cand = {
 			.avail_nodes = topo_eval->node_map,
@@ -176,9 +175,8 @@ static void _check_anchor(torus3d_placement_t *placement, int anchor_idx,
 }
 
 static void _check_torus(torus3d_record_t *torus, topology_eval_t *topo_eval,
-			 uint32_t rem_nodes, bool check_gres,
-			 int *avail_cpu_per_node, bitstr_t *avail_cpu_set,
-			 torus3d_candidate_t *best)
+			 uint32_t rem_nodes, int *avail_cpu_per_node,
+			 bitstr_t *avail_cpu_set, torus3d_candidate_t *best)
 {
 	uint32_t torus_idle_nodes =
 		bit_overlap(topo_eval->node_map, torus->nodes_bitmap);
@@ -197,7 +195,7 @@ static void _check_torus(torus3d_record_t *torus, topology_eval_t *topo_eval,
 
 		for (int j = 0; j < placement->anchor_count; j++)
 			_check_anchor(placement, j, next_placement, topo_eval,
-				      rem_nodes, check_gres, avail_cpu_per_node,
+				      rem_nodes, avail_cpu_per_node,
 				      avail_cpu_set, torus_idle_nodes, best);
 	}
 }
@@ -239,7 +237,6 @@ static int _select_placements(topology_eval_t *topo_eval, int rem_nodes,
 
 		for (int i = 0; i < ctx->record_count; i++) {
 			_check_torus(&ctx->records[i], topo_eval, rem_nodes,
-				     topo_eval->gres_per_job,
 				     avail_cpu_per_node, avail_cpu_set, &best);
 		}
 
