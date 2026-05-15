@@ -200,7 +200,14 @@ again:
 		if (err == EMUNGE_SOCKET)
 			error("If munged is up, restart with --num-threads=10");
 
-		if (err != EMUNGE_CRED_REPLAYED) {
+		/*
+		 * An sbcast credential is presented once per file, so munged
+		 * sees it repeatedly and eventually past its own ttl. The
+		 * signed expiration carried in the credential is checked by
+		 * the caller and is the authoritative lifetime.
+		 */
+		if ((err != EMUNGE_CRED_REPLAYED) &&
+		    !(replay_okay && (err == EMUNGE_CRED_EXPIRED))) {
 			rc = err;
 			goto end_it;
 		}
@@ -210,7 +217,7 @@ again:
 			goto end_it;
 		}
 
-		debug2("We had a replayed credential, but this is expected.");
+		debug2("Credential was replayed or expired, but this is expected.");
 	}
 
 	if ((uid != slurm_conf.slurm_user_id) && (uid != 0)) {
@@ -239,10 +246,10 @@ end_it:
 	return rc;
 }
 
-static int _verify_signature(char *buffer, uint32_t buf_size, char *signature)
+static int _verify_signature(char *buffer, uint32_t buf_size, char *signature,
+			     bool replay_okay)
 {
 	int rc = SLURM_SUCCESS;
-	bool replay_okay = false;
 	buf_t *payload = NULL;
 
 #ifdef MULTIPLE_SLURMD
@@ -298,7 +305,7 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 	if (credential->signature && running_in_slurmd()) {
 		if (_verify_signature(get_buf_data(credential->buffer),
 				      credential->sig_offset,
-				      credential->signature)) {
+				      credential->signature, false)) {
 			slurm_cred_destroy(credential);
 			return NULL;
 		}
@@ -391,7 +398,7 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
 		}
 
 		if (_verify_signature(get_buf_data(buf) + cred_start,
-				      siglen, cred->signature)) {
+				      siglen, cred->signature, true)) {
 			delete_sbcast_cred(cred);
 			return NULL;
 		}
