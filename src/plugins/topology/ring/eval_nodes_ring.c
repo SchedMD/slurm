@@ -349,7 +349,7 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus,
 					    topo_eval->max_nodes);
 
-	if (!bit_set_count(topo_eval->node_map)) {
+	if (bit_ffs(topo_eval->node_map) == -1) {
 		debug("%pJ node_map is empty", job_ptr);
 		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
 		topo_eval->eval_action = EVAL_ACTION_BREAK;
