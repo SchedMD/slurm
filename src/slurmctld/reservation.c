@@ -183,6 +183,7 @@ typedef struct {
 	uint16_t protocol_version;
 	uint32_t resv_packed;
 	uid_t uid;
+	char *username;
 } foreach_pack_resv_t;
 
 typedef struct {
@@ -265,6 +266,7 @@ static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
+static char *_resolve_uid_name(uid_t uid, bool locked);
 static void _restore_resv(slurmctld_resv_t *dest_resv,
 			  slurmctld_resv_t *src_resv);
 static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
@@ -298,7 +300,8 @@ static int  _valid_job_access_resv(job_record_t *job_ptr,
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _resv_node_replace(slurmctld_resv_t *resv_ptr);
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid);
+				  list_t *user_assoc_list, uid_t uid,
+				  char *username);
 
 static void _free_resv_select_members(resv_select_t *resv_select)
 {
@@ -5116,7 +5119,8 @@ static int _foreach_pack_resv(void *x, void *arg)
 	foreach_pack_resv_t *args = arg;
 
 	if (args->check_permissions &&
-	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid))
+	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid,
+				   args->username))
 		return 0;
 
 	_pack_resv(resv_ptr, args->buffer, false, args->protocol_version);
@@ -5131,7 +5135,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	buf_t *buffer;
 	time_t now = time(NULL);
 	list_t *assoc_list = NULL;
-	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	foreach_pack_resv_t pack_args = {
 		.protocol_version = protocol_version,
 		.uid = uid,
@@ -5167,6 +5171,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 					      accounting_enforce, assoc_list)
 		    != SLURM_SUCCESS)
 			goto no_assocs;
+		pack_args.username = _resolve_uid_name(uid, true);
 	}
 
 	/* write individual reservation records */
@@ -5174,6 +5179,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 
 no_assocs:
 	if (pack_args.check_permissions) {
+		xfree(pack_args.username);
 		FREE_NULL_LIST(assoc_list);
 		assoc_mgr_unlock(&locks);
 	}
@@ -5878,7 +5884,28 @@ static bool _check_assoc_access_each(char *access_list, list_t *assoc_list)
 	return !args.found_denied && (!any_allowed || args.found_allowed);
 }
 
-static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
+/*
+ * Look up username corresponding to uid in assoc_mgr.
+ * IN uid - user id to use when looking up the username.
+ * IN locked - if the assoc_mgr read lock is locked or not.
+ * RET username that corresponds to the input uid (caller must xfree()).
+ */
+static char *_resolve_uid_name(uid_t uid, bool locked)
+{
+	slurmdb_user_rec_t user_rec, *user_ptr = NULL;
+	char *name = NULL;
+
+	memset(&user_rec, 0, sizeof(user_rec));
+	user_rec.uid = uid;
+
+	if ((assoc_mgr_fill_in_user(acct_db_conn, &user_rec, accounting_enforce,
+				    &user_ptr, locked) == SLURM_SUCCESS) &&
+	    user_ptr)
+		name = xstrdup(user_ptr->name);
+	return name;
+}
+
+static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid, char *user)
 {
 	bool user_found = false;
 	bool is_allow_list = !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT);
@@ -5887,7 +5914,12 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
 		return true;
 
 	for (int i = 0; i < resv_ptr->user_cnt; i++) {
-		if (resv_ptr->user_list[i] == uid) {
+		if (resv_ptr->user_list[i] != NO_VAL) {
+			if (resv_ptr->user_list[i] == uid) {
+				user_found = true;
+				break;
+			}
+		} else if (user && !xstrcmp(resv_ptr->username_list[i], user)) {
 			user_found = true;
 			break;
 		}
@@ -5899,7 +5931,8 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
  * Validate if the user has access to this reservation.
  */
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid)
+				  list_t *user_assoc_list, uid_t uid,
+				  char *username)
 {
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
@@ -5908,7 +5941,7 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 						user_assoc_list);
 	}
 
-	return _check_uid_access(resv_ptr, uid);
+	return _check_uid_access(resv_ptr, uid, username);
 }
 
 /*
@@ -7376,8 +7409,9 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 				  slurmctld_resv_t *resv_ptr,
 				  bool show_security_violation_error)
 {
-	bool account_good = false;
+	bool account_good = false, allowed;
 	int i;
+	char *username = NULL;
 
 	if (!resv_ptr) {
 		info("Reservation name not found (%s)", job_ptr->resv_name);
@@ -7425,7 +7459,11 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 			return SLURM_SUCCESS;
 	} else {
 no_assocs:
-		if (!_check_uid_access(resv_ptr, job_ptr->user_id))
+		username = _resolve_uid_name(job_ptr->user_id, false);
+		allowed =
+			_check_uid_access(resv_ptr, job_ptr->user_id, username);
+		xfree(username);
+		if (!allowed)
 			goto end_it;
 		if ((resv_ptr->user_cnt != 0) && (resv_ptr->account_cnt == 0))
 			return SLURM_SUCCESS;
@@ -9095,9 +9133,10 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 
 	slurmdb_assoc_rec_t assoc;
 	list_t *assoc_list = NULL;
-	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	bool found_it = false;
 	slurmctld_resv_t *resv_ptr;
+	char *username = NULL;
 
 	/* Make sure we have node write locks. */
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -9131,9 +9170,11 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	    != SLURM_SUCCESS)
 		goto end_it;
 
-	if (_validate_user_access(resv_ptr, assoc_list, uid))
+	username = _resolve_uid_name(uid, true);
+	if (_validate_user_access(resv_ptr, assoc_list, uid, username))
 		found_it = true;
 end_it:
+	xfree(username);
 	FREE_NULL_LIST(assoc_list);
 	assoc_mgr_unlock(&locks);
 
