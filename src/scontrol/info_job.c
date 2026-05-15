@@ -1748,7 +1748,7 @@ static int _print_listjobs_info(void *x, void *arg)
 	return 0;
 }
 
-static void _dump_listjobs(list_t *listjobs_list, int argc, char **argv)
+static void _dump_listjobs(list_t *listjobs_list)
 {
 	int rc;
 
@@ -1783,7 +1783,7 @@ extern void scontrol_list_jobs(int argc, char **argv)
 
 	if (!steps || !list_count(steps)) {
 		if (mime_type)
-			_dump_listjobs(NULL, argc, argv);
+			_dump_listjobs(NULL);
 		else {
 			fprintf(stderr, "No slurmstepd's found on this node\n");
 			exit_code = 1;
@@ -1801,7 +1801,7 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	list_for_each(steps, _add_to_listjobs_list, &for_each_args);
 
 	if (mime_type) {
-		_dump_listjobs(listjobs_list, argc, argv);
+		_dump_listjobs(listjobs_list);
 		goto cleanup;
 	}
 
@@ -1898,7 +1898,7 @@ static void _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id,
 	close(fd);
 }
 
-static void _dump_listpids(list_t *listpids_list, int argc, char **argv)
+static void _dump_listpids(list_t *listpids_list)
 {
 	int rc;
 
@@ -1932,7 +1932,7 @@ static void _list_pids_all_steps(const char *node_name,
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
 		if (mime_type) {
-			_dump_listpids(NULL, argc, argv);
+			_dump_listpids(NULL);
 		} else {
 			fprintf(stderr, "%s does not exist on node %s.\n",
 				log_build_step_id_str(step_id, tmp_char,
@@ -2002,7 +2002,7 @@ static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list,
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
 		if (mime_type)
-			_dump_listpids(NULL, argc, argv);
+			_dump_listpids(NULL);
 		else
 			fprintf(stderr, "No job steps exist on this node.\n");
 		FREE_NULL_LIST(steps);
@@ -2101,7 +2101,7 @@ extern void scontrol_list_pids(int argc, char **argv)
 	}
 
 	if (mime_type) {
-		_dump_listpids(listpids_list, argc, argv);
+		_dump_listpids(listpids_list);
 		goto cleanup;
 	}
 
@@ -2154,7 +2154,7 @@ static void _free_liststeps_info(void *x)
 	xfree(liststeps_info);
 }
 
-static void _dump_liststeps(list_t *liststeps_list, int argc, char **argv)
+static void _dump_liststeps(list_t *liststeps_list)
 {
 	int rc;
 
@@ -2187,7 +2187,7 @@ extern void scontrol_list_steps(int argc, char **argv)
 
 	if (!steps || !list_count(steps)) {
 		if (mime_type)
-			_dump_liststeps(NULL, argc, argv);
+			_dump_liststeps(NULL);
 		else {
 			fprintf(stderr, "No slurmstepd's found on this node\n");
 			exit_code = 1;
@@ -2200,7 +2200,7 @@ extern void scontrol_list_steps(int argc, char **argv)
 	list_for_each(steps, _add_to_liststeps_list, liststeps_list);
 
 	if (mime_type) {
-		_dump_liststeps(liststeps_list, argc, argv);
+		_dump_liststeps(liststeps_list);
 		goto cleanup;
 	}
 
