@@ -2704,9 +2704,20 @@ static int _foreach_get_user_assoc(void *x, void *arg)
 	slurmdb_assoc_rec_t *found_assoc = x;
 	foreach_user_assocs_t *state = arg;
 
-	if (state->assoc->uid != found_assoc->uid) {
-		debug4("not the right user %u != %u",
-		       state->assoc->uid, found_assoc->uid);
+	if (state->assoc->uid != NO_VAL) {
+		if (state->assoc->uid != found_assoc->uid) {
+			debug4("not the right user %u != %u",
+			       state->assoc->uid, found_assoc->uid);
+			return 0;
+		}
+	} else if (state->assoc->user && found_assoc->user) {
+		if (xstrcmp(state->assoc->user, found_assoc->user)) {
+			debug4("not the right user %s != %s",
+			       state->assoc->user, found_assoc->user);
+			return 0;
+		}
+	} else {
+		debug4("no uids/users to compare");
 		return 0;
 	}
 	if (state->assoc->acct &&
@@ -2740,7 +2751,6 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 
 	xassert(assoc);
-	xassert(assoc->uid != NO_VAL);
 	xassert(assoc_list);
 
 	if ((!assoc_mgr_assoc_list

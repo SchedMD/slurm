@@ -235,6 +235,7 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
 static uint32_t _get_job_duration(job_record_t *job_ptr, bool reboot);
 static bool _is_account_valid(char *account);
+static bool _is_username_valid(char *username);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
@@ -1184,6 +1185,25 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 	resv_ptr->name = name;
 }
 
+/* Validate a username */
+static bool _is_username_valid(char *username)
+{
+	slurmdb_user_rec_t user_rec, *user_ptr;
+
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS))
+		return true; /* don't worry about user validity */
+
+	memset(&user_rec, 0, sizeof(user_rec));
+	user_rec.uid = NO_VAL;
+	user_rec.name = username;
+
+	if (assoc_mgr_fill_in_user(acct_db_conn, &user_rec, accounting_enforce,
+				   &user_ptr, false)) {
+		return false;
+	}
+	return true;
+}
+
 /* Validate an account name */
 static bool _is_account_valid(char *account)
 {
@@ -1290,6 +1310,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					       sizeof(slurmdb_assoc_rec_t));
 					assoc.acct = resv_ptr->account_list[j];
 					assoc.uid  = resv_ptr->user_list[i];
+					assoc.user = resv_ptr->username_list[i];
 					rc = assoc_mgr_get_user_assocs(
 						acct_db_conn, &assoc,
 						accounting_enforce,
@@ -1307,6 +1328,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				memset(&assoc, 0,
 				       sizeof(slurmdb_assoc_rec_t));
 				assoc.uid = resv_ptr->user_list[i];
+				assoc.user = resv_ptr->username_list[i];
 				rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
 					    accounting_enforce,
@@ -1350,6 +1372,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		for (i=0; i < resv_ptr->user_cnt; i++) {
 			memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc.uid = resv_ptr->user_list[i];
+			assoc.user = resv_ptr->username_list[i];
 			rc = assoc_mgr_get_user_assocs(
 				    acct_db_conn, &assoc,
 				    accounting_enforce, assoc_list);
@@ -2430,12 +2453,18 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 			goto inval;
 		}
 		if (uid_from_string(tok, &u_tmp) != SLURM_SUCCESS) {
-			info("Reservation request has invalid user %s", tok);
-			if (strict)
-				goto inval;
+			if (!_is_username_valid(tok)) {
+				info("Reservation request has invalid user %s",
+				     tok);
+				if (strict)
+					goto inval;
+			} else {
+				u_list[u_cnt] = (uid_t) NO_VAL;
+				uname_list[u_cnt++] = xstrdup(tok);
+			}
 		} else {
 			u_list[u_cnt] = u_tmp;
-			uname_list[u_cnt++] = NULL;
+			uname_list[u_cnt++] = xstrdup(tok);
 		}
 		tok = strtok_r(NULL, ",", &last);
 	}
