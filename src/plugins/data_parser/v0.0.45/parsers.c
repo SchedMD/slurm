@@ -4039,17 +4039,6 @@ static int DUMP_FUNC(NODE_SELECT_ALLOC_IDLE_CPUS)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NODE_SELECT_TRES_WEIGHTED)
-
-static int DUMP_FUNC(NODE_SELECT_TRES_WEIGHTED)(const parser_t *const parser,
-						void *obj, data_t *dst,
-						args_t *args)
-{
-	data_set_float(dst, 0);
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(NODES)
 
 static int DUMP_FUNC(NODES)(const parser_t *const parser, void *obj,
@@ -13442,7 +13431,6 @@ static const parser_t parsers[] = {
 	addpca(STATS_MSG_RPCS_QUEUE, STATS_MSG_RPC_QUEUE, stats_info_response_msg_t, NEED_NONE, "Pending RPCs"),
 	addpca(STATS_MSG_RPCS_DUMP, STATS_MSG_RPC_DUMP, stats_info_response_msg_t, NEED_NONE, "Pending RPCs by hostlist"),
 	addpc(NODE_SELECT_ALLOC_IDLE_CPUS, node_info_t, NEED_NONE, INT32, NULL),
-	addpc(NODE_SELECT_TRES_WEIGHTED, node_info_t, NEED_NONE, DOUBLE, NULL),
 	addpca(PRIORITY_BY_PARTITION, PART_PRIO, slurm_job_info_t, NEED_NONE, NULL),
 	addpca(NODES, NODE, node_info_msg_t, NEED_NONE, NULL),
 	addpca(JOB_INFO_GRES_DETAIL, STRING, slurm_job_info_t, NEED_NONE, NULL),
@@ -13531,8 +13519,6 @@ static const parser_t parsers[] = {
 	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG, false, NULL, NULL),
 	addpp(BITSTR_PTR, bitstr_t *, BITSTR, false, NULL, NULL),
 	addpp(JOB_STATE_RESP_MSG_PTR, job_state_response_msg_t *, JOB_STATE_RESP_MSG, false, NULL, NULL),
-	addpp(EXT_SENSORS_DATA_PTR, void *, EXT_SENSORS_DATA, true, NULL, NULL),
-	addpp(POWER_MGMT_DATA_PTR, void *, POWER_MGMT_DATA, true, NULL, NULL),
 	addpp(KILL_JOBS_RESP_MSG_PTR, kill_jobs_resp_msg_t *, KILL_JOBS_RESP_MSG, false, NULL, FREE_FUNC(KILL_JOBS_RESP_MSG)),
 	addpp(INT32_PTR, int32_t *, INT32, false, NULL, xfree_ptr),
 	addpp(SLUID_PTR, sluid_t *, STRING, true, NULL, xfree_ptr),
