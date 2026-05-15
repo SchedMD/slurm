@@ -108,6 +108,7 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
@@ -12053,6 +12054,16 @@ static void _release_job_rec(job_record_t *job_ptr, uid_t uid)
 	job_state_unset_flag(job_ptr, JOB_SPECIAL_EXIT);
 	xfree(job_ptr->state_desc);
 	job_ptr->exit_code = 0;
+
+	if (job_ptr->licenses && !job_ptr->license_list) {
+		/*
+		 * The job was specifically released. Don't validate configured
+		 * licenses, otherwise the job may be held again. If the job's
+		 * licenses aren't valid compared to configured licenses the
+		 * job just won't be scheduled.
+		 */
+		restore_job_licenses(job_ptr, false);
+	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by uid %u",
 		   __func__, job_ptr, uid);
