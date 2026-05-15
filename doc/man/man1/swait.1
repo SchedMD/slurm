@@ -1,0 +1,167 @@
+.TH swait "1" "Slurm Commands" "Slurm 26.05" "Slurm Commands"
+
+.SH "NAME"
+swait \- Block until a job's running steps and pending \-\-async steps complete
+
+.SH "SYNOPSIS"
+\fBswait\fR [\fIOPTIONS\fR] [\fIjobid\fR[_\fItask\fR] | \fBs\fR<\fIsluid\fR>]
+
+.SH "DESCRIPTION"
+\fBswait\fR blocks until there are no running steps and no pending
+\fB\-\-async\fR steps. Use \fBswait\fR in a batch script to wait for
+all \fB\-\-async\fR steps to complete.
+
+\fBswait\fR talks directly to the stepmgr; it does not poll
+\fBslurmctld\fR. The target job must have stepmgr enabled (see
+\fBREQUIREMENTS\fR).
+
+The positional argument is a numeric job ID, a single array task
+(e.g. \fI1000_3\fR), or a SLUID (e.g. \fIs4SNKN57XZTE00\fR). Task ranges,
+task lists, and het\-job component offsets (\fIjobid\fR+\fIoffset\fR) are
+not supported. When the target is an array job with more than one task,
+a specific task must be selected with \fIjobid\fR_\fItask\fR.
+
+With no positional argument, \fBswait\fR consults \fBSLURM_JOB_SLUID\fR
+first, and falls back to \fBSLURM_JOB_ID\fR. This lets \fBswait\fR run
+inside a batch script or interactive allocation with no arguments and
+automatically wait on the enclosing job's steps.
+
+.SH "OPTIONS"
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help information and exit.
+.IP
+
+.TP
+\fB\-Q\fR, \fB\-\-quiet\fR
+Suppress informational messages from appearing on stderr.
+Errors will still be displayed. Mutually exclusive with
+\fB\-\-verbose\fR.
+.IP
+
+.TP
+\fB\-\-timeout\fR=\fISECS\fR
+Wait at most \fISECS\fR seconds for the job's steps to drain, then exit
+1. \fISECS\fR must be a non-negative integer. With no \fB\-\-timeout\fR,
+or with \fB\-\-timeout\fR=0, \fBswait\fR blocks indefinitely until the
+steps drain.
+.IP
+
+.TP
+\fB\-\-usage\fR
+Print a short usage line and exit.
+.IP
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Increase verbosity; may be specified multiple times for more detail.
+Mutually exclusive with \fB\-\-quiet\fR.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.SH "REQUIREMENTS"
+The target job must have stepmgr enabled, either site\-wide via
+\fBSlurmctldParameters=enable_stepmgr\fR in \fBslurm.conf\fR(5), or
+per\-job via \fB\-\-stepmgr\fR to \fBsalloc\fR(1)/\fBsbatch\fR(1).
+This can be verified with \fBscontrol show job <jobid>\fR; look for
+\fBStepMgrEnabled=Yes\fR.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBswait\fR options may be set via environment variables. These
+environment variables, along with their corresponding options, are listed below.
+(Note: Command line options will always override these settings.)
+
+.TP
+\fBSLURM_JOB_SLUID\fR
+Used to identify the job to monitor when no positional argument is given.
+Takes precedence over \fBSLURM_JOB_ID\fR.
+.IP
+
+.TP
+\fBSLURM_JOB_ID\fR
+Used to identify the job to monitor when no positional argument is given and
+\fBSLURM_JOB_SLUID\fR is not set.
+.IP
+
+.TP
+\fBSLURM_CONF\fR
+Location of the Slurm configuration file.
+.IP
+
+.SH "EXIT STATUS"
+.TP
+\fB0\fR
+.RS
+There are no running steps, and no pending async steps.
+.RE
+.IP
+
+.TP
+\fB1\fR
+.RS
+\fB\-\-timeout\fR elapsed before steps completed.
+.RE
+.IP
+
+.TP
+\fB2\fR
+.RS
+\fBswait\fR encountered an error.
+.RE
+.IP
+
+.SH "EXAMPLES"
+
+Run multiple async steps from a batch script and block on them. The
+\fB\-\-stepmgr\fR flag may be omitted if stepmgr is enabled site\-wide.
+
+.nf
+#!/bin/bash
+#SBATCH \-n 16
+#SBATCH \-\-stepmgr
+srun \-\-async \-n 8 ./solve_a
+srun \-\-async \-n 8 ./solve_b
+swait
+.fi
+
+\fBswait\fR is only for \fB\-\-async\fR steps; if a script merely
+backgrounds \fBsrun\fR commands with the shell, the shell's \fIwait\fR
+builtin already covers that case and \fBswait\fR is not needed. The
+exception is when a script mixes both: run \fBswait\fR followed by
+\fIwait\fR so that the stepmgr's pending work and the shell's
+background processes have both finished:
+
+.nf
+#!/bin/bash
+#SBATCH \-n 16
+#SBATCH \-\-stepmgr
+srun \-n 8 ./solve_a &
+srun \-\-async \-n 8 ./solve_b
+swait
+wait
+.fi
+
+.SH "COPYING"
+Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsacct\fR(1), \fBsalloc\fR(1), \fBsbatch\fR(1), \fBscancel\fR(1),
+\fBscontrol\fR(1), \fBsqueue\fR(1), \fBsrun\fR(1), \fBslurm.conf\fR(5)
