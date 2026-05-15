@@ -217,7 +217,7 @@ static int _select_placements(topology_eval_t *topo_eval, int rem_nodes,
 	bitstr_t *avail_cpu_set = NULL, *selected_bitmap = NULL;
 	torus3d_context_t *ctx = topo_eval->tctx->plugin_ctx;
 
-	if (!bit_set_count(topo_eval->node_map)) {
+	if (bit_ffs(topo_eval->node_map) == -1) {
 		debug("%pJ node_map is empty", job_ptr);
 		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
 		topo_eval->eval_action = EVAL_ACTION_BREAK;

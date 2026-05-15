@@ -233,7 +233,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	 * Add required nodes to job allocation and
 	 * build list of node bitmaps, sorted by weight
 	 */
-	if (!bit_set_count(topo_eval->node_map)) {
+	if (bit_ffs(topo_eval->node_map) == -1) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
 		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
@@ -864,7 +864,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	 * Add required nodes to job allocation and
 	 * build list of node bitmaps, sorted by weight
 	 */
-	if (!bit_set_count(topo_eval->node_map)) {
+	if (bit_ffs(topo_eval->node_map) == -1) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
 		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
