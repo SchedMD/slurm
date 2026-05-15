@@ -244,7 +244,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY_PTR, /* openapi_qos_query_t* */
 	DATA_PARSER_RPC_ID, /* slurm_msg_type_t - uint16_t */
 	DATA_PARSER_SLURMDB_RPC_ID, /* slurmdbd_msg_type_t */
-	DATA_PARSER_SELECT_PLUGIN_ID, /* Remove when 24.11 is no longer supported: int (SELECT_PLUGIN_*) -> string */
+	DATA_PARSER_SELECT_PLUGIN_ID, /* Remove when 25.11 is no longer supported: int (SELECT_PLUGIN_*) -> string */
 	DATA_PARSER_STATS_REC_PTR, /* slurmdb_stats_rec_t* */
 	DATA_PARSER_STATS_REC, /* slurmdb_stats_rec_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP, /* openapi_resp_single_t */
@@ -373,7 +373,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_NODES_QUERY_PTR, /* openapi_nodes_query_t* */
 	DATA_PARSER_NODE_STATES, /* uint32_t & NODE_STATE_* */
 	DATA_PARSER_NODE_SELECT_ALLOC_IDLE_CPUS, /* node_info_t->select_nodeinfo  */
-	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* Remove when 25.05 is no longer supported: was removed field node_info_t->select_nodeinfo */
+	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* Remove when 25.11 is no longer supported: was removed field node_info_t->select_nodeinfo */
 	DATA_PARSER_UPDATE_NODE_MSG, /* update_node_msg_t */
 	DATA_PARSER_UPDATE_NODE_MSG_PTR, /* update_node_msg_t* */
 	DATA_PARSER_OPENAPI_CREATE_NODE_REQ, /* openapi_resp_single_t */
@@ -441,7 +441,7 @@ typedef enum {
 	DATA_PARSER_ACCT_GATHER_PROFILE, /* uint32_t - ACCT_GATHER_PROFILE_* */
 	DATA_PARSER_ACCT_GATHER_ENERGY, /* acct_gather_energy_t */
 	DATA_PARSER_ACCT_GATHER_ENERGY_PTR, /* acct_gather_energy_t* */
-	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
+	DATA_PARSER_JOB_SHARED, /* Remove when 26.05 is no longer supported: uint16_t - JOB_SHARED_* */
 	DATA_PARSER_JOB_EXCLUSIVE, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_JOB_EXCLUSIVE_FLAGS, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_HOSTLIST, /* hostlist_t* */
@@ -451,7 +451,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_HOSTNAMES_REQ_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP_PTR, /* openapi_resp_single_t* */
-	DATA_PARSER_POWER_FLAGS, /* Remove when 24.11 is no longer supported: uint8_t & SLURM_POWER_FLAGS_* */
+	DATA_PARSER_POWER_FLAGS, /* Remove when 25.11 is no longer supported: uint8_t & SLURM_POWER_FLAGS_* */
 	DATA_PARSER_PARTITION_INFO, /* partition_info_t */
 	DATA_PARSER_PARTITION_INFO_PTR, /* partition_info_t* */
 	DATA_PARSER_PARTITION_INFO_MSG, /* partition_info_msg_t */
@@ -472,10 +472,10 @@ typedef enum {
 	DATA_PARSER_PARTITION_OVERSUBSCRIBE, /* partition_info_t OverSubscribe display */
 	DATA_PARSER_PARTITION_EXCLUSIVE, /* partition_info_t Exclusive display */
 	DATA_PARSER_UPDATE_PARTITION_MSG_LIST, /* list_t* of update_part_msg_t* (which are partition_info_t*) */
-	DATA_PARSER_EXT_SENSORS_DATA, /* Remove when 24.11 is no longer supported: ext_sensors_data_t */
-	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* Remove when 24.11 is no longer supported: ext_sensors_data_t* */
-	DATA_PARSER_POWER_MGMT_DATA, /* Remove when 24.11 is no longer supported: power_mgmt_data_t */
-	DATA_PARSER_POWER_MGMT_DATA_PTR, /* Remove when 24.11 is no longer supported: power_mgmt_data_t* */
+	DATA_PARSER_EXT_SENSORS_DATA, /* Remove when 25.11 is no longer supported: ext_sensors_data_t */
+	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* Remove when 25.11 is no longer supported: ext_sensors_data_t* */
+	DATA_PARSER_POWER_MGMT_DATA, /* Remove when 25.11 is no longer supported: power_mgmt_data_t */
+	DATA_PARSER_POWER_MGMT_DATA_PTR, /* Remove when 25.11 is no longer supported: power_mgmt_data_t* */
 	DATA_PARSER_RESERVATION_INFO, /* reserve_info_t */
 	DATA_PARSER_RESERVATION_INFO_PTR, /* reserve_info_t* */
 	DATA_PARSER_RESERVATION_FLAGS, /* uint64_t & RESERVE_FLAG_* */
@@ -672,7 +672,7 @@ typedef enum {
 	DATA_PARSER_NAMESPACE_DIR_CONF, /* ns_dir_t */
 	DATA_PARSER_NAMESPACE_DIR_CONF_PTR, /* ns_dir_t* */
 	DATA_PARSER_NAMESPACE_DIR_CONF_LIST, /* list_t* of ns_dir_t* */
-	DATA_PARSER_NODE_REASON_USER_ID, /* node_info_t->reason_uid */
+	DATA_PARSER_NODE_REASON_USER_ID, /* Remove when 26.05 is no longer supported: node_info_t->reason_uid */
 	DATA_PARSER_SINFO_REASON_USER_ID, /* sinfo_data_t->reason_uid */
 	DATA_PARSER_TOPOLOGY_RING, /* topology_ctx_t topology/flat plugin */
 	DATA_PARSER_TOPOLOGY_RING_CONFIG, /* topology_ring_config_t */
