@@ -18,3 +18,4 @@ debian/tmp/usr/share/man/man1/srun.1
 debian/tmp/usr/share/man/man1/sshare.1
 debian/tmp/usr/share/man/man1/sstat.1
 debian/tmp/usr/share/man/man1/strigger.1
+debian/tmp/usr/share/man/man1/swait.1
