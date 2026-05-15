@@ -3505,8 +3505,9 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	list_t *license_list_dest = arg;
 
 	/*
-	 * HRES and nodes and name intentionally not copied as they are unused
-	 * by consumers of this function.
+	 * Only the hres_rec fields read by _foreach_hres_pre_select() are
+	 * copied. The rest of hres_rec, plus nodes and name, are intentionally
+	 * not copied as they are unused by consumers of this function.
 	 */
 	license_entry_dest->total = license_entry_src->total;
 	license_entry_dest->used = license_entry_src->used;
@@ -3514,6 +3515,11 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	license_entry_dest->id = license_entry_src->id;
 	license_entry_dest->mode = license_entry_src->mode;
 	license_entry_dest->op_or = license_entry_src->op_or;
+	license_entry_dest->hres_rec.idx = license_entry_src->hres_rec.idx;
+	license_entry_dest->hres_rec.disable_hres =
+		license_entry_src->hres_rec.disable_hres;
+	license_entry_dest->hres_rec.disable_layer =
+		license_entry_src->hres_rec.disable_layer;
 	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
