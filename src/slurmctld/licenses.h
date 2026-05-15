@@ -210,6 +210,9 @@ extern void hres_select_print(hres_select_t *hres_select);
 
 extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
 
+extern void hres_pre_select_with_list(job_record_t *job_ptr, bool test_only,
+				      list_t *license_list);
+
 extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
 				     bf_licenses_t *bf_licenses);
 

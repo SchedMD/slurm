@@ -2546,17 +2546,24 @@ static int _foreach_hres_pre_select(void *x, void *key)
 
 extern void hres_pre_select(job_record_t *job_ptr, bool test_only)
 {
+	if (!job_ptr->hres_select)
+		return;
+
+	slurm_mutex_lock(&license_mutex);
+	hres_pre_select_with_list(job_ptr, test_only, cluster_license_list);
+	slurm_mutex_unlock(&license_mutex);
+}
+
+extern void hres_pre_select_with_list(job_record_t *job_ptr, bool test_only,
+				      list_t *license_list)
+{
 	hres_select_t *hres_select = job_ptr->hres_select;
 
 	if (!hres_select)
 		return;
 
-	slurm_mutex_lock(&license_mutex);
-
 	hres_select->test_only = test_only;
-	list_for_each_ro(cluster_license_list, _foreach_hres_pre_select,
-			 hres_select);
-	slurm_mutex_unlock(&license_mutex);
+	list_for_each_ro(license_list, _foreach_hres_pre_select, hres_select);
 
 	for (int i = 0; i < hres_select->leaf_cnt; i++) {
 		uint32_t min = INFINITE;
