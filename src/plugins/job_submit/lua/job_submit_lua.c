@@ -805,11 +805,16 @@ static int _set_job_req_field(lua_State *L)
 {
 	const char *name, *value_str;
 	job_desc_msg_t *job_desc;
+	bool is_modify = false;
 
 	name = luaL_checkstring(L, 2);
 	lua_getmetatable(L, -3);
 	lua_getfield(L, -1, "_job_desc");
 	job_desc = lua_touserdata(L, -1);
+	lua_pop(L, 1);
+	lua_getfield(L, -1, "_is_modify");
+	is_modify = lua_toboolean(L, -1);
+	lua_pop(L, 1);
 	if (job_desc == NULL) {
 		error("%s: job_desc is NULL", __func__);
 	} else if (!xstrcmp(name, "account")) {
@@ -825,7 +830,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "admin_comment")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->admin_comment);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->admin_comment = xstrdup(value_str);
 	} else if (!xstrcmp(name, "array_inx")) {
 		value_str = luaL_checkstring(L, 3);
@@ -854,7 +859,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "comment")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->comment);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->comment = xstrdup(value_str);
 	} else if (!xstrcmp(name, "container")) {
 		value_str = luaL_checkstring(L, 3);
@@ -878,12 +883,12 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->cpus_per_tres);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->cpus_per_tres = xstrdup(value_str);
 	} else if (!xstrcmp(name, "dependency")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->dependency);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->dependency = xstrdup(value_str);
 	} else if (!xstrcmp(name, "delay_boot")) {
 		job_desc->delay_boot = luaL_checknumber(L, 3);
@@ -892,17 +897,17 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "extra")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->extra);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->extra = xstrdup(value_str);
 	} else if (!xstrcmp(name, "exc_nodes")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->exc_nodes);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->exc_nodes = xstrdup(value_str);
 	} else if (!xstrcmp(name, "features")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->features);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->features = xstrdup(value_str);
 	} else if (!xstrcmp(name, "gres")) {
 		/* "gres" replaced by "tres_per_node" in v18.08 */
@@ -911,12 +916,19 @@ static int _set_job_req_field(lua_State *L)
 		if (strlen(value_str))
 			job_desc->tres_per_node =
 				gres_prepend_tres_type(value_str);
+		else if (is_modify)
+			/*
+			 * On modify, propagate "" so the controller clears
+			 * tres_per_node. Bypass gres_prepend_tres_type("")
+			 * which would emit a malformed TRES string.
+			 */
+			job_desc->tres_per_node = xstrdup("");
 	} else if (!xstrcmp(name, "immediate")) {
 		job_desc->immediate = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "licenses")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->licenses);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->licenses = xstrdup(value_str);
 	} else if (!xstrcmp(name, "mail_type")) {
 		job_desc->mail_type = luaL_checknumber(L, 3);
@@ -937,7 +949,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "mem_per_tres")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->mem_per_tres);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->mem_per_tres = xstrdup(value_str);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		job_desc->min_cpus = luaL_checknumber(L, 3);
@@ -977,7 +989,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "prefer")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->prefer);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->prefer = xstrdup(value_str);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
@@ -1001,7 +1013,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "req_nodes")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->req_nodes);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->req_nodes = xstrdup(value_str);
 	} else if (!xstrcmp(name, "req_switch")) {
 		job_desc->req_switch = luaL_checknumber(L, 3);
@@ -1010,7 +1022,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "reservation")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->reservation);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->reservation = xstrdup(value_str);
 	} else if (!xstrcmp(name, "script")) {
 		value_str = luaL_checkstring(L, 3);
@@ -1061,39 +1073,39 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "tres_bind")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_bind);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->tres_bind = xstrdup(value_str);
 	} else if (!xstrcmp(name, "tres_freq")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_freq);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->tres_freq = xstrdup(value_str);
 	} else if (!xstrcmp(name, "tres_per_job")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_per_job);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->tres_per_job = xstrdup(value_str);
 	} else if (!xstrcmp(name, "tres_per_node")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_per_node);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->tres_per_node = xstrdup(value_str);
 	} else if (!xstrcmp(name, "tres_per_socket")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_per_socket);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->tres_per_socket = xstrdup(value_str);
 	} else if (!xstrcmp(name, "tres_per_task")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_per_task);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->tres_per_task = xstrdup(value_str);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		job_desc->wait4switch = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "wckey")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->wckey);
-		if (strlen(value_str))
+		if (is_modify || strlen(value_str))
 			job_desc->wckey = xstrdup(value_str);
 	} else if (!xstrcmp(name, "work_dir")) {
 		value_str = luaL_checkstring(L, 3);
@@ -1107,7 +1119,7 @@ static int _set_job_req_field(lua_State *L)
 	return 0;
 }
 
-static void _push_job_desc(job_desc_msg_t *job_desc)
+static void _push_job_desc(job_desc_msg_t *job_desc, bool is_modify)
 {
 	lua_newtable(L);
 
@@ -1121,6 +1133,9 @@ static void _push_job_desc(job_desc_msg_t *job_desc)
 	 */
 	lua_pushlightuserdata(L, job_desc);
 	lua_setfield(L, -2, "_job_desc");
+	/* Mark modify so setters can let "" clear string fields. */
+	lua_pushboolean(L, is_modify);
+	lua_setfield(L, -2, "_is_modify");
 	lua_setmetatable(L, -2);
 }
 
@@ -1433,7 +1448,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	_update_jobs_global(L);
 	_update_resvs_global(L);
 
-	_push_job_desc(job_desc);
+	_push_job_desc(job_desc, false);
 	_push_partition_list(job_desc->user_id, submit_uid);
 	lua_pushnumber(L, submit_uid);
 	slurm_lua_stack_dump(
@@ -1501,7 +1516,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	_update_jobs_global(L);
 	_update_resvs_global(L);
 
-	_push_job_desc(job_desc);
+	_push_job_desc(job_desc, true);
 	_push_job_rec(job_ptr);
 	_push_partition_list(job_ptr->user_id, submit_uid);
 	lua_pushnumber(L, submit_uid);
