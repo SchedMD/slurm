@@ -1562,14 +1562,15 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 
 		if (item_type == -1) {
 			item_type = nm_tid;
-		} else if (nm_tid != item_type) {
-			error("Malformed file: fields with the same name in "
-			      "tables with the same name must have the same "
-			      "types");
-			goto error;
+		} else {
+			if (!H5Tequal(nm_tid, item_type)) {
+				error("Malformed file: fields with the same name in tables with the same name must have the same types");
+				goto error;
+			}
+			H5Tclose(nm_tid);
 		}
+		nm_tid = -1;
 
-		H5Tclose(nm_tid);
 		H5Tclose(m_tid);
 
 		H5Tclose(n_tid);
@@ -1619,6 +1620,8 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 		H5PTclose(tables_id[i]);
 	}
 	FREE_NULL_LIST(tables);
+	if (item_type >= 0)
+		H5Tclose(item_type);
 
 	return 0;
 
@@ -1628,6 +1631,8 @@ error:
 	if (n_tid >= 0) H5Tclose(n_tid);
 	if (m_tid >= 0) H5Tclose(m_tid);
 	if (nm_tid >= 0) H5Tclose(nm_tid);
+	if (item_type >= 0)
+		H5Tclose(item_type);
 	FREE_NULL_LIST(tables);
 	for (i = 0; i < nb_tables; ++i) {
 		if (tables_id[i] >= 0)
