@@ -11765,11 +11765,11 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_TORUS3D_CONFIG)[] = {
 static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 	add_parse(STRING, name, "topology", "Arbitrary name of the topology"),
 	add_parse(BOOL, cluster_default, "cluster_default", "topology configuration used outside the context of partitions"),
-	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with tree and default"),
-	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with tree and block"),
-	add_cparse(TOPOLOGY_RING, "ring", "topology/ring plugin configuration, mutually exclusive with block, tree and flat"),
-	add_cparse(TOPOLOGY_TORUS3D, "torus3d", "topology/torus3d plugin configuration, mutually exclusive with block, tree, flat and ring"),
-	add_cparse(TOPOLOGY_TREE, "tree", "topology/tree plugin configuration, mutually exclusive with block and default"),
+	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_RING, "ring", "topology/ring plugin configuration, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_TORUS3D, "torus3d", "topology/torus3d plugin configuration, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_TREE, "tree", "topology/tree plugin configuration, mutually exclusive with any other topology type"),
 };
 #undef add_cparse
 #undef add_parse
