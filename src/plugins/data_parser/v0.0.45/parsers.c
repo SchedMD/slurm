@@ -2369,8 +2369,107 @@ static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(PARTITION_OVERSUBSCRIBE)
-PARSE_DISABLED(PARTITION_EXCLUSIVE)
+/*
+ * Parse job count after ':' for partition/oversubscribe YES: or FORCE:.
+ * Matches read_config.c OverSubscribe=YES:/FORCE:
+ */
+static int _partition_oversubscribe_parse_jobs(const parser_t *const parser,
+					       args_t *args,
+					       data_t *parent_path,
+					       const char *numstr, bool force,
+					       uint16_t *max_share_out)
+{
+	/* Don't allow job count number to set SHARED_FORCE flag accidentally */
+	uint16_t max_jobs = UINT16_MAX & ~SHARED_FORCE;
+	char *endptr;
+	long n;
+
+	errno = 0;
+	n = strtol(numstr, &endptr, 10);
+	if (errno == ERANGE)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_REST_FAIL_PARSING,
+				   "job count out of range");
+	if ((endptr == numstr) || (*endptr != '\0'))
+		return parse_error(parser, args, parent_path,
+				   ESLURM_REST_FAIL_PARSING,
+				   "invalid job count");
+	if (n > max_jobs)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_REST_FAIL_PARSING, "count too large");
+
+	if (force) {
+		if (n < 1)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_REST_FAIL_PARSING,
+					   "FORCE count must be >= 1");
+	} else if (n <= 1) {
+		return parse_error(parser, args, parent_path,
+				   ESLURM_REST_FAIL_PARSING,
+				   "YES count must be > 1");
+	}
+
+	*max_share_out = n | (force ? SHARED_FORCE : 0);
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(PARTITION_OVERSUBSCRIBE)(const parser_t *const parser,
+					       void *obj, data_t *src,
+					       args_t *args,
+					       data_t *parent_path)
+{
+	uint16_t *max_share = obj;
+	char *val;
+	char *colon_pos;
+	int rc = SLURM_SUCCESS;
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Expecting string but got %pd", src);
+
+	val = xstrdup(data_get_string(src));
+	colon_pos = strchr(val, ':');
+	if (colon_pos)
+		*colon_pos = '\0';
+
+	if (!colon_pos && !xstrcasecmp(val, "NO")) {
+		*max_share = 1;
+	} else if (!*max_share) {
+		char *path = NULL;
+		on_warn(PARSING, parser->type, args,
+			set_source_path(&path, args, parent_path), __func__,
+			"Oversubscribe ignored, Exclusive=TOPO and Exclusive=NODE imply OverSubscribe=NO");
+		xfree(path);
+	} else if (!xstrcasecmp(val, "YES")) {
+		if (colon_pos) {
+			rc = _partition_oversubscribe_parse_jobs(parser, args,
+								 parent_path,
+								 colon_pos + 1,
+								 false,
+								 max_share);
+		} else
+			*max_share = 4;
+	} else if (!xstrcasecmp(val, "FORCE")) {
+		if (colon_pos) {
+			rc = _partition_oversubscribe_parse_jobs(parser, args,
+								 parent_path,
+								 colon_pos + 1,
+								 true,
+								 max_share);
+		} else
+			*max_share = 4 | SHARED_FORCE;
+	} else
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_REST_FAIL_PARSING,
+				 "expected NO, YES[:#], or FORCE[:#]");
+
+	xfree(val);
+	return rc;
+}
 
 static int DUMP_FUNC(PARTITION_OVERSUBSCRIBE)(const parser_t *const parser,
 					      void *obj, data_t *dst,
@@ -2388,6 +2487,36 @@ static int DUMP_FUNC(PARTITION_OVERSUBSCRIBE)(const parser_t *const parser,
 		data_set_string(dst, "NO");
 	else
 		data_set_string_fmt(dst, "YES:%u", val);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * partition/exclusive and partition/oversubscribe set max_share and partition
+ * flags (same semantics as scontrol update partition).
+ */
+static int PARSE_FUNC(PARTITION_EXCLUSIVE)(const parser_t *const parser,
+					   void *obj, data_t *src, args_t *args,
+					   data_t *parent_path)
+{
+	partition_info_t *part = obj;
+	const char *val;
+	int rc;
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Expecting string but got %pd", src);
+
+	val = data_get_string(src);
+	rc = parse_partition_exclusive(val, part);
+
+	if (rc != SLURM_SUCCESS)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_REST_FAIL_PARSING,
+				   "expected NO, NODE, USER, or TOPO");
 
 	return SLURM_SUCCESS;
 }
