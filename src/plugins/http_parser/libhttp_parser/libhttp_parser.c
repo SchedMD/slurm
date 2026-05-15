@@ -219,14 +219,22 @@ extern void http_parser_p_free_parse_request(state_t **state_ptr)
 	xfree(state);
 }
 
+static void _state_message_reset(state_t *state)
+{
+	xassert(state->magic == STATE_MAGIC);
+
+	url_free_members(&state->url);
+	state->url = URL_INITIALIZER;
+	xfree(state->last_header);
+	state->is_message_complete = false;
+}
+
 static void _state_parsing_reset(state_t *state)
 {
 	xassert(state->magic == STATE_MAGIC);
 
 	http_parser_init(&state->parser, HTTP_REQUEST);
-	url_free_members(&state->url);
-	xfree(state->last_header);
-	state->is_message_complete = false;
+	_state_message_reset(state);
 }
 
 extern int http_parser_p_new_parse_request(const char *name,
@@ -332,6 +340,8 @@ static void _on_http_parse_error(state_t *state)
 							 state->callback_arg);
 	else
 		state->rc = error.error_number;
+
+	_state_message_reset(state);
 }
 
 static void _http_parser_url_init(struct http_parser_url *url)
@@ -705,6 +715,7 @@ static int _on_message_complete(http_parser *parser)
 				 ->on_content_complete(state->callback_arg)))
 		return 1;
 
+	_state_message_reset(state);
 	return 0;
 }
 
