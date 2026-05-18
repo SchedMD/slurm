@@ -115,6 +115,13 @@ typedef struct {
 	char *nodes;
 } foreach_job_build_details_t;
 
+typedef struct {
+	char *prev_gres_name;
+	uint64_t *tres_cnt;
+	slurmdb_tres_rec_t *tres_rec;
+	bool typeless_found;
+} foreach_set_type_tres_cnt_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -2082,20 +2089,170 @@ extern void gres_stepmgr_job_build_details(
 	*total_gres_str = args.gres_str;
 }
 
+static int _foreach_set_type_tres_cnt(void *x, void *arg)
+{
+	gres_state_t *gres_state_ptr = x;
+	foreach_set_type_tres_cnt_t *args = arg;
+	slurmdb_tres_rec_t *tres_rec = args->tres_rec;
+	bool set_total = false, typeless = false;
+	char *col_name = NULL;
+	uint64_t count;
+	int tres_pos;
+
+	tres_rec->name = gres_state_ptr->gres_name;
+
+	/* Get alloc count for main GRES. */
+	switch (gres_state_ptr->state_type) {
+	case GRES_STATE_TYPE_JOB:
+	{
+		gres_job_state_t *gres_js = gres_state_ptr->gres_data;
+
+		/*
+		 * If total_gres is set for selected (i.e. non-allocated) GRES
+		 * and we had per job request we shouldn't use total_gres since
+		 * it may be higher than actually requested. The way
+		 * gres_sched_add works is that it adds as many GRES devices as
+		 * we can use on the node. It may be more than requested to
+		 * allow further optimization for instance based on nvlink,
+		 * e.g. _set_task_bits.
+		 */
+		if (gres_js->gres_cnt_node_alloc || !gres_js->gres_per_job)
+			count = gres_js->total_gres;
+		else
+			count = gres_js->gres_per_job;
+
+		/*
+		 * Resetting typeless_found to false when GRES name changes
+		 * with respect to previous iteration until it is found again.
+		 *
+		 * This is needed in situations like i.e.:
+		 * "--gres=gpu:1,tmpfs:foo:2,tmpfs:bar:7" where typeless is
+		 * found for GRES name "gpu" but then for "tmpfs" it isn't,
+		 * and thus the logic later around typeless_found would not
+		 * set the count for "tmpfs" off of the sum of tmpfs:foo and
+		 * tmpfs:bar counts.
+		 */
+		if (xstrcmp(args->prev_gres_name, tres_rec->name)) {
+			args->typeless_found = false;
+			xfree(args->prev_gres_name);
+			args->prev_gres_name = xstrdup(tres_rec->name);
+		}
+
+		if (!gres_js->type_name) {
+			args->typeless_found = true;
+			typeless = true;
+		}
+
+		break;
+	}
+	case GRES_STATE_TYPE_NODE:
+	{
+		gres_node_state_t *gres_ns = gres_state_ptr->gres_data;
+		count = gres_ns->gres_cnt_alloc;
+		break;
+	}
+	default:
+		error("%s: unsupported state type %d", __func__,
+		      gres_state_ptr->state_type);
+		return 0;
+	}
+	/*
+	 * Set main TRES's count (i.e. if no GRES "type" is being accounted
+	 * for). We need to increment counter since the job may have been
+	 * allocated multiple GRES types, but Slurm is only configured to
+	 * track the total count. For example, a job allocated 1 GPU of type
+	 * "tesla" and 1 GPU of type "volta", but we want to record that the
+	 * job was allocated a total of 2 GPUs.
+	 */
+	if ((tres_pos = assoc_mgr_find_tres_pos(tres_rec, true)) != -1) {
+		if (count == NO_CONSUME_VAL64)
+			args->tres_cnt[tres_pos] = NO_CONSUME_VAL64;
+		else if (!args->typeless_found)
+			args->tres_cnt[tres_pos] += count;
+		else if (typeless)
+			args->tres_cnt[tres_pos] = count;
+		/*
+		 * No need for else statement, as all cases above should
+		 * always cover setting main TRES's count.
+		 */
+
+		set_total = true;
+	}
+
+	/*
+	 * Set TRES count for GRES model types. This would be handy for GRES
+	 * like "gpu:tesla", where you might want to track both as TRES.
+	 */
+	switch (gres_state_ptr->state_type) {
+	case GRES_STATE_TYPE_JOB:
+	{
+		gres_job_state_t *gres_js = gres_state_ptr->gres_data;
+
+		col_name = gres_js->type_name;
+		if (col_name) {
+			tres_rec->name = xstrdup_printf(
+				"%s:%s", gres_state_ptr->gres_name, col_name);
+			if ((tres_pos = assoc_mgr_find_tres_pos(
+				     tres_rec, true)) != -1)
+				args->tres_cnt[tres_pos] = count;
+			xfree(tres_rec->name);
+		} else if (!set_total) {
+			/*
+			 * Job allocated GRES without "type" specification,
+			 * but Slurm is only accounting for this GRES by
+			 * specific "type", so pick some valid "type" to get
+			 * some accounting. Although the reported "type" may
+			 * not be accurate, it is better than nothing...
+			 */
+			tres_rec->name = gres_state_ptr->gres_name;
+			if ((tres_pos = assoc_mgr_find_tres_pos2(
+				     tres_rec, true)) != -1)
+				args->tres_cnt[tres_pos] = count;
+		}
+		break;
+	}
+	case GRES_STATE_TYPE_NODE:
+	{
+		gres_node_state_t *gres_ns = gres_state_ptr->gres_data;
+
+		for (int type = 0; type < gres_ns->type_cnt; type++) {
+			col_name = gres_ns->type_name[type];
+			if (!col_name)
+				continue;
+
+			tres_rec->name = xstrdup_printf(
+				"%s:%s", gres_state_ptr->gres_name, col_name);
+
+			count = gres_ns->type_cnt_alloc[type];
+
+			if ((tres_pos = assoc_mgr_find_tres_pos(
+				     tres_rec, true)) != -1)
+				args->tres_cnt[tres_pos] = count;
+			xfree(tres_rec->name);
+		}
+		break;
+	}
+	default:
+		error("%s: unsupported state type %d", __func__,
+		      gres_state_ptr->state_type);
+		break;
+	}
+
+	return 0;
+}
+
 /* Fill in job/node TRES arrays with allocated GRES. */
 static void _set_type_tres_cnt(list_t *gres_list,
 			       uint64_t *tres_cnt,
 			       bool locked)
 {
-	list_itr_t *itr;
-	gres_state_t *gres_state_ptr;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
-	bool typeless_found = false, typeless = false;
-	char *col_name = NULL, *prev_gres_name = NULL;
-	uint64_t count;
-	int tres_pos;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	foreach_set_type_tres_cnt_t args = {
+		.tres_cnt = tres_cnt,
+		.tres_rec = &tres_rec,
+	};
 
 	/* we only need to init this once */
 	if (first_run) {
@@ -2113,167 +2270,8 @@ static void _set_type_tres_cnt(list_t *gres_list,
 
 	gres_clear_tres_cnt(tres_cnt, true);
 
-	itr = list_iterator_create(gres_list);
-	while ((gres_state_ptr = list_next(itr))) {
-		bool set_total = false;
-		tres_rec.name = gres_state_ptr->gres_name;
-
-		/* Get alloc count for main GRES. */
-		switch (gres_state_ptr->state_type) {
-		case GRES_STATE_TYPE_JOB:
-		{
-			gres_job_state_t *gres_js = (gres_job_state_t *)
-				gres_state_ptr->gres_data;
-
-			/*
-			 * If total_gres is set for selected (i.e.
-			 * non-allocated) GRES and we had per job request we
-			 * shouldn't use total_gres since it may be higher than
-			 * actually requested. The way gres_sched_add works is
-			 * that it adds as many GRES devices as we can use on
-			 * the node. It may be more than requested to allow
-			 * further optimization for instance based on nvlink,
-			 * e.g. _set_task_bits.
-			 */
-			if (gres_js->gres_cnt_node_alloc ||
-			    !gres_js->gres_per_job)
-				count = gres_js->total_gres;
-			else
-				count = gres_js->gres_per_job;
-
-			/*
-			 * Resetting typeless_found to false when GRES name
-			 * changes with respect to previous iteration until it
-			 * is found again.
-			 *
-			 * This is needed in situations like i.e.:
-			 * "--gres=gpu:1,tmpfs:foo:2,tmpfs:bar:7" where typeless
-			 * is found for GRES name "gpu" but then for "tmpfs"
-			 * it isn't, and thus the logic later around
-			 * typeless_found would not set the count for "tmpfs"
-			 * off of the sum of tmpfs:foo and tmpfs:bar counts.
-			 */
-			if (xstrcmp(prev_gres_name, tres_rec.name)) {
-				typeless_found = false;
-				xfree(prev_gres_name);
-				prev_gres_name = xstrdup(tres_rec.name);
-			}
-
-			if (!gres_js->type_name) {
-				typeless_found = true;
-				typeless = true;
-			} else {
-				typeless = false;
-			}
-
-			break;
-		}
-		case GRES_STATE_TYPE_NODE:
-		{
-			gres_node_state_t *gres_ns = (gres_node_state_t *)
-				gres_state_ptr->gres_data;
-			count = gres_ns->gres_cnt_alloc;
-			break;
-		}
-		default:
-			error("%s: unsupported state type %d", __func__,
-			      gres_state_ptr->state_type);
-			continue;
-		}
-		/*
-		 * Set main TRES's count (i.e. if no GRES "type" is being
-		 * accounted for). We need to increment counter since the job
-		 * may have been allocated multiple GRES types, but Slurm is
-		 * only configured to track the total count. For example, a job
-		 * allocated 1 GPU of type "tesla" and 1 GPU of type "volta",
-		 * but we want to record that the job was allocated a total of
-		 * 2 GPUs.
-		 */
-		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) != -1){
-			if (count == NO_CONSUME_VAL64)
-				tres_cnt[tres_pos] = NO_CONSUME_VAL64;
-			else if (!typeless_found)
-				tres_cnt[tres_pos] += count;
-			else if (typeless)
-				tres_cnt[tres_pos] = count;
-			/*
-			 * No need for else statement, as all cases above should
-			 * always cover setting main TRES's count.
-			 */
-
-			set_total = true;
-		}
-
-		/*
-		 * Set TRES count for GRES model types. This would be handy for
-		 * GRES like "gpu:tesla", where you might want to track both as
-		 * TRES.
-		 */
-		switch (gres_state_ptr->state_type) {
-		case GRES_STATE_TYPE_JOB:
-		{
-			gres_job_state_t *gres_js = (gres_job_state_t *)
-				gres_state_ptr->gres_data;
-
-			col_name = gres_js->type_name;
-			if (col_name) {
-				tres_rec.name = xstrdup_printf(
-					"%s:%s",
-					gres_state_ptr->gres_name,
-					col_name);
-				if ((tres_pos = assoc_mgr_find_tres_pos(
-					     &tres_rec, true)) != -1)
-					tres_cnt[tres_pos] = count;
-				xfree(tres_rec.name);
-			} else if (!set_total) {
-				/*
-				 * Job allocated GRES without "type"
-				 * specification, but Slurm is only accounting
-				 * for this GRES by specific "type", so pick
-				 * some valid "type" to get some accounting.
-				 * Although the reported "type" may not be
-				 * accurate, it is better than nothing...
-				 */
-				tres_rec.name = gres_state_ptr->gres_name;
-				if ((tres_pos = assoc_mgr_find_tres_pos2(
-					     &tres_rec, true)) != -1)
-					tres_cnt[tres_pos] = count;
-			}
-			break;
-		}
-		case GRES_STATE_TYPE_NODE:
-		{
-			int type;
-			gres_node_state_t *gres_ns = (gres_node_state_t *)
-				gres_state_ptr->gres_data;
-
-			for (type = 0; type < gres_ns->type_cnt; type++) {
-				col_name = gres_ns->type_name[type];
-				if (!col_name)
-					continue;
-
-				tres_rec.name = xstrdup_printf(
-					"%s:%s",
-					gres_state_ptr->gres_name,
-					col_name);
-
-				count = gres_ns->type_cnt_alloc[type];
-
-				if ((tres_pos = assoc_mgr_find_tres_pos(
-					     &tres_rec, true)) != -1)
-					tres_cnt[tres_pos] = count;
-				xfree(tres_rec.name);
-			}
-			break;
-		}
-		default:
-			error("%s: unsupported state type %d", __func__,
-			      gres_state_ptr->state_type);
-			continue;
-		}
-	}
-	list_iterator_destroy(itr);
-	xfree(prev_gres_name);
+	list_for_each_ro(gres_list, _foreach_set_type_tres_cnt, &args);
+	xfree(args.prev_gres_name);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
