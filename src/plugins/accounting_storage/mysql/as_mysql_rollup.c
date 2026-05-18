@@ -1472,7 +1472,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		/* now get the jobs during this time only  */
 		query = xstrdup_printf("select %s from \"%s_%s\" as job "
-				       "FORCE INDEX (rollup) "
 				       "where (job.time_eligible and "
 				       "job.time_eligible < %ld and "
 				       "(job.time_end >= %ld or "
