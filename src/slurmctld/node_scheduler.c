@@ -4424,7 +4424,6 @@ extern int pick_batch_host(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 	char *tmp, *tok, sep, last_sep = '&';
 	node_feature_t *feature_ptr;
-	list_itr_t *feature_iter;
 	bitstr_t *feature_bitmap;
 
 	if (job_ptr->batch_host)
@@ -4461,22 +4460,15 @@ extern int pick_batch_host(job_record_t *job_ptr)
 			continue;
 		tmp[i] = '\0';
 
-		feature_iter = list_iterator_create(active_feature_list);
-		while ((feature_ptr = list_next(feature_iter))) {
-			if (xstrcmp(feature_ptr->name, tok))
-				continue;
-			if (last_sep == '&') {
-				bit_and(feature_bitmap,
-					feature_ptr->node_bitmap);
-			} else {
-				bit_or(feature_bitmap,
-				       feature_ptr->node_bitmap);
-			}
-			break;
-		}
-		list_iterator_destroy(feature_iter);
-		if (!feature_ptr)	/* No match */
+		feature_ptr = list_find_first_ro(active_feature_list,
+						 list_find_feature, tok);
+		if (!feature_ptr) {	/* No match */
 			bit_clear_all(feature_bitmap);
+		} else if (last_sep == '&') {
+			bit_and(feature_bitmap, feature_ptr->node_bitmap);
+		} else {
+			bit_or(feature_bitmap, feature_ptr->node_bitmap);
+		}
 		if (sep == '\0')
 			break;
 		tok = tmp + i + 1;
