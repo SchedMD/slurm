@@ -210,6 +210,17 @@ typedef struct {
 } license_update_args_t;
 
 typedef struct {
+	bool *fuzzy_match;
+	bool fuzzy_match_remote;
+	bool has_mode3;
+	slurmdb_tres_rec_t *tres_req;
+	uint64_t *tres_req_cnt;
+	bool *valid;
+	bool validate_configured;
+	bool validate_existing;
+} license_validate_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -2022,23 +2033,105 @@ extern void license_free(void)
  *                   ok to pass NULL if caller doesn't require the output
  * RET license_list, must be destroyed by caller
  */
+static int _foreach_license_validate(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	license_validate_args_t *args = arg;
+	licenses_t *match = NULL;
+	bool is_fuzzy_match = false;
+
+	/* Short-circuit once validation has failed. */
+	if (!*args->valid)
+		return 0;
+
+	if (cluster_license_list) {
+		if (license_entry->nodes) {
+			licenses_find_rec_by_nodes_t find_args = {
+				.name = license_entry->name,
+				.nodes = license_entry->nodes,
+			};
+			match = list_find_first_ro(cluster_license_list,
+						   _license_find_rec_by_nodes,
+						   &find_args);
+		} else if (xstrchr(license_entry->name, '@') ||
+			   !args->fuzzy_match_remote) {
+			match = list_find_first_ro(cluster_license_list,
+						   _license_find_root_rec,
+						   license_entry->name);
+		} else {
+			match = _fuzzy_match_remote_licenses(
+				license_entry->name);
+			is_fuzzy_match = true;
+		}
+	}
+
+	if (!match) {
+		debug("License name requested (%s) does not exist",
+		      license_entry->name);
+		if (!args->validate_existing)
+			return 1; /* delete entry from job_license_list */
+		*args->valid = false;
+		return 0;
+	}
+	if (args->validate_configured &&
+	    (license_entry->total > match->total)) {
+		debug("Licenses count requested higher than configured (%s: %u > %u)",
+		      match->name, license_entry->total, match->total);
+		*args->valid = false;
+		return 0;
+	}
+
+	if (is_fuzzy_match) {
+		/* copy real name to maintain exact match */
+		xfree(license_entry->name);
+		license_entry->name = xstrdup(match->name);
+		if (args->fuzzy_match)
+			*args->fuzzy_match = true;
+	}
+	license_entry->id.lic_id = match->id.lic_id;
+	license_entry->id.hres_id = match->id.hres_id;
+	license_entry->mode = match->mode;
+
+	if (license_entry->mode == HRES_MODE_3) {
+		if (args->has_mode3) {
+			debug("Only one HRes Mode 3 can be used per job");
+			*args->valid = false;
+			return 0;
+		}
+		args->has_mode3 = true;
+	}
+
+	if (args->tres_req_cnt) {
+		int tres_pos;
+		args->tres_req->name = license_entry->name;
+		if ((tres_pos = assoc_mgr_find_tres_pos(args->tres_req,
+							false)) != -1)
+			args->tres_req_cnt[tres_pos] =
+				(uint64_t) license_entry->total;
+	}
+
+	return 0;
+}
+
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing, bool hres,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
 	list_t *job_license_list;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
-	int tres_pos;
-	bool has_mode3 = false;
-	bool fuzzy_match_remote = false;
-	bool is_fuzzy_match = false;
+	license_validate_args_t args = {
+		.fuzzy_match = fuzzy_match,
+		.tres_req = &tres_req,
+		.tres_req_cnt = tres_req_cnt,
+		.valid = valid,
+		.validate_configured = validate_configured,
+		.validate_existing = validate_existing,
+	};
 
 	if (xstrcasestr(slurm_conf.license_params, "RemoteFuzzyMatch"))
-		fuzzy_match_remote = true;
+		args.fuzzy_match_remote = true;
 	/* initialize in case the caller didn't */
 	if (fuzzy_match)
 		*fuzzy_match = false;
@@ -2052,7 +2145,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		 * We can start at TRES_ARRAY_TOTAL_CNT as we know licenses are
 		 * after the static TRES.
 		 */
-		for (tres_pos = TRES_ARRAY_TOTAL_CNT;
+		for (int tres_pos = TRES_ARRAY_TOTAL_CNT;
 		     tres_pos < slurmctld_tres_cnt;
 		     tres_pos++) {
 			if (tres_req_cnt[tres_pos] &&
@@ -2076,77 +2169,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	}
 
 	slurm_mutex_lock(&license_mutex);
-	iter = list_iterator_create(job_license_list);
-	while ((license_entry = list_next(iter))) {
-		is_fuzzy_match = false; /* reset for each entry */
-		if (cluster_license_list) {
-			if (license_entry->nodes) {
-				licenses_find_rec_by_nodes_t args = {
-					.name = license_entry->name,
-					.nodes = license_entry->nodes,
-				};
-				match = list_find_first(
-					cluster_license_list,
-					_license_find_rec_by_nodes, &args);
-			} else if (xstrchr(license_entry->name, '@') ||
-				   !fuzzy_match_remote)
-				match = list_find_first(cluster_license_list,
-							_license_find_root_rec,
-							license_entry->name);
-			else {
-				match = _fuzzy_match_remote_licenses(
-					license_entry->name);
-				is_fuzzy_match = true;
-			}
-		} else
-			match = NULL;
-		if (!match) {
-			debug("License name requested (%s) does not exist",
-			      license_entry->name);
-			if (!validate_existing) {
-				list_delete_item(iter);
-				continue;
-			}
-			*valid = false;
-			break;
-		} else if (validate_configured &&
-			   (license_entry->total > match->total)) {
-			debug("Licenses count requested higher than configured "
-			      "(%s: %u > %u)",
-			      match->name, license_entry->total, match->total);
-			*valid = false;
-			break;
-		}
-
-		if (is_fuzzy_match) {
-			/* copy real name to maintain exact match */
-			xfree(license_entry->name);
-			license_entry->name = xstrdup(match->name);
-			if (fuzzy_match)
-				*fuzzy_match = true;
-		}
-		license_entry->id.lic_id = match->id.lic_id;
-		license_entry->id.hres_id = match->id.hres_id;
-		license_entry->mode = match->mode;
-
-		if (license_entry->mode == HRES_MODE_3) {
-			if (has_mode3) {
-				debug("Only one HRes Mode 3 can be used per job");
-				*valid = false;
-				break;
-			}
-			has_mode3 = true;
-		}
-
-		if (tres_req_cnt) {
-			tres_req.name = license_entry->name;
-			if ((tres_pos = assoc_mgr_find_tres_pos(
-				     &tres_req, false)) != -1)
-				tres_req_cnt[tres_pos] =
-					(uint64_t)license_entry->total;
-		}
-	}
-	list_iterator_destroy(iter);
+	list_delete_all(job_license_list, _foreach_license_validate, &args);
 	slurm_mutex_unlock(&license_mutex);
 
 	_licenses_print("request_license", job_license_list, NULL);
