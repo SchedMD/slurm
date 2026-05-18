@@ -88,6 +88,16 @@ typedef struct {
 	int rc;
 } foreach_job_alloc_t;
 
+typedef struct {
+	uint32_t job_id;
+	list_t *node_gres_list;
+	char *node_name;
+	int node_offset;
+	bool old_job;
+	int rc;
+	bool resize;
+} foreach_job_dealloc_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -1589,14 +1599,46 @@ static int _job_dealloc(gres_state_t *gres_state_job,
  * 		    that is terminating.
  * RET SLURM_SUCCESS or error code
  */
+static int _delete_or_dealloc_job_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_job_dealloc_t *args = arg;
+	gres_state_t *gres_state_node = list_find_first_ro(
+		args->node_gres_list, gres_find_id,
+		&gres_state_job->plugin_id);
+	int rc2;
+
+	if (!gres_state_node) {
+		error("%s: node %s lacks gres/%s for job %u", __func__,
+		      args->node_name, gres_state_job->gres_name, args->job_id);
+		return 0;
+	}
+
+	rc2 = _job_dealloc(gres_state_job, gres_state_node->gres_data,
+			   args->node_offset, args->job_id, args->node_name,
+			   args->old_job, args->resize);
+	if (rc2 == ESLURM_UNSUPPORTED_GRES)
+		return 1;
+	if (rc2 != SLURM_SUCCESS)
+		args->rc = rc2;
+
+	return 0;
+}
+
 extern int gres_stepmgr_job_dealloc(
 	list_t *job_gres_list, list_t *node_gres_list,
 	int node_offset, uint32_t job_id,
 	char *node_name, bool old_job, bool resize)
 {
-	int rc = SLURM_SUCCESS, rc2;
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job, *gres_state_node;
+	foreach_job_dealloc_t args = {
+		.job_id = job_id,
+		.node_gres_list = node_gres_list,
+		.node_name = node_name,
+		.node_offset = node_offset,
+		.old_job = old_job,
+		.rc = SLURM_SUCCESS,
+		.resize = resize,
+	};
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -1606,28 +1648,9 @@ extern int gres_stepmgr_job_dealloc(
 		return SLURM_ERROR;
 	}
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_state_node = list_find_first(node_gres_list, gres_find_id,
-						  &gres_state_job->plugin_id);
+	list_delete_all(job_gres_list, _delete_or_dealloc_job_gres, &args);
 
-		if (gres_state_node == NULL) {
-			error("%s: node %s lacks gres/%s for job %u", __func__,
-			      node_name, gres_state_job->gres_name, job_id);
-			continue;
-		}
-
-		rc2 = _job_dealloc(gres_state_job,
-				   gres_state_node->gres_data, node_offset,
-				   job_id, node_name, old_job, resize);
-		if (rc2 == ESLURM_UNSUPPORTED_GRES) {
-			list_delete_item(job_gres_iter);
-		} else if (rc2 != SLURM_SUCCESS)
-			rc = rc2;
-	}
-	list_iterator_destroy(job_gres_iter);
-
-	return rc;
+	return args.rc;
 }
 
 /*
