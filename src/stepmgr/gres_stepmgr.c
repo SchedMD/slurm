@@ -108,6 +108,13 @@ typedef struct {
 	bitstr_t *to_job_node_bitmap;
 } foreach_job_merge_t;
 
+typedef struct {
+	char *gres_str;
+	uint32_t my_gres_cnt;
+	char **my_gres_details;
+	char *nodes;
+} foreach_job_build_details_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -1972,23 +1979,92 @@ static char *_build_shared_gres_details(char *nodes, int node_index,
  * OUT gres_detail_str - Description of GRES on each node
  * OUT total_gres_str - String containing all gres in the job and counts.
  */
+static int _foreach_job_build_details(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_job_build_details_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	char *gres_name, *sep1, *sep2, *type;
+	uint64_t gres_cnt = 0;
+	char tmp_str[128];
+
+	if (!gres_js->gres_bit_alloc)
+		return 0;
+	if (!args->my_gres_details) {
+		args->my_gres_cnt = gres_js->node_cnt;
+		args->my_gres_details =
+			xcalloc(args->my_gres_cnt, sizeof(char *));
+	}
+
+	if (gres_js->type_name) {
+		sep2 = ":";
+		type = gres_js->type_name;
+	} else {
+		sep2 = "";
+		type = "";
+	}
+
+	gres_name = xstrdup_printf("%s%s%s", gres_state_job->gres_name, sep2,
+				   type);
+
+	for (int j = 0; j < args->my_gres_cnt; j++) {
+		uint64_t alloc_cnt;
+
+		if (j >= gres_js->node_cnt)
+			break;	/* node count mismatch */
+		if (args->my_gres_details[j])
+			sep1 = ",";
+		else
+			sep1 = "";
+
+		if (gres_js->gres_cnt_node_alloc[j] == NO_CONSUME_VAL64)
+			alloc_cnt = 0;
+		else
+			alloc_cnt = gres_js->gres_cnt_node_alloc[j];
+
+		gres_cnt += alloc_cnt;
+
+		if (gres_js->gres_bit_alloc[j] &&
+		    (gres_js->gres_per_bit_alloc &&
+		     gres_js->gres_per_bit_alloc[j])) {
+			char *shared_gres_details = _build_shared_gres_details(
+				args->nodes, j, gres_state_job, gres_js);
+			xstrfmtcat(args->my_gres_details[j],
+				   "%s%s:%" PRIu64 "(%s)", sep1, gres_name,
+				   alloc_cnt, shared_gres_details);
+			xfree(shared_gres_details);
+		} else if (gres_js->gres_bit_alloc[j]) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_js->gres_bit_alloc[j]);
+			xstrfmtcat(args->my_gres_details[j],
+				   "%s%s:%" PRIu64 "(IDX:%s)", sep1, gres_name,
+				   alloc_cnt, tmp_str);
+		} else if (gres_js->gres_cnt_node_alloc[j]) {
+			xstrfmtcat(args->my_gres_details[j],
+				   "%s%s(CNT:%" PRIu64 ")", sep1, gres_name,
+				   alloc_cnt);
+		}
+	}
+
+	xstrfmtcat(args->gres_str, "%s%s:%" PRIu64,
+		   args->gres_str ? "," : "", gres_name, gres_cnt);
+	xfree(gres_name);
+
+	return 0;
+}
+
 extern void gres_stepmgr_job_build_details(
 	list_t *job_gres_list, char *nodes,
 	uint32_t *gres_detail_cnt,
 	char ***gres_detail_str,
 	char **total_gres_str)
 {
-	int i, j;
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	char *sep1, *sep2, tmp_str[128], *type, **my_gres_details = NULL;
-	uint32_t my_gres_cnt = 0;
-	char *gres_name, *gres_str = NULL;
-	uint64_t gres_cnt;
+	foreach_job_build_details_t args = {
+		.nodes = nodes,
+	};
 
 	/* Release any vestigial data (e.g. from job requeue) */
-	for (i = 0; i < *gres_detail_cnt; i++)
+	for (int i = 0; i < *gres_detail_cnt; i++)
 		xfree(gres_detail_str[0][i]);
 	xfree(*gres_detail_str);
 	xfree(*total_gres_str);
@@ -1999,82 +2075,11 @@ extern void gres_stepmgr_job_build_details(
 
 	(void) gres_init();
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(job_gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->gres_bit_alloc == NULL)
-			continue;
-		if (my_gres_details == NULL) {
-			my_gres_cnt = gres_js->node_cnt;
-			my_gres_details = xcalloc(my_gres_cnt, sizeof(char *));
-		}
+	list_for_each_ro(job_gres_list, _foreach_job_build_details, &args);
 
-		if (gres_js->type_name) {
-			sep2 = ":";
-			type = gres_js->type_name;
-		} else {
-			sep2 = "";
-			type = "";
-		}
-
-		gres_name = xstrdup_printf(
-			"%s%s%s",
-			gres_state_job->gres_name, sep2, type);
-		gres_cnt = 0;
-
-		for (j = 0; j < my_gres_cnt; j++) {
-			uint64_t alloc_cnt;
-
-			if (j >= gres_js->node_cnt)
-				break;	/* node count mismatch */
-			if (my_gres_details[j])
-				sep1 = ",";
-			else
-				sep1 = "";
-
-			if (gres_js->gres_cnt_node_alloc[j] == NO_CONSUME_VAL64)
-				alloc_cnt = 0;
-			else
-				alloc_cnt = gres_js->gres_cnt_node_alloc[j];
-
-			gres_cnt += alloc_cnt;
-
-			if (gres_js->gres_bit_alloc[j] &&
-			    (gres_js->gres_per_bit_alloc &&
-			     gres_js->gres_per_bit_alloc[j])) {
-				char *shared_gres_details =
-					_build_shared_gres_details(
-						nodes, j, gres_state_job, gres_js);
-				xstrfmtcat(my_gres_details[j],
-					   "%s%s:%" PRIu64 "(%s)", sep1,
-					   gres_name, alloc_cnt,
-					   shared_gres_details);
-				xfree(shared_gres_details);
-
-			} else if (gres_js->gres_bit_alloc[j]) {
-				bit_fmt(tmp_str, sizeof(tmp_str),
-					gres_js->gres_bit_alloc[j]);
-				xstrfmtcat(my_gres_details[j],
-					   "%s%s:%"PRIu64"(IDX:%s)",
-					   sep1, gres_name,
-					   alloc_cnt,
-					   tmp_str);
-			} else if (gres_js->gres_cnt_node_alloc[j]) {
-				xstrfmtcat(my_gres_details[j],
-					   "%s%s(CNT:%"PRIu64")",
-					   sep1, gres_name,
-					   alloc_cnt);
-			}
-		}
-
-		xstrfmtcat(gres_str, "%s%s:%"PRIu64,
-			   gres_str ? "," : "", gres_name, gres_cnt);
-		xfree(gres_name);
-	}
-	list_iterator_destroy(job_gres_iter);
-	*gres_detail_cnt = my_gres_cnt;
-	*gres_detail_str = my_gres_details;
-	*total_gres_str = gres_str;
+	*gres_detail_cnt = args.my_gres_cnt;
+	*gres_detail_str = args.my_gres_details;
+	*total_gres_str = args.gres_str;
 }
 
 /* Fill in job/node TRES arrays with allocated GRES. */
