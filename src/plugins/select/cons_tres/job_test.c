@@ -96,10 +96,17 @@ typedef struct {
 typedef struct {
 	list_t *licenses_to_preempt;
 	bitstr_t *node_bitmap;
+	job_record_t *job_ptr;
 	list_t *preemptee_job_list;
 	bool remove_some_jobs;
 	job_record_t *last_job_ptr;
 } run_now_preemptee_arg_t;
+
+typedef struct {
+	job_record_t *last_ptr;
+	bool needed;
+	run_now_preemptee_arg_t *wargs;
+} preemptee_needed_args_t;
 
 static int _foreach_rm_cores(void *x, void *arg)
 {
@@ -3157,7 +3164,8 @@ static int _foreach_run_now_preemptee(void *x, void *arg)
 	if ((mode != PREEMPT_MODE_REQUEUE) && (mode != PREEMPT_MODE_CANCEL))
 		return last ? -1 : 0;
 	if (!job_overlap_and_running(wargs->node_bitmap,
-				     wargs->licenses_to_preempt, tmp_job_ptr))
+				     wargs->licenses_to_preempt, tmp_job_ptr) &&
+	    !hres_jobs_share_mode3(wargs->job_ptr, tmp_job_ptr))
 		return last ? -1 : 0;
 	list_append(wargs->preemptee_job_list, tmp_job_ptr);
 	wargs->remove_some_jobs = true;
@@ -3243,6 +3251,71 @@ static void _run_now_suspend(run_now_ctx_t *ctx)
 	return;
 }
 
+static bool _preemptee_needed(run_now_preemptee_arg_t *wargs,
+			      job_record_t *job_ptr)
+{
+	if (job_ptr->node_bitmap &&
+	    bit_overlap_any(wargs->node_bitmap, job_ptr->node_bitmap))
+		return true;
+	if (license_list_overlap_non_hres(wargs->licenses_to_preempt,
+					  job_ptr->license_list))
+		return true;
+
+	return hres_preempt_needed(wargs->job_ptr, job_ptr);
+}
+
+static int _foreach_preemptee_needed(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	preemptee_needed_args_t *args = arg;
+
+	if (!_preemptee_needed(args->wargs, job_ptr))
+		return 0;
+
+	args->needed = true;
+	args->last_ptr = job_ptr;
+
+	return -1;
+}
+
+static int _foreach_preemptee_return(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	preemptee_needed_args_t *args = arg;
+
+	if (job_ptr == args->last_ptr)
+		return -1;
+
+	hres_preempt_return(args->wargs->job_ptr, job_ptr);
+
+	return 0;
+}
+
+static int _foreach_delete_unneeded_preemptee(void *x, void *arg)
+{
+	job_record_t *tmp_job_ptr = x;
+	preemptee_needed_args_t args = { .wargs = arg };
+
+	if (!tmp_job_ptr->het_job_list)
+		return _preemptee_needed(arg, tmp_job_ptr) ? 0 : 1;
+
+	/* Each hetjob component holds its own nodes, licenses and HRES. */
+	list_for_each(tmp_job_ptr->het_job_list, _foreach_preemptee_needed,
+		      &args);
+
+	if (!args.needed)
+		return 1;
+
+	/*
+	 * The whole hetjob is preempted, so the components before the one
+	 * that needs it do not keep the HRES they reserved above.
+	 */
+	list_for_each(tmp_job_ptr->het_job_list, _foreach_preemptee_return,
+		      &args);
+
+	return 0;
+}
+
 static int _foreach_cancel_preemptee(void *x, void *arg)
 {
 	job_record_t *tmp_job_ptr = x;
@@ -3257,6 +3330,7 @@ static int _foreach_cancel_preemptee(void *x, void *arg)
 			    ctx->license_list, ctx->job_ptr->license_list,
 			    tmp_job_ptr, 0, ctx->orig_node_map))
 		return 0;
+	hres_pre_select_with_list(ctx->job_ptr, false, ctx->license_list);
 	bit_or(ctx->node_bitmap, ctx->orig_node_map);
 	*(ctx->rc) =
 		_job_test(ctx->job_ptr, ctx->node_bitmap, ctx->min_nodes,
@@ -3375,12 +3449,11 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.rc = &rc,
 	};
 
-	hres_pre_select(job_ptr, false);
-
 	save_node_map = bit_copy(node_bitmap);
 	ctx.orig_node_map = bit_copy(save_node_map);
 
 	ctx.license_list = cluster_license_copy();
+	hres_pre_select_with_list(job_ptr, false, ctx.license_list);
 
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
@@ -3404,14 +3477,23 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		   !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
 		int reorder_cnt = list_count(preemptee_candidates);
 		reorder_cnt = MIN(reorder_cnt, preempt_reorder_cnt + 2);
+		/*
+		 * Leave the state of the last successful _run_now_cancel() in
+		 * place: it already accounts for every preemptee being gone
+		 * and for job_ptr being placed, which is the baseline
+		 * _foreach_delete_unneeded_preemptee() needs.
+		 */
 		for (int i = 0; i < reorder_cnt; i++) {
-			if (i)
+			if (i) {
 				_reorder_preemptee_candidates(&ctx);
+				bit_copybits(ctx.orig_node_map, save_node_map);
+				FREE_NULL_LIST(ctx.license_list);
+				ctx.license_list = cluster_license_copy();
+				hres_pre_select_with_list(job_ptr, false,
+							  ctx.license_list);
+			}
 			if (_run_now_cancel(&ctx) != SLURM_SUCCESS)
 				break;
-			bit_copybits(ctx.orig_node_map, save_node_map);
-			FREE_NULL_LIST(ctx.license_list);
-			ctx.license_list = cluster_license_copy();
 		}
 		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 		    preemptee_candidates) {
@@ -3419,6 +3501,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				.licenses_to_preempt =
 					job_ptr->licenses_to_preempt,
 				.node_bitmap = node_bitmap,
+				.job_ptr = job_ptr,
 				.last_job_ptr = ctx.last_job_ptr,
 			};
 			if (*preemptee_job_list == NULL)
@@ -3426,6 +3509,21 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			build_args.preemptee_job_list = *preemptee_job_list;
 			list_for_each(preemptee_candidates,
 				      _foreach_run_now_preemptee, &build_args);
+			if (build_args.remove_some_jobs &&
+			    job_ptr->hres_select) {
+				/*
+				 * Remove preemptees that were included
+				 * only due to HRES MODE_3 overlap but
+				 * aren't actually needed.
+				 */
+				list_flip(*preemptee_job_list);
+				list_delete_all(
+					*preemptee_job_list,
+					_foreach_delete_unneeded_preemptee,
+					&build_args);
+				if (!list_count(*preemptee_job_list))
+					FREE_NULL_LIST(*preemptee_job_list);
+			}
 			if (!build_args.remove_some_jobs)
 				FREE_NULL_LIST(*preemptee_job_list);
 		}
