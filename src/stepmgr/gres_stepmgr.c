@@ -138,6 +138,20 @@ typedef struct {
 	int total_gres_cpu_cnt;
 } foreach_step_alloc_outer_t;
 
+typedef struct {
+	bool decr_job_alloc;
+	list_t *job_gres_list;
+	int node_offset;
+	int rc;
+	slurm_step_id_t *tmp_step_id;
+} foreach_step_dealloc_t;
+
+typedef struct {
+	bitstr_t **new_gres_bit_alloc;
+	bitstr_t *new_job_node_bitmap;
+	bitstr_t *orig_job_node_bitmap;
+} foreach_step_state_rebase_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -2920,16 +2934,35 @@ static int _step_dealloc(gres_state_t *gres_state_step, list_t *job_gres_list,
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_step_dealloc(void *x, void *arg)
+{
+	gres_state_t *gres_state_step = x;
+	foreach_step_dealloc_t *args = arg;
+	int rc2;
+
+	rc2 = _step_dealloc(gres_state_step, args->job_gres_list,
+			    args->tmp_step_id, args->node_offset,
+			    args->decr_job_alloc);
+	if (rc2 != SLURM_SUCCESS)
+		args->rc = rc2;
+
+	return 0;
+}
+
 extern int gres_stepmgr_step_dealloc(
 	list_t *step_gres_list, list_t *job_gres_list,
 	uint32_t job_id, uint32_t step_id,
 	int node_offset,
 	bool decr_job_alloc)
 {
-	int rc = SLURM_SUCCESS, rc2;
-	list_itr_t *step_gres_iter;
-	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
+	foreach_step_dealloc_t args = {
+		.decr_job_alloc = decr_job_alloc,
+		.job_gres_list = job_gres_list,
+		.node_offset = node_offset,
+		.rc = SLURM_SUCCESS,
+		.tmp_step_id = &tmp_step_id,
+	};
 
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -2943,19 +2976,9 @@ extern int gres_stepmgr_step_dealloc(
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
 
-	step_gres_iter = list_iterator_create(step_gres_list);
-	while ((gres_state_step = list_next(step_gres_iter))) {
-		rc2 = _step_dealloc(gres_state_step,
-				    job_gres_list,
-				    &tmp_step_id,
-				    node_offset,
-				    decr_job_alloc);
-		if (rc2 != SLURM_SUCCESS)
-			rc = rc2;
-	}
-	list_iterator_destroy(step_gres_iter);
+	list_for_each_ro(step_gres_list, _foreach_step_dealloc, &args);
 
-	return rc;
+	return args.rc;
 }
 
 /*
