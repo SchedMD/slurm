@@ -165,6 +165,11 @@ typedef struct {
 } get_all_license_info_args_t;
 
 typedef struct {
+	slurmdb_tres_rec_t *tres_req;
+	char *tres_str;
+} licenses_2_tres_str_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -2782,15 +2787,34 @@ extern uint32_t get_total_license_cnt(char *name)
 /* node_read should be locked before coming in here
  * returns 1 if change happened.
  */
+static int _foreach_licenses_2_tres_str(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	licenses_2_tres_str_args_t *args = arg;
+	slurmdb_tres_rec_t *tres_rec;
+
+	args->tres_req->name = license_entry->name;
+	if (!(tres_rec = assoc_mgr_find_tres_rec(args->tres_req)))
+		return 0; /* not tracked */
+
+	if (slurmdb_find_tres_count_in_string(args->tres_str, tres_rec->id) !=
+	    INFINITE64)
+		return 0; /* already handled */
+	/* New license */
+	xstrfmtcat(args->tres_str, "%s%u=%" PRIu64, args->tres_str ? "," : "",
+		   tres_rec->id, (uint64_t) license_entry->total);
+
+	return 0;
+}
+
 extern char *licenses_2_tres_str(list_t *license_list)
 {
-	list_itr_t *itr;
-	slurmdb_tres_rec_t *tres_rec;
-	licenses_t *license_entry;
-	char *tres_str = NULL;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	licenses_2_tres_str_args_t args = {
+		.tres_req = &tres_req,
+	};
 
 	if (!license_list)
 		return NULL;
@@ -2803,24 +2827,10 @@ extern char *licenses_2_tres_str(list_t *license_list)
 	}
 
 	assoc_mgr_lock(&locks);
-	itr = list_iterator_create(license_list);
-	while ((license_entry = list_next(itr))) {
-		tres_req.name = license_entry->name;
-		if (!(tres_rec = assoc_mgr_find_tres_rec(&tres_req)))
-			continue; /* not tracked */
-
-		if (slurmdb_find_tres_count_in_string(
-			    tres_str, tres_rec->id) != INFINITE64)
-			continue; /* already handled */
-		/* New license */
-		xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-			   tres_str ? "," : "",
-			   tres_rec->id, (uint64_t)license_entry->total);
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(license_list, _foreach_licenses_2_tres_str, &args);
 	assoc_mgr_unlock(&locks);
 
-	return tres_str;
+	return args.tres_str;
 }
 
 extern void license_set_job_tres_cnt(list_t *license_list,
