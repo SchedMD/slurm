@@ -84,6 +84,7 @@
 #define NODEINFO_MAGIC	0x82ad
 #define RUN_JOB_INCR	16
 #define SELECT_DEBUG	0
+#define PREEMPT_SCORE_LAST (1U << 31)
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -1947,7 +1948,8 @@ top:
 				if (pass_count++ ||
 				    (list_count(preemptee_candidates) == 1))
 					break;
-				tmp_job_ptr->details->preempt_score = 9999;
+				tmp_job_ptr->details->preempt_score =
+					PREEMPT_SCORE_LAST;
 				while ((tmp_job_ptr = list_next(job_iterator))) {
 					tmp_job_ptr->details->preempt_score = 0;
 				}

@@ -47,9 +47,14 @@
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/licenses.h"
 
+#define PREEMPT_SCORE_LICENSE (1U << 16)
+#define PREEMPT_SCORE_HRES (1U << 17)
+#define PREEMPT_SCORE_LAST (1U << 31)
+
 typedef struct {
 	int action;
 	list_t *license_list;
+	bool license_overlap;
 	bitstr_t *node_map;
 	node_use_record_t *node_usage;
 	part_res_record_t *part_record_ptr;
@@ -145,6 +150,7 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *node_bitmap;
+	job_record_t *job_ptr;
 	bool job_needed;
 } reorder_args_t;
 
@@ -2470,21 +2476,44 @@ static int _wrapper_get_node_overlap(void *x, void *arg)
 		return 0;
 
 	wargs->rc += bit_overlap(wargs->node_map, job_ptr->node_bitmap);
+	if (license_list_overlap(wargs->license_list, job_ptr->license_list))
+		wargs->license_overlap = true;
+
 	return 0;
 }
 
-static int _get_preempt_score(bitstr_t *node_map, job_record_t *job_ptr)
+/*
+ * Composite preemption reorder score layout:
+ *   bit 31 - reserved for last-success
+ *   bit 17 - HRES MODE_3 overlap
+ *   bit 16 - license overlap
+ *   bits 0-15 - node overlap count
+ */
+static uint32_t _get_preempt_score(bitstr_t *node_map,
+				   job_record_t *preemptor_ptr,
+				   job_record_t *preemptee_ptr)
 {
+	uint32_t score;
 	wrapper_rm_job_args_t wargs = {
+		.license_list = preemptor_ptr->licenses_to_preempt,
 		.node_map = node_map
 	};
 
-	if (!job_ptr->het_job_list)
-		(void) _wrapper_get_node_overlap(job_ptr, &wargs);
+	if (!preemptee_ptr->het_job_list)
+		(void) _wrapper_get_node_overlap(preemptee_ptr, &wargs);
 	else
-		(void) list_for_each_nobreak(job_ptr->het_job_list,
+		(void) list_for_each_nobreak(preemptee_ptr->het_job_list,
 					     _wrapper_get_node_overlap, &wargs);
-	return wargs.rc;
+
+	score = MIN(wargs.rc, UINT16_MAX);
+
+	if (wargs.license_overlap)
+		score |= PREEMPT_SCORE_LICENSE;
+
+	if (hres_jobs_share_mode3(preemptor_ptr, preemptee_ptr))
+		score |= PREEMPT_SCORE_HRES;
+
+	return score;
 }
 
 static int _wrapper_job_res_rm_job(void *x, void *arg)
@@ -3339,7 +3368,7 @@ static int _foreach_cancel_preemptee(void *x, void *arg)
 			  ctx->future_usage, ctx->license_list,
 			  ctx->resv_exc_ptr, false, false, true, NULL);
 	/*
-	 * Clear any 99999 left by an earlier reorder, so that
+	 * Clear any PREEMPT_SCORE_LAST left by an earlier reorder, so that
 	 * _foreach_reorder_score() only ever finds the current sentinel.
 	 */
 	tmp_job_ptr->details->preempt_score = 0;
@@ -3388,13 +3417,14 @@ static int _foreach_reorder_score(void *x, void *arg)
 	job_record_t *job_ptr = x;
 	reorder_args_t *args = arg;
 
-	if (job_ptr->details->preempt_score == 99999) {
+	if (job_ptr->details->preempt_score == PREEMPT_SCORE_LAST) {
 		args->job_needed = false;
 		return 0;
 	}
 	if (args->job_needed)
 		job_ptr->details->preempt_score =
-			_get_preempt_score(args->node_bitmap, job_ptr);
+			_get_preempt_score(args->node_bitmap, args->job_ptr,
+					   job_ptr);
 	else
 		job_ptr->details->preempt_score = 0;
 	return 0;
@@ -3413,10 +3443,11 @@ static void _reorder_preemptee_candidates(run_now_ctx_t *ctx)
 	} else {
 		reorder_args_t args = {
 			.node_bitmap = ctx->node_bitmap,
+			.job_ptr = ctx->job_ptr,
 			.job_needed = true,
 		};
 
-		ctx->last_job_ptr->details->preempt_score = 99999;
+		ctx->last_job_ptr->details->preempt_score = PREEMPT_SCORE_LAST;
 		list_for_each(ctx->preemptee_candidates, _foreach_reorder_score,
 			      &args);
 		list_sort(ctx->preemptee_candidates,
