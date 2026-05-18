@@ -91,7 +91,7 @@ def setup_metrics_test_case(request):
         if metric and int(metric) == 2:
             break
     else:
-        pytest.fatal("Unable to get metrics/jobs properly")
+        pytest.fail("Unable to get metrics/jobs properly")
 
     yield username, xfail
 
