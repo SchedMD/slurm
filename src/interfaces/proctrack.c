@@ -246,7 +246,7 @@ static bool _test_core_dumping(char* stat_fname)
 		xfree(proc_stat);
 		return false;
 	}
-	*str_ptr = '\0';		/* replace trailing ')' with NULL */
+	*str_ptr = '\0'; /* replace trailing ')' with NULL */
 	/* parse these two strings separately, skipping the leading "(". */
 	memset (cmd, 0, sizeof(cmd));
 	sscanf (proc_stat, "%d (%15c", &pid, cmd);   /* comm[16] in kernel */
