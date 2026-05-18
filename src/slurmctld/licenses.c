@@ -181,6 +181,11 @@ typedef struct {
 } bf_licenses_initial_args_t;
 
 typedef struct {
+	char *licenses;
+	char *sep;
+} bf_licenses_to_string_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -2997,28 +3002,33 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 	return args.bf_list;
 }
 
+static int _foreach_bf_licenses_to_string(void *x, void *arg)
+{
+	bf_license_t *entry = x;
+	bf_licenses_to_string_args_t *args = arg;
+
+	xstrfmtcat(args->licenses, "%s%s%s%slic_id=%u:%u", args->sep,
+		   (entry->resv_ptr ? "resv=" : ""),
+		   (entry->resv_ptr ? entry->resv_ptr->name : ""),
+		   (entry->resv_ptr ? ":" : ""), entry->id.lic_id,
+		   entry->remaining);
+	args->sep = ",";
+
+	return 0;
+}
+
 extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 {
-	char *sep = "";
-	char *licenses = NULL;
-	list_itr_t *iter;
-	bf_license_t *entry;
+	bf_licenses_to_string_args_t args = {
+		.sep = "",
+	};
 
 	if (!licenses_list)
 		return NULL;
 
-	iter = list_iterator_create(licenses_list);
-	while ((entry = list_next(iter))) {
-		xstrfmtcat(licenses, "%s%s%s%slic_id=%u:%u", sep,
-			   (entry->resv_ptr ? "resv=" : ""),
-			   (entry->resv_ptr ? entry->resv_ptr->name : ""),
-			   (entry->resv_ptr ? ":" : ""), entry->id.lic_id,
-			   entry->remaining);
-		sep = ",";
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(licenses_list, _foreach_bf_licenses_to_string, &args);
 
-	return licenses;
+	return args.licenses;
 }
 
 static int _foreach_bf_license_copy(void *x, void *arg)
