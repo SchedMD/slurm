@@ -384,30 +384,6 @@ Read a specified Slurm hostfile. The file must contain a list of Slurm NodeNames
 
 =back
 
-=head3 $msg_thr = $slurm->allocation_msg_thr_create($port, $callbacks);
-
-Startup a message handler talking with the controller dealing with messages from the controller during an allocation.
-
-=over 2
-
-=item * OUT $port: port we are listening for messages on from the controller.
-
-=item * IN $callbacks: callbacks for different types of messages, with structure of C<slurm_allocation_callbacks_t>.
-
-=item * RET: opaque object of C<allocation_msg_thread_t *>,  or NULL on failure.
-
-=back
-
-=head3 $slurm->allocation_msg_thr_destroy($msg_thr);
-
-Shutdown the message handler talking with the controller dealing with messages from the controller during an allocation.
-
-=over 2
-
-=item * IN $msg_thr: opaque object of C<allocation_msg_thread_t> pointer.
-
-=back
-
 =head3 $resp = $slurm->submit_batch_job($job_desc_msg);
 
 Issue RPC to submit a job for later execution.
