@@ -206,6 +206,10 @@ typedef struct {
 } slurm_bf_licenses_avail_args_t;
 
 typedef struct {
+	list_t *new_list;
+} license_update_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -1720,67 +1724,86 @@ extern licenses_t *license_find_rec_by_id(list_t *license_list,
 	return list_find_first_ro(license_list, _license_find_rec_by_id, &id);
 }
 
+static int _is_remote_license(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	return license_entry->remote ? 1 : 0;
+}
+
+static int _foreach_license_update_match(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	license_update_args_t *args = arg;
+	licenses_t *match = NULL;
+
+	if (args->new_list) {
+		licenses_find_rec_by_nodes_t find_args = {
+			.name = license_entry->name,
+			.nodes = license_entry->nodes,
+		};
+		match = list_find_first_ro(args->new_list,
+					   _license_find_rec_by_nodes,
+					   &find_args);
+	}
+
+	if (!match) {
+		info("license %s removed with %u in use", license_entry->name,
+		     license_entry->used);
+	} else {
+		match->id.lic_id = license_entry->id.lic_id;
+		match->id.hres_id = license_entry->id.hres_id;
+		if (license_entry->used > match->total)
+			info("license %s count decreased", match->name);
+	}
+
+	return 0;
+}
+
 /* Update licenses on this system based upon slurm.conf.
  * Remove all previously allocated licenses */
 extern int license_update(char *licenses)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
-	list_t *new_list;
+	licenses_t *remote_entry;
+	license_update_args_t args = { 0 };
 	bool valid = true;
 
-	new_list = _build_license_list(licenses, &valid, false, false);
+	args.new_list = _build_license_list(licenses, &valid, false, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
-	_parse_hierarchical_resources(&new_list);
+	_parse_hierarchical_resources(&args.new_list);
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list) { /* no licenses before now */
-		cluster_license_list = new_list;
+		cluster_license_list = args.new_list;
 		slurm_mutex_unlock(&license_mutex);
 		return SLURM_SUCCESS;
 	}
 
-	iter = list_iterator_create(cluster_license_list);
-	while ((license_entry = list_next(iter))) {
-		/* Always add the remote ones, since we handle those
-		   else where. */
-		if (license_entry->remote) {
-			list_remove(iter);
-			if (!new_list)
-				new_list = list_create(license_free_rec);
-			license_entry->used = 0;
-			list_append(new_list, license_entry);
-			continue;
-		}
-		if (new_list) {
-			licenses_find_rec_by_nodes_t args = {
-				.name = license_entry->name,
-				.nodes = license_entry->nodes,
-			};
-			match = list_find_first(new_list,
-						_license_find_rec_by_nodes,
-						&args);
-		} else
-			match = NULL;
-
-		if (!match) {
-			info("license %s removed with %u in use",
-			     license_entry->name, license_entry->used);
-		} else {
-			match->id.lic_id = license_entry->id.lic_id;
-			match->id.hres_id = license_entry->id.hres_id;
-			if (license_entry->used > match->total) {
-				info("license %s count decreased",
-				     match->name);
-			}
-		}
+	/*
+	 * Move remote licenses (handled elsewhere) from the old list to the
+	 * new list with their used counters reset. args is sent to
+	 * _is_remote_license() since args cannot be NULL, but it is not used
+	 * there.
+	 */
+	while ((remote_entry = list_remove_first(cluster_license_list,
+						 _is_remote_license, &args))) {
+		if (!args.new_list)
+			args.new_list = list_create(license_free_rec);
+		remote_entry->used = 0;
+		list_append(args.new_list, remote_entry);
 	}
-	list_iterator_destroy(iter);
+
+	/*
+	 * Match remaining non-remote licenses against the new list to log
+	 * removals and propagate ids to the matching entry.
+	 */
+	list_for_each_ro(cluster_license_list, _foreach_license_update_match,
+			 &args);
 
 	FREE_NULL_LIST(cluster_license_list);
-	cluster_license_list = new_list;
+	cluster_license_list = args.new_list;
 	_set_license_ids();
 
 	_licenses_print("update_license", cluster_license_list, NULL);
