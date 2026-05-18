@@ -10597,7 +10597,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT32, delay_boot, "delay_boot", "Number of seconds after job eligible start that nodes will be rebooted to satisfy feature specification"),
 	add_parse(STRING, dependency, "dependency", "Other jobs that must meet certain criteria before this job can start"),
 	add_parse(TIMESTAMP, end_time, "end_time", "Expected end time (UNIX timestamp)"),
-	add_cparse(JOB_DESC_MSG_ENV, "environment", "Environment variables to be set for the job"),
+	add_cparse(JOB_DESC_MSG_ENV, "environment", "Environment variables to be set for the job; required for job submissions"),
 	add_skip(environment),
 	add_cparse(JOB_DESC_MSG_RLIMIT_CPU, "rlimits/cpu", "Per-process CPU limit, in seconds"),
 	add_cparse(JOB_DESC_MSG_RLIMIT_FSIZE, "rlimits/fsize", "Largest file that can be created, in bytes"),
