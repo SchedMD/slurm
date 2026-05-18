@@ -142,6 +142,11 @@ typedef struct {
 } fuzzy_match_remote_args_t;
 
 typedef struct {
+	char *licenses;
+	char *sep;
+} license_list_to_string_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -615,30 +620,35 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres,
  *
  * RET string representation of licenses. Must be destroyed by caller.
  */
+static int _foreach_license_list_to_string(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	license_list_to_string_args_t *args = arg;
+
+	if (license_entry->nodes)
+		xstrfmtcat(args->licenses, "%s%s(%s):%u", args->sep,
+			   license_entry->name, license_entry->nodes,
+			   license_entry->total);
+	else
+		xstrfmtcat(args->licenses, "%s%s:%u", args->sep,
+			   license_entry->name, license_entry->total);
+	args->sep = license_entry->op_or ? "|" : ";";
+
+	return 0;
+}
+
 extern char *license_list_to_string(list_t *license_list)
 {
-	char *sep = "";
-	char *licenses = NULL;
-	list_itr_t *iter;
-	licenses_t *license_entry;
+	license_list_to_string_args_t args = {
+		.sep = "",
+	};
 
 	if (!license_list)
-		return licenses;
+		return NULL;
 
-	iter = list_iterator_create(license_list);
-	while ((license_entry = list_next(iter))) {
-		if (license_entry->nodes)
-			xstrfmtcat(licenses, "%s%s(%s):%u", sep,
-				   license_entry->name, license_entry->nodes,
-				   license_entry->total);
-		else
-			xstrfmtcat(licenses, "%s%s:%u", sep,
-				   license_entry->name, license_entry->total);
-		sep = license_entry->op_or ? "|" : ";";
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(license_list, _foreach_license_list_to_string, &args);
 
-	return licenses;
+	return args.licenses;
 }
 
 static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
