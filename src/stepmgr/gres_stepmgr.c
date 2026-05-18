@@ -122,6 +122,22 @@ typedef struct {
 	bool typeless_found;
 } foreach_set_type_tres_cnt_t;
 
+typedef struct {
+	bitstr_t *core_bitmap;
+	bool decr_job_alloc;
+	bool first_step_node;
+	list_t *job_gres_list;
+	list_t *node_gres_list;
+	int node_offset;
+	int rc;
+	uint32_t rem_nodes;
+	list_t *step_gres_list_alloc;
+	uint64_t *step_node_mem_alloc;
+	uint16_t tasks_on_node;
+	slurm_step_id_t tmp_step_id;
+	int total_gres_cpu_cnt;
+} foreach_step_alloc_outer_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -2680,6 +2696,64 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 	return 0;
 }
 
+static int _foreach_step_alloc_outer(void *x, void *arg)
+{
+	gres_state_t *gres_state_step = x;
+	foreach_step_alloc_outer_t *outer = arg;
+	gres_step_state_t *gres_ss = gres_state_step->gres_data;
+	gres_key_t job_search_key;
+	foreach_step_alloc_t args;
+
+	job_search_key.config_flags = gres_state_step->config_flags;
+	job_search_key.plugin_id = gres_state_step->plugin_id;
+	if (gres_ss->type_name)
+		job_search_key.type_id = gres_ss->type_id;
+	else
+		job_search_key.type_id = NO_VAL;
+	job_search_key.node_offset = outer->node_offset;
+
+	args.core_bitmap = outer->core_bitmap;
+	args.decr_job_alloc = outer->decr_job_alloc;
+	args.gres_needed = _step_get_gres_needed(
+		gres_ss, outer->first_step_node, outer->tasks_on_node,
+		outer->rem_nodes, &args.max_gres);
+	args.job_search_key = &job_search_key;
+	args.node_gres_list = outer->node_gres_list;
+	args.node_offset = outer->node_offset;
+	args.rc = SLURM_SUCCESS;
+	args.step_gres_list_alloc = outer->step_gres_list_alloc;
+	args.gres_state_step = gres_state_step;
+	args.step_node_mem_alloc = outer->step_node_mem_alloc;
+	args.tmp_step_id = outer->tmp_step_id;
+	args.total_gres_cpu_cnt = 0;
+
+	/* Pass 1: Allocate GRES overlapping available cores */
+	list_for_each_ro(outer->job_gres_list, (ListForF) _step_alloc_type,
+			 &args);
+	if (args.gres_needed) {
+		log_flag(STEPS, "cpus for optimal gres/%s topology unavailable for %ps allocating anyway.",
+			 gres_state_step->gres_name, &outer->tmp_step_id);
+	}
+	/* Pass 2: Allocate any available GRES */
+	args.core_bitmap = NULL;
+	list_for_each_ro(outer->job_gres_list, (ListForF) _step_alloc_type,
+			 &args);
+	outer->total_gres_cpu_cnt += args.total_gres_cpu_cnt;
+
+	if (args.rc != SLURM_SUCCESS)
+		outer->rc = args.rc;
+
+	if (args.gres_needed && args.gres_needed != INFINITE64 &&
+	    outer->rc == SLURM_SUCCESS) {
+		error("gres/%s: %s for %ps, step's > job's for node %d (gres still needed: %" PRIu64 ")",
+		      gres_state_step->gres_name, __func__, &outer->tmp_step_id,
+		      outer->node_offset, args.gres_needed);
+		outer->rc = ESLURM_INSUFFICIENT_GRES;
+	}
+
+	return 0;
+}
+
 extern int gres_stepmgr_step_alloc(list_t *step_gres_list,
 				   list_t **step_gres_list_alloc,
 				   list_t *job_gres_list, int node_offset,
@@ -2691,10 +2765,18 @@ extern int gres_stepmgr_step_alloc(list_t *step_gres_list,
 				   bitstr_t *core_bitmap,
 				   int *total_gres_cpu_cnt)
 {
-	int rc = SLURM_SUCCESS;
-	list_itr_t *step_gres_iter;
-	gres_state_t *gres_state_step;
-	slurm_step_id_t tmp_step_id = { 0 };
+	foreach_step_alloc_outer_t outer = {
+		.core_bitmap = core_bitmap,
+		.decr_job_alloc = decr_job_alloc,
+		.first_step_node = first_step_node,
+		.job_gres_list = job_gres_list,
+		.node_gres_list = node_gres_list,
+		.node_offset = node_offset,
+		.rc = SLURM_SUCCESS,
+		.rem_nodes = rem_nodes,
+		.step_node_mem_alloc = step_node_mem_alloc,
+		.tasks_on_node = tasks_on_node,
+	};
 
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -2706,70 +2788,19 @@ extern int gres_stepmgr_step_alloc(list_t *step_gres_list,
 
 	if (!*step_gres_list_alloc)
 		*step_gres_list_alloc = list_create(gres_step_list_delete);
+	outer.step_gres_list_alloc = *step_gres_list_alloc;
 
 	xassert(step_node_mem_alloc);
 	*step_node_mem_alloc = 0;
 
-	tmp_step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
-	tmp_step_id.step_id = step_id;
+	outer.tmp_step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	outer.tmp_step_id.step_id = step_id;
 
-	step_gres_iter = list_iterator_create(step_gres_list);
-	while ((gres_state_step = list_next(step_gres_iter))) {
-		gres_step_state_t *gres_ss =
-			(gres_step_state_t *) gres_state_step->gres_data;
-		gres_key_t job_search_key;
-		foreach_step_alloc_t args;
-		job_search_key.config_flags = gres_state_step->config_flags;
-		job_search_key.plugin_id = gres_state_step->plugin_id;
-		if (gres_ss->type_name)
-			job_search_key.type_id = gres_ss->type_id;
-		else
-			job_search_key.type_id = NO_VAL;
+	list_for_each_ro(step_gres_list, _foreach_step_alloc_outer, &outer);
 
-		job_search_key.node_offset = node_offset;
-		args.core_bitmap = core_bitmap;
-		args.decr_job_alloc = decr_job_alloc;
-		args.gres_needed = _step_get_gres_needed(
-			gres_ss, first_step_node, tasks_on_node,
-			rem_nodes, &args.max_gres);
+	*total_gres_cpu_cnt += outer.total_gres_cpu_cnt;
 
-		args.job_search_key = &job_search_key;
-		args.node_gres_list = node_gres_list;
-		args.node_offset = node_offset;
-		args.rc = SLURM_SUCCESS;
-		args.step_gres_list_alloc = *step_gres_list_alloc;
-		args.gres_state_step = gres_state_step;
-		args.step_node_mem_alloc = step_node_mem_alloc;
-		args.tmp_step_id = tmp_step_id;
-		args.total_gres_cpu_cnt = 0;
-
-		/* Pass 1: Allocate GRES overlapping available cores */
-		(void) list_for_each(job_gres_list, (ListForF) _step_alloc_type,
-				     &args);
-		if (args.gres_needed) {
-			log_flag(STEPS, "cpus for optimal gres/%s topology unavailable for %ps allocating anyway.",
-				 gres_state_step->gres_name, &tmp_step_id);
-		}
-		/* Pass 2: Allocate any available GRES */
-		args.core_bitmap = NULL;
-		(void) list_for_each(job_gres_list, (ListForF) _step_alloc_type,
-				     &args);
-		*total_gres_cpu_cnt += args.total_gres_cpu_cnt;
-
-		if (args.rc != SLURM_SUCCESS)
-			rc = args.rc;
-
-		if (args.gres_needed && args.gres_needed != INFINITE64 &&
-		    rc == SLURM_SUCCESS) {
-			error("gres/%s: %s for %ps, step's > job's for node %d (gres still needed: %"PRIu64")",
-			      gres_state_step->gres_name, __func__, &tmp_step_id,
-			      node_offset, args.gres_needed);
-			rc = ESLURM_INSUFFICIENT_GRES;
-		}
-	}
-	list_iterator_destroy(step_gres_iter);
-
-	return rc;
+	return outer.rc;
 }
 
 static int _step_dealloc(gres_state_t *gres_state_step, list_t *job_gres_list,
