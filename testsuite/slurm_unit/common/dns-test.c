@@ -50,7 +50,7 @@
 static void _test_addr_to_string(const slurm_addr_t *addr,
 				 const socklen_t addrlen, const char *dst)
 {
-	char *str = sockaddr_to_string(addr, addrlen);
+	char *str = sockaddr_to_string(addr, addrlen, true);
 
 	if (!dst) {
 		ck_assert(str == NULL);
