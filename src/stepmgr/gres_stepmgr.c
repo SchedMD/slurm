@@ -98,6 +98,16 @@ typedef struct {
 	bool resize;
 } foreach_job_dealloc_t;
 
+typedef struct {
+	bitstr_t *from_job_node_bitmap;
+	int i_first;
+	int i_last;
+	int new_node_cnt;
+	bool select_hetero;
+	list_t *to_job_gres_list;
+	bitstr_t *to_job_node_bitmap;
+} foreach_job_merge_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -1663,6 +1673,157 @@ extern int gres_stepmgr_job_dealloc(
  *			     into job
  * IN to_job_node_bitmap - bitmap of nodes for the job being merged into
  */
+static int _foreach_expand_to_job_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_job_merge_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	bitstr_t **new_gres_bit_alloc, **new_gres_bit_step_alloc;
+	uint64_t *new_gres_cnt_node_alloc, *new_gres_cnt_step_alloc;
+	int to_inx = -1, new_inx = -1;
+
+	new_gres_bit_alloc =
+		xcalloc(args->new_node_cnt, sizeof(bitstr_t *));
+	new_gres_cnt_node_alloc =
+		xcalloc(args->new_node_cnt, sizeof(uint64_t));
+	new_gres_bit_step_alloc =
+		xcalloc(args->new_node_cnt, sizeof(bitstr_t *));
+	new_gres_cnt_step_alloc =
+		xcalloc(args->new_node_cnt, sizeof(uint64_t));
+
+	for (int i = args->i_first; i <= args->i_last; i++) {
+		bool from_match = false, to_match = false;
+		if (bit_test(args->to_job_node_bitmap, i)) {
+			to_match = true;
+			to_inx++;
+		}
+		if (bit_test(args->from_job_node_bitmap, i))
+			from_match = true;
+		if (from_match || to_match)
+			new_inx++;
+		if (to_match) {
+			if (gres_js->gres_bit_alloc) {
+				new_gres_bit_alloc[new_inx] =
+					gres_js->gres_bit_alloc[to_inx];
+			}
+			if (gres_js->gres_cnt_node_alloc) {
+				new_gres_cnt_node_alloc[new_inx] =
+					gres_js->gres_cnt_node_alloc[to_inx];
+			}
+			if (gres_js->gres_bit_step_alloc) {
+				new_gres_bit_step_alloc[new_inx] =
+					gres_js->gres_bit_step_alloc[to_inx];
+			}
+			if (gres_js->gres_cnt_step_alloc) {
+				new_gres_cnt_step_alloc[new_inx] =
+					gres_js->gres_cnt_step_alloc[to_inx];
+			}
+		}
+	}
+	gres_js->node_cnt = args->new_node_cnt;
+	xfree(gres_js->gres_bit_alloc);
+	gres_js->gres_bit_alloc = new_gres_bit_alloc;
+	xfree(gres_js->gres_cnt_node_alloc);
+	gres_js->gres_cnt_node_alloc = new_gres_cnt_node_alloc;
+	xfree(gres_js->gres_bit_step_alloc);
+	gres_js->gres_bit_step_alloc = new_gres_bit_step_alloc;
+	xfree(gres_js->gres_cnt_step_alloc);
+	gres_js->gres_cnt_step_alloc = new_gres_cnt_step_alloc;
+
+	return 0;
+}
+
+static int _foreach_merge_from_job_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_job_merge_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	gres_state_t *gres_state_job2 = list_find_first_ro(
+		args->to_job_gres_list, gres_find_id,
+		&gres_state_job->plugin_id);
+	gres_job_state_t *gres_js2;
+	int from_inx = -1, new_inx = -1;
+
+	if (gres_state_job2) {
+		gres_js2 = gres_state_job2->gres_data;
+	} else {
+		gres_js2 = xmalloc(sizeof(gres_job_state_t));
+		gres_js2->cpus_per_gres = gres_js->cpus_per_gres;
+		gres_js2->gres_per_job = gres_js->gres_per_job;
+		gres_js2->gres_per_job = gres_js->gres_per_job;
+		gres_js2->gres_per_socket = gres_js->gres_per_socket;
+		gres_js2->gres_per_task = gres_js->gres_per_task;
+		gres_js2->mem_per_gres = gres_js->mem_per_gres;
+		gres_js2->ntasks_per_gres = gres_js->ntasks_per_gres;
+		gres_js2->node_cnt = args->new_node_cnt;
+		gres_js2->gres_bit_alloc =
+			xcalloc(args->new_node_cnt, sizeof(bitstr_t *));
+		gres_js2->gres_cnt_node_alloc =
+			xcalloc(args->new_node_cnt, sizeof(uint64_t));
+		gres_js2->gres_bit_step_alloc =
+			xcalloc(args->new_node_cnt, sizeof(bitstr_t *));
+		gres_js2->gres_cnt_step_alloc =
+			xcalloc(args->new_node_cnt, sizeof(uint64_t));
+
+		gres_state_job2 = gres_create_state(
+			gres_state_job, GRES_STATE_SRC_STATE_PTR,
+			GRES_STATE_TYPE_JOB, gres_js2);
+
+		list_append(args->to_job_gres_list, gres_state_job2);
+	}
+	for (int i = args->i_first; i <= args->i_last; i++) {
+		bool from_match = false, to_match = false;
+		if (bit_test(args->to_job_node_bitmap, i))
+			to_match = true;
+		if (bit_test(args->from_job_node_bitmap, i)) {
+			from_match = true;
+			from_inx++;
+		}
+		if (from_match || to_match)
+			new_inx++;
+		if (!from_match)
+			continue;
+
+		if (!gres_js->gres_bit_alloc) {
+			;
+		} else if (args->select_hetero &&
+			   gres_js2->gres_bit_alloc[new_inx] &&
+			   gres_js->gres_bit_alloc &&
+			   gres_js->gres_bit_alloc[new_inx]) {
+			/* Merge job's GRES bitmaps */
+			bit_or(gres_js2->gres_bit_alloc[new_inx],
+			       gres_js->gres_bit_alloc[from_inx]);
+		} else if (gres_js2->gres_bit_alloc[new_inx]) {
+			/* Keep original job's GRES bitmap */
+		} else {
+			gres_js2->gres_bit_alloc[new_inx] =
+				gres_js->gres_bit_alloc[from_inx];
+			gres_js->gres_bit_alloc[from_inx] = NULL;
+		}
+		if (!gres_js->gres_cnt_node_alloc) {
+			;
+		} else if (args->select_hetero &&
+			   gres_js2->gres_cnt_node_alloc[new_inx] &&
+			   gres_js->gres_cnt_node_alloc &&
+			   gres_js->gres_cnt_node_alloc[new_inx]) {
+			gres_js2->gres_cnt_node_alloc[new_inx] +=
+				gres_js->gres_cnt_node_alloc[from_inx];
+		} else if (gres_js2->gres_cnt_node_alloc[new_inx]) {
+			/* Keep original job's GRES bitmap */
+		} else {
+			gres_js2->gres_cnt_node_alloc[new_inx] =
+				gres_js->gres_cnt_node_alloc[from_inx];
+			gres_js->gres_cnt_node_alloc[from_inx] = 0;
+		}
+		if (gres_js->gres_cnt_step_alloc &&
+		    gres_js->gres_cnt_step_alloc[from_inx]) {
+			error("Attempt to merge gres, from job has active steps");
+		}
+	}
+
+	return 0;
+}
+
 extern void gres_stepmgr_job_merge(
 	list_t *from_job_gres_list,
 	bitstr_t *from_job_node_bitmap,
@@ -1670,15 +1831,11 @@ extern void gres_stepmgr_job_merge(
 	bitstr_t *to_job_node_bitmap)
 {
 	static int select_hetero = -1;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_job, *gres_state_job2;
-	gres_job_state_t *gres_js, *gres_js2;
-	int new_node_cnt;
-	int i_first, i_last, i;
-	int from_inx, to_inx, new_inx;
-	bitstr_t **new_gres_bit_alloc, **new_gres_bit_step_alloc;
-	uint64_t *new_gres_cnt_step_alloc, *new_gres_cnt_node_alloc;
 	bool free_to_job_gres_list = false;
+	foreach_job_merge_t args = {
+		.from_job_node_bitmap = from_job_node_bitmap,
+		.to_job_node_bitmap = to_job_node_bitmap,
+	};
 
 	if (select_hetero == -1) {
 		/*
@@ -1692,203 +1849,39 @@ extern void gres_stepmgr_job_merge(
 			select_hetero = 0;
 		xfree(select_type);
 	}
+	args.select_hetero = select_hetero;
 
-	new_node_cnt = bit_set_count(from_job_node_bitmap) +
+	args.new_node_cnt = bit_set_count(from_job_node_bitmap) +
 		bit_set_count(to_job_node_bitmap) -
 		bit_overlap(from_job_node_bitmap, to_job_node_bitmap);
-	i_first = MIN(bit_ffs(from_job_node_bitmap),
-		      bit_ffs(to_job_node_bitmap));
-	i_first = MAX(i_first, 0);
-	i_last  = MAX(bit_fls(from_job_node_bitmap),
-		      bit_fls(to_job_node_bitmap));
-	if (i_last == -1) {
+	args.i_first = MIN(bit_ffs(from_job_node_bitmap),
+			   bit_ffs(to_job_node_bitmap));
+	args.i_first = MAX(args.i_first, 0);
+	args.i_last = MAX(bit_fls(from_job_node_bitmap),
+			  bit_fls(to_job_node_bitmap));
+	if (args.i_last == -1) {
 		error("%s: node_bitmaps are empty", __func__);
 		return;
 	}
 
 	/* Step one - Expand the gres data structures in "to" job */
-	if (!to_job_gres_list)
-		goto step2;
-	gres_iter = list_iterator_create(to_job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		new_gres_bit_alloc = xcalloc(new_node_cnt, sizeof(bitstr_t *));
-		new_gres_cnt_node_alloc = xcalloc(new_node_cnt,
-						  sizeof(uint64_t));
-		new_gres_bit_step_alloc = xcalloc(new_node_cnt,
-						  sizeof(bitstr_t *));
-		new_gres_cnt_step_alloc = xcalloc(new_node_cnt,
-						  sizeof(uint64_t));
-
-		from_inx = to_inx = new_inx = -1;
-		for (i = i_first; i <= i_last; i++) {
-			bool from_match = false, to_match = false;
-			if (bit_test(to_job_node_bitmap, i)) {
-				to_match = true;
-				to_inx++;
-			}
-			if (bit_test(from_job_node_bitmap, i)) {
-				from_match = true;
-				from_inx++;
-			}
-			if (from_match || to_match)
-				new_inx++;
-			if (to_match) {
-				if (gres_js->gres_bit_alloc) {
-					new_gres_bit_alloc[new_inx] =
-						gres_js->
-						gres_bit_alloc[to_inx];
-				}
-				if (gres_js->gres_cnt_node_alloc) {
-					new_gres_cnt_node_alloc[new_inx] =
-						gres_js->
-						gres_cnt_node_alloc[to_inx];
-				}
-				if (gres_js->gres_bit_step_alloc) {
-					new_gres_bit_step_alloc[new_inx] =
-						gres_js->
-						gres_bit_step_alloc[to_inx];
-				}
-				if (gres_js->gres_cnt_step_alloc) {
-					new_gres_cnt_step_alloc[new_inx] =
-						gres_js->
-						gres_cnt_step_alloc[to_inx];
-				}
-			}
-		}
-		gres_js->node_cnt = new_node_cnt;
-		xfree(gres_js->gres_bit_alloc);
-		gres_js->gres_bit_alloc = new_gres_bit_alloc;
-		xfree(gres_js->gres_cnt_node_alloc);
-		gres_js->gres_cnt_node_alloc = new_gres_cnt_node_alloc;
-		xfree(gres_js->gres_bit_step_alloc);
-		gres_js->gres_bit_step_alloc = new_gres_bit_step_alloc;
-		xfree(gres_js->gres_cnt_step_alloc);
-		gres_js->gres_cnt_step_alloc = new_gres_cnt_step_alloc;
-	}
-	list_iterator_destroy(gres_iter);
+	if (to_job_gres_list)
+		list_for_each_ro(to_job_gres_list, _foreach_expand_to_job_gres,
+				 &args);
 
 	/*
 	 * Step two - Merge the gres information from the "from" job into the
 	 * existing gres information for the "to" job
 	 */
-step2:	if (!from_job_gres_list)
+	if (!from_job_gres_list)
 		goto step3;
 	if (!to_job_gres_list) {
 		to_job_gres_list = list_create(gres_job_list_delete);
 		free_to_job_gres_list = true;
 	}
-	gres_iter = list_iterator_create(from_job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		gres_state_job2 = list_find_first(to_job_gres_list,
-						  gres_find_id,
-						  &gres_state_job->plugin_id);
-		if (gres_state_job2) {
-			gres_js2 = gres_state_job2->gres_data;
-		} else {
-			gres_js2 = xmalloc(sizeof(gres_job_state_t));
-			gres_js2->cpus_per_gres =
-				gres_js->cpus_per_gres;
-			gres_js2->gres_per_job =
-				gres_js->gres_per_job;
-			gres_js2->gres_per_job =
-				gres_js->gres_per_job;
-			gres_js2->gres_per_socket =
-				gres_js->gres_per_socket;
-			gres_js2->gres_per_task =
-				gres_js->gres_per_task;
-			gres_js2->mem_per_gres =
-				gres_js->mem_per_gres;
-			gres_js2->ntasks_per_gres =
-				gres_js->ntasks_per_gres;
-			gres_js2->node_cnt = new_node_cnt;
-			gres_js2->gres_bit_alloc =
-				xcalloc(new_node_cnt, sizeof(bitstr_t *));
-			gres_js2->gres_cnt_node_alloc =
-				xcalloc(new_node_cnt, sizeof(uint64_t));
-			gres_js2->gres_bit_step_alloc =
-				xcalloc(new_node_cnt, sizeof(bitstr_t *));
-			gres_js2->gres_cnt_step_alloc =
-				xcalloc(new_node_cnt, sizeof(uint64_t));
-
-			gres_state_job2 = gres_create_state(
-				gres_state_job, GRES_STATE_SRC_STATE_PTR,
-				GRES_STATE_TYPE_JOB, gres_js2);
-
-			list_append(to_job_gres_list, gres_state_job2);
-		}
-		from_inx = to_inx = new_inx = -1;
-		for (i = i_first; i <= i_last; i++) {
-			bool from_match = false, to_match = false;
-			if (bit_test(to_job_node_bitmap, i)) {
-				to_match = true;
-				to_inx++;
-			}
-			if (bit_test(from_job_node_bitmap, i)) {
-				from_match = true;
-				from_inx++;
-			}
-			if (from_match || to_match)
-				new_inx++;
-			if (from_match) {
-				if (!gres_js->gres_bit_alloc) {
-					;
-				} else if (select_hetero &&
-					   gres_js2->
-					   gres_bit_alloc[new_inx] &&
-					   gres_js->gres_bit_alloc &&
-					   gres_js->
-					   gres_bit_alloc[new_inx]) {
-					/* Merge job's GRES bitmaps */
-					bit_or(gres_js2->
-					       gres_bit_alloc[new_inx],
-					       gres_js->
-					       gres_bit_alloc[from_inx]);
-				} else if (gres_js2->
-					   gres_bit_alloc[new_inx]) {
-					/* Keep original job's GRES bitmap */
-				} else {
-					gres_js2->gres_bit_alloc[new_inx] =
-						gres_js->
-						gres_bit_alloc[from_inx];
-					gres_js->
-						gres_bit_alloc
-						[from_inx] = NULL;
-				}
-				if (!gres_js->gres_cnt_node_alloc) {
-					;
-				} else if (select_hetero &&
-					   gres_js2->
-					   gres_cnt_node_alloc[new_inx] &&
-					   gres_js->gres_cnt_node_alloc &&
-					   gres_js->
-					   gres_cnt_node_alloc[new_inx]) {
-					gres_js2->
-						gres_cnt_node_alloc[new_inx] +=
-						gres_js->
-						gres_cnt_node_alloc[from_inx];
-				} else if (gres_js2->
-					   gres_cnt_node_alloc[new_inx]) {
-					/* Keep original job's GRES bitmap */
-				} else {
-					gres_js2->
-						gres_cnt_node_alloc[new_inx] =
-						gres_js->
-						gres_cnt_node_alloc[from_inx];
-					gres_js->
-						gres_cnt_node_alloc[from_inx]=0;
-				}
-				if (gres_js->gres_cnt_step_alloc &&
-				    gres_js->
-				    gres_cnt_step_alloc[from_inx]) {
-					error("Attempt to merge gres, from "
-					      "job has active steps");
-				}
-			}
-		}
-	}
-	list_iterator_destroy(gres_iter);
+	args.to_job_gres_list = to_job_gres_list;
+	list_for_each_ro(from_job_gres_list, _foreach_merge_from_job_gres,
+			 &args);
 
 step3:
 	if (free_to_job_gres_list)
@@ -1902,7 +1895,7 @@ extern void gres_stepmgr_job_clear_alloc(list_t *job_gres_list)
 	if (job_gres_list == NULL)
 		return;
 
-	list_for_each(job_gres_list, _foreach_clear_job_gres, NULL);
+	list_for_each_ro(job_gres_list, _foreach_clear_job_gres, NULL);
 }
 
 static char *_build_shared_gres_details(char *nodes, int node_index,
