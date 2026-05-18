@@ -306,16 +306,11 @@ again:
  *
  * RETVAL:	==0 - no valid data
  * 		!=0 - data are valid
- *
- * Based upon stat2proc() from the ps command. It can handle arbitrary
- * executable file basenames for `cmd', i.e. those with embedded whitespace or
- * embedded ')'s. Such names confuse %s (see scanf(3)), so the string is split
- * and %39c is used instead. (except for embedded ')' "(%[^)]c)" would work.
  */
 static int _get_process_data_line(int in, jag_prec_t *prec) {
 	char sbuf[512], *tmp;
 	int num_read, nvals;
-	char cmd[40], state[1];
+	char state[1];
 	int ppid, pgrp, session, tty_nr, tpgid;
 	long unsigned flags, minflt, cminflt, majflt, cmajflt;
 	long unsigned utime, stime, starttime, vsize;
@@ -329,16 +324,17 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	sbuf[num_read] = '\0';
 
 	/*
-	 * split into "PID (cmd" and "<rest>" replace trailing ')' with NULL
+	 * Split on the last ')' to handle cmd names with embedded ')'.
+	 * After the split sbuf holds "PID (cmd" and tmp+2 holds the rest.
 	 */
 	tmp = strrchr(sbuf, ')');
 	if (!tmp)
 		return 0;
 	*tmp = '\0';
 
-	/* parse these two strings separately, skipping the leading "(". */
-	nvals = sscanf(sbuf, "%d (%39c", &prec->pid, cmd);
-	if (nvals < 2)
+	/* parse the PID from the first segment, skipping the leading "(". */
+	nvals = sscanf(sbuf, "%d (", &prec->pid);
+	if (nvals < 1)
 		return 0;
 
 	nvals = sscanf(tmp + 2,	 /* skip space after ')' too */
