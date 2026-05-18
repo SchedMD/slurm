@@ -1815,6 +1815,22 @@ extern bool listeners_quiesced(void)
 	return quiesced;
 }
 
+/*
+ * Return true when listeners.standby_mode is set (in run_backup() standby),
+ * false when the main loop is on the primary controller path
+ * (slurmctld_primary || backup_has_control) in normal steady state.
+ */
+extern bool slurmctld_listeners_in_standby(void)
+{
+	bool standby;
+
+	slurm_mutex_lock(&listeners.mutex);
+	standby = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return standby;
+}
+
 extern bool is_primary(void)
 {
 	bool primary;
