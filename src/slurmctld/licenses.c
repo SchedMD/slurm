@@ -198,6 +198,14 @@ typedef struct {
 } slurm_bf_licenses_transfer_args_t;
 
 typedef struct {
+	bool avail;
+	job_record_t *job_ptr;
+	bf_licenses_t *licenses;
+	bitstr_t *node_bitmap;
+	bitstr_t *tmp_bitmap;
+} slurm_bf_licenses_avail_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -3287,89 +3295,97 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 			 &args);
 }
 
+static int _foreach_bf_licenses_avail(void *x, void *arg)
+{
+	licenses_t *need = x;
+	slurm_bf_licenses_avail_args_t *args = arg;
+	bf_license_t *resv_entry = NULL, *bf_entry;
+	int needed = need->total;
+
+	if (need->id.hres_id != NO_VAL16) {
+		if (!args->node_bitmap)
+			return 0;
+		COPY_BITMAP(args->tmp_bitmap, args->node_bitmap);
+		slurm_bf_hres_filter(args->job_ptr, args->tmp_bitmap,
+				     args->licenses);
+		if (!bit_equal(args->tmp_bitmap, args->node_bitmap)) {
+			args->avail = false;
+			return -1;
+		}
+		return 0;
+	}
+	/*
+	 * Jobs with reservations may use licenses out of the reservation, as
+	 * well as global ones. Deduct from reservation first, then global as
+	 * needed.
+	 */
+	if (args->job_ptr->resv_ptr) {
+		bf_licenses_find_resv_t target_record = {
+			.id = need->id,
+			.resv_ptr = args->job_ptr->resv_ptr,
+		};
+
+		resv_entry = list_find_first_ro(args->licenses,
+						_bf_licenses_find_resv,
+						&target_record);
+
+		if (resv_entry && (needed <= resv_entry->remaining)) {
+			/*
+			 * OR - only need one, stop searching. Set avail = true
+			 * in case a previous license was unavailable.
+			 */
+			if (need->op_or) {
+				args->avail = true;
+				return -1;
+			}
+			/* AND */
+			return 0;
+		} else if (resv_entry)
+			needed -= resv_entry->remaining;
+	}
+
+	bf_entry = list_find_first_ro(args->licenses, _bf_licenses_find_rec,
+				      &(need->id));
+
+	if (!bf_entry || (bf_entry->remaining < needed)) {
+		args->avail = false;
+		/*
+		 * OR - keep searching until we find one that is available or
+		 * we get through the whole list.
+		 */
+		if (need->op_or)
+			return 0;
+		/* AND */
+		return -1;
+	}
+	/* OR - only need one, stop searching. */
+	if (need->op_or) {
+		args->avail = true;
+		return -1;
+	}
+
+	return 0;
+}
+
 extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 				    job_record_t *job_ptr,
 				    bitstr_t *node_bitmap)
 {
-	list_itr_t *iter;
-	licenses_t *need;
-	bool avail = true;
-	bitstr_t *tmp_bitmap = NULL;
+	slurm_bf_licenses_avail_args_t args = {
+		.avail = true,
+		.job_ptr = job_ptr,
+		.licenses = licenses,
+		.node_bitmap = node_bitmap,
+	};
 
 	if (!job_ptr->license_list)
 		return true;
 
-	iter = list_iterator_create(job_ptr->license_list);
-	while ((need = list_next(iter))) {
-		bf_license_t *resv_entry = NULL, *bf_entry;
-		int needed = need->total;
+	list_for_each(job_ptr->license_list, _foreach_bf_licenses_avail, &args);
 
-		if (need->id.hres_id != NO_VAL16) {
-			if (!node_bitmap)
-				continue;
-			COPY_BITMAP(tmp_bitmap, node_bitmap);
-			slurm_bf_hres_filter(job_ptr, tmp_bitmap, licenses);
-			if (!bit_equal(tmp_bitmap, node_bitmap)) {
-				avail = false;
-				break;
-			}
-			continue;
-		}
-		/*
-		 * Jobs with reservations may use licenses out of the
-		 * reservation, as well as global ones. Deduct from
-		 * reservation first, then global as needed.
-		 */
-		if (job_ptr->resv_ptr) {
-			bf_licenses_find_resv_t target_record = {
-				.id = need->id,
-				.resv_ptr = job_ptr->resv_ptr,
-			};
+	FREE_NULL_BITMAP(args.tmp_bitmap);
 
-			resv_entry = list_find_first(licenses,
-						     _bf_licenses_find_resv,
-						     &target_record);
-
-			if (resv_entry && (needed <= resv_entry->remaining)) {
-				/*
-				 * OR - only need one, stop searching.
-				 * Set avail = true in case a previous license
-				 * was unavailable.
-				 */
-				if (need->op_or) {
-					avail = true;
-					break;
-				}
-				/* AND */
-				continue;
-			} else if (resv_entry)
-				needed -= resv_entry->remaining;
-		}
-
-		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   &(need->id));
-
-		if (!bf_entry || (bf_entry->remaining < needed)) {
-			avail = false;
-			/*
-			 * OR - keep searching until we find one that is
-			 * available or we get through the whole list.
-			 */
-			if (need->op_or)
-				continue;
-			/* AND */
-			break;
-		}
-		/* OR - only need one, stop searching. */
-		if (need->op_or) {
-			avail = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-	FREE_NULL_BITMAP(tmp_bitmap);
-
-	return avail;
+	return args.avail;
 }
 
 static int _bf_licenses_find_difference(void *x, void *key)
