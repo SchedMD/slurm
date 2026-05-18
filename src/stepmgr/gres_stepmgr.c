@@ -76,6 +76,7 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *core_bitmap;
+	list_t *job_gres_list;
 	list_t *job_gres_list_alloc;
 	uint32_t job_id;
 	bool new_alloc;
@@ -1165,16 +1166,104 @@ extern int gres_stepmgr_job_alloc(
  * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
+static int _foreach_job_alloc_whole_node(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	foreach_job_alloc_t *args = arg;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	gres_key_t job_search_key;
+	int rc2;
+
+	if (!gres_ns->gres_cnt_config)
+		return 0;
+
+	/* Allocate shared GRES if requested */
+	if (gres_id_shared(gres_state_node->config_flags)) {
+		if (!list_find_first_ro(args->job_gres_list, gres_find_id,
+					&gres_state_node->plugin_id))
+			return 0;
+	}
+	/* If we allocate the shared gres don't allocate sharing gres */
+	if (gres_ns->alt_gres &&
+	    gres_id_sharing(gres_state_node->plugin_id)) {
+		if (list_find_first_ro(args->job_gres_list, gres_find_id,
+				       &(gres_ns->alt_gres->plugin_id)))
+			return 0;
+	}
+
+	if (gres_state_node->config_flags & GRES_CONF_EXPLICIT) {
+		if (args->job_gres_list) {
+			foreach_explicit_alloc_t explicit_alloc = {
+				.core_bitmap = args->core_bitmap,
+				.gres_state_node = gres_state_node,
+				.job_id = args->job_id,
+				.job_gres_list = &args->job_gres_list_alloc,
+				.new_alloc = args->new_alloc,
+				.node_cnt = args->node_cnt,
+				.node_index = args->node_index,
+				.node_offset = args->node_offset,
+				.node_name = args->node_name,
+				.rc = args->rc,
+			};
+			_job_alloc_explicit(args->job_gres_list,
+					    &explicit_alloc);
+		}
+		return 0;
+	}
+
+	job_search_key.config_flags = gres_state_node->config_flags;
+	job_search_key.plugin_id = gres_state_node->plugin_id;
+
+	/*
+	 * This check is needed and different from the one in
+	 * gres_stepmgr_job_select_whole_node(). _job_alloc() handles all the
+	 * heavy lifting later on to make this all correct.
+	 */
+	if (!gres_ns->type_cnt) {
+		job_search_key.type_id = 0;
+		rc2 = _job_alloc_whole_node_internal(
+			&job_search_key, gres_state_node, args->job_gres_list,
+			&args->job_gres_list_alloc, args->node_cnt,
+			args->node_index, args->node_offset, -1, args->job_id,
+			args->node_name, args->core_bitmap, args->new_alloc);
+		if (rc2 != SLURM_SUCCESS)
+			args->rc = rc2;
+	} else {
+		for (int j = 0; j < gres_ns->type_cnt; j++) {
+			job_search_key.type_id =
+				gres_build_id(gres_ns->type_name[j]);
+			rc2 = _job_alloc_whole_node_internal(
+				&job_search_key, gres_state_node,
+				args->job_gres_list, &args->job_gres_list_alloc,
+				args->node_cnt, args->node_index,
+				args->node_offset, j, args->job_id,
+				args->node_name, args->core_bitmap,
+				args->new_alloc);
+			if (rc2 != SLURM_SUCCESS)
+				args->rc = rc2;
+		}
+	}
+
+	return 0;
+}
+
 extern int gres_stepmgr_job_alloc_whole_node(
 	list_t *job_gres_list, list_t **job_gres_list_alloc, list_t *node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap, bool new_alloc)
 {
-	int rc = SLURM_ERROR, rc2;
-	list_itr_t *node_gres_iter;
-	gres_state_t *gres_state_node;
-	gres_node_state_t *gres_ns;
+	foreach_job_alloc_t args = {
+		.core_bitmap = core_bitmap,
+		.job_gres_list = job_gres_list,
+		.job_id = job_id,
+		.new_alloc = new_alloc,
+		.node_cnt = node_cnt,
+		.node_index = node_index,
+		.node_name = node_name,
+		.node_offset = node_offset,
+		.rc = SLURM_ERROR,
+	};
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -1183,87 +1272,13 @@ extern int gres_stepmgr_job_alloc_whole_node(
 		      __func__, job_id, node_name);
 		return SLURM_ERROR;
 	}
+	args.job_gres_list_alloc = *job_gres_list_alloc;
 
-	node_gres_iter = list_iterator_create(node_gres_list);
-	while ((gres_state_node = list_next(node_gres_iter))) {
-		gres_key_t job_search_key;
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
+	list_for_each_ro(node_gres_list, _foreach_job_alloc_whole_node, &args);
 
-		if (!gres_ns->gres_cnt_config)
-			continue;
+	*job_gres_list_alloc = args.job_gres_list_alloc;
 
-		/* Allocate shared GRES if requested */
-		if (gres_id_shared(gres_state_node->config_flags)) {
-			if (!list_find_first(job_gres_list, gres_find_id,
-					       &gres_state_node->plugin_id))
-				continue;
-		}
-		/* If we allocate the shared gres don't allocate sharing gres */
-		if (gres_ns->alt_gres &&
-		    gres_id_sharing(gres_state_node->plugin_id)) {
-			if (list_find_first(job_gres_list, gres_find_id,
-					    &(gres_ns->alt_gres->plugin_id)))
-				continue;
-		}
-
-		if (gres_state_node->config_flags & GRES_CONF_EXPLICIT) {
-			if (job_gres_list) {
-				foreach_explicit_alloc_t explicit_alloc = {
-					.core_bitmap = core_bitmap,
-					.gres_state_node = gres_state_node,
-					.job_id = job_id,
-					.job_gres_list = job_gres_list_alloc,
-					.new_alloc = new_alloc,
-					.node_cnt = node_cnt,
-					.node_index = node_index,
-					.node_offset = node_offset,
-					.node_name = node_name,
-					.rc = rc,
-
-				};
-				_job_alloc_explicit(job_gres_list,
-						    &explicit_alloc);
-
-			}
-			continue;
-		}
-
-		job_search_key.config_flags = gres_state_node->config_flags;
-		job_search_key.plugin_id = gres_state_node->plugin_id;
-
-		/*
-		 * This check is needed and different from the one in
-		 * gres_stepmgr_job_select_whole_node(). _job_alloc() handles
-		 * all the heavy lifting later on to make this all correct.
-		 */
-		if (!gres_ns->type_cnt) {
-			job_search_key.type_id = 0;
-			rc2 = _job_alloc_whole_node_internal(
-				&job_search_key, gres_state_node,
-				job_gres_list, job_gres_list_alloc,
-				node_cnt, node_index,
-				node_offset, -1, job_id, node_name,
-				core_bitmap, new_alloc);
-			if (rc2 != SLURM_SUCCESS)
-				rc = rc2;
-		} else {
-			for (int j = 0; j < gres_ns->type_cnt; j++) {
-				job_search_key.type_id = gres_build_id(
-					gres_ns->type_name[j]);
-				rc2 = _job_alloc_whole_node_internal(
-					&job_search_key, gres_state_node,
-					job_gres_list, job_gres_list_alloc,
-					node_cnt, node_index,
-					node_offset, j, job_id, node_name,
-					core_bitmap, new_alloc);
-				if (rc2 != SLURM_SUCCESS)
-					rc = rc2;
-			}
-		}
-	}
-	list_iterator_destroy(node_gres_iter);
-
-	return rc;
+	return args.rc;
 }
 
 static int _job_dealloc(gres_state_t *gres_state_job,
