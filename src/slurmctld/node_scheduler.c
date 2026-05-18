@@ -116,6 +116,12 @@ typedef struct {
 	bitstr_t *work_bitmap;
 } match_feature_args_t;
 
+typedef struct {
+	int job_cnt;
+	bool kill_pending;
+	job_record_t *preemptor_ptr;
+} preempt_jobs_args_t;
+
 #define NODE_SET_NOFLAG SLURM_BIT(0)
 #define NODE_SET_REBOOT SLURM_BIT(1)
 #define NODE_SET_OUTSIDE_FLEX SLURM_BIT(2)
@@ -2153,14 +2159,43 @@ try_sched:
 	return error_code;
 }
 
+static int _foreach_preempt_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	preempt_jobs_args_t *args = arg;
+	uint16_t mode = slurm_job_preempt_mode(job_ptr);
+
+	if (mode == PREEMPT_MODE_OFF) {
+		error("%s: Invalid preempt_mode %u for %pJ",
+		      __func__, mode, job_ptr);
+		return 0;
+	}
+
+	if ((mode == PREEMPT_MODE_SUSPEND) &&
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) {
+		debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
+		      job_ptr, args->preemptor_ptr);
+		job_ptr->preempt_time = time(NULL);
+		return 0;
+	}
+
+	args->job_cnt++;
+	if (!args->kill_pending)
+		return 0;
+
+	slurm_job_preempt(job_ptr, args->preemptor_ptr, mode, true);
+
+	return 0;
+}
+
 static void _preempt_jobs(list_t *preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
-	list_itr_t *iter;
-	job_record_t *job_ptr;
-	uint16_t mode;
-	int job_cnt = 0;
 	static time_t sched_update = 0;
+	preempt_jobs_args_t args = {
+		.kill_pending = kill_pending,
+		.preemptor_ptr = preemptor_ptr,
+	};
 
 	if (sched_update != slurm_conf.last_update) {
 		preempt_send_user_signal = false;
@@ -2173,35 +2208,9 @@ static void _preempt_jobs(list_t *preemptee_job_list, bool kill_pending,
 		sched_update = slurm_conf.last_update;
 	}
 
-	iter = list_iterator_create(preemptee_job_list);
-	while ((job_ptr = list_next(iter))) {
-		mode = slurm_job_preempt_mode(job_ptr);
+	list_for_each_ro(preemptee_job_list, _foreach_preempt_job, &args);
 
-		if (mode == PREEMPT_MODE_OFF) {
-			error("%s: Invalid preempt_mode %u for %pJ",
-			      __func__, mode, job_ptr);
-			continue;
-		}
-
-		if ((mode == PREEMPT_MODE_SUSPEND) &&
-		    (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) {
-			debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
-			      job_ptr, preemptor_ptr);
-			job_ptr->preempt_time = time(NULL);
-			continue;
-		}
-
-		job_cnt++;
-		if (!kill_pending)
-			continue;
-
-		if (slurm_job_preempt(job_ptr, preemptor_ptr, mode, true) !=
-		    SLURM_SUCCESS)
-			continue;
-	}
-	list_iterator_destroy(iter);
-
-	if (job_cnt > 0)
+	if (args.job_cnt > 0)
 		*error_code = ESLURM_NODES_BUSY;
 }
 
