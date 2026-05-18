@@ -483,26 +483,43 @@ extern char *fd_resolve_path(int fd)
 	return resolved;
 }
 
-extern char *fd_resolve_peer(int fd)
+/*
+ * Return peer-address string for a socket fd.
+ * IN  fd      - open socket file descriptor
+ * IN  resolve - true to issue a reverse DNS lookup; false for IP literal
+ * IN  caller  - caller's __func__ for log messages
+ * RET allocated string (must xfree()) or NULL on failure; preserves errno
+ */
+static char *_get_peer(int fd, bool resolve, const char *caller)
 {
 	slurm_addr_t addr = {0};
 	socklen_t size = sizeof(addr);
 	int err = errno;
-	char *peer;
+	char *peer = NULL;
 
 	if (fd < 0)
 		return NULL;
 
 	if (slurm_get_peer_addr(fd, &addr)) {
-		log_flag(NET, "%s: unable to resolve peername for fd:%d: %m",
-			 __func__, fd);
+		log_flag(NET, "%s: unable to get peername for fd:%d: %m",
+			 caller, fd);
 		return NULL;
 	}
 
-	peer = sockaddr_to_string(&addr, size);
+	peer = sockaddr_to_string(&addr, size, resolve);
 
 	errno = err;
 	return peer;
+}
+
+extern char *fd_resolve_peer(int fd)
+{
+	return _get_peer(fd, true, __func__);
+}
+
+extern char *fd_get_peer(int fd)
+{
+	return _get_peer(fd, false, __func__);
 }
 
 extern void fd_set_oob(int fd, int value)

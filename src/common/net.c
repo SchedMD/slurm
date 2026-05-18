@@ -451,7 +451,8 @@ static char *_fmt_ip_host_port_str(const slurm_addr_t *addr, const char *host)
 	return resp;
 }
 
-extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
+extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen,
+				bool resolve)
 {
 	int prev_errno = errno;
 	char *resp = NULL;
@@ -483,11 +484,17 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 	/* Check for reserved addresses that getnameinfo() won't resolve */
 	if ((rsv_host = _ip_reserved_to_str(addr))) {
 		resp = _fmt_ip_host_port_str(addr, rsv_host);
-	} else {
+	} else if (resolve) {
 		/* Attempt to resolve hostname */
 		char *host = xgetnameinfo(addr);
 		resp = _fmt_ip_host_port_str(addr, host);
 		xfree(host);
+	} else {
+		/*
+		 * Caller does not want a (potentially blocking) reverse DNS
+		 * lookup; format the IP literal via inet_ntop() instead.
+		 */
+		resp = _fmt_ip_host_port_str(addr, NULL);
 	}
 
 	/*
@@ -498,10 +505,10 @@ extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 	return resp;
 }
 
-extern char *addrinfo_to_string(const struct addrinfo *addr)
+extern char *addrinfo_to_string(const struct addrinfo *addr, bool resolve)
 {
 	return sockaddr_to_string((const slurm_addr_t *) addr->ai_addr,
-				  addr->ai_addrlen);
+				  addr->ai_addrlen, resolve);
 }
 
 extern slurm_addr_t sockaddr_from_unix_path(const char *path)

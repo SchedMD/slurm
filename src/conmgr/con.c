@@ -364,10 +364,12 @@ static char *_resolve_fd(int fd, struct stat *stat_ptr)
 
 	if (S_ISSOCK(stat_ptr->st_mode)) {
 		slurm_addr_t addr = {0};
+		const bool resolve =
+			(slurm_conf.debug_flags & DEBUG_FLAG_CONMGR);
 
 		if (!slurm_get_stream_addr(fd, &addr) &&
 		    (addr.ss_family != AF_UNSPEC) &&
-		    (name = sockaddr_to_string(&addr, sizeof(addr))))
+		    (name = sockaddr_to_string(&addr, sizeof(addr), resolve)))
 			return name;
 	}
 
@@ -416,8 +418,12 @@ static void _set_connection_name(conmgr_fd_t *con, struct stat *in_stat,
 	}
 
 	/* grab socket peer if possible */
-	if (con_flag(con, FLAG_IS_SOCKET) && has_out)
-		out_str = fd_resolve_peer(con->output_fd);
+	if (con_flag(con, FLAG_IS_SOCKET) && has_out) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR)
+			out_str = fd_resolve_peer(con->output_fd);
+		else
+			out_str = fd_get_peer(con->output_fd);
+	}
 
 	if (has_out && !out_str)
 		out_str = _resolve_fd(con->output_fd, out_stat);
@@ -1197,7 +1203,7 @@ static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
 			    addr->ai_protocol);
 		if (fd < 0)
 			fatal("%s: [%s] Unable to create socket: %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		/*
 		 * activate socket reuse to avoid annoying timing issues
@@ -1206,18 +1212,18 @@ static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
 		if (setsockopt(fd, addr->ai_socktype, SO_REUSEADDR,
 			       &one, sizeof(one)))
 			fatal("%s: [%s] setsockopt(SO_REUSEADDR) failed: %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		if (bind(fd, addr->ai_addr, addr->ai_addrlen) != 0)
 			fatal("%s: [%s] Unable to bind socket: %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		fd_set_oob(fd, 0);
 
 		rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
 		if (rc < 0)
 			fatal("%s: [%s] unable to listen(): %m",
-			      __func__, addrinfo_to_string(addr));
+			      __func__, addrinfo_to_string(addr, true));
 
 		rc = add_connection(type, timeouts, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
