@@ -176,6 +176,11 @@ typedef struct {
 } license_set_job_tres_cnt_args_t;
 
 typedef struct {
+	list_t *bf_list;
+	bool bf_running_job_reserve;
+} bf_licenses_initial_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -2953,12 +2958,28 @@ static int _bf_licenses_find_resv(void *x, void *key)
 	return 1;
 }
 
+static int _foreach_bf_licenses_initial(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	bf_licenses_initial_args_t *args = arg;
+	bf_license_t *bf_entry = xmalloc(sizeof(*bf_entry));
+
+	bf_entry->remaining = license_entry->total;
+	bf_entry->id = license_entry->id;
+
+	if (!args->bf_running_job_reserve && (bf_entry->remaining != INFINITE))
+		bf_entry->remaining -= license_entry->used;
+
+	list_append(args->bf_list, bf_entry);
+
+	return 0;
+}
+
 extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 {
-	list_t *bf_list;
-	list_itr_t *iter;
-	licenses_t *license_entry;
-	bf_license_t *bf_entry;
+	bf_licenses_initial_args_t args = {
+		.bf_running_job_reserve = bf_running_job_reserve,
+	};
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list || !list_count(cluster_license_list)) {
@@ -2966,25 +2987,14 @@ extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 		return NULL;
 	}
 
-	bf_list = list_create(_bf_license_free_rec);
+	args.bf_list = list_create(_bf_license_free_rec);
 
-	iter = list_iterator_create(cluster_license_list);
-	while ((license_entry = list_next(iter))) {
-		bf_entry = xmalloc(sizeof(*bf_entry));
-		bf_entry->remaining = license_entry->total;
-		bf_entry->id = license_entry->id;
-
-		if (!bf_running_job_reserve &&
-		    (bf_entry->remaining != INFINITE))
-			bf_entry->remaining -= license_entry->used;
-
-		list_append(bf_list, bf_entry);
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(cluster_license_list, _foreach_bf_licenses_initial,
+			 &args);
 
 	slurm_mutex_unlock(&license_mutex);
 
-	return bf_list;
+	return args.bf_list;
 }
 
 extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
