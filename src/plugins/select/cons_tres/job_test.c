@@ -86,6 +86,16 @@ typedef struct {
 	int *topology_idx;
 } first_relevant_job_arg_t;
 
+static int _foreach_rm_cores(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	part_row_data_t *r_ptr = arg;
+
+	job_res_rm_cores(job_ptr->job_resrcs, r_ptr);
+
+	return 0;
+}
+
 uint64_t def_cpu_per_gpu = 0;
 uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
@@ -1821,8 +1831,6 @@ skip_test0:
 	if (preempt_by_qos && !use_extra_row)
 		c--;				/* Do not use extra row */
 	if (qos_preemptees && use_extra_row) {
-		list_itr_t *job_iterator;
-		job_record_t *job_ptr;
 		/*
 		 * We may be putting the job in extra row. We need to make sure
 		 * that extra row allows the use of resources of jobs that we
@@ -1837,12 +1845,8 @@ skip_test0:
 				      jp_ptr->row[i].row_bitmap);
 		}
 
-		job_iterator = list_iterator_create(qos_preemptees);
-		while ((job_ptr = list_next(job_iterator))) {
-			job_res_rm_cores(job_ptr->job_resrcs,
-					 &(jp_ptr->row[c - 1]));
-		}
-		list_iterator_destroy(job_iterator);
+		list_for_each_ro(qos_preemptees, _foreach_rm_cores,
+				 &jp_ptr->row[c - 1]);
 	}
 
 
