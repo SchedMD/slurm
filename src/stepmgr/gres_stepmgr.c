@@ -934,14 +934,66 @@ static int _foreach_clear_job_gres(void *x, void *arg)
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
  */
+static int _foreach_job_select_whole_node(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	list_t *job_gres_list = arg;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	gres_key_t job_search_key;
+
+	/*
+	 * Don't check for no_consume here, we need them added here and will
+	 * filter them out in gres_job_alloc_whole_node()
+	 */
+	if (!gres_ns->gres_cnt_config)
+		return 0;
+
+	if (gres_state_node->config_flags & GRES_CONF_EXPLICIT)
+		return 0;
+
+	/* Select shared GRES if requested */
+	if (gres_id_shared(gres_state_node->config_flags)) {
+		/*
+		 * If we find it, delete it and add back to the list as a whole
+		 * node selection. This is because we didn't delete it in
+		 * _handle_explicit_req() in node_scheduler.c
+		 */
+		if (!list_delete_first(job_gres_list, gres_find_id,
+				       &gres_state_node->plugin_id))
+			return 0;
+	}
+	/* If we select the shared gres don't select sharing gres */
+	if (gres_ns->alt_gres &&
+	    gres_id_sharing(gres_state_node->plugin_id)) {
+		if (list_find_first_ro(job_gres_list, gres_find_id,
+				       &(gres_ns->alt_gres->plugin_id)))
+			return 0;
+	}
+
+	job_search_key.config_flags = gres_state_node->config_flags;
+	job_search_key.plugin_id = gres_state_node->plugin_id;
+
+	/* Add the non-typed one first/always */
+	job_search_key.type_id = 0;
+	_job_select_whole_node_internal(&job_search_key, gres_ns, -1,
+					gres_state_node->gres_name,
+					job_gres_list);
+
+	/* Then add the typed ones if any */
+	for (int j = 0; j < gres_ns->type_cnt; j++) {
+		job_search_key.type_id = gres_build_id(gres_ns->type_name[j]);
+		_job_select_whole_node_internal(&job_search_key, gres_ns, j,
+						gres_state_node->gres_name,
+						job_gres_list);
+	}
+
+	return 0;
+}
+
 extern int gres_stepmgr_job_select_whole_node(
 	list_t **job_gres_list, list_t *node_gres_list,
 	uint32_t job_id, char *node_name)
 {
-	list_itr_t *node_gres_iter;
-	gres_state_t *gres_state_node;
-	gres_node_state_t *gres_ns;
-
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
 	if (node_gres_list == NULL) {
@@ -953,61 +1005,8 @@ extern int gres_stepmgr_job_select_whole_node(
 	if (!*job_gres_list)
 		*job_gres_list = list_create(gres_job_list_delete);
 
-	node_gres_iter = list_iterator_create(node_gres_list);
-	while ((gres_state_node = list_next(node_gres_iter))) {
-		gres_key_t job_search_key;
-
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
-		/*
-		 * Don't check for no_consume here, we need them added here and
-		 * will filter them out in gres_job_alloc_whole_node()
-		 */
-		if (!gres_ns->gres_cnt_config)
-			continue;
-
-		if (gres_state_node->config_flags & GRES_CONF_EXPLICIT)
-			continue;
-
-		/* Select shared GRES if requested */
-		if (gres_id_shared(gres_state_node->config_flags)) {
-			/*
-			 * If we find it, delete it and add back to the list as
-			 * a whole node selection.
-			 * This is because we didn't delete it in
-			 * _handle_explicit_req() in node_scheduler.c
-			 */
-			if (!list_delete_first(*job_gres_list, gres_find_id,
-					       &gres_state_node->plugin_id))
-				continue;
-		}
-		/* If we select the shared gres don't select sharing gres */
-		if (gres_ns->alt_gres &&
-		    gres_id_sharing(gres_state_node->plugin_id)) {
-			if (list_find_first(*job_gres_list, gres_find_id,
-					    &(gres_ns->alt_gres->plugin_id)))
-				continue;
-		}
-
-		job_search_key.config_flags = gres_state_node->config_flags;
-		job_search_key.plugin_id = gres_state_node->plugin_id;
-
-		/* Add the non-typed one first/always */
-		job_search_key.type_id = 0;
-		_job_select_whole_node_internal(
-			&job_search_key, gres_ns,
-			-1, gres_state_node->gres_name, *job_gres_list);
-
-		/* Then add the typed ones if any */
-		for (int j = 0; j < gres_ns->type_cnt; j++) {
-			job_search_key.type_id = gres_build_id(
-				gres_ns->type_name[j]);
-			_job_select_whole_node_internal(
-				&job_search_key, gres_ns,
-				j, gres_state_node->gres_name,
-				*job_gres_list);
-		}
-	}
-	list_iterator_destroy(node_gres_iter);
+	list_for_each_ro(node_gres_list, _foreach_job_select_whole_node,
+			 *job_gres_list);
 
 	return SLURM_SUCCESS;
 }
