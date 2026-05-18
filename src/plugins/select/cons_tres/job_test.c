@@ -93,6 +93,13 @@ typedef struct {
 	int *topology_idx;
 } will_run_preemptee_arg_t;
 
+typedef struct {
+	list_t *licenses_to_preempt;
+	bitstr_t *node_bitmap;
+	list_t *preemptee_job_list;
+	bool *remove_some_jobs;
+} run_now_preemptee_arg_t;
+
 static int _foreach_rm_cores(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -3061,6 +3068,25 @@ test_future:
 	return rc;
 }
 
+static int _foreach_run_now_preemptee(void *x, void *arg)
+{
+	job_record_t *tmp_job_ptr = x;
+	run_now_preemptee_arg_t *wargs = arg;
+	int mode = slurm_job_preempt_mode(tmp_job_ptr);
+
+	if ((mode != PREEMPT_MODE_REQUEUE) && (mode != PREEMPT_MODE_CANCEL))
+		return 0;
+	if (!job_overlap_and_running(wargs->node_bitmap,
+				     wargs->licenses_to_preempt, tmp_job_ptr))
+		return 0;
+	if (tmp_job_ptr->details->usable_nodes)
+		return -1;
+	list_append(wargs->preemptee_job_list, tmp_job_ptr);
+	*wargs->remove_some_jobs = true;
+
+	return 0;
+}
+
 /* Allocate resources for a job now, if possible */
 static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
@@ -3071,7 +3097,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int rc;
 	bitstr_t *orig_node_map = NULL, *save_node_map;
 	job_record_t *tmp_job_ptr = NULL;
-	list_itr_t *job_iterator, *preemptee_iterator;
+	list_itr_t *job_iterator;
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
 	list_t *license_list;
@@ -3281,6 +3307,12 @@ top:	orig_node_map = bit_copy(save_node_map);
 
 		if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 		    preemptee_candidates) {
+			run_now_preemptee_arg_t wargs = {
+				.licenses_to_preempt =
+					job_ptr->licenses_to_preempt,
+				.node_bitmap = node_bitmap,
+				.remove_some_jobs = &remove_some_jobs,
+			};
 			/*
 			 * Build list of preemptee jobs whose resources are
 			 * actually used
@@ -3288,25 +3320,9 @@ top:	orig_node_map = bit_copy(save_node_map);
 			if (*preemptee_job_list == NULL) {
 				*preemptee_job_list = list_create(NULL);
 			}
-			preemptee_iterator = list_iterator_create(
-				preemptee_candidates);
-			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-				mode = slurm_job_preempt_mode(tmp_job_ptr);
-				if ((mode != PREEMPT_MODE_REQUEUE)    &&
-				    (mode != PREEMPT_MODE_CANCEL))
-					continue;
-				if (!job_overlap_and_running(
-					    node_bitmap,
-					    job_ptr->licenses_to_preempt,
-					    tmp_job_ptr))
-					continue;
-				if (tmp_job_ptr->details->usable_nodes)
-					break;
-				list_append(*preemptee_job_list,
-					    tmp_job_ptr);
-				remove_some_jobs = true;
-			}
-			list_iterator_destroy(preemptee_iterator);
+			wargs.preemptee_job_list = *preemptee_job_list;
+			list_for_each_ro(preemptee_candidates,
+					 _foreach_run_now_preemptee, &wargs);
 			if (!remove_some_jobs) {
 				FREE_NULL_LIST(*preemptee_job_list);
 			}
