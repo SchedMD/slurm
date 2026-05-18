@@ -2756,6 +2756,51 @@ extern bool hres_jobs_share_mode3(job_record_t *job1_ptr,
 	return args.shared;
 }
 
+extern bool hres_preempt_needed(job_record_t *preemptor,
+				job_record_t *preemptee)
+{
+	hres_select_t *hres_select = preemptor->hres_select;
+	bool needed = false;
+	uint32_t hres_per_node;
+	int last_node;
+
+	if (!_jobs_share_mode3(preemptor, preemptee))
+		return false;
+
+	hres_per_node = hres_select->hres_per_node;
+	hres_select->hres_per_node =
+		((hres_select_t *) preemptee->hres_select)->hres_per_node;
+
+	for (int i = 0; next_node_bitmap(preemptee->node_bitmap, &i); i++) {
+		uint16_t leaf_idx = hres_select_find_leaf(hres_select, i);
+		if ((leaf_idx != NO_VAL16) &&
+		    !hres_select_check(hres_select, leaf_idx)) {
+			needed = true;
+			last_node = i;
+			break;
+		}
+	}
+
+	/*
+	 * Roll back the reservations taken above; last_node consumed nothing.
+	 * When the preemptee can stay running its reservation is kept so that
+	 * later candidates see the reduced availability.
+	 */
+	if (needed) {
+		for (int i = 0; next_node_bitmap(preemptee->node_bitmap, &i) &&
+				(i < last_node);
+		     i++) {
+			uint16_t leaf_idx =
+				hres_select_find_leaf(hres_select, i);
+			if (leaf_idx != NO_VAL16)
+				hres_select_return(hres_select, leaf_idx);
+		}
+	}
+	hres_select->hres_per_node = hres_per_node;
+
+	return needed;
+}
+
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
 					  licenses_id_t id)
 {
