@@ -157,6 +157,14 @@ typedef struct {
 	char *tres_str;
 } foreach_gres_on_node_as_tres_t;
 
+typedef struct {
+	uint64_t cpu_cnt;
+	uint16_t cpus_per_task;
+	foreach_gres_cnt_t *foreach_gres_cnt;
+	gres_stepmgr_step_test_args_t *test_args;
+	slurm_step_id_t *tmp_step_id;
+} foreach_step_test_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -3349,24 +3357,77 @@ static int _step_get_gres_cnt(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_step_test(void *x, void *arg)
+{
+	gres_state_t *gres_state_step = x;
+	foreach_step_test_t *outer = arg;
+	gres_stepmgr_step_test_args_t *test_args = outer->test_args;
+	gres_step_state_t *gres_ss = gres_state_step->gres_data;
+	gres_key_t job_search_key;
+	uint64_t tmp_cnt;
+
+	job_search_key.config_flags = gres_state_step->config_flags;
+	job_search_key.plugin_id = gres_state_step->plugin_id;
+	if (gres_ss->type_name)
+		job_search_key.type_id = gres_ss->type_id;
+	else
+		job_search_key.type_id = NO_VAL;
+	job_search_key.node_offset = test_args->node_offset;
+
+	outer->foreach_gres_cnt->job_search_key = &job_search_key;
+	outer->foreach_gres_cnt->gres_cnt = INFINITE64;
+
+	list_for_each_ro(test_args->job_gres_list, _step_get_gres_cnt,
+			 outer->foreach_gres_cnt);
+
+	if (outer->foreach_gres_cnt->gres_cnt == INFINITE64) {
+		log_flag(STEPS, "%s: Job lacks GRES (%s:%s) required by the step",
+			 __func__, gres_state_step->gres_name,
+			 gres_ss->type_name);
+		outer->cpu_cnt = 0;
+		return -1;
+	}
+
+	if (outer->foreach_gres_cnt->gres_cnt == NO_CONSUME_VAL64) {
+		outer->cpu_cnt = NO_VAL64;
+		return -1;
+	}
+
+	tmp_cnt = _step_test(gres_ss, test_args->first_step_node,
+			     outer->cpus_per_task, test_args->max_rem_nodes,
+			     test_args->ignore_alloc,
+			     outer->foreach_gres_cnt->gres_cnt,
+			     test_args->test_mem, test_args->node_offset,
+			     outer->tmp_step_id, test_args->job_resrcs_ptr,
+			     test_args->err_code);
+	if ((tmp_cnt != NO_VAL64) && (tmp_cnt < outer->cpu_cnt))
+		outer->cpu_cnt = tmp_cnt;
+
+	if (outer->cpu_cnt == 0)
+		return -1;
+
+	return 0;
+}
+
 extern uint64_t gres_stepmgr_step_test(gres_stepmgr_step_test_args_t *args)
 {
-	uint64_t cpu_cnt, tmp_cnt;
-	uint16_t cpus_per_task = args->cpus_per_task;
-	list_itr_t *step_gres_iter;
-	gres_state_t *gres_state_step;
-	gres_step_state_t *gres_ss = NULL;
 	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;
+	foreach_step_test_t outer = {
+		.cpu_cnt = NO_VAL64,
+		.cpus_per_task = args->cpus_per_task,
+		.foreach_gres_cnt = &foreach_gres_cnt,
+		.test_args = args,
+		.tmp_step_id = &tmp_step_id,
+	};
 
 	if (args->step_gres_list == NULL)
 		return NO_VAL64;
 	if (args->job_gres_list == NULL)
 		return 0;
 
-	if (cpus_per_task == 0)
-		cpus_per_task = 1;
-	cpu_cnt = NO_VAL64;
+	if (outer.cpus_per_task == 0)
+		outer.cpus_per_task = 1;
 	(void) gres_init();
 	*(args->err_code) = SLURM_SUCCESS;
 
@@ -3378,55 +3439,9 @@ extern uint64_t gres_stepmgr_step_test(gres_stepmgr_step_test_args_t *args)
 	foreach_gres_cnt.ignore_alloc = args->ignore_alloc;
 	foreach_gres_cnt.step_id = &tmp_step_id;
 
-	step_gres_iter = list_iterator_create(args->step_gres_list);
-	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
-		gres_key_t job_search_key;
+	list_for_each_ro(args->step_gres_list, _foreach_step_test, &outer);
 
-		gres_ss = (gres_step_state_t *)gres_state_step->gres_data;
-		job_search_key.config_flags = gres_state_step->config_flags;
-		job_search_key.plugin_id = gres_state_step->plugin_id;
-		if (gres_ss->type_name)
-			job_search_key.type_id = gres_ss->type_id;
-		else
-			job_search_key.type_id = NO_VAL;
-
-		job_search_key.node_offset = args->node_offset;
-
-		foreach_gres_cnt.job_search_key = &job_search_key;
-		foreach_gres_cnt.gres_cnt = INFINITE64;
-
-		(void)list_for_each(args->job_gres_list, _step_get_gres_cnt,
-				    &foreach_gres_cnt);
-
-		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
-			log_flag(STEPS, "%s: Job lacks GRES (%s:%s) required by the step",
-				 __func__, gres_state_step->gres_name,
-				 gres_ss->type_name);
-			cpu_cnt = 0;
-			break;
-		}
-
-		if (foreach_gres_cnt.gres_cnt == NO_CONSUME_VAL64) {
-			cpu_cnt = NO_VAL64;
-			break;
-		}
-
-		tmp_cnt = _step_test(gres_ss, args->first_step_node,
-				     cpus_per_task, args->max_rem_nodes,
-				     args->ignore_alloc,
-				     foreach_gres_cnt.gres_cnt,
-				     args->test_mem, args->node_offset,
-				     &tmp_step_id,
-				     args->job_resrcs_ptr, args->err_code);
-		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < cpu_cnt))
-			cpu_cnt = tmp_cnt;
-
-		if (cpu_cnt == 0)
-			break;
-	}
-	list_iterator_destroy(step_gres_iter);
-
-	return cpu_cnt;
+	return outer.cpu_cnt;
 }
 
 extern char *gres_stepmgr_gres_2_tres_str(list_t *gres_list, bool locked)
