@@ -86,6 +86,13 @@ typedef struct {
 	int *topology_idx;
 } first_relevant_job_arg_t;
 
+typedef struct {
+	bitstr_t **efctv_bitmap;
+	bitstr_t *node_bitmap;
+	list_t *preemptee_job_list;
+	int *topology_idx;
+} will_run_preemptee_arg_t;
+
 static int _foreach_rm_cores(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -2944,6 +2951,22 @@ cleanup:
 	return rc;
 }
 
+static int _foreach_will_run_preemptee(void *x, void *arg)
+{
+	job_record_t *tmp_job_ptr = x;
+	will_run_preemptee_arg_t *wargs = arg;
+	bitstr_t *efctv_bitmap_ptr;
+
+	efctv_bitmap_ptr = _select_topo_bitmap(tmp_job_ptr, wargs->node_bitmap,
+					       wargs->efctv_bitmap,
+					       wargs->topology_idx);
+	if (!bit_overlap_any(efctv_bitmap_ptr, tmp_job_ptr->node_bitmap))
+		return 0;
+	list_append(wargs->preemptee_job_list, tmp_job_ptr);
+
+	return 0;
+}
+
 /*
  * Determine where and when the job at job_ptr can begin execution by updating
  * a scratch cr_record structure to reflect each job terminating at the
@@ -2958,7 +2981,6 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			  resv_exc_t *resv_exc_ptr,
 			  will_run_data_t *will_run_ptr)
 {
-	list_itr_t *preemptee_iterator;
 	int rc = SLURM_ERROR;
 	time_t now = time(NULL);
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
@@ -3014,9 +3036,13 @@ test_future:
 
 	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
 	    preemptee_candidates) {
-		job_record_t *tmp_job_ptr;
-		bitstr_t *efctv_bitmap_ptr, *efctv_bitmap = NULL;
+		bitstr_t *efctv_bitmap = NULL;
 		int topo_idx;
+		will_run_preemptee_arg_t wargs = {
+			.efctv_bitmap = &efctv_bitmap,
+			.node_bitmap = node_bitmap,
+			.topology_idx = &topo_idx,
+		};
 		/*
 		 * Build list of preemptee jobs whose resources are
 		 * actually used. list returned even if not killed
@@ -3025,17 +3051,9 @@ test_future:
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
 		}
-		preemptee_iterator = list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-			efctv_bitmap_ptr =
-				_select_topo_bitmap(tmp_job_ptr, node_bitmap,
-						    &efctv_bitmap, &topo_idx);
-			if (!bit_overlap_any(efctv_bitmap_ptr,
-					     tmp_job_ptr->node_bitmap))
-				continue;
-			list_append(*preemptee_job_list, tmp_job_ptr);
-		}
-		list_iterator_destroy(preemptee_iterator);
+		wargs.preemptee_job_list = *preemptee_job_list;
+		list_for_each_ro(preemptee_candidates,
+				 _foreach_will_run_preemptee, &wargs);
 		FREE_NULL_BITMAP(efctv_bitmap);
 	}
 
