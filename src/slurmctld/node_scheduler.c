@@ -122,6 +122,21 @@ typedef struct {
 	job_record_t *preemptor_ptr;
 } preempt_jobs_args_t;
 
+typedef struct {
+	bitstr_t *feature_bitmap;
+	char *features;
+	bool *has_mor;
+	bool have_count;
+	job_record_t *job_ptr;
+	int last_op;
+	int last_paren_cnt;
+	int last_paren_op;
+	bitstr_t *node_bitmap;
+	bitstr_t *paren_bitmap;
+	bool use_active;
+	bitstr_t *work_bitmap;
+} valid_feature_counts_args_t;
+
 #define NODE_SET_NOFLAG SLURM_BIT(0)
 #define NODE_SET_REBOOT SLURM_BIT(1)
 #define NODE_SET_OUTSIDE_FLEX SLURM_BIT(2)
@@ -3431,20 +3446,119 @@ extern void launch_prolog(job_record_t *job_ptr)
  * OUT has_mor - set if MOR/XAND found in feature expression
  * RET SLURM_SUCCESS or error
  */
+static int _foreach_valid_feature_count(void *x, void *arg)
+{
+	job_feature_t *job_feat_ptr = x;
+	valid_feature_counts_args_t *args = arg;
+	bitstr_t *tmp_bitmap;
+
+	if (args->last_paren_cnt < job_feat_ptr->paren) {
+		/* Start of expression in parenthesis */
+		/*
+		 * If this pair of parentheses is inside of brackets, then this
+		 * is XAND or MOR. Set last_paren_op to avoid incorrectly doing
+		 * bit_and() or bit_or() at the end of parentheses. This only
+		 * matters if the parentheses are the first thing inside of
+		 * brackets, in which case last_op is AND or OR depending on
+		 * what (if anything) came before the brackets. If the
+		 * parentheses are not the first thing inside of brackets then
+		 * last_op is XAND or MOR.
+		 */
+		if (job_feat_ptr->bracket &&
+		    (args->last_op != FEATURE_OP_XAND) &&
+		    (args->last_op != FEATURE_OP_MOR))
+			args->last_paren_op = FEATURE_OP_XAND;
+		else
+			args->last_paren_op = args->last_op;
+		args->last_op = FEATURE_OP_AND;
+		if (args->paren_bitmap) {
+			if (args->job_ptr->job_id) {
+				error("%s: %pJ has bad feature expression: %s",
+				      __func__, args->job_ptr, args->features);
+			} else {
+				error("%s: Reservation has bad feature expression: %s",
+				      __func__, args->features);
+			}
+			FREE_NULL_BITMAP(args->paren_bitmap);
+		}
+		args->paren_bitmap = bit_copy(args->node_bitmap);
+		args->work_bitmap = args->paren_bitmap;
+	}
+
+	if (args->use_active)
+		tmp_bitmap = job_feat_ptr->node_bitmap_active;
+	else
+		tmp_bitmap = job_feat_ptr->node_bitmap_avail;
+	if (tmp_bitmap) {
+		/*
+		 * Here we need to use the current feature for MOR/AND not the
+		 * last_op. For instance fastio&[xeon|nehalem] should ignore
+		 * xeon (in valid_feature_count), but if would be based on
+		 * last_op it will see AND operation. This should only be used
+		 * when dealing with middle options, not for the end as done in
+		 * the last_paren check below.
+		 */
+		if ((job_feat_ptr->op_code == FEATURE_OP_MOR) ||
+		    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
+			*args->has_mor = true;
+		} else if (args->last_op == FEATURE_OP_AND) {
+			bit_and(args->work_bitmap, tmp_bitmap);
+		} else if (args->last_op == FEATURE_OP_OR) {
+			bit_or(args->work_bitmap, tmp_bitmap);
+		}
+	} else {	/* feature not found */
+		if (args->last_op == FEATURE_OP_AND)
+			bit_clear_all(args->work_bitmap);
+	}
+	if (job_feat_ptr->count)
+		args->have_count = true;
+
+	if (args->last_paren_cnt > job_feat_ptr->paren) {
+		/* End of expression in parenthesis */
+		if (args->last_paren_op == FEATURE_OP_AND) {
+			bit_and(args->feature_bitmap, args->work_bitmap);
+		} else if (args->last_paren_op == FEATURE_OP_OR) {
+			bit_or(args->feature_bitmap, args->work_bitmap);
+		} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
+			*args->has_mor = true;
+		}
+		FREE_NULL_BITMAP(args->paren_bitmap);
+		args->work_bitmap = args->feature_bitmap;
+	}
+
+	args->last_op = job_feat_ptr->op_code;
+	args->last_paren_cnt = job_feat_ptr->paren;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+		char *tmp_f, *tmp_w, *tmp_t;
+		tmp_f = bitmap2node_name(args->feature_bitmap);
+		tmp_w = bitmap2node_name(args->work_bitmap);
+		tmp_t = bitmap2node_name(tmp_bitmap);
+		log_flag(NODE_FEATURES, "%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s count:%u",
+			 __func__, job_feat_ptr->name, tmp_f, tmp_w, tmp_t,
+			 job_feat_ptr->count);
+		xfree(tmp_f);
+		xfree(tmp_w);
+		xfree(tmp_t);
+	}
+
+	return 0;
+}
+
 extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bitstr_t *node_bitmap, bool *has_mor)
 {
 	job_details_t *detail_ptr = job_ptr->details;
-	list_itr_t *job_feat_iter;
-	job_feature_t *job_feat_ptr;
-	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
-	int last_paren_cnt = 0;
-	bitstr_t *feature_bitmap, *paren_bitmap = NULL;
-	bitstr_t *tmp_bitmap, *work_bitmap;
-	bool have_count = false, user_update;
 	int rc = SLURM_SUCCESS;
 	list_t *feature_list = NULL;
-	char *features;
+	valid_feature_counts_args_t args = {
+		.has_mor = has_mor,
+		.job_ptr = job_ptr,
+		.last_op = FEATURE_OP_AND,
+		.last_paren_op = FEATURE_OP_AND,
+		.node_bitmap = node_bitmap,
+		.use_active = use_active,
+	};
 
 	xassert(detail_ptr);
 	xassert(node_bitmap);
@@ -3457,120 +3571,25 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	 */
 	if (detail_ptr->features_use) {
 		feature_list = detail_ptr->feature_list_use;
-		features = detail_ptr->features_use;
+		args.features = detail_ptr->features_use;
 	} else {
 		feature_list = detail_ptr->feature_list;
-		features = detail_ptr->features;
+		args.features = detail_ptr->features;
 	}
 
 	*has_mor = false;
 	if (!feature_list)	/* no constraints */
 		return rc;
 
-	user_update = node_features_g_user_update(job_ptr->user_id);
-	find_feature_nodes(feature_list, user_update);
-	feature_bitmap = bit_copy(node_bitmap);
-	work_bitmap = feature_bitmap;
-	job_feat_iter = list_iterator_create(feature_list);
-	while ((job_feat_ptr = list_next(job_feat_iter))) {
-		if (last_paren_cnt < job_feat_ptr->paren) {
-			/* Start of expression in parenthesis */
-			/*
-			 * If this pair of parentheses is inside of brackets,
-			 * then this is XAND or MOR. Set last_paren_op to
-			 * avoid incorrectly doing bit_and() or bit_or() at the
-			 * end of parentheses. This only matters if the
-			 * parentheses are the first thing inside of brackets,
-			 * in which case last_op is AND or OR depending on what
-			 * (if anything) came before the brackets. If the
-			 * parentheses are not the first thing inside of
-			 * brackets then last_op is XAND or MOR.
-			 */
-			if (job_feat_ptr->bracket &&
-			    (last_op != FEATURE_OP_XAND) &&
-			    (last_op != FEATURE_OP_MOR))
-				last_paren_op = FEATURE_OP_XAND;
-			else
-				last_paren_op = last_op;
-			last_op = FEATURE_OP_AND;
-			if (paren_bitmap) {
-				if (job_ptr->job_id) {
-					error("%s: %pJ has bad feature expression: %s",
-					      __func__, job_ptr,
-					      features);
-				} else {
-					error("%s: Reservation has bad feature expression: %s",
-					      __func__, features);
-				}
-				FREE_NULL_BITMAP(paren_bitmap);
-			}
-			paren_bitmap = bit_copy(node_bitmap);
-			work_bitmap = paren_bitmap;
-		}
-
-		if (use_active)
-			tmp_bitmap = job_feat_ptr->node_bitmap_active;
-		else
-			tmp_bitmap = job_feat_ptr->node_bitmap_avail;
-		if (tmp_bitmap) {
-			/*
-			 * Here we need to use the current feature for MOR/AND
-			 * not the last_op.  For instance fastio&[xeon|nehalem]
-			 * should ignore xeon (in valid_feature_count), but if
-			 * would be based on last_op it will see AND operation.
-			 * This should only be used when dealing with middle
-			 * options, not for the end as done in the last_paren
-			 * check below.
-			 */
-			if ((job_feat_ptr->op_code == FEATURE_OP_MOR) ||
-			    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
-				*has_mor = true;
-			} else if (last_op == FEATURE_OP_AND) {
-				bit_and(work_bitmap, tmp_bitmap);
-			} else if (last_op == FEATURE_OP_OR) {
-				bit_or(work_bitmap, tmp_bitmap);
-			}
-		} else {	/* feature not found */
-			if (last_op == FEATURE_OP_AND)
-				bit_clear_all(work_bitmap);
-		}
-		if (job_feat_ptr->count)
-			have_count = true;
-
-		if (last_paren_cnt > job_feat_ptr->paren) {
-			/* End of expression in parenthesis */
-			if (last_paren_op == FEATURE_OP_AND) {
-				bit_and(feature_bitmap, work_bitmap);
-			} else if (last_paren_op == FEATURE_OP_OR) {
-				bit_or(feature_bitmap, work_bitmap);
-			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
-				*has_mor = true;
-			}
-			FREE_NULL_BITMAP(paren_bitmap);
-			work_bitmap = feature_bitmap;
-		}
-
-		last_op = job_feat_ptr->op_code;
-		last_paren_cnt = job_feat_ptr->paren;
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
-			char *tmp_f, *tmp_w, *tmp_t;
-			tmp_f = bitmap2node_name(feature_bitmap);
-			tmp_w = bitmap2node_name(work_bitmap);
-			tmp_t = bitmap2node_name(tmp_bitmap);
-			log_flag(NODE_FEATURES, "%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s count:%u",
-				 __func__, job_feat_ptr->name, tmp_f, tmp_w,
-				 tmp_t, job_feat_ptr->count);
-			xfree(tmp_f);
-			xfree(tmp_w);
-			xfree(tmp_t);
-		}
-	}
-	list_iterator_destroy(job_feat_iter);
-	if (!have_count)
-		bit_and(node_bitmap, work_bitmap);
-	FREE_NULL_BITMAP(feature_bitmap);
-	FREE_NULL_BITMAP(paren_bitmap);
+	find_feature_nodes(feature_list,
+			   node_features_g_user_update(job_ptr->user_id));
+	args.feature_bitmap = bit_copy(node_bitmap);
+	args.work_bitmap = args.feature_bitmap;
+	list_for_each_ro(feature_list, _foreach_valid_feature_count, &args);
+	if (!args.have_count)
+		bit_and(node_bitmap, args.work_bitmap);
+	FREE_NULL_BITMAP(args.feature_bitmap);
+	FREE_NULL_BITMAP(args.paren_bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		char *tmp = bitmap2node_name(node_bitmap);
