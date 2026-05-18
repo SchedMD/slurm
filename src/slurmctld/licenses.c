@@ -137,6 +137,11 @@ typedef struct {
 } foreach_hres_set_mode3_t;
 
 typedef struct {
+	licenses_t *match;
+	char *name;
+} fuzzy_match_remote_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -266,41 +271,46 @@ static int _license_remote_fuzzy_find_rec(void *x, void *key)
  * name exists for multiple server values, we must not randomly select one and
  * prefer to error out.
  */
+static int _foreach_fuzzy_match_remote(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	fuzzy_match_remote_args_t *args = arg;
+	int ismatch = _license_remote_fuzzy_find_rec(license_entry, args->name);
+
+	xassert(ismatch < LIC_MAX_MATCH);
+	if (ismatch == LIC_EXACT_MATCH) {
+		args->match = license_entry;
+		return -1;
+	} else if (ismatch == LIC_FUZZY_MATCH) {
+		if (args->match) {
+			/*
+			 * there is a previous match meaning that there is
+			 * ambiguity about which server the user might mean,
+			 * fail
+			 */
+			args->match = NULL;
+			return -1;
+		}
+		args->match = license_entry;
+	}
+
+	return 0;
+}
+
 static licenses_t *_fuzzy_match_remote_licenses(char *name)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
-
-	match = NULL;
-	iter = list_iterator_create(cluster_license_list);
+	fuzzy_match_remote_args_t args = {
+		.name = name,
+	};
 
 	/*
 	 * have to go through the entire list to ensure we pick either the
 	 * exact local match or the unambiguous remote match
 	 */
-	while ((license_entry = list_next(iter))) {
-		int ismatch =
-			_license_remote_fuzzy_find_rec(license_entry, name);
+	list_for_each_ro(cluster_license_list, _foreach_fuzzy_match_remote,
+			 &args);
 
-		xassert(ismatch < LIC_MAX_MATCH);
-		if (ismatch == LIC_EXACT_MATCH) {
-			match = license_entry;
-			break;
-		} else if (ismatch == LIC_FUZZY_MATCH) {
-			if (match) {
-				/*
-				 * there is a previous match meaning that there
-				 * is ambiguity about which server the user
-				 * might mean, fail
-				 */
-				match = NULL;
-				break;
-			}
-			match = license_entry;
-		}
-	}
-	list_iterator_destroy(iter);
-	return match;
+	return args.match;
 }
 
 static int _license_find_root_rec(void *x, void *key)
