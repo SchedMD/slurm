@@ -1811,6 +1811,12 @@ extern int read_slurm_conf(int recover)
 	_requeue_job_node_failed();
 	load_part_uid_allow_list(true);
 
+	/*
+	 * Initialize HRES before restoring reservations which could have
+	 * reserved some HRES.
+	 */
+	hres_init();
+
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	load_all_resv_state(recover);
 	/* Free the old-to-new mapping after load_all_resv_state() */
@@ -1821,7 +1827,6 @@ extern int read_slurm_conf(int recover)
 		trigger_state_restore();
 		controller_reconfig_scheduling();
 	}
-	hres_init();
 	restore_job_accounting();
 
 	/* sort config_list by weight for scheduling */
@@ -2388,13 +2393,20 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	set_initial_job_alias_list(job_ptr);
 }
 
-static void _restore_job_licenses(job_record_t *job_ptr)
+extern void restore_job_licenses(job_record_t *job_ptr, bool validate)
 {
 	list_t *license_list = NULL, *license_list_alloc = NULL;
 	bool valid = true, alloc_valid = true;
 
-	license_list = license_validate(job_ptr->licenses, false, false, false,
-					job_ptr->tres_req_cnt, &valid, NULL);
+	validate = validate && IS_JOB_PENDING(job_ptr);
+
+	/*
+	 * If the job is pending, validate the license request against
+	 * configured licenses and hold the job if it is not valid.
+	 */
+	license_list =
+		license_validate(job_ptr->licenses, validate, validate, false,
+				 job_ptr->tres_req_cnt, &valid, NULL);
 	license_list_alloc =
 		license_validate(job_ptr->licenses_allocated, false, false,
 				 true, NULL, &alloc_valid, NULL);
@@ -2405,6 +2417,17 @@ static void _restore_job_licenses(job_record_t *job_ptr)
 		xfree(job_ptr->licenses);
 		job_ptr->licenses = license_list_to_string(license_list);
 		hres_create_select(job_ptr);
+	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->priority) {
+		char *msg = xstrdup_printf(
+			"License request '%s' is no longer valid, holding job",
+			job_ptr->licenses);
+
+		info("%pJ %s", job_ptr, msg);
+		job_ptr->priority = 0;
+		job_ptr->state_reason = WAIT_HELD;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = msg;
+		msg = NULL;
 	}
 
 	/*
@@ -2487,7 +2510,7 @@ extern void restore_job_accounting(void)
 						save_accrue_time;
 			}
 		}
-		_restore_job_licenses(job_ptr);
+		restore_job_licenses(job_ptr, true);
 	}
 	list_iterator_destroy(job_iterator);
 }
