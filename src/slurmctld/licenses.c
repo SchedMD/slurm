@@ -151,6 +151,14 @@ typedef struct {
 } license_sync_remote_args_t;
 
 typedef struct {
+	job_record_t *job_ptr;
+	licenses_t *last_entry;
+	bool lic_or;
+	int rc;
+	bool restore;
+} license_job_get_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -2400,86 +2408,92 @@ static int _foreach_hres_job_get(void *x, void *arg)
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
+static int _foreach_license_job_get(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	license_job_get_args_t *args = arg;
+	licenses_t *match;
+
+	if (license_entry->id.hres_id != NO_VAL16) {
+		foreach_get_hres_t hres_arg = {
+			.job_ptr = args->job_ptr,
+			.license_entry = license_entry,
+			.when = last_license_update,
+		};
+		list_for_each_ro(cluster_license_list, _foreach_hres_job_get,
+				 &hres_arg);
+
+		license_entry->used += license_entry->total;
+		return 0;
+	}
+
+	args->lic_or = license_entry->op_or;
+	match = list_find_first_ro(cluster_license_list,
+				   _license_find_rec_by_id,
+				   &license_entry->id);
+	if (!match) {
+		error("could not find license %s for job %u",
+		      license_entry->name, args->job_ptr->job_id);
+		args->rc = SLURM_ERROR;
+		return 0;
+	}
+
+	/*
+	 * With OR, we only know that at least one of the job's requested
+	 * licenses are available, so we need to test for availability again.
+	 * With AND we know that all licenses are available so we don't need
+	 * to check.
+	 */
+	if (args->lic_or) {
+		int resv_blk_lic_cnt = job_test_lic_resv(
+			args->job_ptr, match->id, last_license_update, false);
+		if (!_sufficient_licenses(license_entry, match,
+					  resv_blk_lic_cnt)) {
+			/* Not enough of this license */
+			return 0;
+		}
+	}
+
+	match->used += license_entry->total;
+	license_entry->used += license_entry->total;
+	if (match->remote && args->restore) {
+		if (license_entry->total > match->last_deficit)
+			match->last_deficit = 0;
+		else
+			match->last_deficit -= license_entry->total;
+	}
+	if (args->lic_or) {
+		args->last_entry = license_entry;
+		return -1;
+	}
+
+	return 0;
+}
+
 extern int license_job_get(job_record_t *job_ptr, bool restore)
 {
-	list_itr_t *iter;
-	licenses_t *license_entry, *match;
-	int rc = SLURM_SUCCESS;
-	bool lic_or = false;
+	license_job_get_args_t args = {
+		.job_ptr = job_ptr,
+		.rc = SLURM_SUCCESS,
+		.restore = restore,
+	};
 
 	if (!job_ptr->license_list)	/* no licenses needed */
-		return rc;
+		return SLURM_SUCCESS;
 
 	last_license_update = time(NULL);
 
 	slurm_mutex_lock(&license_mutex);
-	iter = list_iterator_create(job_ptr->license_list);
-	while ((license_entry = list_next(iter))) {
-		if (license_entry->id.hres_id != NO_VAL16) {
-			foreach_get_hres_t arg = {
-				.job_ptr = job_ptr,
-				.license_entry = license_entry,
-				.when = last_license_update,
-			};
-			list_for_each_ro(cluster_license_list,
-					 _foreach_hres_job_get, &arg);
-
-			license_entry->used += license_entry->total;
-
-			continue;
-		}
-
-		lic_or = license_entry->op_or;
-		match = list_find_first(cluster_license_list,
-					_license_find_rec_by_id,
-					&license_entry->id);
-		if (match) {
-			/*
-			 * With OR, we only know that at least one of the job's
-			 * requested licenses are available, so we need to test
-			 * for availability again. With AND we know that all
-			 * licenses are available so we don't need to check.
-			 */
-			if (lic_or) {
-				int resv_blk_lic_cnt =
-					job_test_lic_resv(job_ptr, match->id,
-							  last_license_update,
-							  false);
-
-				if (!_sufficient_licenses(license_entry, match,
-							  resv_blk_lic_cnt)) {
-					/* Not enough of this license */
-					continue;
-				}
-			}
-
-			match->used += license_entry->total;
-			license_entry->used += license_entry->total;
-			if (match->remote && restore) {
-				if (license_entry->total > match->last_deficit)
-					match->last_deficit = 0;
-				else
-					match->last_deficit -=
-						license_entry->total;
-			}
-			if (lic_or) {
-				break;
-			}
-		} else {
-			error("could not find license %s for job %u",
-			      license_entry->name, job_ptr->job_id);
-			rc = SLURM_ERROR;
-		}
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(job_ptr->license_list, _foreach_license_job_get, &args);
 
 	/* When restoring, allocated licenses is already set */
-	if (!rc && !restore)
-		rc = _set_licenses_alloc(job_ptr, lic_or, license_entry);
+	if (!args.rc && !restore)
+		args.rc = _set_licenses_alloc(job_ptr, args.lic_or,
+					      args.last_entry);
 
 	_licenses_print("acquire_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
-	return rc;
+	return args.rc;
 }
 
 static int _foreach_hres_job_return_mode2(void *x, void *arg)
