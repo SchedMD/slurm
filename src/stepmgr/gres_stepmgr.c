@@ -74,6 +74,19 @@ typedef struct {
 	int rc;
 } foreach_explicit_alloc_t;
 
+typedef struct {
+	bitstr_t *core_bitmap;
+	list_t *job_gres_list_alloc;
+	uint32_t job_id;
+	bool new_alloc;
+	int node_cnt;
+	list_t *node_gres_list;
+	int node_index;
+	char *node_name;
+	int node_offset;
+	int rc;
+} foreach_job_alloc_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -1064,6 +1077,32 @@ static int _set_node_type_cnt(gres_state_t *gres_state_job,
  * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
+static int _foreach_job_alloc(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_job_alloc_t *args = arg;
+	gres_state_t *gres_state_node = list_find_first_ro(
+		args->node_gres_list, gres_find_id,
+		&gres_state_job->plugin_id);
+	int rc2;
+
+	if (!gres_state_node) {
+		error("%s: job %u allocated gres/%s on node %s lacking that gres",
+		      __func__, args->job_id, gres_state_job->gres_name,
+		      args->node_name);
+		return 0;
+	}
+
+	rc2 = _job_alloc(gres_state_job, args->job_gres_list_alloc,
+			 gres_state_node, args->node_cnt, args->node_index,
+			 args->node_offset, args->job_id, args->node_name,
+			 args->core_bitmap, args->new_alloc);
+	if (rc2 != SLURM_SUCCESS)
+		args->rc = rc2;
+
+	return 0;
+}
+
 extern int gres_stepmgr_job_alloc(
 	list_t *job_gres_list, list_t **job_gres_list_alloc,
 	list_t *node_gres_list, int node_cnt,
@@ -1071,9 +1110,17 @@ extern int gres_stepmgr_job_alloc(
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap, bool new_alloc)
 {
-	int rc = SLURM_ERROR, rc2;
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job, *gres_state_node;
+	foreach_job_alloc_t args = {
+		.core_bitmap = core_bitmap,
+		.job_id = job_id,
+		.new_alloc = new_alloc,
+		.node_cnt = node_cnt,
+		.node_gres_list = node_gres_list,
+		.node_index = node_index,
+		.node_name = node_name,
+		.node_offset = node_offset,
+		.rc = SLURM_ERROR,
+	};
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -1082,30 +1129,11 @@ extern int gres_stepmgr_job_alloc(
 		      __func__, job_id, node_name);
 		return SLURM_ERROR;
 	}
-	if (*job_gres_list_alloc == NULL) {
+	if (!*job_gres_list_alloc)
 		*job_gres_list_alloc = list_create(gres_job_list_delete);
-	}
+	args.job_gres_list_alloc = *job_gres_list_alloc;
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_state_node = list_find_first(node_gres_list, gres_find_id,
-						  &gres_state_job->plugin_id);
-		if (gres_state_node == NULL) {
-			error("%s: job %u allocated gres/%s on node %s lacking that gres",
-			      __func__, job_id, gres_state_job->gres_name,
-			      node_name);
-			continue;
-		}
-
-		rc2 = _job_alloc(gres_state_job, *job_gres_list_alloc,
-				 gres_state_node, node_cnt,
-				 node_index,
-				 node_offset, job_id, node_name, core_bitmap,
-				 new_alloc);
-		if (rc2 != SLURM_SUCCESS)
-			rc = rc2;
-	}
-	list_iterator_destroy(job_gres_iter);
+	list_for_each_ro(job_gres_list, _foreach_job_alloc, &args);
 
 	/*
 	 * On a slurmctld restart the node doesn't know anything about types so
@@ -1114,11 +1142,10 @@ extern int gres_stepmgr_job_alloc(
 	 * in there we could potentially get duplicate counts.
 	 */
 	if (!new_alloc)
-		(void) list_for_each(*job_gres_list_alloc,
-				     (ListForF) _set_node_type_cnt,
-				     node_gres_list);
+		list_for_each_ro(*job_gres_list_alloc,
+				 (ListForF) _set_node_type_cnt, node_gres_list);
 
-	return rc;
+	return args.rc;
 }
 
 /*
