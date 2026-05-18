@@ -152,6 +152,11 @@ typedef struct {
 	bitstr_t *orig_job_node_bitmap;
 } foreach_step_state_rebase_t;
 
+typedef struct {
+	int node_inx;
+	char *tres_str;
+} foreach_gres_on_node_as_tres_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -3134,6 +3139,37 @@ static void _gres_2_tres_str_internal(char **tres_str,
 	}
 }
 
+static int _foreach_gres_on_node_as_tres(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_gres_on_node_as_tres_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	uint64_t count;
+
+	if (!gres_js->gres_bit_alloc)
+		return 0;
+
+	if (args->node_inx > gres_js->node_cnt)
+		return -1;
+
+	if (!gres_state_job->gres_name) {
+		debug("%s: couldn't find name", __func__);
+		return 0;
+	}
+
+	/* If we are no_consume, print a 0 */
+	if (gres_js->total_gres == NO_CONSUME_VAL64)
+		count = 0;
+	else if (gres_js->gres_cnt_node_alloc[args->node_inx])
+		count = gres_js->gres_cnt_node_alloc[args->node_inx];
+	else /* If this gres isn't on the node skip it */
+		return 0;
+	_gres_2_tres_str_internal(&args->tres_str, gres_state_job->gres_name,
+				  gres_js->type_name, count);
+
+	return 0;
+}
+
 /*
  * Given a job's GRES data structure, return a simple tres string of gres
  * allocated on the node_inx requested
@@ -3147,10 +3183,10 @@ static void _gres_2_tres_str_internal(char **tres_str,
 extern char *gres_stepmgr_gres_on_node_as_tres(
 	list_t *job_gres_list, int node_inx, bool locked)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	char *tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	foreach_gres_on_node_as_tres_t args = {
+		.node_inx = node_inx,
+	};
 
 	if (!job_gres_list)	/* No GRES allocated */
 		return NULL;
@@ -3159,40 +3195,12 @@ extern char *gres_stepmgr_gres_on_node_as_tres(
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(job_gres_iter))) {
-		uint64_t count;
-		gres_job_state_t *gres_js =
-			(gres_job_state_t *)gres_state_job->gres_data;
-		if (!gres_js->gres_bit_alloc)
-			continue;
-
-		if (node_inx > gres_js->node_cnt)
-			break;
-
-		if (!gres_state_job->gres_name) {
-			debug("%s: couldn't find name", __func__);
-			continue;
-		}
-
-		/* If we are no_consume, print a 0 */
-		if (gres_js->total_gres == NO_CONSUME_VAL64)
-			count = 0;
-		else if (gres_js->gres_cnt_node_alloc[node_inx])
-			count = gres_js->gres_cnt_node_alloc[node_inx];
-		else /* If this gres isn't on the node skip it */
-			continue;
-		_gres_2_tres_str_internal(&tres_str,
-					  gres_state_job->gres_name,
-					  gres_js->type_name,
-					  count);
-	}
-	list_iterator_destroy(job_gres_iter);
+	list_for_each_ro(job_gres_list, _foreach_gres_on_node_as_tres, &args);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 
-	return tres_str;
+	return args.tres_str;
 }
 
 static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
