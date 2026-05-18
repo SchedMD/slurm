@@ -170,6 +170,12 @@ typedef struct {
 } licenses_2_tres_str_args_t;
 
 typedef struct {
+	bool locked;
+	uint64_t *tres_cnt;
+	slurmdb_tres_rec_t *tres_rec;
+} license_set_job_tres_cnt_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -2833,16 +2839,32 @@ extern char *licenses_2_tres_str(list_t *license_list)
 	return args.tres_str;
 }
 
+static int _foreach_set_job_tres_cnt(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	license_set_job_tres_cnt_args_t *args = arg;
+	int tres_pos;
+
+	args->tres_rec->name = license_entry->name;
+	if ((tres_pos = assoc_mgr_find_tres_pos(
+		     args->tres_rec, args->locked)) != -1)
+		args->tres_cnt[tres_pos] = (uint64_t) license_entry->total;
+
+	return 0;
+}
+
 extern void license_set_job_tres_cnt(list_t *license_list,
 				     uint64_t *tres_cnt,
 				     bool locked)
 {
-	list_itr_t *itr;
-	licenses_t *license_entry;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
-	int tres_pos;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	license_set_job_tres_cnt_args_t args = {
+		.locked = locked,
+		.tres_cnt = tres_cnt,
+		.tres_rec = &tres_rec,
+	};
 
 	/* we only need to init this once */
 	if (first_run) {
@@ -2857,14 +2879,7 @@ extern void license_set_job_tres_cnt(list_t *license_list,
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	itr = list_iterator_create(license_list);
-	while ((license_entry = list_next(itr))) {
-		tres_rec.name = license_entry->name;
-		if ((tres_pos = assoc_mgr_find_tres_pos(
-			     &tres_rec, locked)) != -1)
-			tres_cnt[tres_pos] = (uint64_t)license_entry->total;
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(license_list, _foreach_set_job_tres_cnt, &args);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
