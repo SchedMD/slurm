@@ -3444,12 +3444,46 @@ extern uint64_t gres_stepmgr_step_test(gres_stepmgr_step_test_args_t *args)
 	return outer.cpu_cnt;
 }
 
+static int _foreach_gres_2_tres_str(void *x, void *arg)
+{
+	gres_state_t *gres_state_ptr = x;
+	char **tres_str = arg;
+	char *col_name = NULL;
+	uint64_t count;
+
+	switch (gres_state_ptr->state_type) {
+	case GRES_STATE_TYPE_JOB:
+	{
+		gres_job_state_t *gres_js = gres_state_ptr->gres_data;
+		col_name = gres_js->type_name;
+		count = gres_js->total_gres;
+		break;
+	}
+	case GRES_STATE_TYPE_STEP:
+	{
+		gres_step_state_t *gres_ss = gres_state_ptr->gres_data;
+		col_name = gres_ss->type_name;
+		count = gres_ss->total_gres;
+		break;
+	}
+	default:
+		error("%s: unsupported state type %d", __func__,
+		      gres_state_ptr->state_type);
+		return 0;
+	}
+
+	/* If we are no_consume, print a 0 */
+	if (count == NO_CONSUME_VAL64)
+		count = 0;
+
+	_gres_2_tres_str_internal(tres_str, gres_state_ptr->gres_name, col_name,
+				  count);
+
+	return 0;
+}
+
 extern char *gres_stepmgr_gres_2_tres_str(list_t *gres_list, bool locked)
 {
-	list_itr_t *itr;
-	gres_state_t *gres_state_ptr;
-	uint64_t count;
-	char *col_name = NULL;
 	char *tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -3460,40 +3494,7 @@ extern char *gres_stepmgr_gres_2_tres_str(list_t *gres_list, bool locked)
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	itr = list_iterator_create(gres_list);
-	while ((gres_state_ptr = list_next(itr))) {
-		switch (gres_state_ptr->state_type) {
-		case GRES_STATE_TYPE_JOB:
-		{
-			gres_job_state_t *gres_js = (gres_job_state_t *)
-				gres_state_ptr->gres_data;
-			col_name = gres_js->type_name;
-			count = gres_js->total_gres;
-			break;
-		}
-		case GRES_STATE_TYPE_STEP:
-		{
-			gres_step_state_t *gres_ss = (gres_step_state_t *)
-				gres_state_ptr->gres_data;
-			col_name = gres_ss->type_name;
-			count = gres_ss->total_gres;
-			break;
-		}
-		default:
-			error("%s: unsupported state type %d", __func__,
-			      gres_state_ptr->state_type);
-			continue;
-		}
-
-		/* If we are no_consume, print a 0 */
-		if (count == NO_CONSUME_VAL64)
-			count = 0;
-
-		_gres_2_tres_str_internal(&tres_str,
-					  gres_state_ptr->gres_name,
-					  col_name, count);
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(gres_list, _foreach_gres_2_tres_str, &tres_str);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
