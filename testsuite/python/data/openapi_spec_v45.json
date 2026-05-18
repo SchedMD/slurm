@@ -11710,9 +11710,8 @@
             }
           },
           "DefMemPerCPU": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Default MB memory per allocated CPU"
+            "$ref": "#/components/schemas/v0.0.45_uint64_no_val_struct",
+            "description": "Default MB memory per allocated CPU (64 bit integer number with flags)"
           },
           "DependencyParameters": {
             "$ref": "#/components/schemas/v0.0.45_csv_string",
