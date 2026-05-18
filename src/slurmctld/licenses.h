@@ -213,6 +213,9 @@ extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
 extern void hres_pre_select_with_list(job_record_t *job_ptr, bool test_only,
 				      list_t *license_list);
 
+extern bool hres_jobs_share_mode3(job_record_t *job1_ptr,
+				  job_record_t *job2_ptr);
+
 extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
 				     bf_licenses_t *bf_licenses);
 

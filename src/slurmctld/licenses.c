@@ -203,6 +203,11 @@ typedef struct {
 } license_sync_remote_args_t;
 
 typedef struct {
+	job_record_t *job1_ptr;
+	bool shared;
+} share_mode3_args_t;
+
+typedef struct {
 	job_record_t *job_ptr;
 	licenses_t *last_entry;
 	bool lic_or;
@@ -2712,6 +2717,43 @@ extern void hres_select_return(hres_select_t *hres_select,
 			hres_select->avail_hres[idx] +=
 				hres_select->hres_per_node;
 	}
+}
+
+static bool _jobs_share_mode3(job_record_t *job1_ptr, job_record_t *job2_ptr)
+{
+	hres_select_t *job1_hres_select = job1_ptr->hres_select;
+	hres_select_t *job2_hres_select = job2_ptr->hres_select;
+	if (job1_hres_select && job2_hres_select &&
+	    (job1_hres_select->root_id.hres_id ==
+	     job2_hres_select->root_id.hres_id))
+		return true;
+	return false;
+}
+
+static int _foreach_share_mode3(void *x, void *arg)
+{
+	job_record_t *job2_ptr = x;
+	share_mode3_args_t *args = arg;
+
+	if (!_jobs_share_mode3(args->job1_ptr, job2_ptr))
+		return 0;
+
+	args->shared = true;
+	return -1;
+}
+
+extern bool hres_jobs_share_mode3(job_record_t *job1_ptr,
+				  job_record_t *job2_ptr)
+{
+	share_mode3_args_t args = { .job1_ptr = job1_ptr };
+
+	/* Each hetjob component has its own hres_select. */
+	if (!job2_ptr->het_job_list)
+		return _jobs_share_mode3(job1_ptr, job2_ptr);
+
+	list_for_each(job2_ptr->het_job_list, _foreach_share_mode3, &args);
+
+	return args.shared;
 }
 
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
