@@ -11743,11 +11743,18 @@ void handle_invalid_dependency(job_record_t *job_ptr)
 void purge_old_job(void)
 {
 	int i, purge_job_count;
+	/*
+	 * purge_old_job modifies jobs and reads conf info. It can also
+	 * call re_kill_job(), which can modify nodes and reads fed info.
+	 */
+	slurmctld_lock_t purge_job_locks = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
-	xassert(verify_lock(FED_LOCK, READ_LOCK));
+	lock_slurmctld(purge_job_locks);
 
 	if ((purge_job_count = list_count(purge_files_list)))
 		debug("%s: job file deletion is falling behind, "
@@ -11761,6 +11768,11 @@ void purge_old_job(void)
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
 		last_job_update = time(NULL);
+	}
+
+	unlock_slurmctld(purge_job_locks);
+
+	if (i) {
 		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond);
 		slurm_mutex_unlock(&purge_thread_lock);

@@ -1557,7 +1557,8 @@ extern void handle_invalid_dependency(job_record_t *job_ptr);
  *	The jobs must have completed at least MIN_JOB_AGE minutes ago.
  *	Test job dependencies, handle after_ok, after_not_ok before
  *	purging any jobs.
- * NOTE: READ lock slurmctld config and WRITE lock jobs before entry
+ * NOTE: slurmctld config and fed READ locks and job and node WRITE locks are
+ *       acquired by this function.
  */
 void purge_old_job(void);
 
