@@ -2981,6 +2981,73 @@ extern int gres_stepmgr_step_dealloc(
 	return args.rc;
 }
 
+static int _foreach_step_state_rebase(void *x, void *arg)
+{
+	gres_state_t *gres_state_step = x;
+	foreach_step_state_rebase_t *args = arg;
+	gres_step_state_t *gres_ss = gres_state_step->gres_data;
+	bitstr_t *new_node_in_use;
+	int new_node_cnt, i_first, i_last;
+	int old_inx = -1, new_inx = -1;
+
+	if (!gres_ss)
+		return 0;
+	if (!gres_ss->node_in_use) {
+		error("gres_step_state_rebase: node_in_use is NULL");
+		return 0;
+	}
+	new_node_cnt = bit_set_count(args->new_job_node_bitmap);
+	i_first = MIN(bit_ffs(args->orig_job_node_bitmap),
+		      bit_ffs(args->new_job_node_bitmap));
+	i_first = MAX(i_first, 0);
+	i_last = MAX(bit_fls(args->orig_job_node_bitmap),
+		     bit_fls(args->new_job_node_bitmap));
+	if (i_last == -1) {
+		error("gres_step_state_rebase: node_bitmaps are empty");
+		return 0;
+	}
+	new_node_in_use = bit_alloc(new_node_cnt);
+
+	for (int i = i_first; i <= i_last; i++) {
+		bool old_match = false, new_match = false;
+		if (bit_test(args->orig_job_node_bitmap, i)) {
+			old_match = true;
+			old_inx++;
+		}
+		if (bit_test(args->new_job_node_bitmap, i)) {
+			new_match = true;
+			new_inx++;
+		}
+		if (old_match && new_match) {
+			bit_set(new_node_in_use, new_inx);
+			if (gres_ss->gres_bit_alloc) {
+				if (!args->new_gres_bit_alloc) {
+					args->new_gres_bit_alloc = xcalloc(
+						new_node_cnt,
+						sizeof(bitstr_t *));
+				}
+				args->new_gres_bit_alloc[new_inx] =
+					gres_ss->gres_bit_alloc[old_inx];
+			}
+		} else if (old_match && gres_ss->gres_bit_alloc &&
+			   gres_ss->gres_bit_alloc[old_inx]) {
+			/*
+			 * Node removed from job allocation, release step's
+			 * resources
+			 */
+			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[old_inx]);
+		}
+	}
+
+	gres_ss->node_cnt = new_node_cnt;
+	FREE_NULL_BITMAP(gres_ss->node_in_use);
+	gres_ss->node_in_use = new_node_in_use;
+	xfree(gres_ss->gres_bit_alloc);
+	gres_ss->gres_bit_alloc = args->new_gres_bit_alloc;
+
+	return 0;
+}
+
 /*
  * A job allocation size has changed. Update the job step gres information
  * bitmaps and other data structures.
@@ -2993,82 +3060,15 @@ void gres_stepmgr_step_state_rebase(
 	bitstr_t *orig_job_node_bitmap,
 	bitstr_t *new_job_node_bitmap)
 {
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_step;
-	gres_step_state_t *gres_ss;
-	int new_node_cnt;
-	int i_first, i_last, i;
-	int old_inx, new_inx;
-	bitstr_t *new_node_in_use;
-	bitstr_t **new_gres_bit_alloc = NULL;
+	foreach_step_state_rebase_t args = {
+		.new_job_node_bitmap = new_job_node_bitmap,
+		.orig_job_node_bitmap = orig_job_node_bitmap,
+	};
 
 	if (gres_list == NULL)
 		return;
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_step = list_next(gres_iter))) {
-		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
-		if (!gres_ss)
-			continue;
-		if (!gres_ss->node_in_use) {
-			error("gres_step_state_rebase: node_in_use is NULL");
-			continue;
-		}
-		new_node_cnt = bit_set_count(new_job_node_bitmap);
-		i_first = MIN(bit_ffs(orig_job_node_bitmap),
-			      bit_ffs(new_job_node_bitmap));
-		i_first = MAX(i_first, 0);
-		i_last  = MAX(bit_fls(orig_job_node_bitmap),
-			      bit_fls(new_job_node_bitmap));
-		if (i_last == -1) {
-			error("gres_step_state_rebase: node_bitmaps "
-			      "are empty");
-			continue;
-		}
-		new_node_in_use = bit_alloc(new_node_cnt);
-
-		old_inx = new_inx = -1;
-		for (i = i_first; i <= i_last; i++) {
-			bool old_match = false, new_match = false;
-			if (bit_test(orig_job_node_bitmap, i)) {
-				old_match = true;
-				old_inx++;
-			}
-			if (bit_test(new_job_node_bitmap, i)) {
-				new_match = true;
-				new_inx++;
-			}
-			if (old_match && new_match) {
-				bit_set(new_node_in_use, new_inx);
-				if (gres_ss->gres_bit_alloc) {
-					if (!new_gres_bit_alloc) {
-						new_gres_bit_alloc = xcalloc(
-							new_node_cnt,
-							sizeof(bitstr_t *));
-					}
-					new_gres_bit_alloc[new_inx] =
-						gres_ss->
-						gres_bit_alloc[old_inx];
-				}
-			} else if (old_match &&
-				   gres_ss->gres_bit_alloc &&
-				   gres_ss->gres_bit_alloc[old_inx]) {
-				/*
-				 * Node removed from job allocation,
-				 * release step's resources
-				 */
-				FREE_NULL_BITMAP(gres_ss->
-					 gres_bit_alloc[old_inx]);
-			}
-		}
-
-		gres_ss->node_cnt = new_node_cnt;
-		FREE_NULL_BITMAP(gres_ss->node_in_use);
-		gres_ss->node_in_use = new_node_in_use;
-		xfree(gres_ss->gres_bit_alloc);
-		gres_ss->gres_bit_alloc = new_gres_bit_alloc;
-	}
-	list_iterator_destroy(gres_iter);
+	list_for_each_ro(gres_list, _foreach_step_state_rebase, &args);
 }
 
 static void _gres_add_2_tres_str(char **tres_str, slurmdb_tres_rec_t *tres_rec,
