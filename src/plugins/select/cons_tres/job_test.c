@@ -1148,17 +1148,16 @@ fini:	if (rc != SLURM_SUCCESS) {
 }
 
 /*
- * Sort the usable_node element to put jobs in the correct
- * preemption order.
+ * Sort by preempt_score to put jobs in the correct preemption order.
  */
-static int _sort_usable_nodes_dec(void *j1, void *j2)
+static int _sort_preempt_score_dec(void *j1, void *j2)
 {
 	job_record_t *job_a = *(job_record_t **) j1;
 	job_record_t *job_b = *(job_record_t **) j2;
 
-	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
+	if (job_a->details->preempt_score > job_b->details->preempt_score)
 		return -1;
-	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
+	else if (job_a->details->preempt_score < job_b->details->preempt_score)
 		return 1;
 
 	return 0;
@@ -2455,7 +2454,7 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	return rc;
 }
 
-static int _wrapper_get_usable_nodes(void *x, void *arg)
+static int _wrapper_get_node_overlap(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *)x;
 	wrapper_rm_job_args_t *wargs = (wrapper_rm_job_args_t *)arg;
@@ -2467,18 +2466,17 @@ static int _wrapper_get_usable_nodes(void *x, void *arg)
 	return 0;
 }
 
-static int _get_usable_nodes(bitstr_t *node_map, job_record_t *job_ptr)
+static int _get_preempt_score(bitstr_t *node_map, job_record_t *job_ptr)
 {
 	wrapper_rm_job_args_t wargs = {
 		.node_map = node_map
 	};
 
 	if (!job_ptr->het_job_list)
-		(void)_wrapper_get_usable_nodes(job_ptr, &wargs);
+		(void) _wrapper_get_node_overlap(job_ptr, &wargs);
 	else
-		(void)list_for_each_nobreak(job_ptr->het_job_list,
-					    _wrapper_get_usable_nodes,
-					    &wargs);
+		(void) list_for_each_nobreak(job_ptr->het_job_list,
+					     _wrapper_get_node_overlap, &wargs);
 	return wargs.rc;
 }
 
@@ -3270,7 +3268,7 @@ static int _foreach_cancel_preemptee(void *x, void *arg)
 	 * Clear any 99999 left by an earlier reorder, so that
 	 * _foreach_reorder_score() only ever finds the current sentinel.
 	 */
-	tmp_job_ptr->details->usable_nodes = 0;
+	tmp_job_ptr->details->preempt_score = 0;
 	if (*(ctx->rc) == SLURM_SUCCESS) {
 		ctx->last_job_ptr = tmp_job_ptr;
 		return -1;
@@ -3316,15 +3314,15 @@ static int _foreach_reorder_score(void *x, void *arg)
 	job_record_t *job_ptr = x;
 	reorder_args_t *args = arg;
 
-	if (job_ptr->details->usable_nodes == 99999) {
+	if (job_ptr->details->preempt_score == 99999) {
 		args->job_needed = false;
 		return 0;
 	}
 	if (args->job_needed)
-		job_ptr->details->usable_nodes =
-			_get_usable_nodes(args->node_bitmap, job_ptr);
+		job_ptr->details->preempt_score =
+			_get_preempt_score(args->node_bitmap, job_ptr);
 	else
-		job_ptr->details->usable_nodes = 0;
+		job_ptr->details->preempt_score = 0;
 	return 0;
 }
 
@@ -3344,11 +3342,11 @@ static void _reorder_preemptee_candidates(run_now_ctx_t *ctx)
 			.job_needed = true,
 		};
 
-		ctx->last_job_ptr->details->usable_nodes = 99999;
+		ctx->last_job_ptr->details->preempt_score = 99999;
 		list_for_each(ctx->preemptee_candidates, _foreach_reorder_score,
 			      &args);
 		list_sort(ctx->preemptee_candidates,
-			  (ListCmpF) _sort_usable_nodes_dec);
+			  (ListCmpF) _sort_preempt_score_dec);
 	}
 }
 

@@ -192,7 +192,7 @@ typedef struct {
 	uint32_t task_dist;		/* task layout for this job. Only
 					 * useful when Consumable Resources
 					 * is enabled */
-	uint32_t usable_nodes;		/* node count needed by preemption */
+	uint32_t preempt_score; /* preemption reorder score - not packed */
 	uint8_t whole_node;		/* WHOLE_NODE_REQUIRED: 1: --exclusive
 					 * WHOLE_NODE_USER: 2: --exclusive=user
 					 * WHOLE_NODE_MCS:  3: --exclusive=mcs */

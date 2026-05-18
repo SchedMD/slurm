@@ -145,7 +145,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		    int max_share, uint32_t req_nodes,
 		    list_t *preemptee_candidates,
 		    list_t **preemptee_job_list);
-static int _sort_usable_nodes_dec(void *, void *);
+static int _sort_preempt_score_dec(void *, void *);
 static bool _test_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _test_only(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -1838,17 +1838,16 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *bitmap,
 }
 
 /*
- * Sort the usable_node element to put jobs in the correct
- * preemption order.
+ * Sort by preempt_score to put jobs in the correct preemption order.
  */
-static int _sort_usable_nodes_dec(void *j1, void *j2)
+static int _sort_preempt_score_dec(void *j1, void *j2)
 {
 	job_record_t *job_a = *(job_record_t **)j1;
 	job_record_t *job_b = *(job_record_t **)j2;
 
-	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
+	if (job_a->details->preempt_score > job_b->details->preempt_score)
 		return -1;
-	else if (job_a->details->usable_nodes < job_b->details->usable_nodes)
+	else if (job_a->details->preempt_score < job_b->details->preempt_score)
 		return 1;
 
 	return 0;
@@ -1934,27 +1933,26 @@ top:
 					      (max_share - 1),
 					      NO_SHARE_LIMIT,
 					      SELECT_MODE_RUN_NOW);
-			tmp_job_ptr->details->usable_nodes =
+			tmp_job_ptr->details->preempt_score =
 				bit_overlap(bitmap, tmp_job_ptr->node_bitmap);
 			if (j < min_nodes)
 				continue;
 			rc = _job_test(job_ptr, bitmap, min_nodes,
 				       max_nodes, req_nodes);
 			/*
-			 * If successful, set the last job's usable count to a
-			 * large value so that it will be first after sorting.
-			 * Note: usable_count is only used for sorting purposes
+			 * If successful, set the last job's preempt_score
+			 * to a large value so it sorts first.
 			 */
 			if (rc == SLURM_SUCCESS) {
 				if (pass_count++ ||
 				    (list_count(preemptee_candidates) == 1))
 					break;
-				tmp_job_ptr->details->usable_nodes = 9999;
+				tmp_job_ptr->details->preempt_score = 9999;
 				while ((tmp_job_ptr = list_next(job_iterator))) {
-					tmp_job_ptr->details->usable_nodes = 0;
+					tmp_job_ptr->details->preempt_score = 0;
 				}
 				list_sort(preemptee_candidates,
-					  (ListCmpF)_sort_usable_nodes_dec);
+					  (ListCmpF) _sort_preempt_score_dec);
 				rc = EINVAL;
 				list_iterator_destroy(job_iterator);
 				_free_cr(exp_cr);
@@ -1977,7 +1975,7 @@ top:
 						    tmp_job_ptr->
 							node_bitmap) == 0)
 					continue;
-				if (tmp_job_ptr->details->usable_nodes == 0)
+				if (tmp_job_ptr->details->preempt_score == 0)
 					continue;
 				list_append(*preemptee_job_list,
 					    tmp_job_ptr);
