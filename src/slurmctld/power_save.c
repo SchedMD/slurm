@@ -150,7 +150,7 @@ static bool suspend_exc_down;
 static uint32_t suspend_exc_state_flags;
 
 static void _clear_power_config(void);
-static void  _do_power_work(time_t now);
+static void _do_power_work(time_t now, bool auto_power_save_enabled);
 static int _do_resume_action(void *entry, void *payload);
 static int _do_power_action(void *entry, void *payload);
 static int _do_power_action_reboot(void *entry, void *payload);
@@ -548,7 +548,7 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 }
 
 /* Perform any power change work to nodes */
-static void _do_power_work(time_t now)
+static void _do_power_work(time_t now, bool auto_power_save_enabled)
 {
 	int i, susp_total = 0;
 	uint32_t susp_state;
@@ -707,7 +707,7 @@ static void _do_power_work(time_t now)
 
 		/* Resume nodes as appropriate */
 		has_job_to_resume =
-			(power_save_enabled &&
+			(auto_power_save_enabled &&
 			 bit_test(job_power_node_bitmap, node_ptr->index));
 		not_rate_limited =
 			(resume_rate == 0 || _rl_get_tokens(&resume_rl_config));
@@ -745,10 +745,10 @@ static void _do_power_work(time_t now)
 		not_rate_limited = (suspend_rate == 0 ||
 				    _rl_get_tokens(&suspend_rl_config));
 		no_suspended_jobs = (node_ptr->sus_job_cnt == 0);
-		suspend_time_exceeded =
-			(power_save_enabled && (node_ptr->last_busy != 0) &&
-			 (node_ptr->last_busy <
-			  (now - node_ptr->suspend_time)));
+		suspend_time_exceeded = (auto_power_save_enabled &&
+					 (node_ptr->last_busy != 0) &&
+					 (node_ptr->last_busy <
+					  (now - node_ptr->suspend_time)));
 		not_avoid_node =
 			(avoid_node_bitmap == NULL ||
 			 (!bit_test(avoid_node_bitmap, node_ptr->index)));
@@ -1604,21 +1604,6 @@ extern void power_save_init(void)
 	slurm_mutex_unlock(&power_mutex);
 }
 
-/* Report if node power saving is enabled */
-extern bool power_save_test(void)
-{
-	bool rc;
-
-	slurm_mutex_lock(&power_mutex);
-	while (!power_save_config) {
-		slurm_cond_wait(&power_cond, &power_mutex);
-	}
-	rc = power_save_enabled;
-	slurm_mutex_unlock(&power_mutex);
-
-	return rc;
-}
-
 /* Free module's allocated memory */
 extern void power_save_fini(void)
 {
@@ -1655,6 +1640,7 @@ static void *_power_save_thread(void *arg)
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, last_power_scan = 0;
+	bool auto_power_save_enabled = false;
 
 	/*
 	 * Build up resume_job_list list in case shut down before resuming
@@ -1673,6 +1659,7 @@ static void *_power_save_thread(void *arg)
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 1;
 		slurm_cond_timedwait(&power_cond, &power_mutex, &ts);
+		auto_power_save_enabled = power_save_enabled;
 		slurm_mutex_unlock(&power_mutex);
 
 		if (slurmctld_config.shutdown_time)
@@ -1683,7 +1670,7 @@ static void *_power_save_thread(void *arg)
 		    ((last_node_update > last_power_scan) ||
 		     (now > (last_power_scan + power_save_interval)))) {
 			lock_slurmctld(node_write_lock);
-			_do_power_work(now);
+			_do_power_work(now, auto_power_save_enabled);
 			unlock_slurmctld(node_write_lock);
 			last_power_scan = now;
 		}

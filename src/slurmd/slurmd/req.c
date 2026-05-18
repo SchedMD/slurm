@@ -2617,7 +2617,7 @@ static void _rpc_run_power_action(slurm_msg_t *msg)
 		      run_args.script_type, WTERMSIG(status));
 
 	xfree(resp);
-	for (int i = 0; argv && argv[i]; i++)
+	for (int i = 0; (i < argc) && argv[i]; i++)
 		xfree(argv[i]);
 	xfree(argv);
 	env_array_free(env);
@@ -2786,7 +2786,7 @@ _rpc_reboot(slurm_msg_t *msg)
 			      run_args.script_path,
 			      WTERMSIG(status));
 		xfree(resp);
-		for (int i = 0; argv && argv[i]; i++)
+		for (int i = 0; (i < argc) && argv[i]; i++)
 			xfree(argv[i]);
 		xfree(argv);
 		env_array_free(env);
