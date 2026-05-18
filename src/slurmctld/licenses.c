@@ -186,6 +186,13 @@ typedef struct {
 } bf_licenses_to_string_args_t;
 
 typedef struct {
+	bool found;
+	job_record_t *job_ptr;
+	bf_licenses_t *licenses;
+	bool lic_or;
+} slurm_bf_licenses_deduct_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -3076,8 +3083,8 @@ static int _foreach_hres_deduct(void *x, void *arg)
 	if (bf_lic->resv_ptr && (args->job_ptr->resv_ptr != bf_lic->resv_ptr))
 		return 0;
 
-	match = list_find_first(cluster_license_list, _license_find_rec_by_id,
-				&bf_lic->id);
+	match = list_find_first_ro(cluster_license_list,
+				   _license_find_rec_by_id, &bf_lic->id);
 	if (!match)
 		return 0;
 
@@ -3108,99 +3115,107 @@ static int _foreach_hres_deduct(void *x, void *arg)
 	else
 		return 0;
 }
+static int _foreach_bf_licenses_deduct(void *x, void *arg)
+{
+	licenses_t *job_entry = x;
+	slurm_bf_licenses_deduct_args_t *args = arg;
+	bf_license_t *resv_entry = NULL, *bf_entry;
+	int needed = job_entry->total;
+	int resv_acquired = 0;
+
+	if (job_entry->id.hres_id != NO_VAL16) {
+		foreach_get_hres_t hres_arg = {
+			.job_ptr = args->job_ptr,
+			.license_entry = job_entry,
+		};
+		slurm_mutex_lock(&license_mutex);
+		list_for_each_ro(args->licenses, _foreach_hres_deduct,
+				 &hres_arg);
+		slurm_mutex_unlock(&license_mutex);
+
+		return 0;
+	}
+
+	args->lic_or = job_entry->op_or;
+	/*
+	 * Jobs with reservations may use licenses out of the reservation, as
+	 * well as global ones. Deduct from reservation first, then global as
+	 * needed.
+	 */
+	if (args->job_ptr->resv_ptr) {
+		bf_licenses_find_resv_t target_record = {
+			.id = job_entry->id,
+			.resv_ptr = args->job_ptr->resv_ptr,
+		};
+
+		resv_entry = list_find_first_ro(args->licenses,
+						_bf_licenses_find_resv,
+						&target_record);
+		if (resv_entry && (needed <= resv_entry->remaining)) {
+			resv_entry->remaining -= needed;
+			/* OR - reservation has enough, break. */
+			if (args->lic_or) {
+				args->found = true;
+				return -1;
+			}
+			return 0;
+		} else if (resv_entry) {
+			resv_acquired = resv_entry->remaining;
+			needed -= resv_acquired;
+			resv_entry->remaining = 0;
+		}
+	}
+
+	bf_entry = list_find_first_ro(args->licenses, _bf_licenses_find_rec,
+				      &job_entry->id);
+
+	if (!bf_entry) {
+		error("%s: missing license lic_id=%u", __func__,
+		      job_entry->id.lic_id);
+	} else if (bf_entry->remaining < needed) {
+		/*
+		 * OR - Not an error; skip this one and keep going until we
+		 * find the next one that is available.
+		 */
+		if (args->lic_or) {
+			/* Return resv_acquired licenses */
+			if (resv_entry) {
+				resv_entry->remaining += resv_acquired;
+				needed += resv_acquired;
+			}
+			return 0;
+		}
+		error("%s: underflow on lic_id=%u", __func__,
+		      bf_entry->id.lic_id);
+		bf_entry->remaining = 0;
+	} else {
+		bf_entry->remaining -= needed;
+		if (args->lic_or) {
+			args->found = true;
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 				     job_record_t *job_ptr)
 {
-	licenses_t *job_entry;
-	list_itr_t *iter;
-	bool found = false, lic_or = false;
+	slurm_bf_licenses_deduct_args_t args = {
+		.job_ptr = job_ptr,
+		.licenses = licenses,
+	};
 
 	xassert(job_ptr);
 
 	if (!job_ptr->license_list)
 		return;
 
-	iter = list_iterator_create(job_ptr->license_list);
-	while ((job_entry = list_next(iter))) {
-		bf_license_t *resv_entry = NULL, *bf_entry;
-		int needed = job_entry->total;
-		int resv_acquired = 0;
+	list_for_each_ro(job_ptr->license_list, _foreach_bf_licenses_deduct,
+			 &args);
 
-		if (job_entry->id.hres_id != NO_VAL16) {
-			foreach_get_hres_t arg = {
-				.job_ptr = job_ptr,
-				.license_entry = job_entry,
-			};
-			slurm_mutex_lock(&license_mutex);
-			list_for_each_ro(licenses, _foreach_hres_deduct, &arg);
-			slurm_mutex_unlock(&license_mutex);
-
-			continue;
-		}
-
-		lic_or = job_entry->op_or;
-		/*
-		 * Jobs with reservations may use licenses out of the
-		 * reservation, as well as global ones. Deduct from
-		 * reservation first, then global as needed.
-		 */
-		if (job_ptr->resv_ptr) {
-			bf_licenses_find_resv_t target_record = {
-				.id = job_entry->id,
-				.resv_ptr = job_ptr->resv_ptr,
-			};
-
-			resv_entry = list_find_first(licenses,
-						     _bf_licenses_find_resv,
-						     &target_record);
-			if (resv_entry && (needed <= resv_entry->remaining)) {
-				resv_entry->remaining -= needed;
-				/* OR - reservation has enough, break. */
-				if (lic_or) {
-					found = true;
-					break;
-				}
-				continue;
-			} else if (resv_entry) {
-				resv_acquired = resv_entry->remaining;
-				needed -= resv_acquired;
-				resv_entry->remaining = 0;
-			}
-		}
-
-		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
-					   &job_entry->id);
-
-		if (!bf_entry) {
-			error("%s: missing license lic_id=%u",
-			      __func__, job_entry->id.lic_id);
-		} else if (bf_entry->remaining < needed) {
-			/*
-			 * OR - Not an error;  skip this one and keep going
-			 * until we find the next one that is available.
-			 */
-			if (lic_or) {
-				/* Return resv_acquired licenses */
-				if (resv_entry) {
-					resv_entry->remaining += resv_acquired;
-					needed += resv_acquired;
-				}
-				continue;
-			}
-			error("%s: underflow on lic_id=%u",
-			      __func__, bf_entry->id.lic_id);
-			bf_entry->remaining = 0;
-		} else {
-			bf_entry->remaining -= needed;
-			if (lic_or) {
-				found = true;
-				break;
-			}
-		}
-	}
-	list_iterator_destroy(iter);
-
-	if (lic_or && !found) {
+	if (args.lic_or && !args.found) {
 		/*
 		 * If we get to this function, we should always have found an
 		 * available license. If we did not, this indicates an error
