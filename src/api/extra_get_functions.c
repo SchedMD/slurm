@@ -134,6 +134,10 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	add_key_pair(my_list, "DefaultQOS", "%s", slurmdbd_conf->default_qos);
 
+	add_key_pair_bool(my_list, "DisableArchiveAnalyze",
+			  (slurmdbd_conf->flags &
+			   DBD_CONF_FLAG_DISABLE_ARCHIVE_ANALYZE));
+
 	add_key_pair_bool(my_list, "DisableCoordDBD",
 			  (slurmdbd_conf->flags &
 			   DBD_CONF_FLAG_DISABLE_COORD_DBD));
