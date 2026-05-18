@@ -1523,6 +1523,13 @@ static void _bit_or_cond(job_record_t *job_ptr, bitstr_t *bitmap)
 				      _bit_or_cond_internal, bitmap);
 }
 
+static int _foreach_bit_or_cond(void *x, void *arg)
+{
+	_bit_or_cond(x, arg);
+
+	return 0;
+}
+
 /*
  * _pick_best_nodes - from a weight order list of all nodes satisfying a
  *	job's specifications, select the "best" for use
@@ -1886,12 +1893,9 @@ try_sched:
 			if ((i+1) < node_set_size || !preemptee_candidates)
 				preemptee_cand = NULL;
 			else if (preempt_flag) {
-				job_record_t *tmp_job_ptr = NULL;
-				list_itr_t *job_iterator;
-				job_iterator = list_iterator_create(preemptee_candidates);
-				while ((tmp_job_ptr = list_next(job_iterator)))
-					_bit_or_cond(tmp_job_ptr, avail_bitmap);
-				list_iterator_destroy(job_iterator);
+				list_for_each_ro(preemptee_candidates,
+						 _foreach_bit_or_cond,
+						 avail_bitmap);
 				bit_and(avail_bitmap, avail_node_bitmap);
 				bit_and(avail_bitmap, total_bitmap);
 				preemptee_cand = preemptee_candidates;
