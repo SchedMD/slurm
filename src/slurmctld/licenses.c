@@ -147,6 +147,10 @@ typedef struct {
 } license_list_to_string_args_t;
 
 typedef struct {
+	list_t *cluster_license_list;
+} license_sync_remote_args_t;
+
+typedef struct {
 	list_t *licenses_cur;
 	list_t *licenses_next;
 	list_itr_t *licenses_cur_iter;
@@ -1841,62 +1845,77 @@ extern void license_remove_remote(slurmdb_res_rec_t *rec)
 	slurm_mutex_unlock(&license_mutex);
 }
 
+static int _find_remote_license_by_name(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	char *name = key;
+
+	if (!license_entry->remote)
+		return 0;
+	return !xstrcmp(license_entry->name, name);
+}
+
+static int _foreach_sync_remote_res(void *x, void *arg)
+{
+	slurmdb_res_rec_t *rec = x;
+	license_sync_remote_args_t *args = arg;
+	licenses_t *license_entry;
+	char *name;
+
+	if (rec->type != SLURMDB_RESOURCE_LICENSE)
+		return 0;
+
+	name = xstrdup_printf("%s@%s", rec->name, rec->server);
+	license_entry = list_find_first_ro(args->cluster_license_list,
+					   _find_remote_license_by_name, name);
+	if (license_entry) {
+		license_entry->remote = 2;
+		_handle_consumed(license_entry, rec);
+		if (license_entry->used > license_entry->total)
+			info("license %s count decreased",
+			     license_entry->name);
+	} else {
+		_add_res_rec_2_lic_list(rec, 1);
+	}
+	xfree(name);
+
+	return 0;
+}
+
+static int _sync_remote_cleanup(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+
+	if (!license_entry->remote)
+		return 0;
+	if (license_entry->remote == 1) {
+		info("license_remove_remote: license %s removed with %u in use",
+		     license_entry->name, license_entry->used);
+		last_license_update = time(NULL);
+		return 1;
+	}
+	/* remote == 2: was matched this sync, reset for next round */
+	license_entry->remote = 1;
+
+	return 0;
+}
+
 extern void license_sync_remote(list_t *res_list)
 {
-	slurmdb_res_rec_t *rec = NULL;
-	licenses_t *license_entry;
-	list_itr_t *iter;
-
 	slurm_mutex_lock(&license_mutex);
 	if (res_list && !cluster_license_list) {
 		xassert(last_license_update);
 		cluster_license_list = list_create(license_free_rec);
 	}
 
-	iter = list_iterator_create(cluster_license_list);
 	if (res_list) {
-		list_itr_t *iter2 = list_iterator_create(res_list);
-		while ((rec = list_next(iter2))) {
-			char *name;
-			if (rec->type != SLURMDB_RESOURCE_LICENSE)
-				continue;
-			name = xstrdup_printf("%s@%s", rec->name, rec->server);
-			while ((license_entry = list_next(iter))) {
-				if (!license_entry->remote)
-					continue;
-				if (!xstrcmp(license_entry->name, name)) {
-					license_entry->remote = 2;
-					_handle_consumed(license_entry, rec);
-					if (license_entry->used >
-					    license_entry->total) {
-						info("license %s count "
-						     "decreased",
-						     license_entry->name);
-					}
-					break;
-				}
-			}
-			xfree(name);
-			if (!license_entry)
-				_add_res_rec_2_lic_list(rec, 1);
-			list_iterator_reset(iter);
-		}
-		list_iterator_destroy(iter2);
+		license_sync_remote_args_t args = {
+			.cluster_license_list = cluster_license_list,
+		};
+		list_for_each_ro(res_list, _foreach_sync_remote_res, &args);
 	}
 
-	while ((license_entry = list_next(iter))) {
-		if (!license_entry->remote)
-			continue;
-		else if (license_entry->remote == 1) {
-			info("license_remove_remote: license %s "
-			     "removed with %u in use",
-			     license_entry->name, license_entry->used);
-			list_delete_item(iter);
-			last_license_update = time(NULL);
-		} else if (license_entry->remote == 2)
-			license_entry->remote = 1;
-	}
-	list_iterator_destroy(iter);
+	list_delete_all(cluster_license_list, _sync_remote_cleanup, NULL);
 
 	slurm_mutex_unlock(&license_mutex);
 }
