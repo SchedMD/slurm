@@ -1801,10 +1801,25 @@ extern void license_update_remote(slurmdb_res_rec_t *rec)
 	slurm_mutex_unlock(&license_mutex);
 }
 
+static int _remove_matching_remote_license(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	char *name = arg;
+
+	if (!license_entry->remote)
+		return 0;
+	if (xstrcmp(license_entry->name, name))
+		return 0;
+
+	info("license_remove_remote: license %s removed with %u in use",
+	     license_entry->name, license_entry->used);
+	last_license_update = time(NULL);
+
+	return 1;
+}
+
 extern void license_remove_remote(slurmdb_res_rec_t *rec)
 {
-	licenses_t *license_entry;
-	list_itr_t *iter;
 	char *name;
 
 	xassert(rec);
@@ -1818,22 +1833,8 @@ extern void license_remove_remote(slurmdb_res_rec_t *rec)
 
 	name = xstrdup_printf("%s@%s", rec->name, rec->server);
 
-	iter = list_iterator_create(cluster_license_list);
-	while ((license_entry = list_next(iter))) {
-		if (!license_entry->remote)
-			continue;
-		if (!xstrcmp(license_entry->name, name)) {
-			info("license_remove_remote: license %s "
-			     "removed with %u in use",
-			     license_entry->name, license_entry->used);
-			list_delete_item(iter);
-			last_license_update = time(NULL);
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	if (!license_entry)
+	if (!list_delete_first(cluster_license_list,
+			       _remove_matching_remote_license, name))
 		error("license_remote_remote: License '%s' not found", name);
 
 	xfree(name);
