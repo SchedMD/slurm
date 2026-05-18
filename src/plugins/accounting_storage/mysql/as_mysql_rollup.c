@@ -760,7 +760,7 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 static void _create_id_usage_insert(char *cluster_name, int type,
 				    time_t curr_start, time_t now,
 				    local_id_usage_t *id_usage,
-				    char **query)
+				    char **query, char **query_pos)
 {
 	local_tres_usage_t *loc_tres;
 	list_itr_t *itr;
@@ -768,6 +768,7 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 	char *table = NULL, *id_name = NULL;
 
 	xassert(query);
+	xassert(query_pos);
 
 	switch (type) {
 	case ASSOC_TABLES:
@@ -797,30 +798,30 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 	itr = list_iterator_create(id_usage->loc_tres);
 	while ((loc_tres = list_next(itr))) {
 		if (!first) {
-			xstrfmtcat(*query,
-				   ", (%ld, %ld, %u, %u, %ld, %u, %"PRIu64")",
-				   now, now,
-				   id_usage->id, id_usage->id_alt,
-				   curr_start, loc_tres->id,
-				   loc_tres->time_alloc);
+			xstrfmtcatat(*query, query_pos,
+				     ", (%ld, %ld, %u, %u, %ld, %u, %"PRIu64")",
+				     now, now,
+				     id_usage->id, id_usage->id_alt,
+				     curr_start, loc_tres->id,
+				     loc_tres->time_alloc);
 		} else {
-			xstrfmtcat(*query,
-				   "insert into \"%s_%s\" "
-				   "(creation_time, mod_time, id, id_alt, "
-				   "time_start, id_tres, alloc_secs) "
-				   "values (%ld, %ld, %u, %u, "
-				   "%ld, %u, %"PRIu64")",
-				   cluster_name, table, now, now,
-				   id_usage->id, id_usage->id_alt,
-				   curr_start, loc_tres->id,
-				   loc_tres->time_alloc);
+			xstrfmtcatat(*query, query_pos,
+				     "insert into \"%s_%s\" "
+				     "(creation_time, mod_time, id, id_alt, "
+				     "time_start, id_tres, alloc_secs) "
+				     "values (%ld, %ld, %u, %u, "
+				     "%ld, %u, %"PRIu64")",
+				     cluster_name, table, now, now,
+				     id_usage->id, id_usage->id_alt,
+				     curr_start, loc_tres->id,
+				     loc_tres->time_alloc);
 			first = 0;
 		}
 	}
 	list_iterator_destroy(itr);
-	xstrfmtcat(*query,
-		   " on duplicate key update mod_time=%ld, "
-		   "alloc_secs=VALUES(alloc_secs);", now);
+	xstrfmtcatat(*query, query_pos,
+		     " on duplicate key update mod_time=%ld, "
+		     "alloc_secs=VALUES(alloc_secs);", now);
 }
 
 static int _add_resv_usage_to_cluster(void *object, void *arg)
@@ -1320,7 +1321,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	time_t curr_start = start;
 	time_t curr_end = curr_start + add_sec;
-	char *query = NULL;
+	char *query = NULL, *query_pos = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	list_itr_t *a_itr = NULL;
@@ -1781,15 +1782,17 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		   associations that could had run in the reservation
 		*/
 		query = NULL;
+		query_pos = NULL;
 		list_iterator_reset(r_itr);
 		while ((r_usage = list_next(r_itr))) {
 			list_itr_t *t_itr;
 			local_tres_usage_t *loc_tres;
 
-			xstrfmtcat(query, "update \"%s_%s\" set unused_wall=%f where id_resv=%u and time_start=%ld;",
-				   cluster_name, resv_table,
-				   r_usage->unused_wall, r_usage->id,
-				   r_usage->orig_start);
+			xstrfmtcatat(query, &query_pos,
+				     "update \"%s_%s\" set unused_wall=%f where id_resv=%u and time_start=%ld;",
+				     cluster_name, resv_table,
+				     r_usage->unused_wall, r_usage->id,
+				     r_usage->orig_start);
 
 			if (!r_usage->loc_tres ||
 			    !list_count(r_usage->loc_tres))
@@ -1891,6 +1894,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			         query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
+			query_pos = NULL;
 			if (rc != SLURM_SUCCESS) {
 				error("couldn't update reservations with unused time");
 				goto end_it;
@@ -1925,12 +1929,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		while ((a_usage = list_next(a_itr)))
 			_create_id_usage_insert(cluster_name, ASSOC_TABLES,
 						curr_start, now,
-						a_usage, &query);
+						a_usage, &query, &query_pos);
 		if (query) {
 			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
 			         query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
+			query_pos = NULL;
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
 				goto end_it;
@@ -1941,12 +1946,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		while ((q_usage = list_next(q_itr)))
 			_create_id_usage_insert(cluster_name, QOS_TABLES,
 						curr_start, now,
-						q_usage, &query);
+						q_usage, &query, &query_pos);
 		if (query) {
 			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
 			         query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
+			query_pos = NULL;
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add qos hour rollup");
 				goto end_it;
@@ -1960,12 +1966,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		while ((w_usage = list_next(w_itr)))
 			_create_id_usage_insert(cluster_name, WCKEY_TABLES,
 						curr_start, now,
-						w_usage, &query);
+						w_usage, &query, &query_pos);
 		if (query) {
 			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
 			         query);
 			rc = mysql_db_query(mysql_conn, query);
 			xfree(query);
+			query_pos = NULL;
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
 				goto end_it;
