@@ -37,6 +37,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/threadpool.h"
+#include "src/common/sluid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/namespace.h"
@@ -212,6 +213,8 @@ static int _call_external_program(void)
 		/* child */
 		char *argv[2];
 		char **env = NULL;
+		char sluid[15] = "";
+		print_sluid(recorded_id.sluid, sluid, sizeof(sluid));
 
 		/* namespace_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
@@ -223,6 +226,7 @@ static int _call_external_program(void)
 		    SLURM_SUCCESS)
 			error("namespace_g_join(%u): %m", recorded_id.job_id);
 		env = env_array_create();
+		env_array_append_fmt(&env, "SLURM_JOB_SLUID", "%s", sluid);
 		env_array_append_fmt(&env, "SLURM_JOBID", "%u",
 				     recorded_id.job_id);
 		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u",
