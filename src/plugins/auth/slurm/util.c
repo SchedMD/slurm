@@ -45,6 +45,7 @@
 #include "src/common/group_cache.h"
 #include "src/common/log.h"
 #include "src/common/uid.h"
+#include "src/common/xbase64.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -125,8 +126,12 @@ extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred)
 
 	errno = 0;
 	if ((payload = jwt_get_grant(jwt, "payload"))) {
-		cred->data = xmalloc(strlen(payload));
-		cred->dlen = jwt_Base64decode(cred->data, payload);
+		cred->dlen = xbase64_decode((uint8_t **) &cred->data, payload);
+		if (cred->dlen < 0) {
+			error("%s: xbase64_decode failed to decode payload",
+			      __func__);
+			return SLURM_ERROR;
+		}
 	}
 
 	return SLURM_SUCCESS;
