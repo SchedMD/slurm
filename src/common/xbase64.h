@@ -36,4 +36,17 @@
 #ifndef _XBASE64_H
 #define _XBASE64_H
 
+#include <stdint.h>
+
+/*
+ * Returns an xmalloc()'d string with the base64 encoded contents.
+ */
+extern char *xbase64_encode(const uint8_t *plain, int len);
+
+/*
+ * Returns the output length, alongside an xmalloc()'d buffer,
+ * or -1 and sets decoded to NULL on failure.
+ */
+extern int xbase64_decode(uint8_t **decoded, const char *encoded);
+
 #endif
