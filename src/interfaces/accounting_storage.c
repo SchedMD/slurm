@@ -1035,13 +1035,12 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
-
-
 	xfree(node_ptr->reason);
 	node_ptr->reason_time = 0;
 	node_ptr->reason_uid = NO_VAL;
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (*(ops.node_up))(db_conn, node_ptr, event_time);
 }
