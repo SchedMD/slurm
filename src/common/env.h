@@ -64,7 +64,6 @@ typedef struct env_options {
 	uint16_t comm_port;	/* srun's communication port */
 	slurm_addr_t *cli; /* launch node address - DON'T FREE, ref only */
 	char *job_name;		/* assigned job name */
-	int jobid;		/* assigned job id */
 	int procid;		/* global task id (across nodes) */
 	int localid;		/* local task id (within node) */
 	int nodeid;
