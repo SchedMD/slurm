@@ -642,13 +642,15 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (env->jobid >= 0) {
-		if (setenvf(&env->env, "SLURM_JOB_ID", "%d", env->jobid)) {
+	if (env->step_id.job_id != NO_VAL) {
+		if (setenvf(&env->env, "SLURM_JOB_ID", "%d",
+			    env->step_id.job_id)) {
 			error("Unable to set SLURM_JOB_ID environment");
 			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
-		if (setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
+		if (setenvf(&env->env, "SLURM_JOBID", "%d",
+			    env->step_id.job_id)) {
 			error("Unable to set SLURM_JOBID environment");
 			rc = SLURM_ERROR;
 		}
