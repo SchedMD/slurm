@@ -50,8 +50,7 @@ static bool signaled = false;
 static pthread_t tid = 0;
 static uint16_t timeout;
 static char *program_name;
-static uint32_t recorded_jobid = NO_VAL;
-static uint32_t recorded_stepid = NO_VAL;
+static slurm_step_id_t recorded_id = SLURM_STEP_ID_INITIALIZER;
 
 static void *_monitor(void *);
 static int _call_external_program(void);
@@ -74,8 +73,7 @@ extern void step_terminate_monitor_start(void)
 
 	slurm_thread_create(NULL, &tid, _monitor, NULL);
 
-	recorded_jobid = step->step_id.job_id;
-	recorded_stepid = step->step_id.step_id;
+	recorded_id = step->step_id;
 
 	slurm_mutex_unlock(&lock);
 }
@@ -223,12 +221,16 @@ static int _call_external_program(void)
 		*/
 		if (namespace_g_join(&step->step_id, getuid(), false) !=
 		    SLURM_SUCCESS)
-			error("namespace_g_join(%u): %m", recorded_jobid);
+			error("namespace_g_join(%u): %m", recorded_id.job_id);
 		env = env_array_create();
-		env_array_append_fmt(&env, "SLURM_JOBID", "%u", recorded_jobid);
-		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", recorded_jobid);
-		env_array_append_fmt(&env, "SLURM_STEPID", "%u", recorded_stepid);
-		env_array_append_fmt(&env, "SLURM_STEP_ID", "%u", recorded_stepid);
+		env_array_append_fmt(&env, "SLURM_JOBID", "%u",
+				     recorded_id.job_id);
+		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u",
+				     recorded_id.job_id);
+		env_array_append_fmt(&env, "SLURM_STEPID", "%u",
+				     recorded_id.step_id);
+		env_array_append_fmt(&env, "SLURM_STEP_ID", "%u",
+				     recorded_id.step_id);
 
 		argv[0] = program_name;
 		argv[1] = NULL;
