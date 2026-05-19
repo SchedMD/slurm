@@ -592,6 +592,10 @@ static int _merge_node_step_data(char* file_name, hid_t jgid_nodes,
 		error("%s: remove(%s): %m", __func__, file_name);
 
 endit:
+	if (ocpypl_id >= 0)
+		H5Pclose(ocpypl_id);
+	if (lcpl_id >= 0)
+		H5Pclose(lcpl_id);
 	xfree(group_name);
 	H5Fclose(fid_nodestep);
 
@@ -717,7 +721,9 @@ static int _merge_step_files(void)
 				put_int_attribute(
 					jgid_step, ATTR_NNODES, node_cnt);
 				H5Gclose(jgid_nodes);
+				jgid_nodes = -1;
 				H5Gclose(jgid_step);
+				jgid_step = -1;
 				node_cnt = 0;
 			}
 
@@ -1095,14 +1101,18 @@ static int _extract_series_table(hid_t fid_job, table_t *table, list_t *fields,
 		types[nb_fields] = nm_tid;
 		offsets[nb_fields] = H5Tget_member_offset(n_tid, (unsigned)i);
 		++nb_fields;
+		nm_tid = -1;
 
-		/*H5Tclose(nm_tid);*/
 		H5Tclose(m_tid);
+		m_tid = -1;
 	}
 
 	H5Tclose(n_tid);
+	n_tid = -1;
 	H5Tclose(tid);
+	tid = -1;
 	H5Dclose(did);
+	did = -1;
 
 	/* open the table */
 	if ((table_id = H5PTopen(fid_job, path)) < 0) {
@@ -1143,16 +1153,28 @@ static int _extract_series_table(hid_t fid_job, table_t *table, list_t *fields,
 	}
 
 	H5PTclose(table_id);
+	table_id = -1;
+
+	for (i = 0; i < nb_fields; i++)
+		H5Tclose(types[i]);
 
 	return SLURM_SUCCESS;
 
 error:
-	if (nm_tid >= 0) H5Dclose(nm_tid);
-	if (m_tid >= 0) H5Dclose(m_tid);
-	if (n_tid >= 0) H5Dclose(n_tid);
-	if (tid >= 0) H5Dclose(tid);
-	if (did >= 0) H5PTclose(did);
-	if (table_id >= 0) H5PTclose(table_id);
+	for (i = 0; i < nb_fields; i++)
+		H5Tclose(types[i]);
+	if (nm_tid >= 0)
+		H5Tclose(nm_tid);
+	if (m_tid >= 0)
+		H5Tclose(m_tid);
+	if (n_tid >= 0)
+		H5Tclose(n_tid);
+	if (tid >= 0)
+		H5Tclose(tid);
+	if (did >= 0)
+		H5Dclose(did);
+	if (table_id >= 0)
+		H5PTclose(table_id);
 	return SLURM_ERROR;
 }
 
@@ -1165,7 +1187,7 @@ static int _extract_series(void)
 	const char *field;
 	list_t *tables = NULL;
 	list_t *fields = NULL;
-	list_itr_t *it;
+	list_itr_t *it = NULL;
 	FILE *output = NULL;
 	int rc = SLURM_ERROR;
 	table_t *t;
@@ -1234,6 +1256,8 @@ static int _extract_series(void)
 			goto error;
 		}
 	}
+	list_iterator_destroy(it);
+	it = NULL;
 
 	FREE_NULL_LIST(tables);
 	FREE_NULL_LIST(fields);
@@ -1242,10 +1266,14 @@ static int _extract_series(void)
 	return SLURM_SUCCESS;
 
 error:
+	if (it)
+		list_iterator_destroy(it);
 	FREE_NULL_LIST(fields);
 	FREE_NULL_LIST(tables);
-	if (output) fclose(output);
-	if (fid_job >= 0) H5Fclose(fid_job);
+	if (output)
+		fclose(output);
+	if (fid_job >= 0)
+		H5Fclose(fid_job);
 	return rc;
 }
 
@@ -1562,19 +1590,24 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 
 		if (item_type == -1) {
 			item_type = nm_tid;
-		} else if (nm_tid != item_type) {
-			error("Malformed file: fields with the same name in "
-			      "tables with the same name must have the same "
-			      "types");
-			goto error;
+		} else {
+			if (!H5Tequal(nm_tid, item_type)) {
+				error("Malformed file: fields with the same name in tables with the same name must have the same types");
+				goto error;
+			}
+			H5Tclose(nm_tid);
 		}
+		nm_tid = -1;
 
-		H5Tclose(nm_tid);
 		H5Tclose(m_tid);
+		m_tid = -1;
 
 		H5Tclose(n_tid);
+		n_tid = -1;
 		H5Tclose(tid);
+		tid = -1;
 		H5Dclose(did);
+		did = -1;
 
 		/* open the table */
 		if ((tables_id[i] = H5PTopen(fid_job, path)) < 0) {
@@ -1601,6 +1634,7 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 	}
 
 	list_iterator_destroy(it);
+	it = NULL;
 
 	if (H5Tequal(item_type, H5T_NATIVE_UINT64)) {
 		_item_analysis_uint(nb_tables, tables_id, nb_records, buf_size,
@@ -1619,15 +1653,26 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 		H5PTclose(tables_id[i]);
 	}
 	FREE_NULL_LIST(tables);
+	if (item_type >= 0)
+		H5Tclose(item_type);
 
 	return 0;
 
 error:
-	if (did >= 0) H5Dclose(did);
-	if (tid >= 0) H5Tclose(tid);
-	if (n_tid >= 0) H5Tclose(n_tid);
-	if (m_tid >= 0) H5Tclose(m_tid);
-	if (nm_tid >= 0) H5Tclose(nm_tid);
+	if (it)
+		list_iterator_destroy(it);
+	if (did >= 0)
+		H5Dclose(did);
+	if (tid >= 0)
+		H5Tclose(tid);
+	if (n_tid >= 0)
+		H5Tclose(n_tid);
+	if (m_tid >= 0)
+		H5Tclose(m_tid);
+	if (nm_tid >= 0)
+		H5Tclose(nm_tid);
+	if (item_type >= 0)
+		H5Tclose(item_type);
 	FREE_NULL_LIST(tables);
 	for (i = 0; i < nb_tables; ++i) {
 		if (tables_id[i] >= 0)
