@@ -20,7 +20,7 @@ def setup():
     atf.require_accounting(True)
     atf.require_config_parameter("AccountingStorageTres", "gres/gpu")
     atf.require_config_parameter("GresTypes", "gpu")
-    atf.require_nodes(2, [("Gres", "gpu:4")])
+    atf.require_nodes(2, [("CPUs", 2), ("RealMemory", 100), ("Gres", "gpu:4")])
 
     gpu_file = f"{str(atf.module_tmp_path)}/gpu"
     for i in range(0, 4):
@@ -335,3 +335,55 @@ def test_alloc_metrics_jobs_users_accts():
     )
 
     atf.cancel_all_jobs(quiet=True)
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 5),
+    reason="Ticket 24994: shared nodes were over-counted before 26.05",
+)
+def test_nodes_alloc_no_overcount_shared_node():
+    """
+    Test that nodes_alloc metrics count each physical node only once when
+    multiple sub-node-sized jobs share the node.
+    """
+    username = atf.properties["test-user"]
+
+    # Submit two jobs to share node1
+    job_id1 = atf.submit_job_sbatch(
+        "-n1 -p a -w node1 --mem-per-cpu=1 --wrap='srun sleep 300'"
+    )
+    job_id2 = atf.submit_job_sbatch(
+        "-n1 -p a -w node1 --mem-per-cpu=1 --wrap='srun sleep 300'"
+    )
+    atf.wait_for_job_state(job_id1, "RUNNING")
+    atf.wait_for_job_state(job_id2, "RUNNING")
+
+    # Wait until both jobs are reflected in the metrics snapshot
+    for t in atf.timer():
+        val = get_metric_value(
+            atf.request_slurmctld("metrics/jobs").text, "slurm_jobs_running"
+        )
+        if val and int(val) >= 2:
+            break
+    else:
+        pytest.fail("Unable to get metrics/jobs")
+
+    # Check that node1 was counted only once for slurm_jobs_nodes_alloc
+    jobs_output = atf.request_slurmctld("metrics/jobs").text
+    assert_metric(
+        jobs_output,
+        "slurm_jobs_nodes_alloc",
+        lambda v: int(v) == 1,
+        "Ticket 24994: slurm_jobs_nodes_alloc should deduplicate shared nodes",
+    )
+
+    # Likewise for slurm_user_jobs_nodes_alloc
+    ua_output = atf.request_slurmctld("metrics/jobs-users-accts").text
+    assert_labeled_metric(
+        ua_output,
+        "slurm_user_jobs_nodes_alloc",
+        "username",
+        username,
+        lambda v: int(v) == 1,
+        "Ticket 24994: slurm_user_jobs_nodes_alloc should deduplicate shared nodes",
+    )
