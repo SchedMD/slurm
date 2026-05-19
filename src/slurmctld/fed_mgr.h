@@ -45,6 +45,7 @@ extern slurmdb_cluster_rec_t    *fed_mgr_cluster_rec;
 extern void      add_fed_job_info(job_record_t *job_ptr);
 extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 				    char **out_buffer);
+extern void fed_mgr_start_sibling_conn(persist_conn_t *persist_conn);
 extern char     *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids);
 extern int       fed_mgr_fini(void);
 extern uint32_t  fed_mgr_get_cluster_id(uint32_t id);
