@@ -367,6 +367,10 @@
 /* xassert.[ch] functions */
 #define	__xassert_failed	slurm_xassert_failed
 
+/* xbase64.[ch] functions */
+#define xbase64_encode slurm_xbase64_encode
+#define xbase64_decode slurm_xbase64_decode
+
 /* xmalloc.[ch] functions */
 #define xsize			slurm_xsize
 #define xfree_ptr		slurm_xfree_ptr
