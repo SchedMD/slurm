@@ -38,6 +38,7 @@
 #include "src/common/xregex.h"
 
 typedef struct env_options {
+	slurm_step_id_t step_id;
 	int ntasks;		/* --ntasks=n,      -n n	*/
 	char *task_count;
 	bool ntasks_set;	/* true if ntasks explicitly set */
@@ -64,7 +65,6 @@ typedef struct env_options {
 	slurm_addr_t *cli; /* launch node address - DON'T FREE, ref only */
 	char *job_name;		/* assigned job name */
 	int jobid;		/* assigned job id */
-	int stepid;	        /* assigned step id */
 	int procid;		/* global task id (across nodes) */
 	int localid;		/* local task id (within node) */
 	int nodeid;
