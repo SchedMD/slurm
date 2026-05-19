@@ -3032,7 +3032,8 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 			   ((job_ptr->details &&
 			     job_ptr->details->requeue) ||
 			    (foreach_kill_job_by->requeue_on_resume_failure &&
-			     IS_NODE_POWERED_DOWN(node_ptr) &&
+			     (IS_NODE_POWERED_DOWN(node_ptr) ||
+			      IS_NODE_POWERING_UP(node_ptr)) &&
 			     IS_JOB_CONFIGURING(job_ptr)))) {
 			srun_node_fail(job_ptr, node_ptr->name);
 			info("requeue job %pJ due to failure of node %s",
