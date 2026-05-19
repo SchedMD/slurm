@@ -5604,7 +5604,7 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 			rc |= (PROLOG_FLAG_ALLOC | PROLOG_FLAG_CONTAIN |
 			       PROLOG_FLAG_RUN_IN_JOB);
 		else if (xstrcasecmp(tok, "DeferBatch") == 0)
-			rc |= PROLOG_FLAG_DEFER_BATCH;
+			rc |= PROLOG_FLAG_ALLOC | PROLOG_FLAG_DEFER_BATCH;
 		else if (xstrcasecmp(tok, "NoHold") == 0)
 			rc |= PROLOG_FLAG_NOHOLD;
 		else if (xstrcasecmp(tok, "ForceRequeueOnFail") == 0)
