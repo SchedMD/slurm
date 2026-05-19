@@ -196,6 +196,16 @@ static slurm_err_t _get_parser_error(const http_parser *parser)
 	return ESLURM_HTTP_PARSING_FAILURE;
 }
 
+static void _state_message_reset(state_t *state)
+{
+	xassert(state->magic == STATE_MAGIC);
+
+	url_free_members(&state->url);
+	state->url = URL_INITIALIZER;
+	xfree(state->last_header);
+	state->is_message_complete = false;
+}
+
 extern void http_parser_p_free_parse_request(state_t **state_ptr)
 {
 	state_t *state = NULL;
@@ -209,24 +219,13 @@ extern void http_parser_p_free_parse_request(state_t **state_ptr)
 
 	xassert(state->magic == STATE_MAGIC);
 
-	url_free_members(&state->url);
-	xassert(!state->last_header);
+	_state_message_reset(state);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
 	state->total_bytes = -1;
 
 	state->magic = ~STATE_MAGIC;
 	xfree(state);
-}
-
-static void _state_message_reset(state_t *state)
-{
-	xassert(state->magic == STATE_MAGIC);
-
-	url_free_members(&state->url);
-	state->url = URL_INITIALIZER;
-	xfree(state->last_header);
-	state->is_message_complete = false;
 }
 
 static void _state_parsing_reset(state_t *state)
