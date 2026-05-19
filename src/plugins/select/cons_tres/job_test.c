@@ -110,6 +110,22 @@ static int _foreach_rm_cores(void *x, void *arg)
 	return 0;
 }
 
+typedef struct {
+	job_record_t *job_ptr;
+	bitstr_t *node_bitmap;
+	uint32_t min_nodes;
+	uint32_t max_nodes;
+	uint32_t req_nodes;
+	uint16_t job_node_req;
+	uint16_t tmp_cr_type;
+	list_t *preemptee_candidates;
+	list_t **preemptee_job_list;
+	resv_exc_t *resv_exc_ptr;
+	bitstr_t *orig_node_map;
+	list_t *license_list;
+	int *rc;
+} run_now_ctx_t;
+
 uint64_t def_cpu_per_gpu = 0;
 uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
@@ -3135,6 +3151,77 @@ static int _foreach_run_now_preemptee(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Try to schedule job_ptr by suspending preemptable QOS jobs.
+ */
+static void _run_now_suspend(run_now_ctx_t *ctx)
+{
+	list_t *suspend_list = list_create(NULL);
+	part_res_record_t *future_part;
+	node_use_record_t *future_usage;
+	list_itr_t *job_iterator;
+	job_record_t *tmp_job_ptr;
+
+	future_part = part_data_dup_res(select_part_record, ctx->orig_node_map);
+	if (future_part == NULL) {
+		FREE_NULL_LIST(suspend_list);
+		*(ctx->rc) = SLURM_ERROR;
+		return;
+	}
+	future_usage = node_data_dup_use(select_node_usage, ctx->orig_node_map);
+	if (future_usage == NULL) {
+		part_data_destroy_res(future_part);
+		FREE_NULL_LIST(suspend_list);
+		*(ctx->rc) = SLURM_ERROR;
+		return;
+	}
+
+	job_iterator = list_iterator_create(ctx->preemptee_candidates);
+	while ((tmp_job_ptr = list_next(job_iterator))) {
+		int mode = slurm_job_preempt_mode(tmp_job_ptr);
+		if (mode != PREEMPT_MODE_SUSPEND)
+			continue;
+		if (_job_res_rm_job(future_part, future_usage, NULL,
+				    tmp_job_ptr, JOB_RES_ACTION_RESUME,
+				    ctx->orig_node_map))
+			continue;
+		list_append(suspend_list, tmp_job_ptr);
+		bit_or(ctx->node_bitmap, ctx->orig_node_map);
+		*(ctx->rc) =
+			_job_test(ctx->job_ptr, ctx->node_bitmap,
+				  ctx->min_nodes, ctx->max_nodes,
+				  ctx->req_nodes, SELECT_MODE_WILL_RUN,
+				  ctx->tmp_cr_type, ctx->job_node_req,
+				  future_part, future_usage, NULL,
+				  ctx->resv_exc_ptr, false, false, false, NULL);
+
+		if (*(ctx->rc) != SLURM_SUCCESS)
+			continue;
+
+		/*
+		 * Found preemptees to suspend. Schedule using extra row
+		 * of core bitmap with the real partition/node records.
+		 */
+		bit_or(ctx->node_bitmap, ctx->orig_node_map);
+		*(ctx->rc) = _job_test(ctx->job_ptr, ctx->node_bitmap,
+				       ctx->min_nodes, ctx->max_nodes,
+				       ctx->req_nodes, SELECT_MODE_RUN_NOW,
+				       ctx->tmp_cr_type, ctx->job_node_req,
+				       select_part_record, select_node_usage,
+				       NULL, ctx->resv_exc_ptr, false, true,
+				       false, suspend_list);
+		FREE_NULL_LIST(suspend_list);
+		list_iterator_destroy(job_iterator);
+		part_data_destroy_res(future_part);
+		node_data_destroy(future_usage);
+		return;
+	}
+	FREE_NULL_LIST(suspend_list);
+	list_iterator_destroy(job_iterator);
+	part_data_destroy_res(future_part);
+	node_data_destroy(future_usage);
+}
+
 /* Allocate resources for a job now, if possible */
 static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
@@ -3154,13 +3241,29 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool preempt_mode = false;
+	run_now_ctx_t ctx = {
+		.job_ptr = job_ptr,
+		.node_bitmap = node_bitmap,
+		.min_nodes = min_nodes,
+		.max_nodes = max_nodes,
+		.req_nodes = req_nodes,
+		.job_node_req = job_node_req,
+		.tmp_cr_type = tmp_cr_type,
+		.preemptee_candidates = preemptee_candidates,
+		.preemptee_job_list = preemptee_job_list,
+		.resv_exc_ptr = resv_exc_ptr,
+		.rc = &rc,
+	};
 
 	hres_pre_select(job_ptr, false);
 
 	save_node_map = bit_copy(node_bitmap);
 top:	orig_node_map = bit_copy(save_node_map);
+	ctx.orig_node_map = orig_node_map;
 
 	license_list = cluster_license_copy();
+	ctx.license_list = license_list;
+
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage, license_list,
@@ -3178,77 +3281,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 		}
 	}
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
-	    (mode == PREEMPT_MODE_SUSPEND) &&
-	    (job_ptr->priority != 0)) {	/* Job can be held by bad allocate */
-		list_t *preemptees_to_suspend_by_qos = list_create(NULL);
-
-		future_part = part_data_dup_res(select_part_record,
-						orig_node_map);
-		if (future_part == NULL) {
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			return SLURM_ERROR;
-		}
-		future_usage = node_data_dup_use(select_node_usage,
-						 orig_node_map);
-		if (future_usage == NULL) {
-			part_data_destroy_res(future_part);
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			return SLURM_ERROR;
-		}
-
-		job_iterator = list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = list_next(job_iterator))) {
-			int mode = slurm_job_preempt_mode(tmp_job_ptr);
-			if (mode != PREEMPT_MODE_SUSPEND)
-				continue;
-			/*
-			 * Remove resources used by tmp_job_ptr and check if
-			 * the preemptor job can run.
-			 */
-			if (_job_res_rm_job(future_part, future_usage,
-					    NULL, tmp_job_ptr,
-					    JOB_RES_ACTION_RESUME,
-					    orig_node_map))
-				continue;
-			list_append(preemptees_to_suspend_by_qos, tmp_job_ptr);
-			bit_or(node_bitmap, orig_node_map);
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN, tmp_cr_type,
-				       job_node_req, future_part, future_usage,
-				       NULL, resv_exc_ptr, false, false,
-				       preempt_mode, NULL);
-
-			if (rc != SLURM_SUCCESS)
-				continue;
-
-			/*
-			 * We have identified the preemptee jobs that we need
-			 * to suspend to run the preemptor job. Try to
-			 * schedule it using extra row of core bitmap.
-			 */
-			bit_or(node_bitmap, orig_node_map);
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_RUN_NOW, tmp_cr_type,
-				       job_node_req, select_part_record,
-				       select_node_usage, NULL, resv_exc_ptr,
-				       false, true, preempt_mode,
-				       preemptees_to_suspend_by_qos);
-			FREE_NULL_LIST(preemptees_to_suspend_by_qos);
-
-			FREE_NULL_BITMAP(orig_node_map);
-			FREE_NULL_BITMAP(save_node_map);
-			list_iterator_destroy(job_iterator);
-			part_data_destroy_res(future_part);
-			node_data_destroy(future_usage);
-			FREE_NULL_LIST(license_list);
-
-			return rc;
-		}
-		FREE_NULL_LIST(preemptees_to_suspend_by_qos);
+	    (mode == PREEMPT_MODE_SUSPEND) && (job_ptr->priority != 0)) {
+		_run_now_suspend(&ctx);
 	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 		   !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
