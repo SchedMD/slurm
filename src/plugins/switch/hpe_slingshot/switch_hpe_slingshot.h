@@ -224,7 +224,10 @@ typedef struct {
 	uint32_t num_nodes;      /* Minimum #nodes to get multicast addrs */
 } slingshot_hwcoll_t;
 
-/* Denotes packing a null stepinfo structure */
+/*
+ * Denotes packing a null stepinfo structure
+ * Remove when 25.11 is not supported
+ */
 #define SLINGSHOT_JOBINFO_NULL_VERSION 0xDEAFDEAF
 
 typedef struct slingshot_jobinfo {
@@ -235,7 +238,7 @@ typedef struct slingshot_jobinfo {
 
 /* Jobinfo structure passed from slurmctld to slurmd */
 typedef struct slingshot_stepinfo {
-	uint32_t version;      /* Version of this structure */
+	uint32_t version;      /* remove when 25.11 is not supported */
 	uint32_t num_vnis;     /* Number of VNIs */
 	uint16_t *vnis;        /* List of VNIs allocated for this application */
 	uint32_t tcs;          /* Bitmap of allowed traffic classes */
