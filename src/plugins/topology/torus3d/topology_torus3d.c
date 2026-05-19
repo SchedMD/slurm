@@ -190,9 +190,9 @@ static bool _coord_in_range(uint16_t pos, uint16_t start, uint16_t size,
 	bool wrap = ((start + size) > limit);
 
 	if (wrap)
-		return ((pos >= start) || pos < ((start + size) % limit));
+		return ((pos >= start) || (pos < ((start + size) % limit)));
 
-	return (pos >= start && pos < (start + size));
+	return ((pos >= start) && (pos < (start + size)));
 }
 
 static void _add_node_to_placements(torus3d_record_t *torus,
@@ -222,9 +222,9 @@ static void _add_node_to_placements(torus3d_record_t *torus,
 		for (int mx = 0; mx < nx; mx++) {
 			for (int my = 0; my < ny; my++) {
 				for (int mz = 0; mz < nz; mz++) {
-					int idx = match_x[mx] * p->y_count *
-							  p->z_count +
-						  match_y[my] * p->z_count +
+					int idx = (match_x[mx] * p->y_count *
+						   p->z_count) +
+						  (match_y[my] * p->z_count) +
 						  match_z[mz];
 					bit_set(p->anchor_bitmaps[idx],
 						node_idx);
@@ -242,16 +242,23 @@ static void _add_node_to_placements(torus3d_record_t *torus,
 		bit_set(ctx->placement_nodes_bitmap, node_idx);
 }
 
+static uint32_t _find_torus_index(torus3d_record_t *torus, uint32_t node_idx)
+{
+	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		if (torus->nodes_map[idx] == node_idx)
+			return idx;
+	}
+	return NO_VAL;
+}
+
 static void _remove_node_from_torus(torus3d_record_t *torus,
 				    torus3d_context_t *ctx,
 				    node_record_t *node_ptr)
 {
-	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-		if (torus->nodes_map[idx] == node_ptr->index) {
-			torus->nodes_map[idx] = NO_VAL;
-			break;
-		}
-	}
+	uint32_t idx = _find_torus_index(torus, node_ptr->index);
+
+	if (idx != NO_VAL)
+		torus->nodes_map[idx] = NO_VAL;
 
 	bit_clear(torus->nodes_bitmap, node_ptr->index);
 
@@ -321,8 +328,8 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	xfree(tmp);
 
 	/* Validate coordinates */
-	if (coord[0] >= torus_dst->x || coord[1] >= torus_dst->y ||
-	    coord[2] >= torus_dst->z) {
+	if ((coord[0] >= torus_dst->x) || (coord[1] >= torus_dst->y) ||
+	    (coord[2] >= torus_dst->z)) {
 		error("Can't add node %s, coordinates (%u,%u,%u) out of bounds for torus %s (%ux%ux%u)",
 		      node_ptr->name, coord[0], coord[1], coord[2],
 		      torus_dst->name, torus_dst->x, torus_dst->y,
@@ -362,12 +369,10 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	}
 
 	if (in_torus) {
-		for (uint32_t idx = 0; idx < torus_dst->node_count; idx++) {
-			if (torus_dst->nodes_map[idx] == node_ptr->index) {
-				torus_dst->nodes_map[idx] = NO_VAL;
-				break;
-			}
-		}
+		uint32_t old_idx =
+			_find_torus_index(torus_dst, node_ptr->index);
+		if (old_idx != NO_VAL)
+			torus_dst->nodes_map[old_idx] = NO_VAL;
 	}
 
 	torus_dst->nodes_map[linear_idx] = node_ptr->index;
@@ -457,13 +462,13 @@ extern int topology_p_get_node_addr(char *node_name, char **paddr,
 		return SLURM_ERROR;
 
 	for (int i = 0; i < ctx->record_count; i++) {
+		uint32_t idx;
 		torus3d_record_t *torus = &ctx->records[i];
 		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
 			continue;
-		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		idx = _find_torus_index(torus, node_ptr->index);
+		if (idx != NO_VAL) {
 			uint16_t x, y, z;
-			if (torus->nodes_map[idx] != node_ptr->index)
-				continue;
 			torus3d_index_to_coord(torus, idx, &x, &y, &z);
 			*paddr = xstrdup_printf("%s:%u:%u:%u.%s", torus->name,
 						x, y, z, node_name);
@@ -618,11 +623,11 @@ extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 			continue;
 
 		if (nodes_list) {
-			if ((topoinfo->topo_array[i].nodes == NULL) ||
-			    (topoinfo->topo_array[i].nodes[0] == '\0'))
+			if (!topoinfo->topo_array[i].nodes ||
+			    !topoinfo->topo_array[i].nodes[0])
 				continue;
 			hs = hostset_create(topoinfo->topo_array[i].nodes);
-			if (hs == NULL)
+			if (!hs)
 				fatal("hostset_create: memory allocation failure");
 			match = hostset_within(hs, nodes_list);
 			hostset_destroy(hs);
@@ -753,8 +758,10 @@ static void _min_wrap_span(bitstr_t *axis_bitmap, uint16_t *start,
 		*start = bit_ffs(axis_bitmap);
 		*span = 1;
 		return;
-		/* All positions occupied */
-	} else if (coord_set == axis_size) {
+	}
+
+	/* All positions occupied */
+	if (coord_set == axis_size) {
 		*start = 0;
 		*span = axis_size;
 		return;
@@ -790,17 +797,121 @@ static void _min_wrap_span(bitstr_t *axis_bitmap, uint16_t *start,
 	*span = axis_size - max_gap;
 }
 
-static uint32_t _morton_encode(uint16_t x, uint16_t y, uint16_t z)
+static uint16_t _bits_needed(uint16_t span)
+{
+	uint16_t bits = 0;
+
+	xassert(span);
+
+	span--;
+	while (span) {
+		bits++;
+		span >>= 1;
+	}
+
+	return bits;
+}
+
+/*
+ * Pre-compute per-axis bit budgets and scale factors for Morton encoding.
+ * Total interleaved bits are capped at TOPO_RANK_ID_SHIFT. When the
+ * natural bit widths exceed the budget, the largest axes are scaled down
+ * first (right-shifted), losing only fine-grained spatial resolution.
+ */
+static void _morton_scale(uint16_t x_span, uint16_t y_span, uint16_t z_span,
+			  uint16_t *bx, uint16_t *by, uint16_t *bz,
+			  uint16_t *sx, uint16_t *sy, uint16_t *sz)
+{
+	uint16_t bx_orig = _bits_needed(x_span);
+	uint16_t by_orig = _bits_needed(y_span);
+	uint16_t bz_orig = _bits_needed(z_span);
+
+	*bx = bx_orig;
+	*by = by_orig;
+	*bz = bz_orig;
+
+	while ((*bx + *by + *bz) > TOPO_RANK_ID_SHIFT) {
+		if ((*bx >= *by) && (*bx >= *bz))
+			(*bx)--;
+		else if (*by >= *bz)
+			(*by)--;
+		else
+			(*bz)--;
+	}
+
+	*sx = bx_orig - *bx;
+	*sy = by_orig - *by;
+	*sz = bz_orig - *bz;
+}
+
+/*
+ * Coordinates must be scaled (right-shifted) to fit their bit budgets.
+ */
+static uint32_t _morton_encode(uint16_t x, uint16_t y, uint16_t z, uint16_t bx,
+			       uint16_t by, uint16_t bz)
 {
 	uint32_t result = 0;
-	for (int i = 0; i < 5; i++) {
-		result |= ((uint32_t) ((x >> i) & 1)) << (3 * i);
-		result |= ((uint32_t) ((y >> i) & 1)) << (3 * i + 1);
-		result |= ((uint32_t) ((z >> i) & 1)) << (3 * i + 2);
+	int pos = 0;
+	uint16_t max_bits = MAX(bx, MAX(by, bz));
+
+	for (int i = 0; i < max_bits; i++) {
+		if (i < bx)
+			result |= ((uint32_t) ((x >> i) & 1)) << pos++;
+		if (i < by)
+			result |= ((uint32_t) ((y >> i) & 1)) << pos++;
+		if (i < bz)
+			result |= ((uint32_t) ((z >> i) & 1)) << pos++;
 	}
 	return result;
 }
 
+static void _find_starting_coords(torus3d_record_t *torus,
+				  bitstr_t *node_bitmap, uint16_t *x_start,
+				  uint16_t *y_start, uint16_t *z_start,
+				  uint16_t *x_span, uint16_t *y_span,
+				  uint16_t *z_span)
+{
+	bitstr_t *x_bitmap, *y_bitmap, *z_bitmap;
+
+	x_bitmap = bit_alloc(torus->x);
+	y_bitmap = bit_alloc(torus->y);
+	z_bitmap = bit_alloc(torus->z);
+
+	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		uint32_t node_idx = torus->nodes_map[idx];
+		uint16_t x, y, z;
+		if (node_idx == NO_VAL)
+			continue;
+		if (!bit_test(node_bitmap, node_idx))
+			continue;
+		torus3d_index_to_coord(torus, idx, &x, &y, &z);
+		bit_set(x_bitmap, x);
+		bit_set(y_bitmap, y);
+		bit_set(z_bitmap, z);
+	}
+
+	_min_wrap_span(x_bitmap, x_start, x_span);
+	_min_wrap_span(y_bitmap, y_start, y_span);
+	_min_wrap_span(z_bitmap, z_start, z_span);
+
+	FREE_NULL_BITMAP(x_bitmap);
+	FREE_NULL_BITMAP(y_bitmap);
+	FREE_NULL_BITMAP(z_bitmap);
+}
+
+/*
+ * Generate node ranks using a Z-order curve (Morton order).
+ * This maps each node's (x, y, z) coordinates into a single integer (node
+ * rank) that approximates spatial locality - nodes that are close together in
+ * the torus are also close together in rank.
+ *
+ * Bit budget per axis is computed from the allocation's span and capped at
+ * TOPO_RANK_ID_SHIFT (16) bits total. Axes that don't fit are scaled down
+ * (right-shifted), losing only fine-grained spatial resolution.
+ *
+ * These node ranks aren't task IDs. They drive a sort in _task_layout_topo()
+ * (slurm_step_layout.c), which assigns task IDs in rank order.
+ */
 extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			       uint32_t *size, void *tctx)
 {
@@ -826,68 +937,62 @@ extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 
 	for (int t = 0; t < ctx->record_count; t++) {
 		torus3d_record_t *torus = &ctx->records[t];
-		bitstr_t *x_bitmap, *y_bitmap, *z_bitmap;
 		uint16_t x_start, y_start, z_start;
 		uint16_t x_span, y_span, z_span;
 		uint32_t rank_idx = 0;
+		uint16_t bx, by, bz, sx, sy, sz;
 
 		if (!bit_overlap_any(torus->nodes_bitmap, node_bitmap))
 			continue;
 
 		if (bit_super_set(torus->nodes_bitmap, node_bitmap)) {
+			/* The whole torus is used; use absolute coordinates */
 			x_start = 0;
 			y_start = 0;
 			z_start = 0;
 			x_span = torus->x;
 			y_span = torus->y;
 			z_span = torus->z;
-			goto whole_torus;
+		} else {
+			/*
+			 * Not all nodes in the torus are used. Set a starting
+			 * "anchor" on each axis - the start of the smallest
+			 * wrap-aware arc covering the used coordinates - so
+			 * that adjacent nodes across a wrap encode to adjacent
+			 * relative coordinates. Without this, for an axis of
+			 * length 4, nodes at positions 0 and 3 would encode
+			 * far apart.
+			 *
+			 * The span is the length of this arc.
+			 */
+			_find_starting_coords(torus, node_bitmap, &x_start,
+					      &y_start, &z_start, &x_span,
+					      &y_span, &z_span);
 		}
 
-		x_bitmap = bit_alloc(torus->x);
-		y_bitmap = bit_alloc(torus->y);
-		z_bitmap = bit_alloc(torus->z);
+		_morton_scale(x_span, y_span, z_span, &bx, &by, &bz, &sx, &sy,
+			      &sz);
 
-		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-			uint32_t node_idx = torus->nodes_map[idx];
-			uint16_t x, y, z;
-			if (node_idx == NO_VAL)
-				continue;
-			if (!bit_test(node_bitmap, node_idx))
-				continue;
-			torus3d_index_to_coord(torus, idx, &x, &y, &z);
-			bit_set(x_bitmap, x);
-			bit_set(y_bitmap, y);
-			bit_set(z_bitmap, z);
-		}
-
-		_min_wrap_span(x_bitmap, &x_start, &x_span);
-		_min_wrap_span(y_bitmap, &y_start, &y_span);
-		_min_wrap_span(z_bitmap, &z_start, &z_span);
-
-		FREE_NULL_BITMAP(x_bitmap);
-		FREE_NULL_BITMAP(y_bitmap);
-		FREE_NULL_BITMAP(z_bitmap);
-whole_torus:
 		for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+			uint16_t x, y, z, rx, ry, rz;
+			uint32_t idx;
+
 			if (!bit_test(torus->nodes_bitmap, i)) {
 				rank_idx++;
 				continue;
 			}
-			for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-				uint16_t x, y, z;
-				if (torus->nodes_map[idx] != (uint32_t) i)
-					continue;
-				torus3d_index_to_coord(torus, idx, &x, &y, &z);
-				uint16_t rx = (x + torus->x - x_start) % x_span;
-				uint16_t ry = (y + torus->y - y_start) % y_span;
-				uint16_t rz = (z + torus->z - z_start) % z_span;
-				(*node_rank)[rank_idx] =
-					((uint32_t) (t + 1)
-					 << TOPO_RANK_ID_SHIFT) |
-					_morton_encode(rx, ry, rz);
-				break;
-			}
+
+			idx = _find_torus_index(torus, i);
+			xassert(idx != NO_VAL);
+
+			torus3d_index_to_coord(torus, idx, &x, &y, &z);
+			rx = (x + torus->x - x_start) % torus->x;
+			ry = (y + torus->y - y_start) % torus->y;
+			rz = (z + torus->z - z_start) % torus->z;
+			(*node_rank)[rank_idx] =
+				((uint32_t) (t + 1) << TOPO_RANK_ID_SHIFT) |
+				_morton_encode(rx >> sx, ry >> sy, rz >> sz, bx,
+					       by, bz);
 			rank_idx++;
 		}
 	}
@@ -905,18 +1010,20 @@ extern void topology_p_get_topology_str(node_record_t *node_ptr,
 		return;
 
 	for (int i = 0; i < ctx->record_count; i++) {
+		uint32_t idx;
+		uint16_t x, y, z;
 		torus3d_record_t *torus = &ctx->records[i];
+
 		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
 			continue;
-		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-			uint16_t x, y, z;
-			if (torus->nodes_map[idx] != node_ptr->index)
-				continue;
-			torus3d_index_to_coord(torus, idx, &x, &y, &z);
-			xstrfmtcat(*topology_str_ptr, "%s%s:%s:%u:%u:%u",
-				   *topology_str_ptr ? "," : "", tctx->name,
-				   torus->name, x, y, z);
-			return;
-		}
+
+		idx = _find_torus_index(torus, node_ptr->index);
+
+		xassert(idx != NO_VAL);
+		torus3d_index_to_coord(torus, idx, &x, &y, &z);
+		xstrfmtcat(*topology_str_ptr, "%s%s:%s:%u:%u:%u",
+			   *topology_str_ptr ? "," : "", tctx->name,
+			   torus->name, x, y, z);
+		return;
 	}
 }

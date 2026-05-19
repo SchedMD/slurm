@@ -6867,7 +6867,7 @@ static int PARSE_FUNC(TOPOLOGY_CONF_ARRAY)(const parser_t *const parser,
 		fargs.array = ctx_array->tctx;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -6982,7 +6982,7 @@ static int PARSE_FUNC(TOPOLOGY_TREE_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = tree_configs->switch_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7097,7 +7097,7 @@ static int PARSE_FUNC(TOPOLOGY_BLOCK_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = block_configs->block_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7251,7 +7251,7 @@ static int PARSE_FUNC(TOPOLOGY_TORUS3D)(const parser_t *const parser, void *obj,
 	if (tctx->plugin && src_dict_count) {
 		rc = parse_error(
 			parser, args, parent_path, SLURM_ERROR,
-			"Field torus3d is mutually excusive with fields block, tree, flat and ring");
+			"Field torus3d is mutually exclusive with fields block, tree, flat and ring");
 	} else if (src_dict_count) {
 		tctx->plugin = xstrdup("topology/torus3d");
 		rc = PARSE(TOPOLOGY_TORUS3D_CONFIG_PTR, tctx->config, src,
@@ -7331,7 +7331,7 @@ static int PARSE_FUNC(TORUS3D_PLACEMENT_ARRAY)(const parser_t *const parser,
 		fargs.array = config->placements;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7371,7 +7371,7 @@ static int PARSE_FUNC(TORUS3D_REGION_ARRAY)(const parser_t *const parser,
 		fargs.array = config->regions;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7458,7 +7458,7 @@ static int PARSE_FUNC(TOPOLOGY_RING_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = ring_configs->ring_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7522,7 +7522,7 @@ static int PARSE_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t
 		fargs.array = torus3d_configs->torus3d_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -11763,11 +11763,11 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_TORUS3D_CONFIG)[] = {
 static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 	add_parse(STRING, name, "topology", "Arbitrary name of the topology"),
 	add_parse(BOOL, cluster_default, "cluster_default", "topology configuration used outside the context of partitions"),
-	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with tree and default"),
-	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with tree and block"),
-	add_cparse(TOPOLOGY_RING, "ring", "topology/ring plugin configuration, mutually exclusive with block, tree and flat"),
-	add_cparse(TOPOLOGY_TORUS3D, "torus3d", "topology/torus3d plugin configuration, mutually exclusive with block, tree, flat and ring"),
-	add_cparse(TOPOLOGY_TREE, "tree", "topology/tree plugin configuration, mutually exclusive with block and default"),
+	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_RING, "ring", "topology/ring plugin configuration, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_TORUS3D, "torus3d", "topology/torus3d plugin configuration, mutually exclusive with any other topology type"),
+	add_cparse(TOPOLOGY_TREE, "tree", "topology/tree plugin configuration, mutually exclusive with any other topology type"),
 };
 #undef add_cparse
 #undef add_parse
@@ -13522,7 +13522,6 @@ static const parser_t parsers[] = {
 	addpp(KILL_JOBS_RESP_MSG_PTR, kill_jobs_resp_msg_t *, KILL_JOBS_RESP_MSG, false, NULL, FREE_FUNC(KILL_JOBS_RESP_MSG)),
 	addpp(INT32_PTR, int32_t *, INT32, false, NULL, xfree_ptr),
 	addpp(SLUID_PTR, sluid_t *, STRING, true, NULL, xfree_ptr),
-	addpp(TOPOLOGY_TORUS3D_CONFIG_PTR, topology_torus3d_config_t *, TOPOLOGY_TORUS3D_CONFIG, false, NULL, (parser_free_func_t) free_topology_torus3d_config),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),

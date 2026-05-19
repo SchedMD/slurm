@@ -77,7 +77,7 @@ static void _log_placement(torus3d_placement_t *placement)
 		for (int i = 0; i < placement->anchor_count; i++) {
 			char *tmp_str =
 				bitmap2node_name(placement->anchor_bitmaps[i]);
-			debug("\t\tnodes: %s",tmp_str);
+			debug("\t\tnodes: %s", tmp_str);
 			xfree(tmp_str);
 		}
 	}
@@ -202,21 +202,18 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 	uint64_t anchor_total = 0;
 	int idx = 0;
 
-	if (!spacing_x || !spacing_y || !spacing_z) {
-		error("Torus3d placement anchor_spacing can't be 0");
-		return EINVAL;
-	}
+	xassert(spacing_x && spacing_y && spacing_z);
 
 	if (spacing_x > torus->x || spacing_y > torus->y ||
 	    spacing_z > torus->z) {
 		error("Torus3d placement anchor_spacing must be within torus dimensions");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	if (src->anchor_seed.x >= torus->x || src->anchor_seed.y >= torus->y ||
 	    src->anchor_seed.z >= torus->z) {
 		error("Torus3d placement anchor_seed must be within torus dimensions");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	xs = _build_axis_positions(torus->x, spacing_x, src->anchor_seed.x,
@@ -232,7 +229,7 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 		xfree(xs);
 		xfree(ys);
 		xfree(zs);
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	placement->anchor_count = (int) anchor_total;
@@ -273,33 +270,33 @@ static int _validate_placement(torus3d_record_t *torus,
 
 	if (!src->dims.x || !src->dims.y || !src->dims.z) {
 		error("Torus3d placement dims must be non-zero");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	expected_size = (uint64_t) src->dims.x * src->dims.y * src->dims.z;
 	if (expected_size > UINT32_MAX) {
 		error("Torus3d placement dims %ux%ux%u exceed size limit",
 		      src->dims.x, src->dims.y, src->dims.z);
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	if (src->dims.x > torus->x || src->dims.y > torus->y ||
 	    src->dims.z > torus->z) {
 		error("Torus3d placement dims exceed torus dimensions");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	placement->size = (uint32_t) expected_size;
 	placement->dims = src->dims;
 	placement->anchor_seed = src->anchor_seed;
 
-	if ((src->anchor_spacing.x == 0) && (src->anchor_spacing.y == 0) &&
-	    (src->anchor_spacing.z == 0)) {
-		placement->anchor_spacing = src->dims;
-		src->anchor_spacing = src->dims;
-	} else {
-		placement->anchor_spacing = src->anchor_spacing;
-	}
+	if (!src->anchor_spacing.x)
+		src->anchor_spacing.x = src->dims.x;
+	if (!src->anchor_spacing.y)
+		src->anchor_spacing.y = src->dims.y;
+	if (!src->anchor_spacing.z)
+		src->anchor_spacing.z = src->dims.z;
+	placement->anchor_spacing = src->anchor_spacing;
 
 	return _build_placement_anchors(torus, src, placement);
 }
@@ -318,24 +315,24 @@ static int _validate_regions_config(slurm_conf_torus3d_t *config,
 
 		if (!region->nodes || !region->nodes[0]) {
 			error("Torus3d region missing nodes");
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 		if ((region->anchor.x + region->dims.x) > config->dims.x ||
 		    (region->anchor.y + region->dims.y) > config->dims.y ||
 		    (region->anchor.z + region->dims.z) > config->dims.z) {
 			error("Torus3d region dims exceed torus dimensions");
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 
 		host_list = hostlist_create(region->nodes);
 		if (!host_list) {
 			error("hostlist_create error on torus3d region nodes");
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 		if (hostlist_count(host_list) != region_size) {
 			error("Torus3d region node count does not match dims");
 			hostlist_destroy(host_list);
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 
 		for (idx = 0; idx < region_size; idx++) {
@@ -367,7 +364,7 @@ static int _validate_regions_config(slurm_conf_torus3d_t *config,
 				error("Torus3d region overlaps existing nodes");
 				free(node_name);
 				hostlist_destroy(host_list);
-				return EINVAL;
+				return SLURM_ERROR;
 			}
 
 			torus->nodes_map[linear_idx] = node_ptr->index;
@@ -404,14 +401,15 @@ static uint16_t _gcd(uint16_t a, uint16_t b)
 }
 
 /*
- * Check if two periodic sub-cube grids overlap on a single axis modeled in
- * infinite space. By Bezout's identity the set of distances between anchors
- * is {delta + m * gcd(s_a, s_b) : m in Z}.
+ * Check if two periodic sub-cube grids overlap on a single torus axis.
+ * By Bezout's identity the set of distances between anchors is
+ * {delta + m * gcd(s_a, s_b, L) : m in Z}, where L is the torus size.
  */
 static bool _grids_overlap_axis(uint16_t seed_a, uint16_t s_a, uint16_t dim_a,
-				uint16_t seed_b, uint16_t s_b, uint16_t dim_b)
+				uint16_t seed_b, uint16_t s_b, uint16_t dim_b,
+				uint16_t L)
 {
-	uint16_t g = _gcd(s_a, s_b);
+	uint16_t g = _gcd(_gcd(s_a, s_b), L);
 	uint16_t r;
 
 	xassert(g);
@@ -463,18 +461,18 @@ static void _detect_placement_overlaps(torus3d_record_t *torus)
 			if (_grids_overlap_axis(p->anchor_seed.x,
 						p->anchor_spacing.x, p->dims.x,
 						q->anchor_seed.x,
-						q->anchor_spacing.x,
-						q->dims.x) &&
+						q->anchor_spacing.x, q->dims.x,
+						torus->x) &&
 			    _grids_overlap_axis(p->anchor_seed.y,
 						p->anchor_spacing.y, p->dims.y,
 						q->anchor_seed.y,
-						q->anchor_spacing.y,
-						q->dims.y) &&
+						q->anchor_spacing.y, q->dims.y,
+						torus->y) &&
 			    _grids_overlap_axis(p->anchor_seed.z,
 						p->anchor_spacing.z, p->dims.z,
 						q->anchor_seed.z,
-						q->anchor_spacing.z,
-						q->dims.z)) {
+						q->anchor_spacing.z, q->dims.z,
+						torus->z)) {
 				p->has_overlap = true;
 				q->has_overlap = true;
 			}
@@ -485,12 +483,8 @@ static void _detect_placement_overlaps(torus3d_record_t *torus)
 static int _validate_config(slurm_conf_torus3d_t *config,
 			    torus3d_record_t *torus)
 {
-	hostlist_t *host_list;
 	hostlist_t *invalid_hl = NULL;
-	char *node_name;
-	uint32_t node_count;
 	uint64_t expected_count;
-	uint32_t node_index = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (!config->name || !config->name[0]) {
@@ -510,6 +504,11 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 
 	expected_count =
 		((uint64_t) config->dims.x * config->dims.y * config->dims.z);
+	if (expected_count > UINT32_MAX) {
+		error("Torus3d dims %ux%ux%u exceed size limit",
+		      config->dims.x, config->dims.y, config->dims.z);
+		return SLURM_ERROR;
+	}
 
 	torus->x = config->dims.x;
 	torus->y = config->dims.y;
@@ -527,6 +526,11 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 		if (rc != SLURM_SUCCESS)
 			goto end;
 	} else if (config->nodes && config->nodes[0]) {
+		hostlist_t *host_list;
+		char *node_name;
+		uint32_t node_count;
+		uint32_t node_index = 0;
+
 		if (!(host_list = hostlist_create(config->nodes))) {
 			error("hostlist_create error on torus3d nodes");
 			return SLURM_ERROR;

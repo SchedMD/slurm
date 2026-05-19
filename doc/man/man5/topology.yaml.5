@@ -224,8 +224,9 @@ coordinate range.
 .TP
 \fBplacements\fR
 List of allowed placement shapes for this torus. Jobs requesting a number of
-nodes matching a placement size will be allocated as a contiguous sub\-cube.
-Jobs that don't match a placement size will not receive an allocation.
+nodes matching a placement size will be allocated as a contiguous sub\-cube
+that may wrap around torus boundaries.
+Jobs that don't match any placement size will not receive an allocation.
 Each placement contains the following attributes:
 
 .RS
