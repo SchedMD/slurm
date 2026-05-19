@@ -98,6 +98,7 @@ TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@	 http-test \
 @HAVE_CHECK_TRUE@	 serializer-test \
 @HAVE_CHECK_TRUE@	 sluid-test \
+@HAVE_CHECK_TRUE@	 xbase64-test \
 @HAVE_CHECK_TRUE@	 xstring-test \
 @HAVE_CHECK_TRUE@	 parse_time-test \
 @HAVE_CHECK_TRUE@	 pack-test \
@@ -172,7 +173,7 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) data-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	dns-test$(EXEEXT) http-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	serializer-test$(EXEEXT) sluid-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	xbase64-test$(EXEEXT) xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) pack-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xahash-test$(EXEEXT)
@@ -256,6 +257,12 @@ xahash_test_OBJECTS = xahash_test-xahash-test.$(OBJEXT)
 xahash_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(xahash_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+xbase64_test_SOURCES = xbase64-test.c
+xbase64_test_OBJECTS = xbase64_test-xbase64-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@xbase64_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+xbase64_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(xbase64_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 xhash_test_SOURCES = xhash-test.c
 xhash_test_OBJECTS = xhash_test-xhash-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@xhash_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -293,6 +300,7 @@ am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/serializer_test-serializer-test.Po \
 	./$(DEPDIR)/sluid_test-sluid-test.Po \
 	./$(DEPDIR)/xahash_test-xahash-test.Po \
+	./$(DEPDIR)/xbase64_test-xbase64-test.Po \
 	./$(DEPDIR)/xhash_test-xhash-test.Po \
 	./$(DEPDIR)/xstring_test-xstring-test.Po
 am__mv = mv -f
@@ -316,8 +324,8 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = data-test.c dns-test.c http-test.c log-test.c lua-test.c \
 	pack-test.c parse_time-test.c reverse_tree-test.c \
-	serializer-test.c sluid-test.c xahash-test.c xhash-test.c \
-	xstring-test.c
+	serializer-test.c sluid-test.c xahash-test.c xbase64-test.c \
+	xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -854,6 +862,8 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@serializer_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@sluid_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@sluid_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@xbase64_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@xbase64_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xstring_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xstring_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@parse_time_test_CFLAGS = $(MYCFLAGS)
@@ -952,6 +962,10 @@ xahash-test$(EXEEXT): $(xahash_test_OBJECTS) $(xahash_test_DEPENDENCIES) $(EXTRA
 	@rm -f xahash-test$(EXEEXT)
 	$(AM_V_CCLD)$(xahash_test_LINK) $(xahash_test_OBJECTS) $(xahash_test_LDADD) $(LIBS)
 
+xbase64-test$(EXEEXT): $(xbase64_test_OBJECTS) $(xbase64_test_DEPENDENCIES) $(EXTRA_xbase64_test_DEPENDENCIES) 
+	@rm -f xbase64-test$(EXEEXT)
+	$(AM_V_CCLD)$(xbase64_test_LINK) $(xbase64_test_OBJECTS) $(xbase64_test_LDADD) $(LIBS)
+
 xhash-test$(EXEEXT): $(xhash_test_OBJECTS) $(xhash_test_DEPENDENCIES) $(EXTRA_xhash_test_DEPENDENCIES) 
 	@rm -f xhash-test$(EXEEXT)
 	$(AM_V_CCLD)$(xhash_test_LINK) $(xhash_test_OBJECTS) $(xhash_test_LDADD) $(LIBS)
@@ -977,6 +991,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serializer_test-serializer-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sluid_test-sluid-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xahash_test-xahash-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xbase64_test-xbase64-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring_test-xstring-test.Po@am__quote@ # am--include-marker
 
@@ -1146,6 +1161,20 @@ xahash_test-xahash-test.obj: xahash-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xahash-test.c' object='xahash_test-xahash-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xahash_test_CFLAGS) $(CFLAGS) -c -o xahash_test-xahash-test.obj `if test -f 'xahash-test.c'; then $(CYGPATH_W) 'xahash-test.c'; else $(CYGPATH_W) '$(srcdir)/xahash-test.c'; fi`
+
+xbase64_test-xbase64-test.o: xbase64-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xbase64_test_CFLAGS) $(CFLAGS) -MT xbase64_test-xbase64-test.o -MD -MP -MF $(DEPDIR)/xbase64_test-xbase64-test.Tpo -c -o xbase64_test-xbase64-test.o `test -f 'xbase64-test.c' || echo '$(srcdir)/'`xbase64-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xbase64_test-xbase64-test.Tpo $(DEPDIR)/xbase64_test-xbase64-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xbase64-test.c' object='xbase64_test-xbase64-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xbase64_test_CFLAGS) $(CFLAGS) -c -o xbase64_test-xbase64-test.o `test -f 'xbase64-test.c' || echo '$(srcdir)/'`xbase64-test.c
+
+xbase64_test-xbase64-test.obj: xbase64-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xbase64_test_CFLAGS) $(CFLAGS) -MT xbase64_test-xbase64-test.obj -MD -MP -MF $(DEPDIR)/xbase64_test-xbase64-test.Tpo -c -o xbase64_test-xbase64-test.obj `if test -f 'xbase64-test.c'; then $(CYGPATH_W) 'xbase64-test.c'; else $(CYGPATH_W) '$(srcdir)/xbase64-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/xbase64_test-xbase64-test.Tpo $(DEPDIR)/xbase64_test-xbase64-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xbase64-test.c' object='xbase64_test-xbase64-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xbase64_test_CFLAGS) $(CFLAGS) -c -o xbase64_test-xbase64-test.obj `if test -f 'xbase64-test.c'; then $(CYGPATH_W) 'xbase64-test.c'; else $(CYGPATH_W) '$(srcdir)/xbase64-test.c'; fi`
 
 xhash_test-xhash-test.o: xhash-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xhash_test_CFLAGS) $(CFLAGS) -MT xhash_test-xhash-test.o -MD -MP -MF $(DEPDIR)/xhash_test-xhash-test.Tpo -c -o xhash_test-xhash-test.o `test -f 'xhash-test.c' || echo '$(srcdir)/'`xhash-test.c
@@ -1495,6 +1524,13 @@ sluid-test.log: sluid-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+xbase64-test.log: xbase64-test$(EXEEXT)
+	@p='xbase64-test$(EXEEXT)'; \
+	b='xbase64-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 xstring-test.log: xstring-test$(EXEEXT)
 	@p='xstring-test$(EXEEXT)'; \
 	b='xstring-test'; \
@@ -1608,6 +1644,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/serializer_test-serializer-test.Po
 	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
+	-rm -f ./$(DEPDIR)/xbase64_test-xbase64-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po
 	-rm -f Makefile
@@ -1666,6 +1703,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/serializer_test-serializer-test.Po
 	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
+	-rm -f ./$(DEPDIR)/xbase64_test-xbase64-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po
 	-rm -f Makefile
