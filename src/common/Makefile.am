@@ -219,6 +219,8 @@ libcommon_la_SOURCES =				\
 	xahash.h				\
 	xassert.c				\
 	xassert.h				\
+	xbase64.c				\
+	xbase64.h				\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\
