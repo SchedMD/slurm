@@ -397,7 +397,7 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 
 	if (env->cpu_bind_type && !env->batch_flag &&
-	    (env->stepid != SLURM_INTERACTIVE_STEP)) {
+	    (env->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
 		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
 		bool append_cpu_bind = false;
@@ -495,7 +495,8 @@ int setup_env(env_t *env, bool preserve_env)
 		xfree(str_bind_type);
 	}
 
-	if (env->mem_bind_type && (env->stepid != SLURM_INTERACTIVE_STEP)) {
+	if (env->mem_bind_type &&
+	    (env->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind_type = NULL, *str_bind_list;
 		char *str_prefer = NULL, *str_bind = NULL;
 
@@ -706,13 +707,15 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
-	if (env->stepid >= 0) {
-		if (setenvf(&env->env, "SLURM_STEP_ID", "%d", env->stepid)) {
+	if (env->step_id.step_id != NO_VAL) {
+		if (setenvf(&env->env, "SLURM_STEP_ID", "%d",
+			    env->step_id.step_id)) {
 			error("Unable to set SLURM_STEP_ID environment");
 			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
-		if (setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
+		if (setenvf(&env->env, "SLURM_STEPID", "%d",
+			    env->step_id.step_id)) {
 			error("Unable to set SLURM_STEPID environment");
 			rc = SLURM_ERROR;
 		}

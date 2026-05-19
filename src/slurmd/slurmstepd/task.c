@@ -330,7 +330,7 @@ extern void exec_task(int local_proc_id)
 		step->envtp->jobid = step->het_job_id;
 	else
 		step->envtp->jobid = step->step_id.job_id;
-	step->envtp->stepid = step->step_id.step_id;
+	step->envtp->step_id = step->step_id;
 	step->envtp->nodeid = step->nodeid + node_offset;
 	step->envtp->cpus_on_node = step->cpus;
 	step->envtp->procid = task->gtid + task_offset;
