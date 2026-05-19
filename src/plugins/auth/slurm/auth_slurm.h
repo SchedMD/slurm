@@ -71,10 +71,6 @@ typedef struct {
 extern bool internal;
 extern bool use_client_ids;
 
-/* Borrow these from libjwt despite them not being public. */
-extern int jwt_Base64encode(char *encoded, const char *string, int len);
-extern int jwt_Base64decode(unsigned char *bufplain, const char *bufcoded);
-
 extern void init_internal(void);
 extern void fini_internal(void);
 extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
