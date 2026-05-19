@@ -505,10 +505,11 @@ def module_teardown():
                 logging.debug(
                     f"Saving the full backtrace of {coredump} from {bin_path} into {bt_file}"
                 )
+                # debuginfod off: It may be too slow
                 results = atf.run_command(
                     f"gdb"
                     f" -batch"
-                    f' -iex "set debuginfod enabled on"'
+                    f' -iex "set debuginfod enabled off"'
                     f' -ex "info files"'
                     f' -ex "set pagination off"'
                     f' -ex "set confirm off"'
@@ -521,7 +522,12 @@ def module_teardown():
                     f" {bin_path} {coredump}",
                     user="root",
                     quiet=True,
+                    timeout=300,
                 )
+                if results["exit_code"] != 0:
+                    logging.warning(
+                        f"Error generating the bt file: {results['exit_code']}"
+                    )
                 with open(bt_file, "w") as f:
                     f.write(results["stdout"])
                     f.write(results["stderr"])
