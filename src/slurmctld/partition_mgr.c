@@ -1267,6 +1267,22 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			__func__, part_desc->name);
 	}
 
+	/*
+	 * Exclusive=NO/NONE and Exclusive=USER adjust max_share only when the
+	 * update does not include OverSubscribe (max_share still NO_VAL16)
+	 * and the partition was Exclusive=NODE.
+	 */
+	if ((part_desc->flags & PART_FLAG_EXC_USER_CLR) &&
+	    (part_desc->flags & PART_FLAG_EXC_TOPO_CLR) &&
+	    !(part_desc->flags & PART_FLAG_EXCLUSIVE_USER) &&
+	    !(part_desc->flags & PART_FLAG_EXCLUSIVE_TOPO) &&
+	    (part_desc->max_share == NO_VAL16) && !part_ptr->max_share)
+		part_ptr->max_share = 1;
+
+	if ((part_desc->flags & PART_FLAG_EXCLUSIVE_USER) &&
+	    (part_desc->max_share == NO_VAL16) && !part_ptr->max_share)
+		part_ptr->max_share = 1;
+
 	if (part_desc->flags & PART_FLAG_LLN) {
 		info("%s: setting LLN for partition %s", __func__,
 		     part_desc->name);
