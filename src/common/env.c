@@ -63,6 +63,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/select.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -652,6 +653,15 @@ int setup_env(env_t *env, bool preserve_env)
 		if (setenvf(&env->env, "SLURM_JOBID", "%d",
 			    env->step_id.job_id)) {
 			error("Unable to set SLURM_JOBID environment");
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if (env->step_id.sluid) {
+		char sluid[15] = "";
+		print_sluid(env->step_id.sluid, sluid, sizeof(sluid));
+		if (setenvf(&env->env, "SLURM_JOB_SLUID", "%s", sluid)) {
+			error("Unable to set SLURM_JOB_SLUID environment");
 			rc = SLURM_ERROR;
 		}
 	}
