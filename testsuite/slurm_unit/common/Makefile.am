@@ -25,6 +25,7 @@ TESTS += xhash-test \
 	 http-test \
 	 serializer-test \
 	 sluid-test \
+	 xbase64-test \
 	 xstring-test \
 	 parse_time-test \
 	 pack-test \
@@ -45,6 +46,8 @@ serializer_test_CFLAGS  = $(MYCFLAGS)
 serializer_test_LDADD   = $(LDADD) @CHECK_LIBS@
 sluid_test_CFLAGS = $(MYCFLAGS)
 sluid_test_LDADD = $(LDADD) @CHECK_LIBS@
+xbase64_test_CFLAGS = $(MYCFLAGS)
+xbase64_test_LDADD = $(LDADD) @CHECK_LIBS@
 xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
