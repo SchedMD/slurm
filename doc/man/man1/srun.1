@@ -123,7 +123,8 @@ with the \fBsrun\fR command that submitted it. The step is launched and
 supervised by the job's step manager, which will queue the step for later
 execution if resources are not currently available. The \fBsrun\fR command
 returns immediately after the step is accepted by the controller and reports
-its stepid, without waiting for the step to start or finish.
+its step ID, without waiting for the step to start or finish.
+See \fB\-\-parsable\fR for details on output format.
 
 Output is written directly on the compute nodes to the files named by
 \fB\-\-output\fR and \fB\-\-error\fR; if neither is given, \fIslurm-%J.out\fR
@@ -2637,6 +2638,16 @@ application performance will likely suffer due to competition for resources.
 This option applies to job allocations.
 
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-exclusive\fR.
+.IP
+
+.TP
+\fB\-\-parsable\fR
+Outputs only the step ID (\fI<jobid>.<stepid>\fR) on a single line of stdout.
+Suppresses the leading "Submitted step " text. Analogous to \fBsbatch
+\-\-parsable\fR, but includes a step ID alongside the job ID.
+Errors are still printed normally to stderr. Requires \fB\-\-async\fR.
+Note that \fB\-\-quiet\fR suppresses the step ID along with the other
+informational messages.
 .IP
 
 .TP
