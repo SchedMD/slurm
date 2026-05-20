@@ -1,0 +1,8 @@
+Usage: swait [OPTIONS] [<jobid>]
+
+Block until a job's running steps and pending --async steps complete.
+
+Options:
+  -V, --version           Print Slurm version and exit
+  -h, --help              Print this help and exit
+      --usage             Print short usage and exit

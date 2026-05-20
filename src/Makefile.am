@@ -30,7 +30,8 @@ SUBDIRS =		\
 	sstat		\
 	stepmgr 	\
 	strigger	\
-	sview
+	sview		\
+	swait
 
 if HAVE_LUA
 SUBDIRS += lua
