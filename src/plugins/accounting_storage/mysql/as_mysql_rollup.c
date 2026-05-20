@@ -96,6 +96,22 @@ typedef struct {
 } local_resv_usage_t;
 
 typedef struct {
+	time_t time_end;
+	time_t time_start;
+} local_suspend_t;
+
+typedef struct {
+	list_t *intervals; /* list of local_suspend_t */
+	uint64_t job_db_inx;
+} local_suspend_set_t;
+
+typedef struct {
+	time_t row_end;
+	time_t row_start;
+	int *suspend_seconds;
+} suspend_accum_arg_t;
+
+typedef struct {
 	char *cluster_name;
 	time_t curr_start;
 	time_t now;
@@ -139,6 +155,46 @@ static void _destroy_local_resv_usage(void *object)
 		FREE_NULL_LIST(r_usage->loc_tres);
 		xfree(r_usage);
 	}
+}
+
+static void _destroy_local_suspend_set(void *object)
+{
+	local_suspend_set_t *set = object;
+	if (set) {
+		FREE_NULL_LIST(set->intervals);
+		xfree(set);
+	}
+}
+
+static void _suspend_set_id(void *item, const void **key, uint32_t *key_len)
+{
+	local_suspend_set_t *set = item;
+	*key = &set->job_db_inx;
+	*key_len = sizeof(set->job_db_inx);
+}
+
+/* Accumulate one suspend interval's overlap with the job's window. */
+static int _accumulate_suspend(void *x, void *arg)
+{
+	local_suspend_t *interval = x;
+	suspend_accum_arg_t *acc = arg;
+	int tot_time;
+	time_t local_start = interval->time_start;
+	time_t local_end = interval->time_end;
+
+	if (!local_start)
+		return 0;
+
+	if (acc->row_start > local_start)
+		local_start = acc->row_start;
+	if (!local_end || (acc->row_end < local_end))
+		local_end = acc->row_end;
+	tot_time = (local_end - local_start);
+
+	if (tot_time > 0)
+		*acc->suspend_seconds += tot_time;
+
+	return 0;
 }
 
 static int _find_loc_tres(void *x, void *key)
@@ -1352,6 +1408,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	list_t *cluster_down_list = NULL;
 	xhash_t *qos_usage_hash = NULL;
 	xhash_t *wckey_usage_hash = NULL;
+	xhash_t *suspend_hash = NULL;
 	list_t *resv_usage_list = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 	local_cluster_usage_t *loc_c_usage = NULL;
@@ -1395,17 +1452,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_COUNT
 	};
 
-	char *suspend_req_inx[] = {
-		"time_start",
-		"time_end"
-	};
-	char *suspend_str = NULL;
-	enum {
-		SUSPEND_REQ_START,
-		SUSPEND_REQ_END,
-		SUSPEND_REQ_COUNT
-	};
-
 	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ROLLUPS) {
 		/*
 		 * If rollups are disabled still check if we need to archive and
@@ -1419,18 +1465,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	cluster_down_list = list_create(_destroy_local_cluster_usage);
 	qos_usage_hash = xhash_init(_qos_usage_id, _destroy_local_id_usage);
 	wckey_usage_hash = xhash_init(_id_usage_id, _destroy_local_id_usage);
+	suspend_hash = xhash_init(_suspend_set_id, _destroy_local_suspend_set);
 	resv_usage_list = list_create(_destroy_local_resv_usage);
 
 	i=0;
 	xstrfmtcat(job_str, "%s", job_req_inx[i]);
 	for(i=1; i<JOB_REQ_COUNT; i++) {
 		xstrfmtcat(job_str, ", %s", job_req_inx[i]);
-	}
-
-	i=0;
-	xstrfmtcat(suspend_str, "%s", suspend_req_inx[i]);
-	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
-		xstrfmtcat(suspend_str, ", %s", suspend_req_inx[i]);
 	}
 
 	/* We need to figure out the dimensions of this cluster */
@@ -1467,6 +1508,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			.curr_start = curr_start,
 			.now = now,
 		};
+		/*
+		 * Suspend intervals are loaded lazily on the first suspended
+		 * job in the window to avoid a query for windows with none.
+		 */
+		bool suspend_loaded = false;
 
 		DB_DEBUG(DB_USAGE, mysql_conn->conn,
 		         "%s curr hour is now %ld-%ld",
@@ -1547,50 +1593,75 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			seconds = (row_end - row_start);
 
 			if (slurm_atoul(row[JOB_REQ_SUSPENDED])) {
-				MYSQL_RES *result2 = NULL;
-				MYSQL_ROW row2;
-				/* get the suspended time for this job */
-				query = xstrdup_printf(
-					"select %s from \"%s_%s\" where "
-					"(time_start < %ld and (time_end >= %ld "
-					"or time_end = 0)) and job_db_inx=%s "
-					"order by time_start",
-					suspend_str, cluster_name,
-					suspend_table,
-					curr_end, curr_start,
-					row[JOB_REQ_DB_INX]);
+				uint64_t jdbinx;
+				local_suspend_set_t *set;
 
-				debug4("%d(%s:%d) query\n%s",
-				       mysql_conn->conn, THIS_FILE,
-				       __LINE__, query);
-				if (!(result2 = mysql_db_query_ret(
-					      mysql_conn,
-					      query, 0))) {
-					rc = SLURM_ERROR;
-					mysql_free_result(result);
-					goto end_it;
+				if (!suspend_loaded) {
+					MYSQL_RES *susp_res;
+					MYSQL_ROW susp_row;
+					char *susp_query = xstrdup_printf(
+						"select job_db_inx, time_start,"
+						" time_end from \"%s_%s\" where"
+						" time_start < %ld and"
+						" (time_end >= %ld"
+						"  or time_end = 0)",
+						cluster_name, suspend_table,
+						curr_end, curr_start);
+					DB_DEBUG(DB_USAGE, mysql_conn->conn,
+					         "query\n%s", susp_query);
+					susp_res = mysql_db_query_ret(
+						mysql_conn, susp_query, 0);
+					xfree(susp_query);
+					if (!susp_res) {
+						rc = SLURM_ERROR;
+						mysql_free_result(result);
+						goto end_it;
+					}
+					while ((susp_row =
+						mysql_fetch_row(susp_res))) {
+						uint64_t sj = slurm_atoull(
+							susp_row[0]);
+						local_suspend_set_t *ss =
+							xhash_get(suspend_hash,
+								  &sj,
+								  sizeof(sj));
+						local_suspend_t *si;
+
+						if (!ss) {
+							ss = xmalloc(
+								sizeof(*ss));
+							ss->job_db_inx = sj;
+							ss->intervals =
+								list_create(
+								xfree_ptr);
+							xhash_add(suspend_hash,
+								  ss);
+						}
+						si = xmalloc(sizeof(*si));
+						si->time_start = slurm_atoull(
+							susp_row[1]);
+						si->time_end = slurm_atoull(
+							susp_row[2]);
+						list_append(ss->intervals, si);
+					}
+					mysql_free_result(susp_res);
+					suspend_loaded = true;
 				}
-				xfree(query);
-				while ((row2 = mysql_fetch_row(result2))) {
-					int tot_time = 0;
-					time_t local_start = slurm_atoul(
-						row2[SUSPEND_REQ_START]);
-					time_t local_end = slurm_atoul(
-						row2[SUSPEND_REQ_END]);
 
-					if (!local_start)
-						continue;
-
-					if (row_start > local_start)
-						local_start = row_start;
-					if (!local_end || row_end < local_end)
-						local_end = row_end;
-					tot_time = (local_end - local_start);
-
-					if (tot_time > 0)
-						suspend_seconds += tot_time;
+				jdbinx = slurm_atoull(row[JOB_REQ_DB_INX]);
+				set = xhash_get(suspend_hash, &jdbinx,
+						sizeof(jdbinx));
+				if (set) {
+					suspend_accum_arg_t acc = {
+						.row_end = row_end,
+						.row_start = row_start,
+						.suspend_seconds =
+							&suspend_seconds,
+					};
+					list_for_each(set->intervals,
+						      _accumulate_suspend,
+						      &acc);
 				}
-				mysql_free_result(result2);
 			}
 
 			/*
@@ -1993,13 +2064,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		list_flush(cluster_down_list);
 		xhash_clear(qos_usage_hash);
 		xhash_clear(wckey_usage_hash);
+		xhash_clear(suspend_hash);
 		list_flush(resv_usage_list);
 		curr_start = curr_end;
 		curr_end = curr_start + add_sec;
 	}
 end_it:
 	xfree(query);
-	xfree(suspend_str);
 	xfree(job_str);
 	_destroy_local_cluster_usage(c_usage);
 
@@ -2012,6 +2083,7 @@ end_it:
 	FREE_NULL_LIST(cluster_down_list);
 	xhash_free_ptr(&qos_usage_hash);
 	xhash_free_ptr(&wckey_usage_hash);
+	xhash_free_ptr(&suspend_hash);
 	FREE_NULL_LIST(resv_usage_list);
 
 /* 	info("stop start %s", slurm_ctime2(&curr_start)); */
