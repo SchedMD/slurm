@@ -38,7 +38,14 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
+
+#include <errno.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "src/common/fd.h"
 #include "src/common/slurmdbd_pack.h"
+#include "src/interfaces/conn.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "slurmdbd_agent.h"
 
@@ -254,6 +261,51 @@ extern void dbd_conn_close(persist_conn_t **pc)
 	log_flag(NET, "sent DB_FINI msg to %s:%u rc(%d):%s",
 		 (*pc)->rem_host, (*pc)->rem_port,
 		 rc, slurm_strerror(rc));
+
+	/*
+	 * In slurmctld only: synchronize with slurmdbd's connection
+	 * teardown before we let the caller (and eventually the next
+	 * slurmctld) proceed. Other callers (sacctmgr, slurmstepd, etc.)
+	 * just close and exit and don't need to wait.
+	 *
+	 * Slurmdbd runs _connection_fini_callback() on the recv thread
+	 * after that thread sees EOF on our socket. The callback is what
+	 * removes us from registered_clusters and NULLs pcon_send. Only
+	 * after the callback returns does slurmdbd's _service_connection
+	 * call slurm_persist_conn_free_thread_loc(), which destroys the
+	 * conn and closes its TCP side.
+	 *
+	 * So: half-close our write side (FIN to slurmdbd), then wait
+	 * for activity on our read side (POLLIN or POLLHUP). By the
+	 * time wait_fd() returns, slurmdbd has run the callback and
+	 * we won't race a subsequent reconnect against a stale entry
+	 * in registered_clusters / pcon_send.
+	 *
+	 * Bounded by a short poll timeout so we don't hang if slurmdbd
+	 * is itself wedged.
+	 */
+	if (running_in_slurmctld() && (*pc)->conn) {
+		int fd = conn_g_get_fd((*pc)->conn);
+		if (fd >= 0) {
+			char drain[256];
+			ssize_t n;
+
+			(void) conn_blocking_g_shutdown((*pc)->conn);
+			(void) shutdown(fd, SHUT_WR);
+
+			if (wait_fd(fd, 5, POLLIN)) {
+				error("%s: [fd:%d] problem waiting for slurmdbd to close connection on %s:%u",
+				      __func__, fd, (*pc)->rem_host,
+				      (*pc)->rem_port);
+			} else {
+				do {
+					n = read(fd, drain, sizeof(drain));
+				} while ((n < 0) && (errno == EINTR));
+			}
+
+			(*pc)->skip_conn_shutdown = true;
+		}
+	}
 
 destroy_conn:
 	slurm_persist_conn_destroy(*pc);
