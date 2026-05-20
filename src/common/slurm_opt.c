@@ -1340,8 +1340,8 @@ static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 	    !xstrcasecmp(arg, "allocation")) {
 		if (opt->srun_opt) {
 			if (xstrcasecmp(arg, "allocation") &&
-			    !xstrstr(slurm_conf.launch_params,
-				     "srun_exclusive_allocation")) {
+			    !xstrcasestr(slurm_conf.launch_params,
+					 "srun_exclusive_allocation")) {
 				opt->srun_opt->exclusive = true;
 				opt->srun_opt->exact = true;
 			}
