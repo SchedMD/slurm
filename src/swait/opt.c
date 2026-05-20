@@ -39,9 +39,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "slurm/slurm.h"
+
+#include "src/common/log.h"
 #include "src/common/proc_args.h"
+#include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/slurm_opt.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
 #include "src/swait/opt.h"
@@ -50,15 +55,16 @@
 #define OPT_LONG_HELP 0x100
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_AUTOCOMP 0x102
+#define OPT_LONG_TIMEOUT 0x103
 
-swait_opt_t opt = { 0 };
+swait_opt_t opt = {
+	.array_job_id = NO_VAL,
+	.array_task_id = NO_VAL,
+};
 
 decl_static_data(help_txt);
 decl_static_data(usage_txt);
 
-/*
- * Print full help text to stdout.
- */
 static void _help(void)
 {
 	char *txt;
@@ -67,15 +73,84 @@ static void _help(void)
 	xfree(txt);
 }
 
-/*
- * Print short usage line to stdout.
- */
 static void _usage(void)
 {
 	char *txt;
 	static_ref_to_cstring(txt, usage_txt);
 	printf("%s", txt);
 	xfree(txt);
+}
+
+/*
+ * Validate a parsed selected-step descriptor as suitable for swait.
+ *
+ * IN id - parsed selected-step descriptor
+ * IN src - original input string (for error messages)
+ * RET SLURM_SUCCESS if id describes a single ordinary job; SLURM_ERROR
+ *     otherwise (with an error message printed).
+ */
+static int _validate_selected_step(const slurm_selected_step_t *id,
+				   const char *src)
+{
+	if (id->het_job_offset != NO_VAL) {
+		error("%s: het-job offsets are not supported", src);
+		return SLURM_ERROR;
+	}
+	if (id->array_bitmap) {
+		error("%s: array-task ranges are not supported, pass one task offset",
+		      src);
+		return SLURM_ERROR;
+	}
+	if (id->step_id.step_id != NO_VAL) {
+		error("%s: swait operates on a job, not a step", src);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * IN src - input string from argv or environment
+ * OUT id - populated selected-step descriptor (caller must free
+ *          id->array_bitmap if any survives)
+ */
+static void _parse_jobid_or_die(const char *src, slurm_selected_step_t *id)
+{
+	if (unfmt_job_id_string(src, id, slurm_conf.max_array_sz) !=
+	    SLURM_SUCCESS) {
+		error("%s: cannot parse job id", src);
+		FREE_NULL_BITMAP(id->array_bitmap);
+		exit(2);
+	}
+	if (_validate_selected_step(id, src) != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(id->array_bitmap);
+		exit(2);
+	}
+}
+
+/*
+ * Resolve the target job identifier from argv, or if no positional argument
+ * was given, fall back to $SLURM_JOB_SLUID (s<sluid> form), then $SLURM_JOB_ID.
+ *
+ * IN  argv_jobid - positional argument or NULL
+ * OUT id         - populated selected-step descriptor (caller frees any
+ *                  array_bitmap)
+ */
+static void _resolve_target(const char *argv_jobid, slurm_selected_step_t *id)
+{
+	const char *src = NULL;
+
+	if (argv_jobid && *argv_jobid) {
+		src = argv_jobid;
+	} else if ((src = getenv("SLURM_JOB_SLUID")) && *src) {
+		;
+	} else if ((src = getenv("SLURM_JOB_ID")) && *src) {
+		;
+	} else {
+		error("no job id given and SLURM_JOB_SLUID/SLURM_JOB_ID are not set");
+		exit(2);
+	}
+
+	_parse_jobid_or_die(src, id);
 }
 
 /*
@@ -90,19 +165,31 @@ extern void parse_command_line(int argc, char **argv)
 	static struct option long_options[] = {
 		{ "autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP },
 		{ "help", no_argument, 0, OPT_LONG_HELP },
+		{ "quiet", no_argument, 0, 'Q' },
+		{ "timeout", required_argument, 0, OPT_LONG_TIMEOUT },
 		{ "usage", no_argument, 0, OPT_LONG_USAGE },
+		{ "verbose", no_argument, 0, 'v' },
 		{ "version", no_argument, 0, 'V' },
 		{ NULL, 0, 0, 0 }
 	};
 
+	const char *argv_jobid = NULL;
+	slurm_selected_step_t id = SLURM_SELECTED_STEP_INITIALIZER;
+
 	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, "hV", long_options,
+	while ((opt_char = getopt_long(argc, argv, "hQvV", long_options,
 				       &option_index)) != -1) {
 		switch (opt_char) {
 		case 'h':
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
+		case 'Q':
+			opt.quiet = true;
+			break;
+		case 'v':
+			opt.verbose++;
+			break;
 		case 'V':
 			print_slurm_version();
 			exit(0);
@@ -112,10 +199,37 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
 			exit(0);
+		case OPT_LONG_TIMEOUT:
+			if (!optarg || !*optarg ||
+			    parse_uint32(optarg, &opt.timeout)) {
+				error("--timeout: invalid value '%s' (must be a non-negative integer)",
+				      optarg ? optarg : "");
+				exit(2);
+			}
+			break;
 		default:
-			fprintf(stderr,
-				"Try \"swait --help\" for more information\n");
+			info("Try \"swait --help\" for more information");
 			exit(2);
 		}
 	}
+
+	if (opt.quiet && opt.verbose) {
+		error("--verbose (-v) and --quiet (-Q) are mutually exclusive");
+		exit(2);
+	}
+
+	if ((argc - optind) > 1) {
+		error("too many positional arguments (expected at most one job id)");
+		exit(2);
+	}
+	if ((argc - optind) == 1)
+		argv_jobid = argv[optind];
+
+	_resolve_target(argv_jobid, &id);
+	opt.target = id.step_id;
+	if (id.array_task_id != NO_VAL) {
+		opt.array_job_id = id.step_id.job_id;
+		opt.array_task_id = id.array_task_id;
+	}
+	FREE_NULL_BITMAP(id.array_bitmap);
 }

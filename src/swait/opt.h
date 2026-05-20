@@ -37,9 +37,19 @@
 #define _SWAIT_OPT_H
 
 #include <inttypes.h>
+#include <stdbool.h>
+
+#include "slurm/slurm.h"
 
 typedef struct {
-	uint32_t job_id; /* job id resolved from argv or env */
+	uint32_t array_job_id; /* array master id from input, or NO_VAL */
+	uint32_t array_task_id; /* task offset from input, or NO_VAL */
+	bool quiet; /* --quiet */
+	slurm_step_id_t target; /* SLUID and/or job_id from argv/env;
+				 * for array tasks, job_id holds the per-task
+				 * assigned id after ctld discovery */
+	uint32_t timeout; /* --timeout, seconds; 0 disables */
+	int verbose; /* count of -v; bumps stderr log level */
 } swait_opt_t;
 
 extern swait_opt_t opt;

@@ -17,3 +17,4 @@
 /usr/share/bash-completion/completions/slurm_completion.sh /usr/share/bash-completion/completions/sshare
 /usr/share/bash-completion/completions/slurm_completion.sh /usr/share/bash-completion/completions/sstat
 /usr/share/bash-completion/completions/slurm_completion.sh /usr/share/bash-completion/completions/strigger
+/usr/share/bash-completion/completions/slurm_completion.sh /usr/share/bash-completion/completions/swait
