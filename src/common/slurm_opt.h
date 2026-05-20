@@ -230,7 +230,6 @@ typedef struct {
 	int minsockets;			/* --minsockets=n		*/
 	int mincores;			/* --mincores=n			*/
 	int minthreads;			/* --minthreads=n		*/
-	bool parsable;			/* --parsable			*/
 	char *propagate;		/* --propagate[=RLIMIT_CORE,...]*/
 	int requeue;			/* --requeue and --no-requeue	*/
 	bool test_only;			/* --test-only			*/
@@ -454,6 +453,7 @@ typedef struct {
 	char *efname;			/* error file name		*/
 	char *ifname;			/* input file name		*/
 	char *ofname;			/* output file name		*/
+	bool parsable; /* --parsable */
 
 } slurm_opt_t;
 

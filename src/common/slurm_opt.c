@@ -3106,30 +3106,25 @@ static slurm_cli_opt_t slurm_opt_het_group = {
 
 static int arg_set_parsable(slurm_opt_t *opt, const char *arg)
 {
-	if (!opt->sbatch_opt)
-		return SLURM_ERROR;
-
-	opt->sbatch_opt->parsable = true;
+	opt->parsable = true;
 
 	return SLURM_SUCCESS;
 }
 static char *arg_get_parsable(slurm_opt_t *opt)
 {
-	if (!opt->sbatch_opt)
-		return xstrdup("invalid-context");
-
-	return xstrdup(opt->sbatch_opt->parsable ? "set" : "unset");
+	return xstrdup(opt->parsable ? "set" : "unset");
 }
 static void arg_reset_parsable(slurm_opt_t *opt)
 {
-	if (opt->sbatch_opt)
-		opt->sbatch_opt->parsable = false;
+	if (opt->sbatch_opt || opt->srun_opt)
+		opt->parsable = false;
 }
 static slurm_cli_opt_t slurm_opt_parsable = {
 	.name = "parsable",
 	.has_arg = no_argument,
 	.val = LONG_OPT_PARSABLE,
 	.set_func_sbatch = arg_set_parsable,
+	.set_func_srun = arg_set_parsable,
 	.get_func = arg_get_parsable,
 	.reset_func = arg_reset_parsable,
 };
