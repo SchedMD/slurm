@@ -736,6 +736,8 @@ The time of job termination, actual or expected.
 .TP
 \fBExclusive\fR
 Exclusive disposition for the job (\fBEXCLUSIVE\fR column).
+(Valid for jobs only).
+Possible values:
 .RS
 .TP
 \fBMCS\fR: only jobs with the same MCS label may share a node (job submitted
@@ -753,8 +755,8 @@ Same tokens as the \fBExclusive\fR field in \fBscontrol show job\fR.
 \fBUSER\fR: only one user's jobs may share a node (job submitted with
 \fB\-\-exclusive=user\fR, or partition \fBExclusive=USER\fR).
 .TP
-(Valid for jobs only)
 .RE
+.IP
 
 .TP
 \fBExcNodes\fR
