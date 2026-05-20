@@ -195,6 +195,22 @@ extern int dbd_conn_check_and_reopen(persist_conn_t *pc)
 	}
 
 	/*
+	 * Bail out if slurm_conf hasn't published accounting_storage_host
+	 * yet. This races the slurmctld startup path where the agent
+	 * thread can call us while main is mid-slurm_conf_reinit() and
+	 * the host string is transiently NULL. _connect_dbd_conn()'s
+	 * _open_persist_conn() would xassert on the NULL rem_host. The
+	 * agent's outer loop retries after a backoff, so returning an
+	 * error here is fine -- we'll try again once the conf is
+	 * loaded.
+	 */
+	if (!slurm_conf.accounting_storage_host) {
+		debug("%s: accounting_storage_host not set; skipping reconnect",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	/*
 	 * Reset the rem_host just in case we were connected to the backup
 	 * before.
 	 */
