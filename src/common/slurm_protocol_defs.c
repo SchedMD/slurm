@@ -5436,6 +5436,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BURST_BUFFER_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_FED_INFO:
+	case SRUN_STEPS_DRAINED:
 		/* No body to free */
 		break;
 	case RESPONSE_FED_INFO:
