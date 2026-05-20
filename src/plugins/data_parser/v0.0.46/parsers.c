@@ -2350,25 +2350,6 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser,
-					  void *obj, data_t *src, args_t *args,
-					  data_t *parent_path)
-{
-	uint16_t *state = obj;
-	int rc = PARSE(UINT16, *state, src, parent_path, args);
-	return rc;
-}
-
-static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj,
-					 data_t *dst, args_t *args)
-{
-	uint16_t *state = obj;
-	uint16_t val = *state & (~SHARED_FORCE);
-
-	data_set_int(dst, val);
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(PARTITION_OVERSUBSCRIBE)
 PARSE_DISABLED(PARTITION_EXCLUSIVE)
 
@@ -9790,10 +9771,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_EXCLUSIVE_FLAGS)[] = {
 	add_flag_equal(JOB_SHARED_TOPO , INFINITE16, "topo"),
 };
 
-static const flag_bit_t PARSER_FLAG_ARRAY(OVERSUBSCRIBE_FLAGS)[] = {
-	add_flag_bit(SHARED_FORCE, "force"),
-};
-
 #define add_skip(field)					\
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path, desc)				\
@@ -10216,8 +10193,6 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 1, "maximums/partition_memory_per_cpu", "MaxMemPerCPU - Maximum real memory size available per allocated CPU in megabytes"),
 	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 1, "maximums/partition_memory_per_node", "MaxMemPerNode - Maximum real memory size available per allocated node in a job allocation in megabytes"),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", "MaxNodes - Maximum count of nodes which may be allocated to any single job"),
-	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 1, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
-	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 1, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
 	add_parse(PARTITION_OVERSUBSCRIBE, max_share, "partition/oversubscribe", "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo)"),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs in minutes"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
@@ -13348,7 +13323,6 @@ static const parser_t parsers[] = {
 	addpsp(WCKEY_TAG, WCKEY_TAG_STRUCT, char *, NEED_NONE, "WCKey ID with tagging"),
 	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(OVERSUBSCRIBE_JOBS, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsp(TRES_STR_BY_TYPE, TRES_LIST, char *, NEED_TRES, NULL),
@@ -13750,7 +13724,6 @@ static const parser_t parsers[] = {
 	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
-	addfa(OVERSUBSCRIBE_FLAGS, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */
