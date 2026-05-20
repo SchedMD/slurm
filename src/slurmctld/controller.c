@@ -2653,9 +2653,6 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (slurmctld_config.shutdown_time) {
-			/* Always stop listening when shutdown requested */
-			listeners_quiesce();
-
 			/*
 			 * Wait for backfill to release locks. Release the
 			 * lock once bf_active is 0: the backfill thread has
@@ -2700,8 +2697,17 @@ static void *_slurmctld_background(void *no_data)
 			 * slurmctld will wait until quiesce to finish before
 			 * responding. The plugin itself is unloaded later, in
 			 * main().
+			 *
+			 * Listeners can't be quiesced yet in case are still
+			 * processing RPCs from the DBD.
 			 */
 			_close_acct_storage_conn();
+
+			/*
+			 * Now that the ctld -> dbd conn is gone it is safe to
+			 * stop listening new connections.
+			 */
+			listeners_quiesce();
 
 			/*
 			 * Wait for all already accepted connection work to
