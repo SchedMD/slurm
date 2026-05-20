@@ -3652,6 +3652,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 		}
 	}
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
+	job_ptr_pend->steps_drained_subs = NULL;
 
 	job_ptr_pend->system_comment = xstrdup(job_ptr->system_comment);
 	job_ptr_pend->topo_jobinfo = NULL;

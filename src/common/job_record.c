@@ -312,6 +312,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
 	FREE_NULL_LIST(job_ptr->step_list);
+	FREE_NULL_LIST(job_ptr->steps_drained_subs);
 	/* switch_g_job_complete() should have already been called if needed */
 	if (job_ptr->switch_jobinfo)
 		switch_g_jobinfo_free(job_ptr);
