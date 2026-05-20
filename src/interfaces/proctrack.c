@@ -195,8 +195,8 @@ extern int proctrack_g_add(stepd_step_rec_t *step, pid_t pid)
  */
 static bool _test_core_dumping(char* stat_fname)
 {
-	int pid, ppid, pgrp, session, tty, tpgid;
-	char cmd[16], state[1];
+	int ppid, pgrp, session, tty, tpgid;
+	char state[1];
 	long unsigned flags, min_flt, cmin_flt, maj_flt, cmaj_flt;
 	long unsigned utime, stime;
 	long cutime, cstime, priority, nice, timeout, it_real_value;
@@ -246,10 +246,7 @@ static bool _test_core_dumping(char* stat_fname)
 		xfree(proc_stat);
 		return false;
 	}
-	*str_ptr = '\0';		/* replace trailing ')' with NULL */
-	/* parse these two strings separately, skipping the leading "(". */
-	memset (cmd, 0, sizeof(cmd));
-	sscanf (proc_stat, "%d (%15c", &pid, cmd);   /* comm[16] in kernel */
+	*str_ptr = '\0'; /* replace trailing ')' with NULL */
 	num = sscanf(str_ptr + 2,		/* skip space after ')' too */
 		"%c "
 		"%d %d %d %d %d "
