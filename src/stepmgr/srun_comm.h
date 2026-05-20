@@ -46,6 +46,26 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
+ * Info for a steps-drained subscriber created from a
+ * REQUEST_STEPS_DRAINED_SUBSCRIBE message; element type for
+ * job_record_t.steps_drained_subs.
+ */
+typedef struct {
+	slurm_addr_t addr;
+	char *host;
+	uint16_t port;
+	uint16_t protocol_version;
+	char *tls_cert;
+} steps_drained_sub_t;
+
+/*
+ * List element destructor matching list_create()'s ListDelF contract for
+ * job_record_t.steps_drained_subs.
+ * IN x - steps_drained_sub_t pointer; may be NULL
+ */
+extern void destroy_steps_drained_sub(void *x);
+
+/*
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
  */
