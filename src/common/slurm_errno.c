@@ -485,6 +485,10 @@ slurm_errtab_t slurm_errtab[] = {
 		"Job cannot be submitted without the current working directory specified.",
 	},
 	{
+		ERRTAB_ENTRY(ESLURM_STEPS_DRAINED),
+		"No running or pending steps in the job",
+	},
+	{
 		ERRTAB_ENTRY(ESLURM_QOS_PREEMPTION_LOOP),
 		"QOS Preemption loop detected",
 	},
