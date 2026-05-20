@@ -10153,7 +10153,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_FLAGS)[] = {
 	add_flag_bit(PART_FLAG_ROOT_ONLY, "ROOT_ONLY"),
 	add_flag_bit(PART_FLAG_REQ_RESV, "REQ_RESV"),
 	add_flag_bit(PART_FLAG_LLN, "LLN"),
-	add_flag_bit(PART_FLAG_EXCLUSIVE_USER, "EXCLUSIVE_USER"),
 	add_flag_bit(PART_FLAG_PDOI, "PDOI"),
 	add_flag_bit(PART_FLAG_DEFAULT_CLR, "DEFAULT_CLEAR"),
 	add_flag_bit(PART_FLAG_HIDDEN_CLR, "HIDDEN_CLEAR"),
@@ -10161,10 +10160,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_FLAGS)[] = {
 	add_flag_bit(PART_FLAG_ROOT_ONLY_CLR, "ROOT_ONLY_CLEAR"),
 	add_flag_bit(PART_FLAG_REQ_RESV_CLR, "REQ_RESV_CLEAR"),
 	add_flag_bit(PART_FLAG_LLN_CLR, "LLN_CLEAR"),
-	add_flag_bit(PART_FLAG_EXC_USER_CLR, "EXC_USER_CLEAR"),
 	add_flag_bit(PART_FLAG_PDOI_CLR, "PDOI_CLEAR"),
-	add_flag_bit(PART_FLAG_EXCLUSIVE_TOPO, "EXCLUSIVE_TOPO"),
-	add_flag_bit(PART_FLAG_EXC_TOPO_CLR, "EXC_TOPO_CLEAR"),
+	/* Exclusive flags hidden because PARTITION_EXCLUSIVE parses/dumps it */
+	add_flag_hidden_bit(PART_FLAG_EXCLUSIVE_USER, "EXCLUSIVE_USER"),
+	add_flag_hidden_bit(PART_FLAG_EXC_USER_CLR, "EXC_USER_CLEAR"),
+	add_flag_hidden_bit(PART_FLAG_EXCLUSIVE_TOPO, "EXCLUSIVE_TOPO"),
+	add_flag_hidden_bit(PART_FLAG_EXC_TOPO_CLR, "EXC_TOPO_CLEAR"),
+	/* Sched flags hidden because no user should set them */
 	add_flag_hidden_bit(PART_FLAG_SCHED_FAILED, "SCHED_FAILED"),
 	add_flag_hidden_bit(PART_FLAG_SCHED_CLEARED, "SCHED_CLEARED"),
 };
