@@ -508,6 +508,9 @@ struct job_record {
 					 * priority or resources, only stored in
 					 * the database. */
 	list_t *step_list;		/* list of job's steps */
+	list_t *steps_drained_subs; /* list of steps-drained subscribers
+				     * (steps_drained_sub_t); only populated in
+				     * stepmgr. DON'T PACK */
 	time_t suspend_time;		/* time job last suspended or resumed */
 	void *switch_jobinfo;		/* opaque blob for switch plugin */
 	char *system_comment;		/* slurmctld's arbitrary comment */
