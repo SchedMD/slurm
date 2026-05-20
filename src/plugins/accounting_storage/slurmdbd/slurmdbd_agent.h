@@ -49,6 +49,13 @@ extern persist_conn_t *slurmdbd_conn;
 extern void slurmdbd_agent_set_conn(persist_conn_t *pc);
 /* Shut down the agent */
 extern void slurmdbd_agent_rem_conn(void);
+/*
+ * Final teardown of the agent queue. Save any messages still queued
+ * (including late writers that enqueued after the agent thread exited)
+ * to dbd.messages and free the queue. Must only be called after the
+ * plugin is otherwise idle (i.e. no concurrent slurmdbd_agent_send()).
+ */
+extern void slurmdbd_agent_fini(void);
 
 /*
  * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
