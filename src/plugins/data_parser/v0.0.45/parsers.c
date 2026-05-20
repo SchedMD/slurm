@@ -10334,8 +10334,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, deny_accounts, "accounts/deny", "DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition"),
 	add_parse(STRING, deny_qos, "qos/deny", "DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition"),
 	add_parse(PARTITION_FLAGS, flags, "flags", "Partition flag options"),
-	add_cparse(PARTITION_EXCLUSIVE, "partition/exclusive",
-		   "Exclusive= string (same as scontrol show partition)"),
+	add_cparse(PARTITION_EXCLUSIVE, "partition/exclusive", "Exclusive= string (same as scontrol show partition)"),
 	add_parse(UINT32, grace_time, "grace_time", "GraceTime - Grace time in seconds to be extended to a job which has been selected for preemption"),
 	add_skip(job_defaults_list), //FIXME - is this even packed?
 	add_parse(STRING, job_defaults_str, "defaults/job", "JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults)"),
