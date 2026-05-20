@@ -2627,6 +2627,7 @@ static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups)
 {
 	char *last = NULL, *g_cpy = NULL, *tok, *tok2, *resv_groups = NULL;
 	bool plus = false, minus = false;
+	int i;
 
 	if (!groups)
 		return ESLURM_GROUP_ID_MISSING;
@@ -2699,12 +2700,16 @@ static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups)
 
 	xfree(resv_ptr->groups);
 	xfree(resv_ptr->user_list);
+	for (i = 0; i < resv_ptr->user_cnt; i++)
+		xfree(resv_ptr->username_list[i]);
+	xfree(resv_ptr->username_list);
 	resv_ptr->user_cnt = 0;
 
 	if (resv_groups && resv_groups[0] != '\0') {
 		resv_ptr->user_list =
 			get_groups_members(resv_groups, &resv_ptr->user_cnt);
-
+		resv_ptr->username_list =
+			xcalloc(resv_ptr->user_cnt, sizeof(char *));
 		if (resv_ptr->user_cnt) {
 			resv_ptr->groups = resv_groups;
 			resv_groups = NULL;
@@ -3962,6 +3967,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	if (resv_desc_ptr->groups) {
 		user_list =
 			get_groups_members(resv_desc_ptr->groups, &user_cnt);
+		username_list = xcalloc(user_cnt, sizeof(char *));
 		if (!user_list) {
 			rc = ESLURM_GROUP_ID_MISSING;
 			goto bad_parse;
@@ -5323,7 +5329,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	}
 
 	if (resv_ptr->groups) {
-		int user_cnt = 0;
+		int user_cnt = 0, i;
 		uid_t *user_list = get_groups_members(resv_ptr->groups,
 						      &user_cnt);
 
@@ -5332,6 +5338,11 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			      resv_ptr->name, resv_ptr->groups);
 		} else {
 			xfree(resv_ptr->user_list);
+			for (i = 0; i < resv_ptr->user_cnt; i++)
+				xfree(resv_ptr->username_list[i]);
+			xfree(resv_ptr->username_list);
+			resv_ptr->username_list =
+				xcalloc(user_cnt, sizeof(char *));
 			resv_ptr->user_list = user_list;
 			resv_ptr->user_cnt = user_cnt;
 			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
@@ -8373,14 +8384,15 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *)x;
 	int *updated = (int *)arg;
-	int user_cnt = 0;
+	int user_cnt = 0, i;
 	uid_t *tmp_uids;
+	char **username_list = NULL;
 
 	if (!resv_ptr->groups)
 		return 0;
 
 	tmp_uids = get_groups_members(resv_ptr->groups, &user_cnt);
-
+	username_list = xcalloc(user_cnt, sizeof(char *));
 	/*
 	 * If the lists are different sizes clearly we are different.
 	 * If the memory isn't the same they are different as well
@@ -8391,7 +8403,13 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 		   sizeof(*tmp_uids) * user_cnt)) {
 		char *old_assocs = xstrdup(resv_ptr->assoc_list);
 
+		for (i = 0; i < resv_ptr->user_cnt; i++)
+			xfree(resv_ptr->username_list[i]);
+		xfree(resv_ptr->username_list);
+		resv_ptr->username_list = username_list;
+		username_list = NULL;
 		resv_ptr->user_cnt = user_cnt;
+		user_cnt = 0;
 		xfree(resv_ptr->user_list);
 		resv_ptr->user_list = tmp_uids;
 		tmp_uids = NULL;
@@ -8406,6 +8424,9 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 		xfree(old_assocs);
 	}
 
+	for (i = 0; i < user_cnt; i++)
+		xfree(username_list[i]);
+	xfree(username_list);
 	xfree(tmp_uids);
 
 	return 0;
