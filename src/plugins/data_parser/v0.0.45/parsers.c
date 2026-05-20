@@ -2376,9 +2376,9 @@ static int DUMP_FUNC(PARTITION_OVERSUBSCRIBE)(const parser_t *const parser,
 					      void *obj, data_t *dst,
 					      args_t *args)
 {
-	partition_info_t *part = obj;
-	uint16_t force = part->max_share & SHARED_FORCE;
-	uint16_t val = part->max_share & (~SHARED_FORCE);
+	uint16_t *max_share = obj;
+	uint16_t force = *max_share & SHARED_FORCE;
+	uint16_t val = *max_share & (~SHARED_FORCE);
 
 	if (!val)
 		data_set_string(dst, "NO");
@@ -10221,7 +10221,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_removed(UINT16, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource", SLURM_26_05_PROTOCOL_VERSION),
 	add_removed(OVERSUBSCRIBE_JOBS, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources", SLURM_26_05_PROTOCOL_VERSION),
 	add_removed(OVERSUBSCRIBE_FLAGS, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting", SLURM_26_05_PROTOCOL_VERSION),
-	add_cparse(PARTITION_OVERSUBSCRIBE, "partition/oversubscribe", "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo)"),
+	add_parse(PARTITION_OVERSUBSCRIBE, max_share, "partition/oversubscribe", "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo)"),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs in minutes"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
 	add_parse(STRING, name, "name", "PartitionName - Name by which the partition may be referenced"),
@@ -13400,6 +13400,7 @@ static const parser_t parsers[] = {
 	addpsp(LOG_LEVEL_UINT16, LOG_LEVEL, uint16_t, NEED_NONE, NULL),
 	addpsp(TIME_SECONDS, STRING, uint32_t, NEED_NONE, "Time formatted as HH:MM:SS or D-HH:MM:SS"),
 	addpsp(PORT_RANGE_ARRAY, PORT_RANGE, uint16_t *, NEED_NONE, "Port range"),
+	addps(PARTITION_OVERSUBSCRIBE, uint16_t, NEED_NONE, STRING, NULL, NULL, "Partition oversubscribe value"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
@@ -13442,7 +13443,6 @@ static const parser_t parsers[] = {
 	addpca(STEP_INFO_MSG, STEP_INFO, job_step_info_response_msg_t, NEED_TRES, NULL),
 	addpca(PARTITION_INFO_MSG, PARTITION_INFO, partition_info_msg_t, NEED_TRES, NULL),
 	addpc(PARTITION_EXCLUSIVE, partition_info_t, NEED_NONE, STRING, NULL),
-	addpc(PARTITION_OVERSUBSCRIBE, partition_info_t, NEED_NONE, STRING, NULL),
 	addpca(RESERVATION_INFO_MSG, RESERVATION_INFO, reserve_info_msg_t, NEED_NONE, NULL),
 	addpca(RESERVATION_INFO_CORE_SPEC, RESERVATION_CORE_SPEC, reserve_info_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_ARGV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
