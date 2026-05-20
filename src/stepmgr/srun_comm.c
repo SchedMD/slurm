@@ -91,6 +91,17 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *tls_cert, char *host,
 	stepmgr_ops->agent_queue_request(agent_args);
 }
 
+extern void destroy_steps_drained_sub(void *x)
+{
+	steps_drained_sub_t *sub = x;
+
+	if (!sub)
+		return;
+	xfree(sub->host);
+	xfree(sub->tls_cert);
+	xfree(sub);
+}
+
 /*
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
