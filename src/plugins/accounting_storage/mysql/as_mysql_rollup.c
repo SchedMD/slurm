@@ -1347,12 +1347,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	list_itr_t *c_itr = NULL;
-	list_itr_t *w_itr = NULL;
 	list_itr_t *r_itr = NULL;
 	xhash_t *assoc_usage_hash = NULL;
 	list_t *cluster_down_list = NULL;
 	xhash_t *qos_usage_hash = NULL;
-	list_t *wckey_usage_list = NULL;
+	xhash_t *wckey_usage_hash = NULL;
 	list_t *resv_usage_list = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 	local_cluster_usage_t *loc_c_usage = NULL;
@@ -1419,7 +1418,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	assoc_usage_hash = xhash_init(_id_usage_id, _destroy_local_id_usage);
 	cluster_down_list = list_create(_destroy_local_cluster_usage);
 	qos_usage_hash = xhash_init(_qos_usage_id, _destroy_local_id_usage);
-	wckey_usage_list = list_create(_destroy_local_id_usage);
+	wckey_usage_hash = xhash_init(_id_usage_id, _destroy_local_id_usage);
 	resv_usage_list = list_create(_destroy_local_resv_usage);
 
 	i=0;
@@ -1461,10 +1460,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 	info("begin start %s", slurm_ctime2(&curr_start)); */
 /* 	info("begin end %s", slurm_ctime2(&curr_end)); */
 	c_itr = list_iterator_create(cluster_down_list);
-	w_itr = list_iterator_create(wckey_usage_list);
 	r_itr = list_iterator_create(resv_usage_list);
 	while (curr_start < end) {
-		int last_wckeyid = -1;
 		id_usage_walk_arg_t arg = {
 			.cluster_name = cluster_name,
 			.curr_start = curr_start,
@@ -1610,27 +1607,17 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				*/
 			}
 
-			/* Short circuit this so so we don't get a pointer. */
-			if (!track_wckey)
-				last_wckeyid = wckey_id;
-
 			/* do the wckey calculation */
-			if (last_wckeyid != wckey_id) {
-				list_iterator_reset(w_itr);
-				while ((w_usage = list_next(w_itr)))
-					if (w_usage->id == wckey_id)
-						break;
-
+			if (track_wckey) {
+				w_usage = xhash_get(wckey_usage_hash, &wckey_id,
+						    sizeof(wckey_id));
 				if (!w_usage) {
-					w_usage = xmalloc(
-						sizeof(local_id_usage_t));
+					w_usage = xmalloc(sizeof(*w_usage));
 					w_usage->id = wckey_id;
-					list_append(wckey_usage_list,
-						    w_usage);
 					w_usage->loc_tres = list_create(
 						_destroy_local_tres_usage);
+					xhash_add(wckey_usage_hash, w_usage);
 				}
-				last_wckeyid = wckey_id;
 			}
 
 			/* do the cluster allocated calculation */
@@ -1976,17 +1963,14 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		if (!track_wckey)
 			goto end_loop;
 
-		list_iterator_reset(w_itr);
-		while ((w_usage = list_next(w_itr)))
-			_create_id_usage_insert(cluster_name, WCKEY_TABLES,
-						curr_start, now,
-						w_usage, &query, &query_pos);
-		if (query) {
+		arg.type = WCKEY_TABLES;
+		xhash_walk(wckey_usage_hash, _id_usage_walk, &arg);
+		if (arg.query) {
 			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
-			         query);
-			rc = mysql_db_query(mysql_conn, query);
-			xfree(query);
-			query_pos = NULL;
+			         arg.query);
+			rc = mysql_db_query(mysql_conn, arg.query);
+			xfree(arg.query);
+			arg.query_pos = NULL;
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add wckey hour rollup");
 				goto end_it;
@@ -2005,7 +1989,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xhash_clear(assoc_usage_hash);
 		list_flush(cluster_down_list);
 		xhash_clear(qos_usage_hash);
-		list_flush(wckey_usage_list);
+		xhash_clear(wckey_usage_hash);
 		list_flush(resv_usage_list);
 		curr_start = curr_end;
 		curr_end = curr_start + add_sec;
@@ -2018,15 +2002,13 @@ end_it:
 
 	if (c_itr)
 		list_iterator_destroy(c_itr);
-	if (w_itr)
-		list_iterator_destroy(w_itr);
 	if (r_itr)
 		list_iterator_destroy(r_itr);
 
 	xhash_free_ptr(&assoc_usage_hash);
 	FREE_NULL_LIST(cluster_down_list);
 	xhash_free_ptr(&qos_usage_hash);
-	FREE_NULL_LIST(wckey_usage_list);
+	xhash_free_ptr(&wckey_usage_hash);
 	FREE_NULL_LIST(resv_usage_list);
 
 /* 	info("stop start %s", slurm_ctime2(&curr_start)); */
