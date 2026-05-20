@@ -90,6 +90,8 @@
 #include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
+#define MAX_SUBSCRIBERS 64
+
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, uid_t uid, pid_t remote_pid);
 static void *_wait_extern_pid(void *args);
@@ -628,6 +630,73 @@ static int _handle_stepmgr_resize_kill_steps(int fd, uid_t uid,
 	slurm_free_msg_members(&msg);
 
 done:
+	return rc;
+}
+
+static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t msg;
+	steps_drained_sub_msg_t *request = NULL;
+	return_code_msg_t rc_msg = { 0 };
+	steps_drained_sub_t *sub = NULL;
+
+	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg,
+					    REQUEST_STEPS_DRAINED_SUBSCRIBE,
+					    true)))
+		return rc;
+
+	request = msg.data;
+
+	if (!request->host || !request->host[0] || !request->port) {
+		rc_msg.return_code = ESLURM_INVALID_NODE_NAME;
+		goto reply;
+	}
+
+	sub = xmalloc(sizeof(*sub));
+	sub->host = xstrdup(request->host);
+	sub->port = request->port;
+	sub->tls_cert = xstrdup(request->tls_cert);
+	sub->protocol_version = msg.protocol_version;
+	slurm_set_addr(&sub->addr, sub->port, sub->host);
+
+	if (sub->addr.ss_family == AF_UNSPEC) {
+		error("REQUEST_STEPS_DRAINED_SUBSCRIBE: cannot resolve %s:%u",
+		      sub->host, sub->port);
+		destroy_steps_drained_sub(sub);
+		rc_msg.return_code = ESLURM_INVALID_NODE_NAME;
+		goto reply;
+	}
+
+	slurm_mutex_lock(&stepmgr_mutex);
+
+	if (!job_has_running_step(job_step_ptr) &&
+	    !job_step_ptr->pending_async_steps) {
+		slurm_mutex_unlock(&stepmgr_mutex);
+		destroy_steps_drained_sub(sub);
+		rc_msg.return_code = ESLURM_STEPS_DRAINED;
+		goto reply;
+	}
+
+	if (job_step_ptr->steps_drained_subs &&
+	    (list_count(job_step_ptr->steps_drained_subs) >= MAX_SUBSCRIBERS)) {
+		slurm_mutex_unlock(&stepmgr_mutex);
+		destroy_steps_drained_sub(sub);
+		rc_msg.return_code = EAGAIN;
+		goto reply;
+	}
+
+	if (!job_step_ptr->steps_drained_subs)
+		job_step_ptr->steps_drained_subs =
+			list_create(destroy_steps_drained_sub);
+
+	list_append(job_step_ptr->steps_drained_subs, sub);
+
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+reply:
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
+	slurm_free_msg_members(&msg);
 	return rc;
 }
 
@@ -2684,6 +2753,10 @@ slurmstepd_rpc_t stepd_proxy_rpcs[] = {
 	{
 		.msg_type = REQUEST_CANCEL_JOB_STEP,
 		.func = _handle_cancel_job_step,
+	},
+	{
+		.msg_type = REQUEST_STEPS_DRAINED_SUBSCRIBE,
+		.func = _handle_steps_drained_subscribe,
 	},
 	{
 		.msg_type = SRUN_JOB_COMPLETE,
