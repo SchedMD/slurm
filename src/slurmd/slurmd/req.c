@@ -365,6 +365,13 @@ static void _slurm_rpc_stepmgr_resize_kill_steps(slurm_msg_t *msg)
 	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
+static void _slurm_rpc_steps_drained_subscribe(slurm_msg_t *msg)
+{
+	steps_drained_sub_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
+}
+
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
@@ -5522,6 +5529,10 @@ slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_CANCEL_JOB_STEP,
 		.func = _slurm_rpc_job_step_kill,
+	},
+	{
+		.msg_type = REQUEST_STEPS_DRAINED_SUBSCRIBE,
+		.func = _slurm_rpc_steps_drained_subscribe,
 	},
 	{
 		.msg_type = SRUN_JOB_COMPLETE,
