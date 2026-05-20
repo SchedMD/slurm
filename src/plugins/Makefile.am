@@ -36,7 +36,8 @@ SUBDIRS = \
 	switch			\
 	task			\
 	tls			\
-	topology
+	topology		\
+	url_parser
 
 if WITH_CGROUP
 SUBDIRS += cgroup

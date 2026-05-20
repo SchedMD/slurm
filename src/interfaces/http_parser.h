@@ -44,6 +44,7 @@
 #define HTTP_PARSER_MAJOR_TYPE "http_parser"
 #define HTTP_PARSER_PREFIX HTTP_PARSER_MAJOR_TYPE "/"
 #define LIBHTTP_PARSER_PLUGIN "libhttp_parser"
+#define LLHTTP_PARSER_PLUGIN "llhttp_parser"
 
 typedef struct {
 	struct {

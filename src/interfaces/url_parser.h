@@ -41,6 +41,7 @@
 
 #define URL_PARSER_MAJOR_TYPE "url_parser"
 #define URL_PARSER_PREFIX URL_PARSER_MAJOR_TYPE "/"
+#define URL_PARSER_INTERNAL_PLUGIN "internal"
 
 /*
  * Load and initialize URL parser plugin

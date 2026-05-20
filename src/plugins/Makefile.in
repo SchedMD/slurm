@@ -210,7 +210,8 @@ DIST_SUBDIRS = accounting_storage acct_gather_energy \
 	cli_filter compress cred data_parser gpu gres hash http_auth \
 	http_parser jobacct_gather jobcomp job_submit metrics mcs mpi \
 	namespace node_features preempt prep priority proctrack sched \
-	select serializer site_factor switch task tls topology cgroup
+	select serializer site_factor switch task tls topology \
+	url_parser cgroup
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -275,8 +276,6 @@ HDF5_LIBS = @HDF5_LIBS@
 HDF5_TYPE = @HDF5_TYPE@
 HDF5_VERSION = @HDF5_VERSION@
 HPE_SLINGSHOT_CFLAGS = @HPE_SLINGSHOT_CFLAGS@
-HTTP_PARSER_CPPFLAGS = @HTTP_PARSER_CPPFLAGS@
-HTTP_PARSER_LDFLAGS = @HTTP_PARSER_LDFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -294,12 +293,16 @@ LDFLAGS = @LDFLAGS@
 LD_EMULATION = @LD_EMULATION@
 LIBCURL = @LIBCURL@
 LIBCURL_CPPFLAGS = @LIBCURL_CPPFLAGS@
+LIBHTTP_PARSER_CPPFLAGS = @LIBHTTP_PARSER_CPPFLAGS@
+LIBHTTP_PARSER_LDFLAGS = @LIBHTTP_PARSER_LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIB_SLURM = @LIB_SLURM@
 LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
+LLHTTP_PARSER_CPPFLAGS = @LLHTTP_PARSER_CPPFLAGS@
+LLHTTP_PARSER_LDFLAGS = @LLHTTP_PARSER_LDFLAGS@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
@@ -478,7 +481,8 @@ SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
 	data_parser gpu gres hash http_auth http_parser jobacct_gather \
 	jobcomp job_submit metrics mcs mpi namespace node_features \
 	preempt prep priority proctrack sched select serializer \
-	site_factor switch task tls topology $(am__append_1)
+	site_factor switch task tls topology url_parser \
+	$(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
