@@ -3428,6 +3428,7 @@ extern step_record_t *create_step_record(job_record_t *job_ptr,
 	step_ptr = xmalloc(sizeof(*step_ptr));
 
 	step_ptr->job_ptr    = job_ptr;
+	step_ptr->step_id.step_id = NO_VAL;
 	step_ptr->exit_code  = NO_VAL;
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
