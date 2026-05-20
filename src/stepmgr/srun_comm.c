@@ -129,6 +129,32 @@ typedef struct {
 	char *node_name;
 } srun_node_fail_args_t;
 
+/*
+ * list_delete_all callback: dispatch SRUN_STEPS_DRAINED (no body) to a
+ * subscriber and consume the entry. Always returns 1 so list_delete_all
+ * removes it after.
+ * IN x   - steps_drained_sub_t pointer
+ * IN arg - owning job_record_t pointer (for the r_uid)
+ * RET 1 always
+ */
+static int _dispatch_steps_drained(void *x, void *arg)
+{
+	steps_drained_sub_t *sub = x;
+	job_record_t *job_ptr = arg;
+	slurm_addr_t *addr = NULL;
+
+	xassert(sub->host);
+	xassert(sub->host[0]);
+	xassert(sub->port);
+
+	addr = xmalloc(sizeof(*addr));
+	*addr = sub->addr;
+
+	_srun_agent_launch(addr, sub->tls_cert, sub->host, SRUN_STEPS_DRAINED,
+			   NULL, job_ptr->user_id, sub->protocol_version);
+	return 1;
+}
+
 slurm_addr_t *_srun_set_addr(step_record_t *step_ptr)
 {
 	char *nodeaddr;
@@ -501,6 +527,21 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op)
 		msg_sent = true;
 	}
 	return msg_sent;
+}
+
+extern void srun_steps_drained(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	if (!job_ptr->steps_drained_subs)
+		return;
+	if (job_has_running_step(job_ptr))
+		return;
+	if (job_ptr->pending_async_steps)
+		return;
+
+	list_delete_all(job_ptr->steps_drained_subs, _dispatch_steps_drained,
+			job_ptr);
 }
 
 /*
