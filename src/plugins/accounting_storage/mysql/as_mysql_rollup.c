@@ -558,7 +558,7 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 				      time_t curr_start, time_t curr_end,
 				      time_t now, time_t use_start,
 				      local_tres_usage_t *loc_tres,
-				      char **query)
+				      char **query, char **query_pos)
 {
 	char start_char[256], end_char[256];
 	uint64_t total_used;
@@ -673,36 +673,38 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 	/*      slurm_ctime2(&loc_tres->start)); */
 	/* info("to %s", slurm_ctime2(&loc_tres->end)); */
 	if (*query)
-		xstrfmtcat(*query, ", (%ld, %ld, %ld, %u, %"PRIu64", "
-			   "%"PRIu64", %"PRIu64", %"PRIu64", "
-			   "%"PRIu64", %"PRIu64", %"PRIu64")",
-			   now, now, use_start, loc_tres->id,
-			   loc_tres->count,
-			   loc_tres->time_alloc,
-			   loc_tres->time_down,
-			   loc_tres->time_pd,
-			   loc_tres->time_idle,
-			   loc_tres->time_over,
-			   loc_tres->time_resv);
+		xstrfmtcatat(*query, query_pos,
+			     ", (%ld, %ld, %ld, %u, %"PRIu64", "
+			     "%"PRIu64", %"PRIu64", %"PRIu64", "
+			     "%"PRIu64", %"PRIu64", %"PRIu64")",
+			     now, now, use_start, loc_tres->id,
+			     loc_tres->count,
+			     loc_tres->time_alloc,
+			     loc_tres->time_down,
+			     loc_tres->time_pd,
+			     loc_tres->time_idle,
+			     loc_tres->time_over,
+			     loc_tres->time_resv);
 	else
-		xstrfmtcat(*query, "insert into \"%s_%s\" "
-			   "(creation_time, mod_time, "
-			   "time_start, id_tres, count, "
-			   "alloc_secs, down_secs, pdown_secs, "
-			   "idle_secs, over_secs, plan_secs) "
-			   "values (%ld, %ld, %ld, %u, %"PRIu64", "
-			   "%"PRIu64", %"PRIu64", %"PRIu64", "
-			   "%"PRIu64", %"PRIu64", %"PRIu64")",
-			   cluster_name, cluster_hour_table,
-			   now, now,
-			   use_start, loc_tres->id,
-			   loc_tres->count,
-			   loc_tres->time_alloc,
-			   loc_tres->time_down,
-			   loc_tres->time_pd,
-			   loc_tres->time_idle,
-			   loc_tres->time_over,
-			   loc_tres->time_resv);
+		xstrfmtcatat(*query, query_pos,
+			     "insert into \"%s_%s\" "
+			     "(creation_time, mod_time, "
+			     "time_start, id_tres, count, "
+			     "alloc_secs, down_secs, pdown_secs, "
+			     "idle_secs, over_secs, plan_secs) "
+			     "values (%ld, %ld, %ld, %u, %"PRIu64", "
+			     "%"PRIu64", %"PRIu64", %"PRIu64", "
+			     "%"PRIu64", %"PRIu64", %"PRIu64")",
+			     cluster_name, cluster_hour_table,
+			     now, now,
+			     use_start, loc_tres->id,
+			     loc_tres->count,
+			     loc_tres->time_alloc,
+			     loc_tres->time_down,
+			     loc_tres->time_pd,
+			     loc_tres->time_idle,
+			     loc_tres->time_over,
+			     loc_tres->time_resv);
 
 	return;
 }
@@ -713,7 +715,7 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 				  time_t now, local_cluster_usage_t *c_usage)
 {
 	int rc = SLURM_SUCCESS;
-	char *query = NULL;
+	char *query = NULL, *query_pos = NULL;
 	list_itr_t *itr;
 	local_tres_usage_t *loc_tres;
 
@@ -726,23 +728,24 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	while ((loc_tres = list_next(itr))) {
 		_setup_cluster_tres_usage(mysql_conn, cluster_name,
 					  curr_start, curr_end, now,
-					  c_usage->start, loc_tres, &query);
+					  c_usage->start, loc_tres, &query,
+					  &query_pos);
 	}
 	list_iterator_destroy(itr);
 
 	if (!query)
 		return rc;
 
-	xstrfmtcat(query,
-		   " on duplicate key update "
-		   "mod_time=%ld, count=VALUES(count), "
-		   "alloc_secs=VALUES(alloc_secs), "
-		   "down_secs=VALUES(down_secs), "
-		   "pdown_secs=VALUES(pdown_secs), "
-		   "idle_secs=VALUES(idle_secs), "
-		   "over_secs=VALUES(over_secs), "
-		   "plan_secs=VALUES(plan_secs)",
-		   now);
+	xstrfmtcatat(query, &query_pos,
+		     " on duplicate key update "
+		     "mod_time=%ld, count=VALUES(count), "
+		     "alloc_secs=VALUES(alloc_secs), "
+		     "down_secs=VALUES(down_secs), "
+		     "pdown_secs=VALUES(pdown_secs), "
+		     "idle_secs=VALUES(idle_secs), "
+		     "over_secs=VALUES(over_secs), "
+		     "plan_secs=VALUES(plan_secs)",
+		     now);
 
 	/* Spacing out the inserts here instead of doing them
 	   all at once in the end proves to be faster.  Just FYI
