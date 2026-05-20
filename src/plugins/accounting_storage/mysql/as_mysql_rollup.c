@@ -1491,15 +1491,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		/* now get the jobs during this time only  */
 		query = xstrdup_printf("select %s from \"%s_%s\" as job "
-				       "where (job.time_eligible and "
-				       "job.time_eligible < %ld and "
-				       "(job.time_end >= %ld or "
-				       "job.time_end = 0)) "
-				       "group by job.job_db_inx "
-				       "order by job.id_assoc, "
-				       "job.time_eligible",
+				       "where job.time_end = 0 and "
+				       "job.time_eligible > 0 and "
+				       "job.time_eligible < %ld "
+				       "union all "
+				       "select %s from \"%s_%s\" as job "
+				       "where job.time_end > 0 and "
+				       "job.time_end >= %ld and "
+				       "job.time_eligible > 0 and "
+				       "job.time_eligible < %ld",
 				       job_str, cluster_name, job_table,
-				       curr_end, curr_start);
+				       curr_end, job_str, cluster_name,
+				       job_table, curr_start, curr_end);
 
 		DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
