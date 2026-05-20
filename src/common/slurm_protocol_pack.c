@@ -8895,6 +8895,42 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_steps_drained_sub_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	steps_drained_sub_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->host, buffer);
+		pack16(msg->port, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		packstr(msg->tls_cert, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, smsg->protocol_version);
+	}
+}
+
+static int _unpack_steps_drained_sub_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	steps_drained_sub_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version < SLURM_26_11_PROTOCOL_VERSION)
+		goto unpack_error;
+
+	safe_unpackstr(&msg->host, buffer);
+	safe_unpack16(&msg->port, buffer);
+	safe_unpack_step_id_members(&msg->step_id, buffer,
+				    smsg->protocol_version);
+	safe_unpackstr(&msg->tls_cert, buffer);
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_steps_drained_sub_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_node_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	node_info_request_msg_t *msg = smsg->data;
@@ -12382,6 +12418,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_JOB_STEP_PIDS:
 		_pack_step_id_msg(msg, buffer);
 		break;
+	case REQUEST_STEPS_DRAINED_SUBSCRIBE:
+		_pack_steps_drained_sub_msg(msg, buffer);
+		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
 				       buffer,
@@ -12908,6 +12947,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
 		rc = _unpack_step_id_msg(msg, buffer);
+		break;
+	case REQUEST_STEPS_DRAINED_SUBSCRIBE:
+		rc = _unpack_steps_drained_sub_msg(msg, buffer);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		rc = unpack_slurm_step_layout(
