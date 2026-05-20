@@ -50,7 +50,7 @@ typedef struct {
  */
 #define ENTRY(_e) { _e, #_e }
 
-const static entry_t msg_types[] = {
+static const entry_t msg_types[] = {
 	ENTRY(REQUEST_NODE_REGISTRATION_STATUS),
 	ENTRY(MESSAGE_NODE_REGISTRATION_STATUS),
 	ENTRY(REQUEST_RECONFIGURE),
