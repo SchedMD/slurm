@@ -44,6 +44,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -131,8 +132,50 @@ static void _connection_fini_callback(void *arg)
 {
 	slurmdbd_conn_t *dbd_conn = (slurmdbd_conn_t *) arg;
 	bool stay_locked = false;
+	int tries = 0;
 
-	slurm_mutex_lock(&dbd_conn->pcon_send_lock);
+	/*
+	 * If we are sending updates to this ctld, it is holding
+	 * pcon_send_lock and is in slurm_persist_conn_open() -- either
+	 * still inside connect() (pcon_send->last_fd not yet published)
+	 * or already past it and sitting in poll() on the pcon_send
+	 * socket. The ctld has disconnected (that is why we are here)
+	 * so the socket will never get a reply. Wake the push by
+	 * shutting down the published fd. Clearing PERSIST_FLAG_RECONNECT
+	 * first prevents _slurm_persist_recv_msg() from reopening the
+	 * connection and re-wedging on a fresh fd. The push errors out
+	 * of slurm_persist_conn_open(), releases pcon_send_lock, and we
+	 * proceed with destroy.
+	 *
+	 * Reading pcon_send->last_fd lock-free is safe because it is a
+	 * scalar published by _open_persist_conn() and cleared to -1 by
+	 * _conn_destroy() before the conn struct is freed -- so unlike
+	 * dereferencing pcon_send->conn, this cannot land on a freed
+	 * TLS conn struct.
+	 *
+	 * Loop while we cannot acquire the lock: last_fd is only valid
+	 * once the socket has been created, so during connect() it may
+	 * be -1 for up to a TCP SYN timeout. Re-attempt the shutdown
+	 * each pass so we wake the push as soon as the fd is published.
+	 */
+	if (dbd_conn->pcon_send)
+		dbd_conn->pcon_send->flags &= ~PERSIST_FLAG_RECONNECT;
+	while (pthread_mutex_trylock(&dbd_conn->pcon_send_lock) == EBUSY) {
+		if (dbd_conn->pcon_send) {
+			int fd = dbd_conn->pcon_send->last_fd;
+			if (fd > 0) {
+				debug("Terminating send to the slurmctld on cluster %s. It is restarting or shutting down.",
+				      dbd_conn->pcon->cluster_name);
+				shutdown(fd, SHUT_RDWR);
+			}
+		}
+		if (tries++ >= 100) {
+			slurm_mutex_lock(&dbd_conn->pcon_send_lock);
+			break;
+		}
+		usleep(10000); /* 10ms */
+	}
+
 	slurm_persist_conn_destroy(dbd_conn->pcon_send);
 	dbd_conn->pcon_send = NULL;
 	slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
