@@ -85,6 +85,10 @@ typedef struct {
 	pthread_t thread_id;
 	int timeout;
 	void *conn; /* interfaces/conn data */
+	int last_fd; /* most recent fd backing conn, valid while conn != NULL;
+		      * reset to -1 before conn destroy. Lock-free readable
+		      * by external wake/shutdown paths that cannot safely
+		      * deref conn. 0 means never opened. */
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
 } persist_conn_t;

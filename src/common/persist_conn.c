@@ -598,6 +598,13 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 
 	fd = conn_g_get_fd(persist_conn->conn);
 
+	/*
+	 * Publish the fd in a stable scalar field readable lock-free by
+	 * external wake paths. last_fd is cleared back to -1 in
+	 * _conn_destroy() before the conn is torn down.
+	 */
+	persist_conn->last_fd = fd;
+
 	fd_set_nonblocking(fd);
 	net_set_keep_alive(fd);
 
