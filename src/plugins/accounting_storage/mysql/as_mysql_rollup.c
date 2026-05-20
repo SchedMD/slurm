@@ -151,16 +151,6 @@ static int _find_loc_tres(void *x, void *key)
 	return 0;
 }
 
-static int _find_id_usage(void *x, void *key)
-{
-	local_id_usage_t *loc = (local_id_usage_t *)x;
-	uint32_t id = *(uint32_t *)key;
-
-	if (loc->id == id)
-		return 1;
-	return 0;
-}
-
 /*
  * xhash identify callback for qos_usage entries keyed on the contiguous
  * (id, id_alt) pair in local_id_usage_t.
@@ -175,6 +165,17 @@ static void _qos_usage_id(void *item, const void **key, uint32_t *key_len)
 	 */
 	*key = &u->id;
 	*key_len = sizeof(u->id) + sizeof(u->id_alt);
+}
+
+/*
+ * xhash identify callback for usage entries keyed only on id
+ * (assoc and wckey hashes).
+ */
+static void _id_usage_id(void *item, const void **key, uint32_t *key_len)
+{
+	local_id_usage_t *u = item;
+	*key = &u->id;
+	*key_len = sizeof(u->id);
 }
 
 static void _remove_job_tres_time_from_cluster(list_t *c_tres, list_t *j_tres,
@@ -1345,11 +1346,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	char *query = NULL, *query_pos = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	list_itr_t *a_itr = NULL;
 	list_itr_t *c_itr = NULL;
 	list_itr_t *w_itr = NULL;
 	list_itr_t *r_itr = NULL;
-	list_t *assoc_usage_list = NULL;
+	xhash_t *assoc_usage_hash = NULL;
 	list_t *cluster_down_list = NULL;
 	xhash_t *qos_usage_hash = NULL;
 	list_t *wckey_usage_list = NULL;
@@ -1416,7 +1416,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				      SLURMDB_PURGE_HOURS);
 	}
 
-	assoc_usage_list = list_create(_destroy_local_id_usage);
+	assoc_usage_hash = xhash_init(_id_usage_id, _destroy_local_id_usage);
 	cluster_down_list = list_create(_destroy_local_cluster_usage);
 	qos_usage_hash = xhash_init(_qos_usage_id, _destroy_local_id_usage);
 	wckey_usage_list = list_create(_destroy_local_id_usage);
@@ -1460,12 +1460,10 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 /* 	info("begin start %s", slurm_ctime2(&curr_start)); */
 /* 	info("begin end %s", slurm_ctime2(&curr_end)); */
-	a_itr = list_iterator_create(assoc_usage_list);
 	c_itr = list_iterator_create(cluster_down_list);
 	w_itr = list_iterator_create(wckey_usage_list);
 	r_itr = list_iterator_create(resv_usage_list);
 	while (curr_start < end) {
-		int last_id = -1;
 		int last_wckeyid = -1;
 		id_usage_walk_arg_t arg = {
 			.cluster_name = cluster_name,
@@ -1601,11 +1599,12 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 */
 			q_usage = _check_q_usage(qos_usage_hash, &id_usage);
 
-			if (last_id != assoc_id) {
-				a_usage = xmalloc(sizeof(local_id_usage_t));
+			a_usage = xhash_get(assoc_usage_hash, &assoc_id,
+					    sizeof(assoc_id));
+			if (!a_usage) {
+				a_usage = xmalloc(sizeof(*a_usage));
 				a_usage->id = assoc_id;
-				list_append(assoc_usage_list, a_usage);
-				last_id = assoc_id;
+				xhash_add(assoc_usage_hash, a_usage);
 				/* a_usage->loc_tres is made later,
 				   don't do it here.
 				*/
@@ -1888,20 +1887,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 							0);
 					}
 
-					if ((last_id != associd) &&
-					    !(a_usage = list_find_first(
-						      assoc_usage_list,
-						      _find_id_usage,
-						      &associd))) {
+					a_usage = xhash_get(assoc_usage_hash,
+							    &associd,
+							    sizeof(associd));
+					if (!a_usage) {
 						a_usage = xmalloc(
-							sizeof(local_id_usage_t));
+							sizeof(*a_usage));
 						a_usage->id = associd;
-						list_append(assoc_usage_list,
-							    a_usage);
 						a_usage->loc_tres = list_create(
 							_destroy_local_tres_usage);
+						xhash_add(assoc_usage_hash,
+							  a_usage);
 					}
-					last_id = associd;
 
 					_add_time_tres(a_usage->loc_tres,
 						       TIME_ALLOC, loc_tres->id,
@@ -1948,17 +1945,14 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		list_iterator_reset(a_itr);
-		while ((a_usage = list_next(a_itr)))
-			_create_id_usage_insert(cluster_name, ASSOC_TABLES,
-						curr_start, now,
-						a_usage, &query, &query_pos);
-		if (query) {
+		arg.type = ASSOC_TABLES;
+		xhash_walk(assoc_usage_hash, _id_usage_walk, &arg);
+		if (arg.query) {
 			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
-			         query);
-			rc = mysql_db_query(mysql_conn, query);
-			xfree(query);
-			query_pos = NULL;
+			         arg.query);
+			rc = mysql_db_query(mysql_conn, arg.query);
+			xfree(arg.query);
+			arg.query_pos = NULL;
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
 				goto end_it;
@@ -2008,7 +2002,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		q_usage     = NULL;
 		w_usage     = NULL;
 
-		list_flush(assoc_usage_list);
+		xhash_clear(assoc_usage_hash);
 		list_flush(cluster_down_list);
 		xhash_clear(qos_usage_hash);
 		list_flush(wckey_usage_list);
@@ -2022,8 +2016,6 @@ end_it:
 	xfree(job_str);
 	_destroy_local_cluster_usage(c_usage);
 
-	if (a_itr)
-		list_iterator_destroy(a_itr);
 	if (c_itr)
 		list_iterator_destroy(c_itr);
 	if (w_itr)
@@ -2031,7 +2023,7 @@ end_it:
 	if (r_itr)
 		list_iterator_destroy(r_itr);
 
-	FREE_NULL_LIST(assoc_usage_list);
+	xhash_free_ptr(&assoc_usage_hash);
 	FREE_NULL_LIST(cluster_down_list);
 	xhash_free_ptr(&qos_usage_hash);
 	FREE_NULL_LIST(wckey_usage_list);
