@@ -1,8 +1,21 @@
-Usage: swait [OPTIONS] [<jobid>]
+Usage: swait [OPTIONS] [<jobid>[_<task>] | s<sluid>]
 
 Block until a job's running steps and pending --async steps complete.
 
+If no job id is given, swait reads $SLURM_JOB_SLUID, then $SLURM_JOB_ID.
+The target job must have been launched with stepmgr enabled.
+
 Options:
-  -V, --version           Print Slurm version and exit
-  -h, --help              Print this help and exit
-      --usage             Print short usage and exit
+  -Q, --quiet             suppress informational messages
+      --timeout=SECS      give up after SECS seconds
+  -v, --verbose           verbosity level
+  -V, --version           output version information and exit
+
+Help options:
+  -h, --help              show this help message
+      --usage             display a brief summary of swait options
+
+Exit status:
+  0  All regular steps have ended.
+  1  --timeout expired.
+  2  swait encountered an error.

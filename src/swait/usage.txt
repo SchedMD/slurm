@@ -1,1 +1,1 @@
-Usage: swait [-Vh] [--usage] [<jobid>]
+Usage: swait [-hQvV] [--timeout=SECS] [--usage] [<jobid>[_<task>] | s<sluid>]
