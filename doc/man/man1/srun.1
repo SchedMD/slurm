@@ -123,7 +123,8 @@ with the \fBsrun\fR command that submitted it. The step is launched and
 supervised by the job's step manager, which will queue the step for later
 execution if resources are not currently available. The \fBsrun\fR command
 returns immediately after the step is accepted by the controller and reports
-its stepid, without waiting for the step to start or finish.
+its step ID, without waiting for the step to start or finish.
+See \fB\-\-parsable\fR for details on output format.
 
 Output is written directly on the compute nodes to the files named by
 \fB\-\-output\fR and \fB\-\-error\fR; if neither is given, \fIslurm-%J.out\fR
@@ -935,8 +936,8 @@ This job can begin execution after the specified jobs have terminated
 in some failed state (non\-zero exit code, node failure, timed out, etc).
 This job must be submitted while the specified job is still active or within
 \fBMinJobAge\fR seconds after the specified job has ended.
-If the dependent job id is not found and is on the same cluster as the job
-submission, the job is rejected. If the dependent job id is not found and is on
+If the dependent job ID is not found and is on the same cluster as the job
+submission, the job is rejected. If the dependent job ID is not found and is on
 a different cluster from the job submission, the dependency is marked as
 failed.
 .IP
@@ -947,8 +948,8 @@ This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
 This job must be submitted while the specified job is still active or within
 \fBMinJobAge\fR seconds after the specified job has ended.
-If the dependent job id is not found and is on the same cluster as the job
-submission, the job is rejected. If the dependent job id is not found and is on
+If the dependent job ID is not found and is on the same cluster as the job
+submission, the job is rejected. If the dependent job ID is not found and is on
 a different cluster from the job submission, the dependency is marked as
 failed.
 .IP
@@ -1722,7 +1723,7 @@ a terminal is not possible. This option applies to job and step allocations.
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job. The specified name will appear along with
-the job id number when querying running jobs on the system. The default
+the job ID number when querying running jobs on the system. The default
 is the supplied \fBexecutable\fR program's name. \fBNOTE\fR: This information
 may be written to the slurm_jobacct.log file. This file is space delimited
 so if a space is used in the \fIjobname\fR name it will cause problems in
@@ -1732,7 +1733,7 @@ properly displaying the contents of the slurm_jobacct.log file when the
 
 .TP
 \fB\-\-jobid\fR=<\fIjobid\fR>
-Initiate a job step under an already allocated job with job id \fIid\fR.
+Initiate a job step under an already allocated job with job ID \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOB_ID environment variable was set. This option applies to step
 allocations.
@@ -2637,6 +2638,16 @@ application performance will likely suffer due to competition for resources.
 This option applies to job allocations.
 
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-exclusive\fR.
+.IP
+
+.TP
+\fB\-\-parsable\fR
+Outputs only the step ID (\fI<jobid>.<stepid>\fR) on a single line of stdout.
+Suppresses the leading "Submitted step " text. Analogous to \fBsbatch
+\-\-parsable\fR, but includes a step ID alongside the job ID.
+Errors are still printed normally to stderr. Requires \fB\-\-async\fR.
+Note that \fB\-\-quiet\fR suppresses the step ID along with the other
+informational messages.
 .IP
 
 .TP

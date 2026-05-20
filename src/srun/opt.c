@@ -1033,6 +1033,11 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (opt.parsable && !sropt.async) {
+		error("--parsable requires --async.");
+		verified = false;
+	}
+
 	if (!_validate_ignore_signals())
 		verified = false;
 
@@ -1552,7 +1557,7 @@ static void _usage(void)
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
-"            [--async]\n"
+"            [--async] [--parsable]\n"
 "            executable [args...]\n");
 
 }
@@ -1627,6 +1632,7 @@ static void _help(void)
 "      --overlap               Allow other steps to overlap this step\n"
 "      --het-group=value       hetjob component allocation(s) in which to launch\n"
 "                              application\n"
+"      --parsable              print only the step ID (requires --async)\n"
 "  -p, --partition=partition   partition requested\n"
 "      --power=flags           power management options\n"
 "      --priority=value        set the priority of the job to value\n"
