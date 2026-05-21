@@ -990,7 +990,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 	list_itr_t *itr;
 	pthread_mutex_t rolledup_lock = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t rolledup_cond;
-	//DEF_TIMERS;
+	DEF_TIMERS;
 
 	xassert(rollup_stats_list_in);
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -1001,7 +1001,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 	slurm_mutex_init(&rolledup_lock);
 	slurm_cond_init(&rolledup_cond, NULL);
 
-	//START_TIMER;
+	START_TIMER;
 	xassert(!*rollup_stats_list_in);
 	*rollup_stats_list_in = list_create(slurmdb_destroy_rollup_stats);
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
@@ -1052,11 +1052,10 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 		debug2("Got %d of %d rolled up", rolledup, roll_started);
 	}
 	slurm_mutex_unlock(&rolledup_lock);
-	debug2("Everything rolled up");
+	END_TIMER;
+	debug("Everything rolled up in %s", TIMER_STR());
 	slurm_mutex_destroy(&rolledup_lock);
 	slurm_cond_destroy(&rolledup_cond);
-	/* END_TIMER; */
-	/* info("total time was %s", TIME_STR); */
 
 	slurm_mutex_unlock(&usage_rollup_lock);
 
