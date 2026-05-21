@@ -90,6 +90,3 @@ int	 get_memset(nodemask_t *mask, stepd_step_rec_t *step);
 void	 slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *step);
 uint16_t slurm_get_numa_node(uint16_t cpuid);
 #endif
-
-/*** from schedutils.c ***/
-int	str_to_cnt(const char* str);

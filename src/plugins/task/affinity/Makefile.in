@@ -186,7 +186,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 task_affinity_la_LIBADD =
 am_task_affinity_la_OBJECTS = affinity.lo dist_tasks.lo numa.lo \
-	schedutils.lo task_affinity.lo
+	task_affinity.lo
 task_affinity_la_OBJECTS = $(am_task_affinity_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -213,7 +213,7 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/affinity.Plo \
 	./$(DEPDIR)/dist_tasks.Plo ./$(DEPDIR)/numa.Plo \
-	./$(DEPDIR)/schedutils.Plo ./$(DEPDIR)/task_affinity.Plo
+	./$(DEPDIR)/task_affinity.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -527,7 +527,6 @@ task_affinity_la_SOURCES = \
 	affinity.c affinity.h \
 	dist_tasks.c dist_tasks.h \
 	numa.c \
-	schedutils.c \
 	task_affinity.c
 
 task_affinity_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS)
@@ -610,7 +609,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/affinity.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/numa.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/schedutils.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_affinity.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -743,7 +741,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/affinity.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/numa.Plo
-	-rm -f ./$(DEPDIR)/schedutils.Plo
 	-rm -f ./$(DEPDIR)/task_affinity.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -793,7 +790,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/affinity.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/numa.Plo
-	-rm -f ./$(DEPDIR)/schedutils.Plo
 	-rm -f ./$(DEPDIR)/task_affinity.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
