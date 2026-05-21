@@ -116,9 +116,11 @@ void* xhash_add(xhash_t* table, void* item)
 
 	if (!table || !item)
 		return NULL;
+	table->identify(item, &key, &keylen);
+	if (xhash_find(table, key, keylen))
+		return NULL;
 	hash_item = xmalloc(sizeof(xhash_item_t));
 	hash_item->item    = item;
-	table->identify(item, &key, &keylen);
 	HASH_ADD_KEYPTR(hh, table->ht, key, keylen, hash_item);
 	++table->count;
 	return hash_item->item;

@@ -86,7 +86,8 @@ void* xhash_get_str(xhash_t* table, const char* key);
  * @param item is the user item to add. It has to be initialized in order for
  *             the idfunc function to be able to calculate the final unique
  *             key string associated with it.
- * @returns item or NULL in case of error.
+ * @returns item, or NULL if table/item are invalid or the key is already
+ *          present in the table.
  */
 void* xhash_add(xhash_t* table, void* item);
 
