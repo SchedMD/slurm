@@ -45,6 +45,8 @@
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"
 
+#define AUTH_PLUGIN_TYPE "auth"
+
 /*
  * This should be equal to MUNGE_UID_ANY
  * do not restrict decode via uid
