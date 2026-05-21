@@ -271,6 +271,29 @@ START_TEST(test_edge_keys)
 }
 END_TEST
 
+START_TEST(test_duplicate_add)
+{
+	xhash_t *ht = xhash_init(hashable_identify, NULL);
+	hashable_t a = { "k", 1 };
+	hashable_t b = { "k", 2 };
+	hashable_t c = { "other", 3 };
+
+	ck_assert_msg(xhash_add(ht, &a) == &a,
+		      "first add returned wrong value");
+	ck_assert_msg(xhash_add(ht, &c) == &c, "distinct-key add failed");
+	ck_assert_msg(xhash_count(ht) == 2, "bad count after first two adds");
+
+	/* Duplicate key must be rejected with NULL and not displace original */
+	ck_assert_msg(xhash_add(ht, &b) == NULL,
+		      "duplicate add did not return NULL");
+	ck_assert_msg(xhash_count(ht) == 2, "duplicate add altered count");
+	ck_assert_msg(xhash_get_str(ht, "k") == &a,
+		      "duplicate add displaced original");
+
+	xhash_free(ht);
+}
+END_TEST
+
 /*****************************************************************************
  * TEST SUITE                                                                *
  ****************************************************************************/
@@ -287,6 +310,7 @@ Suite *xhash_suite(void)
 	tcase_add_test(tc_core, test_count);
 	tcase_add_test(tc_core, test_walk);
 	tcase_add_test(tc_core, test_edge_keys);
+	tcase_add_test(tc_core, test_duplicate_add);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
