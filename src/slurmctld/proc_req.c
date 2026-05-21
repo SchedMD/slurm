@@ -5592,7 +5592,7 @@ static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 		uint32_t rpc_count = 0, user_count = 1;
 		uint8_t queue_enabled = rpc_queue_enabled();
 
-		while (rpc_type_id[rpc_count])
+		while ((rpc_count < RPC_TYPE_SIZE) && rpc_type_id[rpc_count])
 			rpc_count++;
 		pack32(rpc_count, buffer);
 		pack16_array(rpc_type_id, rpc_count, buffer);
@@ -5608,7 +5608,7 @@ static void _pack_rpc_stats(buf_t *buffer, uint16_t protocol_version)
 		}
 
 		/* user_count starts at 1 as root is in index 0 */
-		while (rpc_user_id[user_count])
+		while ((user_count < RPC_USER_SIZE) && rpc_user_id[user_count])
 			user_count++;
 		pack32(user_count, buffer);
 		pack32_array(rpc_user_id, user_count, buffer);
