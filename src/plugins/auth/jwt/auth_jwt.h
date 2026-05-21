@@ -71,4 +71,7 @@ extern void init_hs256(auth_context_t *ctxt, const char *auth_info);
 
 extern void parse_auth_params(auth_context_t *ctxt, const char *auth_info);
 
+extern void cred_set_token(auth_token_t *cred, const char *token,
+			   const char *username);
+
 #endif
