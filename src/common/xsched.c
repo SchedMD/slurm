@@ -153,11 +153,9 @@ extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 	return rval;
 }
 
-extern xcpuset_t *xgetaffinity(pid_t pid)
+static int _getaffinity(pid_t pid, xcpuset_t *mask)
 {
-	int rval;
-	xcpuset_t *mask = xcpuset_alloc();
-
+	errno = 0;
 	/*
 	 * The FreeBSD cpuset API is a superset of the Linux API.
 	 * In addition to PIDs, it supports threads, interrupts,
@@ -167,16 +165,37 @@ extern xcpuset_t *xgetaffinity(pid_t pid)
 	 * Linux sched_*etaffinity() uses 0 for this.
 	 */
 #ifdef __FreeBSD__
-	rval = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
+	return cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
 				  mask->size, &mask->mask);
 #else
-	rval = sched_getaffinity(pid, mask->size, &mask->mask);
+	return sched_getaffinity(pid, mask->size, &mask->mask);
 #endif
+}
+
+extern xcpuset_t *xgetaffinity(pid_t pid)
+{
+	int rval;
+	static size_t max_cpus = CPU_SETSIZE;
+	xcpuset_t *mask = NULL;
+
+	while (true) {
+		xrealloc(mask, (2 * sizeof(size_t)) + CPU_ALLOC_SIZE(max_cpus));
+		mask->max_cpus = max_cpus;
+		mask->size = CPU_ALLOC_SIZE(max_cpus);
+
+		rval = _getaffinity(pid, mask);
+
+		if ((rval < 0) && (errno == EINVAL)) {
+			max_cpus *= 2;
+			continue;
+		}
+
+		break;
+	}
+
 	if (rval) {
-		char *mstr = task_cpuset_to_str(mask);
-		verbose("sched_getaffinity(%d,%zu,0x%s) failed with status %d",
-			pid, mask->size, mstr, rval);
-		xfree(mstr);
+		verbose("sched_getaffinity(%d,%zu) failed with status %d",
+			pid, mask->size, rval);
 	} else if (get_log_level() >= LOG_LEVEL_DEBUG3) {
 		char *mstr = task_cpuset_to_str(mask);
 		debug3("sched_getaffinity(%d) = 0x%s", pid, mstr);
