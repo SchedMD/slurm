@@ -44,6 +44,13 @@ typedef cpuset_t cpu_set_t;
 
 #include <sched.h>
 
+typedef struct {
+	size_t max_cpus;
+	size_t size;
+	/* the mask is technically cpu_set_t[] */
+	cpu_set_t mask; /* MUST BE LAST */
+} xcpuset_t;
+
 /* The size to represent a cpu_set_t as a hex string (including null) */
 #define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
 
