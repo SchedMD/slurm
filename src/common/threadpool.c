@@ -862,8 +862,11 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 	};
 
 	if (threadpool.enabled) {
-		if (!detached)
+		if (!detached) {
+			slurm_mutex_lock(&threadpool.mutex);
 			list_append(threadpool.attached, thread);
+			slurm_mutex_unlock(&threadpool.mutex);
+		}
 
 		if (_assign(thread, id_ptr, caller))
 			return SLURM_SUCCESS;
