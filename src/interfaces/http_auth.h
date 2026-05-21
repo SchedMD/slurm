@@ -43,13 +43,13 @@
 
 typedef enum {
 	HTTP_AUTH_PLUGIN_INVALID = 0,
-	HTTP_AUTH_PLUGIN_JWT = 100,
 	HTTP_AUTH_PLUGIN_LOCAL = 101,
 	HTTP_AUTH_PLUGIN_INVALID_MAX,
 	HTTP_AUTH_PLUGIN_ANY = INFINITE16,
 } http_auth_plugin_id_t;
 
-extern int http_auth_g_init(const char *plugin_type, plugrack_foreach_t listf);
+extern int http_auth_g_init(const char *auth_info, const char *plugin_type,
+			    plugrack_foreach_t listf);
 extern void http_auth_g_fini(void);
 
 /*

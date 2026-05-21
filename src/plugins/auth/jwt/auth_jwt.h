@@ -36,6 +36,42 @@
 #ifndef _AUTH_JWT_H_
 #define _AUTH_JWT_H_
 
+#include "stdbool.h"
+
+#include "src/common/data.h"
+#include "src/common/pack.h"
+
+typedef struct auth_token_s auth_token_t;
+
+typedef struct {
+	char *claim_field;
+	bool use_client_ids;
+	bool use_client_ids_only;
+	data_t *jwks;
+	buf_t *key;
+} auth_context_t;
+
 extern char *pem_from_mod_exp(const char *mod, const char *exp);
+
+extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred);
+
+extern auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
+				   int dlen);
+
+extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
+			 gid_t *gid);
+
+extern int auth_p_thread_config(const char *token, const char *username);
+
+extern void auth_p_destroy(auth_token_t *cred);
+
+extern void init_jwks(auth_context_t *ctxt, const char *auth_info);
+
+extern void init_hs256(auth_context_t *ctxt, const char *auth_info);
+
+extern void parse_auth_params(auth_context_t *ctxt, const char *auth_info);
+
+extern void cred_set_token(auth_token_t *cred, const char *token,
+			   const char *username);
 
 #endif
