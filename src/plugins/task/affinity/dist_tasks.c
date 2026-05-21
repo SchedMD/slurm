@@ -203,7 +203,7 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 			 char **err_msg)
 {
 	char *tmp_map, *save_ptr = NULL, *tok;
-	cpu_set_t avail_cpus;
+	xcpuset_t *avail_cpus = NULL;
 	bool superset = true;
 	int rc = SLURM_SUCCESS;
 
@@ -215,12 +215,13 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	CPU_ZERO(&avail_cpus);
-	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
+	avail_cpus = xcpuset_alloc();
+	if (task_str_to_cpuset(&avail_cpus->mask, avail_mask)) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind map";
 		error("%s", err);
 		if (err_msg)
 			xstrfmtcat(*err_msg, "%s", err);
+		xfree(avail_cpus);
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
@@ -228,7 +229,7 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	tok = strtok_r(tmp_map, ",", &save_ptr);
 	while (tok) {
 		int i = atoi(tok);
-		if (!CPU_ISSET(i, &avail_cpus)) {
+		if (!XCPU_ISSET(i, avail_cpus)) {
 			/* The task's CPU map is completely invalid.
 			 * Disable CPU map. */
 			superset = false;
@@ -246,6 +247,8 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 				   avail_mask);
 		rc = ESLURMD_CPU_BIND_ERROR;
 	}
+
+	xfree(avail_cpus);
 	return rc;
 }
 
