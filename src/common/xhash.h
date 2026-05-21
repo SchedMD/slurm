@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  xtree.h - functions used for hash table manament
+ *  xhash.h - functions used for hash table management
  *****************************************************************************
  *  Copyright (C) 2012 CEA/DAM/DIF
  *
