@@ -256,7 +256,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 			  char **err_msg)
 {
 	char *new_mask = NULL, *save_ptr = NULL, *tok;
-	cpu_set_t avail_cpus, task_cpus;
+	cpu_set_t avail_cpus;
 	bool superset = true;
 	int rc = SLURM_SUCCESS;
 
@@ -281,22 +281,23 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	while (tok) {
 		int i, overlaps = 0;
 		char mask_str[CPU_SET_HEX_STR_SIZE];
-		CPU_ZERO(&task_cpus);
-		if (task_str_to_cpuset(&task_cpus, tok)) {
+		xcpuset_t *task_cpus = xcpuset_alloc();
+		if (task_str_to_cpuset(&task_cpus->mask, tok)) {
 			char *err = "Failed to convert cpu bind string into hex for CPU bind mask";
 			error("%s", err);
 			if (err_msg)
 				xstrfmtcat(*err_msg, "%s", err);
 			xfree(new_mask);
+			xfree(task_cpus);
 			return ESLURMD_CPU_BIND_ERROR;
 		}
 		for (i = 0; i < CPU_SETSIZE; i++) {
-			if (!CPU_ISSET(i, &task_cpus))
+			if (!XCPU_ISSET(i, task_cpus))
 				continue;
 			if (CPU_ISSET(i, &avail_cpus)) {
 				overlaps++;
 			} else {
-				CPU_CLR(i, &task_cpus);
+				XCPU_CLR(i, task_cpus);
 				superset = false;
 			}
 		}
@@ -305,13 +306,14 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 			 * Give it all allowed CPUs. */
 			for (i = 0; i < CPU_SETSIZE; i++) {
 				if (CPU_ISSET(i, &avail_cpus))
-					CPU_SET(i, &task_cpus);
+					XCPU_SET(i, task_cpus);
 			}
 		}
-		task_cpuset_to_str(&task_cpus, mask_str);
+		task_cpuset_to_str(&task_cpus->mask, mask_str);
 		if (new_mask)
 			xstrcat(new_mask, ",");
 		xstrcat(new_mask, mask_str);
+		xfree(task_cpus);
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 
