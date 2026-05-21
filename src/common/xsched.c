@@ -43,14 +43,8 @@
 
 extern xcpuset_t *xcpuset_alloc(void)
 {
-	xcpuset_t *new = NULL;
-	size_t cpusetlen = CPU_ALLOC_SIZE(CPU_SETSIZE);
-
-	new = xmalloc((sizeof(size_t) * 2) + cpusetlen);
-	new->max_cpus = CPU_SETSIZE;
-	new->size = cpusetlen;
+	xcpuset_t *new = xgetaffinity(0);
 	XCPU_ZERO(new);
-
 	return new;
 }
 
