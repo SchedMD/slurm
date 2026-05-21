@@ -98,14 +98,16 @@ extern xcpuset_t *task_str_to_cpuset(const char *str)
 		len -= 2;
 	}
 
-	/* Check that hex chars plus NULL <= CPU_SET_HEX_STR_SIZE */
-	if ((len + 1) > CPU_SET_HEX_STR_SIZE) {
-		error("%s: Hex string is too large to convert to cpu_set_t (length %ld > %d)",
-		      __func__, (long int) len, CPU_SET_HEX_STR_SIZE - 1);
+	mask = xcpuset_alloc();
+
+	/* Check that hex chars will fit into the xcpuset_t */
+	if ((len * 4) > mask->max_cpus) {
+		error("%s: Hex string is too large to convert to cpu_set_t (length %d, max_cpus %zu)",
+		      __func__, len, mask->max_cpus);
+		xfree(mask);
 		return NULL;
 	}
 
-	mask = xcpuset_alloc();
 	while (ptr >= str) {
 		char val = slurm_char_to_hex(*ptr);
 		if (val == (char) -1) {
