@@ -81,7 +81,8 @@
 #include "src/common/xsched.h"
 
 /*** from affinity.c ***/
-int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid);
+extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
+		      uint32_t node_tid);
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA
