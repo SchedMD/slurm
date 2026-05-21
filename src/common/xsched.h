@@ -79,7 +79,7 @@ extern char *task_cpuset_to_str(const xcpuset_t *mask);
  * RET - Returns -1 if str could not be interpreted into valid hex or if str is
  *	 too large, else returns 0 on success.
  */
-extern int task_str_to_cpuset(cpu_set_t *mask, const char *str);
+extern int task_str_to_cpuset(xcpuset_t *mask, const char *str);
 
 /* Wrapper for sched_setaffinity() */
 extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask);
