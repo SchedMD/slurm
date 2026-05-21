@@ -1524,8 +1524,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name, job_table_fields,
 				  ", primary key (job_db_inx), "
 				  "unique index (id_job, time_submit), "
-				  "key old_tuple (id_job, "
-				  "id_assoc, time_submit), "
 				  "key rollup (time_eligible, time_end), "
 				  "key rollup2 (time_end, time_eligible), "
 				  "key nodes_alloc (nodes_alloc), "
