@@ -23,6 +23,9 @@ def setup():
     # JWT is needed for HTTP auth to access metrics endpoints
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
+    atf.require_config_parameter(
+        "SlurmctldHttpAuthParameters", "jwt_key=/opt/slurm/etc/jwt_hs256.key"
+    )
 
     # Define two partitions: debug and power
     atf.require_config_parameter(
