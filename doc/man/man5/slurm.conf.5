@@ -1782,13 +1782,19 @@ allowed and is reset to default. The maximum value is 65535.
 .TP
 \fBHttpParserType\fR
 Specify the http_parser implementation that will be used. Default is
-\fIhttp_parser/libhttp_parser\fR.
+\fIhttp_parser/libhttp_parser\fR if found, otherwise
+\fIhttp_parser/llhttp_parser\fR.
 Acceptable values at present:
 .IP
 .RS
 .TP
 \fBhttp_parser/libhttp_parser\fR
 Use the libhttp_parser based plugin.
+.IP
+
+.TP
+\fBhttp_parser/llhttp_parser\fR
+Use the llhttp based plugin.
 .RE
 .IP
 
@@ -6996,13 +7002,20 @@ MessageTimeout, otherwise it can lead to unexpected draining of nodes.
 .TP
 \fBUrlParserType\fR
 Specify the url_parser implementation that will be used. Default is
-\fIurl_parser/libhttp_parser\fR.
+\fIurl_parser/libhttp_parser\fR if found, otherwise \fIurl_parser/internal\fR.
 Acceptable values at present:
 .IP
 .RS
 .TP
 \fBurl_parser/libhttp_parser\fR
 Use the libhttp_parser based plugin.
+.IP
+
+.TP
+\fBurl_parser/internal\fR
+Use Slurm's internal url parser plugin.
+
+Note: required when \fBHttpParserType\fR=\fBhttp_parser/llhttp_parser\fR.
 .RE
 .IP
 

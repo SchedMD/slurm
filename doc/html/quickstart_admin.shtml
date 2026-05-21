@@ -192,7 +192,8 @@ package of the same name.</td>
 </tr>
 <tr>
 <td><code>slurmrestd</code>(<a href="#restd">restd node</a>)</td>
-<td><i><a href="related_software.html#httpparser">http_parser</a></i>
+<td><i><a href="related_software.html#httpparser">http_parser</a></i> or
+	<i><a href="related_software.html#llhttp">llhttp</a></i>
 <br><i><a href="related_software.html#json">json-c</a></i>
 <br><i><a href="related_software.html#yaml">yaml</a></i> (optional)
 <br><i><a href="related_software.html#jwt">jwt</a></i> (optional)

@@ -47,7 +47,10 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "../common/http_parser_common.h"
+
 #include "src/interfaces/http_parser.h"
+#include "src/interfaces/url_parser.h"
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "Slurm http_parser libhttp_parser plugin";
@@ -55,14 +58,26 @@ const char plugin_type[] = HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define LOG_PARSE(state, fmt, ...) \
-	_log_parse(state, NULL, 0, __func__, fmt, ##__VA_ARGS__)
+	do { \
+		xassert(state->magic == STATE_MAGIC); \
+		log_parse(state->buffer, state->name, NULL, 0, __func__, fmt, \
+			  ##__VA_ARGS__); \
+	} while (0)
 #define LOG_PARSE_AT(state, at, bytes, fmt, ...) \
-	_log_parse(state, (at), (bytes), __func__, fmt, ##__VA_ARGS__)
+	do { \
+		xassert(state->magic == STATE_MAGIC); \
+		log_parse(state->buffer, state->name, (at), (bytes), __func__, \
+			  fmt, ##__VA_ARGS__); \
+	} while (0)
 
 #define PARSE_ERROR(error_number, state) \
-	_on_parse_error(error_number, state, NULL, 0, __func__)
+	on_parse_error(error_number, state->total_bytes, state->buffer, \
+		       state->callbacks, state->callback_arg, state->name, \
+		       NULL, 0, __func__, &state->rc)
 #define PARSE_ERROR_AT(error_number, state, at, bytes) \
-	_on_parse_error(error_number, state, (at), (bytes), __func__)
+	on_parse_error(error_number, state->total_bytes, state->buffer, \
+		       state->callbacks, state->callback_arg, state->name, \
+		       (at), (bytes), __func__, &state->rc)
 
 #define LOG_URL_PARSE(name, buffer, fmt, ...) \
 	_log_url_parse(name, buffer, __func__, fmt, ##__VA_ARGS__)
@@ -181,6 +196,16 @@ static slurm_err_t _get_parser_error(const http_parser *parser)
 	return ESLURM_HTTP_PARSING_FAILURE;
 }
 
+static void _state_message_reset(state_t *state)
+{
+	xassert(state->magic == STATE_MAGIC);
+
+	url_free_members(&state->url);
+	state->url = URL_INITIALIZER;
+	xfree(state->last_header);
+	state->is_message_complete = false;
+}
+
 extern void http_parser_p_free_parse_request(state_t **state_ptr)
 {
 	state_t *state = NULL;
@@ -194,8 +219,7 @@ extern void http_parser_p_free_parse_request(state_t **state_ptr)
 
 	xassert(state->magic == STATE_MAGIC);
 
-	url_free_members(&state->url);
-	xassert(!state->last_header);
+	_state_message_reset(state);
 	xassert(!state->buffer);
 	xassert(state->total_bytes >= 0);
 	state->total_bytes = -1;
@@ -209,9 +233,7 @@ static void _state_parsing_reset(state_t *state)
 	xassert(state->magic == STATE_MAGIC);
 
 	http_parser_init(&state->parser, HTTP_REQUEST);
-	url_free_members(&state->url);
-	xfree(state->last_header);
-	state->is_message_complete = false;
+	_state_message_reset(state);
 }
 
 extern int http_parser_p_new_parse_request(const char *name,
@@ -236,125 +258,6 @@ extern int http_parser_p_new_parse_request(const char *name,
 
 	*state_ptr = state;
 	return SLURM_SUCCESS;
-}
-
-static void _log_parse_buffer(state_t *state, const char *caller,
-			      const char *log_str, const void *at,
-			      const size_t at_bytes)
-{
-	const void *buffer_ptr = get_buf_data(state->buffer);
-	const size_t buffer_bytes = get_buf_offset(state->buffer);
-	const void *buffer_begin = buffer_ptr;
-	const void *begin = NULL;
-#ifndef NDEBUG
-	const void *buffer_end = (buffer_ptr + buffer_bytes);
-	const void *end = (at ? (at + at_bytes) : buffer_end);
-#endif
-	size_t offset_begin = 0, offset_end = 0;
-
-	xassert(buffer_begin);
-	xassert(buffer_begin <= buffer_end);
-
-	if (at) {
-		begin = at;
-		offset_begin = (begin - buffer_begin);
-		offset_end = (offset_begin + at_bytes);
-	} else {
-		xassert(!at_bytes);
-
-		begin = buffer_begin;
-		offset_begin = 0;
-		offset_end = buffer_bytes;
-	}
-
-	/* assert that pointers are in the buffer */
-	xassert(begin >= buffer_begin);
-	xassert(end <= buffer_end);
-	xassert(offset_begin <= offset_end);
-	xassert(offset_begin <= buffer_bytes);
-	xassert(offset_end <= buffer_bytes);
-
-	log_flag(DATA, "%s: [%s] PARSE [%zu,%zu)@0x%"PRIxPTR" %s", caller,
-		 state->name, offset_begin, offset_end, (uintptr_t) buffer_ptr,
-		 log_str);
-	log_flag_hex_range(NET_RAW, buffer_ptr, buffer_bytes, offset_begin,
-			   offset_end, "%s: [%s] %s", caller, state->name,
-			   log_str);
-}
-
-static void _log_parse(state_t *state, const void *at, const size_t at_bytes,
-		       const char *caller, const char *fmt, ...)
-{
-	char *log_str = NULL;
-
-	xassert(state->magic == STATE_MAGIC);
-
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_DATA) ||
-	    (get_log_level() < LOG_LEVEL_VERBOSE))
-		return;
-
-	xassert(fmt);
-	if (fmt) {
-		va_list ap;
-		va_start(ap, fmt);
-		log_str = vxstrfmt(fmt, ap);
-		va_end(ap);
-	}
-
-	if (state->buffer)
-		_log_parse_buffer(state, caller, log_str, at, at_bytes);
-	else
-		log_flag(DATA, "%s: [%s] PARSE EOF %s",
-			 caller, state->name, log_str);
-
-	xfree(log_str);
-}
-
-/*
- * Notify caller that parsing failed
- * NOTE: use PARSE_ERROR() or PARSE_ERROR_AT() instead of calling directly
- * IN error_number - Slurm error encountered
- * IN state - state pointer
- * IN at - pointer to where failure happened or NULL if N/A
- * IN caller - function that caught error
- * RET 1 - always 1 to return to libhttp_parser to stop parsing
- */
-static int _on_parse_error(slurm_err_t error_number, state_t *state,
-			   const void *at, const size_t at_bytes,
-			   const char *caller)
-{
-	http_parser_error_t error = {
-		.error_number = error_number,
-		.offset = state->total_bytes,
-		.at = at,
-		.at_bytes = (at ? at_bytes : -1),
-	};
-
-	xassert(state->magic == STATE_MAGIC);
-
-	if (at) {
-		xassert(state->buffer);
-		xassert(at >= (const void *) get_buf_data(state->buffer));
-		xassert((at + at_bytes) <=
-			(const void *) (get_buf_data(state->buffer) +
-					get_buf_offset(state->buffer)));
-
-		/* Shift total_bytes to at pointer */
-		error.offset +=
-			(at - (const void *) get_buf_data(state->buffer));
-	}
-
-	LOG_PARSE_AT(state, at, at_bytes, "Parsing failed: %s",
-		     slurm_strerror(error_number));
-
-	if (state->callbacks->on_parse_error)
-		state->rc =
-			state->callbacks->on_parse_error(&error,
-							 state->callback_arg);
-	else
-		state->rc = error_number;
-
-	return 1;
 }
 
 static void _log_url_parse_buffer(const char *name, const char *caller,
@@ -436,6 +339,8 @@ static void _on_http_parse_error(state_t *state)
 							 state->callback_arg);
 	else
 		state->rc = error.error_number;
+
+	_state_message_reset(state);
 }
 
 static void _http_parser_url_init(struct http_parser_url *url)
@@ -650,7 +555,7 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 		return PARSE_ERROR_AT(ESLURM_HTTP_UNEXPECTED_URL, state, at,
 				      length);
 
-	if ((rc = url_parser_p_parse(state->name, &buffer, &state->url)))
+	if ((rc = url_parser_g_parse(state->name, &buffer, &state->url)))
 		return PARSE_ERROR_AT(rc, state, at, length);
 
 	return rc;
@@ -809,6 +714,7 @@ static int _on_message_complete(http_parser *parser)
 				 ->on_content_complete(state->callback_arg)))
 		return 1;
 
+	_state_message_reset(state);
 	return 0;
 }
 

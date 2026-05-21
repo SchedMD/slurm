@@ -504,7 +504,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/http_auth/Makefile
 		 src/plugins/http_auth/local/Makefile
 		 src/plugins/http_parser/Makefile
+		 src/plugins/http_parser/common/Makefile
 		 src/plugins/http_parser/libhttp_parser/Makefile
+		 src/plugins/http_parser/llhttp_parser/Makefile
 		 src/plugins/job_submit/Makefile
 		 src/plugins/job_submit/all_partitions/Makefile
 		 src/plugins/job_submit/defaults/Makefile
@@ -582,6 +584,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/ring/Makefile
 		 src/plugins/topology/torus3d/Makefile
 		 src/plugins/topology/tree/Makefile
+		 src/plugins/url_parser/Makefile
+		 src/plugins/url_parser/internal/Makefile
 		 src/sacct/Makefile
 		 src/sackd/Makefile
 		 src/sacctmgr/Makefile

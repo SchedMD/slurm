@@ -68,35 +68,53 @@ extern int url_parser_g_init(void)
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = URL_PARSER_MAJOR_TYPE;
 	const char *url_parser_type = NULL;
+	char *failed_types = NULL;
+	char *url_parser_types[] = {
+		HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN,
+		URL_PARSER_PREFIX URL_PARSER_INTERNAL_PLUGIN,
+	};
 
 	slurm_rwlock_wrlock(&context_lock);
 
 	if (plugin_inited != PLUGIN_NOT_INITED)
 		goto done;
 
-	if (!(url_parser_type = slurm_conf.url_parser_type)) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
+	url_parser_type = slurm_conf.url_parser_type;
 
 	/* Check for overloaded libhttp plugin and set correct plugin name */
 	if (!xstrcmp(url_parser_type, LIBHTTP_PARSER_PLUGIN) ||
 	    !xstrcmp(url_parser_type, URL_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN))
 		url_parser_type = HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN;
 
-	if (!(g_context = plugin_context_create(plugin_type, url_parser_type,
-						(void **) &ops, syms,
-						sizeof(syms)))) {
-		warning("cannot create %s context for %s",
-		      plugin_type, url_parser_type);
+	for (int i = 0; i < ARRAY_SIZE(url_parser_types); i++) {
+		if (!slurm_conf.url_parser_type)
+			url_parser_type = url_parser_types[i];
+
+		if ((g_context =
+			     plugin_context_create(plugin_type, url_parser_type,
+						   (void **) &ops, syms,
+						   sizeof(syms)))) {
+			plugin_inited = PLUGIN_INITED;
+			break;
+		}
+
+		xstrfmtcat(failed_types, "%s%s", (failed_types ? ", " : ""),
+			   url_parser_type);
+
+		if (slurm_conf.url_parser_type)
+			break;
+	}
+
+	if (plugin_inited != PLUGIN_INITED) {
+		warning("cannot create %s context for %s", plugin_type,
+			failed_types);
 		rc = SLURM_ERROR;
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
 
-	plugin_inited = PLUGIN_INITED;
-
 done:
+	xfree(failed_types);
 	slurm_rwlock_unlock(&context_lock);
 	return rc;
 }

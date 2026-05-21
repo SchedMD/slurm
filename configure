@@ -810,10 +810,14 @@ WITH_YAML_FALSE
 WITH_YAML_TRUE
 YAML_LDFLAGS
 YAML_CPPFLAGS
-WITH_HTTP_PARSER_FALSE
-WITH_HTTP_PARSER_TRUE
-HTTP_PARSER_LDFLAGS
-HTTP_PARSER_CPPFLAGS
+WITH_LLHTTP_PARSER_FALSE
+WITH_LLHTTP_PARSER_TRUE
+LLHTTP_PARSER_LDFLAGS
+LLHTTP_PARSER_CPPFLAGS
+WITH_LIBHTTP_PARSER_FALSE
+WITH_LIBHTTP_PARSER_TRUE
+LIBHTTP_PARSER_LDFLAGS
+LIBHTTP_PARSER_CPPFLAGS
 WITH_JWT_FALSE
 WITH_JWT_TRUE
 JWT_LDFLAGS
@@ -1028,7 +1032,8 @@ with_shared_libslurm
 enable_load_env_no_login
 with_json
 with_jwt
-with_http_parser
+with_libhttp_parser
+with_llhttp_parser
 with_yaml
 with_ofed
 with_hdf5
@@ -1797,7 +1802,10 @@ Optional Packages:
                           footprint of Slurm.
   --with-json=PATH        Specify path to json-c installation
   --with-jwt=PATH         Specify path to jwt installation
-  --with-http-parser=PATH Specify path to HTTP Parser installation
+  --with-libhttp-parser=PATH
+                          Specify path to libhttp_parser installation
+  --with-llhttp-parser=PATH
+                          Specify path to llhttp parser installation
   --with-yaml=PATH        Specify path to libyaml installation
   --with-ofed=PATH        Specify path to ofed installation
   --with-hdf5=yes/no/PATH location of h5cc or h5pcc for HDF5 configuration
@@ -23162,37 +23170,37 @@ fi
 
 
 
-	_x_ac_http_parser_dirs="/usr /usr/local"
-	_x_ac_http_parser_libs="lib64 lib"
+	_x_ac_libhttp_parser_dirs="/usr /usr/local"
+	_x_ac_libhttp_parser_libs="lib64 lib"
 
 
-# Check whether --with-http_parser was given.
-if test ${with_http_parser+y}
+# Check whether --with-libhttp_parser was given.
+if test ${with_libhttp_parser+y}
 then :
-  withval=$with_http_parser; if test "x$with_http_parser" != xno && test "x$with_http_parser" != xyes
+  withval=$with_libhttp_parser; if test "x$with_libhttp_parser" != xno && test "x$with_libhttp_parser" != xyes
 then :
-  _x_ac_http_parser_dirs="$with_http_parser"
+  _x_ac_libhttp_parser_dirs="$with_libhttp_parser"
 fi
 fi
 
 
-	if test "x$with_http_parser" = xno; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for HTTP parser disabled" >&5
-printf "%s\n" "$as_me: support for HTTP parser disabled" >&6;}
+	if test "x$with_libhttp_parser" = xno; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for libhttp_parser disabled" >&5
+printf "%s\n" "$as_me: support for libhttp_parser disabled" >&6;}
 	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for http-parser installation" >&5
-printf %s "checking for http-parser installation... " >&6; }
-if test ${x_ac_cv_http_parser_dir+y}
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libhttp_parser installation" >&5
+printf %s "checking for libhttp_parser installation... " >&6; }
+if test ${x_ac_cv_libhttp_parser_dir+y}
 then :
   printf %s "(cached) " >&6
 else case e in #(
   e)
-			for d in $_x_ac_http_parser_dirs; do
+			for d in $_x_ac_libhttp_parser_dirs; do
 			  test -d "$d" || continue
 			  test -d "$d/include" || continue
 			  test -f "$d/include/http_parser.h" || continue
-			  for bit in $_x_ac_http_parser_libs; do
-				_x_ac_http_parser_libs_save="$LIBS"
+			  for bit in $_x_ac_libhttp_parser_libs; do
+				_x_ac_libhttp_parser_libs_save="$LIBS"
 				LIBS="-L$d/$bit -lhttp_parser $LIBS"
 				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -23217,46 +23225,193 @@ return http_parser_init ();
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
-  x_ac_cv_http_parser_dir=$d
+  x_ac_cv_libhttp_parser_dir=$d
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-				LIBS="$_x_ac_http_parser_libs_save"
-				test -n "$x_ac_cv_http_parser_dir" && break
+				LIBS="$_x_ac_libhttp_parser_libs_save"
+				test -n "$x_ac_cv_libhttp_parser_dir" && break
 			  done
-			  test -n "$x_ac_cv_http_parser_dir" && break
+			  test -n "$x_ac_cv_libhttp_parser_dir" && break
 			done
 		   ;;
 esac
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_http_parser_dir" >&5
-printf "%s\n" "$x_ac_cv_http_parser_dir" >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_libhttp_parser_dir" >&5
+printf "%s\n" "$x_ac_cv_libhttp_parser_dir" >&6; }
 
-	if test -z "$x_ac_cv_http_parser_dir"; then
-		if test -z "$with_http_parser"; then
-			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate HTTP Parser library" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate HTTP Parser library" >&2;}
+	if test -z "$x_ac_cv_libhttp_parser_dir"; then
+		if test -z "$with_libhttp_parser"; then
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libhttp_parser library" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate libhttp_parser library" >&2;}
 		else
-			as_fn_error $? "unable to locate HTTP Parser library" "$LINENO" 5
+			as_fn_error $? "unable to locate libhttp_parser library" "$LINENO" 5
 		fi
 	else
 
 printf "%s\n" "#define HAVE_HTTP_PARSER 1" >>confdefs.h
 
-	  HTTP_PARSER_CPPFLAGS="-I$x_ac_cv_http_parser_dir/include"
-	  HTTP_PARSER_LDFLAGS="-L$x_ac_cv_http_parser_dir/$bit -lhttp_parser"
+	  LIBHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_libhttp_parser_dir/include"
+	  if test "$ac_with_rpath" = "yes"; then
+	  	LIBHTTP_PARSER_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_libhttp_parser_dir/$bit -L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+	  else
+	  	LIBHTTP_PARSER_LDFLAGS="-L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+          fi
 	fi
 
 
 
 	fi
 
-	 if test -n "$x_ac_cv_http_parser_dir"; then
-  WITH_HTTP_PARSER_TRUE=
-  WITH_HTTP_PARSER_FALSE='#'
+	 if test -n "$x_ac_cv_libhttp_parser_dir"; then
+  WITH_LIBHTTP_PARSER_TRUE=
+  WITH_LIBHTTP_PARSER_FALSE='#'
 else
-  WITH_HTTP_PARSER_TRUE='#'
-  WITH_HTTP_PARSER_FALSE=
+  WITH_LIBHTTP_PARSER_TRUE='#'
+  WITH_LIBHTTP_PARSER_FALSE=
+fi
+
+
+	_x_ac_llhttp_parser_dirs="/usr /usr/local"
+	_x_ac_llhttp_parser_libs="lib64 lib"
+
+
+# Check whether --with-llhttp_parser was given.
+if test ${with_llhttp_parser+y}
+then :
+  withval=$with_llhttp_parser; if test "x$with_llhttp_parser" != xno && test "x$with_llhttp_parser" != xyes
+then :
+  _x_ac_llhttp_parser_dirs="$with_llhttp_parser"
+fi
+fi
+
+
+	if test "x$with_llhttp_parser" = xno; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for llhttp parser disabled" >&5
+printf "%s\n" "$as_me: support for llhttp parser disabled" >&6;}
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for llhttp parser installation" >&5
+printf %s "checking for llhttp parser installation... " >&6; }
+if test ${x_ac_cv_llhttp_parser_dir+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e)
+			for d in $_x_ac_llhttp_parser_dirs; do
+			  test -d "$d" || continue
+			  test -d "$d/include" || continue
+			  test -f "$d/include/llhttp.h" || continue
+			  for bit in $_x_ac_llhttp_parser_libs; do
+				_x_ac_llhttp_parser_libs_save="$LIBS"
+				LIBS="-L$d/$bit -lllhttp $LIBS"
+				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char llhttp_init (void);
+int
+main (void)
+{
+return llhttp_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  x_ac_cv_llhttp_parser_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+				LIBS="$_x_ac_llhttp_parser_libs_save"
+				test -n "$x_ac_cv_llhttp_parser_dir" && break
+			  done
+			  test -n "$x_ac_cv_llhttp_parser_dir" && break
+			done
+		   ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_llhttp_parser_dir" >&5
+printf "%s\n" "$x_ac_cv_llhttp_parser_dir" >&6; }
+
+	if test -z "$x_ac_cv_llhttp_parser_dir"; then
+		if test -z "$with_llhttp_parser"; then
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate llhttp parser library" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate llhttp parser library" >&2;}
+		else
+			as_fn_error $? "unable to locate llhttp parser library" "$LINENO" 5
+		fi
+	else
+	  LLHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_llhttp_parser_dir/include"
+	  if test "$ac_with_rpath" = "yes"; then
+	  	LLHTTP_PARSER_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_llhttp_parser_dir/$bit -L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+	  else
+	  	LLHTTP_PARSER_LDFLAGS="-L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+          fi
+	  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for llhttp major version >= 9" >&5
+printf %s "checking for llhttp major version >= 9... " >&6; }
+	  save_CPPFLAGS="$CPPFLAGS"
+	  CPPFLAGS="$CPPFLAGS $LLHTTP_PARSER_CPPFLAGS"
+	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <llhttp.h>
+int
+main (void)
+{
+
+#if LLHTTP_VERSION_MAJOR < 9
+#error llhttp major version is not supported
+#endif
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+printf "%s\n" "#define HAVE_HTTP_PARSER 1" >>confdefs.h
+
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		 if test -n "$with_llhttp_parser"
+then :
+  as_fn_error $? "llhttp >= 9 is required but was not found" "$LINENO" 5
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: llhttp found but major version < 9; disabling llhttp parser support" >&5
+printf "%s\n" "$as_me: WARNING: llhttp found but major version < 9; disabling llhttp parser support" >&2;}
+			x_ac_cv_llhttp_parser_dir=""
+			LLHTTP_PARSER_CPPFLAGS=""
+			LLHTTP_PARSER_LDFLAGS="" ;;
+esac
+fi ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	  CPPFLAGS="$save_CPPFLAGS"
+	fi
+
+
+
+	fi
+
+	 if test -n "$x_ac_cv_llhttp_parser_dir"; then
+  WITH_LLHTTP_PARSER_TRUE=
+  WITH_LLHTTP_PARSER_FALSE='#'
+else
+  WITH_LLHTTP_PARSER_TRUE='#'
+  WITH_LLHTTP_PARSER_FALSE=
 fi
 
 
@@ -29294,7 +29449,7 @@ fi
 
 
   if test "x$x_ac_slurmrestd" != "xno"; then
-    if test -n "$x_ac_cv_http_parser_dir" && test -n "$x_ac_cv_json_dir"; then
+    if  test -n "$x_ac_cv_libhttp_parser_dir" || test -n "$x_ac_cv_llhttp_parser_dir"  && test -n "$x_ac_cv_json_dir"; then
       x_ac_slurmrestd=yes
     else
       if test "x$x_ac_slurmrestd" = "xyes"; then
@@ -30616,7 +30771,7 @@ printf "%s\n" "${x_ac_deprecated=no}" >&6; }
 
 
 
-ac_config_files="$ac_config_files Makefile auxdir/Makefile contribs/Makefile contribs/lua/Makefile contribs/nss_slurm/Makefile contribs/openlava/Makefile contribs/pam/Makefile contribs/pam_slurm_adopt/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/pmi/Makefile contribs/pmi2/Makefile contribs/seff/Makefile contribs/sgather/Makefile contribs/sjobexit/Makefile contribs/slurm_completion_help/Makefile contribs/torque/Makefile doc/Makefile doc/html/Makefile doc/html/configurator.easy.html doc/html/configurator.html doc/man/Makefile doc/man/man1/Makefile doc/man/man5/Makefile doc/man/man8/Makefile etc/Makefile src/Makefile src/api/Makefile src/common/Makefile src/conmgr/Makefile src/curl/Makefile src/database/Makefile src/interfaces/Makefile src/lua/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/ctld_relay/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/acct_gather_energy/Makefile src/plugins/acct_gather_energy/gpu/Makefile src/plugins/acct_gather_energy/ibmaem/Makefile src/plugins/acct_gather_energy/ipmi/Makefile src/plugins/acct_gather_energy/pm_counters/Makefile src/plugins/acct_gather_energy/rapl/Makefile src/plugins/acct_gather_energy/xcc/Makefile src/plugins/acct_gather_filesystem/Makefile src/plugins/acct_gather_filesystem/lustre/Makefile src/plugins/acct_gather_interconnect/Makefile src/plugins/acct_gather_interconnect/ofed/Makefile src/plugins/acct_gather_interconnect/sysfs/Makefile src/plugins/acct_gather_profile/Makefile src/plugins/acct_gather_profile/hdf5/Makefile src/plugins/acct_gather_profile/hdf5/sh5util/Makefile src/plugins/acct_gather_profile/influxdb/Makefile src/plugins/auth/Makefile src/plugins/auth/common/Makefile src/plugins/auth/jwt/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/auth/slurm/Makefile src/plugins/burst_buffer/Makefile src/plugins/burst_buffer/common/Makefile src/plugins/burst_buffer/datawarp/Makefile src/plugins/burst_buffer/lua/Makefile src/plugins/certgen/Makefile src/plugins/certgen/script/Makefile src/plugins/certmgr/Makefile src/plugins/certmgr/script/Makefile src/plugins/cgroup/Makefile src/plugins/cgroup/common/Makefile src/plugins/cgroup/v1/Makefile src/plugins/cgroup/v2/Makefile src/plugins/cli_filter/Makefile src/plugins/cli_filter/common/Makefile src/plugins/cli_filter/lua/Makefile src/plugins/cli_filter/syslog/Makefile src/plugins/cli_filter/user_defaults/Makefile src/plugins/compress/Makefile src/plugins/compress/none/Makefile src/plugins/compress/lz4/Makefile src/plugins/cred/Makefile src/plugins/cred/common/Makefile src/plugins/cred/munge/Makefile src/plugins/cred/none/Makefile src/plugins/data_parser/Makefile src/plugins/data_parser/v0.0.42/Makefile src/plugins/data_parser/v0.0.43/Makefile src/plugins/data_parser/v0.0.44/Makefile src/plugins/data_parser/v0.0.45/Makefile src/plugins/gpu/Makefile src/plugins/gpu/common/Makefile src/plugins/gpu/generic/Makefile src/plugins/gpu/nrt/Makefile src/plugins/gpu/nvidia/Makefile src/plugins/gpu/nvml/Makefile src/plugins/gpu/oneapi/Makefile src/plugins/gpu/rsmi/Makefile src/plugins/gres/Makefile src/plugins/gres/common/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/mps/Makefile src/plugins/gres/nic/Makefile src/plugins/gres/shard/Makefile src/plugins/hash/Makefile src/plugins/hash/common_xkcp/Makefile src/plugins/hash/k12/Makefile src/plugins/hash/sha3/Makefile src/plugins/http_auth/Makefile src/plugins/http_auth/local/Makefile src/plugins/http_parser/Makefile src/plugins/http_parser/libhttp_parser/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/all_partitions/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/job_submit/pbs/Makefile src/plugins/job_submit/require_timelimit/Makefile src/plugins/job_submit/throttle/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/common/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/common/Makefile src/plugins/jobcomp/elasticsearch/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/kafka/Makefile src/plugins/jobcomp/lua/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/script/Makefile src/plugins/mcs/Makefile src/plugins/mcs/account/Makefile src/plugins/mcs/group/Makefile src/plugins/mcs/label/Makefile src/plugins/mcs/user/Makefile src/plugins/metrics/Makefile src/plugins/metrics/openmetrics/Makefile src/plugins/mpi/Makefile src/plugins/mpi/cray_shasta/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/mpi/pmix/Makefile src/plugins/namespace/Makefile src/plugins/namespace/linux/Makefile src/plugins/namespace/tmpfs/Makefile src/plugins/node_features/Makefile src/plugins/node_features/helpers/Makefile src/plugins/preempt/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/prep/Makefile src/plugins/prep/script/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/select/Makefile src/plugins/select/cons_tres/Makefile src/plugins/select/linear/Makefile src/plugins/serializer/Makefile src/plugins/serializer/json/Makefile src/plugins/serializer/url-encoded/Makefile src/plugins/serializer/yaml/Makefile src/plugins/site_factor/Makefile src/plugins/site_factor/example/Makefile src/plugins/switch/Makefile src/plugins/switch/hpe_slingshot/Makefile src/plugins/switch/nvidia_imex/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/tls/Makefile src/plugins/tls/none/Makefile src/plugins/tls/s2n/Makefile src/plugins/topology/Makefile src/plugins/topology/block/Makefile src/plugins/topology/common/Makefile src/plugins/topology/flat/Makefile src/plugins/topology/ring/Makefile src/plugins/topology/torus3d/Makefile src/plugins/topology/tree/Makefile src/sacct/Makefile src/sackd/Makefile src/sacctmgr/Makefile src/salloc/Makefile src/sattach/Makefile src/scrun/Makefile src/sbatch/Makefile src/sbcast/Makefile src/scancel/Makefile src/scontrol/Makefile src/scrontab/Makefile src/sdiag/Makefile src/sinfo/Makefile src/slurmctld/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmrestd/Makefile src/slurmrestd/plugins/Makefile src/slurmrestd/plugins/auth/Makefile src/slurmrestd/plugins/auth/jwt/Makefile src/slurmrestd/plugins/auth/local/Makefile src/slurmrestd/plugins/openapi/Makefile src/slurmrestd/plugins/openapi/slurmctld/Makefile src/slurmrestd/plugins/openapi/slurmdbd/Makefile src/slurmrestd/plugins/openapi/util/Makefile src/sprio/Makefile src/squeue/Makefile src/sreport/Makefile src/srun/Makefile src/sshare/Makefile src/sstat/Makefile src/stepmgr/Makefile src/strigger/Makefile src/sview/Makefile testsuite/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/backfill/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/common/bitstring/Makefile testsuite/slurm_unit/common/hostlist/Makefile testsuite/slurm_unit/common/slurm_protocol_defs/Makefile testsuite/slurm_unit/common/slurm_protocol_pack/Makefile testsuite/slurm_unit/common/slurmdb_defs/Makefile testsuite/slurm_unit/common/slurmdb_pack/Makefile testsuite/slurm_unit/topology/Makefile"
+ac_config_files="$ac_config_files Makefile auxdir/Makefile contribs/Makefile contribs/lua/Makefile contribs/nss_slurm/Makefile contribs/openlava/Makefile contribs/pam/Makefile contribs/pam_slurm_adopt/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/pmi/Makefile contribs/pmi2/Makefile contribs/seff/Makefile contribs/sgather/Makefile contribs/sjobexit/Makefile contribs/slurm_completion_help/Makefile contribs/torque/Makefile doc/Makefile doc/html/Makefile doc/html/configurator.easy.html doc/html/configurator.html doc/man/Makefile doc/man/man1/Makefile doc/man/man5/Makefile doc/man/man8/Makefile etc/Makefile src/Makefile src/api/Makefile src/common/Makefile src/conmgr/Makefile src/curl/Makefile src/database/Makefile src/interfaces/Makefile src/lua/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/ctld_relay/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/acct_gather_energy/Makefile src/plugins/acct_gather_energy/gpu/Makefile src/plugins/acct_gather_energy/ibmaem/Makefile src/plugins/acct_gather_energy/ipmi/Makefile src/plugins/acct_gather_energy/pm_counters/Makefile src/plugins/acct_gather_energy/rapl/Makefile src/plugins/acct_gather_energy/xcc/Makefile src/plugins/acct_gather_filesystem/Makefile src/plugins/acct_gather_filesystem/lustre/Makefile src/plugins/acct_gather_interconnect/Makefile src/plugins/acct_gather_interconnect/ofed/Makefile src/plugins/acct_gather_interconnect/sysfs/Makefile src/plugins/acct_gather_profile/Makefile src/plugins/acct_gather_profile/hdf5/Makefile src/plugins/acct_gather_profile/hdf5/sh5util/Makefile src/plugins/acct_gather_profile/influxdb/Makefile src/plugins/auth/Makefile src/plugins/auth/common/Makefile src/plugins/auth/jwt/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/auth/slurm/Makefile src/plugins/burst_buffer/Makefile src/plugins/burst_buffer/common/Makefile src/plugins/burst_buffer/datawarp/Makefile src/plugins/burst_buffer/lua/Makefile src/plugins/certgen/Makefile src/plugins/certgen/script/Makefile src/plugins/certmgr/Makefile src/plugins/certmgr/script/Makefile src/plugins/cgroup/Makefile src/plugins/cgroup/common/Makefile src/plugins/cgroup/v1/Makefile src/plugins/cgroup/v2/Makefile src/plugins/cli_filter/Makefile src/plugins/cli_filter/common/Makefile src/plugins/cli_filter/lua/Makefile src/plugins/cli_filter/syslog/Makefile src/plugins/cli_filter/user_defaults/Makefile src/plugins/compress/Makefile src/plugins/compress/none/Makefile src/plugins/compress/lz4/Makefile src/plugins/cred/Makefile src/plugins/cred/common/Makefile src/plugins/cred/munge/Makefile src/plugins/cred/none/Makefile src/plugins/data_parser/Makefile src/plugins/data_parser/v0.0.42/Makefile src/plugins/data_parser/v0.0.43/Makefile src/plugins/data_parser/v0.0.44/Makefile src/plugins/data_parser/v0.0.45/Makefile src/plugins/gpu/Makefile src/plugins/gpu/common/Makefile src/plugins/gpu/generic/Makefile src/plugins/gpu/nrt/Makefile src/plugins/gpu/nvidia/Makefile src/plugins/gpu/nvml/Makefile src/plugins/gpu/oneapi/Makefile src/plugins/gpu/rsmi/Makefile src/plugins/gres/Makefile src/plugins/gres/common/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/mps/Makefile src/plugins/gres/nic/Makefile src/plugins/gres/shard/Makefile src/plugins/hash/Makefile src/plugins/hash/common_xkcp/Makefile src/plugins/hash/k12/Makefile src/plugins/hash/sha3/Makefile src/plugins/http_auth/Makefile src/plugins/http_auth/local/Makefile src/plugins/http_parser/Makefile src/plugins/http_parser/common/Makefile src/plugins/http_parser/libhttp_parser/Makefile src/plugins/http_parser/llhttp_parser/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/all_partitions/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/job_submit/pbs/Makefile src/plugins/job_submit/require_timelimit/Makefile src/plugins/job_submit/throttle/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/common/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/common/Makefile src/plugins/jobcomp/elasticsearch/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/kafka/Makefile src/plugins/jobcomp/lua/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/script/Makefile src/plugins/mcs/Makefile src/plugins/mcs/account/Makefile src/plugins/mcs/group/Makefile src/plugins/mcs/label/Makefile src/plugins/mcs/user/Makefile src/plugins/metrics/Makefile src/plugins/metrics/openmetrics/Makefile src/plugins/mpi/Makefile src/plugins/mpi/cray_shasta/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/mpi/pmix/Makefile src/plugins/namespace/Makefile src/plugins/namespace/linux/Makefile src/plugins/namespace/tmpfs/Makefile src/plugins/node_features/Makefile src/plugins/node_features/helpers/Makefile src/plugins/preempt/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/prep/Makefile src/plugins/prep/script/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/select/Makefile src/plugins/select/cons_tres/Makefile src/plugins/select/linear/Makefile src/plugins/serializer/Makefile src/plugins/serializer/json/Makefile src/plugins/serializer/url-encoded/Makefile src/plugins/serializer/yaml/Makefile src/plugins/site_factor/Makefile src/plugins/site_factor/example/Makefile src/plugins/switch/Makefile src/plugins/switch/hpe_slingshot/Makefile src/plugins/switch/nvidia_imex/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/tls/Makefile src/plugins/tls/none/Makefile src/plugins/tls/s2n/Makefile src/plugins/topology/Makefile src/plugins/topology/block/Makefile src/plugins/topology/common/Makefile src/plugins/topology/flat/Makefile src/plugins/topology/ring/Makefile src/plugins/topology/torus3d/Makefile src/plugins/topology/tree/Makefile src/plugins/url_parser/Makefile src/plugins/url_parser/internal/Makefile src/sacct/Makefile src/sackd/Makefile src/sacctmgr/Makefile src/salloc/Makefile src/sattach/Makefile src/scrun/Makefile src/sbatch/Makefile src/sbcast/Makefile src/scancel/Makefile src/scontrol/Makefile src/scrontab/Makefile src/sdiag/Makefile src/sinfo/Makefile src/slurmctld/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmrestd/Makefile src/slurmrestd/plugins/Makefile src/slurmrestd/plugins/auth/Makefile src/slurmrestd/plugins/auth/jwt/Makefile src/slurmrestd/plugins/auth/local/Makefile src/slurmrestd/plugins/openapi/Makefile src/slurmrestd/plugins/openapi/slurmctld/Makefile src/slurmrestd/plugins/openapi/slurmdbd/Makefile src/slurmrestd/plugins/openapi/util/Makefile src/sprio/Makefile src/squeue/Makefile src/sreport/Makefile src/srun/Makefile src/sshare/Makefile src/sstat/Makefile src/stepmgr/Makefile src/strigger/Makefile src/sview/Makefile testsuite/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/backfill/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/common/bitstring/Makefile testsuite/slurm_unit/common/hostlist/Makefile testsuite/slurm_unit/common/slurm_protocol_defs/Makefile testsuite/slurm_unit/common/slurm_protocol_pack/Makefile testsuite/slurm_unit/common/slurmdb_defs/Makefile testsuite/slurm_unit/common/slurmdb_pack/Makefile testsuite/slurm_unit/topology/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -30817,8 +30972,12 @@ if test -z "${WITH_JWT_TRUE}" && test -z "${WITH_JWT_FALSE}"; then
   as_fn_error $? "conditional \"WITH_JWT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${WITH_HTTP_PARSER_TRUE}" && test -z "${WITH_HTTP_PARSER_FALSE}"; then
-  as_fn_error $? "conditional \"WITH_HTTP_PARSER\" was never defined.
+if test -z "${WITH_LIBHTTP_PARSER_TRUE}" && test -z "${WITH_LIBHTTP_PARSER_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_LIBHTTP_PARSER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_LLHTTP_PARSER_TRUE}" && test -z "${WITH_LLHTTP_PARSER_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_LLHTTP_PARSER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_YAML_TRUE}" && test -z "${WITH_YAML_FALSE}"; then
@@ -32050,7 +32209,9 @@ do
     "src/plugins/http_auth/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/http_auth/Makefile" ;;
     "src/plugins/http_auth/local/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/http_auth/local/Makefile" ;;
     "src/plugins/http_parser/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/http_parser/Makefile" ;;
+    "src/plugins/http_parser/common/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/http_parser/common/Makefile" ;;
     "src/plugins/http_parser/libhttp_parser/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/http_parser/libhttp_parser/Makefile" ;;
+    "src/plugins/http_parser/llhttp_parser/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/http_parser/llhttp_parser/Makefile" ;;
     "src/plugins/job_submit/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/job_submit/Makefile" ;;
     "src/plugins/job_submit/all_partitions/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/job_submit/all_partitions/Makefile" ;;
     "src/plugins/job_submit/defaults/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/job_submit/defaults/Makefile" ;;
@@ -32128,6 +32289,8 @@ do
     "src/plugins/topology/ring/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/topology/ring/Makefile" ;;
     "src/plugins/topology/torus3d/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/topology/torus3d/Makefile" ;;
     "src/plugins/topology/tree/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/topology/tree/Makefile" ;;
+    "src/plugins/url_parser/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/url_parser/Makefile" ;;
+    "src/plugins/url_parser/internal/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/url_parser/internal/Makefile" ;;
     "src/sacct/Makefile") CONFIG_FILES="$CONFIG_FILES src/sacct/Makefile" ;;
     "src/sackd/Makefile") CONFIG_FILES="$CONFIG_FILES src/sackd/Makefile" ;;
     "src/sacctmgr/Makefile") CONFIG_FILES="$CONFIG_FILES src/sacctmgr/Makefile" ;;
