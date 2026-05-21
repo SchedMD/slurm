@@ -38,33 +38,39 @@
 #include <string.h>
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xsched.h"
 
-extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
+extern xcpuset_t *xcpuset_alloc(void)
+{
+	xcpuset_t *new = xgetaffinity(0);
+	XCPU_ZERO(new);
+	return new;
+}
+
+extern char *task_cpuset_to_str(const xcpuset_t *mask)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
 #else
 	int base;
-	char *ptr = str;
-	char *ret = NULL;
 	bool leading_zeros = true;
+	char *str = xmalloc((mask->max_cpus / 4) + 1);
+	char *ptr = str;
 
-	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
+	for (base = mask->max_cpus - 4; base >= 0; base -= 4) {
 		char val = 0;
-		if (CPU_ISSET(base, mask))
+		if (XCPU_ISSET(base, mask))
 			val |= 1;
-		if (CPU_ISSET(base + 1, mask))
+		if (XCPU_ISSET(base + 1, mask))
 			val |= 2;
-		if (CPU_ISSET(base + 2, mask))
+		if (XCPU_ISSET(base + 2, mask))
 			val |= 4;
-		if (CPU_ISSET(base + 3, mask))
+		if (XCPU_ISSET(base + 3, mask))
 			val |= 8;
 		/* If it's a leading zero, ignore it */
 		if (leading_zeros && !val)
 			continue;
-		if (!ret && val)
-			ret = ptr;
 		*ptr++ = slurm_hex_to_char(val);
 		/* All zeros from here on out will be written */
 		leading_zeros = false;
@@ -72,16 +78,16 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 	/* If the bitmask is all 0s, add a single 0 */
 	if (leading_zeros)
 		*ptr++ = '0';
-	*ptr = '\0';
-	return ret ? ret : ptr - 1;
+	return str;
 #endif
 }
 
-extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
+extern xcpuset_t *task_str_to_cpuset(const char *str)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
 #else
+	xcpuset_t *mask = NULL;
 	int len = strlen(str);
 	const char *ptr = str + len - 1;
 	int base = 0;
@@ -92,59 +98,60 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
 		len -= 2;
 	}
 
-	/* Check that hex chars plus NULL <= CPU_SET_HEX_STR_SIZE */
-	if ((len + 1) > CPU_SET_HEX_STR_SIZE) {
-		error("%s: Hex string is too large to convert to cpu_set_t (length %ld > %d)",
-		      __func__, (long int) len, CPU_SET_HEX_STR_SIZE - 1);
-		return -1;
+	mask = xcpuset_alloc();
+
+	/* Check that hex chars will fit into the xcpuset_t */
+	if ((len * 4) > mask->max_cpus) {
+		error("%s: Hex string is too large to convert to cpu_set_t (length %d, max_cpus %zu)",
+		      __func__, len, mask->max_cpus);
+		xfree(mask);
+		return NULL;
 	}
 
-	CPU_ZERO(mask);
 	while (ptr >= str) {
 		char val = slurm_char_to_hex(*ptr);
-		if (val == (char) -1)
-			return -1;
+		if (val == (char) -1) {
+			xfree(mask);
+			break;
+		}
 		if (val & 1)
-			CPU_SET(base, mask);
+			XCPU_SET(base, mask);
 		if (val & 2)
-			CPU_SET(base + 1, mask);
+			XCPU_SET(base + 1, mask);
 		if (val & 4)
-			CPU_SET(base + 2, mask);
+			XCPU_SET(base + 2, mask);
 		if (val & 8)
-			CPU_SET(base + 3, mask);
+			XCPU_SET(base + 3, mask);
 		ptr--;
 		base += 4;
 	}
 
-	return 0;
+	return mask;
 #endif
 }
 
-extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
+extern int xsetaffinity(pid_t pid, xcpuset_t *mask)
 {
 	int rval;
-	char mstr[CPU_SET_HEX_STR_SIZE];
 
 #ifdef __FreeBSD__
-	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
-				  mask);
+	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
+				  mask->size, &mask->mask);
 #else
-	rval = sched_setaffinity(pid, size, mask);
+	rval = sched_setaffinity(pid, mask->size, &mask->mask);
 #endif
 	if (rval) {
+		char *mstr = task_cpuset_to_str(mask);
 		verbose("sched_setaffinity(%d,%zu,0x%s) failed: %m",
-			pid, size, task_cpuset_to_str(mask, mstr));
+			pid, mask->size, mstr);
+		xfree(mstr);
 	}
 	return rval;
 }
 
-extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
+static int _getaffinity(pid_t pid, xcpuset_t *mask)
 {
-	int rval;
-	char mstr[CPU_SET_HEX_STR_SIZE];
-
-	CPU_ZERO(mask);
-
+	errno = 0;
 	/*
 	 * The FreeBSD cpuset API is a superset of the Linux API.
 	 * In addition to PIDs, it supports threads, interrupts,
@@ -154,25 +161,53 @@ extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 	 * Linux sched_*etaffinity() uses 0 for this.
 	 */
 #ifdef __FreeBSD__
-	rval = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
-				  mask);
+	return cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
+				  mask->size, &mask->mask);
 #else
-	rval = sched_getaffinity(pid, size, mask);
+	return sched_getaffinity(pid, mask->size, &mask->mask);
 #endif
-	if (rval) {
-		verbose("sched_getaffinity(%d,%zu,0x%s) failed with status %d",
-			pid, size, task_cpuset_to_str(mask, mstr), rval);
-	} else {
-		debug3("sched_getaffinity(%d) = 0x%s",
-		       pid, task_cpuset_to_str(mask, mstr));
-	}
-	return rval;
 }
 
-extern int task_cpuset_get_assigned_count(size_t size, cpu_set_t *mask)
+extern xcpuset_t *xgetaffinity(pid_t pid)
 {
-	if (!size || !mask)
-		return -1;
+	int rval;
+	static size_t max_cpus = CPU_SETSIZE;
+	xcpuset_t *mask = NULL;
 
-	return CPU_COUNT_S(size, mask);
+	while (true) {
+		xrealloc(mask, (2 * sizeof(size_t)) + CPU_ALLOC_SIZE(max_cpus));
+		mask->max_cpus = max_cpus;
+		mask->size = CPU_ALLOC_SIZE(max_cpus);
+
+		rval = _getaffinity(pid, mask);
+
+		if ((rval < 0) && (errno == EINVAL)) {
+			max_cpus *= 2;
+			continue;
+		}
+
+		break;
+	}
+
+	if (rval) {
+		verbose("sched_getaffinity(%d,%zu) failed with status %d",
+			pid, mask->size, rval);
+	} else if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+		char *mstr = task_cpuset_to_str(mask);
+		debug3("sched_getaffinity(%d) = 0x%s", pid, mstr);
+		xfree(mstr);
+	}
+
+	return mask;
+}
+
+extern int get_assigned_cpu_count(void)
+{
+	int count = -1;
+	xcpuset_t *mask = xgetaffinity(0);
+
+	count = XCPU_COUNT(mask);
+
+	xfree(mask);
+	return count;
 }

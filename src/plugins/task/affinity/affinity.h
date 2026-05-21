@@ -81,8 +81,7 @@
 #include "src/common/xsched.h"
 
 /*** from affinity.c ***/
-void	slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step, int statval);
-int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid);
+extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid);
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA
@@ -90,8 +89,3 @@ int	 get_memset(nodemask_t *mask, stepd_step_rec_t *step);
 void	 slurm_chk_memset(nodemask_t *mask, stepd_step_rec_t *step);
 uint16_t slurm_get_numa_node(uint16_t cpuid);
 #endif
-
-/*** from schedutils.c ***/
-int	str_to_cpuset(cpu_set_t *mask, const char* str);
-int	str_to_cnt(const char* str);
-char *	cpuset_to_str(const cpu_set_t *mask, char *str);

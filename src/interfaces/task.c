@@ -438,14 +438,14 @@ extern int task_g_update_mem_limit(stepd_step_rec_t *step, uint64_t new_job_mem,
 	return rc;
 }
 
-extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
+extern void task_slurm_chkaffinity(xcpuset_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t node_tid)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
 #else
 	char *bind_type, *action, *status, *units;
-	char mstr[CPU_SET_HEX_STR_SIZE];
+	char *mstr = NULL;
 
 	if (!(step->cpu_bind_type & CPU_BIND_VERBOSE))
 		return;
@@ -489,15 +489,12 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 		}
 	}
 
-	fprintf(stderr, "cpu-bind%s=%s - "
-			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
-			units, bind_type,
-			step->node_name,
-			step->task[node_tid]->gtid,
-			node_tid,
-			step->task[node_tid]->pid,
-			task_cpuset_to_str(mask, mstr),
-			action,
-			status);
+	mstr = task_cpuset_to_str(mask);
+
+	fprintf(stderr, "cpu-bind%s=%s - %s, task %2u %2u [%u]: mask 0x%s%s%s\n",
+		units, bind_type, step->node_name, step->task[node_tid]->gtid,
+		node_tid, step->task[node_tid]->pid, mstr, action, status);
+
+	xfree(mstr);
 #endif
 }

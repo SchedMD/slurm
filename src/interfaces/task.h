@@ -135,6 +135,6 @@ extern int task_g_add_pid(pid_t pid);
 extern int task_g_update_mem_limit(stepd_step_rec_t *step, uint64_t new_job_mem,
 				   uint64_t new_step_mem);
 
-extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
+extern void task_slurm_chkaffinity(xcpuset_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t taskid);
 #endif

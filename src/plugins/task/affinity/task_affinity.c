@@ -61,13 +61,14 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {
-	cpu_set_t cur_mask;
-	char mstr[CPU_SET_HEX_STR_SIZE];
+	char *mstr = NULL;
+	xcpuset_t *cur_mask = xgetaffinity(0);
 
-	slurm_getaffinity(0, sizeof(cur_mask), &cur_mask);
-	task_cpuset_to_str(&cur_mask, mstr);
+	mstr = task_cpuset_to_str(cur_mask);
 	verbose("%s loaded with CPU mask 0x%s", plugin_name, mstr);
 
+	xfree(mstr);
+	xfree(cur_mask);
 	return SLURM_SUCCESS;
 }
 
@@ -119,9 +120,7 @@ static void _calc_cpu_affinity(stepd_step_rec_t *step)
 		return;
 
 	for (int i = 0; i < step->node_tasks; i++) {
-		step->task[i]->cpu_set = xmalloc(sizeof(cpu_set_t));
-		if (!get_cpuset(step->task[i]->cpu_set, step, i))
-			xfree(step->task[i]->cpu_set);
+		step->task[i]->cpu_set = get_cpuset(step, i);
 	}
 }
 
@@ -200,17 +199,17 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 				  uint32_t global_tid)
 {
 	int rc = SLURM_SUCCESS;
-	cpu_set_t *new_mask = step->task[node_tid]->cpu_set;
-	cpu_set_t current_cpus;
+	xcpuset_t *new_mask = step->task[node_tid]->cpu_set;
 	pid_t mypid  = step->task[node_tid]->pid;
 
 	if (new_mask)
-		rc = slurm_setaffinity(mypid, sizeof(*new_mask), new_mask);
+		rc = xsetaffinity(mypid, new_mask);
 
 	/* Log affinity status to stderr */
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
-		slurm_getaffinity(mypid, sizeof(current_cpus), &current_cpus);
-		task_slurm_chkaffinity(&current_cpus, step, rc, node_tid);
+		xcpuset_t *current = xgetaffinity(mypid);
+		task_slurm_chkaffinity(current, step, rc, node_tid);
+		xfree(current);
 	} else {
 		task_slurm_chkaffinity(new_mask, step, rc, node_tid);
 	}

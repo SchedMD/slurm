@@ -203,7 +203,7 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 			 char **err_msg)
 {
 	char *tmp_map, *save_ptr = NULL, *tok;
-	cpu_set_t avail_cpus;
+	xcpuset_t *avail_cpus = NULL;
 	bool superset = true;
 	int rc = SLURM_SUCCESS;
 
@@ -215,8 +215,7 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	CPU_ZERO(&avail_cpus);
-	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
+	if (!(avail_cpus = task_str_to_cpuset(avail_mask))) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind map";
 		error("%s", err);
 		if (err_msg)
@@ -228,7 +227,7 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	tok = strtok_r(tmp_map, ",", &save_ptr);
 	while (tok) {
 		int i = atoi(tok);
-		if (!CPU_ISSET(i, &avail_cpus)) {
+		if (!XCPU_ISSET(i, avail_cpus)) {
 			/* The task's CPU map is completely invalid.
 			 * Disable CPU map. */
 			superset = false;
@@ -246,6 +245,8 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 				   avail_mask);
 		rc = ESLURMD_CPU_BIND_ERROR;
 	}
+
+	xfree(avail_cpus);
 	return rc;
 }
 
@@ -253,7 +254,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 			  char **err_msg)
 {
 	char *new_mask = NULL, *save_ptr = NULL, *tok;
-	cpu_set_t avail_cpus, task_cpus;
+	xcpuset_t *avail_cpus = NULL;
 	bool superset = true;
 	int rc = SLURM_SUCCESS;
 
@@ -265,8 +266,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	CPU_ZERO(&avail_cpus);
-	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
+	if (!(avail_cpus = task_str_to_cpuset(avail_mask))) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind mask";
 		error("%s", err);
 		if (err_msg)
@@ -274,42 +274,44 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	tok = strtok_r(req->cpu_bind, ",", &save_ptr);
-	while (tok) {
-		int i, overlaps = 0;
-		char mask_str[CPU_SET_HEX_STR_SIZE];
-		CPU_ZERO(&task_cpus);
-		if (task_str_to_cpuset(&task_cpus, tok)) {
+	while ((tok = xstrtoken(req->cpu_bind, ",", &save_ptr))) {
+		xcpuset_t *task_cpus = NULL;
+		int overlaps = 0;
+		char *mask_str = NULL;
+
+		if (!(task_cpus = task_str_to_cpuset(tok))) {
 			char *err = "Failed to convert cpu bind string into hex for CPU bind mask";
 			error("%s", err);
 			if (err_msg)
 				xstrfmtcat(*err_msg, "%s", err);
+			xfree(avail_cpus);
 			xfree(new_mask);
 			return ESLURMD_CPU_BIND_ERROR;
 		}
-		for (i = 0; i < CPU_SETSIZE; i++) {
-			if (!CPU_ISSET(i, &task_cpus))
+		for (int i = 0; i < task_cpus->max_cpus; i++) {
+			if (!XCPU_ISSET(i, task_cpus))
 				continue;
-			if (CPU_ISSET(i, &avail_cpus)) {
+			if (XCPU_ISSET(i, avail_cpus)) {
 				overlaps++;
 			} else {
-				CPU_CLR(i, &task_cpus);
+				XCPU_CLR(i, task_cpus);
 				superset = false;
 			}
 		}
 		if (overlaps == 0) {
 			/* The task's CPU mask is completely invalid.
 			 * Give it all allowed CPUs. */
-			for (i = 0; i < CPU_SETSIZE; i++) {
-				if (CPU_ISSET(i, &avail_cpus))
-					CPU_SET(i, &task_cpus);
+			for (int i = 0; i < avail_cpus->max_cpus; i++) {
+				if (XCPU_ISSET(i, avail_cpus))
+					XCPU_SET(i, task_cpus);
 			}
 		}
-		task_cpuset_to_str(&task_cpus, mask_str);
+		mask_str = task_cpuset_to_str(task_cpus);
 		if (new_mask)
 			xstrcat(new_mask, ",");
 		xstrcat(new_mask, mask_str);
-		tok = strtok_r(NULL, ",", &save_ptr);
+		xfree(mask_str);
+		xfree(task_cpus);
 	}
 
 	if (!superset) {
@@ -321,6 +323,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		rc = ESLURMD_CPU_BIND_ERROR;
 	}
 
+	xfree(avail_cpus);
 	xfree(req->cpu_bind);
 	req->cpu_bind = new_mask;
 	return rc;
