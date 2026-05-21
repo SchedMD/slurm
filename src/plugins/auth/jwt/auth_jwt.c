@@ -440,14 +440,8 @@ static int _handle_username(auth_context_t *ctxt, jwt_t *jwt,
 	return SLURM_SUCCESS;
 }
 
-/*
- * Verify a credential to approve or deny authentication.
- *
- * Return SLURM_SUCCESS if the credential is in order and valid.
- */
-extern int auth_p_verify(auth_token_t *cred, char *auth_info)
+extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred)
 {
-	auth_context_t *ctxt = &rpc_ctxt;
 	int rc, auth_rc = ESLURM_AUTH_CRED_INVALID;
 	const char *alg;
 	jwt_t *unverified_jwt = NULL, *jwt = NULL;
@@ -562,6 +556,16 @@ fail:
 		jwt_free(jwt);
 	xfree(username);
 	return auth_rc;
+}
+
+/*
+ * Verify a credential to approve or deny authentication.
+ *
+ * Return SLURM_SUCCESS if the credential is in order and valid.
+ */
+extern int auth_p_verify(auth_token_t *cred, char *auth_info)
+{
+	return cred_verify(&rpc_ctxt, cred);
 }
 
 extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
