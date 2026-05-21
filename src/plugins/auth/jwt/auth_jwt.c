@@ -157,7 +157,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _init_jwks(auth_context_t *ctxt, const char *auth_info)
+extern void init_jwks(auth_context_t *ctxt, const char *auth_info)
 {
 	char *key_file;
 	buf_t *buf;
@@ -261,7 +261,7 @@ extern int init(void)
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
 		_parse_auth_params(&rpc_ctxt, slurm_conf.authalt_params);
-		_init_jwks(&rpc_ctxt, slurm_conf.authalt_params);
+		init_jwks(&rpc_ctxt, slurm_conf.authalt_params);
 		_init_hs256(&rpc_ctxt, slurm_conf.authalt_params);
 	} else {
 		/* we must be in a client command */
