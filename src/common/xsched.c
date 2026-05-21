@@ -152,12 +152,12 @@ extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 	return rval;
 }
 
-extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
+extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask)
 {
 	int rval;
 	char mstr[CPU_SET_HEX_STR_SIZE];
 
-	CPU_ZERO(mask);
+	CPU_ZERO_S(mask->size, &mask->mask);
 
 	/*
 	 * The FreeBSD cpuset API is a superset of the Linux API.
@@ -168,17 +168,18 @@ extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 	 * Linux sched_*etaffinity() uses 0 for this.
 	 */
 #ifdef __FreeBSD__
-	rval = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
-				  mask);
+	rval = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
+				  mask->size, &mask->mask);
 #else
-	rval = sched_getaffinity(pid, size, mask);
+	rval = sched_getaffinity(pid, mask->size, &mask->mask);
 #endif
 	if (rval) {
 		verbose("sched_getaffinity(%d,%zu,0x%s) failed with status %d",
-			pid, size, task_cpuset_to_str(mask, mstr), rval);
+			pid, mask->size, task_cpuset_to_str(&mask->mask, mstr),
+			rval);
 	} else {
 		debug3("sched_getaffinity(%d) = 0x%s",
-		       pid, task_cpuset_to_str(mask, mstr));
+		       pid, task_cpuset_to_str(&mask->mask, mstr));
 	}
 	return rval;
 }
@@ -188,7 +189,7 @@ extern int get_assigned_cpu_count(void)
 	int rc = EINVAL, count = -1;
 	xcpuset_t *mask = xcpuset_alloc();
 
-	if ((rc = slurm_getaffinity(getpid(), mask->size, &mask->mask))) {
+	if ((rc = slurm_getaffinity(getpid(), mask))) {
 		error("%s: Unable to query assigned CPU mask: %s",
                       __func__, slurm_strerror(rc));
 	} else {
