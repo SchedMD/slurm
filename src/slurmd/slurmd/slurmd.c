@@ -3200,7 +3200,7 @@ static int _core_spec_init(void)
 		}
 		FREE_NULL_BITMAP(res_mac_bitmap);
 
-		if ((rval = slurm_setaffinity(pid, mask))) {
+		if ((rval = xsetaffinity(pid, mask))) {
 			error("Resource spec: unable to establish slurmd CPU "
 			      "affinity: %m");
 			_resource_spec_fini();
