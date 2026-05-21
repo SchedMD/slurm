@@ -103,6 +103,8 @@ void* xhash_get(xhash_t* table, const char* key, uint32_t key_len)
 
 void* xhash_get_str(xhash_t* table, const char* key)
 {
+	if (!key)
+		return NULL;
 	return xhash_get(table, key, strlen(key));
 }
 
@@ -137,6 +139,8 @@ void* xhash_pop(xhash_t* table, const char* key, uint32_t len)
 
 void* xhash_pop_str(xhash_t* table, const char* key)
 {
+	if (!key)
+		return NULL;
 	return xhash_pop(table, key, strlen(key));
 }
 
@@ -151,6 +155,8 @@ void xhash_delete(xhash_t* table, const char* key, uint32_t len)
 
 void xhash_delete_str(xhash_t* table, const char* key)
 {
+	if (!key)
+		return;
 	return xhash_delete(table, key, strlen(key));
 }
 
