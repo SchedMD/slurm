@@ -2202,6 +2202,10 @@ static int _handle_add_remove_names(
 				xfree(*object_str);
 
 			(*object_cnt)--;
+			if (not_flag & RESV_CTLD_USER_NOT)
+				xfree(resv_ptr->username_list[j]);
+			else if (not_flag & RESV_CTLD_ACCT_NOT)
+				xfree(resv_ptr->account_list[j]);
 			for (k=j; k<*object_cnt; k++) {
 				switch (not_flag) {
 				case RESV_CTLD_USER_NOT:
