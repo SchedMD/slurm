@@ -288,7 +288,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 			xfree(new_mask);
 			return ESLURMD_CPU_BIND_ERROR;
 		}
-		for (int i = 0; i < CPU_SETSIZE; i++) {
+		for (int i = 0; i < task_cpus->max_cpus; i++) {
 			if (!XCPU_ISSET(i, task_cpus))
 				continue;
 			if (XCPU_ISSET(i, avail_cpus)) {
@@ -301,7 +301,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		if (overlaps == 0) {
 			/* The task's CPU mask is completely invalid.
 			 * Give it all allowed CPUs. */
-			for (int i = 0; i < CPU_SETSIZE; i++) {
+			for (int i = 0; i < avail_cpus->max_cpus; i++) {
 				if (XCPU_ISSET(i, avail_cpus))
 					XCPU_SET(i, task_cpus);
 			}
