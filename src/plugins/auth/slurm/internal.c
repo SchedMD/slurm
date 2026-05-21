@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
+#include "src/common/xbase64.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -58,7 +59,7 @@ typedef struct {
 	const char *kid;
 	time_t exp;
 	unsigned char *key;
-	unsigned int keylen;
+	int keylen;
 } key_details_t;
 
 static key_details_t *default_key = NULL;
@@ -148,9 +149,11 @@ static data_for_each_cmd_t _build_key_list(data_t *d, void *arg)
 		fatal("%s: failed to load key field", __func__);
 
 	k_base64 = xbase64_from_base64url(k);
-	key_ptr->key = xmalloc(strlen(k_base64));
-	key_ptr->keylen = jwt_Base64decode(key_ptr->key, k_base64);
+	key_ptr->keylen = xbase64_decode(&key_ptr->key, k_base64);
 	xfree(k_base64);
+
+	if (key_ptr->keylen < 0)
+		fatal("%s: key failed to decode", __func__);
 
 	if (key_ptr->keylen < 16)
 		fatal("%s: key lacks sufficient entropy", __func__);
@@ -323,9 +326,7 @@ extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
 		goto fail;
 	}
 	if (data && dlen) {
-		/* This is excessive, but also easy to calculate. */
-		char *payload = xcalloc(2, dlen);
-		jwt_Base64encode(payload, data, dlen);
+		char *payload = xbase64_encode(data, dlen);
 		if (jwt_add_grant(jwt, "payload", payload)) {
 			error("%s: jwt_add_grant failure for payload", __func__);
 			xfree(payload);

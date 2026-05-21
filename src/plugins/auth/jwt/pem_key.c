@@ -34,17 +34,9 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xbase64.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-/*
- * Use the libjwt base64 functions despite them not being prototyped in <jwt.h>.
- * Otherwise we'd probably end up copying the exact same implementation
- * (the implementation they use is originally from Apache and is BSD licensed)
- * into Slurm rather than pick up another external dependency.
- */
-extern int jwt_Base64decode(unsigned char *bufplain, const char *bufcoded);
-extern int jwt_Base64encode(char *encoded, const char *string, int len);
 
 /*
  * If the first hex character is '8', 'a', 'b', 'c', 'd', or 'e',
@@ -68,17 +60,15 @@ static void _handle_prepend(char **string)
 static char *_to_hex(const char *base64url)
 {
 	char *base64, *hex;
-	unsigned char *bin;
+	unsigned char *bin = NULL;
 	int binlen;
 
 	base64 = xbase64_from_base64url(base64url);
 
-	/*
-	 * The binary format is ~33% smaller,
-	 * but just make the buffer equal length.
-	 */
-	bin = xmalloc(strlen(base64));
-	binlen = jwt_Base64decode(bin, base64);
+	binlen = xbase64_decode(&bin, base64);
+
+	if (binlen < 0)
+		fatal("xbase64_decode() failed to decode key material");
 
 	hex = xstring_bytes2hex(bin, binlen, NULL);
 
@@ -217,8 +207,7 @@ extern char *pem_from_mod_exp(const char *mod, const char *exp)
 	binkeylen = _to_bin(&binkey, layer3);
 
 	/* And the binary into hex */
-	base64key = xcalloc(2, binkeylen);
-	jwt_Base64encode(base64key, binkey, binkeylen);
+	base64key = xbase64_encode((uint8_t *) binkey, binkeylen);
 
 	xstrcat(pem, "-----BEGIN PUBLIC KEY-----\n");
 	xstrcat(pem, base64key);

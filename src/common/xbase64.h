@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  auth_slurm.h
+ *  xbase64.h
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,74 +33,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _AUTH_SLURM_H
-#define _AUTH_SLURM_H
+#ifndef _XBASE64_H
+#define _XBASE64_H
 
-#include <jwt.h>
-#include <stdbool.h>
-#include <sys/types.h>
+#include <stdint.h>
 
-#include "src/common/data.h"
-#include "src/common/identity.h"
-#include "src/interfaces/cred.h"
+/*
+ * Returns an xmalloc()'d string with the base64 encoded contents.
+ */
+extern char *xbase64_encode(const uint8_t *plain, int len);
 
-#define DEFAULT_TTL 60
-
-typedef struct {
-	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
-
-	bool verified;
-
-	time_t ctime;
-
-	uid_t uid;
-	gid_t gid;
-	char *hostname;
-	char *cluster;
-	char *context;
-
-	void *data;
-	int dlen;
-
-	identity_t *id;
-
-	/* packed data below */
-	char *token;
-} auth_cred_t;
-
-extern bool internal;
-extern bool use_client_ids;
-
-extern void init_internal(void);
-extern void fini_internal(void);
-extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
-			     void *data, int dlen, char *extra);
-extern int verify_internal(auth_cred_t *cred, uid_t decoder_uid);
-extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid);
-
-extern auth_cred_t *create_external(uid_t r_uid, void *data, int dlen);
-extern int verify_external(auth_cred_t *cred);
-
-extern void init_sack_conmgr(void);
-
-extern auth_cred_t *new_cred(void);
-extern void destroy_cred(auth_cred_t *cred);
-#define FREE_NULL_CRED(_X)		\
-do {					\
-	if (_X)				\
-		destroy_cred(_X);	\
-	_X = NULL;			\
-} while (0)
-
-extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred);
-
-extern char *encode_launch(slurm_cred_arg_t *cred);
-extern slurm_cred_t *extract_launch(char *json);
-
-extern char *encode_sbcast(sbcast_cred_arg_t *cred);
-extern sbcast_cred_t *extract_sbcast(char *json);
-
-extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases);
-extern slurm_node_alias_addrs_t *extract_net_aliases(jwt_t *jwt);
+/*
+ * Returns the output length, alongside an xmalloc()'d buffer,
+ * or -1 and sets decoded to NULL on failure.
+ */
+extern int xbase64_decode(uint8_t **decoded, const char *encoded);
 
 #endif
