@@ -157,12 +157,14 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _init_jwks(auth_context_t *ctxt)
+static void _init_jwks(auth_context_t *ctxt, const char *auth_info)
 {
 	char *key_file;
 	buf_t *buf;
 
-	if (!(key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwks=")))
+	FREE_NULL_DATA(ctxt->jwks);
+
+	if (!(key_file = conf_get_opt_str(auth_info, "jwks=")))
 		return;
 
 	_check_key_permissions(key_file, S_IWOTH);
@@ -188,11 +190,11 @@ static void _init_jwks(auth_context_t *ctxt)
 				  _build_jwks_keys, NULL);
 }
 
-static void _init_hs256(auth_context_t *ctxt)
+static void _init_hs256(auth_context_t *ctxt, const char *auth_info)
 {
-	char *key_file;
+	char *key_file = conf_get_opt_str(auth_info, "jwt_key=");
 
-	key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwt_key=");
+	FREE_NULL_BUFFER(ctxt->key);
 
 	/*
 	 * If jwks was loaded, and jwt is not explicitly configured, skip setup.
@@ -222,26 +224,25 @@ static void _init_hs256(auth_context_t *ctxt)
 	xfree(key_file);
 }
 
-static void _parse_auth_params(auth_context_t *ctxt)
+static void _parse_auth_params(auth_context_t *ctxt, const char *auth_info)
 {
 	char *param_val;
 
-	if (!slurm_conf.authalt_params)
+	if (!auth_info)
 		return;
 
 	/* intentionally matches "use_jwt_client_ids_only" as well */
-	if (xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids"))
+	if (xstrstr(auth_info, "use_jwt_client_ids"))
 		ctxt->use_client_ids = true;
 
-	if (xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids_only"))
+	if (xstrstr(auth_info, "use_jwt_client_ids_only"))
 		ctxt->use_client_ids_only = true;
 
 	debug("use_jwt_client_ids: %d, use_jwt_client_ids_only: %d",
 	      ctxt->use_client_ids, ctxt->use_client_ids_only);
 
 	/* Parse userclaimfield parameter */
-	if ((param_val = conf_get_opt_str(slurm_conf.authalt_params,
-					  "userclaimfield="))) {
+	if ((param_val = conf_get_opt_str(auth_info, "userclaimfield="))) {
 		xfree(ctxt->claim_field);
 		ctxt->claim_field = xstrdup(param_val);
 		debug("Custom user claim field: %s", ctxt->claim_field);
@@ -259,9 +260,9 @@ extern int init(void)
 
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
-		_parse_auth_params(&rpc_ctxt);
-		_init_jwks(&rpc_ctxt);
-		_init_hs256(&rpc_ctxt);
+		_parse_auth_params(&rpc_ctxt, slurm_conf.authalt_params);
+		_init_jwks(&rpc_ctxt, slurm_conf.authalt_params);
+		_init_hs256(&rpc_ctxt, slurm_conf.authalt_params);
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
