@@ -74,7 +74,7 @@ extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 	xcpuset_t *mask = NULL;
 	int nummasks, maskid, i;
 	char *curstr, *selstr;
-	char mstr[CPU_SET_HEX_STR_SIZE];
+	char *mstr = NULL, *comma = NULL;
 	uint32_t local_id = node_tid;
 	char buftype[1024];
 
@@ -132,16 +132,15 @@ extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 	}
 
 	/* extract the selected mask from the list */
-	i = 0;
-	curstr = mstr;
-	while (*selstr && (*selstr != ',') && (++i < CPU_SET_HEX_STR_SIZE))
-		*curstr++ = *selstr++;
-	*curstr = '\0';
+	mstr = xstrdup(selstr);
+	if ((comma = xstrchr(mstr, ',')))
+		*comma = 0;
 
 	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
 		if (!(mask = task_str_to_cpuset(mstr)))
 			error("task_str_to_cpuset %s", mstr);
+		xfree(mstr);
 		return mask;
 	}
 
@@ -154,6 +153,7 @@ extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 			mycpu = strtoul (mstr, NULL, 10);
 		}
 		XCPU_SET(mycpu, mask);
+		xfree(mstr);
 		return mask;
 	}
 
@@ -182,6 +182,7 @@ extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 			ptr--;
 			base += 4;
 		}
+		xfree(mstr);
 		return mask;
 	}
 
@@ -197,8 +198,10 @@ extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 		}
 		if (!_bind_ldom(myldom, mask))
 			xfree(mask);
+		xfree(mstr);
 		return mask;
 	}
 
+	xfree(mstr);
 	return mask;
 }
