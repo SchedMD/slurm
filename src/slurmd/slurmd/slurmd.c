@@ -3112,7 +3112,6 @@ static int _core_spec_init(void)
 	pid_t pid;
 	bool slurmd_off_spec;
 	bitstr_t *res_mac_bitmap;
-	cpu_set_t mask;
 
 	if ((conf->core_spec_cnt == 0) && (conf->cpu_spec_list == NULL)) {
 		debug("Resource spec: No specialized cores configured by "
@@ -3190,23 +3189,25 @@ static int _core_spec_init(void)
 			return SLURM_ERROR;
 		}
 	} else {
+		xcpuset_t *mask = xcpuset_alloc();
 		res_mac_bitmap = bit_alloc(ncpus);
 		bit_unfmt(res_mac_bitmap, res_mac_cpus);
-		CPU_ZERO(&mask);
 		for (i = 0; i < ncpus; i++) {
 			bool cpu_in_spec = bit_test(res_mac_bitmap, i);
 			if (slurmd_off_spec != cpu_in_spec) {
-				CPU_SET(i, &mask);
+				XCPU_SET(i, mask);
 			}
 		}
 		FREE_NULL_BITMAP(res_mac_bitmap);
 
-		if ((rval = slurm_setaffinity(pid, sizeof(mask), &mask))) {
+		if ((rval = slurm_setaffinity(pid, mask->size, &mask->mask))) {
 			error("Resource spec: unable to establish slurmd CPU "
 			      "affinity: %m");
 			_resource_spec_fini();
+			xfree(mask);
 			return SLURM_ERROR;
 		}
+		xfree(mask);
 	}
 
 	info("Resource spec: Reserved abstract CPU IDs: %s", res_abs_cpus);
