@@ -9,6 +9,6 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(JWT_CPPFLAGS)
 pkglib_LTLIBRARIES = auth_jwt.la
 
 # JWT authentication plugin.
-auth_jwt_la_SOURCES = auth_jwt.c auth_jwt.h pem_key.c
+auth_jwt_la_SOURCES = auth_jwt.c auth_jwt.h http_auth_jwt.c pem_key.c
 auth_jwt_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
 auth_jwt_la_LIBADD = $(JWT_LIBS) ../common/libauth_common.la

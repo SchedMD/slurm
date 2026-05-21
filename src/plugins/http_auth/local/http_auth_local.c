@@ -53,7 +53,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Required for http_auth plugins: */
 const uint32_t plugin_id = HTTP_AUTH_PLUGIN_LOCAL;
 
-extern int http_auth_p_init(void)
+extern int http_auth_p_init(const char *auth_info)
 {
 	return SLURM_SUCCESS;
 }
