@@ -69,9 +69,9 @@ static int _bind_ldom(uint32_t ldom, xcpuset_t *mask)
 #endif
 }
 
-extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
-		      uint32_t node_tid)
+extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 {
+	xcpuset_t *mask = NULL;
 	int nummasks, maskid, i;
 	char *curstr, *selstr;
 	char mstr[CPU_SET_HEX_STR_SIZE];
@@ -83,18 +83,21 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 		step->cpu_bind);
 
 	if (step->cpu_bind_type & CPU_BIND_NONE) {
-		return false;
+		return NULL;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDRANK) {
 		/* if HAVE_NUMA then bind this task ID to it's corresponding
 		 * locality domain ID. Otherwise, bind this task ID to it's
 		 * corresponding socket ID */
-		return _bind_ldom(local_id, mask);
+		mask = xcpuset_alloc();
+		if (!_bind_ldom(local_id, mask))
+			xfree(mask);
+		return mask;
 	}
 
 	if (!step->cpu_bind)
-		return false;
+		return NULL;
 
 	nummasks = 1;
 	selstr = NULL;
@@ -123,7 +126,7 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 			curstr++;
 		}
 		if (!*curstr) {
-			return false;
+			return NULL;
 		}
 		selstr = curstr;
 	}
@@ -135,13 +138,14 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
+	mask = xcpuset_alloc();
 	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
 		if (task_str_to_cpuset(mask, mstr) < 0) {
 			error("task_str_to_cpuset %s", mstr);
-			return false;
+			xfree(mask);
 		}
-		return true;
+		return mask;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_MAP) {
@@ -152,7 +156,7 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 			mycpu = strtoul (mstr, NULL, 10);
 		}
 		XCPU_SET(mycpu, mask);
-		return true;
+		return mask;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDMASK) {
@@ -169,20 +173,18 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 			curstr += 2;
 		while (ptr >= curstr) {
 			char val = slurm_char_to_hex(*ptr);
-			if (val == (char) -1)
-				return false;
-			if ((val & 1) && !_bind_ldom(base, mask))
-				return false;
-			if ((val & 2) && !_bind_ldom(base + 1, mask))
-				return false;
-			if ((val & 4) && !_bind_ldom(base + 2, mask))
-				return false;
-			if ((val & 8) && !_bind_ldom(base + 3, mask))
-				return false;
+			if ((val == (char) -1) ||
+			    ((val & 1) && !_bind_ldom(base, mask)) ||
+			    ((val & 2) && !_bind_ldom(base + 1, mask)) ||
+			    ((val & 4) && !_bind_ldom(base + 2, mask)) ||
+			    ((val & 8) && !_bind_ldom(base + 3, mask))) {
+				xfree(mask);
+				break;
+			}
 			ptr--;
 			base += 4;
 		}
-		return true;
+		return mask;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDMAP) {
@@ -195,8 +197,10 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 		} else {
 			myldom = strtoul (mstr, NULL, 10);
 		}
-		return _bind_ldom(myldom, mask);
+		if (!_bind_ldom(myldom, mask))
+			xfree(mask);
+		return mask;
 	}
 
-	return false;
+	return mask;
 }
