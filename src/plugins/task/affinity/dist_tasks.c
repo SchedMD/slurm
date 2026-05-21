@@ -279,7 +279,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 
 	while ((tok = xstrtoken(req->cpu_bind, ",", &save_ptr))) {
 		int overlaps = 0;
-		char mask_str[CPU_SET_HEX_STR_SIZE];
+		char *mask_str = NULL;
 		xcpuset_t *task_cpus = xcpuset_alloc();
 		if (task_str_to_cpuset(&task_cpus->mask, tok)) {
 			char *err = "Failed to convert cpu bind string into hex for CPU bind mask";
@@ -309,10 +309,11 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 					XCPU_SET(i, task_cpus);
 			}
 		}
-		task_cpuset_to_str(&task_cpus->mask, mask_str);
+		mask_str = task_cpuset_to_str(task_cpus);
 		if (new_mask)
 			xstrcat(new_mask, ",");
 		xstrcat(new_mask, mask_str);
+		xfree(mask_str);
 		xfree(task_cpus);
 	}
 

@@ -66,12 +66,9 @@ extern xcpuset_t *xcpuset_alloc(void);
  * Convert a CPU bitmask to a hex string.
  *
  * IN mask - A CPU bitmask pointer.
- * IN/OUT str - A char pointer used to return a string of size
- *		CPU_SET_HEX_STR_SIZE.
- * RET - Returns a pointer to a string slice in str that starts at the first
- *	 non-zero hex char or last zero hex char if all bits are not set.
+ * RET - xmalloc'd string.
  */
-extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
+extern char *task_cpuset_to_str(const xcpuset_t *mask);
 
 /*
  * Convert a hex string to a CPU bitmask.
