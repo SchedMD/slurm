@@ -154,8 +154,10 @@ extern void http_router_bind(http_request_method_t method, const char *path,
 			       path);
 	xassert(rpath->request_len > 0);
 
-	xassert(!_find_path(method, path));
-	(void) xhash_add(router.paths, rpath);
+	if (!xhash_add(router.paths, rpath)) {
+		xassert(false);
+		_path_free(rpath);
+	}
 }
 
 extern int http_router_on_request(http_con_t *hcon, const char *name,
