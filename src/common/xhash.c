@@ -146,7 +146,7 @@ void* xhash_pop_str(xhash_t* table, const char* key)
 
 void xhash_delete(xhash_t* table, const char* key, uint32_t len)
 {
-	if (!table || !key || !len)
+	if (!table || !key)
 		return;
 	void* item_item = xhash_pop(table, key, len);
 	if (item_item && table->freefunc)
