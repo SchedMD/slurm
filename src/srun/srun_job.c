@@ -2364,7 +2364,7 @@ extern void setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->localid = -1;
 	env->nodeid = -1;
 	env->procid = -1;
-	env->stepid = -1;
+	env->step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (srun_opt->bcast_flag)
 		_file_bcast(opt_local, job);
@@ -2417,11 +2417,9 @@ extern void setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 			_uint16_array_to_str(job->nhosts,
 					     job->step_ctx->step_resp
 						     ->step_layout->tasks);
+	env->step_id = job->step_id;
 	if (job->het_job_id != NO_VAL)
-		env->jobid = job->het_job_id;
-	else
-		env->jobid = job->step_id.job_id;
-	env->stepid = job->step_id.step_id;
+		env->step_id.job_id = job->het_job_id;
 	env->account = job->account;
 	env->qos = job->qos;
 	env->resv_name = job->resv_name;
