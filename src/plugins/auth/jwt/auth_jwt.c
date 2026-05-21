@@ -69,7 +69,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = AUTH_PLUGIN_JWT;
 const bool hash_enable = false;
 
-typedef struct {
+typedef struct auth_token_s {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 
 	bool verified;
