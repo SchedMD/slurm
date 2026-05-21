@@ -254,7 +254,7 @@ static int _get_return_codes(void *x, void *arg)
 	return 0;
 }
 
-static int _handle_mult_rc_ret(void)
+static int _handle_mult_rc_ret(list_t **id_rc_list)
 {
 	buf_t *buffer;
 	uint16_t msg_type;
@@ -286,7 +286,14 @@ static int _handle_mult_rc_ret(void)
 		slurm_mutex_unlock(&agent_lock);
 		rc = rc_msg.rc;
 
-		_process_id_rc_list(rc_msg.id_rc_list);
+		/*
+		 * Hand the collected id_rc_list back to the caller so it can
+		 * be processed without slurmdbd_lock held; _process_id_rc_list
+		 * takes a slurmctld JOB write lock, which can deadlock with
+		 * callers that hold the JOB lock and call into the slurmdbd
+		 * agent (e.g. read_slurm_conf() during recovery).
+		 */
+		*id_rc_list = rc_msg.id_rc_list;
 
 		slurmdbd_free_list_msg(list_msg);
 		break;
@@ -703,6 +710,8 @@ static void *_agent(void *x)
 		 slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
+		list_t *id_rc_list = NULL;
+
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent) {
 			log_flag(DBD_AGENT, "slurmdbd agent halt with agent_count=%d",
@@ -791,17 +800,19 @@ static void *_agent(void *x)
 			}
 			error("Failure sending message: %d: %m", rc);
 		} else if (list_msg.my_list) {
-			rc = _handle_mult_rc_ret();
+			rc = _handle_mult_rc_ret(&id_rc_list);
 		} else {
 			rc_msg_t rc_msg = { 0 };
 
 			rc = _get_return_code(&rc_msg);
 
-			_process_id_rc_list(rc_msg.id_rc_list);
+			id_rc_list = rc_msg.id_rc_list;
 
 			if (rc == EAGAIN) {
 				if (*slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
+					_process_id_rc_list(id_rc_list);
+					id_rc_list = NULL;
 					END_TIMER2("slurmdbd agent: EAGAIN on shutdown");
 					break;
 				}
@@ -810,6 +821,15 @@ static void *_agent(void *x)
 			}
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
+
+		/*
+		 * Process id_rc_list outside of slurmdbd_lock to avoid an
+		 * AB-BA deadlock between slurmdbd_lock and the slurmctld JOB
+		 * lock taken by _process_id_rc_list().
+		 */
+		_process_id_rc_list(id_rc_list);
+		id_rc_list = NULL;
+
 		slurm_mutex_lock(&assoc_cache_mutex);
 		if (slurmdbd_conn->conn &&
 		    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
