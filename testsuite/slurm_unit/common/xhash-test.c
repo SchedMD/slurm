@@ -234,6 +234,43 @@ START_TEST(test_walk)
 }
 END_TEST
 
+static void crash_on_null_free(void *item)
+{
+	ck_assert_msg(item != NULL, "freefunc invoked with NULL item");
+}
+
+START_TEST(test_edge_keys)
+{
+	xhash_t *ht = xhash_init(hashable_identify, crash_on_null_free);
+	hashable_t empty = { "", 0 };
+	hashable_t other = { "x", 1 };
+
+	ck_assert_msg(xhash_add(ht, &empty) != NULL, "empty-key add failed");
+	ck_assert_msg(xhash_add(ht, &other) != NULL, "second add failed");
+
+	/* NULL key on _str wrappers must return without crashing */
+	ck_assert_msg(xhash_get_str(ht, NULL) == NULL, "NULL key get not null");
+	ck_assert_msg(xhash_pop_str(ht, NULL) == NULL, "NULL key pop not null");
+	xhash_delete_str(ht, NULL);
+	ck_assert_msg(xhash_count(ht) == 2, "NULL key altered count");
+
+	/* Missed delete must not invoke freefunc with NULL */
+	xhash_delete_str(ht, "absent");
+	ck_assert_msg(xhash_count(ht) == 2, "missed delete altered count");
+
+	/* Empty-string key round-trips through add/get/delete */
+	ck_assert_msg(xhash_get_str(ht, "") == &empty, "empty-key get failed");
+	xhash_delete_str(ht, "");
+	ck_assert_msg(xhash_get_str(ht, "") == NULL,
+		      "empty-key delete left item");
+	ck_assert_msg(xhash_get_str(ht, "x") == &other,
+		      "non-empty entry collateral damage");
+	ck_assert_msg(xhash_count(ht) == 1, "bad count after empty-key delete");
+
+	xhash_free(ht);
+}
+END_TEST
+
 /*****************************************************************************
  * TEST SUITE                                                                *
  ****************************************************************************/
@@ -249,6 +286,7 @@ Suite *xhash_suite(void)
 	tcase_add_test(tc_core, test_delete);
 	tcase_add_test(tc_core, test_count);
 	tcase_add_test(tc_core, test_walk);
+	tcase_add_test(tc_core, test_edge_keys);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
