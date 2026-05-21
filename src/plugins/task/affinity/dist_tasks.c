@@ -277,8 +277,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	tok = strtok_r(req->cpu_bind, ",", &save_ptr);
-	while (tok) {
+	while ((tok = xstrtoken(req->cpu_bind, ",", &save_ptr))) {
 		int overlaps = 0;
 		char mask_str[CPU_SET_HEX_STR_SIZE];
 		xcpuset_t *task_cpus = xcpuset_alloc();
@@ -314,7 +313,6 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 			xstrcat(new_mask, ",");
 		xstrcat(new_mask, mask_str);
 		xfree(task_cpus);
-		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 
 	if (!superset) {
