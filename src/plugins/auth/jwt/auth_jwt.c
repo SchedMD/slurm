@@ -190,7 +190,7 @@ extern void init_jwks(auth_context_t *ctxt, const char *auth_info)
 				  _build_jwks_keys, NULL);
 }
 
-static void _init_hs256(auth_context_t *ctxt, const char *auth_info)
+extern void init_hs256(auth_context_t *ctxt, const char *auth_info)
 {
 	char *key_file = conf_get_opt_str(auth_info, "jwt_key=");
 
@@ -262,7 +262,7 @@ extern int init(void)
 	    running_in_slurmd()) {
 		_parse_auth_params(&rpc_ctxt, slurm_conf.authalt_params);
 		init_jwks(&rpc_ctxt, slurm_conf.authalt_params);
-		_init_hs256(&rpc_ctxt, slurm_conf.authalt_params);
+		init_hs256(&rpc_ctxt, slurm_conf.authalt_params);
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
