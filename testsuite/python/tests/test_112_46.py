@@ -9,6 +9,8 @@ import random
 import time
 
 import pytest
+import requests
+import yaml
 
 import atf
 
@@ -2007,3 +2009,153 @@ def test_resv_crash(slurm, admin_level, cleanup_crash):
     assert (
         not resp.warnings and not resp.errors
     ), "We should be able to get the server response from this message"
+
+
+# Fields that legitimately differ between two independent dumps of the same
+# config: runtime counters and the build/boot/update timestamps. The CLI and
+# REST calls each sample a separate RPC, so these can disagree without a bug.
+conf_volatile_fields = {
+    "BOOT_TIME",
+    "NEXT_JOB_ID",
+    "next_job_id",
+    "LastUpdate",
+    "controllers",
+}
+
+
+def test_slurmrestd_slurm_conf(slurm):
+    """GET /slurm/v0.0.46/conf returns a well-formed slurm.conf payload."""
+    resp = slurm.slurm_v0046_get_conf()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert not resp.warnings, f"unexpected warnings: {resp.warnings}"
+    assert resp.slurm_conf, "empty slurm_conf payload"
+    assert resp.slurm_conf.cluster_name == atf.get_config_parameter(
+        "ClusterName"
+    ), "slurm_conf ClusterName does not match the running config"
+
+
+def test_slurmrestd_slurm_conf_update_time_no_change(slurm):
+    """A future update_time yields a no-change response with an empty body."""
+    resp = slurm.slurm_v0046_get_conf(update_time="4102444800")
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.warnings, "expected a no-change warning"
+    assert not resp.slurm_conf, "expected empty body on no-change"
+
+
+def test_slurmrestd_slurm_conf_update_time_past(slurm):
+    """A past update_time still returns the full slurm.conf payload."""
+    resp = slurm.slurm_v0046_get_conf(update_time="1")
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.slurm_conf, "expected a full payload for a past update_time"
+
+
+def test_slurmrestd_slurm_conf_rejects_non_get():
+    """Only GET is registered for /slurm/v0.0.46/conf."""
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}/slurm/v0.0.46/conf",
+        headers=atf.properties["slurmrestd-headers"],
+        timeout=30,
+    )
+    # A non-GET on a GET-only path is not served: slurmrestd's router returns
+    # 404 (ESLURM_REST_UNKNOWN_URL) today. Accept 405 too so a future change to
+    # the more correct status doesn't break this.
+    assert r.status_code in (
+        404,
+        405,
+    ), f"expected 404/405, got {r.status_code}: {r.text[:200]}"
+
+
+def test_scontrol_show_config_json():
+    """`scontrol show config --json=v0.0.46` emits a well-formed slurm_conf."""
+    blob = json.loads(
+        atf.run_command_output("scontrol show config --json=v0.0.46", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurm_conf"], "empty slurm_conf payload"
+
+
+def test_scontrol_show_config_yaml():
+    """`scontrol show config --yaml=v0.0.46` produces the same shape as --json."""
+    blob = yaml.safe_load(
+        atf.run_command_output("scontrol show config --yaml=v0.0.46", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurm_conf"], "empty slurm_conf payload"
+
+
+def test_scontrol_show_config_json_list():
+    """`scontrol show config --json=list` lists the data_parser plugins."""
+    out = atf.run_command_output("scontrol show config --json=list", fatal=True)
+    assert "v0.0.46" in out, f"v0.0.46 not listed in: {out}"
+
+
+def test_slurm_conf_cli_matches_slurmrestd():
+    """scontrol --json=v0.0.46 and /slurm/v0.0.46/conf yield equivalent payloads."""
+    cli = json.loads(
+        atf.run_command_output("scontrol show config --json=v0.0.46", fatal=True)
+    )["slurm_conf"]
+    rest = atf.request_slurmrestd("slurm/v0.0.46/conf").json()["slurm_conf"]
+    assert cli.get("ClusterName"), "slurm_conf payload missing ClusterName"
+    cli = {k: v for k, v in cli.items() if k not in conf_volatile_fields}
+    rest = {k: v for k, v in rest.items() if k not in conf_volatile_fields}
+    assert cli == rest, "scontrol and slurmrestd slurm_conf payloads differ"
+
+
+def test_slurmrestd_slurmdbd_conf(slurmdb):
+    """GET /slurmdb/v0.0.46/conf returns a well-formed slurmdbd.conf payload."""
+    resp = slurmdb.slurmdb_v0046_get_conf()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert not resp.warnings, f"unexpected warnings: {resp.warnings}"
+    assert resp.slurmdbd_conf, "empty slurmdbd_conf payload"
+    assert resp.slurmdbd_conf.dbd_host, "slurmdbd_conf missing DbdHost"
+
+
+def test_slurmrestd_slurmdbd_conf_rejects_non_get():
+    """Only GET is registered for /slurmdb/v0.0.46/conf."""
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}/slurmdb/v0.0.46/conf",
+        headers=atf.properties["slurmrestd-headers"],
+        timeout=30,
+    )
+    # See test_slurmrestd_slurm_conf_rejects_non_get: a non-GET on a
+    # GET-only path is not served (404 today, 405 acceptable).
+    assert r.status_code in (
+        404,
+        405,
+    ), f"expected 404/405, got {r.status_code}: {r.text[:200]}"
+
+
+def test_sacctmgr_show_config_json():
+    """`sacctmgr show config --json=v0.0.46` emits a well-formed slurmdbd_conf."""
+    blob = json.loads(
+        atf.run_command_output("sacctmgr show config --json=v0.0.46", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurmdbd_conf"], "empty slurmdbd_conf payload"
+
+
+def test_sacctmgr_show_config_yaml():
+    """`sacctmgr show config --yaml=v0.0.46` produces the same shape as --json."""
+    blob = yaml.safe_load(
+        atf.run_command_output("sacctmgr show config --yaml=v0.0.46", fatal=True)
+    )
+    assert blob["errors"] == [], f"unexpected errors: {blob['errors']}"
+    assert blob["slurmdbd_conf"], "empty slurmdbd_conf payload"
+
+
+def test_sacctmgr_show_config_json_list():
+    """`sacctmgr show config --json=list` lists the data_parser plugins."""
+    out = atf.run_command_output("sacctmgr show config --json=list", fatal=True)
+    assert "v0.0.46" in out, f"v0.0.46 not listed in: {out}"
+
+
+def test_slurmdbd_conf_cli_matches_slurmrestd():
+    """sacctmgr --json=v0.0.46 and /slurmdb/v0.0.46/conf yield equivalent payloads."""
+    cli = json.loads(
+        atf.run_command_output("sacctmgr show config --json=v0.0.46", fatal=True)
+    )["slurmdbd_conf"]
+    rest = atf.request_slurmrestd("slurmdb/v0.0.46/conf").json()["slurmdbd_conf"]
+    assert cli.get("DbdHost"), "slurmdbd_conf payload missing DbdHost"
+    cli = {k: v for k, v in cli.items() if k not in conf_volatile_fields}
+    rest = {k: v for k, v in rest.items() if k not in conf_volatile_fields}
+    assert cli == rest, "sacctmgr and slurmrestd slurmdbd_conf payloads differ"
