@@ -553,7 +553,8 @@ extern void http_init(void)
 {
 	int rc = EINVAL;
 
-	if ((rc = http_auth_g_init(NULL, NULL)))
+	if ((rc = http_auth_g_init(slurm_conf.slurmctld_http_auth_params, NULL,
+				   NULL)))
 		fatal("http authentication plugins failed to load: %s",
 		      slurm_strerror(rc));
 

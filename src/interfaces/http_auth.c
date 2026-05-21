@@ -46,7 +46,7 @@
 
 typedef struct {
 	uint32_t *plugin_id;
-	int (*init)(void);
+	int (*init)(const char *auth_info);
 	void (*fini)(void);
 	int (*authenticate)(uid_t *uid_ptr, http_con_t *hcon, const char *name,
 			    const http_con_request_t *request);
@@ -69,7 +69,8 @@ static const char *syms[] = {
 static plugins_t *plugins = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int _load(const char *plugin_type, plugrack_foreach_t listf)
+static int _load(const char *auth_info, const char *plugin_type,
+		 plugrack_foreach_t listf)
 {
 	int rc;
 
@@ -89,7 +90,7 @@ static int _load(const char *plugin_type, plugrack_foreach_t listf)
 	for (int i = 0; i < plugins->count; i++) {
 		const ops_t *ops = plugins->functions[i];
 
-		if ((rc = ops->init())) {
+		if ((rc = ops->init(auth_info))) {
 			/* Cleanup initialized plugins */
 			for (; --i >= 0;) {
 				ops = plugins->functions[i];
@@ -103,13 +104,17 @@ static int _load(const char *plugin_type, plugrack_foreach_t listf)
 	return SLURM_SUCCESS;
 }
 
-extern int http_auth_g_init(const char *plugin_type, plugrack_foreach_t listf)
+extern int http_auth_g_init(const char *auth_info, const char *plugin_type,
+			    plugrack_foreach_t listf)
 {
 	int rc;
 
+	if (!auth_info || !auth_info[0])
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock(&mutex);
 
-	rc = _load(plugin_type, listf);
+	rc = _load(auth_info, plugin_type, listf);
 
 	slurm_mutex_unlock(&mutex);
 

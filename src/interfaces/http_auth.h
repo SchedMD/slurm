@@ -48,7 +48,8 @@ typedef enum {
 	HTTP_AUTH_PLUGIN_ANY = INFINITE16,
 } http_auth_plugin_id_t;
 
-extern int http_auth_g_init(const char *plugin_type, plugrack_foreach_t listf);
+extern int http_auth_g_init(const char *auth_info, const char *plugin_type,
+			    plugrack_foreach_t listf);
 extern void http_auth_g_fini(void);
 
 /*
