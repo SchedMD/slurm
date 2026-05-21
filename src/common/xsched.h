@@ -88,7 +88,7 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char *str);
 extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask);
 
 /* Wrapper for sched_getaffinity() */
-extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
+extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask);
 
 /*
  * RET CPUs set or -1 on error

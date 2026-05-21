@@ -64,7 +64,7 @@ extern int init(void)
 	char mstr[CPU_SET_HEX_STR_SIZE];
 	xcpuset_t *cur_mask = xcpuset_alloc();
 
-	slurm_getaffinity(0, cur_mask->size, &cur_mask->mask);
+	slurm_getaffinity(0, cur_mask);
 	task_cpuset_to_str(&cur_mask->mask, mstr);
 	verbose("%s loaded with CPU mask 0x%s", plugin_name, mstr);
 
@@ -210,7 +210,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 	/* Log affinity status to stderr */
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
 		xcpuset_t *current = xcpuset_alloc();
-		slurm_getaffinity(mypid, current->size, &current->mask);
+		slurm_getaffinity(mypid, current);
 		task_slurm_chkaffinity(current, step, rc, node_tid);
 		xfree(current);
 	} else {
