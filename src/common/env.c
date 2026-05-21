@@ -63,6 +63,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/select.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -397,7 +398,7 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 
 	if (env->cpu_bind_type && !env->batch_flag &&
-	    (env->stepid != SLURM_INTERACTIVE_STEP)) {
+	    (env->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
 		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
 		bool append_cpu_bind = false;
@@ -495,7 +496,8 @@ int setup_env(env_t *env, bool preserve_env)
 		xfree(str_bind_type);
 	}
 
-	if (env->mem_bind_type && (env->stepid != SLURM_INTERACTIVE_STEP)) {
+	if (env->mem_bind_type &&
+	    (env->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind_type = NULL, *str_bind_list;
 		char *str_prefer = NULL, *str_bind = NULL;
 
@@ -641,14 +643,25 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
-	if (env->jobid >= 0) {
-		if (setenvf(&env->env, "SLURM_JOB_ID", "%d", env->jobid)) {
+	if (env->step_id.job_id != NO_VAL) {
+		if (setenvf(&env->env, "SLURM_JOB_ID", "%d",
+			    env->step_id.job_id)) {
 			error("Unable to set SLURM_JOB_ID environment");
 			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
-		if (setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
+		if (setenvf(&env->env, "SLURM_JOBID", "%d",
+			    env->step_id.job_id)) {
 			error("Unable to set SLURM_JOBID environment");
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if (env->step_id.sluid) {
+		char sluid[15] = "";
+		print_sluid(env->step_id.sluid, sluid, sizeof(sluid));
+		if (setenvf(&env->env, "SLURM_JOB_SLUID", "%s", sluid)) {
+			error("Unable to set SLURM_JOB_SLUID environment");
 			rc = SLURM_ERROR;
 		}
 	}
@@ -706,13 +719,15 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
-	if (env->stepid >= 0) {
-		if (setenvf(&env->env, "SLURM_STEP_ID", "%d", env->stepid)) {
+	if (env->step_id.step_id != NO_VAL) {
+		if (setenvf(&env->env, "SLURM_STEP_ID", "%d",
+			    env->step_id.step_id)) {
 			error("Unable to set SLURM_STEP_ID environment");
 			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
-		if (setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
+		if (setenvf(&env->env, "SLURM_STEPID", "%d",
+			    env->step_id.step_id)) {
 			error("Unable to set SLURM_STEPID environment");
 			rc = SLURM_ERROR;
 		}
