@@ -3016,11 +3016,11 @@ Above will allocate 2 gpu:a100 per node as specified in nodecnt.
 
 .TP
 \fBUsers\fR=<\fIuser list\fR>
-List of users permitted to use the reserved nodes, for example
-"User=jones1,smith2". Users can also be denied access to a reservation,
-indicated by having a '-' sign before their name, e.g. "User=-jones1,-smith2".
-Refer to the start of this section for general details about access control
-fields.
+List of usernames and/or UIDs permitted to use the reserved nodes, for
+example "User=jones1,smith2". Users can also be denied access to a
+reservation, indicated by having a '-' sign before their name, e.g.
+"User=-jones1,-smith2". Refer to the start of this section for general
+details about access control fields.
 
 Root and the SlurmUser are given access to all reservations, regardless of the
 users set here.
@@ -3062,6 +3062,11 @@ Prior to version 25.05, if a reservation used user- or group-based access
 controls and slurmctld ever failed to validate the user(s) or group(s), it would
 delete the reservation. Reservations are now resilient to temporary validation
 outages.
+
+During reservation creation and validation, the controller will search
+for each specified user, first in the system password database, then in
+the \fBassoc_mgr\fR. This allows the controller to verify usernames that
+don't exist in its own system database.
 
 .IP
 
