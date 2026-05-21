@@ -65,4 +65,6 @@ extern int auth_p_thread_config(const char *token, const char *username);
 
 extern void auth_p_destroy(auth_token_t *cred);
 
+extern void init_jwks(auth_context_t *ctxt, const char *auth_info);
+
 #endif
