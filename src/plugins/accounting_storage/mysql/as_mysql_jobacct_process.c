@@ -1058,7 +1058,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 			step->end = slurm_atoul(step_row[STEP_REQ_END]);
 			/* if the job has ended end the step also */
-			if (!step->end && job_ended) {
+			if (!step->end && job_ended &&
+			    (job->state != JOB_RESIZING)) {
 				step->end = job->end;
 				step->state = job->state;
 			}
