@@ -438,7 +438,7 @@ extern int task_g_update_mem_limit(stepd_step_rec_t *step, uint64_t new_job_mem,
 	return rc;
 }
 
-extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
+extern void task_slurm_chkaffinity(xcpuset_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t node_tid)
 {
 #if defined(__APPLE__)
@@ -496,7 +496,7 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 			step->task[node_tid]->gtid,
 			node_tid,
 			step->task[node_tid]->pid,
-			task_cpuset_to_str(mask, mstr),
+			task_cpuset_to_str(&mask->mask, mstr),
 			action,
 			status);
 #endif

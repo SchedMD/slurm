@@ -211,10 +211,10 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
 		xcpuset_t *current = xcpuset_alloc();
 		slurm_getaffinity(mypid, current->size, &current->mask);
-		task_slurm_chkaffinity(&current->mask, step, rc, node_tid);
+		task_slurm_chkaffinity(current, step, rc, node_tid);
 		xfree(current);
 	} else {
-		task_slurm_chkaffinity(&new_mask->mask, step, rc, node_tid);
+		task_slurm_chkaffinity(new_mask, step, rc, node_tid);
 	}
 
 	return rc;
