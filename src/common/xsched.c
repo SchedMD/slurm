@@ -55,10 +55,10 @@ extern char *task_cpuset_to_str(const xcpuset_t *mask)
 #else
 	int base;
 	bool leading_zeros = true;
-	char *str = xmalloc(CPU_SET_HEX_STR_SIZE);
+	char *str = xmalloc((mask->max_cpus / 4) + 1);
 	char *ptr = str;
 
-	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
+	for (base = mask->max_cpus - 4; base >= 0; base -= 4) {
 		char val = 0;
 		if (XCPU_ISSET(base, mask))
 			val |= 1;
