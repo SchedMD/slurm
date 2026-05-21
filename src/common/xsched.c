@@ -134,20 +134,20 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
 #endif
 }
 
-extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
+extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 {
 	int rval;
 	char mstr[CPU_SET_HEX_STR_SIZE];
 
 #ifdef __FreeBSD__
-	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
-				  mask);
+	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
+				  mask->size, &mask->mask);
 #else
-	rval = sched_setaffinity(pid, size, mask);
+	rval = sched_setaffinity(pid, mask->size, &mask->mask);
 #endif
 	if (rval) {
 		verbose("sched_setaffinity(%d,%zu,0x%s) failed: %m",
-			pid, size, task_cpuset_to_str(mask, mstr));
+			pid, mask->size, task_cpuset_to_str(&mask->mask, mstr));
 	}
 	return rval;
 }

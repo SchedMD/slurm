@@ -205,7 +205,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 	pid_t mypid  = step->task[node_tid]->pid;
 
 	if (new_mask)
-		rc = slurm_setaffinity(mypid, new_mask->size, &new_mask->mask);
+		rc = slurm_setaffinity(mypid, new_mask);
 
 	/* Log affinity status to stderr */
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
