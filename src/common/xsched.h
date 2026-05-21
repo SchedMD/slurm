@@ -59,9 +59,6 @@ typedef struct {
 
 extern xcpuset_t *xcpuset_alloc(void);
 
-/* The size to represent a cpu_set_t as a hex string (including null) */
-#define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
-
 /*
  * Convert a CPU bitmask to a hex string.
  *
