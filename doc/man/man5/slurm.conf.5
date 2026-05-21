@@ -5326,6 +5326,16 @@ Refer to the \fBRELOCATING CONTROLLERS\fR section if you need to change this.
 .IP
 
 .TP
+\fBSlurmctldHttpAuthParameters\fR
+Comma\-separated list of options controlling how the \fBslurmctld\fR HTTP
+listener authenticates incoming requests. Recognized keys are the same
+JWT\-related keys documented under \fBAuthAltParameters\fR. When set, an
+independent per\-daemon authentication keys are loaded from these parameters.
+Tokens presented to the \fBslurmctld\fR HTTP endpoints are verified against
+these configured keys rather than against \fBAuthAltParameters\fR.
+.IP
+
+.TP
 \fBSlurmctldLogFile\fR
 Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's
 logs are written.
