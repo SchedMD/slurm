@@ -648,6 +648,13 @@ extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port);
 extern int clusteracct_storage_g_register_disconn_ctld(
 	void *db_conn, char *control_host);
+/*
+ * Signal the accounting_storage plugin that the slurmctld has finished
+ * loading state (read_slurm_conf has run). Plugins that defer work pending
+ * a populated job_list/job_hash will resume now. No-op for plugins that
+ * don't need it.
+ */
+extern void clusteracct_storage_g_ctld_recovered(void);
 extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 					   slurmdb_cluster_rec_t *cluster_rec);
 
