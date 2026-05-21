@@ -61,13 +61,14 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {
-	char mstr[CPU_SET_HEX_STR_SIZE];
+	char *mstr = NULL;
 	xcpuset_t *cur_mask = xcpuset_alloc();
 
 	slurm_getaffinity(0, cur_mask);
-	task_cpuset_to_str(&cur_mask->mask, mstr);
+	mstr = task_cpuset_to_str(cur_mask);
 	verbose("%s loaded with CPU mask 0x%s", plugin_name, mstr);
 
+	xfree(mstr);
 	xfree(cur_mask);
 	return SLURM_SUCCESS;
 }

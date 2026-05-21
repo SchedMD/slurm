@@ -54,31 +54,29 @@ extern xcpuset_t *xcpuset_alloc(void)
 	return new;
 }
 
-extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
+extern char *task_cpuset_to_str(const xcpuset_t *mask)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
 #else
 	int base;
-	char *ptr = str;
-	char *ret = NULL;
 	bool leading_zeros = true;
+	char *str = xmalloc(CPU_SET_HEX_STR_SIZE);
+	char *ptr = str;
 
 	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
 		char val = 0;
-		if (CPU_ISSET(base, mask))
+		if (XCPU_ISSET(base, mask))
 			val |= 1;
-		if (CPU_ISSET(base + 1, mask))
+		if (XCPU_ISSET(base + 1, mask))
 			val |= 2;
-		if (CPU_ISSET(base + 2, mask))
+		if (XCPU_ISSET(base + 2, mask))
 			val |= 4;
-		if (CPU_ISSET(base + 3, mask))
+		if (XCPU_ISSET(base + 3, mask))
 			val |= 8;
 		/* If it's a leading zero, ignore it */
 		if (leading_zeros && !val)
 			continue;
-		if (!ret && val)
-			ret = ptr;
 		*ptr++ = slurm_hex_to_char(val);
 		/* All zeros from here on out will be written */
 		leading_zeros = false;
@@ -86,8 +84,7 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 	/* If the bitmask is all 0s, add a single 0 */
 	if (leading_zeros)
 		*ptr++ = '0';
-	*ptr = '\0';
-	return ret ? ret : ptr - 1;
+	return str;
 #endif
 }
 
@@ -137,7 +134,6 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
 extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 {
 	int rval;
-	char mstr[CPU_SET_HEX_STR_SIZE];
 
 #ifdef __FreeBSD__
 	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid,
@@ -146,8 +142,10 @@ extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 	rval = sched_setaffinity(pid, mask->size, &mask->mask);
 #endif
 	if (rval) {
+		char *mstr = task_cpuset_to_str(mask);
 		verbose("sched_setaffinity(%d,%zu,0x%s) failed: %m",
-			pid, mask->size, task_cpuset_to_str(&mask->mask, mstr));
+			pid, mask->size, mstr);
+		xfree(mstr);
 	}
 	return rval;
 }
@@ -155,7 +153,6 @@ extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask)
 {
 	int rval;
-	char mstr[CPU_SET_HEX_STR_SIZE];
 
 	CPU_ZERO_S(mask->size, &mask->mask);
 
@@ -174,12 +171,14 @@ extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask)
 	rval = sched_getaffinity(pid, mask->size, &mask->mask);
 #endif
 	if (rval) {
+		char *mstr = task_cpuset_to_str(mask);
 		verbose("sched_getaffinity(%d,%zu,0x%s) failed with status %d",
-			pid, mask->size, task_cpuset_to_str(&mask->mask, mstr),
-			rval);
-	} else {
-		debug3("sched_getaffinity(%d) = 0x%s",
-		       pid, task_cpuset_to_str(&mask->mask, mstr));
+			pid, mask->size, mstr, rval);
+		xfree(mstr);
+	} else if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+		char *mstr = task_cpuset_to_str(mask);
+		debug3("sched_getaffinity(%d) = 0x%s", pid, mstr);
+		xfree(mstr);
 	}
 	return rval;
 }
