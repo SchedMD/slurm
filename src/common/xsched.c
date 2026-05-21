@@ -150,11 +150,10 @@ extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
 	return rval;
 }
 
-extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask)
+extern xcpuset_t *xgetaffinity(pid_t pid)
 {
 	int rval;
-
-	CPU_ZERO_S(mask->size, &mask->mask);
+	xcpuset_t *mask = xcpuset_alloc();
 
 	/*
 	 * The FreeBSD cpuset API is a superset of the Linux API.
@@ -180,20 +179,16 @@ extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask)
 		debug3("sched_getaffinity(%d) = 0x%s", pid, mstr);
 		xfree(mstr);
 	}
-	return rval;
+
+	return mask;
 }
 
 extern int get_assigned_cpu_count(void)
 {
-	int rc = EINVAL, count = -1;
-	xcpuset_t *mask = xcpuset_alloc();
+	int count = -1;
+	xcpuset_t *mask = xgetaffinity(0);
 
-	if ((rc = slurm_getaffinity(getpid(), mask))) {
-		error("%s: Unable to query assigned CPU mask: %s",
-                      __func__, slurm_strerror(rc));
-	} else {
-		count = XCPU_COUNT(mask);
-	}
+	count = XCPU_COUNT(mask);
 
 	xfree(mask);
 	return count;

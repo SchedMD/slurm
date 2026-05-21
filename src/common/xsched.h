@@ -84,8 +84,12 @@ extern int task_str_to_cpuset(xcpuset_t *mask, const char *str);
 /* Wrapper for sched_setaffinity() */
 extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask);
 
-/* Wrapper for sched_getaffinity() */
-extern int slurm_getaffinity(pid_t pid, xcpuset_t *mask);
+/*
+ * Returns an allocated xcpuset_t structure describing the current cpu affinity.
+ * IN - pid, or 0 for current process
+ * RET - xmalloc'd xcpuset_t structure
+ */
+extern xcpuset_t *xgetaffinity(pid_t pid);
 
 /*
  * RET CPUs set or -1 on error
