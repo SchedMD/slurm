@@ -1082,6 +1082,9 @@ extern void threadpool_fini(void)
 
 	threadpool.shutdown = true;
 
+	/* Wake every idle worker to clean up */
+	EVENT_BROADCAST(&threadpool.events.assign);
+
 	slurm_mutex_unlock(&threadpool.mutex);
 }
 
