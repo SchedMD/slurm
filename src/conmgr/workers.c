@@ -112,7 +112,7 @@ static int _detect_cpu_count(void)
 {
 	int count = 0;
 
-	if ((count = get_assigned_cpu_count()) < 0)
+	if ((count = get_assigned_cpu_count()) <= 0)
 		return 0;
 
 	log_flag(CONMGR, "%s: detected %d CPUs available from kernel",
