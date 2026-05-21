@@ -800,3 +800,10 @@ extern int auth_p_prepare_reconfig_fd(char ***env)
 {
 	return -1;
 }
+
+extern void cred_set_token(auth_token_t *cred, const char *token,
+			   const char *username)
+{
+	cred->username = xstrdup(username);
+	cred->token = xstrdup(token);
+}
