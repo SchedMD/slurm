@@ -1311,7 +1311,8 @@ extern void do_list(int argc, char **argv)
 		if (!(job_cond->flags & JOBCOND_FLAG_NO_STEP)) {
 			itr_step = list_iterator_create(job->steps);
 			while ((step = list_next(itr_step))) {
-				if (step->end == 0)
+				if ((step->end == 0) &&
+				    (job->state != JOB_RESIZING))
 					step->end = job->end;
 				print_fields(JOBSTEP, step);
 			}
