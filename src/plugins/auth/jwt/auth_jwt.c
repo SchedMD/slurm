@@ -224,7 +224,7 @@ extern void init_hs256(auth_context_t *ctxt, const char *auth_info)
 	xfree(key_file);
 }
 
-static void _parse_auth_params(auth_context_t *ctxt, const char *auth_info)
+extern void parse_auth_params(auth_context_t *ctxt, const char *auth_info)
 {
 	char *param_val;
 
@@ -260,7 +260,7 @@ extern int init(void)
 
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
-		_parse_auth_params(&rpc_ctxt, slurm_conf.authalt_params);
+		parse_auth_params(&rpc_ctxt, slurm_conf.authalt_params);
 		init_jwks(&rpc_ctxt, slurm_conf.authalt_params);
 		init_hs256(&rpc_ctxt, slurm_conf.authalt_params);
 	} else {

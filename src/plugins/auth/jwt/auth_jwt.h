@@ -69,4 +69,6 @@ extern void init_jwks(auth_context_t *ctxt, const char *auth_info);
 
 extern void init_hs256(auth_context_t *ctxt, const char *auth_info);
 
+extern void parse_auth_params(auth_context_t *ctxt, const char *auth_info);
+
 #endif
