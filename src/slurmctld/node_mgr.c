@@ -1529,6 +1529,19 @@ static void _require_node_reg(node_record_t *node_ptr)
 	ping_nodes_now = true;
 }
 
+static int _foreach_build_part_bitmap(void *x, void *arg)
+{
+	build_part_bitmap(x);
+	return SLURM_SUCCESS;
+}
+
+static void _update_parts(void)
+{
+	/* scan partition table and identify nodes in each */
+	list_for_each(part_list, _foreach_build_part_bitmap, NULL);
+	set_partition_tres(false);
+}
+
 int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 {
 	int error_code = 0, node_cnt;
@@ -1543,6 +1556,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
 
 	if (update_node_msg->node_names == NULL ) {
 		info("%s: invalid node name", __func__);
@@ -2377,6 +2394,9 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			list_sort(config_list, &list_compare_config);
 		}
 	}
+
+	if ((error_code == SLURM_SUCCESS) && update_node_msg->features)
+		_update_parts();
 
 end:
 	FREE_NULL_HOSTLIST(host_list);
@@ -4854,19 +4874,6 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 	slurm_reset_alias(node_ptr->name,
 			  node_ptr->comm_name,
 			  node_ptr->node_hostname);
-}
-
-static int _foreach_build_part_bitmap(void *x, void *arg)
-{
-	build_part_bitmap(x);
-	return SLURM_SUCCESS;
-}
-
-static void _update_parts()
-{
-	/* scan partition table and identify nodes in each */
-	list_for_each(part_list, _foreach_build_part_bitmap, NULL);
-	set_partition_tres(false);
 }
 
 static int _build_node_callback(char *alias, char *hostname, char *address,

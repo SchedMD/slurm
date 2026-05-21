@@ -2557,10 +2557,16 @@ static void *_slurmctld_background(void *no_data)
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock2 = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	/* Locks: Read config, write job, write node
-	 * (Might kill jobs on nodes set DOWN) */
+	/*
+	 * (Might kill jobs on nodes set DOWN; check_node_timers() may call
+	 * update_node() which requires job/node/part write locks)
+	 */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+	};
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock2 = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
