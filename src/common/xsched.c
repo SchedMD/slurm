@@ -38,7 +38,21 @@
 #include <string.h>
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xsched.h"
+
+extern xcpuset_t *xcpuset_alloc(void)
+{
+	xcpuset_t *new = NULL;
+	size_t cpusetlen = CPU_ALLOC_SIZE(CPU_SETSIZE);
+
+	new = xmalloc((sizeof(size_t) * 2) + cpusetlen);
+	new->max_cpus = CPU_SETSIZE;
+	new->size = cpusetlen;
+	XCPU_ZERO(new);
+
+	return new;
+}
 
 extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 {
