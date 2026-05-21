@@ -7358,6 +7358,45 @@ proc _test_init {} {
 #
 ################################################################
 
+# Return 1 if $target_pid is a descendant of our own process
+proc _pid_is_our_descendant {target_pid} {
+	set our_pid [pid]
+	set cur $target_pid
+	set steps 0
+	while {$cur > 1 && $steps < 30} {
+		if {![file exists /proc/$cur/status]} { return 0 }
+		set ppid 0
+		if {[catch {
+			set fh [open /proc/$cur/status r]
+			set body [read $fh]
+			close $fh
+			regexp {PPid:\s+(\d+)} $body -> ppid
+		}]} { return 0 }
+		if {$ppid == $our_pid} { return 1 }
+		if {$ppid == 0} { return 0 }
+		set cur $ppid
+		incr steps
+	}
+	return 0
+}
+
+proc _kill_remaining_spawned {} {
+	# Kill any still-alive spawn'd descendants so Tcl's exit don't block
+	set killed 0
+	foreach chan [file channels] {
+		if {![regexp {^exp[0-9]+$} $chan]} { continue }
+		set pid 0
+		catch { set pid [exp_pid -i $chan] }
+		if {$pid <= 0} { continue }
+		if {![_pid_is_our_descendant $pid]} { continue }
+		catch { exec kill -KILL $pid }
+		incr killed
+	}
+	if {$killed > 0} {
+		log_debug "Killed $killed still-alive spawn'd descendant(s)"
+	}
+}
+
 proc _test_fini { status } {
 	global testsuite_cleanup_on_failure _test_fini_called
 	global _subtest_fail_count _subtest_skip_count
@@ -7392,6 +7431,9 @@ proc _test_fini { status } {
 	if {$status != $STATUS_FAIL || $testsuite_cleanup_on_failure} {
 		_test_cleanup
 	}
+
+	# Make sure no spawn'd child outlives this test.
+	_kill_remaining_spawned
 
 	# If failed, print the normalized load average to help troubleshooting
 	if {$status > 0} {
