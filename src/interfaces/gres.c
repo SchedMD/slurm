@@ -9821,7 +9821,7 @@ static int _foreach_closest_usable_gres(void *x, void *arg)
  */
 static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 					  bitstr_t *gres_bit_alloc,
-					  cpu_set_t *task_cpu_set)
+					  xcpuset_t *task_cpu_set)
 {
 	foreach_closest_usable_gres_t foreach_closest_usable_gres = {
 		.gres_inx = 0,
@@ -9834,7 +9834,7 @@ static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 	}
 
 	foreach_closest_usable_gres.task_cpus_bitmap = cpu_set_to_bit_str(
-		task_cpu_set,
+		&task_cpu_set->mask,
 		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
 	foreach_closest_usable_gres.bitmap_size = bit_size(gres_bit_alloc);
 	foreach_closest_usable_gres.usable_gres =
@@ -9896,7 +9896,7 @@ static int _foreach_gres_to_task(void *x, void *arg)
 }
 
 /* Select the best available gres from gres_slots */
-static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
+static int _assign_gres_to_task(xcpuset_t *task_cpu_set, int ntasks_per_gres,
 				bitstr_t *gres_slots, uint32_t plugin_id)
 {
 	foreach_gres_to_task_t foreach_gres_to_task = {
@@ -9907,7 +9907,7 @@ static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 		.overlap = false,
 		.plugin_id = plugin_id,
 		.task_cpus_bitmap = cpu_set_to_bit_str(
-			task_cpu_set,
+			&task_cpu_set->mask,
 			((gres_slurmd_conf_t *)list_peek(gres_conf_list))->
 			cpu_cnt),
 	};

@@ -120,8 +120,8 @@ static void _calc_cpu_affinity(stepd_step_rec_t *step)
 		return;
 
 	for (int i = 0; i < step->node_tasks; i++) {
-		step->task[i]->cpu_set = xmalloc(sizeof(cpu_set_t));
-		if (!get_cpuset(step->task[i]->cpu_set, step, i))
+		step->task[i]->cpu_set = xcpuset_alloc();
+		if (!get_cpuset(&step->task[i]->cpu_set->mask, step, i))
 			xfree(step->task[i]->cpu_set);
 	}
 }
@@ -201,11 +201,11 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 				  uint32_t global_tid)
 {
 	int rc = SLURM_SUCCESS;
-	cpu_set_t *new_mask = step->task[node_tid]->cpu_set;
+	xcpuset_t *new_mask = step->task[node_tid]->cpu_set;
 	pid_t mypid  = step->task[node_tid]->pid;
 
 	if (new_mask)
-		rc = slurm_setaffinity(mypid, sizeof(*new_mask), new_mask);
+		rc = slurm_setaffinity(mypid, new_mask->size, &new_mask->mask);
 
 	/* Log affinity status to stderr */
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
@@ -214,7 +214,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 		task_slurm_chkaffinity(&current->mask, step, rc, node_tid);
 		xfree(current);
 	} else {
-		task_slurm_chkaffinity(new_mask, step, rc, node_tid);
+		task_slurm_chkaffinity(&new_mask->mask, step, rc, node_tid);
 	}
 
 	return rc;
