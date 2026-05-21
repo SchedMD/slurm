@@ -92,6 +92,4 @@ uint16_t slurm_get_numa_node(uint16_t cpuid);
 #endif
 
 /*** from schedutils.c ***/
-int	str_to_cpuset(cpu_set_t *mask, const char* str);
 int	str_to_cnt(const char* str);
-char *	cpuset_to_str(const cpu_set_t *mask, char *str);
