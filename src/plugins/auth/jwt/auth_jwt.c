@@ -254,6 +254,13 @@ static void _parse_auth_params(void)
 
 extern int init(void)
 {
+	static bool init_run = false;
+
+	if (init_run)
+		return SLURM_SUCCESS;
+
+	init_run = true;
+
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
 		_parse_auth_params();
