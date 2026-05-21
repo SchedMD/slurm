@@ -36,6 +36,19 @@
 #ifndef _AUTH_JWT_H_
 #define _AUTH_JWT_H_
 
+#include "stdbool.h"
+
+#include "src/common/data.h"
+#include "src/common/pack.h"
+
+typedef struct {
+	char *claim_field;
+	bool use_client_ids;
+	bool use_client_ids_only;
+	data_t *jwks;
+	buf_t *key;
+} auth_context_t;
+
 extern char *pem_from_mod_exp(const char *mod, const char *exp);
 
 #endif
