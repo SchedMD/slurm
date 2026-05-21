@@ -1255,6 +1255,11 @@ typedef struct requeue_msg {
 	uint32_t flags;         /* JobExitRequeue | Hold | JobFailed | etc. */
 } requeue_msg_t;
 
+typedef struct resize_msg {
+	char *nodelist; /* name of shrunk node(s) */
+	slurm_step_id_t step_id;
+} resize_msg_t;
+
 typedef struct {
 	uint32_t cluster_id;	/* cluster id of cluster making request */
 	void    *data;		/* Unpacked buffer
@@ -1739,6 +1744,7 @@ extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
 extern void slurm_free_requeue_msg(requeue_msg_t *);
+extern void slurm_free_resize_msg(resize_msg_t *msg);
 /*
  * Free()s the data pointer of a given type or returns !SLURM_SUCCESS if type is
  *	unsupported.

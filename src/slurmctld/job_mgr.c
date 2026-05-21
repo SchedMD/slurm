@@ -12359,6 +12359,68 @@ static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * RPC the stepmgr to complete any step that has tasks on a node that is
+ * going to be removed. Called from the resize of _update_job() when
+ * STEPMGR_ENABLED is set on the job.
+ *
+ * Caller MUST hold the job write lock.
+ *
+ * NOTE: this blocks on a synchronous RPC to the stepmgr for up to
+ * MessageTimeout while holding the job write lock.
+ */
+static void _stepmgr_resize_kill_steps_sync(job_record_t *job_ptr,
+					    char *rem_nodes_str)
+{
+	resize_msg_t req_data = { 0 };
+	slurm_msg_t req = SLURM_MSG_INITIALIZER;
+	slurm_msg_t resp = SLURM_MSG_INITIALIZER;
+	int rc = SLURM_SUCCESS;
+
+	if (!rem_nodes_str || !rem_nodes_str[0])
+		return;
+
+	if (job_ptr->start_protocol_ver < SLURM_26_05_PROTOCOL_VERSION)
+		return;
+
+	req_data.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	req_data.nodelist = rem_nodes_str;
+
+	req.msg_type = REQUEST_STEPMGR_RESIZE_KILL_STEPS;
+	req.data = &req_data;
+	req.protocol_version =
+		MIN(SLURM_PROTOCOL_VERSION, job_ptr->start_protocol_ver);
+	slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
+	if (slurm_conf_get_addr(job_ptr->batch_host, &req.address, req.flags) ==
+	    SLURM_ERROR) {
+		error("%s: failed to resolve address for %pJ batch_host=%s",
+		      __func__, job_ptr, job_ptr->batch_host);
+		return;
+	}
+
+	log_flag(STEPS, "%s: sending REQUEST_STEPMGR_RESIZE_KILL_STEPS to %s for %pJ nodelist=%s",
+		 __func__, job_ptr->batch_host, job_ptr, rem_nodes_str);
+
+	if (slurm_send_recv_node_msg(&req, &resp, 0) != SLURM_SUCCESS) {
+		error("%s: failed to send REQUEST_STEPMGR_RESIZE_KILL_STEPS to %s for %pJ: %m. Killed child step rows for nodes=%s may end up orphaned at the post-resize db_inx.",
+		      __func__, job_ptr->batch_host, job_ptr, rem_nodes_str);
+		return;
+	}
+
+	if (resp.msg_type == RESPONSE_SLURM_RC)
+		rc = ((return_code_msg_t *) resp.data)->return_code;
+
+	if (rc != SLURM_SUCCESS)
+		error("%s: stepmgr-stepd on %s returned rc=%d for %pJ. Killed child step rows for nodes=%s may end up orphaned at the post-resize db_inx.",
+		      __func__, job_ptr->batch_host, rc, job_ptr,
+		      rem_nodes_str);
+	else
+		log_flag(STEPS, "%s: REQUEST_STEPMGR_RESIZE_KILL_STEPS success for %pJ",
+			 __func__, job_ptr);
+
+	slurm_free_msg_members(&resp);
+}
+
 static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		       uid_t uid, char **err_msg)
 {
@@ -14640,6 +14702,21 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			}
 			/* Resize the core bitmaps of the job's steps */
 			rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
+
+			/*
+			 * kill_step_on_node() above doesn't act for numeric
+			 * steps when stepmgr is enabled, it only works for
+			 * batch and extern. So send a RPC to stepmgr to run
+			 * kill_step_on_node() for the steps it manages.
+			 */
+			if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
+			    job_ptr->batch_host) {
+				char *rem_nodes_str =
+					bitmap2node_name(rem_nodes);
+				_stepmgr_resize_kill_steps_sync(job_ptr,
+								rem_nodes_str);
+				xfree(rem_nodes_str);
+			}
 
 			FREE_NULL_BITMAP(orig_job_node_bitmap);
 			FREE_NULL_BITMAP(rem_nodes);

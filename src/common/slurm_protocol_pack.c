@@ -9774,6 +9774,34 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_job_resize_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	resize_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packstr(msg->nodelist, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+	}
+}
+
+static int _unpack_job_resize_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	resize_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->nodelist, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_resize_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_job_user_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_user_id_msg_t *msg = smsg->data;
@@ -12473,6 +12501,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_JOB_REQUEUE:
 		_pack_job_requeue_msg(msg, buffer);
 		break;
+	case REQUEST_STEPMGR_RESIZE_KILL_STEPS:
+		_pack_job_resize_msg(msg, buffer);
+		break;
 	case REQUEST_JOB_USER_INFO:
 		_pack_job_user_msg(msg, buffer);
 		break;
@@ -13006,6 +13037,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_JOB_REQUEUE:
 		rc = _unpack_job_requeue_msg(msg, buffer);
+		break;
+	case REQUEST_STEPMGR_RESIZE_KILL_STEPS:
+		rc = _unpack_job_resize_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_USER_INFO:
 		rc = _unpack_job_user_msg(msg, buffer);
