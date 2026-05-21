@@ -121,7 +121,7 @@ static void _calc_cpu_affinity(stepd_step_rec_t *step)
 
 	for (int i = 0; i < step->node_tasks; i++) {
 		step->task[i]->cpu_set = xcpuset_alloc();
-		if (!get_cpuset(&step->task[i]->cpu_set->mask, step, i))
+		if (!get_cpuset(step->task[i]->cpu_set, step, i))
 			xfree(step->task[i]->cpu_set);
 	}
 }

@@ -40,7 +40,7 @@
 /* If HAVE_NUMA, create mask for given ldom.
  * Otherwise create mask for given socket
  */
-static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
+static int _bind_ldom(uint32_t ldom, xcpuset_t *mask)
 {
 #ifdef HAVE_NUMA
 	int c, maxcpus, nnid = 0;
@@ -51,7 +51,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 	maxcpus = conf->sockets * conf->cores * conf->threads;
 	for (c = 0; c < maxcpus; c++) {
 		if (slurm_get_numa_node(c) == nnid)
-			CPU_SET(c, mask);
+			XCPU_SET(c, mask);
 	}
 	return true;
 #else
@@ -63,13 +63,14 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 		return false;
 	for (s = sid * cpus; s < (sid+1) * cpus; s++) {
 		i = s % conf->block_map_size;
-		CPU_SET(conf->block_map[i], mask);
+		XCPU_SET(conf->block_map[i], mask);
 	}
 	return true;
 #endif
 }
 
-int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
+extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
+		      uint32_t node_tid)
 {
 	int nummasks, maskid, i;
 	char *curstr, *selstr;
@@ -80,7 +81,6 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 	slurm_sprint_cpu_bind_type(buftype, step->cpu_bind_type);
 	debug3("get_cpuset (%s[%d]) %s", buftype, step->cpu_bind_type,
 		step->cpu_bind);
-	CPU_ZERO(mask);
 
 	if (step->cpu_bind_type & CPU_BIND_NONE) {
 		return false;
@@ -137,7 +137,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 
 	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
-		if (task_str_to_cpuset(mask, mstr) < 0) {
+		if (task_str_to_cpuset(&mask->mask, mstr) < 0) {
 			error("task_str_to_cpuset %s", mstr);
 			return false;
 		}
@@ -151,7 +151,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 		} else {
 			mycpu = strtoul (mstr, NULL, 10);
 		}
-		CPU_SET(mycpu, mask);
+		XCPU_SET(mycpu, mask);
 		return true;
 	}
 
