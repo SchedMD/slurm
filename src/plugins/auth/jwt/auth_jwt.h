@@ -53,4 +53,6 @@ typedef struct {
 
 extern char *pem_from_mod_exp(const char *mod, const char *exp);
 
+extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred);
+
 #endif
