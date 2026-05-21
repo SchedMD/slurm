@@ -202,7 +202,6 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 {
 	int rc = SLURM_SUCCESS;
 	cpu_set_t *new_mask = step->task[node_tid]->cpu_set;
-	cpu_set_t current_cpus;
 	pid_t mypid  = step->task[node_tid]->pid;
 
 	if (new_mask)
@@ -210,8 +209,10 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 
 	/* Log affinity status to stderr */
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
-		slurm_getaffinity(mypid, sizeof(current_cpus), &current_cpus);
-		task_slurm_chkaffinity(&current_cpus, step, rc, node_tid);
+		xcpuset_t *current = xcpuset_alloc();
+		slurm_getaffinity(mypid, current->size, &current->mask);
+		task_slurm_chkaffinity(&current->mask, step, rc, node_tid);
+		xfree(current);
 	} else {
 		task_slurm_chkaffinity(new_mask, step, rc, node_tid);
 	}
