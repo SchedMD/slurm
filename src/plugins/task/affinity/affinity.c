@@ -137,7 +137,7 @@ extern int get_cpuset(xcpuset_t *mask, stepd_step_rec_t *step,
 
 	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
-		if (task_str_to_cpuset(&mask->mask, mstr) < 0) {
+		if (task_str_to_cpuset(mask, mstr) < 0) {
 			error("task_str_to_cpuset %s", mstr);
 			return false;
 		}

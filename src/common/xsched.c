@@ -88,7 +88,7 @@ extern char *task_cpuset_to_str(const xcpuset_t *mask)
 #endif
 }
 
-extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
+extern int task_str_to_cpuset(xcpuset_t *mask, const char *str)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
@@ -110,19 +110,19 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char *str)
 		return -1;
 	}
 
-	CPU_ZERO(mask);
+	XCPU_ZERO(mask);
 	while (ptr >= str) {
 		char val = slurm_char_to_hex(*ptr);
 		if (val == (char) -1)
 			return -1;
 		if (val & 1)
-			CPU_SET(base, mask);
+			XCPU_SET(base, mask);
 		if (val & 2)
-			CPU_SET(base + 1, mask);
+			XCPU_SET(base + 1, mask);
 		if (val & 4)
-			CPU_SET(base + 2, mask);
+			XCPU_SET(base + 2, mask);
 		if (val & 8)
-			CPU_SET(base + 3, mask);
+			XCPU_SET(base + 3, mask);
 		ptr--;
 		base += 4;
 	}

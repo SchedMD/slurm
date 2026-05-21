@@ -216,7 +216,7 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	}
 
 	avail_cpus = xcpuset_alloc();
-	if (task_str_to_cpuset(&avail_cpus->mask, avail_mask)) {
+	if (task_str_to_cpuset(avail_cpus, avail_mask)) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind map";
 		error("%s", err);
 		if (err_msg)
@@ -269,7 +269,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	}
 
 	avail_cpus = xcpuset_alloc();
-	if (task_str_to_cpuset(&avail_cpus->mask, avail_mask)) {
+	if (task_str_to_cpuset(avail_cpus, avail_mask)) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind mask";
 		error("%s", err);
 		if (err_msg)
@@ -281,7 +281,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		int overlaps = 0;
 		char *mask_str = NULL;
 		xcpuset_t *task_cpus = xcpuset_alloc();
-		if (task_str_to_cpuset(&task_cpus->mask, tok)) {
+		if (task_str_to_cpuset(task_cpus, tok)) {
 			char *err = "Failed to convert cpu bind string into hex for CPU bind mask";
 			error("%s", err);
 			if (err_msg)
