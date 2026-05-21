@@ -91,12 +91,8 @@ typedef struct {
 	char *username;
 } auth_token_t;
 
-static data_t *jwks = NULL;
-static buf_t *key = NULL;
+static auth_context_t rpc_ctxt = { 0 };
 static char *token = NULL;
-static char *claim_field = NULL;
-static bool use_client_ids = false;
-static bool use_client_ids_only = false;
 static __thread char *thread_token = NULL;
 static __thread char *thread_username = NULL;
 
@@ -163,6 +159,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 
 static void _init_jwks(void)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	char *key_file;
 	buf_t *buf;
 
@@ -179,21 +176,22 @@ static void _init_jwks(void)
 		      plugin_type, key_file);
 	}
 
-	if (serialize_g_string_to_data(&jwks, buf->head, buf->size,
+	if (serialize_g_string_to_data(&ctxt->jwks, buf->head, buf->size,
 				       MIME_TYPE_JSON))
 		fatal("%s: failed to deserialize jwks file `%s`",
 		      __func__, key_file);
 	FREE_NULL_BUFFER(buf);
 
 	/* force everything to be a string */
-	(void) data_convert_tree(jwks, DATA_TYPE_STRING);
+	(void) data_convert_tree(ctxt->jwks, DATA_TYPE_STRING);
 
-	(void) data_list_for_each(data_key_get(jwks, "keys"), _build_jwks_keys,
-				  NULL);
+	(void) data_list_for_each(data_key_get(ctxt->jwks, "keys"),
+				  _build_jwks_keys, NULL);
 }
 
 static void _init_hs256(void)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	char *key_file;
 
 	key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwt_key=");
@@ -201,7 +199,7 @@ static void _init_hs256(void)
 	/*
 	 * If jwks was loaded, and jwt is not explicitly configured, skip setup.
 	 */
-	if (!key_file && jwks)
+	if (!key_file && ctxt->jwks)
 		return;
 
 	if (!key_file && slurm_conf.state_save_location) {
@@ -218,7 +216,7 @@ static void _init_hs256(void)
 
 	debug("%s: Loading key: %s", __func__, key_file);
 
-	if (!(key = create_mmap_buf(key_file))) {
+	if (!(ctxt->key = create_mmap_buf(key_file))) {
 		fatal("%s: Could not load key file (%s)",
 		      plugin_type, key_file);
 	}
@@ -228,6 +226,7 @@ static void _init_hs256(void)
 
 static void _parse_auth_params(void)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	char *param_val;
 
 	if (!slurm_conf.authalt_params)
@@ -235,20 +234,20 @@ static void _parse_auth_params(void)
 
 	/* intentionally matches "use_jwt_client_ids_only" as well */
 	if (xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids"))
-		use_client_ids = true;
+		ctxt->use_client_ids = true;
 
 	if (xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids_only"))
-		use_client_ids_only = true;
+		ctxt->use_client_ids_only = true;
 
 	debug("use_jwt_client_ids: %d, use_jwt_client_ids_only: %d",
-	      use_client_ids, use_client_ids_only);
+	      ctxt->use_client_ids, ctxt->use_client_ids_only);
 
 	/* Parse userclaimfield parameter */
 	if ((param_val = conf_get_opt_str(slurm_conf.authalt_params,
 					  "userclaimfield="))) {
-		xfree(claim_field);
-		claim_field = xstrdup(param_val);
-		debug("Custom user claim field: %s", claim_field);
+		xfree(ctxt->claim_field);
+		ctxt->claim_field = xstrdup(param_val);
+		debug("Custom user claim field: %s", ctxt->claim_field);
 	}
 }
 
@@ -284,9 +283,9 @@ extern int init(void)
 
 extern void fini(void)
 {
-	xfree(claim_field);
-	FREE_NULL_DATA(jwks);
-	FREE_NULL_BUFFER(key);
+	xfree(rpc_ctxt.claim_field);
+	FREE_NULL_DATA(rpc_ctxt.jwks);
+	FREE_NULL_BUFFER(rpc_ctxt.key);
 }
 
 extern auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
@@ -403,6 +402,7 @@ fail:
  */
 static int _handle_username(jwt_t *jwt, auth_token_t *cred)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	char *username = NULL;
 
 	/*
@@ -411,8 +411,8 @@ static int _handle_username(jwt_t *jwt, auth_token_t *cred)
 	 */
 	if (!(username = xstrdup(jwt_get_grant(jwt, "sun"))) &&
 	    !(username = xstrdup(jwt_get_grant(jwt, "username"))) &&
-	    (!claim_field ||
-	     !(username = xstrdup(jwt_get_grant(jwt, claim_field))))) {
+	    (!ctxt->claim_field ||
+	     !(username = xstrdup(jwt_get_grant(jwt, ctxt->claim_field))))) {
 		error("%s: jwt_get_grant failure", __func__);
 		return SLURM_ERROR;
 	}
@@ -449,6 +449,7 @@ static int _handle_username(jwt_t *jwt, auth_token_t *cred)
  */
 extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	int rc, auth_rc = ESLURM_AUTH_CRED_INVALID;
 	const char *alg;
 	jwt_t *unverified_jwt = NULL, *jwt = NULL;
@@ -461,7 +462,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		return SLURM_SUCCESS;
 
 	/* in a client command, we cannot verify responses */
-	if (!jwks && !key) {
+	if (!ctxt->jwks && !ctxt->key) {
 		cred->cannot_verify = true;
 		return SLURM_SUCCESS;
 	}
@@ -482,7 +483,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 	if (!xstrcasecmp(alg, "RS256")) {
 		foreach_rs256_args_t args;
 
-		if (!jwks) {
+		if (!ctxt->jwks) {
 			error("%s: no jwks file loaded, cannot decode RS256 keys",
 			      __func__);
 			goto fail;
@@ -500,22 +501,23 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		/*
 		 * Deal with errors within the matching kid.
 		 */
-		(void) data_list_for_each(data_key_get(jwks, "keys"), _verify_rs256_jwt, &args);
+		(void) data_list_for_each(data_key_get(ctxt->jwks, "keys"),
+					  _verify_rs256_jwt, &args);
 
 		if (!jwt) {
 			error("could not find matching kid or decode failed");
 			goto fail;
 		}
 	} else if (!xstrcasecmp(alg, "HS256")) {
-		if (!key) {
+		if (!ctxt->key) {
 			error("%s: no key file loaded, cannot decode HS256 keys",
 			      __func__);
 			goto fail;
 		}
 
 		if ((rc = jwt_decode(&jwt, cred->token,
-				     (unsigned char *) key->head,
-				     key->size))) {
+				     (unsigned char *) ctxt->key->head,
+				     ctxt->key->size))) {
 			error("%s: jwt_decode failure: %s",
 			      __func__, slurm_strerror(rc));
 			goto fail;
@@ -539,10 +541,10 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		goto fail;
 	}
 
-	if (use_client_ids)
+	if (ctxt->use_client_ids)
 		_handle_identity(jwt, cred);
 
-	if (!cred->id && use_client_ids_only) {
+	if (!cred->id && ctxt->use_client_ids_only) {
 		error("%s: failed to retrieve required identity", __func__);
 		goto fail;
 	}
@@ -566,6 +568,7 @@ fail:
 
 extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	uid_t pw_uid = NO_VAL;
 
 	*uid = SLURM_AUTH_NOBODY;
@@ -589,7 +592,7 @@ extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 	 * it means auth_p_verify() didn't find identity claims.
 	 * Fall back to traditional username lookup if allowed.
 	 */
-	if (!use_client_ids_only) {
+	if (!ctxt->use_client_ids_only) {
 		if (uid_from_string(cred->username, &pw_uid))
 			return;
 		cred->uid = pw_uid;
@@ -634,6 +637,8 @@ extern time_t auth_p_get_time(auth_token_t *cred)
 
 extern void *auth_p_get_identity(auth_token_t *cred)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
+
 	if (!cred) {
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
@@ -643,7 +648,7 @@ extern void *auth_p_get_identity(auth_token_t *cred)
 	 * Identity information is extracted during auth_p_verify() if
 	 * JWT identity claims are enabled. Simply return a copy if available.
 	 */
-	if (use_client_ids)
+	if (ctxt->use_client_ids)
 		return copy_identity(cred->id);
 
 	return NULL;
@@ -719,13 +724,14 @@ extern void auth_p_thread_clear(void)
 
 extern char *auth_p_token_generate(const char *username, int lifespan)
 {
+	auth_context_t *ctxt = &rpc_ctxt;
 	jwt_alg_t opt_alg = JWT_ALG_HS256;
 	time_t now = time(NULL);
 	jwt_t *jwt;
 	char *token, *xtoken;
 	long grant_time = now + lifespan;
 
-	if (!key) {
+	if (!ctxt->key) {
 		error("%s: cannot issue tokens, no key loaded", __func__);
 		return NULL;
 	}
@@ -755,7 +761,8 @@ extern char *auth_p_token_generate(const char *username, int lifespan)
 		goto fail;
 	}
 
-	if (jwt_set_alg(jwt, opt_alg, (unsigned char *) key->head, key->size)) {
+	if (jwt_set_alg(jwt, opt_alg, (unsigned char *) ctxt->key->head,
+			ctxt->key->size)) {
 		error("%s: jwt_add_grant failure", __func__);
 		goto fail;
 	}
