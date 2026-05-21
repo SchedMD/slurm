@@ -398,9 +398,9 @@ fail:
  * for SlurmUser/root tokens so slurmrestd can issue RPCs under other
  * accounts.
  */
-static int _handle_username(jwt_t *jwt, auth_token_t *cred)
+static int _handle_username(auth_context_t *ctxt, jwt_t *jwt,
+			    auth_token_t *cred)
 {
-	auth_context_t *ctxt = &rpc_ctxt;
 	char *username = NULL;
 
 	/*
@@ -547,7 +547,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		goto fail;
 	}
 
-	if (!cred->id && _handle_username(jwt, cred))
+	if (!cred->id && _handle_username(ctxt, jwt, cred))
 		goto fail;
 
 	jwt_free(jwt);
