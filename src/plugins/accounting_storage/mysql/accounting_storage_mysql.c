@@ -3634,6 +3634,11 @@ extern uint16_t clusteracct_storage_p_register_disconn_ctld(
 	return control_port;
 }
 
+extern void clusteracct_storage_p_ctld_recovered(void)
+{
+	/* The mysql plugin has no agent thread to wait on recovery. */
+}
+
 extern int clusteracct_storage_p_fini_ctld(mysql_conn_t *mysql_conn,
 					   slurmdb_cluster_rec_t *cluster_rec)
 {

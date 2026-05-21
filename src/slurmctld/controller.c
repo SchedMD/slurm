@@ -1034,6 +1034,15 @@ int main(int argc, char **argv)
 			select_g_select_nodeinfo_set_all();
 			unlock_slurmctld(config_write_lock);
 
+			/*
+			 * read_slurm_conf has populated job_list/job_hash; the
+			 * accounting agent (slurmdbd) was held off so it
+			 * wouldn't process DBD_ID_RC responses against an empty
+			 * job_hash. Release it now so any dbd.messages loaded
+			 * at startup can be drained against live job state.
+			 */
+			clusteracct_storage_g_ctld_recovered();
+
 			if (recover == 0) {
 				slurmctld_init_db = 1;
 				_accounting_mark_all_nodes_down("cold-start");

@@ -77,4 +77,14 @@ extern int slurmdbd_agent_queue_count(void);
 /* set up local variables based on slurm.conf params */
 extern void slurmdbd_agent_config_setup(void);
 
+/*
+ * Signal to the agent thread that the slurmctld has finished recovery
+ * (read_slurm_conf has run, job_list/job_hash are populated). Until this is
+ * called, the agent thread blocks before sending any RPCs so that returns
+ * from DBD_JOB_START messages aren't processed against an empty job_hash.
+ * Held messages in agent_list (including the on-disk dbd.messages loaded at
+ * startup) are processed in FIFO order once signaled.
+ */
+extern void slurmdbd_agent_ctld_recovered(void);
+
 #endif
