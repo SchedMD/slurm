@@ -58,6 +58,9 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred);
 extern auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
 				   int dlen);
 
+extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
+			 gid_t *gid);
+
 extern void auth_p_destroy(auth_token_t *cred);
 
 #endif

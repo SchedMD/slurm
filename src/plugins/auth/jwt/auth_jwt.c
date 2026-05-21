@@ -568,9 +568,9 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 	return cred_verify(&rpc_ctxt, cred);
 }
 
-extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
+extern void cred_get_ids(auth_context_t *ctxt, auth_token_t *cred, uid_t *uid,
+			 gid_t *gid)
 {
-	auth_context_t *ctxt = &rpc_ctxt;
 	uid_t pw_uid = NO_VAL;
 
 	*uid = SLURM_AUTH_NOBODY;
@@ -607,6 +607,11 @@ extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 		*uid = cred->uid;
 		*gid = cred->gid;
 	}
+}
+
+extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
+{
+	cred_get_ids(&rpc_ctxt, cred, uid, gid);
 }
 
 extern char *auth_p_get_host(auth_token_t *cred)
