@@ -157,9 +157,8 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _init_jwks(void)
+static void _init_jwks(auth_context_t *ctxt)
 {
-	auth_context_t *ctxt = &rpc_ctxt;
 	char *key_file;
 	buf_t *buf;
 
@@ -189,9 +188,8 @@ static void _init_jwks(void)
 				  _build_jwks_keys, NULL);
 }
 
-static void _init_hs256(void)
+static void _init_hs256(auth_context_t *ctxt)
 {
-	auth_context_t *ctxt = &rpc_ctxt;
 	char *key_file;
 
 	key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwt_key=");
@@ -224,9 +222,8 @@ static void _init_hs256(void)
 	xfree(key_file);
 }
 
-static void _parse_auth_params(void)
+static void _parse_auth_params(auth_context_t *ctxt)
 {
-	auth_context_t *ctxt = &rpc_ctxt;
 	char *param_val;
 
 	if (!slurm_conf.authalt_params)
@@ -262,9 +259,9 @@ extern int init(void)
 
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
-		_parse_auth_params();
-		_init_jwks();
-		_init_hs256();
+		_parse_auth_params(&rpc_ctxt);
+		_init_jwks(&rpc_ctxt);
+		_init_hs256(&rpc_ctxt);
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
