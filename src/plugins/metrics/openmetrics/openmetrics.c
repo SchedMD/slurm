@@ -216,18 +216,15 @@ static int _metrics_add(metric_set_t *set, metric_t *m)
 
 	hash_id = _make_hash_id(m->name, m->keyval);
 
-	if (xhash_get_str(ometrics_set->full_hash, hash_id)) {
-		error("Duplicate key when adding metric: %s", m->name);
-		xfree(hash_id);
-		return SLURM_ERROR;
-	}
-
 	if (!m->id)
 		m->id = hash_id;
 	else
 		xfree(hash_id);
 
-	xhash_add(ometrics_set->full_hash, m);
+	if (!xhash_add(ometrics_set->full_hash, m)) {
+		error("Duplicate key when adding metric: %s", m->name);
+		return SLURM_ERROR;
+	}
 
 	name_list = xhash_get_str(ometrics_set->name_hash, m->name);
 	if (!name_list) {
