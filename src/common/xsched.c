@@ -169,10 +169,16 @@ extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 	return rval;
 }
 
-extern int task_cpuset_get_assigned_count(size_t size, cpu_set_t *mask)
+extern int get_assigned_cpu_count(void)
 {
-	if (!size || !mask)
-		return -1;
+	cpu_set_t mask = { { 0 } };
+	int rc = EINVAL;
 
-	return CPU_COUNT_S(size, mask);
+	if ((rc = slurm_getaffinity(getpid(), sizeof(mask), &mask))) {
+		error("%s: Unable to query assigned CPU mask: %s",
+                      __func__, slurm_strerror(rc));
+		return -1;
+	}
+
+	return CPU_COUNT_S(sizeof(mask), &mask);
 }
