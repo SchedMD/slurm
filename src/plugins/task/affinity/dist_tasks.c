@@ -215,13 +215,11 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	avail_cpus = xcpuset_alloc();
-	if (task_str_to_cpuset(avail_cpus, avail_mask)) {
+	if (!(avail_cpus = task_str_to_cpuset(avail_mask))) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind map";
 		error("%s", err);
 		if (err_msg)
 			xstrfmtcat(*err_msg, "%s", err);
-		xfree(avail_cpus);
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
@@ -268,8 +266,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
-	avail_cpus = xcpuset_alloc();
-	if (task_str_to_cpuset(avail_cpus, avail_mask)) {
+	if (!(avail_cpus = task_str_to_cpuset(avail_mask))) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind mask";
 		error("%s", err);
 		if (err_msg)
@@ -278,17 +275,17 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	}
 
 	while ((tok = xstrtoken(req->cpu_bind, ",", &save_ptr))) {
+		xcpuset_t *task_cpus = NULL;
 		int overlaps = 0;
 		char *mask_str = NULL;
-		xcpuset_t *task_cpus = xcpuset_alloc();
-		if (task_str_to_cpuset(task_cpus, tok)) {
+
+		if (!(task_cpus = task_str_to_cpuset(tok))) {
 			char *err = "Failed to convert cpu bind string into hex for CPU bind mask";
 			error("%s", err);
 			if (err_msg)
 				xstrfmtcat(*err_msg, "%s", err);
 			xfree(avail_cpus);
 			xfree(new_mask);
-			xfree(task_cpus);
 			return ESLURMD_CPU_BIND_ERROR;
 		}
 		for (int i = 0; i < CPU_SETSIZE; i++) {

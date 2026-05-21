@@ -138,16 +138,14 @@ extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
-	mask = xcpuset_alloc();
 	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
-		if (task_str_to_cpuset(mask, mstr) < 0) {
+		if (!(mask = task_str_to_cpuset(mstr)))
 			error("task_str_to_cpuset %s", mstr);
-			xfree(mask);
-		}
 		return mask;
 	}
 
+	mask = xcpuset_alloc();
 	if (step->cpu_bind_type & CPU_BIND_MAP) {
 		unsigned int mycpu = 0;
 		if (xstrncmp(mstr, "0x", 2) == 0) {
