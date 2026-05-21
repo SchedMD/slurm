@@ -9864,20 +9864,19 @@ static void _translate_step_to_global_device_index(bitstr_t **usable_gres,
 	*usable_gres = tmp;
 }
 
-bitstr_t *cpu_set_to_bit_str(cpu_set_t *cpu_set, int cpu_count)
+static bitstr_t *_cpu_set_to_bit_str(xcpuset_t *cpu_set, int cpu_count)
 {
 	bitstr_t *cpu_bitstr = bit_alloc(cpu_count);
 
 	if (cpu_set) {
 		for (int i = 0; i < cpu_count; i++)
-			if (CPU_ISSET(i, cpu_set))
+			if (XCPU_ISSET(i, cpu_set))
 				bit_set(cpu_bitstr, i);
 	} else {
 		bit_set_all(cpu_bitstr);
 	}
 
 	return cpu_bitstr;
-
 }
 
 static int _foreach_closest_usable_gres(void *x, void *arg)
@@ -9930,9 +9929,11 @@ static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 		return NULL;
 	}
 
-	foreach_closest_usable_gres.task_cpus_bitmap = cpu_set_to_bit_str(
-		&task_cpu_set->mask,
-		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
+	foreach_closest_usable_gres.task_cpus_bitmap =
+		_cpu_set_to_bit_str(task_cpu_set,
+				    ((gres_slurmd_conf_t *)
+					     list_peek(gres_conf_list))
+					    ->cpu_cnt);
 	foreach_closest_usable_gres.bitmap_size = bit_size(gres_bit_alloc);
 	foreach_closest_usable_gres.usable_gres =
 		bit_alloc(foreach_closest_usable_gres.bitmap_size);
@@ -10003,10 +10004,11 @@ static int _assign_gres_to_task(xcpuset_t *task_cpu_set, int ntasks_per_gres,
 		.ntasks_per_gres = ntasks_per_gres,
 		.overlap = false,
 		.plugin_id = plugin_id,
-		.task_cpus_bitmap = cpu_set_to_bit_str(
-			&task_cpu_set->mask,
-			((gres_slurmd_conf_t *)list_peek(gres_conf_list))->
-			cpu_cnt),
+		.task_cpus_bitmap =
+			_cpu_set_to_bit_str(task_cpu_set,
+					    ((gres_slurmd_conf_t *)
+						     list_peek(gres_conf_list))
+						    ->cpu_cnt),
 	};
 
 	(void) list_for_each(gres_conf_list, _foreach_gres_to_task,
