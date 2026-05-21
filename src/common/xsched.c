@@ -88,11 +88,12 @@ extern char *task_cpuset_to_str(const xcpuset_t *mask)
 #endif
 }
 
-extern int task_str_to_cpuset(xcpuset_t *mask, const char *str)
+extern xcpuset_t *task_str_to_cpuset(const char *str)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
 #else
+	xcpuset_t *mask = NULL;
 	int len = strlen(str);
 	const char *ptr = str + len - 1;
 	int base = 0;
@@ -107,14 +108,16 @@ extern int task_str_to_cpuset(xcpuset_t *mask, const char *str)
 	if ((len + 1) > CPU_SET_HEX_STR_SIZE) {
 		error("%s: Hex string is too large to convert to cpu_set_t (length %ld > %d)",
 		      __func__, (long int) len, CPU_SET_HEX_STR_SIZE - 1);
-		return -1;
+		return NULL;
 	}
 
-	XCPU_ZERO(mask);
+	mask = xcpuset_alloc();
 	while (ptr >= str) {
 		char val = slurm_char_to_hex(*ptr);
-		if (val == (char) -1)
-			return -1;
+		if (val == (char) -1) {
+			xfree(mask);
+			break;
+		}
 		if (val & 1)
 			XCPU_SET(base, mask);
 		if (val & 2)
@@ -127,7 +130,7 @@ extern int task_str_to_cpuset(xcpuset_t *mask, const char *str)
 		base += 4;
 	}
 
-	return 0;
+	return mask;
 #endif
 }
 

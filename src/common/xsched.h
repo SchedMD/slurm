@@ -73,13 +73,10 @@ extern char *task_cpuset_to_str(const xcpuset_t *mask);
 /*
  * Convert a hex string to a CPU bitmask.
  *
- * IN/OUT mask - An empty CPU bitmask pointer that will be set according to CPUs
- *		 specified by the hex values in str.
  * IN str - A null-terminated hex string that specifies CPUs to set.
- * RET - Returns -1 if str could not be interpreted into valid hex or if str is
- *	 too large, else returns 0 on success.
+ * RET - xmalloc'd xcpuset_t structure, or NULL on error
  */
-extern int task_str_to_cpuset(xcpuset_t *mask, const char *str);
+extern xcpuset_t *task_str_to_cpuset(const char *str);
 
 /* Wrapper for sched_setaffinity() */
 extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask);
