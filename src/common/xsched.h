@@ -51,6 +51,12 @@ typedef struct {
 	cpu_set_t mask; /* MUST BE LAST */
 } xcpuset_t;
 
+#define XCPU_COUNT(_mask) CPU_COUNT_S(_mask->size, &_mask->mask)
+#define XCPU_ZERO(_mask) CPU_ZERO_S(_mask->size, &_mask->mask)
+#define XCPU_SET(_cpu, _mask) CPU_SET_S(_cpu, _mask->size, &_mask->mask)
+#define XCPU_CLR(_cpu, _mask) CPU_CLR_S(_cpu, _mask->size, &_mask->mask)
+#define XCPU_ISSET(_cpu, _mask) CPU_ISSET_S(_cpu, _mask->size, &_mask->mask)
+
 /* The size to represent a cpu_set_t as a hex string (including null) */
 #define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
 
