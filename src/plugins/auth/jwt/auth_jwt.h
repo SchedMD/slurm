@@ -41,6 +41,8 @@
 #include "src/common/data.h"
 #include "src/common/pack.h"
 
+typedef struct auth_token_s auth_token_t;
+
 typedef struct {
 	char *claim_field;
 	bool use_client_ids;
