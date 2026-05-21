@@ -110,16 +110,9 @@ static void _worker_delete(void *x)
 
 static int _detect_cpu_count(void)
 {
-	cpu_set_t mask = { { 0 } };
-	int rc = EINVAL, count = 0;
+	int count = 0;
 
-	if ((rc = slurm_getaffinity(getpid(), sizeof(mask), &mask))) {
-		error("%s: Unable to query assigned CPU mask: %s",
-		      __func__, slurm_strerror(rc));
-		return 0;
-	}
-
-	if ((count = task_cpuset_get_assigned_count(sizeof(mask), &mask)) < 0)
+	if ((count = get_assigned_cpu_count()) <= 0)
 		return 0;
 
 	log_flag(CONMGR, "%s: detected %d CPUs available from kernel",

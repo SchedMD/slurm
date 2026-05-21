@@ -42,49 +42,52 @@
 typedef cpuset_t cpu_set_t;
 #endif
 
-#ifdef __NetBSD__
-#define CPU_ZERO(c) cpuset_zero(*(c))
-#define CPU_ISSET(i, c) cpuset_isset((i), *(c))
-#define sched_getaffinity sched_getaffinity_np
-#endif
-
 #include <sched.h>
 
-/* The size to represent a cpu_set_t as a hex string (including null) */
-#define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
+typedef struct {
+	size_t max_cpus;
+	size_t size;
+	/* the mask is technically cpu_set_t[] */
+	cpu_set_t mask; /* MUST BE LAST */
+} xcpuset_t;
+
+#define XCPU_COUNT(_mask) CPU_COUNT_S(_mask->size, &_mask->mask)
+#define XCPU_ZERO(_mask) CPU_ZERO_S(_mask->size, &_mask->mask)
+#define XCPU_SET(_cpu, _mask) CPU_SET_S(_cpu, _mask->size, &_mask->mask)
+#define XCPU_CLR(_cpu, _mask) CPU_CLR_S(_cpu, _mask->size, &_mask->mask)
+#define XCPU_ISSET(_cpu, _mask) CPU_ISSET_S(_cpu, _mask->size, &_mask->mask)
+
+extern xcpuset_t *xcpuset_alloc(void);
 
 /*
  * Convert a CPU bitmask to a hex string.
  *
  * IN mask - A CPU bitmask pointer.
- * IN/OUT str - A char pointer used to return a string of size
- *		CPU_SET_HEX_STR_SIZE.
- * RET - Returns a pointer to a string slice in str that starts at the first
- *	 non-zero hex char or last zero hex char if all bits are not set.
+ * RET - xmalloc'd string.
  */
-extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
+extern char *task_cpuset_to_str(const xcpuset_t *mask);
 
 /*
  * Convert a hex string to a CPU bitmask.
  *
- * IN/OUT mask - An empty CPU bitmask pointer that will be set according to CPUs
- *		 specified by the hex values in str.
  * IN str - A null-terminated hex string that specifies CPUs to set.
- * RET - Returns -1 if str could not be interpreted into valid hex or if str is
- *	 too large, else returns 0 on success.
+ * RET - xmalloc'd xcpuset_t structure, or NULL on error
  */
-extern int task_str_to_cpuset(cpu_set_t *mask, const char *str);
+extern xcpuset_t *task_str_to_cpuset(const char *str);
 
 /* Wrapper for sched_setaffinity() */
-extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
-
-/* Wrapper for sched_getaffinity() */
-extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
+extern int xsetaffinity(pid_t pid, xcpuset_t *mask);
 
 /*
- * Get number of CPUs assigned in mask
- * RET CPUs set or -1 on error
+ * Returns an allocated xcpuset_t structure describing the current cpu affinity.
+ * IN - pid, or 0 for current process
+ * RET - xmalloc'd xcpuset_t structure
  */
-extern int task_cpuset_get_assigned_count(size_t size, cpu_set_t *mask);
+extern xcpuset_t *xgetaffinity(pid_t pid);
+
+/*
+ * RET CPUs set or 0 on error
+ */
+extern int get_assigned_cpu_count(void);
 
 #endif

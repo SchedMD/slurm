@@ -40,7 +40,7 @@
 /* If HAVE_NUMA, create mask for given ldom.
  * Otherwise create mask for given socket
  */
-static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
+static int _bind_ldom(uint32_t ldom, xcpuset_t *mask)
 {
 #ifdef HAVE_NUMA
 	int c, maxcpus, nnid = 0;
@@ -51,7 +51,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 	maxcpus = conf->sockets * conf->cores * conf->threads;
 	for (c = 0; c < maxcpus; c++) {
 		if (slurm_get_numa_node(c) == nnid)
-			CPU_SET(c, mask);
+			XCPU_SET(c, mask);
 	}
 	return true;
 #else
@@ -63,38 +63,41 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 		return false;
 	for (s = sid * cpus; s < (sid+1) * cpus; s++) {
 		i = s % conf->block_map_size;
-		CPU_SET(conf->block_map[i], mask);
+		XCPU_SET(conf->block_map[i], mask);
 	}
 	return true;
 #endif
 }
 
-int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
+extern xcpuset_t *get_cpuset(stepd_step_rec_t *step, uint32_t node_tid)
 {
+	xcpuset_t *mask = NULL;
 	int nummasks, maskid, i;
 	char *curstr, *selstr;
-	char mstr[CPU_SET_HEX_STR_SIZE];
+	char *mstr = NULL, *comma = NULL;
 	uint32_t local_id = node_tid;
 	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, step->cpu_bind_type);
 	debug3("get_cpuset (%s[%d]) %s", buftype, step->cpu_bind_type,
 		step->cpu_bind);
-	CPU_ZERO(mask);
 
 	if (step->cpu_bind_type & CPU_BIND_NONE) {
-		return false;
+		return NULL;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDRANK) {
 		/* if HAVE_NUMA then bind this task ID to it's corresponding
 		 * locality domain ID. Otherwise, bind this task ID to it's
 		 * corresponding socket ID */
-		return _bind_ldom(local_id, mask);
+		mask = xcpuset_alloc();
+		if (!_bind_ldom(local_id, mask))
+			xfree(mask);
+		return mask;
 	}
 
 	if (!step->cpu_bind)
-		return false;
+		return NULL;
 
 	nummasks = 1;
 	selstr = NULL;
@@ -123,27 +126,25 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 			curstr++;
 		}
 		if (!*curstr) {
-			return false;
+			return NULL;
 		}
 		selstr = curstr;
 	}
 
 	/* extract the selected mask from the list */
-	i = 0;
-	curstr = mstr;
-	while (*selstr && (*selstr != ',') && (++i < CPU_SET_HEX_STR_SIZE))
-		*curstr++ = *selstr++;
-	*curstr = '\0';
+	mstr = xstrdup(selstr);
+	if ((comma = xstrchr(mstr, ',')))
+		*comma = 0;
 
 	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
-		if (task_str_to_cpuset(mask, mstr) < 0) {
+		if (!(mask = task_str_to_cpuset(mstr)))
 			error("task_str_to_cpuset %s", mstr);
-			return false;
-		}
-		return true;
+		xfree(mstr);
+		return mask;
 	}
 
+	mask = xcpuset_alloc();
 	if (step->cpu_bind_type & CPU_BIND_MAP) {
 		unsigned int mycpu = 0;
 		if (xstrncmp(mstr, "0x", 2) == 0) {
@@ -151,8 +152,9 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 		} else {
 			mycpu = strtoul (mstr, NULL, 10);
 		}
-		CPU_SET(mycpu, mask);
-		return true;
+		XCPU_SET(mycpu, mask);
+		xfree(mstr);
+		return mask;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDMASK) {
@@ -169,20 +171,19 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 			curstr += 2;
 		while (ptr >= curstr) {
 			char val = slurm_char_to_hex(*ptr);
-			if (val == (char) -1)
-				return false;
-			if ((val & 1) && !_bind_ldom(base, mask))
-				return false;
-			if ((val & 2) && !_bind_ldom(base + 1, mask))
-				return false;
-			if ((val & 4) && !_bind_ldom(base + 2, mask))
-				return false;
-			if ((val & 8) && !_bind_ldom(base + 3, mask))
-				return false;
+			if ((val == (char) -1) ||
+			    ((val & 1) && !_bind_ldom(base, mask)) ||
+			    ((val & 2) && !_bind_ldom(base + 1, mask)) ||
+			    ((val & 4) && !_bind_ldom(base + 2, mask)) ||
+			    ((val & 8) && !_bind_ldom(base + 3, mask))) {
+				xfree(mask);
+				break;
+			}
 			ptr--;
 			base += 4;
 		}
-		return true;
+		xfree(mstr);
+		return mask;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_LDMAP) {
@@ -195,8 +196,12 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 		} else {
 			myldom = strtoul (mstr, NULL, 10);
 		}
-		return _bind_ldom(myldom, mask);
+		if (!_bind_ldom(myldom, mask))
+			xfree(mask);
+		xfree(mstr);
+		return mask;
 	}
 
-	return false;
+	xfree(mstr);
+	return mask;
 }
