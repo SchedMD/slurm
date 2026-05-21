@@ -76,7 +76,7 @@ extern char *task_cpuset_to_str(const xcpuset_t *mask);
 extern xcpuset_t *task_str_to_cpuset(const char *str);
 
 /* Wrapper for sched_setaffinity() */
-extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask);
+extern int xsetaffinity(pid_t pid, xcpuset_t *mask);
 
 /*
  * Returns an allocated xcpuset_t structure describing the current cpu affinity.

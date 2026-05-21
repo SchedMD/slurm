@@ -130,7 +130,7 @@ extern xcpuset_t *task_str_to_cpuset(const char *str)
 #endif
 }
 
-extern int slurm_setaffinity(pid_t pid, xcpuset_t *mask)
+extern int xsetaffinity(pid_t pid, xcpuset_t *mask)
 {
 	int rval;
 
