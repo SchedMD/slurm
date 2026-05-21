@@ -86,7 +86,7 @@ extern int xsetaffinity(pid_t pid, xcpuset_t *mask);
 extern xcpuset_t *xgetaffinity(pid_t pid);
 
 /*
- * RET CPUs set or -1 on error
+ * RET CPUs set or 0 on error
  */
 extern int get_assigned_cpu_count(void);
 
