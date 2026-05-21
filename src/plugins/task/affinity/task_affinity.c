@@ -62,9 +62,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 extern int init(void)
 {
 	char *mstr = NULL;
-	xcpuset_t *cur_mask = xcpuset_alloc();
+	xcpuset_t *cur_mask = xgetaffinity(0);
 
-	slurm_getaffinity(0, cur_mask);
 	mstr = task_cpuset_to_str(cur_mask);
 	verbose("%s loaded with CPU mask 0x%s", plugin_name, mstr);
 
@@ -210,8 +209,7 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 
 	/* Log affinity status to stderr */
 	if (!new_mask || (rc != SLURM_SUCCESS)) {
-		xcpuset_t *current = xcpuset_alloc();
-		slurm_getaffinity(mypid, current);
+		xcpuset_t *current = xgetaffinity(mypid);
 		task_slurm_chkaffinity(current, step, rc, node_tid);
 		xfree(current);
 	} else {
