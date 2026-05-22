@@ -1241,6 +1241,14 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		info("%s: setting exclusive_topo for partition %s", __func__,
 		     part_desc->name);
 		part_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
+
+		/* Make sure Exclusive=TOPO sets Exclusive=NODE */
+		if ((part_desc->max_share != NO_VAL16) && part_desc->max_share)
+			warning("%s: Oversubscribe ignored, Exclusive=TOPO and Exclusive=NODE imply OverSubscribe=NO",
+				__func__);
+		if (part_desc->max_share)
+			part_desc->max_share = 0;
+
 	} else if (part_desc->flags & PART_FLAG_EXC_TOPO_CLR) {
 		info("%s: clearing exclusive_topo for partition %s", __func__,
 		     part_desc->name);

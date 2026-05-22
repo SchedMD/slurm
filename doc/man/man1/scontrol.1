@@ -2258,12 +2258,14 @@ Set partition\-level exclusivity to a single mode.
 \fBNO\fR (or \fBNONE\fR): no partition\-level exclusivity (default).
 .TP
 \fBNODE\fR: allocate whole nodes (similar to job \fB\-\-exclusive\fR).
+This implies \fBOversubscribe=NO\fR.
 .TP
 \fBUSER\fR: only one user's jobs may share a node (similar to
 \fB\-\-exclusive=user\fR).
 .TP
 \fBTOPO\fR: only one job per topology segment (similar to
-\fB\-\-exclusive=topo\fR); also implies \fBNODE\fR.
+\fB\-\-exclusive=topo\fR); also implies \fBNODE\fR. This implies
+\fBOversubscribe=NO\fR
 .TP
 See the \fBExclusive\fR entry in \fBslurm.conf\fR(5) for full semantics.
 .RE

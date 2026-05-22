@@ -7867,11 +7867,11 @@ root to execute jobs).
 \fBExclusive\fR
 Controls partition\-level exclusivity together with \fBOverSubscribe\fR.
 Specify one of "NO", "NODE", "USER", or "TOPO".
-NODE allocates whole nodes (typically used with \fBOverSubscribe=NO\fR).
+NODE allocates whole nodes and implies \fBOverSubscribe=NO\fR.
 USER allows only one user to have jobs on a node at a time (similar to
 \fB\-\-exclusive=user\fR).
 TOPO allows only one job per topology segment (similar to
-\fB\-\-exclusive=topo\fR).
+\fB\-\-exclusive=topo\fR) and implies \fBOverSubscribe=NO\fR.
 For node\-exclusive partitions, jobs receive all CPUs and generic resources on
 allocated nodes, but only as much memory as requested; use \fB\-\-mem=0\fR at
 submit time to request all memory on the node (notably when using gang
