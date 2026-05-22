@@ -313,6 +313,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 
 		jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
 					     step_ptr);
+		job_ptr->pending_async_steps++;
 	} else {
 		step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		step_ptr->step_id.step_id = SLURM_PENDING_STEP;
@@ -900,6 +901,8 @@ static int _wake_steps(void *x, void *arg)
 				slurm_free_job_step_create_request_msg(
 					step_req);
 				pend_step_ptr->step_req = NULL;
+				if (job_ptr->pending_async_steps)
+					job_ptr->pending_async_steps--;
 			}
 			return 1;
 		} else {

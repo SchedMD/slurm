@@ -88,6 +88,14 @@ extern void free_step_record(void *x)
  * the switch_g_job_step_complete() must be called upon completion
  * and not upon record purging. Presently both events occur simultaneously.
  */
+	/*
+	 * Async pending placeholder freed before _wake_steps consumed its
+	 * step_req. _wake_steps nulls step_req before this runs in the
+	 * launched case, so this dec only fires for teardown/error paths.
+	 */
+	if (step_ptr->step_req && step_ptr->job_ptr->pending_async_steps)
+		step_ptr->job_ptr->pending_async_steps--;
+
 	if (step_ptr->switch_step) {
 		if (step_ptr->step_layout)
 			switch_g_job_step_complete(
