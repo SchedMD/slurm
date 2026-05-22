@@ -1446,8 +1446,11 @@ static int _dump_string(lua_State *L, char **ptr, const int index,
 	    luaL_callmeta(L, index, "__tostring"))
 		str = lua_tolstring(L, index, &len);
 
-	/* Only log string if it was set and was a sane length */
-	if (!str || (len <= 0) || (len >= MAX_VAL)) {
+	/*
+	 * Only log string if it was set and was a sane length.
+	 * Allow empty string (len == 0).
+	 */
+	if (!str || (len >= MAX_VAL)) {
 		log_flag(SCRIPT, "%s: invalid string", label);
 		return ESLURM_LUA_INVALID_CONVERSION_TYPE;
 	}

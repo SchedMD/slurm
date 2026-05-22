@@ -1133,6 +1133,7 @@ extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 					  sizeof(pid))))
 		fatal("%s: unable to send pid: %s",
 		      __func__, slurm_strerror(rc));
+	conmgr_unquiesce_fd(state.startup_con);
 
 	conmgr_queue_close_fd(state.startup_con);
 	unlock_state();
@@ -1488,10 +1489,9 @@ static int _anchor_child(int pipe_fd[2])
 
 	conmgr_add_work_signal(SIGCHLD, _catch_sigchld, &state);
 
-	if ((rc = conmgr_process_fd(CON_TYPE_RAW, &conmgr_timeouts_disabled,
-				    pipe_fd[1], pipe_fd[1],
-				    &conmgr_startup_events, CON_FLAG_NONE, NULL,
-				    0, NULL, NULL)))
+	if ((rc = conmgr_process_fd(CON_TYPE_RAW, &conmgr_timeouts_disabled, -1,
+				    pipe_fd[1], &conmgr_startup_events,
+				    CON_FLAG_QUIESCE, NULL, 0, NULL, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
