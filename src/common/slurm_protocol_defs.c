@@ -2505,6 +2505,14 @@ slurm_free_requeue_msg(requeue_msg_t *msg)
 	}
 }
 
+extern void slurm_free_resize_msg(resize_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->nodelist);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
 	xfree(msg);
@@ -5273,6 +5281,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_REQUEUE:
 		slurm_free_requeue_msg(data);
+		break;
+	case REQUEST_STEPMGR_RESIZE_KILL_STEPS:
+		slurm_free_resize_msg(data);
 		break;
 	case RESPONSE_RESOURCE_LAYOUT:
 		slurm_free_resource_layout_msg(data);
