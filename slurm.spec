@@ -193,7 +193,9 @@ BuildRequires: pkgconfig(libcurl)
 
 %if %{with jwt}
 BuildRequires: libjwt-devel >= 1.10.0
+BuildRequires: libjwt-devel < 3
 Requires: libjwt >= 1.10.0
+Requires: libjwt < 3
 %endif
 
 %if %{with yaml}
