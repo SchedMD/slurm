@@ -136,3 +136,47 @@ extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred)
 
 	return SLURM_SUCCESS;
 }
+
+/*
+ * Parse a JWT without verifying its signature. Use only when the caller
+ * has verified by other means (sack_verify()) or trust is delegated.
+ * The original alg is restored in the parsed jwt_t so downstream
+ * defense checks see what the client actually sent.
+ */
+extern jwt_t *decode_unverified_jwt(char *token)
+{
+	jwt_t *jwt = NULL;
+	data_t *header = NULL;
+	char *first_dot, *rewritten = NULL;
+	const char *orig_alg;
+
+	if (!token || !(first_dot = xstrchr(token, '.')))
+		return NULL;
+
+	if (!(header = auth_common_extract_jwt_header(token)))
+		return NULL;
+
+	orig_alg = data_get_string(data_key_get(header, "alg"));
+
+	/* base64url('{"alg":"none"}') = "eyJhbGciOiJub25lIn0" */
+	xstrfmtcat(rewritten, "eyJhbGciOiJub25lIn0.%s", first_dot + 1);
+	if (jwt_decode(&jwt, rewritten, NULL, 0))
+		goto fail;
+	xfree(rewritten);
+
+	(void) jwt_del_headers(jwt, "alg");
+	if (jwt_add_header(jwt, "alg", orig_alg))
+		goto fail;
+
+	FREE_NULL_DATA(header);
+	return jwt;
+
+fail:
+	xfree(rewritten);
+	FREE_NULL_DATA(header);
+	if (jwt) {
+		jwt_free(jwt);
+		jwt = NULL;
+	}
+	return NULL;
+}
