@@ -4324,6 +4324,24 @@ step_record_t *find_step_record(job_record_t *job_ptr, slurm_step_id_t *step_id)
 	return list_find_first(job_ptr->step_list, find_step_id, step_id);
 }
 
+static int _is_running_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	if (step_ptr->state & JOB_COMPLETING)
+		return 0;
+	if (step_ptr->state != JOB_RUNNING)
+		return 0;
+	if (step_ptr->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)
+		return 0;
+	return 1;
+}
+
+extern bool job_has_running_step(job_record_t *job_ptr)
+{
+	return list_find_first(job_ptr->step_list, _is_running_step, NULL);
+}
+
 extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)
 {
 	int i, old_pos;
