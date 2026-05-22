@@ -507,6 +507,7 @@ rm -f %{buildroot}/%{_datadir}/bash-completion/completions/srun
 rm -f %{buildroot}/%{_datadir}/bash-completion/completions/sshare
 rm -f %{buildroot}/%{_datadir}/bash-completion/completions/sstat
 rm -f %{buildroot}/%{_datadir}/bash-completion/completions/strigger
+rm -f %{buildroot}/%{_datadir}/bash-completion/completions/swait
 
 # Build man pages that are generated directly by the tools
 rm -f %{buildroot}/%{_mandir}/man1/sjobexitmod.1
@@ -701,6 +702,7 @@ ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,srun}
 ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sshare}
 ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,sstat}
 ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,strigger}
+ln -sf %{_bashcompdir}/bash-completion/completions/{slurm_completion.sh,swait}
 
 %preun
 
@@ -726,6 +728,7 @@ if [ $1 -eq 0 ]; then
 	rm -f %{_bashcompdir}/bash-completion/completions/sshare
 	rm -f %{_bashcompdir}/bash-completion/completions/sstat
 	rm -f %{_bashcompdir}/bash-completion/completions/strigger
+	rm -f %{_bashcompdir}/bash-completion/completions/swait
 fi
 
 %post sackd

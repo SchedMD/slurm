@@ -2461,6 +2461,15 @@ extern void slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 	}
 }
 
+extern void slurm_free_steps_drained_sub_msg(steps_drained_sub_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->host);
+		xfree(msg->tls_cert);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_suspend_msg(suspend_msg_t *msg)
 {
 	if (msg) {
@@ -5421,6 +5430,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BURST_BUFFER_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_FED_INFO:
+	case SRUN_STEPS_DRAINED:
 		/* No body to free */
 		break;
 	case RESPONSE_FED_INFO:
@@ -5498,6 +5508,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case SRUN_JOB_COMPLETE:
 		slurm_free_srun_job_complete_msg(data);
+		break;
+	case REQUEST_STEPS_DRAINED_SUBSCRIBE:
+		slurm_free_steps_drained_sub_msg(data);
 		break;
 	case SRUN_PING:
 		slurm_free_srun_ping_msg(data);

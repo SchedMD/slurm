@@ -246,6 +246,7 @@ typedef enum {
 	RESPONSE_AUTH_TOKEN,
 	REQUEST_KILL_JOBS,		/* 5040 */
 	RESPONSE_KILL_JOBS,
+	REQUEST_STEPS_DRAINED_SUBSCRIBE, /* 5042 */
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -283,6 +284,7 @@ typedef enum {
 	SRUN_STEP_SIGNAL,	/* for launch plugins aprun and poe,
 				 * srun forwards signal to the launch command */
 	SRUN_NET_FORWARD,
+	SRUN_STEPS_DRAINED,
 
 	PMI_KVS_PUT_REQ = 7201,
 	DEFUNCT_RPC_7202,

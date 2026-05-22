@@ -623,6 +623,7 @@ AC_CONFIG_FILES([Makefile
 		 src/stepmgr/Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
+		 src/swait/Makefile
 		 testsuite/Makefile
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile

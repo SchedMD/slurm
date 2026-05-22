@@ -46,6 +46,26 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
+ * Info for a steps-drained subscriber created from a
+ * REQUEST_STEPS_DRAINED_SUBSCRIBE message; element type for
+ * job_record_t.steps_drained_subs.
+ */
+typedef struct {
+	slurm_addr_t addr;
+	char *host;
+	uint16_t port;
+	uint16_t protocol_version;
+	char *tls_cert;
+} steps_drained_sub_t;
+
+/*
+ * List element destructor matching list_create()'s ListDelF contract for
+ * job_record_t.steps_drained_subs.
+ * IN x - steps_drained_sub_t pointer; may be NULL
+ */
+extern void destroy_steps_drained_sub(void *x);
+
+/*
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
  */
@@ -71,6 +91,13 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op);
  * IN step_ptr - pointer to the slurmctld job step record
  */
 extern void srun_step_complete(step_record_t *step_ptr);
+
+/*
+ * srun_steps_drained - notify subscribers in steps_drained_subs that all
+ * regular steps of a job have ended
+ * IN job_ptr - pointer to the slurmctld job record
+ */
+extern void srun_steps_drained(job_record_t *job_ptr);
 
 /*
  * srun_step_missing - notify srun that a job step is missing from

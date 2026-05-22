@@ -88,6 +88,14 @@ extern void free_step_record(void *x)
  * the switch_g_job_step_complete() must be called upon completion
  * and not upon record purging. Presently both events occur simultaneously.
  */
+	/*
+	 * Async pending placeholder freed before _wake_steps consumed its
+	 * step_req. _wake_steps nulls step_req before this runs in the
+	 * launched case, so this dec only fires for teardown/error paths.
+	 */
+	if (step_ptr->step_req && step_ptr->job_ptr->pending_async_steps)
+		step_ptr->job_ptr->pending_async_steps--;
+
 	if (step_ptr->switch_step) {
 		if (step_ptr->step_layout)
 			switch_g_job_step_complete(
@@ -312,6 +320,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
 	FREE_NULL_LIST(job_ptr->step_list);
+	FREE_NULL_LIST(job_ptr->steps_drained_subs);
 	/* switch_g_job_complete() should have already been called if needed */
 	if (job_ptr->switch_jobinfo)
 		switch_g_jobinfo_free(job_ptr);
@@ -3427,6 +3436,7 @@ extern step_record_t *create_step_record(job_record_t *job_ptr,
 	step_ptr = xmalloc(sizeof(*step_ptr));
 
 	step_ptr->job_ptr    = job_ptr;
+	step_ptr->step_id.step_id = NO_VAL;
 	step_ptr->exit_code  = NO_VAL;
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
@@ -3458,6 +3468,24 @@ step_record_t *find_step_record(job_record_t *job_ptr, slurm_step_id_t *step_id)
 		return NULL;
 
 	return list_find_first(job_ptr->step_list, find_step_id, step_id);
+}
+
+static int _is_running_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	if (step_ptr->state & JOB_COMPLETING)
+		return 0;
+	if (step_ptr->state != JOB_RUNNING)
+		return 0;
+	if (step_ptr->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)
+		return 0;
+	return 1;
+}
+
+extern bool job_has_running_step(job_record_t *job_ptr)
+{
+	return list_find_first(job_ptr->step_list, _is_running_step, NULL);
 }
 
 extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)

@@ -313,6 +313,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 
 		jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
 					     step_ptr);
+		job_ptr->pending_async_steps++;
 	} else {
 		step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		step_ptr->step_id.step_id = SLURM_PENDING_STEP;
@@ -499,6 +500,7 @@ extern void delete_step_records(job_record_t *job_ptr)
 	remaining = list_count(job_ptr->step_list);
 	*stepmgr_ops->last_job_update = time(NULL);
 	list_delete_all(job_ptr->step_list, _step_not_cleaning, &remaining);
+	srun_steps_drained(job_ptr);
 }
 
 /*
@@ -515,6 +517,7 @@ void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr)
 
 	*stepmgr_ops->last_job_update = time(NULL);
 	list_delete_ptr(job_ptr->step_list, step_ptr);
+	srun_steps_drained(job_ptr);
 }
 
 /*
@@ -642,6 +645,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 	list_for_each(job_ptr->step_list, _step_signal, &step_signal);
 	list_delete_all(job_ptr->step_list, _delete_pending_steps,
 			&step_signal);
+	srun_steps_drained(job_ptr);
 
 	if (!step_signal.found && running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
@@ -900,6 +904,8 @@ static int _wake_steps(void *x, void *arg)
 				slurm_free_job_step_create_request_msg(
 					step_req);
 				pend_step_ptr->step_req = NULL;
+				if (job_ptr->pending_async_steps)
+					job_ptr->pending_async_steps--;
 			}
 			return 1;
 		} else {
@@ -953,6 +959,7 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 	args.config_start_count = config_start_count;
 	args.start_count = 0;
 	list_delete_all(job_ptr->step_list, _wake_steps, &args);
+	srun_steps_drained(job_ptr);
 }
 
 /*
