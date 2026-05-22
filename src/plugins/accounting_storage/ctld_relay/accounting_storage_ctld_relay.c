@@ -579,6 +579,11 @@ extern int clusteracct_storage_p_register_disconn_ctld(
 	return SLURM_SUCCESS;
 }
 
+extern void clusteracct_storage_p_ctld_recovered(void)
+{
+	/* The ctld_relay plugin has no agent thread to wait on recovery. */
+}
+
 extern int clusteracct_storage_p_fini_ctld(void *db_conn,
 					   char *ip, uint16_t port,
 					   char *cluster_nodes)

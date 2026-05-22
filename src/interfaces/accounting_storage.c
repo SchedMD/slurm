@@ -193,6 +193,7 @@ typedef struct slurm_acct_storage_ops {
 				    uint16_t rpc_version);
 	int  (*register_ctld)      (void *db_conn, uint16_t port);
 	int  (*register_disconn_ctld)(void *db_conn, char *control_host);
+	void (*ctld_recovered)     (void);
 	int  (*fini_ctld)          (void *db_conn,
 				    slurmdb_cluster_rec_t *cluster_rec);
 	int  (*job_start)          (void *db_conn, job_record_t *job_ptr);
@@ -286,6 +287,7 @@ static const char *syms[] = {
 	"clusteracct_storage_p_cluster_tres",
 	"clusteracct_storage_p_register_ctld",
 	"clusteracct_storage_p_register_disconn_ctld",
+	"clusteracct_storage_p_ctld_recovered",
 	"clusteracct_storage_p_fini_ctld",
 	"jobacct_storage_p_job_start",
 	"jobacct_storage_p_job_heavy",
@@ -1079,6 +1081,16 @@ extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 		return SLURM_SUCCESS;
 
 	return (*(ops.register_ctld))(db_conn, port);
+}
+
+extern void clusteracct_storage_g_ctld_recovered(void)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return;
+
+	(*(ops.ctld_recovered))();
 }
 
 extern int clusteracct_storage_g_register_disconn_ctld(

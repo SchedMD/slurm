@@ -72,6 +72,8 @@ static pthread_t agent_tid      = 0;
 static bool      halt_agent          = 0;
 static time_t    slurmdbd_shutdown   = 0;
 static bool      agent_running       = 0;
+static bool      ctld_recovered      = false;
+static pthread_cond_t ctld_recovered_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
@@ -254,7 +256,7 @@ static int _get_return_codes(void *x, void *arg)
 	return 0;
 }
 
-static int _handle_mult_rc_ret(void)
+static int _handle_mult_rc_ret(list_t **id_rc_list)
 {
 	buf_t *buffer;
 	uint16_t msg_type;
@@ -286,7 +288,14 @@ static int _handle_mult_rc_ret(void)
 		slurm_mutex_unlock(&agent_lock);
 		rc = rc_msg.rc;
 
-		_process_id_rc_list(rc_msg.id_rc_list);
+		/*
+		 * Hand the collected id_rc_list back to the caller so it can
+		 * be processed without slurmdbd_lock held; _process_id_rc_list
+		 * takes a slurmctld JOB write lock, which can deadlock with
+		 * callers that hold the JOB lock and call into the slurmdbd
+		 * agent (e.g. read_slurm_conf() during recovery).
+		 */
+		*id_rc_list = rc_msg.id_rc_list;
 
 		slurmdbd_free_list_msg(list_msg);
 		break;
@@ -689,20 +698,31 @@ static void *_agent(void *x)
 	dbd_list_msg_t list_msg;
 	DEF_TIMERS;
 
-	slurm_mutex_lock(&agent_lock);
-	agent_running = true;
-	slurm_mutex_unlock(&agent_lock);
-
 	list_req.msg_type = DBD_SEND_MULT_MSG;
 	list_req.pcon = slurmdbd_conn;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
+
+	/*
+	 * Wait until the slurmctld has finished loading state (job_list and
+	 * job_hash populated) before processing any messages. Without this,
+	 * DBD_ID_RC responses for DBD_JOB_START messages from dbd.messages or
+	 * other early sends would call find_job_record() against an
+	 * uninitialized job_hash and either crash or silently drop the data.
+	 */
+	slurm_mutex_lock(&agent_lock);
+	while (!ctld_recovered && !*slurmdbd_conn->shutdown)
+		slurm_cond_wait(&ctld_recovered_cond, &agent_lock);
+	agent_running = true;
+	slurm_mutex_unlock(&agent_lock);
 
 	log_flag(DBD_AGENT, "slurmdbd agent_count=%d with msg_type=%s",
 		 list_count(agent_list),
 		 slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
+		list_t *id_rc_list = NULL;
+
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent) {
 			log_flag(DBD_AGENT, "slurmdbd agent halt with agent_count=%d",
@@ -791,17 +811,19 @@ static void *_agent(void *x)
 			}
 			error("Failure sending message: %d: %m", rc);
 		} else if (list_msg.my_list) {
-			rc = _handle_mult_rc_ret();
+			rc = _handle_mult_rc_ret(&id_rc_list);
 		} else {
 			rc_msg_t rc_msg = { 0 };
 
 			rc = _get_return_code(&rc_msg);
 
-			_process_id_rc_list(rc_msg.id_rc_list);
+			id_rc_list = rc_msg.id_rc_list;
 
 			if (rc == EAGAIN) {
 				if (*slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
+					_process_id_rc_list(id_rc_list);
+					id_rc_list = NULL;
 					END_TIMER2("slurmdbd agent: EAGAIN on shutdown");
 					break;
 				}
@@ -810,6 +832,15 @@ static void *_agent(void *x)
 			}
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
+
+		/*
+		 * Process id_rc_list outside of slurmdbd_lock to avoid an
+		 * AB-BA deadlock between slurmdbd_lock and the slurmctld JOB
+		 * lock taken by _process_id_rc_list().
+		 */
+		_process_id_rc_list(id_rc_list);
+		id_rc_list = NULL;
+
 		slurm_mutex_lock(&assoc_cache_mutex);
 		if (slurmdbd_conn->conn &&
 		    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
@@ -896,10 +927,33 @@ static void _shutdown_agent(void)
 
 	slurmdbd_shutdown = time(NULL);
 	slurm_mutex_lock(&agent_lock);
+	/*
+	 * Clear ctld_recovered so a subsequent _create_agent() (on backup
+	 * resume or failed-reconfig restart) starts a fresh agent thread that
+	 * blocks until the next read_slurm_conf() has populated job_hash.
+	 */
+	ctld_recovered = false;
+	/*
+	 * Wake the agent thread if it's still parked on ctld_recovered_cond
+	 * waiting for recovery to finish; we shouldn't keep it stuck if the
+	 * controller is shutting down before that signal arrives.
+	 */
+	slurm_cond_broadcast(&ctld_recovered_cond);
 	if (agent_running)
 		slurm_cond_broadcast(&agent_cond);
 	slurm_mutex_unlock(&agent_lock);
 	slurm_thread_join(agent_tid);
+}
+
+extern void slurmdbd_agent_ctld_recovered(void)
+{
+	if (!running_in_slurmctld())
+		return;
+
+	slurm_mutex_lock(&agent_lock);
+	ctld_recovered = true;
+	slurm_cond_broadcast(&ctld_recovered_cond);
+	slurm_mutex_unlock(&agent_lock);
 }
 
 /****************************************************************************
