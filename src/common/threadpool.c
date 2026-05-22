@@ -281,17 +281,19 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 	log_flag(THREAD, "%s->%s: joining pthread id=0x%"PRIx64,
 		       caller, __func__, (uint64_t) id);
 
+	if (!(thread = list_find_first(threadpool.attached, _match_thread_id,
+				       (void *) &id))) {
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist",
+			 caller, __func__, (uint64_t) id);
+		slurm_mutex_unlock(&threadpool.mutex);
+
+		return ESRCH;
+	}
+
+	xassert(thread->magic == THREAD_MAGIC);
+	xassert(!thread->detached);
+
 	do {
-		if (!(thread = list_find_first(threadpool.attached,
-					       _match_thread_id,
-					       (void *) &id))) {
-			log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist",
-				       caller, __func__, (uint64_t) id);
-			slurm_mutex_unlock(&threadpool.mutex);
-
-			return ESRCH;
-		}
-
 		/* Catch thread being detached */
 		xassert(thread->magic == THREAD_MAGIC);
 
