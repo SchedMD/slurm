@@ -432,23 +432,22 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 	long r_uid, expiration;
 
 	if (verify && key_list) {
-		jwt_t *unverified_jwt = NULL;
+		data_t *jwt_header = NULL;
 		key_details_t *key = NULL;
 		const char *kid = NULL;
 
-		if ((rc = jwt_decode(&unverified_jwt, token, NULL, 0))) {
-			error("%s: jwt_decode failure: %s",
-			      __func__, slurm_strerror(rc));
+		if (!(jwt_header = auth_common_extract_jwt_header(token))) {
+			error("%s: jwt_decode failure", __func__);
 			goto fail;
 		}
 
-		if ((kid = jwt_get_header(unverified_jwt, "kid"))) {
+		if ((kid = data_get_string(data_key_get(jwt_header, "kid")))) {
 			/* Find the kid in our keys list */
 			if (!(key = list_find_first_ro(key_list, _find_kid,
 						       (char *) kid))) {
 				error("%s: could not find kid=%s",
 				      __func__, kid);
-				jwt_free(unverified_jwt);
+				FREE_NULL_DATA(jwt_header);
 				goto fail;
 			}
 		} else {
@@ -457,9 +456,8 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 			key = default_key;
 		}
 
-		kid = NULL;	/* pointer into unverified_jwt */
-		jwt_free(unverified_jwt);
-		unverified_jwt = NULL;
+		kid = NULL;
+		FREE_NULL_DATA(jwt_header);
 
 		if (key->exp && (key->exp < time(NULL))) {
 			error("%s: token received for expired key kid=%s",

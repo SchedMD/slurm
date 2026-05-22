@@ -78,4 +78,11 @@ extern data_t *auth_common_identity_to_data(identity_t *id);
 extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
 						gid_t gid);
 
+/*
+ * Parse a JWT's base64url-encoded header segment.
+ * IN token - JWT token string
+ * RETURNS: data_t on success, NULL on failure
+ */
+extern data_t *auth_common_extract_jwt_header(const char *token);
+
 #endif
