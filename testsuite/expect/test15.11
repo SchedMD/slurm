@@ -45,60 +45,32 @@ proc cleanup {} {
 #
 # Test setting job's name and get priority
 #
-set priority1  0
-set matches    0
-set timeout $max_job_delay
-spawn $salloc -t1 --job-name=$job_name $bin_bash
-expect {
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		send "$scontrol show job $job_id\r"
-		exp_continue
-	}
-	-re "Name=$job_name" {
-		set matches 1
-		exp_continue
-	}
-	-re "Priority=($number)" {
-		set priority1 $expect_out(1,string)
-		send "exit\r"
-		exp_continue
-	}
-	timeout {
-		fail "salloc not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$salloc -t1 --job-name=$job_name $bin_true"]
+if {![regexp "Granted job allocation ($number)" $output - job_id]} {
+	fail "Unable to get job_id from salloc"
 }
-if {$job_id == 0} {
-	fail "salloc failed to initiate job"
+
+set jobs [get_jobs]
+set name [dict_getdef [dict_getdef $jobs $job_id {}] "JobName" ""]
+subtest { $name == $job_name} "Verify that the job set the job name" "$name != $job_name"
+
+set priority1 [dict_getdef [dict_getdef $jobs $job_id {}] "Priority" ""]
+if { $priority1 == ""} {
+	fail "Unable to get Priority from job $job_id"
 }
-subtest {$matches != 0} "Verify that the job set the job name"
 
 #
 # Test setting job's name and get priority
 #
-set job_id     0
-set priority2  0
-spawn $salloc -t1 --nice=1000 $bin_bash
-expect {
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		send "$scontrol show job $job_id\r"
-		exp_continue
-	}
-	-re "Priority=($number)" {
-		set priority2 $expect_out(1,string)
-		send "exit\r"
-		exp_continue
-        }
-	timeout {
-		fail "salloc not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$salloc -t1 --nice=1000 $bin_true"]
+if {![regexp "Granted job allocation ($number)" $output - job_id]} {
+	fail "Unable to get job_id from salloc"
+}
+
+set jobs [get_jobs]
+set priority2 [dict_getdef [dict_getdef $jobs $job_id {}] "Priority" ""]
+if { $priority2 == ""} {
+	fail "Unable to get Priority from job $job_id"
 }
 set delta_prio [expr $priority1 - $priority2]
 subtest {$delta_prio >= 950} "Verify that the job processed the nice option" "$delta_prio < 950"
