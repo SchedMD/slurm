@@ -45,6 +45,7 @@
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+#include "src/common/xbase64.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -288,4 +289,35 @@ static identity_t *_extract_identity_from_data(data_t *data_id, uid_t uid,
 	}
 
 	return id;
+}
+
+extern data_t *auth_common_extract_jwt_header(const char *token)
+{
+	const char *dot;
+	char *header_b64url = NULL, *header_b64 = NULL;
+	uint8_t *header_json = NULL;
+	int header_len;
+	data_t *header = NULL;
+
+	if (!token || !(dot = xstrchr(token, '.')) || (dot == token))
+		return NULL;
+
+	header_b64url = xstrndup(token, dot - token);
+	header_b64 = xbase64_from_base64url(header_b64url);
+	xfree(header_b64url);
+
+	header_len = xbase64_decode(&header_json, header_b64);
+	xfree(header_b64);
+	if (header_len < 0)
+		return NULL;
+
+	if (serialize_g_string_to_data(&header, (char *) header_json,
+				       header_len, MIME_TYPE_JSON)) {
+		xfree(header_json);
+		FREE_NULL_DATA(header);
+		return NULL;
+	}
+	xfree(header_json);
+
+	return header;
 }

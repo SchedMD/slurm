@@ -85,6 +85,12 @@ AC_DEFUN([X_AC_JWT], [
         AC_MSG_ERROR([unable to locate jwt library])
       fi
     else
+      _x_ac_jwt_cppflags_save="$CPPFLAGS"
+      CPPFLAGS="$JWT_CPPFLAGS $CPPFLAGS"
+      AC_CHECK_DECL([jwt_get_grants_json], [],
+        [AC_MSG_ERROR([libjwt missing jwt_get_grants_json (need 1.x or 2.x)])],
+        [[#include <jwt.h>]])
+      CPPFLAGS="$_x_ac_jwt_cppflags_save"
       AC_DEFINE([HAVE_JWT], [1], [Define if you are compiling with jwt.])
     fi
 
