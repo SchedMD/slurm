@@ -1057,16 +1057,16 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	if (con_flag(con, FLAG_WAIT_ON_FINISH)) {
 		log_flag(CONMGR, "%s: [%s] waiting for %s",
 			 __func__, con->name,
-			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
-			  "on_listen_finish()"));
+			 (con_flag(con, FLAG_IS_LISTEN) ? "on_listen_finish()" :
+			  "on_finish()"));
 		return 0;
 	}
 
 	if (con->arg) {
 		log_flag(CONMGR, "%s: [%s] queuing up %s",
 			 __func__, con->name,
-			 (con_flag(con, FLAG_IS_LISTEN) ? "on_finish()" :
-			  "on_listen_finish()"));
+			 (con_flag(con, FLAG_IS_LISTEN) ? "on_listen_finish()" :
+			  "on_finish()"));
 
 		con_set_flag(con, FLAG_WAIT_ON_FINISH);
 
