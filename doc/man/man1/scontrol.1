@@ -292,12 +292,15 @@ primary slurmctld daemon of the specified cluster.
 .IP
 
 .TP
-\fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>} [Reason=<\fIreason\fR>]
+\fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>} [Action=<\fIname\fR>] [Reason=<\fIreason\fR>]
 Control power state of the provided node list/set. For 'power down', the
 optional ASAP flag will be added to the power down request, but will
 otherwise be rejected for power up requests.
 All arguments will be processed insensitive of case except for the node
 list/set. Optional \fIreason\fR may be be specified only when powering down.
+If "action" is set, the \fBPowerAction\fP by the specified name will be used
+instead of the configured \fBResumeProgram\fP or \fBSuspendProgram\fP for this
+request. Power up actions must be configured with \fBLocation=slurmctld\fP.
 This subcommand obsoletes the
 prior usage of scontrol's update command:
 
