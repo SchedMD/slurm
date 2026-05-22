@@ -2122,6 +2122,7 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
  * resume_after - Resume a down|drain node after resume_after time.
  */
 extern void check_node_timers(void);
+extern uint16_t get_periodic_check_interval(void);
 
 /*
  * Send warning signal to job before end time.
