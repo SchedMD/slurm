@@ -1557,8 +1557,10 @@ extern int spawn_anchor(void)
 
 		rc = _wait_create_pid(pipe_fd[0], child);
 		goto done;
-	} else
+	} else {
+		fd_close(&pipe_fd[0]);
 		rc = _anchor_child(pipe_fd);
+	}
 
 done:
 	spank_rc = spank_fini(NULL);
