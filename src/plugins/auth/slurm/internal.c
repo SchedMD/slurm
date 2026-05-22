@@ -478,9 +478,8 @@ extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid)
 			goto fail;
 		}
 	} else {
-		if ((rc = jwt_decode(&jwt, token, NULL, 0))) {
-			error("%s: jwt_decode failure: %s",
-			      __func__, slurm_strerror(rc));
+		if (!(jwt = decode_unverified_jwt(token))) {
+			error("%s: decode_unverified_jwt failure", __func__);
 			goto fail;
 		}
 	}

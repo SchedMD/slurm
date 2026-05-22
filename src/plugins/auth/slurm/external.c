@@ -84,9 +84,9 @@ extern int verify_external(auth_cred_t *cred)
 
 	cred->verified = true;
 
-	if ((rc = jwt_decode(&jwt, cred->token, NULL, 0))) {
-		error("%s: jwt_decode failure: %s",
-		      __func__, slurm_strerror(rc));
+	if (!(jwt = decode_unverified_jwt(cred->token))) {
+		error("%s: decode_unverified_jwt failure", __func__);
+		rc = SLURM_ERROR;
 		goto fail;
 	}
 
