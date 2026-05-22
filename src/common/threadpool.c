@@ -551,6 +551,7 @@ static void _threadpool_prerun(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_postrun(thread_t *thread)
 {
+	xassert(thread->magic == THREAD_MAGIC);
 	xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.running--;
