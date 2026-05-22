@@ -253,13 +253,12 @@ static int _match_thread_ptr(void *x, void *y)
 
 #endif
 
-static int _threadpool_on_detach(thread_t *thread, const bool remove,
-				 const char *caller)
+static int _threadpool_on_detach(thread_t *thread, const char *caller)
 {
 	log_flag(THREAD, "%s->%s: detached pthread id=0x%"PRIx64,
 		       caller, __func__, (uint64_t) thread->id);
 
-	if (remove && !list_delete_ptr(threadpool.attached, thread))
+	if (!list_delete_ptr(threadpool.attached, thread))
 		fatal_abort("this should never happen");
 
 	xassert(!thread->detached);
@@ -313,7 +312,7 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 		 caller, __func__, (uint64_t) thread->id,
 		 (uintptr_t) thread->ret);
 
-	rc = _threadpool_on_detach(thread, true, caller);
+	rc = _threadpool_on_detach(thread, caller);
 
 	HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
 
@@ -1096,13 +1095,13 @@ static int _threadpool_detach(const pthread_t id, const char *caller)
 
 	slurm_mutex_lock(&threadpool.mutex);
 
-	if (!(thread = list_remove_first(threadpool.attached, _match_thread_id,
-					 (void *) &id))) {
+	if (!(thread = list_find_first(threadpool.attached, _match_thread_id,
+				       (void *) &id))) {
 		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
 			       caller, __func__, (uint64_t) id);
 		rc = ESRCH;
 	} else {
-		rc = _threadpool_on_detach(thread, false, caller);
+		rc = _threadpool_on_detach(thread, caller);
 	}
 
 	slurm_mutex_unlock(&threadpool.mutex);
