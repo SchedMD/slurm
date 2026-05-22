@@ -826,6 +826,14 @@ extern step_record_t *find_step_record(job_record_t *job_ptr,
 				       slurm_step_id_t *step_id);
 
 /*
+ * Return true if the job has at least one step in JOB_RUNNING state (with a
+ * non-special step_id and not JOB_COMPLETING).
+ * IN job_ptr - pointer to the job record
+ * RET true if a running step is present, false otherwise
+ */
+extern bool job_has_running_step(job_record_t *job_ptr);
+
+/*
  * Realloc and possibly update a job_ptr->limit_set->tres array.
  *
  * If a new TRES is added the TRES positions in the array could have been moved
