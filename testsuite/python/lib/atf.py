@@ -1252,6 +1252,114 @@ def clean_slurm_conf_nodes(quiet=False):
         )
 
 
+def _is_sackd_required(quiet=False):
+    """True when slurm.conf sets AuthInfo=disable_sack.
+
+    In that mode slurmd no longer binds /run/slurm/sack.socket (so
+    multi-slurmd on the same host can coexist), and a standalone sackd
+    is required to provide that socket for client commands.
+    """
+    info = get_config_parameter("AuthInfo", live=False, default="", quiet=quiet) or ""
+    return "disable_sack" in info
+
+
+def start_sackd(quiet=False):
+    """Starts the SACK daemon (sackd).
+
+    sackd has no log-file option, so we launch it under Popen in foreground
+    (`-D -vvv`) and redirect both streams to <slurm-logs-dir>/sackd.log.
+    """
+    if not properties["auto-config"]:
+        require_auto_config("wants to start sackd")
+
+    sackd_exe = f"{properties['slurm-sbin-dir']}/sackd"
+
+    if pids_from_exe(sackd_exe):
+        logging.warning("Sackd was already running, stopping it first.")
+        stop_sackd(quiet)
+
+    if "slurm-logs-dir" not in properties:
+        properties["slurm-logs-dir"] = os.path.dirname(
+            get_config_parameter("SlurmctldLogFile", live=False, quiet=quiet)
+        )
+    sackd_log = f"{properties['slurm-logs-dir']}/sackd.log"
+    logging.debug(f"Starting sackd; logs at {sackd_log}")
+
+    properties["sackd_log"] = open(sackd_log, "w")
+
+    cmd = [
+        "sudo",
+        "-u",
+        properties["slurm-user"],
+        sackd_exe,
+        "-D",
+        "-vvv",
+    ]
+    properties["sackd"] = subprocess.Popen(
+        cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=properties["sackd_log"],
+        stderr=properties["sackd_log"],
+        start_new_session=True,
+    )
+
+    # Wait for either the SACK socket to appear
+    for t in timer():
+        if properties["sackd"].poll() is not None:
+            rc = properties["sackd"].returncode
+            properties["sackd_log"].flush()
+            properties["sackd_log"].close()
+            properties.pop("sackd_log", None)
+            properties.pop("sackd", None)
+            pytest.fail(f"sackd exited (rc={rc}) before binding the socket.")
+        if os.path.exists("/run/slurm/sack.socket"):
+            logging.debug("Sackd started successfully")
+            return
+    else:
+        pytest.fail("sackd never created /run/slurm/sack.socket")
+
+
+def stop_sackd(quiet=False):
+    """Stops the SACK daemon (sackd) if running."""
+    if not properties["auto-config"]:
+        require_auto_config("wants to stop sackd")
+
+    failures = []
+
+    proc = properties.pop("sackd", None)
+    if proc is None:
+        logging.debug("sackd was not running...")
+    else:
+        logging.debug("Stopping sackd...")
+        proc.send_signal(signal.SIGINT)
+        try:
+            proc.wait(timeout=default_polling_timeout)
+            logging.debug("No sackd is running.")
+        except subprocess.TimeoutExpired:
+            logging.warning("sackd didn't exit on SIGINT; sending SIGKILL")
+            proc.kill()
+            try:
+                proc.wait(timeout=default_polling_timeout)
+                logging.debug("No sackd is running.")
+            except Exception:
+                msg = "sackd didn't exit on SIGKILL"
+                failures.append(msg)
+                logging.warning(msg)
+
+    log_fh = properties.pop("sackd_log", None)
+    if log_fh is not None:
+        try:
+            log_fh.close()
+        except Exception:
+            msg = "Unable to close sackd logs"
+            failures.append(msg)
+            logging.warning(msg)
+
+    if failures:
+        return failures
+    return None
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
@@ -1274,6 +1382,10 @@ def start_slurm(clean=False, quiet=False):
 
     if not properties["auto-config"]:
         require_auto_config("wants to start slurm")
+
+    # First start sackd if necessary, so clients can be run.
+    if _is_sackd_required(quiet=quiet):
+        start_sackd(quiet=quiet)
 
     # Determine whether slurmdbd should be included
     if (
@@ -1491,6 +1603,12 @@ def stop_slurm(fatal=True, quiet=False):
         except Exception:
             properties["slurmrestd"].kill()
         properties["slurmrestd_log"].close()
+
+    # Stop sackd if it was needed for this configuration.
+    if _is_sackd_required(quiet=quiet):
+        err = stop_sackd(quiet=quiet)
+        if err:
+            failures.extend(err)
 
     if failures:
         for fail in failures:
