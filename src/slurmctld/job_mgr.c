@@ -16697,6 +16697,46 @@ static int _requeue_delay(void)
 	return delay;
 }
 
+/*
+ * Reparse job licenses after batch requeue. batch_requeue_fini() clears
+ * license_list; rebuild from job_ptr->licenses so allocate_nodes() ->
+ * license_job_get() can run on the next launch. Validate against configured
+ * licenses and hold the job if the request is no longer valid.
+ *
+ * Mirrors read_config.c _restore_job_licenses() request path.
+ */
+static void _batch_requeue_rebuild_license_list(job_record_t *job_ptr)
+{
+	list_t *license_list;
+	bool valid = true;
+
+	if (!job_ptr->licenses || !job_ptr->licenses[0])
+		return;
+
+	license_list = license_validate(job_ptr->licenses, true, true, false,
+					job_ptr->tres_req_cnt, &valid);
+	if (valid) {
+		job_ptr->license_list = license_list;
+		xfree(job_ptr->licenses);
+		job_ptr->licenses =
+			license_list_to_string(job_ptr->license_list);
+		hres_create_select(job_ptr);
+	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->priority) {
+		char *msg = xstrdup_printf(
+			"License request '%s' is no longer valid, holding job",
+			job_ptr->licenses);
+
+		info("%pJ %s", job_ptr, msg);
+		job_ptr->priority = 0;
+		job_ptr->state_reason = WAIT_HELD;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = msg;
+		FREE_NULL_LIST(license_list);
+	} else {
+		FREE_NULL_LIST(license_list);
+	}
+}
+
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(job_record_t *job_ptr)
@@ -16770,6 +16810,12 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
+
+	/*
+	 * We need to rebuild the license_list to what was requested
+	 * instead of what was given exclusively.
+	 */
+	_batch_requeue_rebuild_license_list(job_ptr);
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;
