@@ -6342,15 +6342,18 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	memcpy(&p_tmp, persist_conn, sizeof(persist_conn_t));
 
+	/*
+	 * Validate and publish the connection, but do NOT yet start the recv
+	 * thread that takes ownership of persist_conn->conn. Once that thread
+	 * is running it can destroy the underlying conn_t (e.g. on shutdown
+	 * detected via persist_conn->shutdown) which would turn the
+	 * &p_tmp.conn used below into a use-after-free.
+	 */
 	if (persist_init->persist_type == PERSIST_TYPE_FED)
 		rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
-	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
+	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE)
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
-
-		slurm_persist_conn_recv_thread_init(
-			persist_conn, conn_g_get_fd(persist_conn->conn), -1,
-			persist_conn);
-	} else
+	else
 		rc = SLURM_ERROR;
 end_it:
 
@@ -6361,6 +6364,21 @@ end_it:
 	if ((rc_msg = slurm_persist_send_msg(&p_tmp, ret_buf))) {
 		debug("Problem sending response to connection uid(%u): %s",
 		      msg->auth_uid, slurm_strerror(rc_msg));
+	}
+
+	/*
+	 * Hand off the connection to the recv thread only after the response
+	 * has been sent. Otherwise the recv thread can tear down the conn
+	 * before we finish replying, leaving us with a use-after-free.
+	 */
+	if (!rc && persist_conn) {
+		if (persist_init->persist_type == PERSIST_TYPE_FED)
+			fed_mgr_start_sibling_conn(persist_conn);
+		else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE)
+			slurm_persist_conn_recv_thread_init(
+				persist_conn,
+				conn_g_get_fd(persist_conn->conn), -1,
+				persist_conn);
 	}
 
 	if (rc && persist_conn) {
