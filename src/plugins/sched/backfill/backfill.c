@@ -155,7 +155,14 @@ typedef struct {
 	uint32_t het_job_id;
 	list_t *het_job_rec_list;	/* list of het_job_rec_t */
 	time_t prev_start;		/* Expected start time from last test */
+	time_t sticky_preempt_start;	/* Partial start waiting on preemption */
 } het_job_map_t;
+
+typedef enum {
+	HET_START_OK = SLURM_SUCCESS,
+	HET_START_FAILED = SLURM_ERROR,
+	HET_START_WAIT_PREEMPT = 1,
+} het_start_rc_t;
 
 typedef struct {
 	uint32_t het_job_id;
@@ -223,6 +230,7 @@ static uint32_t bf_min_prio_reserve = 0;
 static list_t *deadlock_global_list = NULL;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
+static int bf_hetjob_sticky_preempt_timeout = 0;
 static bool bf_one_resv_per_job = false;
 static bool bf_allow_magnetic_slot = false;
 static bool bf_topopt_enable = false;
@@ -996,6 +1004,19 @@ static void _load_config(void)
 	if (bf_hetjob_immediate && !bf_hetjob_prio) {
 		bf_hetjob_prio |= HETJOB_PRIO_MIN;
 		info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
+	}
+
+	bf_hetjob_sticky_preempt_timeout = 0;
+	if ((tmp_ptr = xstrcasestr(sched_params,
+				   "bf_hetjob_sticky_preempt_timeout="))) {
+		bf_hetjob_sticky_preempt_timeout =
+			atoi(tmp_ptr + strlen("bf_hetjob_sticky_preempt_timeout="));
+		if (bf_hetjob_sticky_preempt_timeout < 0) {
+			error("Invalid SchedulerParameters "
+			      "bf_hetjob_sticky_preempt_timeout: %d",
+			      bf_hetjob_sticky_preempt_timeout);
+			bf_hetjob_sticky_preempt_timeout = 0;
+		}
 	}
 
 	if (xstrcasestr(sched_params, "bf_one_resv_per_job"))
@@ -4129,6 +4150,7 @@ static void _het_job_start_clear(void)
 			list_delete_item(iter);
 		} else {
 			map->prev_start = 0;
+			map->sticky_preempt_start = 0;
 			list_flush(map->het_job_rec_list);
 		}
 	}
@@ -4408,7 +4430,25 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 /*
  * Start all components of a hetjob now
  */
-static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
+static bool _het_job_component_started(job_record_t *job_ptr)
+{
+	return IS_JOB_RUNNING(job_ptr) || IS_JOB_CONFIGURING(job_ptr);
+}
+
+static void _het_job_add_used_nodes(bitstr_t **used_bitmap,
+				    job_record_t *job_ptr)
+{
+	if (!job_ptr->node_bitmap)
+		return;
+
+	if (!*used_bitmap)
+		*used_bitmap = bit_copy(job_ptr->node_bitmap);
+	else
+		bit_or(*used_bitmap, job_ptr->node_bitmap);
+}
+
+static het_start_rc_t _het_job_start_now(het_job_map_t *map,
+					 node_space_map_t *node_space)
 {
 	job_record_t *job_ptr;
 	bitstr_t *avail_bitmap = NULL;
@@ -4416,6 +4456,8 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	het_job_rec_t *rec;
 	list_itr_t *iter;
 	int rc = SLURM_SUCCESS;
+	het_start_rc_t start_rc = HET_START_OK;
+	bool any_component_started = false;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
@@ -4431,6 +4473,12 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
 		}
 
+		if (_het_job_component_started(job_ptr)) {
+			any_component_started = true;
+			_het_job_add_used_nodes(&used_bitmap, job_ptr);
+			continue;
+		}
+
 		/*
 		 * Identify the nodes which this job can use
 		 */
@@ -4442,6 +4490,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 			error("%pJ failed to start due to reservation",
 			      job_ptr);
 			FREE_NULL_BITMAP(avail_bitmap);
+			start_rc = HET_START_FAILED;
 			break;
 		}
 		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
@@ -4474,12 +4523,22 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			log_flag(HETJOB, "%pJ started", job_ptr);
-			if (!used_bitmap && job_ptr->node_bitmap)
-				used_bitmap = bit_copy(job_ptr->node_bitmap);
-			else if (job_ptr->node_bitmap)
-				bit_or(used_bitmap, job_ptr->node_bitmap);
+			any_component_started = true;
+			_het_job_add_used_nodes(&used_bitmap, job_ptr);
 		} else {
+			bool preempt_wait =
+				job_ptr->preempt_in_progress ||
+				(job_ptr->details &&
+				 job_ptr->details->preempt_start_time);
 			fed_mgr_job_unlock(job_ptr);
+			if (bf_hetjob_sticky_preempt_timeout &&
+			    any_component_started &&
+			    (rc == ESLURM_NODES_BUSY) &&
+			    preempt_wait) {
+				start_rc = HET_START_WAIT_PREEMPT;
+			} else {
+				start_rc = HET_START_FAILED;
+			}
 			break;
 		}
 		if (job_ptr->time_min) {
@@ -4507,7 +4566,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	list_iterator_destroy(iter);
 	FREE_NULL_BITMAP(used_bitmap);
 
-	return rc;
+	return start_rc;
 }
 
 /*
@@ -4522,6 +4581,7 @@ static void _het_job_kill_now(het_job_map_t *map)
 	int cred_lifetime = 1200;
 	uint32_t save_bitflags;
 
+	map->sticky_preempt_start = 0;
 	cred_lifetime = cred_expiration();
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = list_next(iter))) {
@@ -4563,7 +4623,7 @@ static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single)
 {
 	time_t now = time(NULL);
-	int rc;
+	het_start_rc_t rc;
 
 	if (!map)
 		return false;
@@ -4594,10 +4654,29 @@ static bool _het_job_start_test_single(node_space_map_t *node_space,
 	log_flag(HETJOB, "Attempting to start hetjob %u", map->het_job_id);
 
 	rc = _het_job_start_now(map, node_space);
+	if (rc == HET_START_WAIT_PREEMPT) {
+		if (!map->sticky_preempt_start)
+			map->sticky_preempt_start = now;
+
+		if ((now - map->sticky_preempt_start) <=
+		    bf_hetjob_sticky_preempt_timeout) {
+			log_flag(HETJOB, "Hetjob %u partially started; waiting for preemption cleanup",
+				 map->het_job_id);
+			map->prev_start = now + 1;
+			return false;
+		}
+
+		log_flag(HETJOB, "Hetjob %u sticky preempt timeout expired; rolling back",
+			 map->het_job_id);
+		_het_job_kill_now(map);
+		return false;
+	}
+
 	if (rc != SLURM_SUCCESS) {
 		log_flag(HETJOB, "Failed to start hetjob %u", map->het_job_id);
 		_het_job_kill_now(map);
 	} else {
+		map->sticky_preempt_start = 0;
 		job_start_cnt += list_count(map->het_job_rec_list);
 		if (max_backfill_jobs_start &&
 		    (job_start_cnt >= max_backfill_jobs_start)) {
