@@ -444,7 +444,8 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred)
 {
 	int rc, auth_rc = ESLURM_AUTH_CRED_INVALID;
 	const char *alg;
-	jwt_t *unverified_jwt = NULL, *jwt = NULL;
+	data_t *jwt_header = NULL;
+	jwt_t *jwt = NULL;
 	char *username = NULL;
 
 	if (!cred)
@@ -464,13 +465,12 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred)
 		goto fail;
 	}
 
-	if ((rc = jwt_decode(&unverified_jwt, cred->token, NULL, 0))) {
-		error("%s: initial jwt_decode failure: %s",
-		      __func__, slurm_strerror(rc));
+	if (!(jwt_header = auth_common_extract_jwt_header(cred->token))) {
+		error("%s: initial jwt_decode failure", __func__);
 		goto fail;
 	}
 
-	alg = jwt_get_header(unverified_jwt, "alg");
+	alg = data_get_string(data_key_get(jwt_header, "alg"));
 
 	if (!xstrcasecmp(alg, "RS256")) {
 		foreach_rs256_args_t args;
@@ -481,7 +481,7 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred)
 			goto fail;
 		}
 
-		args.kid = jwt_get_header(unverified_jwt, "kid");
+		args.kid = data_get_string(data_key_get(jwt_header, "kid"));
 		args.token = cred->token;
 		args.jwt = &jwt;
 
@@ -519,8 +519,7 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred)
 		goto fail;
 	}
 
-	jwt_free(unverified_jwt);
-	unverified_jwt = NULL;
+	FREE_NULL_DATA(jwt_header);
 
 	/*
 	 * at this point we have a verified jwt to work with
@@ -550,8 +549,7 @@ extern int cred_verify(auth_context_t *ctxt, auth_token_t *cred)
 	return SLURM_SUCCESS;
 
 fail:
-	if (unverified_jwt)
-		jwt_free(unverified_jwt);
+	FREE_NULL_DATA(jwt_header);
 	if (jwt)
 		jwt_free(jwt);
 	xfree(username);
