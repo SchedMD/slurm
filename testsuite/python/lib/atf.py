@@ -1106,30 +1106,31 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
 
     logging.debug("Starting slurmctld...")
 
-    if not is_slurmctld_running(quiet=quiet):
-        # Start slurmctld
-        command = f"{properties['slurm-sbin-dir']}/slurmctld"
-        if clean:
-            command += " -c -i"
-        results = run_command(command, user=properties["slurm-user"], quiet=quiet)
-        if results["exit_code"] != 0:
-            pytest.fail(
-                f"Unable to start slurmctld (rc={results['exit_code']}): {results['stderr']}"
-            )
-
-        # Verify that slurmctld is running
-        if not repeat_command_until(
-            "scontrol ping", lambda results: re.search(r"is UP", results["stdout"])
-        ):
-            logging.warning(
-                "scontrol ping is not responding, trying to get slurmctld core file..."
-            )
-            gcore("slurmctld")
-            pytest.fail("Slurmctld is not running")
-        else:
-            logging.debug("Slurmctld started successfully")
-    else:
+    if is_slurmctld_running(quiet=quiet):
         logging.warning("Slurmctld was already started")
+        stop_slurmctld(clean, quiet, also_slurmds)
+
+    # Start slurmctld
+    command = f"{properties['slurm-sbin-dir']}/slurmctld"
+    if clean:
+        command += " -c -i"
+    results = run_command(command, user=properties["slurm-user"], quiet=quiet)
+    if results["exit_code"] != 0:
+        pytest.fail(
+            f"Unable to start slurmctld (rc={results['exit_code']}): {results['stderr']}"
+        )
+
+    # Verify that slurmctld is running
+    if not repeat_command_until(
+        "scontrol ping", lambda results: re.search(r"is UP", results["stdout"])
+    ):
+        logging.warning(
+            "scontrol ping is not responding, trying to get slurmctld core file..."
+        )
+        gcore("slurmctld")
+        pytest.fail("Slurmctld is not running")
+    else:
+        logging.debug("Slurmctld started successfully")
 
     if also_slurmds:
         # Build list of slurmds
