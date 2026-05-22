@@ -107,6 +107,7 @@
 #define BACKFILL_RESOLUTION	60
 #define BACKFILL_WINDOW		(24 * 60 * 60)
 #define BF_MAX_JOB_ARRAY_RESV	20
+#define BF_HETJOB_STICKY_PREEMPT_TIMEOUT 1800
 
 #define YIELD_INTERVAL		2000000	/* time in micro-seconds */
 #define YIELD_SLEEP		500000;	/* time in micro-seconds */
@@ -230,7 +231,8 @@ static uint32_t bf_min_prio_reserve = 0;
 static list_t *deadlock_global_list = NULL;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
-static int bf_hetjob_sticky_preempt_timeout = 0;
+static int bf_hetjob_sticky_preempt_timeout =
+	BF_HETJOB_STICKY_PREEMPT_TIMEOUT;
 static bool bf_one_resv_per_job = false;
 static bool bf_allow_magnetic_slot = false;
 static bool bf_topopt_enable = false;
@@ -1006,7 +1008,7 @@ static void _load_config(void)
 		info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
 	}
 
-	bf_hetjob_sticky_preempt_timeout = 0;
+	bf_hetjob_sticky_preempt_timeout = BF_HETJOB_STICKY_PREEMPT_TIMEOUT;
 	if ((tmp_ptr = xstrcasestr(sched_params,
 				   "bf_hetjob_sticky_preempt_timeout="))) {
 		bf_hetjob_sticky_preempt_timeout =
@@ -1015,7 +1017,8 @@ static void _load_config(void)
 			error("Invalid SchedulerParameters "
 			      "bf_hetjob_sticky_preempt_timeout: %d",
 			      bf_hetjob_sticky_preempt_timeout);
-			bf_hetjob_sticky_preempt_timeout = 0;
+			bf_hetjob_sticky_preempt_timeout =
+				BF_HETJOB_STICKY_PREEMPT_TIMEOUT;
 		}
 	}
 
