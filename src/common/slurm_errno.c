@@ -942,6 +942,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_INVALID_EXTERNAL_JOB),
 		"Invalid configuration for external job",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_FILE_UNREADABLE),
+		"Unable to load file for reading",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{
