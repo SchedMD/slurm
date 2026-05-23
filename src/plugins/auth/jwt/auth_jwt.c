@@ -169,8 +169,6 @@ extern void init_jwks(auth_context_t *ctxt, const char *auth_info)
 
 	_check_key_permissions(key_file, S_IWOTH);
 
-	serializer_required(MIME_TYPE_JSON);
-
 	debug("loading jwks file `%s`", key_file);
 	if (!(buf = create_mmap_buf(key_file))) {
 		fatal("%s: Could not load key file (%s)",
@@ -257,6 +255,8 @@ extern int init(void)
 		return SLURM_SUCCESS;
 
 	init_run = true;
+
+	serializer_required(MIME_TYPE_JSON);
 
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
