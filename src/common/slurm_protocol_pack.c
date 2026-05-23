@@ -8899,14 +8899,11 @@ static void _pack_steps_drained_sub_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	steps_drained_sub_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		packstr(msg->host, buffer);
 		pack16(msg->port, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->tls_cert, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, smsg->protocol_version);
 	}
 }
 
@@ -8914,14 +8911,13 @@ static int _unpack_steps_drained_sub_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	steps_drained_sub_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version < SLURM_26_11_PROTOCOL_VERSION)
-		goto unpack_error;
-
-	safe_unpackstr(&msg->host, buffer);
-	safe_unpack16(&msg->port, buffer);
-	safe_unpack_step_id_members(&msg->step_id, buffer,
-				    smsg->protocol_version);
-	safe_unpackstr(&msg->tls_cert, buffer);
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->host, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpackstr(&msg->tls_cert, buffer);
+	}
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
