@@ -18,3 +18,4 @@ usr/bin/srun
 usr/bin/sshare
 usr/bin/sstat
 usr/bin/strigger
+usr/bin/swait

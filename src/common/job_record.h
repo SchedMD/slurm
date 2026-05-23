@@ -437,6 +437,11 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr;	/* pointer to the partition record */
+	uint32_t pending_async_steps; /* count of async pending placeholders in
+				       * step_list; combined with a step_list
+				       * walk for running steps, gates swait.
+				       * Only maintained in stepmgr context;
+				       * always 0 elsewhere. DON'T PACK */
 	priority_mult_t *prio_mult;	/* priority based on requested partition
 					 * and qos */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
@@ -508,6 +513,9 @@ struct job_record {
 					 * priority or resources, only stored in
 					 * the database. */
 	list_t *step_list;		/* list of job's steps */
+	list_t *steps_drained_subs; /* list of steps-drained subscribers
+				     * (steps_drained_sub_t); only populated in
+				     * stepmgr. DON'T PACK */
 	time_t suspend_time;		/* time job last suspended or resumed */
 	void *switch_jobinfo;		/* opaque blob for switch plugin */
 	char *system_comment;		/* slurmctld's arbitrary comment */
@@ -816,6 +824,14 @@ extern int find_step_id(void *object, void *key);
  */
 extern step_record_t *find_step_record(job_record_t *job_ptr,
 				       slurm_step_id_t *step_id);
+
+/*
+ * Return true if the job has at least one step in JOB_RUNNING state (with a
+ * non-special step_id and not JOB_COMPLETING).
+ * IN job_ptr - pointer to the job record
+ * RET true if a running step is present, false otherwise
+ */
+extern bool job_has_running_step(job_record_t *job_ptr);
 
 /*
  * Realloc and possibly update a job_ptr->limit_set->tres array.

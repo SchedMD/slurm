@@ -508,6 +508,13 @@ typedef struct resv_info_request_msg {
         time_t last_update;
 } resv_info_request_msg_t;
 
+typedef struct steps_drained_sub_msg {
+	char *host; /* hostname the stepmgr should push to */
+	uint16_t port; /* listening port on host */
+	slurm_step_id_t step_id; /* job to watch */
+	char *tls_cert; /* self-signed PEM cert, or NULL */
+} steps_drained_sub_msg_t;
+
 typedef struct complete_job_allocation {
 	uint32_t job_rc;
 	slurm_step_id_t step_id;
@@ -1703,6 +1710,7 @@ extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 extern void slurm_free_srun_user_msg(srun_user_msg_t * msg);
+extern void slurm_free_steps_drained_sub_msg(steps_drained_sub_msg_t *msg);
 extern void slurm_free_suspend_msg(suspend_msg_t *msg);
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg);
 extern void slurm_free_top_job_msg(top_job_msg_t *msg);

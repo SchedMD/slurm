@@ -162,6 +162,7 @@ static void *_rpc_thread(void *data)
 	srun_agent = ((msg.msg_type == SRUN_PING) ||
 		      (msg.msg_type == SRUN_JOB_COMPLETE) ||
 		      (msg.msg_type == SRUN_STEP_MISSING) ||
+		      (msg.msg_type == SRUN_STEPS_DRAINED) ||
 		      (msg.msg_type == SRUN_STEP_SIGNAL) ||
 		      (msg.msg_type == SRUN_TIMEOUT) ||
 		      (msg.msg_type == SRUN_USER_MSG) ||
@@ -172,6 +173,7 @@ static void *_rpc_thread(void *data)
 		msg.address = *agent_arg_ptr->addr;
 
 		if ((msg.msg_type == SRUN_JOB_COMPLETE) ||
+		    (msg.msg_type == SRUN_STEPS_DRAINED) ||
 		    (msg.msg_type == SRUN_STEP_SIGNAL)) {
 			slurm_send_msg_maybe(&msg);
 		} else if (slurm_send_only_node_msg(&msg) && !srun_agent) {
