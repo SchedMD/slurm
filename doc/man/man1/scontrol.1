@@ -2258,17 +2258,24 @@ Set partition\-level exclusivity to a single mode.
 \fBNO\fR (or \fBNONE\fR): no partition\-level exclusivity (default).
 .TP
 \fBNODE\fR: allocate whole nodes (similar to job \fB\-\-exclusive\fR).
+This implies \fBOversubscribe=NO\fR.
 .TP
 \fBUSER\fR: only one user's jobs may share a node (similar to
 \fB\-\-exclusive=user\fR).
 .TP
 \fBTOPO\fR: only one job per topology segment (similar to
-\fB\-\-exclusive=topo\fR); also implies \fBNODE\fR.
+\fB\-\-exclusive=topo\fR); also implies \fBNODE\fR. This implies
+\fBOversubscribe=NO\fR
 .TP
 See the \fBExclusive\fR entry in \fBslurm.conf\fR(5) for full semantics.
-Older \fBExclusiveUser=YES\fR and \fBExclusiveTopo=YES\fR are still accepted
-and are equivalent to \fBExclusive=USER\fR and \fBExclusive=TOPO\fR
+.RE
+.RS
+Older \fBExclusiveUser=YES\fR and \fBExclusiveTopo=YES\fR are still
+accepted and are equivalent to \fBExclusive=USER\fR and \fBExclusive=TOPO\fR
 respectively.
+\fBExclusiveUser=YES\fR and \fBExclusiveTopo=YES\fR are mutually exclusive.
+If both deprecated options are set for the same partition, \fBExclusiveUser\fR
+will be ignored.
 .IP
 .RE
 

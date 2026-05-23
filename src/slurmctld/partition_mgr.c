@@ -1289,11 +1289,47 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		info("%s: setting exclusive_topo for partition %s", __func__,
 		     part_desc->name);
 		part_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
+
+		/* Make sure Exclusive=TOPO sets Exclusive=NODE */
+		if ((part_desc->max_share != NO_VAL16) && part_desc->max_share)
+			warning("%s: Oversubscribe ignored, Exclusive=TOPO and Exclusive=NODE imply OverSubscribe=NO",
+				__func__);
+		if (part_desc->max_share)
+			part_desc->max_share = 0;
+
 	} else if (part_desc->flags & PART_FLAG_EXC_TOPO_CLR) {
 		info("%s: clearing exclusive_topo for partition %s", __func__,
 		     part_desc->name);
 		part_ptr->flags &= (~PART_FLAG_EXCLUSIVE_TOPO);
 	}
+
+	/*
+	 * Exclusive=[USER|TOPO] are mutually exclusive. If both will end up
+	 * being set only set Exclusive=TOPO since it is the more restrictive
+	 * option since it implies Exclusive=NODE.
+	 */
+	if ((part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO) &&
+	    (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)) {
+		part_ptr->flags |= ~PART_FLAG_EXCLUSIVE_USER;
+		warning("%s: Exclusive=USER and Exclusive=TOPO are mutually exclusive, ignoring Exclusive=USER (partition %s)",
+			__func__, part_desc->name);
+	}
+
+	/*
+	 * Exclusive=NO/NONE and Exclusive=USER adjust max_share only when the
+	 * update does not include OverSubscribe (max_share still NO_VAL16)
+	 * and the partition was Exclusive=NODE.
+	 */
+	if ((part_desc->flags & PART_FLAG_EXC_USER_CLR) &&
+	    (part_desc->flags & PART_FLAG_EXC_TOPO_CLR) &&
+	    !(part_desc->flags & PART_FLAG_EXCLUSIVE_USER) &&
+	    !(part_desc->flags & PART_FLAG_EXCLUSIVE_TOPO) &&
+	    (part_desc->max_share == NO_VAL16) && !part_ptr->max_share)
+		part_ptr->max_share = 1;
+
+	if ((part_desc->flags & PART_FLAG_EXCLUSIVE_USER) &&
+	    (part_desc->max_share == NO_VAL16) && !part_ptr->max_share)
+		part_ptr->max_share = 1;
 
 	if (part_desc->flags & PART_FLAG_LLN) {
 		info("%s: setting LLN for partition %s", __func__,

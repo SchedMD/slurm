@@ -183,34 +183,26 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		} else if ((taglen == 9) &&
 			   !xstrncasecmp(tag, "Exclusive", 9)) {
+			bool was_yes_force =
+				(part_msg_ptr->max_share > 1) &&
+				(part_msg_ptr->max_share != NO_VAL16);
 			/*
 			 * Exact "Exclusive" (not ExclusiveUser/ExclusiveTopo).
 			 * Single token only: NO, NODE, USER, or TOPO.
 			 */
-			if ((xstrcasecmp(val, "NO") == 0) ||
-			    (xstrcasecmp(val, "NONE") == 0)) {
-				part_msg_ptr->max_share = 1;
-				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			} else if (xstrcasecmp(val, "NODE") == 0) {
-				part_msg_ptr->max_share = 0;
-				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			} else if (xstrcasecmp(val, "USER") == 0) {
-				part_msg_ptr->max_share = 1;
-				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
-				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			} else if (xstrcasecmp(val, "TOPO") == 0) {
-				/* TOPO implies NODE */
-				part_msg_ptr->max_share = 0;
-				part_msg_ptr->flags |= PART_FLAG_EXC_USER_CLR;
-				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
-			} else {
+			if (parse_partition_exclusive(val,
+						      (partition_info_t *)
+							      part_msg_ptr) !=
+			    SLURM_SUCCESS) {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable Exclusive values are NO, NODE, USER, TOPO");
 				return SLURM_ERROR;
 			}
+
+			if (was_yes_force && !part_msg_ptr->max_share)
+				warning("Oversubscribe ignored, Exclusive=TOPO and Exclusive=NODE imply OverSubscribe=NO");
+
 			(*update_cnt_ptr)++;
 		} else if (!xstrncasecmp(tag, "ExclusiveUser",
 					 MAX(taglen, 1))) {
@@ -231,6 +223,10 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
 			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0) {
 				/* TOPO implies Exclusive=NODE */
+				if ((part_msg_ptr->max_share != NO_VAL16) &&
+				    part_msg_ptr->max_share)
+					warning("Oversubscribe ignored, Exclusive=TOPO and Exclusive=NODE imply OverSubscribe=NO");
+
 				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
 				part_msg_ptr->max_share = 0;
 			} else {
@@ -307,8 +303,11 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				   MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 0;
 
-			} else if (xstrncasecmp(val, "YES", MAX(vallen, 1))
-				   == 0) {
+			} else if (!part_msg_ptr->max_share) {
+				warning("%s ignored, Exclusive=TOPO and Exclusive=NODE imply OverSubscribe=NO",
+					tag);
+			} else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) ==
+				   0) {
 				if (colon_pos) {
 					part_msg_ptr->max_share =
 						(uint16_t) strtol(colon_pos+1,
@@ -316,8 +315,8 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				} else {
 					part_msg_ptr->max_share = (uint16_t) 4;
 				}
-			} else if (xstrncasecmp(val, "FORCE", MAX(vallen, 1))
-				   == 0) {
+			} else if (xstrncasecmp(val, "FORCE", MAX(vallen, 1)) ==
+				   0) {
 				if (colon_pos) {
 					part_msg_ptr->max_share =
 						(uint16_t) strtol(colon_pos+1,
@@ -515,6 +514,13 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			return SLURM_ERROR;
 		}
 	}
+
+	if ((part_msg_ptr->flags & PART_FLAG_EXCLUSIVE_USER) &&
+	    (part_msg_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)) {
+		warning("Exclusive=USER and Exclusive=TOPO are mutually exclusive, ignoring Exclusive=USER");
+		part_msg_ptr->flags |= ~PART_FLAG_EXCLUSIVE_USER;
+	}
+
 	return SLURM_SUCCESS;
 }
 
