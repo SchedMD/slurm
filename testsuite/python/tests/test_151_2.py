@@ -577,6 +577,29 @@ def test_scontrol_update_part_exclusive_no(part_for_update):
     ), f"After Exclusive=NO, Exclusive should be NO, got {exclusive!r}"
 
 
+def test_scontrol_update_part_exclusive_no_preserves_oversubscribe(part_for_update):
+    """Exclusive=NO must not reset OverSubscribe=FORCE:n set on the partition."""
+    part_name = part_for_update
+    atf.run_command(
+        f"scontrol update PartitionName={part_name} "
+        "OverSubscribe=FORCE:4 Exclusive=USER",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+    assert atf.get_partition_parameter(part_name, "Exclusive") == "USER"
+    assert atf.get_partition_parameter(part_name, "OverSubscribe") == "FORCE:4"
+
+    atf.run_command(
+        f"scontrol update PartitionName={part_name} Exclusive=NO",
+        fatal=True,
+        user=atf.properties["slurm-user"],
+    )
+    assert atf.get_partition_parameter(part_name, "Exclusive") == "NO"
+    assert (
+        atf.get_partition_parameter(part_name, "OverSubscribe") == "FORCE:4"
+    ), "Exclusive=NO must not change OverSubscribe"
+
+
 def test_scontrol_update_part_exclusive_node(part_for_update):
     """scontrol update part Exclusive=NODE sets Exclusive to NODE."""
     part_name = part_for_update

@@ -214,4 +214,11 @@ extern void xfmt_tres(char **dest, char *prefix, char *src);
  */
 extern void xfmt_tres_freq(char **dest, char *prefix, char *src);
 
+/*
+ * Parse Exclusive= keyword (NO, NONE, NODE, USER, TOPO) and apply it to
+ * max_share and flags.
+ * RET SLURM_SUCCESS or SLURM_ERROR if val is not recognized.
+ */
+extern int parse_partition_exclusive(const char *val, partition_info_t *part);
+
 #endif /* !_PROC_ARGS_H */

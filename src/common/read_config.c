@@ -1385,6 +1385,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		s_p_get_boolean((bool *)&p->exclusive_topo, "ExclusiveTopo",
 				tbl);
+		if (p->exclusive_user && p->exclusive_topo) {
+			error("Exclusive=USER ignored, since it's mutually exclusive with Exclusive=TOPO");
+			p->exclusive_user = false;
+		}
 		if (p->exclusive_topo) {
 			/* TOPO implies Exclusive=NODE */
 			p->max_share = 0;

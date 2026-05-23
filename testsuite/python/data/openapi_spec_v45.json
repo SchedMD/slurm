@@ -10656,7 +10656,6 @@
                 "ROOT_ONLY",
                 "REQ_RESV",
                 "LLN",
-                "EXCLUSIVE_USER",
                 "PDOI",
                 "DEFAULT_CLEAR",
                 "HIDDEN_CLEAR",
@@ -10664,10 +10663,7 @@
                 "ROOT_ONLY_CLEAR",
                 "REQ_RESV_CLEAR",
                 "LLN_CLEAR",
-                "EXC_USER_CLEAR",
-                "PDOI_CLEAR",
-                "EXCLUSIVE_TOPO",
-                "EXC_TOPO_CLEAR"
+                "PDOI_CLEAR"
               ],
               "type": "string"
             }
@@ -10681,7 +10677,7 @@
               },
               "oversubscribe": {
                 "type": "string",
-                "description": "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo)"
+                "description": "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo) (Partition oversubscribe value)"
               },
               "state": {
                 "type": "array",
@@ -10745,7 +10741,8 @@
                   "jobs": {
                     "type": "integer",
                     "format": "int32",
-                    "description": "Maximum number of jobs allowed to oversubscribe resources"
+                    "description": "Maximum number of jobs allowed to oversubscribe resources",
+                    "deprecated": true
                   },
                   "flags": {
                     "type": "array",
@@ -10755,7 +10752,8 @@
                         "force"
                       ],
                       "type": "string"
-                    }
+                    },
+                    "deprecated": true
                   }
                 }
               },
