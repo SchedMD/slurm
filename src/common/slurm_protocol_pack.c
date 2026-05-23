@@ -8904,9 +8904,6 @@ static void _pack_steps_drained_sub_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->port, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->tls_cert, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, smsg->protocol_version);
 	}
 }
 
