@@ -6690,6 +6690,9 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&msg->segment_size, buffer);
+		/* Pre-26.11 clients left segment_size uninitialized. */
+		if (!msg->segment_size)
+			msg->segment_size = NO_VAL16;
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
@@ -6860,6 +6863,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&msg->segment_size, buffer);
+		if (!msg->segment_size)
+			msg->segment_size = NO_VAL16;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpack32(&msg->site_factor, buffer);
@@ -7030,6 +7035,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&msg->segment_size, buffer);
+		if (!msg->segment_size)
+			msg->segment_size = NO_VAL16;
 	}
 
 	smsg->data = msg;
