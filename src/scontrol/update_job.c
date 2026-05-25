@@ -908,6 +908,13 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "WCKey", MAX(taglen, 1))) {
 			job_msg.wckey = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "SegmentSize", MAX(taglen, 7))) {
+			if (parse_uint16(val, &job_msg.segment_size)) {
+				error("Invalid SegmentSize value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
 		} else if (!xstrncasecmp(tag, "StdErr", MAX(taglen, 6))) {
 			job_msg.std_err = val;
 			update_cnt++;
