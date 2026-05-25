@@ -1432,12 +1432,15 @@ proc get_line_cnt { file_name } {
 #	Units can be hours, mins, secs.
 #
 # RETURN VALUE
-#	A non-zero return code indicates a failure.
+#	A -1 return code indicates a failure.
 #
 ################################################################
 
 proc convert_time_str { time_str units } {
-	subtest {[regexp {(?:(\d+):)?(\d+):(\d+)(?:\.(\d+))?} $time_str - hours mins secs msecs]} "Time should be in the format \[HH:\]MM:SS\[.sss\]" "$time_str"
+	if {![regexp {(?:(\d+):)?(\d+):(\d+)(?:\.(\d+))?} $time_str - hours mins secs msecs]} {
+		log_warn "Time should be in the format \[HH:\]MM:SS\[.sss\], got '$time_str'"
+		return -1
+	}
 	if { $hours eq "" } {
 		set hours 0
 	}
