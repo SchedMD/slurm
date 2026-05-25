@@ -1390,6 +1390,16 @@ without waiting for the queue to flush out.
 .IP
 
 .TP
+\fBSegmentSize\fR=<\fIsegment_size\fR>
+When using a topology plugin that supports segments, this defines the size of
+the segments that will be used to create the job allocation. Use 0 to clear
+segmentation. This option can only be changed for pending jobs.
+
+\fBNOTE\fR: If the requested node count is larger than the requested segment
+size, it must also be evenly divisible by the segment size.
+.IP
+
+.TP
 \fBSiteFactor\fR=<\fIaccount\fR>
 Specify the job's site priority factor in the range of +/\-2147483645.
 Only a privileged user can change this parameter.
@@ -1616,11 +1626,6 @@ of "C" and "T".
 \fBSecsPreSuspend\fR=<\fIseconds\fR>
 If the job is suspended, this is the run time accumulated by the job
 (in seconds) prior to being suspended.
-.IP
-
-.TP
-\fBSegmentSize\fR=<\fIsize\fR>
-Requested segment size for the job.
 .IP
 
 .TP
