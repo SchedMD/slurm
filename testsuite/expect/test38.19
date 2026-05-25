@@ -135,38 +135,12 @@ if {[regexp "srun: error: Allocation failure" $output]} {
 subtest {$matches == 1} "Job should be granted but allocation should fail" "$matches != 1"
 
 log_info "SUBTEST: Confirm het job srun fails when trying to overlap nodes"
-set matches 0
-set timeout $max_job_delay
-spawn $salloc -N2 $bin_bash
-expect {
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		lappend job_id_list $job_id
-		reset_bash_prompt
-		exp_continue
-	}
-	-re "$test_prompt" {
-		# job started
-	}
-	timeout {
-		fail "salloc not responding"
-	}
+set job_id [submit_job "-N2 --wrap 'sleep infinity'"]
+if {[wait_for_step "${job_id}.batch"]} {
+	fail "Batch step not started"
 }
-
 set node [get_first_node_of_job $job_id]
 log_info "node=$node for job $job_id"
 
-send "$srun -w $node : -w $node $bin_true\r"
-expect {
-	-re "$test_prompt" {
-		#break
-	}
-	-re "overlaps with excluded $node" {
-		incr matches
-	}
-	timeout {
-		fail "srun not responding"
-	}
-}
-send "exit\r"
-subtest {$matches == 1} "srun should return overlaps with excluded" "$matches != 1"
+set output [run_command_output "$srun --jobid $job_id -w $node : -w $node $bin_true"]
+subtest {[regexp -all "overlaps with excluded $node" $output] == 1} "srun should return overlaps with excluded" "[regexp -all 'overlaps with excluded $node' $output] != 1"
