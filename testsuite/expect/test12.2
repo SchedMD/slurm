@@ -243,32 +243,51 @@ wait_and_subtest _get_file_size $sacct
 #
 # Report basic sacct info
 #
-set output "COMPLETING"
-wait_for -fail {![regexp "COMPLETING" $output]} {
+set found 0
+wait_for {$found} {
 	set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode --starttime=00:00"]
+	set found [regexp "$job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_code" $output]
 }
-subtest {[regexp "$job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_code" $output]} "sacct should report $job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_code" "$output"
+subtest {$found} "sacct should report $job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_code" "$output"
 
 #
 # Report the sacct accounting info: Elapsed
 #
-set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format elapsed --starttime=00:00"]
-set value  [convert_time_str $output "secs"]
-# On busy systems job_elapsed may be a bit bigger than sleep_time if job
-# was completing for a while
-subtest {[tolerance $sleep_time $value +$max_time_error] || \
-         [tolerance $job_elapsed $value $max_time_error]} "Elapsed time reported by sacct should be close to $sleep_time" "$value too different from $sleep_time"
+set found 0
+wait_for {$found} {
+	set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format elapsed --starttime=00:00"]
+	set value  [convert_time_str $output "secs"]
+	# On busy systems job_elapsed may be a bit bigger than sleep_time if job
+	# was completing for a while
+	if {[tolerance $sleep_time $value +$max_time_error] || \
+	    [tolerance $job_elapsed $value $max_time_error]} {
+		set found 1
+	}
+}
+subtest {$found} "Elapsed time reported by sacct should be close to $sleep_time" "$value too different from $sleep_time"
 
 #
 # Report the sacct accounting info: TotalCPU
 #
-set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00"]
-set value  [convert_time_str $output "secs"]
-subtest {$value <= $sleep_time} "TotalCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
+set found 0
+wait_for {$found} {
+	set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00"]
+	set value  [convert_time_str $output "secs"]
+	if {$value <= $sleep_time} {
+		set found 1
+	}
+}
+subtest {$found} "TotalCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
 
 #
 # Report the sacct accounting info: MinCPU
 #
-set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00"]
-set value  [convert_time_str $output "secs"]
-subtest {$value <= $sleep_time} "MinCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
+set found 0
+wait_for {$found} {
+	set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00"]
+	set value  [convert_time_str $output "secs"]
+	if {-1 < $value && $value <= $sleep_time } {
+		set found 1
+	}
+}
+subtest {$found} "MinCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
