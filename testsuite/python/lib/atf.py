@@ -1058,29 +1058,37 @@ def start_slurmd(slurmd_name, quiet=False):
     Returns:
         None
     """
-    logging.debug(f"Starting slurmd for {slurmd_name}...")
+
     # Check whether slurmd is running
     slurmd_pgrep = run_command(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-    if slurmd_pgrep["exit_code"] != 0:
-        # Start slurmd
-        results = run_command(
-            f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
-            user="root",
-            quiet=quiet,
-        )
-        if results["exit_code"] != 0:
-            pytest.fail(
-                f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+    if slurmd_pgrep["exit_code"] == 0:
+        pids = slurmd_pgrep["stdout"].splitlines()
+        for pid in pids:
+            logging.warning(
+                f"slurmd for {slurmd_name} already running. Killing PID {pid}..."
             )
+            run_command(f"kill -9 {pid}", user="root")
+            for t in timer():
+                if run_command(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
+                    break
+            else:
+                pytest.fail(f"Unable to kill already running slurmd ({pid})")
 
-        # Verify that the slurmd is running
-        if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
-            pytest.fail(f"Slurmd -N {slurmd_name} is not running")
-    else:
-        logging.warning(f"slurmd for {slurmd_name} already running")
-        logging.warning(f"slurmd_pgrep['stdout']: {slurmd_pgrep['stdout']}")
-        logging.warning(f"slurmd_pgrep['stderr']: {slurmd_pgrep['stderr']}")
-        logging.warning(f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}")
+    # Start slurmd
+    logging.debug(f"Starting slurmd for {slurmd_name}...")
+    results = run_command(
+        f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
+        user="root",
+        quiet=quiet,
+    )
+    if results["exit_code"] != 0:
+        pytest.fail(
+            f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+        )
+
+    # Verify that the slurmd is running
+    if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
+        pytest.fail(f"Slurmd -N {slurmd_name} is not running")
 
 
 def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
