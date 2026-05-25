@@ -61,9 +61,11 @@ proc mod_state { state reason } {
 proc check_step { num } {
 	global sacct job_id
 
-	set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=now-15minutes --noheader --format=jobid -P"]
-	set steps [regexp -all "batch" $output]
-
+	set steps -1
+	wait_for {$num == $steps} {
+		set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=now-15minutes --noheader --format=jobid -P"]
+		set steps [regexp -all "batch" $output]
+	}
 	subtest {$num == $steps} "Check number of steps" "$steps != $num"
 }
 
@@ -92,13 +94,19 @@ set job_id [submit_job -fail "-N1 -w$node --exclusive -o/dev/null --requeue --wr
 wait_for_job -fail $job_id "RUNNING"
 
 # Wait for batch script to start (after message delays, prologs, etc.)
-sleep 5
+wait_for_step "${job_id}.batch"
 
 # Set the node that the job is running on to down
 mod_state "down" "$test_name"
 
 # Wait a little bit for node state to change
-sleep 5
+set node_state_found 0
+wait_for -fail {$node_state_found} {
+	set nodes [get_nodes]
+	if {[dict get [dict get $nodes $node] "State"] == "DOWN"} {
+		set node_state_found 1
+	}
+}
 
 # Set the node back to resume
 mod_state "resume" "$test_name"
@@ -108,63 +116,59 @@ log_info "Test 2"
 wait_for_job -fail $job_id "PENDING"
 
 # Wait for the state changes to propagate to the database for sacct
-sleep 5
-# The job state should be NODE_FAIL
-set fail_count [check_sacct_states "NODE_FAIL"]
+set fail_count 0
+set canc_count 0
+set pend_count 0
+wait_for {$fail_count && $canc_count && $pend_count} {
+	set fail_count [check_sacct_states "NODE_FAIL"]
+	set canc_count [check_sacct_states "CANCELLED"]
+	set pend_count [check_sacct_states "PENDING"]
+}
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
-
-# The batch step state should be CANCELLED
-set canc_count [check_sacct_states "CANCELLED"]
 subtest {$canc_count == 1} "Test CANCELLED count" "$canc_count != 1"
-
-# The requeued job state should be PENDING
-set pend_count [check_sacct_states "PENDING"]
 subtest {$pend_count == 1} "Test PENDING count" "$pend_count != 1"
 
 wait_for_job -fail $job_id "RUNNING"
 
 # Wait for batch script to start (after message delays, prologs, etc.)
-sleep 5
-
 
 log_info "Test 3"
-set fail_count [check_sacct_states "NODE_FAIL"]
+set fail_count 0
+set canc_count 0
+set run_count 0
+wait_for {$fail_count && $canc_count && $run_count} {
+	set fail_count [check_sacct_states "NODE_FAIL"]
+	set canc_count [check_sacct_states "CANCELLED"]
+	set run_count [check_sacct_states "RUNNING"]
+}
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
-
-set canc_count [check_sacct_states "CANCELLED"]
 subtest {$canc_count == 1} "Test CANCELLED count" "$canc_count != 1"
-
-set run_count [check_sacct_states "RUNNING"]
-# The requeued job and its batch step should now be running.
 subtest {$run_count == 2} "Test RUNNING count" "$run_count != 2"
 
 # Requeue the job
 run_command -fail "$scontrol requeue $job_id"
 
 # Wait a bit for the job to be requeued then check its state
-sleep 8
 wait_for_job -fail $job_id "PENDING"
 
 # Wait for the state changes to propagate to the database for sacct
-sleep 5
 log_info "Test 4"
-set fail_count [check_sacct_states "NODE_FAIL"]
+set fail_count 0
+set canc_count 0
+set pend_count 0
+set req_count 0
+wait_for {$fail_count && $canc_count && $pend_count && $req_count} {
+	set fail_count [check_sacct_states "NODE_FAIL"]
+	set canc_count [check_sacct_states "CANCELLED"]
+	set pend_count [check_sacct_states "PENDING"]
+	set req_count [check_sacct_states "REQUEUE"]
+}
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
-
-set req_count [check_sacct_states "REQUEUE"]
+subtest {$canc_count == 2} "The first and second batch steps should both show CANCELLED" "$canc_count != 2"
+subtest {$pend_count == 1} "Test PENDING count" "$pend_count != 1"
 subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
 
-# The first and second batch steps should both show CANCELLED
-set canc_count [check_sacct_states "CANCELLED"]
-subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
-
-set pend_count [check_sacct_states "PENDING"]
-subtest {$pend_count == 1} "Test PENDING count" "$pend_count != 1"
-
 wait_for_job -fail $job_id "RUNNING"
-
-# Wait for batch script to start (after message delays, prologs, etc.)
-sleep 5
 
 # Check for steps after requeue. There should be 3 batch steps - the first 2
 # that are CANCELLED, and now the last one that is running.
@@ -172,32 +176,37 @@ check_step 3
 
 
 log_info "Test 5"
-set fail_count [check_sacct_states "NODE_FAIL"]
+set fail_count 0
+set canc_count 0
+set req_count 0
+set run_count 0
+wait_for {$fail_count && $canc_count && $req_count && $run_count} {
+	set fail_count [check_sacct_states "NODE_FAIL"]
+	set canc_count [check_sacct_states "CANCELLED"]
+	set req_count [check_sacct_states "REQUEUE"]
+	set run_count [check_sacct_states "RUNNING"]
+}
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
-
-set req_count [check_sacct_states "REQUEUE"]
-subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
-
-set canc_count [check_sacct_states "CANCELLED"]
 subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
-
-# The job and its batch step should be RUNNING
-set run_count [check_sacct_states "RUNNING"]
-subtest {$run_count == 2} "Test RUNNING count" "$run_count != 2"
+subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
+subtest {$run_count == 2} "The job and its batch step should be RUNNING" "$run_count != 2"
 
 wait_for_job -fail $job_id "DONE"
 
 # Check steps after job has completed
 check_step 3
 log_info "Test 6"
-set fail_count [check_sacct_states "NODE_FAIL"]
+set fail_count 0
+set canc_count 0
+set comp_count 0
+set req_count 0
+wait_for {$fail_count && $canc_count && $comp_count && $req_count} {
+	set fail_count [check_sacct_states "NODE_FAIL"]
+	set canc_count [check_sacct_states "CANCELLED"]
+	set comp_count [check_sacct_states "COMPLETED"]
+	set req_count [check_sacct_states "REQUEUE"]
+}
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
-
-set req_count [check_sacct_states "REQUEUE"]
-subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
-
-set canc_count [check_sacct_states "CANCELLED"]
 subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
-
-set comp_count [check_sacct_states "COMPLETED"]
 subtest {$comp_count == 2} "Test COMPLETED count" "$comp_count != 2"
+subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
