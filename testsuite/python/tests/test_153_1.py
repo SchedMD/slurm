@@ -23,9 +23,6 @@ def setup():
     # JWT is needed for HTTP auth to access metrics endpoints
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
-    atf.require_config_parameter(
-        "SlurmctldHttpAuthParameters", "jwt_key=/opt/slurm/etc/jwt_hs256.key"
-    )
 
     # Define two partitions: debug and power
     atf.require_config_parameter(
@@ -60,7 +57,15 @@ def _get_labeled_metric_value(
 
 @pytest.fixture(scope="function")
 def setup_metrics_test_case(request):
-    mauth, mparam, pdata, use_slurm_user, xfail = request.param
+    httpauth, mauth, mparam, pdata, use_slurm_user, xfail = request.param
+
+    if httpauth or mauth or mparam:
+        atf.require_version(
+            (26, 5),
+            component="bin/scontrol",
+            reason="Issue 50792 and 50898: Auth for MetricsType and HttpAuthParameters added in 26.05",
+        )
+
     username = atf.properties["test-user"]
     if use_slurm_user:
         username = atf.properties["slurm-user"]
@@ -70,6 +75,11 @@ def setup_metrics_test_case(request):
     atf.set_config_parameter("MetricsAuthUsers", mauth)
     atf.set_config_parameter("MetricsParameters", mparam)
     atf.set_config_parameter("PrivateData", pdata)
+    if httpauth:
+        atf.require_config_parameter(
+            "SlurmctldHttpAuthParameters",
+            f"jwt_key={atf.properties['slurm-config-dir']}/jwt_hs256.key",
+        )
     atf.require_slurm_running()
 
     # Submit a job as SlurmUser, and another as atf (normal) user
@@ -101,6 +111,7 @@ def setup_metrics_test_case(request):
 
 @pytest.mark.parametrize(
     # Parameters are:
+    # - SlurmctldHttpAuthParameters
     # - MetricsAuthUsers
     # - MetricsParameters
     # - PrivateData
@@ -109,185 +120,67 @@ def setup_metrics_test_case(request):
     "setup_metrics_test_case",
     [
         # setup_metrics_test_case0
-        (None, None, None, True, False),
+        (False, None, None, None, True, False),
         # setup_metrics_test_case1
-        pytest.param(
-            (None, None, "jobs", True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, None, None, "jobs", True, False),
         # setup_metrics_test_case2
-        pytest.param(
-            (None, "ignore_private_data", None, True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, None, "ignore_private_data", None, True, False),
         # setup_metrics_test_case3
-        pytest.param(
-            (atf.properties["slurm-user"], None, None, True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, atf.properties["slurm-user"], None, None, True, False),
         # setup_metrics_test_case4
-        pytest.param(
-            ("nonexisting_user", None, None, True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", None, None, True, False),
         # setup_metrics_test_case5
-        pytest.param(
-            (None, "ignore_private_data", "jobs", True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, None, "ignore_private_data", "jobs", True, False),
         # setup_metrics_test_case6
-        pytest.param(
-            (atf.properties["slurm-user"], None, "jobs", True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, atf.properties["slurm-user"], None, "jobs", True, False),
         # setup_metrics_test_case7
-        pytest.param(
-            ("nonexisting_user", None, "jobs", True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", None, "jobs", True, False),
         # setup_metrics_test_case8
-        pytest.param(
-            (atf.properties["slurm-user"], "ignore_private_data", "jobs", True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
+        (
+            True,
+            atf.properties["slurm-user"],
+            "ignore_private_data",
+            "jobs",
+            True,
+            False,
         ),
         # setup_metrics_test_case9
-        pytest.param(
-            ("nonexisting_user", "ignore_private_data", "jobs", True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", "ignore_private_data", "jobs", True, False),
         # setup_metrics_test_case10
-        pytest.param(
-            (atf.properties["slurm-user"], "ignore_private_data", None, True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, atf.properties["slurm-user"], "ignore_private_data", None, True, False),
         # setup_metrics_test_case11
-        pytest.param(
-            ("nonexisting_user", "ignore_private_data", None, True, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", "ignore_private_data", None, True, False),
         # setup_metrics_test_case12
-        (None, None, None, False, False),
+        (False, None, None, None, False, False),
         # setup_metrics_test_case13
-        pytest.param(
-            (None, None, "jobs", False, True),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, None, None, "jobs", False, True),
         # setup_metrics_test_case14
-        pytest.param(
-            (None, "ignore_private_data", None, False, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, None, "ignore_private_data", None, False, False),
         # setup_metrics_test_case15
-        pytest.param(
-            (atf.properties["test-user"], None, None, False, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, atf.properties["test-user"], None, None, False, False),
         # setup_metrics_test_case16
-        pytest.param(
-            ("nonexisting_user", None, None, False, True),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", None, None, False, True),
         # setup_metrics_test_case17
-        pytest.param(
-            (None, "ignore_private_data", "jobs", False, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, None, "ignore_private_data", "jobs", False, False),
         # setup_metrics_test_case18
-        pytest.param(
-            (atf.properties["test-user"], None, "jobs", False, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, atf.properties["test-user"], None, "jobs", False, False),
         # setup_metrics_test_case19
-        pytest.param(
-            ("nonexisting_user", None, "jobs", False, True),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", None, "jobs", False, True),
         # setup_metrics_test_case20
-        pytest.param(
-            (atf.properties["test-user"], "ignore_private_data", "jobs", False, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
+        (
+            True,
+            atf.properties["test-user"],
+            "ignore_private_data",
+            "jobs",
+            False,
+            False,
         ),
         # setup_metrics_test_case21
-        pytest.param(
-            ("nonexisting_user", "ignore_private_data", "jobs", False, True),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, "nonexisting_user", "ignore_private_data", "jobs", False, True),
         # setup_metrics_test_case22
-        pytest.param(
-            (atf.properties["test-user"], "ignore_private_data", None, False, False),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (True, atf.properties["test-user"], "ignore_private_data", None, False, False),
         # setup_metrics_test_case23
-        pytest.param(
-            ("nonexisting_user", "ignore_private_data", None, False, True),
-            marks=pytest.mark.skipif(
-                atf.get_version("bin/scontrol") < (26, 5),
-                reason="Issue 50792: Auth for MetricsType added in 26.05",
-            ),
-        ),
+        (False, "nonexisting_user", "ignore_private_data", None, False, True),
     ],
     indirect=["setup_metrics_test_case"],
 )
