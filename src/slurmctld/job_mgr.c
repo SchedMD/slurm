@@ -13775,6 +13775,38 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_desc->segment_size != NO_VAL16) {
+		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if (job_desc->segment_size) {
+			uint32_t nodes_cnt;
+
+			if (detail_ptr->job_size_bitmap)
+				nodes_cnt = detail_ptr->max_nodes;
+			else
+				nodes_cnt = detail_ptr->min_nodes;
+
+			if ((nodes_cnt > job_desc->segment_size) &&
+			    (nodes_cnt % job_desc->segment_size)) {
+				info("%s: SegmentSize=%u does not fit job size (%u) for %pJ",
+				     __func__, job_desc->segment_size,
+				     nodes_cnt, job_ptr);
+				error_code = ESLURM_INVALID_NODE_COUNT;
+			}
+		}
+		if ((error_code == SLURM_SUCCESS) &&
+		    (detail_ptr->segment_size != job_desc->segment_size)) {
+			info("%s: setting SegmentSize from %u to %u for %pJ",
+			     __func__, detail_ptr->segment_size,
+			     job_desc->segment_size, job_ptr);
+			detail_ptr->segment_size = job_desc->segment_size;
+			update_accounting = true;
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if ((job_desc->num_tasks != NO_VAL) &&
 	    (job_desc->bitflags & TASKS_CHANGED)) {
 		if (!IS_JOB_PENDING(job_ptr))
