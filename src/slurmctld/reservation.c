@@ -549,24 +549,27 @@ static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt)
 	}
 }
 
+static int _foreach_list_dup(void *x, void *arg)
+{
+	licenses_t *license_src = x;
+	list_t *lic_list = arg;
+	licenses_t *license_dest = xmalloc(sizeof(licenses_t));
+
+	license_dest->name = xstrdup(license_src->name);
+	license_dest->used = license_src->used;
+	list_append(lic_list, license_dest);
+	return 0;
+}
+
 static list_t *_list_dup(list_t *license_list)
 {
-	list_itr_t *iter;
-	licenses_t *license_src, *license_dest;
 	list_t *lic_list = NULL;
 
 	if (!license_list)
 		return lic_list;
 
 	lic_list = list_create(license_free_rec);
-	iter = list_iterator_create(license_list);
-	while ((license_src = list_next(iter))) {
-		license_dest = xmalloc(sizeof(licenses_t));
-		license_dest->name = xstrdup(license_src->name);
-		license_dest->used = license_src->used;
-		list_append(lic_list, license_dest);
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(license_list, _foreach_list_dup, lic_list);
 	return lic_list;
 }
 
