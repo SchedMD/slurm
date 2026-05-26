@@ -108,6 +108,23 @@
 #define bit_copybits		slurm_bit_copybits
 #define	bit_get_bit_num		slurm_bit_get_bit_num
 
+/* data.[ch] functions */
+#define _data_set_string_own slurm__data_set_string_own
+#define data_dict_for_each_const slurm_data_dict_for_each_const
+#define data_free slurm_data_free
+#define data_get_string slurm_data_get_string
+#define data_key_get slurm_data_key_get
+#define data_key_set slurm_data_key_set
+#define data_list_for_each_const slurm_data_list_for_each_const
+#define data_new slurm_data_new
+#define data_set_bool slurm_data_set_bool
+#define data_set_dict slurm_data_set_dict
+#define data_set_float slurm_data_set_float
+#define data_set_int slurm_data_set_int
+#define data_set_list slurm_data_set_list
+#define data_set_null slurm_data_set_null
+#define data_set_string slurm_data_set_string
+
 /* fd.[ch] functions */
 #define closeall		slurm_closeall
 #define closeall_except		slurm_closeall_except
