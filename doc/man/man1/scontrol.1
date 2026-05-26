@@ -987,6 +987,15 @@ Arbitrary descriptive string.
 .IP
 
 .TP
+\fBConsolidateSegments\fR={yes|no}
+Ensure that all segments from the allocation will be consolidated
+into one higher-level aggregated block. Possible values are "YES" and
+"NO". This option can only be changed for pending jobs.
+
+\fBNOTE\fR: This option will only work with the \fBtopology/block\fR plugin.
+.IP
+
+.TP
 \fBContiguous\fR={yes|no}
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
@@ -1403,6 +1412,15 @@ size, it must also be evenly divisible by the segment size.
 \fBSiteFactor\fR=<\fIaccount\fR>
 Specify the job's site priority factor in the range of +/\-2147483645.
 Only a privileged user can change this parameter.
+.IP
+
+.TP
+\fBSpreadSegments\fR={yes|no}
+Prevent nodes within the same base block from being allocated to
+separate segments within the same block. Possible values are "YES"
+and "NO". This option can only be changed for pending jobs.
+
+\fBNOTE\fR: This option will only work with the \fBtopology/block\fR plugin.
 .IP
 
 .TP
