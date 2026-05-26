@@ -877,6 +877,8 @@ static int _wake_steps(void *x, void *arg)
 			step_resp->cred = slurm_cred;
 			step_resp->use_protocol_ver =
 				job_ptr->start_protocol_ver;
+			step_req->use_protocol_ver =
+				job_ptr->start_protocol_ver;
 
 			ctx = _step_ctx_create_stepmgr(step_req, step_resp,
 						       new_step_ptr);
@@ -5565,6 +5567,8 @@ end_it:
 			slurm_step_ctx_t *ctx;
 			debug2("launching async step");
 
+			req_step_msg->use_protocol_ver =
+				step_rec->start_protocol_ver;
 			ctx = _step_ctx_create_stepmgr(req_step_msg,
 						       &job_step_resp,
 						       step_rec);
