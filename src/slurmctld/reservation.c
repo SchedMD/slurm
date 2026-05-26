@@ -8618,8 +8618,12 @@ static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap)
 	}
 
 	if (!reset_all) {
-		/* NODE_STATE_RES already cleared above,
-		 * clear RESERVE_FLAG_MAINT for expired reservations */
+		/*
+		 * NODE_STATE_RES already cleared above, clear
+		 * RESERVE_FLAG_MAINT for expired reservations. This needs to
+		 * be an iterator since the loop body calls _set_nodes_flags()
+		 * which iterates resv_list itself.
+		 */
 		iter = list_iterator_create(resv_list);
 		while ((resv_ptr = list_next(iter))) {
 			if ((resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) &&
@@ -8637,8 +8641,12 @@ static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap)
 		list_iterator_destroy(iter);
 	}
 
-	/* Set NODE_STATE_RES and possibly NODE_STATE_MAINT for nodes in all
-	 * currently active reservations */
+	/*
+	 * Set NODE_STATE_RES and possibly NODE_STATE_MAINT for nodes in all
+	 * currently active reservations. This needs to be an iterator since
+	 * the loop body calls _set_nodes_flags() which iterates resv_list
+	 * itself.
+	 */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if ((now >= resv_ptr->start_time) &&
