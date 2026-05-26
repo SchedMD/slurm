@@ -1108,6 +1108,10 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     if not properties["auto-config"]:
         require_auto_config("wants to start slurmctld")
 
+    # First start sackd if necessary, so clients can be run.
+    if _is_sackd_required(quiet=quiet):
+        start_sackd(quiet=quiet)
+
     logging.debug("Starting slurmctld...")
 
     if is_slurmctld_running(quiet=quiet):
@@ -1193,6 +1197,10 @@ def start_slurmdbd(clean=False, quiet=False):
     """
     if not properties["auto-config"]:
         require_auto_config("wants to start slurmdbd")
+
+    # First start sackd if necessary, so clients can be run.
+    if _is_sackd_required(quiet=quiet):
+        start_sackd(quiet=quiet)
 
     logging.debug("Starting slurmdbd...")
 
