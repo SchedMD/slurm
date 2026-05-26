@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-26.05.0-0rc1</div>
+    <div class="app-desc">Version: Slurm-26.05.0</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -687,14 +687,14 @@
     "EpilogSlurmctld" : [ "EpilogSlurmctld", "EpilogSlurmctld" ],
     "JobCompUser" : "JobCompUser",
     "SuspendProgram" : "SuspendProgram",
-    "MaxJobCount" : 9,
+    "MaxJobCount" : 8,
     "CpuFreqGovernors" : [ "Unset", "Unset" ],
     "RebootProgram" : "RebootProgram",
     "SlurmctldLogFile" : "SlurmctldLogFile",
-    "SlurmctldPortCount" : 7,
+    "SlurmctldPortCount" : 3,
     "SlurmctldHttpAuthParams" : [ "SlurmctldHttpAuthParams", "SlurmctldHttpAuthParams" ],
     "SlurmdHttpAuthParams" : [ "SlurmdHttpAuthParams", "SlurmdHttpAuthParams" ],
-    "UnkillableStepTimeout" : 9,
+    "UnkillableStepTimeout" : 7,
     "SuspendExcNodes" : [ "SuspendExcNodes", "SuspendExcNodes" ],
     "ResvEpilog" : "ResvEpilog",
     "AuthType" : "AuthType",
@@ -704,8 +704,8 @@
     "SlurmctldDebug" : "SlurmctldDebug",
     "SrunPortRange" : {
       "set" : true,
-      "maximum" : 6,
-      "minimum" : 0
+      "maximum" : 0,
+      "minimum" : 4
     },
     "DataParserParameters" : "DataParserParameters",
     "JobCompHost" : "JobCompHost",
@@ -719,37 +719,41 @@
     "BatchStartTimeout" : 1,
     "GresTypes" : [ "GresTypes", "GresTypes" ],
     "TaskPlugin" : [ "TaskPlugin", "TaskPlugin" ],
-    "GroupUpdateTime" : 4,
-    "MaxBatchRequeue" : 6,
+    "GroupUpdateTime" : 2,
+    "MaxBatchRequeue" : 9,
     "JobAcctGatherFrequency" : [ "JobAcctGatherFrequency", "JobAcctGatherFrequency" ],
-    "SuspendRate" : 4,
+    "SuspendRate" : 6,
     "ConfFlags" : [ "DisableRootJobs", "DisableRootJobs" ],
-    "SlurmSchedLogLevel" : 4,
+    "SlurmSchedLogLevel" : 0,
     "SchedulerParameters" : [ "SchedulerParameters", "SchedulerParameters" ],
     "PriorityWeightTRES" : "PriorityWeightTRES",
-    "TreeWidth" : 7,
+    "TreeWidth" : 4,
     "AcctGatherEnergyType" : [ "AcctGatherEnergyType", "AcctGatherEnergyType" ],
     "SuspendExcParts" : [ "SuspendExcParts", "SuspendExcParts" ],
     "RequeueExit" : [ "RequeueExit", "RequeueExit" ],
     "JobSubmitPlugins" : [ "JobSubmitPlugins", "JobSubmitPlugins" ],
     "SlurmdLogFile" : "SlurmdLogFile",
     "JobAcctOomKill" : true,
-    "MaxNodeCount" : 3,
+    "MaxNodeCount" : 6,
     "PriorityWeightJobSize" : 3,
     "SelectType" : "SelectType",
-    "MaxTasksPerNode" : 1,
+    "MaxTasksPerNode" : 6,
     "ResumeProgram" : "ResumeProgram",
     "MCSParameters" : [ "MCSParameters", "MCSParameters" ],
-    "MessageTimeout" : 6,
-    "DefMemPerCPU" : 5,
+    "MessageTimeout" : 2,
+    "DefMemPerCPU" : {
+      "number" : 2,
+      "set" : true,
+      "infinite" : true
+    },
     "PrEpPlugins" : [ "PrEpPlugins", "PrEpPlugins" ],
     "PriorityFavorSmall" : true,
-    "VSizeFactor" : 0,
-    "WaitTime" : 9,
+    "VSizeFactor" : 9,
+    "WaitTime" : 0,
     "SlurmctldPidFile" : "SlurmctldPidFile",
     "DependencyParameters" : [ "DependencyParameters", "DependencyParameters" ],
     "ReconfigFlags" : [ "KeepPartInfo", "KeepPartInfo" ],
-    "FairShareDampeningFactor" : 3,
+    "FairShareDampeningFactor" : 9,
     "SlurmctldAddr" : "SlurmctldAddr",
     "AccountingStorageEnforce" : [ "associations", "associations" ],
     "AcctGatherNodeFreq" : 6,
@@ -765,35 +769,35 @@
       "set" : true,
       "infinite" : true
     },
-    "HealthCheckInterval" : 7,
+    "HealthCheckInterval" : 4,
     "InteractiveStepOptions" : "InteractiveStepOptions",
     "CliFilterPlugins" : [ "CliFilterPlugins", "CliFilterPlugins" ],
     "HostUnreachRetryCount" : 1,
-    "ResvOverRun" : 0,
+    "ResvOverRun" : 6,
     "NamespaceType" : "NamespaceType",
     "SwitchType" : "SwitchType",
-    "GetNameInfoCacheTimeout" : 2,
+    "GetNameInfoCacheTimeout" : 3,
     "AcctGatherProfileType" : "AcctGatherProfileType",
     "AccountingStoragePort" : 0,
     "AcctGatherInterconnectType" : "AcctGatherInterconnectType",
     "MCSPlugin" : "MCSPlugin",
     "MetricsParameters" : [ "MetricsParameters", "MetricsParameters" ],
     "ResvProlog" : "ResvProlog",
-    "MaxDBDMsgs" : 8,
-    "JobCompPort" : 6,
+    "MaxDBDMsgs" : 6,
+    "JobCompPort" : 1,
     "CommunicationParametersFlags" : [ "IPv4", "IPv4" ],
     "TmpFS" : "TmpFS",
-    "PriorityWeightPartition" : 7,
+    "PriorityWeightPartition" : 3,
     "BcastParameters" : [ "BcastParameters", "BcastParameters" ],
     "ClusterName" : "ClusterName",
     "UrlParserType" : "UrlParserType",
-    "PriorityWeightQOS" : 0,
+    "PriorityWeightQOS" : 7,
     "CertgenParameters" : [ "CertgenParameters", "CertgenParameters" ],
     "SelectTypeParameters" : [ "NONE", "NONE" ],
     "PropagateResourceLimits" : [ "PropagateResourceLimits", "PropagateResourceLimits" ],
     "MailProg" : "MailProg",
     "SchedulerType" : "SchedulerType",
-    "SlurmdUserId" : 3,
+    "SlurmdUserId" : 7,
     "HashPlugin" : "HashPlugin",
     "SrunProlog" : "SrunProlog",
     "AccountingStorageExternalHost" : "AccountingStorageExternalHost",
@@ -816,39 +820,39 @@
     "SlurmctldPort" : 3,
     "TaskPluginParam" : [ "None", "None" ],
     "MaxArraySize" : 9,
-    "SlurmdTimeout" : 4,
+    "SlurmdTimeout" : 3,
     "CliFilterParameters" : [ "CliFilterParameters", "CliFilterParameters" ],
-    "FirstJobId" : 9,
+    "FirstJobId" : 7,
     "CertmgrType" : "CertmgrType",
     "TopologyParam" : [ "TopologyParam", "TopologyParam" ],
     "CertmgrParameters" : "CertmgrParameters",
     "SlurmctldPrimaryOnProg" : "SlurmctldPrimaryOnProg",
     "PrioritySiteFactorPlugin" : "PrioritySiteFactorPlugin",
-    "TCPTimeout" : 4,
-    "MaxStepCount" : 6,
+    "TCPTimeout" : 1,
+    "MaxStepCount" : 3,
     "PriorityUsageResetPeriod" : "PriorityUsageResetPeriod",
     "JobAcctGatherParams" : [ "JobAcctGatherParams", "JobAcctGatherParams" ],
-    "KeepaliveInterval" : 1,
+    "KeepaliveInterval" : 7,
     "TLSParameters" : [ "TLSParameters", "TLSParameters" ],
     "CompleteWait" : 5,
     "EnforcePartLimits" : [ "NO", "NO" ],
     "CommunicationParameters" : [ "CommunicationParameters", "CommunicationParameters" ],
-    "SlurmUserId" : 7,
+    "SlurmUserId" : 8,
     "GpuFreqDef" : "GpuFreqDef",
     "PreemptType" : "PreemptType",
     "SwitchParameters" : [ "SwitchParameters", "SwitchParameters" ],
-    "SchedulerTimeSlice" : 8,
+    "SchedulerTimeSlice" : 4,
     "TLSType" : "TLSType",
     "AccountingStorageType" : "AccountingStorageType",
     "PriorityFlags" : [ "ACCRUE_ALWAYS", "ACCRUE_ALWAYS" ],
-    "SuspendTimeout" : 1,
+    "SuspendTimeout" : 4,
     "PreemptMode" : [ "DISABLED", "DISABLED" ],
     "BcastExclude" : [ "BcastExclude", "BcastExclude" ],
     "PrivateData" : [ "accounts", "accounts" ],
     "PrologFlags" : [ "Alloc", "Alloc" ],
     "AccountingStoreFlags" : [ "job_comment", "job_comment" ],
     "MetricsAuthUsers" : [ "MetricsAuthUsers", "MetricsAuthUsers" ],
-    "ResumeRate" : 7,
+    "ResumeRate" : 0,
     "RequeueExitHold" : [ "RequeueExitHold", "RequeueExitHold" ],
     "UnkillableStepProgram" : "UnkillableStepProgram",
     "SlurmdParametersFlags" : [ "config_overrides", "config_overrides" ],
@@ -856,20 +860,20 @@
     "PluginDir" : "PluginDir",
     "JobDefaults" : [ {
       "type" : [ "DefCpuPerGPU", "DefCpuPerGPU" ],
-      "value" : 7
+      "value" : 6
     }, {
       "type" : [ "DefCpuPerGPU", "DefCpuPerGPU" ],
-      "value" : 7
+      "value" : 6
     } ],
     "PropagatePrioProcess" : "PropagatePrioProcess",
-    "SlurmctldTimeout" : 5,
+    "SlurmctldTimeout" : 7,
     "HttpParserType" : "HttpParserType",
     "Prolog" : [ "Prolog", "Prolog" ],
-    "ResumeTimeout" : 6,
+    "ResumeTimeout" : 7,
     "AccountingStorageBackupHost" : "AccountingStorageBackupHost",
     "ProctrackType" : "ProctrackType",
     "SlurmctldSyslogDebug" : "SlurmctldSyslogDebug",
-    "KeepaliveTime" : 5,
+    "KeepaliveTime" : 4,
     "X11Parameters" : [ "X11Parameters", "X11Parameters" ],
     "AcctGatherFilesystemType" : "AcctGatherFilesystemType",
     "SlurmdPidFile" : "SlurmdPidFile",
@@ -903,44 +907,44 @@
     "MailDomain" : "MailDomain",
     "AuthInfo" : "AuthInfo",
     "DebugFlags" : [ "Accrue", "Accrue" ],
-    "HealthCheckTimeout" : 1,
+    "HealthCheckTimeout" : 7,
     "JobCompLoc" : "JobCompLoc",
-    "PriorityWeightFairshare" : 3,
-    "KeepaliveProbes" : 4,
-    "MinJobAge" : 2,
+    "PriorityWeightFairshare" : 6,
+    "KeepaliveProbes" : 1,
+    "MinJobAge" : 1,
     "SuspendExcStates" : [ "SuspendExcStates", "SuspendExcStates" ],
     "MpiParams" : [ "MpiParams", "MpiParams" ],
     "PriorityParameters" : "PriorityParameters",
     "CredType" : "CredType",
     "JobRequeue" : true,
-    "SlurmdPort" : 3,
+    "SlurmdPort" : 5,
     "PropagateResourceLimitsExcept" : [ "PropagateResourceLimitsExcept", "PropagateResourceLimitsExcept" ],
-    "EioTimeout" : 2,
+    "EioTimeout" : 5,
     "AccountingStorageHost" : "AccountingStorageHost",
     "HealthCheckNodeState" : [ "START_ONLY", "START_ONLY" ],
-    "MaxJobId" : 6,
+    "MaxJobId" : 9,
     "NodeFeaturesPlugins" : [ "NodeFeaturesPlugins", "NodeFeaturesPlugins" ],
     "AuthAltParameters" : "AuthAltParameters",
     "AccountingStorageParameters" : [ "AccountingStorageParameters", "AccountingStorageParameters" ],
     "SlurmUser" : "SlurmUser",
-    "PriorityWeightAssoc" : 6,
-    "KillWait" : 9,
+    "PriorityWeightAssoc" : 5,
+    "KillWait" : 5,
     "SrunEpilog" : "SrunEpilog",
     "TaskEpilog" : "TaskEpilog",
     "FederationParameters" : [ "FederationParameters", "FederationParameters" ],
     "SlurmctldParameters" : [ "SlurmctldParameters", "SlurmctldParameters" ],
-    "EpilogMsgTime" : 7,
+    "EpilogMsgTime" : 2,
     "LicenseParameters" : [ "LicenseParameters", "LicenseParameters" ],
     "AuthAltTypes" : [ "AuthAltTypes", "AuthAltTypes" ],
     "SlurmSchedLogFile" : "SlurmSchedLogFile",
-    "PriorityWeightAge" : 5,
+    "PriorityWeightAge" : 6,
     "SlurmdSyslogDebug" : "SlurmdSyslogDebug",
     "LogTimeFormat" : "LogTimeFormat",
     "PrioritySiteFactorParameters" : "PrioritySiteFactorParameters"
   },
   "slurm_conf_meta" : {
     "SLURM_VERSION" : "SLURM_VERSION",
-    "LastUpdate" : 0,
+    "LastUpdate" : 9,
     "ClusterId" : {
       "number" : 2,
       "set" : true,
@@ -951,8 +955,8 @@
       "set" : true,
       "infinite" : true
     },
-    "BOOT_TIME" : 7,
-    "HashValue" : 5,
+    "BOOT_TIME" : 0,
+    "HashValue" : 7,
     "SLURM_CONF" : "SLURM_CONF"
   },
   "errors" : [ {
@@ -1050,107 +1054,107 @@
     "error_number" : 7
   } ],
   "statistics" : {
-    "bf_cycle_max" : 7,
+    "bf_cycle_max" : 0,
     "rpcs_by_message_type" : [ {
-      "cycle_last" : 0,
+      "cycle_last" : 9,
       "average_time" : {
         "number" : 2,
         "set" : true,
         "infinite" : true
       },
-      "type_id" : 7,
-      "queued" : 0,
-      "count" : 9,
-      "dropped" : 9,
+      "type_id" : 4,
+      "queued" : 9,
+      "count" : 7,
+      "dropped" : 0,
       "message_type" : "message_type",
-      "total_time" : 5,
-      "cycle_max" : 7
+      "total_time" : 7,
+      "cycle_max" : 0
     }, {
-      "cycle_last" : 0,
+      "cycle_last" : 9,
       "average_time" : {
         "number" : 2,
         "set" : true,
         "infinite" : true
       },
-      "type_id" : 7,
-      "queued" : 0,
-      "count" : 9,
-      "dropped" : 9,
+      "type_id" : 4,
+      "queued" : 9,
+      "count" : 7,
+      "dropped" : 0,
       "message_type" : "message_type",
-      "total_time" : 5,
-      "cycle_max" : 7
+      "total_time" : 7,
+      "cycle_max" : 0
     } ],
     "bf_backfilled_het_jobs" : 6,
-    "bf_table_size" : 4,
+    "bf_table_size" : 6,
     "schedule_cycle_depth" : 1,
-    "bf_depth_sum" : 5,
+    "bf_depth_sum" : 7,
     "job_states_ts" : {
       "number" : 2,
       "set" : true,
       "infinite" : true
     },
-    "bf_queue_len" : 4,
-    "jobs_started" : 8,
-    "schedule_cycle_max" : 9,
-    "server_thread_count" : 6,
-    "bf_queue_len_sum" : 6,
-    "bf_cycle_last" : 0,
+    "bf_queue_len" : 3,
+    "jobs_started" : 6,
+    "schedule_cycle_max" : 7,
+    "server_thread_count" : 0,
+    "bf_queue_len_sum" : 0,
+    "bf_cycle_last" : 7,
     "bf_exit" : {
-      "state_changed" : 3,
-      "bf_max_time" : 8,
-      "bf_max_job_start" : 0,
-      "bf_node_space_size" : 7,
-      "end_job_queue" : 6,
-      "bf_max_job_test" : 4
+      "state_changed" : 7,
+      "bf_max_time" : 4,
+      "bf_max_job_start" : 6,
+      "bf_node_space_size" : 8,
+      "end_job_queue" : 7,
+      "bf_max_job_test" : 0
     },
     "agent_thread_count" : 5,
-    "jobs_completed" : 9,
-    "bf_depth_mean" : 3,
-    "bf_depth_try_sum" : 3,
-    "schedule_cycle_mean" : 7,
-    "bf_table_size_sum" : 1,
-    "agent_queue_size" : 1,
-    "jobs_failed" : 3,
-    "bf_last_depth_try" : 7,
+    "jobs_completed" : 8,
+    "bf_depth_mean" : 6,
+    "bf_depth_try_sum" : 5,
+    "schedule_cycle_mean" : 4,
+    "bf_table_size_sum" : 4,
+    "agent_queue_size" : 6,
+    "jobs_failed" : 6,
+    "bf_last_depth_try" : 3,
     "req_time" : {
       "number" : 2,
       "set" : true,
       "infinite" : true
     },
-    "bf_cycle_counter" : 5,
+    "bf_cycle_counter" : 6,
     "schedule_queue_length" : 9,
-    "bf_queue_len_mean" : 0,
+    "bf_queue_len_mean" : 4,
     "schedule_exit" : {
-      "max_sched_time" : 5,
-      "licenses" : 9,
-      "default_queue_depth" : 7,
-      "max_job_start" : 1,
-      "max_rpc_cnt" : 4,
-      "end_job_queue" : 6
+      "max_sched_time" : 4,
+      "licenses" : 5,
+      "default_queue_depth" : 6,
+      "max_job_start" : 7,
+      "max_rpc_cnt" : 1,
+      "end_job_queue" : 1
     },
-    "jobs_canceled" : 6,
-    "schedule_cycle_sum" : 2,
-    "jobs_submitted" : 6,
-    "schedule_cycle_mean_depth" : 1,
+    "jobs_canceled" : 9,
+    "schedule_cycle_sum" : 3,
+    "jobs_submitted" : 9,
+    "schedule_cycle_mean_depth" : 7,
     "schedule_cycle_per_minute" : 1,
     "req_time_start" : {
       "number" : 2,
       "set" : true,
       "infinite" : true
     },
-    "jobs_running" : 1,
-    "bf_last_backfilled_jobs" : 6,
+    "jobs_running" : 6,
+    "bf_last_backfilled_jobs" : 2,
     "bf_last_depth" : 3,
-    "bf_backfilled_jobs" : 2,
+    "bf_backfilled_jobs" : 1,
     "rpcs_by_user" : [ {
       "average_time" : {
         "number" : 2,
         "set" : true,
         "infinite" : true
       },
-      "user_id" : 4,
-      "count" : 6,
-      "total_time" : 8,
+      "user_id" : 5,
+      "count" : 4,
+      "total_time" : 6,
       "user" : "user"
     }, {
       "average_time" : {
@@ -1158,46 +1162,45 @@
         "set" : true,
         "infinite" : true
       },
-      "user_id" : 4,
-      "count" : 6,
-      "total_time" : 8,
+      "user_id" : 5,
+      "count" : 4,
+      "total_time" : 6,
       "user" : "user"
     } ],
-    "bf_cycle_mean" : 6,
+    "bf_cycle_mean" : 5,
     "pending_rpcs_by_hostlist" : [ {
-      "type_id" : 0,
+      "type_id" : 3,
       "count" : [ "count", "count" ],
       "message_type" : "message_type"
     }, {
-      "type_id" : 0,
+      "type_id" : 3,
       "count" : [ "count", "count" ],
       "message_type" : "message_type"
     } ],
-    "dbd_agent_queue_size" : 2,
-    "bf_table_size_mean" : 4,
-    "jobs_pending" : 6,
-    "agent_count" : 5,
-    "bf_cycle_sum" : 7,
-    "parts_packed" : 0,
+    "dbd_agent_queue_size" : 5,
+    "bf_table_size_mean" : 1,
+    "jobs_pending" : 3,
+    "agent_count" : 1,
+    "bf_cycle_sum" : 3,
     "bf_active" : true,
     "bf_depth_mean_try" : 3,
-    "gettimeofday_latency" : 7,
+    "gettimeofday_latency" : 2,
     "pending_rpcs" : [ {
-      "type_id" : 4,
-      "count" : 3,
+      "type_id" : 8,
+      "count" : 4,
       "message_type" : "message_type"
     }, {
-      "type_id" : 4,
-      "count" : 3,
+      "type_id" : 8,
+      "count" : 4,
       "message_type" : "message_type"
     } ],
-    "schedule_cycle_total" : 4,
+    "schedule_cycle_total" : 2,
     "bf_when_last_cycle" : {
       "number" : 2,
       "set" : true,
       "infinite" : true
     },
-    "schedule_cycle_last" : 3
+    "schedule_cycle_last" : 9
   }
 }</code></pre>
 
@@ -4412,7 +4415,7 @@
     "tres" : "tres",
     "cpu_binding" : 5,
     "state" : [ "INVALID", "INVALID" ],
-    "sockets" : 9,
+    "sockets" : 5,
     "energy" : {
       "current_watts" : {
         "number" : 5,
@@ -4428,7 +4431,7 @@
     "partitions" : [ "partitions", "partitions" ],
     "topology" : "topology",
     "gres_drained" : "gres_drained",
-    "weight" : 8,
+    "weight" : 6,
     "version" : "version",
     "gres_used" : "gres_used",
     "mcs_label" : "mcs_label",
@@ -4442,7 +4445,7 @@
       "set" : true,
       "infinite" : true
     },
-    "temporary_disk" : 6,
+    "temporary_disk" : 9,
     "tres_used" : "tres_used",
     "effective_cpus" : 7,
     "instance_type" : "instance_type",
@@ -4470,7 +4473,6 @@
     "cluster_name" : "cluster_name",
     "address" : "address",
     "cpus" : 2,
-    "tres_weighted" : 5.025004791520295,
     "gres" : "gres",
     "threads" : 9,
     "suspend_time" : {
@@ -4515,7 +4517,7 @@
     "tres" : "tres",
     "cpu_binding" : 5,
     "state" : [ "INVALID", "INVALID" ],
-    "sockets" : 9,
+    "sockets" : 5,
     "energy" : {
       "current_watts" : {
         "number" : 5,
@@ -4531,7 +4533,7 @@
     "partitions" : [ "partitions", "partitions" ],
     "topology" : "topology",
     "gres_drained" : "gres_drained",
-    "weight" : 8,
+    "weight" : 6,
     "version" : "version",
     "gres_used" : "gres_used",
     "mcs_label" : "mcs_label",
@@ -4545,7 +4547,7 @@
       "set" : true,
       "infinite" : true
     },
-    "temporary_disk" : 6,
+    "temporary_disk" : 9,
     "tres_used" : "tres_used",
     "effective_cpus" : 7,
     "instance_type" : "instance_type",
@@ -4573,7 +4575,6 @@
     "cluster_name" : "cluster_name",
     "address" : "address",
     "cpus" : 2,
-    "tres_weighted" : 5.025004791520295,
     "gres" : "gres",
     "threads" : 9,
     "suspend_time" : {
@@ -4715,7 +4716,7 @@
     "tres" : "tres",
     "cpu_binding" : 5,
     "state" : [ "INVALID", "INVALID" ],
-    "sockets" : 9,
+    "sockets" : 5,
     "energy" : {
       "current_watts" : {
         "number" : 5,
@@ -4731,7 +4732,7 @@
     "partitions" : [ "partitions", "partitions" ],
     "topology" : "topology",
     "gres_drained" : "gres_drained",
-    "weight" : 8,
+    "weight" : 6,
     "version" : "version",
     "gres_used" : "gres_used",
     "mcs_label" : "mcs_label",
@@ -4745,7 +4746,7 @@
       "set" : true,
       "infinite" : true
     },
-    "temporary_disk" : 6,
+    "temporary_disk" : 9,
     "tres_used" : "tres_used",
     "effective_cpus" : 7,
     "instance_type" : "instance_type",
@@ -4773,7 +4774,6 @@
     "cluster_name" : "cluster_name",
     "address" : "address",
     "cpus" : 2,
-    "tres_weighted" : 5.025004791520295,
     "gres" : "gres",
     "threads" : 9,
     "suspend_time" : {
@@ -4818,7 +4818,7 @@
     "tres" : "tres",
     "cpu_binding" : 5,
     "state" : [ "INVALID", "INVALID" ],
-    "sockets" : 9,
+    "sockets" : 5,
     "energy" : {
       "current_watts" : {
         "number" : 5,
@@ -4834,7 +4834,7 @@
     "partitions" : [ "partitions", "partitions" ],
     "topology" : "topology",
     "gres_drained" : "gres_drained",
-    "weight" : 8,
+    "weight" : 6,
     "version" : "version",
     "gres_used" : "gres_used",
     "mcs_label" : "mcs_label",
@@ -4848,7 +4848,7 @@
       "set" : true,
       "infinite" : true
     },
-    "temporary_disk" : 6,
+    "temporary_disk" : 9,
     "tres_used" : "tres_used",
     "effective_cpus" : 7,
     "instance_type" : "instance_type",
@@ -4876,7 +4876,6 @@
     "cluster_name" : "cluster_name",
     "address" : "address",
     "cpus" : 2,
-    "tres_weighted" : 5.025004791520295,
     "gres" : "gres",
     "threads" : 9,
     "suspend_time" : {
@@ -5725,19 +5724,15 @@
     "source" : "source"
   } ],
   "pings" : [ {
-    "mode" : "mode",
     "responding" : true,
     "hostname" : "hostname",
     "latency" : 0,
-    "pinged" : "pinged",
     "primary" : true,
     "status" : "status"
   }, {
-    "mode" : "mode",
     "responding" : true,
     "hostname" : "hostname",
     "latency" : 0,
-    "pinged" : "pinged",
     "primary" : true,
     "status" : "status"
   } ],
@@ -7939,9 +7934,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">Exclude limits from parents (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -8063,9 +8056,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">Exclude limits from parents (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -8181,9 +8172,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV federation list default: null </div><div class="param">flags (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">rpc_version (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div><div class="param">rpc_version (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV RPC version list default: null </div><div class="param">usage_end (optional)</div>
 
@@ -8870,9 +8859,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">Exclude limits from parents (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -9378,9 +9365,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">Exclude limits from parents (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">parent_account (optional)</div>
 
@@ -9880,9 +9865,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV federation list default: null </div><div class="param">flags (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">rpc_version (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div><div class="param">rpc_version (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV RPC version list default: null </div><div class="param">usage_end (optional)</div>
 
@@ -11324,27 +11307,6 @@
     "id" : 9,
     "user" : "user"
   } ],
-  "instances" : [ {
-    "cluster" : "cluster",
-    "instance_id" : "instance_id",
-    "extra" : "extra",
-    "node_name" : "node_name",
-    "time" : {
-      "time_start" : 1,
-      "time_end" : 1
-    },
-    "instance_type" : "instance_type"
-  }, {
-    "cluster" : "cluster",
-    "instance_id" : "instance_id",
-    "extra" : "extra",
-    "node_name" : "node_name",
-    "time" : {
-      "time_start" : 1,
-      "time_end" : 1
-    },
-    "instance_type" : "instance_type"
-  } ],
   "meta" : {
     "slurm" : {
       "cluster" : "cluster",
@@ -11882,9 +11844,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV clusters list default: null </div><div class="param">extra (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV extra list default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">instance_id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV extra list default: null </div><div class="param">instance_id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV instance_id list default: null </div><div class="param">instance_type (optional)</div>
 
@@ -11915,8 +11875,8 @@
     "extra" : "extra",
     "node_name" : "node_name",
     "time" : {
-      "time_start" : 1,
-      "time_end" : 1
+      "time_start" : 6,
+      "time_end" : 0
     },
     "instance_type" : "instance_type"
   }, {
@@ -11925,8 +11885,8 @@
     "extra" : "extra",
     "node_name" : "node_name",
     "time" : {
-      "time_start" : 1,
-      "time_end" : 1
+      "time_start" : 6,
+      "time_end" : 0
     },
     "instance_type" : "instance_type"
   } ],
@@ -12006,9 +11966,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV clusters list default: null </div><div class="param">extra (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV extra list default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">instance_id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV extra list default: null </div><div class="param">instance_id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV instance_id list default: null </div><div class="param">instance_type (optional)</div>
 
@@ -12039,8 +11997,8 @@
     "extra" : "extra",
     "node_name" : "node_name",
     "time" : {
-      "time_start" : 1,
-      "time_end" : 1
+      "time_start" : 6,
+      "time_end" : 0
     },
     "instance_type" : "instance_type"
   }, {
@@ -12049,8 +12007,8 @@
     "extra" : "extra",
     "node_name" : "node_name",
     "time" : {
-      "time_start" : 1,
-      "time_end" : 1
+      "time_start" : 6,
+      "time_end" : 0
     },
     "instance_type" : "instance_type"
   } ],
@@ -12248,22 +12206,6 @@
     },
     "stderr" : "stderr",
     "steps" : [ {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -12290,6 +12232,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -12453,22 +12410,6 @@
         }
       }
     }, {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -12495,6 +12436,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -12852,22 +12808,6 @@
     },
     "stderr" : "stderr",
     "steps" : [ {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -12894,6 +12834,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -13057,22 +13012,6 @@
         }
       }
     }, {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -13099,6 +13038,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -13464,9 +13418,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — Include job script default: null </div><div class="param">show_job_environment (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Include job environment default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">groups (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Include job environment default: null </div><div class="param">groups (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV group list default: null </div><div class="param">job_name (optional)</div>
 
@@ -13614,22 +13566,6 @@
     },
     "stderr" : "stderr",
     "steps" : [ {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -13656,6 +13592,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -13819,22 +13770,6 @@
         }
       }
     }, {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -13861,6 +13796,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -14218,22 +14168,6 @@
     },
     "stderr" : "stderr",
     "steps" : [ {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -14260,6 +14194,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -14423,22 +14372,6 @@
         }
       }
     }, {
-      "CPU" : {
-        "governor" : "governor",
-        "requested_frequency" : {
-          "min" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          },
-          "max" : {
-            "number" : 5,
-            "set" : true,
-            "infinite" : true
-          }
-        }
-      },
-      "pid" : "pid",
       "nodes" : {
         "count" : 6,
         "range" : "range",
@@ -14465,6 +14398,21 @@
         "status" : [ "INVALID", "INVALID" ]
       },
       "kill_request_user" : "kill_request_user",
+      "CPU" : {
+        "governor" : "governor",
+        "requested_frequency" : {
+          "min" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          },
+          "max" : {
+            "number" : 5,
+            "set" : true,
+            "infinite" : true
+          }
+        }
+      },
       "step" : {
         "stdin_expanded" : "stdin_expanded",
         "stdin" : "stdin",
@@ -14892,9 +14840,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">id (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS id list default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">name (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS id list default: null </div><div class="param">name (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS name list default: null </div><div class="param">preempt_mode (optional)</div>
 
@@ -16936,9 +16882,7 @@
     <div class="field-items">
       <div class="param">cluster (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV cluster name list default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV cluster name list default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">name (optional)</div>
 
@@ -17806,9 +17750,7 @@
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> —  default: null </div><div class="param">id (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS id list default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">name (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS id list default: null </div><div class="param">name (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV QOS name list default: null </div><div class="param">preempt_mode (optional)</div>
 
@@ -18207,9 +18149,7 @@
     <div class="field-items">
       <div class="param">cluster (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV cluster name list default: null </div><div class="param">format (optional)</div>
-
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Ignored; process JSON manually to control output format default: null </div><div class="param">id (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV cluster name list default: null </div><div class="param">id (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — CSV ID list default: null </div><div class="param">name (optional)</div>
 
@@ -18708,10 +18648,8 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">hostname (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Target for ping </div>
-<div class="param">pinged (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Ping result </div>
 <div class="param">responding </div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> If ping RPC responded with pong from controller </div>
 <div class="param">latency (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Number of microseconds it took to successfully ping or timeout format: int64</div>
-<div class="param">mode (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> The operating mode of the responding slurmctld </div>
 <div class="param">primary </div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Is responding slurmctld the primary controller (Is responding slurmctld the primary controller) </div>
 <div class="param">status (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Ping status code </div>
     </div>  <!-- field-items -->
@@ -19316,7 +19254,6 @@
 <div class="param">alloc_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total number of CPUs currently allocated for jobs format: int32</div>
 <div class="param">alloc_idle_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total number of idle CPUs format: int32</div>
 <div class="param">tres_used (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Trackable resources currently allocated for jobs </div>
-<div class="param">tres_weighted (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span> Ignored. Was weighted number of billable trackable resources allocated format: double</div>
 <div class="param">slurmd_start_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_uint64_no_val_struct">v0.0.45_uint64_no_val_struct</a></span>  </div>
 <div class="param">sockets (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of physical processor sockets/chips on the node format: int32</div>
 <div class="param">threads (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of logical threads in a single physical core format: int32</div>
@@ -19732,7 +19669,6 @@
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_qos">array[v0.0.45_qos]</a></span>  </div>
 <div class="param">wckeys (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_wckey">array[v0.0.45_wckey]</a></span>  </div>
 <div class="param">associations (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_assoc">array[v0.0.45_assoc]</a></span>  </div>
-<div class="param">instances (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_instance">array[v0.0.45_instance]</a></span>  </div>
 <div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_openapi_meta">v0.0.45_openapi_meta</a></span>  </div>
 <div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_openapi_error">array[v0.0.45_openapi_error]</a></span>  </div>
 <div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_openapi_warning">array[v0.0.45_openapi_warning]</a></span>  </div>
@@ -20107,7 +20043,7 @@
 <div class="param">DebugFlags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Subsystems which provide more detailed event logging </div>
         <div class="param-enum-header">Enum:</div>
 
-<div class="param">DefMemPerCPU (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Default MB memory per allocated CPU format: int64</div>
+<div class="param">DefMemPerCPU (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_uint64_no_val_struct">v0.0.45_uint64_no_val_struct</a></span>  </div>
 <div class="param">DependencyParameters (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">EioTimeout (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Seconds srun waits for slurmstepd to close the TCP/IP connection format: int32</div>
 <div class="param">EnforcePartLimits (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Controls whether partition limits are enforced at job submission time </div>
@@ -20397,8 +20333,7 @@
     <h3><a name="v0.0.45_stats_msg"><code>v0.0.45_stats_msg</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">parts_packed (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Zero if only RPC statistic included format: int32</div>
-<div class="param">req_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_uint64_no_val_struct">v0.0.45_uint64_no_val_struct</a></span>  </div>
+      <div class="param">req_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_uint64_no_val_struct">v0.0.45_uint64_no_val_struct</a></span>  </div>
 <div class="param">req_time_start (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_uint64_no_val_struct">v0.0.45_uint64_no_val_struct</a></span>  </div>
 <div class="param">server_thread_count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of current active slurmctld threads format: int32</div>
 <div class="param">agent_queue_size (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of enqueued outgoing RPC requests in an internal retry list format: int32</div>
@@ -20533,7 +20468,6 @@
 <div class="param">exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.45_process_exit_code_verbose">v0.0.45_process_exit_code_verbose</a></span>  </div>
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_45_step_nodes">v0_0_45_step_nodes</a></span>  </div>
 <div class="param">tasks (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_45_step_tasks">v0_0_45_step_tasks</a></span>  </div>
-<div class="param">pid (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Deprecated; Process ID </div>
 <div class="param">CPU (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_45_step_CPU">v0_0_45_step_CPU</a></span>  </div>
 <div class="param">kill_request_user (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User ID that requested termination of the step </div>
 <div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Current state </div>
@@ -21138,7 +21072,7 @@
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">exclusive (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Exclusive= string (same as scontrol show partition) </div>
-<div class="param">oversubscribe (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo) </div>
+<div class="param">oversubscribe (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo) (Partition oversubscribe value) </div>
 <div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> Current state(s) </div>
         <div class="param-enum-header">Enum:</div>
 
