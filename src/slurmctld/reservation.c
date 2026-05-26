@@ -8448,6 +8448,13 @@ extern void job_resv_check(void)
 	list_for_each(resv_list, _resv_list_reset_cnt, NULL);
 	list_for_each(job_list, _job_resv_check, NULL);
 
+	/*
+	 * This needs to be an iterator since the loop body calls
+	 * list_delete_item() to purge reservations and calls
+	 * _resv_node_replace() which transitively iterates resv_list via
+	 * _select_nodes() — both would deadlock under a list_for_each /
+	 * list_delete_first write lock.
+	 */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->start_time <= now) {
