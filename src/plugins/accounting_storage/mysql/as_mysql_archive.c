@@ -154,6 +154,7 @@ typedef struct {
 	char *resv_req;
 	char *script_hash_inx;
 	char *segment_size;
+	char *sluid;
 	char *start;
 	char *state;
 	char *state_reason_prev;
@@ -237,6 +238,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->resv_req);
 		xfree(object->script_hash_inx);
 		xfree(object->segment_size);
+		xfree(object->sluid);
 		xfree(object->start);
 		xfree(object->state);
 		xfree(object->state_reason_prev);
@@ -611,6 +613,7 @@ static char *job_req_inx[] = {
 	"id_resv",
 	"resv_req",
 	"segment_size",
+	"sluid",
 	"time_start",
 	"state",
 	"state_reason_prev",
@@ -678,6 +681,7 @@ enum {
 	JOB_REQ_RESVID,
 	JOB_REQ_RESV_REQ,
 	JOB_REQ_SEGMENT_SIZE,
+	JOB_REQ_SLUID,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_STATE_REASON,
@@ -1096,6 +1100,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->resvid, buffer);
 	packstr(object->resv_req, buffer);
 	packstr(object->segment_size, buffer);
+	packstr(object->sluid, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
 	packstr(object->state_reason_prev, buffer);
@@ -1172,6 +1177,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->resvid, buffer);
 		safe_unpackstr(&object->resv_req, buffer);
 		safe_unpackstr(&object->segment_size, buffer);
+		safe_unpackstr(&object->sluid, buffer);
 		safe_unpackstr(&object->start, buffer);
 		safe_unpackstr(&object->state, buffer);
 		safe_unpackstr(&object->state_reason_prev, buffer);
@@ -2072,6 +2078,11 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->wckey, buffer);
 		safe_unpackstr(&object->wckey_id, buffer);
 	}
+
+	/* sluid was added in 26.05. Older archives lack it, so set a 0. */
+	if (!object->sluid)
+		object->sluid = xstrdup("0");
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3865,6 +3876,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.resvid = row[JOB_REQ_RESVID];
 		job.resv_req = row[JOB_REQ_RESV_REQ];
 		job.segment_size = row[JOB_REQ_SEGMENT_SIZE];
+		job.sluid = row[JOB_REQ_SLUID];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
 		job.state_reason_prev = row[JOB_REQ_STATE_REASON];
@@ -3926,6 +3938,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_RESVID,
 		JOB_REQ_SCRIPT_HASH_INX,
 		JOB_REQ_SEGMENT_SIZE,
+		JOB_REQ_SLUID,
 		JOB_REQ_START,
 		JOB_REQ_STATE,
 		JOB_REQ_STATE_REASON,
@@ -4108,6 +4121,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     object.resvid,
 			     object.script_hash_inx,
 			     object.segment_size,
+			     object.sluid,
 			     object.start,
 			     object.state,
 			     object.state_reason_prev,
