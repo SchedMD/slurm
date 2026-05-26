@@ -43,7 +43,35 @@
 	<td class="tdchange">.components.schemas["v0.0.45_controller"].type = "object";</td>
 </tr>
 <tr class="trchange">
-	<td class="tdfield">Added</td>
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.mode = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.mode.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.mode.description = "The operating mode of the responding slurmctld";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.mode.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.pinged = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.pinged.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.pinged.description = "Ping result";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.45_controller_ping"].properties.status = {};</td>
 </tr>
 <tr class="trchange">
@@ -247,6 +275,70 @@
 	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cores_per_socket.type = "integer";</td>
 </tr>
 <tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[5] = "CPU_BIND_RANK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[6] = "CPU_BIND_MAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[7] = "CPU_BIND_MASK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[8] = "CPU_BIND_LDRANK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[9] = "CPU_BIND_LDMAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[10] = "CPU_BIND_LDMASK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[11] = "VERBOSE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[5] = "CPU_BIND_MAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[6] = "CPU_BIND_MASK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[7] = "CPU_BIND_LDRANK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[8] = "CPU_BIND_LDMAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[9] = "CPU_BIND_LDMASK";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[10] = "VERBOSE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.cpu_binding_flags.items.enum[11] = "CPU_BIND_ONE_THREAD_PER_CORE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.environment.description = "Environment variables to be set for the job; required for job submissions";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.flags.items.enum[37] = "JOB_IMPLICIT_MAX_NODES";</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.45_job_desc_msg"].properties.memory_update_delay = {};</td>
 </tr>
@@ -289,6 +381,10 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.45_job_info"].properties.container_type.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_job_info"].properties.flags.items.enum[37] = "JOB_IMPLICIT_MAX_NODES";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -499,7 +595,23 @@
 	<td class="tdchange">.components.schemas["v0.0.45_node"].properties.suspend_time.description = "Time in idle state before being considered for power save. (32 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
-	<td class="tdfield">Added</td>
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_node"].properties.tres_weighted = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_node"].properties.tres_weighted.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_node"].properties.tres_weighted.description = "Ignored. Was weighted number of billable trackable resources allocated";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_node"].properties.tres_weighted.format = "double";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.45_node_gres_layout"] = {};</td>
 </tr>
 <tr class="trchange">
@@ -1207,6 +1319,18 @@
 	<td class="tdchange">.components.schemas["v0.0.45_openapi_slurmdbd_conf_resp"].type = "object";</td>
 </tr>
 <tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_openapi_slurmdbd_config_resp"].properties.instances = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_openapi_slurmdbd_config_resp"].properties.instances.$ref = "#/components/schemas/v0.0.45_instance_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_openapi_slurmdbd_config_resp"].properties.instances.deprecated = true;</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.cluster.description = "Cluster name (read-only)";</td>
 </tr>
@@ -1308,51 +1432,35 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[6] = "EXCLUSIVE_USER";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[6] = "PDOI";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[7] = "PDOI";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[7] = "DEFAULT_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[8] = "DEFAULT_CLEAR";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[8] = "HIDDEN_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[9] = "HIDDEN_CLEAR";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[9] = "NO_ROOT_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[10] = "NO_ROOT_CLEAR";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[10] = "ROOT_ONLY_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[11] = "ROOT_ONLY_CLEAR";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[11] = "REQ_RESV_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[12] = "REQ_RESV_CLEAR";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[12] = "LLN_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[13] = "LLN_CLEAR";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[14] = "EXC_USER_CLEAR";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[15] = "PDOI_CLEAR";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[16] = "EXCLUSIVE_TOPO";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[17] = "EXC_TOPO_CLEAR";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.flags.items.enum[13] = "PDOI_CLEAR";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -1365,6 +1473,14 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.maximums.properties.memory_per_cpu.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.maximums.properties.oversubscribe.properties.flags.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.maximums.properties.oversubscribe.properties.jobs.deprecated = true;</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -1396,7 +1512,7 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.partition.properties.oversubscribe.description = "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo)";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_partition_info"].properties.partition.properties.oversubscribe.description = "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo) (Partition oversubscribe value)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -2544,15 +2660,11 @@
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_slurm_conf"].properties.DefMemPerCPU.description = "Default MB memory per allocated CPU";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_slurm_conf"].properties.DefMemPerCPU.$ref = "#/components/schemas/v0.0.45_uint64_no_val_struct";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_slurm_conf"].properties.DefMemPerCPU.format = "int64";</td>
-</tr>
-<tr class="trchange">
-	<td class="tdfield">Added</td>
-	<td class="tdchange">.components.schemas["v0.0.45_slurm_conf"].properties.DefMemPerCPU.type = "integer";</td>
+	<td class="tdchange">.components.schemas["v0.0.45_slurm_conf"].properties.DefMemPerCPU.description = "Default MB memory per allocated CPU (64 bit integer number with flags)";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -6043,7 +6155,39 @@
 	<td class="tdchange">.components.schemas["v0.0.45_slurmdbd_ping"].required[4] = "status";</td>
 </tr>
 <tr class="trchange">
-	<td class="tdfield">Added</td>
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_stats_msg"].properties.parts_packed = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_stats_msg"].properties.parts_packed.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_stats_msg"].properties.parts_packed.description = "Zero if only RPC statistic included";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_stats_msg"].properties.parts_packed.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_stats_msg"].properties.parts_packed.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_step"].properties.pid = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_step"].properties.pid.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.45_step"].properties.pid.description = "Deprecated; Process ID";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.components.schemas["v0.0.45_step"].properties.submit_line = {};</td>
 </tr>
 <tr class="trchange">
@@ -6093,6 +6237,14 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.45_update_partition_msg_list"].type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.05.0";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.05.0";</td>
 </tr>
 <tr class="trchange">
 	<td class="tdfield">Added</td>
@@ -6915,7 +7067,603 @@
 	<td class="tdchange">.paths["/slurm/v0.0.45/resources/{job_id}"].get.tags[0] = "slurm";</td>
 </tr>
 <tr class="trchange">
-	<td class="tdfield">Added</td>
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[10].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[10].description = "CSV ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[10].name = "id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[11].description = "CSV names of parent account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[11].name = "parent_account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[12].description = "CSV partition name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[12].name = "partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[13].description = "CSV QOS list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[13].name = "qos";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[14].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[14].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[15].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[15].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[16].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[16].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"].get.parameters[17]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[10].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[10].description = "CSV ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[10].name = "id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[11].description = "CSV names of parent account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[11].name = "parent_account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[12].description = "CSV partition name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[12].name = "partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[13].description = "CSV QOS list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[13].name = "qos";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[14].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[14].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[15].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[15].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[16].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[16].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/association/"]["delete"].parameters[17]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[10].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[10].description = "CSV ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[10].name = "id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[11].description = "CSV names of parent account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[11].name = "parent_account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[12].description = "CSV partition name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[12].name = "partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[13].description = "CSV QOS list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[13].name = "qos";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[14].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[14].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[15].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[15].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[16].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[16].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"].get.parameters[17]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[10].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[10].description = "CSV ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[10].name = "id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[11].description = "CSV names of parent account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[11].name = "parent_account";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[12].description = "CSV partition name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[12].name = "partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[13].description = "CSV QOS list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[13].name = "qos";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[14].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[14].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[15].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[15].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[16].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[16].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/associations/"]["delete"].parameters[17]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[5].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[5].description = "CSV RPC version list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[5].name = "rpc_version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[6].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[6].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[7].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[7].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[8].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[8].description = "Include deleted clusters";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[8].name = "with_deleted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[9].description = "Include usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[9].name = "with_usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].description = "Include usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].name = "with_usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"].get.parameters[10]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[5].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[5].description = "CSV RPC version list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[5].name = "rpc_version";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[6].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[6].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[7].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[7].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[8].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[8].description = "Include deleted clusters";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[8].name = "with_deleted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[9].description = "Include usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[9].name = "with_usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].description = "Include usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].name = "with_usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/cluster/{cluster_name}"]["delete"].parameters[10].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
 	<td class="tdchange">.paths["/slurmdb/v0.0.45/conf"] = {};</td>
 </tr>
 <tr class="trchange">
@@ -6989,6 +7737,810 @@
 <tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.paths["/slurmdb/v0.0.45/conf"].get.tags[0] = "slurmdb";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[2].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[2].description = "CSV instance_id list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[2].name = "instance_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[3].description = "CSV instance_type list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[3].name = "instance_type";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[4].description = "Ranged node string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[4].name = "node_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[5].description = "Time end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[5].name = "time_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[6].description = "Time start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[6].name = "time_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].description = "Time start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].name = "time_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instance/"].get.parameters[7]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[2].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[2].description = "CSV instance_id list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[2].name = "instance_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[3].description = "CSV instance_type list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[3].name = "instance_type";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[4].description = "Ranged node string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[4].name = "node_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[5].description = "Time end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[5].name = "time_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[6].description = "Time start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[6].name = "time_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].description = "Time start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].name = "time_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/instances/"].get.parameters[7]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[20].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[20].description = "CSV group list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[20].name = "groups";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[21].description = "CSV job name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[21].name = "job_name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[22].description = "CSV partition name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[22].name = "partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[23].description = "CSV QOS name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[23].name = "qos";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[24].description = "CSV reason list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[24].name = "reason";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[25].description = "CSV reservation name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[25].name = "reservation";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[26].description = "CSV reservation ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[26].name = "reservation_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[27].description = "CSV state list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[27].name = "state";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[28].description = "CSV step id list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[28].name = "step";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[29].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[29].name = "end_time";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[30].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[30].name = "start_time";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[31].description = "Ranged node string where jobs ran";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[31].name = "node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[32].description = "CSV user name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[32].name = "users";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[33].description = "CSV WCKey list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[33].name = "wckey";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].description = "CSV WCKey list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].name = "wckey";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/jobs/"].get.parameters[34]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[3].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[3].description = "CSV QOS name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[3].name = "name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].description = "PreemptMode used when jobs in this QOS are preempted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].name = "preempt_mode";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].schema.enum = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].schema.enum[0] = "DISABLED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].schema.enum[1] = "SUSPEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].schema.enum[2] = "REQUEUE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].schema.enum[3] = "CANCEL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[4].schema.enum[4] = "GANG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].description = "PreemptMode used when jobs in this QOS are preempted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].name = "preempt_mode";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.enum = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.enum[0] = "DISABLED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.enum[1] = "SUSPEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.enum[2] = "REQUEUE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.enum[3] = "CANCEL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.enum[4] = "GANG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].get.parameters[5]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[3].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[3].description = "CSV QOS name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[3].name = "name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].description = "PreemptMode used when jobs in this QOS are preempted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].name = "preempt_mode";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].schema.enum = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].schema.enum[0] = "DISABLED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].schema.enum[1] = "SUSPEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].schema.enum[2] = "REQUEUE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].schema.enum[3] = "CANCEL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[4].schema.enum[4] = "GANG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].description = "PreemptMode used when jobs in this QOS are preempted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].name = "preempt_mode";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.enum = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.enum[0] = "DISABLED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.enum[1] = "SUSPEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.enum[2] = "REQUEUE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.enum[3] = "CANCEL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.enum[4] = "GANG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/qos/"].post.parameters[5]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[1].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[1].description = "CSV ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[1].name = "id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[2].description = "CSV name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[2].name = "name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[3].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[3].description = "Only query defaults";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[3].name = "only_defaults";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[4].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[4].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[4].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[5].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[5].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[6].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[6].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[7].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[7].description = "Include usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[7].name = "with_usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[8].description = "Include deleted WCKeys";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[8].name = "with_deleted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].description = "Include deleted WCKeys";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].name = "with_deleted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].get.parameters[9]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[1].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[1].description = "CSV ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[1].name = "id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[2].description = "CSV name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[2].name = "name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[3].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[3].description = "Only query defaults";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[3].name = "only_defaults";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[4].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[4].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[4].name = "usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[5].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[5].name = "usage_start";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[6].description = "CSV user list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[6].name = "user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[7].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[7].description = "Include usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[7].name = "with_usage";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[8].description = "Include deleted WCKeys";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[8].name = "with_deleted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].description = "Include deleted WCKeys";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].name = "with_deleted";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.45/wckeys/"].post.parameters[9].style = "form";</td>
 </tr>
 </table>
 <h3>data_parser/v0.0.44</h3>
@@ -7295,6 +8847,14 @@
 	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.reason_uid.deprecated = true;</td>
 </tr>
 <tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.05.0";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.05.0";</td>
+</tr>
+<tr class="trchange">
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.paths["/slurm/v0.0.44/resources/{job_id}"] = {};</td>
 </tr>
@@ -7442,6 +9002,14 @@
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.43_update_node_msg"].properties.reason_uid.deprecated = true;</td>
 </tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.05.0";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.05.0";</td>
+</tr>
 </table>
 <h3>data_parser/v0.0.42</h3>
 <h4>Modified Fields</h4>
@@ -7466,12 +9034,18 @@
 	<td class="tdfield">Added</td>
 	<td class="tdchange">.components.schemas["v0.0.42_update_node_msg"].properties.reason_uid.deprecated = true;</td>
 </tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info.version = "Slurm-26.05.0";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.info["x-slurm"].release = "26.05.0";</td>
+</tr>
 </table>
 
 <h4>Deprecation notice</h4>
 The v0.0.42 plugin has now been marked as deprecated.
-
-<h3>data_parser/v0.0.40</h3>
 
 <h4>Removal notice</h4>
 The v0.0.41 plugin has now been removed.
