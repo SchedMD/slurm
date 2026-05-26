@@ -79,27 +79,29 @@ section below.
 
 .TP
 \fB\-T\fR, \fB\-\-tres\fR=<\fItres_names\fR>
-Trackable resource (TRES) to report values for.
-By default CPU resource use is reported (except for reservation reports. All
-TRES types reserved by a reservation will be shown by default unless overridden
-with this option).
-Multiple TRES names may be separated using a comma separated list for all
-reports except the job reports, which can only support a single TRES name, or
-"ALL" for all TRES.
+Trackable resource (TRES) to report values for. Defaults to CPU for
+non\-reservation reports; reservation reports default to all TRES the
+reservation holds. Multiple TRES may be given as a comma\-separated list, or
+"ALL" for all TRES; job reports accept only a single TRES name.
 
-The "Reported" Billing TRES is calculated from the largest Billing TRES of each
-node multiplied by the time frame. For example, if a node is part of multiple
-partitions and each has a different TRESBillingWeights defined the Billing TRES
-for the node will be the highest of the partitions. If TRESBillingWeights is
-not defined on any partition for a node then the Billing TRES will be equal to
-the number of CPUs on the node.
+Usage values (the Allocated and Used columns) are aggregated from each job's
+allocated TRES, the same set of TRES that \fBsacct\fR shows in its AllocTRES
+field. Runtime\-monitored TRES populated by the jobacct_gather/acct_gather_*
+plugins (e.g. gres/gpuutil, gres/gpumem, fs/disk, fs/lustre, ic/ofed,
+ic/sysfs) are not folded into that record and will appear as 0 even when sacct
+shows non\-zero values; use \fBsacct \-o TRESUsageIn{Ave,Max,Tot}\fR for
+those. Energy is the exception: if \fBAcctGatherEnergyType\fR is configured
+and returns non\-zero values, it does appear in sreport.
 
-TRES node usage is no longer reported in percent format or in Cluster
-Utilization. Please use TRES CPU instead.
-The main issue with using node is in most configurations multiple jobs are able
-to run on the same node. This makes TRES node accounting count the same node
-multiple times in the same period. In exclusive node configurations, CPU
-accounting returns the same usage node accounting would.
+The "Reported" Billing TRES is the sum, over all nodes, of each node's highest
+Billing value among the partitions that define \fBTRESBillingWeights\fR,
+multiplied by the time frame. If no partition defines \fBTRESBillingWeights\fR
+for a node, its Billing equals its CPU count.
+
+Node usage is no longer reported as a percent or in Cluster Utilization; use
+CPU instead. When multiple jobs share a node, node accounting double\-counts
+the same node within a period; in exclusive\-node setups, CPU accounting yields
+the same result.
 .IP
 
 .TP
