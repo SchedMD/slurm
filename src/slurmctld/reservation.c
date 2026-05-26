@@ -8696,34 +8696,30 @@ extern int set_node_maint_mode(void)
 	return result;
 }
 
+static int _find_maint_resv_with_node(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	int nodenum = *(int *)key;
+	time_t t = time(NULL);
+
+	if (!(resv_ptr->flags & RESERVE_FLAG_MAINT))
+		return 0;
+	if (!(t >= resv_ptr->start_time && t <= resv_ptr->end_time))
+		return 0;
+	if (resv_ptr->node_bitmap &&
+	    bit_test(resv_ptr->node_bitmap, nodenum))
+		return 1;
+	return 0;
+}
+
 /* checks if node within node_record_table_ptr is in maint reservation */
 extern bool is_node_in_maint_reservation(int nodenum)
 {
-	bool res = false;
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
-	time_t t;
-
 	if (nodenum < 0 || nodenum >= node_record_count || !resv_list)
 		return false;
 
-	t = time(NULL);
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
-			continue;
-		if (! (t >= resv_ptr->start_time
-		       && t <= resv_ptr->end_time))
-			continue;
-		if (resv_ptr->node_bitmap &&
-		    bit_test(resv_ptr->node_bitmap, nodenum)) {
-			res = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return res;
+	return list_find_first_ro(resv_list, _find_maint_resv_with_node,
+				  &nodenum);
 }
 
 extern void update_assocs_in_resvs(void)
