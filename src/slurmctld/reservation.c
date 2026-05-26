@@ -8722,10 +8722,14 @@ extern bool is_node_in_maint_reservation(int nodenum)
 				  &nodenum);
 }
 
+static int _foreach_set_access(void *x, void *arg)
+{
+	_set_access(x);
+	return 0;
+}
+
 extern void update_assocs_in_resvs(void)
 {
-	slurmctld_resv_t *resv_ptr = NULL;
-	list_itr_t *iter = NULL;
 	slurmctld_lock_t node_write_lock = {
 		.node = WRITE_LOCK,
 		.part = READ_LOCK,
@@ -8737,12 +8741,7 @@ extern void update_assocs_in_resvs(void)
 	}
 
 	lock_slurmctld(node_write_lock);
-
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter)))
-		_set_access(resv_ptr);
-	list_iterator_destroy(iter);
-
+	list_for_each_ro(resv_list, _foreach_set_access, NULL);
 	unlock_slurmctld(node_write_lock);
 }
 
