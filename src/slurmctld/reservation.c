@@ -6495,7 +6495,11 @@ TRY_AVAIL:
 	/*
 	 * In the first pass, we try to satisfy the resource requirements using
 	 * currently active features. If that fails, use available features
-	 * and require a reboot to satisfy the request
+	 * and require a reboot to satisfy the request.
+	 *
+	 * This needs to be an iterator since the loop tracks parenthesis-group
+	 * state across iterations, which list_for_each() cannot expose to the
+	 * callback.
 	 */
 	feat_iter = list_iterator_create(feature_list);
 	while ((feat_ptr = list_next(feat_iter))) {
