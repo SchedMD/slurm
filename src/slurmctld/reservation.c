@@ -191,6 +191,11 @@ typedef struct {
 } foreach_or_maint_bitmaps_t;
 
 typedef struct {
+	resv_desc_msg_t *resv_desc_ptr;
+	resv_select_t *resv_select;
+} foreach_pick_node_filter_t;
+
+typedef struct {
 	bitstr_t *node_bitmap;
 	resv_desc_msg_t *resv_desc_ptr;
 	slurmctld_resv_t *this_resv_ptr;
@@ -7055,16 +7060,41 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 	FREE_NULL_BITMAP(full_node_bitmap);
 }
 
+static int _foreach_pick_node_filter(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	foreach_pick_node_filter_t *args = arg;
+
+	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+		return 0;
+	if (job_ptr->end_time < args->resv_desc_ptr->start_time)
+		return 0;
+
+	if (args->resv_desc_ptr->core_cnt == NO_VAL) {
+		bit_and_not(args->resv_select->node_bitmap, job_ptr->node_bitmap);
+	} else if (!(args->resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
+		/*
+		 * _check_job_compatibility will remove nodes and cores from
+		 * the available bitmaps if those resources are being used by
+		 * jobs. Don't do this if the IGNORE_JOBS flag is set.
+		 */
+		_check_job_compatibility(job_ptr, args->resv_select);
+	}
+	return 0;
+}
+
 static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
 				resv_select_t *resv_select,
 				uint32_t node_cnt)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
 	bitstr_t *orig_bitmap = NULL, *save_bitmap = NULL;
-	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL;
+	bitstr_t *ret_bitmap = NULL;
 	int total_node_cnt;
 	resv_select_t orig_resv_select = { 0 };
+	foreach_pick_node_filter_t filter_args = {
+		.resv_desc_ptr = resv_desc_ptr,
+		.resv_select = resv_select,
+	};
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 		orig_resv_select.node_bitmap =
@@ -7098,26 +7128,7 @@ static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
 	}
 
 	orig_bitmap = bit_copy(resv_select->node_bitmap);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
-			continue;
-		if (job_ptr->end_time < resv_desc_ptr->start_time)
-			continue;
-
-		if (resv_desc_ptr->core_cnt == NO_VAL) {
-			bit_and_not(resv_select->node_bitmap, job_ptr->node_bitmap);
-		} else if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
-			/*
-			 * _check_job_compatibility will remove nodes and cores
-			 * from the available bitmaps if those resources are
-			 * being used by jobs. Don't do this if the IGNORE_JOBS
-			 * flag is set.
-			 */
-			_check_job_compatibility(job_ptr, resv_select);
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each_ro(job_list, _foreach_pick_node_filter, &filter_args);
 
 	total_node_cnt = bit_set_count(resv_select->node_bitmap);
 	if (total_node_cnt >= node_cnt) {
@@ -7134,11 +7145,22 @@ static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
 		FREE_NULL_BITMAP(save_bitmap);
 	}
 
-	/* Next: Try to reserve nodes that will be allocated to a limited
+	/*
+	 * Next: Try to reserve nodes that will be allocated to a limited
 	 * number of running jobs. We could sort the jobs by priority, QOS,
 	 * size or other criterion if desired. Right now we just go down
-	 * the unsorted job list. */
+	 * the unsorted job list.
+	 *
+	 * This needs to be an iterator since _resv_select() invokes
+	 * select_g_job_test() which in the cons_tres plugin iterates
+	 * job_list itself and would deadlock against the outer read lock.
+	 */
 	if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
+		list_itr_t *job_iterator;
+		job_record_t *job_ptr;
+		bitstr_t *tmp_bitmap = NULL;
+		int total_node_cnt;
+
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(job_ptr) &&
