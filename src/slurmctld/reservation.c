@@ -172,6 +172,15 @@ typedef struct {
 } foreach_merge_licenses_t;
 
 typedef struct {
+	list_t *assoc_list;
+	buf_t *buffer;
+	bool check_permissions;
+	uint16_t protocol_version;
+	uint32_t resv_packed;
+	uid_t uid;
+} foreach_pack_resv_t;
+
+typedef struct {
 	bitstr_t *node_bitmap;
 	resv_desc_msg_t *resv_desc_ptr;
 	slurmctld_resv_t *this_resv_ptr;
@@ -4978,18 +4987,32 @@ extern slurmctld_resv_t *find_resv_name(char *resv_name)
 	return resv_ptr;
 }
 
+static int _foreach_pack_resv(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	foreach_pack_resv_t *args = arg;
+
+	if (args->check_permissions &&
+	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid))
+		return 0;
+
+	_pack_resv(resv_ptr, args->buffer, false, args->protocol_version);
+	args->resv_packed++;
+	return 0;
+}
+
 /* Dump the reservation records to a buffer */
 extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 {
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
-	uint32_t resv_packed;
 	int tmp_offset;
 	buf_t *buffer;
 	time_t now = time(NULL);
 	list_t *assoc_list = NULL;
-	bool check_permissions = false;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	foreach_pack_resv_t pack_args = {
+		.protocol_version = protocol_version,
+		.uid = uid,
+	};
 
 	DEF_TIMERS;
 
@@ -4997,10 +5020,10 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	_create_resv_lists(false);
 
 	buffer = init_buf(BUF_SIZE);
+	pack_args.buffer = buffer;
 
 	/* write header: version and time */
-	resv_packed = 0;
-	pack32(resv_packed, buffer);
+	pack32(pack_args.resv_packed, buffer);
 	pack_time(now, buffer);
 
 	/* Create this list once since it will not change during this call. */
@@ -5008,12 +5031,13 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	    && !validate_operator(uid)) {
 		slurmdb_assoc_rec_t assoc;
 
-		check_permissions = true;
+		pack_args.check_permissions = true;
 
 		memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 		assoc.uid = uid;
 
 		assoc_list = list_create(NULL);
+		pack_args.assoc_list = assoc_list;
 
 		assoc_mgr_lock(&locks);
 		if (assoc_mgr_get_user_assocs(acct_db_conn, &assoc,
@@ -5023,19 +5047,10 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	}
 
 	/* write individual reservation records */
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		if (check_permissions &&
-		    !_validate_user_access(resv_ptr, assoc_list, uid))
-			continue;
-
-		_pack_resv(resv_ptr, buffer, false, protocol_version);
-		resv_packed++;
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(resv_list, _foreach_pack_resv, &pack_args);
 
 no_assocs:
-	if (check_permissions) {
+	if (pack_args.check_permissions) {
 		FREE_NULL_LIST(assoc_list);
 		assoc_mgr_unlock(&locks);
 	}
@@ -5043,7 +5058,7 @@ no_assocs:
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack32(resv_packed, buffer);
+	pack32(pack_args.resv_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
 	END_TIMER2(__func__);
