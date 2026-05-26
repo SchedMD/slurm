@@ -1178,10 +1178,7 @@ static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
-		return;
-
-	(void) probe_run(true, NULL, NULL, __func__);
+	log_flag(SCRIPT, "Caught SIGPROF. Ignoring.");
 }
 
 static void _init_slurmscriptd_conmgr(void)
