@@ -1193,6 +1193,12 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		uint64_t orig_req_mem = job_ptr->details->pn_min_memory;
 		bool feat_change = false;
 
+		/*
+		 * This needs to be an iterator since the inner loop below
+		 * advances feat_iter to consume all features within a
+		 * parenthesis group, which list_for_each() cannot expose to
+		 * the callback.
+		 */
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list_use);
 		while ((feat_ptr = list_next(feat_iter))) {
@@ -4523,6 +4529,11 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		return result_node_bitmap;
 	}
 
+	/*
+	 * This needs to be an iterator since the inner loop below advances
+	 * feat_iter to consume all features within a parenthesis group, which
+	 * list_for_each() cannot expose to the callback.
+	 */
 	feat_iter = list_iterator_create(details_ptr->feature_list_use);
 	while ((job_feat_ptr = list_next(feat_iter))) {
 		if (job_feat_ptr->paren > last_paren) {

@@ -2808,6 +2808,13 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	removed_jobs = list_create(NULL);
 
 	START_TIMER;
+	/*
+	 * This needs to be an iterator since the outer "more_jobs" loop
+	 * drives the inner list_next() calls in multiple passes, looking
+	 * ahead to find groups of jobs ending at similar times. The
+	 * iterator state must persist across outer iterations, which
+	 * list_for_each() cannot provide.
+	 */
 	job_iterator = list_iterator_create(cr_job_list);
 	while (more_jobs) {
 		job_record_t *last_job_ptr = NULL;
@@ -3224,6 +3231,13 @@ top:	orig_node_map = bit_copy(save_node_map);
 			return SLURM_ERROR;
 		}
 
+		/*
+		 * This needs to be an iterator since the loop body uses
+		 * list_remove(job_iterator), list_iterator_reset(job_iterator),
+		 * and nested list_next() on the same iterator to reorder
+		 * preemption candidates. None of those are accessible from
+		 * list_for_each().
+		 */
 		job_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
 			mode = slurm_job_preempt_mode(tmp_job_ptr);

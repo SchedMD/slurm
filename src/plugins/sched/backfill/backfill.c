@@ -509,6 +509,12 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
+		/*
+		 * This needs to be an iterator since the inner loop below
+		 * advances feat_iter to consume all features within a
+		 * parenthesis group, which list_for_each() cannot expose to
+		 * the callback.
+		 */
 		feat_iter = list_iterator_create(feature_cache);
 		while ((feat_ptr = list_next(feat_iter)) &&
 		       (rc == SLURM_SUCCESS)) {
@@ -614,6 +620,12 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
+		/*
+		 * This needs to be an iterator since the inner loop below
+		 * advances feat_iter to consume all features within a
+		 * parenthesis group, which list_for_each() cannot expose to
+		 * the callback.
+		 */
 		feat_iter = list_iterator_create(feature_cache);
 		while ((feat_ptr = list_next(feat_iter))) {
 			detail_ptr->feature_list_use =
