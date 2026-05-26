@@ -1112,7 +1112,7 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
 
     if is_slurmctld_running(quiet=quiet):
         logging.warning("Slurmctld was already started")
-        stop_slurmctld(clean, quiet, also_slurmds)
+        stop_slurmctld(quiet, also_slurmds)
 
     # Start slurmctld
     command = f"{properties['slurm-sbin-dir']}/slurmctld"
