@@ -162,6 +162,12 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *node_bitmap;
+	char *resv_name;
+	time_t start_time;
+} foreach_job_overlap_args_t;
+
+typedef struct {
+	bitstr_t *node_bitmap;
 	resv_desc_msg_t *resv_desc_ptr;
 	slurmctld_resv_t *this_resv_ptr;
 } foreach_resv_overlap_args_t;
@@ -2941,6 +2947,23 @@ unpack_error:
 	return NULL;
 }
 
+static int _find_job_overlap(void *x, void *key)
+{
+	job_record_t *job_ptr = x;
+	foreach_job_overlap_args_t *args = key;
+
+	if (!IS_JOB_RUNNING(job_ptr))
+		return 0;
+	if (job_ptr->end_time <= args->start_time)
+		return 0;
+	if (!bit_overlap_any(job_ptr->node_bitmap, args->node_bitmap))
+		return 0;
+	if (args->resv_name &&
+	    !xstrcmp(args->resv_name, job_ptr->resv_name))
+		return 0;
+	return 1;
+}
+
 /*
  * Test if a new/updated reservation request will overlap running jobs
  * Ignore jobs already running in that specific reservation
@@ -2950,30 +2973,19 @@ unpack_error:
 static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name)
 {
-	list_itr_t *job_iterator;
-	job_record_t *job_ptr;
-	bool overlap = false;
+	foreach_job_overlap_args_t args = {
+		.node_bitmap = node_bitmap,
+		.resv_name = resv_name,
+		.start_time = start_time,
+	};
 
 	if (!node_bitmap ||			/* No nodes to test for */
 	    (flags & RESERVE_FLAG_IGN_JOBS))	/* ignore job overlap */
-		return overlap;
+		return false;
 	if (flags & RESERVE_FLAG_TIME_FLOAT)
-		start_time += time(NULL);
+		args.start_time += time(NULL);
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (IS_JOB_RUNNING(job_ptr)		&&
-		    (job_ptr->end_time > start_time)	&&
-		    bit_overlap_any(job_ptr->node_bitmap, node_bitmap) &&
-		    ((resv_name == NULL) ||
-		     (xstrcmp(resv_name, job_ptr->resv_name) != 0))) {
-			overlap = true;
-			break;
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	return overlap;
+	return list_find_first_ro(job_list, _find_job_overlap, &args);
 }
 
 static int _find_resv_overlap(void *x, void *key)
