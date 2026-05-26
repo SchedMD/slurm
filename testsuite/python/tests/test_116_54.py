@@ -35,6 +35,21 @@ def mpich_program():
     return bin_path
 
 
+@pytest.fixture(autouse=True)
+def shm_cleanup():
+    """
+    MPICH's only unlinks it's shared memory on a clean MPI_Finalize().
+    If MPI_Abort() is used, or SIGKILL/SIGTERM, segfault, OOM kill...
+    then the shared memory is leaked and may interfere with future
+    MPI_Init() calls.
+
+    So we need to remove them in general, but specially in this case.
+    """
+
+    yield
+    atf.run_command("rm -f /dev/shm/psm* /dev/shm/mpich*", user="root", fatal=False)
+
+
 @pytest.mark.xfail(
     atf.get_version("sbin/slurmd") < (26, 5),
     reason="Ticket 24022: PMI2 graceful termination via SIG_TERM_KILL added in 26.05",
