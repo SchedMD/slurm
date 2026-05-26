@@ -186,6 +186,11 @@ typedef struct {
 } foreach_pack_resv_t;
 
 typedef struct {
+	bitstr_t *maint_node_bitmap;
+	slurmctld_resv_t *skip_resv_ptr;
+} foreach_or_maint_bitmaps_t;
+
+typedef struct {
 	bitstr_t *node_bitmap;
 	resv_desc_msg_t *resv_desc_ptr;
 	slurmctld_resv_t *this_resv_ptr;
@@ -8807,6 +8812,20 @@ extern bool job_uses_max_start_delay_resv(job_record_t *job_ptr)
 	return false;
 }
 
+static int _foreach_or_maint_bitmaps(void *x, void *arg)
+{
+	slurmctld_resv_t *resv2_ptr = x;
+	foreach_or_maint_bitmaps_t *args = arg;
+
+	if ((resv2_ptr != args->skip_resv_ptr) &&
+	    (resv2_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) &&
+	    (resv2_ptr->flags & RESERVE_FLAG_MAINT) &&
+	    resv2_ptr->node_bitmap)
+		bit_or(args->maint_node_bitmap, resv2_ptr->node_bitmap);
+
+	return 0;
+}
+
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			     uint32_t flags, bool reset_all,
 			     bitstr_t *node_down_bitmap)
@@ -8814,7 +8833,6 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 	node_record_t *node_ptr;
 	uint32_t old_state;
 	bitstr_t *maint_node_bitmap = NULL;
-	slurmctld_resv_t *resv2_ptr;
 
 	xassert(node_down_bitmap);
 
@@ -8836,18 +8854,13 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 
 	if (!(resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) && !reset_all &&
 	    (resv_ptr->flags & RESERVE_FLAG_MAINT)) {
-		maint_node_bitmap = bit_alloc(node_record_count);
-		list_itr_t *iter = list_iterator_create(resv_list);
-		while ((resv2_ptr = list_next(iter))) {
-			if (resv_ptr != resv2_ptr &&
-			    resv2_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET &&
-			    resv2_ptr->flags & RESERVE_FLAG_MAINT &&
-			    resv2_ptr->node_bitmap) {
-				bit_or(maint_node_bitmap,
-				       resv2_ptr->node_bitmap);
-			}
-		}
-		list_iterator_destroy(iter);
+		foreach_or_maint_bitmaps_t bitmaps_args = {
+			.maint_node_bitmap = bit_alloc(node_record_count),
+			.skip_resv_ptr = resv_ptr,
+		};
+		maint_node_bitmap = bitmaps_args.maint_node_bitmap;
+		list_for_each_ro(resv_list, _foreach_or_maint_bitmaps,
+				 &bitmaps_args);
 	}
 
 	for (int i = 0;
