@@ -42,10 +42,27 @@
 #include "src/common/http.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+strong_alias(_data_set_string_own, slurm__data_set_string_own);
+strong_alias(data_dict_for_each_const, slurm_data_dict_for_each_const);
+strong_alias(data_free, slurm_data_free);
+strong_alias(data_get_string, slurm_data_get_string);
+strong_alias(data_key_get, slurm_data_key_get);
+strong_alias(data_key_set, slurm_data_key_set);
+strong_alias(data_list_for_each_const, slurm_data_list_for_each_const);
+strong_alias(data_new, slurm_data_new);
+strong_alias(data_set_bool, slurm_data_set_bool);
+strong_alias(data_set_dict, slurm_data_set_dict);
+strong_alias(data_set_float, slurm_data_set_float);
+strong_alias(data_set_int, slurm_data_set_int);
+strong_alias(data_set_list, slurm_data_set_list);
+strong_alias(data_set_null, slurm_data_set_null);
+strong_alias(data_set_string, slurm_data_set_string);
 
 #define DATA_DEFINE_DICT_PATH_BUFFER_SIZE 1024
 #define DATA_MAGIC 0x1992189F
