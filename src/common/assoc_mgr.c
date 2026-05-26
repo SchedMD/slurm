@@ -4879,13 +4879,13 @@ static int _foreach_resize_assoc_valid_qos(void *x, void *arg)
 static int _foreach_remove_qos_notify(void *x, void *arg)
 {
 	init_setup.remove_qos_notify(x);
-	return 0;
+	return 1;
 }
 
 static int _foreach_update_qos_notify(void *x, void *arg)
 {
 	init_setup.update_qos_notify(x);
-	return 0;
+	return 1;
 }
 
 extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
@@ -5306,12 +5306,12 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 	/* This needs to happen outside of the assoc_mgr_lock */
 	if (remove_list) {
-		list_for_each(remove_list, _foreach_remove_qos_notify, NULL);
+		list_delete_all(remove_list, _foreach_remove_qos_notify, NULL);
 		FREE_NULL_LIST(remove_list);
 	}
 
 	if (update_list) {
-		list_for_each(update_list, _foreach_update_qos_notify, NULL);
+		list_delete_all(update_list, _foreach_update_qos_notify, NULL);
 		FREE_NULL_LIST(update_list);
 	}
 
