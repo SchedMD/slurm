@@ -4916,33 +4916,25 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
-	list_itr_t *iter;
 	slurmctld_resv_t *resv_ptr;
 	int rc = SLURM_SUCCESS;
 	bitstr_t *node_down_bitmap = NULL;
 
 	log_flag(RESERVATION, "%s: Name=%s", __func__, resv_desc_ptr->name);
 
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		if (xstrcmp(resv_ptr->name, resv_desc_ptr->name))
-			continue;
-
-		node_down_bitmap = bit_alloc(node_record_count);
-		if ((rc = _delete_resv_internal(resv_ptr, node_down_bitmap)) !=
-		    ESLURM_RESERVATION_BUSY) {
-			_clear_job_resv(resv_ptr);
-			list_delete_item(iter);
-		}
-		break;
-	}
-	list_iterator_destroy(iter);
-
+	resv_ptr = list_find_first_ro(resv_list, _find_resv_name,
+				      resv_desc_ptr->name);
 	if (!resv_ptr) {
-		xassert(!node_down_bitmap);
 		info("Reservation %s not found for deletion",
 		     resv_desc_ptr->name);
 		return ESLURM_RESERVATION_INVALID;
+	}
+
+	node_down_bitmap = bit_alloc(node_record_count);
+	if ((rc = _delete_resv_internal(resv_ptr, node_down_bitmap)) !=
+	    ESLURM_RESERVATION_BUSY) {
+		_clear_job_resv(resv_ptr);
+		list_delete_ptr(resv_list, resv_ptr);
 	}
 
 	last_resv_update = time(NULL);
