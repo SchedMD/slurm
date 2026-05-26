@@ -3954,9 +3954,9 @@ extern int assoc_mgr_update(list_t *update_list, bool locked)
 	int rc = SLURM_SUCCESS;
 
 	xassert(update_list);
-	(void) list_for_each(update_list,
-			     assoc_mgr_update_object,
-			     &locked);
+	(void) list_for_each_ro(update_list,
+				assoc_mgr_update_object,
+				&locked);
 	return rc;
 }
 
