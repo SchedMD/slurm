@@ -651,11 +651,6 @@ int main(int argc, char **argv)
 	char *conf_file;
 	stepmgr_ops_t stepmgr_ops = { 0 };
 
-	probe_init();
-	probe_register("rpc-listeners", _probe_listeners, NULL);
-	probe_register("primary", _probe_primary, NULL);
-	probe_register("reconfiguring", _probe_reconfig, NULL);
-
 	stepmgr_ops.agent_queue_request = agent_queue_request;
 	stepmgr_ops.find_job = find_job;
 	stepmgr_ops.find_job_array_rec = find_job_array_rec;
@@ -714,6 +709,12 @@ int main(int argc, char **argv)
 		become_slurm_user();
 		slurmscriptd_run_slurmscriptd(argc, argv, binary);
 	}
+
+	/* Init probes AFTER slurmscriptd */
+	probe_init();
+	probe_register("rpc-listeners", _probe_listeners, NULL);
+	probe_register("primary", _probe_primary, NULL);
+	probe_register("reconfiguring", _probe_reconfig, NULL);
 
 	if (original && under_systemd &&
 	    (slurm_conf.slurm_user_id != getuid())) {
