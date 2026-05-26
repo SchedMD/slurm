@@ -7449,6 +7449,11 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 	time_t now = time(NULL);
 	int32_t resv_begin_time;
 
+	/*
+	 * This needs to be an iterator since _advance_resv_time() may
+	 * eventually call _generate_resv_id() which will deadlock the
+	 * resv_list lock.
+	 */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
