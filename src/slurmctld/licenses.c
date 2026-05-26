@@ -1344,8 +1344,8 @@ extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (!job_ptr->license_list || !license_list)
 		return SLURM_SUCCESS;
 
-	list_for_each(job_ptr->license_list, _foreach_hres_filter,
-		      &filter_args);
+	list_for_each_ro(job_ptr->license_list, _foreach_hres_filter,
+			 &filter_args);
 	return SLURM_SUCCESS;
 }
 
@@ -1421,8 +1421,8 @@ extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	slurm_mutex_lock(&license_mutex);
-	list_for_each(job_ptr->license_list, _foreach_bf_hres_filter,
-		      &filter_args);
+	list_for_each_ro(job_ptr->license_list, _foreach_bf_hres_filter,
+			 &filter_args);
 	slurm_mutex_unlock(&license_mutex);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
@@ -2307,8 +2307,8 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 	if (!job_ptr->licenses_to_preempt && use_licenses_to_preempt)
 		job_ptr->licenses_to_preempt = list_create(NULL);
 
-	list_for_each(job_ptr->license_list, _foreach_license_job_test,
-		      &test_args);
+	list_for_each_ro(job_ptr->license_list, _foreach_license_job_test,
+			 &test_args);
 	if (use_licenses_to_preempt)
 		_licenses_print("licenses_to_preempt",
 				job_ptr->licenses_to_preempt, job_ptr);
@@ -2732,8 +2732,8 @@ extern int license_job_return_to_list(job_record_t *job_ptr,
 
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
-	rc = list_for_each(job_ptr->license_list, _foreach_license_job_return,
-			   &args);
+	rc = list_for_each_ro(job_ptr->license_list,
+			      _foreach_license_job_return, &args);
 
 	return rc;
 }
@@ -3427,7 +3427,8 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 	if (!job_ptr->license_list)
 		return true;
 
-	list_for_each(job_ptr->license_list, _foreach_bf_licenses_avail, &args);
+	list_for_each_ro(job_ptr->license_list, _foreach_bf_licenses_avail,
+			 &args);
 
 	FREE_NULL_BITMAP(args.tmp_bitmap);
 
