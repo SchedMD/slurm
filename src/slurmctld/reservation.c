@@ -160,6 +160,12 @@ typedef struct {
 	bool found_allowed;
 } foreach_check_assoc_access_t;
 
+typedef struct {
+	bitstr_t *node_bitmap;
+	resv_desc_msg_t *resv_desc_ptr;
+	slurmctld_resv_t *this_resv_ptr;
+} foreach_resv_overlap_args_t;
+
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -2967,6 +2973,25 @@ static bool _job_overlap(time_t start_time, uint64_t flags,
 	return overlap;
 }
 
+static int _find_resv_overlap(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	foreach_resv_overlap_args_t *args = key;
+
+	if (resv_ptr == args->this_resv_ptr)
+		return 0;	/* skip self */
+	if (!resv_ptr->node_bitmap)
+		return 0;	/* no specific nodes in reservation */
+	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
+		return 0;
+	if (!bit_overlap_any(resv_ptr->node_bitmap, args->node_bitmap))
+		return 0;	/* no overlap */
+	if (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE))
+		return 0;
+	return _resv_time_overlap(args->resv_desc_ptr, resv_ptr) ? 1 : 0;
+}
+
 /*
  * Test if a new/updated reservation request overlaps an existing
  *	reservation
@@ -2976,37 +3001,18 @@ static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
 			  bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr)
 {
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
-	bool rc = false;
+	foreach_resv_overlap_args_t args = {
+		.node_bitmap = node_bitmap,
+		.resv_desc_ptr = resv_desc_ptr,
+		.this_resv_ptr = this_resv_ptr,
+	};
 
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT)   ||
 	    (resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) ||
 	    (!node_bitmap))
-		return rc;
+		return false;
 
-	iter = list_iterator_create(resv_list);
-
-	while ((resv_ptr = list_next(iter))) {
-		if (resv_ptr == this_resv_ptr)
-			continue;	/* skip self */
-		if (resv_ptr->node_bitmap == NULL)
-			continue;	/* no specific nodes in reservation */
-		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-		    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
-			continue;
-		if (!bit_overlap_any(resv_ptr->node_bitmap, node_bitmap))
-			continue;	/* no overlap */
-		if (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE))
-			continue;
-		if (_resv_time_overlap(resv_desc_ptr, resv_ptr)) {
-			rc = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
+	return list_find_first_ro(resv_list, _find_resv_overlap, &args);
 }
 
 static bool _slots_overlap(const constraint_slot_t *slot0,
