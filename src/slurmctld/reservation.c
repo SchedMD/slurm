@@ -167,6 +167,11 @@ typedef struct {
 } foreach_job_overlap_args_t;
 
 typedef struct {
+	char **merged_licenses;
+	resv_desc_msg_t *resv_desc_ptr;
+} foreach_merge_licenses_t;
+
+typedef struct {
 	bitstr_t *node_bitmap;
 	resv_desc_msg_t *resv_desc_ptr;
 	slurmctld_resv_t *this_resv_ptr;
@@ -3459,6 +3464,23 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		_post_resv_create(resv_ptr);
 }
 
+static int _foreach_merge_licenses(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	foreach_merge_licenses_t *args = arg;
+
+	if (!resv_ptr->licenses ||
+	    (resv_ptr->end_time <= args->resv_desc_ptr->start_time) ||
+	    (resv_ptr->start_time >= args->resv_desc_ptr->end_time))
+		return 0;	/* No overlap */
+	if (args->resv_desc_ptr->name &&
+	    !xstrcmp(args->resv_desc_ptr->name, resv_ptr->name))
+		return 0;	/* Modifying this reservation */
+	xstrcat(*args->merged_licenses, ",");
+	xstrcat(*args->merged_licenses, resv_ptr->licenses);
+	return 0;
+}
+
 /*
  * _license_validate2 - A variant of license_validate which considers the
  * licenses used by overlapping reservations
@@ -3466,9 +3488,11 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 {
 	list_t *license_list = NULL, *merged_list = NULL;
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
 	char *merged_licenses;
+	foreach_merge_licenses_t args = {
+		.merged_licenses = &merged_licenses,
+		.resv_desc_ptr = resv_desc_ptr,
+	};
 
 	if (xstrchr(resv_desc_ptr->licenses, '|')) {
 		/* Reservations do not support OR licenses */
@@ -3482,19 +3506,7 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 		return license_list;
 
 	merged_licenses = xstrdup(resv_desc_ptr->licenses);
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		if ((resv_ptr->licenses   == NULL) ||
-		    (resv_ptr->end_time   <= resv_desc_ptr->start_time) ||
-		    (resv_ptr->start_time >= resv_desc_ptr->end_time))
-			continue;	/* No overlap */
-		if (resv_desc_ptr->name &&
-		    !xstrcmp(resv_desc_ptr->name, resv_ptr->name))
-			continue;	/* Modifying this reservation */
-		xstrcat(merged_licenses, ",");
-		xstrcat(merged_licenses, resv_ptr->licenses);
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(resv_list, _foreach_merge_licenses, &args);
 	merged_list = license_validate(merged_licenses, true, true, true, NULL,
 				       valid, NULL);
 	xfree(merged_licenses);
