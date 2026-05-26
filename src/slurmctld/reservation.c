@@ -7650,6 +7650,11 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
 
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr, reboot);
+	/*
+	 * This needs to be an iterator since _advance_resv_time() may
+	 * eventually call _generate_resv_id() which will deadlock the
+	 * resv_list lock.
+	 */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
