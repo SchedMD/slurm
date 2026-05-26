@@ -161,6 +161,11 @@ typedef struct {
 } foreach_check_assoc_access_t;
 
 typedef struct {
+	time_t end_time;
+	time_t start_time;
+} foreach_find_resv_end_t;
+
+typedef struct {
 	bitstr_t *node_bitmap;
 	char *resv_name;
 	time_t start_time;
@@ -8190,31 +8195,36 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
  * reservations with very close end time.
  * RET the reservation end time or zero of none found
  */
+static int _foreach_find_resv_end(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	foreach_find_resv_end_t *args = arg;
+
+	if (args->start_time > resv_ptr->end_time)
+		return 0;
+	if (!args->end_time || (resv_ptr->end_time < args->end_time))
+		args->end_time = resv_ptr->end_time;
+	return 0;
+}
+
 extern time_t find_resv_end(time_t start_time, int resolution)
 {
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
-	time_t end_time = 0;
+	foreach_find_resv_end_t args = {
+		.start_time = start_time,
+	};
 
 	if (!resv_list)
-		return end_time;
+		return 0;
 
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		if (start_time > resv_ptr->end_time)
-			continue;
-		if ((end_time == 0) || (resv_ptr->end_time < end_time))
-			end_time = resv_ptr->end_time;
-	}
-	list_iterator_destroy(iter);
+	list_for_each_ro(resv_list, _foreach_find_resv_end, &args);
 
 	/* Round-up returned time to given resolution */
 	if (resolution > 0) {
-		end_time = ROUNDUP(end_time, resolution);
-		end_time *= resolution;
+		args.end_time = ROUNDUP(args.end_time, resolution);
+		args.end_time *= resolution;
 	}
 
-	return end_time;
+	return args.end_time;
 }
 
 /* Test a particular job for valid reservation
