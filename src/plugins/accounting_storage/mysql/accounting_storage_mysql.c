@@ -1541,6 +1541,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "time_eligible), "
 				  "key env_hash_inx (env_hash_inx), "
 				  "key script_hash_inx (script_hash_inx), "
+				  "key sluid (sluid), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
