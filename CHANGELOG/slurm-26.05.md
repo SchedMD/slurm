@@ -1,3 +1,6 @@
+## Changes in 26.05.0
+
+
 ## Changes in 26.05.0rc1
 
 * Add SLURM_JOB_QOS to Prolog/Epilog environment.
