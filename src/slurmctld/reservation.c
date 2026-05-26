@@ -8546,13 +8546,33 @@ extern void job_resv_check(void)
 	list_iterator_destroy(iter);
 }
 
+static int _foreach_send_resv_to_accounting(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	int db_rc = *(int *)arg;
+
+	if (db_rc == ACCOUNTING_FIRST_REG) {
+		_post_resv_create(resv_ptr);
+	} else if (db_rc == ACCOUNTING_NODES_CHANGE_DB) {
+		/*
+		 * This makes it so we always get the correct node
+		 * indexes in the database.
+		 */
+		slurmctld_resv_t tmp_resv = { 0 };
+		_post_resv_update(resv_ptr, &tmp_resv);
+	} else {
+		error("%s: unknown db_rc %d", __func__, db_rc);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Send all reservations to accounting.  Only needed at first registration
  */
 extern int send_resvs_to_accounting(int db_rc)
 {
-	list_itr_t *itr = NULL;
-	slurmctld_resv_t *resv_ptr;
 	slurmctld_lock_t node_write_lock = {
 		.node = WRITE_LOCK,
 		.part = READ_LOCK,
@@ -8562,25 +8582,7 @@ extern int send_resvs_to_accounting(int db_rc)
 		return SLURM_SUCCESS;
 
 	lock_slurmctld(node_write_lock);
-
-	itr = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(itr))) {
-		if (db_rc == ACCOUNTING_FIRST_REG)
-			_post_resv_create(resv_ptr);
-		else if (db_rc == ACCOUNTING_NODES_CHANGE_DB) {
-			/*
-			 * This makes it so we always get the correct node
-			 * indexes in the database.
-			 */
-			slurmctld_resv_t tmp_resv = {0};
-			_post_resv_update(resv_ptr, &tmp_resv);
-		} else {
-			error("%s: unknown db_rc %d", __func__, db_rc);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-
+	list_for_each_ro(resv_list, _foreach_send_resv_to_accounting, &db_rc);
 	unlock_slurmctld(node_write_lock);
 
 	return SLURM_SUCCESS;
