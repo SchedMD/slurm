@@ -5065,11 +5065,15 @@ no_assocs:
 	return buffer;
 }
 
+static int _foreach_pack_resv_state(void *x, void *arg)
+{
+	_pack_resv(x, arg, true, SLURM_PROTOCOL_VERSION);
+	return 0;
+}
+
 /* Save the state of all reservations to file */
 extern int dump_all_resv_state(void)
 {
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
 	int error_code = 0;
 	/* Locks: Read node */
 	slurmctld_lock_t resv_read_lock = {
@@ -5090,10 +5094,7 @@ extern int dump_all_resv_state(void)
 
 	/* write reservation records to buffer */
 	lock_slurmctld(resv_read_lock);
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter)))
-		_pack_resv(resv_ptr, buffer, true, SLURM_PROTOCOL_VERSION);
-	list_iterator_destroy(iter);
+	list_for_each_ro(resv_list, _foreach_pack_resv_state, buffer);
 	unlock_slurmctld(resv_read_lock);
 
 	error_code = save_buf_to_state("resv_state", buffer, NULL);
