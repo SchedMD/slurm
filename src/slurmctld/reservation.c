@@ -5402,6 +5402,11 @@ static void _validate_all_reservations(void)
 	log_flag(RESERVATION, "%s: validating %u reservations and %u jobs",
 		 __func__, list_count(resv_list), list_count(job_list));
 
+	/*
+	 * This needs to be an iterator since _resv_node_replace() eventually
+	 * calls _select_nodes() which iterates resv_list and would deadlock
+	 * if we held a list_for_each / list_delete_first write lock here.
+	 */
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (!_validate_one_reservation(resv_ptr)) {
