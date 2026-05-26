@@ -111,6 +111,10 @@ def _wait_held_invalid_license(job_id, timeout=_HOLD_AFTER_REQUEUE_TIMEOUT):
     return False
 
 
+@pytest.mark.xfail(
+    atf.get_version("bin/sbatch") < (25, 5),
+    reason="Issue with LicensesAlloc fixed in 25.05+",
+)
 def test_license_alloc_and_used_after_batch_requeue(cancel_jobs):
     """After requeue, LicensesAlloc must be set and license Used must count the job."""
 
