@@ -41,11 +41,6 @@ _NO_SECOND_RUN_TIMEOUT = 15
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_version(
-        (26, 5),
-        "sbin/slurmctld",
-        reason="Batch requeue license rebuild and hold on invalid request",
-    )
     atf.require_auto_config("Inject Licenses= for batch requeue license test")
     atf.require_nodes(1, [("CPUs", 4)])
     atf.require_config_parameter("SelectType", "select/cons_tres")
@@ -63,12 +58,6 @@ def setup():
         "SchedulerParameters", "sched_interval=1", source="slurm"
     )
     atf.require_slurm_running()
-
-
-@pytest.fixture
-def cancel_jobs():
-    yield
-    atf.cancel_all_jobs()
 
 
 def _license_used(name):
@@ -112,10 +101,11 @@ def _wait_held_invalid_license(job_id, timeout=_HOLD_AFTER_REQUEUE_TIMEOUT):
 
 
 @pytest.mark.xfail(
-    atf.get_version("bin/sbatch") < (25, 5),
-    reason="Issue with LicensesAlloc fixed in 25.05+",
+    atf.get_version("sbin/slurmctld") < (26, 5)
+    or atf.get_version("bin/sbatch") < (25, 5),
+    reason="Ticket 25226: Batch requeue license rebuild and hold on invalid request fixed in 26.05+, and another issue with LicensesAlloc fixed in 25.05+",
 )
-def test_license_alloc_and_used_after_batch_requeue(cancel_jobs):
+def test_license_alloc_and_used_after_batch_requeue():
     """After requeue, LicensesAlloc must be set and license Used must count the job."""
 
     job_id = atf.submit_job_sbatch(
@@ -172,7 +162,11 @@ def test_license_alloc_and_used_after_batch_requeue(cancel_jobs):
     )
 
 
-def test_batch_requeue_hold_when_license_count_invalid(cancel_jobs):
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 5),
+    reason="Ticket 25226: Batch requeue license rebuild and hold on invalid request fixed in 26.05+",
+)
+def test_batch_requeue_hold_when_license_count_invalid():
     """Requeue after configured license count drops below the request holds the job."""
 
     job_id = atf.submit_job_sbatch(
