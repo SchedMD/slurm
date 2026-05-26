@@ -13809,6 +13809,30 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_desc->bitflags & (SPREAD_SEGMENTS | RESET_SPREAD_SEGMENTS)) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if ((job_desc->bitflags & SPREAD_SEGMENTS) &&
+			   (job_desc->bitflags & RESET_SPREAD_SEGMENTS)) {
+			error("%s: SpreadSegments cannot be both set and cleared for %pJ",
+			      __func__, job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+		} else if (job_desc->bitflags & RESET_SPREAD_SEGMENTS) {
+			if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
+				info("%s: clearing SpreadSegments for %pJ",
+				     __func__, job_ptr);
+				job_ptr->bit_flags &= ~SPREAD_SEGMENTS;
+			}
+		} else if (!(job_ptr->bit_flags & SPREAD_SEGMENTS)) {
+			info("%s: setting SpreadSegments for %pJ",
+			     __func__, job_ptr);
+			job_ptr->bit_flags |= SPREAD_SEGMENTS;
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if ((job_desc->num_tasks != NO_VAL) &&
 	    (job_desc->bitflags & TASKS_CHANGED)) {
 		if (!IS_JOB_PENDING(job_ptr))
