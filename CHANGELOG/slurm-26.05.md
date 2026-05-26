@@ -1,5 +1,55 @@
 ## Changes in 26.05.0
 
+* slurmctld - Fix interactive jobs erroneously killed by InactivityLimit when slurmctld is congested.
+* data_parser/v0.0.45 - Remove fields that were deprecated in from v0.0.44
+* slurmd - fix a potential crash during message forwarding
+* slurmctld - Avoid possible crash under heavy load due to pointer comparisons mis-matching.
+* Reject sbatch --external jobs when combined with --wrap
+* Skip external nodes in _slurm_rpc_node_alias_addrs().
+* Fix out-of-bounds array errors by resizing leaf_usage when tres_cnt changes.
+* Add the option to set StorageHost or StorageBackupHost in slurmdbd.conf, or JobCompHost in slurm.conf, to a unix socket. To do so, prefix with "unix:", e.g., StorageHost=unix:/path/to/socket.
+* Logs now better reflect mysql connection issues if connecting over a UNIX socket.
+* Cache uid lookups to speed controller/dbd startup/reconfigure in some cases.
+* All features will be tested before jobs are preempted.
+* Improve clarity of gres/shards in sinfo GRES_USED field.
+* Fix issue with SlurmctldParameters=max_powered_nodes affecting scontrol update nodename=... commands when it should not.
+* slurmctld - return 303 See Other from GET /metrics/* when in backup standby, pointing to the configured primary controller
+* slurmstepd - when a node fails on which the batch step is running, don't deallocate the batch step until after the job completes or is requeued.
+* Reject the job if num_tasks is lower than the partition min_nodes
+* Reject job if num_tasks is lower than min_nodes
+* Reject num_tasks update when num_tasks < min_nodes
+* Set max_nodes from num_tasks when not explicitly set
+* switch/hpe_slingshot - Fix memory leak when the fabric manager responds to a job-lookup GET with HTTP 404.
+* Fix node reboot with slurmd older than 26.05.
+* Prevent the slurmctld's background thread from waiting on the purge files thread while holding the job and node write locks.
+* Prevent slurmctld from crashing after removing all of a pending job's licenses from the configuration.
+* Avoid purging reservations that reserved HRES when restarting or reconfiguring slurmctld.
+* When restoring jobs from state, hold pending jobs whose license or HRES requests are no longer valid.
+* Prevent slurmctld crash when a HetJob component fails to start.
+* Avoid reverse DNS lookup's for connection logging unless DebugFlags=conmgr is configured.
+* Return a properly formatted value for DefMemPerCPU.
+* srun - Reject --async outside of an existing job allocation.
+* Fixed hdf5 'Malformed file' error for sh5util -I extraction.
+* Fixed memory leaks in sh5util.
+* scontrol show federation now brackets IPv6 control host literals so the address and port are no longer ambiguous.
+* Fix torus3d placements overlap detection for torus wrap.
+* Add torus3d node_count overflow guard
+* topology/torus3d - Add adaptive Morton encoding for large torus dimensions.
+* Fix torus3d and other topology parsers reporting DUMPING errors when parsing fails.
+* Requeue --no-requeue jobs when powering-up nodes are drained and requeue_on_resume_failure SchedulerParameter is set.
+* Set PrologFLags=Alloc automatically when PrologFlags=DeferBatch is set. Without Alloc, DeferBatch will have no effect.
+* Improve slurmdbd hourly rollup performance on large clusters.
+* configure - Rename --with-http-parser to --with-libhttp-parser.
+* configure - Add --with-llhttp-parser option.
+* http_parser/libhttp_parser - If rpaths are enabled when configuring slurm, add rpath to libhttp_parser plugin.
+* Add new http_parser/llhttp_parser plugin.
+* Add new url_parser/internal plugin.
+* interfaces/http_parser - If HttpParserType is not specified, no longer default to using the http_parser/libhttp_parser plugin. Instead try to first load http_parser/libhttp_parser then http_parser/llhttp_parser.
+* interfaces/url_parser - If UrlParserType is not specified, no longer default to using the url_parser/libhttp_parser plugin. Instead try to first load url_parser/libhttp_parser then url_parser/internal.
+* slurmrestd - Fix pipelined HTTP/1.1 requests after the first message on a keep-alive connection.
+* http_parser/libhttp_parser - Prevent memory leak if a connection ends early.
+* srun - Add --parsable to emit the bare step id for easier scripting of --async steps.
+* Enable case insensitive comparison to check for srun_exclusive_allocation in LaunchParameters.
 
 ## Changes in 26.05.0rc1
 
