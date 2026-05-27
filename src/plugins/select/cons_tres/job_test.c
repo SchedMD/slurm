@@ -1493,6 +1493,7 @@ try_next_nodes_cnt:
 		min_nodes = next_job_size;
 		max_nodes = next_job_size;
 		req_nodes = next_job_size;
+		_free_avail_res_array(avail_res_array);
 		goto try_next_nodes_cnt;
 	} else if (!avail_res_array) {
 		/* job can not fit */
@@ -1952,6 +1953,7 @@ alloc_job:
 		min_nodes = next_job_size;
 		max_nodes = next_job_size;
 		req_nodes = next_job_size;
+		_free_avail_res_array(avail_res_array);
 		goto try_next_nodes_cnt;
 	}
 
