@@ -4280,7 +4280,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	if (msg->protocol_version < protocol_version)
 		protocol_version = msg->protocol_version;
 
-	/* Following call fills in gtids and local_pids when successful. */
 	rc = stepd_attach(fd, protocol_version, &ioaddr, &resp_msg.address,
 			  req->tls_cert, req->io_key, msg->auth_uid, resp);
 	if (rc != SLURM_SUCCESS) {
