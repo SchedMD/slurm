@@ -107,6 +107,36 @@ struct node_set {		/* set of nodes with same configuration */
 					 * node_weight and flags */
 };
 
+typedef struct {
+	bitstr_t *feature_bitmap;
+	int last_op;
+	int last_paren_cnt;
+	int last_paren_op;
+	bitstr_t *paren_bitmap;
+	bitstr_t *work_bitmap;
+} match_feature_args_t;
+
+typedef struct {
+	int job_cnt;
+	bool kill_pending;
+	job_record_t *preemptor_ptr;
+} preempt_jobs_args_t;
+
+typedef struct {
+	bitstr_t *feature_bitmap;
+	char *features;
+	bool *has_mor;
+	bool have_count;
+	job_record_t *job_ptr;
+	int last_op;
+	int last_paren_cnt;
+	int last_paren_op;
+	bitstr_t *node_bitmap;
+	bitstr_t *paren_bitmap;
+	bool use_active;
+	bitstr_t *work_bitmap;
+} valid_feature_counts_args_t;
+
 #define NODE_SET_NOFLAG SLURM_BIT(0)
 #define NODE_SET_REBOOT SLURM_BIT(1)
 #define NODE_SET_OUTSIDE_FLEX SLURM_BIT(2)
@@ -496,6 +526,45 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
 	xfree(tmp4);
 }
 
+static int _foreach_find_feature_nodes(void *x, void *arg)
+{
+	job_feature_t *job_feat_ptr = x;
+	bool can_reboot = *(bool *) arg;
+	node_feature_t *node_feat_ptr;
+
+	FREE_NULL_BITMAP(job_feat_ptr->node_bitmap_active);
+	FREE_NULL_BITMAP(job_feat_ptr->node_bitmap_avail);
+	node_feat_ptr = list_find_first_ro(active_feature_list,
+					   list_find_feature,
+					   job_feat_ptr->name);
+	if (node_feat_ptr && node_feat_ptr->node_bitmap) {
+		job_feat_ptr->node_bitmap_active =
+			bit_copy(node_feat_ptr->node_bitmap);
+	} else {	/* This feature not active */
+		job_feat_ptr->node_bitmap_active =
+			bit_alloc(node_record_count);
+	}
+	if (can_reboot && job_feat_ptr->changeable) {
+		node_feat_ptr = list_find_first_ro(avail_feature_list,
+						   list_find_feature,
+						   job_feat_ptr->name);
+		if (node_feat_ptr && node_feat_ptr->node_bitmap) {
+			job_feat_ptr->node_bitmap_avail =
+				bit_copy(node_feat_ptr->node_bitmap);
+		} else {   /* This feature not available */
+			job_feat_ptr->node_bitmap_avail =
+				bit_alloc(node_record_count);
+		}
+	} else if (job_feat_ptr->node_bitmap_active) {
+		job_feat_ptr->node_bitmap_avail =
+			bit_copy(job_feat_ptr->node_bitmap_active);
+	}
+
+	_log_feature_nodes(job_feat_ptr);
+
+	return 0;
+}
+
 /*
  * For every element in the feature_list, identify the nodes with that feature
  * either active or available and set the feature_list's node_bitmap_active and
@@ -503,45 +572,57 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
  */
 extern void find_feature_nodes(list_t *feature_list, bool can_reboot)
 {
-	list_itr_t *feat_iter;
-	job_feature_t  *job_feat_ptr;
-	node_feature_t *node_feat_ptr;
-
 	if (!feature_list)
 		return;
-	feat_iter = list_iterator_create(feature_list);
-	while ((job_feat_ptr = list_next(feat_iter))) {
-		FREE_NULL_BITMAP(job_feat_ptr->node_bitmap_active);
-		FREE_NULL_BITMAP(job_feat_ptr->node_bitmap_avail);
-		node_feat_ptr = list_find_first(active_feature_list,
-						list_find_feature,
-						job_feat_ptr->name);
-		if (node_feat_ptr && node_feat_ptr->node_bitmap) {
-			job_feat_ptr->node_bitmap_active =
-				bit_copy(node_feat_ptr->node_bitmap);
-		} else {	/* This feature not active */
-			job_feat_ptr->node_bitmap_active =
-				bit_alloc(node_record_count);
-		}
-		if (can_reboot && job_feat_ptr->changeable) {
-			node_feat_ptr = list_find_first(avail_feature_list,
-							list_find_feature,
-							job_feat_ptr->name);
-			if (node_feat_ptr && node_feat_ptr->node_bitmap) {
-				job_feat_ptr->node_bitmap_avail =
-					bit_copy(node_feat_ptr->node_bitmap);
-			} else {   /* This feature not available */
-				job_feat_ptr->node_bitmap_avail =
-					bit_alloc(node_record_count);
-			}
-		} else if (job_feat_ptr->node_bitmap_active) {
-			job_feat_ptr->node_bitmap_avail =
-				bit_copy(job_feat_ptr->node_bitmap_active);
-		}
+	list_for_each_ro(feature_list, _foreach_find_feature_nodes, &can_reboot);
+}
 
-		_log_feature_nodes(job_feat_ptr);
+static int _foreach_match_feature(void *x, void *arg)
+{
+	job_feature_t *job_feat_ptr = x;
+	match_feature_args_t *args = arg;
+
+	if (args->last_paren_cnt < job_feat_ptr->paren) {
+		/* Start of expression in parenthesis */
+		args->last_paren_op = args->last_op;
+		args->last_op = FEATURE_OP_AND;
+		FREE_NULL_BITMAP(args->paren_bitmap);
+		args->paren_bitmap = node_conf_get_active_bitmap();
+		args->work_bitmap = args->paren_bitmap;
 	}
-	list_iterator_destroy(feat_iter);
+
+	if (job_feat_ptr->node_bitmap_avail) {
+		if (args->last_op == FEATURE_OP_AND) {
+			bit_and(args->work_bitmap,
+				job_feat_ptr->node_bitmap_active);
+		} else if (args->last_op == FEATURE_OP_OR) {
+			bit_or(args->work_bitmap,
+			       job_feat_ptr->node_bitmap_active);
+		} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
+			bit_and(args->work_bitmap,
+				job_feat_ptr->node_bitmap_active);
+		}
+	} else {	/* feature not found */
+		if (args->last_op == FEATURE_OP_AND)
+			bit_clear_all(args->work_bitmap);
+	}
+
+	if (args->last_paren_cnt > job_feat_ptr->paren) {
+		/* End of expression in parenthesis */
+		if (args->last_paren_op == FEATURE_OP_AND) {
+			bit_and(args->feature_bitmap, args->work_bitmap);
+		} else if (args->last_paren_op == FEATURE_OP_OR) {
+			bit_or(args->feature_bitmap, args->work_bitmap);
+		} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
+			bit_and(args->feature_bitmap, args->work_bitmap);
+		}
+		args->work_bitmap = args->feature_bitmap;
+	}
+
+	args->last_op = job_feat_ptr->op_code;
+	args->last_paren_cnt = job_feat_ptr->paren;
+
+	return 0;
 }
 
 /*
@@ -553,11 +634,10 @@ extern void find_feature_nodes(list_t *feature_list, bool can_reboot)
  */
 static int _match_feature(list_t *feature_list, bitstr_t **inactive_bitmap)
 {
-	list_itr_t *job_feat_iter;
-	job_feature_t *job_feat_ptr;
-	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
-	int i, last_paren_cnt = 0;
-	bitstr_t *feature_bitmap, *paren_bitmap = NULL, *work_bitmap;
+	match_feature_args_t args = {
+		.last_op = FEATURE_OP_AND,
+		.last_paren_op = FEATURE_OP_AND,
+	};
 
 	xassert(inactive_bitmap);
 
@@ -565,67 +645,24 @@ static int _match_feature(list_t *feature_list, bitstr_t **inactive_bitmap)
 	    (node_features_g_count() == 0))	/* No inactive features */
 		return 0;
 
-	feature_bitmap = node_conf_get_active_bitmap();
-	work_bitmap = feature_bitmap;
-	job_feat_iter = list_iterator_create(feature_list);
-	while ((job_feat_ptr = list_next(job_feat_iter))) {
-		if (last_paren_cnt < job_feat_ptr->paren) {
-			/* Start of expression in parenthesis */
-			last_paren_op = last_op;
-			last_op = FEATURE_OP_AND;
-			FREE_NULL_BITMAP(paren_bitmap);
-			paren_bitmap = node_conf_get_active_bitmap();
-			work_bitmap = paren_bitmap;
-		}
-
-		if (job_feat_ptr->node_bitmap_avail) {
-			if (last_op == FEATURE_OP_AND) {
-				bit_and(work_bitmap,
-					job_feat_ptr->node_bitmap_active);
-			} else if (last_op == FEATURE_OP_OR) {
-				bit_or(work_bitmap,
-				       job_feat_ptr->node_bitmap_active);
-			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
-				bit_and(work_bitmap,
-				        job_feat_ptr->node_bitmap_active);
-			}
-		} else {	/* feature not found */
-			if (last_op == FEATURE_OP_AND) {
-				bit_clear_all(work_bitmap);
-			}
-		}
-
-		if (last_paren_cnt > job_feat_ptr->paren) {
-			/* End of expression in parenthesis */
-			if (last_paren_op == FEATURE_OP_AND) {
-				bit_and(feature_bitmap, work_bitmap);
-			} else if (last_paren_op == FEATURE_OP_OR) {
-				bit_or(feature_bitmap, work_bitmap);
-			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
-				bit_and(feature_bitmap, work_bitmap);
-			}
-			work_bitmap = feature_bitmap;
-		}
-
-		last_op = job_feat_ptr->op_code;
-		last_paren_cnt = job_feat_ptr->paren;
-	}
-	list_iterator_destroy(job_feat_iter);
+	args.feature_bitmap = node_conf_get_active_bitmap();
+	args.work_bitmap = args.feature_bitmap;
+	list_for_each_ro(feature_list, _foreach_match_feature, &args);
 #if 0
 {
 	char tmp[32];
-	bit_fmt(tmp, sizeof(tmp), work_bitmap);
+	bit_fmt(tmp, sizeof(tmp), args.work_bitmap);
 	info("%s: NODE_BITMAP:%s", __func__, tmp);
 }
 #endif
-	FREE_NULL_BITMAP(paren_bitmap);
-	i = bit_ffc(feature_bitmap);
-	if (i == -1) {	/* No required node features inactive */
-		FREE_NULL_BITMAP(feature_bitmap);
+	FREE_NULL_BITMAP(args.paren_bitmap);
+	if (bit_ffc(args.feature_bitmap) == -1) {
+		/* No required node features inactive */
+		FREE_NULL_BITMAP(args.feature_bitmap);
 		return 0;
 	}
-	bit_not(feature_bitmap);
-	*inactive_bitmap = feature_bitmap;
+	bit_not(args.feature_bitmap);
+	*inactive_bitmap = args.feature_bitmap;
 	return 1;
 }
 
@@ -1156,6 +1193,12 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		uint64_t orig_req_mem = job_ptr->details->pn_min_memory;
 		bool feat_change = false;
 
+		/*
+		 * This needs to be an iterator since the inner loop below
+		 * advances feat_iter to consume all features within a
+		 * parenthesis group, which list_for_each() cannot expose to
+		 * the callback.
+		 */
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list_use);
 		while ((feat_ptr = list_next(feat_iter))) {
@@ -1505,6 +1548,13 @@ static void _bit_or_cond(job_record_t *job_ptr, bitstr_t *bitmap)
 	else
 		list_for_each_nobreak(job_ptr->het_job_list,
 				      _bit_or_cond_internal, bitmap);
+}
+
+static int _foreach_bit_or_cond(void *x, void *arg)
+{
+	_bit_or_cond(x, arg);
+
+	return 0;
 }
 
 /*
@@ -1870,12 +1920,9 @@ try_sched:
 			if ((i+1) < node_set_size || !preemptee_candidates)
 				preemptee_cand = NULL;
 			else if (preempt_flag) {
-				job_record_t *tmp_job_ptr = NULL;
-				list_itr_t *job_iterator;
-				job_iterator = list_iterator_create(preemptee_candidates);
-				while ((tmp_job_ptr = list_next(job_iterator)))
-					_bit_or_cond(tmp_job_ptr, avail_bitmap);
-				list_iterator_destroy(job_iterator);
+				list_for_each_ro(preemptee_candidates,
+						 _foreach_bit_or_cond,
+						 avail_bitmap);
 				bit_and(avail_bitmap, avail_node_bitmap);
 				bit_and(avail_bitmap, total_bitmap);
 				preemptee_cand = preemptee_candidates;
@@ -2133,14 +2180,43 @@ try_sched:
 	return error_code;
 }
 
+static int _foreach_preempt_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	preempt_jobs_args_t *args = arg;
+	uint16_t mode = slurm_job_preempt_mode(job_ptr);
+
+	if (mode == PREEMPT_MODE_OFF) {
+		error("%s: Invalid preempt_mode %u for %pJ",
+		      __func__, mode, job_ptr);
+		return 0;
+	}
+
+	if ((mode == PREEMPT_MODE_SUSPEND) &&
+	    (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) {
+		debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
+		      job_ptr, args->preemptor_ptr);
+		job_ptr->preempt_time = time(NULL);
+		return 0;
+	}
+
+	args->job_cnt++;
+	if (!args->kill_pending)
+		return 0;
+
+	slurm_job_preempt(job_ptr, args->preemptor_ptr, mode, true);
+
+	return 0;
+}
+
 static void _preempt_jobs(list_t *preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
-	list_itr_t *iter;
-	job_record_t *job_ptr;
-	uint16_t mode;
-	int job_cnt = 0;
 	static time_t sched_update = 0;
+	preempt_jobs_args_t args = {
+		.kill_pending = kill_pending,
+		.preemptor_ptr = preemptor_ptr,
+	};
 
 	if (sched_update != slurm_conf.last_update) {
 		preempt_send_user_signal = false;
@@ -2153,35 +2229,9 @@ static void _preempt_jobs(list_t *preemptee_job_list, bool kill_pending,
 		sched_update = slurm_conf.last_update;
 	}
 
-	iter = list_iterator_create(preemptee_job_list);
-	while ((job_ptr = list_next(iter))) {
-		mode = slurm_job_preempt_mode(job_ptr);
+	list_for_each_ro(preemptee_job_list, _foreach_preempt_job, &args);
 
-		if (mode == PREEMPT_MODE_OFF) {
-			error("%s: Invalid preempt_mode %u for %pJ",
-			      __func__, mode, job_ptr);
-			continue;
-		}
-
-		if ((mode == PREEMPT_MODE_SUSPEND) &&
-		    (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)) {
-			debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
-			      job_ptr, preemptor_ptr);
-			job_ptr->preempt_time = time(NULL);
-			continue;
-		}
-
-		job_cnt++;
-		if (!kill_pending)
-			continue;
-
-		if (slurm_job_preempt(job_ptr, preemptor_ptr, mode, true) !=
-		    SLURM_SUCCESS)
-			continue;
-	}
-	list_iterator_destroy(iter);
-
-	if (job_cnt > 0)
+	if (args.job_cnt > 0)
 		*error_code = ESLURM_NODES_BUSY;
 }
 
@@ -3402,20 +3452,119 @@ extern void launch_prolog(job_record_t *job_ptr)
  * OUT has_mor - set if MOR/XAND found in feature expression
  * RET SLURM_SUCCESS or error
  */
+static int _foreach_valid_feature_count(void *x, void *arg)
+{
+	job_feature_t *job_feat_ptr = x;
+	valid_feature_counts_args_t *args = arg;
+	bitstr_t *tmp_bitmap;
+
+	if (args->last_paren_cnt < job_feat_ptr->paren) {
+		/* Start of expression in parenthesis */
+		/*
+		 * If this pair of parentheses is inside of brackets, then this
+		 * is XAND or MOR. Set last_paren_op to avoid incorrectly doing
+		 * bit_and() or bit_or() at the end of parentheses. This only
+		 * matters if the parentheses are the first thing inside of
+		 * brackets, in which case last_op is AND or OR depending on
+		 * what (if anything) came before the brackets. If the
+		 * parentheses are not the first thing inside of brackets then
+		 * last_op is XAND or MOR.
+		 */
+		if (job_feat_ptr->bracket &&
+		    (args->last_op != FEATURE_OP_XAND) &&
+		    (args->last_op != FEATURE_OP_MOR))
+			args->last_paren_op = FEATURE_OP_XAND;
+		else
+			args->last_paren_op = args->last_op;
+		args->last_op = FEATURE_OP_AND;
+		if (args->paren_bitmap) {
+			if (args->job_ptr->job_id) {
+				error("%s: %pJ has bad feature expression: %s",
+				      __func__, args->job_ptr, args->features);
+			} else {
+				error("%s: Reservation has bad feature expression: %s",
+				      __func__, args->features);
+			}
+			FREE_NULL_BITMAP(args->paren_bitmap);
+		}
+		args->paren_bitmap = bit_copy(args->node_bitmap);
+		args->work_bitmap = args->paren_bitmap;
+	}
+
+	if (args->use_active)
+		tmp_bitmap = job_feat_ptr->node_bitmap_active;
+	else
+		tmp_bitmap = job_feat_ptr->node_bitmap_avail;
+	if (tmp_bitmap) {
+		/*
+		 * Here we need to use the current feature for MOR/AND not the
+		 * last_op. For instance fastio&[xeon|nehalem] should ignore
+		 * xeon (in valid_feature_count), but if would be based on
+		 * last_op it will see AND operation. This should only be used
+		 * when dealing with middle options, not for the end as done in
+		 * the last_paren check below.
+		 */
+		if ((job_feat_ptr->op_code == FEATURE_OP_MOR) ||
+		    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
+			*args->has_mor = true;
+		} else if (args->last_op == FEATURE_OP_AND) {
+			bit_and(args->work_bitmap, tmp_bitmap);
+		} else if (args->last_op == FEATURE_OP_OR) {
+			bit_or(args->work_bitmap, tmp_bitmap);
+		}
+	} else {	/* feature not found */
+		if (args->last_op == FEATURE_OP_AND)
+			bit_clear_all(args->work_bitmap);
+	}
+	if (job_feat_ptr->count)
+		args->have_count = true;
+
+	if (args->last_paren_cnt > job_feat_ptr->paren) {
+		/* End of expression in parenthesis */
+		if (args->last_paren_op == FEATURE_OP_AND) {
+			bit_and(args->feature_bitmap, args->work_bitmap);
+		} else if (args->last_paren_op == FEATURE_OP_OR) {
+			bit_or(args->feature_bitmap, args->work_bitmap);
+		} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
+			*args->has_mor = true;
+		}
+		FREE_NULL_BITMAP(args->paren_bitmap);
+		args->work_bitmap = args->feature_bitmap;
+	}
+
+	args->last_op = job_feat_ptr->op_code;
+	args->last_paren_cnt = job_feat_ptr->paren;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+		char *tmp_f, *tmp_w, *tmp_t;
+		tmp_f = bitmap2node_name(args->feature_bitmap);
+		tmp_w = bitmap2node_name(args->work_bitmap);
+		tmp_t = bitmap2node_name(tmp_bitmap);
+		log_flag(NODE_FEATURES, "%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s count:%u",
+			 __func__, job_feat_ptr->name, tmp_f, tmp_w, tmp_t,
+			 job_feat_ptr->count);
+		xfree(tmp_f);
+		xfree(tmp_w);
+		xfree(tmp_t);
+	}
+
+	return 0;
+}
+
 extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bitstr_t *node_bitmap, bool *has_mor)
 {
 	job_details_t *detail_ptr = job_ptr->details;
-	list_itr_t *job_feat_iter;
-	job_feature_t *job_feat_ptr;
-	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
-	int last_paren_cnt = 0;
-	bitstr_t *feature_bitmap, *paren_bitmap = NULL;
-	bitstr_t *tmp_bitmap, *work_bitmap;
-	bool have_count = false, user_update;
 	int rc = SLURM_SUCCESS;
 	list_t *feature_list = NULL;
-	char *features;
+	valid_feature_counts_args_t args = {
+		.has_mor = has_mor,
+		.job_ptr = job_ptr,
+		.last_op = FEATURE_OP_AND,
+		.last_paren_op = FEATURE_OP_AND,
+		.node_bitmap = node_bitmap,
+		.use_active = use_active,
+	};
 
 	xassert(detail_ptr);
 	xassert(node_bitmap);
@@ -3428,120 +3577,25 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	 */
 	if (detail_ptr->features_use) {
 		feature_list = detail_ptr->feature_list_use;
-		features = detail_ptr->features_use;
+		args.features = detail_ptr->features_use;
 	} else {
 		feature_list = detail_ptr->feature_list;
-		features = detail_ptr->features;
+		args.features = detail_ptr->features;
 	}
 
 	*has_mor = false;
 	if (!feature_list)	/* no constraints */
 		return rc;
 
-	user_update = node_features_g_user_update(job_ptr->user_id);
-	find_feature_nodes(feature_list, user_update);
-	feature_bitmap = bit_copy(node_bitmap);
-	work_bitmap = feature_bitmap;
-	job_feat_iter = list_iterator_create(feature_list);
-	while ((job_feat_ptr = list_next(job_feat_iter))) {
-		if (last_paren_cnt < job_feat_ptr->paren) {
-			/* Start of expression in parenthesis */
-			/*
-			 * If this pair of parentheses is inside of brackets,
-			 * then this is XAND or MOR. Set last_paren_op to
-			 * avoid incorrectly doing bit_and() or bit_or() at the
-			 * end of parentheses. This only matters if the
-			 * parentheses are the first thing inside of brackets,
-			 * in which case last_op is AND or OR depending on what
-			 * (if anything) came before the brackets. If the
-			 * parentheses are not the first thing inside of
-			 * brackets then last_op is XAND or MOR.
-			 */
-			if (job_feat_ptr->bracket &&
-			    (last_op != FEATURE_OP_XAND) &&
-			    (last_op != FEATURE_OP_MOR))
-				last_paren_op = FEATURE_OP_XAND;
-			else
-				last_paren_op = last_op;
-			last_op = FEATURE_OP_AND;
-			if (paren_bitmap) {
-				if (job_ptr->job_id) {
-					error("%s: %pJ has bad feature expression: %s",
-					      __func__, job_ptr,
-					      features);
-				} else {
-					error("%s: Reservation has bad feature expression: %s",
-					      __func__, features);
-				}
-				FREE_NULL_BITMAP(paren_bitmap);
-			}
-			paren_bitmap = bit_copy(node_bitmap);
-			work_bitmap = paren_bitmap;
-		}
-
-		if (use_active)
-			tmp_bitmap = job_feat_ptr->node_bitmap_active;
-		else
-			tmp_bitmap = job_feat_ptr->node_bitmap_avail;
-		if (tmp_bitmap) {
-			/*
-			 * Here we need to use the current feature for MOR/AND
-			 * not the last_op.  For instance fastio&[xeon|nehalem]
-			 * should ignore xeon (in valid_feature_count), but if
-			 * would be based on last_op it will see AND operation.
-			 * This should only be used when dealing with middle
-			 * options, not for the end as done in the last_paren
-			 * check below.
-			 */
-			if ((job_feat_ptr->op_code == FEATURE_OP_MOR) ||
-			    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
-				*has_mor = true;
-			} else if (last_op == FEATURE_OP_AND) {
-				bit_and(work_bitmap, tmp_bitmap);
-			} else if (last_op == FEATURE_OP_OR) {
-				bit_or(work_bitmap, tmp_bitmap);
-			}
-		} else {	/* feature not found */
-			if (last_op == FEATURE_OP_AND)
-				bit_clear_all(work_bitmap);
-		}
-		if (job_feat_ptr->count)
-			have_count = true;
-
-		if (last_paren_cnt > job_feat_ptr->paren) {
-			/* End of expression in parenthesis */
-			if (last_paren_op == FEATURE_OP_AND) {
-				bit_and(feature_bitmap, work_bitmap);
-			} else if (last_paren_op == FEATURE_OP_OR) {
-				bit_or(feature_bitmap, work_bitmap);
-			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
-				*has_mor = true;
-			}
-			FREE_NULL_BITMAP(paren_bitmap);
-			work_bitmap = feature_bitmap;
-		}
-
-		last_op = job_feat_ptr->op_code;
-		last_paren_cnt = job_feat_ptr->paren;
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
-			char *tmp_f, *tmp_w, *tmp_t;
-			tmp_f = bitmap2node_name(feature_bitmap);
-			tmp_w = bitmap2node_name(work_bitmap);
-			tmp_t = bitmap2node_name(tmp_bitmap);
-			log_flag(NODE_FEATURES, "%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s count:%u",
-				 __func__, job_feat_ptr->name, tmp_f, tmp_w,
-				 tmp_t, job_feat_ptr->count);
-			xfree(tmp_f);
-			xfree(tmp_w);
-			xfree(tmp_t);
-		}
-	}
-	list_iterator_destroy(job_feat_iter);
-	if (!have_count)
-		bit_and(node_bitmap, work_bitmap);
-	FREE_NULL_BITMAP(feature_bitmap);
-	FREE_NULL_BITMAP(paren_bitmap);
+	find_feature_nodes(feature_list,
+			   node_features_g_user_update(job_ptr->user_id));
+	args.feature_bitmap = bit_copy(node_bitmap);
+	args.work_bitmap = args.feature_bitmap;
+	list_for_each_ro(feature_list, _foreach_valid_feature_count, &args);
+	if (!args.have_count)
+		bit_and(node_bitmap, args.work_bitmap);
+	FREE_NULL_BITMAP(args.feature_bitmap);
+	FREE_NULL_BITMAP(args.paren_bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		char *tmp = bitmap2node_name(node_bitmap);
@@ -4376,7 +4430,6 @@ extern int pick_batch_host(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 	char *tmp, *tok, sep, last_sep = '&';
 	node_feature_t *feature_ptr;
-	list_itr_t *feature_iter;
 	bitstr_t *feature_bitmap;
 
 	if (job_ptr->batch_host)
@@ -4413,22 +4466,15 @@ extern int pick_batch_host(job_record_t *job_ptr)
 			continue;
 		tmp[i] = '\0';
 
-		feature_iter = list_iterator_create(active_feature_list);
-		while ((feature_ptr = list_next(feature_iter))) {
-			if (xstrcmp(feature_ptr->name, tok))
-				continue;
-			if (last_sep == '&') {
-				bit_and(feature_bitmap,
-					feature_ptr->node_bitmap);
-			} else {
-				bit_or(feature_bitmap,
-				       feature_ptr->node_bitmap);
-			}
-			break;
-		}
-		list_iterator_destroy(feature_iter);
-		if (!feature_ptr)	/* No match */
+		feature_ptr = list_find_first_ro(active_feature_list,
+						 list_find_feature, tok);
+		if (!feature_ptr) {	/* No match */
 			bit_clear_all(feature_bitmap);
+		} else if (last_sep == '&') {
+			bit_and(feature_bitmap, feature_ptr->node_bitmap);
+		} else {
+			bit_or(feature_bitmap, feature_ptr->node_bitmap);
+		}
 		if (sep == '\0')
 			break;
 		tok = tmp + i + 1;
@@ -4483,6 +4529,11 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		return result_node_bitmap;
 	}
 
+	/*
+	 * This needs to be an iterator since the inner loop below advances
+	 * feat_iter to consume all features within a parenthesis group, which
+	 * list_for_each() cannot expose to the callback.
+	 */
 	feat_iter = list_iterator_create(details_ptr->feature_list_use);
 	while ((job_feat_ptr = list_next(feat_iter))) {
 		if (job_feat_ptr->paren > last_paren) {

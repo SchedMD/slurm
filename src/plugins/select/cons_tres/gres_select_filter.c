@@ -65,6 +65,14 @@ typedef struct {
 	uint32_t used_sock_cnt;
 } select_and_set_args_t;
 
+typedef struct {
+	int job_fini;
+	uint32_t job_id;
+	int job_node_inx;
+	int node_inx;
+	gres_mc_data_t *tres_mc_ptr;
+} set_job_bits2_args_t;
+
 static uint32_t _get_task_cnt_node(uint32_t *tasks_per_socket, int sock_cnt);
 
 static bool *_build_avail_cores_by_sock(bitstr_t *core_bitmap,
@@ -284,7 +292,7 @@ extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
 	    (list_count(sock_gres_list) == 0))
 		return rc;
 
-	if (list_for_each(sock_gres_list, _foreach_remove_unusable, args) < 0)
+	if (list_for_each_ro(sock_gres_list, _foreach_remove_unusable, args) < 0)
 		rc = SLURM_ERROR;
 
 	xfree(args->avail_cores_by_sock);
@@ -1826,6 +1834,23 @@ static int _select_and_set_node(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_set_job_bits2(void *x, void *arg)
+{
+	sock_gres_t *sock_gres = x;
+	set_job_bits2_args_t *args = arg;
+	bool tmp;
+
+	if (!sock_gres->gres_state_job->gres_data ||
+	    !sock_gres->gres_state_node->gres_data)
+		return 0;
+	tmp = _set_job_bits2(args->node_inx, args->job_node_inx, sock_gres,
+			     args->job_id, args->tres_mc_ptr);
+	if (args->job_fini != 0)
+		args->job_fini = tmp;
+
+	return 0;
+}
+
 /*
  * Make final GRES selection for the job
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
@@ -1837,8 +1862,6 @@ extern int gres_select_filter_select_and_set(list_t **sock_gres_list,
 					     job_record_t *job_ptr,
 					     gres_mc_data_t *tres_mc_ptr)
 {
-	list_itr_t *sock_gres_iter;
-	sock_gres_t *sock_gres;
 	int i, job_node_inx = 0;
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
@@ -1894,22 +1917,18 @@ extern int gres_select_filter_select_and_set(list_t **sock_gres_list,
 		 */
 		job_node_inx = -1;
 		for (i = 0; next_node_bitmap(job_res->node_bitmap, &i); i++) {
-			job_fini = -1;
-			sock_gres_iter = list_iterator_create(
-				sock_gres_list[++job_node_inx]);
-			while ((sock_gres = (sock_gres_t *)
-				list_next(sock_gres_iter))) {
-				bool tmp;
-				if (!sock_gres->gres_state_job->gres_data ||
-				    !sock_gres->gres_state_node->gres_data)
-					continue;
-				tmp = _set_job_bits2(i, job_node_inx,
-						     sock_gres, job_id,
-						     tres_mc_ptr);
-				if (job_fini != 0)
-					job_fini = tmp;
-			}
-			list_iterator_destroy(sock_gres_iter);
+			set_job_bits2_args_t set_job_bits2_args = {
+				.job_fini = -1,
+				.job_id = job_id,
+				.job_node_inx = ++job_node_inx,
+				.node_inx = i,
+				.tres_mc_ptr = tres_mc_ptr,
+			};
+
+			(void) list_for_each(sock_gres_list[job_node_inx],
+					     _foreach_set_job_bits2,
+					     &set_job_bits2_args);
+			job_fini = set_job_bits2_args.job_fini;
 			if (job_fini == 1)
 				break;
 		}

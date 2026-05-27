@@ -133,10 +133,22 @@ typedef struct {
 	list_t *ret_list;
 } create_prio_list_t;
 
+typedef struct {
+	time_t last_ran;
+	uint64_t *tres_run_delta;
+} init_grp_used_args_t;
+
+typedef struct {
+	create_prio_list_t *prio_list;
+	time_t start_time;
+	uid_t uid;
+} priority_factors_args_t;
+
 /* variables defined in priority_multifactor.h */
 
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
 static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc);
+static void _set_norm_shares(list_t *children_list);
 
 static void _destroy_priority_factors_obj_light(void *object)
 {
@@ -156,12 +168,43 @@ static void _destroy_priority_factors_obj_light(void *object)
  * time from last application..
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
+static int _foreach_decay_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	double real_decay = *(double *) arg;
+
+	assoc->usage->usage_raw *= real_decay;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		assoc->usage->usage_tres_raw[i] *= real_decay;
+	assoc->usage->grp_used_wall *= real_decay;
+
+	if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
+		assoc->leaf_usage->usage_raw *= real_decay;
+		for (int i = 0; i < slurmctld_tres_cnt; i++)
+			assoc->leaf_usage->usage_tres_raw[i] *= real_decay;
+		assoc->leaf_usage->grp_used_wall *= real_decay;
+	}
+
+	return 0;
+}
+
+static int _foreach_decay_qos(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+	double real_decay = *(double *) arg;
+
+	if (qos->flags & QOS_FLAG_NO_DECAY)
+		return 0;
+	qos->usage->usage_raw *= real_decay;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		qos->usage->usage_tres_raw[i] *= real_decay;
+	qos->usage->grp_used_wall *= real_decay;
+
+	return 0;
+}
+
 static int _apply_decay(double real_decay)
 {
-	int i;
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -178,36 +221,13 @@ static int _apply_decay(double real_decay)
 	xassert(assoc_mgr_assoc_list);
 	xassert(assoc_mgr_qos_list);
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	/* We want to do this to all associations including root.
-	   All usage_raws are calculated from the bottom up.
-	*/
-	while ((assoc = list_next(itr))) {
-		assoc->usage->usage_raw *= real_decay;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			assoc->usage->usage_tres_raw[i] *= real_decay;
-		assoc->usage->grp_used_wall *= real_decay;
+	/*
+	 * We want to do this to all associations including root.
+	 * All usage_raws are calculated from the bottom up.
+	 */
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_decay_assoc, &real_decay);
+	list_for_each_ro(assoc_mgr_qos_list, _foreach_decay_qos, &real_decay);
 
-		if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
-			assoc->leaf_usage->usage_raw *= real_decay;
-			for (i = 0; i < slurmctld_tres_cnt; i++)
-				assoc->leaf_usage->usage_tres_raw[i] *=
-					real_decay;
-			assoc->leaf_usage->grp_used_wall *= real_decay;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	itr = list_iterator_create(assoc_mgr_qos_list);
-	while ((qos = list_next(itr))) {
-		if (qos->flags & QOS_FLAG_NO_DECAY)
-			continue;
-		qos->usage->usage_raw *= real_decay;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			qos->usage->usage_tres_raw[i] *= real_decay;
-		qos->usage->grp_used_wall *= real_decay;
-	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
@@ -218,12 +238,37 @@ static int _apply_decay(double real_decay)
  * This should be called every PriorityUsageResetPeriod
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
+static int _foreach_reset_assoc_usage(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	assoc->usage->usage_raw = 0;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		assoc->usage->usage_tres_raw[i] = 0;
+	assoc->usage->grp_used_wall = 0;
+
+	if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
+		slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+		assoc->leaf_usage = NULL;
+	}
+
+	return 0;
+}
+
+static int _foreach_reset_qos_usage(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+
+	qos->usage->usage_raw = 0;
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		qos->usage->usage_tres_raw[i] = 0;
+	qos->usage->grp_used_wall = 0;
+
+	return 0;
+}
+
 static int _reset_usage(void)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_qos_rec_t *qos = NULL;
-	int i;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -234,31 +279,13 @@ static int _reset_usage(void)
 
 	xassert(assoc_mgr_assoc_list);
 
-	itr = list_iterator_create(assoc_mgr_assoc_list);
-	/* We want to do this to all associations including root.
+	/*
+	 * We want to do this to all associations including root.
 	 * All usage_raws are calculated from the bottom up.
 	 */
-	while ((assoc = list_next(itr))) {
-		assoc->usage->usage_raw = 0;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			assoc->usage->usage_tres_raw[i] = 0;
-		assoc->usage->grp_used_wall = 0;
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_reset_assoc_usage, NULL);
+	list_for_each_ro(assoc_mgr_qos_list, _foreach_reset_qos_usage, NULL);
 
-		if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
-			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
-			assoc->leaf_usage = NULL;
-		}
-	}
-	list_iterator_destroy(itr);
-
-	itr = list_iterator_create(assoc_mgr_qos_list);
-	while ((qos = list_next(itr))) {
-		qos->usage->usage_raw = 0;
-		for (i=0; i<slurmctld_tres_cnt; i++)
-			qos->usage->usage_tres_raw[i] = 0;
-		qos->usage->grp_used_wall = 0;
-	}
-	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
@@ -336,24 +363,29 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
  *
  * NOTE: acct_mgr_assoc_lock must be locked before this is called.
  */
+static int _set_children_usage_efctv(list_t *children_list);
+
+static int _foreach_set_usage_efctv(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	if (assoc->user) {
+		assoc->usage->usage_efctv = (long double) NO_VAL;
+		return 0;
+	}
+	priority_p_set_assoc_usage(assoc);
+	_set_children_usage_efctv(assoc->usage->children_list);
+
+	return 0;
+}
+
 static int _set_children_usage_efctv(list_t *children_list)
 {
-	slurmdb_assoc_rec_t *assoc = NULL;
-	list_itr_t *itr = NULL;
-
 	if (!children_list || !list_count(children_list))
 		return SLURM_SUCCESS;
 
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		if (assoc->user) {
-			assoc->usage->usage_efctv = (long double)NO_VAL;
-			continue;
-		}
-		priority_p_set_assoc_usage(assoc);
-		_set_children_usage_efctv(assoc->usage->children_list);
-	}
-	list_iterator_destroy(itr);
+	list_for_each_ro(children_list, _foreach_set_usage_efctv, NULL);
+
 	return SLURM_SUCCESS;
 }
 
@@ -966,6 +998,44 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 	}
 }
 
+static int _foreach_init_grp_used_tres_run_secs(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	init_grp_used_args_t *args = arg;
+	double usage_factor = 1.0;
+
+	log_flag(PRIO, "job: %u", job_ptr->job_id);
+
+	/*
+	 * If end_time_exp is NO_VAL we have already ran the end for this job.
+	 * We don't want to do it again, so just exit.
+	 */
+	if (job_ptr->end_time_exp == (time_t) NO_VAL)
+		return 0;
+
+	if (!IS_JOB_RUNNING(job_ptr))
+		return 0;
+
+	if (job_ptr->start_time > args->last_ran)
+		return 0;
+
+	/* apply usage factor */
+	if (job_ptr->qos_ptr && (job_ptr->qos_ptr->usage_factor >= 0))
+		usage_factor = job_ptr->qos_ptr->usage_factor;
+	usage_factor *= (double) (args->last_ran - job_ptr->start_time);
+
+	for (int i = 0; i < slurmctld_tres_cnt; i++) {
+		if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
+			continue;
+		args->tres_run_delta[i] =
+			job_ptr->tres_alloc_cnt[i] * usage_factor;
+	}
+
+	_handle_tres_run_secs(args->tres_run_delta, job_ptr);
+
+	return 0;
+}
+
 /*
  * Remove previously used time from qos and assocs grp_used_tres_run_secs.
  *
@@ -979,14 +1049,15 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
  */
 static void _init_grp_used_tres_run_secs(time_t last_ran)
 {
-	job_record_t *job_ptr = NULL;
-	list_itr_t *itr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	uint64_t tres_run_delta[slurmctld_tres_cnt];
-	int i;
+	init_grp_used_args_t args = {
+		.last_ran = last_ran,
+		.tres_run_delta = tres_run_delta,
+	};
 
 	log_flag(PRIO, "Initializing grp_used_tres_run_secs");
 
@@ -997,42 +1068,9 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
 		return;
 
 	lock_slurmctld(job_read_lock);
-	itr = list_iterator_create(job_list);
-
 	assoc_mgr_lock(&locks);
-	while ((job_ptr = list_next(itr))) {
-		double usage_factor = 1.0;
-		log_flag(PRIO, "job: %u", job_ptr->job_id);
-
-		/* If end_time_exp is NO_VAL we have already ran the end for
-		 * this job.  We don't want to do it again, so just exit.
-		 */
-		if (job_ptr->end_time_exp == (time_t)NO_VAL)
-			continue;
-
-		if (!IS_JOB_RUNNING(job_ptr))
-			continue;
-
-		if (job_ptr->start_time > last_ran)
-			continue;
-
-		/* apply usage factor */
-		if (job_ptr->qos_ptr &&
-		    (job_ptr->qos_ptr->usage_factor >= 0))
-			usage_factor = job_ptr->qos_ptr->usage_factor;
-		usage_factor *= (double)(last_ran - job_ptr->start_time);
-
-		for (i=0; i<slurmctld_tres_cnt; i++) {
-			if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
-				continue;
-			tres_run_delta[i] =
-				job_ptr->tres_alloc_cnt[i] * usage_factor;
-		}
-
-		_handle_tres_run_secs(tres_run_delta, job_ptr);
-	}
+	list_for_each_ro(job_list, _foreach_init_grp_used_tres_run_secs, &args);
 	assoc_mgr_unlock(&locks);
-	list_iterator_destroy(itr);
 	unlock_slurmctld(job_read_lock);
 }
 
@@ -1572,25 +1610,26 @@ static void _internal_setup(void)
 }
 
 
+static int _foreach_norm_shares(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+
+	assoc_mgr_normalize_assoc_shares(assoc);
+	if (!assoc->user)
+		_set_norm_shares(assoc->usage->children_list);
+
+	return 0;
+}
+
 /* Recursively call assoc_mgr_normalize_assoc_shares from assoc_mgr.c on
  * children of an assoc
  */
 static void _set_norm_shares(list_t *children_list)
 {
-	list_itr_t *itr = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-
 	if (!children_list || list_is_empty(children_list))
 		return;
 
-	itr = list_iterator_create(children_list);
-	while ((assoc = list_next(itr))) {
-		assoc_mgr_normalize_assoc_shares(assoc);
-		if (!assoc->user)
-			_set_norm_shares(assoc->usage->children_list);
-	}
-
-	list_iterator_destroy(itr);
+	list_for_each_ro(children_list, _foreach_norm_shares, NULL);
 }
 
 /* We need to set up some global variables that are needed outside of the
@@ -1639,12 +1678,21 @@ static void _init_decay_vars()
 	_read_last_decay_ran(&g_last_ran, &g_last_reset);
 }
 
+static int _foreach_sum_sibling_usage_norm(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *sibling = x;
+	long double *ratio_s = arg;
+
+	if (sibling->shares_raw != SLURMDB_FS_USE_PARENT)
+		*ratio_s += sibling->usage->usage_norm;
+
+	return 0;
+}
+
 static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 {
 	long double ratio_p, ratio_l, k, f, ratio_s;
 	slurmdb_assoc_rec_t *parent_assoc = NULL;
-	list_itr_t *sib_itr = NULL;
-	slurmdb_assoc_rec_t *sibling = NULL;
 	char *child;
 	char *child_str;
 
@@ -1692,13 +1740,8 @@ static void _depth_oblivious_set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 			   parent_assoc->usage->shares_norm);
 
 		ratio_s = 0;
-		sib_itr = list_iterator_create(
-			parent_assoc->usage->children_list);
-		while ((sibling = list_next(sib_itr))) {
-			if(sibling->shares_raw != SLURMDB_FS_USE_PARENT)
-				ratio_s += sibling->usage->usage_norm;
-		}
-		list_iterator_destroy(sib_itr);
+		list_for_each_ro(parent_assoc->usage->children_list,
+				 _foreach_sum_sibling_usage_norm, &ratio_s);
 		ratio_s /= parent_assoc->usage->shares_norm;
 
 		ratio_l = (assoc->usage->usage_norm /
@@ -1922,81 +1965,84 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 		_priority_p_set_assoc_usage_debug(assoc);
 }
 
+static int _foreach_priority_factor_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	priority_factors_args_t *args = arg;
+	time_t use_time;
+
+	if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
+	    !IS_JOB_PENDING(job_ptr))
+		return 0;
+
+	/* Job is not active on this cluster. */
+	if (IS_JOB_REVOKED(job_ptr))
+		return 0;
+
+	/*
+	 * This means the job is not eligible yet
+	 */
+	if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		use_time = job_ptr->details->submit_time;
+	else
+		use_time = job_ptr->details->begin_time;
+
+	if (!use_time || (use_time > args->start_time))
+		return 0;
+
+	/*
+	 * 0 means the job is held
+	 */
+	if (job_ptr->priority == 0)
+		return 0;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != args->uid) &&
+	    !validate_operator(args->uid) &&
+	    (((slurm_mcs_get_privatedata() == 0) &&
+	      !assoc_mgr_is_user_acct_coord(acct_db_conn, args->uid,
+					    job_ptr->account, false)) ||
+	     ((slurm_mcs_get_privatedata() == 1) &&
+	      (mcs_g_check_mcs_label(args->uid, job_ptr->mcs_label,
+				     false) != 0))))
+		return 0;
+
+	/*
+	 * Job is not in any partition, so there is nothing to return. This can
+	 * happen if the Partition was deleted, CALCULATE_RUNNING is enabled,
+	 * and this job is still waiting out MinJobAge before being removed
+	 * from the system.
+	 */
+	if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
+		return 0;
+
+	args->prio_list->job_ptr = job_ptr;
+
+	/* Job in one partition */
+	if (!job_ptr->part_ptr_list)
+		_create_prio_list_part(NULL, args->prio_list);
+	else
+		list_for_each_ro(job_ptr->part_ptr_list,
+				 _create_prio_list_part, args->prio_list);
+
+	return 0;
+}
+
 extern list_t *priority_p_get_priority_factors_list(uid_t uid)
 {
-	list_itr_t *itr;
-	job_record_t *job_ptr = NULL;
-	time_t start_time = time(NULL);
 	create_prio_list_t prio_list = { 0 };
+	priority_factors_args_t args = {
+		.prio_list = &prio_list,
+		.start_time = time(NULL),
+		.uid = uid,
+	};
 
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	if (job_list && list_count(job_list)) {
-		time_t use_time;
-
-		itr = list_iterator_create(job_list);
-		while ((job_ptr = list_next(itr))) {
-			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
-			    !IS_JOB_PENDING(job_ptr))
-				continue;
-
-			/* Job is not active on this cluster. */
-			if (IS_JOB_REVOKED(job_ptr))
-				continue;
-
-			/*
-			 * This means the job is not eligible yet
-			 */
-			if (flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
-				use_time = job_ptr->details->submit_time;
-			else
-				use_time = job_ptr->details->begin_time;
-
-			if (!use_time || (use_time > start_time))
-				continue;
-
-			/*
-			 * 0 means the job is held
-			 */
-			if (job_ptr->priority == 0)
-				continue;
-
-			if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-			    (job_ptr->user_id != uid) &&
-			    !validate_operator(uid) &&
-			    (((slurm_mcs_get_privatedata() == 0) &&
-			      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-			                                    job_ptr->account,
-							    false)) ||
-			     ((slurm_mcs_get_privatedata() == 1) &&
-			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label,
-						     false) != 0))))
-				continue;
-
-			/*
-			 * Job is not in any partition, so there is nothing to
-			 * return. This can happen if the Partition was deleted,
-			 * CALCULATE_RUNNING is enabled, and this job is still
-			 * waiting out MinJobAge before being removed from the
-			 * system.
-			 */
-			if (!job_ptr->part_ptr && !job_ptr->part_ptr_list)
-				continue;
-
-			prio_list.job_ptr = job_ptr;
-
-			/* Job in one partition */
-			if (!job_ptr->part_ptr_list) {
-				_create_prio_list_part(NULL, &prio_list);
-			} else {
-				list_for_each(job_ptr->part_ptr_list,
-					      _create_prio_list_part,
-					      &prio_list);
-			}
-		}
-		list_iterator_destroy(itr);
+		list_for_each_ro(job_list, _foreach_priority_factor_job, &args);
 		if (!list_count(prio_list.ret_list))
 			FREE_NULL_LIST(prio_list.ret_list);
 	}
