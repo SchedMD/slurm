@@ -106,10 +106,46 @@
 	} while (0)
 #endif
 
+typedef enum {
+	THREAD_STATE_INVALID = 0,
+	THREAD_STATE_NEW,
+	THREAD_STATE_CLONING,
+	/* pending assignment of hardware thread */
+	THREAD_STATE_PENDING,
+	THREAD_STATE_ASSIGNED,
+	/* Waiting for requester to acknowledge assignment */
+	THREAD_STATE_ASSIGNED_WAIT,
+	/* Requester acknowledged assignment */
+	THREAD_STATE_ASSIGNED_ACK,
+	THREAD_STATE_RUNNING,
+	/* Waiting for join() */
+	THREAD_STATE_ZOMBIE,
+	THREAD_STATE_COMPLETE,
+	THREAD_STATE_INVALID_MAX
+} thread_state_t;
+
+#define T(x, str) [x] = { x, str }
+
+static const struct {
+	thread_state_t state;
+	const char *str;
+} thread_states[] = {
+	T(THREAD_STATE_NEW, "NEW"),
+	T(THREAD_STATE_CLONING, "CLONING"),
+	T(THREAD_STATE_PENDING, "PENDING"),
+	T(THREAD_STATE_ASSIGNED, "ASSIGNED"),
+	T(THREAD_STATE_ASSIGNED_WAIT, "ASSIGNED_WAIT"),
+	T(THREAD_STATE_ASSIGNED_ACK, "ASSIGNED_ACK"),
+	T(THREAD_STATE_RUNNING, "RUNNING"),
+	T(THREAD_STATE_ZOMBIE, "ZOMBIE"),
+	T(THREAD_STATE_COMPLETE, "COMPLETE"),
+};
+
 #define THREAD_MAGIC 0xA434F4D2
 
 typedef struct {
 	int magic; /* THREAD_MAGIC  */
+	thread_state_t state;
 	/* pthread_self() from thread */
 	pthread_t id;
 	bool detached;
@@ -206,12 +242,22 @@ strong_alias(threadpool_join, slurm_threadpool_join);
 strong_alias(threadpool_init, slurm_threadpool_init);
 strong_alias(threadpool_fini, slurm_threadpool_fini);
 
+static const char *_thread_state_str(const thread_state_t state)
+{
+	xassert(state > THREAD_STATE_INVALID);
+	xassert(state < THREAD_STATE_INVALID_MAX);
+
+	return thread_states[state].str;
+}
+
 static int _match_thread_id(void *x, void *key)
 {
 	const thread_t *thread = x;
 	const pthread_t *id_ptr = key;
 
 	xassert(thread->magic == THREAD_MAGIC);
+	xassert(thread->state > THREAD_STATE_INVALID);
+	xassert(thread->state < THREAD_STATE_INVALID_MAX);
 	xassert(*id_ptr > 0);
 
 	return (pthread_equal(thread->id, *id_ptr) ? 1 : 0);
@@ -225,6 +271,8 @@ static int _match_thread_ptr(void *x, void *y)
 	thread_t *key = y;
 
 	xassert(thread->magic == THREAD_MAGIC);
+	xassert(thread->state > THREAD_STATE_INVALID);
+	xassert(thread->state < THREAD_STATE_INVALID_MAX);
 	xassert(key->magic == THREAD_MAGIC);
 
 	return ((thread == key) ? 1 : 0);
@@ -296,6 +344,8 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 	do {
 		/* Catch thread being detached */
 		xassert(thread->magic == THREAD_MAGIC);
+		xassert(thread->state > THREAD_STATE_INVALID);
+		xassert(thread->state < THREAD_STATE_INVALID_MAX);
 
 		if (list_delete_ptr(threadpool.zombies, thread))
 			break;
@@ -397,6 +447,7 @@ static void _thread_free(thread_t **thread_ptr)
 	if (threadpool.enabled) {
 		/* All threads must be detached at cleanup */
 		xassert(thread->detached);
+		xassert(thread->state == THREAD_STATE_COMPLETE);
 		xassert(!thread->requester);
 
 		slurm_mutex_lock(&threadpool.mutex);
@@ -414,6 +465,7 @@ static void _thread_free(thread_t **thread_ptr)
 #endif
 
 	thread->magic = ~THREAD_MAGIC;
+	thread->state = THREAD_STATE_INVALID_MAX;
 	xfree(thread->thread_name);
 	xfree(thread);
 }
@@ -469,6 +521,9 @@ static void _threadpool_wait_ack(thread_t *thread)
 	timespec_t start_ts = { 0, 0 };
 	pthread_t requester = thread->requester;
 
+	xassert(thread->state == THREAD_STATE_ASSIGNED);
+	thread->state = THREAD_STATE_ASSIGNED_WAIT;
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		start_ts = timespec_now();
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting for requester 0x%"PRIx64" to acknowledge assignment",
@@ -478,6 +533,8 @@ static void _threadpool_wait_ack(thread_t *thread)
 
 	while (thread->requester)
 		EVENT_WAIT(&threadpool.events.assigned_ack, &threadpool.mutex);
+
+	xassert(thread->state == THREAD_STATE_ASSIGNED_ACK);
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_THREAD) && start_ts.tv_sec) {
 		char ts[CTIME_STR_LEN] = "UNKNOWN";
@@ -506,7 +563,9 @@ static void _threadpool_zombie(thread_t *thread)
 	/* Thread must exist in the attached list until detached */
 	xassert(list_find_first(threadpool.attached, _match_thread_ptr,
 				thread));
+	xassert(thread->state == THREAD_STATE_RUNNING);
 
+	thread->state = THREAD_STATE_ZOMBIE;
 	list_append(threadpool.zombies, thread);
 
 	while (!thread->detached) {
@@ -540,11 +599,13 @@ static void _threadpool_prerun(thread_t *thread)
 {
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(!thread->id);
+	xassert((thread->state == THREAD_STATE_PENDING) ||
+		(thread->state == THREAD_STATE_CLONING));
+
 	thread->id = pthread_self();
+	thread->state = THREAD_STATE_ASSIGNED;
 
 	threadpool.total_run++;
-
-	xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.idle--;
 	threadpool.running++;
@@ -559,6 +620,8 @@ static void _threadpool_prerun(thread_t *thread)
 
 	if (thread->requester)
 		_threadpool_wait_ack(thread);
+
+	thread->state = THREAD_STATE_RUNNING;
 }
 
 /* caller must hold threadpool.mutex lock */
@@ -566,6 +629,7 @@ static void _threadpool_postrun(thread_t *thread)
 {
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(pthread_equal(thread->id, pthread_self()));
+	xassert(thread->state == THREAD_STATE_RUNNING);
 
 	threadpool.running--;
 	threadpool.idle++;
@@ -576,11 +640,13 @@ static void _threadpool_postrun(thread_t *thread)
 	if (!thread->detached)
 		_threadpool_zombie(thread);
 
-	thread->id = 0;
-
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(thread->detached);
 	xassert(!thread->requester);
+	xassert(thread->id > 0);
+
+	thread->state = THREAD_STATE_COMPLETE;
+	thread->id = 0;
 }
 
 static void *_thread(void *arg)
@@ -590,10 +656,14 @@ static void *_thread(void *arg)
 
 	xassert(!threadpool.enabled);
 	xassert(thread->magic == THREAD_MAGIC);
+	xassert(thread->state == THREAD_STATE_CLONING);
+
+	thread->state = THREAD_STATE_RUNNING;
 
 	_run(thread);
 
 	ret = thread->ret;
+	thread->state = THREAD_STATE_COMPLETE;
 	_thread_free(&thread);
 
 	return ret;
@@ -619,8 +689,6 @@ static void *_threadpool_thread(void *arg)
 
 	do {
 		if (thread) {
-			xassert(thread->magic == THREAD_MAGIC);
-
 			_threadpool_prerun(thread);
 
 			slurm_mutex_unlock(&threadpool.mutex);
@@ -683,21 +751,15 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	const char *func_name = (thread ? thread->func_name : NULL);
 	const bool detached = (thread && thread->detached);
 
-#ifndef NDEBUG
+	/* only threadpool will have pre-allocated threads */
+	xassert(thread || threadpool.enabled);
+
 	if (thread) {
-		if (threadpool.enabled)
-			slurm_mutex_lock(&threadpool.mutex);
-
 		xassert(thread->magic == THREAD_MAGIC);
+		xassert(thread->state == THREAD_STATE_NEW);
 		xassert(!thread->id);
-
-		if (threadpool.enabled)
-			slurm_mutex_unlock(&threadpool.mutex);
-	} else {
-		/* only threadpool will have pre-allocated threads */
-		xassert(threadpool.enabled);
+		thread->state = THREAD_STATE_CLONING;
 	}
-#endif
 
 	if ((rc = pthread_attr_init(&attr)))
 		fatal("%s->%s: pthread_attr_init() failed: %s",
@@ -770,6 +832,8 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(!thread->requester);
+	xassert(thread->state > THREAD_STATE_INVALID);
+	xassert(thread->state < THREAD_STATE_INVALID_MAX);
 
 	if (!_thread_available()) {
 		log_flag(THREAD, "%s->%s: zero available idle threads for %s()",
@@ -786,6 +850,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		thread->requester = pthread_self();
 	}
 
+	thread->state = THREAD_STATE_PENDING;
 	list_append(threadpool.pending, thread);
 
 	if (!id_ptr) {
@@ -804,6 +869,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	 */
 	while (!thread->id) {
 		xassert(thread->magic == THREAD_MAGIC);
+		xassert(thread->state == THREAD_STATE_PENDING);
 		xassert(pthread_equal(thread->requester, pthread_self()));
 		xassert(threadpool.idle > 0);
 
@@ -815,11 +881,13 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	}
 
 	xassert(thread->magic == THREAD_MAGIC);
+	xassert(thread->state == THREAD_STATE_ASSIGNED_WAIT);
 	xassert(pthread_equal(thread->requester, pthread_self()));
 	xassert(thread->id);
 
 	thread->requester = 0;
 	*id_ptr = thread->id;
+	thread->state = THREAD_STATE_ASSIGNED_ACK;
 
 	log_flag(THREAD, "%s->%s: assigned pthread id=0x%"PRIx64" for %s()",
 		 caller, __func__, (uint64_t) thread->id,
@@ -853,6 +921,7 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 
 	*thread = (thread_t) {
 		.magic = THREAD_MAGIC,
+		.state = THREAD_STATE_NEW,
 		.detached = detached,
 		.thread_name = xstrdup(thread_name),
 		.func = func,
@@ -949,9 +1018,10 @@ static int _log_thread(void *x, void *arg)
 	xassert(logt->magic == LOG_THREAD_MAGIC);
 	xassert(thread->magic == THREAD_MAGIC);
 
-	probe_log(logt->log, "thread[%s@0x%"PRIx64"]: func=%s(0x%"PRIxPTR") type=%s detached=%c requester=0x%"PRIx64" ret=0x%"PRIxPTR,
+	probe_log(logt->log, "thread[%s@0x%"PRIx64"]: func=%s(0x%"PRIxPTR") type=%s state=%s detached=%c requester=0x%"PRIx64" ret=0x%"PRIxPTR,
 		  thread->thread_name, (uint64_t) thread->id,
 		  thread->func_name, (uintptr_t) thread->arg, logt->type,
+		  _thread_state_str(thread->state),
 		  BOOL_CHARIFY(thread->detached), (uint64_t) thread->requester,
 		  (uintptr_t) thread->ret);
 
