@@ -709,9 +709,6 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		fatal("%s->%s: pthread_attr_setstacksize(%u) failed: %s",
 		      caller, __func__, STACK_SIZE, slurm_strerror(rc));
 
-	if (id_ptr)
-		*id_ptr = 0;
-
 	/* All threadpool threads are always detached */
 	if ((threadpool.enabled || detached) &&
 	    (rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)))
@@ -835,6 +832,9 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 			     const char *caller)
 {
 	thread_t *thread = xmalloc(sizeof(*thread));
+
+	if (id_ptr)
+		*id_ptr = 0;
 
 #ifndef NDEBUG
 	if (thread_name && strlen(thread_name) >= PRCTL_BUF_BYTES)
