@@ -3925,6 +3925,8 @@ static int _foreach_cache_update_job(void *x, void *arg)
 		char *tmp_qos_req = xstrdup(job_ptr->details->qos_req);
 		slurmdb_qos_rec_t *qos_ptr = NULL;
 
+		job_ptr->qos_ptr = NULL; /* this is a stale pointer, set NULL */
+
 		token = strtok_r(tmp_qos_req, ",", &last);
 		while (token) {
 			slurmdb_qos_rec_t qos_rec = {
