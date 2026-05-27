@@ -581,7 +581,8 @@ rwfail:
  * On success returns SLURM_SUCCESS and fills in resp->local_pids,
  * resp->gtids, resp->ntasks, and resp->executable.
  */
-extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
+extern int stepd_attach(int fd, uint16_t stepd_protocol_version,
+			uint16_t srun_protocol_version, slurm_addr_t *ioaddr,
 			slurm_addr_t *respaddr, char *cert, char *io_key,
 			uid_t uid, reattach_tasks_response_msg_t *resp)
 {
@@ -590,7 +591,7 @@ extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
 	uint32_t cert_len;
 	int rc = SLURM_SUCCESS;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (stepd_protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int)); /* needs to be first */
 
 		if (cert) {
@@ -607,7 +608,7 @@ extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
 		safe_write(fd, &io_key_len, sizeof(uint32_t));
 		safe_write(fd, io_key, io_key_len);
 		safe_write(fd, &uid, sizeof(uid_t));
-		safe_write(fd, &protocol_version, sizeof(uint16_t));
+		safe_write(fd, &srun_protocol_version, sizeof(uint16_t));
 	} else
 		goto rwfail;
 
