@@ -775,6 +775,42 @@ static void _free_attr(pthread_attr_t *attr)
 		      __func__, slurm_strerror(rc));
 }
 
+/*
+ * Wait for thread assignment if the thread ID pointer needs to be populated.
+ * Caller must hold threadpool.mutex lock.
+ */
+static void _assign_wait(thread_t *thread, pthread_t *id_ptr,
+			 const char *caller)
+{
+	while (!thread->id) {
+		xassert(thread->magic == THREAD_MAGIC);
+		xassert((thread->state == THREAD_STATE_PENDING) ||
+			(thread->state == THREAD_STATE_CLONING));
+		xassert(pthread_equal(thread->requester, pthread_self()));
+
+		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
+			 caller, __func__, thread->func_name, threadpool.idle);
+
+		EVENT_SIGNAL(&threadpool.events.assign);
+		EVENT_WAIT(&threadpool.events.assigned, &threadpool.mutex);
+	}
+
+	xassert(thread->magic == THREAD_MAGIC);
+	xassert(thread->state == THREAD_STATE_ASSIGNED_WAIT);
+	xassert(pthread_equal(thread->requester, pthread_self()));
+	xassert(thread->id);
+
+	thread->requester = 0;
+	*id_ptr = thread->id;
+	thread->state = THREAD_STATE_ASSIGNED_ACK;
+
+	log_flag(THREAD, "%s->%s: assigned pthread id=0x%"PRIx64" for %s()",
+		 caller, __func__, (uint64_t) thread->id,
+		 thread->func_name);
+
+	EVENT_BROADCAST(&threadpool.events.assigned_ack);
+}
+
 static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 {
 	pthread_t id = 0;
@@ -790,7 +826,11 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		xassert(thread->magic == THREAD_MAGIC);
 		xassert(thread->state == THREAD_STATE_NEW);
 		xassert(!thread->id);
+		xassert(!thread->requester);
 		thread->state = THREAD_STATE_CLONING;
+
+		if (id_ptr)
+			thread->requester = pthread_self();
 	}
 
 	if ((rc = pthread_attr_init(&attr)))
@@ -822,8 +862,23 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		fatal("%s->%s: pthread_create() failed: %s",
 		      caller, __func__, slurm_strerror(rc));
 
-	/* Thread may have already free()ed the thread */
-	thread = NULL;
+	/*
+	 * Wait until thread->id is populated after the thread starts or
+	 * there is a race to the next call of join() or detach()
+	 */
+	if (id_ptr) {
+		if (threadpool.enabled) {
+			slurm_mutex_lock(&threadpool.mutex);
+
+			_assign_wait(thread, id_ptr, caller);
+			xassert(pthread_equal(thread->id, id));
+
+			slurm_mutex_unlock(&threadpool.mutex);
+		} else {
+			xassert(id > 0);
+			*id_ptr = id;
+		}
+	}
 
 	xassert(threadpool.enabled || func_name);
 	log_flag(THREAD, "%s->%s: pthread_create() created new %spthread id=0x%"PRIx64" for %s%s",
@@ -833,9 +888,6 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		 (threadpool.enabled ? "" : "()"));
 
 	_free_attr(&attr);
-
-	if (id_ptr)
-		*id_ptr = id;
 
 	return rc;
 }
@@ -895,37 +947,7 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		return true;
 	}
 
-	/*
-	 * Need to wait for thread assignment if the thread ID pointer needs to
-	 * be populated
-	 */
-	while (!thread->id) {
-		xassert(thread->magic == THREAD_MAGIC);
-		xassert(thread->state == THREAD_STATE_PENDING);
-		xassert(pthread_equal(thread->requester, pthread_self()));
-		xassert(threadpool.idle > 0);
-
-		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
-			 caller, __func__, thread->func_name, threadpool.idle);
-
-		EVENT_SIGNAL(&threadpool.events.assign);
-		EVENT_WAIT(&threadpool.events.assigned, &threadpool.mutex);
-	}
-
-	xassert(thread->magic == THREAD_MAGIC);
-	xassert(thread->state == THREAD_STATE_ASSIGNED_WAIT);
-	xassert(pthread_equal(thread->requester, pthread_self()));
-	xassert(thread->id);
-
-	thread->requester = 0;
-	*id_ptr = thread->id;
-	thread->state = THREAD_STATE_ASSIGNED_ACK;
-
-	log_flag(THREAD, "%s->%s: assigned pthread id=0x%"PRIx64" for %s()",
-		 caller, __func__, (uint64_t) thread->id,
-		 thread->func_name);
-
-	EVENT_BROADCAST(&threadpool.events.assigned_ack);
+	_assign_wait(thread, id_ptr, caller);
 
 	/* thread should have removed ptr from pending list */
 	xassert(!list_delete_ptr(threadpool.pending, thread));
