@@ -584,19 +584,24 @@ static void _threadpool_postrun(thread_t *thread)
 static void *_thread(void *arg)
 {
 	thread_t *thread = arg;
+	void *ret = NULL;
 
-	if (!threadpool.enabled) {
-		void *ret = NULL;
+	xassert(!threadpool.enabled);
+	xassert(thread->magic == THREAD_MAGIC);
 
-		xassert(thread->magic == THREAD_MAGIC);
+	_run(thread);
 
-		_run(thread);
+	ret = thread->ret;
+	_thread_free(&thread);
 
-		ret = thread->ret;
-		_thread_free(&thread);
+	return ret;
+}
 
-		return ret;
-	}
+static void *_threadpool_thread(void *arg)
+{
+	thread_t *thread = arg;
+
+	xassert(threadpool.enabled);
 
 	slurm_mutex_lock(&threadpool.mutex);
 
@@ -715,8 +720,11 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		fatal("%s->%s: pthread_attr_setdetachstate failed: %s",
 		      caller, __func__, slurm_strerror(rc));
 
-	/* Pass ownership of thread to _thread() on success */
-	if ((rc = pthread_create(&id, &attr, _thread, thread)))
+	/* Pass ownership of thread to new thread on success */
+	if ((rc = pthread_create(&id, &attr,
+				 (threadpool.enabled ? _threadpool_thread :
+						       _thread),
+				 thread)))
 		fatal("%s->%s: pthread_create() failed: %s",
 		      caller, __func__, slurm_strerror(rc));
 
