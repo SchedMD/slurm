@@ -554,6 +554,9 @@ static void _threadpool_prerun(thread_t *thread)
 	xassert(threadpool.running > 0);
 
 	EVENT_BROADCAST(&threadpool.events.assigned);
+
+	if (thread->requester)
+		_threadpool_wait_ack(thread);
 }
 
 /* caller must hold threadpool.mutex lock */
@@ -614,9 +617,6 @@ static void *_thread(void *arg)
 			thread->id = pthread_self();
 
 			_threadpool_prerun(thread);
-
-			if (thread->requester)
-				_threadpool_wait_ack(thread);
 
 			slurm_mutex_unlock(&threadpool.mutex);
 			_run(thread);
