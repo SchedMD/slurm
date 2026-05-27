@@ -156,7 +156,7 @@ typedef struct {
 	uint32_t het_job_id;
 	list_t *het_job_rec_list;	/* list of het_job_rec_t */
 	time_t prev_start;		/* Expected start time from last test */
-	time_t sticky_preempt_start;	/* Partial start waiting on preemption */
+	time_t sticky_preempt_start;	/* Hetjob waiting on preemption cleanup */
 } het_job_map_t;
 
 typedef enum {
@@ -1191,7 +1191,7 @@ extern void *backfill_agent(void *args)
 		if (slurmctld_config.scheduling_disabled)
 			continue;
 
-		list_flush(het_job_list);
+		_het_job_start_clear();
 		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;
@@ -4149,11 +4149,10 @@ static void _het_job_start_clear(void)
 
 	iter = list_iterator_create(het_job_list);
 	while ((map = list_next(iter))) {
-		if (map->prev_start == 0) {
+		if ((map->prev_start == 0) && !map->sticky_preempt_start) {
 			list_delete_item(iter);
 		} else {
 			map->prev_start = 0;
-			map->sticky_preempt_start = 0;
 			list_flush(map->het_job_rec_list);
 		}
 	}
@@ -4460,7 +4459,6 @@ static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 	list_itr_t *iter;
 	int rc = SLURM_SUCCESS;
 	het_start_rc_t start_rc = HET_START_OK;
-	bool any_component_started = false;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
@@ -4477,7 +4475,6 @@ static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 		}
 
 		if (_het_job_component_started(job_ptr)) {
-			any_component_started = true;
 			_het_job_add_used_nodes(&used_bitmap, job_ptr);
 			continue;
 		}
@@ -4526,7 +4523,6 @@ static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			log_flag(HETJOB, "%pJ started", job_ptr);
-			any_component_started = true;
 			_het_job_add_used_nodes(&used_bitmap, job_ptr);
 		} else {
 			bool preempt_wait =
@@ -4535,9 +4531,8 @@ static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 				 job_ptr->details->preempt_start_time);
 			fed_mgr_job_unlock(job_ptr);
 			if (bf_hetjob_sticky_preempt_timeout &&
-			    any_component_started &&
 			    (rc == ESLURM_NODES_BUSY) &&
-			    preempt_wait) {
+			    (preempt_wait || map->sticky_preempt_start)) {
 				start_rc = HET_START_WAIT_PREEMPT;
 			} else {
 				start_rc = HET_START_FAILED;
@@ -4663,7 +4658,7 @@ static bool _het_job_start_test_single(node_space_map_t *node_space,
 
 		if ((now - map->sticky_preempt_start) <=
 		    bf_hetjob_sticky_preempt_timeout) {
-			log_flag(HETJOB, "Hetjob %u partially started; waiting for preemption cleanup",
+			log_flag(HETJOB, "Hetjob %u preemption started; waiting for cleanup",
 				 map->het_job_id);
 			map->prev_start = now + 1;
 			return false;
