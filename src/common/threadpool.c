@@ -470,47 +470,6 @@ static void _thread_free(thread_t **thread_ptr)
 	xfree(thread);
 }
 
-static void *_run(thread_t *thread)
-{
-	const timespec_t start = timespec_now();
-	void *ret = 0;
-
-	xassert(thread->magic == THREAD_MAGIC);
-
-	_set_thread_name(thread);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
-		char ts[CTIME_STR_LEN] = "UNKNOWN";
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(start, thread->requested);
-
-		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
-
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: %s thread calling %s(0x%"PRIxPTR") after %s",
-			 __func__, _thread_name(thread), (uint64_t) thread->id,
-			 (thread->detached ? "detached" : "attached"),
-			 thread->func_name, (uintptr_t) thread->arg, ts);
-	}
-
-	ret = thread->func(thread->arg);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
-		char ts[CTIME_STR_LEN] = "UNKNOWN";
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(timespec_now(), start);
-
-		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
-
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: %s thread called %s(0x%"PRIxPTR")=0x%"PRIxPTR" for %s",
-			 __func__, _thread_name(thread), (uint64_t) thread->id,
-			 (thread->detached ? "detached" : "attached"),
-			 thread->func_name,
-			 (uintptr_t) thread->arg, (uintptr_t) thread->ret, ts);
-	}
-
-	return ret;
-}
-
 static void _threadpool_run(thread_t *thread)
 {
 	const timespec_t start = timespec_now();
@@ -701,14 +660,44 @@ static void *_thread(void *arg)
 {
 	thread_t *thread = arg;
 	void *ret = NULL;
+	const timespec_t start = timespec_now();
 
 	xassert(!threadpool.enabled);
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(thread->state == THREAD_STATE_CLONING);
 
+	_set_thread_name(thread);
+
 	thread->state = THREAD_STATE_RUNNING;
 
-	ret = _run(thread);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
+		char ts[CTIME_STR_LEN] = "UNKNOWN";
+		timespec_diff_ns_t diff =
+			timespec_diff_ns(start, thread->requested);
+
+		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
+
+		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: %s thread calling %s(0x%"PRIxPTR") after %s",
+			 __func__, _thread_name(thread), (uint64_t) thread->id,
+			 (thread->detached ? "detached" : "attached"),
+			 thread->func_name, (uintptr_t) thread->arg, ts);
+	}
+
+	ret = thread->func(thread->arg);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
+		char ts[CTIME_STR_LEN] = "UNKNOWN";
+		timespec_diff_ns_t diff =
+			timespec_diff_ns(timespec_now(), start);
+
+		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
+
+		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: %s thread called %s(0x%"PRIxPTR")=0x%"PRIxPTR" for %s",
+			 __func__, _thread_name(thread), (uint64_t) thread->id,
+			 (thread->detached ? "detached" : "attached"),
+			 thread->func_name,
+			 (uintptr_t) thread->arg, (uintptr_t) ret, ts);
+	}
 
 	thread->state = THREAD_STATE_COMPLETE;
 	_thread_free(&thread);
