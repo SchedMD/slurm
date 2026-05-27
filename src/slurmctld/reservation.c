@@ -196,6 +196,20 @@ typedef struct {
 } foreach_pick_node_filter_t;
 
 typedef struct {
+	time_t job_end_time;
+	job_record_t *job_ptr;
+	time_t job_start_time;
+	time_t *lic_resv_time;
+	bool move_time;
+	bitstr_t **node_bitmap;
+	int *rc;
+	bool reboot;
+	resv_exc_t *resv_exc_ptr;
+	bool *resv_overlap;
+	time_t *when;
+} foreach_job_test_resv_t;
+
+typedef struct {
 	bitstr_t *node_bitmap;
 	resv_desc_msg_t *resv_desc_ptr;
 	slurmctld_resv_t *this_resv_ptr;
@@ -7816,17 +7830,186 @@ static void _addto_resv_exc(bitstr_t *core_bitmap, resv_exc_t *resv_exc_ptr)
 	}
 }
 
+static int _foreach_job_test_resv_overlap(void *x, void *arg)
+{
+	slurmctld_resv_t *res2_ptr = x;
+	foreach_job_test_resv_t *args = arg;
+	slurmctld_resv_t *resv_ptr = args->job_ptr->resv_ptr;
+	time_t now = time(NULL);
+	time_t start_relative, end_relative;
+	time_t job_end_time_use;
+
+	if (args->reboot)
+		job_end_time_use = args->job_end_time + res2_ptr->boot_time;
+	else
+		job_end_time_use = args->job_end_time;
+
+	_get_rel_start_end(res2_ptr, now, &start_relative, &end_relative);
+
+	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
+	    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
+	     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
+	    (res2_ptr == resv_ptr) ||
+	    !res2_ptr->node_bitmap ||
+	    (start_relative >= job_end_time_use) ||
+	    (end_relative <= args->job_start_time))
+		return 0;
+
+	if (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
+		/*
+		 * Flex reservations steal other reservations resources if
+		 * they are not on the full node. This removes any cores that
+		 * belong to other reservations.
+		 */
+		if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
+			_addto_resv_exc(res2_ptr->core_bitmap,
+					args->resv_exc_ptr);
+		}
+		return 0;
+	}
+
+	if (bit_overlap_any(*args->node_bitmap, res2_ptr->node_bitmap)) {
+		log_flag(RESERVATION, "%s: reservation %s overlaps %s with %u nodes",
+			 __func__, resv_ptr->name, res2_ptr->name,
+			 bit_overlap(*args->node_bitmap, res2_ptr->node_bitmap));
+		*args->resv_overlap = true;
+		bit_and_not(*args->node_bitmap, res2_ptr->node_bitmap);
+	}
+	return 0;
+}
+
+static int _foreach_job_test_no_resv(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	foreach_job_test_resv_t *args = arg;
+	job_record_t *job_ptr = args->job_ptr;
+	time_t now = time(NULL);
+	time_t start_relative, end_relative;
+	time_t job_end_time_use;
+
+	_get_rel_start_end(resv_ptr, now, &start_relative, &end_relative);
+
+	if (args->reboot)
+		job_end_time_use = args->job_end_time + resv_ptr->boot_time;
+	else
+		job_end_time_use = args->job_end_time;
+
+	if ((start_relative >= job_end_time_use) ||
+	    (end_relative <= args->job_start_time))
+		return 0;
+	/*
+	 * FIXME: This only tracks when ANY licenses required by the job are
+	 * freed by any reservation without counting them, so the results are
+	 * not accurate.
+	 */
+	if (license_list_overlap(job_ptr->license_list,
+				 resv_ptr->license_list)) {
+		if ((*args->lic_resv_time == (time_t) 0) ||
+		    (*args->lic_resv_time > resv_ptr->end_time))
+			*args->lic_resv_time = resv_ptr->end_time;
+	}
+
+	if (!resv_ptr->node_bitmap)
+		return 0;
+	/*
+	 * Check if we are able to use this reservation's resources even though
+	 * we didn't request it.
+	 */
+	if (resv_ptr->max_start_delay &&
+	    (job_ptr->warn_time <= resv_ptr->max_start_delay) &&
+	    (job_ptr->warn_flags & KILL_JOB_RESV)) {
+		return 0;
+	}
+
+	if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES ||
+	    ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
+	     (job_ptr->part_ptr == resv_ptr->part_ptr)) ||
+	    ((resv_ptr->flags & RESERVE_FLAG_MAINT) &&
+	     job_ptr->part_ptr &&
+	     bit_super_set(job_ptr->part_ptr->node_bitmap,
+			   resv_ptr->node_bitmap))) {
+		*args->rc = ESLURM_RESERVATION_MAINT;
+		if (args->move_time)
+			*args->when = resv_ptr->end_time;
+		return -1;
+	}
+
+	if (job_ptr->details->req_node_bitmap &&
+	    bit_overlap_any(job_ptr->details->req_node_bitmap,
+			    resv_ptr->node_bitmap) &&
+	    (!resv_ptr->tres_str ||
+	     (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED))) {
+		if (args->move_time)
+			*args->when = resv_ptr->end_time;
+		*args->rc = ESLURM_NODES_BUSY;
+		return -1;
+	}
+
+	if (IS_JOB_WHOLE_TOPO(job_ptr)) {
+		bitstr_t *efctv_bitmap = bit_copy(resv_ptr->node_bitmap);
+		topology_g_whole_topo(efctv_bitmap,
+				      job_ptr->part_ptr->topology_idx);
+
+		log_flag(RESERVATION, "%s: %pJ will can not share topology with %s",
+			 __func__, job_ptr, resv_ptr->name);
+		bit_and_not(*args->node_bitmap, efctv_bitmap);
+		FREE_NULL_BITMAP(efctv_bitmap);
+
+	} else if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) ||
+		   (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED)) {
+		log_flag(RESERVATION, "%s: reservation %s uses full nodes or %pJ will not share nodes",
+			 __func__, resv_ptr->name, job_ptr);
+		bit_and_not(*args->node_bitmap, resv_ptr->node_bitmap);
+	} else {
+		log_flag(RESERVATION, "%s: reservation %s uses partial nodes",
+			 __func__, resv_ptr->name);
+
+		if (!resv_ptr->core_bitmap) {
+			;
+		} else if (!args->resv_exc_ptr) {
+			error("%s: resv_exc_ptr is NULL", __func__);
+		} else if (!args->resv_exc_ptr->core_bitmap) {
+			args->resv_exc_ptr->core_bitmap =
+				bit_copy(resv_ptr->core_bitmap);
+		} else {
+			bit_or(args->resv_exc_ptr->core_bitmap,
+			       resv_ptr->core_bitmap);
+		}
+	}
+
+	if (args->resv_exc_ptr)
+		_addto_gres_list_exc(&args->resv_exc_ptr->gres_list_exc,
+				     resv_ptr->gres_list_alloc);
+
+	if (!job_ptr->part_ptr ||
+	    bit_overlap_any(job_ptr->part_ptr->node_bitmap,
+			    resv_ptr->node_bitmap)) {
+		*args->resv_overlap = true;
+		return 0;
+	}
+	return 0;
+}
+
 extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
 			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
 			 bool reboot)
 {
-	slurmctld_resv_t *resv_ptr = NULL, *res2_ptr;
-	time_t job_start_time, job_end_time, job_end_time_use, lic_resv_time;
-	time_t start_relative, end_relative;
+	slurmctld_resv_t *resv_ptr = NULL;
+	time_t job_start_time, job_end_time, lic_resv_time;
 	time_t now = time(NULL);
-	list_itr_t *iter;
 	int i, rc = SLURM_SUCCESS, rc2;
+	foreach_job_test_resv_t args = {
+		.job_ptr = job_ptr,
+		.lic_resv_time = &lic_resv_time,
+		.move_time = move_time,
+		.node_bitmap = node_bitmap,
+		.rc = &rc,
+		.reboot = reboot,
+		.resv_exc_ptr = resv_exc_ptr,
+		.resv_overlap = resv_overlap,
+		.when = when,
+	};
 
 	*resv_overlap = false;	/* initialize to false */
 	job_start_time = *when;
@@ -7924,54 +8107,10 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		 * if there are any overlapping reservations, we need to
 		 * prevent the job from using those nodes (e.g. MAINT nodes)
 		 */
-		iter = list_iterator_create(resv_list);
-		while ((res2_ptr = list_next(iter))) {
-			if (reboot)
-				job_end_time_use =
-					job_end_time + res2_ptr->boot_time;
-			else
-				job_end_time_use = job_end_time;
-
-			_get_rel_start_end(
-				res2_ptr, now, &start_relative, &end_relative);
-
-			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-			    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
-			     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
-			    (res2_ptr == resv_ptr) ||
-			    (res2_ptr->node_bitmap == NULL) ||
-			    (start_relative >= job_end_time_use) ||
-			    (end_relative <= job_start_time)) {
-				continue;
-			}
-
-			if (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
-				/*
-				 * Flex reservations steal other reservations
-				 * resources if they are not on the full node.
-				 * This removes any cores that belong to other
-				 * reservations.
-				 */
-				if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
-					_addto_resv_exc(res2_ptr->core_bitmap,
-							resv_exc_ptr);
-				}
-
-				continue;
-			}
-
-			if (bit_overlap_any(*node_bitmap,
-					    res2_ptr->node_bitmap)) {
-				log_flag(RESERVATION, "%s: reservation %s overlaps %s with %u nodes",
-					 __func__, resv_ptr->name,
-					 res2_ptr->name,
-					 bit_overlap(*node_bitmap,
-						     res2_ptr->node_bitmap));
-				*resv_overlap = true;
-				bit_and_not(*node_bitmap,res2_ptr->node_bitmap);
-			}
-		}
-		list_iterator_destroy(iter);
+		args.job_end_time = job_end_time;
+		args.job_start_time = job_start_time;
+		list_for_each_ro(resv_list, _foreach_job_test_resv_overlap,
+				 &args);
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
@@ -8013,121 +8152,10 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	 * run and get it's required nodes (if any)
 	 */
 	for (i = 0; ; i++) {
+		args.job_end_time = job_end_time;
+		args.job_start_time = job_start_time;
 		lic_resv_time = (time_t) 0;
-
-		iter = list_iterator_create(resv_list);
-		while ((resv_ptr = list_next(iter))) {
-			_get_rel_start_end(
-				resv_ptr, now, &start_relative, &end_relative);
-
-			if (reboot)
-				job_end_time_use =
-					job_end_time + resv_ptr->boot_time;
-			else
-				job_end_time_use = job_end_time;
-
-			if ((start_relative >= job_end_time_use) ||
-			    (end_relative <= job_start_time))
-				continue;
-			/*
-			 * FIXME: This only tracks when ANY licenses required
-			 * by the job are freed by any reservation without
-			 * counting them, so the results are not accurate.
-			 */
-			if (license_list_overlap(job_ptr->license_list,
-						 resv_ptr->license_list)) {
-				if ((lic_resv_time == (time_t) 0) ||
-				    (lic_resv_time > resv_ptr->end_time))
-					lic_resv_time = resv_ptr->end_time;
-			}
-
-			if (resv_ptr->node_bitmap == NULL)
-				continue;
-			/*
-			 * Check if we are able to use this reservation's
-			 * resources even though we didn't request it.
-			 */
-			if (resv_ptr->max_start_delay &&
-			    (job_ptr->warn_time <= resv_ptr->max_start_delay) &&
-			    (job_ptr->warn_flags & KILL_JOB_RESV)) {
-				continue;
-			}
-
-			if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES ||
-			    ((resv_ptr->flags  & RESERVE_FLAG_PART_NODES) &&
-			     job_ptr->part_ptr == resv_ptr->part_ptr) ||
-			    ((resv_ptr->flags & RESERVE_FLAG_MAINT) &&
-			     job_ptr->part_ptr &&
-			     (bit_super_set(job_ptr->part_ptr->node_bitmap,
-					    resv_ptr->node_bitmap)))) {
-				rc = ESLURM_RESERVATION_MAINT;
-				if (move_time)
-					*when = resv_ptr->end_time;
-				break;
-			}
-
-			if (job_ptr->details->req_node_bitmap &&
-			    bit_overlap_any(job_ptr->details->req_node_bitmap,
-					    resv_ptr->node_bitmap) &&
-			    (!resv_ptr->tres_str ||
-			     job_ptr->details->whole_node &
-			     WHOLE_NODE_REQUIRED)) {
-				if (move_time)
-					*when = resv_ptr->end_time;
-				rc = ESLURM_NODES_BUSY;
-				break;
-			}
-
-			if (IS_JOB_WHOLE_TOPO(job_ptr)) {
-				bitstr_t *efctv_bitmap =
-					bit_copy(resv_ptr->node_bitmap);
-				topology_g_whole_topo(efctv_bitmap,
-						      job_ptr->part_ptr
-							      ->topology_idx);
-
-				log_flag(RESERVATION, "%s: %pJ will can not share topology with %s",
-					 __func__, job_ptr, resv_ptr->name);
-				bit_and_not(*node_bitmap, efctv_bitmap);
-				FREE_NULL_BITMAP(efctv_bitmap);
-
-			} else if ((resv_ptr->ctld_flags &
-				    RESV_CTLD_FULL_NODE) ||
-				  (job_ptr->details->whole_node &
-				   WHOLE_NODE_REQUIRED)) {
-				log_flag(RESERVATION, "%s: reservation %s uses full nodes or %pJ will not share nodes",
-					 __func__, resv_ptr->name, job_ptr);
-				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
-			} else {
-				log_flag(RESERVATION, "%s: reservation %s uses partial nodes",
-				     __func__, resv_ptr->name);
-
-				if (resv_ptr->core_bitmap == NULL) {
-					;
-				} else if (!resv_exc_ptr) {
-					error("%s: resv_exc_ptr is NULL",
-					      __func__);
-				} else if (!resv_exc_ptr->core_bitmap) {
-					resv_exc_ptr->core_bitmap =
-						bit_copy(resv_ptr->core_bitmap);
-				} else {
-					bit_or(resv_exc_ptr->core_bitmap,
-					       resv_ptr->core_bitmap);
-				}
-			}
-
-			if (resv_exc_ptr)
-				_addto_gres_list_exc(
-					&resv_exc_ptr->gres_list_exc,
-					resv_ptr->gres_list_alloc);
-
-			if(!job_ptr->part_ptr ||
-			    bit_overlap_any(job_ptr->part_ptr->node_bitmap,
-					    resv_ptr->node_bitmap)) {
-				*resv_overlap = true;
-				continue;
-			}
-		}
-		list_iterator_destroy(iter);
+		list_for_each_ro(resv_list, _foreach_job_test_no_resv, &args);
 
 		if (resv_exc_ptr) {
 			free_core_array(&resv_exc_ptr->exc_cores);
