@@ -311,7 +311,8 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_spawn_job_container" in bt
         and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
     ):
-        if get_version(component) >= (25, 11, 6):
+        # "slurmstepd -V" won't work, but slurmd should have the same version
+        if get_version("sbin/slurmd") >= (25, 11, 6):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -327,7 +328,8 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "step_partial_comp" in bt
         and "dest=0x0" in bt
     ):
-        if get_version(component) > (25, 11, 6):
+        # "slurmstepd -V" won't work, but slurmd should have the same version
+        if get_version("sbin/slurmd") > (25, 11, 6):
             failures.append(reason)
         else:
             xfailures.append(reason)
