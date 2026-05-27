@@ -3276,6 +3276,7 @@ typedef struct {
 				       * local logfile and syslog*/
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before
 				 * considering node DOWN */
+	char *slurmrestd_params; /* SlurmrestdParameters */
 	char *slurmstepd_params; /* SlurmstepdParameters */
 	char *srun_epilog;      /* srun epilog program */
 	uint16_t *srun_port_range; /* port range for srun */
