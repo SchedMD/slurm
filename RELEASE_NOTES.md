@@ -10,7 +10,7 @@ See the [Upgrade Guide](https://slurm.schedmd.com/upgrades.html) for further det
 
 * New "srun --async" step mode that submits step processes to stepmgr to queue and eventually launch. This avoids issues with keeping a large number of srun processes backgrounded to queue up future step-based workflows. (This was previously described as "mini-batch" in the Slurm roadmap presentations.)
 * New topology/ring and topology/torus3d topology plugins. These implement a single-dimensional and three-dimensional topology respectively.
-* Slurm REST API - Add support for creating/updating/removing partitions, and fror viewing the active slurmctld and slurmdbd configurations.
+* Slurm REST API - Add support for creating/updating/removing partitions, and for viewing the active slurmctld and slurmdbd configurations.
 * Dynamic Memory Resizing. A job can now release memory (and have the cgroup limits updated) using 'scontrol update' while running. A new "sbatch --mem-update=<margin>@<delay>" option can also automatically reduce the memory limit to the current usage plus a given margin percentage after a specified time.
 * Add topology-based sorting for node ranks when using dynamic nodes with the topology plugins. This is also available generically for topology/flat (no topology) with a new alpha_step_rank option.
 * Add an optimized single-node path through the scheduling logic for increased performance.
