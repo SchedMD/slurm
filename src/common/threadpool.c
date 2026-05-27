@@ -379,8 +379,15 @@ static void _set_thread_name(thread_t *thread)
 #endif
 }
 
-static void _thread_free(thread_t *thread)
+/*
+ * Takes ownership of pointer.
+ * Caller must not own threadpool.mutex lock.
+ */
+static void _thread_free(thread_t **thread_ptr)
 {
+	thread_t *thread = *thread_ptr;
+	*thread_ptr = NULL;
+
 	if (!thread)
 		return;
 
@@ -583,7 +590,7 @@ static void *_thread(void *arg)
 		_run(thread);
 
 		ret = thread->ret;
-		_thread_free(thread);
+		_thread_free(&thread);
 
 		return ret;
 	}
@@ -618,8 +625,7 @@ static void *_thread(void *arg)
 			_threadpool_postrun(thread);
 
 			slurm_mutex_unlock(&threadpool.mutex);
-			_thread_free(thread);
-			thread = NULL;
+			_thread_free(&thread);
 			slurm_mutex_lock(&threadpool.mutex);
 		}
 
