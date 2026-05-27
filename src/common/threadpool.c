@@ -206,27 +206,6 @@ strong_alias(threadpool_join, slurm_threadpool_join);
 strong_alias(threadpool_init, slurm_threadpool_init);
 strong_alias(threadpool_fini, slurm_threadpool_fini);
 
-static int _join(const pthread_t id, const char *caller)
-{
-	int rc = EINVAL;
-	void *ret = 0;
-
-	if ((rc = pthread_join(id, &ret))) {
-		error("%s->%s: pthread_join(id=0x%"PRIx64") failed: %s",
-		      caller, __func__, (uint64_t) id, slurm_strerror(rc));
-		return rc;
-	}
-
-	if (ret == PTHREAD_CANCELED)
-		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" was cancelled",
-		       caller, __func__, (uint64_t) id);
-	else
-		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
-		       caller, __func__, (uint64_t) id, (uintptr_t) ret);
-
-	return rc;
-}
-
 static int _match_thread_id(void *x, void *key)
 {
 	const thread_t *thread = x;
@@ -252,6 +231,27 @@ static int _match_thread_ptr(void *x, void *y)
 }
 
 #endif
+
+static int _join(const pthread_t id, const char *caller)
+{
+	int rc = EINVAL;
+	void *ret = NULL;
+
+	if ((rc = pthread_join(id, &ret))) {
+		error("%s->%s: pthread_join(id=0x%"PRIx64") failed: %s",
+		      caller, __func__, (uint64_t) id, slurm_strerror(rc));
+		return rc;
+	}
+
+	if (ret == PTHREAD_CANCELED)
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" was cancelled",
+		       caller, __func__, (uint64_t) id);
+	else
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
+		       caller, __func__, (uint64_t) id, (uintptr_t) ret);
+
+	return rc;
+}
 
 static int _threadpool_on_detach(thread_t *thread, const char *caller)
 {
