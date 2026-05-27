@@ -565,6 +565,8 @@ static int _build_job_queue_for_qos(void *x, void *arg)
 	job_record_t *job_ptr = setup_job->job_ptr;
 
 	job_ptr->qos_ptr = x;
+	if (job_ptr->qos_ptr)
+		job_ptr->qos_id = job_ptr->qos_ptr->id;
 
 	/*
 	 * priority_array index matches part_ptr_list * qos_list
@@ -1521,6 +1523,8 @@ static int _schedule(bool full_queue)
 		}
 
 		job_ptr->qos_ptr = job_queue_rec->qos_ptr;
+		if (job_ptr->qos_ptr)
+			job_ptr->qos_id = job_ptr->qos_ptr->id;
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = job_queue_rec->priority;
 
