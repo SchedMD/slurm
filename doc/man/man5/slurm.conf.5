@@ -6084,6 +6084,70 @@ slurmd can run jobs as the user that submitted them.
 .IP
 
 .TP
+\fBSlurmrestdParameters\fR
+Parameters specific to \fBslurmrestd\fR. Changes to this option take effect only
+when \fBslurmrestd\fR is restarted. Multiple options may be comma separated.
+.IP
+.RS
+.TP
+\fBconmgr_max_connections\fR=<\fIconnection_count\fR>
+Specify the maximum number of connections to be processed at any given time.
+This does not influence the maximum number of pending connections as that is
+controlled by the kernel. Increasing this value will increase \fBslurmrestd\fR's
+memory footprint. Sites are advised to monitor memory consumption when
+increasing this value. Defaults to 124.
+
+\fBNOTE\fR: When set, this value takes precedence over the
+\fBSLURMRESTD_MAX_CONNECTIONS\fR environment variable and the
+\fB\-\-max\-connections\fR CLI flag.
+.IP
+
+.TP
+\fBconmgr_threads\fR=<\fIthread_count\fR>
+The number of process threads in the thread pool used for receiving and
+processing connections on the listening sockets. Defaults to twice the number of
+CPUs available to \fBslurmrestd\fR, up to a maximum default of 32 threads.
+.IP
+.IP
+
+.TP
+\fBconmgr_use_poll\fR
+Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
+.IP
+
+.TP
+\fBconmgr_connect_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering an outbound connection attempt to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_read_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a read from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_quiesce_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering quiesce to be timed out. Upon timeout,
+all (non-listening) active connections will be closed to allow the quiesce to
+start. Defaults to two times the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_wait_write_delay\fR=<\fIseconds\fR>
+When waiting for the kernel to flush the outgoing buffer, poll the kernel for
+changes every <\fIseconds\fR>. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBconmgr_write_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a write to a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.RE
+.IP
+
+.TP
 \fBSlurmSchedLogFile\fR
 Fully qualified pathname of the scheduling event logging file.
 The syntax of this parameter is the same as for \fBSlurmctldLogFile\fR.
