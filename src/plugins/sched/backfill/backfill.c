@@ -2435,6 +2435,8 @@ static void _attempt_backfill(void)
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;
 		job_ptr->qos_ptr = qos_ptr;
+		if (qos_ptr)
+			job_ptr->qos_id = qos_ptr->id;
 
 		mcs_select = slurm_mcs_get_select(job_ptr);
 		het_job_time = _het_job_start_find(job_ptr);
@@ -2620,6 +2622,8 @@ next_task:
 		 */
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->qos_ptr = qos_ptr;
+		if (qos_ptr)
+			job_ptr->qos_id = qos_ptr->id;
 		job_ptr->resv_ptr = resv_ptr;
 		if (resv_ptr)
 			job_ptr->resv_id = resv_ptr->resv_id;
@@ -2820,6 +2824,8 @@ TRY_LATER:
 			job_ptr->time_limit = save_time_limit;
 			job_ptr->part_ptr = part_ptr;
 			job_ptr->qos_ptr = qos_ptr;
+			if (qos_ptr)
+				job_ptr->qos_id = qos_ptr->id;
 		}
 
 		/*

@@ -4002,6 +4002,8 @@ static int _foreach_select_nodes_qos(void *object, void *args)
 	job_record_t *job_ptr = job_node_select->job_ptr;
 
 	job_ptr->qos_ptr = qos_ptr;
+	if (qos_ptr)
+		job_ptr->qos_id = qos_ptr->id;
 
 	debug2("Try %pJ on next QOS %s", job_ptr, qos_ptr->name);
 
