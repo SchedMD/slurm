@@ -87,14 +87,19 @@ def assert_resv(resv_old_dbd, resv_old_ctld):
                 resv_old[id].keys() == resv_new[id].keys()
             ), f"Verify Reservation {id} has the same attributes in {daemon}"
             for param in resv_old[id]:
-                assert (
-                    resv_old[id][param] == resv_new[id][param]
-                ), f"Parameter {param} of Reservation {id} ({resv_new[id][param]}) should have the same value in {daemon} than before upgrading ({resv_old[id][param]})"
+                # UnusedWall may grow
+                if param == "UnusedWall":
+                    assert float(resv_new[id][param]) >= float(resv_old[id][param]), (
+                        f"UnusedWall of Reservation {id} regressed in {daemon} "
+                        f"({resv_new[id][param]} < {resv_old[id][param]})"
+                    )
+                else:
+                    assert (
+                        resv_old[id][param] == resv_new[id][param]
+                    ), f"Parameter {param} of Reservation {id} ({resv_new[id][param]}) should have the same value in {daemon} than before upgrading ({resv_old[id][param]})"
 
     _assert_resv(resv_old_ctld, atf.get_reservations(), "slurmctld")
-
-    resv_new_dbd = get_resv_from_dbd()
-    assert resv_old_dbd == resv_new_dbd
+    _assert_resv(resv_old_dbd, get_resv_from_dbd(), "slurmdbd")
 
 
 def assert_qos(old_dbd):
@@ -179,7 +184,18 @@ def assert_assoc_ctld(old_assoc_ctld):
 
 # TODO: Use --json once available in i50265
 def get_resv_from_dbd():
-    return atf.run_command_output("sacctmgr -Pn show reservations", fatal=True)
+    fields = ["Cluster", "Name", "TRES", "Start", "End", "UnusedWall"]
+    result = {}
+    out = atf.run_command_output("sacctmgr -Pn show reservations", fatal=True)
+    for line in out.splitlines():
+        cols = line.split("|")
+        if len(cols) != len(fields):
+            pytest.fail(
+                f"Unexpected amount of reservation fields: {cols}. Expecting {fields}"
+            )
+        d = dict(zip(fields, cols))
+        result[d["Name"]] = d
+    return result
 
 
 # TODO: Use --json once available in i50265
@@ -269,7 +285,7 @@ def test_upgrade():
     # TODO: Are inactive reservations expected to appear in dbd?
     atf.repeat_until(
         lambda: get_resv_from_dbd(),
-        lambda out: re.search("resv1", out),
+        lambda out: "resv1" in out,
         fatal=True,
     )
 
