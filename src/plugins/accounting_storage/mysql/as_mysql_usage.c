@@ -1053,7 +1053,11 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 	}
 	slurm_mutex_unlock(&rolledup_lock);
 	END_TIMER;
-	debug("Everything rolled up in %s", TIMER_STR());
+	if (rc != SLURM_SUCCESS)
+		error("Rollup failed in %s: one or more clusters had errors",
+		      TIMER_STR());
+	else
+		debug("Everything rolled up in %s", TIMER_STR());
 	slurm_mutex_destroy(&rolledup_lock);
 	slurm_cond_destroy(&rolledup_cond);
 
