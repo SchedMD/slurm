@@ -312,9 +312,11 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	int num_read, nvals;
 	char state[1];
 	int ppid, pgrp, session, tty_nr, tpgid;
-	long unsigned flags, minflt, cminflt, majflt, cmajflt;
-	long unsigned utime, stime, starttime, vsize;
-	long int cutime, cstime, priority, nice, timeout, itrealvalue, rss;
+	unsigned int flags;
+	long unsigned minflt, cminflt, majflt, cmajflt;
+	long unsigned utime, stime, vsize;
+	unsigned long long starttime;
+	long int cutime, cstime, priority, nice, num_threads, itrealvalue, rss;
 	long unsigned f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13;
 	int exit_signal, last_cpu;
 
@@ -339,16 +341,16 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 
 	nvals = sscanf(tmp + 2,	 /* skip space after ')' too */
 		       "%c %d %d %d %d %d "
-		       "%lu %lu %lu %lu %lu "
+		       "%u %lu %lu %lu %lu "
 		       "%lu %lu %ld %ld %ld %ld "
-		       "%ld %ld %lu %lu %ld "
+		       "%ld %ld %llu %lu %ld "
 		       "%lu %lu %lu %lu %lu "
 		       "%lu %lu %lu %lu %lu "
 		       "%lu %lu %lu %d %d ",
 		       state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
 		       &flags, &minflt, &cminflt, &majflt, &cmajflt,
 		       &utime, &stime, &cutime, &cstime, &priority, &nice,
-		       &timeout, &itrealvalue, &starttime, &vsize, &rss,
+		       &num_threads, &itrealvalue, &starttime, &vsize, &rss,
 		       &f1, &f2, &f3, &f4, &f5 ,&f6, &f7, &f8, &f9, &f10, &f11,
 		       &f12, &f13, &exit_signal, &last_cpu);
 	/* There are some additional fields, which we do not scan or use */
