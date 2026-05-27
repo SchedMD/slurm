@@ -539,6 +539,8 @@ static void _threadpool_zombie(thread_t *thread)
 static void _threadpool_prerun(thread_t *thread)
 {
 	xassert(thread->magic == THREAD_MAGIC);
+	xassert(!thread->id);
+	thread->id = pthread_self();
 
 	threadpool.total_run++;
 
@@ -618,8 +620,6 @@ static void *_threadpool_thread(void *arg)
 	do {
 		if (thread) {
 			xassert(thread->magic == THREAD_MAGIC);
-			xassert(!thread->id);
-			thread->id = pthread_self();
 
 			_threadpool_prerun(thread);
 
