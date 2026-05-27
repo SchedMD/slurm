@@ -114,9 +114,13 @@ typedef struct {
 typedef struct {
 	char *cluster_name;
 	time_t curr_start;
+	char *err_msg;
+	size_t flush_threshold;
+	mysql_conn_t *mysql_conn;
 	time_t now;
 	char *query;
 	char *query_pos;
+	int rc;
 	int type;
 } id_usage_walk_arg_t;
 
@@ -1360,11 +1364,64 @@ static void _add_planned_time(local_cluster_usage_t *c_usage, time_t job_start,
 		       loc_seconds * (uint64_t) row_rcpu, 0);
 }
 
+static size_t _get_max_allowed_packet(mysql_conn_t *mysql_conn)
+{
+	uint64_t value = 0;
+
+	/* Conservative default if the server didn't answer. */
+	if (mysql_db_get_var_u64(mysql_conn, "max_allowed_packet", &value) ||
+	    !value)
+		value = 16ULL * 1024 * 1024;
+
+	return value;
+}
+
+static void _flush_chunk(id_usage_walk_arg_t *a)
+{
+	if ((a->rc != SLURM_SUCCESS) || !a->query)
+		return;
+
+	DB_DEBUG(DB_USAGE, a->mysql_conn->conn, "query\n%s", a->query);
+	if (mysql_db_query(a->mysql_conn, a->query) != SLURM_SUCCESS) {
+		error("%s", a->err_msg);
+		a->rc = SLURM_ERROR;
+	}
+	xfree(a->query);
+	a->query_pos = NULL;
+}
+
 static void _id_usage_walk(void *item, void *arg)
 {
 	id_usage_walk_arg_t *a = arg;
+
+	if (a->rc != SLURM_SUCCESS)
+		return;
+
 	_create_id_usage_insert(a->cluster_name, a->type, a->curr_start,
 				a->now, item, &a->query, &a->query_pos);
+
+	if (a->query &&
+	    ((size_t) (a->query_pos - a->query) >= a->flush_threshold))
+		_flush_chunk(a);
+}
+
+static int _flush_id_usage_batch(mysql_conn_t *mysql_conn, xhash_t *hash,
+				 int type, id_usage_walk_arg_t *arg,
+				 char *err_msg)
+{
+	if (!xhash_count(hash))
+		return SLURM_SUCCESS;
+
+	arg->mysql_conn = mysql_conn;
+	arg->type = type;
+	arg->err_msg = err_msg;
+	arg->rc = SLURM_SUCCESS;
+
+	xhash_walk(hash, _id_usage_walk, arg);
+
+	_flush_chunk(arg);
+
+	return arg->rc;
 }
 
 static local_id_usage_t *_check_q_usage(xhash_t *qos_usage_hash,
@@ -1417,6 +1474,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	local_id_usage_t *a_usage = NULL;
 	local_id_usage_t *q_usage = NULL;
 	local_id_usage_t *w_usage = NULL;
+	size_t max_packet;
+	size_t flush_threshold;
 	/* char start_char[20], end_char[20]; */
 
 	char *job_req_inx[] = {
@@ -1498,15 +1557,22 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	dims = atoi(row[0]);
 	mysql_free_result(result);
 
+	max_packet = _get_max_allowed_packet(mysql_conn);
+	flush_threshold = max_packet > 2 * 1024 * 1024 ?
+		max_packet - 1024 * 1024 :
+		max_packet / 2;
+
 /* 	info("begin start %s", slurm_ctime2(&curr_start)); */
 /* 	info("begin end %s", slurm_ctime2(&curr_end)); */
 	c_itr = list_iterator_create(cluster_down_list);
 	r_itr = list_iterator_create(resv_usage_list);
 	while (curr_start < end) {
 		id_usage_walk_arg_t arg = {
+			.mysql_conn = mysql_conn,
 			.cluster_name = cluster_name,
 			.curr_start = curr_start,
 			.now = now,
+			.flush_threshold = flush_threshold,
 		};
 		/*
 		 * Suspend intervals are loaded lazily on the first suspended
@@ -2008,50 +2074,26 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		arg.type = ASSOC_TABLES;
-		xhash_walk(assoc_usage_hash, _id_usage_walk, &arg);
-		if (arg.query) {
-			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
-			         arg.query);
-			rc = mysql_db_query(mysql_conn, arg.query);
-			xfree(arg.query);
-			arg.query_pos = NULL;
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't add assoc hour rollup");
-				goto end_it;
-			}
-		}
+		rc = _flush_id_usage_batch(mysql_conn, assoc_usage_hash,
+					   ASSOC_TABLES, &arg,
+					   "Couldn't add assoc hour rollup");
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
 
-		arg.type = QOS_TABLES;
-		xhash_walk(qos_usage_hash, _id_usage_walk, &arg);
-		if (arg.query) {
-			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
-			         arg.query);
-			rc = mysql_db_query(mysql_conn, arg.query);
-			xfree(arg.query);
-			arg.query_pos = NULL;
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't add qos hour rollup");
-				goto end_it;
-			}
-		}
+		rc = _flush_id_usage_batch(mysql_conn, qos_usage_hash,
+					   QOS_TABLES, &arg,
+					   "Couldn't add qos hour rollup");
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
 
 		if (!track_wckey)
 			goto end_loop;
 
-		arg.type = WCKEY_TABLES;
-		xhash_walk(wckey_usage_hash, _id_usage_walk, &arg);
-		if (arg.query) {
-			DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s",
-			         arg.query);
-			rc = mysql_db_query(mysql_conn, arg.query);
-			xfree(arg.query);
-			arg.query_pos = NULL;
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't add wckey hour rollup");
-				goto end_it;
-			}
-		}
+		rc = _flush_id_usage_batch(mysql_conn, wckey_usage_hash,
+					   WCKEY_TABLES, &arg,
+					   "Couldn't add wckey hour rollup");
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
 
 	end_loop:
 		_destroy_local_cluster_usage(c_usage);
