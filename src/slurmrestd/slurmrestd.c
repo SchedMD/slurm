@@ -700,6 +700,11 @@ int main(int argc, char **argv)
 		fatal("Unable to load url_parser plugin: %s",
 		      slurm_strerror(rc));
 
+	if (slurm_conf.slurmrestd_params &&
+	    (rc = conmgr_set_params(slurm_conf.slurmrestd_params)))
+		fatal("Unable to apply SlurmrestdParameters: %s",
+		      slurm_strerror(rc));
+
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init(thread_count,
 		    (run_mode.listen ? 0 : CONMGR_THREAD_COUNT_MIN),
