@@ -44,6 +44,7 @@
 \*****************************************************************************/
 
 #include "accounting_storage_mysql.h"
+
 #include "as_mysql_acct.h"
 #include "as_mysql_archive.h"
 #include "as_mysql_assoc.h"
@@ -63,6 +64,8 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
+
+#include "src/common/persist_conn.h"
 
 #include "src/slurmdbd/proc_req.h"
 

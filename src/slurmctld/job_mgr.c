@@ -69,6 +69,7 @@
 #include "src/common/id_util.h"
 #include "src/common/node_features.h"
 #include "src/common/parse_time.h"
+#include "src/common/persist_conn.h"
 #include "src/common/port_mgr.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"

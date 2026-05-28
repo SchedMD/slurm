@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/persist_conn.h"
 #include "src/interfaces/jobacct_gather.h"
 
 /*

@@ -72,6 +72,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/persist_conn.h"
 #include "src/common/port_mgr.h"
 #include "src/common/probes.h"
 #include "src/common/proc_args.h"

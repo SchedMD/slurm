@@ -40,6 +40,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/fd.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/threadpool.h"

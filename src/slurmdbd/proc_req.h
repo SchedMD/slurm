@@ -41,6 +41,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_defs.h"
 
 typedef struct {

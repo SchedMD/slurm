@@ -66,6 +66,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
+#include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"

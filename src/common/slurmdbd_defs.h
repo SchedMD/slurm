@@ -44,6 +44,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/list.h"
+#include "src/common/persist_conn.h"
 #include "src/interfaces/accounting_storage.h"
 
 #define RC_AS_CLUSTER_ID SLURM_BIT(31)

@@ -45,6 +45,7 @@
 
 #include "slurmdbd_agent.h"
 #include "src/common/fd.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/interfaces/conn.h"
 #include "src/slurmctld/trigger_mgr.h"

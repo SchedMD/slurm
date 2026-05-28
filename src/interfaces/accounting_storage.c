@@ -45,6 +45,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
+#include "src/common/persist_conn.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"

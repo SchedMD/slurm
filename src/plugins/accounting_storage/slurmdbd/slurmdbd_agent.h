@@ -42,6 +42,7 @@
 
 #include "dbd_conn.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/persist_conn.h"
 
 extern persist_conn_t *slurmdbd_conn;
 
