@@ -1755,6 +1755,10 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 		return NULL;
 	}
 
+	log_flag(NET, "%s: packing msg_type=%s rpc_version=%hu",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, true),
+		 rpc_version);
+
 	buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 
