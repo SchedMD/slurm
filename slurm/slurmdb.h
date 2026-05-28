@@ -824,9 +824,9 @@ typedef struct {
 	list_t *feature_list; /* list of cluster features */
 	uint32_t id; /* id of cluster in federation */
 	char *name; /* Federation name */
-	void *recv;  /* slurm_persist_conn_t we recv information about this
+	void *recv; /* persist_conn_t we recv information about this
 		      * sibling on. (We get this information) */
-	void *send; /* slurm_persist_conn_t we send information to this
+	void *send; /* persist_conn_t we send information to this
 		     * cluster on. (We set this information) */
 	uint32_t state; /* state of cluster in federation */
 	bool sync_recvd; /* true sync jobs from sib has been processed. */
@@ -1777,7 +1777,7 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 /*
  * get a new connection to the slurmdb
  * OUT: persist_conn_flags - Flags returned from connection if any see
- *                           slurm_persist_conn.h.
+ *                           persist_conn.h.
  * RET: pointer used to access db
  */
 extern void *slurmdb_connection_get(uint16_t *persist_conn_flags);
