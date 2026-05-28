@@ -175,8 +175,8 @@ static struct {
 	bool shutdown;
 	/* list_t * of thread_t * */
 	list_t *pending;
-	/* list_t * of thread_t * */
-	list_t *zombies;
+	/* Count of threads currently in THREAD_STATE_ZOMBIE */
+	int zombies;
 	/* list_t * of thread_t * */
 	list_t *attached;
 	/* Number of running threads */
@@ -309,6 +309,11 @@ static int _threadpool_on_detach(thread_t *thread, const char *caller)
 	if (!list_delete_ptr(threadpool.attached, thread))
 		fatal_abort("this should never happen");
 
+	if (thread->state == THREAD_STATE_ZOMBIE) {
+		xassert(threadpool.zombies > 0);
+		threadpool.zombies--;
+	}
+
 	xassert(!thread->detached);
 	thread->detached = true;
 
@@ -347,8 +352,10 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 		xassert(thread->state > THREAD_STATE_INVALID);
 		xassert(thread->state < THREAD_STATE_INVALID_MAX);
 
-		if (list_delete_ptr(threadpool.zombies, thread))
+		if (thread->state == THREAD_STATE_ZOMBIE) {
+			xassert(!thread->detached);
 			break;
+		}
 
 		/* Thread is not a zombie yet */
 		xassert(threadpool.running > 0);
@@ -456,8 +463,6 @@ static void _thread_free(thread_t **thread_ptr)
 		xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
 					 thread));
 		xassert(!list_find_first(threadpool.pending, _match_thread_ptr,
-					 thread));
-		xassert(!list_find_first(threadpool.zombies, _match_thread_ptr,
 					 thread));
 
 		slurm_mutex_unlock(&threadpool.mutex);
@@ -573,7 +578,8 @@ static void _threadpool_zombie(thread_t *thread)
 	xassert(thread->state == THREAD_STATE_RUNNING);
 
 	thread->state = THREAD_STATE_ZOMBIE;
-	list_append(threadpool.zombies, thread);
+	threadpool.zombies++;
+	xassert(threadpool.zombies > 0);
 
 	while (!thread->detached) {
 		EVENT_BROADCAST(&threadpool.events.zombie);
@@ -595,10 +601,6 @@ static void _threadpool_zombie(thread_t *thread)
 			 __func__, _thread_name(thread),
 			 (uint64_t) thread->id, ts);
 	}
-
-	/* join thread should have removed ptr from zombie list */
-	xassert(!list_find_first(threadpool.zombies, _match_thread_ptr,
-				 thread));
 }
 
 /* caller must hold threadpool.mutex lock */
@@ -900,7 +902,7 @@ static bool _thread_available(void)
 {
 	const int pending = list_count(threadpool.pending);
 	const int idle = threadpool.idle;
-	const int zombies = list_count(threadpool.zombies);
+	const int zombies = threadpool.zombies;
 
 	/*
 	 * The number of idle threads not stuck as zombies must be greater than
@@ -1098,15 +1100,13 @@ static void _probe_verbose(probe_log_t *log)
 		log,
 		"state: shutdown:%c pending:%d zombies:%d attached:%d running:%d idle:%d total_run:%" PRIu64 " total_created:%" PRIu64 " peak_count:%" PRIu64,
 		BOOL_CHARIFY(threadpool.shutdown),
-		list_count(threadpool.pending), list_count(threadpool.zombies),
+		list_count(threadpool.pending), threadpool.zombies,
 		list_count(threadpool.attached), threadpool.running,
 		threadpool.idle, threadpool.total_run, threadpool.total_created,
 		threadpool.peak_count);
 
 	logt.type = "pending";
 	(void) list_for_each_ro(threadpool.pending, _log_thread, &logt);
-	logt.type = "zombie";
-	(void) list_for_each_ro(threadpool.zombies, _log_thread, &logt);
 	logt.type = "attached";
 	(void) list_for_each_ro(threadpool.attached, _log_thread, &logt);
 
@@ -1168,9 +1168,6 @@ extern void threadpool_init(const int default_count, const char *params)
 
 	xassert(!threadpool.pending);
 	threadpool.pending = list_create(NULL);
-
-	xassert(!threadpool.zombies);
-	threadpool.zombies = list_create(NULL);
 
 	xassert(!threadpool.attached);
 	threadpool.attached = list_create(NULL);
