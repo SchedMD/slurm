@@ -197,7 +197,6 @@ static struct {
 		event_signal_t assigned;
 		event_signal_t assigned_ack;
 		event_signal_t end;
-		event_signal_t zombie;
 		event_signal_t join;
 	} events;
 
@@ -223,7 +222,6 @@ static struct {
 		.assigned_ack = EVENT_INITIALIZER("THREADPOOL-ASSIGNED-ACK-THREAD"),
 		.end = EVENT_INITIALIZER("THREADPOOL-END-THREAD"),
 		.join = EVENT_INITIALIZER("THREADPOOL-JOIN-THREAD"),
-		.zombie = EVENT_INITIALIZER("THREADPOOL-ZOMBIE-THREAD"),
 	},
 	.histograms = {
 		.request = LATENCY_HISTOGRAM_INITIALIZER,
@@ -318,7 +316,6 @@ static int _threadpool_on_detach(thread_t *thread, const char *caller)
 	thread->detached = true;
 
 	EVENT_BROADCAST(&threadpool.events.join);
-	EVENT_BROADCAST(&threadpool.events.zombie);
 
 	return SLURM_SUCCESS;
 }
@@ -359,7 +356,7 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 			       threadpool.running,
 			       TIMESPEC_ELAPSED_STR(start_ts));
 
-		EVENT_WAIT(&threadpool.events.zombie, &threadpool.mutex);
+		EVENT_WAIT(&threadpool.events.join, &threadpool.mutex);
 	}
 
 	log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist after %s",
@@ -543,10 +540,10 @@ static void _threadpool_zombie(thread_t *thread)
 	threadpool.zombies++;
 	xassert(threadpool.zombies > 0);
 
-	while (!thread->detached) {
-		EVENT_BROADCAST(&threadpool.events.zombie);
+	EVENT_BROADCAST(&threadpool.events.join);
+
+	while (!thread->detached)
 		EVENT_WAIT(&threadpool.events.join, &threadpool.mutex);
-	}
 
 	/* Thread must not exist in the attached list after being detached */
 	xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
