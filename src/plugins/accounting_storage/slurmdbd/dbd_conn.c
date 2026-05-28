@@ -342,6 +342,7 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 	int rc = SLURM_SUCCESS;
 	buf_t *buffer;
 	persist_conn_t *use_conn = req->pcon;
+	slurmdbd_msg_t dbd_msg = { 0 };
 
 	xassert(req);
 	xassert(resp);
@@ -357,7 +358,11 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 		}
 	}
 
-	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
+	dbd_msg = (slurmdbd_msg_t) {
+		.data = req->data,
+		.msg_type = req->msg_type,
+	};
+	if (!(buffer = pack_slurmdbd_msg(&dbd_msg, rpc_version))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -379,7 +384,10 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 		goto end_it;
 	}
 
-	rc = unpack_slurmdbd_msg(resp, rpc_version, buffer);
+	dbd_msg = (slurmdbd_msg_t) { 0 };
+	rc = unpack_slurmdbd_msg(&dbd_msg, rpc_version, buffer);
+	resp->data = dbd_msg.data;
+	resp->msg_type = dbd_msg.msg_type;
 	/* check for the rc of the start job message */
 	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC)
 		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;

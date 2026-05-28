@@ -13471,10 +13471,16 @@ static void _pack_dbd_relay(const slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t grow_size;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		slurmdbd_msg_t dbd_msg = {
+			.data = msg->data,
+			.msg_type = msg->msg_type,
+		};
+		buf_t *dbd_buffer;
+
 		pack16(msg->msg_type, buffer);
 
-		buf_t *dbd_buffer = pack_slurmdbd_msg(msg,
-						      smsg->protocol_version);
+		dbd_buffer =
+			pack_slurmdbd_msg(&dbd_msg, smsg->protocol_version);
 		grow_size = size_buf(dbd_buffer);
 		grow_buf(buffer, grow_size);
 		memcpy(&buffer->head[get_buf_offset(buffer)],
@@ -13490,9 +13496,14 @@ static int _unpack_dbd_relay(slurm_msg_t *smsg, buf_t *buffer)
 	persist_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		slurmdbd_msg_t dbd_msg = { 0 };
+
 		safe_unpack16(&msg->msg_type, buffer);
-		if (unpack_slurmdbd_msg(msg, smsg->protocol_version, buffer))
+		if (unpack_slurmdbd_msg(&dbd_msg, smsg->protocol_version,
+					buffer))
 			goto unpack_error;
+		msg->data = dbd_msg.data;
+		msg->msg_type = dbd_msg.msg_type;
 	}
 
 	smsg->data = msg;

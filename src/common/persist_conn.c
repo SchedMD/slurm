@@ -1177,9 +1177,13 @@ extern buf_t *slurm_persist_msg_pack(persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (persist_conn->flags & PERSIST_FLAG_DBD)
-		buffer = pack_slurmdbd_msg(req_msg, persist_conn->version);
-	else {
+	if (persist_conn->flags & PERSIST_FLAG_DBD) {
+		slurmdbd_msg_t dbd_msg = {
+			.data = req_msg->data,
+			.msg_type = req_msg->msg_type,
+		};
+		buffer = pack_slurmdbd_msg(&dbd_msg, persist_conn->version);
+	} else {
 		slurm_msg_t msg;
 
 		slurm_msg_t_init(&msg);
@@ -1209,9 +1213,12 @@ extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 	xassert(resp_msg);
 
 	if (persist_conn->flags & PERSIST_FLAG_DBD) {
-		rc = unpack_slurmdbd_msg(resp_msg,
-					 persist_conn->version,
+		slurmdbd_msg_t dbd_msg = { 0 };
+
+		rc = unpack_slurmdbd_msg(&dbd_msg, persist_conn->version,
 					 buffer);
+		resp_msg->msg_type = dbd_msg.msg_type;
+		resp_msg->data = dbd_msg.data;
 	} else {
 		slurm_msg_t msg;
 

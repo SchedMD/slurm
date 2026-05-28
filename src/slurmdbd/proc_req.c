@@ -1034,9 +1034,8 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (slurmdbd_conn->version < SLURM_26_05_PROTOCOL_VERSION) {
 		rc = _get_config_keypair(slurmdbd_conn, msg, out_buffer);
 	} else {
-		persist_msg_t resp = {
+		slurmdbd_msg_t resp = {
 			.data = slurmdbd_conf,
-			.pcon = slurmdbd_conn->pcon,
 			.msg_type = DBD_GOT_CONFIG,
 		};
 
