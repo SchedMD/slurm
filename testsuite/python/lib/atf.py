@@ -2111,8 +2111,16 @@ def run_expect_test(test_num=None, fail=True):
     # Forward the expect result to pytest
     if proc.returncode > 127:
         pytest.skip(reason)
-    elif fail:
-        pytest.fail(reason)
+    else:
+        # Handle known (random) issues alreadi fixed.
+        if (
+            "slurm_reconfigure error:Zero Bytes were transmitted or received" in reason
+            and get_version("sbin/slurmctld") < (25, 11)
+        ):
+            pytest.xfail(f"Ticket 25141: Fixed in 25.11+. {reason}")
+
+        if fail:
+            pytest.fail(reason)
 
     return reason, proc.returncode
 
