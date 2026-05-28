@@ -1626,9 +1626,13 @@ extern void run_health_check(void);
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void);
 
-/* make sure the assoc_mgr lists are up and running and state is
- * restored */
-extern void ctld_assoc_mgr_init(void);
+/*
+ * Make sure the assoc_mgr lists are up and running and state is restored.
+ * IN update_now - If true update job, partition, and burst_buffer assoc
+ *                 pointers (basically if read_slurm_conf() will not be called
+ *                 later).
+ */
+extern void ctld_assoc_mgr_init(bool update_now);
 
 /* Make sure the assoc_mgr thread is terminated */
 extern void ctld_assoc_mgr_fini(void);
