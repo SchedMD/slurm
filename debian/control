@@ -28,7 +28,6 @@ Build-Depends:
  libperl-dev,
  libpmix-dev,
  librdkafka-dev,
- librrd-dev,
  libyaml-dev,
  man2html-base,
  po-debconf,
@@ -54,7 +53,6 @@ Conflicts:
  slurm-wlm-jwt-plugin,
  slurm-wlm-mysql-plugin,
  slurm-wlm-plugins,
- slurm-wlm-rrd-plugin,
  slurm-wlm-rsmi-plugin
 Description: Slurm Workload Manager
  Slurm is an open source, fault-tolerant, and highly scalable
@@ -91,7 +89,6 @@ Conflicts:
  slurm-wlm-jwt-plugin-dev,
  slurm-wlm-mysql-plugin-dev,
  slurm-wlm-plugins-dev,
- slurm-wlm-rrd-plugin-dev,
  slurm-wlm-rsmi-plugin-dev,
  libslurm-dev
 Description: Development package for Slurm-smd.
