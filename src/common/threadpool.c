@@ -486,18 +486,11 @@ static void _threadpool_run(thread_t *thread)
 
 	_set_thread_name(thread);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
-		char ts[CTIME_STR_LEN] = "UNKNOWN";
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(start, thread->requested);
-
-		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
-
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: %s thread calling %s(0x%"PRIxPTR") after %s",
-			 __func__, _thread_name(thread), (uint64_t) thread->id,
-			 (thread->detached ? "detached" : "attached"),
-			 thread->func_name, (uintptr_t) thread->arg, ts);
-	}
+	log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: %s thread calling %s(0x%"PRIxPTR") after %s",
+		 __func__, _thread_name(thread), (uint64_t) thread->id,
+		 (thread->detached ? "detached" : "attached"),
+		 thread->func_name, (uintptr_t) thread->arg,
+		 TIMESPEC_DURATION_STR(thread->requested, start));
 
 	HISTOGRAM_ADD_DURATION(&threadpool.histograms.request,
 			       thread->requested);
@@ -512,19 +505,12 @@ static void _threadpool_run(thread_t *thread)
 
 	HISTOGRAM_ADD_DURATION(&threadpool.histograms.run, start);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
-		char ts[CTIME_STR_LEN] = "UNKNOWN";
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(timespec_now(), start);
-
-		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
-
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: %s thread called %s(0x%"PRIxPTR")=0x%"PRIxPTR" for %s",
-			 __func__, _thread_name(thread), (uint64_t) thread->id,
-			 (thread->detached ? "detached" : "attached"),
-			 thread->func_name,
-			 (uintptr_t) thread->arg, (uintptr_t) thread->ret, ts);
-	}
+	log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: %s thread called %s(0x%"PRIxPTR")=0x%"PRIxPTR" for %s",
+		 __func__, _thread_name(thread), (uint64_t) thread->id,
+		 (thread->detached ? "detached" : "attached"),
+		 thread->func_name,
+		 (uintptr_t) thread->arg, (uintptr_t) thread->ret,
+		 TIMESPEC_ELAPSED_STR(start));
 }
 
 /* caller must hold threadpool.mutex lock */
