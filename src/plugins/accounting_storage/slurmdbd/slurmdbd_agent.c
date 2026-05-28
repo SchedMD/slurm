@@ -40,6 +40,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/fd.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/threadpool.h"
 #include "src/common/xstring.h"
@@ -213,7 +214,7 @@ static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer,
 				      msg->ret_info,
 				      msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 		break;
 	default:
 		error("bad message type %s != PERSIST_RC",
@@ -300,9 +301,9 @@ static int _handle_mult_rc_ret(list_t **id_rc_list)
 		slurmdbd_free_list_msg(list_msg);
 		break;
 	case PERSIST_RC:
-		if (slurm_persist_unpack_rc_msg(
-			    &msg, buffer, slurmdbd_conn->version)
-		    == SLURM_SUCCESS) {
+		if (unpack_persist_rc_msg(&msg, buffer,
+					  slurmdbd_conn->version) ==
+		    SLURM_SUCCESS) {
 			rc = msg->rc;
 			if (rc != SLURM_SUCCESS) {
 				if (msg->ret_info == DBD_REGISTER_CTLD &&
@@ -327,7 +328,7 @@ static int _handle_mult_rc_ret(list_t **id_rc_list)
 					      msg->ret_info,
 					      msg->comment);
 			}
-			slurm_persist_free_rc_msg(msg);
+			slurm_free_persist_rc_msg(msg);
 		} else
 			error("unpack message error");
 		break;

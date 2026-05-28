@@ -188,18 +188,6 @@ extern buf_t *slurm_persist_msg_pack(persist_conn_t *persist_conn,
 extern int slurm_persist_msg_unpack(persist_conn_t *persist_conn,
 				    persist_msg_t *resp_msg, buf_t *buffer);
 
-extern void slurm_persist_pack_init_req_msg(persist_init_req_msg_t *msg,
-					    buf_t *buffer);
-extern int slurm_persist_unpack_init_req_msg(persist_init_req_msg_t **msg,
-					     buf_t *buffer);
-extern void slurm_persist_free_init_req_msg(persist_init_req_msg_t *msg);
-
-extern void slurm_persist_pack_rc_msg(persist_rc_msg_t *msg, buf_t *buffer,
-				      uint16_t protocol_version);
-extern int slurm_persist_unpack_rc_msg(persist_rc_msg_t **msg, buf_t *buffer,
-				       uint16_t protocol_version);
-extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg);
-
 extern buf_t *slurm_persist_make_rc_msg(persist_conn_t *persist_conn,
 					uint32_t rc, char *comment,
 					uint16_t ret_info);

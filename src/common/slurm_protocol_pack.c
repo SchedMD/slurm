@@ -13502,6 +13502,90 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void pack_persist_init_req_msg(persist_init_req_msg_t *msg,
+				      buf_t *buffer)
+{
+	/* always send version field first for backwards compatibility */
+	pack16(msg->version, buffer);
+
+	if (msg->version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->cluster_name, buffer);
+		pack16(msg->persist_type, buffer);
+		pack16(msg->port, buffer);
+	} else {
+		error("%s: invalid protocol version %u",
+		      __func__, msg->version);
+	}
+}
+
+extern int unpack_persist_init_req_msg(persist_init_req_msg_t **msg,
+				       buf_t *buffer)
+{
+	persist_init_req_msg_t *msg_ptr =
+		xmalloc(sizeof(persist_init_req_msg_t));
+
+	*msg = msg_ptr;
+
+	safe_unpack16(&msg_ptr->version, buffer);
+
+	if (msg_ptr->version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg_ptr->cluster_name, buffer);
+		safe_unpack16(&msg_ptr->persist_type, buffer);
+		safe_unpack16(&msg_ptr->port, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, msg_ptr->version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_persist_init_req_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+extern void pack_persist_rc_msg(persist_rc_msg_t *msg, buf_t *buffer,
+				uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->comment, buffer);
+		pack16(msg->flags, buffer);
+		pack32(msg->rc, buffer);
+		pack16(msg->ret_info, buffer);
+	} else {
+		error("%s: invalid protocol version %u",
+		      __func__, protocol_version);
+	}
+}
+
+extern int unpack_persist_rc_msg(persist_rc_msg_t **msg, buf_t *buffer,
+				 uint16_t protocol_version)
+{
+	persist_rc_msg_t *msg_ptr = xmalloc(sizeof(persist_rc_msg_t));
+
+	*msg = msg_ptr;
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg_ptr->comment, buffer);
+		safe_unpack16(&msg_ptr->flags, buffer);
+		safe_unpack32(&msg_ptr->rc, buffer);
+		safe_unpack16(&msg_ptr->ret_info, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_persist_rc_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -13646,14 +13730,12 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_acct_gather_energy_req(msg, buffer);
 		break;
 	case REQUEST_PERSIST_INIT:
-		slurm_persist_pack_init_req_msg(
-			(persist_init_req_msg_t *)msg->data,
-			buffer);
+		pack_persist_init_req_msg((persist_init_req_msg_t *) msg->data,
+					  buffer);
 		break;
 	case PERSIST_RC:
-		slurm_persist_pack_rc_msg(
-			(persist_rc_msg_t *)msg->data,
-			buffer, msg->protocol_version);
+		pack_persist_rc_msg((persist_rc_msg_t *) msg->data, buffer,
+				    msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
 		_pack_reboot_msg(msg, buffer);
@@ -14182,15 +14264,17 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_acct_gather_energy_req(msg, buffer);
 		break;
 	case REQUEST_PERSIST_INIT:
+	{
 		/* the version is contained in the data so use that instead of
 		   what is in the message */
-		rc = slurm_persist_unpack_init_req_msg(
-			(persist_init_req_msg_t **)&msg->data, buffer);
+		persist_init_req_msg_t **init_req = (void *) &msg->data;
+
+		rc = unpack_persist_init_req_msg(init_req, buffer);
 		break;
+	}
 	case PERSIST_RC:
-		rc = slurm_persist_unpack_rc_msg(
-			(persist_rc_msg_t **)&msg->data,
-			buffer, msg->protocol_version);
+		rc = unpack_persist_rc_msg((persist_rc_msg_t **) &msg->data,
+					   buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
 		rc = _unpack_reboot_msg(msg, buffer);

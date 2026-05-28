@@ -2124,6 +2124,9 @@ extern uint16_t get_job_exclusive_display_value(job_record_t *job_ptr);
  */
 extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 
+extern void slurm_free_persist_init_req_msg(persist_init_req_msg_t *msg);
+extern void slurm_free_persist_rc_msg(persist_rc_msg_t *msg);
+
 /* Resv creation msg client validation. On error err_msg is set */
 extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,
 				     uint32_t *res_free_flags);

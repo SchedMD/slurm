@@ -1760,10 +1760,10 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 
 	switch (req->msg_type) {
 	case REQUEST_PERSIST_INIT:
-		slurm_persist_pack_init_req_msg(req->data, buffer);
+		pack_persist_init_req_msg(req->data, buffer);
 		break;
 	case PERSIST_RC:
-		slurm_persist_pack_rc_msg(req->data, buffer, rpc_version);
+		pack_persist_rc_msg(req->data, buffer, rpc_version);
 		break;
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:

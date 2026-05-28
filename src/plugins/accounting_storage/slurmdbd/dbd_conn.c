@@ -455,7 +455,7 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 			msg->comment = NULL;
 		}
 
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	}
 
 	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d",
