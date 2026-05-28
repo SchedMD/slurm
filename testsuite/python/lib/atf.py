@@ -423,6 +423,22 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/accounting_storage.c" in bt
+        and "jobacct_storage_g_step_complete" in bt
+        and "_slurm_rpc_step_complete" in bt
+        and "plugin_inited != PLUGIN_NOT_INITED" in bt
+    ):
+        if get_version(component) >= (25, 11):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket 25193: Known issue with slurmd: SIGABRT: double free or corruption (fasttop)"
     component = "sbin/slurmd"
     if (
