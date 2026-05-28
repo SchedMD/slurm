@@ -55,6 +55,7 @@
 #define PERSIST_CONN_NOT_INITED -2
 
 typedef struct persist_conn_s persist_conn_t;
+typedef struct persist_msg_s persist_msg_t;
 
 typedef enum {
 	PERSIST_TYPE_NONE = 0,
@@ -65,11 +66,11 @@ typedef enum {
 	PERSIST_TYPE_ACCT_UPDATE,
 } persist_conn_type_t;
 
-typedef struct {
+struct persist_msg_s {
 	persist_conn_t *pcon; /* persist_conn_t */
 	void *data;		/* pointer to a message type below */
 	uint16_t msg_type;	/* slurmdbd_msg_type_t / slurm_msg_type_t */
-} persist_msg_t;
+};
 
 typedef int (*persist_conn_callback_proc_t)(void *arg, persist_msg_t *msg,
 					    buf_t **out_buffer);
