@@ -101,9 +101,9 @@ def _wait_held_invalid_license(job_id, timeout=_HOLD_AFTER_REQUEUE_TIMEOUT):
 
 
 @pytest.mark.xfail(
-    atf.get_version("sbin/slurmctld") < (26, 5)
+    atf.get_version("sbin/slurmctld") < (25, 11)
     or atf.get_version("bin/sbatch") < (25, 5),
-    reason="Ticket 25226: Batch requeue license rebuild and hold on invalid request fixed in 26.05+, and another issue with LicensesAlloc fixed in 25.05+",
+    reason="Ticket 25226: Batch requeue license rebuild and hold on invalid request fixed in 25.11+, and another issue with LicensesAlloc fixed in 25.05+",
 )
 def test_license_alloc_and_used_after_batch_requeue():
     """After requeue, LicensesAlloc must be set and license Used must count the job."""
@@ -163,8 +163,8 @@ def test_license_alloc_and_used_after_batch_requeue():
 
 
 @pytest.mark.xfail(
-    atf.get_version("sbin/slurmctld") < (26, 5),
-    reason="Ticket 25226: Batch requeue license rebuild and hold on invalid request fixed in 26.05+",
+    atf.get_version("sbin/slurmctld") < (25, 11),
+    reason="Ticket 25226: Batch requeue license rebuild and hold on invalid request fixed in 25.11+",
 )
 def test_batch_requeue_hold_when_license_count_invalid():
     """Requeue after configured license count drops below the request holds the job."""
