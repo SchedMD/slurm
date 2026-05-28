@@ -217,6 +217,14 @@ of nodes, as in the example below:</p>
 	end
 ...
 </pre>
+<p><b>NOTE</b>: On the submit path, assigning an empty string
+(<span class="commandline">""</span>) to any
+<span class="commandline">job_desc</span> string field leaves that field
+NULL (unset), discarding any value the user supplied for it. The per-field
+clear semantics described under
+<span class="commandline">slurm_job_modify</span> below do not apply
+here.</p>
+
 <p class="commandline">
 int slurm_job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 List part_list, int modify_uid)
@@ -239,6 +247,70 @@ be modified.<br>
 (input) user ID initiating the request.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <a href="#job_modify_returns">Returns from job_modify() are the same as the returns from job_submit().</a>
+
+<p><b>NOTE</b>: On the modify path, the following string fields can be
+cleared by assigning an empty string (<span class="commandline">""</span>)
+to them:</p>
+<ul>
+<li><span class="commandline">admin_comment</span></li>
+<li><span class="commandline">comment</span></li>
+<li><span class="commandline">cpus_per_tres</span></li>
+<li><span class="commandline">dependency</span></li>
+<li><span class="commandline">exc_nodes</span></li>
+<li><span class="commandline">extra</span></li>
+<li><span class="commandline">features</span></li>
+<li><span class="commandline">gres</span> &mdash; legacy alias; clears
+<span class="commandline">tres_per_node</span>.</li>
+<li><span class="commandline">licenses</span></li>
+<li><span class="commandline">mem_per_tres</span></li>
+<li><span class="commandline">prefer</span></li>
+<li><span class="commandline">req_nodes</span></li>
+<li><span class="commandline">reservation</span></li>
+<li><span class="commandline">tres_bind</span></li>
+<li><span class="commandline">tres_freq</span></li>
+<li><span class="commandline">tres_per_job</span></li>
+<li><span class="commandline">tres_per_node</span></li>
+<li><span class="commandline">tres_per_socket</span></li>
+<li><span class="commandline">tres_per_task</span></li>
+<li><span class="commandline">wckey</span> &mdash; cannot be cleared when
+<b>AccountingStorageEnforce=wckeys</b> is configured; the update is rejected
+with <span class="commandline">ESLURM_INVALID_WCKEY</span>.</li>
+</ul>
+
+<p>A clear overrides any value the user supplied for that field in the same
+request. <span class="commandline">admin_comment</span>,
+<span class="commandline">comment</span> and
+<span class="commandline">extra</span> are reset to an empty string, which
+<span class="commandline">scontrol show job</span> reports with no value
+(for example <span class="commandline">Comment=</span>); every other field
+listed above is reset to NULL, which
+<span class="commandline">scontrol show job</span> reports as
+<span class="commandline">(null)</span> or omits entirely.</p>
+
+<p>Most of these fields can only be changed while the job is pending. A clear
+attempted on a job that is not pending is rejected, and the rejection fails
+the whole modify request rather than just that field.
+<span class="commandline">admin_comment</span>,
+<span class="commandline">comment</span> and
+<span class="commandline">extra</span> are not gated on job state and can be
+cleared for as long as the job has not finished, and
+<span class="commandline">licenses</span> and
+<span class="commandline">reservation</span> also allow some changes on
+running jobs. Clearing <span class="commandline">admin_comment</span>
+additionally requires a privileged user; on an unprivileged request the whole
+update fails with <span class="commandline">ESLURM_ACCESS_DENIED</span>.
+Guard the assignment on job state if the plugin must not block updates to
+running jobs.</p>
+
+<p>Only the fields listed above are clearable from the plugin; other string
+fields, including <span class="commandline">burst_buffer</span>,
+<span class="commandline">mcs_label</span>,
+<span class="commandline">std_err</span>,
+<span class="commandline">std_in</span> and
+<span class="commandline">std_out</span>, are deliberately excluded.
+Assigning <span class="commandline">""</span> to one of these on modify does
+not clear the field; it leaves the field NULL, discarding any value the user
+supplied for it in the same request.</p>
 
 <h2 id="attr">Lua Job Attributes<a class="slurm_link" href="#attr"></a></h2>
 <p>The available job attributes change occasionally with different versions of
