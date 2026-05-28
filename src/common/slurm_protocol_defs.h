@@ -62,7 +62,6 @@
 #include "src/common/macros.h"
 #include "src/common/msg_type.h"
 #include "src/common/part_record.h"
-#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
@@ -1215,6 +1214,29 @@ typedef struct {
 typedef struct {
 	list_t *nodes;
 } resource_layout_msg_t;
+
+/*
+ * Persistent-connection protocol: flags, connection-type enum, and
+ * wire message bodies.
+ */
+#define PERSIST_FLAG_NONE 0x0000
+#define PERSIST_FLAG_DBD SLURM_BIT(0)
+#define PERSIST_FLAG_RECONNECT SLURM_BIT(1)
+#define PERSIST_FLAG_ALREADY_INITED SLURM_BIT(2)
+#define PERSIST_FLAG_P_USER_CASE SLURM_BIT(3)
+#define PERSIST_FLAG_SUPPRESS_ERR SLURM_BIT(4)
+#define PERSIST_FLAG_EXT_DBD SLURM_BIT(5)
+#define PERSIST_FLAG_DONT_UPDATE_CLUSTER SLURM_BIT(6)
+#define PERSIST_FLAG_P_RESOURCE_CASE SLURM_BIT(7)
+
+typedef enum {
+	PERSIST_TYPE_NONE = 0,
+	PERSIST_TYPE_DBD,
+	PERSIST_TYPE_FED,
+	PERSIST_TYPE_HA_CTL,
+	PERSIST_TYPE_HA_DBD,
+	PERSIST_TYPE_ACCT_UPDATE,
+} persist_conn_type_t;
 
 typedef struct {
 	char *cluster_name; /* cluster this message is coming from */
