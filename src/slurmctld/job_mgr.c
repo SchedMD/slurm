@@ -9944,6 +9944,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 	job_desc_msg->bitflags &= ~SIB_JOB_FLUSH;
 	job_desc_msg->bitflags &= ~TRES_STR_CALC;
 	job_desc_msg->bitflags &= ~JOB_WAS_RUNNING;
+	job_desc_msg->bitflags &= ~RESET_ACCRUE_TIME;
 	if (!cron)
 		job_desc_msg->bitflags &= ~CRON_JOB;
 
