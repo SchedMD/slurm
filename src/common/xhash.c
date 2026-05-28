@@ -83,7 +83,7 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
 	return table;
 }
 
-static xhash_item_t* xhash_find(xhash_t* table, const char* key, uint32_t len)
+static xhash_item_t *xhash_find(xhash_t *table, const void *key, uint32_t len)
 {
 	xhash_item_t* hash_item = NULL;
 
@@ -93,7 +93,7 @@ static xhash_item_t* xhash_find(xhash_t* table, const char* key, uint32_t len)
 	return hash_item;
 }
 
-void* xhash_get(xhash_t* table, const char* key, uint32_t key_len)
+void *xhash_get(xhash_t *table, const void *key, uint32_t key_len)
 {
 	xhash_item_t* item = xhash_find(table, key, key_len);
 	if (!item)
@@ -126,7 +126,7 @@ void* xhash_add(xhash_t* table, void* item)
 	return hash_item->item;
 }
 
-void* xhash_pop(xhash_t* table, const char* key, uint32_t len)
+void *xhash_pop(xhash_t *table, const void *key, uint32_t len)
 {
 	void* item_item;
 	xhash_item_t* item = xhash_find(table, key, len);
@@ -146,7 +146,7 @@ void* xhash_pop_str(xhash_t* table, const char* key)
 	return xhash_pop(table, key, strlen(key));
 }
 
-void xhash_delete(xhash_t* table, const char* key, uint32_t len)
+void xhash_delete(xhash_t *table, const void *key, uint32_t len)
 {
 	if (!table || !key)
 		return;

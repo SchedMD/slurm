@@ -72,7 +72,7 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc);
 /** @returns an item from a key searching through the hash table. NULL if not
  * found.
  */
-void* xhash_get(xhash_t* table, const char* key, uint32_t len);
+void *xhash_get(xhash_t *table, const void *key, uint32_t len);
 
 /** @returns an item from a key string searching through the hash table.
  *  NULL if not found. Wrapper to xhash_get
@@ -95,7 +95,7 @@ void* xhash_add(xhash_t* table, void* item);
  * memory associated with the item even if freefunc was not null at init time.
  * @returns the removed item value.
  */
-void* xhash_pop(xhash_t* table, const char* key, uint32_t len);
+void *xhash_pop(xhash_t *table, const void *key, uint32_t len);
 
 /** Remove an item associated with a key string from the hash table but
  *      does not call the table's free_func on the item.
@@ -108,7 +108,7 @@ void* xhash_pop_str(xhash_t* table, const char* key);
 /** Remove an item associated with a key from the hash table.
  * If found and freefunc at init time was not null, free the item's memory.
  */
-void xhash_delete(xhash_t* table, const char* key, uint32_t len);
+void xhash_delete(xhash_t *table, const void *key, uint32_t len);
 
 /** Remove an item associated with a string key from the hash table
  *      Wrapper to xhash_delete
