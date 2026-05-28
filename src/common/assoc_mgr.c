@@ -1360,11 +1360,10 @@ static int _post_qos_list(list_t *qos_list)
 
 static int _find_cluster_in_clus_res_list(void *x, void *key)
 {
-	slurmdb_res_rec_t *object = x;
+	slurmdb_clus_res_rec_t *object = x;
 	char *cluster_name = key;
 
-	return !xstrcasecmp(object->clus_res_rec->cluster,
-			    cluster_name) ? 1 : 0;
+	return !xstrcasecmp(object->cluster, cluster_name) ? 1 : 0;
 }
 
 static int _foreach_post_res(void *x, void *arg)
