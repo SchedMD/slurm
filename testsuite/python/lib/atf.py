@@ -423,6 +423,22 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    reason = "Ticket 25141: Known issue with slurmctld on reconfigure: SIGABRT in jobacct_storage_g_step_complete(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11+"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/accounting_storage.c" in bt
+        and "jobacct_storage_g_step_complete" in bt
+        and "_slurm_rpc_step_complete" in bt
+        and "plugin_inited != PLUGIN_NOT_INITED" in bt
+    ):
+        if get_version(component) >= (25, 11):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket 25193: Known issue with slurmd: SIGABRT: double free or corruption (fasttop)"
     component = "sbin/slurmd"
     if (
@@ -2022,8 +2038,21 @@ set testsuite_cleanup_on_failure false
     )
 
 
-def run_expect_test(test_num=None):
-    """Run the expect test corresponding to the test_name"""
+def run_expect_test(test_num=None, fail=True):
+    """Run the expect test corresponding to the test_name.
+
+    Args:
+        test_num (string): The expect test number (e.g. "3.17"). If None, it is
+            derived from properties["test_name"].
+        fail (bool): If True (default), call pytest.fail in case of failure.
+
+    Returns:
+        (reason, returncode)
+
+    Note: pytest.skip() is always raised when rc > 127 (expect-level skip)
+    """
+    reason = None
+
     if test_num is None:
         test_num = (
             properties["test_name"]
@@ -2067,7 +2096,7 @@ def run_expect_test(test_num=None):
 
     # If it passed just end
     if proc.returncode == 0:
-        return
+        return reason, 0
 
     # Clean the stdout to search for the main reasons to not pass
     ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
@@ -2099,7 +2128,17 @@ def run_expect_test(test_num=None):
     if proc.returncode > 127:
         pytest.skip(reason)
     else:
-        pytest.fail(reason)
+        # Handle known (random) issues alreadi fixed.
+        if (
+            "slurm_reconfigure error:Zero Bytes were transmitted or received" in reason
+            and get_version("sbin/slurmctld") < (25, 11)
+        ):
+            pytest.xfail(f"Ticket 25141: Fixed in 25.11+. {reason}")
+
+        if fail:
+            pytest.fail(reason)
+
+    return reason, proc.returncode
 
 
 def require_version(
