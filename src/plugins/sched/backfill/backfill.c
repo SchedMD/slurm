@@ -260,6 +260,7 @@ static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader);
 static void _het_job_deadlock_fini(void);
 static bool _het_job_deadlock_test(job_record_t *job_ptr);
 static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr);
+static bool _job_qos_valid(job_record_t *job_ptr, slurmdb_qos_rec_t *qos_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
@@ -1308,6 +1309,27 @@ static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr)
 	return rc;
 }
 
+/*
+ * Test if the saved qos_ptr is still one this job recognizes. The job's
+ * qos_list/qos_ptr may have been rebuilt (e.g. by _foreach_cache_update_job)
+ * or cleared (e.g. by job_fail_qos) while locks were released, leaving our
+ * snapshot dangling.
+ * IN  job_ptr - the job whose current qos state to compare against.
+ * IN  qos_ptr - the snapshot pointer to validate; NULL is treated as valid.
+ * RET true if qos_ptr is NULL or still referenced by job_ptr.
+ */
+static bool _job_qos_valid(job_record_t *job_ptr, slurmdb_qos_rec_t *qos_ptr)
+{
+	if (!qos_ptr)
+		return true;
+
+	if (job_ptr->qos_list)
+		return list_find_first_ro(job_ptr->qos_list,
+					  slurm_find_ptr_in_list, qos_ptr);
+
+	return (job_ptr->qos_ptr == qos_ptr);
+}
+
 /* Determine if job in the backfill queue is still runnable.
  * Job state could change when lock are periodically released */
 static bool _job_runnable_now(job_record_t *job_ptr)
@@ -2346,6 +2368,12 @@ static void _attempt_backfill(void)
 		qos_ptr = job_queue_rec->qos_ptr;
 		use_prefer = job_queue_rec->use_prefer;
 
+		if (!_job_qos_valid(job_ptr, qos_ptr)) {
+			log_flag(BACKFILL, "%pJ saved qos_ptr no longer valid, skipping",
+				 job_ptr);
+			continue;
+		}
+
 		if (job_ptr->array_recs &&
 		    (job_queue_rec->array_task_id == NO_VAL))
 			is_job_array_head = true;
@@ -2422,6 +2450,11 @@ static void _attempt_backfill(void)
 			continue;
 		if (!_job_part_valid(job_ptr, part_ptr))
 			continue;	/* Partition change during lock yield */
+		if (!_job_qos_valid(job_ptr, qos_ptr)) {
+			log_flag(BACKFILL, "%pJ saved qos_ptr no longer valid after yield, skipping",
+				 job_ptr);
+			continue;
+		}
 
 		if (job_ptr->resv_list)
 			job_queue_rec_resv_list(job_queue_rec);
@@ -2813,6 +2846,11 @@ TRY_LATER:
 				job_ptr->resv_id = resv_ptr->resv_id;
 			if (!_job_part_valid(job_ptr, part_ptr))
 				continue;	/* Partition change during lock yield */
+			if (!_job_qos_valid(job_ptr, qos_ptr)) {
+				log_flag(BACKFILL, "%pJ saved qos_ptr no longer valid after yield, skipping",
+					 job_ptr);
+				continue;
+			}
 			if (!job_independent(job_ptr)) {
 				log_flag(BACKFILL, "%pJ no longer independent after bf yield",
 					 job_ptr);
