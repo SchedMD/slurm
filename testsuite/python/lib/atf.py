@@ -2022,8 +2022,21 @@ set testsuite_cleanup_on_failure false
     )
 
 
-def run_expect_test(test_num=None):
-    """Run the expect test corresponding to the test_name"""
+def run_expect_test(test_num=None, fail=True):
+    """Run the expect test corresponding to the test_name.
+
+    Args:
+        test_num (string): The expect test number (e.g. "3.17"). If None, it is
+            derived from properties["test_name"].
+        fail (bool): If True (default), call pytest.fail in case of failure.
+
+    Returns:
+        (reason, returncode)
+
+    Note: pytest.skip() is always raised when rc > 127 (expect-level skip)
+    """
+    reason = None
+
     if test_num is None:
         test_num = (
             properties["test_name"]
@@ -2067,7 +2080,7 @@ def run_expect_test(test_num=None):
 
     # If it passed just end
     if proc.returncode == 0:
-        return
+        return reason, 0
 
     # Clean the stdout to search for the main reasons to not pass
     ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
@@ -2098,8 +2111,10 @@ def run_expect_test(test_num=None):
     # Forward the expect result to pytest
     if proc.returncode > 127:
         pytest.skip(reason)
-    else:
+    elif fail:
         pytest.fail(reason)
+
+    return reason, proc.returncode
 
 
 def require_version(
