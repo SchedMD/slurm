@@ -6,7 +6,7 @@ bin_SCRIPTS = seff smail
 
 seff:
 smail:
-_perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=$$Config{installprefix}; $$P1="$$P/local"; $$T =~ s/$$P1//; $$T =~ s/$$P//; print $$T;'`
+_perldir := $(shell perl -MConfig -e 'if (($$ENV{SLURM_PERL_INSTALLDIRS} || "site") eq "vendor") { print $$Config{installvendorarch} } else { my $$T = $$Config{installsitearch}; my $$P = $$Config{siteprefix}; $$T =~ s|^\Q$$P\E||; print "$(prefix)$$T" }')
 
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)

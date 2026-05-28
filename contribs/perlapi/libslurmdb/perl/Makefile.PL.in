@@ -76,6 +76,8 @@ $other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 # misses them when generating Makefile
 my @inc_clean_files = qw(const-c.inc const-xs.inc);
 
+my $installdirs = $ENV{SLURM_PERL_INSTALLDIRS} || 'site';
+
 WriteMakefile(
     NAME              => 'Slurmdb',
     VERSION_FROM      => 'Slurmdb.pm', # finds $VERSION
@@ -89,6 +91,7 @@ WriteMakefile(
     # Un-comment this if you add C files to link with later:
     OBJECT            => '$(O_FILES)', # link all the C files too
     CCFLAGS           => '-g',
+    INSTALLDIRS       => $installdirs,
     dynamic_lib       => {'OTHERLDFLAGS' => $other_ld_flags},
     #Custom cleanup behavior to clear .inc files
     clean		=> {FILES => join(' ', @inc_clean_files)},

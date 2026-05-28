@@ -72,6 +72,15 @@ my $other_ld_flags = '-Wl,-rpath,@top_builddir@/src/api/.libs -Wl,-rpath,@libdir
 $other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 	if $os =~ "aix";
 
+# Choose the @INC tier for installation. The slurm.spec sets
+# SLURM_PERL_INSTALLDIRS=vendor for RPM builds so distro-packaged
+# modules land in $Config{installvendorarch}, which is always in the
+# system Perl's @INC. Other contexts (autotools './configure && make
+# install', CPAN-style local install) default to 'site', which puts
+# modules under the user-supplied --prefix via EUMM's standard prefix
+# translation.
+my $installdirs = $ENV{SLURM_PERL_INSTALLDIRS} || 'site';
+
 WriteMakefile(
 	NAME              => 'Slurm',
 	VERSION_FROM      => 'lib/Slurm.pm', # finds $VERSION
@@ -85,6 +94,7 @@ WriteMakefile(
 	# Un-comment this if you add C files to link with later:
 	OBJECT            => '$(O_FILES)', # link all the C files too
 	CCFLAGS           => '-g',
+	INSTALLDIRS       => $installdirs,
 	dynamic_lib       => {'OTHERLDFLAGS' => $other_ld_flags},
 );
 
