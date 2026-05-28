@@ -1744,7 +1744,7 @@ static slurmdb_bf_usage_t *_bf_map_find_add(xhash_t* map, uid_t uid)
 	bf_user_usage_t *user;
 	xassert(map != NULL);
 
-	if (!(user = xhash_get(map, (char *)&uid, sizeof(uid_t))))
+	if (!(user = xhash_get(map, &uid, sizeof(uid))))
 		user = _bf_map_add_user(map, uid);
 	return &user->bf_usage;
 }
