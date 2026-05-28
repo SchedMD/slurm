@@ -327,57 +327,47 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 {
 	thread_t *thread = NULL;
 	const timespec_t start_ts = timespec_now();
-	int rc = EINVAL;
 
 	slurm_mutex_lock(&threadpool.mutex);
 
-	log_flag(THREAD, "%s->%s: joining pthread id=0x%"PRIx64,
-		       caller, __func__, (uint64_t) id);
-
-	if (!(thread = list_find_first(threadpool.attached, _match_thread_id,
-				       (void *) &id))) {
-		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist",
-			 caller, __func__, (uint64_t) id);
-		slurm_mutex_unlock(&threadpool.mutex);
-
-		return ESRCH;
-	}
-
-	xassert(thread->magic == THREAD_MAGIC);
-	xassert(!thread->detached);
-
-	do {
-		/* Catch thread being detached */
+	while ((thread = list_find_first(threadpool.attached, _match_thread_id,
+					 (void *) &id))) {
 		xassert(thread->magic == THREAD_MAGIC);
-		xassert(thread->state > THREAD_STATE_INVALID);
-		xassert(thread->state < THREAD_STATE_INVALID_MAX);
-
-		if (thread->state == THREAD_STATE_ZOMBIE) {
-			xassert(!thread->detached);
-			break;
-		}
-
-		/* Thread is not a zombie yet */
-		xassert(threadpool.running > 0);
+		xassert(thread->state > THREAD_STATE_NEW);
+		xassert(thread->state < THREAD_STATE_COMPLETE);
 		xassert(!thread->detached);
 
-		log_flag(THREAD, "%s->%s: waiting for thread id=0x%"PRIx64" with %d running threads",
-			       caller, __func__, (uint64_t) id,
-			       threadpool.running);
+		if (thread->state > THREAD_STATE_RUNNING) {
+			const int rc = _threadpool_on_detach(thread, caller);
+
+			log_flag(THREAD, "%s->%s: joined %s thread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
+				 caller, __func__,
+				 _thread_state_str(thread->state),
+				 (uint64_t) thread->id,
+				 (uintptr_t) thread->ret);
+
+			slurm_mutex_unlock(&threadpool.mutex);
+
+			HISTOGRAM_ADD_DURATION(&threadpool.histograms.join,
+					       start_ts);
+			return rc;
+		}
+
+		log_flag(THREAD, "%s->%s: waiting for %s thread id=0x%"PRIx64" with %d running threads after %s",
+			       caller, __func__,
+			       _thread_state_str(thread->state), (uint64_t) id,
+			       threadpool.running,
+			       TIMESPEC_ELAPSED_STR(start_ts));
+
 		EVENT_WAIT(&threadpool.events.zombie, &threadpool.mutex);
-	} while (true);
+	}
 
-	log_flag(THREAD, "%s->%s: joined pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
-		 caller, __func__, (uint64_t) thread->id,
-		 (uintptr_t) thread->ret);
-
-	rc = _threadpool_on_detach(thread, caller);
-
-	HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
-
+	log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist after %s",
+		 caller, __func__, (uint64_t) id,
+		 TIMESPEC_ELAPSED_STR(start_ts));
 	slurm_mutex_unlock(&threadpool.mutex);
 
-	return rc;
+	return ESRCH;
 }
 
 extern int threadpool_join(const pthread_t id, const char *caller)
