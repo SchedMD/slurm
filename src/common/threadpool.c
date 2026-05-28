@@ -516,35 +516,24 @@ static void _threadpool_run(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_wait_ack(thread_t *thread)
 {
-	timespec_t start_ts = { 0, 0 };
+	const timespec_t start_ts = timespec_now();
 	pthread_t requester = thread->requester;
 
 	xassert(thread->state == THREAD_STATE_ASSIGNED);
 	thread->state = THREAD_STATE_ASSIGNED_WAIT;
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
-		start_ts = timespec_now();
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting for requester 0x%"PRIx64" to acknowledge assignment",
-			 __func__, _thread_name(thread), (uint64_t) thread->id,
-			 (uint64_t) requester);
-	}
+	log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting for requester 0x%"PRIx64" to acknowledge assignment",
+		 __func__, _thread_name(thread), (uint64_t) thread->id,
+		 (uint64_t) requester);
 
 	while (thread->requester)
 		EVENT_WAIT(&threadpool.events.assigned_ack, &threadpool.mutex);
 
 	xassert(thread->state == THREAD_STATE_ASSIGNED_ACK);
 
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_THREAD) && start_ts.tv_sec) {
-		char ts[CTIME_STR_LEN] = "UNKNOWN";
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(timespec_now(), start_ts);
-
-		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
-
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: acknowledged by requester 0x%"PRIx64" after %s",
-			 __func__, _thread_name(thread), (uint64_t) thread->id,
-			 (uint64_t) requester, ts);
-	}
+	log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: acknowledged by requester 0x%"PRIx64" after %s",
+		 __func__, _thread_name(thread), (uint64_t) thread->id,
+		 (uint64_t) requester, TIMESPEC_ELAPSED_STR(start_ts));
 }
 
 /* caller must hold threadpool.mutex lock */
