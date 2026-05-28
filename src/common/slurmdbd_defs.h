@@ -178,6 +178,11 @@ typedef enum {
 	SLURM_PERSIST_INIT_TLS = 6501,
 } slurmdbd_msg_type_t;
 
+typedef struct {
+	void *data; /* pointer to a message type below */
+	uint16_t msg_type; /* slurmdbd_msg_type_t / slurm_msg_type_t */
+} slurmdbd_msg_t;
+
 /*****************************************************************************\
  * Slurm DBD protocol data structures
 \*****************************************************************************/
