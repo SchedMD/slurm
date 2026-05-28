@@ -196,8 +196,8 @@ static struct {
 		event_signal_t assign;
 		event_signal_t assigned;
 		event_signal_t assigned_ack;
+		event_signal_t detach;
 		event_signal_t end;
-		event_signal_t join;
 	} events;
 
 	struct {
@@ -220,8 +220,8 @@ static struct {
 		.assign = EVENT_INITIALIZER("THREADPOOL-ASSIGN-THREAD"),
 		.assigned = EVENT_INITIALIZER("THREADPOOL-ASSIGNED-THREAD"),
 		.assigned_ack = EVENT_INITIALIZER("THREADPOOL-ASSIGNED-ACK-THREAD"),
+		.detach = EVENT_INITIALIZER("THREADPOOL-DETACH-THREAD"),
 		.end = EVENT_INITIALIZER("THREADPOOL-END-THREAD"),
-		.join = EVENT_INITIALIZER("THREADPOOL-JOIN-THREAD"),
 	},
 	.histograms = {
 		.request = LATENCY_HISTOGRAM_INITIALIZER,
@@ -315,7 +315,7 @@ static int _threadpool_on_detach(thread_t *thread, const char *caller)
 	xassert(!thread->detached);
 	thread->detached = true;
 
-	EVENT_BROADCAST(&threadpool.events.join);
+	EVENT_BROADCAST(&threadpool.events.detach);
 
 	return SLURM_SUCCESS;
 }
@@ -356,7 +356,7 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 			       threadpool.running,
 			       TIMESPEC_ELAPSED_STR(start_ts));
 
-		EVENT_WAIT(&threadpool.events.join, &threadpool.mutex);
+		EVENT_WAIT(&threadpool.events.detach, &threadpool.mutex);
 	}
 
 	log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist after %s",
@@ -540,10 +540,10 @@ static void _threadpool_zombie(thread_t *thread)
 	threadpool.zombies++;
 	xassert(threadpool.zombies > 0);
 
-	EVENT_BROADCAST(&threadpool.events.join);
+	EVENT_BROADCAST(&threadpool.events.detach);
 
 	while (!thread->detached)
-		EVENT_WAIT(&threadpool.events.join, &threadpool.mutex);
+		EVENT_WAIT(&threadpool.events.detach, &threadpool.mutex);
 
 	/* Thread must not exist in the attached list after being detached */
 	xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
