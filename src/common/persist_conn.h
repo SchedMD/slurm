@@ -52,8 +52,6 @@
 #define PERSIST_FLAG_DONT_UPDATE_CLUSTER SLURM_BIT(6)
 #define PERSIST_FLAG_P_RESOURCE_CASE SLURM_BIT(7)
 
-#define PERSIST_CONN_NOT_INITED -2
-
 typedef struct persist_conn_s persist_conn_t;
 typedef struct persist_msg_s persist_msg_t;
 
