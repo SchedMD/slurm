@@ -1143,6 +1143,20 @@ extern void threadpool_fini(void)
 	/* Wake every idle worker to clean up */
 	EVENT_BROADCAST(&threadpool.events.assign);
 
+	/*
+	 * Do not wait for all workers to exit before returning. Most callers
+	 * invoke threadpool_fini() as a shutdown trigger rather than a
+	 * synchronous join, and waiting here would wait forever: workers in
+	 * ZOMBIE are blocked on events.detach (only broadcast by
+	 * _threadpool_on_detach() via join/detach, which fini does not issue),
+	 * workers in ASSIGNED_WAIT are blocked on events.assigned_ack from a
+	 * requester that may never return, and workers in RUNNING are inside
+	 * arbitrary user func() that may itself block on I/O or other Slurm
+	 * subsystems that fini's caller is about to tear down. Workers that
+	 * are reachable will observe threadpool.shutdown on their next trip
+	 * through _threadpool_thread() and exit on their own.
+	 */
+
 	slurm_mutex_unlock(&threadpool.mutex);
 }
 
