@@ -5815,27 +5815,29 @@ static int _foreach_check_assoc_access(void *x, void *arg)
 	char deny_id_str[30];
 	char *allow_id_str;
 
+	bool check_allowed = data->check_allowed;
+	bool found_allowed = false;
 	while (assoc) {
 		snprintf(deny_id_str, sizeof(deny_id_str), ",-%u,", assoc->id);
 
 		/* Check if ,-%u, is in list */
 		if (data->check_denied && xstrstr(access_str, deny_id_str)) {
 			data->found_denied = true;
-			return -1;
+			return 0;
 		}
 
 		/* Check if ,%u, is in list */
-		if (data->check_allowed) {
+		if (check_allowed) {
 			/*
 			 * Remove '-' to change "deny" string to "allow" string
 			 */
 			allow_id_str = deny_id_str + 1;
 			allow_id_str[0] = ',';
 			if (xstrstr(access_str, allow_id_str)) {
-				data->found_allowed = true;
+				found_allowed = true;
 				if (data->check_denied) {
 					/* Keep checking for denied only */
-					data->check_allowed = false;
+					check_allowed = false;
 				} else {
 					return -1;
 				}
@@ -5844,7 +5846,8 @@ static int _foreach_check_assoc_access(void *x, void *arg)
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 
-	return 0;
+	/* This assoc was not explicitly denied */
+	return (!data->check_allowed || found_allowed) ? -1 : 0;
 }
 
 static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
@@ -5865,19 +5868,16 @@ static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
 		.found_denied = false,
 		.found_allowed = false,
 	};
-	(void) _foreach_check_assoc_access(assoc, &args);
-
-	return !args.found_denied && (!any_allowed || args.found_allowed);
+	return _foreach_check_assoc_access(assoc, &args) < 0;
 }
 
-static bool _check_assoc_access_each(char *access_list, list_t *assoc_list)
+static bool _check_assoc_access_any(char *access_list, list_t *assoc_list)
 {
 	xassert(access_list);
 	xassert(assoc_list);
 
 	/*
-	 * Reject if any association or parent association is denied.
-	 * Otherwise, check if any is explicitly allowed.
+	 * Allow if any association is allowed by _check_assoc_access.
 	 */
 	bool any_denied = xstrchr(access_list, '-');
 	bool any_allowed = _access_str_any_allowed(access_list);
@@ -5888,9 +5888,7 @@ static bool _check_assoc_access_each(char *access_list, list_t *assoc_list)
 		.found_denied = false,
 		.found_allowed = false,
 	};
-	(void) list_for_each(assoc_list, _foreach_check_assoc_access, &args);
-
-	return !args.found_denied && (!any_allowed || args.found_allowed);
+	return list_for_each(assoc_list, _foreach_check_assoc_access, &args) < 0;
 }
 
 /*
@@ -5946,8 +5944,8 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
 	    resv_ptr->assoc_list) {
-		return _check_assoc_access_each(resv_ptr->assoc_list,
-						user_assoc_list);
+		return _check_assoc_access_any(resv_ptr->assoc_list,
+					       user_assoc_list);
 	}
 
 	return _check_uid_access(resv_ptr, uid, username);
