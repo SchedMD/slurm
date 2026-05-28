@@ -52,6 +52,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
 
@@ -64,12 +65,19 @@
 static void _connection_fini_callback(void *arg);
 
 /*
- * Bridge from the persist_conn callback ABI to proc_req(). Removed when
- * slurmdbd stops using the persist_conn callback machinery.
+ * Bridge from the persist_conn callback ABI (persist_msg_t *) to the
+ * slurmdbd handler ABI (slurmdbd_msg_t *). Both structs carry the
+ * same {data, msg_type} payload; the persist_conn_t back-pointer is
+ * unused by proc_req(). Removed when slurmdbd stops using the
+ * persist_conn callback machinery.
  */
 static int _proc_req_bridge(void *arg, persist_msg_t *pmsg, buf_t **out_buffer)
 {
 	slurmdbd_conn_t *dbd_conn = arg;
+	slurmdbd_msg_t msg = {
+		.data = pmsg->data,
+		.msg_type = pmsg->msg_type,
+	};
 
 	/*
 	 * slurm_persist_msg_unpack() caches the authenticated identity on
@@ -89,7 +97,7 @@ static int _proc_req_bridge(void *arg, persist_msg_t *pmsg, buf_t **out_buffer)
 	dbd_conn->auth_gid = dbd_conn->pcon->auth_gid;
 	dbd_conn->auth_ids_set = dbd_conn->pcon->auth_ids_set;
 
-	return proc_req(arg, pmsg, out_buffer);
+	return proc_req(arg, &msg, out_buffer);
 }
 
 /* Local variables */

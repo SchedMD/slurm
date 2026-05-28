@@ -43,6 +43,7 @@
 #include "src/common/pack.h"
 #include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdbd_pack.h"
 
 typedef struct {
 	persist_conn_t *pcon;
@@ -116,6 +117,6 @@ extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn);
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer);
+extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer);
 
 #endif /* !_PROC_REQ */
