@@ -76,7 +76,7 @@ typedef int (*persist_conn_callback_proc_t)(void *arg, persist_msg_t *msg,
 
 typedef void (*persist_conn_callback_fini_t)(void *arg);
 
-typedef struct persist_conn_s {
+struct persist_conn_s {
 	void *auth_cred;
 	uid_t auth_uid;
 	gid_t auth_gid;
@@ -103,7 +103,7 @@ typedef struct persist_conn_s {
 	bool skip_conn_shutdown;
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
-} persist_conn_t;
+};
 
 /* setup a daemon to receive incoming persistent connections. */
 extern void slurm_persist_conn_recv_server_init(void);
