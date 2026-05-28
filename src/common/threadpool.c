@@ -539,13 +539,10 @@ static void _threadpool_wait_ack(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_zombie(thread_t *thread)
 {
-	timespec_t start_ts = { 0, 0 };
+	const timespec_t start_ts = timespec_now();
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
-		start_ts = timespec_now();
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting to be joined",
-			 __func__, _thread_name(thread), (uint64_t) thread->id);
-	}
+	log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting to be joined",
+		 __func__, _thread_name(thread), (uint64_t) thread->id);
 
 	/* Thread must exist in the attached list until detached */
 	xassert(list_find_first(threadpool.attached, _match_thread_ptr,
@@ -565,17 +562,9 @@ static void _threadpool_zombie(thread_t *thread)
 	xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
 				 thread));
 
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_THREAD) && start_ts.tv_sec) {
-		char ts[CTIME_STR_LEN] = "UNKNOWN";
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(timespec_now(), start_ts);
-
-		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
-
-		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: joined after waiting %s",
-			 __func__, _thread_name(thread),
-			 (uint64_t) thread->id, ts);
-	}
+	log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: joined after waiting %s",
+		 __func__, _thread_name(thread),
+		 (uint64_t) thread->id, TIMESPEC_ELAPSED_STR(start_ts));
 }
 
 /* caller must hold threadpool.mutex lock */
