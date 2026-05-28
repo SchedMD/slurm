@@ -568,7 +568,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     "job_name, state, priority, cpus_req, "
 			     "nodes_alloc, mem_req, flags, state_reason_prev, "
 			     "env_hash_inx, script_hash_inx, restart_cnt, "
-			     "exclusive, oversubscribe",
+			     "exclusive, oversubscribe, segment_size",
 			     mysql_conn->cluster_name, job_table);
 
 		if (wckeyid)
@@ -612,8 +612,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			xstrcatat(query, &pos, ", container");
 		if (job_ptr->licenses)
 			xstrcatat(query, &pos, ", licenses");
-		if (job_ptr->details->segment_size)
-			xstrcatat(query, &pos, ", segment_size");
 		if (job_ptr->details->resv_req)
 			xstrcatat(query, &pos, ", resv_req");
 
@@ -623,7 +621,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     "%u, '%s', %u, %u, %ld, %ld, %ld, '%s', %u, %u, "
 			     "%u, %u, %" PRIu64 ", %u, %u, %" PRIu64
 			     ", %" PRIu64 ", "
-			     "%u, '%s', '%s'",
+			     "%u, '%s', '%s', %u",
 			     job_ptr->db_index, job_ptr->job_id,
 			     job_ptr->step_id.sluid, job_ptr->array_job_id,
 			     array_task_id, job_ptr->het_job_id, het_job_offset,
@@ -636,7 +634,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     job_ptr->details->pn_min_memory, job_ptr->db_flags,
 			     job_ptr->state_reason_prev_db, env_hash_inx,
 			     script_hash_inx, job_ptr->restart_cnt, exclusive,
-			     oversubscribe);
+			     oversubscribe, job_ptr->details->segment_size);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", %u", wckeyid);
@@ -691,9 +689,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->licenses);
-		if (job_ptr->details->segment_size)
-			xstrfmtcatat(query, &pos, ", %u",
-				     job_ptr->details->segment_size);
 		if (job_ptr->details->resv_req)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->details->resv_req);
@@ -713,7 +708,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     "state_reason_prev=%u, env_hash_inx=%"PRIu64
 			     ", script_hash_inx=%"PRIu64", "
 			     "restart_cnt=greatest(restart_cnt, %u), "
-			     "exclusive='%s', oversubscribe='%s'",
+			     "exclusive='%s', oversubscribe='%s', "
+			     "segment_size=%u",
 			     job_ptr->assoc_id, job_ptr->user_id,
 			     job_ptr->group_id, nodes,
 			     job_ptr->resv_id, job_ptr->time_limit,
@@ -727,7 +723,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     job_ptr->db_flags,
 			     job_ptr->state_reason_prev_db,
 			     env_hash_inx, script_hash_inx,
-			     job_ptr->restart_cnt, exclusive, oversubscribe);
+			     job_ptr->restart_cnt, exclusive, oversubscribe,
+			     job_ptr->details->segment_size);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", id_wckey=%u", wckeyid);
@@ -789,9 +786,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", licenses='%s'",
 				     job_ptr->licenses);
-		if (job_ptr->details->segment_size)
-			xstrfmtcatat(query, &pos, ", segment_size=%u",
-				     job_ptr->details->segment_size);
 		if (job_ptr->details->resv_req)
 			xstrfmtcatat(query, &pos, ", resv_req='%s'",
 				     job_ptr->details->resv_req);
@@ -861,9 +855,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, "licenses='%s', ",
 				     job_ptr->licenses);
-		if (job_ptr->details->segment_size)
-			xstrfmtcatat(query, &pos, "segment_size=%u, ",
-				     job_ptr->details->segment_size);
 		if (job_ptr->details->resv_req)
 			xstrfmtcatat(query, &pos, "resv_req='%s', ",
 				     job_ptr->details->resv_req);
@@ -878,7 +869,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     "flags=%u, state_reason_prev=%u, "
 			     "time_eligible=%ld, mod_time=UNIX_TIMESTAMP(), "
 			     "restart_cnt=greatest(restart_cnt, %u), "
-			     "exclusive='%s', oversubscribe='%s' "
+			     "exclusive='%s', oversubscribe='%s', "
+			     "segment_size=%u "
 			     "where job_db_inx=%"PRIu64,
 			     start_time, jname, job_state,
 			     job_ptr->total_nodes, job_ptr->qos_id,
@@ -888,8 +880,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			     job_ptr->array_job_id, array_task_id,
 			     job_ptr->het_job_id, het_job_offset,
 			     job_ptr->db_flags, job_ptr->state_reason_prev_db,
-			     begin_time, job_ptr->restart_cnt,
-			     exclusive, oversubscribe, job_ptr->db_index);
+			     begin_time, job_ptr->restart_cnt, exclusive,
+			     oversubscribe, job_ptr->details->segment_size,
+			     job_ptr->db_index);
 	}
 
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
