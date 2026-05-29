@@ -149,6 +149,7 @@ typedef struct {
 	time_t latest_start;		/* Time when expected to start */
 	part_record_t *part_ptr;
 	slurmctld_resv_t *resv_ptr;
+	bitstr_t *planned_node_bitmap;	/* Nodes selected by backfill */
 } het_job_rec_t;
 
 typedef struct {
@@ -285,7 +286,8 @@ static void _het_job_map_del(void *x);
 static void _het_job_start_clear(void);
 static time_t _het_job_start_find(job_record_t *job_ptr);
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
-			       uint32_t comp_time_limit);
+			       uint32_t comp_time_limit,
+			       bitstr_t *planned_node_bitmap);
 static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single);
 static int  _het_job_start_test_list(void *map, void *node_space);
@@ -2377,7 +2379,8 @@ static void _attempt_backfill(void)
 		 * Establish baseline (worst case) start time for hetjob
 		 * Update time once start time estimate established
 		 */
-		_het_job_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL);
+		_het_job_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL,
+				   NULL);
 
 		if (job_ptr->het_job_id &&
 		    (job_ptr->state_reason == WAIT_NO_REASON)) {
@@ -3420,7 +3423,7 @@ skip_start:
 			job_ptr->node_cnt_wag =
 					MAX(bit_set_count(avail_bitmap), 1);
 			_het_job_start_set(job_ptr, job_ptr->start_time,
-					   comp_time_limit);
+					   comp_time_limit, avail_bitmap);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (bf_hetjob_immediate &&
 			    (!max_backfill_jobs_start ||
@@ -4099,6 +4102,31 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 }
 
 /*
+ * Delete het_job_rec_t record from het_job_rec_list
+ */
+static void _het_job_rec_del(void *x)
+{
+	het_job_rec_t *rec = (het_job_rec_t *) x;
+
+	if (!rec)
+		return;
+
+	FREE_NULL_BITMAP(rec->planned_node_bitmap);
+	xfree(rec);
+}
+
+static void _het_job_rec_set_plan(het_job_rec_t *rec,
+				  bitstr_t *planned_node_bitmap)
+{
+	if (!rec)
+		return;
+
+	FREE_NULL_BITMAP(rec->planned_node_bitmap);
+	if (planned_node_bitmap)
+		rec->planned_node_bitmap = bit_copy(planned_node_bitmap);
+}
+
+/*
  * Delete het_job_map_t record from het_job_list
  */
 static void _het_job_map_del(void *x)
@@ -4146,10 +4174,20 @@ static void _het_job_start_clear(void)
 {
 	het_job_map_t *map;
 	list_itr_t *iter;
+	time_t now = time(NULL);
 
 	iter = list_iterator_create(het_job_list);
 	while ((map = list_next(iter))) {
-		if ((map->prev_start == 0) && !map->sticky_preempt_start) {
+		if (map->sticky_preempt_start) {
+			if ((now - map->sticky_preempt_start) >
+			    bf_hetjob_sticky_preempt_timeout) {
+				map->sticky_preempt_start = 0;
+				map->prev_start = 0;
+				list_flush(map->het_job_rec_list);
+			} else {
+				map->prev_start = 0;
+			}
+		} else if (map->prev_start == 0) {
 			list_delete_item(iter);
 		} else {
 			map->prev_start = 0;
@@ -4217,7 +4255,8 @@ static time_t _het_job_start_find(job_record_t *job_ptr)
  * for the job in any partition and reservation.
  */
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
-			       uint32_t comp_time_limit)
+			       uint32_t comp_time_limit,
+			       bitstr_t *planned_node_bitmap)
 {
 	het_job_map_t *map;
 	het_job_rec_t *rec;
@@ -4242,10 +4281,16 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 				 * This job can start an earlier time in
 				 * some other partition, so ignore new info
 				 */
+				if ((rec->latest_start == latest_start) &&
+				    !rec->planned_node_bitmap)
+					_het_job_rec_set_plan(
+						rec, planned_node_bitmap);
 			} else if (rec) {
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				rec->resv_ptr = job_ptr->resv_ptr;
+				_het_job_rec_set_plan(rec,
+						      planned_node_bitmap);
 			} else {
 				rec = xmalloc(sizeof(het_job_rec_t));
 				rec->job_id = job_ptr->job_id;
@@ -4253,6 +4298,8 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				rec->resv_ptr = job_ptr->resv_ptr;
+				_het_job_rec_set_plan(rec,
+						      planned_node_bitmap);
 				list_append(map->het_job_rec_list, rec);
 			}
 		} else {
@@ -4262,11 +4309,12 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			rec->latest_start = latest_start;
 			rec->part_ptr = job_ptr->part_ptr;
 			rec->resv_ptr = job_ptr->resv_ptr;
+			_het_job_rec_set_plan(rec, planned_node_bitmap);
 
 			map = xmalloc(sizeof(het_job_map_t));
 			map->comp_time_limit = comp_time_limit;
 			map->het_job_id = job_ptr->het_job_id;
-			map->het_job_rec_list = list_create(xfree_ptr);
+			map->het_job_rec_list = list_create(_het_job_rec_del);
 			list_append(map->het_job_rec_list, rec);
 			list_append(het_job_list, map);
 		}
@@ -4449,6 +4497,36 @@ static void _het_job_add_used_nodes(bitstr_t **used_bitmap,
 		bit_or(*used_bitmap, job_ptr->node_bitmap);
 }
 
+static bool _het_job_use_planned_nodes(job_record_t *job_ptr,
+				       het_job_rec_t *rec,
+				       bitstr_t *avail_bitmap)
+{
+	int planned_cnt, avail_cnt;
+
+	if (!rec->planned_node_bitmap)
+		return true;
+
+	planned_cnt = bit_set_count(rec->planned_node_bitmap);
+	avail_cnt = bit_set_count(avail_bitmap);
+	if (!bit_super_set(rec->planned_node_bitmap, avail_bitmap)) {
+		log_flag(HETJOB, "%pJ planned hetjob nodes no longer available: planned=%d available=%d",
+			 job_ptr, planned_cnt, avail_cnt);
+		return false;
+	}
+
+	bit_and(avail_bitmap, rec->planned_node_bitmap);
+	avail_cnt = bit_set_count(avail_bitmap);
+	if (!avail_cnt) {
+		log_flag(HETJOB, "%pJ planned hetjob node bitmap is empty",
+			 job_ptr);
+		return false;
+	}
+
+	log_flag(HETJOB, "%pJ pinned hetjob start to %d planned nodes",
+		 job_ptr, avail_cnt);
+	return true;
+}
+
 static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 					 node_space_map_t *node_space)
 {
@@ -4500,6 +4578,12 @@ static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_and_not(avail_bitmap,
 				job_ptr->details->exc_node_bitmap);
+		}
+		if (!_het_job_use_planned_nodes(job_ptr, rec,
+						avail_bitmap)) {
+			FREE_NULL_BITMAP(avail_bitmap);
+			start_rc = HET_START_FAILED;
+			break;
 		}
 
 		if (fed_mgr_job_lock(job_ptr)) {
