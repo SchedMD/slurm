@@ -2209,16 +2209,58 @@ static int _foreach_part_remove_qos(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_resv_remove_qos(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	slurmdb_qos_rec_t *rec = arg;
+
+	/*
+	 * resv_ptr->qos_list has a NULL destructor and caches bare
+	 * slurmdb_qos_rec_t pointers into assoc_mgr_qos_list. Drop the
+	 * pointer being removed and strip the corresponding name from the
+	 * canonical resv_ptr->qos string so a later rebuild stays in sync.
+	 */
+	if (resv_ptr->qos_list &&
+	    list_remove_first(resv_ptr->qos_list, slurm_find_ptr_in_list,
+			      rec)) {
+		char *remove_name = NULL;
+		bool denied = (resv_ptr->qos[0] == '-');
+
+		info("Reservation %s's QOS %s was just removed; dropping from reservation QOS %s list",
+		     resv_ptr->name, rec->name,
+		     (denied ? "denied" : "allowed"));
+
+		if (denied)
+			xstrfmtcat(remove_name, "-%s", rec->name);
+		else
+			remove_name = rec->name;
+
+		_remove_csv_item(&resv_ptr->qos, remove_name);
+
+		if (denied)
+			xfree(remove_name);
+	}
+
+	return 0;
+}
+
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
-	slurmctld_lock_t part_write_lock =
-		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	slurmctld_lock_t job_part_write_lock = {
+		.conf = NO_LOCK,
+		.job = WRITE_LOCK, /* jobs reference resv pointer */
+		.node = NO_LOCK,
+		.part = WRITE_LOCK,
+		.fed = NO_LOCK,
+	};
 
-	lock_slurmctld(part_write_lock);
+	lock_slurmctld(job_part_write_lock);
 	if (part_list)
 		(void) list_for_each(part_list, _foreach_part_remove_qos, rec);
-	unlock_slurmctld(part_write_lock);
+	if (resv_list)
+		(void) list_for_each(resv_list, _foreach_resv_remove_qos, rec);
+	unlock_slurmctld(job_part_write_lock);
 
 	bb_g_reconfig();
 
