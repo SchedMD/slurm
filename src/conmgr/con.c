@@ -556,6 +556,119 @@ static void _check_timeouts(const conmgr_timeouts_t *timeouts)
 	xassert(!timespec_is_zero(timeouts->write_complete));
 }
 
+static int _validate_socket_fd(int input_fd, int output_fd, const bool has_in,
+			       const bool has_out, bool is_listen)
+{
+	int in_listening = 0, out_listening = 0;
+
+	if (has_in) {
+		socklen_t len = sizeof(in_listening);
+
+		if (getsockopt(input_fd, SOL_SOCKET, SO_ACCEPTCONN,
+			       &in_listening, &len)) {
+			int rc = errno;
+			log_flag(CONMGR, "%s: [fd:%d->%d] getsockopt(fd:%d, SO_ACCEPTCONN) failed: %s",
+				 __func__, input_fd, output_fd, input_fd,
+				 slurm_strerror(rc));
+			return rc;
+		}
+	}
+
+	if (has_out) {
+		socklen_t len = sizeof(out_listening);
+
+		if (getsockopt(output_fd, SOL_SOCKET, SO_ACCEPTCONN,
+			       &out_listening, &len)) {
+			int rc = errno;
+			log_flag(CONMGR, "%s: [fd:%d->%d] getsockopt(fd:%d, SO_ACCEPTCONN) failed: %s",
+				 __func__, input_fd, output_fd, output_fd,
+				 slurm_strerror(rc));
+			return rc;
+		}
+	}
+
+	if (is_listen) {
+		if (has_out) {
+			log_flag(CONMGR, "%s: [fd:%d->%d] rejecting unexpected listening on output_fd",
+				 __func__, input_fd, output_fd);
+			return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
+		} else if (!in_listening) {
+			log_flag(CONMGR, "%s: [fd:%d->%d] rejecting non-listening input socket",
+				 __func__, input_fd, output_fd);
+			return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
+		}
+	} else {
+		if (in_listening) {
+			log_flag(CONMGR, "%s: [fd:%d->%d] rejecting unexpected listening input socket",
+				 __func__, input_fd, output_fd);
+			return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
+		} else if (out_listening) {
+			log_flag(CONMGR, "%s: [fd:%d->%d] rejecting unexpected listening output socket",
+				 __func__, input_fd, output_fd);
+			return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
+static int _validate_output_fd(int input_fd, int output_fd,
+			       struct stat *out_stat, int *out_modes)
+{
+	if (fstat(output_fd, out_stat)) {
+		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
+		return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
+	}
+	if ((*out_modes = fcntl(output_fd, F_GETFL)) < 0) {
+		int rc = errno;
+
+		log_flag(CONMGR, "%s: [fd:%d->%d] fcntl(fd:%d) failed: %s",
+			 __func__, input_fd, output_fd, output_fd,
+			 slurm_strerror(rc));
+		return rc;
+	}
+	/* Output must be writable */
+	if (((*out_modes & O_ACCMODE) != O_WRONLY) &&
+	    ((*out_modes & O_ACCMODE) != O_RDWR)) {
+		char modes_str[FCNTL_MODES_STR_BYTES];
+
+		log_flag(CONMGR, "%s: [fd:%d->%d] output_fd=%d is not writable with modes:%s",
+			 __func__, input_fd, output_fd, output_fd,
+			 fcntl_modes_to_string(*out_modes, modes_str,
+					       sizeof(modes_str)));
+		return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
+	}
+	return SLURM_SUCCESS;
+}
+
+static int _validate_input_fd(int input_fd, int output_fd, struct stat *in_stat,
+			      int *in_modes)
+{
+	if (fstat(input_fd, in_stat)) {
+		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
+		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
+	}
+	if ((*in_modes = fcntl(input_fd, F_GETFL)) < 0) {
+		int rc = errno;
+
+		log_flag(CONMGR, "%s: [fd:%d->%d] fcntl(fd:%d) failed: %s",
+			 __func__, input_fd, output_fd, input_fd,
+			 slurm_strerror(rc));
+		return rc;
+	}
+	/* Input must be readable */
+	if (((*in_modes & O_ACCMODE) != O_RDONLY) &&
+	    ((*in_modes & O_ACCMODE) != O_RDWR)) {
+		char modes_str[FCNTL_MODES_STR_BYTES];
+
+		log_flag(CONMGR, "%s: [fd:%d->%d] input_fd=%d is not readable with modes:%s",
+			 __func__, input_fd, output_fd, input_fd,
+			 fcntl_modes_to_string(*in_modes, modes_str,
+					       sizeof(modes_str)));
+		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
+	}
+	return SLURM_SUCCESS;
+}
+
 extern int add_connection(conmgr_con_type_t type,
 			  const conmgr_timeouts_t *timeouts,
 			  conmgr_fd_t *source, int input_fd, int output_fd,
@@ -566,6 +679,8 @@ extern int add_connection(conmgr_con_type_t type,
 			  const char *tls_cert, void *arg)
 {
 	struct stat in_stat = { 0 };
+	int rc;
+	int in_modes = 0, out_modes = 0;
 	struct stat out_stat = { 0 };
 	conmgr_fd_t *con = NULL;
 	bool set_keep_alive, is_socket, is_fifo, is_chr;
@@ -596,14 +711,21 @@ extern int add_connection(conmgr_con_type_t type,
 		return ENAMETOOLONG;
 	}
 
-	/* verify FD is valid and still open */
-	if (has_in && fstat(input_fd, &in_stat)) {
-		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, input_fd);
-		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
+	/*
+	 * Verify FD is valid and still open. Also check that input/output fds
+	 * are actually readable/writeable. This catches potential mistakes
+	 * where a read-only fd might accidentally have been specified as an
+	 * output fd, or vice versa.
+	 */
+	if (has_in) {
+		if ((rc = _validate_input_fd(input_fd, output_fd, &in_stat,
+					     &in_modes)))
+			return rc;
 	}
-	if (has_out && fstat(output_fd, &out_stat)) {
-		log_flag(CONMGR, "%s: invalid fd:%d: %m", __func__, output_fd);
-		return SLURM_COMMUNICATIONS_INVALID_OUTGOING_FD;
+	if (has_out) {
+		if ((rc = _validate_output_fd(input_fd, output_fd, &out_stat,
+					      &out_modes)))
+			return rc;
 	}
 
 	if (!has_in && !has_out) {
@@ -619,6 +741,12 @@ extern int add_connection(conmgr_con_type_t type,
 	is_chr = (has_in && S_ISCHR(in_stat.st_mode)) ||
 		    (has_out && S_ISCHR(out_stat.st_mode));
 	set_keep_alive = !unix_socket_path && is_socket && !is_listen;
+
+	if (is_socket) {
+		if ((rc = _validate_socket_fd(input_fd, output_fd, has_in,
+					      has_out, is_listen)))
+			return rc;
+	}
 
 	/* all connections are non-blocking */
 	if (has_in) {
@@ -730,10 +858,19 @@ extern int add_connection(conmgr_con_type_t type,
 	con->last_read = timespec_now();
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char in_modes_str[FCNTL_MODES_STR_BYTES];
+		char out_modes_str[FCNTL_MODES_STR_BYTES];
 		char *flags = con_flags_string(con->flags);
 
-		log_flag(CONMGR, "%s: [%s] new connection input_fd=%u output_fd=%u flags=%s",
-			 __func__, con->name, input_fd, output_fd, flags);
+		log_flag(CONMGR, "%s: [%s] new connection input_fd=%d(%s) output_fd=%d(%s) flags=%s",
+			 __func__, con->name, input_fd,
+			 (has_in ? fcntl_modes_to_string(in_modes, in_modes_str,
+							 sizeof(in_modes_str)) :
+			  ""), output_fd,
+			 (has_out ? fcntl_modes_to_string(out_modes,
+							  out_modes_str,
+							  sizeof(out_modes_str))
+			  : ""), flags);
 
 		xfree(flags);
 	}
