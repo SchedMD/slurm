@@ -362,7 +362,7 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(con == arg);
 
-	if (get_log_level() > LOG_LEVEL_DEBUG) {
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		read_lock_state();
 		debug("%s: [%s] closed srun connection state=%s",
 		      __func__, conmgr_fd_get_name(con),
