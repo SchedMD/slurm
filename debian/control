@@ -246,7 +246,7 @@ Description: OpenLava compatibility wrappers for Slurm
   OpenLava wrapper scripts used for helping migrate from OpenLava/LFS to Slurm
 
 Package: slurm-smd-torque
-Architecture: all
+Architecture: any
 Depends:
  slurm-smd (>= ${source:Version}),
  slurm-smd-libslurm-perl (>= ${source:Version}),
