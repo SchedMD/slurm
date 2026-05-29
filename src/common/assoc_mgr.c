@@ -1912,16 +1912,53 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
+/* Used to remove soon to be defunct user pointers from assoc list */
+static int _foreach_update_assoc_cached_user_rec(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	list_t *new_user_list = arg;
+	slurmdb_user_rec_t *user = NULL;
+
+	if (assoc->user_rec) {
+		if (new_user_list)
+			user = list_find_first(new_user_list, _list_find_uid,
+					       &assoc->uid);
+		/*
+		 * If the user is NULL then the association is likely to be
+		 * removed soon by assoc_mgr_refresh_lists(), thus why this is a
+		 * debug log.
+		 */
+		if (!user)
+			debug("User with uid %u has been removed from association %u",
+			      assoc->uid, assoc->id);
+		assoc->user_rec = user;
+	}
+
+	return 0;
+}
+
 static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 {
+	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
+	assoc_mgr_lock_t locks = {
+		.assoc = WRITE_LOCK, /* for updating cached user_rec in assoc */
+		.user = WRITE_LOCK,
+	};
+
+	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	assoc_mgr_lock(&locks);
+
+	if (assoc_mgr_assoc_list)
+		list_for_each(assoc_mgr_assoc_list,
+			      _foreach_update_assoc_cached_user_rec,
+			      current_users);
+
 	FREE_NULL_LIST(assoc_mgr_user_list);
 	FREE_NULL_LIST(assoc_mgr_coord_list);
-	assoc_mgr_user_list = acct_storage_g_get_users(db_conn, uid, &user_q);
+	assoc_mgr_user_list = current_users;
 
 	if (!assoc_mgr_user_list) {
 		assoc_mgr_unlock(&locks);
@@ -2179,7 +2216,10 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
 	uid_t uid = getuid();
-	assoc_mgr_lock_t locks = { .user = WRITE_LOCK };
+	assoc_mgr_lock_t locks = {
+		.assoc = WRITE_LOCK, /* for updating cached user_rec in assoc */
+		.user = WRITE_LOCK,
+	};
 
 	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
 
@@ -2191,6 +2231,11 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 	_post_user_list(current_users);
 
 	assoc_mgr_lock(&locks);
+
+	if (assoc_mgr_assoc_list)
+		list_for_each(assoc_mgr_assoc_list,
+			      _foreach_update_assoc_cached_user_rec,
+			      current_users);
 
 	FREE_NULL_LIST(assoc_mgr_user_list);
 
