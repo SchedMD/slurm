@@ -97,7 +97,7 @@ typedef struct {
 	list_t *licenses_to_preempt;
 	bitstr_t *node_bitmap;
 	list_t *preemptee_job_list;
-	bool *remove_some_jobs;
+	bool remove_some_jobs;
 } run_now_preemptee_arg_t;
 
 static int _foreach_rm_cores(void *x, void *arg)
@@ -3153,7 +3153,7 @@ static int _foreach_run_now_preemptee(void *x, void *arg)
 	if (tmp_job_ptr->details->usable_nodes)
 		return -1;
 	list_append(wargs->preemptee_job_list, tmp_job_ptr);
-	*wargs->remove_some_jobs = true;
+	wargs->remove_some_jobs = true;
 
 	return 0;
 }
@@ -3247,7 +3247,6 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
 	list_t *license_list;
-	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
 	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
@@ -3411,7 +3410,6 @@ top:	orig_node_map = bit_copy(save_node_map);
 				.licenses_to_preempt =
 					job_ptr->licenses_to_preempt,
 				.node_bitmap = node_bitmap,
-				.remove_some_jobs = &remove_some_jobs,
 			};
 			/*
 			 * Build list of preemptee jobs whose resources are
@@ -3423,7 +3421,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			wargs.preemptee_job_list = *preemptee_job_list;
 			list_for_each_ro(preemptee_candidates,
 					 _foreach_run_now_preemptee, &wargs);
-			if (!remove_some_jobs) {
+			if (!wargs.remove_some_jobs) {
 				FREE_NULL_LIST(*preemptee_job_list);
 			}
 		}
