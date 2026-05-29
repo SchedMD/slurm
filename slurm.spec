@@ -248,17 +248,14 @@ BuildRequires: pkgconfig(libselinux)
 # cause errors with rpm 4.13 and on. Turn that check off.
 %define _empty_manifest_terminate_build 0
 
-# First we remove $prefix/local and then just prefix to make
-# sure we get the correct installdir
-%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
-
-%define _perlman3 %(perl -e 'use Config; $T=$Config{installsiteman3dir}; $P=$Config{siteprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
-
-%define _perlarchlib %(perl -e 'use Config; $T=$Config{installarchlib}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;')
-
-%define _perldir %{_prefix}%{_perlarch}
-%define _perlman3dir %{_prefix}%{_perlman3}
-%define _perlarchlibdir %{_prefix}%{_perlarchlib}
+# Install Perl modules in Perl's vendor directory ($Config{installvendorarch}),
+# always in @INC for the system Perl.
+%define _perldir %(perl -MConfig -e 'print $Config{installvendorarch}')
+%define _perlman3dir %(perl -MConfig -e 'print $Config{installvendorman3dir}')
+# _perlarchlibdir is used only to clean up the perllocal.pod that
+# Makefile.PL drops alongside core Perl's archlib regardless of which
+# INSTALLDIRS tier is active, so it must point at $Config{installarchlib}.
+%define _perlarchlibdir %(perl -MConfig -e 'print $Config{installarchlib}')
 
 %description
 Slurm is an open source, fault-tolerant, and highly scalable
@@ -437,7 +434,7 @@ Provides a REST interface to Slurm.
 	%{!?with_munge:--without-munge} \
 	%{?_with_cflags}
 
-make %{?_smp_mflags}
+SLURM_PERL_INSTALLDIRS=vendor make %{?_smp_mflags}
 
 %install
 
@@ -450,8 +447,8 @@ export QA_RPATHS=0x5
 %global __requires_exclude ^libpmix.so|libevent|libnvidia-ml
 
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot}
-make install-contrib DESTDIR=%{buildroot}
+SLURM_PERL_INSTALLDIRS=vendor make install DESTDIR=%{buildroot}
+SLURM_PERL_INSTALLDIRS=vendor make install-contrib DESTDIR=%{buildroot}
 
 # Do not package Slurm's version of libpmi on Cray systems in the usual location.
 # Cray's version of libpmi should be used. Move it elsewhere if the site still
