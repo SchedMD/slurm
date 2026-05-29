@@ -3540,74 +3540,102 @@ Directory to store the archive data.
 
 .TP
 \fBEvents\fR
-Archive Events. If not specified and PurgeEventAfter is set
-all event data removed will be lost permanently.
+When purging events also archive them.
+Default is to permanently delete purged records.
 .IP
 
 .TP
 \fBJobs\fR
-Archive Jobs. If not specified and PurgeJobAfter is set
-all job data removed will be lost permanently.
+When purging jobs also archive them, including scripts and environments.
+Default is to permanently delete purged records.
 .IP
 
 .TP
 \fBJobScript\fR
-Archive Job scripts. If not specified and PurgeJobScriptAfter is set
-all job script data removed will be lost permanently.
+When purging job scripts also archive them.
+Default is to follow \fBJobs\fR.
 .IP
 
 .TP
 \fBJobEnv\fR
-Archive Job environments. If not specified and PurgeJobEnvAfter is set
-all job env data removed will be lost permanently.
+When purging job environments also archive them.
+Default is to follow \fBJobs\fR.
 .IP
 
 .TP
 \fBPurgeEventAfter\fR=
-Purge cluster event records older than time stated in months. If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (e.g. a
-value of '12hours' would purge everything older than 12 hours.)
+Purge cluster event records older than the stated time.
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
 .IP
 
 .TP
 \fBPurgeJobAfter\fR=
-Purge job records older than time stated in months. If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (e.g. a
-value of '12hours' would purge everything older than 12 hours.)
+Purge individual job records older than the stated time (based on end time).
+Aggregated information will be preserved to "PurgeUsageAfter".
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
+
+\fBNOTE\fR: this includes job scripts and job environments if their specific
+purge options (\fBPurgeJobScriptAfter\fR and \fBPurgeJobEnvAfter\fR) are not set.
 .IP
 
 .TP
 \fBPurgeJobScriptAfter\fR=
-Purge job script records older than time stated in months. If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (e.g. a
-value of '12hours' would purge everything older than 12 hours.)
+Purge job script records older than the stated time (based on end time).
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
 .IP
 
 .TP
 \fBPurgeJobEnvAfter\fR=
-Purge job environment records older than time stated in months. If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (e.g. a
-value of '12hours' would purge everything older than 12 hours.)
+Purge job environment records older than the stated time (based on end time).
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
+.IP
+
+.TP
+\fBPurgeResvAfter\fR=
+Purge reservation records older than the stated time (based on end time).
+Aggregated information will be preserved to "PurgeUsageAfter".
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
 .IP
 
 .TP
 \fBPurgeStepAfter\fR=
-Purge step records older than time stated in months. If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (e.g. a
-value of '12hours' would purge everything older than 12 hours.)
+Purge step records older than the stated time (based on end time).
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
 .IP
 
 .TP
 \fBPurgeSuspendAfter\fR=
-Purge job suspend records older than time stated in months. If you
-want to purge on a shorter time period you can include hours, or days
-behind the numeric value to get those more frequent purges. (e.g. a
-value of '12hours' would purge everything older than 12 hours.)
+Purge job suspend records older than the stated time.
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
+.IP
+
+.TP
+\fBPurgeTXNAfter\fR=
+Purge transaction records older than the stated time.
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
+.IP
+
+.TP
+\fBPurgeUsageAfter\fR=
+Purge usage records (Cluster, Association, QOS and WCKey) older than the stated
+time (based on creation or last modified time).
+These tables are the source for reports generated by the sreport(1) command.
+Units are months (default), days, or hours. For example, a value of "12hours"
+would purge all such records older than 12 hours.
+.IP
+
+.TP
+\fBReservations\fR
+When purging reservations also archive them.
+Default is to permanently delete purged records.
 .IP
 
 .TP
@@ -3617,14 +3645,26 @@ Run this script instead of the generic form of archive to flat files.
 
 .TP
 \fBSteps\fR
-Archive Steps. If not specified and PurgeStepAfter is set
-all step data removed will be lost permanently.
+When purging steps also archive them.
+Default is to permanently delete purged records.
 .IP
 
 .TP
 \fBSuspend\fR
-Archive Suspend Data. If not specified and PurgeSuspendAfter is set
-all suspend data removed will be lost permanently.
+When purging suspend records also archive them.
+Default is to permanently delete purged records.
+.IP
+
+.TP
+\fBTXN\fR
+When purging transaction records also archive them.
+Default is to permanently delete purged records.
+.IP
+
+.TP
+\fBUsage\fR
+When purging usage records also archive them.
+Default is to permanently delete purged records.
 .IP
 .RE
 
