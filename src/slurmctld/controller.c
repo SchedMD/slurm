@@ -4018,6 +4018,11 @@ static void _assoc_mgr_post_update_all(void)
 				     NULL);
 	}
 
+	if (resv_list) {
+		(void) list_for_each(resv_list, resv_cache_update_qos_list,
+				     NULL);
+	}
+
 	set_cluster_tres(true);
 
 	assoc_mgr_unlock(&locks);
