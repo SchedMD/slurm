@@ -5604,7 +5604,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	   the association list can be made.
 	*/
 	if (!assoc_mgr_assoc_list)
-		if (assoc_mgr_refresh_lists(db_conn, 0) == SLURM_ERROR)
+		if (assoc_mgr_refresh_lists(db_conn, 0) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 
 	assoc_mgr_lock(&locks);
@@ -6448,6 +6448,7 @@ unpack_error:
 extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 {
 	bool partial_list = 1;
+	bool some_updated = false;
 
 	if (!cache_level) {
 		cache_level = init_setup.cache_level;
@@ -6461,33 +6462,43 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 		if (_refresh_assoc_mgr_tres_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			goto error;
+		some_updated = true;
 	}
 
 	/* get qos before association since it is used there */
-	if (cache_level & ASSOC_MGR_CACHE_QOS)
+	if (cache_level & ASSOC_MGR_CACHE_QOS) {
 		if (_refresh_assoc_mgr_qos_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			goto error;
+		some_updated = true;
+	}
 
 	/* get user before association/wckey since it is used there */
-	if (cache_level & ASSOC_MGR_CACHE_USER)
+	if (cache_level & ASSOC_MGR_CACHE_USER) {
 		if (_refresh_assoc_mgr_user_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			goto error;
+		some_updated = true;
+	}
 
 	if (cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if (_refresh_assoc_mgr_assoc_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			goto error;
+		some_updated = true;
 	}
-	if (cache_level & ASSOC_MGR_CACHE_WCKEY)
+	if (cache_level & ASSOC_MGR_CACHE_WCKEY) {
 		if (_refresh_assoc_wckey_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			goto error;
-	if (cache_level & ASSOC_MGR_CACHE_RES)
+		some_updated = true;
+	}
+	if (cache_level & ASSOC_MGR_CACHE_RES) {
 		if (_refresh_assoc_mgr_res_list(
 			    db_conn, init_setup.enforce) == SLURM_ERROR)
 			goto error;
+		some_updated = true;
+	}
 
 	if (!partial_list && _running_cache())
 		*init_setup.running_cache = RUNNING_CACHE_STATE_LISTS_REFRESHED;
@@ -6497,6 +6508,14 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 
 error:
 	uid_from_string_cache_disable();
+
+	/*
+	 * If some assoc_mgr_*_lists where updated but slurmdbd connection
+	 * lost part way through let the caller know.
+	 */
+	if (!partial_list && _running_cache() && some_updated)
+		return SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+
 	return SLURM_ERROR;
 }
 
