@@ -5347,6 +5347,39 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	return true;
 }
 
+extern int resv_cache_update_qos_list(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	char *last = NULL, *tmp = NULL, *tok = NULL;
+
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
+	if (!resv_ptr->qos_list)
+		return 0;
+
+	/*
+	 * resv_ptr->qos_list caches pointers into assoc_mgr_qos_list with a
+	 * NULL destructor. After the qos list has been refreshed those
+	 * pointers are dangling, so rebuild from the canonical resv_ptr->qos
+	 * string.
+	 */
+	list_flush(resv_ptr->qos_list);
+	if (!resv_ptr->qos)
+		return 0;
+
+	tmp = xstrdup(resv_ptr->qos);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if ((tok[0] == '-') || (tok[0] == '+'))
+			tok++;
+		(void) _append_to_qos_list(resv_ptr->qos_list, tok);
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp);
+
+	return 0;
+}
+
 extern void validate_all_reservations(bool run_now, bool run_locked)
 {
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
