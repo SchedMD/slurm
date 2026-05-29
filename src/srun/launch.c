@@ -1608,6 +1608,22 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		else if (srun_opt->parallel_debug)
 			MPIR_Breakpoint(job);
 	} else {
+		/*
+		 * If no task ever reported a real exit code via
+		 * _task_finish(), *local_global_rc is still 0. Encode an
+		 * explicit WIFEXITED status with exit code 1 so slurmctld
+		 * records this as a launch failure rather than the
+		 * COMPLETED 0:0 default. Skip the override when a real
+		 * task exit (OOM, signal, non-zero rc) has already been
+		 * recorded so its fidelity is preserved. Take launch_lock
+		 * to synchronize with _task_finish(). Leave rc as
+		 * SLURM_SUCCESS so slurm_step_launch_wait_finish() still runs
+		 * and the usual cleanup happens.
+		 */
+		slurm_mutex_lock(&launch_lock);
+		if (*local_global_rc == 0)
+			*local_global_rc = W_EXITCODE(1, 0);
+		slurm_mutex_unlock(&launch_lock);
 		info("%ps aborted before step completely launched.",
 		     &job->step_id);
 	}
