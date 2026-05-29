@@ -150,6 +150,7 @@ typedef struct {
 	part_record_t *part_ptr;
 	slurmctld_resv_t *resv_ptr;
 	bitstr_t *planned_node_bitmap;	/* Nodes selected by backfill */
+	list_t *planned_preemptee_job_ids; /* Job IDs to preempt for plan */
 } het_job_rec_t;
 
 typedef struct {
@@ -283,11 +284,14 @@ static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			       bool *has_mor);
 static int  _het_job_find_map(void *x, void *key);
 static void _het_job_map_del(void *x);
+static list_t *_het_job_build_planned_preemptee_ids(
+	job_record_t *job_ptr, bitstr_t *planned_node_bitmap);
 static void _het_job_start_clear(void);
 static time_t _het_job_start_find(job_record_t *job_ptr);
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			       uint32_t comp_time_limit,
-			       bitstr_t *planned_node_bitmap);
+			       bitstr_t *planned_node_bitmap,
+			       list_t *planned_preemptee_job_ids);
 static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single);
 static int  _het_job_start_test_list(void *map, void *node_space);
@@ -2380,7 +2384,7 @@ static void _attempt_backfill(void)
 		 * Update time once start time estimate established
 		 */
 		_het_job_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL,
-				   NULL);
+				   NULL, NULL);
 
 		if (job_ptr->het_job_id &&
 		    (job_ptr->state_reason == WAIT_NO_REASON)) {
@@ -3417,13 +3421,21 @@ skip_start:
 			}
 		} else if (job_ptr->het_job_id != 0) {
 			uint32_t max_time_limit;
+			list_t *planned_preemptee_job_ids;
+
 			max_time_limit =_get_job_max_tl(job_ptr, now,
 						        node_space);
 			comp_time_limit = MIN(comp_time_limit, max_time_limit);
 			job_ptr->node_cnt_wag =
 					MAX(bit_set_count(avail_bitmap), 1);
+			planned_preemptee_job_ids =
+				_het_job_build_planned_preemptee_ids(
+					job_ptr, avail_bitmap);
+
 			_het_job_start_set(job_ptr, job_ptr->start_time,
-					   comp_time_limit, avail_bitmap);
+					   comp_time_limit, avail_bitmap,
+					   planned_preemptee_job_ids);
+			FREE_NULL_LIST(planned_preemptee_job_ids);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (bf_hetjob_immediate &&
 			    (!max_backfill_jobs_start ||
@@ -4112,11 +4124,78 @@ static void _het_job_rec_del(void *x)
 		return;
 
 	FREE_NULL_BITMAP(rec->planned_node_bitmap);
+	FREE_NULL_LIST(rec->planned_preemptee_job_ids);
 	xfree(rec);
 }
 
+static list_t *_het_job_copy_preemptee_ids(list_t *preemptee_job_ids)
+{
+	list_t *copy = NULL;
+	list_itr_t *iter;
+	uint32_t *job_id;
+
+	if (!preemptee_job_ids)
+		return NULL;
+
+	iter = list_iterator_create(preemptee_job_ids);
+	while ((job_id = list_next(iter))) {
+		uint32_t *job_id_copy = xmalloc(sizeof(*job_id_copy));
+		*job_id_copy = *job_id;
+		if (!copy)
+			copy = list_create(xfree_ptr);
+		list_append(copy, job_id_copy);
+	}
+	list_iterator_destroy(iter);
+
+	return copy;
+}
+
+static list_t *_het_job_build_planned_preemptee_ids(
+	job_record_t *job_ptr, bitstr_t *planned_node_bitmap)
+{
+	list_t *preemptee_candidates, *planned_preemptee_job_ids = NULL;
+	list_itr_t *iter;
+	job_record_t *candidate;
+
+	if (!planned_node_bitmap)
+		return NULL;
+
+	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
+	if (!preemptee_candidates)
+		return NULL;
+
+	iter = list_iterator_create(preemptee_candidates);
+	while ((candidate = list_next(iter))) {
+		uint16_t mode = slurm_job_preempt_mode(candidate);
+		uint32_t *job_id;
+
+		if (mode == PREEMPT_MODE_OFF)
+			continue;
+		if (!job_overlap_and_running(planned_node_bitmap,
+					     job_ptr->license_list,
+					     candidate))
+			continue;
+
+		job_id = xmalloc(sizeof(*job_id));
+		*job_id = candidate->job_id;
+		if (!planned_preemptee_job_ids)
+			planned_preemptee_job_ids = list_create(xfree_ptr);
+		list_append(planned_preemptee_job_ids, job_id);
+	}
+	list_iterator_destroy(iter);
+	FREE_NULL_LIST(preemptee_candidates);
+
+	if (planned_preemptee_job_ids) {
+		log_flag(HETJOB, "%pJ planned %d preemptee jobs for hetjob start",
+			 job_ptr, list_count(planned_preemptee_job_ids));
+	}
+
+	return planned_preemptee_job_ids;
+}
+
 static void _het_job_rec_set_plan(het_job_rec_t *rec,
-				  bitstr_t *planned_node_bitmap)
+				  bitstr_t *planned_node_bitmap,
+				  list_t *planned_preemptee_job_ids)
 {
 	if (!rec)
 		return;
@@ -4124,6 +4203,9 @@ static void _het_job_rec_set_plan(het_job_rec_t *rec,
 	FREE_NULL_BITMAP(rec->planned_node_bitmap);
 	if (planned_node_bitmap)
 		rec->planned_node_bitmap = bit_copy(planned_node_bitmap);
+	FREE_NULL_LIST(rec->planned_preemptee_job_ids);
+	rec->planned_preemptee_job_ids =
+		_het_job_copy_preemptee_ids(planned_preemptee_job_ids);
 }
 
 /*
@@ -4256,7 +4338,8 @@ static time_t _het_job_start_find(job_record_t *job_ptr)
  */
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			       uint32_t comp_time_limit,
-			       bitstr_t *planned_node_bitmap)
+			       bitstr_t *planned_node_bitmap,
+			       list_t *planned_preemptee_job_ids)
 {
 	het_job_map_t *map;
 	het_job_rec_t *rec;
@@ -4284,13 +4367,15 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 				if ((rec->latest_start == latest_start) &&
 				    !rec->planned_node_bitmap)
 					_het_job_rec_set_plan(
-						rec, planned_node_bitmap);
+						rec, planned_node_bitmap,
+						planned_preemptee_job_ids);
 			} else if (rec) {
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				rec->resv_ptr = job_ptr->resv_ptr;
-				_het_job_rec_set_plan(rec,
-						      planned_node_bitmap);
+				_het_job_rec_set_plan(
+					rec, planned_node_bitmap,
+					planned_preemptee_job_ids);
 			} else {
 				rec = xmalloc(sizeof(het_job_rec_t));
 				rec->job_id = job_ptr->job_id;
@@ -4298,8 +4383,9 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				rec->resv_ptr = job_ptr->resv_ptr;
-				_het_job_rec_set_plan(rec,
-						      planned_node_bitmap);
+				_het_job_rec_set_plan(
+					rec, planned_node_bitmap,
+					planned_preemptee_job_ids);
 				list_append(map->het_job_rec_list, rec);
 			}
 		} else {
@@ -4309,7 +4395,8 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			rec->latest_start = latest_start;
 			rec->part_ptr = job_ptr->part_ptr;
 			rec->resv_ptr = job_ptr->resv_ptr;
-			_het_job_rec_set_plan(rec, planned_node_bitmap);
+			_het_job_rec_set_plan(rec, planned_node_bitmap,
+					      planned_preemptee_job_ids);
 
 			map = xmalloc(sizeof(het_job_map_t));
 			map->comp_time_limit = comp_time_limit;
@@ -4527,6 +4614,65 @@ static bool _het_job_use_planned_nodes(job_record_t *job_ptr,
 	return true;
 }
 
+static bool _het_job_preempt_planned_jobs(job_record_t *job_ptr,
+					  het_job_rec_t *rec)
+{
+	list_itr_t *iter;
+	uint32_t *job_id;
+	int preempted = 0, planned_cnt;
+	time_t now = time(NULL);
+
+	if (!rec->planned_node_bitmap || !rec->planned_preemptee_job_ids)
+		return false;
+
+	planned_cnt = list_count(rec->planned_preemptee_job_ids);
+	if (!planned_cnt)
+		return false;
+
+	if (job_ptr->details && job_ptr->details->preempt_start_time &&
+	    (job_ptr->details->preempt_start_time >
+	     (now - slurm_conf.kill_wait - slurm_conf.msg_timeout))) {
+		log_flag(HETJOB, "%pJ already waiting on planned hetjob preemption",
+			 job_ptr);
+		return true;
+	}
+
+	iter = list_iterator_create(rec->planned_preemptee_job_ids);
+	while ((job_id = list_next(iter))) {
+		job_record_t *preemptee = find_job_record(*job_id);
+		uint16_t mode;
+
+		if (!preemptee)
+			continue;
+		if (!job_overlap_and_running(rec->planned_node_bitmap,
+					     job_ptr->license_list,
+					     preemptee))
+			continue;
+
+		mode = slurm_job_preempt_mode(preemptee);
+		if (mode == PREEMPT_MODE_OFF)
+			continue;
+
+		if (slurm_job_preempt(preemptee, job_ptr, mode, true) ==
+		    SLURM_SUCCESS)
+			preempted++;
+	}
+	list_iterator_destroy(iter);
+
+	if (!preempted)
+		return false;
+
+	if (job_ptr->details)
+		job_ptr->details->preempt_start_time = now;
+	job_ptr->preempt_in_progress = true;
+	if (job_ptr->array_recs)
+		job_ptr->array_recs->pend_run_tasks++;
+
+	log_flag(HETJOB, "%pJ preempted %d/%d planned jobs for pinned hetjob start",
+		 job_ptr, preempted, planned_cnt);
+	return true;
+}
+
 static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 					 node_space_map_t *node_space)
 {
@@ -4616,7 +4762,8 @@ static het_start_rc_t _het_job_start_now(het_job_map_t *map,
 			fed_mgr_job_unlock(job_ptr);
 			if (bf_hetjob_sticky_preempt_timeout &&
 			    (rc == ESLURM_NODES_BUSY) &&
-			    (preempt_wait || map->sticky_preempt_start)) {
+			    (preempt_wait || map->sticky_preempt_start ||
+			     _het_job_preempt_planned_jobs(job_ptr, rec))) {
 				start_rc = HET_START_WAIT_PREEMPT;
 			} else {
 				start_rc = HET_START_FAILED;
