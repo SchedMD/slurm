@@ -27,6 +27,8 @@ override_dh_auto_install:
 
 	rm -r debian/tmp/usr/lib/*/slurm/src
 
+	find debian/tmp -name '*.la' -delete
+
 	find debian/tmp/usr/lib/*/ -type f,l -not -name "*.a" -not -name "*.la" -not -name "libpmi*" -not -name "libnss*" -not -name "pam_slurm*" -not -name "*_pbs*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd.install
 
 	find debian/tmp/usr/include/slurm/ -type f > debian/slurm-smd-dev.install
