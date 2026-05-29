@@ -128,10 +128,13 @@ See \fB\-\-parsable\fR for details on output format.
 
 Output is written directly on the compute nodes to the files named by
 \fB\-\-output\fR and \fB\-\-error\fR; if neither is given, \fIslurm-%J.out\fR
-(relative to each task's working directory) is used. Standard input redirection
-is not supported. Options that affect \fBsrun\fR's local I/O handling
-(\fB\-\-label\fR, \fB\-\-unbuffered\fR, terminal \fB\-\-input\fR) therefore have
-no visible effect.
+(relative to each task's working directory) is used. Input is also supported
+by naming a file with \fB\-\-input\fR=<\fIfile\fR>. Forms that require
+\fBsrun\fR to forward its own stdin to the tasks (\fB\-\-input=all\fR or
+\fB\-\-input\fR=<\fItaskid\fR>) do not work because \fBsrun\fR has no I/O
+connection to the step. Some options, such as \fB\-\-label\fR and
+\fB\-\-unbuffered\fR, are applied on the compute node by the \fBslurmstepd\fR(8)
+process that writes the output, rather than by \fBsrun\fR.
 
 Since \fBsrun\fR exits before the step finishes, it does not propagate the
 step's exit code and does not forward signals (e.g., SIGINT from Ctrl\-C) to the
