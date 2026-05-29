@@ -27,11 +27,8 @@
 #include <sys/time.h>
 #include <time.h>
 
-#ifdef __linux__
-#define TIMESPEC_CLOCK_TYPE CLOCK_TAI
-#else
+/* Always use CLOCK_REALTIME to match pthread_cond_timedwait() */
 #define TIMESPEC_CLOCK_TYPE CLOCK_REALTIME
-#endif
 
 extern time_t slurm_mktime(struct tm *tp);
 
