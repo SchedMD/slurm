@@ -4091,8 +4091,17 @@ static void *_assoc_cache_mgr(void *no_data)
 		 * Make sure not to have the assoc_mgr or the
 		 * slurmdbd_lock locked when refresh_lists is called or you may
 		 * get deadlock.
+		 *
+		 * If the slurmdbd connection cuts out partially through
+		 * updating the assoc_mgr's lists, update the job, partition,
+		 * and burst_buffer pointer references to make sure no stale
+		 * points are left. But keep looping since not everything was
+		 * updated.
 		 */
-		assoc_mgr_refresh_lists(acct_db_conn, 0);
+		if (assoc_mgr_refresh_lists(acct_db_conn, 0) ==
+		    SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR)
+			_assoc_mgr_post_update_all();
+
 		if (g_tres_count != slurmctld_tres_cnt) {
 			info("TRES in database does not match cache "
 			     "(%u != %u).  Updating...",
