@@ -855,7 +855,13 @@ extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
 
 	req->assoc_id    = step_ptr->job_ptr->assoc_id;
 	req->container   = step_ptr->container;
-	req->db_index = step_ptr->job_ptr->step_id.sluid;
+	/*
+	 * In Slurm <= 25.05 step_id.sluid=0, so use db_index.
+	 * Once 25.05 is no longer supported only use
+	 * step_ptr->step_id.sluid.
+	 */
+	req->db_index = step_ptr->step_id.sluid ?
+		step_ptr->step_id.sluid : step_ptr->job_ptr->db_index;
 	req->name        = step_ptr->name;
 	req->nodes       = node_list;
 	/* create req->node_inx outside of locks when packing */
@@ -928,7 +934,13 @@ extern int as_build_step_comp_msg(dbd_step_comp_msg_t *req,
 	memset(req, 0, sizeof(dbd_step_comp_msg_t));
 
 	req->assoc_id    = step_ptr->job_ptr->assoc_id;
-	req->db_index = step_ptr->job_ptr->step_id.sluid;
+	/*
+	 * In Slurm <= 25.05 step_id.sluid=0, so use db_index.
+	 * Once 25.05 is no longer supported only use
+	 * step_ptr->step_id.sluid.
+	 */
+	req->db_index = step_ptr->step_id.sluid ?
+		step_ptr->step_id.sluid : step_ptr->job_ptr->db_index;
 	req->end_time    = time(NULL);	/* called at step completion */
 	req->exit_code   = step_ptr->exit_code;
 	req->jobacct     = step_ptr->jobacct;
