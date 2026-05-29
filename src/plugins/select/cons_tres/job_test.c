@@ -3143,7 +3143,7 @@ static int _foreach_run_now_preemptee(void *x, void *arg)
 {
 	job_record_t *tmp_job_ptr = x;
 	run_now_preemptee_arg_t *wargs = arg;
-	int mode = slurm_job_preempt_mode(tmp_job_ptr);
+	uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 
 	if ((mode != PREEMPT_MODE_REQUEUE) && (mode != PREEMPT_MODE_CANCEL))
 		return 0;
