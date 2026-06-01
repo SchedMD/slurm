@@ -601,11 +601,16 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 	}
 }
 
+/* Close the slurmctld -> slurmdbd persistent connection. */
 static void _close_acct_storage_conn(void)
 {
 	if (acct_db_conn)
 		acct_storage_g_close_connection(&acct_db_conn);
+}
 
+/* Unload the accounting_storage plugin. */
+static void _fini_acct_storage(void)
+{
 	acct_storage_g_fini();
 	slurm_persist_conn_recv_server_fini();
 }
@@ -1121,6 +1126,7 @@ int main(int argc, char **argv)
 
 		/* Save any pending state save RPCs */
 		_close_acct_storage_conn();
+		_fini_acct_storage();
 		power_save_fini();
 
 		/* attempt reconfig here */
@@ -2681,17 +2687,61 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (slurmctld_config.shutdown_time) {
-			/* Always stop listening when shutdown requested */
-			listeners_quiesce();
+			/*
+			 * Wait for backfill to release locks. Release the
+			 * lock once bf_active is 0: the backfill thread has
+			 * exited its main loop (it checks shutdown_time and
+			 * won't re-enter) and holding this past here would
+			 * deadlock conmgr_quiesce() against any in-flight
+			 * RPC handler that wants check_bf_running_lock.
+			 */
+			slurm_mutex_lock(&check_bf_running_lock);
+			while (slurmctld_diag_stats.bf_active) {
+				slurm_cond_wait(&check_bf_running_cond,
+						&check_bf_running_lock);
+			}
+			slurm_mutex_unlock(&check_bf_running_lock);
+
+			/*
+			 * Wait for main sched to release locks. Same as
+			 * above: release sched_mutex once sched_alive is 0,
+			 * or an in-flight RPC handler that ends up in
+			 * schedule() (e.g. _slurm_rpc_epilog_complete) will
+			 * deadlock conmgr_quiesce() below.
+			 */
+			slurm_mutex_lock(&sched_mutex);
+			while (sched_alive) {
+				/*
+				 * Wake up _sched_agent() if it is sleeping
+				 * before waiting for it to change state
+				 */
+				slurm_cond_broadcast(&sched_cond);
+				slurm_cond_wait(&sched_cond, &sched_mutex);
+			}
+			slurm_mutex_unlock(&sched_mutex);
+
+			/* kill all scripts running by the slurmctld */
+			track_script_flush();
+			slurmscriptd_flush();
 
 			/*
 			 * Persistent connection to slurmdbd must be closed
 			 * before conmgr quiesce to avoid possible deadlocks
 			 * where slurmdbd is waiting on slurmctld but
 			 * slurmctld will wait until quiesce to finish before
-			 * responding.
+			 * responding. The plugin itself is unloaded later, in
+			 * main().
+			 *
+			 * Listeners can't be quiesced yet in case are still
+			 * processing RPCs from the DBD.
 			 */
 			_close_acct_storage_conn();
+
+			/*
+			 * Now that the ctld -> dbd conn is gone it is safe to
+			 * stop listening new connections.
+			 */
+			listeners_quiesce();
 
 			/*
 			 * Wait for all already accepted connection work to
@@ -2715,35 +2765,12 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			xassert(!acct_db_conn);
 
-			/* Wait for backfill to release locks */
-			slurm_mutex_lock(&check_bf_running_lock);
-			while (slurmctld_diag_stats.bf_active) {
-				slurm_cond_wait(&check_bf_running_cond,
-						&check_bf_running_lock);
-			}
-
-			/* Wait for main sched to release locks */
-			slurm_mutex_lock(&sched_mutex);
-			while (sched_alive) {
-				/*
-				 * Wake up _sched_agent() if it is sleeping
-				 * before waiting for it to change state
-				 */
-				slurm_cond_broadcast(&sched_cond);
-				slurm_cond_wait(&sched_cond, &sched_mutex);
-			}
-
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
 			} else {
 				error("Semaphores still set after flushing RPCs, and finish scheduling. Can not save state");
 			}
-
-			/* Unblock main sched thread, so that it can shutdown */
-			slurm_mutex_unlock(&sched_mutex);
-			/* Unblock backfill thread, so that it can shutdown */
-			slurm_mutex_unlock(&check_bf_running_lock);
 
 			/*
 			 * Allow other connections to start processing again as

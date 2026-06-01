@@ -246,6 +246,15 @@ extern void fini(void)
 {
 	plugin_shutdown = time(NULL);
 
+	/*
+	 * Final flush of agent_list. The agent thread itself no longer
+	 * frees the list on exit (see slurmdbd_agent.c) so that late
+	 * writers between _close_acct_storage_conn() and conmgr_quiesce()
+	 * can still enqueue. By the time we get here, conmgr is quiesced
+	 * and no more enqueues can happen, so it is safe to save + free.
+	 */
+	slurmdbd_agent_fini();
+
 	ext_dbd_fini();
 	xfree(cluster_nodes);
 	xfree(cluster_tres);
