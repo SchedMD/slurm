@@ -3,7 +3,6 @@
 import re
 import sys
 import os
-import codecs
 
 try:
     import pypandoc
@@ -123,8 +122,8 @@ for filename in files:
     dirname, basefilename = os.path.split(filename)
     newfilename = basefilename[:-6] + ".html"
     print("Converting", filename, "->", newfilename)
-    shtml = codecs.open(filename, "r", encoding="utf-8")
-    html = codecs.open(newfilename, "w", encoding="utf-8")
+    shtml = open(filename, "r", encoding="utf-8")
+    html = open(newfilename, "w", encoding="utf-8")
 
     for line in shtml.readlines():
         result = first_header_regex.match(line)
