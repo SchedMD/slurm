@@ -2066,10 +2066,10 @@ extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg)
 	}
 }
 
-extern void slurm_free_update_part_msg(update_part_msg_t * msg)
+extern void slurm_free_update_part_msg(partition_info_t *msg)
 {
 	if (msg) {
-		slurm_free_partition_info_members((partition_info_t *)msg);
+		slurm_free_partition_info_members(msg);
 		xfree(msg);
 	}
 }

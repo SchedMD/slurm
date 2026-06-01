@@ -1659,7 +1659,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
 extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg);
-extern void slurm_free_update_part_msg(update_part_msg_t * msg);
+extern void slurm_free_update_part_msg(partition_info_t *msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);
 extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 					  uint32_t res_free_flags);

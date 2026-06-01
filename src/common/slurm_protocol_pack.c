@@ -1741,7 +1741,7 @@ unpack_error:
 
 static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	update_part_msg_t *msg = smsg->data;
+	partition_info_t *msg = smsg->data;
 	xassert(msg);
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -1784,7 +1784,7 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	update_part_msg_t *msg = xmalloc(sizeof(*msg));
+	partition_info_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->allow_accounts, buffer);
