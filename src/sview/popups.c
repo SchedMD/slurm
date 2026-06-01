@@ -437,7 +437,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	GtkTreeIter iter;
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
-	update_part_msg_t *part_msg = NULL;
+	partition_info_t *part_msg = NULL;
 	resv_desc_msg_t *resv_msg = NULL;
 	char *res_name, *temp;
 
@@ -459,7 +459,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 		label = gtk_label_new(
 			"Partition creation specifications\n\n"
 			"Specify Name. All other fields are optional.");
-		part_msg = xmalloc(sizeof(update_part_msg_t));
+		part_msg = xmalloc(sizeof(*part_msg));
 		slurm_init_part_desc_msg(part_msg);
 		entry = create_part_entry(part_msg, model, &iter);
 	} else if (!xstrcmp(name, "reservation")) {

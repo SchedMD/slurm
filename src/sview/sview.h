@@ -393,7 +393,7 @@ extern void setup_popup_grid_list(popup_info_t *popup_win);
 extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 
 // part_info.c
-extern GtkWidget *create_part_entry(update_part_msg_t *part_msg,
+extern GtkWidget *create_part_entry(partition_info_t *part_msg,
 				    GtkTreeModel *model, GtkTreeIter *iter);
 extern bool check_part_includes_node(int node_dx);
 extern void refresh_part(GtkAction *action, gpointer user_data);
