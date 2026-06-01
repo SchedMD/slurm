@@ -86,7 +86,7 @@ by their application.  Table 1 summarizes these options.
     <td> Combined shortcut option for --sockets-per-node, --cores-per_cpu, --threads-per_core
 </td></tr>
 <tr><td colspan=2>
-<b><a href="#srun_dist">Task Distribution Options</b>
+<b><a href="#srun_dist">Task Distribution Options</a></b>
 </td></tr>
 <tr>
     <td> -m / --distribution </td>
@@ -112,15 +112,19 @@ by their application.  Table 1 summarizes these options.
     <td> --cpus-per-task=<i>CPUs</i></td>
     <td> number of CPUs required per task
 </td></tr>
+<tr>
     <td> --ntasks-per-node=<i>ntasks</i></td>
     <td> number of tasks to invoke on each node
 </td></tr>
+<tr>
     <td> --ntasks-per-socket=<i>ntasks</i></td>
     <td> number of tasks to invoke on each socket
 </td></tr>
+<tr>
     <td> --ntasks-per-core=<i>ntasks</i></td>
     <td> number of tasks to invoke on each core
 </td></tr>
+<tr>
     <td> --overcommit</td>
     <td> Permit more than one task per CPU
 </td></tr>
@@ -131,9 +135,11 @@ by their application.  Table 1 summarizes these options.
     <td> --hint=compute_bound</td>
     <td> use all cores in each socket
 </td></tr>
+<tr>
     <td> --hint=memory_bound</td>
     <td> use only one core in each socket
 </td></tr>
+<tr>
     <td> --hint=[no]multithread</td>
     <td> [don't] use extra threads with in-core multi-threading
 </td></tr>
@@ -144,6 +150,7 @@ by their application.  Table 1 summarizes these options.
     <td> --core-spec=<i>cores</i></td>
     <td> Count of cores to reserve for system use
 </td></tr>
+<tr>
     <td> --thread-spec=<i>threads</i></td>
     <td> Count of threads to reserve for system use
 </td></tr>
@@ -797,7 +804,7 @@ the following identifiers are available:</p>
 
 <UL>
 <UL>
-<DL>% srun -n 4 -B 2:2:1 --mem=1024 sleep 100 &
+<DL>% srun -n 4 -B 2:2:1 --mem=1024 sleep 100 &</DL>
 </UL>
 </UL>
 
