@@ -6108,7 +6108,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->spank_job_env_size) {
 		job_desc->spank_job_env =
-			xcalloc(opt_local->spank_job_env_size,
+			xcalloc((opt_local->spank_job_env_size + 1),
 				sizeof(*job_desc->spank_job_env));
 		for (int i = 0; i < opt_local->spank_job_env_size; i++)
 			job_desc->spank_job_env[i] =
