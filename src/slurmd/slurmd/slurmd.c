@@ -99,6 +99,7 @@
 #include "src/common/stepd_proxy.h"
 #include "src/common/threadpool.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsched.h"
 #include "src/common/xstring.h"
@@ -603,6 +604,7 @@ main (int argc, char **argv)
 	_destroy_conf();
 	cred_g_fini();	/* must be after _destroy_conf() */
 	group_cache_purge();
+	getnameinfo_cache_purge();
 	file_bcast_purge();
 
 	/*
