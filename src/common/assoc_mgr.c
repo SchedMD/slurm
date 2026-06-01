@@ -886,6 +886,37 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 	return parent;
 }
 
+static bool _use_client_ids(void)
+{
+	static bool set = false, use_client_ids = false;
+
+	if (!set) {
+		if (xstrstr(slurm_conf.authinfo, "use_client_ids") ||
+		    xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids"))
+			use_client_ids = true;
+		set = true;
+	}
+
+	return use_client_ids;
+}
+
+/* Caller holds the user lock. */
+static uid_t _uid_from_user_cache(char *username)
+{
+	slurmdb_user_rec_t lookup = { .uid = NO_VAL, .name = username };
+	slurmdb_user_rec_t *user_rec;
+
+	if (!assoc_mgr_user_list)
+		return NO_VAL;
+
+	user_rec = list_find_first(assoc_mgr_user_list, _list_find_user,
+				   &lookup);
+	if (user_rec)
+		return user_rec->uid;
+
+	return NO_VAL;
+}
+
 static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
@@ -990,11 +1021,19 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 		g_user_assoc_count++;
 		if (assoc->uid == NO_VAL || assoc->uid == INFINITE ||
 				assoc->uid == 0) {
-			if (uid_from_string_cached(assoc->user, &pw_uid) !=
-			    SLURM_SUCCESS)
-				assoc->uid = NO_VAL;
-			else
+			uid_t cached_uid = NO_VAL;
+
+			/* INFINITE marks a freshly added assoc */
+			if ((assoc->uid == INFINITE) && _use_client_ids())
+				cached_uid = _uid_from_user_cache(assoc->user);
+
+			if (cached_uid != NO_VAL)
+				assoc->uid = cached_uid;
+			else if (uid_from_string_cached(assoc->user, &pw_uid) ==
+				 SLURM_SUCCESS)
 				assoc->uid = pw_uid;
+			else
+				assoc->uid = NO_VAL;
 		}
 		_set_user_default_acct(assoc, NULL);
 
