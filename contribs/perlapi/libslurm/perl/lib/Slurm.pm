@@ -898,7 +898,7 @@ Create a new partition, only usable by user root.
 
 =over 2
 
-=item * IN $part_info: description of partition configuration with structure of C<update_part_msg_t>.
+=item * IN $part_info: description of partition configuration with structure of C<partition_info_t>.
 
 =item * RET: 0 on success, -1 on failure with errno set.
 
@@ -910,7 +910,7 @@ Issue RPC to update a partition's configuration per request, only usable by user
 
 =over 2
 
-=item * IN $part_info: description of partition updates with structure of C<update_part_msg_t>.
+=item * IN $part_info: description of partition updates with structure of C<partition_info_t>.
 
 =item * RET: 0 on success, -1 on failure with errno set.
 
