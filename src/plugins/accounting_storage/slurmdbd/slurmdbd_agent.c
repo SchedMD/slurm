@@ -455,6 +455,7 @@ static void _load_dbd_state(void)
 						&msg, SLURM_PROTOCOL_VERSION);
 				else
 					buffer = NULL;
+				slurmdbd_free_msg(&msg);
 			}
 			if (!buffer) {
 				error("no buffer given");
