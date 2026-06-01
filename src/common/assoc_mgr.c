@@ -4094,7 +4094,7 @@ static int _foreach_normalize_and_log_assoc(void *x, void *arg)
 static int _foreach_remove_assoc_notify(void *x, void *arg)
 {
 	init_setup.remove_assoc_notify(x);
-	return 1;
+	return 0;
 }
 
 static int _foreach_update_assoc_notify(void *x, void *arg)
@@ -4588,18 +4588,23 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		assoc_mgr_unlock(&locks);
 
 	/* This needs to happen outside of the assoc_mgr_lock */
-	if (remove_list) {
-		list_delete_all(remove_list, _foreach_remove_assoc_notify, NULL);
-		FREE_NULL_LIST(remove_list);
-	}
+	if (remove_list)
+		list_for_each(remove_list, _foreach_remove_assoc_notify, NULL);
 
 	if (update_list) {
 		list_delete_all(update_list, _foreach_update_assoc_notify, NULL);
 		FREE_NULL_LIST(update_list);
 	}
 
+	/*
+	 * Rebuild the partition and reservation assoc lists while the removed
+	 * records are still alive (freed below), so part_update_assoc_lists()
+	 * drops the defunct pointers without a stale-pointer window.
+	 */
 	if (run_update_resvs && init_setup.update_resvs)
 		init_setup.update_resvs();
+
+	FREE_NULL_LIST(remove_list);
 
 	return rc;
 }
