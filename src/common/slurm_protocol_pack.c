@@ -837,6 +837,7 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->power_action_name, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->resume_after, buffer);
+		pack32(msg->suspend_time, buffer);
 		packstr(msg->topology_str, buffer);
 		pack32(msg->weight, buffer);
 	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
@@ -902,6 +903,7 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->power_action_name, buffer);
 		safe_unpackstr(&msg->reason, buffer);
 		safe_unpack32(&msg->resume_after, buffer);
+		safe_unpack32(&msg->suspend_time, buffer);
 		safe_unpackstr(&msg->topology_str, buffer);
 		safe_unpack32(&msg->weight, buffer);
 	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {

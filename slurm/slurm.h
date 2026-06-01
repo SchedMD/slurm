@@ -3423,6 +3423,7 @@ typedef struct slurm_update_node_msg {
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
 				 * after this amount of seconds */
+	uint32_t suspend_time; /* node idle for this long before power save */
 	char *topology_str; /* new topology address string */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
