@@ -1467,7 +1467,7 @@ extern container_state_msg_t *slurm_create_container_state_msg(void)
 	container_state_msg_t *msg = xmalloc(sizeof(*msg));
 	msg->status = CONTAINER_ST_UNKNOWN;
 	msg->pid = NO_VAL;
-	msg->annotations = list_create(destroy_config_key_pair);
+	/* Callers will allocate msg->annotations */
 
 	return msg;
 }

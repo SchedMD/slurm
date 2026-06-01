@@ -539,9 +539,7 @@ static void _alloc_job(void)
 	xfree(opt_string);
 
 	desc = slurm_opt_create_job_desc(&opt, true);
-	xfree(desc->name);
 	read_lock_state();
-	desc->name = xstrdup(state.id);
 	desc->container_id = xstrdup(state.id);
 	if (state.spank_job_env) {
 		env_array_free(desc->spank_job_env);
@@ -559,6 +557,7 @@ static void _alloc_job(void)
 	 */
 	desc->user_id = SLURM_AUTH_NOBODY;
 	desc->group_id = SLURM_AUTH_NOBODY;
+	xfree(desc->name);
 	desc->name = xstrdup("scrun");
 	desc->other_port = _setup_listener();
 

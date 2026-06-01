@@ -272,7 +272,7 @@ extern void free_oci_conf(oci_conf_t *oci)
 		return;
 
 	xfree(oci->container_path);
-	regfree(&oci->runtime_env_exclude);
+	regfree(&oci->env_exclude);
 	xfree(oci->mount_spool_dir);
 	xfree(oci->runtime_create);
 	xfree(oci->runtime_delete);
