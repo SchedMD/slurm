@@ -1010,23 +1010,11 @@ extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 	xassert(running_in_slurmctld());
 	xassert(slurm_conf.max_dbd_msgs);
 
-	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu agent_count:%d",
+	log_flag(PROTOCOL, "msg_type:%s agent_count:%d",
 		 slurmdbd_msg_type_2_str(req->msg_type, 1),
-		 rpc_version, list_count(agent_list));
+		 list_count(agent_list));
 
-	slurm_mutex_lock(&slurmdbd_lock);
-	if (slurmdbd_conn) {
-		buffer = slurm_persist_msg_pack(slurmdbd_conn, req);
-	} else {
-		/*
-		 * This means we are shutting down and we don't have a
-		 * connection anymore to the DBD. So let's pack this message and
-		 * add it to dbd.messages below.
-		 */
-		xassert(slurmdbd_shutdown);
-		buffer = pack_slurmdbd_msg(req, rpc_version);
-	}
-	slurm_mutex_unlock(&slurmdbd_lock);
+	buffer = pack_slurmdbd_msg(req, SLURM_PROTOCOL_VERSION);
 	if (!buffer)	/* pack error */
 		return SLURM_ERROR;
 
