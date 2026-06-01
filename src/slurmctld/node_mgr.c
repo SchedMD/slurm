@@ -153,6 +153,8 @@ static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				   config_record_t *config_ptr);
 static int	_update_node_gres(char *node_names, char *gres);
+static int _update_node_suspend_time(char *node_names, uint32_t suspend_time);
+static char *_suspend_time_str(uint32_t suspend_time, char *buf, size_t len);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
 
@@ -2417,6 +2419,13 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		error_code = _update_node_gres(update_node_msg->node_names,
 					       update_node_msg->gres);
 	}
+	if ((error_code == SLURM_SUCCESS) &&
+	    (update_node_msg->suspend_time != NO_VAL)) {
+		error_code =
+			_update_node_suspend_time(update_node_msg->node_names,
+						  update_node_msg
+							  ->suspend_time);
+	}
 
 	/*
 	 * Update weight. Weight is part of config_ptr,
@@ -2621,6 +2630,99 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 
 	info("_update_node_weight: nodes %s weight set to: %u",
 		node_names, weight);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _suspend_time_str - format a SuspendTime value for logging, spelling out
+ *	NO_VAL and INFINITE instead of printing their raw uint32_t value
+ */
+static char *_suspend_time_str(uint32_t suspend_time, char *buf, size_t len)
+{
+	if (suspend_time == NO_VAL)
+		return "unset";
+	if (suspend_time == INFINITE)
+		return "INFINITE";
+	snprintf(buf, len, "%u", suspend_time);
+	return buf;
+}
+
+/*
+ * _update_node_suspend_time - Update SuspendTime associated with nodes
+ *	build new config list records as needed
+ * IN node_names - list of nodes to update
+ * IN suspend_time - New SuspendTime value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_suspend_time(char *node_names, uint32_t suspend_time)
+{
+	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	hostlist_t *host_list;
+	list_itr_t *config_iterator;
+	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
+	node_record_t *node_ptr;
+	int rc, config_cnt, tmp_cnt;
+	char tmp_buf[12];
+
+	if (!(host_list = nodespec_to_hostlist(node_names, false, NULL)))
+		return ESLURM_INVALID_NODE_NAME;
+	rc = hostlist2bitmap(host_list, false, &node_bitmap);
+	FREE_NULL_HOSTLIST(host_list);
+	if (rc) {
+		info("%s: invalid node_name", __func__);
+		FREE_NULL_BITMAP(node_bitmap);
+		return rc;
+	}
+
+	/*
+	 * For each config_record with one of these nodes, update it
+	 * (if all nodes updated) or split it into a new entry.
+	 */
+	config_iterator = list_iterator_create(config_list);
+	while ((config_ptr = list_next(config_iterator))) {
+		if (config_ptr == first_new)
+			break; /* done with all original records */
+
+		if (!bit_overlap_any(node_bitmap, config_ptr->node_bitmap))
+			continue; /* no overlap, leave alone */
+
+		tmp_bitmap = bit_copy(node_bitmap);
+		bit_and(tmp_bitmap, config_ptr->node_bitmap);
+		config_cnt = bit_set_count(config_ptr->node_bitmap);
+		tmp_cnt = bit_set_count(tmp_bitmap);
+		if (tmp_cnt == config_cnt) {
+			/* all nodes changed, update in situ */
+			config_ptr->suspend_time = suspend_time;
+		} else {
+			/* partial update, split config_record */
+			new_config_ptr = _dup_config(config_ptr);
+			if (!first_new)
+				first_new = new_config_ptr;
+			new_config_ptr->suspend_time = suspend_time;
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
+			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
+			_update_config_ptr(tmp_bitmap, new_config_ptr);
+
+			/* Update remaining records */
+			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
+			xfree(config_ptr->nodes);
+			config_ptr->nodes =
+				bitmap2node_name(config_ptr->node_bitmap);
+		}
+
+		for (int i = 0; (node_ptr = next_node_bitmap(tmp_bitmap, &i));
+		     i++)
+			node_ptr->suspend_time = suspend_time;
+
+		FREE_NULL_BITMAP(tmp_bitmap);
+	}
+	list_iterator_destroy(config_iterator);
+	FREE_NULL_BITMAP(node_bitmap);
+
+	info("%s: nodes %s SuspendTime set to: %s",
+	     __func__, node_names,
+	     _suspend_time_str(suspend_time, tmp_buf, sizeof(tmp_buf)));
+
 	return SLURM_SUCCESS;
 }
 
