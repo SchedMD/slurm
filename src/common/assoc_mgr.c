@@ -4563,7 +4563,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		while ((rec = list_next(itr)))
 			init_setup.remove_assoc_notify(rec);
 		list_iterator_destroy(itr);
-		FREE_NULL_LIST(remove_list);
 	}
 
 	if (update_list) {
@@ -4574,8 +4573,15 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		FREE_NULL_LIST(update_list);
 	}
 
+	/*
+	 * Rebuild the partition and reservation assoc lists while the removed
+	 * records are still alive (freed below), so part_update_assoc_lists()
+	 * drops the defunct pointers without a stale-pointer window.
+	 */
 	if (run_update_resvs && init_setup.update_resvs)
 		init_setup.update_resvs();
+
+	FREE_NULL_LIST(remove_list);
 
 	return rc;
 }
