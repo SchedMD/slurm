@@ -12339,6 +12339,12 @@ static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
 {
 	int rc;
 
+	if (job_ptr->start_protocol_ver < SLURM_26_05_PROTOCOL_VERSION) {
+		info("%s: cannot resize memory for %pJ started before Slurm version 26.05",
+		     __func__, job_ptr);
+		return ESLURM_NOT_SUPPORTED;
+	}
+
 	if (job_ptr->node_bitmap_rs) {
 		info("%s: memory resize already in progress for %pJ",
 		     __func__, job_ptr);
