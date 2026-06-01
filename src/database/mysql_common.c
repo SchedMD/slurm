@@ -1174,11 +1174,16 @@ extern int mysql_db_query(mysql_conn_t *mysql_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!mysql_conn || !mysql_conn->db_conn) {
+	if (!mysql_conn) {
 		fatal("You haven't inited this storage yet.");
 		return 0;	/* For CLANG false positive */
 	}
 	slurm_mutex_lock(&mysql_conn->lock);
+	if (!mysql_conn->db_conn) {
+		slurm_mutex_unlock(&mysql_conn->lock);
+		fatal("You haven't inited this storage yet.");
+		return 0; /* For CLANG false positive */
+	}
 	rc = _mysql_query_internal(mysql_conn->db_conn, query);
 	slurm_mutex_unlock(&mysql_conn->lock);
 	return rc;
@@ -1192,11 +1197,16 @@ extern int mysql_db_delete_affected_rows(mysql_conn_t *mysql_conn, char *query)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!mysql_conn || !mysql_conn->db_conn) {
+	if (!mysql_conn) {
 		fatal("You haven't inited this storage yet.");
 		return 0;	/* For CLANG false positive */
 	}
 	slurm_mutex_lock(&mysql_conn->lock);
+	if (!mysql_conn->db_conn) {
+		slurm_mutex_unlock(&mysql_conn->lock);
+		fatal("You haven't inited this storage yet.");
+		return 0; /* For CLANG false positive */
+	}
 	if (!(rc = _mysql_query_internal(mysql_conn->db_conn, query)))
 		rc = mysql_affected_rows(mysql_conn->db_conn);
 	slurm_mutex_unlock(&mysql_conn->lock);
@@ -1207,11 +1217,12 @@ extern int mysql_db_ping(mysql_conn_t *mysql_conn)
 {
 	int rc;
 
-	if (!mysql_conn->db_conn)
-		return -1;
-
 	/* clear out the old results so we don't get a 2014 error */
 	slurm_mutex_lock(&mysql_conn->lock);
+	if (!mysql_conn->db_conn) {
+		slurm_mutex_unlock(&mysql_conn->lock);
+		return -1;
+	}
 	_clear_results(mysql_conn->db_conn);
 	rc = mysql_ping(mysql_conn->db_conn);
 	/*
@@ -1228,10 +1239,11 @@ extern int mysql_db_commit(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!mysql_conn->db_conn)
-		return SLURM_ERROR;
-
 	slurm_mutex_lock(&mysql_conn->lock);
+	if (!mysql_conn->db_conn) {
+		slurm_mutex_unlock(&mysql_conn->lock);
+		return SLURM_ERROR;
+	}
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_conn->db_conn);
 	if (mysql_commit(mysql_conn->db_conn)) {
@@ -1249,10 +1261,11 @@ extern int mysql_db_rollback(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (!mysql_conn->db_conn)
-		return SLURM_ERROR;
-
 	slurm_mutex_lock(&mysql_conn->lock);
+	if (!mysql_conn->db_conn) {
+		slurm_mutex_unlock(&mysql_conn->lock);
+		return SLURM_ERROR;
+	}
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_conn->db_conn);
 	if (mysql_rollback(mysql_conn->db_conn)) {
