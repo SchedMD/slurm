@@ -1394,7 +1394,6 @@ function __slurm_comp_common_flags() {
 		"none"
 		"prefer"
 		"rank"
-		"sort"
 	)
 	local mpi_types=(
 		"list"
