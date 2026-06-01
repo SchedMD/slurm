@@ -23,6 +23,9 @@ p2_suspend_timeout = 107
 p2_resume_timeout = 108
 
 n_suspend_time = 109
+# Below the global and partition values, so that the node-level value has to
+# take precedence rather than win as the largest.
+n_update_suspend_time = 90
 
 
 def suspend_time_val(value):
@@ -173,3 +176,83 @@ def test_cloud_options(setup):
     assert nodes["node1"]["suspend_time"] == suspend_time_val(p2_suspend_time)
     assert nodes["d1"]["suspend_time"] == suspend_time_val(p2_suspend_time)
     assert nodes["d2"]["suspend_time"] == suspend_time_val(n_suspend_time)
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/scontrol") < (26, 11),
+    reason="#50873: per-node SuspendTime updates added in 26.11",
+)
+@pytest.mark.parametrize("setup", [100], indirect=True)
+def test_update_node_suspend_time(setup):
+    atf.run_command(
+        "scontrol create nodename=d1 state=cloud",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.run_command(
+        "scontrol create nodename=d2 state=cloud",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    nodes = atf.get_nodes()
+    assert nodes["d1"]["suspend_time"] == suspend_time_val(
+        setup
+    ), "A new cloud node should inherit the global SuspendTime"
+
+    atf.run_command(
+        f"scontrol update nodename=d1 SuspendTime={n_update_suspend_time}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    nodes = atf.get_nodes()
+    assert nodes["d1"]["suspend_time"] == suspend_time_val(
+        n_update_suspend_time
+    ), "The per-node SuspendTime update should be applied"
+    assert nodes["d2"]["suspend_time"] == suspend_time_val(
+        setup
+    ), "Updating d1 should not change the SuspendTime of d2"
+
+    atf.run_command(
+        "scontrol reconfigure", user=atf.properties["slurm-user"], fatal=True
+    )
+    nodes = atf.get_nodes()
+    assert nodes["d1"]["suspend_time"] == suspend_time_val(
+        n_update_suspend_time
+    ), "The per-node SuspendTime should survive a reconfigure"
+
+    atf.run_command(
+        "scontrol update partitionname=p1 nodes=d1",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    nodes = atf.get_nodes()
+    assert nodes["d1"]["suspend_time"] == suspend_time_val(
+        n_update_suspend_time
+    ), "The per-node SuspendTime should survive moving d1 into partition p1"
+
+    # INFINITE, NONE and -1 are documented aliases that all disable automatic
+    # suspending; pin that clause for each of them. Reset to a finite value
+    # first, otherwise every iteration after the first asserts that an
+    # already-INFINITE node is still INFINITE, which cannot fail whatever the
+    # alias did.
+    for alias in ("INFINITE", "NONE", "-1"):
+        atf.run_command(
+            f"scontrol update nodename=d1 SuspendTime={n_update_suspend_time}",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+        )
+        nodes = atf.get_nodes()
+        assert nodes["d1"]["suspend_time"] == suspend_time_val(
+            n_update_suspend_time
+        ), f"d1 should be back to a finite SuspendTime before testing {alias}"
+
+        atf.run_command(
+            f"scontrol update nodename=d1 SuspendTime={alias}",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+        )
+        nodes = atf.get_nodes()
+        assert nodes["d1"]["suspend_time"] == suspend_time_val(
+            infinite_option_num
+        ), f"SuspendTime={alias} should disable suspending d1"
