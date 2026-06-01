@@ -2427,8 +2427,8 @@ The nodes list will be assumed to be a filename if it contains a "/" character.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
 
-Rather than repeating a node name multiple times, an asterisk and
-a repetition count may be appended to a node name. For example
+Repeated node names may be useful when using \fB\-\-distribution=arbitrary\fR.
+An asterisk and a repetition count may be appended to a node name. For example,
 "node1,node1" and "node1*2" are equivalent. This option applies to job and step
 allocations.
 .IP
