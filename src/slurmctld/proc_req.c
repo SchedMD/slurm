@@ -4491,7 +4491,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	update_part_msg_t *part_desc_ptr = msg->data;
+	partition_info_t *part_desc_ptr = msg->data;
 	/* Locks: Read config, write job, write node, write partition
 	 * NOTE: job write lock due to gang scheduler support */
 	slurmctld_lock_t part_write_lock = {
