@@ -4599,7 +4599,7 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 	slurmdb_wckey_rec_t * object = NULL;
 	list_itr_t *itr = NULL;
 	int rc = SLURM_SUCCESS;
-	uid_t pw_uid;
+	uid_t pw_uid, cached_uid;
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	if (!locked)
@@ -4678,14 +4678,21 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if (uid_from_string_cached(object->user, &pw_uid) !=
-			    SLURM_SUCCESS) {
-				debug("wckey add couldn't get a uid "
-				      "for user %s",
+			cached_uid = NO_VAL;
+
+			if (_use_client_ids())
+				cached_uid = _uid_from_user_cache(object->user);
+
+			if ((cached_uid == NO_VAL) &&
+			    (uid_from_string_cached(object->user, &pw_uid) ==
+			     SLURM_SUCCESS))
+				cached_uid = pw_uid;
+
+			if (cached_uid == NO_VAL)
+				debug("wckey add couldn't get a uid for user %s",
 				      object->user);
-				object->uid = NO_VAL;
-			} else
-				object->uid = pw_uid;
+
+			object->uid = cached_uid;
 
 			/* If is_def is uninitialized the value will
 			   be NO_VAL, so if it isn't 1 make it 0.
