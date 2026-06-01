@@ -163,10 +163,9 @@ int slurm_delete_node(update_node_msg_t *node_msg)
  * IN part_msg - description of partition configuration
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-int
-slurm_create_partition ( update_part_msg_t * part_msg)
+int slurm_create_partition(partition_info_t *part_msg)
 {
-	return _slurm_update ((void *) part_msg, REQUEST_CREATE_PARTITION);
+	return _slurm_update((void *) part_msg, REQUEST_CREATE_PARTITION);
 }
 
 /*
@@ -175,10 +174,9 @@ slurm_create_partition ( update_part_msg_t * part_msg)
  * IN part_msg - description of partition updates
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-int
-slurm_update_partition ( update_part_msg_t * part_msg )
+int slurm_update_partition(partition_info_t *part_msg)
 {
-	return _slurm_update ((void *) part_msg, REQUEST_UPDATE_PARTITION);
+	return _slurm_update((void *) part_msg, REQUEST_UPDATE_PARTITION);
 }
 
 /*
