@@ -944,6 +944,8 @@ static void _parse_params(const int default_count, const char *params)
 	if (default_count > 0)
 		threadpool.config.preallocate = default_count;
 
+	threadpool.enabled = true;
+
 	if (!params)
 		return;
 
