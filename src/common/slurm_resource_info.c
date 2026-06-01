@@ -533,8 +533,6 @@ void slurm_print_mem_bind_help(void)
 			printf(
 "Memory bind options:\n"
 "    --mem-bind=         Bind memory to locality domains (ldom)\n"
-"        nosort          avoid sorting pages at startup\n"
-"        sort            sort pages at startup\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
 "        v[erbose]       verbosely report binding before task runs\n"
 "        no[ne]          don't bind tasks to memory (default)\n"
