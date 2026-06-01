@@ -144,7 +144,7 @@ by their application.  Table 1 summarizes these options.
     <td> [don't] use extra threads with in-core multi-threading
 </td></tr>
 <tr><td colspan=2>
-<b><a href="#srun_hints">Resources reserved for system use</a></b>
+<b>Resources reserved for system use</b>
 </td></tr>
 <tr>
     <td> --core-spec=<i>cores</i></td>
