@@ -93,6 +93,7 @@ static uint32_t s2n_conf_conn_cnt = 0;
 static uint32_t s2n_all_conn_cnt = 0;
 static pthread_mutex_t s2n_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s2n_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t s2n_all_cnt_cond = PTHREAD_COND_INITIALIZER;
 
 static bool fini_run = false;
 
@@ -769,12 +770,33 @@ extern int init(void)
 
 extern void fini(void)
 {
+	struct timespec ts = { 0, 0 };
+	int drain_timeout = (2 * slurm_conf.msg_timeout);
+
 	slurm_mutex_lock(&s2n_conf_cnt_lock);
 	if (fini_run) {
 		slurm_mutex_unlock(&s2n_conf_cnt_lock);
 		return;
 	}
 	fini_run = true;
+
+	/*
+	 * Wait for remaining connections to close before freeing the global
+	 * configs they may still be using. If connections don't close within
+	 * the timeout, leave the global configs allocated and return to avoid a
+	 * use-after-free failure.
+	 */
+	ts.tv_sec = (time(NULL) + drain_timeout);
+	while (s2n_all_conn_cnt) {
+		if (time(NULL) >= ts.tv_sec) {
+			error("%s: timed out after %d seconds waiting for %u connection(s) to drain, skipping cleanup",
+			      __func__, drain_timeout, s2n_all_conn_cnt);
+			slurm_mutex_unlock(&s2n_conf_cnt_lock);
+			return;
+		}
+		slurm_cond_timedwait(&s2n_all_cnt_cond, &s2n_conf_cnt_lock,
+				     &ts);
+	}
 
 	if (s2n_config_free(client_config))
 		on_s2n_error(NULL, s2n_config_free);
@@ -944,6 +966,9 @@ static void _s2n_config_dec(tls_conn_t *conn)
 		s2n_all_conn_cnt--;
 	else
 		error("%s: unexpected s2n_all_conn_cnt underflow", __func__);
+
+	if (!s2n_all_conn_cnt)
+		slurm_cond_signal(&s2n_all_cnt_cond);
 
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
