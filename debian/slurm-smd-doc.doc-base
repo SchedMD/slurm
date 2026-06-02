@@ -5,5 +5,5 @@ Abstract: The manual of the Slurm cluster resource manager.
 Section: System/Administration
 
 Format: HTML
-Index: /usr/share/doc/slurm-wlm-doc/html/slurm.html
-Files: /usr/share/doc/slurm-wlm-doc/html/*.html
+Index: /usr/share/doc/slurm-smd-doc/html/configurator.html
+Files: /usr/share/doc/slurm-smd-doc/html/*.html

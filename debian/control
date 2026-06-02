@@ -32,7 +32,7 @@ Build-Depends:
  man2html-base,
  po-debconf,
  python3,
-Homepage: http://slurm.schedmd.com
+Homepage: https://slurm.schedmd.com
 Vcs-Browser: https://github.com/SchedMD/slurm
 Vcs-Git: https://github.com/SchedMD/slurm.git
 
@@ -40,6 +40,7 @@ Package: slurm-smd
 Architecture: any
 Depends:
  ${shlibs:Depends},
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -65,7 +66,8 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
- bash-completion
+ bash-completion,
+ ${misc:Depends}
 Recommends:
  munge,
 Conflicts:
@@ -78,6 +80,7 @@ Package: slurm-smd-dev
 Architecture: any
 Depends:
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -109,6 +112,7 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -122,18 +126,20 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
  slurmd
 Description: Slurm compute node daemon
-  Used to launch jobs on compute nodes.
+ Used to launch jobs on compute nodes.
 
 Package: slurm-smd-slurmdbd
 Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -157,7 +163,8 @@ Package: slurm-smd-sackd
 Architecture: any
 Depends:
  slurm-smd (= ${binary:Version}),
- ${shlibs:Depends}
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Slurm authentication daemon.
  Used on login nodes that are not running slurmd daemons to allow authentication
  to the cluster.
@@ -182,8 +189,8 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends}
 Description: Slurm NSS plugin
-  This plugin can permit passwd, group, and cloud node host resolution for a job
-  to be serviced through the local slurmstepd process.
+ This plugin can permit passwd, group, and cloud node host resolution for a job
+ to be serviced through the local slurmstepd process.
 
 Package: slurm-smd-libpam-slurm-adopt
 Architecture: any
@@ -194,10 +201,10 @@ Depends:
 Conflicts:
  libpam-slurm-adopt
 Description: Slurm's pam_slurm_adopt module
-  This module restricts access to compute nodes in a cluster where Slurm is in
-  use.  Access is granted to root, any user with an Slurm-launched job currently
-  running on the node, or any user who has allocated resources on the node
-  according to the Slurm
+ This module restricts access to compute nodes in a cluster where Slurm is in
+ use.  Access is granted to root, any user with an Slurm-launched job currently
+ running on the node, or any user who has allocated resources on the node
+ according to the Slurm
 
 Package: slurm-smd-libpmi0
 Section: libs
@@ -208,7 +215,7 @@ Depends:
   ${shlibs:Depends},
   ${misc:Depends}
 Description: Slurm PMI library implementation
-  The Slurm PMI library.
+ The Slurm PMI library.
 
 Package: slurm-smd-libpmi2-0
 Section: libs
@@ -219,8 +226,8 @@ Depends:
   ${shlibs:Depends},
   ${misc:Depends}
 Description: Slurm PMI2 library implementation
-  The Slurm PMI2 library.  For systems using Slurm, this version is preferred
-  over the compatibility libraries shipped by the PMIx project.
+ The Slurm PMI2 library.  For systems using Slurm, this version is preferred
+ over the compatibility libraries shipped by the PMIx project.
 
 Package: slurm-smd-libslurm-perl
 Section: perl
@@ -231,8 +238,8 @@ Depends:
  ${shlibs:Depends}
 Conflicts: libslurmdb-perl
 Description: Perl API for Slurm
-  This package includes the perl API to provide a helpful interface to Slurm
-  through Perl
+ This package includes the perl API to provide a helpful interface to Slurm
+ through Perl
 
 Package: slurm-smd-openlava
 Architecture: all
@@ -243,10 +250,10 @@ Depends:
  ${perl:Depends},
  ${misc:Depends}
 Description: OpenLava compatibility wrappers for Slurm
-  OpenLava wrapper scripts used for helping migrate from OpenLava/LFS to Slurm
+ OpenLava wrapper scripts used for helping migrate from OpenLava/LFS to Slurm
 
 Package: slurm-smd-torque
-Architecture: all
+Architecture: any
 Depends:
  slurm-smd (>= ${source:Version}),
  slurm-smd-libslurm-perl (>= ${source:Version}),
@@ -256,4 +263,4 @@ Depends:
  ${misc:Depends}
 Conflicts: gridengine-client, torque-client, torque-client-x11
 Description: Torque compatibility wrappers for Slurm
-  Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
+ Torque wrapper scripts used for helping migrate from Torque/PBS to Slurm
