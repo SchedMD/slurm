@@ -908,6 +908,7 @@ extern bool tls_p_own_cert_loaded(void)
 static void _s2n_config_inc(tls_conn_t *conn)
 {
 	xassert(conn->magic == TLS_CONN_MAGIC);
+	xassert(conn->using_global_s2n_conf);
 
 	slurm_mutex_lock(&s2n_conf_cnt_lock);
 	s2n_conf_conn_cnt++;
@@ -982,7 +983,6 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 			slurm_rwlock_unlock(&s2n_conf_lock);
 			return SLURM_ERROR;
 		}
-		_s2n_config_inc(conn);
 
 		if (is_server)
 			conn->s2n_config = server_config;
@@ -990,6 +990,8 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 			conn->s2n_config = client_config;
 
 		conn->using_global_s2n_conf = true;
+		_s2n_config_inc(conn);
+
 		slurm_rwlock_unlock(&s2n_conf_lock);
 		return SLURM_SUCCESS;
 	}
