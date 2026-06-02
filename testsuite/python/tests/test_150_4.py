@@ -6,8 +6,8 @@ import re
 import atf
 import pytest
 
-register_order = ["b2", "a2", "b1", "a1"]
-alpha_order = ["a1", "a2", "b1", "b2"]
+register_order = ["node102", "node12", "node101", "node11"]
+alpha_order = ["node11", "node12", "node101", "node102"]
 node_list_arg = ",".join(alpha_order)
 nnodes = len(register_order)
 
