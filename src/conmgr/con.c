@@ -176,28 +176,44 @@ static const char *_con_flag_string(con_flags_t flag)
 	fatal_abort("invalid type");
 }
 
-extern char *con_flags_string(const con_flags_t flags)
+extern char *con_flags_print(const con_flags_t flags, char *str, size_t bytes)
 {
-	char *str = NULL, *at = NULL;
 	uint32_t matched = 0;
+	char *ptr = str;
 
-	if (flags == FLAG_NONE)
-		return xstrdup(_con_flag_string(FLAG_NONE));
+	if (flags == FLAG_NONE) {
+		(void) snprintf(ptr, bytes, "%s", _con_flag_string(FLAG_NONE));
+		return ptr;
+	}
 
 	/* skip FLAG_NONE */
-	for (int i = 1; i < ARRAY_SIZE(con_flags); i++) {
+	for (int i = 1; (bytes > 0) && (i < ARRAY_SIZE(con_flags)); i++) {
 		if ((con_flags[i].flag & flags) == con_flags[i].flag) {
-			xstrfmtcatat(str, &at, "%s%s", (str ? "|" : ""),
-				     con_flags[i].string);
+			int wrote = snprintf(ptr, bytes, "%s%s",
+					     (matched ? "|" : ""),
+					     con_flags[i].string);
+			if ((wrote < 0) || (wrote >= bytes))
+				return "INVALID";
+
 			matched |= con_flags[i].flag;
+			bytes -= wrote;
+			ptr += wrote;
 		}
 	}
 
-	if (flags ^ matched)
-		xstrfmtcatat(str, &at, "%s0x%08"PRIx32, (str ? "|" : ""),
-			     (flags ^ matched));
+	if ((flags ^ matched) && (bytes > 0) &&
+	    (snprintf(ptr, bytes, "%s0x%08" PRIx32,
+		      (matched ?  "|" : ""), (flags ^ matched)) >= bytes))
+		return "INVALID";
 
 	return str;
+}
+
+extern char *con_flags_string(const con_flags_t flags)
+{
+	char *str = xmalloc(CON_FLAGS_STR_BYTES);
+
+	return con_flags_print(flags, str, CON_FLAGS_STR_BYTES);
 }
 
 /*

@@ -163,6 +163,17 @@ typedef enum {
 #define con_assign_flag(con, flag, value) \
 	((con)->flags = ((con)->flags & ~(flag)) | ((!!value) * (flag)))
 
+/* Bytes needed to print all con_flags_t values as a '|'-delimited string */
+#define CON_FLAGS_STR_BYTES 2048
+
+/*
+ * Convert flags to printable string
+ * IN flags - connection flags
+ * IN str - String to populate
+ * IN bytes - Number of bytes in str
+ * RET pointer to str
+ */
+extern char *con_flags_print(const con_flags_t flags, char *str, size_t bytes);
 
 /*
  * Convert flags to printable string
