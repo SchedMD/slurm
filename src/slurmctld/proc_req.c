@@ -3155,6 +3155,22 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
+
+	/*
+	 * srun attaching to an existing array allocation (e.g.
+	 * --jobid=<array_job_id>_<task_id>) passes the array task id in
+	 * step_id.step_id. Resolve it to the real task's job id before the
+	 * generic lookup, which finds the pointer only by job id.
+	 */
+	if (job_info_msg->step_id.step_id != NO_VAL) {
+		job_record_t *task_ptr =
+			find_job_array_rec(job_info_msg->step_id.job_id,
+					   job_info_msg->step_id.step_id);
+		if (task_ptr)
+			job_info_msg->step_id.job_id = task_ptr->job_id;
+		job_info_msg->step_id.step_id = NO_VAL;
+	}
+
 	error_code =
 		job_alloc_info(msg->auth_uid, &job_info_msg->step_id, &job_ptr);
 	END_TIMER2(__func__);

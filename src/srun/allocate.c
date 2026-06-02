@@ -718,6 +718,8 @@ extern list_t *existing_allocation(void)
 	old_job_id = (uint32_t) sropt.jobid;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	step_id.job_id = old_job_id;
+	step_id.step_id = sropt.array_task_id;
+	sropt.array_task_id = NO_VAL;
 	if (slurm_het_job_lookup(step_id, &job_resp_list) < 0) {
 		if (sropt.parallel_debug)
 			return NULL;    /* create new allocation as needed */
