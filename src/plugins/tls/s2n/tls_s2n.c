@@ -90,6 +90,7 @@ static bool is_own_cert_trusted_by_ca = false;
 static pthread_rwlock_t s2n_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static uint32_t s2n_conf_conn_cnt = 0;
+static uint32_t s2n_all_conn_cnt = 0;
 static pthread_mutex_t s2n_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s2n_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
 
@@ -926,13 +927,23 @@ static void _s2n_config_dec(tls_conn_t *conn)
 		if (s2n_conf_conn_cnt > 0) {
 			s2n_conf_conn_cnt--;
 		} else {
-			error("%s: unexpected underflow", __func__);
+			error("%s: unexpected s2n_conf_conn_cnt underflow",
+			      __func__);
 		}
 
 		if (s2n_conf_conn_cnt == 0) {
 			slurm_cond_signal(&s2n_conf_cnt_cond);
 		}
 	}
+
+	/*
+	 * All connections are tracked by s2n_all_conn_cnt, so decrement it
+	 * unconditionally here.
+	 */
+	if (s2n_all_conn_cnt)
+		s2n_all_conn_cnt--;
+	else
+		error("%s: unexpected s2n_all_conn_cnt underflow", __func__);
 
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
@@ -1058,6 +1069,13 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 			 tls_conn_args->output_fd);
 		return NULL;
 	}
+
+	/*
+	 * Track total connection count here and in _s2n_config_dec(). Every
+	 * connection counted here reaches _cleanup_tls_conn(), including the
+	 * goto fail paths below.
+	 */
+	s2n_all_conn_cnt++;
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 
 	conn = xmalloc(sizeof(*conn));
