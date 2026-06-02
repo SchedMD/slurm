@@ -946,16 +946,14 @@ static void _s2n_config_dec(tls_conn_t *conn)
 
 	/* Only connections using the global config hold a conf refcount */
 	if (conn->using_global_s2n_conf) {
-		if (s2n_conf_conn_cnt > 0) {
+		if (s2n_conf_conn_cnt)
 			s2n_conf_conn_cnt--;
-		} else {
+		else
 			error("%s: unexpected s2n_conf_conn_cnt underflow",
 			      __func__);
-		}
 
-		if (s2n_conf_conn_cnt == 0) {
+		if (!s2n_conf_conn_cnt)
 			slurm_cond_signal(&s2n_conf_cnt_cond);
-		}
 	}
 
 	/*
