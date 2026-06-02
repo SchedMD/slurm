@@ -4370,7 +4370,7 @@ extern void node_mgr_make_node_blocked(job_record_t *job_ptr, bool set)
 	if (!IS_JOB_WHOLE_TOPO(job_ptr))
 		return;
 
-	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap)
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap || !job_ptr->part_ptr)
 		return;
 
 	tmp_bitmap = bit_copy(job_ptr->job_resrcs->node_bitmap);
