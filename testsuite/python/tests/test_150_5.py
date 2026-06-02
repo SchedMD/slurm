@@ -231,7 +231,7 @@ def _assert_node_under_switch(name, expected, timeout=10):
 def test_baseline_topology_from_slurmd_conf():
     """Scenario a: dynamic-normal slurmd with Topology=tree_topo:sw_alpha in its
     --conf registers under switch sw_alpha."""
-    name = "dyn_a"
+    name = "node10"
     try:
         _start_dynamic_slurmd(name, PORT_BASE, "Topology=tree_topo:sw_alpha")
         _assert_topology(name, "tree_topo:sw_alpha")
@@ -249,7 +249,7 @@ def test_admin_override_survives_slurmd_ping():
     the same --conf; from the controller's perspective this is a
     registration RPC carrying the original Topology, which is exactly
     the ping case for the new validate_node_specs() gate."""
-    name = "dyn_c"
+    name = "node11"
     port = PORT_BASE + 1
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -287,7 +287,7 @@ def test_admin_override_survives_slurmd_restart():
     restart vs. a registration RPC); both hit the same controller
     code path, so this test mainly guards against future drift if
     that ever changes."""
-    name = "dyn_d"
+    name = "node12"
     port = PORT_BASE + 2
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -318,7 +318,7 @@ def test_slurmd_new_topology_ignored():
     new value is IGNORED -- slurmd does not take topology ownership
     back. To re-apply a new Topology= the operator must scontrol delete
     the node and let it re-register."""
-    name = "dyn_e"
+    name = "node13"
     port = PORT_BASE + 3
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -344,7 +344,7 @@ def test_topology_retained_when_slurmd_drops_topology():
     """Scenario f: when slurmd restarts without Topology= in --conf,
     the topology assigned on the first registration is retained
     (slurmd's drop is not a take-back signal)."""
-    name = "dyn_f"
+    name = "node14"
     port = PORT_BASE + 4
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -368,7 +368,7 @@ def test_admin_override_survives_slurmctld_restart():
     on restore the gate (boot_time > last_response) correctly skips
     when slurmd reports the same OS boot it had before the controller
     went down."""
-    name = "dyn_g"
+    name = "node15"
     port = PORT_BASE + 5
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -412,7 +412,7 @@ def test_reboot_during_slurmctld_downtime_detected():
     restarting it with -b, which sets slurmd's conf->boot_time to
     "now" (slurmd.c) so the controller derives a boot_time later
     than the saved last_response."""
-    name = "dyn_h"
+    name = "node16"
     port = PORT_BASE + 6
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -479,7 +479,7 @@ def test_baseline_instance_id_type_extra_from_slurmd_conf():
     """Scenario i: dynamic-normal slurmd with --instance-id, --instance-type,
     and --extra on the command line populates the three corresponding node
     fields on first registration."""
-    name = "dyn_i"
+    name = "node17"
     port = PORT_BASE + 7
     try:
         _start_dynamic_slurmd(
@@ -495,21 +495,27 @@ def test_baseline_instance_id_type_extra_from_slurmd_conf():
 
 
 @pytest.mark.parametrize(
-    "field,slurmd_flag,scontrol_kw,orig,admin",
+    "name, field,slurmd_flag,scontrol_kw,orig,admin",
     [
-        ("instance_id", "--instance-id", "InstanceId", "id-orig", "id-admin"),
-        ("instance_type", "--instance-type", "InstanceType", "type-orig", "type-admin"),
-        ("extra", "--extra", "Extra", "extra-orig", "extra-admin"),
+        ("node18", "instance_id", "--instance-id", "InstanceId", "id-orig", "id-admin"),
+        (
+            "node19",
+            "instance_type",
+            "--instance-type",
+            "InstanceType",
+            "type-orig",
+            "type-admin",
+        ),
+        ("node20", "extra", "--extra", "Extra", "extra-orig", "extra-admin"),
     ],
 )
 def test_admin_override_survives_slurmd_restart_field(
-    field, slurmd_flag, scontrol_kw, orig, admin
+    name, field, slurmd_flag, scontrol_kw, orig, admin
 ):
     """Scenarios j/k/l: after a scontrol update of the field, a slurmd
     kill/restart that re-reports the original value does not clobber
     the admin override. One pytest node per field so a per-field
     regression localizes to one apply block in the unified gate."""
-    name = f"dyn_jkl_{field}"
     port = PORT_BASE + 8 + ["instance_id", "instance_type", "extra"].index(field)
     try:
         _start_dynamic_slurmd(name, port, slurmd_args=f"{slurmd_flag}={orig}")
@@ -553,7 +559,7 @@ def test_slurmd_reboot_applies_new_topology():
     IS_NODE_CLOUD && (was_powering_up || was_powered_down) and never
     fires for dynamic-normal nodes -- subsequent slurmd reboots
     silently keep the admin's pre-reboot topology."""
-    name = "dyn_m"
+    name = "node21"
     port = PORT_BASE + 11
     try:
         _start_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
@@ -595,10 +601,19 @@ def test_slurmd_reboot_applies_new_topology():
 
 
 @pytest.mark.parametrize(
-    "field,slurmd_flag,scontrol_kw,orig,admin,new",
+    "name,field,slurmd_flag,scontrol_kw,orig,admin,new",
     [
-        ("instance_id", "--instance-id", "InstanceId", "id-orig", "id-admin", "id-new"),
         (
+            "node22",
+            "instance_id",
+            "--instance-id",
+            "InstanceId",
+            "id-orig",
+            "id-admin",
+            "id-new",
+        ),
+        (
+            "node23",
             "instance_type",
             "--instance-type",
             "InstanceType",
@@ -606,11 +621,19 @@ def test_slurmd_reboot_applies_new_topology():
             "type-admin",
             "type-new",
         ),
-        ("extra", "--extra", "Extra", "extra-orig", "extra-admin", "extra-new"),
+        (
+            "node24",
+            "extra",
+            "--extra",
+            "Extra",
+            "extra-orig",
+            "extra-admin",
+            "extra-new",
+        ),
     ],
 )
 def test_slurmd_reboot_applies_new_field(
-    field, slurmd_flag, scontrol_kw, orig, admin, new
+    name, field, slurmd_flag, scontrol_kw, orig, admin, new
 ):
     """Scenarios n/o/p: when slurmd is restarted with -b (simulating a
     node reboot) and a different value for the field, the new value
@@ -618,7 +641,6 @@ def test_slurmd_reboot_applies_new_field(
     the original registration and the reboot. Mirrors scenario m for
     the corresponding field-apply path in the unified gated block.
     One pytest node per field so a per-field regression localizes."""
-    name = f"dyn_nop_{field}"
     port = PORT_BASE + 12 + ["instance_id", "instance_type", "extra"].index(field)
     try:
         _start_dynamic_slurmd(name, port, slurmd_args=f"{slurmd_flag}={orig}")
