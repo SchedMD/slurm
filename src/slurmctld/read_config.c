@@ -1807,6 +1807,13 @@ extern int read_slurm_conf(int recover)
 	set_cluster_tres(false);
 
 	_validate_het_jobs();
+
+	if ((slurm_conf.prolog_timeout != NO_VAL16) &&
+	    (slurm_conf.batch_start_timeout < slurm_conf.prolog_timeout))
+		warning("BatchStartTimeout (%u) is less than the prolog timeout (%u); a batch job whose prolog runs longer than BatchStartTimeout may be considered missing and requeued",
+			slurm_conf.batch_start_timeout,
+			slurm_conf.prolog_timeout);
+
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	_requeue_job_node_failed();
 	load_part_uid_allow_list(true);
