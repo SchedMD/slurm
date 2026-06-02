@@ -32,7 +32,7 @@ Build-Depends:
  man2html-base,
  po-debconf,
  python3,
-Homepage: http://slurm.schedmd.com
+Homepage: https://slurm.schedmd.com
 Vcs-Browser: https://github.com/SchedMD/slurm
 Vcs-Git: https://github.com/SchedMD/slurm.git
 
