@@ -40,6 +40,7 @@ Package: slurm-smd
 Architecture: any
 Depends:
  ${shlibs:Depends},
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -65,7 +66,8 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
- bash-completion
+ bash-completion,
+ ${misc:Depends}
 Recommends:
  munge,
 Conflicts:
@@ -78,6 +80,7 @@ Package: slurm-smd-dev
 Architecture: any
 Depends:
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -109,6 +112,7 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -122,6 +126,7 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -134,6 +139,7 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  slurm-smd (= ${binary:Version}),
+ ${misc:Depends},
 Recommends:
  munge,
 Conflicts:
@@ -157,7 +163,8 @@ Package: slurm-smd-sackd
 Architecture: any
 Depends:
  slurm-smd (= ${binary:Version}),
- ${shlibs:Depends}
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Slurm authentication daemon.
  Used on login nodes that are not running slurmd daemons to allow authentication
  to the cluster.
