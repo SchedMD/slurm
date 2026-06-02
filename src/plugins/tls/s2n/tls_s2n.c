@@ -93,6 +93,8 @@ static uint32_t s2n_conf_conn_cnt = 0;
 static pthread_mutex_t s2n_conf_cnt_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t s2n_conf_cnt_cond = PTHREAD_COND_INITIALIZER;
 
+static bool fini_run = false;
+
 /*
  * These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
@@ -766,10 +768,11 @@ extern int init(void)
 
 extern void fini(void)
 {
-	static bool fini_run = false;
-
-	if (fini_run)
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
+	if (fini_run) {
+		slurm_mutex_unlock(&s2n_conf_cnt_lock);
 		return;
+	}
 	fini_run = true;
 
 	if (s2n_config_free(client_config))
@@ -792,6 +795,8 @@ extern void fini(void)
 
 	xfree(own_cert);
 	xfree(own_key);
+
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
 
 static int _negotiate(tls_conn_t *conn)
@@ -1039,6 +1044,17 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	log_flag(TLS, "%s: create connection. fd:%d->%d. tls mode:%s",
 		 plugin_type, tls_conn_args->input_fd, tls_conn_args->output_fd,
 		 conn_mode_to_str(tls_conn_args->mode));
+
+	slurm_mutex_lock(&s2n_conf_cnt_lock);
+	if (fini_run) {
+		/* Block new connections once fini() has been called */
+		slurm_mutex_unlock(&s2n_conf_cnt_lock);
+		log_flag(TLS, "%s: shutting down, refusing new connection for fd:%d->%d",
+			 plugin_type, tls_conn_args->input_fd,
+			 tls_conn_args->output_fd);
+		return NULL;
+	}
+	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 
 	conn = xmalloc(sizeof(*conn));
 	conn->magic = TLS_CONN_MAGIC;
