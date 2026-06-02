@@ -15833,8 +15833,10 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			 IS_JOB_SUSPENDED(job_ptr)) {
 			if (bit_test(job_ptr->node_bitmap, node_ptr->index)) {
 				if ((job_ptr->batch_flag) &&
-				    (node_ptr->index == bit_ffs(
-					    job_ptr->node_bitmap))) {
+				    (reg_msg->step_id[i].step_id ==
+				     SLURM_BATCH_SCRIPT) &&
+				    (node_ptr->index ==
+				     bit_ffs(job_ptr->node_bitmap))) {
 					/* NOTE: Used for purging defunct
 					 * batch jobs */
 					job_ptr->time_last_active = now;
