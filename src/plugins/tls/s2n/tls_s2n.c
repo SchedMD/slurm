@@ -920,14 +920,17 @@ static void _s2n_config_dec(tls_conn_t *conn)
 
 	slurm_mutex_lock(&s2n_conf_cnt_lock);
 
-	if (s2n_conf_conn_cnt > 0) {
-		s2n_conf_conn_cnt--;
-	} else {
-		error("%s: unexpected underflow", __func__);
-	}
+	/* Only connections using the global config hold a conf refcount */
+	if (conn->using_global_s2n_conf) {
+		if (s2n_conf_conn_cnt > 0) {
+			s2n_conf_conn_cnt--;
+		} else {
+			error("%s: unexpected underflow", __func__);
+		}
 
-	if (s2n_conf_conn_cnt == 0) {
-		slurm_cond_signal(&s2n_conf_cnt_cond);
+		if (s2n_conf_conn_cnt == 0) {
+			slurm_cond_signal(&s2n_conf_cnt_cond);
+		}
 	}
 
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
@@ -941,6 +944,8 @@ static void _cleanup_tls_conn(tls_conn_t **conn_ptr)
 
 	xassert(conn->magic == TLS_CONN_MAGIC);
 
+	_s2n_config_dec(conn);
+
 	if (conn->s2n_config && (conn->s2n_config != server_config) &&
 	    (conn->s2n_config != client_config))
 		if (s2n_config_free(conn->s2n_config))
@@ -952,9 +957,6 @@ static void _cleanup_tls_conn(tls_conn_t **conn_ptr)
 
 	if (conn->s2n_conn && s2n_connection_free(conn->s2n_conn) < 0)
 		on_s2n_error(conn, s2n_connection_free);
-
-	if (conn->using_global_s2n_conf)
-		_s2n_config_dec(conn);
 
 	if (s2n_stack_traces_enabled())
 		s2n_free_stacktrace();
