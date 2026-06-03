@@ -2981,6 +2981,39 @@ extern void launch_job(job_record_t *job_ptr)
 	}
 }
 
+static int _relaunch_unsent_batch(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	slurm_step_id_t step_id = { 0 };
+	step_record_t *step_ptr;
+
+	if (!job_ptr->batch_flag || IS_JOB_CONFIGURING(job_ptr) ||
+	    !IS_JOB_RUNNING(job_ptr))
+		return 0;
+
+	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	step_id.step_id = SLURM_BATCH_SCRIPT;
+	if ((step_ptr = find_step_record(job_ptr, &step_id)) &&
+	    !step_ptr->launch_sent)
+		launch_job(job_ptr);
+
+	return 0;
+}
+
+extern void relaunch_unsent_batch_jobs(void)
+{
+	slurmctld_lock_t job_write_lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = READ_LOCK,
+		.fed = READ_LOCK,
+	};
+
+	lock_slurmctld(job_write_lock);
+	list_for_each(job_list, _relaunch_unsent_batch, NULL);
+	unlock_slurmctld(job_write_lock);
+}
+
 /*
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
  * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id,

@@ -182,6 +182,12 @@ extern int job_start_data(job_record_t *job_ptr,
 extern void launch_job(job_record_t *job_ptr);
 
 /*
+ * relaunch_unsent_batch_jobs - after state recovery, re-issue launch_job()
+ *	for every batch job whose batch launch was never sent
+ */
+extern void relaunch_unsent_batch_jobs(void);
+
+/*
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
  * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id,
  *                         uid and nodes have already been set
