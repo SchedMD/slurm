@@ -1607,6 +1607,9 @@ The reason a job has not been started by the scheduler: e.g., waiting for
 \fBReqB:S:C:T\fR=<\fIbaseboard_count\fR>:<\fIsocket_per_baseboard_count\fR>:<\fIcore_per_socket_count\fR>:<\fIthread_per_core_count\fR>
 Specifies the count of various hardware components requested by the job.
 Unconstrained values may be shown as "0" or "*".
+The job submission flags \fB\-\-extra\-node\-info\fR,
+\fB\-\-cores\-per\-socket\fR, and \fB\-\-threads\-per\-core\fR set the values
+of "C" and "T".
 .IP
 
 .TP
