@@ -18,7 +18,7 @@ Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b>
 </h2>
 
 <p>The Consumable Trackable Resources (<b>cons_tres</b>) plugin has been built
-to work with several resources. It can track a Board, Socket, Core, CPU, Memory
+to work with several resources. It can track a Socket, Core, CPU, Memory
 as well as any combination of the logical processors with Memory:</p>
 <ul>
   <li><b>CPU</b> (<i>CR_CPU</i>): CPU as a consumable resource.</li>
@@ -28,7 +28,6 @@ as well as any combination of the logical processors with Memory:</p>
     <li>On a multi-core/hyperthread system CPUs will be threads.</li>
     <li>On a single-core system CPUs are CPUs.</li>
   </ul>
-  <li><b>Board</b> (<i>CR_Board</i>): Baseboard as a consumable resource.</li>
   <li><b>Socket</b> (<i>CR_Socket</i>): Socket as a consumable resource.</li>
   <li><b>Core</b> (<i>CR_Core</i>): Core as a consumable resource.</li>
   <li><b>Socket and Memory</b> (<i>CR_Socket_Memory</i>): Socket

@@ -1074,11 +1074,7 @@ typedef enum {
 	 * co-allocated within a core.
 	 */
 	SELECT_CORE = SLURM_BIT(2),
-	/*
-	 * Resources are shared down to the board level. Jobs will not be
-	 * co-allocated within a board.
-	 */
-	SELECT_BOARD = SLURM_BIT(3),
+	/* SLURM_BIT(3) - Was SELECT_BOARD */
 	/*
 	 * Memory as consumable resources. Memory is not over-committed when
 	 * selected as a consumable resource.

@@ -8633,6 +8633,14 @@ static int DUMP_FUNC(SLURM_CONF_CONTROLLERS)(const parser_t *const parser,
 	.name = flag_string,                                          \
 	.deprecated = deprec,                                         \
 }
+#define add_flag_removed_hidden(flag_string, deprec)                  \
+{                                                                     \
+	.magic = MAGIC_FLAG_BIT,                                      \
+	.type = FLAG_BIT_TYPE_REMOVED,                                \
+	.name = flag_string,                                          \
+	.deprecated = deprec,                                         \
+	.hidden = true,                                               \
+}
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(slurmdb_assoc_rec_t, mtype, false, field, 0, path, desc)
@@ -11524,7 +11532,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(SELECT_TYPE_PARAM)[] = {
 	add_flag_hidden(SELECT_SOCKET, SELECT_TYPE_EXCL_MASK, "SOCKET"),
 	add_flag_equal_desc(SELECT_MEMORY, SELECT_TYPE_EXCL_MASK, "CR_MEMORY", "Memory is a consumable resource."),
 	add_flag_hidden_masked_bit(SELECT_MEMORY, SELECT_TYPE_EXCL_MASK, "MEMORY"),
-	add_flag_hidden_masked_bit(SELECT_BOARD, SELECT_TYPE_NON_EXCL_MASK, "BOARD"),
+	add_flag_removed_hidden("BOARD", SLURM_26_11_PROTOCOL_VERSION),
 	add_flag_masked_bit_desc(SELECT_ONE_TASK_PER_CORE, SELECT_TYPE_NON_EXCL_MASK, "CR_ONE_TASK_PER_CORE", "Allocate one task per core by default."),
 	add_flag_hidden_masked_bit(SELECT_ONE_TASK_PER_CORE, SELECT_TYPE_NON_EXCL_MASK, "ONE_TASK_PER_CORE"),
 	add_flag_masked_bit_desc(SELECT_CORE_DEFAULT_DIST_BLOCK, SELECT_TYPE_NON_EXCL_MASK, "CR_CORE_DEFAULT_DIST_BLOCK", "Allocate cores within a node using block distribution by default."),
