@@ -93,6 +93,7 @@ const char plugin_type[] = "accounting_storage/as_mysql";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static mysql_db_info_t *mysql_db_info = NULL;
+static pthread_rwlock_t mysql_db_info_lock = PTHREAD_RWLOCK_INITIALIZER;
 static char *mysql_db_name = NULL;
 
 #define DELETE_SEC_BACK 86400
@@ -1088,11 +1089,14 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 		errno = ESLURM_DB_CONNECTION;
 		return ESLURM_DB_CONNECTION;
 	} else if (mysql_db_ping(mysql_conn) != 0) {
+		int rc;
 		/* avoid memory leak and end thread */
 		mysql_db_close_db_connection(mysql_conn);
-		if (mysql_db_get_db_connection(
-			    mysql_conn, mysql_db_name, mysql_db_info)
-		    != SLURM_SUCCESS) {
+		slurm_rwlock_rdlock(&mysql_db_info_lock);
+		rc = mysql_db_get_db_connection(mysql_conn, mysql_db_name,
+						mysql_db_info);
+		slurm_rwlock_unlock(&mysql_db_info_lock);
+		if (rc != SLURM_SUCCESS) {
 			error("unable to re-connect to as_mysql database");
 			errno = ESLURM_DB_CONNECTION;
 			return ESLURM_DB_CONNECTION;
@@ -3034,7 +3038,9 @@ extern void *acct_storage_p_get_connection(
 	}
 
 	errno = SLURM_SUCCESS;
+	slurm_rwlock_rdlock(&mysql_db_info_lock);
 	mysql_db_get_db_connection(mysql_conn, mysql_db_name, mysql_db_info);
+	slurm_rwlock_unlock(&mysql_db_info_lock);
 
 	if (mysql_conn->db_conn)
 		errno = SLURM_SUCCESS;
@@ -3798,8 +3804,10 @@ extern int acct_storage_p_reconfig(mysql_conn_t *mysql_conn, bool dbd)
 {
 	debug2("Reloading mysql_db_info based on reconfig request");
 	/* Destroy old database info and create new one with updated config */
+	slurm_rwlock_wrlock(&mysql_db_info_lock);
 	destroy_mysql_db_info(mysql_db_info);
 	mysql_db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_AS);
+	slurm_rwlock_unlock(&mysql_db_info_lock);
 
 	return SLURM_SUCCESS;
 }
