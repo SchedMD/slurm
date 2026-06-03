@@ -3979,8 +3979,9 @@ def get_reservations(quiet=False, **run_command_kwargs):
             # Add it to the temporary resv dictionary
             resv_dict[parameter_name] = parameter_value
 
-        # Add the resv dictionary to the resvs dictionary
-        resvs_dict[resv_dict["ReservationName"]] = resv_dict
+        if "ReservationName" in resv_dict:
+            # Add the resv dictionary to the resvs dictionary
+            resvs_dict[resv_dict["ReservationName"]] = resv_dict
 
         # Clear the resv dictionary for use by the next resv
         resv_dict = {}
