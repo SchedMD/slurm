@@ -2508,8 +2508,14 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	if (nodes_ready) {
+		step_record_t *step_ptr;
+		slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+
 		if (IS_JOB_CONFIGURING(job_ptr))
 			job_config_fini(job_ptr);
+		step_id.step_id = SLURM_BATCH_SCRIPT;
+		if ((step_ptr = find_step_record(job_ptr, &step_id)))
+			step_ptr->launch_sent = true;
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return 0;
 	}

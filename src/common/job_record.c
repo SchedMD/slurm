@@ -817,6 +817,8 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 			step_req_msg.data = step_ptr->step_req;
 			pack_job_step_create_request_msg(&step_req_msg, buffer);
 		}
+
+		packbool(step_ptr->launch_sent, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
@@ -1038,6 +1040,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	bool has_step_req;
+	bool launch_sent = true;
 	step_record_t *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
 	job_step_create_request_msg_t *step_req = NULL;
@@ -1163,6 +1166,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 				goto unpack_error;
 			step_req = step_req_msg.data;
 		}
+
+		safe_unpackbool(&launch_sent, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
@@ -1369,6 +1374,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	memory_allocated = NULL;
 	step_ptr->name         = name;
 	step_ptr->step_req     = step_req;
+	step_ptr->launch_sent = launch_sent;
 	step_ptr->network      = network;
 	step_ptr->flags        = flags;
 	step_ptr->gres_list_req = gres_list_req;
