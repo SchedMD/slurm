@@ -4986,6 +4986,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
+	slurm_step_id_t step_id = { 0 };
 	char *host = NULL;
 
 	if (job_ptr_in->het_job_id) {
@@ -4997,6 +4998,11 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 		}
 	} else
 		job_ptr = job_ptr_in;
+
+	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	step_id.step_id = SLURM_BATCH_SCRIPT;
+	if ((step_ptr = find_step_record(job_ptr, &step_id)))
+		return step_ptr;
 
 	step_ptr = create_step_record(job_ptr, 0);
 
