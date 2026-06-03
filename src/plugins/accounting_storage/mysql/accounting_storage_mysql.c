@@ -1442,6 +1442,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
 				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1453,6 +1454,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
 				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1464,6 +1466,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
 				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1475,6 +1478,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
 				  ", primary key (id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1486,6 +1490,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
 				  ", primary key (id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1497,6 +1502,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
 				  ", primary key (id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1587,6 +1593,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  id_usage_table_fields,
 				  ", primary key (id, id_alt, "
 				  "id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1599,6 +1606,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  id_usage_table_fields,
 				  ", primary key (id, id_alt, "
 				  "id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1611,6 +1619,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  id_usage_table_fields,
 				  ", primary key (id, id_alt, "
 				  "id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1621,6 +1630,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  resv_table_fields,
 				  ", primary key (id_resv, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
@@ -1663,6 +1673,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
 				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1674,6 +1685,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
 				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
@@ -1685,6 +1697,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
 				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start), "
 				  "key archive_delete (deleted), "
 				  "key archive_purge (mod_time))")
 	    == SLURM_ERROR)
