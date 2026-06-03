@@ -196,10 +196,9 @@ hv_to_partition_info_msg(HV *hv, partition_info_msg_t *part_info_msg)
 }
 
 /*
- * convert perl HV to update_part_msg_t
+ * convert perl HV to partition_info_t
  */
-int
-hv_to_update_part_msg(HV *hv, update_part_msg_t *part_msg)
+int hv_to_update_part_msg(HV *hv, partition_info_t *part_msg)
 {
 	slurm_init_part_desc_msg(part_msg);
 

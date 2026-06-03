@@ -58,7 +58,7 @@ extern int partition_info_to_hv(partition_info_t *part_info, HV *hv);
 extern int hv_to_partition_info(HV *hv, partition_info_t *part_info);
 extern int partition_info_msg_to_hv(partition_info_msg_t *part_info_msg, HV *hv);
 extern int hv_to_partition_info_msg(HV *hv, partition_info_msg_t *part_info_msg);
-extern int hv_to_update_part_msg(HV *hv, update_part_msg_t *part_msg);
+extern int hv_to_update_part_msg(HV *hv, partition_info_t *part_msg);
 extern int hv_to_delete_part_msg(HV *hv, delete_part_msg_t *delete_msg);
 
 /********** ctl config conversion functions **********/

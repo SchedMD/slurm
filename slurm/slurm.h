@@ -3359,8 +3359,6 @@ typedef struct slurm_update_node_msg {
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 
-typedef struct partition_info update_part_msg_t;
-
 typedef struct job_sbcast_cred_msg {
 	char         *node_list;	/* assigned list of nodes */
 	void *sbcast_cred;		/* opaque data structure */
@@ -4648,7 +4646,7 @@ extern void slurm_print_topo_info_msg(FILE *out,
  *	default values
  * IN/OUT update_part_msg - user defined partition descriptor
  */
-extern void slurm_init_part_desc_msg(update_part_msg_t *update_part_msg);
+extern void slurm_init_part_desc_msg(partition_info_t *update_part_msg);
 
 /*
  * slurm_load_partitions - issue RPC to get slurm all partition configuration
@@ -4708,7 +4706,7 @@ extern char *slurm_sprint_partition_info(partition_info_t *part_ptr,
  * IN part_msg - description of partition configuration
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_create_partition(update_part_msg_t *part_msg);
+extern int slurm_create_partition(partition_info_t *part_msg);
 
 /*
  * slurm_update_partition - issue RPC to update a partition's configuration
@@ -4716,7 +4714,7 @@ extern int slurm_create_partition(update_part_msg_t *part_msg);
  * IN part_msg - description of partition updates
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_update_partition(update_part_msg_t *part_msg);
+extern int slurm_update_partition(partition_info_t *part_msg);
 
 /*
  * slurm_delete_partition - issue RPC to delete a partition, only usable

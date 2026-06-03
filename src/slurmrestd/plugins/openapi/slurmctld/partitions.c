@@ -47,7 +47,7 @@ typedef struct {
 	uint16_t index;
 } foreach_create_update_part_t;
 
-static void _warn_on_ignore_values(update_part_msg_t *update_part,
+static void _warn_on_ignore_values(partition_info_t *update_part,
 				   uint16_t index, openapi_ctxt_t *ctxt)
 {
 	char *warn_str = NULL;
@@ -87,7 +87,7 @@ static void _warn_on_ignore_values(update_part_msg_t *update_part,
 
 static int _foreach_create_update_partition(void *x, void *arg)
 {
-	update_part_msg_t *update_part = x;
+	partition_info_t *update_part = x;
 	foreach_create_update_part_t *args = arg;
 	partition_info_msg_t *part_info_ptr = args->part_info_ptr;
 	bool part_exists = false;

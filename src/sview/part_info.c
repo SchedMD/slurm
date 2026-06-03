@@ -496,9 +496,8 @@ static uint16_t _set_part_over_subscribe_popup(void)
 }
 
 /* don't free this char */
-static const char *_set_part_msg(update_part_msg_t *part_msg,
-				 const char *new_text,
-				 int column)
+static const char *_set_part_msg(partition_info_t *part_msg,
+				 const char *new_text, int column)
 {
 	char *type = "", *temp_char;
 	int temp_int = 0;
@@ -747,7 +746,7 @@ return_error:
 }
 
 static void _admin_edit_combo_box_part(GtkComboBox *combo,
-				       update_part_msg_t *part_msg)
+				       partition_info_t *part_msg)
 {
 	GtkTreeModel *model = NULL;
 	GtkTreeIter iter;
@@ -775,9 +774,8 @@ static void _admin_edit_combo_box_part(GtkComboBox *combo,
 		g_free(name);
 }
 
-static gboolean _admin_focus_out_part(GtkEntry *entry,
-				      GdkEventFocus *event,
-				      update_part_msg_t *part_msg)
+static gboolean _admin_focus_out_part(GtkEntry *entry, GdkEventFocus *event,
+				      partition_info_t *part_msg)
 {
 	if (global_entry_changed) {
 		const char *col_name = NULL;
@@ -800,7 +798,7 @@ static gboolean _admin_focus_out_part(GtkEntry *entry,
 	return false;
 }
 
-static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
+static GtkWidget *_admin_full_edit_part(partition_info_t *part_msg,
 					GtkTreeModel *model, GtkTreeIter *iter)
 {
 	GtkScrolledWindow *window = create_scrolled_window();
@@ -2049,7 +2047,7 @@ static void _process_each_partition(GtkTreeModel  *model,
 }
 /*process_each_partition ^^^*/
 
-extern GtkWidget *create_part_entry(update_part_msg_t *part_msg,
+extern GtkWidget *create_part_entry(partition_info_t *part_msg,
 				    GtkTreeModel *model, GtkTreeIter *iter)
 {
 	GtkScrolledWindow *window = create_scrolled_window();
@@ -2407,7 +2405,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	GtkTreeStore *treestore = NULL;
 	GtkTreePath *path = NULL;
 	GtkTreeIter iter;
-	update_part_msg_t *part_msg = NULL;
+	partition_info_t *part_msg = NULL;
 
 	char *temp = NULL;
 	char *old_text = NULL;
@@ -2422,7 +2420,7 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		goto no_input;
 	}
 
-	part_msg = xmalloc(sizeof(update_part_msg_t));
+	part_msg = xmalloc(sizeof(*part_msg));
 
 	treestore = GTK_TREE_STORE(data);
 	path = gtk_tree_path_new_from_string(path_string);
@@ -3046,7 +3044,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 {
 	char *nodelist = NULL;
 	char *partid = NULL;
-	update_part_msg_t *part_msg = NULL;
+	partition_info_t *part_msg = NULL;
 	int edit_type = 0;
 	int response = 0;
 	char tmp_char[100];
@@ -3073,7 +3071,7 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 	gtk_tree_model_get(model, iter, SORTID_NAME, &partid, -1);
 	gtk_tree_model_get(model, iter, SORTID_NODELIST, &nodelist, -1);
 
-	part_msg = xmalloc(sizeof(update_part_msg_t));
+	part_msg = xmalloc(sizeof(*part_msg));
 	slurm_init_part_desc_msg(part_msg);
 	part_msg->name = xstrdup(partid);
 

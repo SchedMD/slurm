@@ -7721,12 +7721,9 @@ static void FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)(void *ptr)
 
 static void *NEW_FUNC(PARTITION_INFO)(void)
 {
-	/*
-	 * update_part_msg_t is partition_info_t
-	 * This is only used for create and update partition endpoints
-	 */
+	/* This is only used for create and update partition endpoints */
 	partition_info_t *part_info = xmalloc(sizeof(*part_info));
-	slurm_init_part_desc_msg((update_part_msg_t *) part_info);
+	slurm_init_part_desc_msg(part_info);
 	return part_info;
 }
 

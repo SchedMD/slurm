@@ -1081,7 +1081,7 @@ extern int set_partition_billing_weights(char *billing_weights_str,
  * global: part_list - list of partition entries
  *	last_part_update - update time of partition records
  */
-extern int update_part(update_part_msg_t * part_desc, bool create_flag)
+extern int update_part(partition_info_t *part_desc, bool create_flag)
 {
 	int error_code;
 	part_record_t *part_ptr;

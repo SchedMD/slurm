@@ -1021,7 +1021,7 @@ slurm_sprint_partition_info(slurm_t self, HV *part_info, int one_liner=0)
 int
 slurm_create_partition(slurm_t self, HV *part_info)
 	PREINIT:
-		update_part_msg_t update_msg;
+		partition_info_t update_msg;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -1037,7 +1037,7 @@ slurm_create_partition(slurm_t self, HV *part_info)
 int
 slurm_update_partition(slurm_t self, HV *part_info)
 	PREINIT:
-		update_part_msg_t update_msg;
+		partition_info_t update_msg;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self

@@ -43,9 +43,9 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/scontrol/scontrol.h"
 
-extern int
-scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
-			     update_part_msg_t *part_msg_ptr)
+extern int scontrol_parse_part_options(int argc, char **argv,
+				       int *update_cnt_ptr,
+				       partition_info_t *part_msg_ptr)
 {
 	int i, min, max;
 	char *tag, *val;
@@ -190,9 +190,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			 * Exact "Exclusive" (not ExclusiveUser/ExclusiveTopo).
 			 * Single token only: NO, NODE, USER, or TOPO.
 			 */
-			if (parse_partition_exclusive(val,
-						      (partition_info_t *)
-							      part_msg_ptr) !=
+			if (parse_partition_exclusive(val, part_msg_ptr) !=
 			    SLURM_SUCCESS) {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
@@ -538,7 +536,7 @@ extern int
 scontrol_update_part (int argc, char **argv)
 {
 	int update_cnt = 0;
-	update_part_msg_t part_msg;
+	partition_info_t part_msg;
 	int err;
 
 	slurm_init_part_desc_msg ( &part_msg );
@@ -578,7 +576,7 @@ extern int
 scontrol_create_part (int argc, char **argv)
 {
 	int update_cnt = 0;
-	update_part_msg_t part_msg;
+	partition_info_t part_msg;
 	int err;
 
 	slurm_init_part_desc_msg ( &part_msg );
