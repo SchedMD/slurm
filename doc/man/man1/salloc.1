@@ -229,7 +229,6 @@ An arbitrary comment.
 Ensure that all segments from the allocation will be consolidated
 into one higher-level aggregated block.
 
-This option applies to job allocations.
 \fBNOTE\fR: This option will only work with the \fBtopology/block\fR plugin.
 .IP
 
@@ -918,10 +917,9 @@ sockets, cores per socket and/or threads per core.
 .br
 \fBNOTE\fR: These options do not specify the resource allocation size.
 Each value specified is considered a minimum.
-An asterisk (*) can be used as a placeholder indicating that all available
-resources of that type are to be utilized. Values can also be specified as
-min\-max. The individual levels can also be specified in separate options if
-desired:
+An asterisk (*) can be used as a placeholder without restricting node selection
+for that type. The individual levels can also be specified in separate options
+if desired:
 .nf
     \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
     \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
@@ -934,8 +932,7 @@ if the \fB\-B\fR option specifies a thread count, otherwise an option of
 If SelectType is configured to select/cons_tres, it must have a parameter of
 CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
-If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
-option applies to job allocations.
+If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'.
 .br
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-hint\fR,
 \fB\-\-threads\-per\-core\fR and \fB\-\-ntasks\-per\-core\fR.
@@ -2085,7 +2082,7 @@ of port they want to reserve. The parameter MpiParams=ports=12000\-12999
 must be specified in \fIslurm.conf\fR. If the number of reserved ports is zero
 then no ports are reserved. Used for native Cray's PMI only.
 This option can only be used if the slurmstepd step management is enabled.
-This option applies to job allocations. See \fB\-\-stepmgr\fR.
+See \fB\-\-stepmgr\fR.
 .IP
 
 .TP
@@ -2147,7 +2144,6 @@ This option disables the topology/tree plugin.
 Prevent nodes within the same base block from being allocated to
 separate segments within the same block.
 
-This option applies to job allocations.
 \fBNOTE\fR: This option will only work with the \fBtopology/block\fR plugin.
 .IP
 
