@@ -264,7 +264,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		if (query)
 			xstrcat(query, " union ");
 
-		xstrfmtcat(query, "select distinct %s, '%s' as cluster from \"%s_%s\" as t1 left join \"%s_%s\" as t2 on t2.lineage like concat(t1.lineage, '0-%%') %s && t1.user='' && t2.lineage is NULL",
+		xstrfmtcat(query, "select distinct %s, '%s' as cluster from \"%s_%s\" as t1 left join \"%s_%s\" as t2 on t2.lineage like concat(t1.lineage, '0-%%') %s and t1.user='' and t2.lineage is NULL",
 			   tmp, cluster_name, cluster_name,
 			   assoc_table, cluster_name,
 			   assoc_table, extra);
