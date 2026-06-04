@@ -439,8 +439,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		xstrfmtcat(*extra,
 			   "(t1.time_eligible and "
 			   "(( t1.time_start and (%ld < t1.time_start)) or "
-			   " (!t1.time_start and  t1.time_end and (%ld < t1.time_end)) or "
-			   " (!t1.time_start and !t1.time_end and (t1.state=%d))) and "
+			   " (not t1.time_start and t1.time_end and (%ld < t1.time_end)) or "
+			   " (not t1.time_start and not t1.time_end and (t1.state=%d))) and "
 			   "(%ld > t1.time_eligible))",
 			   job_cond->usage_start,
 			   job_cond->usage_start,
@@ -469,7 +469,7 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_start and "
-			   "((%ld < t1.time_end or (!t1.time_end and t1.state=%d))) and "
+			   "((%ld < t1.time_end or (not t1.time_end and t1.state=%d))) and "
 			   "((%ld > t1.time_start)))",
 			   job_cond->usage_start, base_state,
 			   job_cond->usage_end);
