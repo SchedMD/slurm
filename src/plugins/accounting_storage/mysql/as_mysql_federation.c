@@ -585,7 +585,7 @@ extern list_t *as_mysql_modify_federations(
 		if (!name_char) {
 			xstrfmtcat(name_char, "(name='%s'", object);
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " or name='%s'", object);
 		}
 	}
 	mysql_free_result(result);
