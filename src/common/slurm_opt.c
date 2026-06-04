@@ -3377,8 +3377,12 @@ static int arg_set_requeue(slurm_opt_t *opt, const char *arg)
 
 	opt->sbatch_opt->requeue = 1;
 
-	if (!xstrcasecmp(arg, "expedite"))
+	if (!xstrcasecmp(arg, "expedite")) {
 		opt->job_flags |= EXPEDITED_REQUEUE;
+	} else {
+		error("Invalid --requeue specification");
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
