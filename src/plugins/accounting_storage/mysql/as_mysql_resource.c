@@ -945,10 +945,10 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf("select id, name, server, cluster "
 			       "from %s as t1 left outer join "
-			       "%s as t2 on (res_id = id%s) %s && %s;",
+			       "%s as t2 on (res_id = id%s) %s and %s;",
 			       res_table, clus_res_table,
 			       (!res_cond || !res_cond->with_deleted) ?
-			       " && t2.deleted=0" : "",
+			       " and t2.deleted=0" : "",
 			       extra, clus_extra);
 	xfree(clus_extra);
 
@@ -990,7 +990,7 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (query_clusters) {
 			xstrfmtcat(clus_char,
-				   "%s(res_id='%s' && cluster='%s')",
+				   "%s(res_id='%s' and cluster='%s')",
 				   clus_char ? " || " : "", row[0], row[3]);
 		} else {
 			if (!res_added) {
