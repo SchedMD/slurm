@@ -63,7 +63,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->description_list
 	    && list_count(res_cond->description_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -76,14 +76,14 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	}
 
 	if (!(res_cond->flags & SLURMDB_RES_FLAG_NOTSET)) {
-		xstrfmtcat(*extra, " && (flags & %u)",
+		xstrfmtcat(*extra, " and (flags & %u)",
 			   res_cond->flags & SLURMDB_RES_FLAG_BASE);
 	}
 
 	if (res_cond->id_list
 	    && list_count(res_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -98,7 +98,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->manager_list
 	    && list_count(res_cond->manager_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->manager_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -113,7 +113,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->name_list
 	    && list_count(res_cond->name_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -128,7 +128,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->server_list
 	    && list_count(res_cond->server_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->server_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -143,7 +143,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	if (res_cond->type_list
 	    && list_count(res_cond->type_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->type_list);
 		while ((object = list_next(itr))) {
 			if (set)
