@@ -1496,7 +1496,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (user_list && list_count(user_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, "(");
 
@@ -1516,7 +1516,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (acct_list && list_count(acct_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, "(");
 
@@ -1540,7 +1540,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf(
-		"select user, acct from %s where deleted=0 && %s order by user",
+		"select user, acct from %s where deleted=0 and %s order by user",
 		acct_coord_table, extra);
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
