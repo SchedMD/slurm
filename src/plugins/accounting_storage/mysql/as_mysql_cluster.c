@@ -1211,7 +1211,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 
 	if (event_cond->cpus_min) {
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
@@ -1236,7 +1236,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		break;
 	case SLURMDB_EVENT_CLUSTER:
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		xstrcat(extra, "node_name = '')");
@@ -1244,7 +1244,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		break;
 	case SLURMDB_EVENT_NODE:
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		xstrcat(extra, "node_name != '')");
@@ -1272,7 +1272,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
@@ -1292,24 +1292,24 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 			event_cond->period_end = now;
 
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
 		if (event_cond->cond_flags & SLURMDB_EVENT_COND_OPEN)
 			xstrfmtcat(extra,
-				   "(time_start >= %ld) && (time_end = 0))",
+				   "(time_start >= %ld) and (time_end = 0))",
 				   event_cond->period_start);
 		else
 			xstrfmtcat(extra,
 				   "(time_start < %ld) "
-				   "&& (time_end >= %ld || time_end = 0))",
+				   "and (time_end >= %ld || time_end = 0))",
 				   event_cond->period_end,
 				   event_cond->period_start);
 
 	} else if (event_cond->cond_flags & SLURMDB_EVENT_COND_OPEN) {
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
@@ -1320,7 +1320,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 	    && list_count(event_cond->reason_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->reason_list);
@@ -1338,7 +1338,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 	    && list_count(event_cond->reason_uid_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->reason_uid_list);
@@ -1356,7 +1356,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 	    && list_count(event_cond->state_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(event_cond->state_list);
