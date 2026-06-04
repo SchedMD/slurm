@@ -949,7 +949,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	 * entries we don't want.
 	 */
 	if (assoc_cond->flags & ASSOC_COND_FLAG_WITH_DELETED)
-		xstrfmtcat(*extra, " (t1.deleted=0 || t1.deleted=1)");
+		xstrfmtcat(*extra, " (t1.deleted=0 or t1.deleted=1)");
 	else
 		xstrfmtcat(*extra, " t1.deleted=0");
 
@@ -964,7 +964,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			if (assoc_cond->flags & ASSOC_COND_FLAG_SUB_ACCTS) {
 				xstrfmtcat(*extra,
 					   "%s.lineage like '%%/%s/%%'",
@@ -986,7 +986,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		itr = list_iterator_create(assoc_cond->def_qos_id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.def_qos_id='%s'",
 				   prefix, object);
 			set = 1;
@@ -1001,7 +1001,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.user='%s'", prefix, object);
 			set = 1;
 		}
@@ -1020,7 +1020,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.partition='%s'",
 				   prefix, object);
 			set = 1;
@@ -1035,7 +1035,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		itr = list_iterator_create(assoc_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.id_assoc=%s", prefix, object);
 			set = 1;
 		}
@@ -1050,7 +1050,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		itr = list_iterator_create(assoc_cond->parent_acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.parent_acct='%s'",
 				   prefix, object);
 			set = 1;
