@@ -2080,8 +2080,8 @@ static int _get_accts_with_user_coords_users(void *x, void *arg)
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
 		     "%sselect distinct t2.acct, t2.user from \"%s_%s\" as t1, "
-		     "\"%s_%s\" as t2 where t1.deleted=0 && "
-		     "t2.deleted=0 && (t1.flags & %u) && t2.lineage like "
+		     "\"%s_%s\" as t2 where t1.deleted=0 and "
+		     "t2.deleted=0 and (t1.flags & %u) and t2.lineage like "
 		     "concat('%%/', t1.acct, '/0-%%')",
 		     create_string->query ? " union " : "",
 		     cluster_name, assoc_table,
