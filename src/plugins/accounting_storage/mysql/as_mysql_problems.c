@@ -336,7 +336,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(query, " || ");
+				xstrcat(query, " or ");
 			xstrfmtcat(query, "name='%s'", object);
 			set = 1;
 		}
