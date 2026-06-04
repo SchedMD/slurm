@@ -87,12 +87,12 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->acct_list && list_count(txn_cond->acct_list)) {
 		set = 0;
 		if (assoc_extra)
-			xstrcat(assoc_extra, " && (");
+			xstrcat(assoc_extra, " and (");
 		else
 			xstrcat(assoc_extra, " where (");
 
 		if (name_extra)
-			xstrcat(name_extra, " && (");
+			xstrcat(name_extra, " and (");
 		else
 			xstrcat(name_extra, " (");
 		itr = list_iterator_create(txn_cond->acct_list);
@@ -118,7 +118,7 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->cluster_list && list_count(txn_cond->cluster_list)) {
 		set = 0;
 		if (name_extra)
-			xstrcat(name_extra, " && (");
+			xstrcat(name_extra, " and (");
 		else
 			xstrcat(name_extra, "(");
 
@@ -141,12 +141,12 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->user_list && list_count(txn_cond->user_list)) {
 		set = 0;
 		if (assoc_extra)
-			xstrcat(assoc_extra, " && (");
+			xstrcat(assoc_extra, " and (");
 		else
 			xstrcat(assoc_extra, " where (");
 
 		if (name_extra)
-			xstrcat(name_extra, " && (");
+			xstrcat(name_extra, " and (");
 		else
 			xstrcat(name_extra, "(");
 
@@ -194,11 +194,11 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			if (mysql_num_rows(result)) {
 				if (extra)
 					xstrfmtcat(extra,
-						   " || (cluster='%s' && (",
+						   " || (cluster='%s' and (",
 						   object);
 				else
 					xstrfmtcat(extra,
-						   " where (cluster='%s' && (",
+						   " where (cluster='%s' and (",
 						   object);
 
 				set = 0;
@@ -236,7 +236,7 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->action_list && list_count(txn_cond->action_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(txn_cond->action_list);
@@ -253,7 +253,7 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->actor_list && list_count(txn_cond->actor_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(txn_cond->actor_list);
@@ -270,7 +270,7 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->id_list && list_count(txn_cond->id_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(txn_cond->id_list);
@@ -297,7 +297,7 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->info_list && list_count(txn_cond->info_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(txn_cond->info_list);
@@ -314,7 +314,7 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (txn_cond->name_list && list_count(txn_cond->name_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		itr = list_iterator_create(txn_cond->name_list);
@@ -330,21 +330,21 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (txn_cond->time_start && txn_cond->time_end) {
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
-		xstrfmtcat(extra, "timestamp < %ld && timestamp >= %ld)",
+		xstrfmtcat(extra, "timestamp < %ld and timestamp >= %ld)",
 			   txn_cond->time_end, txn_cond->time_start);
 	} else if (txn_cond->time_start) {
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		xstrfmtcat(extra, "timestamp >= %ld)", txn_cond->time_start);
 
 	} else if (txn_cond->time_end) {
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 		xstrfmtcat(extra, "timestamp < %ld)", txn_cond->time_end);
