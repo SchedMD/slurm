@@ -1253,7 +1253,7 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select cluster_nodes, time_start, "
 			       "time_end from \"%s_%s\" where node_name='' "
-			       "&& cluster_nodes !=''",
+			       "and cluster_nodes !=''",
 			       (char *)list_peek(job_cond->cluster_list),
 			       event_table);
 
@@ -1262,8 +1262,8 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			job_cond->usage_end = now;
 
 		xstrfmtcat(query,
-			   " && ((time_start < %ld) "
-			   "&& (time_end >= %ld || time_end = 0))",
+			   " and ((time_start < %ld) "
+			   "and (time_end >= %ld || time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
