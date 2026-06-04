@@ -991,7 +991,7 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (query_clusters) {
 			xstrfmtcat(clus_char,
 				   "%s(res_id='%s' and cluster='%s')",
-				   clus_char ? " || " : "", row[0], row[3]);
+				   clus_char ? " or " : "", row[0], row[3]);
 		} else {
 			if (!res_added) {
 				name = xstrdup_printf("%s@%s", row[1], row[2]);
@@ -1000,9 +1000,9 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				name = NULL;
 			}
 			xstrfmtcat(name_char, "%sid='%s'",
-				   name_char ? " || " : "", row[0]);
+				   name_char ? " or " : "", row[0]);
 			xstrfmtcat(clus_char, "%sres_id='%s'",
-				   clus_char ? " || " : "", row[0]);
+				   clus_char ? " or " : "", row[0]);
 		}
 		if (have_clusters && row[3] && row[3][0]) {
 			slurmdb_res_rec_t *res_rec =
