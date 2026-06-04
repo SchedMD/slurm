@@ -5416,7 +5416,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	switch (type) {
 	case PURGE_TXN:
 		query = xstrdup_printf("select %s from \"%s\" where "
-				       "deleted = 1 && cluster='%s' "
+				       "deleted = 1 and cluster='%s' "
 				       "LIMIT %d",
 				       cols, sql_table,
 				       cluster_name,
