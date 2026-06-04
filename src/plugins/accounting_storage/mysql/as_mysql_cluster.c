@@ -1278,7 +1278,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 
 		while ((object = hostlist_shift(temp_hl))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "node_name='%s'", object);
 			set = 1;
 			free(object);
@@ -1303,7 +1303,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		else
 			xstrfmtcat(extra,
 				   "(time_start < %ld) "
-				   "and (time_end >= %ld || time_end = 0))",
+				   "and (time_end >= %ld or time_end = 0))",
 				   event_cond->period_end,
 				   event_cond->period_start);
 
@@ -1326,7 +1326,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		itr = list_iterator_create(event_cond->reason_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "reason like '%%%s%%'", object);
 			set = 1;
 		}
@@ -1344,7 +1344,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		itr = list_iterator_create(event_cond->reason_uid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "reason_uid='%s'", object);
 			set = 1;
 		}
@@ -1363,7 +1363,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 		while ((object = list_next(itr))) {
 			uint32_t tmp_state = strtol(object, NULL, 10);
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			if (tmp_state & NODE_STATE_BASE)
 				xstrfmtcat(extra, "(state&%u)=%u",
 					   NODE_STATE_BASE,
