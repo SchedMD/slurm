@@ -765,7 +765,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"execute query; "
 		"deallocate prepare query; "
 		"set @my_acct = @my_acct_new; "
-		"UNTIL without_limits || @my_acct = '' END REPEAT; "
+		"UNTIL without_limits or @my_acct = '' END REPEAT; "
 		"select @mj, @mja, @mpt, @msj, "
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 		"@def_qos_id, @qos, @delta_qos, @prio;"
