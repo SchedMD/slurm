@@ -321,7 +321,7 @@ static int _cluster_remove_wckeys(remove_common_args_t *args,
 		if (!assoc_char)
 			xstrfmtcat(assoc_char, "id_wckey='%s'", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || id_wckey='%s'", row[0]);
+			xstrfmtcat(assoc_char, " or id_wckey='%s'", row[0]);
 
 		wckey_rec = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		/* we only need id and cluster when removing
