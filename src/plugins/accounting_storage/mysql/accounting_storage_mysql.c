@@ -2230,7 +2230,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 		xassert(cluster_name);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set mod_time=%ld%s "
-			   "where deleted=0 && %s;",
+			   "where deleted=0 and %s;",
 			   cluster_name, table, now, vals, cond_char);
 		xstrfmtcat(query,
 			   "insert into %s "
@@ -2242,7 +2242,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	} else {
 		xstrfmtcat(query,
 			   "update %s set mod_time=%ld%s "
-			   "where deleted=0 && %s;",
+			   "where deleted=0 and %s;",
 			   table, now, vals, cond_char);
 		xstrfmtcat(query,
 			   "insert into %s "
