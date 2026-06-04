@@ -996,7 +996,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
 				       "where t1.job_db_inx=%s and "
 				       "t1.time_start <= %ld and "
-				       "(!t1.time_end or t1.time_end >= %ld)",
+				       "(not t1.time_end or t1.time_end >= %ld)",
 				       step_fields, cluster_name,
 				       step_table, db_inx_char,
 				       job_cond->usage_end,
