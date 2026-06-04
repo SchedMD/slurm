@@ -1410,7 +1410,7 @@ no_resv:
 	if (job_cond->resvid_list && list_count(job_cond->resvid_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->resvid_list);
@@ -1427,7 +1427,7 @@ no_resv:
 	if (job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1448,7 +1448,7 @@ no_resv:
 	/* Don't show revoked sibling federated jobs w/out -D */
 	if (!(job_cond->flags & JOBCOND_FLAG_DUP))
 		xstrfmtcat(*extra, " %s (t1.state != %"PRIu64")",
-			   *extra ? "&&" : "where",
+			   *extra ? "and" : "where",
 			   JOB_REVOKED);
 
 	return SLURM_SUCCESS;
