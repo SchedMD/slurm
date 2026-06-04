@@ -556,7 +556,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if (!extra)
 			xstrcat(extra, " where ");
 		else
-			xstrcat(extra, " && ");
+			xstrcat(extra, " and ");
 		xstrfmtcat(extra, "((%s.lineage like '%%/0-%s/%%')",
 			   prefix, user->name);
 		if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) &&
@@ -580,13 +580,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc "
 			       "left join \"%s_%s\" as t3 "
-			       "on t1.id_resv=t3.id_resv && "
-			       "((t1.time_start && "
-			       "(t3.time_start < t1.time_start && "
+			       "on t1.id_resv=t3.id_resv and "
+			       "((t1.time_start and "
+			       "(t3.time_start < t1.time_start and "
 			       "(t3.time_end >= t1.time_start || "
 			       "t3.time_end = 0))) || "
-			       "(t1.time_start = 0 && "
-			       "((t3.time_start < t1.time_submit && "
+			       "(t1.time_start = 0 and "
+			       "((t3.time_start < t1.time_submit and "
 			       "(t3.time_end >= t1.time_submit || "
 			       "t3.time_end = 0)) || "
 			       "(t3.time_start > t1.time_submit))))",
@@ -607,7 +607,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 	if (job_cond->flags & JOBCOND_FLAG_RUNAWAY) {
 		if (extra)
-			xstrcat(extra, " && (t1.time_end=0)");
+			xstrcat(extra, " and (t1.time_end=0)");
 		else
 			xstrcat(extra, " where (t1.time_end=0)");
 	}
@@ -816,8 +816,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				query = xstrdup_printf(
 					"select time_start, time_end from "
 					"\"%s_%s\" where "
-					"(time_start < %ld && (time_end >= %ld "
-					"|| time_end = 0)) && job_db_inx=%s "
+					"(time_start < %ld and (time_end >= %ld "
+					"|| time_end = 0)) and job_db_inx=%s "
 					"order by time_start",
 					cluster_name, suspend_table,
 					job_cond->usage_end,
@@ -976,7 +976,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				if (set)
 					xstrcat(extra, " || ");
 				else
-					xstrcat(extra, " && (");
+					xstrcat(extra, " and (");
 
 				/*
 				 * The stepid could be negative so use
@@ -994,8 +994,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		}
 
 		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
-				       "where t1.job_db_inx=%s && "
-				       "t1.time_start <= %ld && "
+				       "where t1.job_db_inx=%s and "
+				       "t1.time_start <= %ld and "
 				       "(!t1.time_end || t1.time_end >= %ld)",
 				       step_fields, cluster_name,
 				       step_table, db_inx_char,
