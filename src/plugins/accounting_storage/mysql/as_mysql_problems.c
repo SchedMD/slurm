@@ -130,7 +130,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(query, " || ");
+				xstrcat(query, " or ");
 			xstrfmtcat(query, "name='%s'", object);
 			set = 1;
 		}
