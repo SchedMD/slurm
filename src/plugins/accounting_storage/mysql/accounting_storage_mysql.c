@@ -2521,13 +2521,13 @@ extern int remove_common(remove_common_args_t *args)
 			if (cluster_centric) {
 				query = xstrdup_printf(
 					"delete from \"%s_%s\" where "
-					"creation_time>%ld && (%s);",
+					"creation_time>%ld and (%s);",
 					cluster_name, table, day_old,
 					name_char);
 			} else {
 				query = xstrdup_printf(
 					"delete from %s where "
-					"creation_time>%ld && (%s);",
+					"creation_time>%ld and (%s);",
 					table, day_old, name_char);
 			}
 		}
@@ -2535,14 +2535,14 @@ extern int remove_common(remove_common_args_t *args)
 		if (cluster_centric) {
 			xstrfmtcatat(query, &pos,
 				     "update \"%s_%s\" set mod_time=%ld, "
-				     "deleted=1 where deleted=0 && (%s);",
+				     "deleted=1 where deleted=0 and (%s);",
 				     cluster_name, table, now, name_char);
 		} else if (table == federation_table) {
 			xstrfmtcatat(query, &pos,
 				     "update %s set "
 				     "mod_time=%ld, deleted=1, "
 				     "flags=DEFAULT "
-				     "where deleted=0 && (%s);",
+				     "where deleted=0 and (%s);",
 				     federation_table, now, name_char);
 		} else if (table == qos_table) {
 			xstrfmtcatat(
@@ -2577,12 +2577,12 @@ extern int remove_common(remove_common_args_t *args)
 				"usage_factor=DEFAULT, "
 				"usage_thres=DEFAULT, "
 				"limit_factor=DEFAULT "
-				"where deleted=0 && (%s);",
+				"where deleted=0 and (%s);",
 				qos_table, now, name_char);
 		} else {
 			xstrfmtcatat(query, &pos,
 				     "update %s set mod_time=%ld, deleted=1 "
-				     "where deleted=0 && (%s);",
+				     "where deleted=0 and (%s);",
 				     table, now, name_char);
 		}
 	}
