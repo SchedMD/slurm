@@ -2061,8 +2061,8 @@ static int _get_indirect_acct_coords(void *x, void *arg)
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
 		     "%sselect distinct t1.user, t2.acct from "
-		     "\"%s\" as t1, \"%s_%s\" as t2 where t1.deleted=0 && "
-		     "t2.deleted=0 && t2.user='' && (t1.acct != t2.acct) && "
+		     "\"%s\" as t1, \"%s_%s\" as t2 where t1.deleted=0 and "
+		     "t2.deleted=0 and t2.user='' and (t1.acct != t2.acct) and "
 		     "t2.lineage like concat('%%/', t1.acct, '/%%')",
 		     create_string->query ? " union " : "",
 		     acct_coord_table,
