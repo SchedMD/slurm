@@ -3637,10 +3637,10 @@ is_same_user:
 	   taken care of above. */
 	if (assoc_cond->user_list && !list_count(assoc_cond->user_list)) {
 		debug4("no user specified looking at users");
-		xstrcat(extra, " && user != '' ");
+		xstrcat(extra, " and user != '' ");
 	} else if (!assoc_cond->user_list) {
 		debug4("no user specified looking at accounts");
-		xstrcat(extra, " && user = '' ");
+		xstrcat(extra, " and user = '' ");
 	}
 
 	if ((rc = setup_assoc_limits(assoc, &tmp_char1, &tmp_char2,
