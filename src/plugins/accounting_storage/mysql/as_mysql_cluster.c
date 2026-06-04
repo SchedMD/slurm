@@ -170,7 +170,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	if (cluster_cond->cluster_list
 	    && list_count(cluster_cond->cluster_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(cluster_cond->cluster_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -185,7 +185,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	if (cluster_cond->federation_list
 	    && list_count(cluster_cond->federation_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(cluster_cond->federation_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -200,7 +200,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	if (cluster_cond->rpc_version_list
 	    && list_count(cluster_cond->rpc_version_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(cluster_cond->rpc_version_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -213,12 +213,12 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	}
 
 	if (cluster_cond->classification) {
-		xstrfmtcat(*extra, " && (classification & %u)",
+		xstrfmtcat(*extra, " and (classification & %u)",
 			   cluster_cond->classification);
 	}
 
 	if (cluster_cond->flags != NO_VAL) {
-		xstrfmtcat(*extra, " && (flags & %u)",
+		xstrfmtcat(*extra, " and (flags & %u)",
 			   cluster_cond->flags);
 	}
 
