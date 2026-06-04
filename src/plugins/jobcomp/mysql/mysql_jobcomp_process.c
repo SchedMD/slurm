@@ -69,7 +69,7 @@ extern list_t *mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		itr = list_iterator_create(job_cond->step_list);
 		while ((selected_step = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			tmp = xstrdup_printf("jobid=%u",
 					     selected_step->step_id.job_id);
 			xstrcat(extra, tmp);
@@ -90,7 +90,7 @@ extern list_t *mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		itr = list_iterator_create(job_cond->partition_list);
 		while ((selected_part = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			tmp = xstrdup_printf("`partition`='%s'",
 					      selected_part);
 			xstrcat(extra, tmp);
