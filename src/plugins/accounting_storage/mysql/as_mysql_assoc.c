@@ -2494,7 +2494,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		int has_def_acct = 0;
 
 		/* Check if there is already a default account. */
-		query = xstrdup_printf("select id_assoc from \"%s_%s\" where user='%s' && acct!='%s' && is_def=1 && deleted!=1;",
+		query = xstrdup_printf("select id_assoc from \"%s_%s\" where user='%s' and acct!='%s' and is_def=1 and deleted!=1;",
 				       assoc_in->cluster, assoc_table,
 				       assoc_in->user, assoc_in->acct);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -2577,12 +2577,12 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		xstrfmtcat(vals, ", '%s'", parent);
 		xstrfmtcat(extra, ", parent_acct='%s', user=''",
 			   parent);
-		xstrfmtcat(update, " && user=''");
+		xstrfmtcat(update, " and user=''");
 	} else {
 		char *part = assoc->partition;
 		xstrcat(cols, ", user");
 		xstrfmtcat(vals, ", '%s'", assoc->user);
-		xstrfmtcat(update, " && user='%s'", assoc->user);
+		xstrfmtcat(update, " and user='%s'", assoc->user);
 		xstrfmtcat(extra, ", user='%s'", assoc->user);
 
 		/*
@@ -2593,7 +2593,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 			part = "";
 		xstrcat(cols, ", `partition`");
 		xstrfmtcat(vals, ", '%s'", part);
-		xstrfmtcat(update, " && `partition`='%s'", part);
+		xstrfmtcat(update, " and `partition`='%s'", part);
 		xstrfmtcat(extra, ", `partition`='%s'", part);
 	}
 
