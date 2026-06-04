@@ -1165,7 +1165,7 @@ empty:
 	 * coordinator of.
 	 */
 	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_USERS))
-		xstrfmtcat(extra, " && t1.user='%s'", user.name);
+		xstrfmtcat(extra, " and t1.user='%s'", user.name);
 
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
