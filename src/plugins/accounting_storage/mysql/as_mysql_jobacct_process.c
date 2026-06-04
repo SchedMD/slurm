@@ -565,7 +565,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
 				xstrfmtcat(extra,
-					   " || (%s.lineage like '%%/%s/%%')",
+					   " or (%s.lineage like '%%/%s/%%')",
 					   prefix, coord->name);
 			}
 			list_iterator_destroy(itr);
@@ -583,12 +583,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "on t1.id_resv=t3.id_resv and "
 			       "((t1.time_start and "
 			       "(t3.time_start < t1.time_start and "
-			       "(t3.time_end >= t1.time_start || "
-			       "t3.time_end = 0))) || "
+			       "(t3.time_end >= t1.time_start or "
+			       "t3.time_end = 0))) or "
 			       "(t1.time_start = 0 and "
 			       "((t3.time_start < t1.time_submit and "
-			       "(t3.time_end >= t1.time_submit || "
-			       "t3.time_end = 0)) || "
+			       "(t3.time_end >= t1.time_submit or "
+			       "t3.time_end = 0)) or "
 			       "(t3.time_start > t1.time_submit))))",
 			       job_fields, cluster_name, job_table,
 			       cluster_name, assoc_table,
@@ -817,7 +817,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					"select time_start, time_end from "
 					"\"%s_%s\" where "
 					"(time_start < %ld and (time_end >= %ld "
-					"|| time_end = 0)) and job_db_inx=%s "
+					"or time_end = 0)) and job_db_inx=%s "
 					"order by time_start",
 					cluster_name, suspend_table,
 					job_cond->usage_end,
@@ -974,7 +974,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					break;
 				}
 				if (set)
-					xstrcat(extra, " || ");
+					xstrcat(extra, " or ");
 				else
 					xstrcat(extra, " and (");
 
@@ -996,7 +996,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
 				       "where t1.job_db_inx=%s and "
 				       "t1.time_start <= %ld and "
-				       "(!t1.time_end || t1.time_end >= %ld)",
+				       "(!t1.time_end or t1.time_end >= %ld)",
 				       step_fields, cluster_name,
 				       step_table, db_inx_char,
 				       job_cond->usage_end,
