@@ -279,7 +279,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 
 	if (acct_cond->flags != SLURMDB_ACCT_FLAG_NONE) {
 		if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
-			xstrfmtcatat(*extra, at, " and !(flags & %u)",
+			xstrfmtcatat(*extra, at, " and not (flags & %u)",
 				     SLURMDB_ACCT_FLAG_USER_COORD);
 		} else if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
 			xstrfmtcatat(*extra, at, " and (flags & %u)",
