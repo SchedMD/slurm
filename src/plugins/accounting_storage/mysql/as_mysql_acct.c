@@ -988,7 +988,7 @@ extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (acct_cond->flags & SLURMDB_ACCT_FLAG_DELETED)
-		xstrcatat(extra, &at, "where (deleted=0 || deleted=1)");
+		xstrcatat(extra, &at, "where (deleted=0 or deleted=1)");
 	else
 		xstrcatat(extra, &at, "where deleted=0");
 
@@ -1012,7 +1012,7 @@ empty:
 		itr = list_iterator_create(user.coord_accts);
 		while ((coord = list_next(itr))) {
 			if (set) {
-				xstrfmtcat(extra, " || name='%s'",
+				xstrfmtcat(extra, " or name='%s'",
 					   coord->name);
 			} else {
 				set = 1;
