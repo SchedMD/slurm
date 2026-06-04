@@ -312,7 +312,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		char *sluid_ids = NULL;
 
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -368,7 +368,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   "%st1.id_job in (%s) || "
 					   "t1.het_job_id in (select "
 					   "t4.het_job_id from \"%s_%s\" as "
-					   "t4 where t4.id_job in (%s) && "
+					   "t4 where t4.id_job in (%s) and "
 					   "t4.het_job_id)",
 					   sep, job_ids, cluster_name,
 					   job_table, job_ids);
@@ -388,7 +388,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   sep, het_job_ids);
 			else
 				xstrfmtcat(*extra, "%s(t1.het_job_id in (%s) "
-					   "&& t1.het_job_offset in (%s))",
+					   "and t1.het_job_offset in (%s))",
 					   sep, het_job_ids, het_job_offset);
 			sep = " || ";
 		}
