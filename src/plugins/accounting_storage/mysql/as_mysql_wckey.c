@@ -88,9 +88,9 @@ static int _reset_default_wckey(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 
 	xstrfmtcat(query, "update \"%s_%s\" set is_def=0, mod_time=%ld "
-		   "where (user='%s' && wckey_name!='%s' && is_def=1);"
+		   "where (user='%s' and wckey_name!='%s' and is_def=1);"
 		   "select id_wckey from \"%s_%s\" "
-		   "where (user='%s' && wckey_name!='%s' && is_def=1);",
+		   "where (user='%s' and wckey_name!='%s' and is_def=1);",
 		   wckey->cluster, wckey_table, (long)now,
 		   wckey->user, wckey->name,
 		   wckey->cluster, wckey_table,
