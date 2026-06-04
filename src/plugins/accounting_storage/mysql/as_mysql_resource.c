@@ -828,7 +828,7 @@ extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 			       "id",
 			       tmp, res_table, clus_res_table,
 			       (!res_cond || !res_cond->with_deleted) ?
-			       " && t2.deleted=0" : "",
+			       " and t2.deleted=0" : "",
 			       extra);
 	xfree(tmp);
 	xfree(extra);
