@@ -238,12 +238,12 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 
 	if (wckey_cond->only_defs) {
 		set = 1;
-		xstrfmtcat(*extra, " && (%s.is_def=1)", prefix);
+		xstrfmtcat(*extra, " and (%s.is_def=1)", prefix);
 	}
 
 	if (wckey_cond->name_list && list_count(wckey_cond->name_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(wckey_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -259,7 +259,7 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 
 	if (wckey_cond->id_list && list_count(wckey_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(wckey_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -273,7 +273,7 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 
 	if (wckey_cond->user_list && list_count(wckey_cond->user_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(wckey_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
