@@ -1440,7 +1440,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		added++;
 
 		if (name_char)
-			xstrfmtcat(name_char, " || id_assoc=%s",
+			xstrfmtcat(name_char, " or id_assoc=%s",
 				   row[MASSOC_ID]);
 		else
 			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
