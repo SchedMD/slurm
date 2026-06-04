@@ -2301,7 +2301,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 		 * parent (which will happen in addto_update_list()).
 		 */
 		query = xstrdup_printf(
-			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0 order by t2.lineage;",
+			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s and t2.deleted=0 order by t2.lineage;",
 			cluster_name, assoc_table, assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -2346,7 +2346,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 	if (has_jobs)
 		goto just_update;
 
-	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
+	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld and (%s);",
 			       cluster_name, assoc_table,
 			       day_old, loc_assoc_char);
 
