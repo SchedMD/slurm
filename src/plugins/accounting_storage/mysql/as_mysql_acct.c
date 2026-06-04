@@ -320,7 +320,7 @@ static int _foreach_add_acct(void *x, void *arg)
 	slurmdb_acct_flags_t base_flags;
 
 	/* Check to see if it is already in the acct_table */
-	query = xstrdup_printf("select name from %s where name='%s' and !deleted",
+	query = xstrdup_printf("select name from %s where name='%s' and not deleted",
 			       acct_table, name);
 	result = mysql_db_query_ret(add_acct_cond->mysql_conn, query, 0);
 
