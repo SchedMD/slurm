@@ -231,7 +231,7 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 		return 0;
 
 	if (wckey_cond->with_deleted)
-		xstrfmtcat(*extra, " where (%s.deleted=0 || %s.deleted=1)",
+		xstrfmtcat(*extra, " where (%s.deleted=0 or %s.deleted=1)",
 			   prefix, prefix);
 	else
 		xstrfmtcat(*extra, " where %s.deleted=0", prefix);
@@ -247,9 +247,9 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 		itr = list_iterator_create(wckey_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra,
-				   "%s.wckey_name='%s' || %s.wckey_name='*%s'",
+				   "%s.wckey_name='%s' or %s.wckey_name='*%s'",
 				   prefix, object, prefix, object);
 			set = 1;
 		}
@@ -263,7 +263,7 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 		itr = list_iterator_create(wckey_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.id_wckey=%s", prefix, object);
 			set = 1;
 		}
@@ -277,7 +277,7 @@ static int _setup_wckey_cond_limits(slurmdb_wckey_cond_t *wckey_cond,
 		itr = list_iterator_create(wckey_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.user='%s'", prefix, object);
 			set = 1;
 		}
