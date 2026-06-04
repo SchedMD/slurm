@@ -703,7 +703,7 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 				xstrfmtcat(id_str, ",%u", assoc->id);
 			else {
 				xstrfmtcat(id_str, "%st3.id_assoc in (%u",
-					   id_str ? ") && " : "",
+					   id_str ? ") and " : "",
 					   assoc->id);
 				first = false;
 			}
