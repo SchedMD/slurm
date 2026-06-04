@@ -309,7 +309,7 @@ static uint32_t _get_res_used(mysql_conn_t *mysql_conn, uint32_t res_id,
 			       "from %s as t2 where deleted=0 and res_id=%u",
 			       clus_res_table, res_id);
 	if (extra)
-		xstrfmtcat(query, " and !(%s)", extra);
+		xstrfmtcat(query, " and not (%s)", extra);
 
 	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
