@@ -2099,7 +2099,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			"id_alt, id_tres, time_start, alloc_secs) "
 			"select %ld, %ld, id, id_alt, id_tres, "
 			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
-			"(time_start < %ld && time_start >= %ld) "
+			"(time_start < %ld and time_start >= %ld) "
 			"group by id, id_alt, id_tres on duplicate key update "
 			"mod_time=%ld, alloc_secs=@ASUM;",
 			cluster_name,
@@ -2115,7 +2115,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			"id_alt, id_tres, time_start, alloc_secs) "
 			"select %ld, %ld, id, id_alt, id_tres, "
 			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
-			"(time_start < %ld && time_start >= %ld) "
+			"(time_start < %ld and time_start >= %ld) "
 			"group by id, id_alt, id_tres on duplicate key update "
 			"mod_time=%ld, alloc_secs=@ASUM;",
 			cluster_name,
@@ -2142,7 +2142,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			   "@ISUM:=SUM(idle_secs), "
 			   "@OSUM:=SUM(over_secs), "
 			   "@PSUM:=SUM(plan_secs) from \"%s_%s\" where "
-			   "(time_start < %ld && time_start >= %ld) "
+			   "(time_start < %ld and time_start >= %ld) "
 			   "group by deleted, id_tres "
 			   "on duplicate key update "
 			   "mod_time=%ld, count=@CPU, "
@@ -2163,7 +2163,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 				   "select %ld, %ld, "
 				   "id, id_alt, id_tres, %ld, "
 				   "@ASUM:=SUM(alloc_secs) "
-				   "from \"%s_%s\" where (time_start < %ld && "
+				   "from \"%s_%s\" where (time_start < %ld and "
 				   "time_start >= %ld) "
 				   "group by id, id_alt, id_tres "
 				   "on duplicate key update "
