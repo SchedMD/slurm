@@ -1697,7 +1697,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	    user_cond->assoc_cond->user_list
 	    && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -1710,7 +1710,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
-		xstrfmtcat(extra, " && admin_level=%u",
+		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 	}
 
@@ -1732,7 +1732,7 @@ empty:
 				xfree(extra);
 				return NULL;
 			}
-			xstrfmtcat(extra, " && name='%s'", user.name);
+			xstrfmtcat(extra, " and name='%s'", user.name);
 		}
 	}
 
