@@ -64,7 +64,7 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 	if (fed_cond->cluster_list
 	    && list_count(fed_cond->cluster_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(fed_cond->cluster_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -79,7 +79,7 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 	if (fed_cond->federation_list
 	    && list_count(fed_cond->federation_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(fed_cond->federation_list);
 		while ((object = list_next(itr))) {
 			if (set)
