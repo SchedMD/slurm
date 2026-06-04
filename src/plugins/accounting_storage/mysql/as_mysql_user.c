@@ -1668,7 +1668,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (user_cond->with_deleted)
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
+		xstrcat(extra, "where (deleted=0 or deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
 
@@ -1701,7 +1701,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
