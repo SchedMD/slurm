@@ -858,7 +858,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 						     ",%s", qos_id);
 				} else {
 					xstrfmtcatat(id_str, &id_str_pos,
-						     " && id_alt in (%s",
+						     " and id_alt in (%s",
 						     qos_id);
 					first = false;
 				}
