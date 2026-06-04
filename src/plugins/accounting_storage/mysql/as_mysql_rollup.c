@@ -1473,8 +1473,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		/* now get the jobs during this time only  */
 		query = xstrdup_printf("select %s from \"%s_%s\" as job "
 				       "FORCE INDEX (rollup) "
-				       "where (job.time_eligible && "
-				       "job.time_eligible < %ld && "
+				       "where (job.time_eligible and "
+				       "job.time_eligible < %ld and "
 				       "(job.time_end >= %ld || "
 				       "job.time_end = 0)) "
 				       "group by job.job_db_inx "
@@ -1531,8 +1531,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"select %s from \"%s_%s\" where "
-					"(time_start < %ld && (time_end >= %ld "
-					"|| time_end = 0)) && job_db_inx=%s "
+					"(time_start < %ld and (time_end >= %ld "
+					"|| time_end = 0)) and job_db_inx=%s "
 					"order by time_start",
 					suspend_str, cluster_name,
 					suspend_table,
