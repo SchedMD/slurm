@@ -1469,7 +1469,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->acct_list && list_count(job_cond->acct_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->acct_list);
@@ -1486,7 +1486,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->associd_list);
@@ -1504,14 +1504,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	    list_count(job_cond->constraint_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->constraint_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " && ");
+				xstrcat(*extra, " and ");
 			if (object[0])
 				xstrfmtcat(*extra,
 					   "t1.constraints like '%%%s%%'",
@@ -1528,7 +1528,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->db_flags != SLURMDB_JOB_FLAG_NOTSET) {
 		set = 1;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1543,7 +1543,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->reason_list && list_count(job_cond->reason_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1562,7 +1562,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->userid_list && list_count(job_cond->userid_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1580,7 +1580,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->groupid_list && list_count(job_cond->groupid_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->groupid_list);
@@ -1597,7 +1597,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->jobname_list && list_count(job_cond->jobname_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1615,7 +1615,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->partition_list);
@@ -1632,7 +1632,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->qos_list && list_count(job_cond->qos_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->qos_list);
@@ -1648,7 +1648,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 	if (job_cond->cpus_min) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1670,7 +1670,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 	if (job_cond->nodes_min) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1688,7 +1688,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 	if (job_cond->timelimit_min) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1715,12 +1715,12 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			if (!(job_cond->flags &
 			      JOBCOND_FLAG_NO_DEFAULT_USAGE)) {
 				if (*extra)
-					xstrcat(*extra, " && (");
+					xstrcat(*extra, " and (");
 				else
 					xstrcat(*extra, " where (");
 
 				xstrfmtcat(*extra,
-					   "(t1.time_submit < %ld) && "
+					   "(t1.time_submit < %ld) and "
 					   "(t1.time_end >= %ld ||"
 					   " t1.time_end = 0))",
 					   job_cond->usage_end,
@@ -1728,7 +1728,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			}
 		} else if (job_cond->usage_start) {
 			if (*extra)
-				xstrcat(*extra, " && (");
+				xstrcat(*extra, " and (");
 			else
 				xstrcat(*extra, " where (");
 
@@ -1740,18 +1740,18 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			else
 				xstrfmtcat(*extra,
 					   "(t1.time_eligible "
-					   "&& t1.time_eligible < %ld "
-					   "&& (t1.time_end >= %ld "
+					   "and t1.time_eligible < %ld "
+					   "and (t1.time_end >= %ld "
 					   "|| t1.time_end = 0)))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
 		} else if (job_cond->usage_end) {
 			if (*extra)
-				xstrcat(*extra, " && (");
+				xstrcat(*extra, " and (");
 			else
 				xstrcat(*extra, " where (");
 			xstrfmtcat(*extra,
-				   "(t1.time_eligible && "
+				   "(t1.time_eligible and "
 				   "t1.time_eligible < %ld))",
 				   job_cond->usage_end);
 		}
@@ -1760,7 +1760,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->wckey_list && list_count(job_cond->wckey_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
