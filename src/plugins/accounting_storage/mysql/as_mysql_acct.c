@@ -250,7 +250,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	    acct_cond->assoc_cond->acct_list &&
 	    list_count(acct_cond->assoc_cond->acct_list)) {
 		int set = 0;
-		xstrcatat(*extra, at, " && (");
+		xstrcatat(*extra, at, " and (");
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -265,7 +265,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	if (acct_cond->description_list
 	    && list_count(acct_cond->description_list)) {
 		int set = 0;
-		xstrcatat(*extra, at, " && (");
+		xstrcatat(*extra, at, " and (");
 		itr = list_iterator_create(acct_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -279,10 +279,10 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 
 	if (acct_cond->flags != SLURMDB_ACCT_FLAG_NONE) {
 		if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
-			xstrfmtcatat(*extra, at, " && !(flags & %u)",
+			xstrfmtcatat(*extra, at, " and !(flags & %u)",
 				     SLURMDB_ACCT_FLAG_USER_COORD);
 		} else if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
-			xstrfmtcatat(*extra, at, " && (flags & %u)",
+			xstrfmtcatat(*extra, at, " and (flags & %u)",
 				     SLURMDB_ACCT_FLAG_USER_COORD);
 		}
 	}
@@ -290,7 +290,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	if (acct_cond->organization_list
 	    && list_count(acct_cond->organization_list)) {
 		int set = 0;
-		xstrcatat(*extra, at, " && (");
+		xstrcatat(*extra, at, " and (");
 		itr = list_iterator_create(acct_cond->organization_list);
 		while ((object = list_next(itr))) {
 			if (set)
