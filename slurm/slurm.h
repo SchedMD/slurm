@@ -967,13 +967,13 @@ typedef enum mem_bind_type {    /* memory binding type from --mem-bind=... */
 	MEM_BIND_MAP    = 0x08,	/* =map_mem:<list of NUMA IDs> */
 	MEM_BIND_MASK   = 0x10,	/* =mask_mem:<list of NUMA masks> */
 	MEM_BIND_LOCAL  = 0x20,	/* =local */
-	/* sort and prefer can be set with any other flags */
-	MEM_BIND_SORT	= 0x40,	/* =sort */
+	MEM_BIND_SORT	= 0x40,	/* DEPRECATED remove in 27.05 */
+	/* prefer can be set with any other flags */
 	MEM_BIND_PREFER = 0x80	/* =prefer */
 } mem_bind_type_t;
 
 #define MEM_BIND_TYPE_MASK 0x3e
-#define MEM_BIND_TYPE_FLAGS_MASK 0xc0
+#define MEM_BIND_TYPE_FLAGS_MASK 0x80
 
 typedef enum accel_bind_type {    /* accelerator binding from --accel_bind= */
 	ACCEL_BIND_VERBOSE         = 0x01, /* 'v' verbose */
