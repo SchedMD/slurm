@@ -355,17 +355,17 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 			if (job_cond->flags & JOBCOND_FLAG_DUP)
 				xstrfmtcat(
 					*extra,
-					"(t1.job_db_inx in (%s) || t1.sluid in (%s))",
+					"(t1.job_db_inx in (%s) or t1.sluid in (%s))",
 					sluid_ids, sluid_ids);
 			else
 				xstrfmtcat(*extra, "t1.job_db_inx in (%s)",
 					   sluid_ids);
-			sep = " || ";
+			sep = " or ";
 		}
 		if (job_ids) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
 				xstrfmtcat(*extra,
-					   "%st1.id_job in (%s) || "
+					   "%st1.id_job in (%s) or "
 					   "t1.het_job_id in (select "
 					   "t4.het_job_id from \"%s_%s\" as "
 					   "t4 where t4.id_job in (%s) and "
@@ -378,9 +378,9 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 			else
 				xstrfmtcat(
 					*extra,
-					"%st1.id_job in (%s) || t1.het_job_id in (%s)",
+					"%st1.id_job in (%s) or t1.het_job_id in (%s)",
 					sep, job_ids, job_ids);
-			sep = " || ";
+			sep = " or ";
 		}
 		if (het_job_offset) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
@@ -390,12 +390,12 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 				xstrfmtcat(*extra, "%s(t1.het_job_id in (%s) "
 					   "and t1.het_job_offset in (%s))",
 					   sep, het_job_ids, het_job_offset);
-			sep = " || ";
+			sep = " or ";
 		}
 		if (array_job_ids) {
 			xstrfmtcat(*extra, "%s(t1.id_array_job in (%s))",
 				   sep, array_job_ids);
-			sep = " || ";
+			sep = " or ";
 		}
 
 		if (array_task_ids) {
