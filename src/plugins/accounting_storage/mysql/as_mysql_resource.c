@@ -377,7 +377,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 
 	query = xstrdup_printf("select distinct %s from %s as t1 "
 			       "left outer join "
-			       "%s as t2 on (res_id=id && "
+			       "%s as t2 on (res_id=id and "
 			       "t2.deleted=0) "
 			       "where id=%u group by id",
 			       tmp, res_table, clus_res_table, res->id);
