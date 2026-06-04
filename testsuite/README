@@ -703,6 +703,7 @@ test_101_1   Test --help and --helpformat
 test_101_2   Test sacct SLUID support including resizes and OriginalSLUID
 test_101_3   Test sacct OverSubscribe and Exclusive reporting from slurmdbd
 test_101_4   Test basic sacct --json
+test_101_5   Test sacct Restarts and Start are per-run after a requeue
 
 test_102_#   Testing of sacctmgr options.
 =========================================
