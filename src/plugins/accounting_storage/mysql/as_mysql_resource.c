@@ -1270,7 +1270,7 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (query_clusters) {
 			xstrfmtcat(clus_char,
 				   "%s(res_id='%s' and cluster='%s')",
-				   clus_char ? " || " : "",
+				   clus_char ? " or " : "",
 				   row[RES_REQ_ID],
 				   row[RES_REQ_CLUSTER]);
 		} else {
@@ -1283,9 +1283,9 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				name = NULL;
 			}
 			xstrfmtcat(name_char, "%sid='%s'",
-				   name_char ? " || " : "", row[RES_REQ_ID]);
+				   name_char ? " or " : "", row[RES_REQ_ID]);
 			xstrfmtcat(clus_char, "%sres_id='%s'",
-				   clus_char ? " || " : "", row[RES_REQ_ID]);
+				   clus_char ? " or " : "", row[RES_REQ_ID]);
 		}
 		if (have_clusters &&
 		    row[RES_REQ_CLUSTER] &&
