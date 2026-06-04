@@ -110,6 +110,84 @@ static int (*close_range_f)(unsigned int first, unsigned int last,
 			    int flags) = NULL;
 static int rlimit_nofile = INT_MAX;
 
+#define T(x) { x, #x }
+
+static const struct {
+	int flag;
+	const char *str;
+} fcntl_acc_modes[] = {
+	T(O_RDONLY),
+	T(O_WRONLY),
+	T(O_RDWR),
+};
+
+static const struct {
+	int flag;
+	const char *str;
+} fcntl_modes[] = {
+	T(O_APPEND),    T(O_ASYNC), T(O_NONBLOCK), T(O_DSYNC), T(O_SYNC),
+#ifdef O_DIRECT
+	T(O_DIRECT),
+#endif
+#ifdef O_NOATIME
+	T(O_NOATIME),
+#endif
+#ifdef O_PATH
+	T(O_PATH),
+#endif
+#ifdef O_LARGEFILE
+	T(O_LARGEFILE),
+#endif
+};
+
+#undef T
+
+extern const char *fcntl_modes_to_string(const int modes, char *str,
+					 size_t bytes)
+{
+	int matched = 0;
+	char *dst = str;
+
+	/* Treat O_ACCMODE masked bits as special as a 0x00 is a valid flag */
+
+	for (int i = 0; i < ARRAY_SIZE(fcntl_acc_modes); i++) {
+		if ((modes & O_ACCMODE) == fcntl_acc_modes[i].flag) {
+			int wrote = snprintf(dst, bytes, "%s",
+					     fcntl_acc_modes[i].str);
+
+			if ((wrote < 0) || (wrote > bytes))
+				return "INVALID";
+
+			dst += wrote;
+			bytes -= wrote;
+			matched = fcntl_acc_modes[i].flag;
+			break;
+		}
+	}
+
+	for (int i = 0; i < ARRAY_SIZE(fcntl_modes); i++) {
+		if (((modes & ~O_ACCMODE) & fcntl_modes[i].flag) ==
+		    fcntl_modes[i].flag) {
+			int wrote =
+				snprintf(dst, bytes, "|%s", fcntl_modes[i].str);
+
+			if ((wrote < 0) || (wrote > bytes))
+				return "INVALID";
+
+			dst += wrote;
+			bytes -= wrote;
+			matched |= fcntl_modes[i].flag;
+		}
+	}
+
+	if (((matched & ~O_ACCMODE) != (modes & ~O_ACCMODE)) &&
+	    (snprintf(dst, bytes, "|0x%X", (modes & ~matched & ~O_ACCMODE)) <
+	     0))
+		return "INVALID";
+
+	return str;
+}
+
 static bool _is_fd_skipped(int fd, int *skipped, log_closeall_skip_t log_skip)
 {
 	if (fd == log_skip.log_fd)
