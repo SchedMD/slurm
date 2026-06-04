@@ -1263,7 +1263,7 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 
 		xstrfmtcat(query,
 			   " and ((time_start < %ld) "
-			   "and (time_end >= %ld || time_end = 0))",
+			   "and (time_end >= %ld or time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
