@@ -264,7 +264,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 		   the updated assocs back to the slurmctlds
 		*/
 		xstrfmtcat(sel_query, "select id_assoc from \"%s_%s\" "
-			   "where (user='%s' && acct!='%s' && is_def=1);",
+			   "where (user='%s' and acct!='%s' and is_def=1);",
 			   assoc->cluster, assoc_table,
 			   assoc->user, assoc->acct);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", sel_query);
@@ -302,7 +302,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 	if (run_update) {
 		use_query = query ? query : &reset_query;
 		xstrfmtcat(*use_query,
-			   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' && acct!='%s' && is_def=1);",
+			   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' and acct!='%s' and is_def=1);",
 			   assoc->cluster, assoc_table, (long)now,
 			   assoc->user, assoc->acct);
 		if (reset_query) {
