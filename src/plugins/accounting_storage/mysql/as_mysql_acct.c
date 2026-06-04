@@ -872,7 +872,7 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				     object);
 		xstrfmtcatat(assoc_char, &assoc_char_pos,
 			     "%st2.lineage like '%%/%s/%%'",
-			     assoc_char ? " || " : "", object);
+			     assoc_char ? " or " : "", object);
 	}
 
 	if (name_char)
