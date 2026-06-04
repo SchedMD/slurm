@@ -200,6 +200,27 @@ static void _destroy_sacctmgr_file_opts(void *object)
 	}
 }
 
+/*
+ * Determine if the ':' at colon_pos is the type separator of a typed TRES
+ * (e.g. "gres/gpu:tesla=4") rather than the file-format column separator.
+ */
+static bool _is_colon_typed_tres(const char *options, int start, int colon_pos)
+{
+	for (int j = colon_pos - 1; j >= start; j--) {
+		switch (options[j]) {
+		case '=':
+		case ',':
+		case ':':
+		case '"':
+		case '\'':
+			return false;
+		case '/':
+			return true;
+		}
+	}
+	return false;
+}
+
 static char *_parse_option(char *options, bool make_lower,
 			   char **sub, int *command_len, int *end,
 			   int *i, int *option2)
@@ -208,7 +229,10 @@ static char *_parse_option(char *options, bool make_lower,
 	int quote = 0;
 	int start = *i;
 
-	while (options[*i] && options[*i] != ':' && options[*i] != '\n') {
+	while (options[*i] && options[*i] != '\n') {
+		if (options[*i] == ':' &&
+		    !_is_colon_typed_tres(options, start, *i))
+			break;
 		if (options[*i] == '"' || options[*i] == '\'') {
 			if (quote) {
 				if (options[*i] == quote_c)
