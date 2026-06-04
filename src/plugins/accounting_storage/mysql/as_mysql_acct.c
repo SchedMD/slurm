@@ -254,7 +254,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcatat(*extra, at, " || ");
+				xstrcatat(*extra, at, " or ");
 			xstrfmtcatat(*extra, at, "name='%s'", object);
 			set = 1;
 		}
@@ -269,7 +269,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 		itr = list_iterator_create(acct_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcatat(*extra, at, " || ");
+				xstrcatat(*extra, at, " or ");
 			xstrfmtcatat(*extra, at, "description='%s'", object);
 			set = 1;
 		}
@@ -294,7 +294,7 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 		itr = list_iterator_create(acct_cond->organization_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcatat(*extra, at, " || ");
+				xstrcatat(*extra, at, " or ");
 			xstrfmtcatat(*extra, at, "organization='%s'", object);
 			set = 1;
 		}
