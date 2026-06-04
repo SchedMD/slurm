@@ -1150,10 +1150,10 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (query_clusters || send_update)
 		query = xstrdup_printf("select %s, cluster, t2.allowed "
 				       "from %s as t1 left outer join "
-				       "%s as t2 on (res_id = id%s) %s && %s;",
+				       "%s as t2 on (res_id = id%s) %s and %s;",
 				       col_names, res_table, clus_res_table,
 				       (!res_cond || !res_cond->with_deleted) ?
-				       " && t2.deleted=0" : "",
+				       " and t2.deleted=0" : "",
 				       extra, clus_extra);
 	else
 		query = xstrdup_printf("select %s from %s as t1 %s;",
@@ -1269,7 +1269,7 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (query_clusters) {
 			xstrfmtcat(clus_char,
-				   "%s(res_id='%s' && cluster='%s')",
+				   "%s(res_id='%s' and cluster='%s')",
 				   clus_char ? " || " : "",
 				   row[RES_REQ_ID],
 				   row[RES_REQ_CLUSTER]);
