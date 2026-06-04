@@ -1873,7 +1873,7 @@ static int _process_remove_assoc_results(remove_common_args_t *args,
 		}
 		list_append(args->ret_list, object);
 		if (args->assoc_char)
-			xstrfmtcat(args->assoc_char, " || id_assoc=%s",
+			xstrfmtcat(args->assoc_char, " or id_assoc=%s",
 				   row[RASSOC_ID]);
 		else
 			xstrfmtcat(args->assoc_char, "id_assoc=%s",
