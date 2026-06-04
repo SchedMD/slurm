@@ -1262,7 +1262,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (set)
 				xstrcat(extra, " || ");
 			else
-				xstrcat(extra, " && (");
+				xstrcat(extra, " and (");
 
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -1275,7 +1275,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
 
 	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
-		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
+		xstrfmtcat(extra, " and admin_level=%u", user_cond->admin_level);
 	}
 
 	if (!extra && !ret_list) {
