@@ -1977,7 +1977,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		if (user->coord_accts && list_count(user->coord_accts)) {
 			slurmdb_coord_rec_t *coord = NULL;
 			bool added = false;
-			xstrcat(query, " || (user='' && (");
+			xstrcat(query, " || (user='' and (");
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
 				xstrfmtcat(query, "%sacct='%s'",
@@ -2004,7 +2004,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			} else {
 				set = 1;
 				xstrfmtcat(extra,
-					   " && ((t1.lineage like '%s%%')",
+					   " and ((t1.lineage like '%s%%')",
 					   row[0]);
 			}
 		}
