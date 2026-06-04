@@ -149,7 +149,7 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 	if (qos_cond->description_list &&
 	    list_count(qos_cond->description_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(qos_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -164,7 +164,7 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 	if (qos_cond->id_list &&
 	    list_count(qos_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(qos_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -179,7 +179,7 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 	if (qos_cond->name_list &&
 	    list_count(qos_cond->name_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(qos_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -193,7 +193,7 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 
 	if ((qos_cond->preempt_mode != NO_VAL16) && qos_cond->preempt_mode) {
 		set = 1;
-		xstrfmtcat(*extra, " && (preempt_mode&%d",
+		xstrfmtcat(*extra, " and (preempt_mode&%d",
 			   qos_cond->preempt_mode);
 		if (qos_cond->preempt_mode & PREEMPT_MODE_COND_OFF)
 			xstrcat(*extra, " || preempt_mode=0");
