@@ -1143,11 +1143,11 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!name_char)
 			xstrfmtcat(name_char, "id='%s'", row[0]);
 		else
-			xstrfmtcat(name_char, " || id='%s'", row[0]);
+			xstrfmtcat(name_char, " or id='%s'", row[0]);
 		if (!assoc_char)
 			xstrfmtcat(assoc_char, "id_qos='%s'", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || id_qos='%s'", row[0]);
+			xstrfmtcat(assoc_char, " or id_qos='%s'", row[0]);
 		xstrfmtcat(extra,
 			   ", qos=replace(qos, ',%s,', if(qos=',%s,', '', ','))"
 			   ", delta_qos=replace(delta_qos, ',+%s,', if(delta_qos=',+%s,', '', ','))"
