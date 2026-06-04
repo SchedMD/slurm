@@ -1505,7 +1505,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (!object[0])
 				continue;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "user='%s'", object);
 			set = 1;
 		}
@@ -1525,7 +1525,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (!object[0])
 				continue;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "acct='%s'", object);
 			set = 1;
 		}
