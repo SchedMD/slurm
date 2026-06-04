@@ -2101,8 +2101,8 @@ static int _get_accts_with_user_coords_indirect(void *x, void *arg)
 	 * accounts.
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
-		     "%sselect distinct acct from \"%s_%s\" where deleted=0 && "
-		     "user='' && acct!='%s' && lineage like concat('%%/%s/%%')",
+		     "%sselect distinct acct from \"%s_%s\" where deleted=0 and "
+		     "user='' and acct!='%s' and lineage like concat('%%/%s/%%')",
 		     create_string->query ? " union " : "",
 		     cluster_name, assoc_table,
 		     create_string->extra, create_string->extra);
