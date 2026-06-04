@@ -5714,7 +5714,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 	case PURGE_TXN:
 		purge_query = xstrdup_printf(
 			"delete from \"%s\" where "
-			"deleted=1 && cluster='%s' LIMIT %d",
+			"deleted=1 and cluster='%s' LIMIT %d",
 			sql_table, cluster_name,
 			slurmdbd_conf->max_purge_limit);
 
