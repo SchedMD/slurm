@@ -161,7 +161,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 	if (resv_cond->id_list && list_count(resv_cond->id_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->id_list);
@@ -178,7 +178,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 	if (resv_cond->name_list && list_count(resv_cond->name_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->name_list);
@@ -198,16 +198,16 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 			resv_cond->time_end = now;
 
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
 			   "(t1.time_start < %ld "
-			   "&& (t1.time_end >= %ld || t1.time_end = 0)))",
+			   "and (t1.time_end >= %ld || t1.time_end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if (resv_cond->time_end) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
