@@ -673,7 +673,7 @@ static list_t *_get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 	}
 
 	query = xstrdup_printf(
-		"select %s from %s as t2 where %s && (res_id=%u);",
+		"select %s from %s as t2 where %s and (res_id=%u);",
 		tmp, clus_res_table, extra, res_id);
 	xfree(tmp);
 	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
