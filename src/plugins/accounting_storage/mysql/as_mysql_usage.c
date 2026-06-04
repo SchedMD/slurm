@@ -461,8 +461,8 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" as t1, "
 			"\"%s_%s\" as t2, \"%s_%s\" as t3 "
-			"where (t1.time_start < %ld && t1.time_start >= %ld) "
-			"&& t1.id=t2.id_assoc && (%s) && "
+			"where (t1.time_start < %ld and t1.time_start >= %ld) "
+			"and t1.id=t2.id_assoc and (%s) and "
 			"%s "
 			"order by t3.id_assoc, time_start;",
 			tmp, cluster_name, my_usage_table,
@@ -475,8 +475,8 @@ static int _get_object_usage(mysql_conn_t *mysql_conn,
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" as t1 "
-			"where (time_start < %ld && time_start >= %ld) "
-			"&& (%s) order by id, time_start;",
+			"where (time_start < %ld and time_start >= %ld) "
+			"and (%s) order by id, time_start;",
 			tmp, cluster_name, my_usage_table, end, start, id_str);
 		break;
 	default:
