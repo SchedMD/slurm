@@ -55,7 +55,7 @@ static int _setup_assoc_cond_limits(
 
 	if (assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -69,7 +69,7 @@ static int _setup_assoc_cond_limits(
 
 	if (assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -82,13 +82,13 @@ static int _setup_assoc_cond_limits(
 	} else if (user_query) {
 		/* we want all the users, but no non-user associations */
 		set = 1;
-		xstrcat(*extra, " && (t1.user!='')");
+		xstrcat(*extra, " and (t1.user!='')");
 	}
 
 	if (assoc_cond->partition_list
 	    && list_count(assoc_cond->partition_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
