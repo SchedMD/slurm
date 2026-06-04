@@ -3093,7 +3093,7 @@ def require_config_file(
 def require_config_parameter(
     parameter_name,
     parameter_value,
-    condition=None,
+    operator="==",
     source="slurm",
     skip_message=None,
     delimiter="=",
@@ -3105,11 +3105,17 @@ def require_config_parameter(
 
     Args:
         parameter_name (string): The parameter name.
-        parameter_value (string): The target parameter value.
-        condition (callable): If there is a range of acceptable values, a
-            condition can be specified to test whether the current parameter
-            value is sufficient. If not, the target parameter_value will be
-            used (or the test will be skipped in the case of local-config mode).
+        parameter_value (string or list[string]): The target parameter value.
+            If a list of acceptable values is given, the requirement is
+            considered satisfied when the current value matches ANY of them.
+            In auto-config mode, when none match, the FIRST listed value is
+            used as the target — so callers should list their preferred
+            default first.
+            If a dict is passed then multiple values are assigned.
+        operator (string): By default the observed current value and the
+            desired values are expected to be equal ("=="), but we can require
+            just "<=" or ">=" too (usually for numerical values).
+            If a dict is passed as parameter_value, only "==" is supported.
         source (string): Name of the config file without the .conf prefix.
         skip_message (string): Message to be displayed if in local-config mode
             and parameter not present.
@@ -3126,12 +3132,26 @@ def require_config_parameter(
 
     Examples:
         >>> require_config_parameter('SelectType', 'select/cons_tres')
-        >>> require_config_parameter('SlurmdTimeout', 5, lambda v: v <= 5)
+        >>> require_config_parameter('SlurmdTimeout', 5, '<=')
+        >>> require_config_parameter('SelectType', ['select/cons_tres', 'select/linear'])
         >>> require_config_parameter('Name', {'gpu': {'File': '/dev/tty0'}, 'mps': {'Count': 100}}, source='gres')
         >>> require_config_parameter("PartitionName", {"primary": {"Nodes": "ALL"}, "dynamic1": {"Nodes": "ns1"}, "dynamic2": {"Nodes": "ns2"}, "dynamic3": {"Nodes": "ns1,ns2"}})
     """
 
+    _ALLOWED_OPERATORS = ("==", "<=", ">=")
+    if operator not in _ALLOWED_OPERATORS:
+        pytest.fail(
+            f"Unsupported operator {operator!r} (allowed: {_ALLOWED_OPERATORS})"
+        )
+
+    # Dict case: params like PartitionName. The outer key is the stanza
+    # identifier; the inner dict is the stanza's sub-key=value pairs.
     if isinstance(parameter_value, dict):
+        if operator != "==":
+            pytest.fail(
+                f"A dict parameter_value only supports operator '==', "
+                f"not {operator!r}"
+            )
         tmp1_dict = dict()
         for k1, v1 in parameter_value.items():
             tmp2_dict = dict()
@@ -3141,28 +3161,61 @@ def require_config_parameter(
                 else:
                     tmp2_dict[k2.casefold()] = v2
             tmp1_dict[k1.casefold()] = tmp2_dict
-
         parameter_value = tmp1_dict
-    elif isinstance(parameter_value, str):
-        parameter_value = parameter_value.casefold()
+
+        observed_value = get_config_parameter(
+            parameter_name, live=False, source=source, quiet=True, delimiter=delimiter
+        )
+        if str(observed_value) == str(parameter_value):
+            return
+        if properties["auto-config"]:
+            set_config_parameter(
+                parameter_name, parameter_value, source=source, delimiter=delimiter
+            )
+        else:
+            if skip_message is None:
+                skip_message = f"This test requires the {parameter_name} parameter to be {parameter_value} (but it is {observed_value})"
+            pytest.skip(skip_message, allow_module_level=True)
+        return
+
+    if isinstance(parameter_value, (list, tuple)):
+        values = list(parameter_value)
+    else:
+        values = [parameter_value]
+    if not values:
+        pytest.fail(
+            f"require_config_parameter({parameter_name!r}, ...) needs at least one value"
+        )
+    values = [v.casefold() if isinstance(v, str) else v for v in values]
+
+    if operator != "==" and len(values) > 1:
+        pytest.fail(
+            f"Using operator {operator!r} with multiple values doesn't make sense, right?"
+        )
 
     observed_value = get_config_parameter(
         parameter_name, live=False, source=source, quiet=True, delimiter=delimiter
     )
 
     condition_satisfied = False
-    if condition is None:
-        # condition = lambda observed, desired: observed == desired
-        if observed_value == str(parameter_value):
-            condition_satisfied = True
-    else:
-        if condition(observed_value):
-            condition_satisfied = True
+    if observed_value:
+        for v in values:
+            obs = type(v)(observed_value)
+            if operator == "==" and obs == v:
+                condition_satisfied = True
+                break
+            if operator == "<=" and obs <= v:
+                condition_satisfied = True
+                break
+            if operator == ">=" and obs >= v:
+                condition_satisfied = True
+                break
 
     if not condition_satisfied:
+        target = values[0]
         if properties["auto-config"]:
             set_config_parameter(
-                parameter_name, parameter_value, source=source, delimiter=delimiter
+                parameter_name, target, source=source, delimiter=delimiter
             )
         else:
             if skip_message is None:
@@ -3180,24 +3233,46 @@ def require_config_parameter_includes(name, value, source="slurm"):
 
     Args:
         name (string): The parameter name.
-        value (string): The value we want to be in the list.
+        value (string or list[string]): The value we want to be in the list.
+            If a list/tuple of acceptable values is given, the parameter is
+            considered to already satisfy the requirement if ANY of them is
+            present. In auto-config mode, when none are present, the FIRST
+            listed value is added — so callers should list their preferred
+            default first.
         source (string): Name of the config file without the .conf prefix.
 
     Returns:
         None
 
     Example:
+        >>> # Single value:
         >>> require_config_parameter_includes('SlurmdParameters', 'config_overrides')
+        >>>
+        >>> # Any of several acceptable values; if none present in auto-config,
+        >>> # adds 'CR_Core_Memory' (the first listed):
+        >>> require_config_parameter_includes(
+        ...     'SelectTypeParameters',
+        ...     ['CR_Core_Memory', 'CR_Memory'],
+        ... )
     """
+    values = [value] if isinstance(value, str) else list(value)
+    if not values:
+        pytest.fail(
+            f"require_config_parameter_includes({name!r}, ...) needs at least one value"
+        )
+
+    already_present = any(
+        config_parameter_includes(name, v, source=source, live=False, quiet=True)
+        for v in values
+    )
 
     if properties["auto-config"]:
-        add_config_parameter_value(name, value, source=source)
+        if not already_present:
+            add_config_parameter_value(name, values[0], source=source)
     else:
-        if not config_parameter_includes(
-            name, value, source=source, live=False, quiet=True
-        ):
+        if not already_present:
             pytest.skip(
-                f"This test requires the {name} parameter to include {value}",
+                f"This test requires the {name} parameter to include any of these: {value}",
                 allow_module_level=True,
             )
 
