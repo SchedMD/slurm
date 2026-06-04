@@ -385,7 +385,7 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	if (ret_list) {
 		/* Check for only running jobs */
 		xstrfmtcatat(query, &pos,
-			     " and t1.time_end=0 && t1.state<%d limit 1",
+			     " and t1.time_end=0 and t1.state<%d limit 1",
 			     JOB_COMPLETE);
 	}
 
