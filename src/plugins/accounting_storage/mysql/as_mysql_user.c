@@ -1260,7 +1260,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (!object[0])
 				continue;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			else
 				xstrcat(extra, " and (");
 
@@ -1355,7 +1355,7 @@ no_user_table:
 		}
 		xstrfmtcatat(assoc_char, &assoc_char_pos,
 			     "%st2.lineage like '%%/0-%s/%%'",
-			     assoc_char ? " || " : "", object);
+			     assoc_char ? " or " : "", object);
 
 		user_rec->name = xstrdup(object);
 		if (addto_update_list(mysql_conn->update_list,
