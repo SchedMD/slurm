@@ -437,10 +437,10 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * (-E > time_eligible)
 		 */
 		xstrfmtcat(*extra,
-			   "(t1.time_eligible && "
-			   "(( t1.time_start && (%ld < t1.time_start)) || "
-			   " (!t1.time_start &&  t1.time_end && (%ld < t1.time_end)) || "
-			   " (!t1.time_start && !t1.time_end && (t1.state=%d))) && "
+			   "(t1.time_eligible and "
+			   "(( t1.time_start and (%ld < t1.time_start)) || "
+			   " (!t1.time_start and  t1.time_end and (%ld < t1.time_end)) || "
+			   " (!t1.time_start and !t1.time_end and (t1.state=%d))) and "
 			   "(%ld > t1.time_eligible))",
 			   job_cond->usage_start,
 			   job_cond->usage_start,
@@ -451,8 +451,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		xstrfmtcat(*extra,
 			   "(select count(time_start) from "
 			   "\"%s_%s\" where "
-			   "(time_start <= %ld && (time_end >= %ld "
-			   "|| time_end = 0)) && job_db_inx=t1.job_db_inx)",
+			   "(time_start <= %ld and (time_end >= %ld "
+			   "|| time_end = 0)) and job_db_inx=t1.job_db_inx)",
 			   cluster_name, suspend_table,
 			   job_cond->usage_end ?
 			   job_cond->usage_end : job_cond->usage_start,
@@ -468,8 +468,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * (-E > time_start)
 		 */
 		xstrfmtcat(*extra,
-			   "(t1.time_start && "
-			   "((%ld < t1.time_end || (!t1.time_end && t1.state=%d))) && "
+			   "(t1.time_start and "
+			   "((%ld < t1.time_end || (!t1.time_end and t1.state=%d))) and "
 			   "((%ld > t1.time_start)))",
 			   job_cond->usage_start, base_state,
 			   job_cond->usage_end);
@@ -493,7 +493,7 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * Job ending *in* the time window with the specified state.
 		 */
 		xstrfmtcat(*extra,
-		           "(t1.state='%u' && (t1.time_end && "
+		           "(t1.state='%u' and (t1.time_end and "
 		           "(t1.time_end between %ld and %ld)))",
 		           base_state, job_cond->usage_start,
 			   job_cond->usage_end);
