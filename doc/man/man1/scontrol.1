@@ -1621,10 +1621,14 @@ incremented.
 
 .TP
 \fBExitCode\fR=<\fIexit\fR>:<\fIsig\fR>
-Exit status reported for the job by the wait() function.
-The first number is the exit code, typically as set by the exit() function.
-The second number of the signal that caused the process to terminate if
+Exit code reported for the job by the wait() function.
+The first number is the exit status, typically as set by the exit() function.
+The second number is the signal that caused the process to terminate if
 it was terminated by a signal.
+If Slurm failed the job with an error code, \fBSlurmRC\fR (shown with
+\fB\-\-details\fR) holds it.
+Slurm can also fail a job without an error code, for example at its
+deadline; the job's state and reason show those failures.
 .IP
 
 .TP
@@ -1691,6 +1695,14 @@ of "C" and "T".
 \fBSecsPreSuspend\fR=<\fIseconds\fR>
 If the job is suspended, this is the run time accumulated by the job
 (in seconds) prior to being suspended.
+.IP
+
+.TP
+\fBSlurmRC\fR
+The job's Slurm return code, or 0 if no Slurm error code was recorded
+for the job.
+Only displayed when the \fB\-\-details\fR option is used.
+See <https://slurm.schedmd.com/job_exit_code.html#rc> for more information.
 .IP
 
 .TP
