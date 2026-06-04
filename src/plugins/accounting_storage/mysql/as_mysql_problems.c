@@ -332,7 +332,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 	    assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		int set = 0;
 		char *object = NULL;
-		xstrcat(query, " && (");
+		xstrcat(query, " and (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -383,7 +383,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 				xstrcat(query, " union ");
 			xstrfmtcat(query,
 				   "select distinct id_assoc from \"%s_%s\" "
-				   "where deleted=0 && "
+				   "where deleted=0 and "
 				   "user='%s'",
 				   cluster_name, assoc_table, row[0]);
 		}
