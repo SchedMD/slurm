@@ -59,7 +59,7 @@ static int _setup_assoc_cond_limits(
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.acct='%s'", object);
 			set = 1;
 		}
@@ -73,7 +73,7 @@ static int _setup_assoc_cond_limits(
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.user='%s'", object);
 			set = 1;
 		}
@@ -92,7 +92,7 @@ static int _setup_assoc_cond_limits(
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.`partition`='%s'", object);
 			set = 1;
 		}
