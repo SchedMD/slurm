@@ -2024,7 +2024,7 @@ again:
 			   event_time, suspended_char);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%ld where (%s) "
-			   "&& time_end=0;",
+			   "and time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   event_time, suspended_char);
 		xfree(suspended_char);
