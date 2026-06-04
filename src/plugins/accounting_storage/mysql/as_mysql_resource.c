@@ -164,19 +164,19 @@ static int _setup_clus_res_cond(slurmdb_res_cond_t *res_cond, char **extra)
 	int query_clusters = 0;
 
 	if (!res_cond) {
-		xstrfmtcat(*extra, "%st2.deleted=0", *extra ? " && " : "");
+		xstrfmtcat(*extra, "%st2.deleted=0", *extra ? " and " : "");
 		return SLURM_SUCCESS;
 	}
 
 	if (res_cond->with_deleted)
 		xstrfmtcat(*extra, "%s(t2.deleted=0 || t2.deleted=1)",
-			   *extra ? " && " : "");
+			   *extra ? " and " : "");
 	else
-		xstrfmtcat(*extra, "%st2.deleted=0", *extra ? " && " : "");
+		xstrfmtcat(*extra, "%st2.deleted=0", *extra ? " and " : "");
 
 	if (res_cond->cluster_list && list_count(res_cond->cluster_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->cluster_list);
 		while ((tmp = list_next(itr))) {
 			if (set)
@@ -191,7 +191,7 @@ static int _setup_clus_res_cond(slurmdb_res_cond_t *res_cond, char **extra)
 
 	if (res_cond->allowed_list && list_count(res_cond->allowed_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(res_cond->allowed_list);
 		while ((tmp = list_next(itr))) {
 			if (set)
