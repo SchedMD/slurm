@@ -955,12 +955,12 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 
 	if (assoc_cond->flags & ASSOC_COND_FLAG_ONLY_DEFS) {
 		set = 1;
-		xstrfmtcat(*extra, " && (%s.is_def=1)", prefix);
+		xstrfmtcat(*extra, " and (%s.is_def=1)", prefix);
 	}
 
 	if (assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -982,7 +982,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	if (assoc_cond->def_qos_id_list
 	    && list_count(assoc_cond->def_qos_id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->def_qos_id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -997,7 +997,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 
 	if (assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -1010,13 +1010,13 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	} else if (assoc_cond->user_list) {
 		/* we want all the users, but no non-user associations */
 		set = 1;
-		xstrfmtcat(*extra, " && (%s.user!='')", prefix);
+		xstrfmtcat(*extra, " and (%s.user!='')", prefix);
 	}
 
 	if (assoc_cond->partition_list
 	    && list_count(assoc_cond->partition_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -1031,7 +1031,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 
 	if (assoc_cond->id_list && list_count(assoc_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -1046,7 +1046,7 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	if (assoc_cond->parent_acct_list
 	    && list_count(assoc_cond->parent_acct_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->parent_acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
