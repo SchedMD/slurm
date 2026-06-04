@@ -57,7 +57,7 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 		return 0;
 
 	if (fed_cond->with_deleted)
-		xstrcat(*extra, " where (t1.deleted=0 || t1.deleted=1)");
+		xstrcat(*extra, " where (t1.deleted=0 or t1.deleted=1)");
 	else
 		xstrcat(*extra, " where t1.deleted=0");
 
@@ -68,7 +68,7 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 		itr = list_iterator_create(fed_cond->cluster_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t2.name='%s'", object);
 			set = 1;
 		}
@@ -83,7 +83,7 @@ static int _setup_federation_cond_limits(slurmdb_federation_cond_t *fed_cond,
 		itr = list_iterator_create(fed_cond->federation_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.name='%s'", object);
 			set = 1;
 		}
