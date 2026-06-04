@@ -1156,7 +1156,7 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 		return false;
 	}
 
-	query = xstrdup_printf("select distinct acct from \"%s_%s\" where deleted=0 && (%s) && (",
+	query = xstrdup_printf("select distinct acct from \"%s_%s\" where deleted=0 and (%s) and (",
 			       cluster_name, assoc_table, user_char);
 
 	/*
@@ -1167,7 +1167,7 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 	itr = list_iterator_create(coord->coord_accts);
 	while ((coord_acct = (list_next(itr)))) {
 		xstrfmtcat(query, "%sacct != '%s'", sep_str, coord_acct->name);
-		sep_str = " && ";
+		sep_str = " and ";
 	}
 	list_iterator_destroy(itr);
 	xstrcat(query, ");");
