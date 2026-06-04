@@ -5502,7 +5502,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	case PURGE_TXN:
 		query = xstrdup_printf(
 			"select %s from \"%s\" where %s <= %ld "
-			"&& cluster='%s' order by %s asc LIMIT 1",
+			"and cluster='%s' order by %s asc LIMIT 1",
 			col_name, table, col_name, period_end, cluster,
 			col_name);
 		break;
@@ -5527,7 +5527,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where %s > 0 "
-				       "&& %s <= %ld order by %s asc LIMIT 1",
+				       "and %s <= %ld order by %s asc LIMIT 1",
 				       col_name, cluster, table, col_name,
 				       col_name, period_end, col_name);
 		break;
