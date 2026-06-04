@@ -514,7 +514,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 			 * entry. */
 			query = xstrdup_printf(
 				"update \"%s_%s\" set time_end=%ld "
-				"where deleted=0 && id_resv=%u "
+				"where deleted=0 and id_resv=%u "
 				"and time_start=%ld;",
 				resv->cluster, resv_table,
 				resv->time_start,
