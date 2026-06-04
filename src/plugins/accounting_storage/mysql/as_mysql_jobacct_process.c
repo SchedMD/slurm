@@ -1475,7 +1475,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.account='%s'", object);
 			set = 1;
 		}
@@ -1492,7 +1492,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->associd_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_assoc='%s'", object);
 			set = 1;
 		}
@@ -1550,7 +1550,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->reason_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.state_reason_prev='%s'",
 				   object);
 			set = 1;
@@ -1569,7 +1569,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->userid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_user='%s'", object);
 			set = 1;
 		}
@@ -1586,7 +1586,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->groupid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_group='%s'", object);
 			set = 1;
 		}
@@ -1604,7 +1604,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->jobname_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.job_name='%s'", object);
 			set = 1;
 		}
@@ -1621,7 +1621,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.partition='%s'", object);
 			set = 1;
 		}
@@ -1638,7 +1638,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->qos_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_qos='%s'", object);
 			set = 1;
 		}
@@ -1721,7 +1721,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 				xstrfmtcat(*extra,
 					   "(t1.time_submit < %ld) and "
-					   "(t1.time_end >= %ld ||"
+					   "(t1.time_end >= %ld or"
 					   " t1.time_end = 0))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
@@ -1735,14 +1735,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			if (!job_cond->usage_end)
 				xstrfmtcat(*extra,
 					   "(t1.time_end >= %ld "
-					   "|| t1.time_end = 0))",
+					   "or t1.time_end = 0))",
 					   job_cond->usage_start);
 			else
 				xstrfmtcat(*extra,
 					   "(t1.time_eligible "
 					   "and t1.time_eligible < %ld "
 					   "and (t1.time_end >= %ld "
-					   "|| t1.time_end = 0)))",
+					   "or t1.time_end = 0)))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
 		} else if (job_cond->usage_end) {
@@ -1767,7 +1767,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		itr = list_iterator_create(job_cond->wckey_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.wckey='%s'", object);
 			set = 1;
 		}
