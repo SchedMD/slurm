@@ -83,7 +83,7 @@ extern list_t *mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
