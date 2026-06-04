@@ -1385,7 +1385,7 @@ extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(job_cond->resv_list);
 		while ((object = list_next(itr))) {
 			if (my_set)
-				xstrcat(query, " || ");
+				xstrcat(query, " or ");
 			xstrfmtcat(query, "resv_name='%s'", object);
 			my_set = 1;
 		}
@@ -1416,7 +1416,7 @@ no_resv:
 		itr = list_iterator_create(job_cond->resvid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_resv='%s'", object);
 			set = 1;
 		}
@@ -1434,7 +1434,7 @@ no_resv:
 		itr = list_iterator_create(job_cond->state_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 
 			_state_time_string(extra, cluster_name,
 					   (uint32_t)slurm_atoul(object),
