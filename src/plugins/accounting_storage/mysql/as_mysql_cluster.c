@@ -163,7 +163,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		return 0;
 
 	if (cluster_cond->with_deleted)
-		xstrcat(*extra, " where (deleted=0 || deleted=1)");
+		xstrcat(*extra, " where (deleted=0 or deleted=1)");
 	else
 		xstrcat(*extra, " where deleted=0");
 
@@ -174,7 +174,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		itr = list_iterator_create(cluster_cond->cluster_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "name='%s'", object);
 			set = 1;
 		}
@@ -189,7 +189,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		itr = list_iterator_create(cluster_cond->federation_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "federation='%s'", object);
 			set = 1;
 		}
@@ -204,7 +204,7 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		itr = list_iterator_create(cluster_cond->rpc_version_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "rpc_version='%s'", object);
 			set = 1;
 		}
