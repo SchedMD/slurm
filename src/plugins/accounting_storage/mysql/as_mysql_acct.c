@@ -1016,7 +1016,7 @@ empty:
 					   coord->name);
 			} else {
 				set = 1;
-				xstrfmtcat(extra, " && (name='%s'",
+				xstrfmtcat(extra, " and (name='%s'",
 					   coord->name);
 			}
 		}
