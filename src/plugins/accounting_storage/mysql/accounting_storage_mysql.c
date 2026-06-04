@@ -2320,7 +2320,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 		while ((row = mysql_fetch_row(result))) {
 			slurmdb_assoc_rec_t *rem_assoc = NULL;
 			if (loc_assoc_char)
-				xstrcat(loc_assoc_char, " || ");
+				xstrcat(loc_assoc_char, " or ");
 			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
 
 			rem_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
