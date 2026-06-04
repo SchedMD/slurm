@@ -696,7 +696,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 
 	/* We want all direct sub accounts and user accounts */
 	xstrfmtcatat(query, &query_pos,
-		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
+		     "select distinct %s from \"%s_%s\" where deleted!=1 and id_assoc!=%u and lineage like '%s%%' and ((user = '' and parent_acct = '%s') || (user != '' and acct = '%s')) order by lineage;",
 		     object, assoc->cluster, assoc_table,
 		     assoc->id, lineage, acct, acct);
 	xfree(object);
