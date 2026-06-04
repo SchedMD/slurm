@@ -917,7 +917,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
 			       "!(state & %"PRIu64") and (time_start < %ld "
 			       "and (time_end >= %ld "
-			       "|| time_end = 0)) "
+			       "or time_end = 0)) "
 			       "order by node_name, time_start",
 			       event_str, cluster_name, event_table,
 			       NODE_STATE_MAINT,
