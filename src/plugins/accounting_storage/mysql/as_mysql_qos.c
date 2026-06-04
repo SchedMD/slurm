@@ -928,7 +928,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " or name='%s'", object);
 		}
 
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
