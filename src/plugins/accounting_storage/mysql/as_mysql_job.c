@@ -1180,7 +1180,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 				 */
 				query = xstrdup_printf(
 					"insert into \"%s\" (creation_time, mod_time, id, id_tres, time_start, alloc_secs) "
-					"select creation_time, %ld, %u, id_tres, time_start, @ASUM:=SUM(alloc_secs) from \"%s\" where (id=%u || id=%u) and %s group by id_tres, time_start on duplicate key update alloc_secs=@ASUM;",
+					"select creation_time, %ld, %u, id_tres, time_start, @ASUM:=SUM(alloc_secs) from \"%s\" where (id=%u or id=%u) and %s group by id_tres, time_start on duplicate key update alloc_secs=@ASUM;",
 					use_table,
 					now, id_switch->old, use_table,
 					id_switch->new, id_switch->old,
