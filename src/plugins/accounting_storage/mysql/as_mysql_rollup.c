@@ -1160,7 +1160,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
 
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "(time_start < %ld && time_end >= %ld) "
+			       "(time_start < %ld and time_end >= %ld) "
 			       "order by time_start",
 			       resv_str, cluster_name, resv_table,
 			       curr_end, curr_start);
