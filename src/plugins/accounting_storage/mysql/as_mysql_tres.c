@@ -204,7 +204,7 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	if (tres_cond->id_list
 	    && list_count(tres_cond->id_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(tres_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
@@ -219,7 +219,7 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	if (tres_cond->type_list
 	    && list_count(tres_cond->type_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(tres_cond->type_list);
 		while ((object = list_next(itr))) {
 			char *slash;
@@ -235,7 +235,7 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 				char *name = slash;
 				*slash = '\0';
 				name++;
-				xstrfmtcat(extra, "(type='%s' && name='%s')",
+				xstrfmtcat(extra, "(type='%s' and name='%s')",
 					   object, name);
 			}
 			set = 1;
@@ -247,7 +247,7 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	if (tres_cond->name_list
 	    && list_count(tres_cond->name_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(tres_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
