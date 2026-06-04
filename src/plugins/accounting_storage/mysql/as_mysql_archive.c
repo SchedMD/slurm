@@ -5292,7 +5292,7 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	switch (type) {
 	case PURGE_TXN:
 		query = xstrdup_printf("update \"%s\" set deleted = 1 where "
-				       "%s <= %ld && cluster='%s' "
+				       "%s <= %ld and cluster='%s' "
 				       "LIMIT %d",
 				       sql_table, col_name, period_end,
 				       cluster_name,
@@ -5332,7 +5332,7 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "%s > 0 && %s <= %ld "
+				       "%s > 0 and %s <= %ld "
 				       "LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       col_name, period_end,
