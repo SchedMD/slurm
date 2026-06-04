@@ -18,7 +18,7 @@ def main():
         print("Both arguments must be integers.")
         sys.exit(1)
 
-    print(f"Allocating {megabytes} MB for {seconds} seconds...")
+    print(f"Allocating {megabytes} MB for {seconds} seconds...", flush=True)
     a = bytearray(megabytes * 1024 * 1024)
 
     # Touch every page to ensure it's resident (one byte every 4KB)
@@ -26,7 +26,7 @@ def main():
         a[i] = 0
 
     time.sleep(seconds)
-    print("Done.")
+    print("Done.", flush=True)
 
 
 if __name__ == "__main__":
