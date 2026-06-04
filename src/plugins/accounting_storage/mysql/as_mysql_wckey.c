@@ -399,7 +399,7 @@ static int _cluster_modify_wckeys(mysql_conn_t *mysql_conn,
 		if (!wckey_char)
 			xstrfmtcat(wckey_char, "id_wckey='%s'", row[0]);
 		else
-			xstrfmtcat(wckey_char, " || id_wckey='%s'", row[0]);
+			xstrfmtcat(wckey_char, " or id_wckey='%s'", row[0]);
 
 		wckey_rec = xmalloc(sizeof(slurmdb_wckey_rec_t));
 		/* we only need id and cluster when removing
