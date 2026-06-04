@@ -1903,7 +1903,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 		job_db_inx = old_db_inx;
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%d where "
-			   "job_db_inx=%"PRIu64" && time_end=0;",
+			   "job_db_inx=%"PRIu64" and time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_db_inx);
 
@@ -1931,7 +1931,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 	else
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%d where "
-			   "job_db_inx=%"PRIu64" && time_end=0;",
+			   "job_db_inx=%"PRIu64" and time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_ptr->db_index);
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
