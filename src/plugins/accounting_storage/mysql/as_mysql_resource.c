@@ -56,7 +56,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 	}
 
 	if (res_cond->with_deleted)
-		xstrcat(*extra, "where (t1.deleted=0 || t1.deleted=1)");
+		xstrcat(*extra, "where (t1.deleted=0 or t1.deleted=1)");
 	else
 		xstrcat(*extra, "where t1.deleted=0");
 
@@ -67,7 +67,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		itr = list_iterator_create(res_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "description='%s'", object);
 			set = 1;
 		}
@@ -87,7 +87,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		itr = list_iterator_create(res_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "id='%s'", object);
 			set = 1;
 		}
@@ -102,7 +102,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		itr = list_iterator_create(res_cond->manager_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "manager='%s'", object);
 			set = 1;
 		}
@@ -117,7 +117,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		itr = list_iterator_create(res_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "name='%s'", object);
 			set = 1;
 		}
@@ -132,7 +132,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		itr = list_iterator_create(res_cond->server_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "server='%s'", object);
 			set = 1;
 		}
@@ -147,7 +147,7 @@ static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 		itr = list_iterator_create(res_cond->type_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "type='%s'", object);
 			set = 1;
 		}
