@@ -167,7 +167,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 		itr = list_iterator_create(resv_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.id_resv=%s", prefix, object);
 			set = 1;
 		}
@@ -184,7 +184,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 		itr = list_iterator_create(resv_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.resv_name='%s'",
 				   prefix, object);
 			set = 1;
@@ -203,7 +203,7 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
 			   "(t1.time_start < %ld "
-			   "and (t1.time_end >= %ld || t1.time_end = 0)))",
+			   "and (t1.time_end >= %ld or t1.time_end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if (resv_cond->time_end) {
 		if (*extra)
