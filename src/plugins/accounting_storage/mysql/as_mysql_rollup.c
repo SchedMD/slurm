@@ -1475,7 +1475,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       "FORCE INDEX (rollup) "
 				       "where (job.time_eligible and "
 				       "job.time_eligible < %ld and "
-				       "(job.time_end >= %ld || "
+				       "(job.time_end >= %ld or "
 				       "job.time_end = 0)) "
 				       "group by job.job_db_inx "
 				       "order by job.id_assoc, "
@@ -1532,7 +1532,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				query = xstrdup_printf(
 					"select %s from \"%s_%s\" where "
 					"(time_start < %ld and (time_end >= %ld "
-					"|| time_end = 0)) and job_db_inx=%s "
+					"or time_end = 0)) and job_db_inx=%s "
 					"order by time_start",
 					suspend_str, cluster_name,
 					suspend_table,
