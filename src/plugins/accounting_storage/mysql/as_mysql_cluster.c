@@ -1985,8 +1985,8 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	*/
 	query = xstrdup_printf(
 		"update %s set mod_time=%ld, control_host='', "
-		"control_port=0 where name='%s' && "
-		"control_host='%s' && control_port=%u;",
+		"control_port=0 where name='%s' and "
+		"control_host='%s' and control_port=%u;",
 		cluster_table, now, cluster_rec->name,
 		cluster_rec->control_host, cluster_rec->control_port);
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
