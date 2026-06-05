@@ -2411,22 +2411,26 @@ will be sorted by Slurm.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR={<\fInode_name_list\fR>|<\fIfilename\fR>}
-Request a specific list of hosts.
-The job will contain \fIall\fR of these hosts and possibly additional hosts
-as needed to satisfy resource requirements.
-The list may be specified as a comma\-separated list of hosts, a range of hosts
-(host[1\-5,7,...] for example), or a filename.
-The host list will be assumed to be a filename if it contains a "/" character.
-If you specify a minimum node or processor count larger than can be satisfied
-by the supplied host list, additional resources will be allocated on other
-nodes as needed.
-Rather than repeating a host name multiple times, an asterisk and
-a repetition count may be appended to a host name. For example
-"host1,host1" and "host1*2" are equivalent. If the number of tasks is given and
-a list of requested nodes is also given, the number of nodes used from that list
-will be reduced to match that of the number of tasks if the number of nodes in
-the list is greater than the number of tasks. This option applies to job and
-step allocations.
+Request a specific list of nodes.
+The job will contain as many of these nodes as possible based on the resource
+requirements, delaying execution as needed to wait for resources to become
+available.
+
+If you specify a minimum node or processor count larger than can be satisfied by
+the supplied node list, additional resources will be allocated on other nodes
+as needed (unless \fB\-\-segment\fR is also used). Conversely, a lower node or
+processor count may only require a subset of the supplied node list.
+
+The list may be specified as a comma\-separated list of nodes, a range of nodes
+(e.g. node[1\-5,7,...]), or a filename.
+The nodes list will be assumed to be a filename if it contains a "/" character.
+The order of the node names in the list is not important; the node names
+will be sorted by Slurm.
+
+Repeated node names may be useful when using \fB\-\-distribution=arbitrary\fR.
+An asterisk and a repetition count may be appended to a node name. For example,
+"node1,node1" and "node1*2" are equivalent. This option applies to job and step
+allocations.
 .IP
 
 .TP

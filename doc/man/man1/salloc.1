@@ -1784,15 +1784,19 @@ will be sorted by Slurm.
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fInode_name_list\fR>
-Request a specific list of hosts.
-The job will contain \fIall\fR of these hosts and possibly additional hosts
-as needed to satisfy resource requirements.
-The list may be specified as a comma\-separated list of hosts, a range of hosts
-(host[1\-5,7,...] for example), or a filename.
-The host list will be assumed to be a filename if it contains a "/" character.
-If you specify a minimum node or processor count larger than can be satisfied
-by the supplied host list, additional resources will be allocated on other
-nodes as needed.
+Request a specific list of nodes.
+The job will contain as many of these nodes as possible based on the resource
+requirements, delaying execution as needed to wait for resources to become
+available.
+
+If you specify a minimum node or processor count larger than can be satisfied by
+the supplied node list, additional resources will be allocated on other nodes
+as needed (unless \fB\-\-segment\fR is also used). Conversely, a lower node or
+processor count may only require a subset of the supplied node list.
+
+The list may be specified as a comma\-separated list of nodes, a range of nodes
+(e.g. node[1\-5,7,...]), or a filename.
+The nodes list will be assumed to be a filename if it contains a "/" character.
 Duplicate node names in the list will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
