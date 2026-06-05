@@ -377,7 +377,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
-    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock(): Invalid argument"
+    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock(): Invalid argument. Fixed in 25.11.6+"
     component = "sbin/slurmd"
     if (
         component in bin_path
@@ -387,8 +387,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "in _forward_thread" in bt
         and "%s: pthread_mutex_lock(): %m" in bt
     ):
-        # TODO: Add version when t25070 is fixed
-        failures.append(reason)
+        if get_version(component) >= (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage fixed in 25.11.6"
