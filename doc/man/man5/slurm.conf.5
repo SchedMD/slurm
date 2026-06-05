@@ -3970,6 +3970,17 @@ set, then it would be automatically set.
 .IP
 
 .TP
+\fBbf_hetjob_sticky_preempt_timeout=#\fR
+Number of seconds the backfill scheduler will keep retrying the same
+heterogeneous job start attempt after preemption has started for one of its
+components. During this window, the scheduler waits for preempted jobs on the
+planned nodes to finish cleanup instead of immediately rolling back the
+heterogeneous job start and replanning against a different node set.
+Set to 0 to disable this sticky preemption wait.
+The default value is 1800 seconds.
+.IP
+
+.TP
 \fBbf_hetjob_prio=[min|avg|max]\fR
 At the beginning of each backfill scheduling cycle, a list of pending to be
 scheduled jobs is sorted according to the precedence order configured in
