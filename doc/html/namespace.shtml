@@ -4,8 +4,8 @@
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
-<p>A namespace plugin can be enabled to provide job-specific, private temporary
-file system space.</p>
+<p>A namespace plugin can be enabled to provide private, temporary file system
+space for each job.</p>
 
 <p>When enabled on the cluster, a filesystem namespace will be created for each
 job with a unique, private instance of /tmp and /dev/shm for the job to use.
