@@ -1929,8 +1929,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 	}
 
 	/* Job cgroup */
-	print_sluid(step->step_id.sluid, sluid_str, sizeof(sluid_str));
-	xstrfmtcat(new_path, "/%s", sluid_str);
+	if (slurm_cgroup_conf.cgroup_job_id_paths) {
+		xstrfmtcat(new_path, "/job_%u", step->step_id.job_id);
+	} else {
+		print_sluid(step->step_id.sluid, sluid_str, sizeof(sluid_str));
+		xstrfmtcat(new_path, "/%s", sluid_str);
+	}
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_JOB],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
 		error("unable to create %pI cgroup", &step->step_id);
