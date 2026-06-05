@@ -4202,7 +4202,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	slurm_addr_t *cli = &msg->orig_addr;
 	uint32_t nodeid = NO_VAL;
 	uid_t uid = -1;
-	uint16_t protocol_version;
+	uint16_t stepd_protocol_version;
 	list_t *steps = stepd_available(conf->spooldir, conf->node_name);;
 	step_loc_t *stepd = NULL;
 
@@ -4222,8 +4222,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   &stepd->step_id, &protocol_version);
+	fd = stepd_connect(conf->spooldir, conf->node_name, &stepd->step_id,
+			   &stepd_protocol_version);
 	if (fd == -1) {
 		debug("reattach for nonexistent %ps stepd_connect failed: %m",
 		      &req->step_id);
@@ -4231,14 +4231,14 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((uid = stepd_get_uid(fd, protocol_version)) == INFINITE) {
+	if ((uid = stepd_get_uid(fd, stepd_protocol_version)) == INFINITE) {
 		debug("_rpc_reattach_tasks couldn't read from the %ps: %m",
 		      &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done2;
 	}
 
-	nodeid = stepd_get_nodeid(fd, protocol_version);
+	nodeid = stepd_get_nodeid(fd, stepd_protocol_version);
 
 	debug2("_rpc_reattach_tasks: nodeid %d in the job step", nodeid);
 
@@ -4275,14 +4275,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	resp->gtids = NULL;
 	resp->local_pids = NULL;
 
-	/* NOTE: We need to use the protocol_version from
-	 * sattach here since responses will be sent back to it. */
-	if (msg->protocol_version < protocol_version)
-		protocol_version = msg->protocol_version;
-
-	/* Following call fills in gtids and local_pids when successful. */
-	rc = stepd_attach(fd, protocol_version, &ioaddr, &resp_msg.address,
-			  req->tls_cert, req->io_key, msg->auth_uid, resp);
+	/*
+	 * stepd_protocol_version controls the local slurmd<->stepd
+	 * communications while msg->protocol_version (sattach's version) is
+	 * forwarded to the stepd so it can send responses directly to sattach
+	 * at the right version.
+	 */
+	rc = stepd_attach(fd, stepd_protocol_version, msg->protocol_version,
+			  &ioaddr, &resp_msg.address, req->tls_cert,
+			  req->io_key, msg->auth_uid, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done2;

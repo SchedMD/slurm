@@ -201,7 +201,8 @@ extern int stepd_update_mem_limit(int fd, uint16_t protocol_version,
  *         probably be moved into a more generic stepd_api call so that
  *         this header does not need to include slurm_protocol_defs.h.
  */
-extern int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
+extern int stepd_attach(int fd, uint16_t stepd_protocol_version,
+			uint16_t srun_protocol_version, slurm_addr_t *ioaddr,
 			slurm_addr_t *respaddr, char *cert, char *io_key,
 			uid_t uid, reattach_tasks_response_msg_t *resp);
 
