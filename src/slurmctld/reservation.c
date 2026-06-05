@@ -156,7 +156,7 @@ typedef struct {
 	char *access_str;
 	bool check_denied;
 	bool check_allowed;
-} foreach_check_assoc_access_t;
+} check_assoc_access_t;
 
 typedef struct {
 	time_t end_time;
@@ -5804,10 +5804,14 @@ static bool _access_str_any_allowed(char *access_str)
 	return false;
 }
 
-static int _foreach_check_assoc_access(void *x, void *arg)
+/*
+ * Reject if the association or a parent association is denied.
+ * Otherwise, check if explicitly allowed.
+ */
+static int _assoc_has_access(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *assoc = x;
-	foreach_check_assoc_access_t *data = arg;
+	check_assoc_access_t *data = arg;
 
 	char *access_str = data->access_str;
 	char deny_id_str[30];
@@ -5857,12 +5861,12 @@ static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
 	 */
 	bool any_denied = xstrchr(access_list, '-');
 	bool any_allowed = _access_str_any_allowed(access_list);
-	foreach_check_assoc_access_t args = {
+	check_assoc_access_t args = {
 		.access_str = access_list,
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
 	};
-	return _foreach_check_assoc_access(assoc, &args);
+	return _assoc_has_access(assoc, &args);
 }
 
 static bool _check_assoc_access_any(char *access_list, list_t *assoc_list)
@@ -5875,12 +5879,12 @@ static bool _check_assoc_access_any(char *access_list, list_t *assoc_list)
 	 */
 	bool any_denied = xstrchr(access_list, '-');
 	bool any_allowed = _access_str_any_allowed(access_list);
-	foreach_check_assoc_access_t args = {
+	check_assoc_access_t args = {
 		.access_str = access_list,
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
 	};
-	return list_find_first_ro(assoc_list, _foreach_check_assoc_access, &args);
+	return list_find_first_ro(assoc_list, _assoc_has_access, &args);
 }
 
 /*
