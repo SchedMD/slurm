@@ -156,8 +156,6 @@ typedef struct {
 	char *access_str;
 	bool check_denied;
 	bool check_allowed;
-	bool found_denied;
-	bool found_allowed;
 } foreach_check_assoc_access_t;
 
 typedef struct {
@@ -5821,10 +5819,8 @@ static int _foreach_check_assoc_access(void *x, void *arg)
 		snprintf(deny_id_str, sizeof(deny_id_str), ",-%u,", assoc->id);
 
 		/* Check if ,-%u, is in list */
-		if (data->check_denied && xstrstr(access_str, deny_id_str)) {
-			data->found_denied = true;
+		if (data->check_denied && xstrstr(access_str, deny_id_str))
 			return 0;
-		}
 
 		/* Check if ,%u, is in list */
 		if (check_allowed) {
@@ -5865,8 +5861,6 @@ static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
 		.access_str = access_list,
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
-		.found_denied = false,
-		.found_allowed = false,
 	};
 	return _foreach_check_assoc_access(assoc, &args) < 0;
 }
@@ -5885,8 +5879,6 @@ static bool _check_assoc_access_any(char *access_list, list_t *assoc_list)
 		.access_str = access_list,
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
-		.found_denied = false,
-		.found_allowed = false,
 	};
 	return list_for_each(assoc_list, _foreach_check_assoc_access, &args) < 0;
 }
