@@ -5835,7 +5835,7 @@ static int _foreach_check_assoc_access(void *x, void *arg)
 					/* Keep checking for denied only */
 					check_allowed = false;
 				} else {
-					return -1;
+					return 1;
 				}
 			}
 		}
@@ -5843,7 +5843,7 @@ static int _foreach_check_assoc_access(void *x, void *arg)
 	}
 
 	/* This assoc was not explicitly denied */
-	return (!data->check_allowed || found_allowed) ? -1 : 0;
+	return !data->check_allowed || found_allowed;
 }
 
 static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
@@ -5862,7 +5862,7 @@ static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
 	};
-	return _foreach_check_assoc_access(assoc, &args) < 0;
+	return _foreach_check_assoc_access(assoc, &args);
 }
 
 static bool _check_assoc_access_any(char *access_list, list_t *assoc_list)
@@ -5880,7 +5880,7 @@ static bool _check_assoc_access_any(char *access_list, list_t *assoc_list)
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
 	};
-	return list_for_each(assoc_list, _foreach_check_assoc_access, &args) < 0;
+	return list_find_first_ro(assoc_list, _foreach_check_assoc_access, &args);
 }
 
 /*
