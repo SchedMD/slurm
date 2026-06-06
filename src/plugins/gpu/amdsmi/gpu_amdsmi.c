@@ -1585,7 +1585,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
             }
         }
         gpu->energy.previous_consumed_energy = gpu->energy.consumed_energy;
-        gpu->energy.consumed_energy = now_j;
+        gpu->energy.consumed_energy = (uint64_t)now_j;
         //debug2("AMDSMI: GPU[%u] energy count = %f J (raw=%lu, res=%f)", dv_ind, now_j, energy_now, counter_res);
         /* Update baseline for next call */
         last_energy_joules[dv_ind] = now_j;
