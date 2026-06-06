@@ -39,6 +39,12 @@
 
 #define _GNU_SOURCE
 
+#include <dirent.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
 #include <dlfcn.h>
 #include <amd_smi/amdsmi.h>
 #include "../common/gpu_common.h"
@@ -117,6 +123,87 @@ static gpu_info_t gpus[MAX_GPU_DEVICES];
 static void _amdsmi_get_version(char *version, unsigned int len);
 static void _amdsmi_get_driver(char *driver, unsigned int len);
 
+
+#define MAX_PIDS 4096
+
+typedef struct {
+    pid_t pid;
+    uint64_t last_busy_ns;
+    uint64_t last_time_ns;
+} pid_usage_t;
+
+static pid_usage_t usage_table[MAX_PIDS];
+static int usage_count = 0;
+
+/* ✅ monotonic time */
+static uint64_t _now_ns(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+}
+
+/* ✅ lookup/create entry */
+static pid_usage_t *_get_entry(pid_t pid)
+{
+    for (int i = 0; i < usage_count; i++) {
+        if (usage_table[i].pid == pid)
+            return &usage_table[i];
+    }
+
+    if (usage_count >= MAX_PIDS)
+        return NULL;
+
+    usage_table[usage_count].pid = pid;
+    usage_table[usage_count].last_busy_ns = 0;
+    usage_table[usage_count].last_time_ns = 0;
+
+    return &usage_table[usage_count++];
+}
+
+/* ✅ fdinfo usage */
+static uint64_t _read_fdinfo_busy(pid_t pid)
+{
+    char path[256];
+    snprintf(path, sizeof(path), "/proc/%d/fdinfo", pid);
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return 0;
+
+    struct dirent *de;
+    uint64_t total_busy = 0;
+
+    while ((de = readdir(dir)) != NULL) {
+        if (de->d_name[0] == '.')
+            continue;
+
+        char file[512];
+        snprintf(file, sizeof(file), "%s/%s", path, de->d_name);
+
+        FILE *f = fopen(file, "r");
+        if (!f)
+            continue;
+
+        char line[256];
+        while (fgets(line, sizeof(line), f)) {
+
+            uint64_t val = 0;
+
+            /* ✅ engine time counters */
+            if (sscanf(line, "drm-engine-gfx: %lu", &val) == 1 ||
+                sscanf(line, "drm-engine-compute: %lu", &val) == 1 ||
+                sscanf(line, "drm-engine-render: %lu", &val) == 1) {
+                total_busy += val;
+            }
+        }
+
+        fclose(f);
+    }
+
+    closedir(dir);
+    return total_busy;
+}
 
 
 /*
@@ -1641,76 +1728,94 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     return SLURM_SUCCESS;
 }
 
-
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
-    if (!data)
+    if (!data) {
+        error("AMDSMI: gpu_p_usage_read() called with NULL data pointer");
         return SLURM_ERROR;
+    }
 
     bool track_gpumem  = (gpumem_pos  != -1);
     bool track_gpuutil = (gpuutil_pos != -1);
 
-    if (!track_gpumem && !track_gpuutil)
+    if (!track_gpumem && !track_gpuutil) {
+        debug2("%s: TRES gpuutil/gpumem not tracked", __func__);
         return SLURM_SUCCESS;
+    }
+
+    if (!get_usage) {
+        debug2("%s: AMDSMI < required version; usage disabled", __func__);
+        return SLURM_SUCCESS;
+    }
 
     _amdsmi_init();
 
-    uint32_t dev_count = 0;
-    amdsmi_get_processor_handles(&dev_count, NULL);
+    /*
+     * NOTE: The current AMD-SMI API for process info is NOT per-GPU handle.
+     * Signature: amdsmi_get_gpu_compute_process_info_by_pid(uint32_t pid, amdsmi_process_info_t *proc) [1](https://github.com/ROCm/amdsmi)
+     */
+    amdsmi_process_info_t pinfo;
+    memset(&pinfo, 0, sizeof(pinfo));
 
-    amdsmi_processor_handle *handles =
-        xmalloc(sizeof(*handles) * dev_count);
+    const char *status_string = NULL;
+    amdsmi_status_t rc =
+        amdsmi_get_gpu_compute_process_info_by_pid((uint32_t)pid, &pinfo); /* [1](https://github.com/ROCm/amdsmi) */
 
-    amdsmi_get_processor_handles(&dev_count, handles);
-
-    uint64_t total_mem = 0;
-    uint64_t total_util = 0;
-
-    for (uint32_t i = 0; i < dev_count; i++) {
-
-        /* ✅ 1. Read GPU activity */
-        amdsmi_engine_usage_t usage;
-        if (amdsmi_get_gpu_activity(handles[i], &usage)
-            != AMDSMI_STATUS_SUCCESS)
-            continue;
-
-        /* ✅ 2. Get process list */
-        amdsmi_process_info_t procs[32];
-        uint32_t num = 32;
-
-        if (amdsmi_get_gpu_process_list(handles[i], &num, procs)
-            != AMDSMI_STATUS_SUCCESS)
-            continue;
-
-        uint32_t active_procs = 0;
-
-        for (uint32_t j = 0; j < num; j++) {
-            if (procs[j].pid)
-                active_procs++;
-        }
-
-        for (uint32_t j = 0; j < num; j++) {
-
-            if (procs[j].pid != (uint32_t)pid)
-                continue;
-
-            /* ✅ Memory */
-            if (track_gpumem)
-                total_mem += (uint64_t)procs[j].vram_usage;
-
-            /* ✅ Util (shared across processes) */
-            if (track_gpuutil && active_procs > 0) {
-                total_util += usage.gfx_activity / active_procs;
-            }
-        }
+    if (rc == AMDSMI_STATUS_NOT_FOUND) {
+        /* PID not using GPU; normal */
+        return SLURM_SUCCESS;
+    }
+    if (rc != AMDSMI_STATUS_SUCCESS) {
+        (void) amdsmi_status_code_to_string(rc, &status_string);
+        error("AMDSMI: process usage read failed for pid %d: %s",
+              pid, status_string ? status_string : "unknown");
+        return SLURM_ERROR;
     }
 
-    if (track_gpumem)
-        data[gpumem_pos].size_read = total_mem;
+    /*
+     * pinfo.vram_usage is in MB (per docs). Convert to bytes for Slurm gpumem TRES. [2](https://rocm.docs.amd.com/projects/amdsmi/en/latest/doxygen/docBin/html/amdsmi_8h.html)
+     */
+    if (track_gpumem) {
+        data[gpumem_pos].size_read = (uint64_t)pinfo.vram_usage/1024L;
+    }
 
-    if (track_gpuutil)
-        data[gpuutil_pos].size_read = total_util;
+    if (track_gpuutil){ 
 
-    xfree(handles);
+pid_usage_t *entry = _get_entry(pid);
+        if (!entry)
+            return SLURM_ERROR;
+
+        uint64_t now  = _now_ns();
+        uint64_t busy = _read_fdinfo_busy(pid);
+
+        if (entry->last_time_ns == 0) {
+            entry->last_time_ns = now;
+            entry->last_busy_ns = busy;
+            data[gpuutil_pos].size_read = 0;
+            return SLURM_SUCCESS;
+        }
+
+        uint64_t delta_busy = busy - entry->last_busy_ns;
+        uint64_t delta_time = now  - entry->last_time_ns;
+
+        entry->last_busy_ns = busy;
+        entry->last_time_ns = now;
+
+        if (delta_time == 0) {
+            data[gpuutil_pos].size_read = 0;
+            return SLURM_SUCCESS;
+        }
+
+        double util = (double)delta_busy / (double)delta_time;
+
+        uint64_t percent = (uint64_t)(util * 100.0);
+
+        if (percent > 100)
+            percent = 100;
+
+        data[gpuutil_pos].size_read = percent;
+
+    }
+
     return SLURM_SUCCESS;
 }
