@@ -1641,61 +1641,76 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     return SLURM_SUCCESS;
 }
 
+
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
-    if (!data) {
-        error("AMDSMI: gpu_p_usage_read() called with NULL data pointer");
+    if (!data)
         return SLURM_ERROR;
-    }
 
     bool track_gpumem  = (gpumem_pos  != -1);
     bool track_gpuutil = (gpuutil_pos != -1);
 
-    if (!track_gpumem && !track_gpuutil) {
-        debug2("%s: TRES gpuutil/gpumem not tracked", __func__);
+    if (!track_gpumem && !track_gpuutil)
         return SLURM_SUCCESS;
-    }
-
-    if (!get_usage) {
-        debug2("%s: AMDSMI < required version; usage disabled", __func__);
-        return SLURM_SUCCESS;
-    }
 
     _amdsmi_init();
 
-    /*
-     * NOTE: The current AMD-SMI API for process info is NOT per-GPU handle.
-     * Signature: amdsmi_get_gpu_compute_process_info_by_pid(uint32_t pid, amdsmi_process_info_t *proc) [1](https://github.com/ROCm/amdsmi)
-     */
-    amdsmi_process_info_t pinfo;
-    memset(&pinfo, 0, sizeof(pinfo));
+    uint32_t dev_count = 0;
+    amdsmi_get_processor_handles(&dev_count, NULL);
 
-    const char *status_string = NULL;
-    amdsmi_status_t rc =
-        amdsmi_get_gpu_compute_process_info_by_pid((uint32_t)pid, &pinfo); /* [1](https://github.com/ROCm/amdsmi) */
+    amdsmi_processor_handle *handles =
+        xmalloc(sizeof(*handles) * dev_count);
 
-    if (rc == AMDSMI_STATUS_NOT_FOUND) {
-        /* PID not using GPU; normal */
-        return SLURM_SUCCESS;
+    amdsmi_get_processor_handles(&dev_count, handles);
+
+    uint64_t total_mem = 0;
+    uint64_t total_util = 0;
+
+    for (uint32_t i = 0; i < dev_count; i++) {
+
+        /* ✅ 1. Read GPU activity */
+        amdsmi_engine_usage_t usage;
+        if (amdsmi_get_gpu_activity(handles[i], &usage)
+            != AMDSMI_STATUS_SUCCESS)
+            continue;
+
+        /* ✅ 2. Get process list */
+        amdsmi_process_info_t procs[32];
+        uint32_t num = 32;
+
+        if (amdsmi_get_gpu_process_list(handles[i], &num, procs)
+            != AMDSMI_STATUS_SUCCESS)
+            continue;
+
+        uint32_t active_procs = 0;
+
+        for (uint32_t j = 0; j < num; j++) {
+            if (procs[j].pid)
+                active_procs++;
+        }
+
+        for (uint32_t j = 0; j < num; j++) {
+
+            if (procs[j].pid != (uint32_t)pid)
+                continue;
+
+            /* ✅ Memory */
+            if (track_gpumem)
+                total_mem += (uint64_t)procs[j].vram_usage;
+
+            /* ✅ Util (shared across processes) */
+            if (track_gpuutil && active_procs > 0) {
+                total_util += usage.gfx_activity / active_procs;
+            }
+        }
     }
-    if (rc != AMDSMI_STATUS_SUCCESS) {
-        (void) amdsmi_status_code_to_string(rc, &status_string);
-        error("AMDSMI: process usage read failed for pid %d: %s",
-              pid, status_string ? status_string : "unknown");
-        return SLURM_ERROR;
-    }
 
-    /* pinfo.cu_occupancy is percent (0-100) [2](https://rocm.docs.amd.com/projects/amdsmi/en/latest/doxygen/docBin/html/amdsmi_8h.html) */
-    if (track_gpuutil) {
-        data[gpuutil_pos].size_read = (uint64_t)pinfo.cu_occupancy;
-    }
+    if (track_gpumem)
+        data[gpumem_pos].size_read = total_mem;
 
-    /*
-     * pinfo.vram_usage is in MB (per docs). Convert to bytes for Slurm gpumem TRES. [2](https://rocm.docs.amd.com/projects/amdsmi/en/latest/doxygen/docBin/html/amdsmi_8h.html)
-     */
-    if (track_gpumem) {
-        data[gpumem_pos].size_read = (uint64_t)pinfo.vram_usage * 1024ULL * 1024ULL;
-    }
+    if (track_gpuutil)
+        data[gpuutil_pos].size_read = total_util;
 
+    xfree(handles);
     return SLURM_SUCCESS;
 }
