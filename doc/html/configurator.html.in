@@ -165,6 +165,7 @@ function displayfile()
    "#GetEnvTimeout=2 <br>" +
    "#HealthCheckInterval=0 <br>" +
    "#HealthCheckProgram= <br>" +
+   "#HealthCheckTimeout=60 <br>" +
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#MessageTimeout=10 <br>" +
@@ -525,7 +526,7 @@ These parameters are optional.
 </DL>
 
 <P>
-<B>TaskProlog/Epilog</B>: Fully qualified path to be executed as the user
+<B>TaskProlog/Epilog</B>: Path that will be executed as the user
 before each task begins execution and after each task terminates.
 These parameters are optional.
 <DL>

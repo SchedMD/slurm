@@ -60,6 +60,8 @@ typedef enum {
 
 typedef struct {
 	uint32_t jobid;
+	char *sluid;
+	char *original_sluid;
 	char *partition;
 	char *start_time;
 	char *end_time;

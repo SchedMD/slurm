@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/log.h"
+#include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -56,6 +57,56 @@ extern int op_handler_reconfigure(openapi_ctxt_t *ctxt)
 			rc = errno;
 		resp_error(ctxt, rc, __func__, "slurm_reconfigure() failed");
 	}
+
+	return rc;
+}
+
+static int _dump_config(openapi_ctxt_t *ctxt)
+{
+	int rc = EINVAL;
+	openapi_resp_config_t resp = { 0 };
+	openapi_config_query_t query = { 0 };
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_CONF_QUERY, query, ctxt->query,
+		       ctxt->parent_path))
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Rejecting request. Failure parsing query.");
+	errno = SLURM_SUCCESS;
+	if ((rc = slurm_load_ctl_conf(query.update_time, &resp.slurm_conf)) &&
+	    (rc == SLURM_ERROR) && errno)
+		rc = errno;
+
+	if (!rc) {
+		rc = DATA_DUMP(ctxt->parser, OPENAPI_CONF_RESP, resp,
+			       ctxt->resp);
+	} else if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		char ts[64] = "INVALID";
+		slurm_make_time_str(&query.update_time, ts, sizeof(ts));
+		resp_warn(ctxt, __func__,
+			  "No config changes since update_time[%s]=%s",
+			  TIMESPEC_STR(((timespec_t) {
+					       .tv_sec = query.update_time }),
+				       true),
+			  ts);
+		rc = SLURM_SUCCESS;
+	} else {
+		resp_error(ctxt, rc, __func__, "slurm_load_ctl_conf() failed");
+	}
+
+	slurm_free_conf(resp.slurm_conf);
+	return rc;
+}
+
+extern int op_handler_config(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_GET)
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	else
+		rc = _dump_config(ctxt);
 
 	return rc;
 }

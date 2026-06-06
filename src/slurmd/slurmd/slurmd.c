@@ -110,6 +110,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/compress.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
@@ -403,6 +404,7 @@ main (int argc, char **argv)
 
 	probe_init();
 	probe_register("rpc-listeners", _probe_listener, NULL);
+	closeall_init();
 
 	if (original) {
 		/*
@@ -560,7 +562,8 @@ main (int argc, char **argv)
 
 	conmgr_run(false);
 
-	if (original)
+	if (original &&
+	    !(slurm_conf.health_check_node_state & HEALTH_CHECK_REBOOT_ONLY))
 		run_script_health_check();
 
 	record_launched_jobs();
@@ -1612,6 +1615,7 @@ _print_conf(void)
 
 	debug3("Logfile     = `%s'",     conf->logfile);
 	debug3("HealthCheck = `%s'",     cf->health_check_program);
+	debug3("HealthCheckTimeout = %u", cf->health_check_timeout);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 
@@ -2456,6 +2460,69 @@ static void _validate_dynamic_conf(void)
 	}
 }
 
+static void _insert_gpu_conf(char **tmp)
+{
+	char *gres_ptr = NULL;
+	char *gpu_gres_str = NULL;
+	uint32_t cpu_cnt = MAX(conf->actual_cpus, conf->block_map_size);
+	node_config_load_t node_conf = {
+		.cpu_cnt = cpu_cnt,
+		.in_slurmd = true,
+		.gres_name = "gpu",
+		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs,
+	};
+
+	if (conf->dynamic_conf &&
+	    (gres_ptr = xstrcasestr(conf->dynamic_conf, "Gres="))) {
+		char *gres_end = strchr(gres_ptr, ' ');
+
+		if (gres_end)
+			*gres_end = '\0';
+		if (xstrcasestr(gres_ptr, "gpu:")) {
+			if (gres_end)
+				*gres_end = ' ';
+			return; /* GPU GRES already exists */
+		}
+		if (gres_end)
+			*gres_end = ' ';
+	}
+
+	/* Parse gres.conf so autofill honors admin settings. */
+	(void) gres_parse_conf(conf->node_name, cpu_cnt);
+
+	gpu_gres_str = gres_get_dynamic_gpu_str(node_conf);
+	if (!gpu_gres_str)
+		return; /* No GPU GRES found */
+
+	verbose("Autodetected Gres for dynamic node %s: %s",
+	        conf->node_name, gpu_gres_str);
+
+	if (gres_ptr) {
+		char *gres_end = strchr(gres_ptr, ' ');
+		char *new_dynamic_conf = NULL;
+
+		/*
+		 * If Gres= is already present, append the GPU GRES to
+		 * conf->dynamic_conf instead of *tmp like normal
+		 */
+		if (gres_end) {
+			*gres_end = '\0';
+			xstrfmtcat(new_dynamic_conf, "%s,%s %s",
+				   conf->dynamic_conf, gpu_gres_str,
+				   gres_end + 1);
+			*gres_end = ' ';
+		} else {
+			xstrfmtcat(new_dynamic_conf, "%s,%s",
+				   conf->dynamic_conf, gpu_gres_str);
+		}
+		xfree(conf->dynamic_conf);
+		conf->dynamic_conf = new_dynamic_conf;
+	} else {
+		xstrfmtcat(*tmp, "Gres=%s ", gpu_gres_str);
+	}
+	xfree(gpu_gres_str);
+}
+
 static void _dynamic_init(void)
 {
 	if (!conf->dynamic_type)
@@ -2527,6 +2594,8 @@ static void _dynamic_init(void)
 		if (!xstrcasestr(conf->dynamic_conf, "RealMemory="))
 			xstrfmtcat(tmp, "RealMemory=%"PRIu64" ",
 				   conf->physical_memory_size);
+
+		_insert_gpu_conf(&tmp);
 
 		if (conf->dynamic_conf)
 			xstrcat(tmp, conf->dynamic_conf);
@@ -2762,6 +2831,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (cred_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	if (compress_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
@@ -2813,6 +2884,7 @@ _slurmd_fini(void)
 {
 	int rc;
 
+	compress_g_fini();
 	assoc_mgr_fini(false);
 	mpi_fini();
 	node_features_g_fini();
@@ -3346,10 +3418,12 @@ extern int run_script_health_check(void)
 
 	if (slurm_conf.health_check_program &&
 	    (slurm_conf.health_check_interval ||
-	     (slurm_conf.health_check_node_state & HEALTH_CHECK_START_ONLY))) {
+	     (slurm_conf.health_check_node_state & HEALTH_CHECK_START_ONLY) ||
+	     (slurm_conf.health_check_node_state & HEALTH_CHECK_REBOOT_ONLY))) {
 		char **env = env_array_create();
 		char *cmd_argv[2];
 		char *resp = NULL;
+
 		/*
 		 * We can point script_argv to cmd_argv now (before setting
 		 * values inside cmd_argv) since cmd_argv is on the stack
@@ -3357,7 +3431,7 @@ extern int run_script_health_check(void)
 		 */
 		run_command_args_t run_command_args = {
 			.job_id = 0, /* implicit job_id = 0 */
-			.max_wait = 60 * 1000,
+			.max_wait = slurm_conf.health_check_timeout * 1000,
 			.script_argv = cmd_argv,
 			.script_path = slurm_conf.health_check_program,
 			.script_type = "health_check",

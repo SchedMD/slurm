@@ -62,7 +62,12 @@ extern char *default_plugin_path;
 #ifndef node_record_t
 typedef struct node_record node_record_t;
 #endif
-
+/*
+ * If all is used, nojobs and nosteps aren't
+ * part of it.  They must be requested as well.
+ */
+#define ACCOUNTING_ENFORCE_ALL \
+	(0xffff & ~(ACCOUNTING_ENFORCE_NO_JOBS | ACCOUNTING_ENFORCE_NO_STEPS))
 #define ACCOUNTING_ENFORCE_ASSOCS SLURM_BIT(0)
 #define ACCOUNTING_ENFORCE_LIMITS SLURM_BIT(1)
 #define ACCOUNTING_ENFORCE_WCKEYS SLURM_BIT(2)
@@ -85,6 +90,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_CERTGEN_TYPE "certgen/script"
 #define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
+#define EPILOG_MSG_TIME_MAX 1000000 /* 1 seconds in usec */
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     120
 #define DEFAULT_GETNAMEINFO_CACHE_TIMEOUT 60
@@ -99,6 +105,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #define DEFAULT_HASH_PLUGIN "hash/k12"
+#define DEFAULT_HEALTH_CHECK_TIMEOUT 60
 #define DEFAULT_HTTP_PARSER_TYPE "http_parser/libhttp_parser"
 #define DEFAULT_HOST_UNREACH_RETRY_COUNT 0
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
@@ -131,7 +138,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
 #define DEFAULT_PRIORITY_TYPE       "priority/multifactor"
 #define DEFAULT_RECONF_KEEP_PART_STATE 0
-#define DEFAULT_RETURN_TO_SERVICE   0
+#define DEFAULT_RETURN_TO_SERVICE RETURN_TO_SERVICE_NONE
 #define DEFAULT_RESUME_RATE         300
 #define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_ROUTE_PLUGIN   	    "route/default"
@@ -169,6 +176,9 @@ typedef struct node_record node_record_t;
 /* MAX_TASKS_PER_NODE is defined in slurm.h
  */
 #define DEFAULT_MAX_TASKS_PER_NODE  MAX_TASKS_PER_NODE
+
+#define UNIX_PREFIX "unix:"
+#define UNIX_PREFIX_BYTES strlen("unix:")
 
 typedef struct slurm_conf_node {
 	char *nodenames;
@@ -423,6 +433,13 @@ extern int slurm_conf_check_addr(const char *node_name, bool *dynamic);
  * Return value is the length of the array.
  */
 extern int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[]);
+
+/*
+ * Get list of power actions from slurm.conf
+ *
+ * Return value is SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int slurm_conf_power_action_list(list_t **power_action_list);
 
 /*
  * Set "ptr_array" with the pointer to an array of pointers to

@@ -69,7 +69,8 @@ typedef enum {
  * Serialize data in src into string dest
  * IN/OUT dest - ptr to NULL string ptr to set with output data.
  * 	caller must xfree(dest) if set. Pointer is not changed on failure.
- * IN/OUT length - set with number of bytes written to *dest (including '\0')
+ * IN/OUT length - set with number of bytes written to *dest.
+ *	Note: length will not include '\0'
  * IN src - populated data ptr to serialize
  * IN mime_type - serialize data into the given mime_type
  * IN flags - optional flags to specify to serilzier to change presentation of

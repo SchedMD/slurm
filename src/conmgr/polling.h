@@ -94,6 +94,20 @@ typedef enum {
 extern const char *pollctl_type_to_string(pollctl_fd_type_t type);
 
 /*
+ * Whether a polling type monitors the fd for read readiness.
+ * IN type - polling type to inspect
+ * RET true if poll() will deliver readable events for this type
+ */
+extern bool pollctl_fd_type_is_read(pollctl_fd_type_t type);
+
+/*
+ * Whether a polling type monitors the fd for write readiness.
+ * IN type - polling type to inspect
+ * RET true if poll() will deliver writeable events for this type
+ */
+extern bool pollctl_fd_type_is_write(pollctl_fd_type_t type);
+
+/*
  * Add new connection to monitor via poll()
  * IN fd - file descriptor to start polling
  * IN type - type of file descriptor

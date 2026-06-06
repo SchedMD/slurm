@@ -129,11 +129,22 @@ static int _on_request(http_con_t *hcon, const char *name,
 	return rc;
 }
 
-static void _on_close(const char *name, void *arg)
+/*
+ * Latest non-success status_code observed on an HTTP conmgr connection.
+ * slurmrestd inet mode handles a single connection at a time and uses
+ * this to propagate connection-level errors up to the process exit code
+ * (see slurmrestd.c after conmgr_run()).
+ */
+static slurm_err_t last_status_code = SLURM_SUCCESS;
+
+static void _on_close(const char *name, slurm_err_t status_code, void *arg)
 {
 	http_context_t *ctxt = arg;
 
 	xassert(ctxt->magic == MAGIC);
+
+	if (status_code)
+		last_status_code = status_code;
 
 	_connection_finish(ctxt);
 }
@@ -167,6 +178,11 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	fatal_abort("this should never happen");
+}
+
+extern slurm_err_t http_events_get_last_status_code(void)
+{
+	return last_status_code;
 }
 
 const conmgr_events_t *http_events_get(void)

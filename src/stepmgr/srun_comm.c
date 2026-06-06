@@ -578,6 +578,7 @@ extern void srun_response(slurm_step_id_t *step_id)
 
 	if (job_ptr == NULL)
 		return;
+	job_ptr->srun_no_resp_time = 0;
 	job_ptr->time_last_active = now;
 
 	if (step_id->step_id == NO_VAL)

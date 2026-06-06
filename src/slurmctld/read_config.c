@@ -894,10 +894,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->max_cpus_per_socket = part->max_cpus_per_socket;
 	part_ptr->max_share      = part->max_share;
 	part_ptr->max_mem_per_cpu = part->max_mem_per_cpu;
-	part_ptr->max_nodes      = part->max_nodes;
-	part_ptr->max_nodes_orig = part->max_nodes;
-	part_ptr->min_nodes      = part->min_nodes;
-	part_ptr->min_nodes_orig = part->min_nodes;
+	part_ptr->max_nodes = part->max_nodes;
+	part_ptr->min_nodes = part->min_nodes;
 	part_ptr->over_time_limit = part->over_time_limit;
 	part_ptr->preempt_mode   = part->preempt_mode;
 	part_ptr->priority_job_factor = part->priority_job_factor;
@@ -1456,6 +1454,14 @@ void _sync_jobs_to_conf(void)
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;
 		}
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+		if (job_ptr->nodes_rs &&
+		    node_name2bitmap(job_ptr->nodes_rs, false,
+				     &job_ptr->node_bitmap_rs, NULL)) {
+			error("Invalid nodes_rs (%s) for %pJ",
+			      job_ptr->nodes_rs, job_ptr);
+			job_fail = true;
+		}
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail &&
@@ -1494,7 +1500,7 @@ void _sync_jobs_to_conf(void)
 
 		_sync_steps_to_conf(job_ptr);
 
-		build_node_details(job_ptr, false); /* set node_addr */
+		build_node_details(job_ptr);
 
 		if (job_fail) {
 			bool was_running = false;
@@ -1807,6 +1813,10 @@ extern int read_slurm_conf(int recover)
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	load_all_resv_state(recover);
+	/* Free the old-to-new mapping after load_all_resv_state() */
+	xfree(node_old_to_new_map);
+	old_node_record_count = 0;
+	is_node_table_changed = false;
 	if (recover >= 1) {
 		trigger_state_restore();
 		controller_reconfig_scheduling();
@@ -2384,10 +2394,10 @@ static void _restore_job_licenses(job_record_t *job_ptr)
 	bool valid = true, alloc_valid = true;
 
 	license_list = license_validate(job_ptr->licenses, false, false, false,
-					job_ptr->tres_req_cnt, &valid);
+					job_ptr->tres_req_cnt, &valid, NULL);
 	license_list_alloc =
 		license_validate(job_ptr->licenses_allocated, false, false,
-				 true, NULL, &alloc_valid);
+				 true, NULL, &alloc_valid, NULL);
 	FREE_NULL_LIST(job_ptr->license_list);
 
 	if (valid) {

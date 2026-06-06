@@ -48,7 +48,14 @@ typedef struct {
 	acct_gather_energy_t energy;
 } gpu_status_t;
 
-extern int gpu_plugin_init(void);
+/*
+ * Load the GPU plugin selected by gres.conf's Autodetect= setting.
+ *
+ * IN node_conf - Needed for GRES_AUTODETECT_GPU_FULL probing.
+ * RET SLURM_SUCCESS, or a Slurm errno on plugin load failure
+ */
+extern int gpu_plugin_init(node_config_load_t *node_conf);
+
 extern int gpu_plugin_fini(void);
 extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos);
 extern list_t *gpu_g_get_system_gpu_list(node_config_load_t *node_conf);

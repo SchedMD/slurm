@@ -784,7 +784,8 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	 */
 
 	if (hcon_events->on_close)
-		hcon_events->on_close(conmgr_con_get_name(hcon_con), hcon_arg);
+		hcon_events->on_close(conmgr_con_get_name(hcon_con),
+				      conmgr_args.status_code, hcon_arg);
 
 	CONMGR_CON_UNLINK(hcon_con);
 }
@@ -865,4 +866,10 @@ extern int http_con_get_auth_creds(http_con_t *hcon, uid_t *cred_uid,
 	xassert(hcon->magic == MAGIC);
 	return conmgr_con_get_auth_creds(hcon->con, cred_uid, cred_gid,
 					 cred_pid);
+}
+
+extern bool http_con_is_tls(http_con_t *hcon)
+{
+	xassert(hcon->magic == MAGIC);
+	return conmgr_fd_is_tls(hcon->con);
 }

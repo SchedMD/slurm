@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  common_topo.c - common functions for accounting storage
+ *  common_topo.c - common functions for topology plugins
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -37,6 +37,7 @@
 
 #include "common_topo.h"
 #include "eval_nodes.h"
+#include "gres_sched.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/core_array.h"
@@ -260,12 +261,33 @@ extern bool common_topo_route_part(void)
 	return route_part;
 }
 
+/*
+ * Return the retry loop action after an eval_nodes() call.
+ */
+static eval_action_t _eval_nodes_get_action(topology_eval_t *topo_eval)
+{
+	eval_action_t action = topo_eval->eval_action;
+	/*
+	 * Every branch should set eval_action. If it does not, catch this
+	 * in a development build with xassert(), but allow a non-dev build
+	 * to gracefully retry.
+	 */
+	xassert(action != EVAL_ACTION_NONE);
+	if (action == EVAL_ACTION_NONE) {
+		error("%s: eval_action not set, using default", __func__);
+		action = EVAL_ACTION_RETRY_DEFAULT;
+	}
+
+	topo_eval->eval_action = EVAL_ACTION_NONE;
+	return action;
+}
+
 extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 {
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
 	job_record_t *job_ptr = topo_eval->job_ptr;
 
-	int ec;
+	int ec, first_ec = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
 	int rem_nodes;
@@ -286,7 +308,6 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		if (((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus <
-
 		      avail_res_array[i]->avail_cpus)) ||
 		    /* OR node has no CPUs */
 		    (avail_res_array[i]->avail_cpus < 1)) {
@@ -327,6 +348,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
 	topo_eval->first_pass = false;
+	topo_eval->eval_action = EVAL_ACTION_NONE;
 	rem_nodes = bit_set_count(orig_node_map);
 
 	/*
@@ -334,22 +356,33 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * removing nodes.
 	 */
 	do {
+		eval_action_t action;
 		topo_eval->max_nodes = orig_max_nodes;
 		bit_copybits(topo_eval->node_map, orig_node_map);
 		core_array_or(topo_eval->avail_core, orig_core_array);
 
 		ec = eval_nodes(topo_eval);
 
+		/*
+		 * Permanent errors should be returned on first pass only.
+		 */
+		xassert(ec != ESLURM_NOT_SUPPORTED);
+		xassert(ec != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE);
+
 		if (ec == SLURM_SUCCESS)
 			break;
 
-		if (ec == ESLURM_BREAK_EVAL)
+		if (first_ec == SLURM_SUCCESS)
+			first_ec = ec;
+
+		action = _eval_nodes_get_action(topo_eval);
+		if (action == EVAL_ACTION_BREAK)
 			break;
 
 		if (rem_nodes <= topo_eval->min_nodes)
 			break;
 
-		if (ec == ESLURM_RETRY_EVAL) {
+		if (action == EVAL_ACTION_RETRY) {
 			bit_and_not(orig_node_map, topo_eval->node_map);
 			rem_nodes = bit_set_count(orig_node_map);
 
@@ -381,7 +414,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			idx = 0;
 		}
 
-		if (ec == ESLURM_RETRY_EVAL_HINT &&
+		if (action == EVAL_ACTION_RETRY_HINT &&
 		    (bit_ffs(topo_eval->node_map) >= 0)) {
 			int tmp_idx = idx;
 
@@ -442,8 +475,40 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 			}
 		}
 	}
+
+	/* Return the first retry loop error for the most descriptive reason */
+	if (ec && first_ec)
+		ec = first_ec;
+
 	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&orig_core_array);
 	xfree(sorted_res);
 	return ec;
+}
+
+extern int common_test_node(topology_eval_t *topo_eval, int node_idx)
+{
+	job_record_t *job_ptr = topo_eval->job_ptr;
+	job_details_t *details_ptr = job_ptr->details;
+	int64_t rem_max_cpus;
+	uint64_t maxtasks;
+
+	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, 1);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus, 1);
+
+	eval_nodes_select_cores(topo_eval, node_idx, 1);
+	eval_nodes_cpus_to_use(topo_eval, node_idx, rem_max_cpus, 1, &maxtasks,
+			       true);
+
+	if ((topo_eval->avail_cpus == 0) ||
+	    (details_ptr->min_cpus > topo_eval->avail_cpus) ||
+	    !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
+		return SLURM_ERROR;
+	}
+
+	bit_clear_all(topo_eval->node_map);
+	bit_set(topo_eval->node_map, node_idx);
+	eval_nodes_clip_socket_cores(topo_eval);
+
+	return SLURM_SUCCESS;
 }

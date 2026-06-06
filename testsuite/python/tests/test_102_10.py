@@ -172,3 +172,90 @@ def test_modify_qos_tres_with_amend_syntax(limit, title, desc, base, input, resu
     assert (
         output.rstrip() == result
     ), f"QoS {qos1} should have {result}, not {output.rstrip()}"
+
+
+# Ticket 24836: Fix parsing issue for GRES resources that contain a hyphen
+# ("-") in their name when using sacctmgr. A GRES type with a hyphen is
+# configured, and the assignment/increment/decrement operators are exercised
+# against it.
+hyphen_gres = "gpu-test"
+hyphen_tres = f"gres/{hyphen_gres}"
+
+hyphen_data = [
+    (
+        "assign_hyphen_gres",
+        f"Assigning a TRES with hyphen in its name ({hyphen_tres}=5)",
+        None,
+        f"{hyphen_tres}=5",
+        f"{hyphen_tres}=5",
+    ),
+    (
+        "increment_hyphen_gres",
+        f"Incrementing a TRES with hyphen in its name ({hyphen_tres}+=3)",
+        f"{hyphen_tres}=5",
+        f"{hyphen_tres}+=3",
+        f"{hyphen_tres}=8",
+    ),
+    (
+        "decrement_hyphen_gres",
+        f"Decrementing a TRES with hyphen in its name ({hyphen_tres}-=2)",
+        f"{hyphen_tres}=5",
+        f"{hyphen_tres}-=2",
+        f"{hyphen_tres}=3",
+    ),
+]
+
+hyphen_data_ids = [d[0] for d in hyphen_data]
+
+
+@pytest.fixture(scope="module")
+def setup_gres_hyphen():
+    """Configure a GRES type whose name contains a hyphen (ticket 24836)."""
+    atf.require_auto_config("wants to configure a GRES type with a hyphen")
+    atf.require_config_parameter("SelectType", "select/cons_tres")
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
+    atf.require_config_parameter_includes("GresTypes", hyphen_gres)
+    atf.require_config_parameter_includes("AccountingStorageTRES", hyphen_tres)
+    atf.require_slurm_running()
+
+
+@pytest.mark.parametrize(
+    "title,desc,base,input,result", hyphen_data, ids=hyphen_data_ids
+)
+def test_modify_tres_with_hyphen_in_gres_name(
+    setup_gres_hyphen, title, desc, base, input, result
+):
+    """Ticket 24836: sacctmgr should correctly parse GRES names with a hyphen."""
+
+    logging.info(f"Running case {title}: {desc}")
+
+    hyphen_hint = (
+        f"Check if sacctmgr correctly parsed '{hyphen_tres}'. The '-' in "
+        f"the GRES name might have been treated as the decrement operator "
+        f"and the name truncated to '{hyphen_tres.split('-')[0]}'."
+    )
+
+    if base:
+        base_result = atf.run_command(
+            f"sacctmgr -i mod user {user1} where account={acct1} set MaxTRES={base}",
+            user=atf.properties["slurm-user"],
+        )
+        assert (
+            base_result["exit_code"] == 0
+        ), f"Failed to set baseline MaxTRES={base}: {base_result['stderr'].strip()}. \n{hyphen_hint}"
+
+    input_result = atf.run_command(
+        f"sacctmgr -i mod user {user1} where account={acct1} set MaxTRES={input}",
+        user=atf.properties["slurm-user"],
+    )
+    assert (
+        input_result["exit_code"] == 0
+    ), f"Failed to apply MaxTRES={input}: {input_result['stderr'].strip()}. \n{hyphen_hint}"
+
+    output = atf.run_command_output(
+        f"sacctmgr show assoc -nP where user={user1} account={acct1} format=MaxTRES",
+        fatal=True,
+    )
+    assert (
+        output.rstrip() == result
+    ), f"Association ({user1}, {acct1}) should have MaxTRES={result}, not {output.rstrip()}. \n{hyphen_hint}"

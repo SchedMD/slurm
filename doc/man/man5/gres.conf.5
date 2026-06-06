@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "Slurm 26.05" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -55,6 +55,17 @@ The hardware detection mechanisms to enable for automatic GRES configuration.
 Currently, the options are:
 .IP
 .RS
+.TP
+\fBfull\fR
+On \fBslurmd\fR, try all hardware detection mechanisms in order (NVML, NVIDIA,
+RSMI, oneAPI, NRT) until GPUs are detected, stopping after the first one that
+finds a device.
+
+\fBNOTE\fR: This is the default for dynamic nodes (\fBslurmd \-Z\fR) when
+gres.conf has no \fBAutoDetect\fR setting and no explicit \fBName=gpu\fR
+records.
+.IP
+
 .TP
 \fBnrt\fR
 Automatically detect AWS Trainium/Inferentia devices.
@@ -225,9 +236,21 @@ with that gres will have this flag implied.
 .IP
 
 .TP
+\fBenv_uuid\fR
+Set vendor environment variables using UUIDs instead of numeric
+device indices.
+Affects these environment variables: \fICUDA_VISIBLE_DEVICES\fR and
+\fIROCR_VISIBLE_DEVICES\fR.
+Requires the use of \fBAutoDetect\fR so that UUIDs are available.
+
+For example, instead of "\fICUDA_VISIBLE_DEVICES=0\fR", it would look like:
+"\fICUDA_VISIBLE_DEVICES=GPU-8932f937-d72c-4106-c12f-20bd9faed9f6\fR"
+.IP
+
+.TP
 \fBexplicit\fR
 If the flag is set, GRES is not allocated to the job as part of whole node
-allocation (--exclusive or OverSubscribe=EXCLUSIVE set on partition) unless
+allocation (--exclusive or partition \fBExclusive=NODE\fR set) unless
 it was explicitly requested by the job.
 
 \fBNOTE\fR: If a gres has this flag configured it is global, so all other nodes

@@ -85,17 +85,19 @@ extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg)
 		 __func__, con->name, bytes, slurm_strerror(rc));
 
 	/* conmgr will be unable to read entire RPC -> close connection now */
-	close_con(false, con);
+	slurm_mutex_lock(&mgr.mutex);
+	con_set_status_code(con, rc);
+	close_con(true, con);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
-static int _get_fd_readable(conmgr_fd_t *con)
+static int _get_fd_readable(const int fd, const int mss, const char *name)
 {
 	int readable = 0;
 
-	if (fd_get_readable_bytes(con->input_fd, &readable, con->name) ||
-	    !readable) {
-		if (con->mss != NO_VAL)
-			readable = con->mss;
+	if (fd_get_readable_bytes(fd, &readable, name) || !readable) {
+		if (mss != NO_VAL)
+			readable = mss;
 		else
 			readable = DEFAULT_READ_BYTES;
 	}
@@ -119,43 +121,62 @@ static int _get_fd_readable(conmgr_fd_t *con)
 extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 {
 	ssize_t read_c;
-	int rc, readable;
+	int rc = EINVAL, readable = -1, input_fd = -1, mss = NO_VAL;
 
-	con_unset_flag(con, FLAG_CAN_READ);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (con->input_fd < 0) {
+	slurm_mutex_lock(&mgr.mutex);
+
+	if ((con->input_fd < 0) || con_flag(con, FLAG_READ_EOF)) {
+		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(NET, "%s: [%s] called on closed connection",
 			 __func__, con->name);
 		return;
 	}
 
-	readable = _get_fd_readable(con);
+	/* Reset poll()ed status on the input */
+	con_unset_flag(con, FLAG_CAN_READ);
+
+	input_fd = con->input_fd;
+	mss = con->mss;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	readable = _get_fd_readable(input_fd, mss, con->name);
 
 	/* Grow buffer as needed to handle the incoming data */
 	if ((rc = try_grow_buf_remaining(buf, readable))) {
 		error("%s: [%s] unable to allocate larger %s: %s",
 		      __func__, con->name, what, slurm_strerror(rc));
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
 	/* check for errors with a NULL read */
-	if ((read_c = read(con->input_fd,
-			   (get_buf_data(buf) + get_buf_offset(buf)),
+	if ((read_c = read(input_fd, (get_buf_data(buf) + get_buf_offset(buf)),
 			   readable)) < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		int read_errno = errno;
+
+		if (read_errno == EAGAIN || read_errno == EWOULDBLOCK) {
 			log_flag(NET, "%s: [%s] socket would block on read",
 				 __func__, con->name);
 			return;
 		}
 
-		log_flag(NET, "%s: [%s] error while reading: %m",
-			 __func__, con->name);
+		log_flag(NET, "%s: [%s] error while reading: %s",
+			 __func__, con->name, slurm_strerror(read_errno));
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, read_errno);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
+
+	slurm_mutex_lock(&mgr.mutex);
 
 	/* Always update read timestamp on read() success */
 	con->last_read = timespec_now();
@@ -164,10 +185,8 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
 			 __func__, con->name, get_buf_offset(buf), what);
 
-		slurm_mutex_lock(&mgr.mutex);
-		/* lock to tell mgr that we are done */
+		/* tell mgr that we are done */
 		con_set_flag(con, FLAG_READ_EOF);
-		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in %s",
 			 __func__, con->name, read_c, get_buf_offset(buf),
@@ -178,6 +197,8 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 
 		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
 	}
+
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
@@ -283,12 +304,18 @@ extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 			log_flag(NET, "%s: [%s] retry write: %m",
 				 __func__, con->name);
 		} else {
-			error("%s: [%s] writev(%d) failed: %m",
-			      __func__, con->name, con->output_fd);
+			int write_errno = errno;
+
+			error("%s: [%s] writev(%d) failed: %s",
+			      __func__, con->name, con->output_fd,
+			      slurm_strerror(write_errno));
 			/* drop outbound data on the floor */
 			list_flush(out);
-			close_con(false, con);
-			close_con_output(false, con);
+			slurm_mutex_lock(&mgr.mutex);
+			con_set_status_code(con, write_errno);
+			close_con(true, con);
+			close_con_output(true, con);
+			slurm_mutex_unlock(&mgr.mutex);
 		}
 	} else if (args.wrote == 0) {
 		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
@@ -393,11 +420,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		      __func__, con->name, slurm_strerror(rc));
 
 		slurm_mutex_lock(&mgr.mutex);
-		if (mgr.exit_on_error)
-			mgr.shutdown_requested = true;
-
-		if (!mgr.error)
-			mgr.error = rc;
+		con_set_status_code(con, rc);
 
 		/*
 		 * processing data failed so drop any

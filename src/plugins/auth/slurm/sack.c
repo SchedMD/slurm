@@ -60,6 +60,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/serializer.h"
 
+#include "src/plugins/auth/common/auth_common.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
 #define SLURMCTLD_SACK_SOCKET "/run/slurmctld/sack.socket"
@@ -154,7 +155,7 @@ static int _sack_create(conmgr_fd_t *con, buf_t *in)
 	 * root/SlurmUser, who must already exist on all nodes.
 	 */
 	if (use_client_ids)
-		extra = get_identity_string(NULL, uid, gid);
+		extra = auth_common_get_identity_string(NULL, uid, gid);
 
 	if (!(token = create_internal("sack", uid, gid, r_uid,
 				      data, dlen, extra))) {

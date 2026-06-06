@@ -455,6 +455,8 @@ static uint32_t _str_2_res_flags(char *flags)
 
 	if (xstrcasestr(flags, "Absolute"))
 		return SLURMDB_RES_FLAG_ABSOLUTE;
+	if (xstrcasestr(flags, "SharedPool"))
+		return SLURMDB_RES_FLAG_SHARED_POOL;
 
 	return 0;
 }
@@ -853,6 +855,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		assoc->leaf_usage = NULL;
 
 		slurmdb_destroy_assoc_usage(assoc->usage);
+		slurmdb_destroy_assoc_usage(assoc->usage_het);
 		/* NOTE assoc->user_rec is a soft reference, do not free here */
 		assoc->user_rec = NULL;
 		slurmdb_destroy_bf_usage(assoc->bf_usage);
@@ -915,12 +918,14 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->container);
 		xfree(job->derived_es);
 		xfree(job->env);
+		xfree(job->exclusive);
 		xfree(job->extra);
 		xfree(job->failed_node);
 		xfree(job->jobname);
 		xfree(job->licenses);
 		xfree(job->lineage);
 		xfree(job->mcs_label);
+		xfree(job->oversubscribe);
 		xfree(job->partition);
 		xfree(job->qos_req);
 		xfree(job->nodes);
@@ -973,6 +978,7 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		FREE_NULL_LIST(qos->preempt_list);
 		xfree(qos->relative_tres_cnt);
 		slurmdb_destroy_qos_usage(qos->usage);
+		slurmdb_destroy_qos_usage(qos->usage_het);
 	}
 }
 
@@ -2167,6 +2173,8 @@ extern char *slurmdb_res_flags_str(uint32_t flags)
 		xstrcat(res_flags, "Remove,");
 	if (flags & SLURMDB_RES_FLAG_ABSOLUTE)
 		xstrcat(res_flags, "Absolute,");
+	if (flags & SLURMDB_RES_FLAG_SHARED_POOL)
+		xstrcat(res_flags, "SharedPool,");
 
 	if (res_flags)
 		res_flags[strlen(res_flags)-1] = '\0';
@@ -3017,6 +3025,51 @@ extern uint32_t slurmdb_parse_purge(char *string)
 		error("Invalid purge string '%s'", string);
 
 	return purge;
+}
+
+extern uint32_t slurmdb_purge_units_2_int(const slurmdb_purge_units_t
+						  *purge_units)
+{
+	uint32_t purge = NO_VAL;
+
+	if (!purge_units->set)
+		return NO_VAL;
+
+	if (purge_units->hours)
+		purge = (SLURMDB_PURGE_HOURS | purge_units->hours);
+	else if (purge_units->days)
+		purge = (SLURMDB_PURGE_DAYS | purge_units->days);
+	else if (purge_units->months)
+		purge = (SLURMDB_PURGE_MONTHS | purge_units->months);
+
+	if ((purge != NO_VAL) && purge_units->archive)
+		purge |= SLURMDB_PURGE_ARCHIVE;
+
+	return purge;
+}
+
+extern void slurmdb_int_2_purge_units(const uint32_t purge,
+				      slurmdb_purge_units_t *purge_units)
+{
+	uint32_t units = 0;
+
+	xassert(purge_units);
+	*purge_units = (slurmdb_purge_units_t) { 0 };
+
+	if (purge == NO_VAL)
+		return;
+
+	purge_units->set = true;
+	units = SLURMDB_PURGE_GET_UNITS(purge);
+
+	if (SLURMDB_PURGE_IN_HOURS(purge))
+		purge_units->hours = units;
+	else if (SLURMDB_PURGE_IN_DAYS(purge))
+		purge_units->days = units;
+	else if (SLURMDB_PURGE_IN_MONTHS(purge))
+		purge_units->months = units;
+
+	purge_units->archive = SLURMDB_PURGE_ARCHIVE_SET(purge);
 }
 
 extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
@@ -3964,9 +4017,11 @@ extern char *slurmdb_format_tres_str(
 			char *tres_name;
 
 			while (tmp_str[end]) {
-				if ((tmp_str[end] == '=') ||
-				    (tmp_str[end] == '+') ||
-				    (tmp_str[end] == '-'))
+				if (tmp_str[end] == '=')
+					break;
+				if (((tmp_str[end] == '+') ||
+				     (tmp_str[end] == '-')) &&
+				    (tmp_str[end + 1] == '='))
 					break;
 				end++;
 			}

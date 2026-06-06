@@ -45,7 +45,6 @@ BraceWrapping:
   AfterObjCDeclaration: false
   AfterStruct: false
   AfterUnion: false
-  AfterExternBlock: true
   BeforeCatch: false
   BeforeElse: false
   BeforeWhile: false

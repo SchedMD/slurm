@@ -52,11 +52,15 @@ typedef struct {
 	/* number of characters in request string */
 	int request_len;
 	/* Callback for path */
-	http_con_on_request_event_t on_request;
+	http_router_on_request_event_t on_request;
+	/* Callback for cleanup */
+	http_router_on_fini on_fini;
+	/* arbitrary pointer to path callbacks */
+	void *path_arg;
 } path_t;
 
 static struct {
-	http_con_on_request_event_t on_not_found;
+	http_router_on_request_event_t on_not_found;
 	xhash_t *paths;
 } router = { 0 };
 
@@ -88,11 +92,13 @@ static void _path_free(void *item)
 	path_t *rpath = item;
 
 	xassert(rpath->magic == MAGIC);
+	if (rpath->on_fini)
+		rpath->on_fini(rpath->on_request, rpath->path_arg);
 	rpath->magic = ~MAGIC;
 	xfree(rpath);
 }
 
-extern void http_router_init(http_con_on_request_event_t on_not_found)
+extern void http_router_init(http_router_on_request_event_t on_not_found)
 {
 	xassert(!router.paths);
 
@@ -125,7 +131,8 @@ static path_t *_find_path(http_request_method_t method, const char *path)
 }
 
 extern void http_router_bind(http_request_method_t method, const char *path,
-			     http_con_on_request_event_t on_request)
+			     http_router_on_request_event_t on_request,
+			     http_router_on_fini on_fini, void *path_arg)
 {
 	path_t *rpath = NULL;
 
@@ -138,6 +145,8 @@ extern void http_router_bind(http_request_method_t method, const char *path,
 	*rpath = (path_t) {
 		.magic = MAGIC,
 		.on_request = on_request,
+		.on_fini = on_fini,
+		.path_arg = path_arg,
 	};
 
 	rpath->request_len =
@@ -155,8 +164,8 @@ extern int http_router_on_request(http_con_t *hcon, const char *name,
 	path_t *rpath = NULL;
 
 	if (!(rpath = _find_path(request->method, request->url.path)))
-		return router.on_not_found(hcon, name, request, arg);
+		return router.on_not_found(hcon, name, request, arg, NULL);
 
 	xassert(rpath->magic == MAGIC);
-	return rpath->on_request(hcon, name, request, arg);
+	return rpath->on_request(hcon, name, request, arg, rpath->path_arg);
 }

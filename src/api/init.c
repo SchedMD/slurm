@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/fd.h"
 #include "src/common/read_config.h"
 
 #include "src/interfaces/accounting_storage.h"
@@ -47,6 +48,8 @@
 extern void slurm_init(const char *conf)
 {
 	slurm_conf_init(conf);
+
+	closeall_init();
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");

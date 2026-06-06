@@ -100,6 +100,15 @@ uint32_t *cr_node_cores_offset = NULL;
 bool spec_cores_first = false;
 time_t slurmd_start_time = 0;
 
+/*
+ * Old-to-new node index mapping built during load_all_node_state()
+ * so that GRES per-node arrays can be remapped after the node table
+ * is re-sorted.  Populated in slurmctld's node_mgr.c.
+ */
+int *node_old_to_new_map = NULL;
+uint32_t old_node_record_count = 0;
+bool is_node_table_changed = false;
+
 /* Local function definitions */
 static void _delete_config_record(void);
 static void _delete_node_config_ptr(node_record_t *node_ptr);
@@ -1165,7 +1174,8 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 
 	if (!xstrncmp("blockwith{", node_str, 10) ||
 	    !xstrncmp("ringwith{", node_str, 9) ||
-	    !xstrncmp("switchwith{", node_str, 11)) {
+	    !xstrncmp("switchwith{", node_str, 11) ||
+	    !xstrncmp("toruswith{", node_str, 10)) {
 		node_record_t *node_ptr;
 		bitstr_t *tmp_bitmap = bit_alloc(node_record_count);
 
@@ -1183,7 +1193,8 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 		FREE_NULL_BITMAP(tmp_bitmap);
 	} else if (!xstrncmp("block{", node_str, 6) ||
 		   !xstrncmp("ring{", node_str, 5) ||
-		   !xstrncmp("switch{", node_str, 7)) {
+		   !xstrncmp("switch{", node_str, 7) ||
+		   !xstrncmp("torus{", node_str, 6)) {
 		bitstr_t *tmp_bitmap = topology_g_get_bitmap(start_ptr);
 
 		if (tmp_bitmap) {
@@ -1694,6 +1705,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack32(object->next_state, buffer);
 		pack32(object->node_state, buffer);
 		pack32(object->cpu_bind, buffer);
+		pack32(object->suspend_time, buffer);
 		pack16(object->cpus, buffer);
 		pack16(object->boards, buffer);
 		pack16(object->tot_cores, buffer);
@@ -1716,6 +1728,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack_time(object->last_response, buffer);
 		packstr(object->parameters, buffer);
 		pack16(object->port, buffer);
+		packstr(object->power_action_name, buffer);
 		pack16(object->protocol_version, buffer);
 		pack16(object->tpc, buffer);
 		packstr(object->mcs_label, buffer);
@@ -1776,7 +1789,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		(void) gres_node_state_pack(object->gres_list, buffer,
 					    protocol_version);
 		pack32(object->weight, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(object->cert_last_renewal, buffer);
 
 		if (pack_secrets)
@@ -1814,52 +1827,6 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack_bit_str_hex(object->gpu_spec_bitmap, buffer);
 		pack32(object->tmp_disk, buffer);
 		packstr(object->topology_str, buffer);
-		pack32(object->reason_uid, buffer);
-		pack_time(object->reason_time, buffer);
-		pack_time(object->resume_after, buffer);
-		pack_time(object->boot_req_time, buffer);
-		pack_time(object->power_save_req_time, buffer);
-		pack_time(object->last_busy, buffer);
-		pack_time(object->last_response, buffer);
-		pack16(object->port, buffer);
-		pack16(object->protocol_version, buffer);
-		pack16(object->tpc, buffer);
-		packstr(object->mcs_label, buffer);
-		(void) gres_node_state_pack(object->gres_list, buffer,
-					    protocol_version);
-		pack32(object->weight, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (pack_secrets)
-			packstr(object->cert_token, buffer);
-		else
-			packnull(buffer);
-
-		packstr(object->comm_name, buffer);
-		packstr(object->name, buffer);
-		packstr(object->node_hostname, buffer);
-		packstr(object->comment, buffer);
-		packstr(object->extra, buffer);
-		packstr(object->reason, buffer);
-		packstr(object->features, buffer);
-		packstr(object->features_act, buffer);
-		packstr(object->gres, buffer);
-		packstr(object->instance_id, buffer);
-		packstr(object->instance_type, buffer);
-		packstr(object->cpu_spec_list, buffer);
-		pack32(object->next_state, buffer);
-		pack32(object->node_state, buffer);
-		pack32(object->cpu_bind, buffer);
-		pack16(object->cpus, buffer);
-		pack16(object->boards, buffer);
-		pack16(object->tot_sockets, buffer);
-		pack16(object->cores, buffer);
-		pack16(object->core_spec_cnt, buffer);
-		pack64(object->mem_spec_limit, buffer);
-		pack16(object->threads, buffer);
-		pack64(object->real_memory, buffer);
-		pack16(object->res_cores_per_gpu, buffer);
-		pack_bit_str_hex(object->gpu_spec_bitmap, buffer);
-		pack32(object->tmp_disk, buffer);
 		pack32(object->reason_uid, buffer);
 		pack_time(object->reason_time, buffer);
 		pack_time(object->resume_after, buffer);
@@ -1915,6 +1882,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack32(&object->next_state, buffer);
 		safe_unpack32(&object->node_state, buffer);
 		safe_unpack32(&object->cpu_bind, buffer);
+		safe_unpack32(&object->suspend_time, buffer);
 		safe_unpack16(&object->cpus, buffer);
 		safe_unpack16(&object->boards, buffer);
 		safe_unpack16(&object->tot_cores, buffer);
@@ -1937,6 +1905,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack_time(&object->last_response, buffer);
 		safe_unpackstr(&object->parameters, buffer);
 		safe_unpack16(&object->port, buffer);
+		safe_unpackstr(&object->power_action_name, buffer);
 		safe_unpack16(&object->protocol_version, buffer);
 		safe_unpack16(&object->tpc, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
@@ -1994,7 +1963,7 @@ extern int node_record_unpack(void **out,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&object->cert_last_renewal, buffer);
 		safe_unpackstr(&object->cert_token, buffer);
 		safe_unpackstr(&object->comm_name, buffer);
@@ -2041,52 +2010,6 @@ extern int node_record_unpack(void **out,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&object->weight, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->cert_token, buffer);
-		safe_unpackstr(&object->comm_name, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->node_hostname, buffer);
-		safe_unpackstr(&object->comment, buffer);
-		safe_unpackstr(&object->extra, buffer);
-		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->features, buffer);
-		safe_unpackstr(&object->features_act, buffer);
-		safe_unpackstr(&object->gres, buffer);
-		safe_unpackstr(&object->instance_id, buffer);
-		safe_unpackstr(&object->instance_type, buffer);
-		safe_unpackstr(&object->cpu_spec_list, buffer);
-		safe_unpack32(&object->next_state, buffer);
-		safe_unpack32(&object->node_state, buffer);
-		safe_unpack32(&object->cpu_bind, buffer);
-		safe_unpack16(&object->cpus, buffer);
-		safe_unpack16(&object->boards, buffer);
-		safe_unpack16(&object->tot_sockets, buffer);
-		safe_unpack16(&object->cores, buffer);
-		safe_unpack16(&object->core_spec_cnt, buffer);
-		safe_unpack64(&object->mem_spec_limit, buffer);
-		safe_unpack16(&object->threads, buffer);
-		safe_unpack64(&object->real_memory, buffer);
-		safe_unpack16(&object->res_cores_per_gpu, buffer);
-		unpack_bit_str_hex(&object->gpu_spec_bitmap, buffer);
-		safe_unpack32(&object->tmp_disk, buffer);
-		safe_unpack32(&object->reason_uid, buffer);
-		safe_unpack_time(&object->reason_time, buffer);
-		safe_unpack_time(&object->resume_after, buffer);
-		safe_unpack_time(&object->boot_req_time, buffer);
-		safe_unpack_time(&object->power_save_req_time, buffer);
-		safe_unpack_time(&object->last_busy, buffer);
-		safe_unpack_time(&object->last_response, buffer);
-		safe_unpack16(&object->port, buffer);
-		safe_unpack16(&object->protocol_version, buffer);
-		safe_unpack16(&object->tpc, buffer);
-		safe_unpackstr(&object->mcs_label, buffer);
-		if (gres_node_state_unpack(&object->gres_list, buffer,
-					   object->name, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpack32(&object->weight, buffer);
-
-		object->tot_cores = object->tot_sockets * object->cores;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

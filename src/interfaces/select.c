@@ -67,6 +67,7 @@ typedef struct {
 						 job_record_t *to_job_ptr);
 	int		(*job_resized)		(job_record_t *job_ptr,
 						 node_record_t *node_ptr);
+	void (*job_mem_reduce)(job_record_t *job_ptr);
 	int		(*job_fini)		(job_record_t *job_ptr);
 	int		(*job_suspend)		(job_record_t *job_ptr,
 						 bool indf_susp);
@@ -85,6 +86,7 @@ static const char *node_select_syms[] = {
 	"select_p_job_ready",
 	"select_p_job_expand",
 	"select_p_job_resized",
+	"select_p_job_mem_reduce",
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
@@ -193,6 +195,11 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "CR_ONE_TASK_PER_CORE");
+	}
+	if (select_type_param & SELECT_NO_DIST_TOPO_BLOCK) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_NO_DIST_TOPO_BLOCK");
 	}
 	if (select_type_param & SELECT_CORE_DEFAULT_DIST_BLOCK) {
 		if (select_str[0])
@@ -323,6 +330,11 @@ extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	return (*(ops.job_resized))(job_ptr, node_ptr);
 }
 
+extern void select_g_job_mem_reduce(job_record_t *job_ptr)
+{
+	(*(ops.job_mem_reduce))(job_ptr);
+}
+
 /*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
@@ -364,15 +376,6 @@ extern int select_g_select_nodeinfo_set_all(void)
 extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
 {
 	return (*(ops.nodeinfo_set))(job_ptr);
-}
-
-/*
- * packs the select plugin_id for backwards compatibility
- * Remove when 24.11 is no longer supported.
- */
-extern void select_plugin_id_pack(buf_t *buffer)
-{
-	pack32(*(ops.plugin_id), buffer);
 }
 
 /*

@@ -143,27 +143,27 @@ static const int nodes_in_page = (4064 - sizeof(list_t)) / sizeof(list_node_t);
  ****************/
 #define LIST_THREAD_LOCK_DEF pthread_t tid = pthread_self(); bool locked = false;
 
-#define LIST_THREAD_LOCK(l, write_lock)					\
-do {									\
-	/*								\
+#define LIST_THREAD_LOCK(l, write_lock) \
+	do { \
+		/*								\
 	 * If I am on the same thread and already locked,		\
 	 * don't lock again.						\
-	 */								\
-	if (l->tid != tid) {						\
-		if (write_lock) {					\
-			slurm_rwlock_wrlock(&l->mutex);			\
-			/* Only set tid under a write lock */		\
-			l->tid = tid;					\
-		} else {						\
-			slurm_rwlock_rdlock(&l->mutex);			\
-			xassert(!l->tid);				\
-		}							\
-		locked = true;						\
-	} else {							\
-		debug3("%s: list lock already held by this thread",	\
-		       __func__);					\
-	}								\
-} while (0)
+	 */ \
+		if (!pthread_equal(l->tid, tid)) { \
+			if (write_lock) { \
+				slurm_rwlock_wrlock(&l->mutex); \
+				/* Only set tid under a write lock */ \
+				l->tid = tid; \
+			} else { \
+				slurm_rwlock_rdlock(&l->mutex); \
+				xassert(!l->tid); \
+			} \
+			locked = true; \
+		} else { \
+			debug3("%s: list lock already held by this thread",	\
+		       __func__); \
+		} \
+	} while (0)
 
 #define LIST_THREAD_UNLOCK(l, write_lock)				\
 do {									\
@@ -520,11 +520,12 @@ extern int list_delete_all(list_t *l, ListFindF f, void *key)
 	list_node_t **pp;
 	void *v;
 	int n = 0;
+	LIST_THREAD_LOCK_DEF
 
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	LIST_THREAD_LOCK(l, true);
 
 	pp = &l->head;
 	while (*pp) {
@@ -539,7 +540,7 @@ extern int list_delete_all(list_t *l, ListFindF f, void *key)
 			pp = &(*pp)->next;
 		}
 	}
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, true);
 
 	return n;
 }
@@ -583,11 +584,12 @@ extern int list_delete_ptr(list_t *l, void *key)
 	list_node_t **pp;
 	void *v;
 	int n = 0;
+	LIST_THREAD_LOCK_DEF
 
 	xassert(l);
 	xassert(key);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	LIST_THREAD_LOCK(l, true);
 
 	pp = &l->head;
 	while (*pp) {
@@ -601,7 +603,7 @@ extern int list_delete_ptr(list_t *l, void *key)
 		} else
 			pp = &(*pp)->next;
 	}
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, true);
 
 	return n;
 }

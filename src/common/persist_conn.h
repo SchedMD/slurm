@@ -50,8 +50,11 @@
 #define PERSIST_FLAG_SUPPRESS_ERR   SLURM_BIT(4)
 #define PERSIST_FLAG_EXT_DBD        SLURM_BIT(5)
 #define PERSIST_FLAG_DONT_UPDATE_CLUSTER SLURM_BIT(6)
+#define PERSIST_FLAG_P_RESOURCE_CASE SLURM_BIT(7)
 
 #define PERSIST_CONN_NOT_INITED -2
+
+typedef struct persist_conn_s persist_conn_t;
 
 typedef enum {
 	PERSIST_TYPE_NONE = 0,
@@ -63,18 +66,23 @@ typedef enum {
 } persist_conn_type_t;
 
 typedef struct {
-	void *pcon;		/* persist_conn_t */
+	persist_conn_t *pcon; /* persist_conn_t */
 	void *data;		/* pointer to a message type below */
 	uint16_t msg_type;	/* slurmdbd_msg_type_t / slurm_msg_type_t */
 } persist_msg_t;
 
-typedef struct {
+typedef int (*persist_conn_callback_proc_t)(void *arg, persist_msg_t *msg,
+					    buf_t **out_buffer);
+
+typedef void (*persist_conn_callback_fini_t)(void *arg);
+
+typedef struct persist_conn_s {
 	void *auth_cred;
 	uid_t auth_uid;
 	gid_t auth_gid;
 	bool auth_ids_set;
-	int (*callback_proc)(void *arg, persist_msg_t *msg, buf_t **out_buffer);
-	void (*callback_fini)(void *arg);
+	persist_conn_callback_proc_t callback_proc;
+	persist_conn_callback_fini_t callback_fini;
 	char *cluster_name;
 	time_t comm_fail_time;	/* avoid constant error messages */
 	uint16_t my_port;
@@ -139,7 +147,7 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 extern int slurm_persist_conn_wait_for_thread_loc(void);
 
 /* Free the index given from slurm_persist_conn_wait_for_thread_loc */
-extern void slurm_persist_conn_free_thread_loc(int thread_loc);
+extern void slurm_persist_conn_free_thread_loc(int thread_loc, bool detach);
 
 /* Open a persistent socket connection and sends an init message to establish
  * the connection.

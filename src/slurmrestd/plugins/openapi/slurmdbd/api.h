@@ -205,6 +205,7 @@ extern int op_handler_association(ctxt_t *ctxt);
 extern int op_handler_clusters(ctxt_t *ctxt);
 extern int op_handler_cluster(ctxt_t *ctxt);
 extern int op_handler_config(ctxt_t *ctxt);
+extern int op_handler_conf(ctxt_t *ctxt);
 extern int op_handler_diag(ctxt_t *ctxt);
 extern int op_handler_instances(ctxt_t *ctxt);
 extern int op_handler_instance(ctxt_t *ctxt);

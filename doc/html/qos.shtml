@@ -127,8 +127,8 @@ delete a QOS attached to a partition without deleting the attachment in the
 limits instead of absolute limits by setting <code>Flags=Relative</code>.
 When this flag is set, all resource limits are treated as percentages of the
 total resources available. Values higher than 100 are interpreted as 100%.
-Memory limits should be set with no units. Although the default units (MB) will
-be displayed, the limits will be enforced as a percentage (1MB = 1%).</p>
+Memory limits should be set with no units. Although the default units (M) will
+be displayed, the limits will be enforced as a percentage (1M = 1%).</p>
 
 <p><b>NOTE</b>: When <i>Flags=Relative</i> is added to a QOS, <b>slurmctld</b>
 must be restarted or reconfigured for the flag to take effect.</p>

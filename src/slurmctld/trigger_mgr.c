@@ -56,8 +56,9 @@
 #include "src/common/bitstring.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
-#include "src/common/slurmdbd_defs.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/state_save.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -281,6 +282,10 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 	trigger_info_t *trig_in;
 	trig_mgr_info_t *trig_test;
 	uint32_t job_id = 0;
+	slurmctld_lock_t job_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+	};
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_list == NULL)
@@ -292,10 +297,23 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 		goto fini;
 	trig_in = msg->trigger_array;
 	if (trig_in->res_type == TRIGGER_RES_TYPE_JOB) {
-		job_id = (uint32_t) atol(trig_in->res_id);
-		if (job_id == 0) {
-			rc = ESLURM_INVALID_JOB_ID;
-			goto fini;
+		if (trig_in->res_id && (trig_in->res_id[0] == 's')) {
+			sluid_t sluid = str2sluid(trig_in->res_id);
+			job_record_t *job_ptr;
+			lock_slurmctld(job_read_lock);
+			if (!sluid || !(job_ptr = find_sluid(sluid))) {
+				unlock_slurmctld(job_read_lock);
+				rc = ESLURM_INVALID_JOB_ID;
+				goto fini;
+			}
+			job_id = job_ptr->job_id;
+			unlock_slurmctld(job_read_lock);
+		} else {
+			job_id = (uint32_t) atol(trig_in->res_id);
+			if (job_id == 0) {
+				rc = ESLURM_INVALID_JOB_ID;
+				goto fini;
+			}
 		}
 	} else if ((trig_in->trig_id == 0) && (trig_in->user_id == NO_VAL)) {
 		rc = EINVAL;
@@ -434,9 +452,18 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	for (i = 0; i < msg->record_count; i++) {
 		if (msg->trigger_array[i].res_type ==
 		    TRIGGER_RES_TYPE_JOB) {
-			job_id = (uint32_t) atol(
-				 msg->trigger_array[i].res_id);
-			job_ptr = find_job_record(job_id);
+			char *res_id = msg->trigger_array[i].res_id;
+			if (res_id && (res_id[0] == 's')) {
+				sluid_t sluid = str2sluid(res_id);
+				if (sluid)
+					job_ptr = find_sluid(sluid);
+				else
+					job_ptr = NULL;
+				job_id = job_ptr ? job_ptr->job_id : 0;
+			} else {
+				job_id = (uint32_t) atol(res_id);
+				job_ptr = find_job_record(job_id);
+			}
 			if (job_ptr == NULL) {
 				rc = ESLURM_INVALID_JOB_ID;
 				continue;
@@ -744,8 +771,17 @@ static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 		goto unpack_error;
 	if (trig_ptr->res_type == TRIGGER_RES_TYPE_JOB) {
 		job_record_t *job_ptr;
-		trig_ptr->job_id = (uint32_t) atol(trig_ptr->res_id);
-		job_ptr = find_job_record(trig_ptr->job_id);
+		if (trig_ptr->res_id && (trig_ptr->res_id[0] == 's')) {
+			sluid_t sluid = str2sluid(trig_ptr->res_id);
+			if (sluid)
+				job_ptr = find_sluid(sluid);
+			else
+				job_ptr = NULL;
+			trig_ptr->job_id = job_ptr ? job_ptr->job_id : 0;
+		} else {
+			trig_ptr->job_id = (uint32_t) atol(trig_ptr->res_id);
+			job_ptr = find_job_record(trig_ptr->job_id);
+		}
 		if (((trig_ptr->job_id == 0) || (job_ptr == NULL)) &&
 		    (trig_ptr->state != 2))
 			goto unpack_error;

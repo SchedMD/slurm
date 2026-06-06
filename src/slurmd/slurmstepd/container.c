@@ -198,6 +198,10 @@ static char *_generate_pattern(const char *pattern, int task_id,
 			case 'U':
 				xstrfmtcatat(buffer, &offset, "%u", step->uid);
 				break;
+			case 'Z':
+				xstrfmtcatat(buffer, &offset, "%s",
+					     c->work_dir);
+				break;
 			default:
 				fatal("%s: unexpected replacement character: %c",
 				      __func__, *b);
@@ -1196,6 +1200,9 @@ extern void container_run(stepd_step_task_info_t *task)
 #endif
 		environ = env;
 	}
+
+	xfree(c->work_dir);
+	c->work_dir = xstrdup(step->cwd);
 
 	debug4("%s: setting cwd from %s to task spooldir: %s",
 	       __func__, step->cwd, c->task_spool_dir);

@@ -1,6 +1,6 @@
 # Makefile for auth plugins
 
-SUBDIRS = none
+SUBDIRS = common none
 
 if WITH_MUNGE
 SUBDIRS += munge

@@ -79,6 +79,7 @@
 #include "launch.h"
 #include "multi_prog.h"
 #include "opt.h"
+#include "signals.h"
 
 static void _help(void);
 static void _usage(void);
@@ -120,6 +121,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
+static bool _validate_ignore_signals(void);
 
 static void  _set_options(const int argc, char **argv);
 static bool  _under_parallel_debugger(void);
@@ -899,6 +901,19 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	}
 }
 
+static bool _validate_ignore_signals(void)
+{
+	for (int i = 1; i < 64; i++) {
+		if ((sropt.ignore_signals & ((uint64_t) 1 << i)) &&
+		    !srun_sig_is_ignorable(i)) {
+			error("Signal %s cannot be ignored", sig_num2name(i));
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /*
  * _opt_verify : perform some post option processing verification
  *
@@ -1002,6 +1017,19 @@ static bool _opt_verify(void)
 		error("--exact and --whole are mutually exclusive.");
 		verified = false;
 	}
+
+	if (sropt.async && sropt.pty) {
+		error("--async and --pty are mutually exclusive.");
+		verified = false;
+	}
+
+	if (opt.immediate && sropt.async) {
+		error("--immediate and --async are mutually exclusive.");
+		verified = false;
+	}
+
+	if (!_validate_ignore_signals())
+		verified = false;
 
 	if (sropt.no_alloc && !opt.nodelist) {
 		error("must specify a node list with -Z, --no-allocate.");
@@ -1318,6 +1346,9 @@ static bool _opt_verify(void)
 #endif
 	}
 
+	if (opt.x11 && opt.clusters)
+		warning("X11 forwarding may not work reliably in combination with --clusters.");
+
 	if (opt.x11) {
 		x11_get_display(&opt.x11_target_port, &opt.x11_target);
 		opt.x11_magic_cookie = x11_get_xauth();
@@ -1515,7 +1546,8 @@ static void _usage(void)
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
-"            [--oom-kill-step[=0|1]]\n"
+"            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
+"            [--async]\n"
 "            executable [args...]\n");
 
 }
@@ -1533,6 +1565,7 @@ static void _help(void)
 "                              intervals. Supported datatypes:\n"
 "                              task=<interval> energy=<interval>\n"
 "                              network=<interval> filesystem=<interval>\n"
+"      --async                 create async step\n"
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"
 "      --bcast=<dest_path>     Copy executable file to compute nodes\n"
@@ -1556,6 +1589,7 @@ static void _help(void)
 "      --gres=list             required generic resources per node\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
+"      --ignore-signals=signals... prevent forwarding of specified signals\n"
 "  -i, --input=in              location of stdin redirection\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              run under already allocated job\n"
@@ -1654,13 +1688,8 @@ static void _help(void)
 "      --exact                 use only the resources requested for the step\n"
 "                              (by default, all non-gres resources on each node\n"
 "                              in the allocation will be used in the step)\n"
-"      --exclusive[=user]      for job allocation, this allocates nodes in\n"
-"                              in exclusive mode\n"
-"                              for job steps, this is equivalent to --exact\n"
-"      --exclusive[=mcs]       allocate nodes in exclusive mode when\n"
-"                              cpu consumable resource is enabled\n"
-"                              and mcs plugin is enabled (--exact implied)\n"
-"                              or don't share CPUs for job steps\n"
+"      --exclusive[=type]      for job allocation, this allocates nodes in\n"
+"                              exclusive mode (or specific type of exclusive)\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"
 "                              --mem >= --mem-per-cpu if --mem is specified.\n"

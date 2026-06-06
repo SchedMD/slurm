@@ -37,8 +37,16 @@ directory as slurm.conf.</p>
 <a href="namespace.yaml.html">namespace.yaml</a>. This plugin can be configured
 to create user and PID namespaces in addition to a temporary filesystem
 namespace. Namespaces can be configured for all nodes or for a subset of nodes.
-As an example, if all nodes will be configured the same way, you could put the
-following in your namespace.yaml:</p>
+</p>
+
+<p>By default the plugin creates private bind mounts for <b>/tmp</b> and
+<b>/dev/shm</b>. The <b>dirs</b> option can be used to change the list of
+directories. For more control, the <b>dir_confs</b> option provides
+per-directory configuration including per-directory backing storage, mount
+options, tmpfs support, and path substitutions.</p>
+
+<p>As an example, if all nodes will be configured the same way, you could put
+the following in your namespace.yaml:</p>
 
 <pre>
 defaults:

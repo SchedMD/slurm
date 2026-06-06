@@ -106,6 +106,7 @@ typedef struct {
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t job_core_spec;		/* count of specialized cores */
 	time_t job_end_time;            /* UNIX timestamp for job end time */
+	uint16_t job_exclusive; /* JOB_EXCLUSIVE_NONE/NODE/USER/MCS/TOPO */
 	char *job_extra;		/* Extra - arbitrary string */
 	char *job_hostlist;		/* list of nodes allocated to JOB */
 	char *job_licenses;		/* Licenses allocated to job */
@@ -115,7 +116,7 @@ typedef struct {
 	uint32_t job_nhosts;		/* count of nodes allocated to JOB */
 	slurm_addr_t *job_node_addrs;	/* allocated node addrs */
 	uint32_t job_ntasks;
-	uint16_t job_oversubscribe;	/* shared/oversubscribe status */
+	uint16_t job_oversubscribe; /* JOB_OVERSUBSCRIBE_NO/YES/OK */
 	list_t *job_gres_list;		/* Generic resources allocated to JOB */
 	char *job_partition;		/* partition */
 	char *job_qos;

@@ -55,6 +55,14 @@
 #define SLURMDB_PURGE_IN_MONTHS(_X) \
 	(_X != NO_VAL && _X & SLURMDB_PURGE_MONTHS)
 
+typedef struct {
+	uint32_t hours;
+	uint32_t days;
+	uint32_t months;
+	bool archive;
+	bool set;
+} slurmdb_purge_units_t;
+
 /* This is used to point out constants that exist in the
  * TRES records.  This should be the same order as
  * the enum pointing out the order in the array that is defined in
@@ -198,6 +206,24 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end);
 extern uint32_t slurmdb_parse_purge(char *string);
 extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
 				  bool with_archive);
+
+/*
+ * Convert a slurmdb_purge_units_t struct to uint32_t
+ * IN purge_units - struct containing values to be converted
+ * RET purge units as uint32_t
+ */
+extern uint32_t slurmdb_purge_units_2_int(const slurmdb_purge_units_t
+						  *purge_units);
+
+/*
+ * Take purge units as uint32_t and fill slurmdb_purge_units_t struct
+ * IN  purge - existing purge units
+ * OUT purge_units - slurmdb_purge_units_t struct to fill
+ * Note: purge_units is always zeroed; if purge is NO_VAL, no fields will be set
+ */
+extern void slurmdb_int_2_purge_units(const uint32_t purge,
+				      slurmdb_purge_units_t *purge_units);
+
 extern int slurmdb_addto_qos_char_list(list_t *char_list, list_t *qos_list,
 				       char *names, int option);
 /*

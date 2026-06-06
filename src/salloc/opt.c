@@ -657,6 +657,9 @@ static bool _opt_verify(void)
 	    (xstrcasestr(slurm_conf.sched_params, "salloc_wait_nodes")))
 			saopt.wait_all_nodes = 1;
 
+	if (opt.x11 && opt.clusters)
+		warning("X11 forwarding may not work reliably in combination with --clusters.");
+
 	if (opt.x11) {
 		x11_get_display(&opt.x11_target_port, &opt.x11_target);
 		opt.x11_magic_cookie = x11_get_xauth();

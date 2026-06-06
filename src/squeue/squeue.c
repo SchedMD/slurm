@@ -318,9 +318,10 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 	if (old_job_ptr) {
 		if (clear_old)
 			old_job_ptr->last_update = 0;
-		if (params.job_id) {
+		if (params.job_id || params.sluid) {
 			slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 			step_id.job_id = params.job_id;
+			step_id.sluid = params.sluid;
 			error_code = slurm_load_job(&new_job_ptr, step_id,
 						    show_flags);
 		} else if (params.user_id) {
@@ -342,9 +343,10 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		}
 	} else if (params.only_state) {
 		return (error_code = _query_job_states(argc, argv));
-	} else if (params.job_id) {
+	} else if (params.job_id || params.sluid) {
 		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 		step_id.job_id = params.job_id;
+		step_id.sluid = params.sluid;
 		error_code = slurm_load_job(&new_job_ptr, step_id, show_flags);
 	} else if (params.user_id) {
 		error_code = slurm_load_job_user(&new_job_ptr, params.user_id,

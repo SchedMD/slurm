@@ -233,11 +233,13 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	char *dassoc_inx[] = {
 		"user",
 		"acct",
+		"`partition`",
 	};
 
 	enum {
 		DASSOC_USER,
 		DASSOC_ACCT,
+		DASSOC_PART,
 		DASSOC_COUNT
 	};
 
@@ -263,11 +265,17 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		"having max(is_def)=1 " /* Is default account is selected */
 		"and not count(*)=" /* Is this all of that user's assocs? */
 		"(select count(*) FROM \"%s_%s\" "
-		"where deleted=0 AND user=myuser)) "
+		"where deleted=0 AND user=myuser) "
+		/* Only portion of defaults being removed? */
+		"and not (select count(*) from \"%s_%s\" %s where deleted=0 "
+		"and user=myuser and (%s) and is_def=1)<(select count(*) "
+		"FROM \"%s_%s\" where deleted=0 and user=myuser and is_def=1)) "
 		"as t3 ON user=myuser "
 		"where is_def=1 AND deleted=0",
 		tmp_char, cluster_name, assoc_table, cluster_name, assoc_table,
-		as_statement, assoc_char, cluster_name, assoc_table);
+		as_statement, assoc_char, cluster_name, assoc_table,
+		cluster_name, assoc_table, as_statement, assoc_char,
+		cluster_name, assoc_table);
 
 	xfree(tmp_char);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -295,6 +303,8 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		tmp_char = xstrdup_printf("C = %-15s A = %-10s U = %-9s",
 					  cluster_name, row[DASSOC_ACCT],
 					  row[DASSOC_USER]);
+		if (row[DASSOC_PART][0])
+			xstrfmtcat(tmp_char, " P = %-9s", row[DASSOC_PART]);
 		list_append(ret_list, tmp_char);
 	}
 
@@ -1250,6 +1260,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "derived_ec", "int unsigned default 0 not null" },
 		{ "derived_es", "text" },
 		{ "env_hash_inx", "bigint unsigned default 0 not null" },
+		{ "exclusive", "tinytext" },
 		{ "exit_code", "int unsigned default 0 not null" },
 		{ "extra", "text" },
 		{ "flags", "int unsigned default 0 not null" },
@@ -1275,12 +1286,14 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "nodelist", "text" },
 		{ "nodes_alloc", "int unsigned not null" },
 		{ "node_inx", "text" },
+		{ "oversubscribe", "tinytext" },
 		{ "partition", "tinytext not null" },
 		{ "priority", "int unsigned not null" },
 		{ "qos_req", "text" },
 		{ "restart_cnt", "smallint unsigned default 0" },
 		{ "resv_req", "text" },
 		{ "script_hash_inx", "bigint unsigned default 0 not null" },
+		{ "sluid", "bigint unsigned default 0 not null" },
 		{ "state", "int unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "time_submit", "bigint unsigned default 0 not null" },
@@ -1540,7 +1553,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (hash_inx), "
 				  "unique index env_hash_inx "
 				  "(env_hash(66)), "
-				  "key archive_delete (deleted))")
+				  "key archive_delete (deleted), "
+				  "key archive_purge (last_used))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1551,7 +1565,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (hash_inx), "
 				  "unique index script_hash_inx "
 				  "(script_hash(66)), "
-				  "key archive_delete (deleted))")
+				  "key archive_delete (deleted), "
+				  "key archive_purge (last_used))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -3469,9 +3484,10 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_config(void *db_conn, char *config_name)
+extern int acct_storage_p_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr)
 {
-	return NULL;
+	return ESLURM_NOT_SUPPORTED;
 }
 
 extern list_t *acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,

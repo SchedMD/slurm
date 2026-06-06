@@ -138,3 +138,33 @@ cleanup:
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 	return SLURM_SUCCESS;
 }
+
+static int _dump_conf(openapi_ctxt_t *ctxt)
+{
+	int rc = EINVAL;
+	openapi_resp_slurmdbd_conf_t resp = { 0 };
+
+	if ((rc = slurmdb_config_get(ctxt->db_conn, &resp.slurmdb_conf)))
+		(void) resp_error(ctxt, rc, __func__,
+				  "slurmdb_config_get() failed");
+
+	rc = DATA_DUMP(ctxt->parser, OPENAPI_SLURMDBD_CONF_RESP, resp,
+		       ctxt->resp);
+
+	slurmdbd_free_conf(resp.slurmdb_conf);
+	return rc;
+}
+
+extern int op_handler_conf(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_GET)
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	else
+		rc = _dump_conf(ctxt);
+
+	return rc;
+}

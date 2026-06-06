@@ -47,6 +47,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 
+#define SLURM_24_11_PROTOCOL_VERSION MAKE_SLURM_VER(42)
 #define SLURM_24_05_PROTOCOL_VERSION MAKE_SLURM_VER(41)
 #define SLURM_23_11_PROTOCOL_VERSION ((40 << 8) | 0)
 #define SLURM_23_02_PROTOCOL_VERSION ((39 << 8) | 0)
@@ -123,6 +124,7 @@ typedef struct {
 	char *derived_ec;
 	char *derived_es;
 	char *env_hash_inx;
+	char *exclusive;
 	char *exit_code;
 	char *extra;
 	char *eligible;
@@ -141,6 +143,7 @@ typedef struct {
 	char *name;
 	char *nodelist;
 	char *node_inx;
+	char *oversubscribe;
 	char *partition;
 	char *priority;
 	char *qos;
@@ -204,6 +207,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->derived_ec);
 		xfree(object->derived_es);
 		xfree(object->env_hash_inx);
+		xfree(object->exclusive);
 		xfree(object->exit_code);
 		xfree(object->extra);
 		xfree(object->eligible);
@@ -222,6 +226,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->name);
 		xfree(object->nodelist);
 		xfree(object->node_inx);
+		xfree(object->oversubscribe);
 		xfree(object->partition);
 		xfree(object->priority);
 		xfree(object->qos);
@@ -576,6 +581,7 @@ static char *job_req_inx[] = {
 	"derived_ec",
 	"derived_es",
 	"env_hash_inx",
+	"exclusive",
 	"exit_code",
 	"extra",
 	"flags",
@@ -595,6 +601,7 @@ static char *job_req_inx[] = {
 	"job_name",
 	"nodelist",
 	"node_inx",
+	"oversubscribe",
 	"`partition`",
 	"priority",
 	"id_qos",
@@ -641,6 +648,7 @@ enum {
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_ENV_HASH_INX,
+	JOB_REQ_EXCLUSIVE,
 	JOB_REQ_EXIT_CODE,
 	JOB_REQ_EXTRA,
 	JOB_REQ_FLAGS,
@@ -660,6 +668,7 @@ enum {
 	JOB_REQ_NAME,
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
+	JOB_REQ_OVERSUBSCRIBE,
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
@@ -1057,6 +1066,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
 	packstr(object->env_hash_inx, buffer);
+	packstr(object->exclusive, buffer);
 	packstr(object->exit_code, buffer);
 	packstr(object->extra, buffer);
 	packstr(object->flags, buffer);
@@ -1076,6 +1086,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->node_inx, buffer);
 	packstr(object->het_job_id, buffer);
 	packstr(object->het_job_offset, buffer);
+	packstr(object->oversubscribe, buffer);
 	packstr(object->partition, buffer);
 	packstr(object->priority, buffer);
 	packstr(object->qos, buffer);
@@ -1113,7 +1124,72 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 
 	memset(object, 0, sizeof(local_job_t));
 
-	if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->account, buffer);
+		safe_unpackstr(&object->admin_comment, buffer);
+		safe_unpackstr(&object->alloc_nodes, buffer);
+		safe_unpackstr(&object->associd, buffer);
+		safe_unpackstr(&object->array_jobid, buffer);
+		safe_unpackstr(&object->array_max_tasks, buffer);
+		safe_unpackstr(&object->array_taskid, buffer);
+		safe_unpackstr(&object->array_task_pending, buffer);
+		safe_unpackstr(&object->array_task_str, buffer);
+		safe_unpackstr(&object->script_hash_inx, buffer);
+		safe_unpackstr(&object->blockid, buffer);
+		safe_unpackstr(&object->constraints, buffer);
+		safe_unpackstr(&object->container, buffer);
+		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr(&object->derived_ec, buffer);
+		safe_unpackstr(&object->derived_es, buffer);
+		safe_unpackstr(&object->env_hash_inx, buffer);
+		safe_unpackstr(&object->exclusive, buffer);
+		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->extra, buffer);
+		safe_unpackstr(&object->flags, buffer);
+		safe_unpackstr(&object->timelimit, buffer);
+		safe_unpackstr(&object->eligible, buffer);
+		safe_unpackstr(&object->end, buffer);
+		safe_unpackstr(&object->gid, buffer);
+		safe_unpackstr(&object->gres_used, buffer);
+		safe_unpackstr(&object->job_db_inx, buffer);
+		safe_unpackstr(&object->jobid, buffer);
+		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->licenses, buffer);
+		safe_unpackstr(&object->mcs_label, buffer);
+		safe_unpackstr(&object->mod_time, buffer);
+		safe_unpackstr(&object->name, buffer);
+		safe_unpackstr(&object->nodelist, buffer);
+		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr(&object->het_job_id, buffer);
+		safe_unpackstr(&object->het_job_offset, buffer);
+		safe_unpackstr(&object->oversubscribe, buffer);
+		safe_unpackstr(&object->partition, buffer);
+		safe_unpackstr(&object->priority, buffer);
+		safe_unpackstr(&object->qos, buffer);
+		safe_unpackstr(&object->qos_req, buffer);
+		safe_unpackstr(&object->req_cpus, buffer);
+		safe_unpackstr(&object->req_mem, buffer);
+		safe_unpackstr(&object->restart_cnt, buffer);
+		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr(&object->resv_req, buffer);
+		safe_unpackstr(&object->segment_size, buffer);
+		safe_unpackstr(&object->start, buffer);
+		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr(&object->state_reason_prev, buffer);
+		safe_unpackstr(&object->std_err, buffer);
+		safe_unpackstr(&object->std_in, buffer);
+		safe_unpackstr(&object->std_out, buffer);
+		safe_unpackstr(&object->submit, buffer);
+		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr(&object->submit_line, buffer);
+		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr(&object->tres_alloc_str, buffer);
+		safe_unpackstr(&object->tres_req_str, buffer);
+		safe_unpackstr(&object->uid, buffer);
+		safe_unpackstr(&object->wckey, buffer);
+		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr(&object->work_dir, buffer);
+	} else if (rpc_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->account, buffer);
 		safe_unpackstr(&object->admin_comment, buffer);
 		safe_unpackstr(&object->alloc_nodes, buffer);
@@ -3759,6 +3835,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
 		job.env_hash_inx = row[JOB_REQ_ENV_HASH_INX];
+		job.exclusive = row[JOB_REQ_EXCLUSIVE];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
 		job.extra = row[JOB_REQ_EXTRA];
 		job.flags = row[JOB_REQ_FLAGS];
@@ -3778,6 +3855,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
+		job.oversubscribe = row[JOB_REQ_OVERSUBSCRIBE];
 		job.partition = row[JOB_REQ_PARTITION];
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
@@ -3874,12 +3952,14 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_CONSTRAINTS,
 		JOB_REQ_CONTAINER,
 		JOB_REQ_DERIVED_ES,
+		JOB_REQ_EXCLUSIVE,
 		JOB_REQ_EXTRA,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_LICENSES,
 		JOB_REQ_MCS_LABEL,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
+		JOB_REQ_OVERSUBSCRIBE,
 		JOB_REQ_SUBMIT_LINE,
 		JOB_REQ_SYSTEM_COMMENT,
 		JOB_REQ_QOS_REQ,
@@ -3946,6 +4026,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.exclusive == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.extra == NULL)
 			xstrcatat(format, &format_pos, ", %s");
 		else
@@ -3967,6 +4051,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.node_inx == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.oversubscribe == NULL)
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
@@ -4049,6 +4137,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.container,
 			     (object.derived_es == NULL) ?
 			     "NULL" : object.derived_es,
+			     (object.exclusive == NULL) ?
+			     "NULL" : object.exclusive,
 			     (object.extra == NULL) ?
 			     "NULL" : object.extra,
 			     (object.kill_requid == NULL) ?
@@ -4061,6 +4151,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.nodelist,
 			     (object.node_inx == NULL) ?
 			     "NULL" : object.node_inx,
+			     (object.oversubscribe == NULL) ?
+			     "NULL" : object.oversubscribe,
 			     (object.submit_line == NULL) ?
 			     "NULL" : object.submit_line,
 			     (object.system_comment == NULL) ?
@@ -5219,17 +5311,17 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_JOB_ENV_NJ:
 	case PURGE_JOB_SCRIPT_NJ:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "unix_timestamp(%s) <= %ld LIMIT %d",
+				       "%s <= FROM_UNIXTIME(%ld) LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       period_end,
 				       slurmdbd_conf->max_purge_limit);
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "%s <= %ld && time_end != 0 "
+				       "%s > 0 && %s <= %ld "
 				       "LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end,
+				       col_name, period_end,
 				       slurmdbd_conf->max_purge_limit);
 
 		break;
@@ -5411,19 +5503,19 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	case PURGE_JOB_SCRIPT_NJ:
 	case PURGE_JOB_ENV_NJ:
 		query = xstrdup_printf("select unix_timestamp(%s) from "
-				       "\"%s_%s\" where unix_timestamp(%s) "
-				       "<= %ld order by %s asc limit 1",
+				       "\"%s_%s\" where %s "
+				       "<= FROM_UNIXTIME(%ld) order by %s "
+				       "asc limit 1",
 				       col_name, cluster, table, col_name,
 				       period_end, col_name);
 
 		break;
 
 	default:
-		query = xstrdup_printf(
-			"select %s from \"%s_%s\" where %s <= %ld "
-			"&& time_end != 0 order by %s asc LIMIT 1",
-			col_name, cluster, table, col_name, period_end,
-			col_name);
+		query = xstrdup_printf("select %s from \"%s_%s\" where %s > 0 "
+				       "&& %s <= %ld order by %s asc LIMIT 1",
+				       col_name, cluster, table, col_name,
+				       col_name, period_end, col_name);
 		break;
 	}
 
@@ -5732,24 +5824,21 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		 * a time. mysql_db_delete_affected_rows will return < 0 on
 		 * failure or 0 if no records are affected.
 		 */
-		if ((rc = mysql_db_delete_affected_rows(
-			     mysql_conn, purge_query)) > 0) {
-			/* Commit here every time since this could create a huge
-			 * transaction.
-			 */
-			if ((rc = mysql_db_commit(mysql_conn)))
-				error("Couldn't commit cluster (%s) purge",
-				      cluster_name);
-		}
-
-		if (rc != SLURM_SUCCESS) {
+		rc = mysql_db_delete_affected_rows(mysql_conn, purge_query);
+		if (rc < 0) {
 			error("Couldn't remove old data from %s table",
 			      sql_table);
+			rc = SLURM_ERROR;
 			goto end_it;
-		} else if (mysql_db_commit(mysql_conn)) {
+		}
+
+		/* Commit here every time since this could create a huge
+		 * transaction.
+		 */
+		if ((rc = mysql_db_commit(mysql_conn))) {
 			error("Couldn't commit cluster (%s) purge",
 			      cluster_name);
-			break;
+			goto end_it;
 		}
 	}
 end_it:

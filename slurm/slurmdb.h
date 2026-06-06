@@ -155,6 +155,7 @@ typedef enum {
 #define	SLURMDB_RES_FLAG_REMOVE      0x40000000
 
 #define	SLURMDB_RES_FLAG_ABSOLUTE    SLURM_BIT(0)
+#define SLURMDB_RES_FLAG_SHARED_POOL SLURM_BIT(1)
 
 /* Define Federation flags */
 #define	FEDERATION_FLAG_BASE           0x0fffffff
@@ -294,6 +295,86 @@ typedef enum {
 #define DB_CONN_FLAG_CLUSTER_DEL SLURM_BIT(0)
 #define DB_CONN_FLAG_ROLLBACK SLURM_BIT(1)
 #define DB_CONN_FLAG_FEDUPDATE SLURM_BIT(2)
+
+#define DEFAULT_SLURMDBD_AUTHTYPE "auth/munge"
+//#define DEFAULT_SLURMDBD_JOB_PURGE	12
+#define DEFAULT_SLURMDBD_PIDFILE "/var/run/slurmdbd.pid"
+#define DEFAULT_SLURMDBD_ARCHIVE_DIR "/tmp"
+#define DEFAULT_SLURMDBD_KEEPALIVE_INTERVAL 30
+#define DEFAULT_SLURMDBD_KEEPALIVE_PROBES 3
+#define DEFAULT_SLURMDBD_KEEPALIVE_TIME 30
+#define DEFAULT_SLURMDBD_MAX_PURGE_LIMIT 50000
+
+//#define DEFAULT_SLURMDBD_STEP_PURGE	1
+
+/* Define slurmdbd_conf_t flags */
+enum dbd_conf_flag {
+	DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT = SLURM_BIT(0),
+	DBD_CONF_FLAG_ALL_RES_ABS = SLURM_BIT(1),
+	DBD_CONF_FLAG_DISABLE_COORD_DBD = SLURM_BIT(2),
+	DBD_CONF_FLAG_GET_DBVER = SLURM_BIT(3),
+	DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS = SLURM_BIT(4),
+	DBD_CONF_FLAG_DISABLE_ROLLUPS = SLURM_BIT(5),
+};
+
+/* SlurmDBD configuration parameters */
+typedef struct {
+	char *archive_dir; /* location to locally store
+					 * data if not using a script   */
+	char *archive_script; /* script to archive old data	*/
+	uint16_t commit_delay; /* On busy systems delay
+					 * commits from slurmctld this
+					 * many seconds                 */
+	char *dbd_addr; /* network address of Slurm DBD	*/
+	char *dbd_backup; /* hostname of Slurm DBD backup */
+	char *dbd_host; /* hostname of Slurm DBD	*/
+	uint16_t dbd_port; /* port number for RPCs to DBD	*/
+	uint16_t debug_level; /* Debug level, default=3	*/
+	char *default_qos; /* default qos setting when
+					 * adding clusters              */
+	uint32_t flags; /* Various flags see DBD_CONF_FLAG_* */
+	char *log_file; /* Log file			*/
+	uint32_t max_purge_limit; /* max number of records that are purged in a
+				   * single query so that locks can be
+				   * periodically released */
+	uint32_t max_time_range; /* max time range for user queries */
+	char *parameters; /* parameters to change behavior with
+					 * the slurmdbd directly	*/
+	uint16_t persist_conn_rc_flags; /* flags to be sent back on any
+						* persist connection init
+						*/
+	char *pid_file; /* where to store current PID	*/
+	/* purge variable format
+					 * controlled by PURGE_FLAGS	*/
+	uint32_t purge_event; /* purge events older than
+					 * this in months or days       */
+	uint32_t purge_job; /* purge time for job info	*/
+	uint32_t purge_resv; /* purge time for reservation info */
+	uint32_t purge_step; /* purge time for step info	*/
+	uint32_t purge_suspend; /* purge suspend data older
+					 * than this in months or days	*/
+	uint32_t purge_txn; /* purge transaction data older
+					 * than this in months or days	*/
+	uint32_t purge_usage; /* purge usage data older
+					 * than this in months or days	*/
+	uint32_t purge_jobscript; /* purge job scripts older
+				   * than this in months or days  */
+	uint32_t purge_jobenv; /* purge job environments older
+				* than this in months or days  */
+	char *storage_loc; /* database name		*/
+	char *storage_pass_script;
+	char *storage_user;
+	uint16_t syslog_debug; /* output to both logfile and syslog*/
+	uint16_t track_wckey; /* Whether or not to track wckey*/
+	uint16_t track_ctld; /* Whether or not track when a
+					 * slurmctld goes down or not   */
+} slurmdbd_conf_t;
+
+/*
+ * slurmdbd_free_conf - free slurmdbd configuration message
+ * IN conf - pointer to slurmdbd configuration message
+ */
+extern void slurmdbd_free_conf(slurmdbd_conf_t *conf);
 
 /********************************************/
 
@@ -631,6 +712,7 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t uid;		   /* user ID */
 	slurmdb_assoc_usage_t *usage;
+	slurmdb_assoc_usage_t *usage_het;
 	char *user;		   /* user associated to assoc */
 	slurmdb_user_rec_t *user_rec; /* Cache of user record
 				       * soft ref - mem not managed here
@@ -899,6 +981,7 @@ typedef struct {
 	time_t eligible;
 	time_t end;
 	char *env;
+	char *exclusive;
 	uint32_t exitcode;
 	char *extra; /* Extra - arbitrary string */
 	char *failed_node;
@@ -914,6 +997,7 @@ typedef struct {
 	char *licenses;
 	char 	*mcs_label;
 	char	*nodes;
+	char *oversubscribe;
 	char	*partition;
 	uint32_t priority;
 	uint32_t qosid;
@@ -928,6 +1012,7 @@ typedef struct {
 	char *script;
 	uint16_t segment_size;
 	uint32_t show_full;
+	uint64_t sluid; /* sluid from first submission, never changes */
 	time_t start;
 	uint32_t state;
 	uint32_t state_reason_prev;
@@ -1118,6 +1203,7 @@ typedef struct {
 			     * heterogeneous systems */
 	uint64_t *relative_tres_cnt; /* Only here for convenience DON'T PACK */
 	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
+	slurmdb_qos_usage_t *usage_het; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny
@@ -1830,11 +1916,22 @@ extern int slurmdb_clear_stats(void *db_conn);
 extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr);
 
 /*
- * get info from the storage
- * RET: List of config_key_pair_t *
- * note List needs to be freed with slurm_list_destroy() when called
+ * Get descriptive keypairs from slurmdbd_conf
+ * IN slurmdbd_conf - Pointer to slurmdbd_conf instance
+ * RET: List of config_key_pair_t * (caller must FREE_NULL_LIST())
  */
-extern list_t *slurmdb_config_get(void *db_conn);
+extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t
+						   *slurmdbd_conf);
+
+/*
+ * Get config from slurmdbd
+ * IN db_conn - db connection
+ * IN slurmdbd_conf_ptr - Pointer to populate.
+ *	Pointer must released via slurmdbd_free_conf().
+ * RET: SLURM_SUCCESS or error
+ */
+extern int slurmdb_config_get(void *db_conn,
+			      slurmdbd_conf_t **slurmdbd_conf_ptr);
 
 /*
  * get info from the storage

@@ -39,6 +39,13 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+typedef struct {
+	char *path; /* target mount point, e.g. "/tmp" */
+	char *base_path; /* per-dir backing storage root (optional) */
+	char *opts_str; /* mount option string (optional) */
+	bool tmpfs; /* mount as fresh tmpfs instead of bind */
+} ns_dir_t;
+
 typedef struct ns_conf {
 	bool auto_basepath;
 	char *basepath;
@@ -49,6 +56,7 @@ typedef struct ns_conf {
 	uint32_t clonensflags;
 	uint32_t clonensepilog_wait;
 	char *dirs;
+	list_t *dir_confs; /* list of ns_dir_t*; supersedes dirs when set */
 	bool disable_bpf_token;
 	char *initscript;
 	bool shared;
@@ -107,7 +115,7 @@ extern int namespace_g_restore(char *dir_name, bool recover);
 extern int namespace_g_stepd_create(stepd_step_rec_t *step);
 
 /* Delete the namespace for the specified job, actions run in slurmstepd */
-extern int namespace_g_stepd_delete(slurm_step_id_t *step_id);
+extern int namespace_g_stepd_delete(stepd_step_rec_t *step);
 
 /* Send namespace config to slurmstepd on the provided file descriptor */
 extern int namespace_g_send_stepd(int fd);
@@ -121,6 +129,7 @@ extern bool namespace_g_can_bpf(stepd_step_rec_t *step);
 /* Setups the bpf token */
 extern int namespace_g_setup_bpf_token(stepd_step_rec_t *step);
 
+extern void slurm_free_ns_dir(ns_dir_t *ns_dir);
 extern void slurm_free_ns_conf_members(ns_conf_t *ns_conf);
 extern void slurm_free_ns_conf(ns_conf_t *ns_conf);
 extern void slurm_free_ns_full_conf(ns_full_conf_t *ns_full_conf);

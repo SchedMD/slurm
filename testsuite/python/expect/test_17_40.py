@@ -13,7 +13,7 @@ def setup():
     atf.require_config_parameter("SelectTypeParameters", "CR_Core")
 
     atf.require_config_parameter("AllowSpecResourcesUsage", "YES")
-    atf.require_nodes(2, [("CPUs", 4)])
+    atf.require_nodes(2, [("Sockets", 2), ("CoresPerSocket", 4), ("ThreadsPerCore", 2)])
     atf.require_slurm_running()
 
 

@@ -1996,10 +1996,18 @@ skip_start:
 				     job_state_reason_string(
 					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
+		} else if (IS_TOPO_ERROR(error_code)) {
+			sched_debug2("%pJ cannot start: %s. Partition=%s. state_desc=%s",
+				   job_ptr, slurm_strerror(error_code),
+				   job_ptr->partition,
+				   job_ptr->state_desc);
+			if (!use_prefer)
+				fail_by_part = true;
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
-			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
+			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+			   (error_code !=
+			    ESLURM_INVALID_BURST_BUFFER_REQUEST)) {
 			sched_info("schedule: %pJ non-runnable: %s",
 				   job_ptr, slurm_strerror(error_code));
 			last_job_update = now;
@@ -2440,8 +2448,9 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	 * logic fills in the default stdout path in the batch launch message so
 	 * that slurmstepd can handle the paths correctly as they now expect
 	 * stdout path to be set.
+	 * Remove this when 25.05 is no longer supported.
 	 */
-	if ((job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) &&
+	if ((job_ptr->start_protocol_ver < SLURM_25_11_PROTOCOL_VERSION) &&
 	    !launch_msg_ptr->std_out) {
 		if (!job_ptr->array_job_id) {
 			launch_msg_ptr->std_out =
@@ -2596,22 +2605,18 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	/* Should always be set for active jobs */
 	struct job_resources *resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_t *step_layout = NULL;
-	uint16_t cpus_per_task_array[1];
-	uint32_t cpus_task_reps[1];
 	uint16_t cpus_per_task = 1;
 	char *task_count = NULL;
+	uint16_t *cpus_per_node = NULL;
+	uint16_t *cpus_per_task_array = NULL;
+	int node_inx = 0;
 
 	slurm_step_layout_req_t step_layout_req = {
-		.cpus_per_task = cpus_per_task_array,
-		.cpus_task_reps = cpus_task_reps,
 		.plane_size = NO_VAL16,
 	};
 
 	xassert(job_ptr->details);
 	xassert(resrcs_ptr);
-
-	step_layout_req.cpu_count_reps = resrcs_ptr->cpu_array_reps;
-	step_layout_req.cpus_per_node = resrcs_ptr->cpu_array_value;
 
 	step_layout_req.num_hosts = resrcs_ptr->nhosts;
 
@@ -2619,8 +2624,23 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	    (job_ptr->details->cpus_per_task != NO_VAL16))
 		cpus_per_task = job_ptr->details->cpus_per_task;
 
-	cpus_per_task_array[0] = cpus_per_task;
-	cpus_task_reps[0] = resrcs_ptr->nhosts;
+	/* Expand RLE cpu_array into flat per-node arrays */
+	cpus_per_node = xcalloc(resrcs_ptr->nhosts, sizeof(*cpus_per_node));
+	cpus_per_task_array =
+		xcalloc(resrcs_ptr->nhosts, sizeof(*cpus_per_task_array));
+	for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+		for (int j = 0; j < resrcs_ptr->cpu_array_reps[i]; j++) {
+			if (node_inx >= resrcs_ptr->nhosts)
+				break;
+			cpus_per_node[node_inx] =
+				resrcs_ptr->cpu_array_value[i];
+			cpus_per_task_array[node_inx] = cpus_per_task;
+			node_inx++;
+		}
+	}
+
+	step_layout_req.cpus_per_node = cpus_per_node;
+	step_layout_req.cpus_per_task = cpus_per_task_array;
 
 	if (job_ptr->bit_flags & JOB_NTASKS_SET &&
 	    (job_ptr->details->num_tasks)) {
@@ -2630,11 +2650,9 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 					    step_layout_req.num_hosts;
 	} else {
 		step_layout_req.num_tasks = 0;
-		for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+		for (int i = 0; i < resrcs_ptr->nhosts; i++) {
 			step_layout_req.num_tasks +=
-				(resrcs_ptr->cpu_array_value[i] /
-				 cpus_per_task) *
-				resrcs_ptr->cpu_array_reps[i];
+				cpus_per_node[i] / cpus_per_task;
 		}
 	}
 
@@ -2659,6 +2677,8 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 		slurm_step_layout_destroy(step_layout);
 	}
 
+	xfree(cpus_per_node);
+	xfree(cpus_per_task_array);
 	return task_count;
 }
 
@@ -2669,6 +2689,21 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 	if (job->name)
 		env_array_overwrite(&launch->environment, "SLURM_JOB_NAME",
 				    job->name);
+
+	/*
+	 * The oversubscribe/exclusive helpers handle job->details == NULL
+	 * internally; the rest of this function dereferences job->details
+	 * unconditionally, so no guard is needed here. These return static
+	 * strings; do not xfree.
+	 */
+	env_array_overwrite(&launch->environment,
+			    "SLURM_JOB_OVERSUBSCRIBE",
+			    job_oversubscribe_string(
+				    get_job_oversubscribe_value(job)));
+	env_array_overwrite(&launch->environment,
+			    "SLURM_JOB_EXCLUSIVE",
+			    job_exclusive_display_string(
+				    get_job_exclusive_display_value(job)));
 
 	if (job->details->open_mode) {
 		/* Propagate mode to spawned job using environment variable */
@@ -4534,8 +4569,6 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	if (job_start_data->rc == SLURM_SUCCESS) {
 		int test_fini = -1;
 		uint8_t save_share_res, save_whole_node;
-		/* On BlueGene systems don't adjust the min/max node limits
-		   here.  We are working on midplane values. */
 		min_nodes = MAX(job_ptr->details->min_nodes,
 				part_ptr->min_nodes);
 		if (job_ptr->details->max_nodes == 0)
@@ -4608,7 +4641,8 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		resp_data->start_time = MAX(job_ptr->start_time,
 					    orig_start_time);
 		resp_data->start_time = MAX(resp_data->start_time, start_res);
-		job_ptr->start_time   = 0;  /* restore pending job start time */
+		/* restore pending job start time to what backfill set */
+		job_ptr->start_time = orig_start_time;
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		resp_data->part_name  = xstrdup(part_ptr->name);
 
@@ -4737,53 +4771,15 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
 	return boot_node_bitmap;
 }
 
-/*
- * reboot_job_nodes - Reboot the compute nodes allocated to a job.
- * Also change the modes of KNL nodes for node_features/knl_generic plugin.
- * IN job_ptr - pointer to job that will be initiated
- * RET SLURM_SUCCESS(0) or error code
- */
-static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
-			     uint16_t protocol_version)
-{
-	agent_arg_t *reboot_agent_args = NULL;
-	reboot_msg_t *reboot_msg;
-	hostlist_t *hostlist;
-
-	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-	reboot_agent_args->retry = 0;
-	reboot_agent_args->node_count = 0;
-	reboot_agent_args->protocol_version = protocol_version;
-
-	if ((hostlist = bitmap2hostlist(node_bitmap))) {
-		reboot_agent_args->hostlist = hostlist;
-		reboot_agent_args->node_count = hostlist_count(hostlist);
-	}
-
-	reboot_msg = xmalloc(sizeof(reboot_msg_t));
-	slurm_init_reboot_msg(reboot_msg, false);
-	reboot_agent_args->msg_args = reboot_msg;
-	reboot_msg->features = xstrdup(features);
-
-	set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
-	agent_queue_request(reboot_agent_args);
-}
-
-static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
-		       job_record_t *job_ptr, char *reboot_features,
-		       uint16_t protocol_version)
+static void _do_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
+		       char *reboot_features, uint16_t protocol_version)
 {
 	xassert(node_bitmap);
 
 	if (bit_ffs(node_bitmap) == -1)
 		return;
 
-	if (power_save_on)
-		power_job_reboot(node_bitmap, job_ptr, reboot_features);
-	else
-		_send_reboot_msg(node_bitmap, reboot_features,
-				 protocol_version);
+	power_action_reboot(node_bitmap, reboot_features);
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		char *nodes = bitmap2node_name(node_bitmap);
 		if (nodes) {
@@ -4824,14 +4820,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	bitstr_t *non_feature_node_bitmap = NULL;
 	char *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
-	static bool power_save_on = false;
-	static time_t sched_update = 0;
-	static bool logged = false;
-
-	if (sched_update != slurm_conf.last_update) {
-		power_save_on = power_save_test();
-		sched_update = slurm_conf.last_update;
-	}
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
 		return;
@@ -4841,15 +4829,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	else
 		boot_node_bitmap = node_features_reboot(job_ptr,
 							&reboot_features);
-
-	if (!logged && boot_node_bitmap &&
-	    (!power_save_on &&
-	     ((slurm_conf.reboot_program == NULL) ||
-	      (slurm_conf.reboot_program[0] == '\0')))) {
-		info("%s: Preparing node reboot without power saving and RebootProgram",
-		     __func__);
-		logged = true;
-	}
 
 	if (boot_node_bitmap &&
 	    job_ptr->details->features_use &&
@@ -4943,6 +4922,19 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		}
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
+		if (reboot_features &&
+		    !node_features_g_job_features_need_reboot(reboot_features)) {
+			/* Don't need to put REBOOT_ISSUSED flag on. */
+		} else {
+			/*
+			 * Use REBOOT_ISSUED flag to be able to detect when a
+			 * node was rebooted through this code and to determine
+			 * if the health check should be run when the node
+			 * finished rebooting.
+			 */
+			node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
+		}
+
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(power_down_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
@@ -4951,22 +4943,21 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 
 	if (feature_node_bitmap) {
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
-		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
-			   reboot_features, protocol_version);
+		_do_reboot(feature_node_bitmap, job_ptr, reboot_features,
+			   protocol_version);
 		bit_and_not(boot_node_bitmap, feature_node_bitmap);
 	}
 
 	if (non_feature_node_bitmap) {
 		/* Reboot nodes with no feature changes */
-		_do_reboot(power_save_on, non_feature_node_bitmap, job_ptr,
-			   NULL, protocol_version);
+		_do_reboot(non_feature_node_bitmap, job_ptr, NULL,
+			   protocol_version);
 		bit_and_not(boot_node_bitmap, non_feature_node_bitmap);
 	}
 
 	if (job_ptr->reboot) {
 		/* Reboot the remaining nodes blindly as per direct request */
-		_do_reboot(power_save_on, boot_node_bitmap, job_ptr, NULL,
-			   protocol_version);
+		_do_reboot(boot_node_bitmap, job_ptr, NULL, protocol_version);
 	}
 
 cleanup:
@@ -5055,7 +5046,8 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 	if (job_ptr->job_state & JOB_REQUEUE_FED)
 		return;
 
-	if (IS_JOB_CONFIGURING(job_ptr) && test_job_nodes_ready(job_ptr)) {
+	if (IS_JOB_CONFIGURING(job_ptr) && !pick_batch_host(job_ptr) &&
+	    test_job_nodes_ready(job_ptr)) {
 		info("%s: Configuration for %pJ is complete",
 		     __func__, job_ptr);
 		job_config_fini(job_ptr);

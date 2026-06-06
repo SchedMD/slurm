@@ -704,16 +704,8 @@ _setup_srun_tree_info(void)
 static int
 _setup_srun_socket(const mpi_step_info_t *mpi_step)
 {
-	int rc;
-	uint16_t *ports;
-
-	if ((ports = slurm_get_srun_port_range()))
-		rc = net_stream_listen_ports(&tree_sock, &tree_info.pmi_port,
-					     ports, false);
-	else
-		rc = net_stream_listen(&tree_sock, &tree_info.pmi_port);
-
-	if (rc < 0) {
+	if (slurm_init_msg_engine_srun_ports(&tree_sock, &tree_info.pmi_port) !=
+	    SLURM_SUCCESS) {
 		error("mpi/pmi2: Failed to create tree socket");
 		return SLURM_ERROR;
 	}

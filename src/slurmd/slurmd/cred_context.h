@@ -81,4 +81,11 @@ extern void cred_handle_reissue(slurm_cred_t *cred, bool locked);
 
 extern bool cred_cache_valid(slurm_cred_t *cred);
 
+/*
+ * Reject credentials for job_id created before reject_before.
+ * Called when a job's memory limit is reduced to invalidate stale credentials.
+ */
+extern void cred_set_reject_before(slurm_step_id_t *step_id,
+				   time_t reject_before);
+
 #endif

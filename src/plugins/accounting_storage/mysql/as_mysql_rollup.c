@@ -1328,11 +1328,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	list_itr_t *q_itr = NULL;
 	list_itr_t *w_itr = NULL;
 	list_itr_t *r_itr = NULL;
-	list_t *assoc_usage_list = list_create(_destroy_local_id_usage);
-	list_t *cluster_down_list = list_create(_destroy_local_cluster_usage);
-	list_t *qos_usage_list = list_create(_destroy_local_id_usage);
-	list_t *wckey_usage_list = list_create(_destroy_local_id_usage);
-	list_t *resv_usage_list = list_create(_destroy_local_resv_usage);
+	list_t *assoc_usage_list = NULL;
+	list_t *cluster_down_list = NULL;
+	list_t *qos_usage_list = NULL;
+	list_t *wckey_usage_list = NULL;
+	list_t *resv_usage_list = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 	local_cluster_usage_t *loc_c_usage = NULL;
 	local_cluster_usage_t *c_usage = NULL;
@@ -1385,6 +1385,21 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		SUSPEND_REQ_END,
 		SUSPEND_REQ_COUNT
 	};
+
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ROLLUPS) {
+		/*
+		 * If rollups are disabled still check if we need to archive and
+		 * purge.
+		 */
+		return _process_purge(mysql_conn, cluster_name, archive_data,
+				      SLURMDB_PURGE_HOURS);
+	}
+
+	assoc_usage_list = list_create(_destroy_local_id_usage);
+	cluster_down_list = list_create(_destroy_local_cluster_usage);
+	qos_usage_list = list_create(_destroy_local_id_usage);
+	wckey_usage_list = list_create(_destroy_local_id_usage);
+	resv_usage_list = list_create(_destroy_local_resv_usage);
 
 	i=0;
 	xstrfmtcat(job_str, "%s", job_req_inx[i]);
@@ -2034,6 +2049,17 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
 	char *unit_name;
+
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ROLLUPS) {
+		/*
+		 * If rollups are disable still check if we need to archive and
+		 * purge.
+		 */
+		rc = _process_purge(mysql_conn, cluster_name, archive_data,
+				    (run_month ? SLURMDB_PURGE_MONTHS :
+						 SLURMDB_PURGE_DAYS));
+		return rc;
+	}
 
 	while (curr_start < end) {
 		if (!localtime_r(&curr_start, &start_tm)) {

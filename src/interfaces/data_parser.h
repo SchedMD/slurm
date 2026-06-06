@@ -81,6 +81,7 @@ typedef enum {
 	DATA_PARSER_FLOAT64_NO_VAL, /* double - may be NO_VAL of INFINITE */
 	DATA_PARSER_FLOAT64_NO_VAL_STRUCT, /* FLOAT64_NO_VAL_t */
 	DATA_PARSER_FLOAT64_NO_VAL_STRUCT_PTR, /* FLOAT64_NO_VAL_t* */
+	DATA_PARSER_FLOAT32, /* float */
 	DATA_PARSER_BOOL, /* uint8_t */
 	DATA_PARSER_BOOL16, /* uint16_t */
 	DATA_PARSER_BOOL16_NO_VAL, /* uint16_t - false if NO_VAL16 */
@@ -468,6 +469,8 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PARTITIONS_MOD_REQ_PTR, /* openapi_partitions_mod_t* */
 	DATA_PARSER_PARTITION_FLAGS, /* uint32_t - PART_FLAG_* */
 	DATA_PARSER_PARTITION_PREEMPT_MODES, /* uint16_t */
+	DATA_PARSER_PARTITION_OVERSUBSCRIBE, /* partition_info_t OverSubscribe display */
+	DATA_PARSER_PARTITION_EXCLUSIVE, /* partition_info_t Exclusive display */
 	DATA_PARSER_UPDATE_PARTITION_MSG_LIST, /* list_t* of update_part_msg_t* (which are partition_info_t*) */
 	DATA_PARSER_EXT_SENSORS_DATA, /* Remove when 24.11 is no longer supported: ext_sensors_data_t */
 	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* Remove when 24.11 is no longer supported: ext_sensors_data_t* */
@@ -497,6 +500,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_RESERVATION_MOD_RESP_PTR, /* openapi_openapi_resp_single_t* */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG, /* job_array_resp_msg_t */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR, /* job_array_resp_msg_t * */
+	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR_LIST, /* list_t *job_array_resp_msg_t * */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_ENTRY, /* JOB_ARRAY_RESPONSE_MSG_entry_t */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_ENTRY_PTR, /* JOB_ARRAY_RESPONSE_MSG_entry_t* */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_ARRAY, /* JOB_ARRAY_RESPONSE_MSG_entry_t[] */
@@ -665,6 +669,9 @@ typedef enum {
 	DATA_PARSER_NAMESPACE_NODE_CONF_COMPLEX, /* ns_node_conf_t* */
 	DATA_PARSER_NAMESPACE_CONF, /* ns_conf_t */
 	DATA_PARSER_NAMESPACE_CONF_PTR, /* ns_conf_t* */
+	DATA_PARSER_NAMESPACE_DIR_CONF, /* ns_dir_t */
+	DATA_PARSER_NAMESPACE_DIR_CONF_PTR, /* ns_dir_t* */
+	DATA_PARSER_NAMESPACE_DIR_CONF_LIST, /* list_t* of ns_dir_t* */
 	DATA_PARSER_NODE_REASON_USER_ID, /* node_info_t->reason_uid */
 	DATA_PARSER_SINFO_REASON_USER_ID, /* sinfo_data_t->reason_uid */
 	DATA_PARSER_TOPOLOGY_RING, /* topology_ctx_t topology/flat plugin */
@@ -674,6 +681,85 @@ typedef enum {
 	DATA_PARSER_RING_CONFIG, /* slurm_conf_ring_t */
 	DATA_PARSER_RING_CONFIG_PTR, /* slurm_conf_ring_t* */
 	DATA_PARSER_NODE_PARTITION_CPU_BINDING_FLAGS, /* uint32_t <-> cpu_bind_type_t */
+	DATA_PARSER_JOB_DEFAULTS, /* job_defaults_t */
+	DATA_PARSER_JOB_DEFAULTS_PTR, /* job_defaults_t* */
+	DATA_PARSER_JOB_DEFAULTS_LIST, /* list_t* job_defaults_t */
+	DATA_PARSER_JOB_DEFAULTS_TYPE, /* JOB_DEF_* */
+	DATA_PARSER_CONF_FLAGS, /* CONF_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_COMMUNICATION_PARAMETERS, /* CommunicationParameters= specific CONF_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_ACCOUNTING_STORE, /* AccountingStoreFlags= specific CONF_FLAG_* */
+	DATA_PARSER_ACCT_STORAGE_ENFORCE, /* uint16_t - ACCOUNTING_ENFORCE_* */
+	DATA_PARSER_CONF_FLAGS_SLURMD_PARAMETERS, /* SlurmdParameters= specific CONF_FLAG_* */
+	DATA_PARSER_CPU_FREQ_GOVS, /* CPU_FREQ_* */
+	DATA_PARSER_DEBUG_FLAGS, /* uint64_t - DEBUG_FLAG_* */
+	DATA_PARSER_ENFORCE_PART_LIMITS, /* uint16_t - PARTITION_ENFORCE_* */
+	DATA_PARSER_LOG_TIME_FORMAT, /* uint16_t - LOG_FMT_* */
+	DATA_PARSER_HEALTH_CHECK_NODE_STATE, /* uint16_t - HEALTH_CHECK_NODE_* */
+	DATA_PARSER_PRIVATE_DATA, /* uint16_t - PRIVATE_DATA_* */
+	DATA_PARSER_PRIORITY_FLAGS, /* uint16_t - PRIORITY_FLAGS_* */
+	DATA_PARSER_PRIORITY_RESET_PERIOD, /* uint16_t - PRIORITY_RESET_* */
+	DATA_PARSER_PROPAGATE_PRIO_PROCESS, /* uint16_t - PROP_PRIO_* */
+	DATA_PARSER_PROLOG_FLAGS, /* uint16_t - PROLOG_FLAG_* */
+	DATA_PARSER_RECONFIG_FLAGS, /* uint16_t - RECONFIG_* */
+	DATA_PARSER_RETURN_TO_SERVICE, /* uint16_t - RETURN_TO_SERVICE_* */
+	DATA_PARSER_SELECT_TYPE_PARAM, /* uint16_t - SELECT_* */
+	DATA_PARSER_SLURM_CONF_PREEMPT_MODES, /* uint16_t - PREEMPT_MODE_* */
+	DATA_PARSER_TASK_PLUGIN_PARAM_FLAGS, /* uint32_t - CPU_BIND_* */
+	DATA_PARSER_LOG_LEVEL, /* log_level_t */
+	DATA_PARSER_LOG_LEVEL_UINT16, /* uint16_t -> log_level_t */
+	DATA_PARSER_TIME_SECONDS, /* uint32_t */
+	DATA_PARSER_PORT_RANGE_ARRAY, /* uint16_t[2] */
+	DATA_PARSER_PORT_RANGE, /* port_range_t */
+	DATA_PARSER_PORT_RANGE_PTR, /* port_range_t* */
+	DATA_PARSER_SLURM_CONF_EPILOG, /* slurm_conf_t->epilog,epilog_cnt */
+	DATA_PARSER_SLURM_CONF_EPILOG_SLURMCTLD, /* slurm_conf_t->epilog_slurmctld,epilog_slurmctld_cnt */
+	DATA_PARSER_SLURM_CONF_PROLOG, /* slurm_conf_t->prolog,prolog_cnt */
+	DATA_PARSER_SLURM_CONF_PROLOG_SLURMCTLD, /* slurm_conf_t->prolog_slurmctld,prolog_slurmctld_cnt */
+	DATA_PARSER_CONTROLLER, /* controllers_t */
+	DATA_PARSER_CONTROLLER_PTR, /* controllers_t* */
+	DATA_PARSER_CONTROLLERS_ARRAY, /* controllers_t[] (null terminated) */
+	DATA_PARSER_SLURM_CONF, /* slurm_conf_t */
+	DATA_PARSER_SLURM_CONF_PTR, /* slurm_conf_t* */
+	DATA_PARSER_SLURM_CONF_CONTROLLERS, /* slurm_conf_t->control_addr,control_cnt,control_machine */
+	DATA_PARSER_SLURM_CONF_META, /* slurm_conf_t */
+	DATA_PARSER_SLURM_CONF_META_PTR, /* slurm_conf_t* */
+	DATA_PARSER_OPENAPI_CONF_RESP, /* openapi_resp_config_t */
+	DATA_PARSER_OPENAPI_CONF_RESP_PTR, /* openapi_resp_config_t* */
+	DATA_PARSER_OPENAPI_CONF_QUERY, /* openapi_config_query_t */
+	DATA_PARSER_OPENAPI_CONF_QUERY_PTR, /* openapi_config_query_t* */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_FLAGS, /* uint32_t - JOB_* macros */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_QUERY, /* openapi_job_requeue_query_t */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_QUERY_PTR, /* openapi_job_requeue_query_t* */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_QUERY, /* openapi_jobs_requeue_query_t */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_QUERY_PTR, /* openapi_jobs_requeue_query_t* */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_SLURMDBD_CONF, /* slurmdbd_conf_t */
+	DATA_PARSER_SLURMDBD_CONF_PTR, /* slurmdbd_conf_t* */
+	DATA_PARSER_SLURMDB_PURGE, /* uint32_t */
+	DATA_PARSER_SLURMDB_PURGE_UNITS, /* slurmdb_purge_units_t */
+	DATA_PARSER_CONF_FLAGS_PERSIST_CONN_RC, /* PERSIST_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_DBD, /* DBD_CONF_FLAG_* */
+	DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP, /* openapi_resp_slurmdbd_conf_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP_PTR, /* openapi_resp_slurmdbd_conf_t* */
+	DATA_PARSER_TOPOLOGY_TORUS3D, /* topology_ctx_t topology/torus3d plugin */
+	DATA_PARSER_TOPOLOGY_TORUS3D_CONFIG, /* topology_torus3d_config_t */
+	DATA_PARSER_TOPOLOGY_TORUS3D_CONFIG_PTR, /* topology_torus3d_config_t* */
+	DATA_PARSER_TOPOLOGY_TORUS3D_CONFIG_ARRAY, /* topology_torus3d_config_t->torus3d_configs,config_cnt */
+	DATA_PARSER_TORUS3D_CONFIG, /* slurm_conf_torus3d_t */
+	DATA_PARSER_TORUS3D_CONFIG_PTR, /* slurm_conf_torus3d_t* */
+	DATA_PARSER_TORUS3D_DIMS, /* slurm_conf_torus3d_dims_t */
+	DATA_PARSER_TORUS3D_DIMS_PTR, /* slurm_conf_torus3d_dims_t* */
+	DATA_PARSER_TORUS3D_PLACEMENT, /* slurm_conf_torus3d_placement_t */
+	DATA_PARSER_TORUS3D_PLACEMENT_PTR, /* slurm_conf_torus3d_placement_t* */
+	DATA_PARSER_TORUS3D_PLACEMENT_ARRAY, /* slurm_conf_torus3d_t placements */
+	DATA_PARSER_TORUS3D_REGION, /* slurm_conf_torus3d_region_t */
+	DATA_PARSER_TORUS3D_REGION_PTR, /* slurm_conf_torus3d_region_t* */
+	DATA_PARSER_TORUS3D_REGION_ARRAY, /* slurm_conf_torus3d_t regions */
+	DATA_PARSER_TOPOLOGY_FLAT_CONFIG, /* topology_flat_config_t */
+	DATA_PARSER_TOPOLOGY_FLAT_CONFIG_PTR, /* topology_flat_config_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

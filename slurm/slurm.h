@@ -285,7 +285,7 @@ enum job_states {
 
 /* SLURM_BIT(0-7) are already taken with base job_states above */
 #define JOB_LAUNCH_FAILED SLURM_BIT(8)
-/*  was JOB_UPDATE_DB     SLURM_BIT(9), removed v24.11 */
+/* UNUSED     SLURM_BIT(9) */
 #define JOB_GETENV_FAILED SLURM_BIT(9) /* Job with --get-user-env or
 					 * equivalent failed or timed out at
 					 * user environment retrieval stage
@@ -697,6 +697,13 @@ typedef enum auth_plugin_type {
 	AUTH_PLUGIN_SLURM	= 103,
 } auth_plugin_type_t;
 
+/* compress plugin (id) to use for compression */
+enum compress_plugin_type {
+	COMPRESS_PLUGIN_NONE = 0,
+	/* 1 was formerly zlib */
+	COMPRESS_PLUGIN_LZ4 = 2,
+};
+
 /*
  * Hash plugin (id) used for communication.
  */
@@ -906,7 +913,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	/* the following manual binding flags are mutually exclusive */
 	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
 	CPU_BIND_NONE	    = 0x0020, /* =no */
-	/* CPU_BIND_RANK = 0x0040 was removed in 24.11 */
+	/* UNUSED = 0x0040 */
 	CPU_BIND_MAP	    = 0x0080, /* =map_cpu:<list of CPU IDs> */
 	CPU_BIND_MASK	    = 0x0100, /* =mask_cpu:<list of CPU masks> */
 	CPU_BIND_LDRANK     = 0x0200, /* =locality domain rank */
@@ -1107,7 +1114,10 @@ typedef enum {
 	SELECT_PACK_NODES = SLURM_BIT(9),
 	/* Prefer least-loaded device for shared GRES */
 	SELECT_LL_SHARED_GRES = SLURM_BIT(10),
-	/* SLURM_BIT(11), empty */
+	/*
+	 * Disable topology node rank sort
+	 */
+	SELECT_NO_DIST_TOPO_BLOCK = SLURM_BIT(11),
 	/*
 	 * By default, distribute cores using a block approach inside the
 	 * nodes
@@ -1148,6 +1158,15 @@ typedef enum {
 #define PROP_PRIO_ON		0x0001	/* Propagate user nice value */
 #define PROP_PRIO_NICER		0x0002	/* Ensure that user tasks have a nice
 					 * value that is higher than slurmd */
+/* Node stays DOWN until admin intervenes */
+#define RETURN_TO_SERVICE_NONE 0x0000
+/*
+ * DOWN node returns to service on registration only if set DOWN due to being
+ * non-responsive
+ */
+#define RETURN_TO_SERVICE_NON_RESP 0x0001
+/* DOWN node returns to service on registration regardless of reason */
+#define RETURN_TO_SERVICE_ALL 0x0002
 
 #define PRIORITY_FLAGS_ACCRUE_ALWAYS	 SLURM_BIT(0) /* Flag to always accrue
 						       * age priority to pending
@@ -1251,6 +1270,10 @@ typedef enum {
 #define SPREAD_SEGMENTS SLURM_BIT(43) /* Spread segments across blocks*/
 #define CONSOLIDATE_SEGMENTS SLURM_BIT(44) /* Consolidate segments */
 #define EXPEDITED_REQUEUE SLURM_BIT(45) /* expedited requeue requested */
+#define NEED_MORE_FEATURES SLURM_BIT(46) /* protect from jobs being preempted
+					  * while resources are available */
+#define JOB_IMPLICIT_MAX_NODES SLURM_BIT(47) /* max_nodes was implicitly set
+					      * from num_tasks */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
@@ -1277,6 +1300,8 @@ typedef enum {
 	SSF_GRES_ALLOW_TASK_SHARING = 1 << 9,
 	SSF_WAIT_FOR_CHILDREN = 1 << 10,
 	SSF_KILL_ON_BAD_EXIT = 1 << 11,
+	SSF_ASYNC = 1 << 12, /* step is async, launching is managed by stepmgr
+			      * instead of srun */
 } step_spec_flags_t;
 
 enum topology_plugin_type {
@@ -1596,6 +1621,26 @@ typedef bitstr_t bitoff_t;
 #define JOB_SHARED_MCS          0x0003
 #define JOB_SHARED_TOPO 0x0004
 
+/*
+ * Oversubscribe display
+ * (for job_info.oversubscribe, cred, SLURM_JOB_OVERSUBSCRIBE).
+ * NO=no oversubscribe, YES=user --oversubscribe, OK=partition allows.
+ */
+#define JOB_OVERSUBSCRIBE_NO 0
+#define JOB_OVERSUBSCRIBE_YES 1
+#define JOB_OVERSUBSCRIBE_OK 2
+
+/*
+ * Exclusive display
+ * (for job_info.exclusive, cred, SLURM_JOB_EXCLUSIVE).
+ * Single value: NONE/NODE/USER/MCS/TOPO. No combinations.
+ */
+#define JOB_EXCLUSIVE_NONE 0
+#define JOB_EXCLUSIVE_NODE 1
+#define JOB_EXCLUSIVE_USER 2
+#define JOB_EXCLUSIVE_MCS 3
+#define JOB_EXCLUSIVE_TOPO 4
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1805,6 +1850,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint64_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
 				  * default=0 (no limit) */
+	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
+	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
 	char *req_context;	/* requested selinux context */
@@ -1874,6 +1921,7 @@ typedef struct job_info {
 	int32_t *exc_node_inx;	/* excluded list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	uint16_t exclusive; /* JOB_EXCLUSIVE_* (NONE/NODE/USER/MCS/TOPO) */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *extra;		/* Arbitrary string */
 	char *failed_node;	/* if set, node that caused job to fail */
@@ -1903,6 +1951,8 @@ typedef struct job_info {
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
 	char *mcs_label;	/* mcs_label if mcs plugin in use */
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
+	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */
@@ -1919,6 +1969,7 @@ typedef struct job_info {
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
 	uint16_t oom_kill_step;	/* kill whole step in case of task oom */
+	uint16_t oversubscribe; /* JOB_OVERSUBSCRIBE_NO/YES/OK */
 	char *partition;	/* name of assigned partition */
 	char *prefer;		/* comma separated list of soft features */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
@@ -1947,6 +1998,13 @@ typedef struct job_info {
 	char *resv_ports;	/* Reserved MPI ports (as hostlist str) */
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	char *selinux_context;
+	/*
+	 * Legacy display value, superseded by oversubscribe / exclusive.
+	 * Retained for data_parser/v0.0.42-v0.0.44, which still expose it as
+	 * the "shared" REST field. Remove this field, the 26.05 wire-format
+	 * pack/unpack of it, and get_job_share_value()/job_share_string()
+	 * once the minimum supported data_parser version is v0.0.45.
+	 */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint32_t site_factor;	/* factor to consider in priority */
 	slurm_step_id_t step_id;
@@ -2014,7 +2072,7 @@ typedef struct priority_factors_object {
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	double direct_prio; /* Manually set priority. If it is set prio_factors
 			     * will be NULL */
-	uint32_t job_id;
+	slurm_step_id_t step_id; /* Will contain the job_id and sluid */
 	char *partition;
 	priority_factors_t *prio_factors;
 	char *qos;
@@ -2076,12 +2134,11 @@ typedef struct suspend_exc_update_msg {
 
 typedef struct {
 	char *node_list; /* nodelist corresponding to task layout */
-	uint16_t *cpus_per_node; /* cpus per node */
-	uint32_t *cpu_count_reps; /* how many nodes have same cpu count */
+	uint16_t *cpus_per_node; /* flat array: one entry per node */
+	uint32_t *node_ranks; /* Topology rank of each node */
 	uint32_t num_hosts; /* number of hosts we have */
 	uint32_t num_tasks; /* number of tasks to distribute across these cpus*/
-	uint16_t *cpus_per_task; /* number of cpus per task */
-	uint32_t *cpus_task_reps; /* how many nodes have same per task count */
+	uint16_t *cpus_per_task; /* flat array: one entry per node */
 	uint32_t task_dist; /* type of distribution we are using */
 	uint16_t plane_size; /* plane size (only needed for plane distribution*/
 } slurm_step_layout_req_t;
@@ -2206,9 +2263,9 @@ typedef struct {
 	/* I/O handling */
 	bool buffered_stdio;
 	bool labelio;
-	char *remote_output_filename;
-	char *remote_error_filename;
-	char *remote_input_filename;
+	char *output_filename;
+	char *error_filename;
+	char *input_filename;
 	slurm_step_io_fds_t local_fds;
 
 	bool multi_prog;
@@ -2438,6 +2495,7 @@ typedef struct node_info {
 				 * the name of the reservation */
 	time_t slurmd_start_time;/* time of slurmd startup */
 	uint16_t sockets;       /* total number of sockets per node */
+	uint32_t suspend_time; /* node idle for this long before power save */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	char *topology_str; /* topology address string */
@@ -2925,6 +2983,7 @@ typedef struct reservation_name_msg {
 /* NodeHealthCheck flags */
 #define HEALTH_CHECK_CYCLE	SLURM_BIT(8) /* cycle through nodes node */
 #define HEALTH_CHECK_START_ONLY SLURM_BIT(9) /* execute only at slurmd startup */
+#define HEALTH_CHECK_REBOOT_ONLY SLURM_BIT(10) /* execute only after slurmd reboot */
 
 #define PROLOG_FLAG_ALLOC	0x0001 /* execute prolog upon allocation */
 #define PROLOG_FLAG_NOHOLD	0x0002 /* don't block salloc/srun until
@@ -3051,6 +3110,7 @@ typedef struct {
 				 * health check program, see
 				 * HEALTH_CHECK_NODE_* above */
 	char * health_check_program;	/* pathname of health check program */
+	uint16_t health_check_timeout; /* time limit for health check seconds */
 	char *http_parser_type; /* http_parser plugin type */
 	uint32_t host_unreach_retry_count; /* times to retry connecting if
                                             * rc=EHOSTUNREACH */
@@ -3084,6 +3144,7 @@ typedef struct {
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL
 				 * on job termination */
 	char *launch_params;	/* step launcher plugin options */
+	char *license_params; /* license parameters */
 	char *licenses;		/* licenses available on this cluster */
 	uint16_t log_fmt;       /* Log file timestamp format */
 	char *mail_domain;	/* default domain to append to usernames */
@@ -3100,6 +3161,9 @@ typedef struct {
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	char *mcs_plugin; /* mcs plugin type */
 	char *mcs_plugin_params; /* mcs plugin parameters */
+	uint8_t metrics_auth; /* require auth for metrics endpoints */
+	char *metrics_auth_users; /* allowed users to query metrics plugins */
+	char *metrics_params; /* metrics plugins parameters */
 	char *metrics_type; /* metrics plugin type */
 	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */
@@ -3191,6 +3255,7 @@ typedef struct {
 	char *slurmctld_addr;	/* Address used for communications to the
 				 * currently active slurmctld daemon */
 	uint16_t slurmctld_debug; /* slurmctld logging level */
+	char *slurmctld_http_auth_params;
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */
@@ -3203,6 +3268,7 @@ typedef struct {
 				    * on non-responding primarily controller */
 	char *slurmctld_params;	/* SlurmctldParameters */
 	uint16_t slurmd_debug;	/* slurmd logging level */
+	char *slurmd_http_auth_params;
 	char *slurmd_logfile;	/* where slurmd error log gets written */
 	char *slurmd_params;	/* SlurmdParameters */
 	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
@@ -3290,6 +3356,7 @@ typedef struct slurm_update_node_msg {
 	char *node_hostname;	/* node's hostname (optional) */
 	char *node_names;	/* nodelist expression */
 	uint32_t node_state;	/* see enum node_states */
+	char *power_action_name; /* PowerAction name for power up/down */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
 				 * after this amount of seconds */
@@ -3480,7 +3547,7 @@ typedef struct license_info_msg {
 
 typedef struct {
 	uint32_t  job_array_count;
-	char    **job_array_id; /* Note: The string may be truncated */
+	char **job_array_id;
 	uint32_t *error_code;
 	char **err_msg;
 } job_array_resp_msg_t;

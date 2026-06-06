@@ -77,14 +77,17 @@ job or any given plugin).</li>
 </ul>
 
 <h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
-<p>The host kernel must be configured to allow user land containers:</p>
+<p>The host kernel must be configured to allow user land containers. The
+following settings are required for systems using AppArmor:</p>
 <pre>
 sudo sysctl -w kernel.unprivileged_userns_clone=1
 sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
 sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 </pre>
 
-<p>Docker also provides a tool to verify the kernel configuration:
+<p>Other systems can skip the above steps, but if your system is using SELinux
+you will need to <a href="selinux.html">configure it</a> to work with Slurm.
+Docker also provides a tool to verify the kernel configuration:
 <pre>$ dockerd-rootless-setuptool.sh check --force
 [INFO] Requirements are satisfied</pre>
 </p>

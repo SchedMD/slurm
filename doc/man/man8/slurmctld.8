@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "Slurm 26.05" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "Slurm 26.11" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -180,6 +180,14 @@ Return scheduler metrics.
 \fBGET /metrics/jobs-users-accts\fR
 Return user and account job metrics.
 .IP
+
+.PP
+When multiple \fBSlurmctldHost\fR entries are configured, a daemon in standby
+mode will answer \fBGET /metrics*\fR with HTTP 303 "See Other" with the
+\fBLocation\fR header pointing to the same path and query on the first listed
+controller. If no such address is available, the response will be HTTP 503
+"Service Unavailable" instead of a redirect. See \fBSlurmctldHost\fR in
+\fBslurm.conf\fR(5).
 
 .SH "CORE FILE LOCATION"
 If slurmctld is started with the \fB\-D\fR option then the core file will be

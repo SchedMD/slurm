@@ -96,6 +96,7 @@ static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(pid_t pid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
+static void _wait_for_connections(void);
 
 struct io_operations msg_socket_ops = {
 	.readable = &_msg_socket_readable,
@@ -112,6 +113,7 @@ static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t stepmgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t resize_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
@@ -274,6 +276,7 @@ static void *_msg_thr_internal(void *ignored)
 	eio_handle_mainloop(step->msg_handle);
 	debug("Message thread exited");
 
+	_wait_for_connections();
 	return NULL;
 }
 
@@ -310,8 +313,17 @@ static void _wait_for_connections(void)
 
 	slurm_mutex_lock(&message_lock);
 	ts.tv_sec = time(NULL) + STEPD_MESSAGE_COMP_WAIT;
-	while (message_connections > 0 && rc == 0)
+	while (message_connections > 0 && rc == 0) {
+		log_flag(NET, "Waiting on %d connections to finish",
+			 message_connections);
 		rc = pthread_cond_timedwait(&message_cond, &message_lock, &ts);
+	}
+	if (message_connections > 0) {
+		error("Timed out waiting for %d connections to finish, abandoning them now.",
+		      message_connections);
+	} else {
+		log_flag(NET, "All connections finished.");
+	}
 
 	slurm_mutex_unlock(&message_lock);
 }
@@ -336,7 +348,6 @@ _msg_socket_readable(eio_obj_t *obj)
 			/* slurmd considers the job step done now that
 			 * the domain name socket is destroyed */
 			obj->fd = -1;
-			_wait_for_connections();
 		} else {
 			debug2("  false");
 		}
@@ -839,6 +850,83 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _cap_step_mem(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+	uint64_t new_job_mem = *(uint64_t *) arg;
+	job_resources_t *resrcs = job_step_ptr->job_resrcs;
+	int job_node_inx = -1, step_node_inx = -1;
+
+	if (step_ptr->pn_min_memory && !(step_ptr->pn_min_memory & MEM_PER_CPU))
+		step_ptr->pn_min_memory =
+			MIN(step_ptr->pn_min_memory, new_job_mem);
+
+	if (!step_ptr->memory_allocated)
+		return SLURM_SUCCESS;
+
+	for (int i = 0; next_node_bitmap(resrcs->node_bitmap, &i); i++) {
+		job_node_inx++;
+		if (!bit_test(step_ptr->step_node_bitmap, i))
+			continue;
+		step_node_inx++;
+		step_ptr->memory_allocated[step_node_inx] =
+			MIN(step_ptr->memory_allocated[step_node_inx],
+			    new_job_mem);
+		if (!(step_ptr->flags & SSF_MEM_ZERO) &&
+		    !(step_ptr->flags & SSF_OVERLAP_FORCE))
+			resrcs->memory_used[job_node_inx] +=
+				step_ptr->memory_allocated[step_node_inx];
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _handle_update_mem_limits(int fd, uid_t uid, pid_t remote_pid)
+{
+	uint64_t new_job_mem;
+	uint64_t new_step_mem;
+	int rc;
+
+	safe_read(fd, &new_job_mem, sizeof(uint64_t));
+
+	slurm_mutex_lock(&resize_mutex);
+	/*
+	 * Cap the step memory at the new job memory if it exceeds it.
+	 * Otherwise keep the step's existing limit.
+	 */
+	new_step_mem = MIN(step->step_mem, new_job_mem);
+
+	rc = task_g_update_mem_limit(step, new_job_mem, new_step_mem);
+
+	if (rc == SLURM_SUCCESS) {
+		step->job_mem = new_job_mem;
+		step->step_mem = new_step_mem;
+
+		if (job_step_ptr) {
+			job_resources_t *resrcs;
+
+			slurm_mutex_lock(&stepmgr_mutex);
+			job_step_ptr->details->pn_min_memory = new_job_mem;
+			resrcs = job_step_ptr->job_resrcs;
+			for (int i = 0; i < resrcs->nhosts; i++) {
+				resrcs->memory_allocated[i] =
+					MIN(resrcs->memory_allocated[i],
+					    new_job_mem);
+				resrcs->memory_used[i] = 0;
+			}
+			list_for_each(job_step_ptr->step_list, _cap_step_mem,
+				      &new_job_mem);
+			slurm_mutex_unlock(&stepmgr_mutex);
+		}
+	}
+	slurm_mutex_unlock(&resize_mutex);
+
+	safe_write(fd, &rc, sizeof(int));
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
 static int _handle_uid(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->uid, sizeof(uid_t));
@@ -1090,7 +1178,9 @@ static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 	uint32_t i;
 
 	debug("_handle_terminate for %ps uid=%u", &step->step_id, uid);
-	step_terminate_monitor_start();
+
+	if (get_job_state() < SLURMSTEPD_STEP_CANCELLED)
+		step_terminate_monitor_start();
 
 	/*
 	 * Sanity checks
@@ -2262,6 +2352,24 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_job_usage(int fd, uid_t uid, pid_t remote_pid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	int rc;
+
+	debug("%s for %ps", __func__, &step->step_id);
+
+	jobacct = jobacctinfo_create(NULL);
+	jobacct_gather_stat_job(jobacct);
+
+	rc = jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+				 SLURM_PROTOCOL_VERSION);
+
+	jobacctinfo_destroy(jobacct);
+
+	return rc;
+}
+
 /* We don't check the uid in this function, anyone may list the task info. */
 static int _handle_task_info(int fd, uid_t uid, pid_t remote_pid)
 {
@@ -2420,6 +2528,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.func = _handle_mem_limits,
 	},
 	{
+		.msg_type = REQUEST_STEP_UPDATE_MEM_LIMITS,
+		.from_slurmd = true,
+		.func = _handle_update_mem_limits,
+	},
+	{
 		.msg_type = REQUEST_STEP_UID,
 		.func = _handle_uid,
 	},
@@ -2473,6 +2586,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_STEP_STAT,
 		.from_job_owner = true,
 		.func = _handle_stat_jobacct,
+	},
+	{
+		.msg_type = REQUEST_JOB_USAGE,
+		.from_slurmd = true,
+		.func = _handle_job_usage,
 	},
 	{
 		.msg_type = REQUEST_STEP_LIST_PIDS,

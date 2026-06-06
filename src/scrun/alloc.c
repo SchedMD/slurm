@@ -371,20 +371,12 @@ static uint32_t _setup_listener(void)
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
 	};
-	uint16_t *ports;
 	uint16_t port = 0;
 	int fd = -1;
 	int rc;
 
-	if ((ports = slurm_get_srun_port_range())) {
-		if (net_stream_listen_ports(&fd, &port,
-					    slurm_get_srun_port_range(),
-					    false) < 0)
-			fatal("%s: unable to open local listening port. Try increasing range of SrunPortRange in slurm.conf.",
-			      __func__);
-	} else {
-		if (net_stream_listen(&fd, &port) < 0)
-			fatal("%s: unable to open local listening port",
+	if (slurm_init_msg_engine_srun_ports(&fd, &port) != SLURM_SUCCESS) {
+		fatal("%s: unable to open local listening port. Try increasing range of SrunPortRange in slurm.conf.",
 			      __func__);
 	}
 

@@ -4,8 +4,6 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = srun
 
-depend_libs = $(top_builddir)/src/bcast/libfile_bcast.la
-
 srun_SOURCES = \
 	allocate.c allocate.h \
 	debugger.c debugger.h \
@@ -21,9 +19,9 @@ srun_SOURCES = \
 	step_ctx.c step_ctx.h \
 	task_state.c task_state.h
 
-srun_LDADD = $(depend_libs) $(LIB_SLURM)
+srun_LDADD = $(LIB_SLURM)
 
-srun_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
+srun_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 srun_LDFLAGS = $(CMD_LDFLAGS) $(CRAY_JOB_LDFLAGS)
 

@@ -604,7 +604,7 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 
 	log_flag(SWITCH, "%s: Starting %pJ", __func__, job_ptr);
 
-	if (job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) {
+	if (job_ptr->start_protocol_ver < SLURM_25_11_PROTOCOL_VERSION) {
 		/*
 		 * Remove this case when 25.05 support is no longer supported.
 		 *
@@ -678,7 +678,12 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 	return _stepd_setup_imex_channel(step);
 }
 
-extern void switch_p_extern_step_fini(int job_id)
+extern void switch_p_stepmgr_fini(uint32_t job_id)
+{
+	/* not supported */
+}
+
+extern void switch_p_stepmgr_init(void)
 {
 	/* not supported */
 }

@@ -571,7 +571,7 @@ static int _unpack_jobcomp_kafka_msg_opaque(kafka_msg_opaque_t *opaque,
 	xassert(buffer);
 	xassert(opaque);
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&opaque->event, buffer);
 		safe_unpack32(&opaque->job_id, buffer);
 	} else {
@@ -607,19 +607,11 @@ static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		opaque = jobcomp_kafka_message_init_opaque(event, 0);
 		if (_unpack_jobcomp_kafka_msg_opaque(opaque, protocol_version,
 						     buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&payload, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t job_id;
-
-		/* All pre-25.05 msgs are job_finish events */
-		event = JOBCOMP_EVENT_JOB_FINISH;
-		safe_unpack32(&job_id, buffer);
-		opaque = jobcomp_kafka_message_init_opaque(event, job_id);
 		safe_unpackstr(&payload, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",

@@ -384,6 +384,7 @@ static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static list_t *gres_conf_list = NULL;
 static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
+static bool gres_conf_parsed_early = false;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 static bool reset_prev = true;
@@ -1169,8 +1170,15 @@ static int _post_plugin_gres_conf(void *x, void *arg)
 	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 		return 0;
 
-	if (gres_slurmd_conf->config_flags & GRES_CONF_GLOBAL_INDEX)
-		gres_ctx->config_flags |= GRES_CONF_GLOBAL_INDEX;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_UUID) {
+		if (!gres_slurmd_conf->unique_id) {
+			warning("Flags=env_uuid set but no GPU UUID available for device %s. Falling back to numeric indices.",
+				gres_slurmd_conf->file ? gres_slurmd_conf->file :
+				"(unknown)");
+			gres_slurmd_conf->config_flags &= ~GRES_CONF_UUID;
+		} else
+			gres_ctx->config_flags |= GRES_CONF_UUID;
+	}
 
 	return 1;
 }
@@ -1327,7 +1335,9 @@ static char *_get_autodetect_flags_str(void)
 	if (!(autodetect_flags & GRES_AUTODETECT_GPU_FLAGS))
 		xstrfmtcat(flags, "%sunset", flags ? "," : "");
 	else {
-		if (autodetect_flags & GRES_AUTODETECT_GPU_NVML)
+		if (autodetect_flags & GRES_AUTODETECT_GPU_FULL)
+			xstrfmtcat(flags, "%sfull", flags ? "," : "");
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_NVML)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_AMDSMI)
 			xstrfmtcat(flags, "%samdsmi", flags ? "," : "");
@@ -1351,7 +1361,9 @@ static uint32_t _handle_autodetect_flags(char *str)
 	uint32_t flags = 0;
 
 	/* Set the node-local gpus value of autodetect_flags */
-	if (xstrcasestr(str, "nvml"))
+	if (xstrcasestr(str, "full"))
+		flags |= GRES_AUTODETECT_GPU_FULL;
+	else if (xstrcasestr(str, "nvml"))
 		flags |= GRES_AUTODETECT_GPU_NVML;
 	else if (xstrcasestr(str, "amdsmi"))
 		flags |= GRES_AUTODETECT_GPU_AMDSMI;
@@ -1445,6 +1457,14 @@ static int _merge_by_type(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _match_gres_name(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	char *name = arg;
+
+	return !xstrcasecmp(gres_slurmd_conf->name, name);
+}
+
 static int _slurm_conf_gres_str(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -1483,7 +1503,7 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 
 	for (int i = 0; autodetect_options[i] != GRES_AUTODETECT_UNSET; i++) {
 		autodetect_flags = autodetect_options[i];
-		if (gpu_plugin_init() != SLURM_SUCCESS)
+		if (gpu_plugin_init(&node_conf) != SLURM_SUCCESS)
 			continue;
 		gres_list_system = gpu_g_get_system_gpu_list(&node_conf);
 		if (gres_list_system) {
@@ -1517,6 +1537,49 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 			xfree(gres_str);
 		}
 	}
+}
+
+extern char *gres_get_dynamic_gpu_str(node_config_load_t node_conf)
+{
+	list_t *gres_list_system = NULL, *gres_list_merged = NULL;
+	char *gres_str = NULL;
+	uint32_t saved_gpu_flags;
+
+	xassert(slurm_conf.plugindir);
+
+	/* Honor Autodetect=off in gres.conf. */
+	if (autodetect_flags & GRES_AUTODETECT_GPU_OFF)
+		return NULL;
+
+	if (gres_conf_list &&
+	    list_find_first_ro(gres_conf_list, _match_gres_name, "gpu"))
+		return NULL;
+
+	saved_gpu_flags = autodetect_flags & GRES_AUTODETECT_GPU_FLAGS;
+
+	/* Default to FULL when gres.conf didn't pin a plugin. */
+	if (!saved_gpu_flags)
+		gres_autodetect_flags_set_gpu(GRES_AUTODETECT_GPU_FULL);
+
+	if (gpu_plugin_init(&node_conf) != SLURM_SUCCESS) {
+		gres_autodetect_flags_set_gpu(saved_gpu_flags);
+		return NULL;
+	}
+
+	gres_list_system = gpu_g_get_system_gpu_list(&node_conf);
+	if (gres_list_system) {
+		gres_list_merged = list_create(NULL);
+		list_for_each(gres_list_system, _merge_by_type,
+			      gres_list_merged);
+		list_for_each(gres_list_merged, _slurm_conf_gres_str,
+			      &gres_str);
+		FREE_NULL_LIST(gres_list_merged);
+		FREE_NULL_LIST(gres_list_system);
+	}
+
+	gres_autodetect_flags_set_gpu(saved_gpu_flags);
+
+	return gres_str;
 }
 
 /*
@@ -1566,6 +1629,8 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
 		flags |= GRES_CONF_ONE_SHARING;
 	if (xstrcasestr(input, "explicit"))
 		flags |= GRES_CONF_EXPLICIT;
+	if (xstrcasestr(input, "env_uuid"))
+		flags |= GRES_CONF_UUID;
 	/* String 'no_gpu_env' will clear all GPU env vars */
 	if (no_gpu_env)
 		*no_gpu_env = xstrcasestr(input, "no_gpu_env");
@@ -1714,20 +1779,28 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("Invalid GRES record name=%s type=%s: Flags (%s) contains \"no_gpu_env\", which must be mutually exclusive to all other GRES env flags of same node and name",
 			      p->name, p->type_name, tmp_str);
 
-		set_default_envs = false;
 		/*
-		 * Make sure that Flags are consistent with each other
-		 * if set for multiple lines of the same GRES.
+		 * Only override default env logic when explicit vendor
+		 * env flags or no_gpu_env are present. Pure modifier
+		 * flags like env_uuid (GRES_CONF_UUID) let defaults or
+		 * AutoDetect provide vendor flags.
 		 */
-		if (prev_gres.name_hash &&
-		    _same_gres_name_as_prev(&prev_gres, p) &&
-		    ((prev_gres.flags != flags) ||
-		     (prev_gres.no_gpu_env != no_gpu_env)))
-			fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
-			      p->name, p->type_name, tmp_str);
+		if (env_flags || no_gpu_env) {
+			set_default_envs = false;
+			/*
+			 * Make sure that Flags are consistent with each
+			 * other if set for multiple lines of the same
+			 * GRES.
+			 */
+			if (prev_gres.name_hash &&
+			    _same_gres_name_as_prev(&prev_gres, p) &&
+			    ((prev_gres.flags != flags) ||
+			     (prev_gres.no_gpu_env != no_gpu_env)))
+				fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
+				      p->name, p->type_name, tmp_str);
 
-		_set_prev_gres_flags(&prev_gres, p, flags,
-				     no_gpu_env);
+			_set_prev_gres_flags(&prev_gres, p, flags, no_gpu_env);
+		}
 
 		xfree(tmp_str);
 	} else if ((prev_gres.flags || prev_gres.no_gpu_env) &&
@@ -1743,6 +1816,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	/* Flags not set. By default, all env vars are set for GPUs */
 	if (set_default_envs && !xstrcasecmp(p->name, "gpu")) {
 		uint32_t env_flags = GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF;
+		/* Preserve modifier flags (e.g. env_uuid) already set */
+		env_flags |= p->config_flags & GRES_CONF_UUID;
 		p->config_flags |= env_flags;
 		_set_prev_gres_flags(&prev_gres, p, env_flags, false);
 	}
@@ -1897,9 +1972,11 @@ static int _foreach_gres_conf(void *x, void *arg)
 		gres_ctx->config_flags |= GRES_CONF_ONE_SHARING;
 
 	if (!(gres_slurmd_conf->config_flags & GRES_CONF_ENV_DEF) &&
-	    gres_slurmd_conf->config_flags & GRES_CONF_ENV_SET)
+	    (gres_slurmd_conf->config_flags &
+	     (GRES_CONF_ENV_SET | GRES_CONF_UUID)))
 		gres_ctx->config_flags |=
-			(gres_slurmd_conf->config_flags & GRES_CONF_ENV_SET);
+			(gres_slurmd_conf->config_flags &
+			 (GRES_CONF_ENV_SET | GRES_CONF_UUID));
 	/*
 	 * Since there could be multiple types of the same plugin we
 	 * need to only make sure we load it once.
@@ -2302,7 +2379,8 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 
 	/* Set default env flags, and allow AutoDetect to override */
 	if (!xstrcasecmp(merge_gres->gres_ctx->gres_name, "gpu")) {
-		if (merge_gres->gres_ctx->config_flags & GRES_CONF_ENV_SET)
+		if (merge_gres->gres_ctx->config_flags &
+		    (GRES_CONF_ENV_SET | GRES_CONF_UUID))
 			gres_slurmd_conf.config_flags |=
 				merge_gres->gres_ctx->config_flags;
 		else
@@ -2671,11 +2749,11 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
 }
 
 /* Load the specific GRES plugins here */
-static int _load_specific_gres_plugins(void)
+static int _load_specific_gres_plugins(node_config_load_t *node_conf)
 {
 	int rc;
 
-	if ((rc = gpu_plugin_init()) != SLURM_SUCCESS)
+	if ((rc = gpu_plugin_init(node_conf)) != SLURM_SUCCESS)
 		return rc;
 
 	return rc;
@@ -2719,9 +2797,6 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 			    fill_in_gres_devices->max_dev_num)
 				fill_in_gres_devices->max_dev_num =
 					gres_device->dev_num;
-
-			if (gres_slurmd_conf->config_flags & GRES_CONF_MIG)
-				gres_device->flags |= GRES_DEV_MIG;
 
 			list_append(*fill_in_gres_devices->gres_devices,
 				    gres_device);
@@ -2807,24 +2882,14 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 }
 
 /*
- * Load this node's configuration (how many resources it has, topology, etc.)
- * IN cpu_cnt - Number of CPUs configured for node node_name.
- * IN node_name - Name of the node to load the GRES config for.
- * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
- * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
- *	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
- *	derived from gres.conf's "Cores" range string) into machine format
- *	(normal slrumd/stepd operation). If not, it will remain unconverted (for
- *	testing purposes or when unused).
- * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
- *	convert CPU affinities from machine format (as collected from NVML and
- *	others) into abstract format, for sanity checking purposes.
- * NOTE: Called from slurmd (and from slurmctld for each cloud node)
+ * Parse gres.conf into gres_conf_list and update autodetect_flags. Refreshes
+ * gres_node_name to match node_name. Caller must hold gres_context_lock.
+ *
+ * IN node_name - Name of the node to load the GRES config for
+ * IN cpu_cnt - number of CPUs configured for node_name
+ * RET SLURM_SUCCESS or ESLURM_UNSUPPORTED_GRES
  */
-extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
-				   list_t *gres_list,
-				   void *xcpuinfo_abs_to_mac,
-				   void *xcpuinfo_mac_to_abs)
+static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 {
 	static s_p_options_t _gres_conf_options[] = {
 		{"AutoDetect", S_P_STRING},
@@ -2832,51 +2897,25 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		{"NodeName", S_P_ARRAY, _parse_gres_config_node, NULL},
 		{NULL}
 	};
-	list_t *tmp_gres_conf_list = NULL;
-
-	int count = 0, i, rc, rc2;
+	list_t *tmp_gres_conf_list = list_create(destroy_gres_slurmd_conf);
+	int count = 0, i, rc = SLURM_SUCCESS;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file = NULL;
 	char *autodetect_string = NULL;
-	bool in_slurmd = running_in_slurmd();
 
-	node_config_load_t node_conf = {
-		.cpu_cnt = cpu_cnt,
-		.in_slurmd = in_slurmd,
-		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
-	};
-
-	if (cpu_cnt == 0) {
-		error("%s: Invalid cpu_cnt of 0 for node %s",
-		      __func__, node_name);
-		return ESLURM_INVALID_CPU_COUNT;
+	if (xstrcmp(gres_node_name, node_name)) {
+		xfree(gres_node_name);
+		gres_node_name = xstrdup(node_name);
 	}
+	gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
 
-	if (xcpuinfo_abs_to_mac)
-		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
-
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
-
-	if (gres_context_cnt == 0) {
-		rc = SLURM_SUCCESS;
-		goto fini;
-	}
-
-	tmp_gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		info("Can not stat gres.conf file (%s), using slurm.conf data",
 		     gres_conf_file);
 	} else {
-		if (xstrcmp(gres_node_name, node_name)) {
-			xfree(gres_node_name);
-			gres_node_name = xstrdup(node_name);
-		}
-
 		gres_cpu_cnt = cpu_cnt;
 		tbl = s_p_hashtbl_create(_gres_conf_options);
 		if (s_p_parse_file(tbl, NULL, gres_conf_file, 0, NULL) ==
@@ -2917,9 +2956,98 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		}
 		s_p_hashtbl_destroy(tbl);
 	}
+
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = tmp_gres_conf_list;
 	tmp_gres_conf_list = NULL;
+
+fini:
+	FREE_NULL_LIST(tmp_gres_conf_list);
+	xfree(gres_conf_file);
+	return rc;
+}
+
+extern int gres_parse_conf(char *node_name, uint32_t cpu_cnt)
+{
+	int rc;
+
+	if (cpu_cnt == 0) {
+		error("%s: Invalid cpu_cnt of 0 for node %s",
+		      __func__, node_name);
+		return ESLURM_INVALID_CPU_COUNT;
+	}
+
+	xassert(gres_context_cnt >= 0);
+
+	slurm_mutex_lock(&gres_context_lock);
+	if (gres_context_cnt == 0) {
+		slurm_mutex_unlock(&gres_context_lock);
+		return SLURM_SUCCESS;
+	}
+
+	rc = _parse_gres_conf_locked(node_name, cpu_cnt);
+	if (rc == SLURM_SUCCESS)
+		gres_conf_parsed_early = true;
+	slurm_mutex_unlock(&gres_context_lock);
+	return rc;
+}
+
+/*
+ * Load this node's configuration (how many resources it has, topology, etc.)
+ *
+ * IN cpu_cnt - Number of CPUs configured for node node_name.
+ * IN node_name - Name of the node to load the GRES config for.
+ * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
+ * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
+ *	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
+ *	derived from gres.conf's "Cores" range string) into machine format
+ *	(normal slrumd/stepd operation). If not, it will remain unconverted (for
+ *	testing purposes or when unused).
+ * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
+ *	convert CPU affinities from machine format (as collected from NVML and
+ *	others) into abstract format, for sanity checking purposes.
+ * NOTE: Called from slurmd (and from slurmctld for each cloud node)
+ */
+extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
+				   list_t *gres_list,
+				   void *xcpuinfo_abs_to_mac,
+				   void *xcpuinfo_mac_to_abs)
+{
+	int i, rc, rc2;
+	bool in_slurmd = running_in_slurmd();
+
+	node_config_load_t node_conf = {
+		.cpu_cnt = cpu_cnt,
+		.in_slurmd = in_slurmd,
+		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs,
+	};
+
+	if (cpu_cnt == 0) {
+		error("%s: Invalid cpu_cnt of 0 for node %s",
+		      __func__, node_name);
+		return ESLURM_INVALID_CPU_COUNT;
+	}
+
+	if (xcpuinfo_abs_to_mac)
+		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
+
+	xassert(gres_context_cnt >= 0);
+
+	slurm_mutex_lock(&gres_context_lock);
+
+	if (gres_context_cnt == 0) {
+		rc = SLURM_SUCCESS;
+		goto fini;
+	}
+
+	if (gres_conf_parsed_early && !xstrcmp(gres_node_name, node_name)) {
+		gres_conf_parsed_early = false;
+	} else {
+		gres_conf_parsed_early = false;
+		rc = _parse_gres_conf_locked(node_name, cpu_cnt);
+		if (rc != SLURM_SUCCESS)
+			goto fini;
+	}
 
 	/* Validate gres.conf and slurm.conf somewhat before merging */
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -2932,7 +3060,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	/* Merge slurm.conf and gres.conf together into gres_conf_list */
 	_merge_config(&node_conf, gres_conf_list, gres_list);
 
-	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS) {
+	if ((rc = _load_specific_gres_plugins(&node_conf)) != SLURM_SUCCESS) {
 		goto fini;
 	}
 
@@ -2974,8 +3102,6 @@ fini:
 	 */
 	if (!in_slurmd || !xstrstr(slurm_conf.acct_gather_energy_type, "gpu"))
 		gpu_plugin_fini();
-	xfree(gres_conf_file);
-	FREE_NULL_LIST(tmp_gres_conf_list);
 	_pack_context_buf();
 	_pack_gres_conf();
 	slurm_mutex_unlock(&gres_context_lock);
@@ -5615,6 +5741,38 @@ extern void gres_node_state_dealloc_all(list_t *gres_list)
 	(void) list_for_each(gres_list, _node_state_dealloc, NULL);
 }
 
+static bool _is_shared_gres_full_alloc(gres_node_state_t *gres_ns, int topo_inx)
+{
+	gres_node_state_t *alt_gres_ns;
+
+	xassert(gres_ns);
+	xassert(topo_inx < gres_ns->topo_cnt);
+
+	if (!gres_ns->alt_gres || !gres_ns->topo_gres_bitmap ||
+	    !gres_ns->topo_gres_bitmap[topo_inx])
+		return false;
+
+	alt_gres_ns = gres_ns->alt_gres->gres_data;
+	if (!alt_gres_ns || !alt_gres_ns->gres_bit_alloc)
+		return false;
+
+	return bit_overlap_any(gres_ns->topo_gres_bitmap[topo_inx],
+			       alt_gres_ns->gres_bit_alloc);
+}
+
+static void _xstrfmtcat_shared_gres_used(char **str, const char *sep,
+					 gres_node_state_t *gres_ns,
+					 int topo_inx)
+{
+	uint64_t alloc = gres_ns->topo_gres_cnt_alloc[topo_inx];
+	uint64_t avail = gres_ns->topo_gres_cnt_avail[topo_inx];
+
+	if (!alloc && _is_shared_gres_full_alloc(gres_ns, topo_inx))
+		xstrfmtcat(*str, "%s-/%" PRIu64, sep, avail);
+	else
+		xstrfmtcat(*str, "%s%" PRIu64 "/%" PRIu64, sep, alloc, avail);
+}
+
 static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 {
 	char *sep = "";
@@ -5651,12 +5809,11 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 
 			is_shared = gres_is_shared_name(gres_name);
 			if (is_shared) {
-				uint64_t alloc, avail;
+				uint64_t alloc;
+				_xstrfmtcat_shared_gres_used(
+					&topo_gres_cnt_alloc_str, "", gres_ns,
+					i);
 				alloc = gres_ns->topo_gres_cnt_alloc[i];
-				avail = gres_ns->topo_gres_cnt_avail[i];
-				xstrfmtcat(topo_gres_cnt_alloc_str,
-					   "%"PRIu64"/%"PRIu64,
-					   alloc, avail);
 				gres_alloc_cnt += alloc;
 			} else if (gres_ns->topo_gres_bitmap[i]) {
 				topo_gres_bitmap =
@@ -5671,12 +5828,11 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 					continue;
 				bit_set(topo_printed, j);
 				if (is_shared) {
-					uint64_t alloc, avail;
+					uint64_t alloc;
+					_xstrfmtcat_shared_gres_used(
+						&topo_gres_cnt_alloc_str, ",",
+						gres_ns, j);
 					alloc = gres_ns->topo_gres_cnt_alloc[j];
-					avail = gres_ns->topo_gres_cnt_avail[j];
-					xstrfmtcat(topo_gres_cnt_alloc_str,
-						   ",%"PRIu64"/%"PRIu64,
-						   alloc, avail);
 					gres_alloc_cnt += alloc;
 				} else if (gres_ns->topo_gres_bitmap[j]) {
 					if (!topo_gres_bitmap) {
@@ -5710,8 +5866,12 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 				gres_alloc_idx = "N/A";
 			}
 			xstrfmtcat(gres_ns->gres_used,
-				   "%s%s:%s:%"PRIu64"(%s%s)", sep, gres_name,
-				   gres_ns->topo_type_name[i], gres_alloc_cnt,
+				   "%s%s%s%s:%" PRIu64 "(%s%s)", sep, gres_name,
+				   gres_ns->topo_type_name[i] ? ":" : "",
+				   gres_ns->topo_type_name[i] ?
+					   gres_ns->topo_type_name[i] :
+					   "",
+				   gres_alloc_cnt,
 				   is_shared ? "" : "IDX:", gres_alloc_idx);
 			sep = ",";
 			FREE_NULL_BITMAP(topo_gres_bitmap);
@@ -6073,6 +6233,104 @@ extern void gres_job_clear_alloc(gres_job_state_t *gres_js)
 	xfree(gres_js->gres_cnt_step_alloc);
 	xfree(gres_js->gres_cnt_node_alloc);
 	gres_js->node_cnt = 0;
+}
+
+/*
+ * Remap a pointer array from old node indices to new ones.
+ * Orphaned elements (old index maps to -1 or out of range) are freed
+ * via elem_free; pass NULL to simply discard orphaned values.
+ */
+static void _remap_ptr_array(void ***arr_ptr, int *old_to_new, uint32_t limit,
+			     uint32_t new_cnt, void (*elem_free)(void *))
+{
+	void **old_arr = *arr_ptr;
+	void **new_arr = xcalloc(new_cnt, sizeof(void *));
+
+	for (uint32_t i = 0; i < limit; i++) {
+		if (!old_arr[i])
+			continue;
+		if ((old_to_new[i] >= 0) && (old_to_new[i] < (int) new_cnt))
+			new_arr[old_to_new[i]] = old_arr[i];
+		else if (elem_free)
+			elem_free(old_arr[i]);
+		old_arr[i] = NULL;
+	}
+	xfree(*arr_ptr);
+	*arr_ptr = new_arr;
+}
+
+/*
+ * Remap a uint64_t value array from old node indices to new ones.
+ * Orphaned entries (old index maps to -1 or out of range) are dropped.
+ */
+static void _remap_uint64_t_array(uint64_t **arr_ptr, int *old_to_new,
+				  uint32_t limit, uint32_t new_cnt)
+{
+	uint64_t *old_arr = *arr_ptr;
+	uint64_t *new_arr = xcalloc(new_cnt, sizeof(uint64_t));
+
+	for (uint32_t i = 0; i < limit; i++) {
+		if ((old_to_new[i] >= 0) && (old_to_new[i] < (int) new_cnt))
+			new_arr[old_to_new[i]] = old_arr[i];
+	}
+	xfree(*arr_ptr);
+	*arr_ptr = new_arr;
+}
+
+static int _foreach_resv_gres_remap(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js;
+	uint32_t new_cnt = node_record_count;
+	uint32_t limit;
+
+	if (!gres_state_job)
+		return 0;
+	gres_js = gres_state_job->gres_data;
+	if (!gres_js || !gres_js->node_cnt)
+		return 0;
+
+	log_flag(GRES, "%s: remapping %s:%s node_cnt %u -> %u",
+		 __func__,
+		 gres_state_job->gres_name ? gres_state_job->gres_name : "?",
+		 (gres_js->type_name && gres_js->type_name[0]) ?
+			 gres_js->type_name : "(typeless)",
+		 gres_js->node_cnt, new_cnt);
+
+	limit = MIN(gres_js->node_cnt, old_node_record_count);
+
+	if (gres_js->gres_bit_alloc)
+		_remap_ptr_array((void ***) &gres_js->gres_bit_alloc,
+				 node_old_to_new_map, limit, new_cnt,
+				 bit_free_ptr);
+	if (gres_js->gres_cnt_node_alloc)
+		_remap_uint64_t_array(&gres_js->gres_cnt_node_alloc,
+				      node_old_to_new_map, limit, new_cnt);
+	if (gres_js->gres_per_bit_alloc)
+		_remap_ptr_array((void ***) &gres_js->gres_per_bit_alloc,
+				 node_old_to_new_map, limit, new_cnt,
+				 xfree_ptr);
+
+	gres_js->node_cnt = new_cnt;
+	return 0;
+}
+
+extern void gres_resv_list_remap_global_indices(list_t *gres_list)
+{
+	xassert(gres_list);
+	xassert(node_record_count);
+	xassert(node_old_to_new_map);
+	xassert(old_node_record_count);
+
+	if (!gres_list || !node_record_count || !node_old_to_new_map ||
+	    !old_node_record_count) {
+		error("%s: called with invalid state (gres_list=%p node_record_count=%d map=%p old_cnt=%u)",
+		      __func__, gres_list, node_record_count,
+		      node_old_to_new_map, old_node_record_count);
+		return;
+	}
+
+	(void) list_for_each(gres_list, _foreach_resv_gres_remap, NULL);
 }
 
 extern void gres_job_list_delete(void *list_element)
@@ -7646,49 +7904,6 @@ extern void gres_prep_pack(void *in, uint16_t protocol_version, buf_t *buffer)
 	}
 }
 
-/*
- * Pack a job's allocated gres information for use by prolog/epilog
- * IN gres_list - generated by gres_job_config_validate()
- * IN/OUT buffer - location to write state to
- *
- * When 24.11 is no longer supported this can be removed.
- */
-extern int gres_prep_pack_legacy(list_t *gres_list, buf_t *buffer,
-				 uint16_t protocol_version)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t top_offset, tail_offset;
-	uint16_t rec_cnt = 0;
-	list_itr_t *gres_iter;
-	gres_prep_t *gres_prep;
-
-	top_offset = get_buf_offset(buffer);
-	pack16(rec_cnt, buffer);	/* placeholder if data */
-
-	if (gres_list == NULL)
-		return rc;
-
-	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		return rc;
-	}
-
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_prep = list_next(gres_iter))) {
-		gres_prep_pack(gres_prep, protocol_version, buffer);
-		rec_cnt++;
-	}
-	list_iterator_destroy(gres_iter);
-
-	tail_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, top_offset);
-	pack16(rec_cnt, buffer);
-	set_buf_offset(buffer, tail_offset);
-
-	return rc;
-}
-
 static void _prep_list_del(void *x)
 {
 	gres_prep_t *gres_prep = (gres_prep_t *) x;
@@ -7784,60 +7999,6 @@ extern int gres_prep_unpack_list(list_t **out, buf_t *buffer,
 
 	return rc;
 }
-
-/*
- * Unpack a job's allocated gres information for use by prolog/epilog
- * OUT gres_list - restored state stored by gres_prep_pack()
- * IN/OUT buffer - location to read state from
- *
- * When 24.11 is no longer supported this can be removed.
- */
-extern int gres_prep_unpack_legacy(list_t **gres_list, buf_t *buffer,
-				   uint16_t protocol_version)
-{
-	int rc = SLURM_SUCCESS;
-	uint16_t rec_cnt = 0;
-	gres_prep_t *gres_prep = NULL;
-	bool locked = false;
-
-	safe_unpack16(&rec_cnt, buffer);
-	if (rec_cnt == 0)
-		return SLURM_SUCCESS;
-
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
-	locked = true;
-	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_prep_list_del);
-	}
-
-	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
-		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
-			break;
-		rec_cnt--;
-
-		if (_gres_prep_unpack((void **)&gres_prep, protocol_version,
-				      buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (gres_prep) {
-			list_append(*gres_list, gres_prep);
-			gres_prep = NULL;
-		}
-	}
-	slurm_mutex_unlock(&gres_context_lock);
-	return rc;
-
-unpack_error:
-	error("%s: unpack error", __func__);
-	if (gres_prep)
-		_prep_list_del(gres_prep);
-	if (locked)
-		slurm_mutex_unlock(&gres_context_lock);
-	return SLURM_ERROR;
-}
-
 
 static int _foreach_prep_build_env(void *x, void *arg)
 {
@@ -10258,14 +10419,13 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		 * Consolidate allocated gres bitstring so that we get the GRES
 		 * device index of the GRES within the context of the job, and
 		 * not within the context of the whole node, unless specifically
-		 * required with the GRES_CONF_GLOBAL_INDEX flag.
+		 * required with the GRES_CONF_UUID flag.
 		 */
-		if (!(gres_context[context_inx].config_flags &
-		      GRES_CONF_GLOBAL_INDEX))
+		if (!(gres_context[context_inx].config_flags & GRES_CONF_UUID))
 			bit_consolidate(gres_bit_alloc);
 	}
 
-	if (gres_context[context_inx].config_flags & GRES_CONF_GLOBAL_INDEX) {
+	if (gres_context[context_inx].config_flags & GRES_CONF_UUID) {
 		use_local_index = false;
 		dev_index_mode_set = true;
 	}
@@ -10547,6 +10707,36 @@ extern void gres_step_state_log(list_t *gres_list, uint32_t job_id,
 	(void) list_for_each(gres_list, _step_state_log, &tmp_step_id);
 }
 
+static int _foreach_gres_init(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	bool *rc = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (!gres_js->gres_per_job)
+		return 0;
+	gres_js->total_gres = 0;
+	*rc = true;
+
+	return 0;
+}
+
+/*
+ * Clear GRES allocation info for all job GRES at start of scheduling cycle
+ * Return TRUE if any gres_per_job constraints to satisfy
+ */
+extern bool gres_sched_init(list_t *job_gres_list)
+{
+	bool rc = false;
+
+	if (!job_gres_list)
+		return rc;
+
+	(void) list_for_each(job_gres_list, _foreach_gres_init, &rc);
+
+	return rc;
+}
+
 /*
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
@@ -10799,7 +10989,7 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	/* Set debug flags only */
 	(void) gres_init();
 
-	rc = _load_specific_gres_plugins();
+	rc = _load_specific_gres_plugins(NULL);
 
 	return rc;
 rwfail:
@@ -10810,7 +11000,7 @@ rwfail:
 	/* Set debug flags only */
 	(void) gres_init();
 
-	rc = _load_specific_gres_plugins();
+	rc = _load_specific_gres_plugins(NULL);
 
 	return rc;
 }
@@ -10912,6 +11102,12 @@ extern int gres_get_step_info(list_t *step_gres_list, char *gres_name,
 extern uint32_t gres_get_autodetect_flags(void)
 {
 	return autodetect_flags;
+}
+
+extern void gres_autodetect_flags_set_gpu(uint32_t gpu_flags_part)
+{
+	autodetect_flags = (autodetect_flags & ~GRES_AUTODETECT_GPU_FLAGS) |
+			   (gpu_flags_part & GRES_AUTODETECT_GPU_FLAGS);
 }
 
 extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked)
@@ -11024,9 +11220,15 @@ extern char *gres_flags2str(uint32_t config_flags)
 		sep = ",";
 	}
 
-	if (config_flags & GRES_CONF_ENV_AMDSMI){
+	if (config_flags & GRES_CONF_ENV_AMDSMI) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "ENV_AMDSMI");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_UUID) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "UUID");
 		sep = ",";
 	}
 	if (config_flags & GRES_CONF_ENV_RSMI) {

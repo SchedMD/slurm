@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "Slurm 26.05" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -206,6 +206,17 @@ Get IP addresses of <\fINODES\fR> from slurmctld.
 .IP
 
 .TP
+\fBgetent\fR [<\fINodeName\fR>]
+Print entities (users and groups) associated with each step
+running on the host that invokes this command. This contacts any
+slurmstepd's running locally, and does not contact slurmctld.
+Use <\fINodeName\fR> if using \-\-enable\-multiple\-slurmd.
+
+\fBNOTE\fR: This command will not work for any steps launched while
+\fBLaunchParameters=disable_send_gids\fR is set in slurm.conf.
+.IP
+
+.TP
 \fBhelp\fR
 Display a description of scontrol options and commands.
 .IP
@@ -213,8 +224,8 @@ Display a description of scontrol options and commands.
 .TP
 \fBhold\fR <\fIjob_list\fR>
 Prevent a pending job from being started (sets its priority to 0).
-The job_list argument is a space separated list of job IDs OR
-"jobname=" with the job's name, which will attempt to hold all jobs having
+The job_list argument is a space separated list of job IDs (numeric or SLUID)
+OR "jobname=" with the job's name, which will attempt to hold all jobs having
 that name.
 
 Only a privileged user, account coordinator, or job owner may hold jobs. If
@@ -237,7 +248,7 @@ Use <\fINodeName\fR> if using --enable-multiple-slurmd.
 
 .TP
 \fBlistpids\fR [<\fIjob_id\fR>[.<\fIstep_id\fR>]] [<\fINodeName\fR>]
-Print a listing of the process IDs in a job step (if JOBID.STEPID is provided),
+Print process IDs in a job step (if JOBID.STEPID is provided),
 or all of the job steps in a job (if \fIjob_id\fP is provided), or all of the job
 steps in all of the jobs on the local node (if \fIjob_id\fP is not provided
 or \fIjob_id\fP is "*"). This will work only with processes on the node on
@@ -283,10 +294,11 @@ primary slurmctld daemon of the specified cluster.
 .TP
 \fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>} [Reason=<\fIreason\fR>]
 Control power state of the provided node list/set. For 'power down', the
-optional ASAP/FORCE flag will be added to the power down request, but will
-otherwise be rejected for power up requests. All arguments will be processed
-insensitive of case except for the node list/set. Optional \fIreason\fR may be
-be specified only when powering down. This subcommand obsoletes the
+optional ASAP flag will be added to the power down request, but will
+otherwise be rejected for power up requests.
+All arguments will be processed insensitive of case except for the node
+list/set. Optional \fIreason\fR may be be specified only when powering down.
+This subcommand obsoletes the
 prior usage of scontrol's update command:
 
 scontrol update NodeName=<\fInodes\fR>
@@ -331,10 +343,11 @@ effect until the configured \fIResumeTimeout\fR is reached.
 .IP
 
 .TP
-\fBreboot\fR [ASAP] [nextstate={RESUME|DOWN}] [reason=<\fIreason\fR>] {ALL|\
-<\fINodeList\fR>|<\fINodeSet\fR>}
+\fBreboot\fR [ASAP] [FORCE] [nextstate={RESUME|DOWN}] [reason=<\fIreason\fR>]\
+[action=<\fIpower action name\fR>] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>}
 Reboot the nodes in the system when they become idle using the
-\fBRebootProgram\fP as configured in Slurm's slurm.conf file.
+\fBRebootProgram\fP as configured in Slurm's slurm.conf file. If "action" is
+set, the \fBPowerAction\fP by the specified name will be used instead.
 Each node will have the "REBOOT" flag added to its node state.
 After a node reboots and the slurmd daemon starts up again, the
 HealthCheckProgram will run once. Then, the slurmd daemon will register
@@ -344,6 +357,8 @@ additional jobs from running on the node so it can be
 rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
 "ASAP" will also set the node reason to "Reboot ASAP" if the "reason" option
 isn't specified and will set nextstate=UNDRAIN if nextstate isn't specified.
+The "FORCE" option will ignore the current state and any jobs running, resetting
+reboot and power states, requeueing jobs, and requesting immediate reboot.
 If the "nextstate" option is specified
 as "DOWN", then the node will remain in a down state after rebooting. If
 "nextstate" is specified as "RESUME", then the nodes will resume as normal
@@ -389,9 +404,9 @@ or authentication mechanism.
 .TP
 \fBrelease\fR <\fIjob_list\fR>
 Release a previously held job to begin execution.
-The job_list argument is a space separated list of job IDs OR
-"jobname=" with the job's name, which will attempt to release all jobs having
-that name.
+The job_list argument is a space separated list of job IDs (numeric or SLUID)
+OR "jobname=" with the job's name, which will attempt to release all jobs
+having that name.
 Note that a privileged user may release an admin-hold or a user-hold.
 An unprivileged job owner or coordinator may only release a user-hold.
 Also see \fBhold\fR.
@@ -631,8 +646,8 @@ is mapped to "tux1","tux2" and "tux3" (one hostname per line).
 
 .TP
 \fBjob\fR
-Displays statistics about all jobs by default. If an optional jobid is
-specified, details for just that job will be displayed.
+Displays statistics about all jobs by default. If an optional jobid (numeric
+or SLUID) is specified, details for just that job will be displayed.
 If the job does not specify socket\-per\-node, cores\-per\-socket or
 threads\-per\-core then it will display '*' in the ReqS:C:T=*:*:* field.
 .IP
@@ -670,8 +685,9 @@ Displays statistics for the slurmd running on the current node.
 .TP
 \fBstep\fR
 Displays statistics about all job steps by default. If an optional jobid
-is specified, details about steps for just that job will be displayed.
-If a jobid.stepid is specified, details for just that step will be displayed.
+(numeric or SLUID) is specified, details about steps for just that job will be
+displayed. If a jobid.stepid is specified, details for just that step will be
+displayed.
 If a container-id=<\fIid\fR> is specified, then the first matching step with
 the given container-id will be displayed.
 .IP
@@ -1191,19 +1207,23 @@ Set the job's minimum number of CPUs per node to the specified value.
 .IP
 
 .TP
-\fBMinMemoryCPU\fR=<\fImegabytes\fR>
+\fBMinMemoryCPU\fR=<\fImebibytes\fR>
 Set the job's minimum real memory required per allocated CPU to the specified
 value. Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .IP
 
 .TP
-\fBMinMemoryNode\fR=<\fImegabytes\fR>
+\fBMinMemoryNode\fR=<\fImebibytes\fR>
 Set the job's minimum real memory required per node to the specified value.
-Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
+For running jobs, only reduction is allowed. If the job was submitted with
+\fB\-\-mem\-per\-cpu\fR, the new per\-node limit replaces the per\-CPU limit
+(compared against the highest per\-node allocation across all nodes).
+Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both
+(for pending jobs).
 .IP
 
 .TP
-\fBMinTmpDiskNode\fR=<\fImegabytes\fR>
+\fBMinTmpDiskNode\fR=<\fImebibytes\fR>
 Set the job's minimum temporary disk space required per node to the specified value.
 .IP
 
@@ -1397,11 +1417,6 @@ Value may be reset to job default with blank data value, "StdOut=".
 .IP
 
 .TP
-\fBShared\fR={yes|no}
-See \fIOverSubscribe\fP option above.
-.IP
-
-.TP
 \fBStartTime\fR=<\fItime_spec\fR>
 Set the job's earliest initiation time.
 It accepts times of the form \fIHH:MM:SS\fR to run a job at
@@ -1415,9 +1430,7 @@ a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR or \fIMM.DD.YY\fR,
 or a date and time as \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR. You can also
 give times like \fInow + count time\-units\fR, where the time\-units
 can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, \fIdays\fR,
-or \fIweeks\fR and you can tell Slurm to run the job today with the keyword
-\fItoday\fR and to run the job tomorrow with the keyword
-\fItomorrow\fR.
+or \fIweeks\fR. The keywords \fItoday\fR and \fItomorrow\fR may also be used.
 .IP
 .RS
 .PP
@@ -1753,8 +1766,6 @@ gres.conf files and restart daemons.
 If GRES are associated with specific sockets, that information will be reported
 For example if all 4 GPUs on a node are all associated with socket zero, then
 "Gres=gpu:4(S:0)". If associated with sockets 0 and 1 then "Gres=gpu:4(S:0\-1)".
-The information of which specific GPUs are associated with specific GPUs is not
-reported, but only available by parsing the gres.conf file.
 Generic resources assigned via \fBscontrol\fR will only persist across the
 restart of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
@@ -1764,12 +1775,16 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBInstanceId\fR=<\fIinstance_id\fR>
-Cloud instance ID.
+Cloud instance ID. Multiple IDs may be specified using the same syntax as a
+node range expression (used in \fBNodeName\fR). If multiple IDs are specified,
+the total number must match the number of nodes being updated.
 .IP
 
 .TP
 \fBInstanceType\fR=<\fIinstance_type\fR>
-Cloud instance type.
+Cloud instance type. Multiple types may be specified using the same syntax as a
+node range expression (used in \fBNodeName\fR). If multiple types are
+specified, the total number must match the number of nodes being updated.
 .IP
 
 .TP
@@ -1922,7 +1937,7 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBAllocMem\fR
-The total memory, in MB, currently allocated by jobs on the node.
+The total memory, in MiB, currently allocated by jobs on the node.
 .IP
 
 .TP
@@ -1938,7 +1953,7 @@ exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 
 .TP
 \fBFreeMem\fR
-The total memory, in MB, currently free on the node as reported by the OS.
+The total memory, in MiB, currently free on the node as reported by the OS.
 .IP
 
 .TP
@@ -1950,13 +1965,13 @@ LastBusy > SuspendTime).
 
 .TP
 \fBMemSpecLimit\fR
-The combined memory limit, in megabytes, on this node for the Slurm compute
+The combined memory limit, in mebibytes, on this node for the Slurm compute
 node daemons (slurmd, slurmstepd).
 .IP
 
 .TP
 \fBRealMemory\fR
-The total memory, in MB, on the node.
+The total memory, in MiB, on the node.
 .IP
 
 .TP
@@ -2202,13 +2217,13 @@ Format is the same as for MaxTime.
 .TP
 \fBDefMemPerCPU\fR=<\fIMB\fR>
 Set the default memory to be allocated per CPU for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
 \fBDefMemPerNode\fR=<\fIMB\fR>
 Set the default memory to be allocated per node for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
@@ -2233,10 +2248,26 @@ Possible values are "YES" and "NO".
 .IP
 
 .TP
-\fBExclusiveUser\fR={yes|no}
-When enabled nodes will be exclusively allocated to users. Multiple jobs can
-be run simultaneously, but those jobs must be from a single user.
+\fBExclusive\fR={no|none|node|user|topo}
+Set partition\-level exclusivity to a single mode.
+.RS
+.TP
+\fBNO\fR (or \fBNONE\fR): no partition\-level exclusivity (default).
+.TP
+\fBNODE\fR: allocate whole nodes (similar to job \fB\-\-exclusive\fR).
+.TP
+\fBUSER\fR: only one user's jobs may share a node (similar to
+\fB\-\-exclusive=user\fR).
+.TP
+\fBTOPO\fR: only one job per topology segment (similar to
+\fB\-\-exclusive=topo\fR); also implies \fBNODE\fR.
+.TP
+See the \fBExclusive\fR entry in \fBslurm.conf\fR(5) for full semantics.
+Older \fBExclusiveUser=YES\fR and \fBExclusiveTopo=YES\fR are still accepted
+and are equivalent to \fBExclusive=USER\fR and \fBExclusive=TOPO\fR
+respectively.
 .IP
+.RE
 
 .TP
 \fBGraceTime\fR=<\fIseconds\fR>
@@ -2268,7 +2299,7 @@ Default number of CPUs per allocated GPU.
 
 .TP
 \fBDefMemPerGPU\fR
-Default memory limit (in megabytes) per allocated GPU.
+Default memory limit (in mebibytes) per allocated GPU.
 .RE
 .IP
 
@@ -2292,13 +2323,13 @@ in this partition.
 .TP
 \fBMaxMemPerCPU\fR=<\fIMB\fR>
 Set the maximum memory to be allocated per CPU for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
 \fBMaxMemPerNode\fR=<\fIMB\fR>
 Set the maximum memory to be allocated per node for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
@@ -2348,12 +2379,14 @@ have already begun execution.
 .IP
 
 .TP
-\fBOverSubscribe\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
+\fBOverSubscribe\fR={yes|no|force}[:<\fIjob_count\fR>]
 Specify if compute resources (i.e. individual CPUs) in this partition can be
 shared by multiple jobs.
-Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
+Possible values are "YES", "NO", and "FORCE".
 An optional job count specifies how many jobs can be allocated to use
 each resource.
+Whole\-node\-exclusive partitions can be configured with \fBExclusive\fR=node
+(see above).
 .IP
 
 .TP
@@ -2426,11 +2459,6 @@ Possible values are "YES" and "NO".
 Specify if only allocation requests initiated by user root will be satisfied.
 This can be used to restrict control of the partition to some meta\-scheduler.
 Possible values are "YES" and "NO".
-.IP
-
-.TP
-\fBShared\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
-Renamed to \fIOverSubscribe\fP, see option descriptions above.
 .IP
 
 .TP
@@ -2914,14 +2942,13 @@ a specific time of day (seconds are optional).
 You may also specify \fImidnight\fR, \fInoon\fR, \fIelevenses\fR (11 AM),
 \fIfika\fR (3 PM) or \fIteatime\fR (4 PM) and you can have a time\-of\-day
 suffixed with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
-You can also say what day the job will be run, by specifying
+You can also say what day the reservation will start, by specifying
 a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR or \fIMM.DD.YY\fR,
 or a date and time as \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR. You can also
 give times like \fInow + count time\-units\fR, where the time\-units
 can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, \fIdays\fR,
-or \fIweeks\fR and you can tell Slurm to run the job today with the keyword
-\fItoday\fR and to run the job tomorrow with the keyword
-\fItomorrow\fR. You cannot update the \fIStartTime\fP of a reservation
+or \fIweeks\fR. The keywords \fItoday\fR and \fItomorrow\fR may also be used.
+You cannot update the \fIStartTime\fP of a reservation
 in \fIACTIVE\fP state.
 .IP
 
@@ -3242,7 +3269,7 @@ scontrol: show part debug
 PartitionName=debug
    AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL
    AllocNodes=ALL Default=YES QoS=N/A
-   DefaultTime=NONE DisableRootJobs=NO ExclusiveUser=NO ExclusiveTopo=NO GraceTime=0 Hidden=NO
+   DefaultTime=NONE DisableRootJobs=NO Exclusive=NO GraceTime=0 Hidden=NO
    MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=0 LLN=NO MaxCPUsPerNode=UNLIMITED MaxCPUsPerSocket=UNLIMITED
    NodeSets=ALL
    Nodes=snowflake[0\-48]
@@ -3268,7 +3295,7 @@ JobId=71701 Name=hostname
    NumNodes=1 NumCPUs=10 CPUs/Task=2 ReqS:C:T=1:1:1
    MinCPUsNode=2 MinMemoryNode=0 MinTmpDiskNode=0
    Features=(null) Reservation=(null)
-   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   OverSubscribe=OK Exclusive=NO Contiguous=0 Licenses=(null) Network=(null)
 scontrol: update JobId=71701 TimeLimit=30:00 Priority=500
 scontrol: show hostnames tux[1\-3]
 tux1

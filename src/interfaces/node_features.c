@@ -64,6 +64,7 @@ typedef struct node_features_ops {
 	char *	(*node_xlate2)	(char *new_features);
 	bool	(*user_update)	(uid_t uid);
 	void	(*get_config)	(config_plugin_params_t *p);
+	bool	(*job_features_need_reboot) (char *features);
 } node_features_ops_t;
 
 /*
@@ -82,7 +83,8 @@ static const char *syms[] = {
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
 	"node_features_p_user_update",
-	"node_features_p_get_config"
+	"node_features_p_get_config",
+	"node_features_p_job_features_need_reboot"
 };
 
 static int g_context_cnt = -1;
@@ -438,6 +440,27 @@ extern uint32_t node_features_g_boot_time(void)
 	END_TIMER2(__func__);
 
 	return boot_time;
+}
+
+extern bool node_features_g_job_features_need_reboot(char *features)
+{
+	DEF_TIMERS;
+	bool need = false;
+	int i;
+
+	START_TIMER;
+	xassert(g_context_cnt >= 0);
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context_cnt == 0) {
+		need = true;
+	} else {
+		for (i = 0; i < g_context_cnt; i++)
+			need |= (*(ops[i].job_features_need_reboot))(features);
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	END_TIMER2(__func__);
+
+	return need;
 }
 
 /* Get node features plugin configuration */

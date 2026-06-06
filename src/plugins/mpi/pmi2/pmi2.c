@@ -188,7 +188,7 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 	client_req_get_bool(req, ISWORLD_KEY, &is_world);
 	/* no response needed. just cancel the job step if required */
 	if (is_world) {
-		slurm_kill_job_step(&job_info.step_id, SIGKILL, 0);
+		slurm_kill_job_step(&job_info.step_id, SIG_TERM_KILL, 0);
 	}
 	return rc;
 }

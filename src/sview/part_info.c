@@ -1391,7 +1391,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			 "force:%u", (part_ptr->max_share & ~(SHARED_FORCE)));
 		tmp_over_subscribe = tmp_over_subscribe_buf;
 	} else if (part_ptr->max_share == 0) {
-		tmp_over_subscribe = "exclusive";
+		tmp_over_subscribe = "no";
 	} else if (part_ptr->max_share > 1) {
 		snprintf(tmp_over_subscribe_buf,
 			 sizeof(tmp_over_subscribe_buf), "yes:%u",

@@ -549,6 +549,15 @@ static slurm_cli_opt_t slurm_opt_argv = {
 	.reset_func = arg_reset_argv,
 };
 
+COMMON_SRUN_BOOL_OPTION(async);
+static slurm_cli_opt_t slurm_opt_async = {
+	.name = "async",
+	.has_arg = no_argument,
+	.val = LONG_OPT_ASYNC,
+	.set_func_srun = arg_set_async,
+	.get_func = arg_get_async,
+	.reset_func = arg_reset_async,
+};
 
 COMMON_SBATCH_STRING_OPTION(batch_features);
 static slurm_cli_opt_t slurm_opt_batch = {
@@ -1327,10 +1336,15 @@ static slurm_cli_opt_t slurm_opt_exclude = {
 
 static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 {
-	if (!arg || !xstrcasecmp(arg, "exclusive")) {
+	if (!arg || !xstrcasecmp(arg, "exclusive") ||
+	    !xstrcasecmp(arg, "allocation")) {
 		if (opt->srun_opt) {
-			opt->srun_opt->exclusive = true;
-			opt->srun_opt->exact = true;
+			if (xstrcasecmp(arg, "allocation") &&
+			    !xstrstr(slurm_conf.launch_params,
+				     "srun_exclusive_allocation")) {
+				opt->srun_opt->exclusive = true;
+				opt->srun_opt->exact = true;
+			}
 		}
 		opt->shared = JOB_SHARED_NONE;
 	} else if (!xstrcasecmp(arg, "oversubscribe")) {
@@ -1350,8 +1364,18 @@ static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_exclusive(slurm_opt_t *opt)
 {
-	if (opt->shared == JOB_SHARED_NONE)
+	if (opt->shared == JOB_SHARED_NONE) {
+		/*
+		 * if a job allocation is JOB_SHARED_NONE _and_ does not
+		 * have exact applied, the only way this happened is with
+		 * --exclusive=allocation or --exclusive with
+		 * LaunchParamaters=srun_exclusive_allocation.
+		 * A user specifying --exact separately could confuse this
+		 */
+		if (opt->srun_opt && !opt->srun_opt->exact)
+			return xstrdup("allocation");
 		return xstrdup("exclusive");
+	}
 	if (opt->shared == JOB_SHARED_OK)
 		return xstrdup("oversubscribe");
 	if (opt->shared == JOB_SHARED_USER)
@@ -1944,6 +1968,80 @@ static slurm_cli_opt_t slurm_opt_ignore_pbs = {
 	.reset_func = arg_reset_ignore_pbs,
 };
 
+static int arg_set_ignore_signals(slurm_opt_t *opt, const char *arg)
+{
+	char *tmp, *tok, *parse_ptr = NULL;
+	int signal;
+
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->ignore_signals = 0;
+	tmp = xstrdup(arg);
+	tok = strtok_r(tmp, ",", &parse_ptr);
+
+	if (!tok) {
+		error("--ignore-signals requires at least one signal");
+		xfree(tmp);
+		return SLURM_ERROR;
+	}
+
+	while (tok) {
+		signal = sig_name2num(tok);
+		if (!signal || signal > 64) {
+			error("Invalid signal name or number: %s", tok);
+			xfree(tmp);
+			return SLURM_ERROR;
+		}
+		if (signal == 64) {
+			error("Signal %s is not handled by srun and cannot be ignored",
+			      tok);
+			xfree(tmp);
+			return SLURM_ERROR;
+		}
+		opt->srun_opt->ignore_signals |= ((uint64_t) 1 << signal);
+		tok = strtok_r(NULL, ",", &parse_ptr);
+	}
+	xfree(tmp);
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_ignore_signals(slurm_opt_t *opt)
+{
+	char *result = NULL, *pos = NULL;
+	char *sep = "";
+
+	if (!opt->srun_opt || !opt->srun_opt->ignore_signals)
+		return xstrdup("unset");
+
+	for (int i = 1; i < 64; i++) {
+		if (opt->srun_opt->ignore_signals & ((uint64_t) 1 << i)) {
+			xstrfmtcatat(result, &pos, "%s%s", sep,
+				     sig_num2name(i));
+			sep = ",";
+		}
+	}
+
+	return result;
+}
+
+static void arg_reset_ignore_signals(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->ignore_signals = 0;
+}
+
+static slurm_cli_opt_t slurm_opt_ignore_signals = {
+	.name = "ignore-signals",
+	.has_arg = required_argument,
+	.val = LONG_OPT_IGNORE_SIGNALS,
+	.set_func_srun = arg_set_ignore_signals,
+	.get_func = arg_get_ignore_signals,
+	.reset_func = arg_reset_ignore_signals,
+	.reset_each_pass = true,
+};
+
 static int arg_set_immediate(slurm_opt_t *opt, const char *arg)
 {
 	if (opt->sbatch_opt)
@@ -2382,6 +2480,63 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.get_func = arg_get_mem_per_gpu,
 	.reset_func = arg_reset_mem_per_gpu,
 	.reset_each_pass = true,
+};
+
+static int arg_set_mem_update(slurm_opt_t *opt, const char *arg)
+{
+	char *tmparg = xstrdup(arg);
+	char *split = xstrchr(tmparg, '@');
+	long margin;
+	int delay;
+	char *end;
+
+	if (!split) {
+		error("--mem-update requires MARGIN@DELAY format");
+		xfree(tmparg);
+		return SLURM_ERROR;
+	}
+
+	split[0] = '\0';
+	split++;
+
+	margin = strtol(tmparg, &end, 10);
+	delay = time_str2mins(split);
+
+	if ((margin <= 0) || (margin > UINT16_MAX) || (delay > UINT16_MAX) ||
+	    (delay <= 0) || (delay == NO_VAL) || (*end != '\0')) {
+		error("Invalid --mem-update specification");
+		xfree(tmparg);
+		return SLURM_ERROR;
+	}
+
+	opt->mem_update_margin = (uint16_t) margin;
+	opt->mem_update_delay = (uint16_t) delay;
+
+	xfree(tmparg);
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_mem_update(slurm_opt_t *opt)
+{
+	if (opt->mem_update_margin && opt->mem_update_delay)
+		return xstrdup_printf("%u@%u", opt->mem_update_margin,
+				      opt->mem_update_delay);
+	return xstrdup("unset");
+}
+
+static void arg_reset_mem_update(slurm_opt_t *opt)
+{
+	opt->mem_update_margin = 0;
+	opt->mem_update_delay = 0;
+}
+
+static slurm_cli_opt_t slurm_opt_mem_update = {
+	.name = "mem-update",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MEM_UPDATE,
+	.set_func = arg_set_mem_update,
+	.get_func = arg_get_mem_update,
+	.reset_func = arg_reset_mem_update,
 };
 
 COMMON_INT_OPTION_SET(pn_min_cpus, "--mincpus");
@@ -4228,6 +4383,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_array,
 	&slurm_opt_argv,
+	&slurm_opt_async,
 	&slurm_opt_autocomplete,
 	&slurm_opt_batch,
 	&slurm_opt_bcast,
@@ -4289,6 +4445,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_hint,
 	&slurm_opt_hold,
 	&slurm_opt_ignore_pbs,
+	&slurm_opt_ignore_signals,
 	&slurm_opt_immediate,
 	&slurm_opt_input,
 	&slurm_opt_interactive,
@@ -4307,6 +4464,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_bind,
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
+	&slurm_opt_mem_update,
 	&slurm_opt_mincpus,
 	&slurm_opt_mpi,
 	&slurm_opt_msg_timeout,
@@ -5679,6 +5837,23 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 		opt->job_flags |= GRES_ONE_TASK_PER_SHARING;
 }
 
+static void _validate_segment_size(slurm_opt_t *opt)
+{
+	int nodes_cnt;
+
+	if (!opt->segment_size || !opt->nodes_set)
+		return;
+
+	if (opt->job_size_str && opt->max_nodes)
+		nodes_cnt = opt->max_nodes;
+	else
+		nodes_cnt = opt->min_nodes;
+
+	if ((nodes_cnt > opt->segment_size) && (nodes_cnt % opt->segment_size))
+		fatal("--segment=%u does not fit the job size (%d): node count must be evenly divisible by segment size",
+		      opt->segment_size, nodes_cnt);
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -5693,6 +5868,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_nodelist(opt);
 	_validate_arbitrary(opt);
 	_validate_gres_flags(opt);
+	_validate_segment_size(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
@@ -6038,6 +6214,9 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		job_desc->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
+
+	job_desc->mem_update_margin = opt_local->mem_update_margin;
+	job_desc->mem_update_delay = opt_local->mem_update_delay;
 
 	if (opt_local->req_switch >= 0)
 		job_desc->req_switch = opt_local->req_switch;
