@@ -69,7 +69,7 @@ typedef struct {
  */
 #define AMDSMI_STRING_BUFFER_SIZE			256
 /* ROCM release version >= 6.0.0 required for gathering usage */
-#define AMDSMI_REQ_VERSION_USAGE 6
+#define AMDSMI_REQ_VERSION_USAGE 26
 
 #define MAX_GPU_DEVICES 256
 
@@ -1586,7 +1586,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         }
         gpu->energy.previous_consumed_energy = gpu -> energy.consumed_energy;
         gpu->energy.consumed_energy = now_j;
-        debug2("AMDSMI: GPU[%u] energy count = %f J (raw=%lu, res=%f)", dv_ind, now_j, energy_now, counter_res);
+        //debug2("AMDSMI: GPU[%u] energy count = %f J (raw=%lu, res=%f)", dv_ind, now_j, energy_now, counter_res);
         /* Update baseline for next call */
         last_energy_joules[dv_ind] = now_j;
         last_energy_time[dv_ind]   = time(NULL);
@@ -1626,14 +1626,14 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     if (have_watts) {
         gpu->last_update_watt    = watts;
         gpu->energy.current_watts = watts;
-        info("AMDSMI: GPU[%u] power reading = %u W", dv_ind, watts);
+        //info("AMDSMI: GPU[%u] power reading = %u W", dv_ind, watts);
     } else {
         /* Transient failure â€” report 0W but DON'T return error.
          * Returning SLURM_ERROR can cause SLURM to drop this GPU
          * from per-job accounting until next full discovery. */
         gpu->last_update_watt    = 0;
         gpu->energy.current_watts = 0;
-        debug("AMDSMI: GPU[%u] no usable power source â€” reporting 0W", dv_ind);
+        //debug("AMDSMI: GPU[%u] no usable power source â€” reporting 0W", dv_ind);
     }
 
     gpu->previous_update_time = gpu->last_update_time;
