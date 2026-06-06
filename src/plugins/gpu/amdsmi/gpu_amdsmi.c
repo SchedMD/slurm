@@ -244,8 +244,8 @@ static void _amdsmi_init(void)
                   i, e_rc_str ? e_rc_str : "unknown error");
             gpus[i].energy_start = 0;
         } else {
-            debug("AMDSMI: GPU%d initial energy count: %" PRIu64 " Joules",
-                  i, gpus[i].energy_start);
+            //debug("AMDSMI: GPU%d initial energy count: %" PRIu64 " Joules",
+            //      i, gpus[i].energy_start);
         last_energy_joules[i] = gpus[i].energy_start;
         last_energy_time[i] = time(NULL);
         info("AMDSMI: GPU%d initial energy count: %" PRIu64 " Joules",
@@ -1578,13 +1578,13 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
                            dv_ind, watts, dt);*/
                     gpu->last_update_watt = watts;
                     gpu->energy.current_watts = watts;
-                    gpu -> previous_update_time = gpu -> last_update_time;
+                    gpu->previous_update_time = gpu->last_update_time;
                     gpu->last_update_time = time(NULL);
                     return SLURM_SUCCESS;
                 }
             }
         }
-        gpu->energy.previous_consumed_energy = gpu -> energy.consumed_energy;
+        gpu->energy.previous_consumed_energy = gpu->energy.consumed_energy;
         gpu->energy.consumed_energy = now_j;
         //debug2("AMDSMI: GPU[%u] energy count = %f J (raw=%lu, res=%f)", dv_ind, now_j, energy_now, counter_res);
         /* Update baseline for next call */
@@ -1697,12 +1697,6 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
     if (track_gpumem) {
         data[gpumem_pos].size_read = (uint64_t)pinfo.vram_usage * 1024ULL * 1024ULL;
     }
-
-    log_flag(JAG,
-             "pid %d: GPUUtil=%lu%% MemMB=%lu",
-             pid,
-             track_gpuutil ? data[gpuutil_pos].size_read : 0UL,
-             (unsigned long)pinfo.vram_usage);
 
     return SLURM_SUCCESS;
 }
