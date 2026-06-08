@@ -1103,3 +1103,7 @@ test_162_#   Testing of swait.
 ==============================
 test_162_1   Test swait against a stepmgr-enabled cluster
 test_162_2   Test swait's steps-drained push path
+
+test_163_#   Testing jobacct_gather/cgroup memory accounting.
+=============================================================
+test_163_1   Test completed accounting preserves short memory peaks
