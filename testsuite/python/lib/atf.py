@@ -3107,13 +3107,14 @@ def require_config_parameter(
 
     Args:
         parameter_name (string): The parameter name.
-        parameter_value (string or list[string]): The target parameter value.
+        parameter_value: The target parameter value or a list of them.
             If a list of acceptable values is given, the requirement is
             considered satisfied when the current value matches ANY of them.
             In auto-config mode, when none match, the FIRST listed value is
             used as the target — so callers should list their preferred
             default first.
             If a dict is passed then multiple values are assigned.
+            None means parameter is required to be unset.
         operator (string): By default the observed current value and the
             desired values are expected to be equal ("=="), but we can require
             just "<=" or ">=" too (usually for numerical values).
@@ -3198,10 +3199,16 @@ def require_config_parameter(
     observed_value = get_config_parameter(
         parameter_name, live=False, source=source, quiet=True, delimiter=delimiter
     )
+    if not observed_value and None in values:
+        # already unset, and unset is acceptable
+        return
 
     condition_satisfied = False
     if observed_value:
         for v in values:
+            if v is None:
+                # None means expected unset, but parameter was set
+                continue
             obs = type(v)(observed_value)
             if operator == "==" and obs == v:
                 condition_satisfied = True
