@@ -288,6 +288,7 @@ typedef enum {
 				 * srun forwards signal to the launch command */
 	SRUN_NET_FORWARD,
 	SRUN_STEPS_DRAINED,
+	SRUN_STEP_ALLOCATED, /* push created step to a waiting sync srun */
 
 	PMI_KVS_PUT_REQ = 7201,
 	DEFUNCT_RPC_7202,

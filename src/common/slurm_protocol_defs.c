@@ -5503,6 +5503,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_het_step_id_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
+	case SRUN_STEP_ALLOCATED:
 		slurm_free_job_step_create_response_msg(data);
 		break;
 	case RESPONSE_SLURM_RC:
@@ -6815,6 +6816,9 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_STEP_SIGNAL)
 			slurm_free_job_step_kill_msg(
+				agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_STEP_ALLOCATED)
+			slurm_free_job_step_create_response_msg(
 				agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_JOB_NOTIFY)
 			slurm_free_job_notify_msg(agent_arg_ptr->msg_args);

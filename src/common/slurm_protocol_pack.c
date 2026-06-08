@@ -14825,6 +14825,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_het_step_id_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
+	case SRUN_STEP_ALLOCATED:
 		_pack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
@@ -15386,6 +15387,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_het_step_id_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
+	case SRUN_STEP_ALLOCATED:
 		rc = _unpack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
