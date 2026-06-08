@@ -189,7 +189,6 @@ typedef struct {
 typedef struct {
 	uint64_t cume_space_time;
 	job_record_t *job_ptr;
-	part_record_t *part_ptr;
 	uint32_t part_cpus_per_node;
 } delay_start_t;
 
@@ -4426,7 +4425,7 @@ static int _foreach_delayed_job_start_time(void *x, void *arg)
 	uint32_t job_size_cpus, job_size_nodes, job_time;
 
 	if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
-	    (job_q_ptr->part_ptr != delay_start->part_ptr) ||
+	    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
 	    (job_q_ptr->priority < job_ptr->priority) ||
 	    (job_q_ptr->job_id == job_ptr->job_id) ||
 	    (IS_JOB_REVOKED(job_q_ptr)))
@@ -4455,22 +4454,20 @@ static int _foreach_delayed_job_start_time(void *x, void *arg)
  * delay the job's expected initiation time as needed to run those jobs.
  * NOTE: This is only a rough estimate of the job's start time as it ignores
  * job dependencies, feature requirements, specific node requirements, etc. */
-static void _delayed_job_start_time(job_record_t *job_ptr,
-				    part_record_t *part_ptr)
+static void _delayed_job_start_time(job_record_t *job_ptr)
 {
 	uint32_t part_node_cnt, part_cpu_cnt;
 	delay_start_t delay_start = {
 		.job_ptr = job_ptr,
-		.part_ptr = part_ptr,
 		.part_cpus_per_node = 1,
 	};
 
-	if (part_ptr == NULL)
+	if (job_ptr->part_ptr == NULL)
 		return;
-	part_node_cnt = part_ptr->total_nodes;
-	part_cpu_cnt  = part_ptr->total_cpus;
+	part_node_cnt = job_ptr->part_ptr->total_nodes;
+	part_cpu_cnt = job_ptr->part_ptr->total_cpus;
 	if (part_cpu_cnt == 0)
-                return;
+		return;
 	if (part_cpu_cnt > part_node_cnt)
 		delay_start.part_cpus_per_node = part_cpu_cnt / part_node_cnt;
 
@@ -4520,6 +4517,9 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		job_start_data->rc = ESLURM_INVALID_PARTITION_NAME;
 		return -1;
 	}
+
+	if (job_ptr->part_ptr_list)
+		job_ptr->part_ptr = part_ptr;
 
 	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
 		if (node_name2bitmap(job_ptr->details->req_nodes, false,
@@ -4646,7 +4646,7 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
 		resp_data->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		resp_data->proc_cnt = job_ptr->total_cpus;
-		_delayed_job_start_time(job_ptr, part_ptr);
+		_delayed_job_start_time(job_ptr);
 		resp_data->start_time = MAX(job_ptr->start_time,
 					    orig_start_time);
 		resp_data->start_time = MAX(resp_data->start_time, start_res);
@@ -4702,13 +4702,17 @@ extern int job_start_data(job_record_t *job_ptr,
 	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
 		return ESLURM_DISABLED;
 
-	if (job_ptr->part_ptr_list)
+	if (job_ptr->part_ptr_list) {
+		part_record_t *save_part_ptr = job_ptr->part_ptr;
+
 		(void) list_for_each(job_ptr->part_ptr_list,
 				     _foreach_job_start_data_part,
 				     &job_start_data);
-	else
+		job_ptr->part_ptr = save_part_ptr;
+	} else {
 		(void) _foreach_job_start_data_part(job_ptr->part_ptr,
 						    &job_start_data);
+	}
 
 	return job_start_data.rc;
 }
