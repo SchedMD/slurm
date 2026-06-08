@@ -936,6 +936,116 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 	return NULL;
 }
 
+/*
+ * Create a pending step's real step_record at wake time and build its
+ * step-create response (the shared spine of the async and, later, sync wake
+ * arms). On terminal error, logs and records accounting as the async arm did.
+ * IN  job_ptr - owning job
+ * IN  pend_step_ptr - the pending placeholder (carries step_req)
+ * OUT new_step_ptr - the created step_record on success
+ * OUT step_resp - the built response (cred, layout, ports) on success
+ * RET SLURM_SUCCESS, ESLURM_STEP_QUEUED (still busy, keep pending), or a
+ *     terminal error (already logged/cleaned)
+ */
+static int _create_step_at_wake(job_record_t *job_ptr,
+				step_record_t *pend_step_ptr,
+				step_record_t **new_step_ptr,
+				job_step_create_response_msg_t **step_resp)
+{
+	job_step_create_request_msg_t *step_req = pend_step_ptr->step_req;
+	job_step_create_response_msg_t *resp = NULL;
+	slurm_cred_t *slurm_cred = NULL;
+	char *err_msg = NULL;
+	int rc = EINVAL;
+
+	step_req->immediate = 1;
+	rc = _step_create(job_ptr, step_req, new_step_ptr,
+			  job_ptr->start_protocol_ver, &err_msg);
+	step_req->immediate = 0;
+	xfree(err_msg);
+
+	if (rc == ESLURM_STEP_QUEUED) {
+		debug2("Resources busy, async step still queued");
+		return rc;
+	} else if (rc) {
+		error("Could not create async step: %s", slurm_strerror(rc));
+		jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn,
+						pend_step_ptr);
+		srun_step_drained(pend_step_ptr);
+		return rc;
+	}
+
+	rc = _make_step_cred(*new_step_ptr, &slurm_cred,
+			     job_ptr->start_protocol_ver);
+	if (rc) {
+		error("Could not create cred for async step: %s",
+		      slurm_strerror(rc));
+		_cleanup_failed_step(*new_step_ptr);
+		return rc;
+	}
+
+	resp = xmalloc(sizeof(*resp));
+	resp->def_cpu_bind_type = step_req->launch_params->cpu_bind_type;
+	resp->resv_ports = xstrdup((*new_step_ptr)->resv_ports);
+	resp->state = JOB_RUNNING;
+	resp->step_id = (*new_step_ptr)->step_id;
+	resp->step_layout =
+		slurm_step_layout_copy((*new_step_ptr)->step_layout);
+	resp->stepmgr = xstrdup(job_ptr->batch_host);
+	resp->cred = slurm_cred;
+	resp->use_protocol_ver = job_ptr->start_protocol_ver;
+	step_req->use_protocol_ver = job_ptr->start_protocol_ver;
+	*step_resp = resp;
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Launch a created async step in-process (the async delivery tail) and free
+ * the retained step_req on success.
+ * IN job_ptr - owning job
+ * IN/OUT pend_step_ptr - the pending placeholder (step_req cleared on success)
+ * IN new_step_ptr - the created step_record
+ * IN step_resp - the built response (consumed by the ctx)
+ */
+static void _launch_in_stepmgr(job_record_t *job_ptr,
+			       step_record_t *pend_step_ptr,
+			       step_record_t *new_step_ptr,
+			       job_step_create_response_msg_t *step_resp)
+{
+	job_step_create_request_msg_t *step_req = pend_step_ptr->step_req;
+	slurm_step_ctx_t *ctx = NULL;
+	int rc = EINVAL;
+
+	/*
+	 * Set to "none" when not set, to prevent
+	 * mpi_g_client_init() setting to MpiDefault.
+	 */
+	if (!step_req->launch_params->mpi_plugin_name)
+		step_req->launch_params->mpi_plugin_name = xstrdup("none");
+
+	ctx = _step_ctx_create_stepmgr(step_req, step_resp, new_step_ptr);
+	rc = slurm_step_launch(ctx, step_req->launch_params, NULL);
+	ctx->step_req = NULL;
+	step_ctx_destroy(ctx);
+
+	if (rc) {
+		error("Could not launch async step: %s", slurm_strerror(rc));
+		_cleanup_failed_step(new_step_ptr);
+	} else {
+		/*
+		 * step_req was retained on pend_step_ptr across
+		 * _build_pending_step until launch. Free it now and clear the
+		 * alias so free_step_record(), run when list_delete_all()
+		 * removes pend_step_ptr after we return 1, doesn't double-free.
+		 */
+		slurm_free_job_step_create_request_msg(step_req);
+		pend_step_ptr->step_req = NULL;
+		if (job_ptr->pending_async_steps)
+			job_ptr->pending_async_steps--;
+	}
+}
+
 static int _wake_steps(void *x, void *arg)
 {
 	step_record_t *pend_step_ptr = x;
@@ -947,15 +1057,12 @@ static int _wake_steps(void *x, void *arg)
 	if ((args->start_count < args->config_start_count) ||
 	    (pend_step_ptr->time_last_active <= args->max_age)) {
 		if (pend_step_ptr->flags & SSF_ASYNC) {
-			slurm_step_ctx_t *ctx;
-			char *err_msg = NULL;
 			job_record_t *job_ptr;
 			step_record_t *new_step_ptr = NULL;
-			int rc;
-			slurm_cred_t *slurm_cred = NULL;
+			job_step_create_response_msg_t *step_resp = NULL;
 			job_step_create_request_msg_t *step_req =
 				pend_step_ptr->step_req;
-			job_step_create_response_msg_t *step_resp;
+			int rc;
 
 			debug2("Attempting launching of pending async step");
 			_dump_step_desc(step_req);
@@ -978,88 +1085,15 @@ static int _wake_steps(void *x, void *arg)
 				return 1;
 			}
 
-			step_req->immediate = 1;
-			rc = _step_create(job_ptr, step_req, &new_step_ptr,
-					  job_ptr->start_protocol_ver,
-					  &err_msg);
-			step_req->immediate = 0;
+			rc = _create_step_at_wake(job_ptr, pend_step_ptr,
+						  &new_step_ptr, &step_resp);
+			if (rc == ESLURM_STEP_QUEUED)
+				return 0; /* don't remove step from pending list */
+			if (rc)
+				return 1; /* error already logged + accounted */
 
-			if (rc == ESLURM_STEP_QUEUED) {
-				debug2("Resources busy, async step still queued");
-				xfree(err_msg);
-				/* 0 means don't remove step from pending list */
-				return 0;
-			} else if (rc) {
-				error("Could not create async step: %s",
-				      slurm_strerror(rc));
-				xfree(err_msg);
-				jobacct_storage_g_step_complete(
-					stepmgr_ops->acct_db_conn,
-					pend_step_ptr);
-				srun_step_drained(pend_step_ptr);
-				return 1;
-			}
-			rc = _make_step_cred(new_step_ptr, &slurm_cred,
-					     job_ptr->start_protocol_ver);
-			if (rc) {
-				error("Could not create cred for async step: %s",
-				      slurm_strerror(rc));
-				xfree(err_msg);
-				_cleanup_failed_step(new_step_ptr);
-				return 1;
-			}
-
-			step_resp = xmalloc(sizeof(*step_resp));
-			step_resp->def_cpu_bind_type =
-				step_req->launch_params->cpu_bind_type;
-			step_resp->resv_ports = xstrdup(new_step_ptr->resv_ports);
-			step_resp->step_id = new_step_ptr->step_id;
-			step_resp->step_layout =
-				slurm_step_layout_copy(new_step_ptr->step_layout);
-
-			step_resp->stepmgr = xstrdup(job_ptr->batch_host);
-			step_resp->cred = slurm_cred;
-			step_resp->use_protocol_ver =
-				job_ptr->start_protocol_ver;
-			step_req->use_protocol_ver =
-				job_ptr->start_protocol_ver;
-			/*
-			 * Set to "none" when not set, to prevent
-			 * mpi_g_client_init() setting to MpiDefault.
-			 */
-			if (!step_req->launch_params->mpi_plugin_name)
-				step_req->launch_params->mpi_plugin_name =
-					xstrdup("none");
-
-			ctx = _step_ctx_create_stepmgr(step_req, step_resp,
-						       new_step_ptr);
-
-			rc = slurm_step_launch(
-				ctx, step_req->launch_params, NULL);
-
-			ctx->step_req = NULL;
-			step_ctx_destroy(ctx);
-			xfree(err_msg);
-
-			if (rc) {
-				error("Could not launch async step: %s",
-				      slurm_strerror(rc));
-				_cleanup_failed_step(new_step_ptr);
-			} else {
-				/*
-				 * step_req was retained on pend_step_ptr
-				 * across _build_pending_step until launch.
-				 * Free it now that the step is launched and
-				 * clear the alias so free_step_record(), run
-				 * when list_delete_all() removes pend_step_ptr
-				 * after we return 1, doesn't double-free.
-				 */
-				slurm_free_job_step_create_request_msg(
-					step_req);
-				pend_step_ptr->step_req = NULL;
-				if (job_ptr->pending_async_steps)
-					job_ptr->pending_async_steps--;
-			}
+			_launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
+					   step_resp);
 			return 1;
 		} else {
 			srun_step_signal(pend_step_ptr, 0);
