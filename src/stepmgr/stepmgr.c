@@ -201,9 +201,9 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	job_step_create_request_msg_t *step_specs =
 		(job_step_create_request_msg_t *) arg;
 
-	if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP) &&
-	    (step_ptr->state == JOB_PENDING) &&
-	    (step_ptr->srun_pid	== step_specs->srun_pid) &&
+	if ((step_ptr->state == JOB_PENDING) &&
+	    !(step_ptr->flags & SSF_ASYNC) &&
+	    (step_ptr->srun_pid == step_specs->srun_pid) &&
 	    (!xstrcmp(step_ptr->host, step_specs->host))) {
 		return 1;
 	}
@@ -380,8 +380,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
-	if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP) ||
-	    (step_ptr->state == JOB_PENDING))
+	if (step_ptr->state == JOB_PENDING)
 		return;
 
 	/*
@@ -477,7 +476,7 @@ static int _step_not_cleaning(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	int *remaining = (int *) arg;
 
-	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
+	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
 		srun_step_signal(step_ptr, 0);
 	_internal_step_complete(step_ptr, *remaining);
 
@@ -494,7 +493,7 @@ static int _finish_step_comp(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
-	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
+	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
 		return 0;
 
 	remaining = list_count(job_ptr->step_list);
