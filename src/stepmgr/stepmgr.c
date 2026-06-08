@@ -373,8 +373,8 @@ static bool _build_pending_step(job_record_t *job_ptr,
 }
 
 /*
- * Queue a placeholder for a step that failed to schedule on a busy resource,
- * shared by the nodes-busy and ports-busy paths.
+ * Queue a placeholder for a step that failed to schedule on a busy resource
+ * (unless it is an immediate asynchronous step) and report it as queued.
  * IN job_ptr - job the step belongs to
  * IN/OUT step_specs - create request; gains an assigned step_id when queued
  * IN protocol_version - negotiated create-request version.
@@ -390,7 +390,9 @@ static int _queue_pending_step(job_record_t *job_ptr,
 	    !_build_pending_step(job_ptr, step_specs, protocol_version))
 		return busy_errno;
 
-	if ((step_specs->flags & SSF_ASYNC) &&
+	/* A step id is assigned only for a >= 26.11 peer */
+	if (((protocol_version > SLURM_26_05_PROTOCOL_VERSION) ||
+	     (step_specs->flags & SSF_ASYNC)) &&
 	    (step_specs->step_id.step_id != NO_VAL))
 		return ESLURM_STEP_QUEUED;
 	return busy_errno;
@@ -5595,20 +5597,22 @@ end_it:
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 		else if (error_code == ESLURM_STEP_QUEUED) {
-			log_flag(STEPS, "%s queued async %ps: %s",
+			log_flag(STEPS, "%s queued %ps: %s",
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 			/*
-			 * The pending step retains step_req; stop the
-			 * regular RPC flow from freeing it.  Reply with
+			 * An asynchronous pending step retains step_req on the
+			 * placeholder; stop the regular RPC flow from freeing
+			 * it.  A synchronous pending step does not retain it,
+			 * so let the normal flow free it.  Reply with
 			 * RESPONSE_JOB_STEP_CREATE carrying the assigned
-			 * step_id and state = JOB_PENDING so srun can
-			 * surface it.  _step_create translates busy
-			 * errnos to ESLURM_STEP_QUEUED only after a
-			 * successful _build_pending_step, so step_id is
-			 * guaranteed to be set here.
+			 * step_id and state = JOB_PENDING so srun can surface
+			 * it.  _step_create() translates busy errnos to
+			 * ESLURM_STEP_QUEUED only after a successful
+			 * _build_pending_step(), so step_id is guaranteed set.
 			 */
-			msg->data = NULL;
+			if (req_step_msg->flags & SSF_ASYNC)
+				msg->data = NULL;
 
 			memset(&job_step_resp, 0, sizeof(job_step_resp));
 			job_step_resp.step_id = req_step_msg->step_id;
