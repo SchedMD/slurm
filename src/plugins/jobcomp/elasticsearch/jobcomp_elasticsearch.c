@@ -106,6 +106,8 @@ struct job_node {
 
 char *save_state_file = "elasticsearch_state";
 char *log_url = NULL;
+char *username = NULL;
+char *password = NULL;
 
 static pthread_cond_t location_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t location_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -178,9 +180,10 @@ static int _index_job(const char *jobcomp)
 		return SLURM_ERROR;
 	}
 
-	rc = slurm_curl_request(jobcomp, log_url, NULL, NULL, NULL, NULL, NULL,
-				slist, 0, &response_str, &response_code,
-				HTTP_REQUEST_POST, false, false);
+	rc = slurm_curl_request(jobcomp, log_url, username, password, NULL,
+			NULL, NULL, slist, 0, &response_str,
+			&response_code, HTTP_REQUEST_POST, false,
+			false);
 	/*
 	 * HTTP 200 (OK)	- request succeed.
 	 * HTTP 201 (Created)	- request succeed and resource created.
@@ -315,6 +318,8 @@ extern int init(void)
 	slurm_mutex_lock(&pend_jobs_lock);
 	(void) _load_pending_jobs();
 	slurm_mutex_unlock(&pend_jobs_lock);
+	username = getenv("SLURM_JOBCOMP_USERNAME");
+	password = getenv("SLURM_JOBCOMP_PASSWORD");
 
 	if (slurm_curl_init())
 		return SLURM_ERROR;
