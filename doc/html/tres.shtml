@@ -27,7 +27,7 @@ Current TRES Types are:
   For many TRES types, the units are a count of that item (e.g., CPU). For TRES
   types in which the value represents an amount of data (e.g., Memory), the
   default unit is Mebibytes (MiB). Different units can be specified using a
-  suffix [K|M|G|T].
+  suffix <code>[K|M|G|T|P]</code>.
 </p>
 
 <p>
@@ -124,11 +124,11 @@ it is the result of this weighted calculation.</p>
 i.e., <code>TRESBillingWeights="CPU=1"</code>.</p>
 
 <p>The weighted amount of a resource can be adjusted by adding a suffix of
-<code>[KMGTP]</code> after the billing weight. The base unit for memory and burst
-buffers is Mebibytes. For example, a memory weight of <code>mem=0.25</code> on a
-job allocated 8GiB will result in 2048 billed units (8192MiB * 0.25). A memory
-weight of <code>mem=0.25G</code> on the same job will result in 2 billed units
-((8192MiB/1024) * 0.25).</p>
+<code>[K|M|G|T|P]</code> after the billing weight. The base unit for memory and
+burst buffers is Mebibytes. For example, a memory weight of <code>mem=0.25</code>
+on a job allocated 8GiB will result in 2048 billed units (8192MiB * 0.25). A
+memory weight of <code>mem=0.25G</code> on the same job will result in 2 billed
+units ((8192MiB/1024) * 0.25).</p>
 
 <p>By default the billing of TRES is calculated as the sum of all TRES types
 multiplied by their corresponding billing weight. For example, consider a
