@@ -522,6 +522,12 @@ typedef struct steps_drained_sub_msg {
 	char *tls_cert; /* self-signed PEM cert, or NULL */
 } steps_drained_sub_msg_t;
 
+typedef struct {
+	uint32_t exit_code; /* step exit code; NO_VAL if unlaunched */
+	uint32_t state; /* terminal job state; see job_state_string() */
+	slurm_step_id_t step_id; /* step that ended, or NO_VAL terminator */
+} srun_steps_drained_msg_t;
+
 typedef struct complete_job_allocation {
 	uint32_t job_rc;
 	slurm_step_id_t step_id;
@@ -1771,6 +1777,7 @@ extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 extern void slurm_free_net_forward_msg(net_forward_msg_t *msg);
 extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
+extern void slurm_free_srun_steps_drained_msg(srun_steps_drained_msg_t *msg);
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 extern void slurm_free_srun_user_msg(srun_user_msg_t * msg);
 extern void slurm_free_steps_drained_sub_msg(steps_drained_sub_msg_t *msg);

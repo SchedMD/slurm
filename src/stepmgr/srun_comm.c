@@ -130,11 +130,11 @@ typedef struct {
 } srun_node_fail_args_t;
 
 /*
- * list_delete_all callback: dispatch SRUN_STEPS_DRAINED (no body) to a
- * subscriber and consume the entry. Always returns 1 so list_delete_all
- * removes it after.
+ * list_delete_all callback: dispatch the whole-set drain terminator
+ * (SRUN_STEPS_DRAINED with a NO_VAL step_id sentinel) to a subscriber and
+ * consume the entry. Always returns 1 so list_delete_all removes it after.
  * IN x   - steps_drained_sub_t pointer
- * IN arg - owning job_record_t pointer (for the r_uid)
+ * IN arg - owning job_record_t pointer
  * RET 1 always
  */
 static int _dispatch_steps_drained(void *x, void *arg)
@@ -142,6 +142,7 @@ static int _dispatch_steps_drained(void *x, void *arg)
 	steps_drained_sub_t *sub = x;
 	job_record_t *job_ptr = arg;
 	slurm_addr_t *addr = NULL;
+	srun_steps_drained_msg_t *msg_arg = NULL;
 
 	xassert(sub->req.host);
 	xassert(sub->req.host[0]);
@@ -150,8 +151,12 @@ static int _dispatch_steps_drained(void *x, void *arg)
 	addr = xmalloc(sizeof(*addr));
 	*addr = sub->addr;
 
+	msg_arg = xmalloc(sizeof(*msg_arg));
+	msg_arg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	msg_arg->exit_code = NO_VAL;
+
 	_srun_agent_launch(addr, sub->req.tls_cert, sub->req.host,
-			   SRUN_STEPS_DRAINED, NULL, job_ptr->user_id,
+			   SRUN_STEPS_DRAINED, msg_arg, job_ptr->user_id,
 			   sub->protocol_version);
 	return 1;
 }

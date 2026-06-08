@@ -2489,6 +2489,11 @@ extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg)
 	}
 }
 
+extern void slurm_free_srun_steps_drained_msg(srun_steps_drained_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 {
 	xfree(msg);
@@ -5515,8 +5520,10 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BURST_BUFFER_INFO:
 	case ACCOUNTING_REGISTER_CTLD:
 	case REQUEST_FED_INFO:
-	case SRUN_STEPS_DRAINED:
 		/* No body to free */
+		break;
+	case SRUN_STEPS_DRAINED:
+		slurm_free_srun_steps_drained_msg(data);
 		break;
 	case RESPONSE_FED_INFO:
 		slurmdb_destroy_federation_rec(data);
