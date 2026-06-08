@@ -88,7 +88,8 @@ BasePath=/var/nvme/storage
 
 <p>An easy way to verify that the container is working is to run a job and
 ensure that the /tmp directory is empty (since it normally has some other
-files) and that "." is owned by the user that submitted the job.</p>
+files) and is owned by the user that submitted the job.</p>
+
 <pre>
 tim@slurm-ctld:~$ srun ls -al /tmp
 total 8
@@ -102,26 +103,29 @@ mounted into the job. <code>/$BasePath/$JobID</code> should be owned by root,
 and is not intended to be accessible to the user.</p>
 
 <p>You can also verify the mount location is correct:</p>
+
 <pre>
 parallels@linux_vb:~$ echo $SLURM_JOB_ID
 7
 parallels@linux_vb:~$ findmnt -o+PROPAGATION | grep /tmp
 └─/tmp  /dev/sda1[/storage/7/.7] ext4  rw,relatime,errors=remount-ro,data=ordered   private
 </pre>
+
 <p>In the example above, <b>base_path</b> points to <b>/storage</b>, so job ID 7
 mounts <b>/tmp</b> on <b>/storage/7/.7</b>. When a user from inside a job tries
 to look up mounts, they can see that their <b>/tmp</b> is mounted, but they are
 prevented from mistakenly accessing the backing directory directly.</p>
 
 <p>Additionally, when the <b>Linux</b> plugin is in use, you can confirm that a
-PID namespace is in effect by running a job and running "ps". The only visible
-PIDs should be related to the job and PID 1 will be named <b>slurmstepd:
-[${job_id}.namespace]</b>.</p>
+PID namespace is in effect by running a job and running <code>ps</code>.
+The only visible PIDs should be related to the job and PID 1 will be named
+<code>slurmstepd: [${job_id}.namespace]</code>.</p>
 
 <h2 id="spank">SPANK<a class="slurm_link" href="#spank"></a></h2>
 
-<p>This plugin interfaces with the SPANK api, and automatically joins the job's
+<p>This plugin interfaces with the SPANK API, and automatically joins the job's
 namespace in the following functions:</p>
+
 <ul>
 <li>spank_task_init_privileged()</li>
 <li>spank_task_init()</li>
@@ -131,7 +135,7 @@ namespace in the following functions:</p>
 is set up. Hence all SPANK-related job steps will view only the private /tmp the
 plugin creates.</p>
 
-<p>In addition to the job itself, the TaskProlog will also be executed inside
-the container.</p>
+<p>In addition to the job itself, the <b>TaskProlog</b> will also be executed
+inside the container.</p>
 
 <!--#include virtual="footer.txt"-->
