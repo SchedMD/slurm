@@ -466,6 +466,23 @@ static void _cleanup_failed_step(step_record_t *step_ptr)
 	delete_step_record(job_ptr, step_ptr);
 }
 
+/*
+ * Whether a signal cancels a queued (taskless) step.
+ * IN signal - signal number from the kill request
+ * RET true if the signal aborts the pending step, false to ignore it
+ */
+static bool _sig_aborts_pending_step(uint16_t signal)
+{
+	switch (signal) {
+	case SIGINT:
+	case SIGTERM:
+	case SIGKILL:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static int _step_signal(void *object, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *)object;
@@ -478,9 +495,19 @@ static int _step_signal(void *object, void *arg)
 	    !find_step_id(step_ptr, &step_signal->step_id))
 		return SLURM_SUCCESS;
 
-	if ((step_ptr->state == JOB_PENDING) &&
-	    (step_ptr->flags & SSF_ASYNC))
+	if (step_ptr->state == JOB_PENDING) {
+		/*
+		 * A terminating signal aborts the queued create (the
+		 * placeholder is reaped in _delete_pending_steps()),
+		 * anything else is a no-op.  Nudge the waiting srun
+		 * for synchronous steps.
+		 */
+		step_signal->found = true;
+		if (_sig_aborts_pending_step(step_signal->signal) &&
+		    !(step_ptr->flags & SSF_ASYNC))
+			srun_step_signal(step_ptr, step_signal->signal);
 		return SLURM_SUCCESS;
+	}
 
 	step_signal->found = true;
 	signal = step_signal->signal;
@@ -664,6 +691,13 @@ static int _delete_pending_steps(void *x, void *arg)
 
 	if ((step_ptr->state == JOB_PENDING) &&
 	    verify_step_id(&step_ptr->step_id, &step_signal->step_id)) {
+		/*
+		 * Reap a placeholder only on a terminating signal,
+		 * synchronous or asynchronous.
+		 */
+		if (!_sig_aborts_pending_step(step_signal->signal))
+			return 0;
+
 		step_signal->found = true;
 		if (step_ptr->flags & SSF_ASYNC)
 			jobacct_storage_g_step_complete(
@@ -5785,6 +5819,9 @@ extern int stepmgr_get_step_layouts(job_record_t *job_ptr,
 	itr = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(itr))) {
 		if (!verify_step_id(&step_ptr->step_id, step_id))
+			continue;
+		/* A queued placeholder has no layout yet */
+		if (!step_ptr->step_layout)
 			continue;
 		/*
 		 * Rebuild alias_addrs if need after restart of slurmctld
