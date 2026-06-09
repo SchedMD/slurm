@@ -3248,6 +3248,56 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	FREE_NULL_LIST(resp);
 }
 
+/*
+ * Reroute REQUEST_HET_STEP_ID to the het leader's stepmgr stepd.
+ */
+static void _slurm_rpc_het_step_id(slurm_msg_t *msg)
+{
+	int error_code = SLURM_SUCCESS;
+	job_record_t *job_ptr;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+	het_step_id_msg_t *req = msg->data;
+	reroute_msg_t reroute_msg = { 0 };
+	DEF_TIMERS;
+
+	START_TIMER;
+
+	if (!validate_slurmd_user(msg->auth_uid)) {
+		error("Security violation, REQUEST_HET_STEP_ID RPC from uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	lock_slurmctld(job_read_lock);
+
+	job_ptr = find_job_record(req->step_id.job_id);
+
+	if (!job_ptr) {
+		error_code = ESLURM_INVALID_JOB_ID;
+	} else if (!job_ptr->het_job_list) {
+		error_code = job_ptr->het_job_id ? ESLURM_NOT_HET_JOB_LEADER :
+						   ESLURM_INVALID_JOB_ID;
+	} else if (!(job_ptr->bit_flags & STEPMGR_ENABLED)) {
+		error_code = ESLURM_NOT_SUPPORTED;
+	} else {
+		reroute_msg.stepmgr = job_ptr->batch_host;
+	}
+
+	if (error_code != SLURM_SUCCESS) {
+		debug2("%s: %pI uid=%u: %s", __func__, &req->step_id,
+		       msg->auth_uid, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		(void) send_msg_response(msg, RESPONSE_SLURM_REROUTE_MSG,
+					 &reroute_msg);
+	}
+
+	unlock_slurmctld(job_read_lock);
+
+	END_TIMER2(__func__);
+}
+
 /* _slurm_rpc_job_sbcast_cred - process RPC to get details on existing job
  *	plus sbcast credential */
 static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
@@ -7081,6 +7131,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.node = READ_LOCK,
 			.part = NO_LOCK,
 		},
+	},{
+		.msg_type = REQUEST_HET_STEP_ID,
+		.func = _slurm_rpc_het_step_id,
 	},{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
 		.func = _slurm_rpc_job_sbcast_cred,
