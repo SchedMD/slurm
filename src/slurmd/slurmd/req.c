@@ -423,6 +423,13 @@ static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_PRIVATE_DATA, true);
 }
 
+static void _slurm_rpc_het_step_id(slurm_msg_t *msg)
+{
+	het_step_id_msg_t *request = msg->data;
+
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
+}
+
 extern int send_slurmd_conf_lite(int fd, slurmd_conf_t *cf)
 {
 	int len;
@@ -5671,6 +5678,10 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
 		.func = _slurm_het_job_alloc_info,
+	},
+	{
+		.msg_type = REQUEST_HET_STEP_ID,
+		.func = _slurm_rpc_het_step_id,
 	},
 	{
 		/* terminate the array. this must be last. */
