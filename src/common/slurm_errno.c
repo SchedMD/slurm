@@ -171,6 +171,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_READ_TIMEOUT),
 		"Connection timed out reading",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_DELAYED_ERROR),
+		"Kernel reported delayed socket error after successful write(), client side likely closed",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
