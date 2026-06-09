@@ -77,6 +77,7 @@ void _xsystemd_notify_barrier(int fd)
 		error("poll timed out: PID on systemd might not be updated");
 
 	close(pipe_fd[0]);
+	xfree(payload);
 	return;
 
 fail:
