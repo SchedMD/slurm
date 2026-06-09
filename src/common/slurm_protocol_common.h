@@ -42,6 +42,8 @@
 
 #include "config.h"
 
+#include "slurm/slurm.h" /* for SLURM_BIT() */
+
 /* for listen API */
 #define SLURM_DEFAULT_LISTEN_BACKLOG 4096
 
