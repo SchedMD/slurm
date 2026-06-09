@@ -1198,7 +1198,7 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 	assoc_cond.acct_list = list_create(NULL);
-	list_append(assoc_cond.cluster_list, temp);
+	list_append(assoc_cond.acct_list, temp);
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster);
 	assoc_cond.user_list = list_create(NULL);
