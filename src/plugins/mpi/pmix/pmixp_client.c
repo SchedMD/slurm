@@ -390,7 +390,7 @@ static void _build_node2task_map(pmixp_namespace_t *nsptr, uint32_t *node2tasks)
 static int _set_mapsinfo(list_t *lresp)
 {
 	pmix_info_t *kvp;
-	char *regexp, *input, *map = NULL, *pos = NULL;
+	char *regexp = NULL, *input, *map = NULL, *pos = NULL;
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
 	hostlist_t *hl = nsptr->hl;
 	int rc, i, j;
@@ -401,9 +401,12 @@ static int _set_mapsinfo(list_t *lresp)
 	rc = PMIx_generate_regex(input, &regexp);
 	xfree(input);
 	if (rc != PMIX_SUCCESS) {
+		free(regexp);
 		return SLURM_ERROR;
 	}
+
 	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIX_STRING);
+	free(regexp);
 	regexp = NULL;
 	list_append(lresp, kvp);
 
@@ -431,10 +434,12 @@ static int _set_mapsinfo(list_t *lresp)
 	xfree(node2tasks);
 
 	if (rc != PMIX_SUCCESS) {
+		free(regexp);
 		return SLURM_ERROR;
 	}
 
 	PMIXP_KVP_CREATE(kvp, PMIX_PROC_MAP, regexp, PMIX_STRING);
+	free(regexp);
 	regexp = NULL;
 	list_append(lresp, kvp);
 
