@@ -113,6 +113,63 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 }
 
 /*
+ * Block until the controller pokes the step request socket (a step
+ * completed, retry step create), the srun destroy signal fires, or the
+ * timeout elapses.  Used while a step is queued waiting on resources.
+ * IN sock - step request listener socket, or -1
+ * IN timeout - in milliseconds
+ * OUT timed_out - set true if the poll timed out
+ * IN retry_errno - errno to return so the caller retries the create
+ * RET errno to surface (retry_errno, or ESLURM_ALREADY_DONE if cancelled)
+ */
+static int _wait_pending_step(int sock, int timeout, bool *timed_out,
+			      int retry_errno)
+{
+	int errnum = retry_errno;
+	struct pollfd fds[2];
+	DEF_TIMERS;
+
+	START_TIMER;
+	fds[0].fd = sock;
+	fds[0].events = POLLIN;
+	fds[1].fd = srun_sig_eventfd;
+	fds[1].events = POLLIN;
+
+	while (1) {
+		int i, time_left;
+		long elapsed_time;
+		END_TIMER;
+		elapsed_time = (TIMER_DURATION_USEC() / MSEC_IN_SEC);
+		if (elapsed_time >= timeout)
+			break;
+		time_left = timeout - elapsed_time;
+		i = poll(fds, 2, time_left);
+
+		/* Caught destroy signal during poll() */
+		if (fds[1].revents & POLLIN)
+			break;
+
+		if (i == 0)
+			*timed_out = true;
+		if (i >= 0)
+			break;
+		if ((errno == EINTR) || (errno == EAGAIN))
+			continue;
+		break;
+	}
+
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	if (srun_destroy_sig) {
+		info("Cancelled pending job step with signal %d",
+		     srun_destroy_sig);
+		errnum = ESLURM_ALREADY_DONE;
+	}
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
+
+	return errnum;
+}
+
+/*
  * step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
@@ -127,13 +184,10 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
-	int i, rc, time_left;
+	int rc;
 	int sock = -1;
 	uint16_t port = 0;
 	int errnum = 0;
-	struct pollfd fds[2];
-	long elapsed_time;
-	DEF_TIMERS;
 
 	xassert(step_req);
 
@@ -155,42 +209,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 
 	rc = slurm_job_step_create(step_req, &step_resp);
 	if ((rc < 0) && launch_step_retry_errno(errno)) {
-		START_TIMER;
-		errnum = errno;
-		fds[0].fd = sock;
-		fds[0].events = POLLIN;
-		fds[1].fd = srun_sig_eventfd;
-		fds[1].events = POLLIN;
-
-		while (1) {
-			END_TIMER;
-			elapsed_time = (TIMER_DURATION_USEC() / 1000);
-			if (elapsed_time >= timeout)
-				break;
-			time_left = timeout - elapsed_time;
-			i = poll(fds, 2, time_left);
-
-			/* Caught destroy signal during poll() */
-			if (fds[1].revents & POLLIN)
-				break;
-
-			if (i == 0)
-				*timed_out = true;
-			if (i >= 0)
-				break;
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			break;
-		}
-
-		slurm_mutex_lock(&srun_destroy_sig_lock);
-		if (srun_destroy_sig) {
-			info("Cancelled pending job step with signal %d",
-			     srun_destroy_sig);
-			errnum = ESLURM_ALREADY_DONE;
-		}
-		slurm_mutex_unlock(&srun_destroy_sig_lock);
-
+		errnum = _wait_pending_step(sock, timeout, timed_out, errno);
 		if (sock != -1)
 			close(sock);
 		errno = errnum;
