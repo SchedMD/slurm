@@ -801,6 +801,21 @@ static int _get_job_req_field_index(lua_State *L)
 }
 
 /* Set fields in the job request structure on job submit or modify */
+/*
+ * Assign a job_desc string field from the Lua value at stack slot 3.
+ * When (clearable) is true, an empty string is preserved on the modify
+ * path (is_modify) so the controller's clear-on-empty branch fires;
+ * otherwise an empty string drops the field to NULL. Relies on the
+ * value_str, job_desc, is_modify and L locals of _set_job_req_field().
+ */
+#define SET_JOB_STRING(field, clearable) \
+	do { \
+		value_str = luaL_checkstring(L, 3); \
+		xfree(job_desc->field); \
+		if (((clearable) && is_modify) || strlen(value_str)) \
+			job_desc->field = xstrdup(value_str); \
+	} while (0)
+
 static int _set_job_req_field(lua_State *L)
 {
 	const char *name, *value_str;
@@ -818,54 +833,27 @@ static int _set_job_req_field(lua_State *L)
 	if (job_desc == NULL) {
 		error("%s: job_desc is NULL", __func__);
 	} else if (!xstrcmp(name, "account")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->account);
-		if (strlen(value_str))
-			job_desc->account = xstrdup(value_str);
+		SET_JOB_STRING(account, false);
 	} else if (!xstrcmp(name, "acctg_freq")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->acctg_freq);
-		if (strlen(value_str))
-			job_desc->acctg_freq = xstrdup(value_str);
+		SET_JOB_STRING(acctg_freq, false);
 	} else if (!xstrcmp(name, "admin_comment")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->admin_comment);
-		if (is_modify || strlen(value_str))
-			job_desc->admin_comment = xstrdup(value_str);
+		SET_JOB_STRING(admin_comment, true);
 	} else if (!xstrcmp(name, "array_inx")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->array_inx);
-		if (strlen(value_str))
-			job_desc->array_inx = xstrdup(value_str);
+		SET_JOB_STRING(array_inx, false);
 	} else if (!xstrcmp(name, "batch_features")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->batch_features);
-		if (strlen(value_str))
-			job_desc->batch_features = xstrdup(value_str);
+		SET_JOB_STRING(batch_features, false);
 	} else if (!xstrcmp(name, "begin_time")) {
 		job_desc->begin_time = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "bitflags")) {
 		job_desc->bitflags = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "burst_buffer")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->burst_buffer);
-		if (strlen(value_str))
-			job_desc->burst_buffer = xstrdup(value_str);
+		SET_JOB_STRING(burst_buffer, false);
 	} else if (!xstrcmp(name, "clusters")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->clusters);
-		if (strlen(value_str))
-			job_desc->clusters = xstrdup(value_str);
+		SET_JOB_STRING(clusters, false);
 	} else if (!xstrcmp(name, "comment")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->comment);
-		if (is_modify || strlen(value_str))
-			job_desc->comment = xstrdup(value_str);
+		SET_JOB_STRING(comment, true);
 	} else if (!xstrcmp(name, "container")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->container);
-		if (strlen(value_str))
-			job_desc->container = xstrdup(value_str);
+		SET_JOB_STRING(container, false);
 	} else if (!xstrcmp(name, "contiguous")) {
 		job_desc->contiguous = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "core_spec")) {
@@ -881,34 +869,19 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "cpus_per_task")) {
 		job_desc->cpus_per_task = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->cpus_per_tres);
-		if (is_modify || strlen(value_str))
-			job_desc->cpus_per_tres = xstrdup(value_str);
+		SET_JOB_STRING(cpus_per_tres, true);
 	} else if (!xstrcmp(name, "dependency")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->dependency);
-		if (is_modify || strlen(value_str))
-			job_desc->dependency = xstrdup(value_str);
+		SET_JOB_STRING(dependency, true);
 	} else if (!xstrcmp(name, "delay_boot")) {
 		job_desc->delay_boot = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "end_time")) {
 		job_desc->end_time = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "extra")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->extra);
-		if (is_modify || strlen(value_str))
-			job_desc->extra = xstrdup(value_str);
+		SET_JOB_STRING(extra, true);
 	} else if (!xstrcmp(name, "exc_nodes")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->exc_nodes);
-		if (is_modify || strlen(value_str))
-			job_desc->exc_nodes = xstrdup(value_str);
+		SET_JOB_STRING(exc_nodes, true);
 	} else if (!xstrcmp(name, "features")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->features);
-		if (is_modify || strlen(value_str))
-			job_desc->features = xstrdup(value_str);
+		SET_JOB_STRING(features, true);
 	} else if (!xstrcmp(name, "gres")) {
 		/* "gres" replaced by "tres_per_node" in v18.08 */
 		value_str = luaL_checkstring(L, 3);
@@ -926,31 +899,19 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "immediate")) {
 		job_desc->immediate = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "licenses")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->licenses);
-		if (is_modify || strlen(value_str))
-			job_desc->licenses = xstrdup(value_str);
+		SET_JOB_STRING(licenses, true);
 	} else if (!xstrcmp(name, "mail_type")) {
 		job_desc->mail_type = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "mail_user")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->mail_user);
-		if (strlen(value_str))
-			job_desc->mail_user = xstrdup(value_str);
+		SET_JOB_STRING(mail_user, false);
 	} else if (!xstrcmp(name, "max_cpus")) {
 		job_desc->max_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		job_desc->max_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "mcs_label")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->mcs_label);
-		if (strlen(value_str))
-			job_desc->mcs_label = xstrdup(value_str);
+		SET_JOB_STRING(mcs_label, false);
 	} else if (!xstrcmp(name, "mem_per_tres")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->mem_per_tres);
-		if (is_modify || strlen(value_str))
-			job_desc->mem_per_tres = xstrdup(value_str);
+		SET_JOB_STRING(mem_per_tres, true);
 	} else if (!xstrcmp(name, "min_cpus")) {
 		job_desc->min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
@@ -961,10 +922,7 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "min_nodes")) {
 		job_desc->min_nodes = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "name")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->name);
-		if (strlen(value_str))
-			job_desc->name = xstrdup(value_str);
+		SET_JOB_STRING(name, false);
 	} else if (!xstrcmp(name, "nice")) {
 		/*
 		 * nice should be NO_VAL when unset or incremented by
@@ -982,15 +940,9 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "num_tasks")) {
 		job_desc->num_tasks = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "partition")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->partition);
-		if (strlen(value_str))
-			job_desc->partition = xstrdup(value_str);
+		SET_JOB_STRING(partition, false);
 	} else if (!xstrcmp(name, "prefer")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->prefer);
-		if (is_modify || strlen(value_str))
-			job_desc->prefer = xstrdup(value_str);
+		SET_JOB_STRING(prefer, true);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
 		job_desc->pn_min_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_memory")) {
@@ -1004,38 +956,23 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "priority")) {
 		job_desc->priority = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "qos")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->qos);
-		if (strlen(value_str))
-			job_desc->qos = xstrdup(value_str);
+		SET_JOB_STRING(qos, false);
 	} else if (!xstrcmp(name, "reboot")) {
 		job_desc->reboot = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "req_nodes")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->req_nodes);
-		if (is_modify || strlen(value_str))
-			job_desc->req_nodes = xstrdup(value_str);
+		SET_JOB_STRING(req_nodes, true);
 	} else if (!xstrcmp(name, "req_switch")) {
 		job_desc->req_switch = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "requeue")) {
 		job_desc->requeue = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "reservation")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->reservation);
-		if (is_modify || strlen(value_str))
-			job_desc->reservation = xstrdup(value_str);
+		SET_JOB_STRING(reservation, true);
 	} else if (!xstrcmp(name, "script")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->script);
-		if (strlen(value_str))
-			job_desc->script = xstrdup(value_str);
+		SET_JOB_STRING(script, false);
 	} else if (!xstrcmp(name, "segment_size")) {
 		job_desc->segment_size = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "selinux_context")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->selinux_context);
-		if (strlen(value_str))
-			job_desc->selinux_context = xstrdup(value_str);
+		SET_JOB_STRING(selinux_context, false);
 	} else if (!xstrcmp(name, "shared") ||
 		   !xstrcmp(name, "oversubscribe")) {
 		job_desc->shared = luaL_checknumber(L, 3);
@@ -1047,20 +984,11 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "sockets_per_node")) {
 		job_desc->sockets_per_node = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "std_err")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->std_err);
-		if (strlen(value_str))
-			job_desc->std_err = xstrdup(value_str);
+		SET_JOB_STRING(std_err, false);
 	} else if (!xstrcmp(name, "std_in")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->std_in);
-		if (strlen(value_str))
-			job_desc->std_in = xstrdup(value_str);
+		SET_JOB_STRING(std_in, false);
 	} else if (!xstrcmp(name, "std_out")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->std_out);
-		if (strlen(value_str))
-			job_desc->std_out = xstrdup(value_str);
+		SET_JOB_STRING(std_out, false);
 	} else if (!xstrcmp(name, "thread_spec")) {
 		job_desc->core_spec = luaL_checknumber(L, 3);
 		job_desc->core_spec |= CORE_SPEC_THREAD;
@@ -1071,53 +999,31 @@ static int _set_job_req_field(lua_State *L)
 	} else if (!xstrcmp(name, "time_min")) {
 		job_desc->time_min = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "tres_bind")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->tres_bind);
-		if (is_modify || strlen(value_str))
-			job_desc->tres_bind = xstrdup(value_str);
+		SET_JOB_STRING(tres_bind, true);
 	} else if (!xstrcmp(name, "tres_freq")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->tres_freq);
-		if (is_modify || strlen(value_str))
-			job_desc->tres_freq = xstrdup(value_str);
+		SET_JOB_STRING(tres_freq, true);
 	} else if (!xstrcmp(name, "tres_per_job")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->tres_per_job);
-		if (is_modify || strlen(value_str))
-			job_desc->tres_per_job = xstrdup(value_str);
+		SET_JOB_STRING(tres_per_job, true);
 	} else if (!xstrcmp(name, "tres_per_node")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->tres_per_node);
-		if (is_modify || strlen(value_str))
-			job_desc->tres_per_node = xstrdup(value_str);
+		SET_JOB_STRING(tres_per_node, true);
 	} else if (!xstrcmp(name, "tres_per_socket")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->tres_per_socket);
-		if (is_modify || strlen(value_str))
-			job_desc->tres_per_socket = xstrdup(value_str);
+		SET_JOB_STRING(tres_per_socket, true);
 	} else if (!xstrcmp(name, "tres_per_task")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->tres_per_task);
-		if (is_modify || strlen(value_str))
-			job_desc->tres_per_task = xstrdup(value_str);
+		SET_JOB_STRING(tres_per_task, true);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		job_desc->wait4switch = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "wckey")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->wckey);
-		if (is_modify || strlen(value_str))
-			job_desc->wckey = xstrdup(value_str);
+		SET_JOB_STRING(wckey, true);
 	} else if (!xstrcmp(name, "work_dir")) {
-		value_str = luaL_checkstring(L, 3);
-		xfree(job_desc->work_dir);
-		if (strlen(value_str))
-			job_desc->work_dir = xstrdup(value_str);
+		SET_JOB_STRING(work_dir, false);
 	} else {
 		error("_set_job_field: unrecognized field: %s", name);
 	}
 
 	return 0;
 }
+
+#undef SET_JOB_STRING
 
 static void _push_job_desc(job_desc_msg_t *job_desc, bool is_modify)
 {
