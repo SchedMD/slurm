@@ -516,6 +516,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		    SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "QosLevel", MAX(command_len, 1))) {
+		int qos_count = 0;
+
 		*allow_option = true;
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(xfree_ptr);
@@ -524,10 +526,16 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			g_qos_list = slurmdb_qos_get(
 				db_conn, NULL);
 
-		if (slurmdb_addto_qos_char_list(assoc->qos_list,
-						g_qos_list, value,
-						option) > 0)
+		qos_count = slurmdb_addto_qos_char_list(assoc->qos_list,
+							g_qos_list, value,
+							option);
+		if (qos_count > 0) {
 			set = 1;
+		} else if (value && value[0]) {
+			fprintf(stderr, "You gave a bad qos '%s'.  Use 'list qos' to get complete list.\n", value);
+			exit_code = 1;
+			set = 1;
+		}
 	}
 
 	return set;
