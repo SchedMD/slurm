@@ -73,7 +73,6 @@ extern void http_router_fini(void);
 
 /*
  * Bind to path in HTTP router
- * IN hrouter - http router to bind path events
  * IN method - HTTP method to bind at path
  * IN path - string HTTP URL path to bind
  * IN on_request - callbacks for on_request() event
