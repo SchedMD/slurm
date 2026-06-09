@@ -12230,6 +12230,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(LOG_TIME_FORMAT)[] = {
 	add_flag_equal_desc(LOG_FMT_CLOCK, INFINITE64, "clock", "Timestamp in microseconds from C standard clock() function."),
 	add_flag_equal_desc(LOG_FMT_SHORT, INFINITE64, "short", "Short date and time format."),
 	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Timestamp in ctime() format without the year, with microseconds, process ID, and thread name and ID."),
+	add_flag_equal_desc(LOG_FMT_OMIT, INFINITE64, "omit", "Omit the timestamp."),
 };
 
 /* based on _validate_and_set_defaults() PropagatePrioProcess */
