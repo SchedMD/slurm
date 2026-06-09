@@ -48,6 +48,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with jwt		%_with_jwt 1		require jwt support
 # --with freeipmi	%_with_freeipmi 1	require freeipmi support
 # --with selinux	%_with_selinux 1	build with selinux support
+# --with hpe_slingshot	%_with_hpe_slingshot 1	build with switch/hpe_slingshot plugin
 #
 
 #  Options that are off by default (enable with --with <opt>)
@@ -70,6 +71,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with jwt
 %bcond_with yaml
 %bcond_with freeipmi
+%bcond_with hpe_slingshot
 
 # Use debug by default on all systems
 %bcond_without debug
@@ -432,6 +434,7 @@ Provides a REST interface to Slurm.
 	%{?_with_yaml} \
 	%{?_with_nvml} \
 	%{!?with_munge:--without-munge} \
+	%{?_with_hpe_slingshot} \
 	%{?_with_cflags}
 
 SLURM_PERL_INSTALLDIRS=vendor make %{?_smp_mflags}
