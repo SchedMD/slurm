@@ -73,7 +73,7 @@ static int _sack_try_connection(struct sockaddr_un *addr)
 		return -1;
 	}
 
-	if (connect(fd, (struct sockaddr *)addr, len) < 0) {
+	if (connect(fd, (struct sockaddr *) addr, len) < 0) {
 		debug3("%s: connect() failed for %s: %m",
 		      __func__, addr->sun_path);
 		close(fd);

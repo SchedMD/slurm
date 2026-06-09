@@ -560,14 +560,14 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
  * preserve the historical BSD workaround.
  */
 #if !defined(HAVE_STRUCT_SOCKADDR_IN_SIN_LEN) && \
-    !defined(HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN) && \
-    !defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
+	!defined(HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN) && \
+	!defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
 	if (addr->ss_family == AF_INET)
-		((struct sockaddr_in *)addr)->sin_len =
-			(uint8_t)sizeof(struct sockaddr_in);
+		((struct sockaddr_in *) addr)->sin_len =
+			(uint8_t) sizeof(struct sockaddr_in);
 	else if (addr->ss_family == AF_INET6)
-		((struct sockaddr_in6 *)addr)->sin6_len =
-			(uint8_t)sizeof(struct sockaddr_in6);
+		((struct sockaddr_in6 *) addr)->sin6_len =
+			(uint8_t) sizeof(struct sockaddr_in6);
 #endif
 #endif
 	if (quiet)
@@ -768,10 +768,9 @@ extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd)
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, addr_name);
-	slen = sockaddr_fixlen((struct sockaddr *) &sa,
-			       (socklen_t) sizeof(sa));
+	slen = sockaddr_fixlen((struct sockaddr *) &sa, (socklen_t) sizeof(sa));
 
-	while ((rc = connect(*fd, (struct sockaddr *)&sa, slen)) &&
+	while ((rc = connect(*fd, (struct sockaddr *) &sa, slen)) &&
 	       (errno == EINTR))
 		; /* empty loop */
 

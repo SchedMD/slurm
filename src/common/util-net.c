@@ -52,12 +52,12 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
-#include "src/common/macros.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -411,8 +411,8 @@ static char *_getnameinfo(const slurm_addr_t *addr)
 		return NULL;
 	}
 
-	err = getnameinfo((const struct sockaddr *) &ss, alen,
-			  hbuf, sizeof(hbuf), NULL, 0, NI_NAMEREQD);
+	err = getnameinfo((const struct sockaddr *) &ss, alen, hbuf,
+			  sizeof(hbuf), NULL, 0, NI_NAMEREQD);
 	if (err == EAI_SYSTEM) {
 		log_flag(NET, "%s: getnameinfo(%pA) failed: %s: %m",
 			 __func__, addr, gai_strerror(err));

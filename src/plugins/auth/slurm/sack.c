@@ -340,9 +340,11 @@ extern void init_sack_conmgr(void)
 		/* set value of socket path */
 		mask = umask(0);
 
-		bind_len = sockaddr_fixlen((struct sockaddr *) &addr,
-					   (socklen_t) sizeof(struct sockaddr_un));
-		if ((rc = bind(sack_fd, (const struct sockaddr *) &addr, bind_len)))
+		bind_len =
+			sockaddr_fixlen((struct sockaddr *) &addr,
+					(socklen_t) sizeof(struct sockaddr_un));
+		if ((rc = bind(sack_fd, (const struct sockaddr *) &addr,
+			       bind_len)))
 			fatal("%s: [%pA] Unable to bind UNIX socket: %m",
 			      __func__, &addr);
 		umask(mask);

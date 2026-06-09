@@ -609,38 +609,36 @@ static socklen_t _unix_sock_len(const struct sockaddr_un *un,
 
 extern socklen_t sockaddr_fixlen(struct sockaddr *sa, socklen_t provided_len)
 {
+	socklen_t len;
+
 	if (!sa)
 		return provided_len;
 
 	switch (sa->sa_family) {
-	case AF_INET: {
-		socklen_t len = (socklen_t) sizeof(struct sockaddr_in);
+	case AF_INET:
+		len = (socklen_t) sizeof(struct sockaddr_in);
 #if defined(HAVE_STRUCT_SOCKADDR_IN_SIN_LEN)
 		((struct sockaddr_in *) sa)->sin_len = (uint8_t) len;
 #elif defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
 		sa->sa_len = (uint8_t) len;
 #endif
 		return len;
-	}
-	case AF_INET6: {
-		socklen_t len = (socklen_t) sizeof(struct sockaddr_in6);
+	case AF_INET6:
+		len = (socklen_t) sizeof(struct sockaddr_in6);
 #if defined(HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN)
 		((struct sockaddr_in6 *) sa)->sin6_len = (uint8_t) len;
 #elif defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
 		sa->sa_len = (uint8_t) len;
 #endif
 		return len;
-	}
-	case AF_UNIX: {
-		struct sockaddr_un *un = (struct sockaddr_un *) sa;
-		socklen_t len = _unix_sock_len(un, provided_len);
+	case AF_UNIX:
+		len = _unix_sock_len((struct sockaddr_un *) sa, provided_len);
 #if defined(HAVE_STRUCT_SOCKADDR_UN_SUN_LEN)
-		un->sun_len = (uint8_t) len;
+		((struct sockaddr_un *) sa)->sun_len = (uint8_t) len;
 #elif defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
 		sa->sa_len = (uint8_t) len;
 #endif
 		return len;
-	}
 	default:
 #if defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
 		/* best effort: reflect caller-provided length if meaningful */

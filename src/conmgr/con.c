@@ -1153,7 +1153,7 @@ static int _add_unix_listener(const conmgr_timeouts_t *timeouts,
 	bind_len = sockaddr_fixlen((struct sockaddr *) &addr,
 				   (socklen_t) sizeof(addr));
 
-	if ((rc = bind(fd, (const struct sockaddr *)&addr, bind_len)))
+	if ((rc = bind(fd, (const struct sockaddr *) &addr, bind_len)))
 		fatal("%s: [%s] Unable to bind UNIX socket: %m",
 		      __func__, listen_on);
 
@@ -1165,8 +1165,7 @@ static int _add_unix_listener(const conmgr_timeouts_t *timeouts,
 		      __func__, listen_on);
 
 	return add_connection(type, timeouts, NULL, fd, -1, events, flags,
-			      &addr, bind_len, true, unixsock, NULL, NULL,
-			      arg);
+			      &addr, bind_len, true, unixsock, NULL, NULL, arg);
 }
 
 static int _add_socket_listener(const conmgr_timeouts_t *timeouts,

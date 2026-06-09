@@ -367,8 +367,8 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 	debug3("Called _msg_socket_accept");
 
-	while ((fd = accept4(obj->fd, (struct sockaddr *) &addr,
-			    &len, SOCK_CLOEXEC)) < 0) {
+	while ((fd = accept4(obj->fd, (struct sockaddr *) &addr, &len,
+			     SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||
