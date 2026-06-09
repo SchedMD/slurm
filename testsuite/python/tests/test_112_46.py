@@ -197,13 +197,18 @@ def non_admin(setup):
 
 
 @pytest.fixture(scope="function")
-def cleanup_crash(setup):
-    yield
+def resv_crash(setup):
+    """Ensure that slurmrestd is running and reservation is deleted"""
+
+    resv_name = "crash_resv_name"
+    yield resv_name
 
     if not atf.is_slurmrestd_running():
         atf.start_slurmrestd()
         # We have a new port
         atf.properties["openapi_config"].host = atf.properties["slurmrestd_url"]
+
+    atf.run_command(f"scontrol delete reservationname={resv_name}", user="root")
 
 
 @pytest.fixture(scope="function")
@@ -3450,7 +3455,7 @@ def test_util_hostlist(util_api):
     assert "node[01-03]" == response.hostlist
 
 
-def test_resv_crash(slurm, admin_level, cleanup_crash):
+def test_resv_crash(slurm, admin_level, resv_crash):
     """Check for xfree crash (bug 23038)"""
     from openapi_client.models.v0046_reservation_desc_msg import V0046ReservationDescMsg
     from openapi_client.models.v0046_reservation_mod_req import V0046ReservationModReq
@@ -3458,7 +3463,7 @@ def test_resv_crash(slurm, admin_level, cleanup_crash):
     from openapi_client.models.v0046_uint64_no_val_struct import V0046Uint64NoValStruct
 
     # Don't overlap with other resv in case of restd crash/restart
-    resv_name = "crash_test_resv"
+    resv_name = resv_crash
     users = ["root", "atf"]
     duration = V0046Uint32NoValStruct(number=1, set=True)
     start_time = V0046Uint64NoValStruct(
