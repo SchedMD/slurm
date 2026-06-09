@@ -64,6 +64,11 @@ typedef struct {
 	slurmdb_qos_rec_t *qos_rec_old;
 } local_mod_qos_t;
 
+typedef struct {
+	slurmdb_assoc_rec_t *mod_assoc;
+	list_t *now_qos_list;
+} assoc_qos_merge_args_t;
+
 typedef enum {
 	MOD_CLUSTER,
 	MOD_ACCT,
@@ -513,6 +518,33 @@ static int _print_out_qos(void *x, void *args)
 	return 0;
 }
 
+/*
+ * Additive load: append file QOS entries not already on the stored assoc.
+ */
+static int _foreach_assoc_qos_merge_new(void *x, void *arg)
+{
+	char *new_qos = x;
+	assoc_qos_merge_args_t *merge = arg;
+	char *now_qos = NULL;
+
+	if (merge->now_qos_list) {
+		list_itr_t *now_qos_itr = list_iterator_create(
+			merge->now_qos_list);
+		while ((now_qos = list_next(now_qos_itr))) {
+			if (!xstrcmp(new_qos, now_qos))
+				break;
+		}
+		list_iterator_destroy(now_qos_itr);
+	}
+
+	if (!now_qos) {
+		if (!merge->mod_assoc->qos_list)
+			merge->mod_assoc->qos_list = list_create(xfree_ptr);
+		list_append(merge->mod_assoc->qos_list, xstrdup(new_qos));
+	}
+
+	return 0;
+}
 
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		      slurmdb_assoc_rec_t *assoc,
@@ -822,26 +854,15 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {
-		list_itr_t *now_qos_itr =
-			list_iterator_create(assoc->qos_list);
-		list_itr_t *new_qos_itr =
-			list_iterator_create(file_opts->assoc_rec.qos_list);
-		char *now_qos = NULL, *new_qos = NULL;
+		char *new_qos = NULL;
+		assoc_qos_merge_args_t merge = {
+			.mod_assoc = &mod_assoc,
+			.now_qos_list = assoc->qos_list,
+		};
 
-		if (!mod_assoc.qos_list)
-			mod_assoc.qos_list = list_create(xfree_ptr);
-		while ((new_qos = list_next(new_qos_itr))) {
-			while ((now_qos = list_next(now_qos_itr))) {
-				if (!xstrcmp(new_qos, now_qos))
-					break;
-			}
-			list_iterator_reset(now_qos_itr);
-			if (!now_qos)
-				list_append(mod_assoc.qos_list,
-					    xstrdup(new_qos));
-		}
-		list_iterator_destroy(new_qos_itr);
-		list_iterator_destroy(now_qos_itr);
+		(void) list_for_each_ro(file_opts->assoc_rec.qos_list,
+					_foreach_assoc_qos_merge_new,
+					&merge);
 		if (mod_assoc.qos_list && list_count(mod_assoc.qos_list))
 			new_qos = get_qos_complete_str(g_qos_list,
 						       mod_assoc.qos_list);
