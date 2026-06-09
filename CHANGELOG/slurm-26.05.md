@@ -1,3 +1,21 @@
+## Changes in 26.05.1
+
+* stepmgr - Fix crash when launching async steps with a srun from a different release than the local slurmd.
+* Fix slurmctld memory leak when using topology/tree and requesting multiple node sizes (-N 2:4:8).
+* Fixed a crash caused by a race condition in the mysql code caused by checking the connection before it was safely locked.
+* Fix DB performance issue when locating steps by SLUID in step completion.
+* Fix step start and complete for jobs that survived an upgrade from Slurm <= 25.05 to Slurm 26.05.
+* accounting_storage/slurmdbd - Fix slurmctld performance regression caused by unnecessary lock contention when packing a message to the slurmdbd agent.
+* Fix warning in shtml2html.py when using Python 3.14+
+* Block memory resize for jobs started before 26.05.
+* Fix DBD state replay leaking unpacked messages on version mismatch.
+* Fix runtime-added assoc/wckey uid NO_VAL under use_client_ids.
+* Fix typo in _unitdir fallback path in slurm.spec.
+* Fixed an incompatibility between 26.05 slurmd and 25.05+ slurmstepd when using a 24.11 sattach that would cause the sattach to hang.
+* Fix parsing issue of "sacctmgr load" when trying to load a file that contains typed TRES.
+* Error if salloc/sbatch/srun --requeue has an invalid option specified
+* slurmctld - Fix ~37 second extra delay in retries for slurmdbd reconnection and state saves on NTP-synced systems.
+
 ## Changes in 26.05.0
 
 * slurmctld - Fix interactive jobs erroneously killed by InactivityLimit when slurmctld is congested.
