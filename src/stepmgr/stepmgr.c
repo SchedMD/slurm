@@ -3818,6 +3818,51 @@ static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Whether the job is in a state that permits starting a step on it.
+ * IN job_ptr - job the step would run under
+ * RET SLURM_SUCCESS, or the error to report to the requester
+ */
+static int _job_can_run_step(job_record_t *job_ptr)
+{
+	uint32_t over_time_limit = NO_VAL;
+
+	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
+		return ESLURM_DISABLED;
+
+	if (job_ptr->node_bitmap_rs)
+		return ESLURM_INVALID_JOB_STATE;
+
+	if (IS_JOB_PENDING(job_ptr)) {
+		/* NOTE: LSF creates a job allocation for batch jobs.
+		 * After the allocation has been made, LSF submits a
+		 * job to run in that allocation (sbatch --jobid= ...).
+		 * If that job is pending either LSF messed up or LSF is
+		 * not being used. We have seen this problem with Moab. */
+		return ESLURM_DUPLICATE_JOB_ID;
+	}
+
+	/* Get OverTimeLimit from job's partition if set, or globally. */
+	if (job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->over_time_limit != NO_VAL16))
+		over_time_limit = job_ptr->part_ptr->over_time_limit;
+	else
+		over_time_limit = slurm_conf.over_time_limit;
+
+	if (over_time_limit == INFINITE16)
+		over_time_limit = YEAR_MINUTES;
+
+	if (IS_JOB_FINISHED(job_ptr) ||
+	    (((job_ptr->end_time + (over_time_limit * 60)) <= time(NULL)) &&
+	     !IS_JOB_CONFIGURING(job_ptr)))
+		return ESLURM_ALREADY_DONE;
+
+	if (job_ptr->details->prolog_running)
+		return ESLURM_PROLOG_RUNNING;
+
+	return SLURM_SUCCESS;
+}
+
 static int _switch_setup(step_record_t *step_ptr)
 {
 	xassert(step_ptr);
@@ -3860,7 +3905,6 @@ static int _step_create(job_record_t *job_ptr,
 	list_t *step_gres_list = NULL;
 	uint32_t task_dist;
 	uint32_t max_tasks;
-	uint32_t over_time_limit;
 	bool resv_ports_present = false;
 	bool async = step_specs->flags & SSF_ASYNC;
 
@@ -3889,38 +3933,9 @@ static int _step_create(job_record_t *job_ptr,
 			return ESLURM_DUPLICATE_STEP_ID;
 	}
 
-	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
-		return ESLURM_DISABLED;
-
-	if (job_ptr->node_bitmap_rs)
-		return ESLURM_INVALID_JOB_STATE;
-
-	if (IS_JOB_PENDING(job_ptr)) {
-		/* NOTE: LSF creates a job allocation for batch jobs.
-		 * After the allocation has been made, LSF submits a
-		 * job to run in that allocation (sbatch --jobid= ...).
-		 * If that job is pending either LSF messed up or LSF is
-		 * not being used. We have seen this problem with Moab. */
-		return ESLURM_DUPLICATE_JOB_ID;
-	}
-
-	/* Get OverTimeLimit from job's partition if set, or globally. */
-	if (job_ptr->part_ptr &&
-	    (job_ptr->part_ptr->over_time_limit != NO_VAL16))
-		over_time_limit = job_ptr->part_ptr->over_time_limit;
-	else
-		over_time_limit = slurm_conf.over_time_limit;
-
-	if (over_time_limit == INFINITE16)
-		over_time_limit = YEAR_MINUTES;
-
-	if (IS_JOB_FINISHED(job_ptr) ||
-	    (((job_ptr->end_time + (over_time_limit * 60)) <= time(NULL)) &&
-	     !IS_JOB_CONFIGURING(job_ptr)))
-		return ESLURM_ALREADY_DONE;
-
-	if (job_ptr->details->prolog_running)
-		return ESLURM_PROLOG_RUNNING;
+	ret_code = _job_can_run_step(job_ptr);
+	if (ret_code)
+		return ret_code;
 
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
