@@ -46,7 +46,8 @@ See the [Upgrade Guide](https://slurm.schedmd.com/upgrades.html) for further det
 
 ## API Changes
 
-The Slurm API has been updated to use slurm_step_id_t in lieu of a job_id in API calls. This allows the API to be queried by SLUID instead of by JobId. Backwards compatibility is available through the SLURM_BACKWARD_COMPAT define when including <slurm/slurm.h>.
+* The Slurm API has been updated to use slurm_step_id_t in lieu of a job_id in API calls. This allows the API to be queried by SLUID instead of by JobId. Backwards compatibility is available through the SLURM_BACKWARD_COMPAT define when including <slurm/slurm.h>.
+* cgroup/v2 directory structures are now keyed off of SLUID and not the JobId.
 
 ## REST API Changes
 
