@@ -8125,6 +8125,29 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_het_step_id_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	het_step_id_msg_t *msg = smsg->data;
+
+	pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+}
+
+static int _unpack_het_step_id_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	het_step_id_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (unpack_step_id_members(&msg->step_id, buffer,
+				   smsg->protocol_version))
+		goto unpack_error;
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_het_step_id_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_reattach_tasks_request_msg(const slurm_msg_t *smsg,
 					     buf_t *buffer)
 {
@@ -13907,6 +13930,10 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_SLURM_REROUTE_MSG:
 		_pack_reroute_msg(msg, buffer);
 		break;
+	case REQUEST_HET_STEP_ID:
+	case RESPONSE_HET_STEP_ID:
+		_pack_het_step_id_msg(msg, buffer);
+		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		_pack_job_step_create_response_msg(msg, buffer);
 		break;
@@ -14449,6 +14476,10 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
 		rc = _unpack_reroute_msg(msg, buffer);
+		break;
+	case REQUEST_HET_STEP_ID:
+	case RESPONSE_HET_STEP_ID:
+		rc = _unpack_het_step_id_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		rc = _unpack_job_step_create_response_msg(msg, buffer);

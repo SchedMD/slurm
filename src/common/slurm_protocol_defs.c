@@ -1414,6 +1414,11 @@ extern void slurm_free_reroute_msg(reroute_msg_t *msg)
 	}
 }
 
+extern void slurm_free_het_step_id_msg(het_step_id_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_batch_script_msg(char *msg)
 {
 	xfree(msg);
@@ -5422,6 +5427,10 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
 		slurm_free_reroute_msg(data);
+		break;
+	case REQUEST_HET_STEP_ID:
+	case RESPONSE_HET_STEP_ID:
+		slurm_free_het_step_id_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		slurm_free_job_step_create_response_msg(data);

@@ -1258,6 +1258,10 @@ typedef struct {
 			    * return of a message type sent. */
 } persist_rc_msg_t;
 
+typedef struct het_step_id_msg {
+	slurm_step_id_t step_id;
+} het_step_id_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1643,6 +1647,7 @@ extern void slurm_free_last_update_msg(last_update_msg_t * msg);
 extern void slurm_free_return_code_msg(return_code_msg_t * msg);
 extern void slurm_free_return_code2_msg(return_code2_msg_t *msg);
 extern void slurm_free_reroute_msg(reroute_msg_t *msg);
+extern void slurm_free_het_step_id_msg(het_step_id_msg_t *msg);
 extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
 extern void slurm_free_container_id_request_msg(
 	container_id_request_msg_t *msg);
