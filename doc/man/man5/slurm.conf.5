@@ -2568,16 +2568,18 @@ not explicitly listed in the job submission specification.
 \fBLogTimeFormat\fR
 Format of the timestamp in slurmctld and slurmd log files. Accepted
 format values include "iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms",
-"rfc3339", "clock", "short" and "thread_id". The values ending in "_ms" differ
-from the ones without in that fractional seconds with millisecond precision are
-printed. The default value is "iso8601_ms". The "rfc5424" formats are the same
-as the "iso8601" formats except that the timezone value is also shown.
-The "clock" format shows a timestamp in microseconds retrieved
+"rfc3339", "clock", "short", "thread_id" and "omit". The values ending in "_ms"
+differ from the ones without in that fractional seconds with millisecond
+precision are printed. The default value is "iso8601_ms". The "rfc5424" formats
+are the same as the "iso8601" formats except that the timezone value is also
+shown. The "clock" format shows a timestamp in microseconds retrieved
 with the C standard clock() function. The "short" format is a short
 date and time format. The "thread_id" format shows the timestamp
 in the C standard ctime() function form without the year but
 including the microseconds, the daemon's process ID and the current thread name
-and ID.
+and ID. The "omit" format disables the timestamp at the start of each log line.
+This is useful when logging through a service such as systemd's journal that
+records its own timestamps.
 .IP
 
 .TP
