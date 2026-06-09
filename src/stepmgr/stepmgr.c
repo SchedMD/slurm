@@ -5934,15 +5934,77 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		goto end_it;
 	}
 
-	error_code = _step_create(job_ptr, req_step_msg, &step_rec,
-				  msg->protocol_version, &err_msg);
+	step_rec = NULL;
+	if (!(req_step_msg->flags & SSF_ASYNC) &&
+	    (req_step_msg->step_id.step_id != NO_VAL))
+		step_rec = find_step_record(job_ptr, &req_step_msg->step_id);
 
-	if (error_code == SLURM_SUCCESS) {
+	if (step_rec &&
+	    (IS_STEP_CONFIGURING(step_rec) ||
+	     (IS_STEP_RUNNING(step_rec) && !IS_STEP_COMPLETING(step_rec)))) {
+		/*
+		 * The reconcile below skips _step_create(), so apply the
+		 * job-state gates it would have.  slurmd's RELAY_AUTH_JOB
+		 * already bound this RPC to the job's own user, so the
+		 * requester check is a belt-and-braces repeat of that rather
+		 * than the gate doing the work.
+		 */
+		if (req_step_msg->user_id != job_ptr->user_id) {
+			error_code = ESLURM_ACCESS_DENIED;
+			goto end_it;
+		}
+		/*
+		 * Only the srun that owns the step may reconcile it.  A
+		 * re-send comes from the same process on the same node, so
+		 * anything else is a second srun of the same user naming an
+		 * id it does not own.
+		 */
+		if ((step_rec->srun_pid != req_step_msg->srun_pid) ||
+		    xstrcmp(step_rec->host, req_step_msg->host)) {
+			error_code = ESLURM_DUPLICATE_STEP_ID;
+			goto end_it;
+		}
+		error_code = _job_can_run_step(job_ptr);
+		if (error_code)
+			goto end_it;
+		/*
+		 * A cancel landed while the push was in flight and srun was
+		 * told; re-sending means it never saw that.  Do not hand back
+		 * a step the user has already cancelled.
+		 */
+		if (step_rec->requid != (uid_t) -1) {
+			error_code = ESLURM_STEP_CANCELLED;
+			goto end_it;
+		}
+		/*
+		 * Lost-push re-send: the step was created at wake and pushed,
+		 * but srun never got the push and re-sent; or the push was
+		 * delivered, clearing the provisional mark, while a re-send was
+		 * already in flight.  Re-sending proves srun is alive, so clear
+		 * the provisional mark and re-deliver the existing step (a fresh
+		 * cred + its existing layout) rather than create a duplicate
+		 * (ESLURM_DUPLICATE_STEP_ID).
+		 */
+		step_rec->state &= ~JOB_CONFIGURING;
 		error_code = _make_step_cred(step_rec, &slurm_cred,
 					     step_rec->start_protocol_ver);
 		if (error_code) {
 			_cleanup_failed_step(step_rec);
 			step_rec = NULL;
+		}
+	} else {
+		step_rec = NULL;
+		error_code = _step_create(job_ptr, req_step_msg, &step_rec,
+					  msg->protocol_version, &err_msg);
+
+		if (error_code == SLURM_SUCCESS) {
+			error_code =
+				_make_step_cred(step_rec, &slurm_cred,
+						step_rec->start_protocol_ver);
+			if (error_code) {
+				_cleanup_failed_step(step_rec);
+				step_rec = NULL;
+			}
 		}
 	}
 	END_TIMER2(__func__);
