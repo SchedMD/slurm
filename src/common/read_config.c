@@ -4372,6 +4372,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_SHORT;
 		else if (xstrcasestr(temp_str, "thread_id"))
 			conf->log_fmt = LOG_FMT_THREAD_ID;
+		else if (xstrcasestr(temp_str, "omit"))
+			conf->log_fmt = LOG_FMT_OMIT;
 		xfree(temp_str);
 	}
 
