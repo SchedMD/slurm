@@ -65,6 +65,16 @@
 #define PMIX_APP_ARGV "pmix.app.argv"
 #endif
 
+/*
+ * PMIx older than 3.2.0 lack the PMIX_REGEX type and always return a plain
+ * string when generating regexs, so fall back to PMIX_STRING.
+ */
+#ifdef PMIX_REGEX
+#define PMIXP_REGEX_TYPE PMIX_REGEX
+#else
+#define PMIXP_REGEX_TYPE PMIX_STRING
+#endif
+
 #define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
 	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
 
@@ -404,8 +414,7 @@ static int _set_mapsinfo(list_t *lresp)
 		free(regexp);
 		return SLURM_ERROR;
 	}
-
-	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIX_STRING);
+	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIXP_REGEX_TYPE);
 	free(regexp);
 	regexp = NULL;
 	list_append(lresp, kvp);
@@ -438,7 +447,7 @@ static int _set_mapsinfo(list_t *lresp)
 		return SLURM_ERROR;
 	}
 
-	PMIXP_KVP_CREATE(kvp, PMIX_PROC_MAP, regexp, PMIX_STRING);
+	PMIXP_KVP_CREATE(kvp, PMIX_PROC_MAP, regexp, PMIXP_REGEX_TYPE);
 	free(regexp);
 	regexp = NULL;
 	list_append(lresp, kvp);
