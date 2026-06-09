@@ -1159,6 +1159,14 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					substitute = substitute_on_stack;
 					should_xfree = 0;
 					break;
+				case LOG_FMT_OMIT:
+					/*
+					 * Nothing to substitute: the timestamp
+					 * is dropped at the log_msg() call
+					 * sites, so "%M" is never emitted in
+					 * this mode.
+					 */
+					break;
 				}
 				break;
 			}
@@ -1344,7 +1352,9 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
-		xlogfmtcat(&msgbuf, "[%M] %s%s", sched_log->prefix, pfx);
+		xlogfmtcat(&msgbuf,
+			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+			   sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s%s\n", msgbuf, buf);
 		fflush(sched_log->logfp);
@@ -1416,10 +1426,15 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
 		} else if (running_in_daemon()) {
-			xlogfmtcat(&msgbuf, "[%M]");
-			_log_printf(log, log->buf, stderr, "%s %s%s%s", msgbuf,
-				    pfx, buf, eol);
-			xfree(msgbuf);
+			if (log->fmt == LOG_FMT_OMIT) {
+				_log_printf(log, log->buf, stderr, "%s%s%s",
+					    pfx, buf, eol);
+			} else {
+				xlogfmtcat(&msgbuf, "[%M]");
+				_log_printf(log, log->buf, stderr, "%s %s%s%s",
+					    msgbuf, pfx, buf, eol);
+				xfree(msgbuf);
+			}
 		} else {
 			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
 				    log->argv0, pfx, buf, eol);
@@ -1461,7 +1476,9 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		fflush(log->logfp);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
-		xlogfmtcat(&msgbuf, "[%M] %s%s", log->prefix, pfx);
+		xlogfmtcat(&msgbuf,
+			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+			   log->prefix, pfx);
 		_log_printf(log, log->fbuf, log->logfp, "%s%s\n", msgbuf, buf);
 		fflush(log->logfp);
 
