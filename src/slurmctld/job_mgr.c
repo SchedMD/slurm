@@ -14361,8 +14361,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				   SLURM_SUCCESS) {
 				FREE_NULL_LIST(detail_ptr->prefer_list);
 				xfree(detail_ptr->prefer);
-				detail_ptr->features = old_prefer;
-				detail_ptr->feature_list = old_list;
+				detail_ptr->prefer = old_prefer;
+				detail_ptr->prefer_list = old_list;
 				error_code = ESLURM_INVALID_PREFER;
 			} else {
 				sched_info("%s: setting prefer to %s for %pJ",
