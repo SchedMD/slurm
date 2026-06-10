@@ -59,6 +59,7 @@ typedef struct {
 	char *path;
 	http_request_on_request_t on_request;
 	http_request_on_error_t on_error;
+	const char *on_error_func;
 	data_parser_type_t reply_type;
 	void *arg;
 } bound_request_t;
@@ -74,6 +75,19 @@ typedef struct http_request_event_s {
 	const char *write_mime;
 	const http_con_request_t *request;
 } http_request_event_t;
+
+static int _on_error(http_request_event_t *event, int rc)
+{
+	bound_request_t *breq = event->breq;
+
+	log_flag(NET, "%s: Calling %s(%p) on error for %s %s: %s",
+		 __func__, breq->on_error_func, breq->arg,
+		 get_http_method_string(event->request->method),
+		 event->request->url.path, slurm_strerror(rc));
+
+	return breq->on_error(event, event->hcon, event->name, event->request,
+			      rc);
+}
 
 static int _on_request(http_con_t *hcon, const char *name,
 		       const http_con_request_t *request, void *arg,
@@ -96,14 +110,14 @@ static int _on_request(http_con_t *hcon, const char *name,
 					   name, request))) {
 		error("%s: [%s] Rejecting HTTP authentication: %s",
 		      __func__, name, slurm_strerror(rc));
-		return breq->on_error(&event, hcon, name, request, rc);
+		return _on_error(&event, rc);
 	}
 
 	if ((rc = http_resolve_mime_types(name, request, &event.read_mime,
 					  &event.write_mime))) {
 		error("%s: [%s] Rejecting HTTP mime headers: %s",
 		      __func__, name, slurm_strerror(rc));
-		return breq->on_error(&event, hcon, name, request, rc);
+		return _on_error(&event, rc);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
@@ -146,6 +160,7 @@ static void _bind(data_parser_t *parser, http_request_method_t method,
 		.magic = BOUND_REQUEST_MAGIC,
 		.on_request = on_request,
 		.on_error = on_error,
+		.on_error_func = on_error_func,
 		.reply_type = reply_type,
 		.arg = arg,
 		.path = xstrdup(path),
@@ -193,8 +208,6 @@ extern int http_request_reply(http_request_event_t *event, int rc,
 	bound_request_t *breq = event->breq;
 	data_parser_t *parser = breq->parser;
 	http_con_t *hcon = event->hcon;
-	const char *name = event->name;
-	const http_con_request_t *request = event->request;
 	const char *write_mime = event->write_mime;
 	http_status_code_t status = http_status_from_error(rc);
 
@@ -208,13 +221,12 @@ extern int http_request_reply(http_request_event_t *event, int rc,
 		xassert(breq->reply_type < DATA_PARSER_TYPE_MAX);
 
 		if (!(buffer = try_init_buf(BUF_SIZE)))
-			return breq->on_error(event, hcon, name, request,
-					      ENOMEM);
+			return _on_error(event, ENOMEM);
 
 		if ((rc = serdes_dump_buf(parser, breq->reply_type, reply,
 					  reply_bytes, buffer, write_mime,
 					  SER_FLAGS_NONE)))
-			rc = breq->on_error(event, hcon, name, request, rc);
+			rc = _on_error(event, rc);
 		else
 			rc = http_con_send_response(hcon, status, headers,
 						    close_header, buffer,
