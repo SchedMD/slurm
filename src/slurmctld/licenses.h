@@ -59,7 +59,7 @@ typedef uint16_t path_idx_t[MAX_HIERARCHY_DEPTH];
 
 typedef struct {
 	uint32_t capacity;
-	bitstr_t *node_bitmap;
+	bitstr_t *node_bitmap; /* alias of licenses_t.node_bitmap, never free */
 	path_idx_t path_idx;
 } hres_leaf_t;
 

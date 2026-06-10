@@ -1586,8 +1586,9 @@ static int _foreach_hres_create_select(void *x, void *key)
 	if (license->hres_rec.level)
 		return 0;
 
+	/* Alias license->node_bitmap; do not copy */
 	hres_select->leaf[hres_select->leaf_cnt].node_bitmap =
-		bit_copy(license->node_bitmap);
+		license->node_bitmap;
 
 	hres_select->depth = license->hres_rec.depth;
 
@@ -1787,10 +1788,7 @@ extern void hres_select_free(job_record_t *job_ptr)
 	if (!hres_select)
 		return;
 
-	for (int i = 0; i < hres_select->leaf_cnt; i++) {
-		FREE_NULL_BITMAP(hres_select->leaf[i].node_bitmap);
-	}
-
+	/* Do not free leaf[i].node_bitmap, since it is not a copy */
 	xfree(hres_select->leaf);
 	xfree(hres_select->avail_hres);
 	xfree(hres_select->avail_hres_orig);
