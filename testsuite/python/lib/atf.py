@@ -364,7 +364,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
-    reason = "Ticket 25013: Known issue with slurmctld: Assertion (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)) "
+    reason = "Ticket 25013: Known issue with slurmctld: Assertion (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)). Fixed in 25.05.8+"
     component = "sbin/slurmctld"
     if (
         component in bin_path
@@ -373,8 +373,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "in close_con" in bt
         and "con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)" in bt
     ):
-        # TODO: Add version when t25013 is fixed
-        failures.append(reason)
+        if get_version(component) >= (25, 5, 8):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock(): Invalid argument. Fixed in 25.11.6+"
