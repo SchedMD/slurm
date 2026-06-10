@@ -2826,6 +2826,9 @@ static int _load_specific_gres_plugins(node_config_load_t *node_conf)
 {
 	int rc;
 
+	if (running_in_slurmctld())
+		return SLURM_SUCCESS;
+
 	if ((rc = gpu_plugin_init(node_conf)) != SLURM_SUCCESS)
 		return rc;
 
