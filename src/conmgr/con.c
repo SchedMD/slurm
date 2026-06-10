@@ -1621,9 +1621,12 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 		if ((rc = fd_get_socket_error(fd, &err)))
 			error("%s: [%s] error while getting socket error: %s",
 			      __func__, con->name, slurm_strerror(rc));
-		else if (err)
+		else if (err) {
+			if (err == EPIPE)
+				err = SLURM_COMMUNICATIONS_DELAYED_ERROR;
 			error("%s: [%s] socket error encountered while polling: %s",
 			      __func__, con->name, slurm_strerror(err));
+		}
 
 		con_set_status_code(con, (rc ? rc : err));
 	}
