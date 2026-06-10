@@ -13948,14 +13948,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if ((job_desc->deadline) && (!IS_JOB_RUNNING(job_ptr))) {
-		char time_str[256];
-		slurm_make_time_str(&job_ptr->deadline, time_str,
-				    sizeof(time_str));
 		if (job_desc->deadline < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
 		} else if (privileged) {
+			char time_str[256];
 			/* update deadline */
 			job_ptr->deadline = job_desc->deadline;
+			slurm_make_time_str(&job_ptr->deadline, time_str,
+					    sizeof(time_str));
 			sched_info("%s: setting deadline to %s for %pJ",
 				   __func__, time_str, job_ptr);
 			/*
