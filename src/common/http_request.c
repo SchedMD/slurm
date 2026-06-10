@@ -39,6 +39,7 @@
 #include "src/common/http_mime.h"
 #include "src/common/http_router.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/openapi.h"
 #include "src/common/read_config.h"
 #include "src/common/serdes.h"
@@ -155,7 +156,9 @@ static void _bind(data_parser_t *parser, http_request_method_t method,
 		xstrsubstitute(breq->path, OPENAPI_DATA_PARSER_PARAM,
 			       data_parser_get_plugin_version(parser));
 
-	http_router_bind(method, breq->path, _on_request, _breq_free, breq);
+	http_router_bind_funcname(method, breq->path, _on_request,
+				  on_request_func, _breq_free,
+				  XSTRINGIFY(_breq_free), breq);
 }
 
 extern void http_request_bind_funcname(data_parser_t **parsers,
