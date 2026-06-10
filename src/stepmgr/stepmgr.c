@@ -3734,8 +3734,8 @@ static int _step_create(job_record_t *job_ptr,
 	 * srun never saw the id) comes back as NO_VAL and must still reap its
 	 * own stale placeholder instead of stacking a second one.
 	 */
-	if (((step_specs->step_id.step_id != NO_VAL) || !async) &&
-	    !(async && step_specs->immediate)) {
+	if (!async || ((step_specs->step_id.step_id != NO_VAL) &&
+		       !step_specs->immediate)) {
 		if (list_delete_first(job_ptr->step_list,
 				      _purge_duplicate_steps,
 				      step_specs) < 0)
