@@ -409,7 +409,13 @@ extern int url_path_walk(const char *path, bool allow_templates,
 				rc = ESLURM_URL_UNSUPPORTED_FORMAT;
 				goto cleanup;
 			}
-			break;
+
+			/*
+			 * Decoded byte belongs to the current segment:
+			 * keep accumulating rather than falling through
+			 * to the buffer reset below, which would drop it.
+			 */
+			continue;
 		}
 		case '/': /* rfc3986 */
 			if (buffer && buffer[0])
