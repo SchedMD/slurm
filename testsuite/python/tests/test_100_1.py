@@ -55,6 +55,13 @@ and hopefully remove them from the xfail list.
 """
 
 # TODO: Remove xfail_tests.append() once their issue is fixed.
+if atf.get_version() < (26, 11):
+    skip_tests.append(
+        (
+            "common/test_http_router.c",
+            "Ticket 24549: Only test http_router starting at Slurm 26.11",
+        )
+    )
 if atf.get_version() < (26, 5):
     xfail_tests.append(
         (
