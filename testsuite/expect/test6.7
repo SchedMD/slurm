@@ -34,8 +34,8 @@ set file_out2    "$test_dir/output2"
 set file_prog    "$test_name.prog"
 set job_id       0
 
-set SIGUSR1 [string trim [exec kill -l SIGUSR1]]
-set SIGSTOP [string trim [exec kill -l SIGSTOP]]
+set SIGUSR1 [string trim [run_command_output -fail "$bin_kill -l SIGUSR1"]]
+set SIGSTOP [string trim [run_command_output -fail "$bin_kill -l SIGSTOP"]]
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
