@@ -3575,6 +3575,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->licenses_allocated = NULL;
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
 	job_ptr_pend->licenses_to_preempt = NULL;
+	job_ptr_pend->hres_select = NULL;
+	hres_create_select(job_ptr_pend);
 	job_ptr_pend->lic_req = xstrdup(job_ptr->lic_req);
 	job_ptr_pend->mail_user = xstrdup(job_ptr->mail_user);
 	job_ptr_pend->mcs_label = xstrdup(job_ptr->mcs_label);
