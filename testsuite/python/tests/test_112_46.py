@@ -5,6 +5,7 @@ import getpass
 import json
 import logging
 import os
+import pwd
 import random
 import time
 
@@ -186,6 +187,7 @@ def non_admin(setup):
         user=atf.properties["slurm-user"],
         fatal=True,
     )
+    _wait_for_assoc_mgr_account(local_cluster_name, "root")
     yield
     atf.cancel_all_jobs()
     atf.run_command(
@@ -3896,3 +3898,406 @@ def test_slurmrestd_topology_rejects_non_get(path):
         404,
         405,
     ), f"expected 404/405 for POST /{path}, got {r.status_code}: {r.text[:200]}"
+
+
+def _assert_job_requeue(jobid, expected_state, expected_reason, held):
+    for t in atf.timer(fatal=True):
+        if int(atf.get_job_parameter(jobid, "Restarts", quiet=True)) > 0:
+            break
+
+    atf.wait_for_job_state(
+        jobid,
+        expected_state,
+        desired_reason=expected_reason,
+        fatal=True,
+    )
+
+    if held:
+        assert (
+            atf.get_job_parameter(jobid, "Priority", quiet=True) == 0
+        ), "Held job should have priority 0"
+
+
+def _get_running_array_tasks(jobid, task_count):
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+    task_ids = list(atf.get_jobs(job_id=jobid, quiet=True))
+    assert len(task_ids) == task_count, f"Array job should have {task_count} tasks"
+    for task_id in task_ids:
+        atf.wait_for_job_state(task_id, "RUNNING", fatal=True)
+    return task_ids
+
+
+@pytest.mark.parametrize(
+    "query_params,expected_state,expected_reason",
+    [
+        pytest.param({}, "PENDING", "BeginTime", id="no_flags"),
+        pytest.param({"incomplete": "True"}, "PENDING", "BeginTime", id="incomplete"),
+        pytest.param(
+            {"hold": "True"}, "PENDING", "job_requeued_in_held_state", id="hold"
+        ),
+        pytest.param(
+            {"hold": "True", "special_exit": "True"},
+            "SPECIAL_EXIT",
+            "job_requeued_in_held_state",
+            id="special_exit",
+        ),
+    ],
+)
+def test_job_requeue(slurm, query_params, expected_state, expected_reason, non_admin):
+    """Test single job requeue endpoint"""
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    task_ids = _get_running_array_tasks(jobid, 2)
+
+    # Requeue it
+    resp = slurm.slurm_v0046_get_job_requeue(str(jobid), **query_params)
+    assert not resp.warnings, "Requeue response should have no warnings"
+    assert not resp.errors, "Requeue response should have no errors"
+    # Verify that the response has a status since it is an array job
+    assert len(resp.status) == 1, "Array job requeue should populate status"
+    assert resp.status[0].job_id == jobid, "Status job_id should match requeued job"
+    assert resp.status[0].error_code == 0, "Requeue status should have no error"
+
+    # Make sure every task of the array requeued
+    for task_id in task_ids:
+        _assert_job_requeue(
+            task_id, expected_state, expected_reason, "hold" in query_params
+        )
+
+
+def test_job_requeue_incomplete(slurm, non_admin):
+    """The Incomplete flag skips jobs that have already completed"""
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='exit 0'", fatal=True)
+    atf.wait_for_job_state(jobid, "COMPLETED", fatal=True)
+
+    # With the Incomplete flag the completed job is left untouched
+    resp = slurm.slurm_v0046_get_job_requeue(str(jobid), incomplete="True")
+    assert not resp.errors, "Requeue response should have no errors"
+    assert (
+        atf.get_job_parameter(jobid, "JobState", quiet=True) == "COMPLETED"
+    ), "Incomplete flag should not requeue a completed job"
+    assert (
+        int(atf.get_job_parameter(jobid, "Restarts", quiet=True)) == 0
+    ), "Incomplete flag should not requeue a completed job"
+
+    # Without the flag the same completed job is requeued
+    resp = slurm.slurm_v0046_get_job_requeue(str(jobid))
+    assert not resp.errors, "Requeue response should have no errors"
+    _assert_job_requeue(jobid, "PENDING", "BeginTime", False)
+
+
+@pytest.mark.parametrize(
+    "requeue_flags,expected_state,expected_reason,held",
+    [
+        pytest.param(None, "PENDING", "BeginTime", False, id="no_flags"),
+        pytest.param(
+            ["Hold"], "PENDING", "job_requeued_in_held_state", True, id="hold"
+        ),
+        pytest.param(
+            ["Hold", "SpecialExit"],
+            "SPECIAL_EXIT",
+            "job_requeued_in_held_state",
+            True,
+            id="special_exit",
+        ),
+    ],
+)
+def test_jobs_requeue(
+    slurm, requeue_flags, expected_state, expected_reason, held, non_admin
+):
+    """Test batch jobs requeue endpoint"""
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    jobids = []
+    jobids.append(
+        atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    )
+    jobids.append(
+        atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    )
+
+    # Wait for every task of both arrays to go from PENDING to RUNNING
+    task_ids = []
+    for jobid in jobids:
+        task_ids.extend(_get_running_array_tasks(jobid, 2))
+
+    # Batch requeue both jobs
+    requeue_params = {
+        "jobs": [str(jid) for jid in jobids],
+    }
+    if requeue_flags:
+        requeue_params["flags"] = requeue_flags
+    requeue_req = V0046OpenapiJobsRequeueQuery(**requeue_params)
+    resp = slurm.slurm_v0046_post_jobs_requeue(
+        v0046_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.warnings, "Requeue response should have no warnings"
+    assert not resp.errors, "Requeue response should have no errors"
+    # Verify that the response has a status since these are array jobs
+    assert len(resp.status) == 2, "Each requeued array job should have a status"
+    for i in range(len(jobids)):
+        assert len(resp.status[i]) == 1, "Array job status should have one entry"
+        assert resp.status[i][0].job_id == jobids[i], "Status job_id should match"
+        assert resp.status[i][0].error_code == 0, "Requeue status should have no error"
+
+    # Make sure every task of both arrays requeued
+    for task_id in task_ids:
+        _assert_job_requeue(task_id, expected_state, expected_reason, held)
+
+
+def test_jobs_requeue_incomplete(slurm, non_admin):
+    """The batch Incomplete flag skips only the jobs that have completed"""
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    done_id = atf.submit_job_sbatch("--requeue --wrap='exit 0'", fatal=True)
+    atf.wait_for_job_state(done_id, "COMPLETED", fatal=True)
+    running_id = atf.submit_job_sbatch("--requeue --wrap='sleep infinity'", fatal=True)
+    atf.wait_for_job_state(running_id, "RUNNING", fatal=True)
+
+    requeue_req = V0046OpenapiJobsRequeueQuery(
+        jobs=[str(done_id), str(running_id)], flags=["Incomplete"]
+    )
+    resp = slurm.slurm_v0046_post_jobs_requeue(
+        v0046_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.warnings, "Requeue response should have no warnings"
+    assert not resp.errors, "Requeue response should have no errors"
+
+    assert (
+        atf.get_job_parameter(done_id, "JobState", quiet=True) == "COMPLETED"
+    ), "Incomplete flag should not requeue a completed job"
+    assert (
+        int(atf.get_job_parameter(done_id, "Restarts", quiet=True)) == 0
+    ), "Incomplete flag should not requeue a completed job"
+    _assert_job_requeue(running_id, "PENDING", "BeginTime", False)
+
+
+def test_job_requeue_special_exit_requires_hold(slurm, non_admin):
+    """SpecialExit without Hold is rejected by both requeue endpoints"""
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity'", fatal=True)
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+
+    # GET single job endpoint rejects SpecialExit without Hold
+    try:
+        slurm.slurm_v0046_get_job_requeue_with_http_info(
+            str(jobid), special_exit="True"
+        )
+        assert False, "SpecialExit without Hold should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0046OpenapiResp"
+        )
+        assert e.status != 200, "Rejected request should not return HTTP 200"
+        assert len(response.errors) == 1, "Rejected request should report one error"
+        assert not response.warnings, "Rejected request should have no warnings"
+
+    # POST batch endpoint rejects SpecialExit without Hold
+    requeue_req = V0046OpenapiJobsRequeueQuery(jobs=[str(jobid)], flags=["SpecialExit"])
+    try:
+        slurm.slurm_v0046_post_jobs_requeue_with_http_info(
+            v0046_openapi_jobs_requeue_query=requeue_req
+        )
+        assert False, "SpecialExit without Hold should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0046OpenapiResp"
+        )
+        assert e.status != 200, "Rejected request should not return HTTP 200"
+        assert len(response.errors) == 1, "Rejected request should report one error"
+        assert not response.warnings, "Rejected request should have no warnings"
+
+    # The rejected requests did not requeue or hold the job
+    assert (
+        atf.get_job_parameter(jobid, "JobState", quiet=True) == "RUNNING"
+    ), "Rejected requeue should leave the job running"
+
+
+def test_job_requeue_invalid_job(slurm):
+    """Requeuing a nonexistent job reports an error"""
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    # A job id above MaxJobId is never assigned, so it cannot exist
+    bad_jobid = int(atf.get_config_parameter("MaxJobId")) + 1
+    try:
+        slurm.slurm_v0046_get_job_requeue_with_http_info(str(bad_jobid))
+        assert False, "Requeuing a nonexistent job should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0046OpenapiResp"
+        )
+        assert e.status != 200, "Nonexistent job requeue should not return HTTP 200"
+        assert response.errors, "Nonexistent job requeue should report an error"
+
+    requeue_req = V0046OpenapiJobsRequeueQuery(jobs=[str(bad_jobid)])
+    try:
+        slurm.slurm_v0046_post_jobs_requeue_with_http_info(
+            v0046_openapi_jobs_requeue_query=requeue_req
+        )
+        assert False, "Requeuing a nonexistent job should raise an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0046OpenapiResp"
+        )
+        assert e.status != 200, "Nonexistent job requeue should not return HTTP 200"
+        assert response.errors, "Nonexistent job requeue should report an error"
+
+
+@pytest.mark.skipif(
+    "daemon" not in {p.pw_name for p in pwd.getpwall()},
+    reason="Issue 50672: nobody is reserved, so a local daemon user is needed",
+)
+def test_job_requeue_permission_denied(non_admin):
+    """A denied requeue reports a per-job error in the status array"""
+    import openapi_client
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    # Slurm reserves "nobody" and rejects its tokens outright
+    non_owner = "daemon"
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-2", fatal=True)
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+
+    # Mint a token for an unprivileged user that does not own the job
+    token = (
+        atf.run_command_output(
+            f"scontrol token username={non_owner}",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+            quiet=True,
+        )
+        .strip()
+        .split("=", 1)[1]
+        .strip()
+    )
+    config = openapi_client.Configuration()
+    config.host = atf.properties["slurmrestd_url"]
+    config.access_token = token
+    other = openapi_client.SlurmApi(openapi_client.ApiClient(config))
+
+    # A user that does not own the job cannot requeue it, so the denial comes
+    # back as a per-job error in the status array, not a top-level error
+    resp = other.slurm_v0046_get_job_requeue(str(jobid))
+    assert not resp.errors, "Per-job denial should not report a top-level error"
+    assert len(resp.status) == 1, "Denied array requeue should report one status"
+    assert (
+        resp.status[0].error_code == 2002
+    ), "Denied requeue should report ESLURM_ACCESS_DENIED"
+
+    requeue_req = V0046OpenapiJobsRequeueQuery(jobs=[str(jobid)])
+    resp = other.slurm_v0046_post_jobs_requeue(
+        v0046_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.errors, "Per-job denial should not report a top-level error"
+    assert len(resp.status) == 1, "Batch requeue should report one status per job"
+    assert len(resp.status[0]) == 1, "Denied array requeue should report one status"
+    assert (
+        resp.status[0][0].error_code == 2002
+    ), "Denied requeue should report ESLURM_ACCESS_DENIED"
+
+    # The job was left running, not requeued
+    assert (
+        int(atf.get_job_parameter(jobid, "Restarts", quiet=True)) == 0
+    ), "Denied requeue should not requeue the job"
+
+
+def test_job_requeue_single_task(slurm, non_admin):
+    """Both requeue endpoints requeue a single array task by its #_# id"""
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity' -a1-3", fatal=True)
+    _get_running_array_tasks(jobid, 3)
+
+    # Resolve the raw job ids of every task (stable across the requeue)
+    task_1, task_2, task_3 = [
+        next(iter(atf.get_jobs(job_id=f"{jobid}_{i}", quiet=True))) for i in (1, 2, 3)
+    ]
+
+    # Hold so each requeued task stays PENDING for a deterministic check
+    resp = slurm.slurm_v0046_get_job_requeue(f"{jobid}_1", hold="True")
+    assert not resp.errors, "Requeue response should have no errors"
+    _assert_job_requeue(task_1, "PENDING", "job_requeued_in_held_state", True)
+    for task_id in (task_2, task_3):
+        assert (
+            atf.get_job_parameter(task_id, "JobState", quiet=True) == "RUNNING"
+        ), "The other array tasks should keep running"
+
+    requeue_req = V0046OpenapiJobsRequeueQuery(jobs=[f"{jobid}_2"], flags=["Hold"])
+    resp = slurm.slurm_v0046_post_jobs_requeue(
+        v0046_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.errors, "Requeue response should have no errors"
+    _assert_job_requeue(task_2, "PENDING", "job_requeued_in_held_state", True)
+    assert (
+        atf.get_job_parameter(task_3, "JobState", quiet=True) == "RUNNING"
+    ), "The other array task should keep running"
+
+
+def test_job_requeue_non_array(slurm, non_admin):
+    """A non-array job requeues with an empty status list"""
+
+    jobid = atf.submit_job_sbatch("--requeue --wrap='sleep infinity'", fatal=True)
+    atf.wait_for_job_state(jobid, "RUNNING", fatal=True)
+
+    resp = slurm.slurm_v0046_get_job_requeue(str(jobid))
+    assert not resp.errors, "Requeue response should have no errors"
+    # A non-array job does not populate the status list
+    assert len(resp.status) == 0, "Non-array requeue should have an empty status"
+
+    _assert_job_requeue(jobid, "PENDING", "BeginTime", False)
+
+
+def test_job_requeue_not_requeueable(slurm, non_admin):
+    """Neither requeue endpoint requeues a job submitted with --no-requeue"""
+    from openapi_client.models.v0046_openapi_jobs_requeue_query import (
+        V0046OpenapiJobsRequeueQuery,
+    )
+
+    jobid = atf.submit_job_sbatch(
+        "--no-requeue --wrap='sleep infinity' -a1-2", fatal=True
+    )
+    task_ids = _get_running_array_tasks(jobid, 2)
+
+    resp = slurm.slurm_v0046_get_job_requeue(str(jobid))
+    assert not resp.errors, "Per-job refusal should not report a top-level error"
+    assert len(resp.status) == 1, "Refused array requeue should report one status"
+    assert (
+        resp.status[0].error_code == 2037
+    ), "Refused requeue should report ESLURM_DISABLED"
+
+    requeue_req = V0046OpenapiJobsRequeueQuery(jobs=[str(jobid)])
+    resp = slurm.slurm_v0046_post_jobs_requeue(
+        v0046_openapi_jobs_requeue_query=requeue_req,
+    )
+    assert not resp.errors, "Per-job refusal should not report a top-level error"
+    assert len(resp.status) == 1, "Batch requeue should report one status per job"
+    assert len(resp.status[0]) == 1, "Refused array requeue should report one status"
+    assert (
+        resp.status[0][0].error_code == 2037
+    ), "Refused requeue should report ESLURM_DISABLED"
+
+    for task_id in task_ids:
+        assert (
+            int(atf.get_job_parameter(task_id, "Restarts", quiet=True)) == 0
+        ), "A --no-requeue job should never be requeued"
+        assert (
+            atf.get_job_parameter(task_id, "JobState", quiet=True) == "RUNNING"
+        ), "A --no-requeue job should keep running"
