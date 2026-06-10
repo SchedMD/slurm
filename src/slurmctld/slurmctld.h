@@ -749,6 +749,15 @@ extern job_record_t *find_sluid(sluid_t sluid);
 extern job_record_t *find_job(const slurm_step_id_t *step_id);
 
 /*
+ * Get a step_id from the het leader's counter.
+ *
+ * IN het_job_id - leader's job_id.
+ * OUT step_id_out - allocated step_id.
+ * RET SLURM_SUCCESS or ESLURM_INVALID_JOB_ID.
+ */
+extern int get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out);
+
+/*
  * find_part_record - find a record for partition with specified name
  * IN name - name of the desired partition
  * RET pointer to partition or NULL if not found

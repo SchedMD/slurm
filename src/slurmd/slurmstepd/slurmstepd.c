@@ -54,6 +54,7 @@
 #include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
 #include "src/common/probes.h"
+#include "src/common/read_config.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
@@ -442,11 +443,141 @@ static void *_step_time_limit_thread(void *data)
 	return NULL;
 }
 
+static void _resolve_add_addr(char *node_name)
+{
+	slurm_node_alias_addrs_t *alias_addrs = NULL;
+
+	if (!slurm_conf_check_addr(node_name, NULL))
+		return;
+
+	/* Not in conf; ask slurmctld for the alias. */
+	if (!slurm_get_node_alias_addrs(node_name, &alias_addrs)) {
+		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
+					      alias_addrs->node_addrs);
+	}
+	slurm_free_node_alias_addrs(alias_addrs);
+}
+
+/*
+ * _remote_get_het_step_id - RPC to the het leader's REQUEST_HET_STEP_ID.
+ *
+ * First call goes to slurmctld which replies with RESPONSE_SLURM_REROUTE_MSG
+ * carrying the leader's batch_host. The nodename is cached in a function-static
+ * slot (serialized by the caller's stepmgr_mutex) and reused on subsequent
+ * calls that go directly to the leader stepd via slurmd.
+ *
+ * NOTE: stepmgr_mutex is held by the caller across the RPCs below, which
+ * stalls other stepmgr RPCs on this stepd by up to MessageTimeout per hop.
+ */
+static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
+{
+	int rc = SLURM_SUCCESS;
+	het_step_id_msg_t req = { .step_id = SLURM_STEP_ID_INITIALIZER };
+	slurm_msg_t req_msg, resp_msg;
+	static char *stepmgr_nodename = NULL;
+
+	req.step_id.job_id = het_job_id;
+	req.step_id.step_id = NO_VAL;
+	req.step_id.step_het_comp = NO_VAL;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_HET_STEP_ID;
+	req_msg.data = &req;
+
+	slurm_msg_t_init(&resp_msg);
+
+	if (!stepmgr_nodename) {
+		if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) <
+		    0) {
+			rc = SLURM_ERROR;
+			goto done;
+		}
+		if (resp_msg.msg_type == RESPONSE_SLURM_REROUTE_MSG) {
+			reroute_msg_t *rr_msg = resp_msg.data;
+			stepmgr_nodename = rr_msg->stepmgr;
+			rr_msg->stepmgr = NULL;
+
+			if (!stepmgr_nodename) {
+				rc = SLURM_ERROR;
+				goto done;
+			}
+			_resolve_add_addr(stepmgr_nodename);
+		} else if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
+			rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+			if (rc == SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+			goto done;
+		} else {
+			error("%s: unexpected ctld response %s", __func__,
+			      rpc_num2string(resp_msg.msg_type));
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		slurm_free_msg_members(&resp_msg);
+	}
+
+	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+
+	if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
+				req_msg.flags)) {
+		error("%s: cannot get leader stepmgr %s", __func__,
+		      stepmgr_nodename);
+		xfree(stepmgr_nodename);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0)) {
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_HET_STEP_ID:
+	{
+		het_step_id_msg_t *resp = resp_msg.data;
+		*step_id_out = resp->step_id.step_id;
+		break;
+	}
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		if (rc == SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+		break;
+	default:
+		error("%s: unexpected response %s", __func__,
+		      rpc_num2string(resp_msg.msg_type));
+		rc = SLURM_ERROR;
+		break;
+	}
+
+done:
+	slurm_free_msg_members(&resp_msg);
+	return rc;
+}
+
+static int _get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
+{
+	xassert(job_step_ptr);
+
+	/* stepmgr_mutex is already held by the caller (_set_step_id). */
+
+	if (job_step_ptr->job_id == het_job_id) {
+		/* I am the leader: allocate from my own counter. */
+		*step_id_out = job_step_ptr->next_step_id++;
+		return SLURM_SUCCESS;
+	}
+
+	return _remote_get_het_step_id(het_job_id, step_id_out);
+}
+
 stepmgr_ops_t stepd_stepmgr_ops = {
 	.find_job = find_job,
 	.find_job_record = find_job_record,
 	.last_job_update = &last_job_update,
 	.agent_queue_request = _agent_queue_request,
+	.get_het_step_id = _get_het_step_id,
 };
 
 static int _foreach_job_node_array(void *x, void *arg)

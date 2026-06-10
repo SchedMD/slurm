@@ -656,6 +656,7 @@ int main(int argc, char **argv)
 	stepmgr_ops.find_job = find_job;
 	stepmgr_ops.find_job_array_rec = find_job_array_rec;
 	stepmgr_ops.find_job_record = find_job_record;
+	stepmgr_ops.get_het_step_id = get_het_step_id;
 	stepmgr_ops.job_config_fini = job_config_fini;
 	stepmgr_ops.last_job_update = &last_job_update;
 	stepmgr_init(&stepmgr_ops);

@@ -2598,6 +2598,19 @@ extern job_record_t *find_sluid(sluid_t sluid)
 	return NULL;
 }
 
+extern int get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
+{
+	job_record_t *het_leader;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	if (!(het_leader = find_job_record(het_job_id)))
+		return ESLURM_INVALID_JOB_ID;
+
+	*step_id_out = het_leader->next_step_id++;
+	return SLURM_SUCCESS;
+}
+
 extern job_record_t *find_job(const slurm_step_id_t *step_id)
 {
 	if (step_id->sluid) {
