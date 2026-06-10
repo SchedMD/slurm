@@ -269,7 +269,6 @@ int main (int argc, char **argv)
 	exit(exit_code);
 }
 
-
 static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 {
 	int rc = SLURM_SUCCESS;
