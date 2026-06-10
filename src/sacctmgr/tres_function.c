@@ -130,7 +130,7 @@ int sacctmgr_list_tres(int argc, char **argv)
 	int field_count, i;
 	print_field_t *field;
 
-    	for (i=0; i<argc; i++) {
+	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
