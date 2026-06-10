@@ -231,8 +231,8 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	return 0;
 }
 
-static void _set_step_id(step_record_t *step_ptr,
-			 job_step_create_request_msg_t *step_specs)
+static int _set_step_id(step_record_t *step_ptr,
+			job_step_create_request_msg_t *step_specs)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
@@ -267,6 +267,8 @@ static void _set_step_id(step_record_t *step_ptr,
 	} else {
 		step_ptr->step_id.step_id = job_ptr->next_step_id++;
 	}
+
+	return SLURM_SUCCESS;
 }
 
 static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
@@ -331,7 +333,10 @@ static bool _build_pending_step(job_record_t *job_ptr,
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 	if (step_specs->flags & SSF_ASYNC) {
 		step_ptr->step_req = step_specs;
-		_set_step_id(step_ptr, step_specs);
+		if (_set_step_id(step_ptr, step_specs)) {
+			delete_step_record(job_ptr, step_ptr);
+			return false;
+		}
 		step_specs->step_id = step_ptr->step_id;
 		step_ptr->name = xstrdup(step_specs->name);
 
@@ -348,7 +353,10 @@ static bool _build_pending_step(job_record_t *job_ptr,
 		if (protocol_version > SLURM_26_05_PROTOCOL_VERSION) {
 			/* A re-queue re-sends its already-assigned id. */
 			if (step_specs->step_id.step_id == NO_VAL) {
-				_set_step_id(step_ptr, step_specs);
+				if (_set_step_id(step_ptr, step_specs)) {
+					delete_step_record(job_ptr, step_ptr);
+					return false;
+				}
 				step_specs->step_id = step_ptr->step_id;
 			} else {
 				step_ptr->step_id = step_specs->step_id;
@@ -3949,7 +3957,10 @@ static int _step_create(job_record_t *job_ptr,
 					MAX(job_ptr->next_step_id,
 					    step_ptr->step_id.step_id + 1);
 		} else {
-			_set_step_id(step_ptr, step_specs);
+			if ((ret_code = _set_step_id(step_ptr, step_specs))) {
+				delete_step_record(job_ptr, step_ptr);
+				return ret_code;
+			}
 			/*
 			 * Echo the assigned id back so that if this create
 			 * then fails on busy reserved ports the pending
@@ -4114,8 +4125,11 @@ static int _step_create(job_record_t *job_ptr,
 		}
 	}
 
-	if (async && !step_specs->immediate)
-		_set_step_id(step_ptr, step_specs);
+	if (async && !step_specs->immediate &&
+	    (ret_code = _set_step_id(step_ptr, step_specs))) {
+		delete_step_record(job_ptr, step_ptr);
+		return ret_code;
+	}
 
 	if ((ret_code = _switch_setup(step_ptr))) {
 		delete_step_record(job_ptr, step_ptr);
@@ -5382,7 +5396,10 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	/* Needed for not considering it in _mark_busy_nodes */
 	step_ptr->flags |= SSF_EXT_LAUNCHER;
 
-	_set_step_id(step_ptr, step_specs);
+	if ((rc = _set_step_id(step_ptr, step_specs))) {
+		delete_step_record(job_ptr, step_ptr);
+		return rc;
+	}
 
 	/* The step needs to run on all the cores. */
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
