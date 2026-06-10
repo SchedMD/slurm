@@ -256,12 +256,12 @@ static int _set_step_id(step_record_t *step_ptr,
 		}
 	} else if (job_ptr->het_job_id &&
 		   (job_ptr->het_job_id != job_ptr->job_id)) {
-		job_record_t *het_job;
-		het_job = stepmgr_ops->find_job_record(job_ptr->het_job_id);
-		if (het_job)
-			step_ptr->step_id.step_id = het_job->next_step_id++;
-		else
-			step_ptr->step_id.step_id = job_ptr->next_step_id++;
+		uint32_t *id_out = &step_ptr->step_id.step_id;
+		int rc;
+
+		rc = stepmgr_ops->get_het_step_id(job_ptr->het_job_id, id_out);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 		job_ptr->next_step_id =
 			MAX(job_ptr->next_step_id, step_ptr->step_id.step_id);
 	} else {
@@ -321,6 +321,13 @@ static bool _build_pending_step(job_record_t *job_ptr,
 
 	*stepmgr_ops->last_job_update = time(NULL);
 
+	if (step_specs->flags & SSF_ASYNC) {
+		if (_set_step_id(step_ptr, step_specs)) {
+			delete_step_record(job_ptr, step_ptr);
+			return false;
+		}
+	}
+
 	step_ptr->cpu_count = step_specs->num_tasks;
 	step_ptr->cwd = xstrdup(step_specs->cwd);
 	step_ptr->flags = step_specs->flags;
@@ -333,10 +340,6 @@ static bool _build_pending_step(job_record_t *job_ptr,
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 	if (step_specs->flags & SSF_ASYNC) {
 		step_ptr->step_req = step_specs;
-		if (_set_step_id(step_ptr, step_specs)) {
-			delete_step_record(job_ptr, step_ptr);
-			return false;
-		}
 		step_specs->step_id = step_ptr->step_id;
 		step_ptr->name = xstrdup(step_specs->name);
 
