@@ -3071,18 +3071,6 @@ static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 			xfree(autodetect_string);
 		}
 
-		/* AutoDetect cannot run on the slurmctld node */
-		if (running_in_slurmctld() &&
-		    autodetect_flags &&
-		    !((autodetect_flags & GRES_AUTODETECT_GPU_FLAGS) &
-		      GRES_AUTODETECT_GPU_OFF)) {
-			rc = ESLURM_UNSUPPORTED_GRES;
-			error("Cannot use AutoDetect on cloud/dynamic node \"%s\"",
-			      gres_node_name);
-			s_p_hashtbl_destroy(tbl);
-			goto fini;
-		}
-
 		if (s_p_get_array((void ***) &gres_array,
 				  &count, "Name", tbl)) {
 			for (i = 0; i < count; i++) {
