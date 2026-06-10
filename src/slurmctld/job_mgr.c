@@ -13965,7 +13965,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			sched_info("%s: Attempt to extend end time for %pJ",
+			sched_info("%s: Attempt to extend deadline for %pJ",
 				   __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -15202,7 +15202,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_desc->site_factor = user_site_factor;
 	}
 	if (job_desc->site_factor != NO_VAL) {
-		sched_info("%s: setting AdinPrioFactor to %u for %pJ",
+		sched_info("%s: setting AdminPrioFactor to %u for %pJ",
 			   __func__, job_desc->site_factor, job_ptr);
 		job_ptr->site_factor = job_desc->site_factor;
 	}
