@@ -73,15 +73,33 @@ extern void http_router_fini(void);
 
 /*
  * Bind to path in HTTP router
+ * NOTE: Use http_router_bind() macro when not redirected
+ * IN method - HTTP method to bind at path
+ * IN path - string HTTP URL path to bind
+ * IN on_request - callbacks for on_request() event
+ * IN on_request_func - function name of on_request for logging
+ * IN on_fini - callbacks to cleanup path_arg from http_router_fini();
+ * IN on_fini_func - function name of on_fini for logging
+ * IN path_arg - arbitrary pointer to pass to on_request()
+ */
+extern void http_router_bind_funcname(http_request_method_t method,
+				      const char *path,
+				      http_router_on_request_event_t on_request,
+				      const char *on_request_func,
+				      http_router_on_fini on_fini,
+				      const char *on_fini_func, void *path_arg);
+/*
+ * Bind to path in HTTP router
  * IN method - HTTP method to bind at path
  * IN path - string HTTP URL path to bind
  * IN on_request - callbacks for on_request() event
  * IN on_fini - callbacks to cleanup path_arg from http_router_fini();
  * IN path_arg - arbitrary pointer to pass to on_request()
  */
-extern void http_router_bind(http_request_method_t method, const char *path,
-			     http_router_on_request_event_t on_request,
-			     http_router_on_fini on_fini, void *path_arg);
+#define http_router_bind(method, path, on_request, on_fini, path_arg) \
+	http_router_bind_funcname((method), (path), (on_request), \
+				  XSTRINGIFY(on_request), (on_fini), \
+					     XSTRINGIFY(on_fini), path_arg)
 
 /* Callback to have HTTP router match method and path to a bound callback */
 extern int http_router_on_request(http_con_t *hcon, const char *name,

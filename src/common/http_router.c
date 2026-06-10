@@ -130,9 +130,12 @@ static path_t *_find_path(http_request_method_t method, const char *path)
 	return rpath;
 }
 
-extern void http_router_bind(http_request_method_t method, const char *path,
-			     http_router_on_request_event_t on_request,
-			     http_router_on_fini on_fini, void *path_arg)
+extern void http_router_bind_funcname(http_request_method_t method,
+				      const char *path,
+				      http_router_on_request_event_t on_request,
+				      const char *on_request_func,
+				      http_router_on_fini on_fini,
+				      const char *on_fini_func, void *path_arg)
 {
 	path_t *rpath = NULL;
 
