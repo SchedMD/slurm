@@ -69,19 +69,6 @@ proc check_step { num } {
 	subtest {$num == $steps} "Check number of steps" "$steps != $num"
 }
 
-# Count the number of jobs and steps with a specific job ID and state
-proc check_sacct_states {states} {
-	global job_id sacct
-
-	# This test will requeue jobs making those jobs be eligible in the
-	# future from sacct's perspective.  Since sacct only shows eligible
-	# jobs we have to specify end in the future.
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
-	# NOTE: Skip "extern" job container optionally spawned by "PrologFlags=contain"
-	set state_num [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|$states" $output]
-
-	return $state_num
-}
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "Not using accounting_storage/slurmdbd"
@@ -119,10 +106,13 @@ wait_for_job -fail $job_id "PENDING"
 set fail_count 0
 set canc_count 0
 set pend_count 0
-wait_for {$fail_count && $canc_count && $pend_count} {
-	set fail_count [check_sacct_states "NODE_FAIL"]
-	set canc_count [check_sacct_states "CANCELLED"]
-	set pend_count [check_sacct_states "PENDING"]
+wait_for {$fail_count == 1 && $canc_count == 1 && $pend_count == 1} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set pend_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|PENDING" $output]
 }
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
 subtest {$canc_count == 1} "Test CANCELLED count" "$canc_count != 1"
@@ -136,10 +126,13 @@ log_info "Test 3"
 set fail_count 0
 set canc_count 0
 set run_count 0
-wait_for {$fail_count && $canc_count && $run_count} {
-	set fail_count [check_sacct_states "NODE_FAIL"]
-	set canc_count [check_sacct_states "CANCELLED"]
-	set run_count [check_sacct_states "RUNNING"]
+wait_for {$fail_count == 1 && $canc_count == 1 && $run_count == 2} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set run_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|RUNNING" $output]
 }
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
 subtest {$canc_count == 1} "Test CANCELLED count" "$canc_count != 1"
@@ -157,11 +150,14 @@ set fail_count 0
 set canc_count 0
 set pend_count 0
 set req_count 0
-wait_for {$fail_count && $canc_count && $pend_count && $req_count} {
-	set fail_count [check_sacct_states "NODE_FAIL"]
-	set canc_count [check_sacct_states "CANCELLED"]
-	set pend_count [check_sacct_states "PENDING"]
-	set req_count [check_sacct_states "REQUEUE"]
+wait_for {$fail_count == 1 && $canc_count == 2 && $pend_count == 1 && $req_count == 1} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set pend_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|PENDING" $output]
+	set req_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|REQUEUE" $output]
 }
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
 subtest {$canc_count == 2} "The first and second batch steps should both show CANCELLED" "$canc_count != 2"
@@ -180,11 +176,14 @@ set fail_count 0
 set canc_count 0
 set req_count 0
 set run_count 0
-wait_for {$fail_count && $canc_count && $req_count && $run_count} {
-	set fail_count [check_sacct_states "NODE_FAIL"]
-	set canc_count [check_sacct_states "CANCELLED"]
-	set req_count [check_sacct_states "REQUEUE"]
-	set run_count [check_sacct_states "RUNNING"]
+wait_for {$fail_count == 1 && $canc_count == 2 && $req_count == 1 && $run_count == 2} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set req_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|REQUEUE" $output]
+	set run_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|RUNNING" $output]
 }
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
 subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
@@ -200,11 +199,14 @@ set fail_count 0
 set canc_count 0
 set comp_count 0
 set req_count 0
-wait_for {$fail_count && $canc_count && $comp_count && $req_count} {
-	set fail_count [check_sacct_states "NODE_FAIL"]
-	set canc_count [check_sacct_states "CANCELLED"]
-	set comp_count [check_sacct_states "COMPLETED"]
-	set req_count [check_sacct_states "REQUEUE"]
+wait_for {$fail_count == 1 && $canc_count == 2 && $comp_count == 2 && $req_count == 1} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set comp_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|COMPLETED" $output]
+	set req_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|REQUEUE" $output]
 }
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
 subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
