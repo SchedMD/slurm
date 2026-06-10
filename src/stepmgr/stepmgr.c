@@ -3715,6 +3715,7 @@ static int _step_create(job_record_t *job_ptr,
 	uint32_t max_tasks;
 	uint32_t over_time_limit;
 	bool resv_ports_present = false;
+	bool async = step_specs->flags & SSF_ASYNC;
 
 	*new_step_record = NULL;
 
@@ -3733,9 +3734,8 @@ static int _step_create(job_record_t *job_ptr,
 	 * srun never saw the id) comes back as NO_VAL and must still reap its
 	 * own stale placeholder instead of stacking a second one.
 	 */
-	if (((step_specs->step_id.step_id != NO_VAL) ||
-	     !(step_specs->flags & SSF_ASYNC)) &&
-	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate)) {
+	if (((step_specs->step_id.step_id != NO_VAL) || !async) &&
+	    !(async && step_specs->immediate)) {
 		if (list_delete_first(job_ptr->step_list,
 				      _purge_duplicate_steps,
 				      step_specs) < 0)
@@ -3929,10 +3929,10 @@ static int _step_create(job_record_t *job_ptr,
 	step_ptr->start_time = time(NULL);
 	step_ptr->state      = JOB_RUNNING;
 
-	if ((step_specs->flags & SSF_ASYNC) && step_specs->immediate) {
+	if (async && step_specs->immediate) {
 		/* Async pending step already has a step_id. */
 		step_ptr->step_id = step_specs->step_id;
-	} else if (!(step_specs->flags & SSF_ASYNC)) {
+	} else if (!async) {
 		if (step_specs->step_id.step_id != NO_VAL) {
 			/* Sync pending step already has a step_id. */
 			step_ptr->step_id = step_specs->step_id;
@@ -4114,7 +4114,7 @@ static int _step_create(job_record_t *job_ptr,
 		}
 	}
 
-	if ((step_specs->flags & SSF_ASYNC) && !step_specs->immediate)
+	if (async && !step_specs->immediate)
 		_set_step_id(step_ptr, step_specs);
 
 	if ((ret_code = _switch_setup(step_ptr))) {
