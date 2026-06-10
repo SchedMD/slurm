@@ -136,8 +136,9 @@ static void _breq_free(http_router_on_request_event_t on_request,
 
 static void _bind(data_parser_t *parser, http_request_method_t method,
 		  const char *path, http_request_on_request_t on_request,
-		  http_request_on_error_t on_error,
-		  data_parser_type_t reply_type, void *arg)
+		  const char *on_request_func, http_request_on_error_t on_error,
+		  const char *on_error_func, data_parser_type_t reply_type,
+		  void *arg)
 {
 	bound_request_t *breq = xmalloc(sizeof(*breq));
 	*breq = (bound_request_t) {
@@ -157,15 +158,18 @@ static void _bind(data_parser_t *parser, http_request_method_t method,
 	http_router_bind(method, breq->path, _on_request, _breq_free, breq);
 }
 
-extern void http_request_bind(data_parser_t **parsers,
-			      http_request_method_t method, const char *path,
-			      http_request_on_request_t on_request,
-			      http_request_on_error_t on_error,
-			      data_parser_type_t reply_type, void *arg)
+extern void http_request_bind_funcname(data_parser_t **parsers,
+				       http_request_method_t method,
+				       const char *path,
+				       http_request_on_request_t on_request,
+				       const char *on_request_func,
+				       http_request_on_error_t on_error,
+				       const char *on_error_func,
+				       data_parser_type_t reply_type, void *arg)
 {
 	if (reply_type == DATA_PARSER_TYPE_INVALID) {
-		_bind(NULL, method, path, on_request, on_error, reply_type,
-		      arg);
+		_bind(NULL, method, path, on_request, on_request_func, on_error,
+		      on_error_func, reply_type, arg);
 		return;
 	}
 
@@ -174,7 +178,8 @@ extern void http_request_bind(data_parser_t **parsers,
 
 	for (int i = 0; parsers[i]; i++)
 		if (data_parser_g_resolve_type_string(parsers[i], reply_type))
-			_bind(parsers[i], method, path, on_request, on_error,
+			_bind(parsers[i], method, path, on_request,
+			      on_request_func, on_error, on_error_func,
 			      reply_type, arg);
 }
 

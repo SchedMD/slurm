@@ -38,6 +38,7 @@
 
 #include "src/common/http.h"
 #include "src/common/http_con.h"
+#include "src/common/macros.h"
 
 #include "src/interfaces/data_parser.h"
 
@@ -82,6 +83,34 @@ typedef int (*http_request_on_error_t)(http_request_event_t *event,
  * DATA_PARSER_TYPE_INVALID, the path is registered once per parser version
  * that supports the given type (substituting OPENAPI_DATA_PARSER_PARAM in
  * path with the parser version string).
+ * NOTE: Use http_request_bind() macro instead of calling directly.
+ * IN parsers - NULL-terminated array of data parsers
+ * IN method - HTTP method to bind
+ * IN path - URL path to bind (may contain OPENAPI_DATA_PARSER_PARAM)
+ * IN on_request - callback for authenticated requests
+ * IN on_request_func - string of function name
+ * IN on_error - callback for request processing errors
+ * IN on_error_func - string of function name
+ * IN reply_type - data parser type for serializing replies, or
+ *	DATA_PARSER_TYPE_INVALID for untyped replies
+ * IN arg - arbitrary pointer passed through to on_request callback
+ */
+extern void http_request_bind_funcname(data_parser_t **parsers,
+				       http_request_method_t method,
+				       const char *path,
+				       http_request_on_request_t on_request,
+				       const char *on_request_func,
+				       http_request_on_error_t on_error,
+				       const char *on_error_func,
+				       data_parser_type_t reply_type,
+				       void *arg);
+
+/*
+ * Bind an HTTP path to request and error callbacks. Handles authentication
+ * and MIME negotiation before invoking on_request. When reply_type is not
+ * DATA_PARSER_TYPE_INVALID, the path is registered once per parser version
+ * that supports the given type (substituting OPENAPI_DATA_PARSER_PARAM in
+ * path with the parser version string).
  * IN parsers - NULL-terminated array of data parsers
  * IN method - HTTP method to bind
  * IN path - URL path to bind (may contain OPENAPI_DATA_PARSER_PARAM)
@@ -91,11 +120,12 @@ typedef int (*http_request_on_error_t)(http_request_event_t *event,
  *	DATA_PARSER_TYPE_INVALID for untyped replies
  * IN arg - arbitrary pointer passed through to on_request callback
  */
-extern void http_request_bind(data_parser_t **parsers,
-			      http_request_method_t method, const char *path,
-			      http_request_on_request_t on_request,
-			      http_request_on_error_t on_error,
-			      data_parser_type_t reply_type, void *arg);
+#define http_request_bind(parsers, method, path, on_request, on_error, \
+			  reply_type, arg) \
+	http_request_bind_funcname((parsers), (method), (path), (on_request), \
+				   XSTRINGIFY(on_request), (on_error), \
+					      XSTRINGIFY(on_error), \
+							 (reply_type), (arg))
 
 /*
  * Send an HTTP response for a bound request. When a parser is associated with
