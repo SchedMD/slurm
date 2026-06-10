@@ -4102,13 +4102,15 @@ static int _step_create(job_record_t *job_ptr,
 	if ((step_specs->resv_port_cnt != NO_VAL16) &&
 	    (step_specs->resv_port_cnt != 0)) {
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-		i = resv_port_step_alloc(step_ptr);
-		if (i != SLURM_SUCCESS) {
-			if (i == ESLURM_PORTS_BUSY)
-				i = _queue_pending_step(job_ptr, step_specs,
-							protocol_version, i);
+		ret_code = resv_port_step_alloc(step_ptr);
+		if (ret_code != SLURM_SUCCESS) {
+			if (ret_code == ESLURM_PORTS_BUSY)
+				ret_code =
+					_queue_pending_step(job_ptr, step_specs,
+							    protocol_version,
+							    ret_code);
 			delete_step_record(job_ptr, step_ptr);
-			return i;
+			return ret_code;
 		}
 	}
 
