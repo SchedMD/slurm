@@ -40,6 +40,7 @@
 #include <unistd.h>
 
 #include "src/common/fd.h"
+#include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/sack_api.h"
 #include "src/common/slurm_protocol_api.h"
@@ -64,7 +65,8 @@ static struct sockaddr_un sack_addrs[] =
 static int _sack_try_connection(struct sockaddr_un *addr)
 {
 	int fd;
-	size_t len = strlen(addr->sun_path) + 1 + sizeof(addr->sun_family);
+	socklen_t len = sockaddr_fixlen((struct sockaddr *) addr,
+					(socklen_t) sizeof(*addr));
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		debug3("%s: socket() failed: %m", __func__);

@@ -97,6 +97,7 @@ static void _sock_bind_wild(int sockfd)
 {
 	int rc, retry;
 	slurm_addr_t sin;
+	socklen_t blen;
 	static bool seeded = false;
 
 	if (!seeded) {
@@ -107,7 +108,9 @@ static void _sock_bind_wild(int sockfd)
 	slurm_setup_addr(&sin, RANDOM_USER_PORT);
 
 	for (retry=0; retry < PORT_RETRIES ; retry++) {
-		rc = bind(sockfd, (struct sockaddr *) &sin, sizeof(sin));
+		blen = sockaddr_fixlen((struct sockaddr *) &sin,
+				       (socklen_t) sizeof(sin));
+		rc = bind(sockfd, (struct sockaddr *) &sin, blen);
 		if (rc >= 0)
 			break;
 		slurm_set_port(&sin, RANDOM_USER_PORT);
@@ -543,26 +546,30 @@ ready:
 
 extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
 {
-	socklen_t bind_len = (addr->ss_family == AF_INET6) ?
-				     sizeof(struct sockaddr_in6) :
-				     sizeof(struct sockaddr_in);
 	int rc;
 	int fd;
 	int log_lvl = LOG_LEVEL_ERROR;
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
-	/*
-	 * The BSDs requires the sa_len field to be set correctly in
-	 * struct sockaddr_in / sockaddr_in6 before calling bind().
-	 * If unset, bind() may fail with EINVAL.
-	 */
-	if (addr->ss_family == AF_INET)
-		((struct sockaddr_in *) addr)->sin_len = bind_len;
-	else if (addr->ss_family == AF_INET6)
-		((struct sockaddr_in6 *) addr)->sin6_len = bind_len;
-#endif
+	socklen_t bind_len = sockaddr_fixlen((struct sockaddr *) addr,
+					     (socklen_t) sizeof(*addr));
 
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+/*
+ * Fallback: if configure didn't detect any sockaddr length fields,
+ * preserve the historical BSD workaround.
+ */
+#if !defined(HAVE_STRUCT_SOCKADDR_IN_SIN_LEN) && \
+	!defined(HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN) && \
+	!defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
+	if (addr->ss_family == AF_INET)
+		((struct sockaddr_in *) addr)->sin_len =
+			(uint8_t) sizeof(struct sockaddr_in);
+	else if (addr->ss_family == AF_INET6)
+		((struct sockaddr_in6 *) addr)->sin6_len =
+			(uint8_t) sizeof(struct sockaddr_in6);
+#endif
+#endif
 	if (quiet)
 		log_lvl = LOG_LEVEL_DEBUG;
 
@@ -663,6 +670,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	int retry_cnt = 0, ehostunreach_cnt = 0;
 	int fd, rc = SLURM_SUCCESS;
 	uint32_t sleep_ns = 500 * NSEC_IN_MSEC;
+	slurm_addr_t tmp;
+	socklen_t alen;
 
 	if ((slurm_addr_is_unspec(addr)) || (slurm_get_port(addr) == 0)) {
 		error("Error connecting, bad data: family = %u, port = %u",
@@ -688,8 +697,10 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 			_sock_bind_wild(fd);
 		}
 
-		rc = _slurm_connect(fd, (struct sockaddr const *)addr,
-				    sizeof(*addr));
+		tmp = *addr;
+		alen = sockaddr_fixlen((struct sockaddr *) &tmp,
+				       (socklen_t) sizeof(tmp));
+		rc = _slurm_connect(fd, (struct sockaddr const *) &tmp, alen);
 		if (!rc) {
 			/* success */
 			break;
@@ -737,6 +748,7 @@ error:
 extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd)
 {
 	struct sockaddr_un sa;
+	socklen_t slen;
 	int rc;
 
 	xassert(addr_name);
@@ -756,8 +768,9 @@ extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd)
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, addr_name);
+	slen = sockaddr_fixlen((struct sockaddr *) &sa, (socklen_t) sizeof(sa));
 
-	while ((rc = connect(*fd, (struct sockaddr *) &sa, SUN_LEN(&sa))) &&
+	while ((rc = connect(*fd, (struct sockaddr *) &sa, slen)) &&
 	       (errno == EINTR))
 		; /* empty loop */
 

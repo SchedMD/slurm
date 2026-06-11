@@ -46,6 +46,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -107,6 +108,8 @@ int net_stream_listen(int *fd, uint16_t *port)
 
 	/* bind ephemeral port */
 	slurm_setup_addr(&sin, 0);
+
+	len = sockaddr_fixlen((struct sockaddr *) &sin, len);
 
 	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
@@ -243,6 +246,8 @@ extern int net_set_nodelay(int sock, bool set, const char *con_name)
 static bool _is_port_ok(int s, uint16_t port, bool local)
 {
 	slurm_addr_t addr;
+	socklen_t alen;
+
 	slurm_setup_addr(&addr, port);
 
 	if (!local) {
@@ -259,7 +264,8 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 		return false;
 	}
 
-	if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+	alen = sockaddr_fixlen((struct sockaddr *) &addr, sizeof(addr));
+	if (bind(s, (struct sockaddr *) &addr, alen) < 0) {
 		log_flag(NET, "%s: bind() failed on port:%d fd:%d: %m",
 			 __func__, port, s);
 		return false;
@@ -582,4 +588,83 @@ extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 		return ESLURM_AUTH_NOBODY;
 
 	return SLURM_SUCCESS;
+}
+
+/* Safe pathname length for AF_UNIX (avoids overruns). */
+static socklen_t _unix_sock_len(const struct sockaddr_un *un,
+				socklen_t provided)
+{
+	size_t maxn = sizeof(un->sun_path);
+	size_t n;
+
+	/* Linux abstract namespace: sun_path[0] == '\0' => length is provided. */
+	if ((provided >= (socklen_t) offsetof(struct sockaddr_un, sun_path)) &&
+	    (un->sun_path[0] == '\0'))
+		return provided;
+
+	n = strnlen(un->sun_path, maxn);
+
+	return (socklen_t) (offsetof(struct sockaddr_un, sun_path) + n);
+}
+
+extern socklen_t sockaddr_fixlen(struct sockaddr *sa, socklen_t provided_len)
+{
+	socklen_t len;
+
+	if (!sa)
+		return provided_len;
+
+	switch (sa->sa_family) {
+	case AF_INET:
+		len = (socklen_t) sizeof(struct sockaddr_in);
+#if defined(HAVE_STRUCT_SOCKADDR_IN_SIN_LEN)
+		((struct sockaddr_in *) sa)->sin_len = (uint8_t) len;
+#elif defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
+		sa->sa_len = (uint8_t) len;
+#endif
+		return len;
+	case AF_INET6:
+		len = (socklen_t) sizeof(struct sockaddr_in6);
+#if defined(HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN)
+		((struct sockaddr_in6 *) sa)->sin6_len = (uint8_t) len;
+#elif defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
+		sa->sa_len = (uint8_t) len;
+#endif
+		return len;
+	case AF_UNIX:
+		len = _unix_sock_len((struct sockaddr_un *) sa, provided_len);
+#if defined(HAVE_STRUCT_SOCKADDR_UN_SUN_LEN)
+		((struct sockaddr_un *) sa)->sun_len = (uint8_t) len;
+#elif defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
+		sa->sa_len = (uint8_t) len;
+#endif
+		return len;
+	default:
+#if defined(HAVE_STRUCT_SOCKADDR_SA_LEN)
+		/* best effort: reflect caller-provided length if meaningful */
+		if (provided_len <= 255)
+			sa->sa_len = (uint8_t) provided_len;
+#endif
+		return provided_len;
+	}
+}
+
+extern int sockaddr_copy_fix(struct sockaddr_storage *dst,
+			     const struct sockaddr *src, socklen_t src_len,
+			     socklen_t *out_len)
+{
+	socklen_t n;
+
+	if (!dst || !src || !out_len)
+		return -1;
+
+	n = src_len;
+	if (n > (socklen_t) sizeof(*dst))
+		n = (socklen_t) sizeof(*dst);
+
+	memset(dst, 0, sizeof(*dst));
+	memcpy(dst, src, n);
+
+	*out_len = sockaddr_fixlen((struct sockaddr *) dst, n);
+	return 0;
 }

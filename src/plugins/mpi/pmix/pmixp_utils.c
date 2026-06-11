@@ -61,6 +61,7 @@
 
 /* must come after the above pmixp includes */
 #include "src/common/forward.h"
+#include "src/common/net.h"
 
 extern int pmixp_count_digits_base10(uint32_t val)
 {
@@ -83,6 +84,7 @@ void pmixp_free_buf(void *x)
 int pmixp_usock_create_srv(char *path)
 {
 	static struct sockaddr_un sa;
+	socklen_t blen;
 	int ret = 0;
 
 	if (strlen(path) >= sizeof(sa.sun_path)) {
@@ -101,7 +103,8 @@ int pmixp_usock_create_srv(char *path)
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, path);
-	if ((ret = bind(fd, (struct sockaddr *)&sa, SUN_LEN(&sa)))) {
+	blen = sockaddr_fixlen((struct sockaddr *) &sa, (socklen_t) sizeof(sa));
+	if ((ret = bind(fd, (struct sockaddr *) &sa, blen))) {
 		PMIXP_ERROR_STD("Cannot bind() UNIX socket %s", path);
 		goto err_fd;
 	}

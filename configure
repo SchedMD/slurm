@@ -2415,6 +2415,69 @@ fi
 
 } # ac_fn_c_try_cpp
 
+# ac_fn_c_check_member LINENO AGGR MEMBER VAR INCLUDES
+# ----------------------------------------------------
+# Tries to find if the field MEMBER exists in type AGGR, after including
+# INCLUDES, setting cache variable VAR accordingly.
+ac_fn_c_check_member ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $2.$3" >&5
+printf %s "checking for $2.$3... " >&6; }
+if eval test \${$4+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main (void)
+{
+static $2 ac_aggr;
+if (ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$4=yes"
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main (void)
+{
+static $2 ac_aggr;
+if (sizeof ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$4=yes"
+else case e in #(
+  e) eval "$4=no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+eval ac_res=\$$4
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_member
+
 # ac_fn_c_check_type LINENO TYPE VAR INCLUDES
 # -------------------------------------------
 # Tests whether TYPE exists after having included INCLUDES, setting cache
@@ -27938,6 +28001,57 @@ else
 fi
 
   fi
+
+
+ac_fn_c_check_member "$LINENO" "struct sockaddr" "sa_len" "ac_cv_member_struct_sockaddr_sa_len" "#include <sys/types.h>
+    #include <sys/socket.h>
+"
+if test "x$ac_cv_member_struct_sockaddr_sa_len" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_SOCKADDR_SA_LEN 1" >>confdefs.h
+
+
+fi
+
+
+ac_fn_c_check_member "$LINENO" "struct sockaddr_in" "sin_len" "ac_cv_member_struct_sockaddr_in_sin_len" "#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+"
+if test "x$ac_cv_member_struct_sockaddr_in_sin_len" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_SOCKADDR_IN_SIN_LEN 1" >>confdefs.h
+
+
+fi
+
+
+ac_fn_c_check_member "$LINENO" "struct sockaddr_in6" "sin6_len" "ac_cv_member_struct_sockaddr_in6_sin6_len" "#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+"
+if test "x$ac_cv_member_struct_sockaddr_in6_sin6_len" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN 1" >>confdefs.h
+
+
+fi
+
+
+ac_fn_c_check_member "$LINENO" "struct sockaddr_un" "sun_len" "ac_cv_member_struct_sockaddr_un_sun_len" "#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <sys/un.h>
+"
+if test "x$ac_cv_member_struct_sockaddr_un_sun_len" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_SOCKADDR_UN_SUN_LEN 1" >>confdefs.h
+
+
+fi
 
 
 #

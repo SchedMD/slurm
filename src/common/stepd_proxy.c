@@ -36,6 +36,7 @@
 #include <sys/un.h>
 
 #include "src/common/fd.h"
+#include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -297,13 +298,14 @@ extern void stepd_proxy_stepd_init(char *spooldir)
 static int _stepd_connect_to_slurmd(void)
 {
 	struct sockaddr_un slurmd_addr = { .sun_family = AF_UNIX };
-	size_t len;
+	socklen_t len;
 	int fd;
 
 	(void) snprintf(slurmd_addr.sun_path, sizeof(slurmd_addr.sun_path),
 			"%s/slurmd.socket", slurmd_spooldir);
 
-	len = strlen(slurmd_addr.sun_path) + 1 + sizeof(slurmd_addr.sun_family);
+	len = sockaddr_fixlen((struct sockaddr *) &slurmd_addr,
+			      (socklen_t) sizeof(slurmd_addr));
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		error("%s: socket() failed: %m", __func__);
