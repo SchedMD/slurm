@@ -226,7 +226,7 @@ def test_reboot_force(current_nodes):
     atf.run_command(f"scontrol reboot {nodelist} force", fatal=True, user="slurm")
     atf.wait_for_job_state(job_id, "PENDING", timeout=5, fatal=True)
     for node in current_nodes:
-        atf.wait_for_node_state_any(
+        atf.wait_for_node_state(
             node, ["REBOOT_REQUESTED", "REBOOT_ISSUED"], timeout=10, fatal=True
         )
     for node in current_nodes:
@@ -247,7 +247,7 @@ def test_reboot_action_slurmctld(current_nodes):
         user="slurm",
     )
     for node in current_nodes:
-        atf.wait_for_node_state_any(
+        atf.wait_for_node_state(
             node, ["REBOOT_REQUESTED", "REBOOT_ISSUED"], timeout=10, fatal=True
         )
     for node in current_nodes:
@@ -273,13 +273,13 @@ def test_reboot_asap(current_nodes):
     )
     atf.wait_for_job_state(job_id, "PENDING", timeout=5, fatal=True)
     for node in current_nodes:
-        atf.wait_for_node_state_any(
+        atf.wait_for_node_state(
             node, ["REBOOT_REQUESTED", "REBOOT_ISSUED"], timeout=10, fatal=True
         )
     for node in current_nodes:
         atf.wait_for_node_state(node, "REBOOT_ISSUED", timeout=20, fatal=True)
     for node in current_nodes:
-        atf.wait_for_node_state_any(node, ["IDLE", "ALLOCATED"], timeout=20, fatal=True)
+        atf.wait_for_node_state(node, ["IDLE", "ALLOCATED"], timeout=20, fatal=True)
 
 
 def test_reboot_action_slurmd(current_nodes):

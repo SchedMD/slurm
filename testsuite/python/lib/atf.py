@@ -4,6 +4,7 @@
 ##############################################################################
 import collections
 import datetime
+import enum
 import errno
 
 # import glob
@@ -4759,102 +4760,93 @@ def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
         return default
 
 
-def wait_for_node_state_any(
-    nodename,
-    desired_node_states,
-    timeout=default_polling_timeout,
-    poll_interval=None,
-    fatal=False,
-    reverse=False,
-):
-    """Wait for any of the specified node states to be reached.
-
-    Polls the node state every poll interval seconds, waiting up to the timeout
-    for the specified node state to be reached.
-
-    Args:
-        nodename (string): The name of the node whose state is being monitored.
-        desired_node_states (iterable): The states that the node is expected to reach.
-        timeout (integer): The number of seconds to wait before timing out.
-        poll_interval (float): Number of seconds between node state polls.
-        fatal (boolean): If True, a timeout will cause the test to fail.
-        reverse (boolean): If True, wait for the node to lose the desired state.
-
-    Returns:
-        Boolean value indicating whether the node ever reached the desired state.
-
-    Example:
-        >>> wait_for_node_state_any('node1', ['IDLE', 'ALLOCATED'], timeout=60, poll_interval=5)
-        True
-        >>> wait_for_node_state_any('node2', ['DOWN'], timeout=30, fatal=True)
-        False
-    """
-
-    state_set = frozenset(desired_node_states)
-
-    def any_overlap(state):
-        return bool(state_set & set(state)) != reverse
-
-    # Wrapper for the repeat_until command to do all our state checking for us
-    repeat_until(
-        lambda: get_node_parameter(nodename, "state"),
-        any_overlap,
-        timeout=timeout,
-        poll_interval=poll_interval,
-        fatal=fatal,
-    )
-
-    return any_overlap(get_node_parameter(nodename, "state"))
+class SetMatch(enum.Enum):
+    EQUAL = "=="
+    INTERSECTS = "~="
 
 
 def wait_for_node_state(
     nodename,
     desired_node_state,
+    operator=SetMatch.INTERSECTS,
     timeout=default_polling_timeout,
-    poll_interval=None,
+    poll_interval=1,
     fatal=False,
     reverse=False,
 ):
-    """Wait for a specified node state to be reached.
+    """Wait for a specified node state to be reached on one or more nodes.
 
     Polls the node state every poll interval seconds, waiting up to the timeout
-    for the specified node state to be reached.
+    for the specified node state to be reached. When given a list of nodes,
+    the per-node condition must hold for *all* of them; with reverse=True, the
+    per-node condition is inverted (so a list with reverse=True means "no node
+    satisfies the condition").
+
+    A single query to slurmctld is issued per poll regardless of the number of
+    nodes being monitored.
 
     Args:
-        nodename (string): The name of the node whose state is being monitored.
-        desired_node_state (string): The state that the node is expected to reach.
+        nodename (string or list/set of strings): A node name, or a list of
+            node names, whose state is being monitored.
+        desired_node_state (string or list/set of strings): A state name, or a
+            list of state names, that the node(s) are expected to reach.
+        operator (SetMatch or string): How desired_node_state is matched
+            against the actual node state list. Accepts either a SetMatch
+            member or its underlying string value ("~=" or "=="). Defaults to
+            ~= (SetMatch.INTERSECTS). See SetMatch.
         timeout (integer): The number of seconds to wait before timing out.
         poll_interval (float): Number of seconds between node state polls.
+            Defaults to 1s.
         fatal (boolean): If True, a timeout will cause the test to fail.
-        reverse (boolean): If True, wait for the node to lose the desired state.
+        reverse (boolean): If True, wait for the per-node condition to be
+            false instead of true.
 
     Returns:
-        Boolean value indicating whether the node ever reached the desired state.
+        Boolean value indicating whether the desired condition was reached on
+        all the specified node(s) before the timeout.
 
     Example:
         >>> wait_for_node_state('node1', 'IDLE', timeout=60, poll_interval=5)
         True
         >>> wait_for_node_state('node2', 'DOWN', timeout=30, fatal=True)
         False
+        >>> wait_for_node_state(['node1', 'node2', 'node3'], 'IDLE', fatal=True)
+        True
+        >>> wait_for_node_state('node1', ['REBOOT_REQUESTED', 'REBOOT_ISSUED'], fatal=True)
+        True
+        >>> wait_for_node_state(node_list, 'IDLE', operator=SetMatch.EQUAL, fatal=True)
+        True
+        >>> wait_for_node_state(node_list, 'IDLE', operator='==', fatal=True)
+        True
     """
 
-    # Figure out if we're waiting for the desired_node_state to be present or to be gone
-    def has_state(state):
-        return desired_node_state in state
+    try:
+        operator = SetMatch(operator)
+    except ValueError:
+        pytest.fail(
+            f"Unsupported operator {operator!r} "
+            f"(allowed: {[m.value for m in SetMatch]})"
+        )
 
-    def not_state(state):
-        return desired_node_state not in state
-
-    # Wrapper for the repeat_until command to do all our state checking for us
-    repeat_until(
-        lambda: get_node_parameter(nodename, "state"),
-        not_state if reverse else has_state,
-        timeout=timeout,
-        poll_interval=poll_interval,
-        fatal=fatal,
+    nodes_to_check = {nodename} if isinstance(nodename, str) else set(nodename)
+    desired_set = (
+        {desired_node_state}
+        if isinstance(desired_node_state, str)
+        else set(desired_node_state)
     )
 
-    return (desired_node_state in get_node_parameter(nodename, "state")) != reverse
+    def matches(state):
+        if operator is SetMatch.EQUAL:
+            ok = set(state) == desired_set
+        else:  # SetMatch.INTERSECTS
+            ok = bool(desired_set & set(state))
+        return ok != reverse
+
+    for _ in timer(timeout=timeout, poll_interval=poll_interval, fatal=fatal):
+        nodes = get_nodes(quiet=True)
+        if all(matches(nodes[n]["state"]) for n in nodes_to_check):
+            return True
+    return False
 
 
 def wait_for_step(job_id, step_id, **repeat_until_kwargs):

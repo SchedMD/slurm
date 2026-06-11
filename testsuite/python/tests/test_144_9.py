@@ -320,7 +320,7 @@ array_test_parameters = [
 def test_array(job_args, running_count):
     job_str = f'{job_args} --wrap "sleep infinity"'
     job_id = atf.submit_job_sbatch(job_str, fatal=True, quiet=False)
-    atf.wait_for_node_state_any("node1", ["ALLOCATED", "MIXED"], fatal=True)
+    atf.wait_for_node_state("node1", ["ALLOCATED", "MIXED"], fatal=True)
     count = int(atf.run_command_output("squeue --noheader --state=Running| wc -l"))
     atf.cancel_all_jobs(quiet=True)
     atf.wait_for_job_state(job_id, "CANCELLED")
