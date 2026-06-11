@@ -2292,3 +2292,22 @@ extern void sacctmgr_initialize_g_tres_list(void)
 		g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
 	}
 }
+
+/*
+ * Parse a TRES limit value for load/modify into *dest.
+ * Returns 1 on success, -1 on parse failure.
+ */
+extern int sacctmgr_set_tres_rec_field(char **dest, char *value,
+				       uint32_t tres_flags)
+{
+	char *tmp_char;
+
+	sacctmgr_initialize_g_tres_list();
+
+	if (!(tmp_char = slurmdb_format_tres_str(value, g_tres_list, 1)))
+		return -1;
+
+	slurmdb_combine_tres_strings(dest, tmp_char, tres_flags);
+	xfree(tmp_char);
+	return 1;
+}

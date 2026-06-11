@@ -365,6 +365,8 @@ extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 	list_t *wckey_list, char *user, char *name, char *cluster);
 
 extern void sacctmgr_initialize_g_tres_list(void);
+extern int sacctmgr_set_tres_rec_field(char **dest, char *value,
+				       uint32_t tres_flags);
 
 /* file_functions.c */
 extern int print_file_add_limits_to_line(char **line,
