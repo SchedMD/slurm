@@ -240,6 +240,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->admin_comment);
 	xfree(job_ptr->alias_list);
 	xfree(job_ptr->alloc_node);
+	xfree(job_ptr->alloc_partition);
 	xfree(job_ptr->alloc_tls_cert);
 	job_record_free_null_array_recs(job_ptr);
 	if (job_ptr->array_recs) {
@@ -2851,6 +2852,16 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		} else {
 			packbool(false, buffer);
 		}
+		/*
+		 * Pack the allocated partition so part_ptr can be recovered on
+		 * restart or reconfigure without relying on the order of the
+		 * partition string. A non-pending job with a part_ptr packs
+		 * part_ptr->name. Pack alloc_partition otherwise.
+		 */
+		if (!IS_JOB_PENDING(dump_job_ptr) && dump_job_ptr->part_ptr)
+			packstr(dump_job_ptr->part_ptr->name, buffer);
+		else
+			packstr(dump_job_ptr->alloc_partition, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
@@ -3395,6 +3406,7 @@ extern int job_record_unpack(job_record_t **out,
 			assoc_mgr_set_uid(job_ptr->user_id,
 					  job_ptr->id->pw_name);
 		}
+		safe_unpackstr(&job_ptr->alloc_partition, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 		job_ptr->db_index = job_ptr->step_id.sluid;

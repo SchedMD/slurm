@@ -273,6 +273,12 @@ struct job_record {
 	char    *admin_comment;		/* administrator's arbitrary comment */
 	char	*alias_list;		/* node name to address aliases */
 	char    *alloc_node;		/* local node making resource alloc */
+	char *alloc_partition; /* allocated partition name, set for
+				* a running or suspended job and
+				* state saved so part_ptr can be
+				* recovered on restart or reconfigure.
+				* At runtime prefer part_ptr, which is
+				* authoritative. */
 	char *alloc_tls_cert;		/* TLS certificate for client that is
 					 * getting/has allocation
 					 * (srun, salloc,etc.) */
