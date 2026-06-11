@@ -5721,6 +5721,10 @@ extern void rebuild_job_part_list(job_record_t *job_ptr)
 		.job_ptr = job_ptr,
 	};
 
+	xfree(job_ptr->alloc_partition);
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		job_ptr->alloc_partition = xstrdup(job_ptr->part_ptr->name);
+
 	xfree(job_ptr->partition);
 
 	if (!job_ptr->part_ptr_list) {
