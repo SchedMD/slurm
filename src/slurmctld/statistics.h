@@ -198,7 +198,6 @@ typedef struct job_statistics {
 	uint64_t memory_alloc;
 	uint16_t min_nodes;
 	bitstr_t *node_bitmap;
-	uint16_t nodes_alloc;
 	char *partition;
 	uint32_t state_reason;
 	char *user_name;
