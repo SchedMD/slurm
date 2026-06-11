@@ -94,6 +94,14 @@ static pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
 bool power_save_enabled = false;
+/*
+ * True when valid SuspendProgram and ResumeProgram are configured. Unlike
+ * power_save_enabled, this does not account for the global SuspendTime being
+ * INFINITE: a finite per-node SuspendTime can still enable automatic power
+ * save for individual nodes, so a finite per-node SuspendTime is only
+ * rejected when the programs themselves are missing.
+ */
+bool power_save_avail = false;
 bool power_save_started = false;
 bool power_save_debug = false;
 
@@ -1512,6 +1520,8 @@ static int _init_power_config(void)
 		debug("power: No valid ResumeProgram");
 		auto_power_save_disabled = true;
 	}
+	power_save_avail = (suspend_prog && resume_prog);
+
 	if (auto_power_save_disabled) {
 		info("power: automatic power save mode disabled");
 	}

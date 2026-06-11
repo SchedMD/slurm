@@ -49,6 +49,14 @@
 extern list_t *resume_job_list;
 
 /*
+ * True if valid SuspendProgram and ResumeProgram are configured, regardless of
+ * the global SuspendTime value. A finite per-node SuspendTime can enable
+ * automatic power save for individual nodes even when the global SuspendTime
+ * is INFINITE, so per-node SuspendTime is only rejected when this is false.
+ */
+extern bool power_save_avail;
+
+/*
  * config_power_mgr - Read power management configuration
  */
 extern void config_power_mgr(void);
