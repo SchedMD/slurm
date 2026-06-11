@@ -648,6 +648,48 @@ part_record_t *find_part_record(char *name)
 }
 
 /*
+ * find_alloc_part_record - find a non-pending job's allocated partition from
+ *	its state saved alloc_partition, falling back to the first token of
+ *	the partition string when alloc_partition is NULL.
+ * IN job_ptr - the job to look up
+ * OUT part_name - if not NULL, set to a copy of the partition name only when
+ *	the return is NULL, letting the caller name the removed partition
+ * RET the allocated partition, or NULL if it no longer exists
+ */
+extern part_record_t *find_alloc_part_record(job_record_t *job_ptr,
+					     char **part_name)
+{
+	char *name, *tmp_name = NULL, *last = NULL;
+	part_record_t *part_ptr;
+
+	xassert(job_ptr);
+
+	/*
+	 * When alloc_partition is NULL, fall back to the first token of the
+	 * partition string: pre-26.11 state (the prepended allocated partition)
+	 * or a completing job whose alloc_partition was cleared by a runtime
+	 * change (rebuild_job_part_list() re-sets it only for running or
+	 * suspended jobs).
+	 *
+	 * The lookup returns NULL when that partition no longer exists; the job
+	 * then reports a surviving partition instead. This is display only --
+	 * accounting already recorded the partition it ran in.
+	 */
+	name = job_ptr->alloc_partition;
+	if (!name && job_ptr->partition) {
+		tmp_name = xstrdup(job_ptr->partition);
+		name = strtok_r(tmp_name, ",", &last);
+	}
+
+	part_ptr = name ? find_part_record(name) : NULL;
+	if (part_name && !part_ptr)
+		*part_name = xstrdup(name);
+	xfree(tmp_name);
+
+	return part_ptr;
+}
+
+/*
  * Create a copy of a job's part_list *partition list
  * IN part_list_src - a job's part_list
  * RET copy of part_list_src, must be freed by caller

@@ -1557,6 +1557,18 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		 * this job */
 	}
 
+	/*
+	 * A non-pending job must keep the partition it was allocated in.
+	 * get_part_list() set part_ptr to one of the job's partitions, which
+	 * need not be the allocated one, so recover it from alloc_partition.
+	 * _sync_jobs_to_conf() cleans up the job if that partition is gone.
+	 */
+	if (!IS_JOB_PENDING(job_ptr)) {
+		part_record_t *part_ptr = find_alloc_part_record(job_ptr, NULL);
+		if (part_ptr)
+			job_ptr->part_ptr = part_ptr;
+	}
+
 #if 0
 	/*
 	 * This is not necessary since the job_id_sequence is checkpointed and
@@ -2800,9 +2812,18 @@ static int _foreach_kill_job_by_part_name(void *x, void *arg)
 			      __func__);
 		} else if (rebuild_name_list) {
 			if (list_count(job_ptr->part_ptr_list) > 0) {
+				/*
+				 * rebuild_job_part_list() repoints part_ptr to
+				 * the list head for a pending job, else keeps the
+				 * allocated one. The deleted partition is always a
+				 * secondary one (partition_in_use() blocks
+				 * deleting the allocated one), so a running or
+				 * suspended job is not killed. A completing job
+				 * whose allocated partition was the one deleted
+				 * falls through to the NULL part_ptr assignment
+				 * below.
+				 */
 				rebuild_job_part_list(job_ptr);
-				job_ptr->part_ptr =
-					list_peek(job_ptr->part_ptr_list);
 			} else {
 				FREE_NULL_LIST(job_ptr->part_ptr_list);
 			}
