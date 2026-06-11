@@ -561,7 +561,6 @@ static int _fill_jobs_statistics(void *x, void *arg)
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		new->cpus_alloc = j->total_cpus;
-		new->nodes_alloc = j->total_nodes;
 		new->memory_alloc =
 			(j->tres_alloc_cnt ? j->tres_alloc_cnt[TRES_ARRAY_MEM] :
 					     0);
