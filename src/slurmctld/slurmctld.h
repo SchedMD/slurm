@@ -1964,9 +1964,9 @@ extern int set_partition_billing_weights(char *billing_weights_str,
 extern int update_part(partition_info_t *part_desc, bool create_flag);
 
 /*
- * Sort all jobs' part_ptr_list to be in descending order according to
- * partition priority tier. This Should be called anytime a partition's priority
- * tier is modified.
+ * Sort every job's part_ptr_list by PriorityTier (descending) and rebuild its
+ * partition string to match, repointing a pending job's part_ptr to the new
+ * highest-tier partition. Call whenever a partition's PriorityTier changes.
  */
 extern void sort_all_jobs_partition_lists();
 

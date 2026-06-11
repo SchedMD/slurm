@@ -7624,6 +7624,14 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
 
+	/*
+	 * Build a multi-partition job's partition string from the
+	 * PriorityTier-sorted part_ptr_list so it is reported in tier order,
+	 * not submission order.
+	 */
+	if (job_ptr->part_ptr_list)
+		rebuild_job_part_list(job_ptr);
+
 	part_ptr_list = NULL;
 	qos_ptr_list = NULL;
 
@@ -19929,8 +19937,16 @@ extern uint16_t job_mgr_determine_cpus_per_core(
 static int _sort_part_lists(void *x, void *none)
 {
 	job_record_t *job_ptr = x;
-	if (job_ptr && job_ptr->part_ptr_list)
-		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+
+	if (!job_ptr || !job_ptr->part_ptr_list)
+		return SLURM_SUCCESS;
+
+	list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+	/*
+	 * Rebuild the partition string in the new PriorityTier order and
+	 * repoint a pending job's part_ptr to the new list head.
+	 */
+	rebuild_job_part_list(job_ptr);
 	return SLURM_SUCCESS;
 }
 
