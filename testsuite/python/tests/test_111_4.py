@@ -4,8 +4,8 @@
 import atf
 import pytest
 
-# A dictionary to store the nodes used in the test
-node_list = {}
+# A list of the nodes used in the test
+node_list = []
 node_range = ""
 
 
@@ -18,15 +18,14 @@ def setup():
     atf.require_slurm_running()
 
     # Get a list of 8 idle nodes to be used in the tests
-    nodes = atf.run_job_nodes("-N8 true", fatal=True)
-    for i, node in enumerate(nodes):
-        node_list[i] = node
-    node_range = atf.node_list_to_range(node_list.values())
+    node_list.extend(atf.run_job_nodes("-N8 true", fatal=True))
+    node_range = atf.node_list_to_range(node_list)
 
 
 @pytest.fixture(scope="function", autouse=True)
 def reset_node_states():
-    """Ensure all jobs are canceled and nodes are resumed after each test."""
+    """Wait for all nodes to be idle before each test; cancel jobs + resume after."""
+    atf.wait_for_node_state(node_list, "IDLE", operator="==", fatal=True)
     yield
     atf.cancel_all_jobs()
     atf.run_command(

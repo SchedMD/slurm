@@ -162,7 +162,7 @@ def test_cloud_state_cycle():
 
     # Make sure the cloud node starts suspending once it hasn't received a job
     # for suspend_time
-    atf.wait_for_node_state_any(
+    atf.wait_for_node_state(
         f"{node_prefix}1",
         ["POWER_DOWN", "POWERING_DOWN"],
         timeout=suspend_time + 5,
