@@ -574,11 +574,18 @@ static int _fill_jobs_statistics(void *x, void *arg)
 		js->cpus_alloc += new->cpus_alloc;
 		js->memory_alloc += new->memory_alloc;
 		js->gpus_alloc += new->gpus_alloc;
+		/*
+		 * Several jobs can share the same nodes, so update the
+		 * node_bitmap of all-jobs-stats adding the bits of this job.
+		 */
 		if (j->node_bitmap) {
 			if (!js->node_bitmap)
 				js->node_bitmap = bit_copy(j->node_bitmap);
 			else
 				bit_or(js->node_bitmap, j->node_bitmap);
+
+			/* Update the metric with the new count, O(1) cost. */
+			js->nodes_alloc = bit_set_count(js->node_bitmap);
 		}
 	}
 
@@ -662,24 +669,22 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 		s->cpus_alloc += j->cpus_alloc;
 		s->gpus_alloc += j->gpus_alloc;
 		s->memory_alloc += j->memory_alloc;
+		/*
+		 * Several jobs can share the same nodes, so update the
+		 * node_bitmap of all-jobs-stats adding the bits of this job.
+		 */
 		if (j->node_bitmap) {
 			if (!s->node_bitmap)
 				s->node_bitmap = bit_copy(j->node_bitmap);
 			else
 				bit_or(s->node_bitmap, j->node_bitmap);
+
+			/* Update the metric with the new count, O(1) cost. */
+			s->nodes_alloc = bit_set_count(s->node_bitmap);
 		}
 	}
 
 	s->job_cnt++;
-}
-
-static int _finalize_ua_nodes_alloc(void *x, void *arg)
-{
-	ua_stats_t *ua = x;
-
-	if (ua->s->node_bitmap)
-		ua->s->nodes_alloc = bit_set_count(ua->s->node_bitmap);
-	return SLURM_SUCCESS;
 }
 
 static int _get_users_accts(void *x, void *args)
@@ -733,9 +738,6 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 		lock_slurmctld(job_read_lock);
 
 	list_for_each_ro(job_list, _fill_jobs_statistics, &args);
-
-	if (s->node_bitmap)
-		s->nodes_alloc = bit_set_count(s->node_bitmap);
 
 	if (lock)
 		unlock_slurmctld(job_read_lock);
@@ -966,9 +968,6 @@ extern users_accts_stats_t *statistics_get_users_accounts(jobs_stats_t *js)
 	ua->accounts = list_create((ListDelF) _free_ua_stats);
 
 	list_for_each(js->jobs, _get_users_accts, ua);
-
-	list_for_each(ua->users, _finalize_ua_nodes_alloc, NULL);
-	list_for_each(ua->accounts, _finalize_ua_nodes_alloc, NULL);
 
 	return ua;
 }
