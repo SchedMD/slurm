@@ -251,6 +251,7 @@ extern void reset_stats(int level)
 
 static void _free_job_stats(job_stats_t *j)
 {
+	FREE_NULL_BITMAP(j->node_bitmap);
 	xfree(j->user_name);
 	xfree(j->partition);
 	xfree(j->account);
@@ -560,18 +561,31 @@ static int _fill_jobs_statistics(void *x, void *arg)
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		new->cpus_alloc = j->total_cpus;
-		new->nodes_alloc = j->total_nodes;
 		new->memory_alloc =
 			(j->tres_alloc_cnt ? j->tres_alloc_cnt[TRES_ARRAY_MEM] :
 					     0);
+		if (j->node_bitmap)
+			new->node_bitmap = bit_copy(j->node_bitmap);
 
 		if ((gpu_tres_pos >= 0) && j->tres_alloc_cnt)
 			new->gpus_alloc = j->tres_alloc_cnt[gpu_tres_pos];
 
 		js->cpus_alloc += new->cpus_alloc;
-		js->nodes_alloc += new->nodes_alloc;
 		js->memory_alloc += new->memory_alloc;
 		js->gpus_alloc += new->gpus_alloc;
+		/*
+		 * Several jobs can share the same nodes, so update the
+		 * node_bitmap of all-jobs-stats adding the bits of this job.
+		 */
+		if (j->node_bitmap) {
+			if (!js->node_bitmap)
+				js->node_bitmap = bit_copy(j->node_bitmap);
+			else
+				bit_or(js->node_bitmap, j->node_bitmap);
+
+			/* Update the metric with the new count, O(1) cost. */
+			js->nodes_alloc = bit_set_count(js->node_bitmap);
+		}
 	}
 
 	/*
@@ -654,7 +668,19 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 		s->cpus_alloc += j->cpus_alloc;
 		s->gpus_alloc += j->gpus_alloc;
 		s->memory_alloc += j->memory_alloc;
-		s->nodes_alloc += j->nodes_alloc;
+		/*
+		 * Several jobs can share the same nodes, so update the
+		 * node_bitmap of all-jobs-stats adding the bits of this job.
+		 */
+		if (j->node_bitmap) {
+			if (!s->node_bitmap)
+				s->node_bitmap = bit_copy(j->node_bitmap);
+			else
+				bit_or(s->node_bitmap, j->node_bitmap);
+
+			/* Update the metric with the new count, O(1) cost. */
+			s->nodes_alloc = bit_set_count(s->node_bitmap);
+		}
 	}
 
 	s->job_cnt++;
@@ -947,6 +973,7 @@ extern users_accts_stats_t *statistics_get_users_accounts(jobs_stats_t *js)
 
 extern void statistics_free_jobs(jobs_stats_t *s)
 {
+	FREE_NULL_BITMAP(s->node_bitmap);
 	FREE_NULL_LIST(s->jobs);
 	xfree(s);
 }
