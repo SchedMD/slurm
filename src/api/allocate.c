@@ -58,6 +58,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -813,6 +814,44 @@ static int _job_will_run_cluster(job_desc_msg_t *req,
 }
 
 /*
+ * Look up SLURM_STEPMGR_HET_GROUP_<N> by matching job_id against
+ * SLURM_JOB_ID_HET_GROUP_<N>. Returns NULL when called outside a hetjob
+ * allocation or when no component matches.
+ */
+static char *_get_het_stepmgr_env_for_jobid(uint32_t job_id)
+{
+	char *het_size_env, *mgr_env = NULL;
+	uint32_t het_size = 0;
+
+	het_size_env = getenv("SLURM_HET_SIZE");
+	if (!het_size_env)
+		return NULL;
+
+	if (parse_uint32(het_size_env, &het_size) || (het_size < 2))
+		return NULL;
+
+	for (uint32_t i = 0; i < het_size; i++) {
+		char *name = NULL, *id_str;
+		uint32_t comp_id;
+
+		xstrfmtcat(name, "SLURM_JOB_ID_HET_GROUP_%u", i);
+		id_str = getenv(name);
+		xfree(name);
+		if (!id_str || parse_uint32(id_str, &comp_id))
+			continue;
+		if (comp_id != job_id)
+			continue;
+
+		xstrfmtcat(name, "SLURM_STEPMGR_HET_GROUP_%u", i);
+		mgr_env = xstrdup(getenv(name));
+		xfree(name);
+		break;
+	}
+
+	return mgr_env;
+}
+
+/*
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
@@ -836,7 +875,10 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 re_send:
 	/* xstrdup() to be consistent with reroute and be able to free. */
-	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
+	stepmgr_nodename = _get_het_stepmgr_env_for_jobid(req->step_id.job_id);
+	if (!stepmgr_nodename)
+		stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR"));
+	if (stepmgr_nodename) {
 trystepmgr:
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
