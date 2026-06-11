@@ -1178,7 +1178,10 @@ static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	log_flag(SCRIPT, "Caught SIGPROF. Ignoring.");
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	(void) probe_run(true, NULL, NULL, __func__);
 }
 
 static void _init_slurmscriptd_conmgr(void)
@@ -1219,6 +1222,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	slurmscriptd_readfd = SLURMSCRIPT_READ_FD;
 
 	_change_proc_name(argc, argv, "slurmscriptd");
+
+	probe_init();
 
 	/* Test communications with slurmctld. */
 	ack = SLURM_SUCCESS;
@@ -1266,6 +1271,7 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 #ifdef MEMORY_LEAK_DEBUG
 	track_script_fini();
 	slurm_mutex_destroy(&powersave_script_count_mutex);
+	probe_fini();
 #endif
 
 	/* We never want to return from here, only exit. */
