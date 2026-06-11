@@ -576,6 +576,84 @@ static void *_fwd_tree_thread(void *arg)
 	return NULL;
 }
 
+/*
+ * Mark every host in the iterations after j (each sp_hl[] sublist, or one
+ * host per remaining hl entry) as a failed forward on ret_list, then signal
+ * waiters. Used by the cancel paths once forwarding is shutting down.
+ *
+ * IN/OUT ret_list - list the failed entries are appended to
+ * IN     mutex    - mutex guarding ret_list/notify
+ * IN     notify   - condition signaled after the entries are recorded
+ * IN     hl       - non-split hostlist (NULL if sp_hl is used)
+ * IN/OUT sp_hl    - split hostlist array (NULL if hl is used); entries
+ *                   [j+1, hl_count) are drained and freed
+ * IN     j        - index of the iteration that hit the shutdown branch
+ * IN     hl_count - total number of iterations
+ */
+static void _fail_remaining_fwds(list_t **ret_list, pthread_mutex_t *mutex,
+				 pthread_cond_t *notify, hostlist_t *hl,
+				 hostlist_t **sp_hl, int j, int hl_count)
+{
+	char *name = NULL;
+
+	slurm_mutex_lock(mutex);
+	for (j++; j < hl_count; j++) {
+		if (sp_hl) {
+			while ((name = hostlist_shift(sp_hl[j]))) {
+				mark_as_failed_forward(ret_list, name,
+						       SLURM_SHUTTING_DOWN);
+				free(name);
+			}
+			hostlist_destroy(sp_hl[j]);
+			sp_hl[j] = NULL;
+		} else if (hl) {
+			name = hostlist_shift(hl);
+			mark_as_failed_forward(ret_list, name,
+					       SLURM_SHUTTING_DOWN);
+			free(name);
+		}
+	}
+	slurm_cond_signal(notify);
+	slurm_mutex_unlock(mutex);
+}
+
+/*
+ * forward_fini() already completed. Mark every host owned by the current
+ * iteration (fwd_tree->tree_hl) and every remaining iteration after j as
+ * failed on fwd_tree_in->ret_list so the caller does not wait forever for
+ * responses that will never arrive. Frees fwd_tree.
+ *
+ * IN     fwd_tree    - per-iteration fwd_tree that was going to be handed
+ *                      to _fwd_tree_thread; freed by this call
+ * IN/OUT fwd_tree_in - caller's fwd_tree; its ret_list is extended with
+ *                      failed entries and notify is signaled
+ * IN     hl          - non-split hostlist (NULL if sp_hl is used)
+ * IN/OUT sp_hl       - split hostlist array (NULL if hl is used); entries
+ *                      [j+1, hl_count) are drained and freed
+ * IN     j           - index of the iteration that hit the disabled
+ *                      branch; iterations after j are drained
+ * IN     hl_count    - total number of iterations
+ */
+static void _cancel_fwd(fwd_tree_t *fwd_tree, fwd_tree_t *fwd_tree_in,
+			hostlist_t *hl, hostlist_t **sp_hl, int j, int hl_count)
+{
+	char *name = NULL;
+
+	slurm_mutex_lock(fwd_tree->tree_mutex);
+	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
+		mark_as_failed_forward(&fwd_tree->ret_list, name,
+				       SLURM_SHUTTING_DOWN);
+		free(name);
+	}
+	slurm_cond_signal(fwd_tree->notify);
+	FREE_NULL_HOSTLIST(fwd_tree->tree_hl);
+	slurm_mutex_unlock(fwd_tree->tree_mutex);
+	xfree(fwd_tree);
+
+	_fail_remaining_fwds(&fwd_tree_in->ret_list, fwd_tree_in->tree_mutex,
+			     fwd_tree_in->notify, hl, sp_hl, j, hl_count);
+}
+
 static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count)
@@ -610,6 +688,15 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 			free(name);
 		}
 
+		slurm_mutex_lock(&global_forward_mutex);
+		if (shutdown_requested) {
+			slurm_mutex_unlock(&global_forward_mutex);
+
+			_cancel_fwd(fwd_tree, fwd_tree_in, hl, sp_hl, j,
+				    hl_count);
+			return;
+		}
+
 		/*
 		 * Lock and increase thread counter, we need that to protect
 		 * the start_msg_tree waiting loop that was originally designed
@@ -617,7 +704,6 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		 * fwd thread was not able to get all the return codes from
 		 * children, the waiting loop was deadlocked.
 		 */
-		slurm_mutex_lock(&global_forward_mutex);
 		thread_count++;
 		xassert(thread_count > 0);
 		slurm_mutex_unlock(&global_forward_mutex);
