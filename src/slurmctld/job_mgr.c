@@ -7322,8 +7322,7 @@ static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 					  "enable_stepmgr");
 	}
 
-	if ((stepmgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&
-	    (job_desc->het_job_offset == NO_VAL)) {
+	if (stepmgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) {
 		job_ptr->bit_flags |= STEPMGR_ENABLED;
 	} else {
 		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
