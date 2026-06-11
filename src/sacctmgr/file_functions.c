@@ -1519,6 +1519,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, user->name);
+	if (cluster) {
+		assoc_cond.cluster_list = list_create(NULL);
+		list_append(assoc_cond.cluster_list, cluster);
+	}
 	user_cond.assoc_cond = &assoc_cond;
 
 	if (file_opts->def_acct)
@@ -1748,6 +1752,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	}
 
 	FREE_NULL_LIST(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.cluster_list);
 
 	return set;
 }
