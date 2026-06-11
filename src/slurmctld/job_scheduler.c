@@ -5685,7 +5685,6 @@ static int _valid_node_feature(char *feature, bool can_reboot)
 }
 
 #define REBUILD_PENDING SLURM_BIT(0)
-#define REBUILD_ACTIVE SLURM_BIT(1)
 
 typedef struct {
 	uint16_t flags;
@@ -5702,19 +5701,19 @@ static int _build_partition_string(void *object, void *arg) {
 		job_ptr->part_ptr = part_ptr;
 		flags &= ~(REBUILD_PENDING);
 	}
-	if ((flags & REBUILD_ACTIVE) && (part_ptr == job_ptr->part_ptr))
-		return SLURM_SUCCESS;       /* already added */
 	if (job_ptr->partition)
 		xstrcat(job_ptr->partition, ",");
 	xstrcat(job_ptr->partition, part_ptr->name);
 	return SLURM_SUCCESS;
 }
 
-/* If a job can run in multiple partitions, when it is started we want to
- * put the name of the partition used _first_ in that list. When slurmctld
- * restarts, that will be used to set the job's part_ptr and that will be
- * reported to squeue. We leave all of the partitions in the list though,
- * so the job can be requeued and have access to them all. */
+/*
+ * Rebuild the job's partition string from its part_ptr_list. For a running
+ * or suspended job, alloc_partition records the allocated partition so
+ * part_ptr can be recovered on restart/reconfigure without relying on the
+ * order of the partition string. We leave all of the partitions in the list
+ * though, so the job can be requeued and have access to them all.
+ */
 extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
 	rebuild_args_t arg = {
@@ -5733,10 +5732,7 @@ extern void rebuild_job_part_list(job_record_t *job_ptr)
 		return;
 	}
 
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-		arg.flags |= REBUILD_ACTIVE;
-		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
-	} else if (IS_JOB_PENDING(job_ptr))
+	if (IS_JOB_PENDING(job_ptr))
 		arg.flags |= REBUILD_PENDING;
 	list_for_each(job_ptr->part_ptr_list, _build_partition_string, &arg);
 	last_job_update = time(NULL);
