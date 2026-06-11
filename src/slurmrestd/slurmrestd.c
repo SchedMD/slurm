@@ -768,8 +768,8 @@ int main(int argc, char **argv)
 				      auth_plugin_types[i]);
 	}
 
-	if (init_rest_auth(become_user_mode, auth_plugin_handles,
-			   auth_plugin_count))
+	if (init_rest_auth(become_user_mode, unshare_sysv, unshare_files,
+			   auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
 	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,

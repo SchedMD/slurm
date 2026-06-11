@@ -55,7 +55,8 @@
 static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
-	int (*init)(bool become_user_mode);
+	int (*init)(bool become_user_mode, bool unshare_sysv,
+		    bool unshare_files);
 	int (*fini)(void);
 	int (*auth)(on_http_request_args_t *args, rest_auth_context_t *ctxt);
 	void *(*db_conn)(rest_auth_context_t *context);
@@ -112,7 +113,8 @@ extern void destroy_rest_auth(void)
 	slurm_mutex_unlock(&init_lock);
 }
 
-extern int init_rest_auth(bool become_user_mode,
+extern int init_rest_auth(bool become_user_mode, bool unshare_sysv,
+			  bool unshare_files,
 			  const plugin_handle_t *plugin_handles,
 			  const size_t plugin_count)
 {
@@ -153,7 +155,8 @@ extern int init_rest_auth(bool become_user_mode,
 			debug5("%s: found plugin_id: %u",
 			       __func__, plugin_ids[g_context_cnt]);
 
-		(*(ops[g_context_cnt].init))(become_user_mode);
+		(*(ops[g_context_cnt].init))(become_user_mode, unshare_sysv,
+					     unshare_files);
 		g_context_cnt++;
 	}
 
