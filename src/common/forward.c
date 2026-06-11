@@ -70,6 +70,7 @@
 static pthread_mutex_t global_forward_mutex = PTHREAD_MUTEX_INITIALIZER;
 static event_signal_t event_fini = EVENT_INITIALIZER("FWD-TREE-FINISH");
 static bool enabled = false;
+static bool shutdown_requested = false;
 static int thread_count = 0;
 
 static struct {
@@ -1110,6 +1111,7 @@ extern void forward_init(void)
 		log_flag(NET, "%s: tree forwarding enabled", __func__);
 		probe_register("tree-forward", _probe, NULL);
 		enabled = true;
+		shutdown_requested = false;
 	}
 
 	slurm_mutex_unlock(&global_forward_mutex);
@@ -1130,6 +1132,7 @@ extern void forward_fini(void)
 	}
 
 	enabled = false;
+	shutdown_requested = true;
 
 	while (thread_count > 0) {
 		log_flag(NET, "%s: tree forwarding waiting for %d threads for %s",
