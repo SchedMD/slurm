@@ -76,7 +76,7 @@ extern int slurm_rest_auth_p_apply(rest_auth_context_t *context);
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 /* protected by lock */
-static bool become_user = false;
+static bool become_user_mode = false;
 
 #define MAGIC 0xd11abee2
 typedef struct {
@@ -164,7 +164,7 @@ static int _auth_socket(on_http_request_args_t *args,
 		 * users trying to connect
 		 */
 		slurm_mutex_lock(&lock);
-		if (become_user) {
+		if (become_user_mode) {
 			info("%s: [%s] accepted user proxy socket connection with uid:%u gid:%u pid:%ld",
 			     __func__, name, cred_uid, cred_gid,
 			     (long) cred_pid);
@@ -199,7 +199,7 @@ static int _auth_socket(on_http_request_args_t *args,
 			 * attacks. Next attempt to connect will be forced to be
 			 * the same user.
 			 */
-			become_user = false;
+			become_user_mode = false;
 			slurm_mutex_unlock(&lock);
 		} else {
 			slurm_mutex_unlock(&lock);
@@ -270,7 +270,7 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 		bool reject_proxy = false;
 
 		slurm_mutex_lock(&lock);
-		if (become_user)
+		if (become_user_mode)
 			reject_proxy = true;
 		slurm_mutex_unlock(&lock);
 
@@ -351,10 +351,10 @@ extern void slurm_rest_auth_p_init(bool bu)
 		debug3("%s: REST local auth activated", __func__);
 	} else if (!getuid()) {
 		slurm_mutex_lock(&lock);
-		if (become_user)
+		if (become_user_mode)
 			fatal("duplicate call to %s", __func__);
 
-		become_user = true;
+		become_user_mode = true;
 		slurm_mutex_unlock(&lock);
 
 		debug3("%s: REST local auth with become user mode active",

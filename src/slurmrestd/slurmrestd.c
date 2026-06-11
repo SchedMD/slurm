@@ -140,7 +140,7 @@ static data_parser_t **parsers = NULL;
 static bool unshare_sysv = true;
 static bool unshare_files = true;
 static bool check_user = true;
-static bool become_user = false;
+static bool become_user_mode = false;
 static http_status_code_t *response_status_codes = NULL;
 
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
@@ -255,7 +255,7 @@ static void _parse_env(void)
 #endif /* NDEBUG */
 				check_user = false;
 			} else if (!xstrcasecmp(token, "become_user")) {
-				become_user = true;
+				become_user_mode = true;
 			} else {
 				fatal("Unexpected value in SLURMRESTD_SECURITY=%s",
 				      token);
@@ -616,10 +616,10 @@ static void _lock_down(void)
 	if (uid != 0 && setuid(uid))
 		fatal("Unable to setuid: %m");
 
-	if (become_user && getuid())
+	if (become_user_mode && getuid())
 		fatal("slurmrestd must run as root in become_user mode");
 
-	if (become_user && getgid())
+	if (become_user_mode && getgid())
 		fatal("slurmrestd must run as root in become_user mode");
 
 #ifdef PR_SET_DUMPABLE
@@ -650,9 +650,9 @@ static void _check_user(void)
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
 		fatal("slurmrestd should not be run with SlurmUser's group.");
 
-	if (!getuid() && !become_user)
+	if (!getuid() && !become_user_mode)
 		fatal("slurmrestd should not be run as the root user.");
-	if (!getgid() && !become_user)
+	if (!getgid() && !become_user_mode)
 		fatal("slurmrestd should not be run with the root group.");
 
 	if ((gid_count = getgroups(0, NULL)) > 0) {
@@ -665,7 +665,7 @@ static void _check_user(void)
 			if (list[i] == slurm_conf.slurm_user_id)
 				fatal("slurmrestd should not be run with SlurmUser's group.");
 
-			if (!list[i] && !become_user)
+			if (!list[i] && !become_user_mode)
 				fatal("slurmrestd should not be run with the root group.");
 
 			if (list[i] == SLURM_AUTH_NOBODY)
@@ -832,7 +832,8 @@ int main(int argc, char **argv)
 				      auth_plugin_types[i]);
 	}
 
-	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
+	if (init_rest_auth(become_user_mode, auth_plugin_handles,
+			   auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
 	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
