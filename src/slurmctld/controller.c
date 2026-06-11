@@ -267,6 +267,7 @@ static struct {
 static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
+static void _assoc_mgr_post_update_all(void);
 static int          _controller_index(void);
 static void         _create_clustername_file(void);
 static void _flush_rpcs(void);
@@ -975,7 +976,8 @@ int main(int argc, char **argv)
 			 */
 			if (bb_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize burst_buffer plugin");
-			ctld_assoc_mgr_init();
+			/* If reconfiguring job_list/part_list already inited */
+			ctld_assoc_mgr_init(reconfiguring);
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_g_restore(recover))
@@ -2144,16 +2146,58 @@ static int _foreach_part_remove_qos(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_resv_remove_qos(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	slurmdb_qos_rec_t *rec = arg;
+
+	/*
+	 * resv_ptr->qos_list has a NULL destructor and caches bare
+	 * slurmdb_qos_rec_t pointers into assoc_mgr_qos_list. Drop the
+	 * pointer being removed and strip the corresponding name from the
+	 * canonical resv_ptr->qos string so a later rebuild stays in sync.
+	 */
+	if (resv_ptr->qos_list &&
+	    list_remove_first(resv_ptr->qos_list, slurm_find_ptr_in_list,
+			      rec)) {
+		char *remove_name = NULL;
+		bool denied = (resv_ptr->qos[0] == '-');
+
+		info("Reservation %s's QOS %s was just removed; dropping from reservation QOS %s list",
+		     resv_ptr->name, rec->name,
+		     (denied ? "denied" : "allowed"));
+
+		if (denied)
+			xstrfmtcat(remove_name, "-%s", rec->name);
+		else
+			remove_name = rec->name;
+
+		_remove_csv_item(&resv_ptr->qos, remove_name);
+
+		if (denied)
+			xfree(remove_name);
+	}
+
+	return 0;
+}
+
 static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
-	slurmctld_lock_t part_write_lock =
-		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	slurmctld_lock_t job_part_write_lock = {
+		.conf = NO_LOCK,
+		.job = WRITE_LOCK, /* jobs reference resv pointer */
+		.node = NO_LOCK,
+		.part = WRITE_LOCK,
+		.fed = NO_LOCK,
+	};
 
-	lock_slurmctld(part_write_lock);
+	lock_slurmctld(job_part_write_lock);
 	if (part_list)
 		(void) list_for_each(part_list, _foreach_part_remove_qos, rec);
-	unlock_slurmctld(part_write_lock);
+	if (resv_list)
+		(void) list_for_each(resv_list, _foreach_resv_remove_qos, rec);
+	unlock_slurmctld(job_part_write_lock);
 
 	bb_g_reconfig();
 
@@ -3049,22 +3093,15 @@ extern void save_all_state(void)
 }
 
 /* make sure the assoc_mgr is up and running with the most current state */
-extern void ctld_assoc_mgr_init(void)
+extern void ctld_assoc_mgr_init(bool update_now)
 {
 	assoc_init_args_t assoc_init_arg;
-	int num_jobs = 0;
-	slurmctld_lock_t job_write_lock = {
+	slurmctld_lock_t j_n_p_write_lock = {
 		.conf = NO_LOCK,
 		.job = WRITE_LOCK,
-		.node = NO_LOCK,
-		.part = NO_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
 		.fed = NO_LOCK,
-	};
-	assoc_mgr_lock_t locks = {
-		.assoc = WRITE_LOCK,
-		.qos = WRITE_LOCK,
-		.tres = WRITE_LOCK,
-		.user = WRITE_LOCK,
 	};
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
@@ -3118,31 +3155,28 @@ extern void ctld_assoc_mgr_init(void)
 	load_qos_usage();
 	_init_tres();
 
-	lock_slurmctld(job_write_lock);
-	if (job_list) {
-		num_jobs = list_count(job_list);
-		if (num_jobs) {
+	if (update_now) {
+		lock_slurmctld(j_n_p_write_lock);
+		_assoc_mgr_post_update_all();
+		if (job_list && list_count(job_list)) {
 			/*
 			 * This case (num_jobs > 0) should only happen on a
 			 * failed reconfiguration.
 			 */
-			assoc_mgr_lock(&locks);
-			(void) list_for_each(job_list,
-					     _foreach_cache_update_job, NULL);
-			assoc_mgr_unlock(&locks);
 			restore_job_accounting();
 		}
+		unlock_slurmctld(j_n_p_write_lock);
 	}
-	unlock_slurmctld(job_write_lock);
 
-	/* This thread is looking for when we get correct data from
-	   the database so we can update the assoc_ptr's in the jobs
-	*/
-	if ((running_cache != RUNNING_CACHE_STATE_NOTRUNNING) || num_jobs) {
+	/*
+	 * This thread is looking for when we get correct data from
+	 * the database so we can update the assoc_ptr's in the jobs,
+	 * partitions, and burst buffers.
+	 */
+	if ((running_cache != RUNNING_CACHE_STATE_NOTRUNNING)) {
 		slurm_thread_create(&assoc_cache_thread,
 				    _assoc_cache_mgr, NULL);
 	}
-
 }
 
 /* Make sure the assoc_mgr thread is terminated */
@@ -3925,6 +3959,8 @@ static int _foreach_cache_update_job(void *x, void *arg)
 		char *tmp_qos_req = xstrdup(job_ptr->details->qos_req);
 		slurmdb_qos_rec_t *qos_ptr = NULL;
 
+		job_ptr->qos_ptr = NULL; /* this is a stale pointer, set NULL */
+
 		token = strtok_r(tmp_qos_req, ",", &last);
 		while (token) {
 			slurmdb_qos_rec_t qos_rec = {
@@ -4021,6 +4057,52 @@ static int _foreach_cache_update_part(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * This needs to be call after all assoc_mgr_*_list have been freed and reset.
+ * Jobs, partitions, and burst buffers all reference pointers from those list
+ * and need to be updated to not have stale pointers.
+ * Requires job, node, and part write locks. It will get its own assoc locks.
+ */
+static void _assoc_mgr_post_update_all(void)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+
+	assoc_mgr_lock_t locks = {
+		.assoc = READ_LOCK,
+		.qos = WRITE_LOCK,
+		.tres = WRITE_LOCK,
+		.user = READ_LOCK,
+	};
+
+	assoc_mgr_lock(&locks);
+	if (job_list) {
+		debug2("got real data from the database refreshing the association ptr's for %d jobs",
+		       list_count(job_list));
+		(void) list_for_each(job_list, _foreach_cache_update_job, NULL);
+	}
+
+	if (part_list) {
+		(void) list_for_each(part_list, _foreach_cache_update_part,
+				     NULL);
+	}
+
+	if (resv_list) {
+		(void) list_for_each(resv_list, resv_cache_update_qos_list,
+				     NULL);
+	}
+
+	set_cluster_tres(true);
+
+	assoc_mgr_unlock(&locks);
+	/*
+	 * issuing a reconfig will reset the pointers on the burst
+	 * buffers
+	 */
+	bb_g_reconfig();
+}
+
 /* _assoc_cache_mgr - hold out until we have real data from the
  * database so we can reset the job ptr's assoc ptr's */
 static void *_assoc_cache_mgr(void *no_data)
@@ -4028,9 +4110,6 @@ static void *_assoc_cache_mgr(void *no_data)
 	/* Write lock on jobs, nodes and partitions */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = WRITE_LOCK,
-		  .user = READ_LOCK };
 
 	if (running_cache != RUNNING_CACHE_STATE_RUNNING)
 		lock_slurmctld(job_write_lock);
@@ -4059,8 +4138,17 @@ static void *_assoc_cache_mgr(void *no_data)
 		 * Make sure not to have the assoc_mgr or the
 		 * slurmdbd_lock locked when refresh_lists is called or you may
 		 * get deadlock.
+		 *
+		 * If the slurmdbd connection cuts out partially through
+		 * updating the assoc_mgr's lists, update the job, partition,
+		 * and burst_buffer pointer references to make sure no stale
+		 * points are left. But keep looping since not everything was
+		 * updated.
 		 */
-		assoc_mgr_refresh_lists(acct_db_conn, 0);
+		if (assoc_mgr_refresh_lists(acct_db_conn, 0) ==
+		    SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR)
+			_assoc_mgr_post_update_all();
+
 		if (g_tres_count != slurmctld_tres_cnt) {
 			info("TRES in database does not match cache "
 			     "(%u != %u).  Updating...",
@@ -4083,26 +4171,9 @@ static void *_assoc_cache_mgr(void *no_data)
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
 
-	assoc_mgr_lock(&locks);
-	if (job_list) {
-		debug2("got real data from the database refreshing the association ptr's for %d jobs",
-		       list_count(job_list));
-		(void) list_for_each(job_list, _foreach_cache_update_job, NULL);
-	}
-
-	if (part_list) {
-		(void) list_for_each(part_list, _foreach_cache_update_part,
-				     NULL);
-	}
-
-	set_cluster_tres(true);
-
-	assoc_mgr_unlock(&locks);
-	/* issuing a reconfig will reset the pointers on the burst
-	   buffers */
-	bb_g_reconfig();
-
+	_assoc_mgr_post_update_all();
 	unlock_slurmctld(job_write_lock);
+
 	/* This needs to be after the lock and after we update the
 	   jobs so if we need to send them we are set. */
 	_accounting_cluster_ready();
