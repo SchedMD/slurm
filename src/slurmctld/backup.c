@@ -314,7 +314,7 @@ void run_backup(void)
 	agent_init();
 
 	/* Calls assoc_mgr_init() */
-	ctld_assoc_mgr_init();
+	ctld_assoc_mgr_init(false);
 
 	/*
 	 * priority_g_init() needs to be called after assoc_mgr_init()

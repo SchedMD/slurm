@@ -2232,15 +2232,37 @@ extern void part_list_update_assoc_lists(void)
 extern int part_update_assoc_lists(void *x, void *arg)
 {
 	part_record_t *part_ptr = x;
+	int old_allow_cnt = 0, old_deny_cnt = 0;
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 
+	if (part_ptr->allow_accts_list)
+		old_allow_cnt = list_count(part_ptr->allow_accts_list);
 	FREE_NULL_LIST(part_ptr->allow_accts_list);
 	part_ptr->allow_accts_list =
 		accounts_list_build(part_ptr->allow_accounts, true);
+
+	if (old_allow_cnt && !part_ptr->allow_accts_list)
+		info("Partition %s's last AllowAccounts association was removed; partition now allows all accounts",
+		     part_ptr->name);
+	else if (part_ptr->allow_accts_list &&
+		 (list_count(part_ptr->allow_accts_list) < old_allow_cnt))
+		info("Partition %s had an AllowAccounts association removed",
+		     part_ptr->name);
+
+	if (part_ptr->deny_accts_list)
+		old_deny_cnt = list_count(part_ptr->deny_accts_list);
 	FREE_NULL_LIST(part_ptr->deny_accts_list);
 	part_ptr->deny_accts_list =
 		accounts_list_build(part_ptr->deny_accounts, true);
+
+	if (old_deny_cnt && !part_ptr->deny_accts_list)
+		info("Partition %s's last DenyAccounts association was removed; no accounts are now denied",
+		     part_ptr->name);
+	else if (part_ptr->deny_accts_list &&
+		 (list_count(part_ptr->deny_accts_list) < old_deny_cnt))
+		info("Partition %s had a DenyAccounts association removed",
+		     part_ptr->name);
 
 	return 0;
 }
