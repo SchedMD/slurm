@@ -450,6 +450,40 @@ static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
 	return qos_rec;
 }
 
+static int _foreach_apply_user_default_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	list_t *user_list = arg;
+	slurmdb_user_rec_t *user;
+
+	if (!assoc->user)
+		return 0;
+	user = sacctmgr_find_user_from_list(user_list, assoc->user);
+	if (!user || !user->default_acct || !user->default_acct[0])
+		return 0;
+	if (!xstrcmp(assoc->acct, user->default_acct))
+		assoc->is_def = 1;
+	else
+		assoc->is_def = 0;
+
+	return 0;
+}
+
+/*
+ * sacctmgr load stores DefaultAccount on the in-memory user row; list user
+ * reads default account from the association with is_def=1. Mark the matching
+ * user association before slurmdb_associations_add().
+ */
+static void _apply_user_default_assocs(list_t *user_list,
+				       list_t *user_assoc_list)
+{
+	if (!user_list || !user_assoc_list)
+		return;
+
+	(void) list_for_each(user_assoc_list, _foreach_apply_user_default_assoc,
+			     user_list);
+}
+
 static int _print_out_assoc(list_t *assoc_list, bool user, bool add)
 {
 	list_t *format_list = NULL;
@@ -3426,6 +3460,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	}
 
 	if (rc == SLURM_SUCCESS && list_count(user_assoc_list)) {
+		_apply_user_default_assocs(user_list, user_assoc_list);
 		printf("User Associations\n");
 		rc = _print_out_assoc(user_assoc_list, 1, 1);
 		set = 1;
