@@ -2848,6 +2848,13 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 			&launch_msg_ptr->environment, "SLURM_JOB_SEGMENT_SIZE",
 			het_job_offset, "%u", het_job->details->segment_size);
 
+	if ((het_job_leader->bit_flags & STEPMGR_ENABLED) &&
+	    het_job->batch_host)
+		(void) env_array_overwrite_het_fmt(&launch_msg_ptr->environment,
+						   "SLURM_STEPMGR",
+						   het_job_offset, "%s",
+						   het_job->batch_host);
+
 	if (het_job->details && het_job->job_resrcs) {
 		/* Both should always be set for active jobs */
 		tmp_str = get_tasks_per_node(het_job);
