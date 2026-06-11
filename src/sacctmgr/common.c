@@ -2295,12 +2295,16 @@ extern void sacctmgr_initialize_g_tres_list(void)
 
 /*
  * Parse a TRES limit value for load/modify into *dest.
- * Returns 1 on success, -1 on parse failure.
+ * Empty value is omitted (leave unset). Returns 1 on success, 0 when
+ * omitted, and -1 on parse failure.
  */
 extern int sacctmgr_set_tres_rec_field(char **dest, char *value,
 				       uint32_t tres_flags)
 {
 	char *tmp_char;
+
+	if (!value || !value[0])
+		return 0;
 
 	sacctmgr_initialize_g_tres_list();
 
