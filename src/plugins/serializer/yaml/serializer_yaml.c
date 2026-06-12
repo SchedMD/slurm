@@ -188,8 +188,11 @@ static serializer_flags_t _merge_flags(serializer_flags_t flags)
 
 extern int serialize_p_init(serializer_flags_t flags)
 {
-	if (flags != SER_FLAGS_NONE)
+	/* See the matching comment in the json serializer. */
+	if (flags & (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY))
 		global_flags = flags;
+	else
+		global_flags = (SERIALIZER_YAML_DEFAULT_FLAGS | flags);
 
 	log_flag(DATA, "loaded");
 
@@ -664,7 +667,7 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf,
 	if (!yaml_emitter_initialize(emitter))
 		_yaml_emitter_error;
 
-	if (flags == SER_FLAGS_COMPACT) {
+	if (flags & SER_FLAGS_COMPACT) {
 		yaml_emitter_set_indent(emitter, 0);
 		yaml_emitter_set_width(emitter, -1);
 		yaml_emitter_set_break(emitter, YAML_ANY_BREAK);

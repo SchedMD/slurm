@@ -138,9 +138,6 @@ static int _parse_config(const char *config, serializer_flags_t *flags)
 	while (token) {
 		serializer_flags_t flag = SER_FLAGS_NONE;
 
-		if (!token[0])
-			continue;
-
 		if ((flag = _parse_flag(token)) == SER_FLAGS_NONE) {
 			debug("%s: Unknown flag \"%s\" in \"%s\"",
 			      __func__, token, config);
@@ -154,6 +151,18 @@ static int _parse_config(const char *config, serializer_flags_t *flags)
 	xfree(toklist);
 
 	return rc;
+}
+
+/* Parse SerializerParameters comma-separated flags, SER_FLAGS_NONE if unset */
+static serializer_flags_t _conf_flags(void)
+{
+	serializer_flags_t flags = SER_FLAGS_NONE;
+	const char *params = slurm_conf.serializer_params;
+
+	if (params && params[0] && _parse_config(params, &flags))
+		fatal("Unable to parse SerializerParameters \"%s\"", params);
+
+	return flags;
 }
 
 static int _find_serializer_full_type(void *x, void *key)
@@ -302,7 +311,7 @@ extern const char **get_mime_type_array(void)
 extern int serializer_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	serializer_flags_t flags = SER_FLAGS_NONE;
+	serializer_flags_t conf_flags = SER_FLAGS_NONE;
 
 	slurm_mutex_lock(&init_mutex);
 	if (plugins) {
@@ -326,10 +335,13 @@ extern int serializer_g_init(void)
 
 	xrecalloc(mime_array, (plugins->count + 1), sizeof(*mime_array));
 
+	conf_flags = _conf_flags();
+
 	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
 		const char *config = NULL;
 		const char **mime_types;
 		const funcs_t *func_ptr = plugins->functions[i];
+		serializer_flags_t flags = conf_flags;
 
 		xassert(plugins->handles[i] != PLUGIN_INVALID_HANDLE);
 
@@ -358,9 +370,13 @@ extern int serializer_g_init(void)
 				config = getenv(ENV_CONFIG_YAML);
 		}
 
-		if (config && config[0] && (rc = _parse_config(config, &flags)))
-			fatal("Unable to parse serializer \"%s\" flags: %s",
-			      config, slurm_strerror(rc));
+		/* Env vars override SerializerParameters flags for this plugin */
+		if (config && config[0]) {
+			flags = SER_FLAGS_NONE;
+			if ((rc = _parse_config(config, &flags)))
+				fatal("Unable to parse serializer \"%s\" flags: %s",
+				      config, slurm_strerror(rc));
+		}
 
 		rc = (*func_ptr->init)(flags);
 	}

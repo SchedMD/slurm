@@ -94,8 +94,16 @@ static serializer_flags_t _merge_flags(serializer_flags_t flags)
 
 extern int serialize_p_init(serializer_flags_t flags)
 {
-	if (flags != SER_FLAGS_NONE)
+	/*
+	 * Only replace the default formatting when a formatting flag was
+	 * actually requested. Merging otherwise keeps a non-formatting flag
+	 * (complex), or a flag only meaningful to another serializer (no_tag),
+	 * from silently dropping this plugin's default.
+	 */
+	if (flags & (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY))
 		global_flags = flags;
+	else
+		global_flags = (SERIALIZER_JSON_DEFAULT_FLAGS | flags);
 
 	log_flag(DATA, "loaded");
 
