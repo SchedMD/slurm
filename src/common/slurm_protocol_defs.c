@@ -5795,6 +5795,7 @@ slurm_free_license_info_msg(license_info_msg_t *msg)
 			xfree(msg->lic_array[cc].name);
 			xfree(msg->lic_array[cc].nodes);
 			xfree(msg->lic_array[cc].layer_name);
+			xfree(msg->lic_array[cc].parent_name);
 			FREE_NULL_LIST(msg->lic_array[cc].base);
 		}
 		xfree(msg->lic_array);

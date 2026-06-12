@@ -3565,6 +3565,7 @@ typedef struct slurm_license_info {
 	uint8_t mode;
 	char *nodes;
 	char *layer_name;
+	char *parent_name;
 	list_t *base; /* list of hres_variable_t */
 } slurm_license_info_t;
 

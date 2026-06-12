@@ -3431,6 +3431,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack8(lic->mode, buffer);
 		packstr(lic->nodes, buffer);
 		packstr(lic->hres_rec.layer_name, buffer);
+		packstr(lic->hres_rec.parent_name, buffer);
 		slurm_pack_list(lic->hres_rec.base, slurm_pack_hres_variable,
 				buffer, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

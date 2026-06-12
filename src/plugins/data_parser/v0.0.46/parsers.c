@@ -9499,7 +9499,9 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parser(slurm_license_info_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(STRING, name, "LicenseName", "Name of the license"),
-	add_parse(UINT32, total, "Total", "Total number of licenses present"),
+	add_parse(UINT32, conf_total, "ConfTotal", "Total number of licenses present before base usage"),
+	add_parse(UINT32, total, "Total", "Total number of licenses present after base usage"),
+	add_parse(UINT32, base_usage, "BaseUsage", "Sum of base usage"),
 	add_parse(UINT32, in_use, "Used", "Number of licenses in use"),
 	add_parse(UINT32, available, "Free", "Number of licenses currently available"),
 	add_parse(BOOL, remote, "Remote", "Indicates whether licenses are served by the database"),
@@ -9507,7 +9509,10 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, last_consumed, "LastConsumed", "Last known number of licenses that were consumed in the license manager (Remote Only)"),
 	add_parse(UINT32, last_deficit, "LastDeficit", "Number of \"missing licenses\" from the cluster's perspective"),
 	add_parse(TIMESTAMP, last_update, "LastUpdate", "When the license information was last updated (UNIX Timestamp)"),
+	add_parse(STRING, layer_name, "LayerName", "Name of HRES Layer"),
+	add_parse(STRING, parent_name, "ParentName", "Name of HRES Layer's parent"),
 	add_parse(STRING, nodes, "Nodes", "HRes nodes"),
+	add_parse(H_VARIABLE_LIST, base, "Base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer."),
 };
 #undef add_parse
 

@@ -45,6 +45,11 @@
 
 #include "scontrol.h"
 
+typedef struct {
+	char *pos;
+	char *str;
+} foreach_base2str_arg_t;
+
 static void _print_license_info(const char *, license_info_msg_t *);
 static slurm_license_info_t ** _license_sort(license_info_msg_t
 					     *license_list);
@@ -149,6 +154,33 @@ static int _match_license_name(const char *query, const char *name, bool fuzzy)
 	return xstrcmp(query, name) == 0;
 }
 
+static int _foreach_base2str(void *x, void *arg)
+{
+	hres_variable_t *var = x;
+	foreach_base2str_arg_t *barg = arg;
+
+	xstrfmtcatat(barg->str, &barg->pos, "%s%s:%u", (barg->str ? "," : ""),
+		     var->name, var->value);
+	return 0;
+}
+
+/*
+ * Build "Base=<name>:<value>[,<name>:<value>...]", the same syntax accepted by
+ * "scontrol update HRESName=... Base=...". Prints "Base=(null)" if empty.
+ */
+static char *_lic_base2str(list_t *base, bool one_liner)
+{
+	foreach_base2str_arg_t arg = { 0 };
+	char *str = NULL;
+
+	if (base)
+		list_for_each(base, _foreach_base2str, &arg);
+	str = xstrdup_printf("%sBase=%s", (one_liner ? " " : "\n    "),
+			     (arg.str ? arg.str : "(null)"));
+	xfree(arg.str);
+	return str;
+}
+
 /* _print_license_info()
  *
  * Print the license information.
@@ -204,9 +236,20 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 		       (display_lic[cc])->reserved,
 		       (display_lic[cc])->remote ? "yes" : "no");
 		if (display_lic[cc]->mode) {
-			printf("%sNodes=%s Mode=%u\n",
+			char *base_str = _lic_base2str(display_lic[cc]->base,
+						       one_liner);
+
+			printf("%sLayerName=%s%s%s Nodes=%s Mode=%u ConfTotal=%u BaseUsage=%u%s\n",
 			       one_liner ? " " : "\n    ",
-			       display_lic[cc]->nodes, display_lic[cc]->mode);
+			       display_lic[cc]->layer_name,
+			       display_lic[cc]->parent_name ? " ParentName=" :
+			       "",
+			       display_lic[cc]->parent_name ?
+			       display_lic[cc]->parent_name : "",
+			       display_lic[cc]->nodes, display_lic[cc]->mode,
+			       display_lic[cc]->conf_total,
+			       display_lic[cc]->base_usage, base_str);
+			xfree(base_str);
 		} else if (display_lic[cc]->remote) {
 			char time_str[256];
 			slurm_make_time_str(&display_lic[cc]->last_update,

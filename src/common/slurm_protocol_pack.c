@@ -12891,6 +12891,7 @@ static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 			safe_unpack8(&msg->lic_array[i].mode, buffer);
 			safe_unpackstr(&msg->lic_array[i].nodes, buffer);
 			safe_unpackstr(&msg->lic_array[i].layer_name, buffer);
+			safe_unpackstr(&msg->lic_array[i].parent_name, buffer);
 			if (slurm_unpack_list(&msg->lic_array[i].base,
 					      _unpack_hres_variable,
 					      hres_variable_free,
