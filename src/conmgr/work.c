@@ -355,15 +355,17 @@ static void _handle_work_pending(work_t *work)
 	}
 
 	if (depend & CONMGR_WORK_DEP_CON_WRITE_COMPLETE) {
+		char flags_str[CON_FLAGS_STR_BYTES];
+
 		xassert(con);
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			_log_work(work, __func__, "Enqueueing connection write complete work. pending_writes=%u pending_write_complete_work:%u flags=%s",
-				  list_count(con->out),
-				  list_count(con->write_complete_work), flags);
-			xfree(flags);
-		}
+		_log_work(
+			work, __func__,
+			"Enqueueing connection write complete work. pending_writes=%u pending_write_complete_work:%u flags=%s",
+			list_count(con->out),
+			list_count(con->write_complete_work),
+			con_flags_print(con->flags, flags_str,
+					sizeof(flags_str)));
 
 		list_append(con->write_complete_work, work);
 		return;
@@ -376,12 +378,14 @@ static void _handle_work_pending(work_t *work)
 	}
 
 	if (con) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			_log_work(work, __func__, "Enqueueing connection work. pending_work:%u flags=%s",
-				  list_count(con->work), flags);
-			xfree(flags);
-		}
+		char flags_str[CON_FLAGS_STR_BYTES];
+
+		_log_work(
+			work, __func__,
+			"Enqueueing connection work. pending_work:%u flags=%s",
+			list_count(con->work),
+			con_flags_print(con->flags, flags_str,
+					sizeof(flags_str)));
 
 		list_append(con->work, work);
 
