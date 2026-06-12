@@ -489,6 +489,19 @@ static int _poll(const char *caller)
 	fd_count = pctl.fd_count;
 	events = pctl.events;
 
+	/*
+	 * Honor _interrupt() by treating it like an actual interrupt was
+	 * received by exiting early.
+	 */
+	if (pctl.interrupt.requested) {
+		log_flag(CONMGR, "%s->%s: [EPOLL] skipping epoll_wait() to honor %d pending interrupt request(s)",
+			 caller, __func__, pctl.interrupt.requested);
+		pctl.interrupt.requested = 0;
+		pctl.events_triggered = 0;
+		slurm_mutex_unlock(&pctl.mutex);
+		return SLURM_SUCCESS;
+	}
+
 	log_flag(CONMGR, "%s->%s: [EPOLL] BEGIN: epoll_wait() with %d file descriptors",
 		    caller, __func__, pctl.fd_count);
 
@@ -625,12 +638,19 @@ static void _interrupt(const char *caller)
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
-	if (!pctl.polling) {
-		log_flag(CONMGR, "%s->%s: [EPOLL] skipping sending interrupt when not actively poll()ing",
-			 caller, __func__);
-	} else {
-		pctl.interrupt.requested++;
+	pctl.interrupt.requested++;
 
+	if (!pctl.polling) {
+		/*
+		 * There is no epoll_wait() to break out of right now, but
+		 * record the request so the next _poll() does not block. This
+		 * avoids losing an interrupt requested in the window between
+		 * the poll being queued (mgr.poll_active) and pctl.polling
+		 * being set, which could otherwise hang (e.g. on shutdown).
+		 */
+		log_flag(CONMGR, "%s->%s: [EPOLL] recording interrupt requested while not poll()ing requests=%d",
+			 caller, __func__, pctl.interrupt.requested);
+	} else {
 		/* Check for duplicate requests. */
 		if (pctl.interrupt.requested == 1) {
 			fd = pctl.interrupt.send;
