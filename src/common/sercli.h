@@ -60,6 +60,31 @@ typedef struct {
 } data_parser_dump_cli_ctxt_t;
 
 /*
+ * Release a parser from data_parser_cli_load() and the dump ctxt it carries
+ * (meta, errors, warnings), then NULL *parser_ptr.
+ * NOTE: frees the parser first so no callback can touch the ctxt afterward.
+ * NOTE: no-op when *parser_ptr is NULL (the "list"/error/no-mime paths).
+ */
+extern void data_parser_cli_free_ctxt(data_parser_t **parser_ptr);
+
+/*
+ * data_parser_cli_load() for one-shot tools with no cleanup label: on the
+ * "list" short-circuit or a load error, release the ctxt and exit().
+ * NOTE: no-op returning SLURM_SUCCESS when mime_type is unset, so it is safe
+ *	to call unconditionally.
+ * IN/OUT parser_ptr - set to the new parser, or NULL on "list"/error
+ * IN acct_db_conn - slurmdb connection or NULL
+ * IN argc/argv - program argv (used to populate meta)
+ * IN mime_type - mime type the caller intends to dump (load skipped if unset)
+ * IN data_parser - data_parser parameters; "list" prints plugin list
+ * RET SLURM_SUCCESS or error (only returns on the dump path)
+ */
+extern int data_parser_load_cli_or_exit(data_parser_t **parser_ptr,
+					void *acct_db_conn, int argc,
+					char **argv, const char *mime_type,
+					const char *data_parser);
+
+/*
  * Dump a full openapi_resp_* struct to STDOUT using a parser from
  * data_parser_cli_load().
  * NOTE: injects the parser's ctxt meta/errors/warnings into resp's common

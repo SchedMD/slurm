@@ -362,6 +362,45 @@ extern int data_parser_dump_cli_single(data_parser_type_t type, void *response,
 	return data_parser_dump_cli_resp(type, &single, sizeof(single), parser);
 }
 
+extern void data_parser_cli_free_ctxt(data_parser_t **parser_ptr)
+{
+	data_parser_dump_cli_ctxt_t *ctxt;
+
+	if (!parser_ptr || !*parser_ptr)
+		return;
+
+	ctxt = data_parser_get_error_arg(*parser_ptr);
+
+	/* free the parser first so no callback can touch the ctxt afterward */
+	FREE_NULL_DATA_PARSER(*parser_ptr);
+
+	free_openapi_resp_meta(ctxt->meta);
+	FREE_NULL_LIST(ctxt->errors);
+	FREE_NULL_LIST(ctxt->warnings);
+	xfree(ctxt);
+}
+
+extern int data_parser_load_cli_or_exit(data_parser_t **parser_ptr,
+					void *acct_db_conn, int argc,
+					char **argv, const char *mime_type,
+					const char *data_parser)
+{
+	int rc;
+
+	if (!mime_type)
+		return SLURM_SUCCESS;
+
+	rc = data_parser_cli_load(parser_ptr, acct_db_conn, argc, argv,
+				  mime_type, data_parser);
+
+	if (rc || !*parser_ptr) {
+		data_parser_cli_free_ctxt(parser_ptr);
+		exit(rc ? 1 : 0);
+	}
+
+	return rc;
+}
+
 extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
 {
 	char *default_data_parser = (slurm_conf.data_parser_parameters ?
