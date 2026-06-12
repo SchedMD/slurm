@@ -209,6 +209,64 @@ cleanup:
 	return rc;
 }
 
+extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
+				int argc, char **argv, const char *mime_type,
+				const char *data_parser)
+{
+	int rc = SLURM_SUCCESS;
+	data_parser_dump_cli_ctxt_t *ctxt = NULL;
+	data_parser_t *parser = NULL;
+
+	xassert(parser_ptr);
+	xassert(!*parser_ptr);
+
+	if (!xstrcasecmp(data_parser, "list")) {
+		data_parser_t *list_parser = NULL;
+
+		/*
+		 * "list" short-circuit: print the plugin list and return with
+		 * *parser_ptr NULL (nothing allocated). The caller sees a NULL
+		 * parser and exits without dumping.
+		 */
+		dprintf(STDERR_FILENO, "Possible data_parser plugins:\n");
+		list_parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL, "list",
+						_plugrack_foreach_list, false);
+		FREE_NULL_DATA_PARSER(list_parser);
+		return SLURM_SUCCESS;
+	}
+
+	ctxt = xmalloc(sizeof(*ctxt));
+	ctxt->magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC;
+	ctxt->data_parser = data_parser;
+	ctxt->mime_type = mime_type;
+	ctxt->errors = list_create(free_openapi_resp_error);
+	ctxt->warnings = list_create(free_openapi_resp_warning);
+	ctxt->meta = data_parser_cli_meta(argc, argv, mime_type);
+
+	if (!(parser = data_parser_cli_parser(data_parser, ctxt))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		error("%s output not supported by %s",
+		      mime_type, SLURM_DATA_PARSER_VERSION);
+		free_openapi_resp_meta(ctxt->meta);
+		FREE_NULL_LIST(ctxt->errors);
+		FREE_NULL_LIST(ctxt->warnings);
+		xfree(ctxt);
+		return rc;
+	}
+
+	if (acct_db_conn)
+		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
+				     acct_db_conn);
+
+	xassert(!ctxt->meta->plugin.data_parser);
+	ctxt->meta->plugin.data_parser =
+		xstrdup(data_parser_get_plugin(parser));
+
+	*parser_ptr = parser;
+	return rc;
+}
+
 extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
 {
 	char *default_data_parser = (slurm_conf.data_parser_parameters ?

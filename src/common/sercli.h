@@ -53,9 +53,34 @@ typedef struct {
 	int magic; /* DATA_PARSER_DUMP_CLI_CTXT_MAGIC */
 	int rc;
 	list_t *errors;
+	const char *mime_type;
 	list_t *warnings;
 	const char *data_parser;
+	openapi_resp_meta_t *meta;
 } data_parser_dump_cli_ctxt_t;
+
+/*
+ * Load a CLI dump context for a subsequent dump.
+ * NOTE: call BEFORE the slurm_load_*() RPC so "list" can short-circuit it.
+ * NOTE: for "list", prints plugin names to STDOUT (header on STDERR) and
+ *	returns SLURM_SUCCESS with *parser_ptr NULL and nothing allocated; the
+ *	caller detects a NULL parser and skips the dump.
+ * NOTE: otherwise heap-allocates the dump ctxt (errors/warnings/meta) and the
+ *	parser that carries it as its callback arg, assigns acct_db_conn, and
+ *	sets meta->plugin.data_parser; release with
+ *	data_parser_cli_free_ctxt().
+ * NOTE: on a load error it frees everything it allocated and returns
+ *	*parser_ptr NULL, so the caller need not free on the error path.
+ * IN/OUT parser_ptr - set to the new parser, or NULL on "list"/error
+ * IN acct_db_conn - slurmdb connection or NULL
+ * IN argc/argv - program argv (used to populate meta)
+ * IN mime_type - mime type the caller intends to dump
+ * IN data_parser - data_parser parameters; "list" prints plugin list
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
+				int argc, char **argv, const char *mime_type,
+				const char *data_parser);
 
 /*
  * Dump object of given type to STDOUT
