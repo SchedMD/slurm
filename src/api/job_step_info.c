@@ -377,8 +377,10 @@ extern int slurm_find_step_ids_by_container_id(uint16_t show_flags, uid_t uid,
 	req_msg.data = &req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec))
-		return errno;
+					   working_cluster_rec)) {
+		rc = errno;
+		goto fini;
+	}
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_STEP_BY_CONTAINER_ID:
@@ -395,6 +397,8 @@ extern int slurm_find_step_ids_by_container_id(uint16_t show_flags, uid_t uid,
 	}
 
 	slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+fini:
+	xfree(req.container_id);
 
 	return rc;
 }

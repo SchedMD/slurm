@@ -255,6 +255,17 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	return con;
 }
 
+static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	debug("%s:[%s] opened listener connection",
+	      __func__, conmgr_fd_get_name(con));
+
+	/* must return !NULL or connection will be closed */
+	return con;
+}
+
 static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg)
 {
@@ -351,9 +362,24 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(con == arg);
 
-	if (get_log_level() > LOG_LEVEL_DEBUG) {
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		read_lock_state();
 		debug("%s: [%s] closed srun connection state=%s",
+		      __func__, conmgr_fd_get_name(con),
+		      slurm_container_status_to_str(state.status));
+		unlock_state();
+	}
+}
+
+static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(con == arg);
+
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		read_lock_state();
+		debug("%s: [%s] closed listener connection, state=%s",
 		      __func__, conmgr_fd_get_name(con),
 		      slurm_container_status_to_str(state.status));
 		unlock_state();
@@ -368,8 +394,10 @@ static uint32_t _setup_listener(void)
 {
 	static const conmgr_events_t events = {
 		.on_connection = _on_connection,
-		.on_msg = _on_msg,
 		.on_finish = _on_finish,
+		.on_listen_connect = _on_listen_connect,
+		.on_listen_finish = _on_listen_finish,
+		.on_msg = _on_msg,
 	};
 	uint16_t port = 0;
 	int fd = -1;
@@ -383,9 +411,9 @@ static uint32_t _setup_listener(void)
 	xassert(port > 0);
 	debug("%s: listening for srun RPCs on port=%hu", __func__, port);
 
-	if ((rc = conmgr_process_fd(CON_TYPE_RPC, &conmgr_timeouts_disabled, fd,
-				    fd, &events, CON_FLAG_NONE, NULL, 0, NULL,
-				    NULL)))
+	if ((rc = conmgr_process_fd_listen(fd, CON_TYPE_RPC,
+					   &conmgr_timeouts_disabled, &events,
+					   CON_FLAG_NONE, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
@@ -511,11 +539,10 @@ static void _alloc_job(void)
 	xfree(opt_string);
 
 	desc = slurm_opt_create_job_desc(&opt, true);
-	xfree(desc->name);
 	read_lock_state();
-	desc->name = xstrdup(state.id);
 	desc->container_id = xstrdup(state.id);
 	if (state.spank_job_env) {
+		env_array_free(desc->spank_job_env);
 		desc->spank_job_env =
 			env_array_copy((const char **) state.spank_job_env);
 		desc->spank_job_env_size = envcount(state.spank_job_env);
@@ -530,6 +557,7 @@ static void _alloc_job(void)
 	 */
 	desc->user_id = SLURM_AUTH_NOBODY;
 	desc->group_id = SLURM_AUTH_NOBODY;
+	xfree(desc->name);
 	desc->name = xstrdup("scrun");
 	desc->other_port = _setup_listener();
 

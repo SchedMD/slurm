@@ -255,4 +255,16 @@ extern int fd_get_buffered_output_bytes(int fd, int *bytes_ptr,
  */
 extern int fd_get_maxmss(int fd, const char *con_name);
 
+#define FCNTL_MODES_STR_BYTES 512
+
+/*
+ * Dump output of fcntl(F_GETFL) as string
+ * IN modes flags from fcntl(F_GETFL)
+ * IN str - string to populate
+ * IN bytes - number of bytes in str (should be >= FCNTL_MODES_STR_BYTES)
+ * RET access type as string
+ */
+extern const char *fcntl_modes_to_string(const int modes, char *str,
+					 size_t bytes);
+
 #endif /* !_FD_H */

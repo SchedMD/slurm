@@ -873,7 +873,6 @@ extern int (slurm_job_node_ready)(slurm_step_id_t step_id)
 
 	if (resp.msg_type == RESPONSE_JOB_READY) {
 		rc = ((return_code_msg_t *) resp.data)->return_code;
-		slurm_free_return_code_msg(resp.data);
 	} else if (resp.msg_type == RESPONSE_SLURM_RC) {
 		int job_rc = ((return_code_msg_t *) resp.data) ->
 				return_code;
@@ -882,12 +881,13 @@ extern int (slurm_job_node_ready)(slurm_step_id_t step_id)
 			rc = READY_JOB_FATAL;
 		else	/* EAGAIN */
 			rc = READY_JOB_ERROR;
-		slurm_free_return_code_msg(resp.data);
 	} else if (resp.msg_type == RESPONSE_PROLOG_EXECUTING) {
 		rc = READY_JOB_ERROR;
 	} else {
 		rc = READY_JOB_ERROR;
 	}
+
+	slurm_free_msg_members(&resp);
 
 	return rc;
 }
