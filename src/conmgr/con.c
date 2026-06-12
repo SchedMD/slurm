@@ -708,6 +708,9 @@ extern int add_connection(conmgr_con_type_t type,
 	static const size_t unix_socket_path_max =
 		sizeof(((struct sockaddr_un *) NULL)->sun_path);
 	const conmgr_timeouts_t *timeouts_ptr = NULL;
+	char in_modes_str[FCNTL_MODES_STR_BYTES];
+	char out_modes_str[FCNTL_MODES_STR_BYTES];
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	if (timeouts)
 		timeouts_ptr = timeouts;
@@ -873,23 +876,15 @@ extern int add_connection(conmgr_con_type_t type,
 	/* Always set last_read for connect timeout */
 	con->last_read = timespec_now();
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char in_modes_str[FCNTL_MODES_STR_BYTES];
-		char out_modes_str[FCNTL_MODES_STR_BYTES];
-		char *flags = con_flags_string(con->flags);
-
-		log_flag(CONMGR, "%s: [%s] new connection input_fd=%d(%s) output_fd=%d(%s) flags=%s",
-			 __func__, con->name, input_fd,
-			 (has_in ? fcntl_modes_to_string(in_modes, in_modes_str,
-							 sizeof(in_modes_str)) :
-			  ""), output_fd,
-			 (has_out ? fcntl_modes_to_string(out_modes,
-							  out_modes_str,
-							  sizeof(out_modes_str))
-			  : ""), flags);
-
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] new connection input_fd=%d(%s) output_fd=%d(%s) flags=%s",
+		 __func__, con->name, input_fd,
+		 (has_in ?
+		  fcntl_modes_to_string(in_modes, in_modes_str,
+					sizeof(in_modes_str)) : ""),
+		 output_fd, (has_out ?
+			     fcntl_modes_to_string(out_modes, out_modes_str,
+						   sizeof(out_modes_str)) : ""),
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	if (tls_conn)
 		tls_adopt(con, tls_conn);
