@@ -993,12 +993,17 @@ extern int (slurm_allocation_lookup)(slurm_step_id_t step_id,
 	return SLURM_SUCCESS;
 }
 
-extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
+/*
+ * Send REQUEST_HET_JOB_ALLOC_INFO to a single target and merge the response
+ * list into *info. If stepmgr_nodename is NULL, queries slurmctld.
+ */
+static int _het_job_lookup_one(char *stepmgr_nodename, slurm_step_id_t step_id,
+			       list_t **info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
+	list_t *resp_list;
 	slurm_msg_t resp_msg;
-	char *stepmgr_nodename = NULL;
 
 	memset(&req, 0, sizeof(req));
 	req.step_id = step_id;
@@ -1008,7 +1013,7 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	req_msg.msg_type = REQUEST_HET_JOB_ALLOC_INFO;
 	req_msg.data = &req;
 
-	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
+	if (stepmgr_nodename) {
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
 		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
@@ -1028,7 +1033,6 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
 					    req_msg.flags);
 		}
-		xfree(stepmgr_nodename);
 
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
 			return SLURM_ERROR;
@@ -1041,11 +1045,17 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
 			return SLURM_ERROR;
-		*info = NULL;
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
-		*info = resp_msg.data;
-		return SLURM_SUCCESS;
+		resp_list = resp_msg.data;
+		if (!(*info)) {
+			*info = resp_list;
+			resp_list = NULL;
+		} else {
+			list_transfer(*info, resp_list);
+		}
+
+		FREE_NULL_LIST(resp_list);
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
@@ -1053,6 +1063,23 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern int(slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
+{
+	char *stepmgr_nodename = NULL;
+	int rc = SLURM_SUCCESS;
+
+	*info = NULL;
+
+	stepmgr_nodename = getenv("SLURM_STEPMGR");
+
+	rc = _het_job_lookup_one(stepmgr_nodename, step_id, info);
+
+	if (rc)
+		FREE_NULL_LIST(*info);
+
+	return rc;
 }
 
 /*
