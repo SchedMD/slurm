@@ -175,13 +175,6 @@ typedef enum {
  */
 extern char *con_flags_print(const con_flags_t flags, char *str, size_t bytes);
 
-/*
- * Convert flags to printable string
- * IN flags - connection flags
- * RET string of flags (must xfree())
- */
-extern char *con_flags_string(const con_flags_t flags);
-
 #define MAGIC_CON_MGR_FD_REF 0xA2F4B4EF
 
 typedef struct conmgr_fd_ref_s {

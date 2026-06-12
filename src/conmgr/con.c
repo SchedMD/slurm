@@ -209,13 +209,6 @@ extern char *con_flags_print(const con_flags_t flags, char *str, size_t bytes)
 	return str;
 }
 
-extern char *con_flags_string(const con_flags_t flags)
-{
-	char *str = xmalloc(CON_FLAGS_STR_BYTES);
-
-	return con_flags_print(flags, str, CON_FLAGS_STR_BYTES);
-}
-
 /*
  * Close all connections (for_each)
  * NOTE: must hold mgr.mutex
