@@ -211,6 +211,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* job_comp_port */
 	/* job_comp_type */
 	/* job_comp_user */
+	packstr(slurm_conf.def_runtime_plugin, buffer);
 	packstr(slurm_conf.namespace_plugin, buffer);
 	/* job_defaults_list */
 	pack16(slurm_conf.job_file_append, buffer);
@@ -448,6 +449,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* job_comp_port */
 	/* job_comp_type */
 	/* job_comp_user */
+	safe_unpackstr(&slurm_conf.def_runtime_plugin, buffer);
 	safe_unpackstr(&slurm_conf.namespace_plugin, buffer);
 	/* job_defaults_list */
 	safe_unpack16(&slurm_conf.job_file_append, buffer);

@@ -1425,6 +1425,32 @@ mutually exclusive.
 .IP
 
 .TP
+\fBDefRuntimePlugin\fR
+Identifies the default runtime plugin loaded by slurmstepd for job tasks. This
+may be overridden per job with the \fB\-\-runtime\fR option. The plugin only
+runs a task inside a container when the job requests one (via
+\fB\-\-container\fR); otherwise the task is executed directly. The default
+value is \fBruntime/oci\fR.
+
+\fBNOTE\fR: This option selects the runtime plugin interface only; the OCI
+runtime binary is configured separately in \fBoci.conf\fR(5) (see also
+\fBscrun\fR(1)). For job isolation through namespaces, see \fBNamespaceType\fR.
+
+Acceptable values at present include:
+.IP
+.RS
+.TP 20
+\fBruntime/none\fR
+\fB\-\-container\fR requests are ignored; job tasks are executed directly by
+slurmstepd.
+.IP
+.TP
+\fBruntime/oci\fR
+Job tasks are run within an OCI runtime.
+.RE
+.IP
+
+.TP
 \fBDependencyParameters\fR
 Multiple options may be comma separated.
 .IP

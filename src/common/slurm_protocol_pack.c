@@ -4060,6 +4060,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		pack64(conf->def_mem_per_cpu, buffer);
 		pack64(conf->debug_flags, buffer);
 		packstr(conf->dependency_params, buffer);
+		packstr(conf->def_runtime_plugin, buffer);
 
 		pack16(conf->eio_timeout, buffer);
 		pack16(conf->enforce_part_limits, buffer);
@@ -5148,6 +5149,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpack64(&conf->def_mem_per_cpu, buffer);
 		safe_unpack64(&conf->debug_flags, buffer);
 		safe_unpackstr(&conf->dependency_params, buffer);
+		safe_unpackstr(&conf->def_runtime_plugin, buffer);
 
 		safe_unpack16(&conf->eio_timeout, buffer);
 		safe_unpack16(&conf->enforce_part_limits, buffer);

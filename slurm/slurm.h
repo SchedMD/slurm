@@ -3075,6 +3075,7 @@ typedef struct {
 	char *data_parser_parameters; /* data parser parameters */
 	uint64_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	char *def_runtime_plugin; /* default runtime plugin type */
 	char *dependency_params; /* DependencyParameters */
 	uint16_t eio_timeout;     /* timeout for the eio thread */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding

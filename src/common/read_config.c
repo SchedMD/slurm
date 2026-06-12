@@ -267,6 +267,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerCPU", S_P_UINT64},
 	{"DefMemPerGPU" , S_P_UINT64},
 	{"DefMemPerNode", S_P_UINT64},
+	{"DefRuntimePlugin", S_P_STRING},
 	{"DependencyParameters", S_P_STRING},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EioTimeout", S_P_UINT16},
@@ -2774,6 +2775,7 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->control_machine);
 	xfree(conf->cred_type);
 	xfree(conf->data_parser_parameters);
+	xfree(conf->def_runtime_plugin);
 	xfree(conf->dependency_params);
 	for (int i = 0; i < conf->epilog_cnt; i++)
 		xfree(conf->epilog[i]);
@@ -2929,6 +2931,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	xfree(conf->cred_type);
 	conf->def_mem_per_cpu = 0;
 	conf->debug_flags = 0;
+	xfree(conf->def_runtime_plugin);
 	xfree(conf->dependency_params);
 	conf->acct_gather_node_freq = 0;
 	xfree(conf->acct_gather_energy_type);
@@ -4223,6 +4226,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		else
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
+
+	if (!s_p_get_string(&conf->def_runtime_plugin, "DefRuntimePlugin",
+			    hashtbl))
+		conf->def_runtime_plugin = xstrdup(DEFAULT_RUNTIME_PLUGIN);
 
 	found_plugin = s_p_get_string(&conf->namespace_plugin, "NamespaceType",
 				      hashtbl);
