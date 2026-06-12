@@ -129,6 +129,7 @@ extern time_t last_license_update;
 extern int license_init(char *licenses);
 
 extern int hres_init(void);
+extern int hres_update(hres_update_msg_t *msg);
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
 extern bool hres_select_check(hres_select_t *hres_select,

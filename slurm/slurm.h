@@ -3577,6 +3577,14 @@ typedef struct license_info_msg {
 } license_info_msg_t;
 
 typedef struct {
+	list_t *base; /* list of hres_variable_t */
+	uint32_t count;
+	char *hres_name;
+	char *layer_name;
+	char *nodes;
+} hres_update_msg_t;
+
+typedef struct {
 	uint32_t  job_array_count;
 	char **job_array_id;
 	uint32_t *error_code;

@@ -1375,6 +1375,11 @@ extern int hres_init(void)
 	return SLURM_SUCCESS;
 }
 
+extern int hres_update(hres_update_msg_t *msg)
+{
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_hres_filter_mode1(void *x, void *arg)
 {
 	licenses_t *match = x;

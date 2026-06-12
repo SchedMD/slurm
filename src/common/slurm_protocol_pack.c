@@ -13864,6 +13864,50 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_update_hres_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	hres_update_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		slurm_pack_list(msg->base, slurm_pack_hres_variable, buffer,
+				smsg->protocol_version);
+		pack32(msg->count, buffer);
+		packstr(msg->hres_name, buffer);
+		packstr(msg->layer_name, buffer);
+		packstr(msg->nodes, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, smsg->protocol_version);
+	}
+}
+
+static int _unpack_update_hres_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	hres_update_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&msg->base, _unpack_hres_variable,
+				      hres_variable_free, buffer,
+				      smsg->protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&msg->count, buffer);
+		safe_unpackstr(&msg->hres_name, buffer);
+		safe_unpackstr(&msg->layer_name, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, smsg->protocol_version);
+		goto unpack_error;
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_hres_update_msg(msg);
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -14398,6 +14442,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case RESPONSE_NODE_ALIAS_ADDRS:
 		_pack_node_alias_addrs_resp_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_HRES:
+		_pack_update_hres_msg(msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -14965,6 +15012,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_NODE_ALIAS_ADDRS:
 		rc = _unpack_node_alias_addrs_resp_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_HRES:
+		rc = _unpack_update_hres_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);

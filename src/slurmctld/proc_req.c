@@ -1862,6 +1862,17 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 	debug2("%s %s", __func__, TIMER_STR());
 }
 
+static void _slurm_rpc_update_hres(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+
+	START_TIMER;
+	hres_update(msg->data);
+
+	END_TIMER2(__func__);
+	debug2("%s %s", __func__, TIMER_STR());
+}
+
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
 static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 {
@@ -7053,6 +7064,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_END_TIME,
 		.func = _slurm_rpc_end_time,
+	},{
+		.msg_type = REQUEST_UPDATE_HRES,
+		.func = _slurm_rpc_update_hres,
 	},{
 		.msg_type = REQUEST_FED_INFO,
 		.func = _slurm_rpc_get_fed,

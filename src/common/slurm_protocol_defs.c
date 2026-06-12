@@ -2037,6 +2037,18 @@ extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_hres_update_msg(hres_update_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	FREE_NULL_LIST(msg->base);
+	xfree(msg->hres_name);
+	xfree(msg->layer_name);
+	xfree(msg->nodes);
+	xfree(msg);
+}
+
 extern void slurm_free_node_reg_resp_msg(
 	slurm_node_reg_resp_msg_t *msg)
 {
@@ -5239,6 +5251,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_ACCT_GATHER_UPDATE:
 	case RESPONSE_ACCT_GATHER_ENERGY:
 		slurm_free_acct_gather_node_resp_msg(data);
+		break;
+	case REQUEST_UPDATE_HRES:
+		slurm_free_hres_update_msg(data);
 		break;
 	case RESPONSE_NODE_REGISTRATION:
 		slurm_free_node_reg_resp_msg(data);
