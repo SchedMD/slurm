@@ -341,12 +341,12 @@ again:
 
 	if (con_flag(con, FLAG_ON_DATA_TRIED) ||
 	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			log_flag(NET, "%s: [%s] skipping with flags=%s",
-				 __func__, con->name, flags);
-			xfree(flags);
-		}
+		char flags_str[CON_FLAGS_STR_BYTES];
+
+		log_flag(NET, "%s: [%s] skipping with flags=%s",
+			 __func__, con->name,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
