@@ -612,6 +612,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	handle_connection_args_t local_args = {
 		.magic = MAGIC_HANDLE_CONNECTION,
 	};
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	if (!args) {
 		/*
@@ -737,12 +738,10 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	 */
 	if (con_flag(con, FLAG_QUIESCE) && ((con->input_fd >= 0) ||
 					    (con->output_fd >= 0))) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: [%s] connection is quiesced flags=%s",
-				 __func__, con->name, flags);
-			xfree(flags);
-		}
+		log_flag(CONMGR, "%s: [%s] connection is quiesced flags=%s",
+			 __func__, con->name,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 		con_set_polling(con, PCTL_TYPE_NONE, __func__);
 		return 0;
 	}
@@ -1008,21 +1007,19 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 				return 0;
 			}
 
-			if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-				char *flags = con_flags_string(con->flags);
-				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u pending_tls_read=%d pending_tls_writes=%d work=%d write_complete_work=%d extract=%s flags=%s",
-					 __func__, con->name,
-					 get_buf_offset(con->in),
-					 list_count(con->out),
-					 (con->tls_in ?
-					  get_buf_offset(con->tls_in) : -1),
-					 (con->tls_out ?
-					  list_count(con->tls_out) : -1),
-					 list_count(con->work),
-					 list_count(con->write_complete_work),
-					 con->on_extract.func_name, flags);
-				xfree(flags);
-			}
+			log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u pending_tls_read=%d pending_tls_writes=%d work=%d write_complete_work=%d extract=%s flags=%s",
+				 __func__, con->name,
+				 get_buf_offset(con->in),
+				 list_count(con->out),
+				 (con->tls_in ?
+				  get_buf_offset(con->tls_in) : -1),
+				 (con->tls_out ?
+				  list_count(con->tls_out) : -1),
+				 list_count(con->work),
+				 list_count(con->write_complete_work),
+				 con->on_extract.func_name,
+				 con_flags_print(con->flags, flags_str,
+						 sizeof(flags_str)));
 		}
 		return 0;
 	}
@@ -1091,12 +1088,10 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	xassert(con->refs < INT_MAX);
 	xassert(con->refs >= 0);
 	if (con->refs > 0) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: [%s] waiting on outstanding references:%d flags=%s",
-				 __func__, con->name, con->refs, flags);
-			xfree(flags);
-		}
+		log_flag(CONMGR, "%s: [%s] waiting on outstanding references:%d flags=%s",
+			 __func__, con->name, con->refs,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 
 		return 0;
 	}
