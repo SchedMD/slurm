@@ -81,6 +81,7 @@ typedef struct {
 	uint32_t base_usage;
 	uint16_t depth; /* depth of layout */
 	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
+	char *layer_name;
 	uint16_t layers_cnt; /* count of layers, set only for root*/
 	uint16_t leaf_cnt; /* count of leafs, set only for root*/
 	uint16_t level; /* level - 0 for leaf */

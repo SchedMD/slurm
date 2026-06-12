@@ -499,6 +499,7 @@ typedef struct {
 typedef struct {
 	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
+	char *layer_name;
 	char *nodes;
 } hierarchy_layer_t;
 
@@ -7366,6 +7367,7 @@ static void FREE_FUNC(H_LAYER)(void *ptr)
 		return;
 
 	FREE_NULL_LIST(layer->base);
+	xfree(layer->layer_name);
 	xfree(layer->nodes);
 	xfree(layer);
 }
@@ -7441,6 +7443,7 @@ static int _foreach_layer(void *x, void *arg)
 	license->name = xstrdup(args->resource->name);
 	license->mode = args->resource->mode;
 	license->nodes = xstrdup(layer->nodes);
+	license->hres_rec.layer_name = xstrdup(layer->layer_name);
 	license->hres_rec.total = layer->count;
 
 	if (((void *) hres_variable_free) && list_count(layer->base)) {
@@ -7542,6 +7545,7 @@ static int _foreach_license(void *x, void *arg)
 	if (!resource->layers)
 		resource->layers = list_create(FREE_FUNC(H_LAYER));
 	layer = xmalloc(sizeof(*layer));
+	layer->layer_name = xstrdup(license->hres_rec.layer_name);
 	layer->nodes = xstrdup(license->nodes);
 	layer->count = license->hres_rec.total;
 	if (!resource->topology_name)
@@ -11620,6 +11624,7 @@ static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
 #define add_parse_req(mtype, field, path, desc)				\
 	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_LAYER)[] = {
+	add_parse_req(STRING, layer_name, "layer_name", "Layer name. Must be unique (case insensitive)."),
 	add_parse_req(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
 	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
 	add_parse_req(UINT32_NO_VAL, count, "count", "Resource quantity"),

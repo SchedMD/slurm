@@ -253,9 +253,10 @@ static int _foreach_license_print(void *x, void *arg)
 	foreach_license_print_t *args = arg;
 
 	if (license_entry->id.hres_id != NO_VAL16) {
-		info("licenses: %s=%s lic_id=%u hres_id=%u mode=%u nodes:%s total=%u used=%u",
+		info("licenses: %s=%s lic_id=%u hres_id=%u mode=%u layer_name=%s nodes:%s total=%u used=%u",
 		     args->header, license_entry->name, license_entry->id.lic_id,
 		     license_entry->id.hres_id, license_entry->mode,
+		     license_entry->hres_rec.layer_name,
 		     license_entry->nodes, license_entry->total,
 		     license_entry->used);
 		if (license_entry->mode == HRES_MODE_3) {
@@ -309,6 +310,7 @@ extern void license_free_rec(void *x)
 		xfree(license_entry->name);
 		FREE_NULL_BITMAP(license_entry->node_bitmap);
 		xfree(license_entry->nodes);
+		xfree(license_entry->hres_rec.layer_name);
 		xfree(license_entry->hres_rec.topology_name);
 		FREE_NULL_LIST(license_entry->hres_rec.variables);
 		xfree(license_entry);
@@ -818,6 +820,38 @@ static bool _sufficient_licenses(licenses_t *request, licenses_t *match,
 		resv_licenses) <= match->total;
 }
 
+static int _find_dup_layer_name(void *x, void *key)
+{
+	licenses_t *lic = x;
+	licenses_t *lic_key = key;
+
+	/* Don't match on self */
+	if (lic == lic_key)
+		return 0;
+
+	/* Only enforce uniqueness among the same HRES. */
+	if (lic->id.hres_id != lic_key->id.hres_id)
+		return 0;
+
+	if (!xstrcasecmp(lic->hres_rec.layer_name,
+			 lic_key->hres_rec.layer_name))
+		return 1; /* Duplicate layer_name */
+	return 0;
+}
+
+static int _foreach_validate_layer_name(void *x, void *arg)
+{
+	licenses_t *lic = x;
+
+	if (lic->id.hres_id == NO_VAL16)
+		return 0;
+
+	if (list_find_first_ro(cluster_license_list, _find_dup_layer_name, lic))
+		fatal("Detected duplicate HRES layer_name: %s",
+		      lic->hres_rec.layer_name);
+	return 0;
+}
+
 static void _parse_hierarchical_resources(list_t **license_list_ptr)
 {
 	int rc = EINVAL;
@@ -1181,6 +1215,10 @@ extern int hres_init(void)
 			     NULL) < 0)
 		fatal("Can't set hres_id or bitmap");
 	list_sort(cluster_license_list, _sort_hres);
+
+	/* Enforce uniqueness of hres_rec.layer_name */
+	list_for_each_ro(cluster_license_list, _foreach_validate_layer_name,
+			 NULL);
 
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_mode3,
 			     &arg) < 0)
