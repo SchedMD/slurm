@@ -2675,11 +2675,9 @@ static int _foreach_log_connection(void *x, void *arg)
 	};
 	char last_read[CTIME_STR_LEN] = "", *last_read_delim = "";
 	char last_write[CTIME_STR_LEN] = "", *last_write_delim = "";
-	char *flags = NULL;
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	flags = con_flags_string(con->flags);
 
 	if (con->last_read.tv_sec) {
 		last_read_delim = "@";
@@ -2701,7 +2699,8 @@ static int _foreach_log_connection(void *x, void *arg)
 
 	probe_log(log, "connection: [%s]+%d status_code=%s flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
 		  con->name, con->refs, slurm_strerror(con->status_code),
-		  flags, conmgr_con_type_string(con->type),
+		  con_flags_print(con->flags, flags_str, sizeof(flags_str)),
+		  conmgr_con_type_string(con->type),
 	     con->input_fd, con->output_fd, &con->address,
 	     BOOL_CHARIFY(con->tls),
 	     (con->tls_in ? get_buf_offset(con->tls_in) : 0),
@@ -2715,8 +2714,6 @@ static int _foreach_log_connection(void *x, void *arg)
 	     BOOL_CHARIFY(con->on_extract.func),
 	     pollctl_type_to_string(con->polling_input_fd),
 	     pollctl_type_to_string(con->polling_output_fd));
-
-	xfree(flags);
 
 	if (con->work) {
 		log_con_work_args_t args = {
