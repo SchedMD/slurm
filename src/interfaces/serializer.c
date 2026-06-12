@@ -313,7 +313,8 @@ extern int serializer_g_init(void)
 	xassert(!should_not_change);
 
 	xassert(sizeof(funcs_t) == sizeof(void *) * ARRAY_SIZE(syms));
-	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE, NULL, NULL, syms,
+	rc = load_plugins(&plugins, SERIALIZER_MAJOR_TYPE,
+			  slurm_conf.serializer_plugins, NULL, syms,
 			  ARRAY_SIZE(syms));
 
 	if (rc)
