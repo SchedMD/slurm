@@ -169,6 +169,11 @@ typedef struct {
 	slurm_msg_t *msg;
 } foreach_multi_msg_t;
 
+typedef struct {
+	const char *het_job_id_set;
+	bool log_submit;
+} foreach_het_job_finalize_t;
+
 extern void record_rpc_stats(slurm_msg_t *msg, long delta)
 {
 	slurm_mutex_lock(&rpc_mutex);
@@ -954,6 +959,17 @@ static void _exclude_het_job_nodes(list_t *job_req_list)
 	xfree(req_nodes);
 }
 
+static int _foreach_het_job_finalize(void *x, void *arg)
+{
+	foreach_het_job_finalize_t *args = arg;
+	job_record_t *job_ptr = x;
+
+	job_ptr->het_job_id_set = xstrdup(args->het_job_id_set);
+	if (args->log_submit)
+		log_flag(HETJOB, "Submit %pJ", job_ptr);
+	return 0;
+}
+
 /*
  * _create_het_job_id_set - Obtain the het_job_id_set
  * het_job_id_set OUT - allocated in the function and must be xfreed
@@ -1280,11 +1296,10 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 
 	if (first_job_ptr)
 		first_job_ptr->het_job_list = submit_job_list;
-	iter = list_iterator_create(submit_job_list);
-	while ((job_ptr = list_next(iter))) {
-		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(submit_job_list, _foreach_het_job_finalize,
+			     &(foreach_het_job_finalize_t) {
+				     .het_job_id_set = het_job_id_set,
+			     });
 	xfree(het_job_id_set);
 
 	_het_job_val_rem(submit_job_list);
@@ -4289,13 +4304,12 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	if (first_job_ptr)
 		first_job_ptr->het_job_list = submit_job_list;
 
-	iter = list_iterator_create(submit_job_list);
-	while ((job_ptr = list_next(iter))) {
-		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
-		if (error_code == SLURM_SUCCESS)
-			log_flag(HETJOB, "Submit %pJ", job_ptr);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(submit_job_list, _foreach_het_job_finalize,
+			     &(foreach_het_job_finalize_t) {
+				     .het_job_id_set = het_job_id_set,
+				     .log_submit =
+					     (error_code == SLURM_SUCCESS),
+			     });
 	xfree(het_job_id_set);
 
 	_het_job_val_rem(submit_job_list);
