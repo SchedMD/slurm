@@ -393,6 +393,17 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         State=CLOUD nodes, the default is 90.</p>
       </dd>
 
+      <dt id="periodic_check_interval"><b>periodic_check_interval=#</b><a class=
+      "slurm_link" href="#periodic_check_interval"></a>
+      </dt>
+
+      <dd>
+        <p>How often slurmctld runs periodic background checks, including job
+        time-limit handling, reservation checks, and node timer checks. Lower
+        values can reduce the delay before jobs progress after nodes resume
+        and register. Default is 30 seconds.</p>
+      </dd>
+
       <dt id="power_save_interval"><b>power_save_interval=#</b><a class=
       "slurm_link" href="#power_save_interval"></a>
       </dt>
