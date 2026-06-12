@@ -84,17 +84,26 @@ scontrol_load_reservations(reserve_info_msg_t **res_buffer_pptr)
  */
 extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 {
-	int error_code, print_cnt = 0;
+	int error_code = SLURM_SUCCESS, print_cnt = 0;
 	reserve_info_msg_t *res_info_ptr = NULL;
 	reserve_info_t *res_ptr = NULL;
 	reserve_info_t **resvs = NULL;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		error_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	error_code = scontrol_load_reservations(&res_info_ptr);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_reservations error");
-		return;
+		goto cleanup;
 	}
 
 	if (!mime_type && (quiet_flag == -1)) {
@@ -118,7 +127,6 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 	}
 
 	if (mime_type) {
-		int rc;
 		reserve_info_msg_t msg = {
 			.last_update = res_info_ptr->last_update,
 			.record_count = print_cnt,
@@ -134,11 +142,9 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 		for (int i = 0; i < print_cnt; i++)
 			msg.reservation_array[i] = *resvs[i];
 
-		DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, orig_argc,
-			      orig_argv, NULL, mime_type, data_parser, rc);
-
-		if (rc)
-			exit_code = 1;
+		error_code = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_RESERVATION_RESP, &resp,
+			sizeof(resp), parser);
 
 		xfree(msg.reservation_array);
 	} else {
@@ -157,5 +163,10 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 			printf ("No reservations in the system\n");
 	}
 
+cleanup:
+	if (error_code)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	xfree(resvs);
 }

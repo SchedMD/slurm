@@ -91,13 +91,24 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 	int error_code, print_cnt = 0;
 	partition_info_msg_t *part_info_ptr = NULL;
 	partition_info_t **parts = NULL;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		int rc = SLURM_ERROR;
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc)
+			exit_code = SLURM_ERROR;
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	error_code = scontrol_load_partitions(&part_info_ptr);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_partitions error");
-		return;
+		goto cleanup;
 	}
 
 	if (part_info_ptr->record_count) {
@@ -127,7 +138,7 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 	}
 
 	if (mime_type) {
-		int rc;
+		int rc = SLURM_ERROR;
 		partition_info_msg_t msg = {
 			.record_count = print_cnt,
 			.last_update = part_info_ptr->last_update,
@@ -142,8 +153,9 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 		for (int i = 0; i < print_cnt; i++)
 			msg.partition_array[i] = *parts[i];
 
-		DATA_DUMP_CLI(OPENAPI_PARTITION_RESP, resp, orig_argc,
-			      orig_argv, NULL, mime_type, data_parser, rc);
+		rc = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_PARTITION_RESP, &resp, sizeof(resp),
+			parser);
 
 		if (rc)
 			exit_code = SLURM_ERROR;
@@ -164,5 +176,8 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 			printf ("No partitions in the system\n");
 	}
 
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	xfree(parts);
 }

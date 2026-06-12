@@ -1425,6 +1425,15 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		error_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	/* check for valid SLUID first */
 	sluid = str2sluid(job_id_str);
@@ -1441,7 +1450,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 				errno = ESLURM_INVALID_JOB_ID;
 				if (quiet_flag != 1)
 					slurm_perror("scontrol_print_job error");
-				return;
+				goto cleanup;
 			}
 			++tmp_job_ptr;
 		}
@@ -1466,19 +1475,17 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			resp.last_backfill = job_buffer_ptr->last_backfill;
 		}
 
-		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, orig_argc, orig_argv,
-			      NULL, mime_type, data_parser, error_code);
-
-		if (error_code)
-			exit_code = 1;
-		return;
+		error_code = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_JOB_INFO_RESP, &resp, sizeof(resp),
+			parser);
+		goto cleanup;
 	}
 
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror("slurm_load_jobs error");
-		return;
+		goto cleanup;
 	}
 
 	if (quiet_flag == -1) {
@@ -1529,6 +1536,12 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 		} else if (quiet_flag != 1)
 			printf ("No jobs in the system\n");
 	}
+
+cleanup:
+	if (error_code)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 }
 
 /*
@@ -1548,6 +1561,15 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	job_step_info_response_msg_t *job_step_info_ptr = NULL;
 	uint16_t show_flags = 0;
 	job_step_info_t **steps = NULL;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		error_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	if (!job_step_id_str) {
 		/* do nothing */
@@ -1604,13 +1626,10 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 				resp.last_update =
 					job_step_info_ptr->last_update;
 
-			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, orig_argc,
-				      orig_argv, NULL, mime_type, data_parser,
-				      error_code);
-
-			if (error_code)
-				exit_code = 1;
-			return;
+			error_code = data_parser_dump_cli_resp(
+				DATA_PARSER_OPENAPI_STEP_INFO_MSG, &resp,
+				sizeof(resp), parser);
+			goto cleanup;
 		}
 
 		exit_code = 1;
@@ -1622,7 +1641,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 				      __func__, job_step_id_str,
 				      slurm_strerror(error_code));
 		}
-		return;
+		goto cleanup;
 	}
 
 	if (!mime_type && (quiet_flag == -1)) {
@@ -1659,8 +1678,9 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (job_step_info_ptr)
 			resp.last_update = job_step_info_ptr->last_update;
 
-		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, orig_argc, orig_argv,
-			      NULL, mime_type, data_parser, error_code);
+		error_code = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_STEP_INFO_MSG, &resp, sizeof(resp),
+			parser);
 	} else if (steps) {
 		int i = 0;
 
@@ -1707,8 +1727,12 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 			printf ("No job steps in the system\n");
 	}
 
+cleanup:
+	if (error_code)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	xfree(steps);
-
 	slurm_free_job_step_info_response_msg(job_step_info_ptr);
 }
 
@@ -1748,16 +1772,16 @@ static int _print_listjobs_info(void *x, void *arg)
 	return 0;
 }
 
-static void _dump_listjobs(list_t *listjobs_list)
+static void _dump_listjobs(list_t *listjobs_list, data_parser_t *parser)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	openapi_resp_listjobs_info_t resp = {
 		.listjobs_list = listjobs_list,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_LISTJOBS_INFO_RESP, resp, orig_argc, orig_argv,
-		      NULL, mime_type, data_parser, rc);
+	rc = data_parser_dump_cli_resp(DATA_PARSER_OPENAPI_LISTJOBS_INFO_RESP,
+				       &resp, sizeof(resp), parser);
 
 	if (rc != SLURM_SUCCESS)
 		exit_code = 1;
@@ -1775,6 +1799,15 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	list_t *listjobs_list = NULL;
 	list_t *jobs_seen = NULL;
 	add_to_listjobs_list_args_t for_each_args = { 0 };
+	int rc = SLURM_SUCCESS;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	if (argc)
 		node_name = argv[1];
@@ -1783,7 +1816,7 @@ extern void scontrol_list_jobs(int argc, char **argv)
 
 	if (!steps || !list_count(steps)) {
 		if (mime_type)
-			_dump_listjobs(NULL);
+			_dump_listjobs(NULL, parser);
 		else {
 			fprintf(stderr, "No slurmstepd's found on this node\n");
 			exit_code = 1;
@@ -1801,7 +1834,7 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	list_for_each(steps, _add_to_listjobs_list, &for_each_args);
 
 	if (mime_type) {
-		_dump_listjobs(listjobs_list);
+		_dump_listjobs(listjobs_list, parser);
 		goto cleanup;
 	}
 
@@ -1809,6 +1842,10 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	list_for_each(listjobs_list, _print_listjobs_info, NULL);
 
 cleanup:
+	if (rc)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	FREE_NULL_LIST(listjobs_list);
 	FREE_NULL_LIST(jobs_seen);
 	FREE_NULL_LIST(steps);
@@ -1898,16 +1935,16 @@ static void _list_pids_one_step(const char *node_name, slurm_step_id_t *step_id,
 	close(fd);
 }
 
-static void _dump_listpids(list_t *listpids_list)
+static void _dump_listpids(list_t *listpids_list, data_parser_t *parser)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	openapi_resp_listpids_info_t resp = {
 		.listpids_list = listpids_list,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_LISTPIDS_INFO_RESP, resp, orig_argc, orig_argv,
-		      NULL, mime_type, data_parser, rc);
+	rc = data_parser_dump_cli_resp(DATA_PARSER_OPENAPI_LISTPIDS_INFO_RESP,
+				       &resp, sizeof(resp), parser);
 
 	if (rc != SLURM_SUCCESS)
 		exit_code = 1;
@@ -1915,8 +1952,7 @@ static void _dump_listpids(list_t *listpids_list)
 
 static void _list_pids_all_steps(const char *node_name,
 				 slurm_step_id_t *step_id,
-				 list_t* listpids_list,
-				 int argc, char **argv)
+				 list_t *listpids_list, data_parser_t *parser)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -1932,7 +1968,7 @@ static void _list_pids_all_steps(const char *node_name,
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
 		if (mime_type) {
-			_dump_listpids(NULL);
+			_dump_listpids(NULL, parser);
 		} else {
 			fprintf(stderr, "%s does not exist on node %s.\n",
 				log_build_step_id_str(step_id, tmp_char,
@@ -1993,7 +2029,7 @@ static void _list_pids_all_steps(const char *node_name,
 }
 
 static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list,
-				int argc, char **argv)
+				data_parser_t *parser)
 {
 	list_t *steps;
 	list_itr_t *itr;
@@ -2002,7 +2038,7 @@ static void _list_pids_all_jobs(const char *node_name, list_t *listpids_list,
 	steps = stepd_available(NULL, node_name);
 	if (!steps || list_count(steps) == 0) {
 		if (mime_type)
-			_dump_listpids(NULL);
+			_dump_listpids(NULL, parser);
 		else
 			fprintf(stderr, "No job steps exist on this node.\n");
 		FREE_NULL_LIST(steps);
@@ -2071,6 +2107,15 @@ extern void scontrol_list_pids(int argc, char **argv)
 	char *node_name = NULL;
 	list_t *listpids_list = NULL;
 	slurm_selected_step_t sel = { 0 };
+	int rc = SLURM_SUCCESS;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	if (argc >= 2)
 		jobid_str = argv[1];
@@ -2083,17 +2128,17 @@ extern void scontrol_list_pids(int argc, char **argv)
 			fprintf(stderr, "\"%s\" does not look like a jobid\n",
 				jobid_str);
 			exit_code = 1;
-			return;
+			goto cleanup;
 		}
 	}
 
 	listpids_list = list_create(_free_listpids_info);
 
 	if (jobid_str == NULL || jobid_str[0] == '*') {
-		_list_pids_all_jobs(node_name, listpids_list, argc, argv);
+		_list_pids_all_jobs(node_name, listpids_list, parser);
 	} else {
 		_list_pids_all_steps(node_name, &sel.step_id, listpids_list,
-				     argc, argv);
+				     parser);
 	}
 
 	if (exit_code && list_count(listpids_list) == 0) {
@@ -2101,7 +2146,7 @@ extern void scontrol_list_pids(int argc, char **argv)
 	}
 
 	if (mime_type) {
-		_dump_listpids(listpids_list);
+		_dump_listpids(listpids_list, parser);
 		goto cleanup;
 	}
 
@@ -2110,6 +2155,10 @@ extern void scontrol_list_pids(int argc, char **argv)
 	list_for_each(listpids_list, _print_listpids_info, NULL);
 
 cleanup:
+	if (rc)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	FREE_NULL_LIST(listpids_list);
 }
 
@@ -2154,16 +2203,16 @@ static void _free_liststeps_info(void *x)
 	xfree(liststeps_info);
 }
 
-static void _dump_liststeps(list_t *liststeps_list)
+static void _dump_liststeps(list_t *liststeps_list, data_parser_t *parser)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	openapi_resp_liststeps_info_t resp = {
 		.liststeps_list = liststeps_list,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_LISTSTEPS_INFO_RESP, resp, orig_argc, orig_argv,
-		      NULL, mime_type, data_parser, rc);
+	rc = data_parser_dump_cli_resp(DATA_PARSER_OPENAPI_LISTSTEPS_INFO_RESP,
+				       &resp, sizeof(resp), parser);
 
 	if (rc != SLURM_SUCCESS)
 		exit_code = 1;
@@ -2178,7 +2227,16 @@ extern void scontrol_list_steps(int argc, char **argv)
 {
 	list_t *liststeps_list = NULL;
 	char *node_name = NULL;
-	list_t *steps;
+	list_t *steps = NULL;
+	int rc = SLURM_SUCCESS;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	if (argc)
 		node_name = argv[1];
@@ -2187,7 +2245,7 @@ extern void scontrol_list_steps(int argc, char **argv)
 
 	if (!steps || !list_count(steps)) {
 		if (mime_type)
-			_dump_liststeps(NULL);
+			_dump_liststeps(NULL, parser);
 		else {
 			fprintf(stderr, "No slurmstepd's found on this node\n");
 			exit_code = 1;
@@ -2200,7 +2258,7 @@ extern void scontrol_list_steps(int argc, char **argv)
 	list_for_each(steps, _add_to_liststeps_list, liststeps_list);
 
 	if (mime_type) {
-		_dump_liststeps(liststeps_list);
+		_dump_liststeps(liststeps_list, parser);
 		goto cleanup;
 	}
 
@@ -2208,6 +2266,10 @@ extern void scontrol_list_steps(int argc, char **argv)
 	list_for_each(liststeps_list, _print_liststeps_info, NULL);
 
 cleanup:
+	if (rc)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	FREE_NULL_LIST(liststeps_list);
 	FREE_NULL_LIST(steps);
 }
@@ -2656,10 +2718,19 @@ extern void scontrol_print_resources(int argc, char **argv)
 	int error_code = SLURM_SUCCESS;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	resource_layout_msg_t *resp = NULL;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		error_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	if (argc < 3) {
 		slurm_perror("missing JobId");
-		return;
+		goto cleanup;
 	}
 
 	step_id.job_id = atoll(argv[2]);
@@ -2669,15 +2740,10 @@ extern void scontrol_print_resources(int argc, char **argv)
 	if (mime_type) {
 		list_t *nodes = (resp ? resp->nodes : NULL);
 
-		DATA_DUMP_CLI_SINGLE(OPENAPI_RESOURCE_LAYOUT_RESP, nodes,
-				     orig_argc, orig_argv, NULL, mime_type,
-				     data_parser, error_code);
-
-		slurm_free_resource_layout_msg(resp);
-
-		if (error_code)
-			exit_code = 1;
-		return;
+		error_code = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP, nodes,
+			parser);
+		goto cleanup;
 	}
 
 	if (error_code) {
@@ -2686,10 +2752,15 @@ extern void scontrol_print_resources(int argc, char **argv)
 		else
 			error("%pI lookup failed: %s",
 			      &step_id, slurm_strerror(error_code));
-		exit_code = 1;
-		return;
+		goto cleanup;
 	}
 
 	list_for_each(resp->nodes, _print_node_resources, NULL);
+
+cleanup:
+	if (error_code)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	slurm_free_resource_layout_msg(resp);
 }
