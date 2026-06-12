@@ -1863,16 +1863,6 @@ extern void hres_select_return(hres_select_t *hres_select,
 	}
 }
 
-extern void hres_variable_free(void *x)
-{
-	hres_variable_t *variable = x;
-
-	if (variable) {
-		xfree(variable->name);
-		xfree(variable);
-	}
-}
-
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
 					  licenses_id_t id)
 {

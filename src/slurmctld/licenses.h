@@ -94,11 +94,6 @@ typedef struct {
 } hres_rec_t;
 
 typedef struct {
-	char *name;
-	uint32_t value;
-} hres_variable_t;
-
-typedef struct {
 	licenses_id_t id;
 	char *		name;		/* name associated with a license */
 	bool op_or; /* Whether the licenses were requested with AND or OR */
@@ -152,8 +147,6 @@ extern void hres_select_free(job_record_t *job_ptr);
 extern void hres_select_print(hres_select_t *hres_select);
 
 extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
-
-extern void hres_variable_free(void *x);
 
 extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
 				     bf_licenses_t *bf_licenses);

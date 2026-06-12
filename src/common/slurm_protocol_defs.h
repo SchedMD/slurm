@@ -1848,6 +1848,7 @@ extern void slurm_free_tls_cert_response_msg_members(tls_cert_response_msg_t
 							     *msg);
 extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
 extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg);
+extern void hres_variable_free(void *x);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);

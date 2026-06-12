@@ -3539,6 +3539,10 @@ typedef struct trigger_info_msg {
 	trigger_info_t *trigger_array;	/* the trigger records */
 } trigger_info_msg_t;
 
+typedef struct {
+	char *name;
+	uint32_t value;
+} hres_variable_t;
 
 /* Individual license information
  */
@@ -3839,6 +3843,13 @@ extern int slurm_sbcast_lookup(slurm_selected_step_t *selected_step,
 			       job_sbcast_cred_msg_t **info);
 
 extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
+
+/*
+ * slurm_destroy_hres_variable - free one hres_variable_t, for use as the
+ *	destructor of the base list of hres_update_msg_t
+ * IN object - hres_variable_t to free
+ */
+extern void slurm_destroy_hres_variable(void *object);
 
 /* slurm_load_licenses()
  *

@@ -5750,6 +5750,18 @@ extern bool valid_spank_job_env(char **spank_job_env,
 	return true;
 }
 
+extern void hres_variable_free(void *x)
+{
+	hres_variable_t *variable = x;
+
+	if (variable) {
+		xfree(variable->name);
+		xfree(variable);
+	}
+}
+
+strong_alias(hres_variable_free, slurm_destroy_hres_variable);
+
 /* slurm_free_license_info()
  *
  * Free the license info returned previously
