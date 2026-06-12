@@ -1067,16 +1067,55 @@ static int _het_job_lookup_one(char *stepmgr_nodename, slurm_step_id_t step_id,
 
 extern int(slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 {
-	char *stepmgr_nodename = NULL;
+	char *het_size_env, *stepmgr_nodename = NULL;
+	uint32_t het_size = 0;
 	int rc = SLURM_SUCCESS;
 
 	*info = NULL;
+
+	/*
+	 * For stepmgr het jobs each component's stepmgr only knows its own
+	 * job_record_t. Fan out one REQUEST_HET_JOB_ALLOC_INFO per component
+	 * using SLURM_STEPMGR_HET_GROUP_<N> / SLURM_JOB_ID_HET_GROUP_<N> and
+	 * merge the responses.
+	 */
+	het_size_env = getenv("SLURM_HET_SIZE");
+	if (het_size_env)
+		parse_uint32(het_size_env, &het_size);
+	if ((het_size > 1) && getenv("SLURM_STEPMGR_HET_GROUP_0")) {
+		for (uint32_t i = 0; i < het_size; i++) {
+			slurm_step_id_t het_id = SLURM_STEP_ID_INITIALIZER;
+			char *job_id_str;
+			char *name = NULL;
+			char *node;
+
+			xstrfmtcat(name, "SLURM_STEPMGR_HET_GROUP_%u", i);
+			node = getenv(name);
+			xfree(name);
+			xstrfmtcat(name, "SLURM_JOB_ID_HET_GROUP_%u", i);
+			job_id_str = getenv(name);
+			xfree(name);
+			if (!node || !job_id_str ||
+			    parse_uint32(job_id_str, &het_id.job_id)) {
+				FREE_NULL_LIST(*info);
+				return SLURM_ERROR;
+			}
+
+			rc = _het_job_lookup_one(node, het_id, info);
+			if (rc != SLURM_SUCCESS) {
+				FREE_NULL_LIST(*info);
+				return rc;
+			}
+		}
+
+		return SLURM_SUCCESS;
+	}
 
 	stepmgr_nodename = getenv("SLURM_STEPMGR");
 
 	rc = _het_job_lookup_one(stepmgr_nodename, step_id, info);
 
-	if (rc)
+	if (rc != SLURM_SUCCESS)
 		FREE_NULL_LIST(*info);
 
 	return rc;
