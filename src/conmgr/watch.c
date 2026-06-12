@@ -1333,6 +1333,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 {
 	conmgr_fd_t *con = NULL;
 	con_flags_t old_flags;
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	xassert(fd >= 0);
 
@@ -1374,13 +1375,10 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			fatal_abort("should never happen");
 		}
 
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: [%s] listener fd=%u flags=%s",
-				 __func__, con->name, fd, flags);
-			xfree(flags);
-		}
+		log_flag(CONMGR, "%s: [%s] listener fd=%u flags=%s",
+			 __func__, con->name, fd,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 
 		return SLURM_SUCCESS;
 	}
@@ -1399,12 +1397,9 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 		con_assign_flag(con, FLAG_CAN_WRITE,
 				pollctl_events_can_write(events));
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] fd=%d flags=%s",
-			 __func__, con->name, fd, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] fd=%d flags=%s",
+		 __func__, con->name, fd,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	/* Attempt to changed connection state immediately */
 	if ((con->flags & FLAGS_MASK_STATE) != (old_flags & FLAGS_MASK_STATE))
