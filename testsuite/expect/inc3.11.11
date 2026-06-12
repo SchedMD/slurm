@@ -1,0 +1,162 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Partition Reservations
+#
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_11_delete_resv { res_name } {
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		fail "Unable to delete reservation ($res_name)"
+	}
+}
+
+proc inc3_11_11_fini { res_name msg ret_code } {
+	if {$ret_code} {
+		inc3_11_11_delete_resv $res_name
+		fail $msg
+	} else {
+		log_info $msg
+	}
+}
+
+proc inc3_11_11_resv_create { res_name args } {
+	global user_name
+
+	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
+	set ret_code [create_res $res_name $cmd]
+	if {$ret_code != 0} {
+		inc3_11_11_fini $res_name "Unable to create a valid reservation" 1
+	}
+}
+
+proc inc3_11_11_resv_fail { res_name args } {
+	global user_name
+
+	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
+	set ret_code [create_res $res_name $cmd]
+	if {$ret_code == 0} {
+		inc3_11_11_fini "Reservation should have failed to create" 1
+	} else {
+		log_info "Expected error. You can turn that frown upside-down"
+	}
+}
+
+proc inc3_11_11_resv_update_s { res_name args } {
+	global user_name
+
+	set ret_code [update_res $res_name $args]
+	if {$ret_code != 0} {
+		regsub {nodes=(?!ALL)\S+} $args nodes=<one_node> invariant_args
+		inc3_11_11_fini $res_name "Reservation should have succeeded update with $invariant_args" 1
+	}
+}
+
+proc inc3_11_11_resv_update_f { res_name args } {
+	global user_name
+
+	set ret_code [update_res $res_name $args]
+	if {$ret_code == 0} {
+		inc3_11_11_fini $res_name "Reservation should have failed update with $args" 1
+	} else {
+		log_info "Expected error. You can turn that frown upside-down"
+	}
+}
+
+proc inc3_11_11_resv_test { res_name part flags nodes } {
+	set res_info [get_reservations $res_name]
+	if { ![dict exists $res_info $res_name] } {
+		delete_res $res_name
+		fail "Unable to get info about reservation ($res_name)"
+	}
+	set res_flags     [dict get $res_info $res_name "Flags"]
+	set res_partition [dict get $res_info $res_name "PartitionName"]
+	set res_nodes     [dict get $res_info $res_name "Nodes"]
+
+	# Sort each set of nodes to make sure comparison is homogenus
+	set res_nodes     [node_list_to_range [lsort -dictionary [node_range_to_list $res_nodes]]]
+	set nodes         [node_list_to_range [lsort -dictionary [node_range_to_list $nodes]]]
+
+	if {$flags ne $res_flags} {
+		inc3_11_11_fini $res_name "failed to get reservation flags $flags!=$res_flags" 1
+	}
+	if {$part ne $res_partition} {
+		inc3_11_11_fini $res_name "failed to get partition $part!=$res_partition" 1
+	}
+	if {$nodes ne $res_nodes} {
+		inc3_11_11_fini $res_name "failed to get partition nodes $nodes!=$res_nodes" 1
+	}
+}
+
+proc inc3_11_11 {} {
+	global def_partition
+
+	set res_name "resv3.11.11"
+
+	log_info "+++++ STARTING TEST 11 +++++"
+
+	set part_nodes [get_partition_param $def_partition "Nodes"]
+	set one_node [lindex [get_nodes_by_state] 0]
+
+	inc3_11_11_resv_create $res_name partition=$def_partition
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+	inc3_11_11_delete_resv $res_name
+
+	inc3_11_11_resv_create $res_name partition=$def_partition nodes=$one_node
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES" $one_node
+	inc3_11_11_delete_resv $res_name
+
+	inc3_11_11_resv_create $res_name partition=$def_partition nodes=ALL
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+	inc3_11_11_delete_resv $res_name
+
+	inc3_11_11_resv_create $res_name nodes=$one_node
+	inc3_11_11_resv_update_f $res_name flags=part_nodes
+	inc3_11_11_resv_update_f $res_name flags=part_nodes nodes=ALL
+	inc3_11_11_resv_update_s $res_name flags=part_nodes partition=$def_partition nodes=ALL
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+	inc3_11_11_resv_update_s $res_name nodes=$one_node
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES" $one_node
+	inc3_11_11_delete_resv $res_name
+
+	inc3_11_11_resv_create $res_name nodes=$one_node
+	inc3_11_11_resv_update_s $res_name partition=$def_partition
+	inc3_11_11_resv_update_s $res_name flags=part_nodes nodes=ALL
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+	inc3_11_11_resv_update_s $res_name nodes=$one_node
+	inc3_11_11_resv_test $res_name $def_partition "SPEC_NODES" $one_node
+	inc3_11_11_delete_resv $res_name
+
+	inc3_11_11_resv_fail $res_name flags=part_nodes
+	inc3_11_11_resv_fail $res_name flags=part_nodes partition=$def_partition
+	inc3_11_11_resv_fail $res_name flags=part_nodes nodes=$one_node
+	inc3_11_11_resv_fail $res_name flags=part_nodes nodes=ALL
+	inc3_11_11_resv_fail $res_name flags=part_nodes partition=$def_partition nodes=$one_node
+
+	inc3_11_11_resv_create $res_name partition=$def_partition nodes=ALL flags=part_nodes
+	inc3_11_11_resv_test   $res_name $def_partition "SPEC_NODES,PART_NODES" $part_nodes
+	inc3_11_11_delete_resv $res_name
+
+	inc3_11_11_fini $res_name "inc3_11_11 all good" 0
+}

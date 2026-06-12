@@ -1,0 +1,100 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test qalter's -o option for changing the stdout path of a job.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in      "$test_dir/input"
+set job_id       0
+set out_path     "/tmp/null"
+
+if {[file executable $qalter] == 0} {
+	skip "$qalter does not exist"
+}
+
+if {[file executable $qsub] == 0} {
+	skip "$qsub does not exits"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_in "sleep 200"
+
+proc check_output { path job_id } {
+	global scontrol
+
+#	Support leading options (i.e. original "stdout=...")
+	set re_word_str_slash "\[a-zA-Z0-9=_,\-\/\]*"
+
+	set check_out 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Comment=($re_word_str_slash)stdout=($path)" {
+			set check_out 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$check_out == 1} "Verify output path for job was set to the correct value"
+}
+
+set job_id 0
+spawn $qsub -l walltime=1:00 -o /dev/null -e /dev/null $file_in
+expect {
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "qsub is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "qsub did not submit job"
+}
+
+set found 0
+spawn $qalter -o $out_path $job_id
+expect {
+	timeout {
+		fail "qalter is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+check_output $out_path $job_id

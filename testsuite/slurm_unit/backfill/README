@@ -1,0 +1,39 @@
+BACKFILL-TEST README
+====================
+The backfill-test can also function as a standalone backfill and
+select plugin emulator. After running `make check`, the
+`backfill-test` binary will be located in the `.libs` directory.
+
+USAGE
+-----
+To use `backfill-test`, you need to:
+
+1. Specify the directory containing the required configuration files
+   using the `-c` option.
+2. Specify the input test file that lists the jobs to be processed
+   using the `-t` option.
+
+TEST FILE FORMAT
+----------------
+Each line in the test file represents a job specification.
+The format is as follows (space delimited):
+
+- First number: `job_id` (if set to `0`, it will be assigned automatically).
+- Second number: Job priority.
+- Third number: Requested number of nodes.
+- Fourth number: Time limit for the job.
+
+Empty lines and lines starting with `#` are ignored.
+
+IMPORTANT NOTES
+---------------
+- Not all options are supported. Refer to the provided `slurm.conf` file in this
+  directory for guidance.
+- The test file is not validated. Ensure its correctness before use.
+
+EXAMPLE TEST FILE
+----------------
+0 10 1 10
+0 5 32 10
+0 1 31 5
+0 1 9 5

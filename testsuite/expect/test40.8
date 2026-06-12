@@ -1,0 +1,144 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Simple CUDA MPS test
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_prog   "$test_name.prog"
+set job_id      0
+
+if {![check_config_select "cons_tres"]} {
+    skip "This test is only compatible with select/cons_tres"
+}
+
+if { [llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
+	skip "This test requires being able to submit job with --gres=mps:100"
+}
+
+proc cleanup {} {
+	global job_id file_prog
+
+	cancel_job $job_id
+	file delete $file_prog
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+env | grep CUDA_VISIBLE_DEVICES
+env | grep CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+unset CUDA_VISIBLE_DEVICES
+ls $nvcc
+$nvcc ${file_prog}.cu -g -o $file_prog
+./$file_prog &
+./$file_prog &
+wait"
+
+#
+# Spawn a batch job to build and run CUDA job
+#
+set job_id [submit_job -fail "--output=$file_out -N1 --gres=mps:10 -t1 $file_in"]
+
+#
+# Wait for job to complete and check for file
+#
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+set matches 0
+set no_nvcc 0
+set run_time1 0
+set run_time2 0
+spawn $bin_cat $file_out
+expect {
+	-re "Couldn't allocate memory" {
+		skip "This means the gpu selected doesn't support this test"
+	}
+	-re "No such file" {
+		incr no_nvcc
+		exp_continue
+	}
+	-re "Could not find" {
+		incr no_nvcc
+		exp_continue
+	}
+	-re "CUDA_VISIBLE_DEVICES" {
+		incr matches
+		exp_continue
+	}
+	-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE" {
+		incr matches
+		exp_continue
+	}
+	-re "Max error: 0" {
+		incr matches
+		exp_continue
+	}
+	-re "Run Time (usec): ($number)" {
+		if {$run_time1 == 0} {
+			set run_time1 $expect_out(1,string)
+		} else {
+			set run_time2 $expect_out(1,string)
+		}
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 0
+spawn $bin_cat $file_out
+expect {
+	-re "Run Time .usec.: ($number)" {
+		if {$run_time1 == 0} {
+			set run_time1 $expect_out(1,string)
+		} else {
+			set run_time2 $expect_out(1,string)
+		}
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$no_nvcc != 0} {
+	skip "Could not find program nvcc (CUDA compiler)"
+} elseif {$matches != 6} {
+	fail "CUDA output not as expected ($matches != 6)"
+}
+if {$run_time1 > 0} {
+	set delta_t [expr abs($run_time1 - $run_time2)]
+	set percent_time_diff [expr ($delta_t * 100) / $run_time1]
+	if {$percent_time_diff > 20} {
+		fail "CUDA MPS jobs appear to have not run in parallel. Run time difference was $percent_time_diff percent"
+	} else {
+		log_debug "CUDA MPS jobs do appear to have not run in parallel"
+		log_debug "Run time difference was $percent_time_diff percent"
+	}
+}

@@ -1,0 +1,178 @@
+/*****************************************************************************\
+ **  mpi_pmi2.c - Library routines for initiating MPI jobs using PMI2.
+ *****************************************************************************
+ *  Copyright (C) 2011-2012 National University of Defense Technology.
+ *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.
+ *  All rights reserved.
+ *  Portions copyright (C) 2015 Mellanox Technologies Inc.
+ *  Written by Artem Polyakov <artemp@mellanox.com>.
+ *  All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/types.h>
+
+#include <slurm/slurm_errno.h>
+#include "src/common/slurm_xlator.h"
+#include "src/interfaces/mpi.h"
+
+#include "setup.h"
+#include "agent.h"
+#include "spawn.h"
+
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "mpi PMI2 plugin";
+const char plugin_type[] = "mpi/pmi2";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+/* Required for mpi plugins: */
+const uint32_t plugin_id = MPI_PLUGIN_PMI2;
+
+/*
+ * The following is executed in slurmstepd.
+ */
+
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
+{
+	int rc;
+
+	debug("using mpi/pmi2");
+
+	if (step->batch)
+		return SLURM_SUCCESS;
+
+	rc = pmi2_setup_stepd(step, env);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	if (pmi2_start_agent() < 0) {
+		error ("mpi/pmi2: failed to create pmi2 agent thread");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
+{
+	int i;
+
+	env_array_overwrite_fmt(env, "PMI_FD", "%u",
+				TASK_PMI_SOCK(mpi_task->ltaskid));
+
+	env_array_overwrite_fmt(env, "PMI_JOBID", "%s",
+				job_info.pmi_jobid);
+	env_array_overwrite_fmt(env, "PMI_RANK", "%u", mpi_task->gtaskid);
+	env_array_overwrite_fmt(env, "PMI_SIZE", "%u", mpi_task->ntasks);
+	if (job_info.spawn_seq) { /* PMI1.1 needs this env-var */
+		env_array_overwrite_fmt(env, "PMI_SPAWNED", "%u", 1);
+	}
+	/* close unused sockets in task */
+	close(tree_sock);
+	tree_sock = 0;
+	for (i = 0; i < mpi_task->ltasks; i ++) {
+		close(STEPD_PMI_SOCK(i));
+		STEPD_PMI_SOCK(i) = 0;
+		if (i != mpi_task->ltaskid) {
+			close(TASK_PMI_SOCK(i));
+			TASK_PMI_SOCK(i) = 0;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * The following is executed in srun.
+ */
+
+extern mpi_plugin_client_state_t *
+mpi_p_client_prelaunch(mpi_step_info_t *mpi_step, char ***env)
+{
+	int rc;
+
+	debug("mpi/pmi2: client_prelaunch");
+
+	rc = pmi2_setup_srun(mpi_step, env);
+	if (rc != SLURM_SUCCESS) {
+		return NULL;
+	}
+
+	if (pmi2_start_agent() < 0) {
+		error("failed to start PMI2 agent thread");
+		return NULL;
+	}
+
+	return (void *)0x12345678;
+}
+
+extern int mpi_p_client_fini(mpi_plugin_client_state_t *state)
+{
+	pmi2_stop_agent();
+
+	/* the job may be allocated by this srun.
+	 * or exit of this srun may cause the job script to exit.
+	 * wait for the spawned steps. */
+	spawn_job_wait();
+
+	return SLURM_SUCCESS;
+}
+
+extern int init(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void fini(void)
+{
+	/* cleanup after ourself */
+	pmi2_stop_agent();
+	pmi2_cleanup_stepd();
+}
+
+extern void mpi_p_conf_options(s_p_options_t **full_options, int *full_opt_cnt)
+{
+}
+
+extern void mpi_p_conf_set(s_p_hashtbl_t *tbl)
+{
+}
+
+extern s_p_hashtbl_t *mpi_p_conf_get(void)
+{
+	return NULL;
+}
+
+extern list_t *mpi_p_conf_get_printable(void)
+{
+	return NULL;
+}

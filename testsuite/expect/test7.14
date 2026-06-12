@@ -1,0 +1,104 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Verify the ability to modify the Derived Exit Code and Comment
+#          fields of a job record in the database.
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Don Lipari <lipari1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in          "$test_dir/input"
+set file_prog1       "$test_name.prog1"
+set file_prog2       "$test_name.prog2"
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+proc cleanup {} {
+	global file_prog1 file_prog2
+
+	file delete $file_prog1 $file_prog2
+}
+
+#
+# Build programs
+#
+exec $bin_cc -O -o $file_prog1 ${file_prog1}.c
+exec $bin_cc -O -o $file_prog2 ${file_prog2}.c
+
+#
+# Submit a script that returns a successful exit code and confirm that
+# the job record's ExitCode reflects this value.  $file_prog1 returns a
+# successful error code (0) and $file_prog2 returns an unsuccessful
+# error code (123).
+#
+# The failed job step should have no influence on the job's ExitCode
+# value.  However the DerivedExitCode value should be set to the
+# highest value of all the job steps, in this case, 123.
+#
+
+make_bash_script $file_in "
+  $bin_echo 'testing successful job return code'
+  $srun $file_prog1
+  $srun $file_prog2
+  exit 0
+"
+
+set job_id [submit_job -fail "--output=/dev/null -t1 $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+
+#
+# Confirm correct ExitCode and DerivedExitCode settings in job record
+#
+set job_exit_code [get_job_param $job_id "ExitCode"]
+subtest {$job_exit_code eq "0:0"} "Verify ExitCode in job record" "$job_exit_code != 0:0"
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
+	subskip "stepmgr jobs don't track DerivedExitCode on the controller."
+} else {
+	set derived_exit_code [get_job_param $job_id "DerivedExitCode"]
+	subtest {$derived_exit_code eq "123:0"} "Verify DerivedExitCode in job record" "$derived_exit_code != 123:0"
+}
+
+# Wait for the end time to be recorded in the accounting database
+wait_for_job_acct -fail $job_id end
+
+#
+# Modify the DerivedExitCode and String of the job
+#
+set output [run_command -fail "$sacctmgr -i modify job job=$job_id set DerivedExitCode=22 Comment=hello"]
+if {![regexp $job_id $output]} {
+	fail "sacctmgr failed to change DerivedExitCode/Comment"
+}
+
+#
+# Confirm the DerivedExitCode and String fields of the job record in the db
+# matches the above modification and that ExitCode did not change.
+#
+set output [run_command_output -fail "$sacct -n -P -X -j $job_id -o ExitCode,DerivedExitCode,Comment"]
+subtest [regexp {0:0\|0:22\|hello} $output] "Verify job record in the accounting database has the right exit codes"

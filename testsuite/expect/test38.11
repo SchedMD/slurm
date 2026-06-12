@@ -1,0 +1,77 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate sbcast for a hetjob allocation.
+############################################################################
+# Copyright (C) SchedMD LLC.
+# and Isaac Hartung <ihartung@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set node1      ""
+set node2      ""
+set het_job_id 0
+set tmp_dir    "/tmp/${test_name}_[pid]"
+
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
+}
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
+	skip "This test requires that the SlurmdUser be root"
+}
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+if { [llength [get_nodes_by_request "--exclusive=user -N2"]] != 2 } {
+	skip "Did not find at least 2 idle nodes"
+}
+
+proc cleanup { } {
+	global het_job_id srun bin_rm tmp_dir
+
+	run_command "$srun --jobid=${het_job_id} --het-group=0 $bin_rm -rf $tmp_dir"
+	run_command "$srun --jobid=${het_job_id} --het-group=1 $bin_rm -rf $tmp_dir"
+
+	cancel_job $het_job_id
+}
+
+set het_job_id [submit_job "-t2 -N1 : -N1 --wrap '$bin_sleep 30'"]
+wait_for_job -fail $het_job_id "RUNNING"
+
+run_command -fail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 mkdir -p $tmp_dir"
+run_command -fail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 mkdir -p $tmp_dir"
+
+run_command -fail "$srun --jobid=${het_job_id} --het-group=0 printenv SLURM_JOB_ID"
+run_command -fail "$srun --jobid=${het_job_id} --het-group=1 printenv SLURM_JOB_ID"
+
+run_command -fail "$sbcast -f --jobid=$het_job_id $srun $tmp_dir/file"
+run_command -fail "$sbcast -f --jobid=${het_job_id}+0 $srun $tmp_dir/file_comp0"
+run_command -fail "$sbcast -f --jobid=${het_job_id}+1 $srun $tmp_dir/file_comp1"
+
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 ls $tmp_dir/file"]} "Verify main file is in node of component 0"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 ls $tmp_dir/file"]} "Verify main file is in node of component 1"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 ls $tmp_dir/file_comp0"]} "Verify file_comp0 is in node of component 0"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 ls $tmp_dir/file_comp1"]} "Verify file_comp1 is in node of component 1"
+
+# TODO: This fails with multiple_slurmd because $tmp_dir is shared
+# subtest {[run_command_status -xfail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 ls $tmp_dir/file_comp1"]} "Verify file_comp1 is not is not in node of component 0"
+# subtest {[run_command_status -xfail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 ls $tmp_dir/file_comp0"]} "Verify file_comp0 is not is not in node of component 1"

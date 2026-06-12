@@ -1,0 +1,74 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of sbatch --bbf option
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_bbf    "$test_dir/bbf"
+set file_script "$test_dir/script"
+set file_out    "$test_dir/output"
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Build job script
+#
+exec $bin_rm -f $file_bbf $file_script $file_out
+make_bash_script $file_script "
+  echo test_script
+  exit 0
+"
+
+#
+# Build BBF file to get inserted into script above
+#
+set fd [open $file_bbf "w"]
+puts $fd "echo test_bbf"
+puts $fd "exit 0"
+close $fd
+exec $bin_chmod 400 $file_bbf
+
+#
+# NOTE: The "bbf" file does not need to contain Burst Buffer options, but can
+# contain text to be inserted at the start of the script (after "#! shell").
+#
+set job_id [submit_job -fail "-t1 -n1 --bbf=$file_bbf -o $file_out $file_script"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+#
+# Check for desired output
+#
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp -all "test_bbf" $output] == 1} "Verify that bbf script was executed once"
+subtest {![regexp "test_script" $output]} "Verify that bbf script was executed before the script test"

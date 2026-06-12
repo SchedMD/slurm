@@ -1,0 +1,231 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a id="top">Authentication Plugins</a></h1>
+
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
+
+<p>It is important for Slurm to know that the Remote Procedure Calls (RPCs)
+that it receives are coming from trusted sources. There are a few different
+authentication mechanisms available within Slurm to verify the legitimacy and
+integrity of the requests.</p>
+
+<p>If you plan to change the authentication type, you will need to drain the
+cluster of running jobs and stop all Slurm daemons before making the change.
+Otherwise, requests can be made with the new type while the running daemons
+still operate with the old type that was present when they started.</p>
+
+<h2 id="munge">MUNGE<a class="slurm_link" href="#munge"></a></h2>
+
+<p>MUNGE can be used to create and validate credentials. It allows Slurm to
+authenticate the UID and GID of a request from another host that has matching
+users and groups. MUNGE libraries must exist when building Slurm in order for
+it to be able to use munge for authentication. All hosts in the cluster must
+have a shared cryptographic key.</p>
+
+<h4 id="munge_setup">Setup<a class="slurm_link" href="#munge_setup"></a></h4>
+
+<ol>
+<li>MUNGE requires that there be a shared key on the machines running
+slurmctld, slurmdbd and the nodes. You can create a key file by entering your
+own text or by generating random data:
+<pre>
+dd if=/dev/random of=/etc/munge/munge.key bs=1024 count=1
+</pre>
+</li>
+
+<li>This key should be owned by the "munge" user and should not be readable
+or writable by other users:
+<pre>
+chown munge:munge /etc/munge/munge.key
+chmod 400 /etc/munge/munge.key
+</pre>
+</li>
+
+<li>Distribute the key file to the machines on the cluster. It needs to be
+on the machines running slurmctld, slurmdbd, slurmd and any submit hosts
+you have configured. Use the distribution method of your choice.</li>
+
+<li>The "munge" service should be running on any machines that need to use it
+for authentication. It should be enabled and started on all the machines you
+distributed a key to:
+<pre>
+systemctl enable munge
+systemctl start munge
+</pre>
+</li>
+
+<li>Changing the authentication mechanism requires a restart of Slurm daemons.
+The daemons need to be stopped before updating the slurm.conf so that client
+commands do not use a mechanism other than what the running daemons are
+expecting.</li>
+
+<li>Update your slurm.conf and slurmdbd.conf to use MUNGE authentication.
+<ul>
+<li>slurm.conf:
+<pre>
+AuthType = auth/munge
+CredType = cred/munge
+</pre></li>
+<li>slurmdbd.conf:
+<pre>
+AuthType = auth/munge
+</pre></li>
+</ul>
+</li>
+
+<li>Start the Slurm daemons back up with the appropriate method for your
+cluster.</li>
+</ol>
+
+<h2 id="slurm">Slurm<a class="slurm_link" href="#slurm"></a></h2>
+
+<p>Beginning with version 23.11, Slurm has its own plugin that can create and
+validate credentials. It validates that the requests come from legitimate UIDs
+and GIDs on other hosts with matching users and groups. All hosts in the
+cluster must have a shared cryptographic key.</p>
+
+<h4 id="single_key_setup">Single Key Setup<a class="slurm_link" href="#single_key_setup"></a></h4>
+
+<ol>
+<li>For the authentication to happen correctly you must have a shared key on
+the machine running slurmctld, slurmdbd and the nodes. You can create a key
+file by entering your own text or by generating random data:
+<pre>
+dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1
+</pre>
+</li>
+
+<li>The slurm.key or slurm.jwks should be owned by SlurmUser and should not be
+readable or writable by other users. This example assumes the SlurmUser is
+'slurm':
+<pre>
+chown slurm:slurm /etc/slurm/slurm.key
+chmod 600 /etc/slurm/slurm.key
+</pre>
+</li>
+
+<li>Distribute the key file to the machines on the cluster. It needs to be
+on the machines running slurmctld, slurmdbd, slurmd and sackd.</li>
+
+<li>Update your slurm.conf and slurmdbd.conf to use the Slurm authentication
+type.
+<ul>
+<li>slurm.conf:
+<pre>
+AuthType = auth/slurm
+CredType = cred/slurm
+</pre></li>
+<li>slurmdbd.conf:
+<pre>
+AuthType = auth/slurm
+</pre></li>
+</ul>
+</li>
+
+<li>If not using systemd, create the runtime directories. (Systemd takes care of
+this automatically if you're starting the daemons using the provided service
+files).
+<pre>
+mkdir /run/slurmctld /run/slurmdbd
+chown slurm:slurm /run/slurmctld /run/slurmdbd
+</pre>
+</li>
+
+<li>Start the daemons back up with the appropriate method for your cluster.</li>
+</ol>
+
+<p>Beginning with version 24.05, you may alternatively create a slurm.jwks file
+with multiple keys defined. The slurm.jwks file aids with key rotation, as
+the cluster does not need to be restarted at once when a key is rotated.
+Instead, an scontrol reconfigure is sufficient. There are no slurm.conf
+parameters required to use the slurm.jwks file, instead, the presence of the
+slurm.jwks file enables this functionality. If the slurm.jwks is not present or
+cannot be read, the cluster defaults to the slurm.key.</p>
+
+<h4 id="multiple_key_setup">Multiple Key Setup<a class="slurm_link" href="#multiple_key_setup"></a></h4>
+
+<p>Setup for multiple keys is very similar to the single key setup with the
+exception of a richer key file. The key file is composed of one jwks-esque
+"keys" list, with a number of "key" entries into this list. The key entries
+have many different fields. An example file is below.
+</p>
+
+<pre>
+{
+  "keys": [
+    {
+      "alg": "HS256",
+      "kty": "oct",
+      "kid": "key-identifier",
+      "k": "VGhlIGtleSBiZWxvdyBtZSBuZXZlciBsaWVz",
+      "exp": 1718200800
+    },
+    {
+      "alg": "HS256",
+      "kty": "oct",
+      "kid": "key-identifier-2",
+      "k": "VGhlIGtleSBhYm92ZSBtZSBhbHdheXMgbGllcw==",
+      "use": "default"
+    }
+  ]
+}
+</pre>
+
+<p>The following fields are used by auth/slurm. (Additional fields can be
+present, but will be ignored.)
+<ul>
+<li><b>alg</b> &mdash; The cryptographic algorithm used with the key. This
+field is required, and the value MUST be HS256.</li>
+<li><b>kty</b> &mdash; The family of cryptographic algorithms used to sign the
+key. This field is required, and the value MUST be oct.</li>
+<li><b>kid</b> &mdash; The case-sensitive text identifier used for key
+matching. This field is required, and the text must be unique.</li>
+<li><b>k</b> &mdash; The actual key, represented in a Base64 or Base64url
+encoded binary blob. This field is required, and must be longer than 16
+bytes.</li>
+<li><b>use</b> &mdash; Determines whether this key is the default key.
+Acceptable values are only "default", which denotes this key as the default
+key. There can only be one default key. This field is optional.</li>
+<li><b>exp</b> &mdash; The expiration date of the key as a Unix timestamp. This
+field is optional.</li>
+</ul>
+</p>
+
+<p>Once the slurm.jwks file has been created, use the same process for setting
+up auth/slurm as in the single key setup, except use the slurm.jwks file instead
+of the slurm.key file.</p>
+
+<p>If the cluster does not have access to consistent user ids from LDAP or
+the operating system, you can use the
+<a href="slurm.conf.html#OPT_use_client_ids">use_client_ids</a> option to
+allow it to use the Slurm authentication mechanism.</p>
+
+<h4 id="sack">SACK<a class="slurm_link" href="#sack"></a></h4>
+
+<p>Slurm's internal authentication makes use of a subsystem &mdash; the
+<b>S</b>lurm <b>A</b>uth and <b>C</b>red <b>K</b>iosk (SACK) &mdash;
+that is responsible for handling requests from the <b>auth/slurm</b> and
+<b>cred/slurm</b> plugins. This subsystem is automatically started and managed
+internally by the slurmctld, slurmdbd, and slurmd daemons on each system with no
+need to run a separate daemon.</p>
+
+<p>For login nodes not running one of these Slurm daemons, the <b>sackd</b>
+daemon should be run to allow the Slurm client commands to authenticate to
+the rest of the cluster. This daemon can also manage cached configuration files
+for <a href="configless_slurm.html">configless</a> environments.</p>
+
+<p>Beginning with version 25.05, it's possible for multiple <b>sackd</b> daemons
+to co-exist on the same login node by changing the RuntimeDirectory option in
+separate systemd service files. Clients can authenticate against different sackd
+daemons on the same login node by managing the <b>SLURM_CONF</b> environment
+variable to point at the different cluster configuration files. Refer to the
+<a href="sackd.html">sackd(8)</a> manual for more information.
+
+<h2 id="jwt">JWT<a class="slurm_link" href="#jwt"></a></h2>
+
+<p>Slurm can be configured to use JSON Web Tokens (JWT) for authentication
+purposes. This is configured with the AuthAltType parameter and is used only
+for client to server communication. You can read more about this authentication
+mechanism and how to install it <a href="jwt.html">here</a>.</p>
+
+<!--#include virtual="footer.txt"-->

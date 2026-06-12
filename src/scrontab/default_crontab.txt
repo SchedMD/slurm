@@ -1,0 +1,20 @@
+# Welcome to scrontab, Slurm's cron-like interface.
+#
+# Edit this file to submit recurring jobs to be run by Slurm.
+#
+# Note that jobs will be run based on the Slurm controller's
+# time and timezone.
+#
+# Lines must either be valid entries, comments (start with '#'),
+# or blank.
+#
+# Lines starting with #SCRON will be parsed for options to use
+# with the next cron line. E.g., "#SCRON --time 1" would request
+# a one minute timelimit be applied. See the sbatch man page for
+# options, although note that not all options are supported here.
+#
+# For example, the following line (when uncommented) would request
+# a job be run at 5am each day.
+# 0 5 * * * /my/script/to/run
+#
+# min hour day-of-month month day-of-week command

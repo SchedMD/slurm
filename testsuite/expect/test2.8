@@ -1,0 +1,420 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol show commands for jobs and steps.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id1     0
+set job_id2     0
+set step_id	0
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+if {[check_config_select "linear"]} {
+	if {$nb_nodes < 2} {
+		skip "This test is incompatible with select/linear and only one node"
+	}
+} elseif {[default_part_exclusive]} {
+	if {$nb_nodes < 2} {
+		skip "This test is incompatible with exclusive node allocations and only one node"
+	}
+}
+
+proc cleanup {} {
+	global job_id1 job_id2 bin_rm test_id
+
+	cancel_job [list $job_id1 $job_id2]
+	exec $bin_rm -f slurm-$job_id1.sh $test_id.sh
+}
+
+#
+# Submit a couple jobs so we have something to work with
+#
+spawn $sbatch --output=/dev/null --error=/dev/null -t5 --wrap "$srun $bin_sleep 60"
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	fail "srun submit failed"
+}
+
+spawn $sbatch --output=/dev/null --error=/dev/null -t5 --wrap "$srun $bin_sleep 60"
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	fail "srun submit failed"
+}
+
+wait_for_job -fail $job_id1 "RUNNING"
+wait_for_job -fail $job_id2 "RUNNING"
+
+#
+# Look for these jobs with scontrol
+#
+# NOTE: Running "scontrol show job" and looking for these job IDs
+# may not work due to a bug in awk not scanning large output buffers
+#
+# NOTE: Match "JobId=" only
+#
+log_debug "Getting more info for job id 1 ($job_id1)"
+set matches 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_debug "Getting more info for job id 2 ($job_id2)"
+spawn $scontrol show job $job_id2
+expect {
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	fail "scontrol failed to find matching job ($matches != 2)"
+}
+
+#
+# using the scontrol -d option to display more info about job
+#
+log_debug "Getting more info for job id 1 ($job_id1) with -d option"
+set matches 0
+spawn $scontrol -d show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_debug "Getting more info for job id 2 ($job_id2) with -d option"
+spawn $scontrol -d show job $job_id2
+expect {
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+
+}
+set match_target 4
+if {$matches != $match_target} {
+	fail "scontrol failed to find matching job ($matches != $match_target)"
+}
+
+#
+# using the scontrol -dd option to display more info about job
+#
+log_debug "Getting more info for job id 1 ($job_id1) with -dd option"
+set matches 0
+spawn $scontrol -dd show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_debug "Getting more info for job id 2 ($job_id2) with -dd option"
+spawn $scontrol -dd show job $job_id2
+expect {
+	-re "JobId=$job_id2 " {
+		incr matches
+		exp_continue
+	}
+	-re "CPU_IDs=" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+
+}
+
+set match_target 4
+if {$matches != $match_target} {
+	fail "scontrol failed to find matching job ($matches != $match_target)"
+}
+
+#
+# Look at a specific job with scontrol
+#
+set matches 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobId=$job_id1 " {
+		incr matches
+		exp_continue
+	}
+	-re "JobId=" {
+		fail "scontrol filter by job id"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "scontrol failed to find requested job"
+}
+
+#
+# Wait for step to start
+#
+sleep 10
+
+#
+# Look at all job steps with scontrol
+#
+set matches 0
+spawn $scontrol show step $job_id1
+expect {
+	-re "StepId=$job_id1\\.$step_id " {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "scontrol failed to find job step ($job_id1.$step_id)"
+}
+
+#
+# Look at specific job step with scontrol
+#
+set matches 0
+spawn $scontrol show step $job_id1.$step_id
+expect {
+	-re "StepId=$job_id1\\.$step_id " {
+		incr matches
+		exp_continue
+	}
+	-re "StepId=" {
+		fail "scontrol filter by step id"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "scontrol failed to specific job step"
+}
+
+#
+# Look at specific _invalid_ job step with scontrol
+# (At least it should be invalid)
+#
+set matches 0
+set job_id3 [expr $job_id1 + 10000]
+spawn $scontrol show step $job_id3.$step_id
+expect {
+	-re "StepId=$job_id3\\.$step_id " {
+		fail "scontrol found unexpected job step"
+	}
+	-re "Invalid job id" {
+		log_debug "No worries, error expected"
+		incr matches
+		exp_continue
+	}
+	-re "StepId=" {
+		fail "scontrol filter by step id"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "scontrol found unexpected job step"
+}
+
+
+#
+# write batch_script to file
+#
+set matches 0
+spawn $scontrol write batch_script $job_id1
+expect {
+	-re "batch script for job $job_id1 written to slurm-$job_id1\\.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "scontrol failed to write batch script"
+}
+
+set matches 0
+spawn $scontrol write batch_script $job_id2 $test_id.sh
+expect {
+	-re "batch script for job $job_id2 written to $test_id\\.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "scontrol failed to write batch script"
+}
+
+set matches 0
+spawn ls slurm-$job_id1.sh
+expect {
+	-re "ls: cannot access" {
+		fail "ls failure"
+	}
+	-re "slurm-$job_id1\\.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "Could not find file"
+}
+
+set matches 0
+spawn ls $test_id.sh
+expect {
+	-re "ls: cannot access" {
+		fail "ls failure"
+	}
+	-re "$test_id\\.sh" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "Could not find file"
+}

@@ -1,0 +1,539 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test federated squeue, sinfo, sprio, scontrol output
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set fed_name     "feda"
+set user_name    ""
+set srun_job_cnt 0
+set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
+set my_sbatch   "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_srun     "${fed_slurm_base}/$fedc1/bin/srun"
+set my_sinfo    "${fed_slurm_base}/$fedc1/bin/sinfo"
+set my_sprio    "${fed_slurm_base}/$fedc1/bin/sprio"
+set my_squeue   "${fed_slurm_base}/$fedc1/bin/squeue"
+set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+set min_job_age [expr {$min_job_age + 65}]
+set file_in     "$test_dir/input"
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc sbatch { args } {
+	global number bin_sleep node_count my_sbatch file_in
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
+		--error=/dev/null -t300 --requeue "
+	append command $args
+	append command " $file_in"
+	set regex "Submitted batch job ($number)"
+
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Batch submit failure"
+	}
+	return $job_id
+}
+
+proc squeue { options regex } {
+	global my_squeue
+
+	set matches 0
+	set command "$my_squeue --noheader "
+	append command $options
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Unexpected error in squeue (expected $regex)"
+	}
+}
+
+proc verify { job_id output } {
+	global squeue fedc1 fedc2 fedc3
+
+	if {[string match $output $fedc1]} {
+		squeue "-M$output " "$job_id.+R.+"
+		squeue "-M$fedc1 -s " "$job_id\\.0.+$fedc1.+$job_id\\.1.+$fedc1.+$job_id\\.batch.+$fedc1"
+	}
+	if {[string match $output $fedc2]} {
+		squeue "-M$output " "$job_id.+R.+"
+		squeue "-M$fedc2 -s " "$job_id\\.0.+$fedc2.+$job_id\\.1.+$fedc2.+$job_id\\.batch.+$fedc2"
+	}
+	if {[string match $output $fedc3]} {
+		squeue "-M$output " "$job_id.+R.+"
+		squeue "-M$fedc3 -s " "$job_id\\.0.+$fedc3.+$job_id\\.1.+$fedc3.+$job_id\\.batch.+$fedc3"
+	}
+
+}
+
+proc sinfo { options regex } {
+	global my_sinfo
+
+	set matches 0
+	set command "$my_sinfo --noheader "
+	append command $options
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Unexpected error in sinfo (expected $regex)"
+	}
+}
+
+proc sprio { options regex {match_cnt 1} } {
+	global my_sprio
+
+	set matches 0
+	set command "$my_sprio --noheader "
+	append command $options
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != $match_cnt} {
+		fail "Unexpected error in sprio (expected $regex: $matches != $match_cnt)"
+	}
+}
+
+proc scontrol_show { category tasks regex option } {
+	global my_scontrol bin_grep
+
+	set matches 0
+	set command "$my_scontrol "
+	append command $option
+	append command " show $category | $bin_grep \"$tasks\""
+
+	spawn bash -c $command
+	expect {
+		-re "$regex" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Unexpected error in scontrol_show (expected $regex $matches matches)"
+	}
+}
+
+proc cancel_federation_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global fed_name bin_bash bin_rm test_name
+
+	cancel_federation_jobs
+	delete_federations $fed_name
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
+}
+
+# Start test
+
+if {![check_federation_setup]} {
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
+}
+
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+cleanup
+
+# Add clusters to federation
+if [setup_federation $fed_name] {
+	fail "Failed to setup federation"
+}
+
+# Get number of nodes per cluster
+set node_count [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]]
+
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc1 set features=fa
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc2 set features=fb
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=fc
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+make_bash_script $file_in "env; $my_srun --overlap sleep 900 & $my_srun --overlap sleep 900"
+
+log_info "################################################################"
+log_info "Verify federated squeue output"
+log_info "################################################################"
+
+set ji0 [sbatch]
+set ji1 [sbatch]
+set ji2 [sbatch]
+set local ""
+
+set output [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set x ($ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output\\s+$ji0\\s+$ji0\\.batch\\s+$output)
+if {[string match $output $fedc1]} {
+	set a ($ji0\\s+$output\\s+)
+	set x1 ($ji0\\s+$ji0\\.batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output)
+	set local ($ji0.+R.+)
+} elseif {[string match $output $fedc2]} {
+	set b ($ji0\\s+$output\\s+)
+	set y1 ($ji0\\s+$ji0\\.batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output)
+} else {
+	set c ($ji0\\s+$output\\s+)
+	set z1 ($ji0\\s+$ji0\\.batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output)
+}
+
+
+set output [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set y ($ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output\\s+$ji1\\s+$ji1\\.batch\\s+$output)
+if {[string match $output $fedc1]} {
+	set a ($ji1\\s+$output\\s+)
+	set x1 ($ji1\\s+$ji1\\.batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
+	set local ($ji1.+R.+)
+} elseif {[string match $output $fedc2]} {
+	set b ($ji1\\s+$output\\s+)
+	set y1 ($ji1\\s+$ji1\\.batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
+} else {
+	set c ($ji1\\s+$output\\s+)
+	set z1 ($ji1\\s+$ji1\\.batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
+}
+
+set output [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set z ($ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output\\s+$ji2\\s+$ji2\\.batch\\s+$output)
+if {[string match $output $fedc1]} {
+	set a ($ji2\\s+$output\\s+)
+	set x1 ($ji2\\s+$ji2\\.batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
+	set local ($ji2.+R.+)
+} elseif {[string match $output $fedc2]} {
+	set b ($ji2\\s+$output\\s+)
+	set y1 ($ji2\\s+$ji2\\.batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
+} else {
+	set c ($ji2\\s+$output\\s+)
+	set z1 ($ji2\\s+$ji2\\.batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
+}
+
+# Give time for steps to start.
+sleep 2
+
+squeue "-s " "$ji0\\.0.+$ji0\\.1.+$ji0\\.batch.+$ji1\\.0.+$ji1\\.1.+$ji1\\.batch.+$ji2\\.0.+$ji2\\.1.+$ji2\\.batch.+"
+squeue "--local " "$local"
+squeue "-s -O jobid,stepid,cluster " "$x\\s+$y\\s+$z"
+squeue "-s -O jobid,stepid,cluster -Scluster " "$x1\\s+$y1\\s+$z1"
+squeue "-s -O jobid,stepid,cluster -S-cluster " "$z1\\s+$y1\\s+$x1"
+squeue "-O jobid,stepid,cluster -Scluster " "squeue: error: Invalid job format specification: stepid"
+# squeue "-O jobid,cluster -Scluster " "$a$b$c"
+squeue "-O jobid,cluster -S-cluster " "$c$b$a"
+
+# Verify that -M<cluster> implies --local
+
+squeue "-O jobid,stepid,cluster -s " "$x\\s+$y\\s+$z"
+
+set output [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+
+verify $ji0 $output
+
+set output [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+
+verify $ji1 $output
+
+set output [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+
+verify $ji2 $output
+
+log_info "################################################################"
+log_info "Verify federated sinfo output"
+log_info "################################################################"
+
+cancel_federation_jobs
+
+set regex "(debug\\*\\s+($fedc1|$fedc2|$fedc3)\\s+up\\s+infinite\\s+10\\s+idle\\s+($fedc1|$fedc2|$fedc3)_\\\[1-10\\\]\\s*)"
+
+sinfo "" "$regex{3}"
+sinfo "--local " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+($fedc1)_\\\[1-10\\\])"
+sinfo "-M$fedc1 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc1.+)"
+sinfo "-M$fedc2 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc2.+)"
+sinfo "-M$fedc3 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc3.+)"
+
+#
+# Remove the sprio format variable if found
+#
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
+log_info "################################################################"
+log_info "Verify federated sprio output"
+log_info "################################################################"
+
+set ji0 [sbatch]
+wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3
+set ji1 [sbatch]
+wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3
+set ji2 [sbatch]
+wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3
+set ji3 [sbatch]
+set ji4 [sbatch "-M$fedc1"]
+set ji5 [sbatch "-M$fedc2"]
+set ji6 [sbatch "-M$fedc3"]
+
+squeue "" "(\\s+($ji6|$ji5|$ji4|$ji3).+PD.+\\n){4}(\\s+($ji0|$ji1|$ji2).+R.+\\n){3}"
+
+sprio "" "(\\s+($ji6|$ji5|$ji4|$ji3).+\\n){4}"
+
+sprio "--sibling" "($ji3|$ji4|$ji5|$ji6)" 6
+sprio "--local" "(\\s+($ji3|$ji4).+\\n){2}"
+sprio "-M$fedc1" "(\\s+($ji3|$ji4).+\\n){2}"
+sprio "-M$fedc2" "(\\s+($ji3|$ji5).+\\n){2}"
+sprio "-M$fedc3" "(\\s+($ji3|$ji6).+\\n){2}"
+
+log_info "################################################################"
+log_info "Verify federated scontrol show jobs output"
+log_info "################################################################"
+
+cancel_federation_jobs
+
+set reg1 ""
+set reg2 ""
+set reg3 ""
+set reg4 ""
+set reg5 ""
+set reg6 ""
+
+
+set ji0 [sbatch]
+set o0 [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set ji1 [sbatch]
+set o1 [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set ji2 [sbatch]
+set o2 [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set ji3 [sbatch]
+
+sleep 2
+
+if { [string match $o0 $fedc1] } {
+	set reg1 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
+	set reg4 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} elseif { [string match $o0 $fedc2] } {
+	set reg2 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
+	set reg5 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} else {
+	set reg3 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
+	set reg6 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+}
+
+if { [string match $o1 $fedc1] } {
+	set reg1 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
+	set reg4 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} elseif { [string match $o1 $fedc2] } {
+	set reg2 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
+	set reg5 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} else {
+	set reg3 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
+	set reg6 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+}
+
+if { [string match $o2 $fedc1] } {
+	set reg1 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
+	set reg4 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} elseif { [string match $o2 $fedc2] } {
+	set reg2 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
+	set reg5 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+} else {
+	set reg3 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
+	set reg6 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+}
+
+
+set tasks "\\($ji0\\|$ji1\\|$ji2\\|$ji3\\)"
+set regex_j "(JobId=($ji0|$ji1|$ji2|$ji3) JobName=input\\s+\\n)"
+set regex_s "(StepId=($ji0|$ji1|$ji2)\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
+
+scontrol_show "jobs" $tasks "$regex_j{4}" ""
+scontrol_show "jobs" $tasks "$regex_j{6}" "--sibling"
+scontrol_show "jobs" $tasks "$reg1{2}" "--local"
+scontrol_show "jobs" $tasks "$reg1{2}" "-M$fedc1"
+scontrol_show "jobs" $tasks "$reg2{2}" "-M$fedc2"
+scontrol_show "jobs" $tasks "$reg3{2}" "-M$fedc3"
+
+scontrol_show "steps" $tasks "$regex_s{6}" ""
+scontrol_show "steps" $tasks "$regex_s{6}" "--sibling"
+scontrol_show "steps" $tasks "$reg4{2}" "--local"
+scontrol_show "steps" $tasks "$reg4{2}" "-M$fedc1"
+scontrol_show "steps" $tasks "$reg5{2}" "-M$fedc2"
+scontrol_show "steps" $tasks "$reg6{2}" "-M$fedc3"

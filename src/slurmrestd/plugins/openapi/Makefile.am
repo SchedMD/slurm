@@ -1,0 +1,1 @@
+SUBDIRS = slurmctld slurmdbd util

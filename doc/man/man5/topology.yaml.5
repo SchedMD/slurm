@@ -1,0 +1,355 @@
+.TH "topology.yaml" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
+
+.SH "NAME"
+topology.yaml \-  Slurm configuration file for the topology plugins
+
+.SH "DESCRIPTION"
+
+.LP
+\fBtopology.yaml\fR is a YAML\-formatted configuration file that defines
+multiple network topologies for optimizing job resource allocation in Slurm.
+The file must be located in the same directory as \fBslurm.conf\fR. Any text
+following a "#" in this file is treated as a comment through the end of that
+line.
+
+Additional details are available in \fBtopology.conf\fR(5) and in the
+Topology Guide: <https://slurm.schedmd.com/topology.html>
+
+\fBNOTE\fR: Slurm will first check for topology.yaml.
+If this file exists, topology.conf will be ignored.
+.LP
+
+.SH "PARAMETERS"
+.LP
+Each topology contains the following attributes:
+.LP
+
+.TP
+\fBtopology\fR
+Unique name of the topology, will be used to identify it on partition
+configurations. Must be the first attribute.
+.IP
+
+.TP
+\fBcluster_default\fR
+The first topology defined with \fBcluster_default: true\fR will be used for
+partitions without an explicitly specified topology and cluster-wide operations
+not tied to a partition (e.g., slurmctld-to-slurmd communication). Defaults to
+\fBfalse\fR.
+.IP
+
+.LP
+Each topology must also define exactly one of the following topology types:
+.RS
+.TP
+\fBblock\fR
+This topology will use the \fBtopology/block\fR plugin. Must contain additional
+fields, see below.
+.IP
+
+.TP
+\fBflat\fR
+If set to \fBtrue\fR, this topology will use the \fBtopology/flat\fR plugin,
+which is the default if no TopologyPlugin or topology.yaml is specified.
+May also be set to a dictionary of options, see "Flat definitions" below.
+.IP
+
+.TP
+\fBring\fR
+This topology will use the \fBtopology/ring\fR plugin. Must contain additional
+fields, see below.
+.IP
+
+.TP
+\fBtorus3d\fR
+This topology will use the \fBtopology/torus3d\fR plugin. Must contain
+additional fields, see below.
+.IP
+
+.TP
+\fBtree\fR
+This topology will use the \fBtopology/tree\fR plugin. Must contain additional
+fields, see below.
+.IP
+.RE
+
+.SS "Block definitions"
+.LP
+Each block topology contains the following attributes:
+.LP
+
+.TP
+\fBblock_sizes\fR
+List of the planning base block size, alongside any
+higher-level block sizes that would be enforced.
+Successive \fBBlockSizes\fR must be a power of two larger than the prior values.
+.IP
+
+.TP
+\fBblocks\fR
+List of blocks available in this topology. Each block contains the following
+attributes:
+
+.RS
+.TP
+\fBblock\fR
+The name of a block. This name is internal to Slurm and arbitrary.
+Each block should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBnodes\fR
+Child nodes of the named block.
+.IP
+.RE
+.IP
+
+.SS "Tree definitions"
+.LP
+Each tree topology contains the following attribute:
+.LP
+
+.TP
+\fBswitches\fR
+List of switches available in this topology. Each switch contains the following
+attributes:
+
+.RS
+.TP
+\fBswitch\fR
+The name of a switch. This name is internal to Slurm and arbitrary.
+Each switch should have a unique name.
+This field must be specified and cannot be longer than 64 characters.
+.IP
+
+.TP
+\fBchildren\fR
+Child switches of the named switch.
+.IP
+
+.TP
+\fBnodes\fR
+Child nodes of the named leaf switch.
+.IP
+
+.RE
+.IP
+
+.SS "Ring definitions"
+.LP
+Each ring topology contains the following attribute:
+.LP
+
+.TP
+\fBrings\fR
+List of rings available in this topology. Each ring contains the following
+attributes:
+
+.RS
+.TP
+\fBring\fR
+The name of a ring. This name is internal to Slurm and arbitrary.
+Each ring should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBnodes\fR
+Ordered list of child nodes in the ring.
+A maximum of 16 nodes can be specified per ring.
+.IP
+.RE
+.IP
+
+.SS "Torus3d definitions"
+.LP
+Each torus3d topology contains the following attribute:
+.LP
+
+.TP
+\fBtoruses\fR
+List of 3D torus definitions. Each torus contains the following attributes:
+
+.RS
+.TP
+\fBname\fR
+The name of the torus. This name is internal to Slurm and arbitrary.
+Each torus should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBdims\fR
+The dimensions of the torus as an object with \fBx\fR, \fBy\fR, and \fBz\fR
+fields (each a positive integer). The product x*y*z defines the total number
+of coordinate cells in the torus.
+.IP
+
+.TP
+\fBnodes\fR
+Child nodes of the torus. Nodes are mapped to coordinates in x\-major order
+(x varies fastest). Mutually exclusive with \fBregions\fR.
+.IP
+
+.TP
+\fBregions\fR
+List of regions within the torus that map subsets of coordinates to nodes.
+Mutually exclusive with \fBnodes\fR.
+Each region contains the following attributes:
+
+.RS
+.TP
+\fBanchor\fR
+Starting coordinate of the region as an object with \fBx\fR, \fBy\fR, and
+\fBz\fR fields.
+.IP
+
+.TP
+\fBdims\fR
+Size of the region as an object with \fBx\fR, \fBy\fR, and \fBz\fR fields.
+The region covers coordinates from \fBanchor\fR to
+\fBanchor\fR + \fBdims\fR \- 1. The region must fit within the torus
+dimensions (no wrap\-around).
+.IP
+
+.TP
+\fBnodes\fR
+Nodes to place in the region, mapped in x\-major order within the region's
+coordinate range.
+.IP
+.RE
+.IP
+
+.TP
+\fBplacements\fR
+List of allowed placement shapes for this torus. Jobs requesting a number of
+nodes matching a placement size will be allocated as a contiguous sub\-cube.
+Jobs that don't match a placement size will not receive an allocation.
+Each placement contains the following attributes:
+
+.RS
+.TP
+\fBdims\fR
+Dimensions of the placement shape as an object with \fBx\fR, \fBy\fR, and
+\fBz\fR fields. The product x*y*z defines the placement size (number of nodes).
+.IP
+
+.TP
+\fBanchor_seed\fR
+Optional starting coordinate offset for the anchor grid as an object with
+\fBx\fR, \fBy\fR, and \fBz\fR fields. Shifts the entire anchor grid by the
+given offset. Defaults to {0, 0, 0}.
+.IP
+
+.TP
+\fBanchor_spacing\fR
+Optional spacing between placement anchors as an object with \fBx\fR, \fBy\fR,
+and \fBz\fR fields. Controls how anchor positions are generated across the
+torus. Defaults to the placement \fBdims\fR if not specified.
+.IP
+.RE
+.IP
+.RE
+
+.SS "Flat definitions"
+.LP
+Each flat topology may contain the following attribute:
+.LP
+
+.TP
+\fBalpha_step_rank\fR
+If set to \fBtrue\fR, sort the job's allocated nodes alphabetically by name
+when picking step nodes and laying out tasks. By default the order follows
+the internal node table index, which for dynamically registered nodes
+reflects registration order rather than name order.
+.IP
+
+.SH "EXAMPLE"
+.nf
+---
+- topology: topo1
+  cluster_default: true
+  tree:
+    switches:
+      - switch: sw_root
+        children: s[1-2]
+      - switch: s1
+        nodes: node[01-02]
+      - switch: s2
+        nodes: node[03-04]
+- topology: topo2
+  cluster_default: false
+  block:
+    block_sizes:
+      - 4
+      - 16
+    blocks:
+      - block: b1
+        nodes: node[01-04]
+      - block: b2
+        nodes: node[05-08]
+      - block: b3
+        nodes: node[09-12]
+      - block: b4
+        nodes: node[13-16]
+- topology: topo3
+  cluster_default: false
+  flat: true
+- topology: topo3a
+  cluster_default: false
+  flat:
+    alpha_step_rank: true
+- topology: topo4
+  cluster_default: false
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[01-08]
+      - ring: ring1
+        nodes: node[09-16]
+- topology: topo5
+  cluster_default: false
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 4
+          y: 4
+          z: 2
+        nodes: node[01-32]
+        placements:
+          - dims:
+              x: 2
+              y: 2
+              z: 1
+          - dims:
+              x: 2
+              y: 2
+              z: 2
+          - dims:
+              x: 4
+              y: 4
+              z: 2
+.fi
+
+.SH "COPYING"
+Copyright (C) 2025 SchedMD LLC.
+
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5), \fBtopology.conf\fR(5)

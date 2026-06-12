@@ -1,0 +1,1719 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Establish global state information for Slurm accounting tests
+#
+# To define site-specific state information, set the values in a file
+# named 'globals.local'. Those values will override any specified here.
+# for example:
+#
+# $ cat globals.local
+# set slurm_dir "/usr/local"
+# set mpicc     "/usr/local/bin/mpicc"
+#
+############################################################################
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
+# Additions by Joseph Donaghy <donaghy1@llnl.gov>
+# Additions by Bill Brophy <bill.brophy@bull.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the supplied file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+set timeout 60
+
+#
+# Use sacctmgr to create a cluster
+#
+proc add_cluster { name clus_req_in } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	array set clus_req $clus_req_in
+	if { ![string length $name] } {
+		fail "A cluster name must be specified"
+	}
+
+	set command "$name"
+
+	foreach option [array names clus_req] {
+
+		if {$option eq "qos"} {
+			if {$clus_req($option) eq " "} {
+				set $clus_req($option) "''"
+			}
+		}
+		set command "$command $option=$clus_req($option)"
+	}
+	eval spawn $sacctmgr -i add cluster $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Adding Cluster" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem adding clusters got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to remove the test cluster
+#
+proc remove_cluster {name} {
+	global access_err sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		fail "A cluster name must be specified"
+	}
+
+	eval spawn $sacctmgr -i delete cluster $name
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Deleting clusters" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr delete not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$access_err != 0} {
+		return $::RETURN_ERROR
+	}
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem deleting cluster got $matches"
+		set rc $::RETURN_ERROR
+	}
+	if { !$nothing } {
+		if {![check_acct_associations]} {
+			log_error "Our associations don't line up"
+			set rc $::RETURN_ERROR
+		}
+	}
+
+	return $rc
+}
+
+
+proc mod_cluster { name clus_req_in } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	array set clus_req $clus_req_in
+	if { ![string length $name] } {
+		fail "A cluster name must be specified"
+	}
+
+	set command ""
+
+	foreach option [array names clus_req] {
+
+		if {$option eq "qos"} {
+			if {$clus_req($option) eq " "} {
+				set $clus_req($option) "''"
+			}
+		}
+		set command "$command $option=$clus_req($option)"
+	}
+	set command "$command where name=$name"
+
+	eval spawn $sacctmgr -i mod cluster set $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Modified cluster" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem adding clusters. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to add an account
+#
+proc add_acct { name acct_req_in } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	array set acct_req $acct_req_in
+	if { ![string length $name] } {
+		fail "An account must be specified"
+	}
+
+	set command "name=$name"
+
+	foreach option [array names acct_req] {
+
+		if {$option eq "qos"} {
+			if {$acct_req($option) eq " "} {
+				set $acct_req($option) "''"
+			}
+		}
+
+		set command "$command $option=$acct_req($option)"
+	}
+
+	eval spawn $sacctmgr -i add account $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Adding Account" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		log_error "sacctmgr had a problem adding account. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to remove an account
+#
+proc remove_acct { cluster name } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set nothing 1
+	set check "Deleting account"
+
+	if { ![string length $name] } {
+		fail "An account must be specified"
+	}
+
+	set command "name=$name"
+
+	if { [string length $cluster] } {
+		set command "$command cluster=$cluster"
+		set check "Deleting account associations"
+	}
+
+	eval spawn $sacctmgr -i delete account $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "$check" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem deleting account. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if { !$nothing } {
+		if {![check_acct_associations]} {
+			log_error "Our associations don't line up"
+			set rc $::RETURN_ERROR
+		}
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to modify an account
+#
+########################################################################
+#
+# IN: name - name of acct to modify
+#
+#     acct_mod_desc_in - consist of the cluster,
+#     description, organization, and parent.
+#     Stuff before the where.
+#
+#     acct_mod_assoc_vals_in - association consist of
+#     fairshare, grpcpumin, grpcpurunmins, grpcpu, grpjob
+#     grpmemory, grpnode, grpsubmit, grpwall, maxcpumin
+#     maxcpu, maxjob, maxnode, maxsubmit, maxwall. Stuff
+#     after the set
+#
+#     acct_mod_acct_vals_in - account values consist of parent,
+#     organization, description
+########################################################################
+
+proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set valid_array 1
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+	array set acct_mod_desc $acct_mod_desc_in
+	array set acct_mod_assoc_vals $acct_mod_assoc_vals_in
+	array set acct_mod_acct_vals $acct_mod_acct_vals_in
+
+	if { ![string length $name] } {
+		fail "An account must be specified"
+	}
+
+	# Set up the where
+	set wcommand "where name=$name"
+
+	foreach desc [array names acct_mod_desc] {
+
+		if {$desc eq "qos"} {
+			if {$acct_mod_desc($desc) eq " "} {
+				set $acct_mod_desc($desc) "''"
+			}
+		}
+		set wcommand "$wcommand $desc=$acct_mod_desc($desc)"
+	}
+
+	# Set up the set
+	set scommand "set"
+
+	foreach acct_val [array names acct_mod_acct_vals] {
+
+		if {$acct_val eq "qos"} {
+			if {$acct_mod_acct_vals($acct_val) eq " "} {
+				set $acct_mod_acct_vals($acct_val) "''"
+			}
+		}
+
+		set scommand "$scommand $acct_val=$acct_mod_acct_vals($acct_val)"
+		set acct_stuff 1
+
+	}
+
+	foreach assoc_val [array names acct_mod_assoc_vals] {
+
+		if {$assoc_val eq "qos"} {
+			if {$acct_mod_assoc_vals($assoc_val) eq " "} {
+				set $acct_mod_assoc_vals($assoc_val) "''"
+			}
+		}
+
+		set scommand "$scommand $assoc_val=$acct_mod_assoc_vals($assoc_val)"
+		set assoc_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+	eval spawn $sacctmgr -i modify account $scommand $wcommand
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Modified accounts" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified account associations" {
+			incr matches
+			exp_continue
+		}
+		-re "Requested parent account (.*) is a child of" {
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $expected} {
+		log_error "sacctmgr had a problem modifying account. got $matches needed $expected"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to add a user
+#
+proc add_user { name user_req_in } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	array set user_req $user_req_in
+	if { ![string length $name] } {
+		fail "A user must be specified"
+	}
+
+	set command "user=$name"
+
+	foreach option [array names user_req] {
+
+		if {$option eq "qos"} {
+			if {$user_req($option) eq " "} {
+				set $user_req($option)  "''"
+			}
+		}
+		set command "$command $option=$user_req($option)"
+	}
+
+	eval spawn $sacctmgr -i add user $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Adding User" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		-re "WCKeys" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$matches} {
+		log_error "sacctmgr had a problem adding user. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to remove a user
+#
+proc remove_user { cluster acct user } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set nothing 1
+	set check "Deleting user"
+
+	if { ![string length $user] } {
+		fail "A user must be specified"
+	}
+
+	set command "$user"
+
+	if { [string length $cluster] } {
+		set command "$command cluster=$cluster"
+		set check "Deleting user associations"
+	}
+
+	if { [string length $acct] } {
+		set command "$command account=$acct"
+		set check "Deleting user associations"
+	}
+
+	eval spawn $sacctmgr -i delete user $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "$check" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr delete not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem deleting user. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if { !$nothing } {
+		if {![check_acct_associations]} {
+			log_error "Our associations don't line up"
+			set rc $::RETURN_ERROR
+		}
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to modify an user
+#
+###############################################################
+#
+#
+# IN: user_mod_desc_in - consist of the cluster,
+#     account, partition, adminlevel, defaultaccount, and
+#     defaultwckey.  Stuff before the where.
+#
+#     user_mod_acct_vals_in - account values consist of adminlevel,
+#     defaultaccount, and defaultwckey. Stuff before set.
+#
+#     user_mod_assoc_vals_in - association consist of
+#     fairshare, grpcpumin, grpcpurunmins, grpcpu, grpjob
+#     grpmemory, grpnode, grpsubmit, grpwall, maxcpumin
+#     maxcpu, maxjob, maxnode, maxsubmit, maxwall. Stuff
+#     after the set
+#
+#
+##############################################################
+
+proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+	array set user_mod_info $user_mod_info_req
+	array set user_mod_acct $user_mod_acct_req
+	array set user_mod_assoc $user_mod_assoc_req
+
+	if { ![string length $name] } {
+		fail "A user must be specified"
+	}
+
+	# Set up the where
+	set wcommand "where name=$name"
+	foreach desc [array names user_mod_info] {
+
+		if {$desc eq "qos"} {
+			if {$user_mod_info($desc) eq " "} {
+				set $user_mod_info($desc) "''"
+			}
+		}
+
+		set wcommand "$wcommand $desc=$user_mod_info($desc)"
+	}
+
+	# Set up the set
+	set scommand "set"
+
+	# Account Values
+	foreach desc [array names user_mod_acct] {
+
+		if {$desc eq "qos"} {
+			if {$user_mod_acct($desc) eq " "} {
+				set $user_mod_acct($desc) "''"
+			}
+		}
+
+		set scommand "$scommand $desc=$user_mod_acct($desc)"
+		set acct_stuff 1
+	}
+
+
+	# Association Values
+	foreach desc [array names user_mod_assoc] {
+
+		if {$desc eq "qos"} {
+			if {$user_mod_assoc($desc) eq " "} {
+				set $user_mod_assoc($desc) "''"
+			}
+		}
+
+		set scommand "$scommand $desc=$user_mod_assoc($desc)"
+		set assoc_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+	eval spawn $sacctmgr -i modify user $scommand $wcommand
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Modified user associations" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified users" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr modify not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $expected} {
+		log_error "sacctmgr had a problem modifying user. Got $matches needed $expected"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to create a QoS
+#
+proc add_qos {name qos_req_in} {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	array set qos_req $qos_req_in
+
+	if { ![string length $name] } {
+		fail "A qos must be specified"
+	}
+
+	set command "$name"
+
+	foreach option [array names qos_req] {
+		if {$qos_req($option) eq " "} {
+			set $qos_req($option) "''"
+		}
+		set command "$command $option=$qos_req($option)"
+	}
+
+	eval spawn $sacctmgr -i add qos $command
+	expect {
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting qos's from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Adding QOS" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem adding QoS got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Modify QoS
+#
+proc mod_qos { qos_name qos_mod_val_in} {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set expected 0
+	set wcommand "where name=$qos_name"
+	set scommand "set"
+	array set qos_mod_vals $qos_mod_val_in
+
+	if { ![string length $qos_name] } {
+		fail "A qos must be specified"
+	}
+
+	foreach desc [array names qos_mod_vals] {
+
+		if {$qos_mod_vals($desc) eq " "} {
+			set $qos_mod_vals($desc) "''"
+		}
+
+		set scommand "$scommand $desc=$qos_mod_vals($desc)"
+	}
+
+	set output [run_command_output -fail "$sacctmgr -i modify qos $wcommand $scommand"]
+	if {![regexp "Modified qos" $output]} {
+		log_error "sacctmgr did not change qos $qos_name"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to remove the test QoS
+#
+proc remove_qos {name} {
+	global access_err sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		fail "A qos must be specified"
+	}
+
+	spawn $sacctmgr -i delete qos $name
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Deleting QOS" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr delete not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$access_err != 0} {
+		return $::RETURN_ERROR
+	}
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem deleting QoS got $matches"
+		set rc $::RETURN_ERROR
+	}
+	if { !$nothing } {
+		if {![check_acct_associations]} {
+			log_error "Our associations don't line up"
+			set rc $::RETURN_ERROR
+		}
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to add a coordinator
+#
+proc add_coor { accounts names } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+
+	if { ![string length $names] } {
+		fail "At least one coordinator name must be specified"
+	}
+
+	set command "$names"
+
+	if { [string length $accounts] } {
+		set command "$command account=$accounts"
+	}
+
+#	if { [string length $names] } {
+#		set command "$command names=$names"
+#	}
+
+	eval spawn $sacctmgr -i add coordinator $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Adding Coordinator" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem adding coordinator. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if {![check_acct_associations]} {
+		log_error "Our associations don't line up"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to remove a coordinator
+#
+proc remove_coor { accounts names } {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set nothing 1
+
+	if { ![string length $names] } {
+		fail "At least one coordinator name must be specified"
+	}
+
+	set command "$names"
+
+	if { [string length $accounts] } {
+		set command "$command accounts=$accounts"
+	}
+
+	eval spawn $sacctmgr -i delete coordinator $command
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "No associations" {
+			log_error "Your command didn't return anything"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Removing Coordinator" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr delete not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem deleting coordinator. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	if { !$nothing } {
+		if {![check_acct_associations]} {
+			log_error "Our associations don't line up"
+			set rc $::RETURN_ERROR
+		}
+	}
+
+	return $rc
+}
+
+
+proc archive_load { file } {
+	global sacctmgr
+
+	#
+	# Use sacctmgr to load info
+	#
+	set rc $::RETURN_SUCCESS
+	set result [run_command -timeout 360 "$sacctmgr -i -n archive load $file"]
+	if { [dict get $result exit_code] != 0 || [regexp "There was a problem" [dict get $result output]]} {
+		log_error "sacctmgr didn't load archive correctly"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to create a resource
+#
+proc add_resource {name res_limits} {
+	global sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set command "name=$name"
+	array set res_req $res_limits
+
+	if { ![string length $name] } {
+		fail "A resource name must be specified"
+	}
+
+	foreach option [array names res_req] {
+		if {$res_req($option) eq " "} {
+			set $res_req($option) "''"
+		}
+		set command "$command $option=$res_req($option)"
+	}
+
+	eval spawn $sacctmgr -i add resource $command
+	expect {
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting system resources from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Adding Resource" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr add not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		log_error "sacctmgr had a problem adding system resource. Got $matches"
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+#
+# Use sacctmgr to remove the test res
+#
+proc remove_res {name} {
+	global access_err sacctmgr timeout
+
+	set rc $::RETURN_SUCCESS
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		fail "A resource name must be specified"
+	}
+
+	spawn $sacctmgr -i delete res $name
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			log_error "There was a problem with the sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem getting" {
+			log_error "There was a problem getting information from the database"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re "Problem adding" {
+			log_error "There was an unknown problem"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		-re " Deleting system resource" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr nothing
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr delete not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches == 1} {
+		return $rc
+	}
+	if {$access_err != 0} {
+		return $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+################################################################
+#
+# NAME
+#	check_assoc_limit - checks that the association limits are correct
+#
+# SYNOPSIS
+#	check_assoc_limit assoc type name assoc_val
+#
+# RETURN VALUE
+#	true if association limits are correct, false otherwise
+#
+################################################################
+
+proc check_assoc_limit { assoc type name assoc_val } {
+	global sacctmgr number
+	array set assoc_arr $assoc_val
+	set return_value true
+	set format_str ""
+	set exp "$name"
+	set first 0
+
+	foreach vals [array name assoc_arr] {
+
+		if {[string compare -nocase $vals "Description"] &&
+		    [string compare -nocase $vals "Organization"] &&
+		    [string compare -nocase $vals "AdminLevel"] &&
+		    [string compare -nocase $vals "DefaultAccount"]} {
+
+			if { $first == 0 } {
+				set format_str "$vals"
+				set exp "$exp\.$assoc_arr($vals)"
+				set first 1
+			} else {
+
+				set exp "$exp\.$assoc_arr($vals)"
+				set format_str "$format_str\,$vals"
+			}
+		}
+	}
+	log_info "\nChecking $name Limits"
+	log_user 0
+	set check_val 0
+	if {$assoc == 1} {
+		spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,$format_str
+		expect {
+			-re "$exp" {
+				set check_val 1
+				exp_continue
+			}
+			timeout {
+				fail "sacctmgr is not responding"
+			}
+			eof {
+				wait
+			}
+
+		}
+		if {$check_val != 1} {
+			log_error "$name was not set correctly"
+			set return_value false
+		}
+
+	} elseif {$assoc == 2} {
+		spawn $sacctmgr list assoc $type=$name -p -n format=account,$format_str
+		expect {
+			-re "$exp" {
+				set check_val 1
+				exp_continue
+			}
+			timeout {
+				fail "sacctmgr is not responding"
+			}
+			eof {
+				wait
+			}
+
+		}
+		if {$check_val != 1} {
+			log_error "$name was not set correctly $check_val"
+			set return_value false
+		}
+	} elseif {$assoc == 3} {
+		spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str
+		expect {
+			-re "$exp" {
+				set check_val 1
+				exp_continue
+			}
+			timeout {
+				fail "sacctmgr is not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		if {$check_val != 1} {
+			log_error "$name was not set correctly $check_val"
+			set return_value false
+		}
+	}
+	log_user 1
+
+	return $return_value
+}
+
+
+################################################################
+#
+# NAME
+#	reset_account_usage - resets account association limits on a given cluster
+#
+# SYNOPSIS
+#	reset_account_usage cluster account
+#
+# RETURN VALUE
+#	0 if usage reset was successful, non-zero otherwise
+#
+################################################################
+
+proc reset_account_usage { cluster acct } {
+	global sacctmgr
+
+	set rc $::RETURN_SUCCESS
+	if {$cluster eq ""} {
+		set cluster [get_config_param "ClusterName"]
+	}
+
+	spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0
+	expect {
+		-re "error:" {
+			log_error "Something went wrong with sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $rc
+}
+
+
+################################################################
+#
+# NAME
+#	reset_qos_usage - resets QOS usage on a given cluster
+#
+# SYNOPSIS
+#	reset_qos_usage cluster qos
+#
+# RETURN VALUE
+#	0 if successful, non-zero otherwise
+#
+################################################################
+
+proc reset_qos_usage { cluster qos } {
+	global sacctmgr
+
+	set rc $::RETURN_SUCCESS
+	if {$cluster eq ""} {
+		set cluster [get_config_param "ClusterName"]
+	}
+
+	spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0
+	expect {
+		-re "error:" {
+			log_error "Something went wrong with sacctmgr command"
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $rc
+}
+
+
+###############################################################
+#
+# NAME
+#	check_qos_limits - verifies that the qos limits are correct
+#
+# SYNOPSIS
+#	check_qos_limits name qos_req
+#
+# RETURN VALUE
+#	0 if successful, 1 otherwise
+#
+###############################################################
+
+proc check_qos_limits { qos_name qos_req } {
+	global sacctmgr
+	array set qos_info $qos_req
+
+	if { ![string length $qos_name] } {
+		fail "A qos name must be specified"
+	}
+
+	set qos_str ""
+	set check_cnt 0
+	foreach option [array names qos_info] {
+		set value $qos_info($option)
+		if { $qos_str eq "" || $qos_str eq "(null)" } {
+			set qos_str "format=$option"
+		} else {
+			append qos_str ",$option"
+		}
+
+		incr check_cnt
+	}
+
+	set matches 0
+	set output [run_command_output -fail "$sacctmgr -n -p list qos $qos_name $qos_str"]
+	set in_vals [split $output "|"]
+
+	set i 0
+	foreach option [array names qos_info] {
+		set value $qos_info($option)
+		set in_val [lindex $in_vals $i]
+		incr i
+
+		# If we removed it with -1 expect blank.
+		# These others are formatted timestrings we need to convert them
+		# back to secs/mins to check.
+		if { $value eq -1 && $in_val eq "" } {
+			set in_val -1
+		} elseif { [string first ":" $value] != -1 } {
+			# no conversion needed
+		} elseif { $option eq "GraceTime" } { # secs
+			set in_val [convert_time_str $in_val "secs"]
+		} elseif { ([string first "MaxWall" $option] != -1) ||
+			   ([string first "GrpWall" $option] != -1) ||
+			   ($option eq "PreemptExemptTime") } { # mins
+			set in_val [convert_time_str $in_val "mins"]
+		}
+
+		if { $value eq $in_val } {
+			incr matches
+		} else {
+			log_error "$option should be '$value' but we got '$in_val'"
+		}
+	}
+
+	if {$matches != $check_cnt} {
+		fail "Limits do not match ($matches != $check_cnt)"
+	}
+
+	global sacctmgr
+}
+
+
+###############################################################
+#
+# NAME
+#	check_resource_limits - verifies that the resource limits are correct
+#
+# SYNOPSIS
+#	check_resource_limits name res_limits
+#
+# RETURN VALUE
+#	0 if successful, 1 otherwise
+#
+###############################################################
+
+proc check_resource_limits { name res_limits } {
+	global sacctmgr
+
+	set command "format=name"
+	set values "$name"
+	set rc $::RETURN_SUCCESS
+	array set res_req $res_limits
+
+	if { ![string length $name] } {
+		fail "A resource name must be specified"
+	}
+
+	foreach option [array names res_req] {
+		if {$res_req($option) eq " "} {
+			set $res_req($option) "''"
+		}
+		set command "$command,$option"
+		set values "$values.$res_req($option)"
+	}
+
+	set output [run_command -fail -nolog "$sacctmgr -p -n list resource $name $command"]
+	if {![regexp -nocase "$values" $output]} {
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+###############################################################
+#
+# NAME
+#	mod_resource - modifies existing resource limits
+#
+# SYNOPSIS
+#	mod_resource name mod_limits
+#
+# RETURN VALUE
+#	0 if successful, 1 otherwise
+#
+###############################################################
+
+proc mod_resource {name mod_limits} {
+
+	global sacctmgr
+	set commands ""
+	set rc $::RETURN_SUCCESS
+	array set res_mod_req $mod_limits
+
+	if { ![string length $name] } {
+		fail "A resource name must be specified"
+	}
+
+	foreach option [array names res_mod_req] {
+		if {$res_mod_req($option) eq " "} {
+			set $res_mod_req($option) "''"
+		}
+		set commands "$commands$option=$res_mod_req($option) "
+	}
+
+	set output [run_command_output -fail -nolog "$sacctmgr -i mod resource where name=$name set $commands"]
+	if {![regexp "Modified server resource ..." $output]} {
+		set rc $::RETURN_ERROR
+	}
+
+	return $rc
+}
+
+
+###############################################################
+#
+# NAME
+#	get_assoc_id - returns association ID for given user/account/cluster
+#
+# SYNOPSIS
+#	get_assoc_id user account cluster
+#
+# RETURN VALUE
+#	association ID if successful, -1 otherwise
+#
+###############################################################
+
+proc get_assoc_id {user acct cluster} {
+	global sacctmgr number
+
+	if { ![string length $user] } {
+		fail "A user must be specified"
+	}
+
+	if { ![string length $acct] } {
+		fail "An account must be specified"
+	}
+
+	if { ![string length $cluster] } {
+		fail "A cluster name must be specified"
+	}
+
+	log_user 0
+	set id -1
+	eval spawn $sacctmgr -p -n list assoc format=id where user=$user acct=$acct cluster=$cluster
+	expect {
+		-re "($number)\\|" {
+			if { $id != -1 } {
+				set new_id $expect_out(1,string)
+				log_error "For some reason we already have an association id $id but just got $new_id for $user, $acct, $cluster."
+				set id -1
+				exp_continue
+			}
+			set id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr is not responding"
+		}
+		eof {
+			wait
+		}
+
+	}
+	log_user 1
+
+	return $id
+}

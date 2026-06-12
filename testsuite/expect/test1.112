@@ -1,0 +1,79 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --deadline and -- begin option and time not changed
+############################################################################
+# Copyright (C) 2015 CEA/DAM/DIF
+# Written by Aline Roy <aline.roy@cea.fr>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set job_id      0
+
+#
+# Spawn a job with a deadline and no time-min
+#
+set timeout $max_job_delay
+spawn $srun -v --begin now+10 --deadline now+1hour -t 10 $bin_sleep 1
+expect {
+	-re "Requested time limit is invalid" {
+		fail "Requested time limit is invalid"
+	}
+	-re "Incompatible begin and deadline time specification" {
+		fail "Incompatible begin and deadline time specification"
+	}
+	-re "job ($number) queued and waiting for resources" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "job ($number) has been allocated resources" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "Job not submitted"
+}
+
+#
+# test timelimit in job
+#
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=00:10:" {
+		exp_continue
+	}
+	-re "TimeLimit=" {
+		fail "Job submitted with a time limit different than calculated (00:10:00)"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}

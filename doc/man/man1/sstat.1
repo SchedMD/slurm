@@ -1,0 +1,408 @@
+.TH sstat "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+sstat \- Display the status information of a running job/step.
+
+.SH "SYNOPSIS"
+\fBsstat\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+.PP
+Status information for running jobs invoked with Slurm.
+.PP
+The \fBsstat\fR command displays job status information for your analysis.
+The \fBsstat\fR command displays information pertaining to CPU, Task, Node,
+Resident Set Size (RSS) and Virtual Memory (VM).
+You can tailor the output with the use of the \fB\-\-fields=\fR
+option to specify the fields to be shown.
+.PP
+For the root user, the \fBsstat\fR command displays job status data for any
+job running on the system.
+.PP
+For the non\-root user, the \fBsstat\fR output is limited to the user's jobs.
+
+.PP
+\fBNOTE\fR: The \fBsstat\fR command requires that the \fBjobacct_gather\fP
+plugin be installed and operational.
+
+\fBNOTE\fR: Availability of metrics rely on the \fBjobacct_gather\fP plugin
+used. For example the jobacct_gather/cgroup in combination with cgroup/v2 does
+not provide Virtual Memory metrics due to limitations in the kernel cgroups
+interfaces and will show a 0 for the related fields.
+.SH "OPTIONS"
+
+.TP
+\fB\-a\fR, \fB\-\-allsteps\fR
+Print all steps for the given job(s) when no step is specified.
+.IP
+
+.TP
+\fB\-o\fR, \fB\-\-format\fR, \fB\-\-fields\fR
+Comma separated list of fields.
+(use '\-\-helpformat' for a list of available fields).
+
+\fBNOTE\fR: When using the format option for listing various fields you can put
+a %NUMBER afterwards to specify how many characters should be printed.
+
+i.e. format=name%30 will print 30 characters of field name right
+justified. A \-30 will print 30 characters left justified.
+.IP
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Displays a general help message.
+.IP
+
+.TP
+\fB\-e\fR, \fB\-\-helpformat\fR
+Print a list of fields that can be specified with the '\-\-format' option.
+.IP
+
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR
+Format is <job(.step)>. Stat this job step or comma\-separated list of job
+steps. Jobs may be specified by numeric job ID or by SLUID. This option is
+required. When no step is specified, only the lowest numbered normal step
+(excluding batch, extern, etc.) is displayed.
+Use the \fB\-\-allsteps\fR flag to display all running steps for the given
+job(s).
+\fBNOTE\fR: A step id of 'batch' will display the information about the batch
+step.
+\fBNOTE\fR: A step id of 'extern' will display the information about the
+extern step. This step is only available when using PrologFlags=contain
+.IP
+
+.TP
+\fB\-\-noconvert\fR
+Don't convert units from their original type (e.g. 2048M won't be converted to
+2G).
+.IP
+
+.TP
+\fB\-n\fR, \fB\-\-noheader\fR
+No heading will be added to the output. The default action is to
+display a header.
+.IP
+
+.TP
+\fB\-p\fR, \fB\-\-parsable\fR
+output will be '|' delimited with a '|' at the end
+.IP
+
+.TP
+\fB\-P\fR, \fB\-\-parsable2\fR
+output will be '|' delimited without a '|' at the end
+.IP
+
+.TP
+\fB\-i\fR, \fB\-\-pidformat\fR
+Predefined format to list the pids running for each job step.
+(JobId,Nodes,Pids)
+.IP
+
+.TP
+\fB\-\-usage\fR
+Display a command usage summary.
+.IP
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Primarily for debugging purposes, report the state of various
+variables during processing.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version.
+.IP
+
+.SS "Job Status Fields"
+Descriptions of each field option can be found below.
+Note that the Ave*, Max* and Min* accounting fields look at the values for
+all the tasks of each step in a job and return the average, maximum or minimum
+values of the task for that job step. For example, for MaxRSS, the returned
+value is the maximum memory consumption seen by one of the tasks of the step,
+and MaxRSSTask shows which task it is.
+.RS
+
+.TP
+\f3AllocTRES\fP
+Allocated TRES of all tasks in job.
+.IP
+
+.TP
+\f3AveCPU\fP
+Average (system + user) CPU time of all tasks in job.
+.IP
+
+.TP
+\f3AveCPUFreq\fP
+Average weighted CPU frequency of all tasks in job, in kHz.
+.IP
+
+.TP
+\f3AveDiskRead\fP
+Average number of bytes read by all tasks in job.
+.IP
+
+.TP
+\f3AveDiskWrite\fP
+Average number of bytes written by all tasks in job.
+.IP
+
+.TP
+\f3AvePages\fP
+Average number of page faults of all tasks in job.
+.IP
+
+.TP
+\f3AveRSS\fP
+Average resident set size of all tasks in job.
+.IP
+
+.TP
+\f3AveVMSize\fP
+Average Virtual Memory size of all tasks in job.
+.IP
+
+.TP
+\f3ConsumedEnergy\fP
+Total energy consumed by all tasks in job, in joules.
+Note: Only in case of exclusive job allocation this value
+reflects the jobs' real energy consumption.
+.IP
+
+.TP
+\f3JobID\fP
+The number of the job or job step.
+It is in the form:
+\f2job.jobstep\fP
+.IP
+
+.TP
+\f3MaxDiskRead\fP
+Maximum number of bytes read by all tasks in job.
+.IP
+
+.TP
+\f3MaxDiskReadNode\fP
+The node on which the maxdiskread occurred.
+.IP
+
+.TP
+\f3MaxDiskReadTask\fP
+The task ID where the maxdiskread occurred.
+.IP
+
+.TP
+\f3MaxDiskWrite\fP
+Maximum number of bytes written by all tasks in job.
+.IP
+
+.TP
+\f3MaxDiskWriteNode\fP
+The node on which the maxdiskwrite occurred.
+.IP
+
+.TP
+\f3MaxDiskWriteTask\fP
+The task ID where the maxdiskwrite occurred.
+.IP
+
+.TP
+\f3MaxPages\fP
+Maximum number of page faults of all tasks in job.
+.IP
+
+.TP
+\f3MaxPagesNode\fP
+The node on which the maxpages occurred.
+.IP
+
+.TP
+\f3MaxPagesTask\fP
+The task ID where the maxpages occurred.
+.IP
+
+.TP
+\f3MaxRSS\fP
+Maximum resident set size of all tasks in job.
+.IP
+
+.TP
+\f3MaxRSSNode\fP
+The node on which the maxrss occurred.
+.IP
+
+.TP
+\f3MaxRSSTask\fP
+The task ID where the maxrss occurred.
+.IP
+
+.TP
+\f3MaxVMSize\fP
+Maximum Virtual Memory size of all tasks in job.
+.IP
+
+.TP
+\f3MaxVMSizeNode\fP
+The node on which the maxvsize occurred.
+.IP
+
+.TP
+\f3MaxVMSizeTask\fP
+The task ID where the maxvsize occurred.
+.IP
+
+.TP
+\f3MinCPU\fP
+Minimum (system + user) CPU time of all tasks in job.
+.IP
+
+.TP
+\f3MinCPUNode\fP
+The node on which the mincpu occurred.
+.IP
+
+.TP
+\f3MinCPUTask\fP
+The task ID where the mincpu occurred.
+.IP
+
+.TP
+\f3NTasks\fP
+Total number of tasks in a job or step.
+.IP
+
+.TP
+\f3ReqCPUFreq\fP
+Requested CPU frequency for the step, in kHz.
+.IP
+
+.TP
+\f3SLUID\fP
+The Slurm Lexicographically\-sortable Unique Identifier assigned to the job.
+This value remains constant during the lifetime of the job, even after a resize.
+Be aware that the accounting database tracks a separate SLUID per accounting
+record that changes on resize or requeue.
+.IP
+
+.TP
+\f3TresUsageInAve\fP
+Tres average usage in by all tasks in job.
+\fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node
+centric instead of task.
+.IP
+
+.TP
+\f3TresUsageInMax\fP
+Tres maximum usage in by all tasks in job.
+\fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node
+centric instead of task.
+.IP
+
+.TP
+\f3TresUsageInMaxNode\fP
+Node for which each maximum TRES usage out occurred.
+.IP
+
+.TP
+\f3TresUsageInMaxTask\fP
+Task for which each maximum TRES usage out occurred.
+.IP
+
+.TP
+\f3TresUsageOutAve\fP
+Tres average usage out by all tasks in job.
+\fBNOTE\fR: If corresponding TresUsageOutMaxTask is \-1 the metric is node
+centric instead of task.
+.IP
+
+.TP
+\f3TresUsageOutMax\fP
+Tres maximum usage out by all tasks in job.
+\fBNOTE\fR: If corresponding TresUsageOutMaxTask is \-1 the metric is node
+centric instead of task.
+.IP
+
+.TP
+\f3TresUsageOutMaxNode\fP
+Node for which each maximum TRES usage out occurred.
+.IP
+
+.TP
+\f3TresUsageOutMaxTask\fP
+Task for which each maximum TRES usage out occurred.
+.IP
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsstat\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsstat\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsstat\fR or other Slurm client commands that send remote procedure
+calls to \fBslurmctld\fR from loops in shell scripts or other programs. Ensure
+that programs limit calls to \fBsstat\fR to the minimum necessary for the
+information you are trying to gather.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsstat\fR options may be set via environment variables. These
+environment variables, along with their corresponding options, are listed below.
+(Note: Command line options will always override these settings.)
+
+.TP 20
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sstat to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.SH "EXAMPLES"
+
+.TP
+Display job step information for job 11 with the specified fields:
+.IP
+.nf
+$ sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
+25:02.000  0K         1.37M      5.93M      9.0
+.fi
+
+.TP
+Display job step information for job 11 with the specified fields in a \
+parsable format:
+.IP
+.nf
+$ sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
+25:02.000|0K|1.37M|5.93M|9.0|
+.fi
+
+.SH "COPYING"
+Copyright (C) 2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.br
+Copyright (C) 2010\-2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsacct\fR(1)

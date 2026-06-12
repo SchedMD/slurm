@@ -1,0 +1,92 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that sbatch, srun, salloc return partition error message.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_part      [default_partition]
+set part_inv       "$test_part\g"
+set file_in        "$test_dir/input"
+
+make_bash_script $file_in "sleep 1"
+
+proc test_sbatch { part }  {
+	global srun salloc sbatch file_in part_inv
+
+	log_info "=======Testing Values: $part======="
+
+	log_info "====Testing sbatch===="
+	set match 0
+	spawn $sbatch -t1 -p$part -o/dev/null $file_in
+	expect {
+		-re "invalid partition specified: $part_inv" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			fail "sbatch is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$match != 0} "Validate that sbatch returns invalid partition error message"
+
+	log_info "====Testing srun===="
+	set match 0
+	spawn $srun -t1 -p$part -o/dev/null $file_in
+	expect {
+		-re "invalid partition specified: $part_inv" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			fail "sbatch is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$match != 0} "Validate that srun returns invalid partition error message"
+
+	log_info "====Testing salloc===="
+	set match 0
+	spawn $salloc -t1 -p$part $file_in
+	expect {
+		-re "invalid partition specified: $part_inv" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			fail "sbatch is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$match != 0} "Validate that salloc returns invalid partition error message"
+}
+
+test_sbatch $test_part\g
+test_sbatch "$test_part\,$test_part\g"

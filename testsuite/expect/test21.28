@@ -1,0 +1,286 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr delete N (abort) test
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set qs1         normal
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
+set tu3         "${test_name}-user.3"
+set aln         None
+set ala         Administrator
+set alo         Operator
+set access_err  0
+set lista       "$ta1 $ta2 $ta3"
+set listc       "$tc1 $tc2 $tc3"
+set listu       "$tu1 $tu2 $tu3"
+
+# Cluster
+array set clus_req {}
+
+# Accounts
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# User
+array set user_req {
+	adminlevel Operator
+	fairshare 2500
+	maxcpumins    1000000
+	maxjobs  50
+	maxnodes 300
+	maxwall  01:00:00
+}
+set user_req(cluster) $tc1,$tc2,$tc3
+set user_req(account) $ta1,$ta2,$ta3
+set user_req(defaultaccount) $ta2
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global ta1 ta2 ta3 tc1 tc2 tc3 tu1 tu2 tu3
+
+	remove_user "" "" "$tu1,$tu2,$tu3"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
+}
+
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
+}
+
+# Add users
+if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
+}
+
+################################################################
+#
+# Proc: list_test_users
+#
+# Purpose: Use sacctmgr to list the test user additions
+#
+# Returns: Number representing the number of entries found.
+#
+# Input: None
+#
+################################################################
+proc list_test_users { } {
+	global sacctmgr
+	global tu1 tu2 tu3 ta1 ta2 ta3 tc1 tc2 tc3 user_req
+
+	set output [run_command_output -fail "$sacctmgr -n -p list user format='User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw' names=$tu1,$tu2,$tu3 withassoc"]
+	if {[regexp "There was a problem" $output]} {
+		fail "There was a problem with the sacctmgr command"
+	}
+
+	return [regexp -all "(($tu1|$tu2|$tu3).$ta2.$user_req(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req(fairshare).$user_req(maxcpumins).$user_req(maxjobs).$user_req(maxnodes).$user_req(maxwall).)" $output]
+}
+################################################################
+#
+# Proc: list_test_object
+#
+# Purpose: Use sacctmgr to list the test object deletions
+#
+# Returns: Number representing the number of entries found.
+#
+# Input: None
+#
+################################################################
+proc list_test_object { to1 to2 to3 tname} {
+	global sacctmgr
+	set tmatches 0
+	spawn $sacctmgr -n -p list $tname $to1,$to2,$to3
+	expect {
+		-re "There was a problem" {
+			log_error "There was a problem with the sacctmgr command"
+		}
+		-re "($to1|$to2|$to3)" {
+			incr tmatches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr list associations not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $tmatches
+}
+################################################################
+#
+# Begin here with abort delete test
+#
+foreach atest $lista {
+	spawn $sacctmgr del account $atest
+	expect {
+		"(N/y):" {
+			send "N"
+			exp_continue
+			timeout {
+				fail "sacctmgr del account timing out"
+			}
+		}
+	}
+}
+
+
+set count [list_test_users]
+if { $count != 27 } {
+	fail "sacctmgr did not abort delete of accounts ($count)"
+}
+
+foreach ctest $listc {
+	spawn $sacctmgr del cluster $ctest
+	expect {
+		"(N/y):" {
+			send "N"
+			exp_continue
+			timeout {
+				fail "sacctmgr del cluster timing out"
+			}
+		}
+	}
+}
+
+
+set count [list_test_users]
+if { $count != 27 } {
+	fail "sacctmgr did not abort delete of cluster ($clu) ($count)"
+}
+
+#
+foreach utest $listu {
+	spawn $sacctmgr del user $utest
+	expect {
+		"(N/y):" {
+			send "N"
+			exp_continue
+			timeout {
+				fail "sacctmgr del user ($utest) timing out"
+			}
+		}
+	}
+}
+
+set count [list_test_users]
+if { $count != 27 } {
+	fail "sacctmgr did not abort delete of users ($count)"
+}
+
+################################################################
+#
+# Begin here with delete test
+#
+#
+foreach udtest $listu {
+	spawn $sacctmgr del user $udtest
+	expect {
+		"(N/y):" {
+			send "y"
+			exp_continue
+			timeout {
+				fail "sacctmgr del user ($udtest) timing out"
+			}
+		}
+	}
+}
+
+if { [list_test_object $tu1 $tu2 $tu3 user] != 0 } {
+	fail "sacctmgr did not delete users"
+}
+
+#
+
+foreach adtest $lista {
+	spawn $sacctmgr del account $adtest
+	expect {
+		"(N/y):" {
+			send "y"
+			exp_continue
+			timeout {
+				fail "sacctmgr del account timing out"
+			}
+		}
+	}
+}
+
+
+if { [list_test_object $ta1 $ta2 $ta3 account] != 0 } {
+	fail "sacctmgr did not delete accounts"
+}
+
+#
+foreach cdtest $listc {
+	spawn $sacctmgr del cluster $cdtest
+	expect {
+		"(N/y):" {
+			send "y"
+			exp_continue
+			timeout {
+				fail "sacctmgr del cluster timing out"
+			}
+		}
+	}
+}
+
+
+if { [list_test_object $tc1 $tc2 $tc3 cluster] != 0 } {
+	fail "sacctmgr did not delete cluster ($clu)"
+}

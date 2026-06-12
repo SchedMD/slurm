@@ -1,0 +1,174 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that mod QoS modifies the preempt QoS when using =,+=,
+#          -=
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set qos_test(0)  "${test_name}_qos_0"
+set qos_test(1)  "${test_name}_qos_1"
+set qos_test(2)  "${test_name}_qos_2"
+set qos_test(3)  "${test_name}_qos_3"
+set qos_test(4)  "${test_name}_qos_4"
+set access_err   0
+
+set qos_names_str 0
+foreach inx [array names qos_test] {
+	if { $qos_names_str != 0 } {
+		set qos_names_str "$qos_names_str,$qos_test($inx)"
+	} else {
+		set qos_names_str "$qos_test($inx)"
+	}
+}
+
+proc reset_qos { } {
+	global sacctmgr qos_main qos_test
+
+	set removed 0
+	spawn $sacctmgr -i mod qos $qos_test(0) set preempt=
+	expect {
+		"Modified qos" {
+			set removed 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$removed == 1} "Verify preempt QOS was removed from QOS" "$qos_test(0)"
+}
+
+proc _local_mod_qos { preempt_qos } {
+	global sacctmgr qos_test
+
+	set mod 0
+	spawn $sacctmgr -i mod qos $qos_test(0) set preempt$preempt_qos
+	expect {
+		-re "Modified qos" {
+			set mod 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$mod == 1} "Verify QOS was modified" "$qos_test(0) => $preempt_qos"
+}
+
+proc check_pre { preempt_qos } {
+	global sacctmgr re_word_str qos_test
+
+	set match 0
+	spawn $sacctmgr show qos $qos_test(0) format=preempt%-80 --noheader
+	expect {
+		-re "$preempt_qos" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$match == 1} "Verify preempted QOS" "Preempted QOS do not match what is expected: $preempt_qos"
+}
+
+######################### Test Begins #########################
+
+#
+# Check that current user is root or SlurmUser
+#
+if {![is_super_user]} {
+	skip "Test can only be ran as SlurmUser"
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "Not using accounting_storage/slurmdbd"
+}
+
+proc cleanup {} {
+	global qos_names_str
+
+	remove_qos $qos_names_str
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+# Add a few QoS
+if [add_qos $qos_names_str ""] {
+	fail "Unable to add QOS ($qos_names_str)"
+}
+
+# Add a preempt qos with =
+log_info "Add a preempt qos with ="
+_local_mod_qos "=$qos_test(1)"
+check_pre $qos_test(1)
+
+# Now clear the preempt qos
+reset_qos
+check_pre " "
+
+# Add multiple QoSs with =
+log_info "Add multiple QoSs with ="
+_local_mod_qos "=$qos_test(1),$qos_test(2)"
+check_pre "$qos_test(1),$qos_test(2)"
+reset_qos
+check_pre " "
+
+# Add multiple QoSs with +=
+log_info "Add multiple QoSs with +="
+_local_mod_qos "=$qos_test(1)"
+_local_mod_qos "+=$qos_test(2)"
+check_pre "$qos_test(1),$qos_test(2)"
+_local_mod_qos "+=$qos_test(3),$qos_test(4)"
+check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+reset_qos
+check_pre " "
+
+# Remove some of the QoS with -=
+log_info "Add multiple QoSs with -="
+_local_mod_qos "=$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+check_pre "$qos_test(1),$qos_test(2),$qos_test(3),$qos_test(4)"
+_local_mod_qos "-=$qos_test(2)"
+check_pre "$qos_test(1),$qos_test(3),$qos_test(4)"
+_local_mod_qos "-=$qos_test(4)"
+check_pre "$qos_test(1),$qos_test(3)"
+_local_mod_qos "-=$qos_test(1),$qos_test(3)"
+check_pre " "

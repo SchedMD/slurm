@@ -1,0 +1,336 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Job Submit Plugin API</a></h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+<p> This document describes Slurm job submit plugins and the API that
+defines them. It is intended as a resource to programmers wishing to write
+their own Slurm job submit plugins. This is version 100 of the API.</p>
+
+<p>Slurm job submit plugins must conform to the
+Slurm Plugin API with the following specifications:</p>
+
+<p><span class="commandline">const char
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
+<p style="margin-left:.2in">
+A free-formatted ASCII text string that identifies the plugin.
+
+<p><span class="commandline">const char
+plugin_type[]="<i>major/minor</i>"</span><br>
+<p style="margin-left:.2in">
+The major type must be &quot;job_submit.&quot;
+The minor type can be any suitable name for the type of job submission package.
+We include samples in the Slurm distribution for
+<ul>
+<li><b>all_partitions</b> &mdash; Set default partition to all partitions on
+the cluster.</li>
+<li><b>defaults</b> &mdash; Set default values for job submission or modify
+requests.</li>
+<li><b>logging</b> &mdash; Log select job submission and modification
+parameters.</li>
+<li><b>lua</b> &mdash; Interface to <a href="http://www.lua.org">Lua</a> scripts
+implementing these functions (actually a slight variation of them). Sample Lua
+scripts can be found with the Slurm distribution in the directory
+<i>contribs/lua</i>. The Lua script must be named "job_submit.lua" and must
+be located in the default configuration directory (typically the subdirectory
+"etc" of the installation directory). Slurmctld will fatal on startup if the
+configured lua script is invalid. Slurm will try to load the script for each
+job submission. If the script is broken or removed while slurmctld is running,
+Slurm will fallback to the previous working version of the script.
+<b>Warning</b>: slurmctld runs this script while holding internal locks, and
+only a single copy of this script can run at a time. This blocks most
+concurrency in slurmctld. Therefore, this script should run to completion as
+quickly as possible.</li>
+<li><b>partition</b> &mdash; Sets a job's default partition based upon job
+submission parameters and available partitions.</li>
+<li><b>pbs</b> &mdash; Translate PBS job submission options to Slurm equivalent
+(if possible).</li>
+<li><b>require_timelimit</b> &mdash; Force job submissions to specify a
+timelimit.</li>
+</ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loaded by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
+<p>Slurm can be configured to use multiple job_submit plugins if desired,
+however the lua plugin will only execute one lua script named "job_submit.lua"
+located in the default script directory (typically the subdirectory "etc" of
+the installation directory).</p>
+
+
+<h2 id="api">API Functions<a class="slurm_link" href="#api"></a></h2>
+<p>All of the following functions are required. Functions which are not
+implemented must be stubbed.
+
+<p class="commandline"> int init (void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.</p>
+
+<p class="commandline"> void fini (void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+
+<p class="commandline">
+int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid, char **error_msg)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with the job submission
+parameters supplied by the user regardless of the command used (e.g.
+salloc, sbatch, slurmrestd). Only explicitly
+defined values will be represented. For values not defined at submit time
+<span class="commandline">slurm.NO_VAL/16/64</span> or
+<span class="commandline">nil</span> will be set. It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example
+to examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications, before job defaults
+are set.<br>
+<span class="commandline">submit_uid</span>
+(input) user ID initiating the request.<br>
+<span class="commandline">error_msg</span>
+(output) If the argument is not null, then a plugin generated error message
+can be stored here. The error message is expected to have allocated memory
+which Slurm will release using the xfree function. The error message is always
+propagated to the caller, no matter the return code.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
+int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr, uint32_t modify_uid)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with job modification parameters
+supplied by the user regardless of the command used (e.g. scontrol, sview,
+slurmrestd). It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example to
+examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications, before job defaults
+are set.<br>
+<span class="commandline">job_ptr</span>
+(input/output) slurmctld daemon's current data structure for the job to
+be modified.<br>
+<span class="commandline">modify_uid</span>
+(input) user ID initiating the request.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<h2 id="lua">Lua Functions<a class="slurm_link" href="#lua"></a></h2>
+<p>The Lua functions differ slightly from those implemented in C for
+better ease of use. Sample Lua scripts can be found with the Slurm distribution
+in the directory <i>contribs/lua</i>. The default installation location of
+the Lua scripts is the same location as the Slurm configuration file,
+<i>slurm.conf</i>.
+Setting <code>debugflags=script</code> and (at least debug)
+<code>SlurmctldDebug=debug</code> in <a href="slurm.conf">slurm.conf</a> will
+dump error stacktraces in the slurmctld.log along with the debugging
+information but should <b>not</b> be configured on production clusters.
+Reading and writing of job environment variables using Lua is possible
+by referencing the environment variables as a data structure containing
+named elements.</p>
+<p><b>NOTE</b>: Only sbatch sends the environment to slurmctld. salloc and srun
+do not send the environment to slurmctld, so <i>job_desc.environment</i> is not
+available in the job_submit plugin for these jobs.</p>
+<p>For example:</p>
+<pre>
+...
+	-- job_desc.environment is only available for batch jobs.
+	if (job_desc.script) then
+		if (job_desc.environment ~= nil) then
+			if (job_desc.environment["FOO"] ~= nil) then
+				slurm.log_user("Found env FOO=%s",
+					       job_desc.environment["FOO"])
+			end
+		end
+	end
+...
+</pre>
+<p><b>NOTE</b>: To get/set the environment for all types of jobs, an alternate
+approach is to use <a href="cli_filter_plugins.html">CliFilterPlugins</a>.</p>
+
+<p class="commandline">
+int slurm_job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t
+submit_uid)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with the job submission
+parameters supplied by the user regardless of the command used (e.g.
+salloc, sbatch, slurmrestd). Only explicitly
+defined values will be represented. For values not defined at submit time
+<span class="commandline">slurm.NO_VAL/16/64</span> or
+<span class="commandline">nil</span> will be set. It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example
+to examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">part_list</span>
+(input) List of pointer to partitions which this user is authorized to use.<br>
+<span class="commandline">submit_uid</span>
+(input) user ID initiating the request.<br>
+<a name="job_modify_returns"></a><p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">slurm.SUCCESS</span> &mdash;
+Job submission accepted by plugin.<br>
+<span class="commandline">slurm.FAILURE</span> &mdash;
+Job submission rejected due to error (Deprecated in 19.05).<br>
+<span class="commandline">slurm.ERROR</span> &mdash;
+Job submission rejected due to error.<br>
+<span class="commandline">slurm.ESLURM_*</span> &mdash;
+Job submission rejected due to error as defined by
+<i>slurm/slurm_errno.h</i> and <i>src/common/slurm_errno.c</i>.<br>
+
+<p><b>NOTE</b>: As <span class="commandline">job_desc</span> contains only
+user-specified values, undefined values can be recognized (before defaults
+are set) by either checking for <span class="commandline">nil</span> or for
+the corresponding <span class="commandline">slurm.NO_VAL/16/64</span>. This
+allows sites to apply policies, such as requiring users to define the number
+of nodes, as in the example below:</p>
+<pre>
+...
+	-- Number of nodes must be defined at submit time
+	if (job_desc.max_nodes == slurm.NO_VAL) then
+		slurm.log_user("No max_nodes specified, please specify a number of nodes")
+		return slurm.ERROR
+	end
+...
+</pre>
+<p class="commandline">
+int slurm_job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+List part_list, int modify_uid)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the slurmctld daemon with job modification parameters
+supplied by the user regardless of the command used (e.g. scontrol, sview,
+slurmrestd). It can be used to log and/or
+modify the job parameters supplied by the user as desired. Note that this
+function has access to the slurmctld's global data structures, for example to
+examine the available partitions, reservations, etc.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">job_desc</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">job_ptr</span>
+(input/output) slurmctld daemon's current data structure for the job to
+be modified.<br>
+<span class="commandline">part_list</span>
+(input) List of pointer to partitions which this user is authorized to use.<br>
+<span class="commandline">modify_uid</span>
+(input) user ID initiating the request.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<a href="#job_modify_returns">Returns from job_modify() are the same as the returns from job_submit().</a>
+
+<h2 id="attr">Lua Job Attributes<a class="slurm_link" href="#attr"></a></h2>
+<p>The available job attributes change occasionally with different versions of
+Slurm. To find the job attributes that are available for the version of Slurm
+you're using, go to the <a href="https://github.com/SchedMD/slurm"> SchedMD
+github page</a>. Navigate to <b>src/lua/slurm_lua.c</b> and look for function
+<b>slurm_lua_job_record_field()</b>, which contains the list
+of attributes available for the job_record (e.g. current record in Slurm).
+Navigate to <b>src/plugins/job_submit/lua/job_submit_lua.c</b> and look for
+function <b>_get_job_req_field()</b>, which contains the list of attributes
+available for the job_descriptor (e.g. submission or modification request).
+</p>
+
+<h2 id="building">Building<a class="slurm_link" href="#building"></a></h2>
+<p>Generally using a LUA interface for a job submit plugin is best:
+It is simple to write and maintain with minimal dependencies upon the Slurm
+data structures.
+However using C does provide a mechanism to get more information than available
+using LUA including full access to all of the data structures and functions
+in the slurmctld daemon.
+The simplest way to build a C program would be to just replace one of the
+job submit plugins included in the Slurm distribution with your own code
+(i.e. use a patch with your own code).
+Then just build and install Slurm with that new code.
+Building a new plugin outside of the Slurm distribution is possible, but
+far more complex.
+It also requires access to a multitude of Slurm header files as shown in the
+procedure below.</p>
+
+<ol>
+<li>You will need to at least partly build Slurm first. The "configure" command
+must be executed in order to build the "config.h" file in the build directory.</li>
+
+<li>Create a local directory somewhere for your files to build with.
+Also create subdirectories named ".libs" and ".deps".</li>
+
+<li>Copy a ".deps/job_submit_*Plo" file from another job_submit plugin's ".deps"
+directory (made as part of the build process) into your local ".deps" subdirectory.
+Rename the file as appropriate to reflect your plugins name (e.g. rename
+"job_submit_partition.Plo" to be something like "job_submit_mine.Plo").</li>
+
+<li>Compile and link your plugin. Those options might differ depending
+upon your build environment. Check the options used for building the
+other job_submit plugins and modify the example below as required.</li>
+
+<li>Install the plugin.</li>
+</ol>
+
+<pre>
+# Example:
+# The Slurm source is in ~/SLURM/slurm.git
+# The Slurm build directory is ~/SLURM/slurm.build
+# The plugin build is to take place in the directory
+#   "~/SLURM/my_submit"
+# The installation location is "/usr/local"
+
+# Build Slurm from ~/SLURM/slurm.build
+# (or at least run "~/SLURM/slurm.git/configure")
+
+# Set up your plugin files
+cd ~/SLURM
+mkdir my_submit
+cd my_submit
+mkdir .libs
+mkdir .deps
+# Create your plugin code
+vi job_submit_mine.c
+
+# Copy up a dependency file
+cp ~/SLURM/slurm.build/src/plugins/job_submit/partition/.deps/job_submit_partition.Plo \
+   .deps/job_submit_mine.Plo
+
+# Compile
+gcc -DHAVE_CONFIG_H -I~/SLURM/slurm.build -I~/slurm.git \
+   -g -O2 -pthread -fno-gcse -Werror -Wall -g -O0       \
+   -fno-strict-aliasing -MT job_submit_mine.lo          \
+   -MD -MP -MF .deps/job_submit_mine.Tpo                \
+   -c job_submit_mine.c -o .libs/job_submit_mine.o
+
+# Some clean up
+mv -f .deps/job_submit_mine.Tpo .deps/job_submit_mine.Plo
+rm -fr .libs/job_submit_mine.a .libs/job_submit_mine.la \
+   .libs/job_submit_mine.lai job_submit_mine.so
+
+# Link
+gcc -shared -fPIC -DPIC .libs/job_submit_mine.o -O2         \
+   -pthread -O0 -pthread -Wl,-soname -Wl,job_submit_mine.so \
+   -o job_submit_mine.so
+
+# Install
+cp job_submit_mine.so file \
+   /usr/local/lib/slurm/job_submit_mine.so
+</pre>
+
+<!--#include virtual="footer.txt"-->

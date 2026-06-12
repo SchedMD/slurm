@@ -1,0 +1,113 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test --gpus-per-tres with --exclusive option
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in        "$test_dir/input"
+set number_commas  "\[0-9_,\]+"
+
+if {![check_config_select "cons_tres"]} {
+    skip "This test is only compatible with select/cons_tres"
+}
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+if {$nb_nodes < 1} {
+    skip "This test is 1 or more nodes in the default partition"
+}
+set nb_nodes 1
+set nb_tasks 1
+
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 2} {
+	skip "This test requires 2 or more GPUs on $nb_nodes nodes of the default partition"
+}
+
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+
+if {$cpus_per_node < 2} {
+	skip "This test requires 2 or more CPUs per node in the default partition"
+}
+if {$gpu_cnt > $cpus_per_node} {
+	log_warn "This test needs CPUs >= GPUs in the node. On current configuration it will only test the expected error."
+}
+
+#
+# Build input script files
+#
+make_bash_script $file_in "if \[ \$SLURM_LOCALID -eq 0 \]; then
+echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+fi
+if \[ \$SLURM_PROCID -eq 0 \]; then
+$scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
+fi
+exit 0"
+
+set match 0
+set res_alloc_error 0
+set timeout $max_job_delay
+spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 --nodes=$nb_nodes --exclusive --ntasks=$nb_tasks -t1 -J "$test_name" -l $file_in
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "Requested node configuration is not available" {
+		incr res_alloc_error
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$gpu_cnt > $cpus_per_node} {
+	if {$res_alloc_error} {
+		log_info "This error is expected since GPUs ($gpu_cnt) > CPUs ($cpus_per_node)"
+	} else {
+		fail "Requested node configuration shouldn't be available"
+	}
+} else {
+	if {$match == $nb_tasks} {
+		log_info "Number of devices correct ($match)"
+	} else {
+		fail "srun --gpus-per-task with --exclusive failure ($match != $nb_tasks)"
+	}
+}
+
+if {$gpu_cnt > $cpus_per_node} {
+	skip "System has more GPUs than CPUs, test is only checking an expected error"
+}

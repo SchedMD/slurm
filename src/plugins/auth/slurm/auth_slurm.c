@@ -1,0 +1,335 @@
+/*****************************************************************************\
+ *  auth_slurm.c
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include <sys/types.h>
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/slurm_xlator.h"
+
+#include "src/common/identity.h"
+#include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
+#include "src/interfaces/serializer.h"
+
+#include "src/plugins/auth/slurm/auth_slurm.h"
+
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "Slurm auth and cred plugin";
+const char plugin_type[] = "auth/slurm";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+/* Required for auth plugins: */
+const uint32_t plugin_id = AUTH_PLUGIN_SLURM;
+const bool hash_enable = true;
+
+bool internal = false;
+bool use_client_ids = false;
+
+static void _run_sack_maybe(void)
+{
+	bool run_sack = true;
+
+	if (xstrstr(slurm_conf.authinfo, "disable_sack"))
+		run_sack = false;
+
+	if (running_in_slurmstepd())
+		run_sack = false;
+
+	if (running_in_sackd())
+		run_sack = true;
+
+	if (getenv("SLURM_CONFIG_FETCH"))
+		run_sack = false;
+
+	if (run_sack)
+		init_sack_conmgr();
+}
+
+extern int init(void)
+{
+	static bool init_run = false;
+	bool need_key = run_in_daemon(IS_SACKD | IS_SLURMD | IS_SLURMCTLD |
+				      IS_SLURMDBD | WITH_STEPMGR);
+
+	/*
+	 * auth/slurm and cred/slurm plugins use the same .so, so they get
+	 * double init()'ed. We detect that the stepd is the stepmgr after the
+	 * first init(), auth_g_init(), and we need to be able to init() on the
+	 * second init(), creg_g_init(), as a daemon.
+	 */
+	if (init_run && (!need_key || internal))
+		return SLURM_SUCCESS;
+
+	init_run = true;
+
+	serializer_required(MIME_TYPE_JSON);
+
+	internal = need_key;
+
+	if (internal) {
+		debug("running as daemon");
+		init_internal();
+		_run_sack_maybe();
+	} else {
+		debug("running as client");
+	}
+
+	if (xstrstr(slurm_conf.authinfo, "use_client_ids"))
+		use_client_ids = true;
+
+	debug("loaded: internal=%s, use_client_ids=%s",
+	      internal ? "true" : "false",
+	      use_client_ids ? "true" : "false");
+
+	return SLURM_SUCCESS;
+}
+
+extern void fini(void)
+{
+	static bool fini_run = false;
+
+	if (fini_run)
+		return;
+	fini_run = true;
+
+	if (internal) {
+		/*
+		 * Do not attempt to remove /run/slurm/sack.socket.
+		 * If multiple daemons are co-located on this node, we may no
+		 * longer be the one that owns that socket, and removing it
+		 * would prevent the current owner from responding.
+		 */
+		fini_internal();
+	}
+}
+
+extern auth_cred_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
+				  int dlen)
+{
+	if (internal) {
+		auth_cred_t *cred = new_cred();
+		cred->token = create_internal("auth", getuid(), getgid(), r_uid,
+					      data, dlen, NULL);
+		return cred;
+	}
+
+	return create_external(r_uid, data, dlen);
+}
+
+extern void auth_p_destroy(auth_cred_t *cred)
+{
+	destroy_cred(cred);
+}
+
+extern int auth_p_verify(auth_cred_t *cred, char *auth_info)
+{
+	if (!cred) {
+		errno = ESLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+
+	if (internal)
+		return verify_internal(cred, getuid());
+
+	return verify_external(cred);
+}
+
+extern void auth_p_get_ids(auth_cred_t *cred, uid_t *uid, gid_t *gid)
+{
+	if (!cred || !cred->verified) {
+		/*
+		 * This xassert will trigger on a development build if
+		 * the calling path did not verify the credential first.
+		 */
+		xassert(!cred);
+		*uid = SLURM_AUTH_NOBODY;
+		*gid = SLURM_AUTH_NOBODY;
+		return;
+	}
+
+	*uid = cred->uid;
+	*gid = cred->gid;
+}
+
+extern char *auth_p_get_host(auth_cred_t *cred)
+{
+	if (!cred) {
+		errno = ESLURM_AUTH_BADARG;
+		return NULL;
+	}
+
+	return xstrdup(cred->hostname);
+}
+
+extern int auth_p_get_data(auth_cred_t *cred, char **data, uint32_t *len)
+{
+	if (!cred) {
+		errno = ESLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+
+	*data = cred->data;
+	*len = cred->dlen;
+	cred->data = NULL;
+	cred->dlen = 0;
+	return SLURM_SUCCESS;
+}
+
+extern time_t auth_p_get_time(auth_cred_t *cred)
+{
+	if (!cred)
+		return 0;
+
+	return cred->ctime;
+}
+
+extern void *auth_p_get_identity(auth_cred_t *cred)
+{
+	if (!cred)
+		return NULL;
+
+	if (use_client_ids)
+		return copy_identity(cred->id);
+
+	return NULL;
+}
+
+extern int auth_p_pack(auth_cred_t *cred, buf_t *buf,
+		       uint16_t protocol_version)
+{
+	if (!buf) {
+		errno = ESLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+
+	packstr(cred->token, buf);
+
+	return SLURM_SUCCESS;
+}
+
+/* Take ownership of token pointer */
+static auth_cred_t *_cred(char *token, const char *username, uid_t uid,
+			  gid_t gid)
+{
+	auth_cred_t *cred = NULL;
+
+	if (!token || !token[0]) {
+		error("%s: required token not provided", __func__);
+		errno = ESLURM_AUTH_CRED_INVALID;
+		xfree(token);
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = new_cred();
+	cred->token = token;
+	cred->uid = uid;
+	cred->gid = gid;
+	return cred;
+}
+
+extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
+{
+	char *token = NULL;
+
+	if (!buf) {
+		errno = ESLURM_AUTH_BADARG;
+		return NULL;
+	}
+
+	safe_unpackstr(&token, buf);
+
+	return _cred(token, NULL, SLURM_AUTH_NOBODY, SLURM_AUTH_NOBODY);
+
+unpack_error:
+	xfree(token);
+	errno = ESLURM_AUTH_UNPACK;
+	return NULL;
+}
+
+/*
+ * auth/slurm does not support user aliasing. Only permit this call from the
+ * same user (which means no internal state changes are necessary).
+ */
+extern int auth_p_thread_config(const char *token, const char *username)
+{
+	int rc = ESLURM_AUTH_CRED_INVALID;
+	char *user;
+
+	/* auth/slurm does not accept user provided auth token */
+	if (token || !username) {
+		error("Rejecting thread config token for user %s", username);
+		return rc;
+	}
+
+	user = uid_to_string_or_null(getuid());
+
+	if (!xstrcmp(username, user)) {
+		debug("applying thread config for user %s", username);
+		rc = SLURM_SUCCESS;
+	} else {
+		error("rejecting thread config for user %s while running as %s",
+		      username, user);
+	}
+
+	xfree(user);
+
+	return rc;
+}
+
+extern void auth_p_thread_clear(void)
+{
+	/* no op */
+}
+
+extern char *auth_p_token_generate(const char *username, int lifespan)
+{
+	return NULL;
+}
+
+extern auth_cred_t *auth_p_cred_generate(const char *token,
+					 const char *username, uid_t uid,
+					 gid_t gid)
+{
+	return _cred(xstrdup(token), username, uid, gid);
+}

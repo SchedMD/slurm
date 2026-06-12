@@ -1,0 +1,76 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Confirm min_mem_per_{cpu,node} in lua JobSubmitPlugin
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_lua_min_mem	"$test_name\_scripts/min_mem.lua"
+set job_name		"$test_name"
+
+if {![have_lua]} {
+	skip "LUA must be installed and enabled to test lua job_submit plugin."
+}
+
+if {[check_config_select "linear"]} {
+    skip "Test requires SelectType!=select/linear"
+}
+
+proc test_min_mem { cmd min_mem_per_cpu_exp min_mem_per_node_exp } {
+	set output [run_command_output -fail "$cmd"]
+	set per_cpu_found ""
+	set per_node_found ""
+	regexp -lineanchor "^(srun|salloc|sbatch): min_mem_per_cpu is (\\S+)$" $output - - per_cpu_found
+	regexp -lineanchor "^(srun|salloc|sbatch): min_mem_per_node is (\\S+)$" $output - - per_node_found
+	subtest {$per_cpu_found == $min_mem_per_cpu_exp} "min_mem_per_cpu should be $min_mem_per_cpu_exp" "$per_cpu_found != $min_mem_per_cpu_exp"
+	subtest {$per_node_found == $min_mem_per_node_exp} "min_mem_per_node should be $min_mem_per_node_exp" "$per_node_found != $min_mem_per_node_exp"
+}
+
+proc cleanup {} {
+	global config_dir
+
+	restore_conf $config_dir/job_submit.lua
+	restore_conf $config_dir/slurm.conf
+	reconfigure
+}
+
+set config_dir [get_conf_path]
+save_conf $config_dir/job_submit.lua
+save_conf $config_dir/slurm.conf
+
+# Activate lua plugin
+run_command "$bin_rm $config_dir/job_submit.lua"
+run_command -fail "$bin_cp $test_lua_min_mem $config_dir/job_submit.lua"
+exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_echo "\n### $test_name additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
+reconfigure -fail
+
+testproc test_min_mem "$salloc -J $job_name $bin_true" nil nil
+testproc test_min_mem "$srun -J $job_name $bin_true" nil nil
+testproc test_min_mem "$sbatch -J $job_name -o /dev/null --wrap $bin_true" nil nil
+
+testproc test_min_mem "$salloc -J $job_name --mem-per-cpu=1024 $bin_true" 1024 nil
+testproc test_min_mem "$srun -J $job_name --mem-per-cpu=1024 $bin_true" 1024 nil
+testproc test_min_mem "$sbatch -J $job_name --mem-per-cpu=1024 -o /dev/null --wrap $bin_true" 1024 nil
+testproc test_min_mem "$salloc -J $job_name --mem=2048 $bin_true" nil 2048
+testproc test_min_mem "$srun -J $job_name --mem=2048 $bin_true" nil 2048
+testproc test_min_mem "$sbatch -J $job_name --mem=2048 -o /dev/null --wrap $bin_true" nil 2048

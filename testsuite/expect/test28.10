@@ -1,0 +1,64 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test change to maximum running task count in a job array.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set array_size    4
+set job_id        0
+set task_limit    1
+
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
+	skip "MaxArraySize is too small"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# Submit a job array with 4 elements
+set job_id [submit_job -fail "-n1 --array=0-[expr $array_size -1]%$task_limit --output=/dev/null -t1 --wrap 'sleep 60'"]
+
+wait_for_job -fail ${job_id}_0 "RUNNING"
+
+# We want to see the array task limit increased up to the array size
+# and the running array elements increase to match until all are running.
+wait_for -subtest -timeout 60 {$task_limit == $array_size && $run_count == $array_size} {
+	set output [run_command_output -fail "$squeue --state=RUNNING --job $job_id --format %i --noheader"]
+	set run_count [regexp -all -line "^${job_id}_\\d+" $output]
+	log_debug "Array task limit: $task_limit, running job array elements: $run_count"
+
+	# Make sure we aren't running more elements than our current limit
+	if {$run_count > $task_limit} {
+		fail "More job array elements are running ($run_count) than the current limit ($task_limit) allows"
+	}
+
+	# If we have reached our previous limit, increase it incrementally up to the array size
+	if {$run_count == $task_limit && $task_limit < $array_size} {
+		incr task_limit
+		run_command -fail "$scontrol update jobid=$job_id arraytaskthrottle $task_limit"
+	}
+}

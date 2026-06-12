@@ -1,0 +1,77 @@
+This is the contribs dir for Slurm.
+
+SOURCE DISTRIBUTION HIERARCHY
+-----------------------------
+
+Subdirectories contain the source-code for the various contributations for
+Slurm as their documentation. A quick description of the subdirectories
+of the Slurm contribs distribution follows:
+
+  lua/               [ LUA scripts ]
+     Example LUA scripts that can serve as Slurm plugins.
+     job_submit.lua - job_submit plugin that can set a job's default partition
+		      using a very simple algorithm
+     job_submit_license.lua - job_submit plugin that can set a job's use of
+		      system licenses
+
+  openlava/          [ Wrapper Scripts for OpenLava/LSF migration to Slurm ]
+     Helpful scripts to make transition to Slurm easier from OpenLava or LSF.
+     These scripts are easily updatable if there is functionality missing.
+
+  pam/               [ PAM (Pluggable Authentication Module) for Slurm ]
+     This PAM module will restrict who can login to a node to users who have
+     been allocated resources on the node and user root.
+
+  pam_slurm_adopt/   [ Plugin for PAM to place incoming connections into
+                       existing Slurm job container ]
+     This Slurm plugin provides a mechanism for new incoming connections to
+     be placed into existing Slurm jobs containers so that then can be accounted
+     for and killed at job termination. See the README file in the subdirectory
+     for more details.
+
+  perlapi/           [ Perl API to Slurm source ]
+     API to Slurm using perl.  Making available all Slurm command that exist
+     in the Slurm proper API.
+
+  pmi/               [ PMI client library ]
+     User applications can link with this library to use Slurm's mpi/pmi
+     plugin.
+
+  pmi2/              [ PMI2 client library ]
+     User applications can link with this library to use Slurm's mpi/pmi2
+     plugin.
+
+  seff/              [Tools to include job include job accounting in email]
+     Expand information in job state change notification (e.g. job start, job
+     ended, etc.) to include job accounting information in the email. Configure
+     Slurm's MailProg to "smail" from this package.
+
+  sgather/           [ shell script ]
+     Gather remote files from a job into a central location. Reverse of of
+     sbcast command.
+
+  sjobexit/          [ Perl programs ]
+     Tools for managing job exit code records
+
+  sjstat             [ Perl program ]
+     Lists attributes of jobs under Slurm control
+
+  skilling.c         [ C program ]
+     This program can be used to order the hostnames in a 2+ dimensional
+     architecture for use in the slurm.conf file. It is used to generate
+     the Hilbert number based upon a node's physical location in the
+     computer. Nodes close together in their Hilbert number will also be
+     physically close in 2-D or 3-D space, so we can reduce the 2-D or 3-D
+     job placement problem to a 1-D problem that Slurm can easily handle
+     by defining the node names in the slurm.conf file in order of their
+     Hilbert number. If the computer is not a perfect square or cube with
+     power of two size, then collapse the node list maintaining the numeric
+     order based upon the Hilbert number.
+
+  slurm_completion_help/     [shell script, vim file]
+     Scripts to help in option completion when using slurm commands.
+
+  torque/            [ Wrapper Scripts for Torque migration to Slurm ]
+     Helpful scripts to make transition to Slurm easier from PBS or Torque.
+     These scripts are easily updatable if there is functionality missing.
+     NOTE: For the showq command, see https://github.com/pedmon/slurm_showq

@@ -1,0 +1,124 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validates that scontrol update will update job using
+#          the jobid and jobid with array index
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set array_size    4
+set file_script   "$test_dir/script"
+set job_id        0
+set array_in      2
+
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
+	skip "MaxArraySize is too small"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+proc check_update { job job_time } {
+	global scontrol number
+
+	set new_job_id 0
+	set time_match 0
+	spawn $scontrol show job $job
+	expect {
+		-re "JobId=($number) ArrayJobId" {
+			set new_job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "TimeLimit=00:($number):00" {
+			if {$expect_out(1,string) == $job_time } {
+				incr time_match
+			}
+			exp_continue
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$new_job_id == 0} {
+		fail "Failed to get new job id"
+	}
+	if {$time_match != 1} {
+		fail "Job ($job) was never updated"
+	}
+	return $new_job_id
+}
+
+proc update_job { job job_time } {
+	global scontrol
+
+	spawn $scontrol update jobid=$job TimeLimit=$job_time
+	expect {
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+#####################Test starts here######################
+# Submit a job array with 4 elements
+make_bash_script $file_script "sleep 10"
+
+spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "sbatch did not submit jobs"
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "sbatch did not submit jobs"
+}
+
+# Update a specific job using job array syntax
+update_job ${job_id}_$array_in 2
+set new_job_id [check_update ${job_id}_$array_in 2]
+
+# Update a specific job using job ID syntax
+update_job $new_job_id 4
+set new_job_id [check_update ${job_id}_2 4]
+
+# Make sure other tasks remain unchanged
+check_update ${job_id}_1 1

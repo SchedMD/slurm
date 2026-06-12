@@ -1,0 +1,376 @@
+/*****************************************************************************\
+ *  jobcomp_elasticsearch.c - elasticsearch slurm job completion logging plugin.
+ *****************************************************************************
+ *  Produced at Barcelona Supercomputing Center, in collaboration with
+ *  Barcelona School of Informatics.
+ *  Written by Alejandro Sanchez Graells <alejandro.sanchezgraells@bsc.es>,
+ *  <asanchez1987@gmail.com>, who borrowed heavily from jobcomp/filetxt
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "config.h"
+
+#include <fcntl.h>
+#include <inttypes.h>
+#include <grp.h>
+#include <pwd.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "src/common/slurm_xlator.h"
+
+#include "src/common/data.h"
+#include "src/common/fd.h"
+#include "src/common/list.h"
+#include "src/common/parse_time.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
+#include "src/common/slurmdb_defs.h"
+#include "src/common/state_save.h"
+#include "src/common/threadpool.h"
+#include "src/common/xstring.h"
+
+#include "src/curl/slurm_curl.h"
+
+#include "src/interfaces/jobcomp.h"
+#include "src/interfaces/serializer.h"
+
+#include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
+
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
+
+#define MAX_STR_LEN 10240	/* 10 KB */
+#define MAX_JOBS 1000000
+
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "Job completion elasticsearch logging plugin";
+const char plugin_type[] = "jobcomp/elasticsearch";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+#define INDEX_RETRY_INTERVAL 30
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined. They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern uint16_t accounting_enforce __attribute__((weak_import));
+extern void *acct_db_conn __attribute__((weak_import));
+#else
+uint16_t accounting_enforce = 0;
+void *acct_db_conn = NULL;
+#endif
+
+/* Type for handling HTTP responses */
+struct http_response {
+	char *message;
+	size_t size;
+};
+
+struct job_node {
+	time_t last_index_retry;
+	char * serialized_job;
+};
+
+char *save_state_file = "elasticsearch_state";
+char *log_url = NULL;
+
+static pthread_cond_t location_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t location_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t save_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t pend_jobs_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t job_handler_thread;
+static list_t *jobslist = NULL;
+static bool thread_shutdown = false;
+
+/* Load jobcomp data from save state file */
+static int _load_pending_jobs(void)
+{
+	int i, rc = SLURM_SUCCESS;
+	char *job_data = NULL, *state_file = NULL;
+	uint32_t job_cnt = 0;
+	buf_t *buffer = NULL;
+	struct job_node *jnode;
+
+	slurm_mutex_lock(&save_lock);
+	if (!(buffer = state_save_open(save_state_file, &state_file))) {
+		error("Could not open jobcomp state file %s: %m", state_file);
+		error("NOTE: Finished jobs may be lost!");
+		slurm_mutex_unlock(&save_lock);
+		xfree(state_file);
+		return SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&save_lock);
+	xfree(state_file);
+
+	safe_unpack32(&job_cnt, buffer);
+	for (i = 0; i < job_cnt; i++) {
+		safe_unpackstr(&job_data, buffer);
+		jnode = xmalloc(sizeof(struct job_node));
+		jnode->serialized_job = job_data;
+		list_enqueue(jobslist, jnode);
+	}
+	if (job_cnt > 0) {
+		log_flag(JOBCOMP, "Loaded %u jobs from state file", job_cnt);
+	}
+	FREE_NULL_BUFFER(buffer);
+
+	return rc;
+
+unpack_error:
+	error("%s: Error unpacking file %s", plugin_type, save_state_file);
+	FREE_NULL_BUFFER(buffer);
+	return SLURM_ERROR;
+}
+
+/* Try to index job into elasticsearch */
+static int _index_job(const char *jobcomp)
+{
+	struct curl_slist *slist = NULL;
+	int rc = SLURM_SUCCESS;
+	long response_code = 0;
+	char *response_str = NULL;
+
+	slurm_mutex_lock(&location_mutex);
+	if (log_url == NULL) {
+		error("%s: JobCompLoc parameter not configured", plugin_type);
+		slurm_mutex_unlock(&location_mutex);
+		return SLURM_ERROR;
+	}
+
+	slist = curl_slist_append(slist, "Content-Type: " MIME_TYPE_JSON);
+
+	if (slist == NULL) {
+		error("%s: curl_slist_append: %m", plugin_type);
+		slurm_mutex_unlock(&location_mutex);
+		return SLURM_ERROR;
+	}
+
+	rc = slurm_curl_request(jobcomp, log_url, NULL, NULL, NULL, NULL, NULL,
+				slist, 0, &response_str, &response_code,
+				HTTP_REQUEST_POST, false, false);
+	/*
+	 * HTTP 200 (OK)	- request succeed.
+	 * HTTP 201 (Created)	- request succeed and resource created.
+	 */
+	if ((response_code != 200) && (response_code != 201)) {
+		log_flag(JOBCOMP, "HTTP status code %ld received from %s",
+			 response_code, log_url);
+		log_flag(JOBCOMP, "HTTP response:\n%s", response_str);
+		rc = SLURM_ERROR;
+	} else {
+		log_flag(JOBCOMP, "Job indexed into elasticsearch. Response: %s",
+			 response_str);
+	}
+
+	xfree(response_str);
+	slurm_mutex_unlock(&location_mutex);
+	return rc;
+}
+
+/* Saves the state of all jobcomp data for further indexing retries */
+static int _save_state(void)
+{
+	int rc = SLURM_SUCCESS;
+	list_itr_t *iter;
+	static uint32_t high_buffer_size = (1024 * 1024);
+	buf_t *buffer = init_buf(high_buffer_size);
+	uint32_t job_cnt;
+	struct job_node *jnode;
+
+	job_cnt = list_count(jobslist);
+	pack32(job_cnt, buffer);
+	iter = list_iterator_create(jobslist);
+	while ((jnode = (struct job_node *)list_next(iter))) {
+		packstr(jnode->serialized_job, buffer);
+	}
+	list_iterator_destroy(iter);
+
+	slurm_mutex_lock(&save_lock);
+	rc = save_buf_to_state(save_state_file, buffer, NULL);
+	slurm_mutex_unlock(&save_lock);
+
+	FREE_NULL_BUFFER(buffer);
+
+	return rc;
+}
+
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
+{
+	struct job_node *jnode = NULL;
+	data_t *record = NULL;
+	int rc;
+
+	if (list_count(jobslist) > MAX_JOBS) {
+		error("%s: Limit of %d enqueued jobs in memory waiting to be indexed reached. %pJ discarded",
+		      plugin_type, MAX_JOBS, job_ptr);
+		return SLURM_ERROR;
+	}
+
+	record = jobcomp_common_job_record_to_data(job_ptr, event);
+	jnode = xmalloc(sizeof(struct job_node));
+	if ((rc = serialize_g_data_to_string(&jnode->serialized_job, NULL,
+					     record, MIME_TYPE_JSON,
+					     SER_FLAGS_COMPACT))) {
+		xfree(jnode);
+		log_flag(JOBCOMP, "unable to serialize %pJ to JSON: %s",
+			 job_ptr, slurm_strerror(rc));
+	} else {
+		list_enqueue(jobslist, jnode);
+	}
+
+	FREE_NULL_DATA(record);
+	return rc;
+}
+
+extern void *_process_jobs(void *x)
+{
+	list_itr_t *iter;
+	struct job_node *jnode = NULL;
+	struct timespec ts = {0, 0};
+	time_t now;
+
+	/* Wait for jobcomp_p_set_location log_url setup. */
+	slurm_mutex_lock(&location_mutex);
+	ts.tv_sec = time(NULL) + INDEX_RETRY_INTERVAL;
+	slurm_cond_timedwait(&location_cond, &location_mutex, &ts);
+	slurm_mutex_unlock(&location_mutex);
+
+	while (!thread_shutdown) {
+		int success_cnt = 0, fail_cnt = 0, wait_retry_cnt = 0;
+		sleep(1);
+		iter = list_iterator_create(jobslist);
+		while ((jnode = (struct job_node *)list_next(iter)) &&
+		       !thread_shutdown) {
+			now = time(NULL);
+			if ((jnode->last_index_retry == 0) ||
+			    (difftime(now, jnode->last_index_retry) >=
+					INDEX_RETRY_INTERVAL)) {
+				if ((_index_job(jnode->serialized_job) ==
+				     SLURM_SUCCESS)) {
+					list_delete_item(iter);
+					success_cnt++;
+				} else {
+					jnode->last_index_retry = now;
+					fail_cnt++;
+				}
+			} else
+				wait_retry_cnt++;
+		}
+		list_iterator_destroy(iter);
+		if ((success_cnt || fail_cnt))
+			log_flag(JOBCOMP, "index success:%d fail:%d wait_retry:%d",
+				 success_cnt, fail_cnt,
+				 wait_retry_cnt);
+	}
+	return NULL;
+}
+
+static void _jobslist_del(void *x)
+{
+	struct job_node *jnode = (struct job_node *) x;
+	xfree(jnode->serialized_job);
+	xfree(jnode);
+}
+
+extern int init(void)
+{
+	serializer_required(MIME_TYPE_JSON);
+
+	jobcomp_common_conf_init();
+	jobslist = list_create(_jobslist_del);
+	slurm_thread_create(NULL, &job_handler_thread, _process_jobs, NULL);
+	slurm_mutex_lock(&pend_jobs_lock);
+	(void) _load_pending_jobs();
+	slurm_mutex_unlock(&pend_jobs_lock);
+
+	if (slurm_curl_init())
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern void fini(void)
+{
+	thread_shutdown = true;
+	slurm_thread_join(job_handler_thread);
+
+	_save_state();
+	FREE_NULL_LIST(jobslist);
+	xfree(log_url);
+
+	jobcomp_common_conf_fini();
+	slurm_curl_fini();
+}
+
+/*
+ * The remainder of this file implements the standard Slurm job completion
+ * logging API.
+ */
+extern int jobcomp_p_set_location(void)
+{
+	char *location = slurm_conf.job_comp_loc;
+	int rc = SLURM_SUCCESS;
+
+	if (location == NULL) {
+		error("%s: JobCompLoc parameter not configured", plugin_type);
+		return SLURM_ERROR;
+	}
+
+	slurm_mutex_lock(&location_mutex);
+	if (log_url)
+		xfree(log_url);
+	log_url = xstrdup(location);
+	slurm_cond_broadcast(&location_cond);
+	slurm_mutex_unlock(&location_mutex);
+
+	return rc;
+}
+
+/*
+ * get info from the database
+ * in/out job_list list of job_rec_t *
+ * note list needs to be freed when called
+ */
+extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
+{
+	debug("%s function is not implemented", __func__);
+	return NULL;
+}
+
+extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
+{
+	return SLURM_SUCCESS;
+}

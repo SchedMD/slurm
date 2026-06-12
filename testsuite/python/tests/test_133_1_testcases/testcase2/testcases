@@ -1,0 +1,31 @@
+# etc33.1.2 -- test an unbalanced topology
+#
+# Full config, initial conditions
+peta[10000-19999]
+peta[10000-14999]
+peta[15000-15199]
+peta[15200-15599]
+peta[15600-15999]
+peta[16000-16399]
+peta[16400-16799]
+peta[16800-17199]
+peta[17200-17599]
+peta[17600-17999]
+peta[18000-18399]
+peta[18400-18799]
+peta[18800-19199]
+peta[19200-19599]
+peta[19600-19999]
+
+# Second half, first forward, first list
+peta[15000-15199]
+peta[15000-15019]
+peta[15020-15039]
+peta[15040-15059]
+peta[15060-15079]
+peta[15080-15099]
+peta[15100-15119]
+peta[15120-15139]
+peta[15140-15159]
+peta[15160-15179]
+peta[15180-15199]

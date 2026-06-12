@@ -1,0 +1,432 @@
+/*****************************************************************************\
+ *  jobcomp_common.c - common functions for jobcomp plugins
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
+#include "src/common/assoc_mgr.h"
+#include "src/common/data.h"
+#include "src/common/fd.h"
+#include "src/common/id_util.h"
+#include "src/common/parse_time.h"
+#include "src/common/sluid.h"
+#include "src/interfaces/jobcomp.h"
+#include "src/slurmctld/slurmctld.h"
+
+#define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_CONF_JOB_FINISH
+
+static bool send_script = false;
+static bool send_comment = false;
+
+static bool _valid_date_format(char *date_str)
+{
+	if (!date_str || !*date_str ||
+	    !xstrcasecmp(date_str, "unknown") ||
+	    !xstrcasecmp(date_str, "none"))
+		return false;
+
+	return true;
+}
+
+extern void jobcomp_common_conf_init(void)
+{
+	if (xstrcasestr(slurm_conf.job_comp_params, "send_script"))
+		send_script = true;
+	if (xstrcasestr(slurm_conf.job_comp_params, "send_comment"))
+		send_comment = true;
+}
+
+extern void jobcomp_common_conf_fini(void)
+{
+	/* not currently used */
+}
+
+/*
+ * Return an string associated with a jobcomp_event_t.
+ * Caller should NOT free it.
+ *
+ * IN: event
+ * OUT: associated event string
+ */
+extern char *jobcomp_common_get_event_name(uint32_t event)
+{
+	switch (event) {
+	case JOBCOMP_EVENT_JOB_FINISH:
+		return "job finish";
+	case JOBCOMP_EVENT_JOB_START:
+		return "job start";
+	case JOBCOMP_EVENT_INVALID:
+	default:
+		return "invalid";
+	}
+}
+
+extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
+						 uint32_t event)
+{
+	char start_str[32], end_str[32], time_str[32];
+	char *usr_str = NULL, *grp_str = NULL, *state_string = NULL;
+	char *exit_code_str = NULL, *derived_ec_str = NULL, *partition = NULL;
+	buf_t *script = NULL;
+	enum job_states job_state;
+	int i, tmp_int, tmp_int2;
+	time_t elapsed_time = 0;
+	uint32_t time_limit;
+	data_t *record = NULL;
+	bool event_job_finish = (event & JOBCOMP_EVENT_JOB_FINISH);
+	char sluid_str[SLUID_STR_BYTES];
+
+	usr_str = user_from_job(job_ptr);
+	grp_str = group_from_job(job_ptr);
+	partition = job_ptr->part_ptr ? job_ptr->part_ptr->name :
+					job_ptr->partition;
+
+	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
+		time_limit = job_ptr->part_ptr->max_time;
+	else
+		time_limit = job_ptr->time_limit;
+
+	if (!event_job_finish) {
+		parse_time_make_str_utc(&job_ptr->start_time, start_str,
+					sizeof(start_str));
+	} else if (job_ptr->job_state & JOB_RESIZING) {
+		time_t now = time(NULL);
+		state_string = job_state_string(job_ptr->job_state);
+		if (job_ptr->resize_time) {
+			parse_time_make_str_utc(&job_ptr->resize_time,
+						start_str, sizeof(start_str));
+		} else {
+			parse_time_make_str_utc(&job_ptr->start_time, start_str,
+						sizeof(start_str));
+		}
+		parse_time_make_str_utc(&now, end_str, sizeof(end_str));
+	} else {
+		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
+		 * flag set when called. We remove the flags to get the eventual
+		 * completion state: JOB_FAILED, JOB_TIMEOUT, etc. */
+		job_state = job_ptr->job_state & JOB_STATE_BASE;
+		state_string = job_state_string(job_state);
+		if (job_ptr->resize_time) {
+			parse_time_make_str_utc(&job_ptr->resize_time,
+						start_str, sizeof(start_str));
+		} else if (job_ptr->start_time > job_ptr->end_time) {
+			/* Job cancelled while pending and
+			 * expected start time is in the future. */
+			snprintf(start_str, sizeof(start_str), "Unknown");
+		} else {
+			parse_time_make_str_utc(&job_ptr->start_time, start_str,
+						sizeof(start_str));
+		}
+		parse_time_make_str_utc(&job_ptr->end_time, end_str,
+					sizeof(end_str));
+	}
+
+	if (event_job_finish) {
+		if (job_ptr->end_time && job_ptr->start_time &&
+		    job_ptr->start_time < job_ptr->end_time)
+			elapsed_time = job_ptr->end_time - job_ptr->start_time;
+		else
+			elapsed_time = 0;
+
+		tmp_int = tmp_int2 = 0;
+		if (job_ptr->derived_ec == NO_VAL)
+			;
+		else if (WIFSIGNALED(job_ptr->derived_ec))
+			tmp_int2 = WTERMSIG(job_ptr->derived_ec);
+		else if (WIFEXITED(job_ptr->derived_ec))
+			tmp_int = WEXITSTATUS(job_ptr->derived_ec);
+		xstrfmtcat(derived_ec_str, "%d:%d", tmp_int, tmp_int2);
+
+		tmp_int = tmp_int2 = 0;
+		if (job_ptr->exit_code == NO_VAL)
+			;
+		else if (WIFSIGNALED(job_ptr->exit_code))
+			tmp_int2 = WTERMSIG(job_ptr->exit_code);
+		else if (WIFEXITED(job_ptr->exit_code))
+			tmp_int = WEXITSTATUS(job_ptr->exit_code);
+		xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
+	}
+
+	record = data_set_dict(data_new());
+
+	data_set_int(data_key_set(record, "jobid"), job_ptr->job_id);
+
+	print_sluid(job_ptr->db_index, sluid_str, sizeof(sluid_str));
+	data_set_string(data_key_set(record, "sluid"), sluid_str);
+
+	if (job_ptr->step_id.sluid) {
+		print_sluid(job_ptr->step_id.sluid, sluid_str,
+			    sizeof(sluid_str));
+		data_set_string(data_key_set(record, "original_sluid"),
+				sluid_str);
+	}
+
+	data_set_string(data_key_set(record, "container"), job_ptr->container);
+	data_set_string(data_key_set(record, "username"), usr_str);
+	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
+	data_set_string(data_key_set(record, "groupname"), grp_str);
+	data_set_int(data_key_set(record, "group_id"), job_ptr->group_id);
+	if (_valid_date_format(start_str))
+		data_set_string(data_key_set(record, "@start"), start_str);
+	if (event_job_finish && _valid_date_format(end_str))
+		data_set_string(data_key_set(record, "@end"), end_str);
+	if (event_job_finish)
+		data_set_int(data_key_set(record, "elapsed"), elapsed_time);
+	data_set_string(data_key_set(record, "partition"), partition);
+	data_set_string(data_key_set(record, "alloc_node"),
+			job_ptr->alloc_node);
+	data_set_string(data_key_set(record, "nodes"), job_ptr->nodes);
+	data_set_int(data_key_set(record, "total_cpus"), job_ptr->total_cpus);
+	data_set_int(data_key_set(record, "total_nodes"), job_ptr->total_nodes);
+	if (event_job_finish) {
+		data_set_string_own(data_key_set(record, "derived_ec"),
+				    derived_ec_str);
+		derived_ec_str = NULL;
+		data_set_string_own(data_key_set(record, "exit_code"),
+				    exit_code_str);
+		exit_code_str = NULL;
+	}
+	data_set_string(data_key_set(record, "state"), state_string);
+	if (event_job_finish) {
+		data_set_string(data_key_set(record, "failed_node"),
+				job_ptr->failed_node);
+		data_set_float(data_key_set(record, "cpu_hours"),
+			       ((elapsed_time * job_ptr->total_cpus) /
+				3600.0f));
+	}
+
+	if (job_ptr->array_task_id != NO_VAL) {
+		data_set_int(data_key_set(record, "array_job_id"),
+			     job_ptr->array_job_id);
+		data_set_int(data_key_set(record, "array_task_id"),
+			     job_ptr->array_task_id);
+	}
+
+	if (job_ptr->het_job_id != NO_VAL) {
+		if (event_job_finish) {
+			/* Continue supporting the old terms. */
+			data_set_int(data_key_set(record, "pack_job_id"),
+				     job_ptr->het_job_id);
+			data_set_int(data_key_set(record, "pack_job_offset"),
+				     job_ptr->het_job_offset);
+		}
+		data_set_int(data_key_set(record, "het_job_id"),
+			     job_ptr->het_job_id);
+		data_set_int(data_key_set(record, "het_job_offset"),
+			     job_ptr->het_job_offset);
+	}
+
+	if ((job_ptr->priority != NO_VAL) && (job_ptr->priority != INFINITE))
+		data_set_int(data_key_set(record, "priority"),
+			     job_ptr->priority);
+
+	if (job_ptr->details && job_ptr->details->submit_time) {
+		parse_time_make_str_utc(&job_ptr->details->submit_time,
+					time_str, sizeof(time_str));
+		if (_valid_date_format(time_str))
+			data_set_string(data_key_set(record, "@submit"),
+					time_str);
+	}
+
+	if (job_ptr->details && job_ptr->details->begin_time) {
+		parse_time_make_str_utc(&job_ptr->details->begin_time, time_str,
+					sizeof(time_str));
+		if (_valid_date_format(time_str))
+			data_set_string(data_key_set(record, "@eligible"),
+					time_str);
+		if (job_ptr->start_time) {
+			int64_t queue_wait = (int64_t)difftime(
+				job_ptr->start_time,
+				job_ptr->details->begin_time);
+			if (queue_wait >= 0)
+				data_set_int(data_key_set(record,
+							  "@queue_wait"),
+							  queue_wait);
+		}
+	}
+
+	if (job_ptr->details && job_ptr->details->work_dir)
+		data_set_string(data_key_set(record, "work_dir"),
+				job_ptr->details->work_dir);
+
+	if (job_ptr->details && job_ptr->details->std_err)
+		data_set_string(data_key_set(record, "std_err"),
+				job_ptr->details->std_err);
+
+	if (job_ptr->details && job_ptr->details->std_in)
+		data_set_string(data_key_set(record, "std_in"),
+				job_ptr->details->std_in);
+
+	if (job_ptr->details && job_ptr->details->std_out)
+		data_set_string(data_key_set(record, "std_out"),
+				job_ptr->details->std_out);
+
+	if (job_ptr->assoc_ptr && job_ptr->assoc_ptr->cluster)
+		data_set_string(data_key_set(record, "cluster"),
+				job_ptr->assoc_ptr->cluster);
+
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->name)
+		data_set_string(data_key_set(record, "qos"),
+				job_ptr->qos_ptr->name);
+
+	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL))
+		data_set_int(data_key_set(record, "ntasks"),
+			     job_ptr->details->num_tasks);
+
+	if (job_ptr->details && (job_ptr->details->ntasks_per_node != NO_VAL16))
+		data_set_int(data_key_set(record, "ntasks_per_node"),
+			     job_ptr->details->ntasks_per_node);
+
+	if (job_ptr->details && (job_ptr->details->ntasks_per_tres != NO_VAL16))
+		data_set_int(data_key_set(record, "ntasks_per_tres"),
+			     job_ptr->details->ntasks_per_tres);
+
+	if (job_ptr->details && (job_ptr->details->cpus_per_task != NO_VAL16))
+		data_set_int(data_key_set(record, "cpus_per_task"),
+			     job_ptr->details->cpus_per_task);
+
+	if (job_ptr->details && job_ptr->details->orig_dependency)
+		data_set_string(data_key_set(record, "orig_dependency"),
+				job_ptr->details->orig_dependency);
+
+	if (job_ptr->details && job_ptr->details->exc_nodes)
+		data_set_string(data_key_set(record, "excluded_nodes"),
+				job_ptr->details->exc_nodes);
+
+	if (job_ptr->details && job_ptr->details->features)
+		data_set_string(data_key_set(record, "features"),
+				job_ptr->details->features);
+
+	if (time_limit != INFINITE)
+		data_set_int(data_key_set(record, "time_limit"),
+			     (time_limit * 60));
+
+	if (job_ptr->name)
+		data_set_string(data_key_set(record, "job_name"),
+				job_ptr->name);
+
+	if (job_ptr->resv_name)
+		data_set_string(data_key_set(record, "reservation_name"),
+				job_ptr->resv_name);
+
+	if (job_ptr->wckey)
+		data_set_string(data_key_set(record, "wc_key"), job_ptr->wckey);
+
+	if (job_ptr->tres_req_str)
+		data_set_string(data_key_set(record, "tres_req_raw"),
+				job_ptr->tres_req_str);
+
+	if (job_ptr->tres_fmt_req_str)
+		data_set_string(data_key_set(record, "tres_req"),
+				job_ptr->tres_fmt_req_str);
+
+	if (job_ptr->tres_alloc_str)
+		data_set_string(data_key_set(record, "tres_alloc_raw"),
+				job_ptr->tres_alloc_str);
+
+	if (job_ptr->tres_fmt_alloc_str)
+		data_set_string(data_key_set(record, "tres_alloc"),
+				job_ptr->tres_fmt_alloc_str);
+
+	if (job_ptr->account)
+		data_set_string(data_key_set(record, "account"),
+				job_ptr->account);
+
+	if (job_ptr->admin_comment)
+		data_set_string(data_key_set(record, "admin_comment"),
+				job_ptr->admin_comment);
+
+	if (send_comment && job_ptr->comment)
+		data_set_string(data_key_set(record, "comment"),
+				job_ptr->comment);
+
+	if (send_script && (script = get_job_script(job_ptr))) {
+		data_set_string(data_key_set(record, "script"),
+				get_buf_data(script));
+		FREE_NULL_BUFFER(script);
+	}
+
+	if (job_ptr->assoc_ptr) {
+		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
+					   NO_LOCK, NO_LOCK, NO_LOCK };
+		slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+		char *parent_accounts = NULL;
+		char **acc_aux = NULL;
+		int nparents = 0;
+
+		assoc_mgr_lock(&locks);
+
+		/* Start at the first parent and go up. When studying
+		 * this code it was slightly faster to do 2 loops on
+		 * the association linked list and only 1 xmalloc but
+		 * we opted for cleaner looking code and going with a
+		 * realloc. */
+		while (assoc_ptr) {
+			if (assoc_ptr->acct) {
+				acc_aux = xrealloc(acc_aux,
+						   sizeof(char *) *
+						   (nparents + 1));
+				acc_aux[nparents++] = assoc_ptr->acct;
+			}
+			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		}
+
+		for (i = nparents - 1; i >= 0; i--)
+			xstrfmtcat(parent_accounts, "/%s", acc_aux[i]);
+		xfree(acc_aux);
+
+		data_set_string(data_key_set(record, "parent_accounts"),
+				parent_accounts);
+
+		xfree(parent_accounts);
+
+		assoc_mgr_unlock(&locks);
+	}
+
+	xfree(usr_str);
+	xfree(grp_str);
+
+	return record;
+}
+
+extern uint32_t jobcomp_common_parse_enabled_events(void)
+{
+	uint32_t enabled_events = 0;
+
+	enabled_events |= JOBCOMP_CONF_DEFAULT_EVENTS;
+
+	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_start"))
+		enabled_events |= JOBCOMP_CONF_JOB_START;
+
+	return enabled_events;
+}

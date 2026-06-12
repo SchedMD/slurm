@@ -1,0 +1,59 @@
+#!/usr/bin/env expect
+################################################################################
+# Purpose: Test of Slurm functionality
+#          Sets the job name environment variable, and changes it using srun,
+#          sbatch and salloc.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set name        "banana"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+
+# Set env path to SLURM_JOB_NAME
+set env(SLURM_JOB_NAME) "zebra"
+
+make_bash_script $file_in "$bin_env | grep SLURM_JOB_NAME"
+
+#
+# Tests -J by using srun
+#
+set output [run_command_output -fail "$srun -J $name -t1 $file_in"]
+subtest {[regexp "SLURM_JOB_NAME=$name" $output]} "Verify SLURM_JOB_NAME for srun"
+
+#
+# Tests -J using sbatch
+#
+set job_id [submit_job -fail "-J $name -t1 -o $file_out $file_in"]
+
+wait_for_job $job_id "DONE"
+wait_for_file -fail $file_out
+
+set output [run_command_output -fail "$bin_grep SLURM_JOB_NAME=banana $file_out"]
+subtest {[regexp "SLURM_JOB_NAME=$name" $output]} "Verify SLURM_JOB_NAME for sbatch"
+
+#
+# Tests -J using salloc
+#
+set output [run_command_output -fail "$salloc -J $name -t1 $file_in"]
+subtest {[regexp "SLURM_JOB_NAME=$name" $output]} "Verify SLURM_JOB_NAME for salloc"

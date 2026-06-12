@@ -1,0 +1,409 @@
+.TH sprio "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+sprio \- view the factors that comprise a job's scheduling priority
+
+.SH "SYNOPSIS"
+\fBsprio\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+\fBsprio\fR is used to view the components of a job's scheduling
+priority when the multi\-factor priority plugin is installed.
+\fBsprio\fR is a read\-only utility that extracts information from the
+multi\-factor priority plugin. By default, \fBsprio\fR returns
+information for all pending jobs. Options exist to display specific
+jobs by job ID and user name.
+
+.SH "OPTIONS"
+
+.TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+The cluster to issue commands to. Only one cluster name may be specified.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with either \fBFederationParameters=fed_display\fR
+configured or the \fB\-\-federation\fR option set.
+This option implicitly sets the \fB\-\-local\fR option.
+.IP
+
+.TP
+\fB\-\-federation\fR
+Show jobs in federation if a member of one.
+.IP
+
+.TP
+\fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
+Specify the information to be displayed, its size and position (right
+or left justified). The default formats when all factors have been
+assigned non\-zero weights are
+.IP
+.RS
+.TP 15
+\fIdefault\fR
+"%.15i %9r %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %20T"
+.IP
+
+.TP
+\fI\-l, \-\-long\fR
+"%.15i %9r %.8u %.8o %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10n %.10Q %.11N %.20T";
+.IP
+.RE
+
+The format of each field is "%[.][size]type".
+.IP
+.RS
+.TP 8
+\fIsize\fR
+is the minimum field size.
+If no size is specified, whatever is needed to print the information will be used.
+.IP
+
+.TP
+\fI .\fR
+indicates the output should be left justified.
+By default, output is right justified.
+.IP
+.RE
+
+Valid \fItype\fR specifications include:
+.IP
+.RS
+.TP 4
+\fB%a\fR
+Normalized age priority
+.IP
+
+.TP
+\fB%A\fR
+Weighted age priority
+.IP
+
+.TP
+\fB%b\fR
+Normalized association priority
+.IP
+
+.TP
+\fB%B\fR
+Weighted association priority
+.IP
+
+.TP
+\fB%c\fR
+Cluster name. Only applicable for federated clusters
+.IP
+
+.TP
+\fB%f\fR
+Normalized fair\-share priority
+.IP
+
+.TP
+\fB%F\fR
+Weighted fair\-share priority
+.IP
+
+.TP
+\fB%i\fR
+Job ID
+.IP
+
+.TP
+\fB%j\fR
+Normalized job size priority
+.IP
+
+.TP
+\fB%J\fR
+Weighted job size priority
+.IP
+
+.TP
+\fB%n\fR
+QOS name
+.IP
+
+.TP
+\fB%N\fR
+Nice adjustment
+.IP
+
+.TP
+\fB%o\fR
+Account name
+.IP
+
+.TP
+\fB%p\fR
+Normalized partition priority
+.IP
+
+.TP
+\fB%P\fR
+Weighted partition priority
+.IP
+
+.TP
+\fB%q\fR
+Normalized quality of service priority
+.IP
+
+.TP
+\fB%Q\fR
+Weighted quality of service priority
+.IP
+
+.TP
+\fB%r\fR
+Partition name
+.IP
+
+.TP
+\fB%s\fR
+SLUID assigned to the job.
+.IP
+
+.TP
+\fB%S\fR
+Weighted admin priority.
+.IP
+
+.TP
+\fB%t\fR
+Normalized TRES priorities
+.IP
+
+.TP
+\fB%T\fR
+Weighted TRES priorities
+.IP
+
+.TP
+\fB%u\fR
+User name for a job
+.IP
+
+.TP
+\fB%Y\fR
+Job priority
+.IP
+
+.TP
+\fB%y\fR
+Normalized job priority
+.RE
+.IP
+
+.TP
+\fB\-\-help\fR
+Print a help message describing all options \fBsprio\fR.
+.IP
+
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
+Requests a comma separated list of job ids to display. Defaults to
+all jobs. Jobs may be specified by numeric job ID or by SLUID.
+.IP
+
+.TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any). Overrides \-\-federation.
+.IP
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs.
+.IP
+
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+.IP
+
+.TP
+\fB\-n\fR, \fB\-\-norm\fR
+Display the normalized priority factors for the selected jobs.
+.IP
+
+.TP
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_list\fR>
+Requests a comma separated list of partitions to display. Defaults to
+all partitions.
+.IP
+
+.TP
+\fB\-\-sibling\fR
+Show all sibling jobs on a federated cluster. Without this option in a
+federated cluster, each job in each partition will have its priority and its
+components reported for only one cluster. Each sibling job on the various
+clusters in the federation may have different priority, which will not be
+reported without using this option. Implicitly adds "%c" (cluster name) to the
+output format.
+.IP
+
+.TP
+\fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
+Specification of the order in which jobs should be reported. This uses the same
+field specification as <output_format>. Multiple sorts may be performed by
+listing multiple sort fields separated by commas. The field specifications may
+be preceded by "+" or "\-" for ascending (default) or descending respectively.
+For example, a <sort_list> of "u,r,\-y" will sort the job priority reports by
+username, partition name, and descending job priority, in that order. The
+default <sort_list> is "i" (ascending job id).
+.IP
+
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBsprio\fR options.
+.IP
+
+.TP
+\fB\-u\fR, \fB\-\-user\fR=<\fIuser_list\fR>
+Request jobs from a comma separated list of users. The list can
+consist of user names or user id numbers.
+.IP
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Report details of sprios actions.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.TP
+\fB\-w\fR, \fB\-\-weights\fR
+Display the configured weights for each factor. This is for information
+purposes only. Actual job data is suppressed.
+.IP
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsprio\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsprio\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsprio\fR or other Slurm client commands that send remote procedure
+calls to \fBslurmctld\fR from loops in shell scripts or other programs. Ensure
+that programs limit calls to \fBsprio\fR to the minimum necessary for the
+information you are trying to gather.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+If no corresponding command line option is specified, \fBsprio\fR will use the
+value of the following environment variables.
+
+.TP 20
+\fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
+.IP
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sprio to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.TP
+\fBSPRIO_FEDERATION\fR
+Same as \fB\-\-federation\fR
+.IP
+
+.TP
+\fBSPRIO_FORMAT\fR
+Same as \fB\-o <output_format>, \-\-format=<output_format>\fR
+.IP
+
+.TP
+\fBSPRIO_LOCAL\fR
+Same as \fB\-\-local\fR
+.IP
+
+.TP
+\fBSPRIO_SIBLING\fR
+Same as \fB\-\-sibling\fR
+.IP
+
+.SH "EXAMPLES"
+
+.TP
+Print the list of all pending jobs with their weighted priorities
+.IP
+.nf
+$ sprio
+  JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
+  65539      62664          0      51664       1000      10000          0
+  65540      62663          0      51663       1000      10000          0
+  65541      62662          0      51662       1000      10000          0
+.fi
+
+.TP
+Print the list of all pending jobs with their normalized priorities
+.IP
+.nf
+$ sprio \-n
+  JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION  QOS
+  65539 0.00001459 0.0007180  0.5166470  1.0000000  1.0000000  0.0000000
+  65540 0.00001459 0.0007180  0.5166370  1.0000000  1.0000000  0.0000000
+  65541 0.00001458 0.0007180  0.5166270  1.0000000  1.0000000  0.0000000
+.fi
+
+.TP
+Print the job priorities for specific jobs
+.IP
+.nf
+$ sprio \-\-jobs=65548,65547
+  JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
+  65547      62078          0      51078       1000      10000          0
+  65548      62077          0      51077       1000      10000          0
+.fi
+
+.TP
+Print the job priorities for jobs of specific users
+.IP
+.nf
+$ sprio \-\-users=fred,sally
+  JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
+  65548     fred     62079         1      51077      1000      10000       0
+  65549    sally     62080         1      51078      1000      10000       0
+.fi
+
+.TP
+Print the configured weights for each priority component
+.IP
+.nf
+$ sprio \-w
+  JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
+  Weights                1000     100000       1000      10000          1
+.fi
+
+.SH "COPYING"
+Copyright (C) 2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.br
+Copyright (C) 2010\-2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBsqueue\fR(1), \fBsshare\fR(1)

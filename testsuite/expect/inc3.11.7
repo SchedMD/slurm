@@ -1,0 +1,297 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test3.11
+#	   Several cases for core based reservations
+#          Plugin select/cons_tres needed
+#
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_7 {} {
+	global re_word_str bin_sleep cluster_cpus cores_per_node
+	global def_partition file_in number part_cores part_node
+	global part_node_cnt part_node_cores
+	global sbatch scancel scontrol user_name wait_for_job
+
+	set res_name "resv3.11.7"
+
+	log_info "+++++ STARTING TEST 7 +++++"
+
+	# Make a reservation, just to get node size information
+	set ret_code [create_res $res_name "StartTime=now Duration=1 Nodes=$part_node User=$user_name"]
+	if {$ret_code != 0} {
+		fail "Unable to create a valid reservation"
+	}
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		fail "Unable to delete reservation ($res_name)"
+	}
+
+	# Now make a reservation using half the cores on that node
+	# There is no way to specify the Nodes in a reservation with CoreCnt,
+	# so hope that we get a node with the same size
+	set corecnt [ expr ($part_node_cores / 2) ]
+	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$part_node CoreCnt=$corecnt User=$user_name"]
+	if {$ret_code != 0} {
+		fail "Unable to create a valid reservation"
+	}
+
+	set res_info [get_reservations $res_name]
+	if { ![dict exists $res_info $res_name] } {
+		delete_res $res_name
+		fail "Unable to get info about reservation ($res_name)"
+	}
+	lassign [get_node_cpus [dict get $res_info $res_name "Nodes"]] cputot threadcnt
+	set thread_res_num [ expr $corecnt * $threadcnt ]
+
+	# Make the job script
+	make_bash_script $file_in "$bin_sleep 100"
+
+	# Sleep short time in case clocks are not synchronized
+	sleep 5
+
+	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
+	set job_id 0
+	spawn $sbatch -n1 --reservation=$res_name --output=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		delete_res $res_name
+		fail "Batch submit failure"
+	}
+
+	subtest {[wait_for_job $job_id RUNNING] == 0} "A simple job using just 1 core should run inside the reservation"
+
+	cancel_job $job_id
+	sleep 1
+
+	# (Second test) Submit the batch job: a job using all cores allocated by the reservation
+	spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		delete_res $res_name
+		fail "Batch submit failure"
+	}
+
+	# Show the job, make sure reservation tag is right
+	subtest {[wait_for_job $job_id RUNNING] == 0} "A job using all cores allocated by the reservation should run"
+
+	cancel_job $job_id
+	sleep 1
+
+	# (Third test) Submit the batch job: a job using all cores not allocated by the reservation
+	spawn $sbatch -n$thread_res_num --nodelist=[dict get $res_info $res_name "Nodes"] --output=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		delete_res $res_name
+		fail "Batch submit failure"
+	}
+
+	# Show the job, make sure reservation tag is right
+	subtest {[wait_for_job $job_id RUNNING] == 0} "A job using all cores not allocated by the reservation should run"
+
+	cancel_job $job_id
+
+	# (Fourth test) Submit a batch job: a job using more cores than allocated by the reservation
+	set thread_res_num [ expr ($thread_res_num + 1) ]
+	spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		delete_res $res_name
+		fail "Batch submit failure"
+	}
+
+	sleep 10
+
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "Job ($job_id) not found"
+		}
+		-re "JobState=PENDING" {
+			log_info "Job $job_id is PENDING as expected"
+			exp_continue
+		}
+		-re "JobState=RUNNING" {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "Job ($job_id) is RUNNING but it should not be"
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	cancel_job $job_id
+
+	# (Fifth test) Submit a batch job: a job specifying node in reservation and
+	#              using more cores than allocated by the reservation
+	spawn $sbatch -n$thread_res_num --nodelist=[dict get $res_info $res_name "Nodes"] --nodes=1 --output=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		delete_res $res_name
+		fail "Batch submit failure"
+	}
+
+	sleep 10
+
+	# Show the job, make sure reservation tag is right
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "Job ($job_id) not found"
+		}
+		-re "JobState=PENDING" {
+			log_info "Job $job_id is PENDING as expected"
+			exp_continue
+		}
+		-re "JobState=RUNNING" {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "Job ($job_id) is RUNNING but it should not be"
+		}
+		timeout {
+			delete_res $res_name
+			cancel_job $job_id
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Cancelling the job now. Let's see if it runs once reservation is deleted
+	#
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		cancel_job $job_id
+		fail "Unable to delete reservation ($res_name)"
+	}
+
+	sleep 10
+
+	# Show the job
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Invalid job id specified" {
+			fail "Job ($job_id) not found"
+		}
+		-re "JobState=PENDING" {
+			cancel_job $job_id
+			fail "Job ($job_id) is PENDING but it should not be"
+		}
+		-re "JobState=RUNNING" {
+			log_info "Job $job_id is RUNNING as expected"
+			exp_continue
+		}
+		timeout {
+			cancel_job $job_id
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	cancel_job $job_id
+}

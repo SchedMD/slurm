@@ -1,0 +1,2 @@
+#!/bin/sh
+printf '%s' "$1" | openssl req -x509 -key /dev/stdin -subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=my_slurm_ca"

@@ -1,0 +1,794 @@
+.TH slurmrestd "8" "Slurm REST Daemon" "Slurm 26.11" "Slurm REST Daemon"
+
+.SH "NAME"
+slurmrestd \- Interface to Slurm via REST API.
+.SH "SYNOPSIS"
+\fBslurmrestd\fR [\fIOPTIONS\fR...] <\fI[host]:port\fR|\fIunix:/path/to/socket\fR>...
+.SH "DESCRIPTION"
+\fBslurmrestd\fR is REST API interface for Slurm. It can be used in two modes:
+
+.PP
+\fBInetd Mode\fR: slurmrestd will read and write to STDIO. If STDIN is a socket
+file descriptor, then slurmrestd will detect this and use relevant
+functionality. This mode is designed to work with piped input, inetd, xinetd or
+systemd socket activation.
+
+.PP
+\fBListen Mode\fR: slurmrestd will open a listening socket on each requested
+\fIhost\fR:\fIport\fR pair or UNIX socket.
+
+.SH "OPTIONS"
+
+.TP
+\fB[https://][host]:port\fR
+Hostname and port to listen against. \fIhost\fR may be an IPv4/IPv6 IP or a
+resolvable hostname. Hostnames are only looked up at startup and do not change
+for the life of the process. \fIhost\fR is optional; if not provided, slurmrestd
+will listen on all network interfaces. \fIhttps://\fR is optional; if not
+provided, slurmrestd will automatically use TLS plugin to encrypt traffic when
+possible. If \fIhttps://\fR is specified; slurmrestd will require the configured
+TLS plugin to encrypt traffic.
+.IP
+
+.TP
+\fBunix:///path/to/socket\fR
+Listen on local UNIX socket. Must have permission to create socket in
+filesystem.
+.IP
+
+.TP
+\fB\-a <plugin>\fR[,plugin]...
+Comma\-delimited list of authentication plugins to load.
+By default all available authentication plugins will be loaded.
+.RS
+.TP
+\fBlist\fR
+Display a list of the possible plugins to load.
+.IP
+
+.TP
+\fBrest_auth/local\fR
+Allows authentication via UNIX sockets when \fBauth/munge\fR is active.
+.br
+\fBNOTE\fR: slurmrestd and client processes must run under the same UID or the
+client requests will be rejected.
+.IP
+
+.TP
+\fBrest_auth/jwt\fR
+Allows authentication via TCP and UNIX sockets when \fBAuthAltTypes=auth/jwt\fR
+is active. User must specify the following HTTP cookies with each request:
+.RS
+.TP
+\fBX-SLURM-USER-NAME\fR:<user name>
+.IP
+.TP
+\fBX-SLURM-USER-TOKEN\fR:<JSON Web Token>
+.RE
+.IP
+\fBNOTE\fR: Tokens are usually generated via calling "\fBscontrol token\fR".
+.RE
+.IP
+
+.TP
+\fB\-d <plugin>\fR[,plugin]...
+Comma\-delimited list of data_parser plugins, which will determine the
+output format. May include optional flags denoted by '+' symbol. By default all
+available data_parser plugins will be loaded without any optional flags.
+See also \fB-s\fR for OpenAPI plugins controlling the available content.
+.BR
+Defaults: all builtin supported data_parser plugins.
+.RS
+.TP
+\fBlist[+flags]\fR
+Display a list of the possible plugins to load.
+.IP
+
+.TP
+\fBlatest\fR
+Automatically replaced with latest plugin version. See relevant plugin for
+description and potential flags.
+.IP
+
+.TP
+\fB[data_parser/]v0.0.40[+fast]\fR
+Load data_parser/]v0.0.40 plugin to for formatting of data. Only compatible
+with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
+.RS
+.TP
+\fB+fast\fR
+Disable builtin warnings and other logic to strictly validate
+incoming requests. Should only ever be used in a production environment with
+very well tested clients and potentially malformatted requests will be accepted
+as given and no warnings will be generated about ignored or incorrect fields or
+values.
+.IP
+.RE
+.IP
+
+.TP
+\fB[data_parser/]v0.0.41[+fast][+prefer_refs]\fR
+Load data_parser/]v0.0.41 plugin to for formatting of data. Only compatible
+with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
+.RS
+.TP
+\fB+fast\fR
+Disable builtin warnings and other logic to strictly validate
+incoming requests. Should only ever be used in a production environment with
+very well tested clients and potentially malformatted requests will be accepted
+as given and no warnings will be generated about ignored or incorrect fields or
+values.
+.IP
+.TP
+\fB+prefer_refs\fR
+Prefer inline expansion of referenced schemas (via \fI$ref\fR) in generated
+OpenAPI specifications if the schema is only referenced once.
+.IP
+.RE
+.IP
+
+.TP
+\fB[data_parser/]v0.0.42[+fast][+minimize_refs][+inline_enums]\fR
+Load data_parser/]v0.0.42 plugin to for formatting of data. Only compatible
+with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
+.RS
+.TP
+\fB+fast\fR
+Disable builtin warnings and other logic to strictly validate
+incoming requests. Should only ever be used in a production environment with
+very well tested clients and potentially malformatted requests will be accepted
+as given and no warnings will be generated about ignored or incorrect fields or
+values.
+.IP
+.TP
+\fB+minimize_refs\fR
+Avoid inline expansion of referenced schemas (via \fI$ref\fR) in generated
+OpenAPI specifications if the schema is only referenced once.
+.IP
+.TP
+\fB+inline_enums\fR
+Avoid inline expansion of referenced schemas (via \fI$ref\fR) in generated
+OpenAPI specifications for enum arrays.
+.IP
+.RE
+.IP
+
+.TP
+\fB[data_parser/]v0.0.43[+fast][+minimize_refs]\fR
+Load data_parser/]v0.0.43 plugin to for formatting of data. Only compatible
+with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
+.RS
+.TP
+\fB+fast\fR
+Disable builtin warnings and other logic to strictly validate
+incoming requests. Should only ever be used in a production environment with
+very well tested clients and potentially malformatted requests will be accepted
+as given and no warnings will be generated about ignored or incorrect fields or
+values.
+.IP
+.TP
+\fB+minimize_refs\fR
+Avoid inline expansion of referenced schemas (via \fI$ref\fR) in generated
+OpenAPI specifications if the schema is only referenced once.
+.IP
+.RE
+.IP
+
+.TP
+\fB[data_parser/]v0.0.44[+fast][+minimize_refs]\fR
+Load data_parser/]v0.0.44 plugin to for formatting of data. Only compatible
+with \fBopenapi/slurmctld\fR, \fBopenapi/slurmdbd\fR, and \fBopenapi/util\fR
+content plugins.
+.RS
+.TP
+\fB+fast\fR
+Disable builtin warnings and other logic to strictly validate
+incoming requests. Should only ever be used in a production environment with
+very well tested clients and potentially malformatted requests will be accepted
+as given and no warnings will be generated about ignored or incorrect fields or
+values.
+.IP
+.TP
+\fB+minimize_refs\fR
+Avoid inline expansion of referenced schemas (via \fI$ref\fR) in generated
+OpenAPI specifications if the schema is only referenced once.
+.IP
+.RE
+.IP
+
+.RE
+.IP
+
+.TP
+\fB\-f <file>\fR
+Read Slurm configuration from the specified file. See \fBNOTES\fR below.
+.IP
+
+.TP
+\fB\-\-generate\-openapi\-spec\fR
+Dump JSON formatted OpenAPI specification to stdout and exit immediately.
+Loads minimal plugins required. All "content" fields will only be in JSON
+format even if the \fIserializer/yaml\fR plugin is present and loadable.
+Loading of \fBslurm.conf\fR(5) can be disabled by passing additional
+arguments \fB\-f /dev/null\fR or setting \fBSLURM_CONF\fR=/dev/null in the
+environment.
+.IP
+
+.TP
+\fB\-g <group id>\fR
+Change group id (and drop supplemental groups) before processing client
+request. This should be a unique group with no write access or special
+permissions. Do not set this to the group belonging to to SlurmUser or
+root or the daemon won't start with the default settings.
+.IP
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Help; print a brief summary of command options.
+.IP
+
+.TP
+\fB\-\-max\-connections <count>\fR
+Set the maximum number of connections to process at any one time. This is
+independent of the number of connections that can connect to slurmrestd at any
+one time. The kernel allows any number of connections to be pending for
+processing at any one time when SYN cookies are active.
+.RS
+.TP
+\fBCaution\fR:
+Each connection could cause one RPC to the controller daemons, leading to
+potential overloading of the controller. Each connection can also hold memory
+for the duration of the life of the connection. Having too many connections
+processing at once could use considerably more memory. Process limits
+(\fBulimit\fR(3)) may require adjustment when this value is increased.
+.TP
+Default: 124
+.RE
+.IP
+
+.TP
+\fB\-s <plugin>\fR[,plugin]...
+Comma\-delimited list of OpenAPI plugins to load, which will determine the
+available content. By default, OpenAPI plugins loaded will be
+\fIslurmctld,slurmdbd\fR when
+\fBAccountingStorageType\fR=\fIaccounting_storage/slurmdbd\fR is configured in
+\fBslurm.conf\fR(5) or \fIslurmctld\fR for any other configuration.
+See also \fB-d\fR for the data_parser plugins controlling the output format.
+.RS
+.TP
+\fBlist\fR
+Display a list of the possible plugins to load.
+.IP
+
+.TP
+\fB[openapi/]slurmctld\fR
+Provides 'slurm/' endpoints for the loaded data_parser plugins.
+.IP
+
+.TP
+\fB[openapi/]slurmdbd\fR
+Provides 'slurmdb/' endpoints for the loaded data_parser plugins. This plugin
+will fail if \fBaccounting_storage/slurmdbd\fR is not used in the cluster.
+.IP
+
+.TP
+\fB[openapi/]util\fR
+Provides 'util/' endpoints for the loaded data_parser plugins. Util is short for
+utility. It provides utilities available directly through slurmrestd.
+.IP
+.RE
+.IP
+
+.TP
+\fB\-t <THREAD COUNT>\fR
+Specify number of threads to use to process client connections.
+Ignored in inetd mode.
+.IP
+
+.TP
+\fB\-u <user id>\fR
+Change user id before processing client request. This should be a unique group
+with no write access or special permissions. Do not set this user to SlurmUser
+or root or the daemon won't start with the default settings.
+.IP
+
+.TP
+\fB\-v\fR
+Verbose operation. Multiple \fBv\fR's can be specified, with each '\fBv\fR'
+beyond the first increasing verbosity, up to 6 times (i.e. \-vvvvvv).
+Higher verbosity levels will have significant performance impact. See
+\fBSLURMRESTD_DEBUG\fR for description of logging targets.
+.IP
+
+.TP
+\fB\-V\fR
+Print version information and exit.
+.IP
+
+.SH "TLS"
+slurmrestd supports TLS encrypion via the TLS plugin interface. For a detailed
+description of TLS support in Slurm, see <https://slurm.schedmd.com/tls.html>.
+.PP
+slurmrestd supports TLS encryption for incoming HTTPS connections independently
+of how \fBTLSType\fR in \fBslurm.conf\fR(5) is configured. The configuration of
+\fBTLSParameters\fR in \fBslurm.conf\fR(5) is always applied. This allows the
+Slurm RPC layer to remain unencrypted via TLS while allowing slurmrestd to
+service HTTPS requests via TLS.
+.PP
+slurmrestd includes automatic detection of incoming TLS connections. If TLS
+plugin is fully configured and successfully loads at startup, then all new
+incoming connections will be fingerprinted for SSLv3 (per RFC#6101) and TLSv1.x
+(per RFC#8446) handshakes. Upon a matching fingerprint, each incoming
+connections will then be encrypted via the configured TLS plugin for the
+duration of the connection. Support for TLS is handled independently of if the
+connection is a [\fBunix\fR(2)] \fBsocket\fR(2) or \fBpipe(2)\fR (in INETD
+mode). Listening connections created with \fBhttps://\fR will be required to be
+encrypted via the TLS plugin. Any incoming connections to these listeners
+without TLS encryption will be closed immediately without sending an error
+response the client.
+.PP
+TLS support in slurmrestd is dependent on the requirements of the TLS plugin.
+slurmrestd will attempt to load the first available TLS plugin (except \fI
+tls/none\fR) automatically at startup. The requirements for each plugin are
+listed below:
+.TP
+\fBtls/s2n\fR
+The following files must be present and readable by the invoking user (before
+\fB\-u <user id>\fR is applied) at startup:
+.IP
+.RS
+.TP
+\fBrestd_cert_file.pem\fR
+TLS x509 server public certificate. Must be signed by CA trusted by clients.
+The certificate's \fICN\fR (common name) must match the hostname. slurmrestd
+ignores the host in client HTTP requests but most TLS clients will require they
+match.
+.sp 1
+Note: The certificate's file must be placed in the \fBautoconf(1)\fR
+installation directory variable sysconfdir which can be overridden via setting
+\fBTLSParameters\fR=\fBrestd_cert_file=\fR\fI/path/to/restd_cert_file.pem\fR in
+\fBslurm.conf\fR(5).
+.IP
+
+.TP
+\fBrestd_cert_key_file.pem\fR
+Private key for \fBrestd_cert_file.pem\fR. This file must \fBonly\fR be
+readable by the slurmrestd user.
+.sp 1
+Note: The certificate's file must be placed in the \fBautoconf(1)\fR
+installation directory variable sysconfdir which can be overridden via setting
+\fBTLSParameters\fR=\fBrestd_cert_key_file=\fR\fI/path/to/restd_cert_key.pem\fR
+in \fBslurm.conf\fR(5).
+.IP
+
+.RE
+.IP
+
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables can be used to override settings
+compiled into slurmrestd.
+
+.TP
+\fBABORT_ON_FATAL\fR
+When a fatal error is detected, use abort() instead of exit() to terminate the
+process. This allows backtraces to be captured without recompiling Slurm.
+.IP
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for slurmrestd to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.TP
+\fBSLURM_DEBUG\fR
+Set debug level explicitly. Valid values are 0\-9, or the same string values as
+the debug options such as SlurmctldDebug in slurm.conf(5). Increased if
+\fB\-v\fR passed as argument during invocation. Ignored if
+\fBSLURMRESTD_DEBUG\fR or \fBSLURMRESTD_DEBUG_STDERR\fR or
+\fBSLURMRESTD_DEBUG_SYSLOG\fR are set in environment. See
+\fBSLURMRESTD_DEBUG\fR for description of logging targets.
+.IP
+
+.TP
+\fBSLURMRESTD_JSON\fR or \fBSLURM_JSON\fR
+Control JSON serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output JSON as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR
+Output JSON in pretty format to make it more readable.
+.IP
+.RE
+
+.TP
+\fBSLURM_JWT\fR
+This variable must be set to use JWT token authentication.
+.IP
+
+.TP
+\fBSLURMRESTD_AUTH_TYPES\fR
+Set allowed authentication types. See \fB\-a\fR
+.IP
+
+.TP
+\fBSLURMRESTD_DEBUG\fR
+Set debug level explicitly. Valid values are 0\-9, or the same string values as
+the debug options such as SlurmctldDebug in slurm.conf(5). If a controlling
+TTY is detected, interactive mode will automatically activate to provide
+additional logging information to stderr. If a controlling TTY is not detected,
+then logs are sent to syslog. Increased if \fB\-v\fR passed as argument during
+invocation. Ignored if \fBSLURMRESTD_DEBUG_STDERR\fR or
+\fBSLURMRESTD_DEBUG_SYSLOG\fR are set in environment.
+.IP
+
+.TP
+\fBSLURMRESTD_DEBUG_STDERR\fR
+Set debug level explicitly for logging to STDERR. Valid values are 0\-9, or the
+same string values as the debug options such as SlurmctldDebug in
+slurm.conf(5). Increased if \fB\-v\fR passed as argument during invocation.
+.IP
+
+.TP
+\fBSLURMRESTD_DEBUG_SYSLOG\fR
+Set debug level explicitly for logging to syslog. Valid values are 0\-9, or the
+same string values as the debug options such as SlurmctldDebug in
+slurm.conf(5). Increased if \fB\-v\fR passed as argument during invocation.
+.IP
+
+.TP
+\fBSLURMRESTD_DATA_PARSER_PLUGINS\fR
+Comma\-delimited list of data_parser plugins to load. See \fB\-d\fR
+.IP
+
+.TP
+\fBSLURMRESTD_LISTEN\fR
+Comma\-delimited list of host:port pairs or unix sockets to listen on.
+.IP
+
+.TP
+\fBSLURMRESTD_MAX_CONNECTIONS\fR
+Set the maximum number of connections to process at any one time. See
+\fB\-\-max\-connections\fR
+.IP
+
+.TP
+\fBSLURMRESTD_OPENAPI_PLUGINS\fR
+Comma\-delimited list of OpenAPI plugins to load. See \fB\-s\fR
+.IP
+
+.TP
+\fBSLURMRESTD_RESPONSE_STATUS_CODES\fR
+Comma\-delimited list of OpenAPI method responses to generate in OpenAPI
+specification.
+.BR
+Default: 200,default
+.IP
+
+.TP
+\fBSLURMRESTD_SECURITY\fR
+Control slurmrestd security functionality using the following comma\-delimited
+values:
+.IP
+.RS
+.TP
+\fBbecome_user\fR
+Allows \fBslurmrestd\fR to be run as root in order to become the requesting
+user for all requests. When combined with \fBrest_auth/local\fB, when a user
+connects via a named UNIX socket, \fBslurmrestd\fR will setuid()/setgid() into
+that user/group and then complete all requests as the given user. This mode is
+only intended for inet mode as the user change is permanent for the life of the
+process. This mode is incompatible with \fBrest_auth/jwt\fR and it is suggested
+to start \fBslurmrestd\fR with "-a \fBrest_auth/local\fR" arguments.
+.IP
+
+.TP
+\fBdisable_unshare_files\fR
+Disables unsharing file descriptors with parent process.
+.IP
+
+.TP
+\fBdisable_unshare_sysv\fR
+Disables unsharing the SYSV namespace.
+.IP
+
+.TP
+\fBdisable_user_check\fR
+Disables check that slurmrestd is not running as root or SlurmUser, or with the
+root or SlurmUser's primary group. Disabling this check will allow slurmrestd
+to run as root or SlurmUser which will allow anyone who can communicate with
+this daemon to run anything as the root user on the cluster.
+.RE
+.IP
+
+.TP
+\fBSLURMRESTD_YAML\fR or \fBSLURM_YAML\fR
+Control YAML serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output YAML as compact as possible.
+.IP
+
+.TP
+\fBno_tag\fR
+Output YAML without datatype !!tags.
+.IP
+
+.TP
+\fBpretty\fR
+Output YAML in pretty format to make it more readable.
+.RE
+.IP
+
+.SH "SIGNALS"
+
+.TP 6
+\fBSIGINT\fR
+\fBslurmrestd\fR will shutdown cleanly.
+.IP
+
+.TP
+\fBSIGPIPE\fR
+This signal is explicitly ignored.
+.IP
+
+.TP
+\fBSIGPROF\fR
+Logs connection manager state when debug level is at least info.
+.IP
+
+.SH "NOTES"
+\fBSPANK\fR and \fBclifilter\fR plugins are not supported in \fBslurmrestd\fR
+due to their lack of thread safety. Active \fBSPANK\fR plugins and
+\fBJobSubmitPlugins\fR in \fBslurmctld\fR are independent of slurmrestd and can
+be used to enforce site policy on job submissions.
+
+.SH "EXAMPLES"
+
+.LP
+Generate OpenAPI schema without configuration
+.IP
+.nf
+$ slurmrestd -f /dev/null  --generate-openapi-spec -s slurmdbd,slurmctld -d v0.0.42 > openapi.json
+.fi
+
+.LP
+Start \fBslurmrestd\fR with a UNIX socket in listen mode:
+.IP
+.nf
+$ export SLURMRESTD=/var/spool/slurm/restd/rest
+$ slurmrestd -s slurmctld,slurmdbd -d v0.0.42 unix:$SLURMRESTD
+.fi
+
+.LP
+Verify connectivity with slurmctld with a ping, with \fBslurmrestd\fR
+running in listen mode:
+.IP
+.nf
+$ export $(scontrol token)
+$ curl --unix-socket "${SLURMRESTD}" -H "X-SLURM-USER-TOKEN:${SLURM_JWT}" 'http://ignored_with_unix_sockets/slurm/v0.0.42/ping' | jq '.pings'
+[
+  {
+    "hostname": "omicronpersei8",
+    "pinged": "UP",
+    "latency": 314,
+    "mode": "primary"
+  }
+]
+.fi
+
+.LP
+Verify connectivity with slurmdbd with a diag request, with \fBslurmrestd\fR
+running in listen mode:
+.IP
+.nf
+$ export $(scontrol token)
+$ curl --unix-socket "${SLURMRESTD}" -H "X-SLURM-USER-TOKEN:${SLURM_JWT}" 'http://ignored_with_unix_sockets/slurmdb/v0.0.42/diag' | jq '.pings'
+1722009793
+.fi
+
+.LP
+Query the status of a node with \fBslurmrestd\fR running in INETD mode:
+.IP
+.nf
+$ echo -e "GET http://ignored/slurm/v0.0.42/node/host1 HTTP/1.1\\r\\n" | slurmrestd
+HTTP/1.1 200 OK
+Content-Length: 3174
+Content-Type: application/json
+
+{
+  "nodes": [
+    {
+      "architecture": "x86_64",
+      "burstbuffer_network_address": "",
+      "boards": 1,
+      "boot_time": {
+        "set": true,
+        "infinite": false,
+	"number": 1720820315
+      },
+      "cluster_name": "",
+      "cores": 16,
+      "specialized_cores": 0,
+      "cpu_binding": 0,
+      "cpu_load": 446,
+      "free_mem": {
+        "set": true,
+        "infinite": false,
+	"number": 39871
+      },
+      "cpus": 32,
+      "effective_cpus": 32,
+      "specialized_cpus": "",
+      "energy": {
+        "average_watts": 0,
+        "base_consumed_energy": 0,
+        "consumed_energy": 0,
+	"current_watts": {
+          "set": false,
+          "infinite": false,
+          "number": 0
+        },
+	"previous_consumed_energy": 0,
+	"last_collected": 0
+      },
+      "external_sensors": {},
+      "extra": "",
+      "power": {},
+      "features": [],
+      "active_features": [],
+      "gpu_spec": "",
+      "gres": "gpu:fake1:1(S:0),gpu:fake2:1(S:0)",
+      "gres_drained": "N\/A",
+      "gres_used": "gpu:fake1:0(IDX:N\/A),gpu:fake2:0(IDX:N\/A)",
+      "instance_id": "",
+      "instance_type": "",
+      "last_busy": {
+	"set": true,
+	"infinite": false,
+	"number": 1722009794
+      },
+      "mcs_label": "",
+      "specialized_memory": 0,
+      "name": "host1",
+      "next_state_after_reboot": [
+	"INVALID"
+      ],
+      "address": "localhost",
+      "hostname": "omicronpersei8",
+      "state": [
+        "IDLE"
+      ],
+      "operating_system": "Linux 6.5.0-44-generic #44-Ubuntu SMP PREEMPT_DYNAMIC Fri Jun  7 15:10:09 UTC 2024",
+      "owner": "",
+      "partitions": [
+        "debug"
+      ],
+      "port": 5015,
+      "real_memory": 127927,
+      "res_cores_per_gpu": 0,
+      "comment": "",
+      "reason": "",
+      "reason_changed_at": {
+	"set": true,
+	"infinite": false,
+	"number": 0
+      },
+      "reason_set_by_user": "",
+      "resume_after": {
+        "set": true,
+        "infinite": false,
+        "number": 0
+      },
+      "reservation": "",
+      "alloc_memory": 0,
+      "alloc_cpus": 0,
+      "alloc_idle_cpus": 32,
+      "tres_used": "",
+      "tres_weighted": 0.0,
+      "slurmd_start_time": {
+	"set": true,
+	"infinite": false,
+	"number": 1722009794
+      },
+      "sockets": 1,
+      "threads": 2,
+      "temporary_disk": 0,
+      "weight": 1,
+      "tres": "cpu=32,mem=127927M,billing=32,gres\/gpu=2",
+      "version": "24.11.0-0rc1"
+    }
+  ],
+  "last_update": {
+    "set": true,
+    "infinite": false,
+    "number": 1722010273
+  },
+  "meta": {
+<<< TRIMMED >>>
+  },
+  "errors": [],
+  "warnings": []
+}
+.fi
+
+.LP
+Submit a job to \fBslurmrestd\fR with it running in listen mode:
+.IP
+.nf
+$ jq . example_job.json
+{
+  "job": {
+    "script": "#!/bin/bash\\nsleep 30",
+    "name": "ExampleJob",
+    "account": "sub1",
+    "environment": [
+      "PATH=/usr/bin/:/bin/"
+    ],
+    "current_working_directory": "/tmp/",
+    "tasks": 12,
+    "memory_per_cpu": 100,
+    "time_limit": 240
+  }
+}
+
+$ curl -H "Content-Type: application/json" --data-binary @example_job.json --unix-socket "${SLURMRESTD}" 'http://ignored/slurm/v0.0.42/job/submit'
+{
+  "job_id": 9,
+  "step_id": "batch",
+  "job_submit_user_msg": "",
+  "meta": {
+<<< TRIMMED >>>
+  },
+  "errors": [],
+  "warnings": []
+}
+
+$ curl -H "Content-Type: application/json" --data-binary @example_job.json --unix-socket "${SLURMRESTD}" 'http://ignored/slurm/v0.0.42/job/submit'
+{
+  "job_id": 7,
+  "step_id": "batch",
+  "job_submit_user_msg": "",
+  "meta": {
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "description": "Expected OpenAPI type=array (Slurm type=list) but got OpenAPI type=object (Slurm type=dictionary): {\"PATH\":\"\\\/bin\"}",
+      "source": "#\/job\/environment\/"
+    }
+  ]
+}
+.fi
+
+.SH "COPYING"
+Copyright (C) 2019\-2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5), \fBslurmctld\fR(8), \fBslurmdbd\fR(8)

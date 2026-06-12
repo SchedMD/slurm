@@ -1,0 +1,14 @@
+debian/tmp/lib/security/pam_slurm_adopt.a
+debian/tmp/lib/security/pam_slurm_adopt.la
+debian/tmp/usr/lib/*/libnss_slurm.a
+debian/tmp/usr/lib/*/libnss_slurm.la
+debian/tmp/usr/lib/*/libpmi.a
+debian/tmp/usr/lib/*/libpmi.la
+debian/tmp/usr/lib/*/libpmi2.a
+debian/tmp/usr/lib/*/libpmi2.la
+debian/tmp/usr/include/slurm/pmi2.h
+debian/tmp/usr/include/pmi2.h
+debian/tmp/usr/lib/*/slurm/job_submit_pbs.a
+debian/tmp/usr/lib/*/slurm/job_submit_pbs.la
+debian/tmp/usr/lib/*/slurm/spank_pbs.a
+debian/tmp/usr/lib/*/slurm/spank_pbs.la

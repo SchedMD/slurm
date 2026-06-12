@@ -1,0 +1,583 @@
+.TH SPANK "8" "Slurm Component" "Slurm 26.11" "Slurm Component"
+
+.SH "NAME"
+\fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
+
+.SH "DESCRIPTION"
+This manual briefly describes the capabilities of the Slurm Plug\-in
+Architecture for Node and job Kontrol (\fBSPANK\fR) as well as the \fBSPANK\fR
+configuration file: (By default: \fBplugstack.conf\fP.)
+.LP
+\fBSPANK\fR provides a very generic interface for stackable plug\-ins
+which may be used to dynamically modify the job launch code in
+Slurm. \fBSPANK\fR plugins may be built without access to Slurm source
+code. They need only be compiled against Slurm's \fBspank.h\fR header file,
+added to the \fBSPANK\fR config file \fBplugstack.conf\fR,
+and they will be loaded at runtime during the next job launch. Thus,
+the \fBSPANK\fR infrastructure provides administrators and other developers
+a low cost, low effort ability to dynamically modify the runtime
+behavior of Slurm job launch.
+.LP
+\fBNOTE\fR: All \fBSPANK\fR plugins should be recompiled when upgrading Slurm
+to a new major release. The \fBSPANK\fR API is not guaranteed to be ABI
+compatible between major releases. Any \fBSPANK\fR plugin linking to any of the
+Slurm libraries should be carefully checked as the Slurm APIs and headers
+can change between major releases.
+.LP
+
+.SH "SPANK PLUGINS"
+\fBSPANK\fR plugins are loaded in up to five separate contexts during a
+\fBSlurm\fR job. Briefly, the five contexts are:
+
+.TP 8
+\fBlocal\fR
+In \fBlocal\fR context, the plugin is loaded by \fBsrun\fR. (i.e. the "local"
+part of a parallel job).
+.IP
+
+.TP
+\fBremote\fR
+In \fBremote\fR context, the plugin is loaded by \fBslurmstepd\fR. (i.e. the "remote"
+part of a parallel job).
+.IP
+
+.TP
+\fBallocator\fR
+In \fBallocator\fR context, the plugin is loaded in one of the job allocation
+utilities \fBsalloc\fR, \fBsbatch\fR or \fBscrontab\fR.
+.IP
+
+.TP
+\fBslurmd\fR
+In \fBslurmd\fR context, the plugin is loaded in the
+\fBslurmd\fR daemon itself. \fBNOTE\fR: Plugins loaded in slurmd context
+persist for the entire time slurmd is running, so if configuration is
+changed or plugins are updated, slurmd must be restarted for the changes
+to take effect.
+.IP
+
+.TP
+\fBjob_script\fR
+In the \fBjob_script\fR context, plugins are loaded in the context of the
+job prolog or epilog. \fBNOTE\fR: Plugins are loaded in \fBjob_script\fR
+context on each run on the job prolog or epilog, in a separate address
+space from plugins in \fBslurmd\fR context. This means there is no
+state shared between this context and other contexts, or even between
+one call to \fBslurm_spank_job_prolog\fR or \fBslurm_spank_job_epilog\fR
+and subsequent calls.
+.IP
+.LP
+In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
+\fBlocal_user_init\fR functions are called. In allocator context, only the
+\fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
+Similarly, in slurmd context, only the \fBinit\fR and \fBslurmd_exit\fR
+callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
+and \fBjob_epilog\fR callbacks are used.
+Plugins may query the context in which they are running with the
+\fBspank_context\fR and \fBspank_remote\fR functions defined in
+\fBspank.h\fR.
+.LP
+\fBSPANK\fR plugins may be called from multiple points during the Slurm job
+launch. A plugin may define the following functions:
+
+.TP 2
+\fBslurm_spank_init\fR
+Called just after plugins are loaded. In remote context, this is just
+after job step is initialized. This function is called before any plugin
+option processing.
+.IP
+
+.TP
+\fBslurm_spank_job_prolog\fR
+Called at the same time as the job prolog. If this function returns a
+non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
+\fBplugstack.conf\fR, the node that this is run on will be drained.
+.IP
+
+.TP
+\fBslurm_spank_init_post_opt\fR
+Called at the same point as \fBslurm_spank_init\fR, but after all
+user options to the plugin have been processed. The reason that the
+\fBinit\fR and \fBinit_post_opt\fR callbacks are separated is so that
+plugins can process system\-wide options specified in plugstack.conf in
+the \fBinit\fR callback, then process user options, and finally take some
+action in \fBslurm_spank_init_post_opt\fR if necessary.
+In the case of a heterogeneous job, \fBslurm_spank_init\fR is invoked once
+per job component.
+.IP
+
+.TP
+\fBslurm_spank_local_user_init\fR
+Called in local (\fBsrun\fR) context only after all
+options have been processed.
+This is called after the job ID and step IDs are available.
+This happens in \fBsrun\fR after the allocation is made, but before
+tasks are launched.
+.IP
+
+.TP
+\fBslurm_spank_user_init\fR
+Called after privileges are temporarily dropped. (remote context only)
+.IP
+
+.TP
+\fBslurm_spank_task_init_privileged\fR
+Called for each task just after fork, but before all elevated privileges
+are dropped. This can run in parallel with \fBslurm_spank_task_post_fork\fR.
+(remote context only)
+.IP
+
+.TP
+\fBslurm_spank_task_init\fR
+Called for each task just before execve (2). If you are restricting memory
+with cgroups, memory allocated here will be in the job's cgroup. (remote
+context only)
+.IP
+
+.TP
+\fBslurm_spank_task_post_fork\fR
+Called for each task from parent process after fork (2) is complete.
+Due to the fact that \fBslurmd\fR does not exec any tasks until all
+tasks have completed fork (2), this call is guaranteed to run before
+the user task is executed. This can run in parallel with
+\fBslurm_spank_task_init_privileged\fR. (remote context only)
+.IP
+
+.TP
+\fBslurm_spank_task_exit\fR
+Called for each task as its exit status is collected by Slurm.
+(remote context only)
+.IP
+
+.TP
+\fBslurm_spank_exit\fR
+Called once just before \fBslurmstepd\fR exits in remote context.
+In local context, called before \fBsrun\fR exits.
+.IP
+
+.TP
+\fBslurm_spank_job_epilog\fR
+Called at the same time as the job epilog. If this function returns a
+non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
+\fBplugstack.conf\fR, the node that this is run on will be drained.
+.IP
+
+.TP
+\fBslurm_spank_slurmd_exit\fR
+Called in slurmd when the daemon is shut down.
+.IP
+
+.LP
+All of these functions have the same prototype, for example:
+.nf
+   int \fBslurm_spank_init\fR (spank_t spank, int ac, char *argv[])
+.fi
+
+.LP
+Where \fBspank\fR is the \fBSPANK\fR handle which must be passed back to
+Slurm when the plugin calls functions like \fBspank_get_item\fR and
+\fBspank_getenv\fR. Configured arguments (See \fBCONFIGURATION\fR
+below) are passed in the argument vector \fBargv\fR with argument
+count \fBac\fR.
+.LP
+A plugin may also define the following variables that will be used by Slurm:
+
+.TP
+\fBslurm_spank_init_failure_mode\fR
+When a slurm_spank_init call fails, change how that failure is handled by Slurm.
+Recognized values are:
+.IP
+.RS
+.TP
+\fBESPANK_NODE_FAILURE\fR
+Slurm considers the node to be at fault and marks it as drained. The job may be
+requeued. This is the default.
+.IP
+
+.TP
+\fBESPANK_JOB_FAILURE\fR
+Slurm considers the job to be at fault and marks it as failed (not to be
+requeued). The node will not be drained.
+.RE
+.IP
+
+.LP
+\fBSPANK\fR plugins can query the current list of supported slurm_spank
+symbols to determine if the current version supports a given plugin hook.
+This may be useful because the list of plugin symbols may grow in the
+future. The query is done using the \fBspank_symbol_supported\fR function,
+which has the following prototype:
+.nf
+    int \fBspank_symbol_supported\fR (const char *sym);
+.fi
+
+.LP
+The return value is 1 if the symbol is supported, 0 if not.
+.LP
+\fBSPANK\fR plugins do not have direct access to internally defined Slurm
+data structures. Instead, information about the currently executing
+job is obtained via the \fBspank_get_item\fR function call.
+.nf
+  spank_err_t \fBspank_get_item\fR (spank_t spank, spank_item_t item, ...);
+.fi
+
+The \fBspank_get_item\fR call must be passed the current \fBSPANK\fR
+handle as well as the item requested, which is defined by the
+passed \fBspank_item_t\fR. A variable number of pointer arguments are also
+passed, depending on which item was requested by the plugin. A
+list of the valid values for \fBitem\fR is kept in the \fBspank.h\fR header
+file. Some examples are:
+
+.TP 2
+\fBS_JOB_UID\fR
+User id for running job. (uid_t *) is third arg of \fBspank_get_item\fR
+.IP
+
+.TP
+\fBS_JOB_STEPID\fR
+Job step id for running job. (uint32_t *) is third arg of \fBspank_get_item\fR.
+.IP
+
+.TP
+\fBS_TASK_EXIT_STATUS\fR
+Exit status for exited task. Only valid from \fBslurm_spank_task_exit\fR.
+(int *) is third arg of \fBspank_get_item\fR.
+.IP
+
+.TP
+\fBS_JOB_ARGV\fR
+Complete job command line. Third and fourth args to \fBspank_get_item\fR
+are (int *, char ***).
+.IP
+
+.LP
+See \fBspank.h\fR for more details.
+.LP
+\fBSPANK\fR functions in the \fBlocal\fB and \fBallocator\fR environment should
+use the \fBgetenv\fR, \fBsetenv\fR, and \fBunsetenv\fR functions to view and
+modify the job's environment.
+\fBSPANK\fR functions in the \fBremote\fR environment should use the
+\fBspank_getenv\fR, \fBspank_setenv\fR, and \fBspank_unsetenv\fR functions to
+view and modify the job's environment. \fBspank_getenv\fR
+searches the job's environment for the environment variable
+\fIvar\fR and copies the current value into a buffer \fIbuf\fR
+of length \fIlen\fR.  \fBspank_setenv\fR allows a \fBSPANK\fR
+plugin to set or overwrite a variable in the job's environment,
+and \fBspank_unsetenv\fR unsets an environment variable in
+the job's environment. The prototypes are:
+.nf
+ spank_err_t \fBspank_getenv\fR (spank_t spank, const char *var,
+		           char *buf, int len);
+ spank_err_t \fBspank_setenv\fR (spank_t spank, const char *var,
+		           const char *val, int overwrite);
+ spank_err_t \fBspank_unsetenv\fR (spank_t spank, const char *var);
+.fi
+
+.LP
+These are only necessary in remote context since modifications of
+the standard process environment using \fBsetenv\fR (3), \fBgetenv\fR (3),
+and \fBunsetenv\fR (3) may be used in local context.
+.LP
+Functions are also available from within the \fBSPANK\fR plugins to
+establish environment variables to be exported to the Slurm
+\fBPrologSlurmctld\fR, \fBProlog\fR, \fBEpilog\fR and \fBEpilogSlurmctld\fR
+programs (the so\-called \fBjob control\fR environment).
+The name of environment variables established by these calls will be prepended
+with the string \fISPANK_\fR in order to avoid any security implications
+of arbitrary environment variable control. (After all, the job control
+scripts do run as root or the Slurm user.).
+.LP
+These functions are available from \fBlocal\fR context only.
+.nf
+  spank_err_t \fBspank_job_control_getenv\fR(spank_t spank, const char *var,
+		             char *buf, int len);
+  spank_err_t \fBspank_job_control_setenv\fR(spank_t spank, const char *var,
+		             const char *val, int overwrite);
+  spank_err_t \fBspank_job_control_unsetenv\fR(spank_t spank, const char *var);
+.fi
+
+.LP
+See \fBspank.h\fR for more information.
+.LP
+Many of the described \fBSPANK\fR functions available to plugins return
+errors via the \fBspank_err_t\fR error type. On success, the return value
+will be set to \fBESPANK_SUCCESS\fR, while on failure, the return value
+will be set to one of many error values defined in \fBspank.h\fR. The
+\fBSPANK\fR interface provides a simple function
+.nf
+  const char * \fBspank_strerror\fR(spank_err_t err);
+.fi
+which may be used to translate a \fBspank_err_t\fR value into its
+string representation.
+
+.LP
+The \fBslurm_spank_log\fR function can be used to print messages back to the
+user at an error level. This is to keep users from having to rely on the
+\fBslurm_error\fR function, which can be confusing because it prepends
+"\fBerror:\fR" to every message.
+
+.SH "SPANK OPTIONS"
+.LP
+SPANK plugins also have an interface through which they may define
+and implement extra job options. These options are made available to
+the user through Slurm commands such as \fBsrun\fR(1), \fBsalloc\fR(1),
+and \fBsbatch\fR(1). If the option is specified by the user, its value is
+forwarded and registered with the plugin in slurmd when the job is run.
+In this way, \fBSPANK\fR plugins may dynamically provide new options and
+functionality to Slurm.
+.LP
+Each option registered by a plugin to Slurm takes the form of
+a \fBstruct spank_option\fR which is declared in \fBspank.h\fR as
+.nf
+   struct spank_option {
+      char *         name;
+      char *         arginfo;
+      char *         usage;
+      int            has_arg;
+      int            val;
+      spank_opt_cb_f cb;
+   };
+.fi
+
+Where
+
+.TP
+.I name
+is the name of the option. Its length is limited to \fBSPANK_OPTION_MAXLEN\fR
+defined in \fBspank.h\fR.
+.IP
+
+.TP
+.I arginfo
+is a description of the argument to the option, if the option does take
+an argument.
+.IP
+
+.TP
+.I usage
+is a short description of the option suitable for \-\-help output.
+.IP
+
+.TP
+.I has_arg
+0 if option takes no argument, 1 if option takes an argument, and
+2 if the option takes an optional argument. (See \fBgetopt_long\fR (3)).
+.IP
+
+.TP
+.I val
+A plugin\-local value to return to the option callback function.
+.IP
+
+.TP
+.I cb
+A callback function that is invoked when the plugin option is
+registered with Slurm. \fBspank_opt_cb_f\fR is typedef'd in
+\fBspank.h\fR as
+.IP
+.nf
+  typedef int (*spank_opt_cb_f) (int val, const char *optarg,
+		                 int remote);
+.fi
+Where \fIval\fR is the value of the \fIval\fR field in the \fBspank_option\fR
+struct, \fIoptarg\fR is the supplied argument if applicable, and \fIremote\fR
+is 0 if the function is being called from the "local" host (e.g. host where
+\fBsrun\fR or \fBsbatch/salloc\fR are invoked) or 1 from the "remote" host
+(host where slurmd/slurmstepd run) but only executed by \fBslurmstepd\fR
+(remote context) if the option was registered for such context.
+.LP
+Plugin options may be registered with Slurm using
+the \fBspank_option_register\fR function. This function is only valid
+when called from the plugin's \fBslurm_spank_init\fR handler, and
+registers one option at a time. The prototype is
+.nf
+   spank_err_t spank_option_register (spank_t sp,
+		   struct spank_option *opt);
+.fi
+This function will return \fBESPANK_SUCCESS\fR on successful registration
+of an option, or \fBESPANK_BAD_ARG\fR for errors including invalid spank_t
+handle, or when the function is not called from the \fBslurm_spank_init\fR
+function. All options need to be registered from all contexts in which
+they will be used. For instance, if an option is only used in local (srun)
+and remote (slurmd) contexts, then \fBspank_option_register\fR
+should only be called from within those contexts. For example:
+.nf
+   if (spank_context() != S_CTX_ALLOCATOR)
+      spank_option_register (sp, opt);
+.fi
+If, however, the option is used in all contexts, the \fBspank_option_register\fR
+needs to be called everywhere.
+.LP
+In addition to \fBspank_option_register\fR, plugins may also export options
+to Slurm by defining a table of \fBstruct spank_option\fR with the
+symbol name \fBspank_options\fR. This method, however, is not supported
+for use with \fBsbatch\fR and \fBsalloc\fR (allocator context), thus
+the use of \fBspank_option_register\fR is preferred. When using the
+\fBspank_options\fR table, the final element in the array must be
+filled with zeros. A \fBSPANK_OPTIONS_TABLE_END\fR macro is provided
+in \fBspank.h\fR for this purpose.
+.LP
+When an option is provided by the user on the local side, either by command line
+options or by environment variables, \fBSlurm\fR will immediately invoke the
+option's callback with \fIremote\fR=0. This is meant for the plugin to do local
+sanity checking of the option before the value is sent to the remote side during
+job launch. If the argument the user specified is invalid, the plugin should
+issue an error and issue a non\-zero return code from the callback. The plugin
+should be able to handle cases where the spank option is set multiple times
+through environment variables and command line options. Environment variables
+are processed before command line options.
+.LP
+On the remote side, options and their arguments are registered just
+after \fBSPANK\fR plugins are loaded and before the \fBspank_init\fR
+handler is called. This allows plugins to modify behavior of all plugin
+functionality based on the value of user\-provided options.
+.LP
+As an alternative to use of an option callback and global variable,
+plugins can use the \fBspank_option_getopt\fR option to check for
+supplied options after option processing. This function has the prototype:
+.nf
+   spank_err_t spank_option_getopt(spank_t sp,
+       struct spank_option *opt, char **optargp);
+.fi
+This function returns \fBESPANK_SUCCESS\fR if the option defined in the
+struct spank_option \fIopt\fR has been used by the user. If \fIoptargp\fR
+is non\-NULL then it is set to any option argument passed (if the option
+takes an argument). The use of this method is \fIrequired\fR to process
+options in \fBjob_script\fR context (\fBslurm_spank_job_prolog\fR and
+\fBslurm_spank_job_epilog\fR). This function is valid in the following contexts:
+slurm_spank_job_prolog, slurm_spank_local_user_init, slurm_spank_user_init,
+slurm_spank_task_init_privileged, slurm_spank_task_init, slurm_spank_task_exit,
+and slurm_spank_job_epilog.
+
+.SH "CONFIGURATION"
+.LP
+The default \fBSPANK\fR plug\-in stack configuration file is
+\fBplugstack.conf\fR in the same directory as \fBslurm.conf\fR(5),
+though this may be changed via the Slurm config parameter
+\fIPlugStackConfig\fR. Normally the \fBplugstack.conf\fR file
+should be identical on all nodes of the cluster.
+The config file lists \fBSPANK\fR plugins,
+one per line, along with whether the plugin is \fIrequired\fR or
+\fIoptional\fR, and any global arguments that are to be passed to
+the plugin for runtime configuration. Comments are preceded with '#'
+and extend to the end of the line. If the configuration file
+is missing or empty, it will simply be ignored.
+.LP
+\fBNOTE\fR: The \fBSPANK\fR plugins need to be installed on the machines that
+execute slurmd (compute nodes) as well as on the machines that execute job
+allocation utilities such as salloc, sbatch, etc (login nodes).
+.LP
+The format of each non\-comment line in the configuration file is:
+\fB
+.nf
+  required/optional   plugin   arguments
+.fi
+\fR For example:
+.nf
+  optional /usr/lib/slurm/test.so
+.fi
+Tells \fBslurmd\fR to load the plugin \fBtest.so\fR passing no arguments.
+If a \fBSPANK\fR plugin is \fIrequired\fR, then failure of any of the
+plugin's functions will cause \fBslurmd\fR, or the job allocator command to
+terminate the job, while \fIoptional\fR plugins only cause a warning.
+.LP
+If a fully\-qualified path is not specified for a plugin, then the
+currently configured \fIPluginDir\fR in \fBslurm.conf\fR(5) is searched.
+.LP
+\fBSPANK\fR plugins are stackable, meaning that more than one plugin may
+be placed into the config file. The plugins will simply be called
+in order, one after the other, and appropriate action taken on
+failure given that state of the plugin's \fIoptional\fR flag.
+.LP
+Additional config files or directories of config files may be included
+in \fBplugstack.conf\fR with the \fBinclude\fR keyword. The \fBinclude\fR
+keyword must appear on its own line, and takes a glob as its parameter,
+so multiple files may be included from one \fBinclude\fR line. For
+example, the following syntax will load all config files in the
+/etc/slurm/plugstack.conf.d directory, in local collation order:
+.nf
+  include /etc/slurm/plugstack.conf.d/*
+.fi
+which might be considered a more flexible method for building up
+a spank plugin stack.
+.LP
+The \fBSPANK\fR config file is re\-read on each job launch, so editing
+the config file will not affect running jobs. However care should
+be taken so that a partially edited config file is not read by a
+launching job.
+
+.SH "Errors"
+When SPANK plugin results in a non-zero result, the following changes will result:
+
+.TS
+expand, allbox, tab (@);
+l l c c c c
+l l c c c c.
+Command@Function                         @Context   @Exitcode @Drains Node @Fails job
+_
+srun   @slurm_spank_init                 @local     @1        @no          @yes
+srun   @slurm_spank_init_post_opt        @local     @1        @no          @yes
+srun   @slurm_spank_local_user_init      @local     @1        @no          @yes
+srun   @slurm_spank_init                 @remote    @1        @no          @no
+srun   @slurm_spank_user_init            @remote    @0        @no          @no
+srun   @slurm_spank_task_init_privileged @remote    @1        @no          @yes
+srun   @slurm_spank_task_post_fork       @remote    @0        @no          @no
+srun   @slurm_spank_task_init            @remote    @1        @no          @yes
+srun   @slurm_spank_task_exit            @remote    @0        @no          @no
+srun   @slurm_spank_exit                 @local     @0        @no          @yes
+_
+salloc @slurm_spank_init                 @allocator @1        @no          @yes
+salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+salloc @slurm_spank_init                 @remote    @1        @no          @no
+salloc @slurm_spank_user_init            @remote    @1        @no          @yes
+salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
+salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
+salloc @slurm_spank_task_init            @remote    @1        @no          @yes
+salloc @slurm_spank_task_exit            @remote    @0        @no          @no
+salloc @slurm_spank_exit                 @allocator @0        @no          @yes
+_
+sbatch @slurm_spank_init                 @allocator @1        @no          @yes
+sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+sbatch @slurm_spank_init                 @remote    @1        @yes         @no
+sbatch @slurm_spank_user_init            @remote    @1        @yes         @yes
+sbatch @slurm_spank_task_init_privileged @remote    @1        @no          @yes
+sbatch @slurm_spank_task_post_fork       @remote    @1        @yes         @yes
+sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
+sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
+sbatch @slurm_spank_exit                 @allocator @0        @no          @no
+_
+scrontab @slurm_spank_init               @allocator @1        @no          @no
+scrontab @slurm_spank_exit               @allocator @0        @no          @no
+.TE
+
+\fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
+timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
+failure.
+
+.SH "COPYING"
+Portions copyright (C) 2010\-2022 SchedMD LLC.
+Copyright (C) 2006 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+.SH "FILES"
+\fB/etc/slurm/slurm.conf\fR \- Slurm configuration file.
+.br
+\fB/etc/slurm/plugstack.conf\fR \- SPANK configuration file.
+.br
+\fB/usr/include/slurm/spank.h\fR \- SPANK header file.
+.SH "SEE ALSO"
+.LP
+\fBsrun\fR(1), \fBslurm.conf\fR(5)

@@ -1,0 +1,163 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test3.11
+#	   Several cases for core based reservations
+#          Plugin select/cons_tres needed
+#
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_8 {} {
+	global user_name
+	global file_in bin_sleep sbatch number scontrol
+	global re_word_str scancel
+	global cluster_cpus def_partition
+
+	set res_name "resv3.11.8"
+
+	log_info "+++++ STARTING TEST 8 +++++"
+
+	# Make the job script
+	make_bash_script $file_in "$bin_sleep 100"
+
+	# Make a reservation, just to get node size information
+	set ret_code [create_res $res_name "StartTime=now Duration=1 NodeCnt=1 User=$user_name"]
+	if {$ret_code != 0} {
+		fail "Unable to create a valid reservation"
+	}
+	set host_name ""
+	spawn $scontrol show res $res_name
+	expect {
+		-re "Nodes=($re_word_str)" {
+			set host_name $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			delete_res $res_name
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		fail "Unable to delete reservation ($res_name)"
+	}
+	if {$host_name eq ""} {
+		fail "Failed to get host name"
+	}
+
+	lassign [get_node_cpus $host_name] cpu_tot threads_per_core
+
+	set boards  1
+	set sockets 1
+	set cores_per_socket 1
+	spawn $scontrol show node $host_name
+	expect {
+		-re " CoresPerSocket=($number)" {
+			set cores_per_socket $expect_out(1,string)
+			exp_continue
+		}
+		-re " Sockets=($number)" {
+			set sockets $expect_out(1,string)
+			exp_continue
+		}
+		-re " Boards=($number)" {
+			set boards $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	set cores_per_node [ expr $boards * $sockets * $cores_per_socket ]
+	set core_res_num   [ expr $cores_per_node / 2 ]
+	set cpu_res_num    [ expr $cpu_tot / 2 ]
+
+	# (First test) Submit the batch job: a simple job using half the CPUs on the selected node
+	set job_id 0
+	spawn $sbatch -w $host_name --time=10:00 --ntasks-per-node=$cpu_res_num --output=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			cancel_job $job_id
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		fail "Batch submit failure"
+	}
+
+	if {[wait_for_job $job_id "RUNNING"] != 0} {
+		cancel_job $job_id
+		fail "Job failed to start"
+	}
+	log_debug "Job is running as expected"
+
+	# Make the reservation using free cores in a node
+	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
+	subtest {$ret_code == 0} "A reservation using the free cores in a node should succeed"
+
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		cancel_job $job_id
+		fail "Unable to delete reservation ($res_name)"
+	}
+
+	set core_res_num  [expr $core_res_num + 1]
+	# Make the reservation using more cores then free in a node
+	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
+	if {! [
+		subtest {$ret_code != 0} "A reservation using more cores than free in a node should fail"
+	] } {
+		delete_res $res_name
+	}
+
+	# Make the reservation using more cores than free in a node (now)
+	# but those cores being free at reservation start time
+	set ret_code [create_res $res_name "StartTime=now+3600 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
+	subtest {$ret_code == 0} "A reservation using more cores than currently free but free at reservation start time should succeed"
+
+	# Make the reservation using more cores than free at reservation start time
+	set ret_code [create_res $res_name "StartTime=now+300 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
+	subtest {$ret_code != 0} "A reservation using more cores than free at reservation start time should fail"
+
+	delete_res $res_name
+	cancel_job $job_id
+}

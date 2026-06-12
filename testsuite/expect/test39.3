@@ -1,0 +1,120 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test full set of srun --gpu options and scontrol show step.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+
+if {![check_config_select "cons_tres"]} {
+    skip "This test is only compatible with select/cons_tres"
+}
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+if {$nb_nodes > 1} {
+	set nb_nodes 2
+}
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 1} {
+	skip "This test requires 1 or more GPUs on $nb_nodes nodes of the default partition"
+}
+
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+
+log_debug "GPUs per node count is $gpu_cnt"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+
+if {$gpu_cnt > $cpus_per_node} {
+	set gpu_cnt $cpus_per_node
+}
+
+set cpus_per_gpu 1
+set gpu_bind "closest"
+set gpu_freq "medium"
+set tot_gpus $gpu_cnt
+if {$nb_nodes > 1} {
+	incr tot_gpus $gpu_cnt
+}
+set gpus_per_node $gpu_cnt
+if {$gpus_per_node > 1 && [expr $gpus_per_node % 2] == 0 && \
+    ($sockets_per_node > 1 || $cpus_per_socket > 1)} {
+	set ntasks [expr $nb_nodes * 2]
+} else {
+	set ntasks $nb_nodes
+}
+set gpus_per_task [expr $tot_gpus / $ntasks]
+set mem_per_gpu 10
+set tot_cpus [expr $tot_gpus * $cpus_per_gpu]
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$scontrol show step \$SLURM_JOB_ID.\$SLURM_STEP_ID
+exit 0"
+
+
+#
+# Verify if incorrect map_gpu, mask_gpu values are rejected
+#
+set output [run_command_output -xfail "$srun --gpu-bind=verbose,mask_gpu:NaN hostname"]
+subtest {[regexp "srun: error: Failed to validate NaN, offending character is N" $output]} "The command should fail because of invalid argument"
+
+set output [run_command_output -xfail "$srun --gpu-bind=verbose,map_gpu:NaN hostname"]
+subtest {[regexp "srun: error: Failed to validate NaN, offending character is N" $output]} "The command should fail because of invalid argument"
+
+#
+# Spawn srun job with various --gpu options
+# We only look at the output of the first task. Multiple tasks may be used
+# due to the various options.
+#
+set timeout $max_job_delay
+set output [run_command_output -fail "$srun --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu --nodes=$nb_nodes --ntasks=$ntasks -t1 -l $file_in"]
+subtest {[regexp -all "0: *CpusPerTres=gres/gpu:$cpus_per_gpu" $output] == 1} "Verify CpusPerTres"
+subtest {[regexp -all "0: *MemPerTres=gres/gpu:$mem_per_gpu" $output] == 1} "Verify MemPerTres"
+subtest {[regexp -all "0: *TresBind=gres/gpu:$gpu_bind" $output] == 1} "Verify TresBind"
+subtest {[regexp -all "0: *TresFreq=gpu:$gpu_freq" $output] == 1} "Verify TresFreq"
+subtest {[regexp -all "0: *TresPerStep=cpu:$tot_cpus,gres/gpu:$tot_gpus" $output] == 1} "Verify TresPerStep"
+subtest {[regexp -all "0: *TresPerNode=gres/gpu:$gpus_per_node" $output] == 1} "Verify TresPerNode"
+subtest {[regexp -all "0: *TresPerTask=gres/gpu=$gpus_per_task" $output] == 1} "Verify TresPerTask"
+
+#
+# Spawn srun job with various --gpu options
+# We only look at the output of the first task. Multiple tasks may be used
+# due to the various options.
+#
+set gpus_per_socket 1
+set sockets_per_node 1
+set output [run_command_output -fail "$srun --cpus-per-gpu=$cpus_per_gpu --gpus-per-socket=$gpus_per_socket --sockets-per-node=$sockets_per_node --nodes=$nb_nodes --ntasks=$ntasks -t1 -l $file_in"]
+subtest {[regexp -all "0: *TresPerSocket=gres/gpu:$gpus_per_socket" $output] == 1} "Verify TresPerSocket"
+
+# Test srun and --gpu-bind=verbose (needs >= 2 tasks and a GPU)
+set output [run_command_output -fail "$srun -n2 --gpus=1 -l --gpu-bind=verbose,closest hostname"]
+subtest {[regexp -all "gpu-bind: usable_gres=" $output] == 2} "Verify --gpu-bind=verbose prints 2 bindings"

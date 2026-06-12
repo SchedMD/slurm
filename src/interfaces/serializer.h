@@ -1,0 +1,177 @@
+/*****************************************************************************\
+ *  serializer.h - serializer plugin interface
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef _INTERFACES_SERIALIZER_H
+#define _INTERFACES_SERIALIZER_H
+
+#include "src/common/data.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+
+#include "src/interfaces/data_parser.h"
+
+typedef enum {
+	SER_FLAGS_NONE = 0, /* defaults to compact currently */
+	SER_FLAGS_COMPACT = SLURM_BIT(0),
+	SER_FLAGS_PRETTY = SLURM_BIT(1),
+	SER_FLAGS_COMPLEX = SLURM_BIT(2), /* Dump Infinity and NaN */
+	SER_FLAGS_NO_TAG = SLURM_BIT(3), /* don't dump YAML tags */
+} serializer_flags_t;
+
+/*
+ * Define common MIME types to make it easier for serializer callers.
+ *
+ * WARNING: There is no guarantee that plugins for these types
+ * will be loaded at any given time.
+ */
+#define MIME_TYPE_YAML "application/x-yaml"
+#define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
+#define ENV_CONFIG_YAML "SLURM_YAML"
+#define MIME_TYPE_JSON "application/json"
+#define MIME_TYPE_JSON_PLUGIN "serializer/json"
+#define ENV_CONFIG_JSON "SLURM_JSON"
+#define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
+#define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
+
+/*
+ * Serialize data in src into string dest
+ * IN/OUT dest - ptr to NULL string ptr to set with output data.
+ * 	caller must xfree(dest) if set. Pointer is not changed on failure.
+ * IN/OUT length - set with number of bytes written to *dest.
+ *	Note: length will not include '\0'
+ * IN src - populated data ptr to serialize
+ * IN mime_type - serialize data into the given mime_type
+ * IN flags - optional flags to specify to serilzier to change presentation of
+ * 	data
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_g_data_to_string(char **dest, size_t *length,
+				      const data_t *src, const char *mime_type,
+				      serializer_flags_t flags);
+
+/*
+ * serialize string in src into data dest
+ * IN/OUT dest - ptr to NULL data ptr to set with output data.
+ * 	caller must FREE_NULL_DATA(dest) if set.
+ * IN src - string to deserialize
+ * IN length - number of bytes in src
+ * IN mime_type - deserialize data using given mime_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_g_string_to_data(data_t **dest, const char *src,
+				      size_t length, const char *mime_type);
+
+typedef struct serialize_parse_state_s serialize_parse_state_t;
+
+/*
+ * Parse given (potentially partial) string buffer into target struct dst
+ * IN/OUT state_ptr - Pointer populated with parsing state
+ *	If start_ptr is !NULL, then serializer expects another call to
+ *	serialize_g_parse().
+ *	Passing a NULL src will always release state_ptr.
+ * IN parser - return from data_parser_g_new()
+ * IN type - expected data_parser type of obj
+ * IN dst - ptr to struct/scalar to populate
+ *	This *must* be a pointer to the object and not just a value of the
+ *	object.
+ * IN dst_bytes - size of object pointed to by dst
+ * IN src - string buffer to parse into obj.
+ *	[offset, size) will be string to be read.
+ *	src offset will be set with how many bytes have been processed
+ * IN mime_type - deserialize data using given mime_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_g_parse(serialize_parse_state_t **state_ptr,
+			     data_parser_t *parser, data_parser_type_t type,
+			     void *dst, ssize_t dst_bytes, buf_t *src,
+			     const char *mime_type);
+
+typedef struct serialize_dump_state_s serialize_dump_state_t;
+
+/*
+ * Dump given target struct src into fixed size buffer
+ * IN/OUT state_ptr - Pointer populated with parsing state
+ *	If state_ptr is !NULL, then serializer expects another call to
+ *	serialize_g_dump().
+ *	Passing a NULL dst will always release state_ptr.
+ * IN parser - return from data_parser_g_new()
+ * IN type - data_parser type of obj
+ * IN src - ptr to struct/scalar to dump to data_t
+ *	This *must* be a pointer to the object and not just a value of the object.
+ * IN src_bytes - size of object pointed to by src
+ * IN/OUT dst - buffer to populate with serialized output.
+ *	Writes will try to honor the size of the buffer (but may resize it).
+ *	Offset to indicate the bytes populated.
+ * IN flags - optional flags to specify to serilzier to change presentation of
+ *	data
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_g_dump(serialize_dump_state_t **state_ptr,
+			    data_parser_t *parser, data_parser_type_t type,
+			    void *src, ssize_t src_bytes, buf_t *dst,
+			    const char *mime_type, serializer_flags_t flags);
+
+/*
+ * Check if there is a plugin loaded that can handle the requested mime type
+ * RET ptr to best matching mime type or NULL if none can match
+ */
+extern const char *resolve_mime_type(const char *mime_type,
+				     const char **plugin_ptr);
+
+/*
+ * Provide ptr to NULL terminated array of primary mime_type per plugin
+ * WARNING: serializer_g_init() should not be called after this is called
+ */
+extern const char **get_mime_type_array(void);
+
+/*
+ * Ensure a plugin is loaded that can handle mime_type.
+ */
+extern void serializer_required(const char *mime_type);
+
+/*
+ * Load and initialize serializer plugins
+ *
+ * IN config - string with configuration to parse or NULL
+ * RET SLURM_SUCCESS or error
+ */
+extern int serializer_g_init(void);
+
+/*
+ * Unload all serializer plugins
+ */
+extern void serializer_g_fini(void);
+
+#endif

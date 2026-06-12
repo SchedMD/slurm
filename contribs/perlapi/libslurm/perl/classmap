@@ -1,0 +1,20 @@
+# this file contains a hash reference $class_map, which maps $ntype of C type
+# to class name of Perl objects. This will be eval()-ed by xsubpp.
+#
+# XXX: DO NOT use $class or other variables used in xsubpp, or there will be
+# trouble with xsubpp v1.9508 as in RHEL5.3
+
+$slurm_perl_api::class_map = {
+	"slurm_t" 			=> "Slurm",
+	"bitstr_tPtr"		 	=> "Slurm::Bitstr",
+	"hostlist_tPtr" 		=> "Slurm::Hostlist",
+	"list_tPtr"			=> "Slurm::List",
+	"list_itr_tPtr"			=> "Slurm::ListIterator",
+
+	"dynamic_plugin_data_tPtr"	=> "Slurm::dynamic_plugin_data_t",
+	"job_resources_tPtr"		=> "Slurm::job_resources_t",
+	"jobacctinfo_tPtr"              => "Slurm::jobacctinfo_t",
+	"allocation_msg_thread_tPtr"       => "Slurm::allocation_msg_thread_t",
+	"node_info_msg_tPtr"		=> "Slurm::node_info_msg_t",
+	"job_info_msg_tPtr"		=> "Slurm::job_info_msg_t",
+};

@@ -1,0 +1,270 @@
+/*****************************************************************************\
+ *  http.h - handling HTTP
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef SLURM_HTTP_H
+#define SLURM_HTTP_H
+
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+#include "src/common/data.h"
+
+/*
+ * HTTP status codes from rfc2616&rfc7231 for http1.1
+ */
+typedef enum {
+	/* place holder for invalid status code */
+	HTTP_STATUS_CODE_INVALID = 0,
+	/* 1xx (Informational) */
+	HTTP_STATUS_CODE_CONTINUE = 100,
+	HTTP_STATUS_CODE_SWITCH_PROTOCOLS = 101,
+	/* 2xx (Successful) */
+	HTTP_STATUS_CODE_SUCCESS_OK = 200,
+	HTTP_STATUS_CODE_SUCCESS_CREATED = 201,
+	HTTP_STATUS_CODE_SUCCESS_ACCEPTED = 202,
+	HTTP_STATUS_CODE_SUCCESS_NON_AUTHORITATIVE = 203,
+	HTTP_STATUS_CODE_SUCCESS_NO_CONTENT = 204,
+	HTTP_STATUS_CODE_SUCCESS_RESET_CONNECTION = 205,
+	HTTP_STATUS_CODE_SUCCESS_PARTIAL_CONTENT = 206,
+	/* 3xx (Redirection) */
+	HTTP_STATUS_CODE_REDIRECT_MULTIPLE_CHOICES = 300,
+	HTTP_STATUS_CODE_REDIRECT_MOVED_PERMANENTLY = 301,
+	HTTP_STATUS_CODE_REDIRECT_FOUND = 302,
+	HTTP_STATUS_CODE_REDIRECT_SEE_OTHER = 303,
+	HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED = 304,
+	HTTP_STATUS_CODE_REDIRECT_USE_PROXY = 305,
+	HTTP_STATUS_CODE_REDIRECT_TEMP_REDIRCT = 307,
+	/* 4xx (Client Error) */
+	HTTP_STATUS_CODE_ERROR_BAD_REQUEST = 400,
+	HTTP_STATUS_CODE_ERROR_UNAUTHORIZED = 401,
+	HTTP_STATUS_CODE_ERROR_PAYMENT_REQUIRED = 402,
+	HTTP_STATUS_CODE_ERROR_FORBIDDEN = 403,
+	HTTP_STATUS_CODE_ERROR_NOT_FOUND = 404,
+	HTTP_STATUS_CODE_ERROR_METHOD_NOT_ALLOWED = 405,
+	HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE = 406,
+	HTTP_STATUS_CODE_ERROR_PROXY_AUTH_REQ = 407,
+	HTTP_STATUS_CODE_ERROR_REQUEST_TIMEOUT = 408,
+	HTTP_STATUS_CODE_ERROR_CONFLICT = 409,
+	HTTP_STATUS_CODE_ERROR_GONE = 410,
+	HTTP_STATUS_CODE_ERROR_LENGTH_REQUIRED = 411,
+	HTTP_STATUS_CODE_ERROR_PRECONDITION_FAILED = 412,
+	HTTP_STATUS_CODE_ERROR_ENTITY_TOO_LARGE = 413,
+	HTTP_STATUS_CODE_ERROR_URI_TOO_LONG = 414,
+	HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE = 415,
+	HTTP_STATUS_CODE_ERROR_REQUEST_RANGE_UNSATISFIABLE = 416,
+	HTTP_STATUS_CODE_ERROR_EXPECTATION_FAILED = 417,
+	HTTP_STATUS_CODE_ERROR_IM_A_TEAPOT = 418,
+	HTTP_STATUS_CODE_ERROR_MISDIRECT_REQUESTED = 421,
+	HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT = 422,
+	HTTP_STATUS_CODE_ERROR_UPGRADE_REQUIRED = 426,
+	/* 5xx (Server Error) */
+	HTTP_STATUS_CODE_SRVERR_INTERNAL = 500,
+	HTTP_STATUS_CODE_SRVERR_NOT_IMPLEMENTED = 501,
+	HTTP_STATUS_CODE_SRVERR_BAD_GATEWAY = 502,
+	HTTP_STATUS_CODE_SRVERR_SERVICE_UNAVAILABLE = 503,
+	HTTP_STATUS_CODE_SRVERR_GATEWAY_TIMEOUT = 504,
+	HTTP_STATUS_CODE_SRVERR_HTTP_VERSION_NOT_SUPPORTED = 505,
+	HTTP_STATUS_CODE_SRVERR_VARIANT_ALSO_NEGOTIATES = 506,
+	HTTP_STATUS_CODE_SRVERR_INSUFFICENT_STORAGE = 507,
+	HTTP_STATUS_CODE_SRVERR_LOOP_DETECTED = 508,
+	HTTP_STATUS_CODE_SRVERR_NOT_EXTENDED = 510,
+	HTTP_STATUS_CODE_SRVERR_NETWORK_AUTH_REQ = 511,
+	/* place holder for invalid max status code */
+	HTTP_STATUS_CODE_INVALID_MAX,
+	/* place holder for default status code */
+	HTTP_STATUS_CODE_DEFAULT = INFINITE16,
+} http_status_code_t;
+/*
+ * Convert status code to string of status code
+ * IN code status code to convert
+ * RET string of status code or NULL on error
+ */
+extern const char *get_http_status_code_string(http_status_code_t code);
+/*
+ * Convert string to status code
+ * IN str - string to parse
+ * RET status code or HTTP_STATUS_CODE_INVALID on error
+ */
+extern http_status_code_t get_http_status_code(const char *str);
+
+/*
+ * Convert Slurm error to HTTP status
+ * IN error - Slurm error to convert http status code
+ * RET http status code or HTTP_STATUS_CODE_SRVERR_INTERNAL (catch all)
+ */
+extern http_status_code_t http_status_from_error(slurm_err_t error);
+
+/*
+ * Supported HTTP request Methods.
+ * All others will be rejected.
+ */
+typedef enum {
+	/* place holder for invalid method */
+	HTTP_REQUEST_INVALID = 0,
+	HTTP_REQUEST_GET,
+	HTTP_REQUEST_POST,
+	HTTP_REQUEST_PUT,
+	HTTP_REQUEST_DELETE,
+	HTTP_REQUEST_OPTIONS,
+	HTTP_REQUEST_HEAD,
+	HTTP_REQUEST_PATCH,
+	HTTP_REQUEST_TRACE,
+	/* place holder for invalid max method */
+	HTTP_REQUEST_INVALID_MAX,
+} http_request_method_t;
+
+/*
+ * Get HTTP method from string
+ * IN string containing method name (case insensitive)
+ * RET method or HTTP_REQUEST_INVALID if unknown
+ */
+extern http_request_method_t get_http_method(const char *str);
+extern const char *get_http_method_string(const http_request_method_t method);
+/* Get lower case method string */
+extern const char *get_http_method_string_lc(
+	const http_request_method_t method);
+
+/* RFC3986 section 3.1 URL Scheme */
+typedef enum {
+	URL_SCHEME_INVALID = 0,
+	URL_SCHEME_HTTP,
+	URL_SCHEME_HTTPS,
+	URL_SCHEME_UNIX, /* UNIX Socket - Not IANA registered */
+	URL_SCHEME_INVALID_MAX /* place holder */
+} url_scheme_t;
+
+/*
+ * Get URL scheme from string
+ * IN string containing method name (case insensitive)
+ * IN bytes - number of bytes in string
+ * IN scheme_ptr - pointer to populate with scheme
+ * RET SLURM_SUCCESS or error
+ */
+extern int url_get_scheme(const char *str, size_t bytes,
+			  url_scheme_t *scheme_ptr);
+
+/*
+ * Dump scheme as string into str
+ * IN scheme - pointer to scheme to dump into str
+ * RET string for scheme or NULL if unknown
+ */
+extern const char *url_get_scheme_string(const url_scheme_t scheme);
+
+/*
+ * Parses url path into a data struct.
+ * IN query rfc3986&rfc1866 query string
+ * 	application/x-www-form-urlencoded
+ * 	breaks /path/to/url/ -> [path,to,url]
+ * 	into a data_t sequence
+ * IN convert_types if true, call data_convert_type() on each value
+ * IN allow_templates - allow sections to be template variables e.g.: "{name}"
+ * RET data ptr or NULL on error
+ */
+extern data_t *parse_url_path(const char *path, bool convert_types,
+			      bool allow_templates);
+/*
+ * Callback for parsing URL path
+ * IN entry - entry in path
+ * IN template - True when entry is a {template} variable name
+ * IN arg - arbitrary pointer
+ * RET SLURM_SUCESS to continue parsing or error to stop
+ */
+typedef int (*on_url_path_entry_t)(const char *entry, bool template, void *arg);
+
+/*
+ * Walk each entry/dir in a URL path
+ * IN path - URL path to walk by each entry
+ * IN allow_templates - Allow {variable} template entries
+ * IN on_entry - Callback on each entry to call
+ * IN arg - arbitrary pointer to pass to on_entry()
+ * RETURN SLURM_SUCCESS or error
+ */
+extern int url_path_walk(const char *path, bool allow_templates,
+			 on_url_path_entry_t on_entry, void *arg);
+
+/*
+ * Decodes URL escape sequence (denoted via %XX)
+ * IN ptr - pointing to % character
+ * RET \0 on error or decoded character
+ */
+extern unsigned char url_decode_escape_seq(const char *ptr,
+					   const char *ptr_end);
+
+typedef struct {
+	url_scheme_t scheme;
+	char *host;
+	char *port;
+	char *user;
+	char *path;
+	char *query;
+	char *fragment;
+} url_t;
+
+#define URL_INITIALIZER                       \
+	((url_t) {                            \
+		.scheme = URL_SCHEME_INVALID, \
+	})
+
+/* Free all members in URL */
+extern void url_free_members(url_t *url);
+
+/* Copy all members in URL */
+extern void url_copy_members(url_t *dst, const url_t *src);
+
+#define HTTP_HEADER_MAGIC 0x1aaffbe2
+
+/* HTTP header */
+typedef struct {
+	int magic; /* HTTP_HEADER_MAGIC */
+	char *name;
+	char *value;
+} http_header_t;
+
+/*
+ * Create new http header
+ * RET pointer to header (must free with free_http_header())
+ */
+extern http_header_t *http_header_new(const char *name, const char *value);
+
+/* Free http header and contents */
+extern void free_http_header(http_header_t *header);
+
+/* find http header from header list
+ * IN headers - list_t of http_header_t*
+ * IN name - name of header to find
+ * RET ptr to header value or NULL if not found
+ */
+extern const char *find_http_header(list_t *headers, const char *name);
+
+#endif /* SLURM_HTTP_H */

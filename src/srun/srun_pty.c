@@ -1,0 +1,188 @@
+/*****************************************************************************\
+ *  src/srun/srun_pty.c - pty handling for srun
+ *****************************************************************************
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Morris Jette  <jette1@llnl.gov>
+ *  CODE-OCEC-09-009. All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include <poll.h>
+#include <pthread.h>
+#include <signal.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+
+#include "slurm/slurm_errno.h"
+
+#include "src/common/events.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/net.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/threadpool.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
+
+#include "src/interfaces/conn.h"
+
+#include "srun_job.h"
+#include "srun_pty.h"
+
+#include "opt.h"
+
+static pthread_mutex_t winch_lock = PTHREAD_MUTEX_INITIALIZER;
+static event_signal_t winch_event = EVENT_INITIALIZER("SIGWINCH");
+static bool handle_sigwinch = false;
+
+/*
+ * Static prototypes
+ */
+static void * _pty_thread(void *arg);
+
+/* Set pty window size in job structure
+ * RET 0 on success, -1 on error */
+int set_winsize(int fd, srun_job_t *job)
+{
+	struct winsize ws;
+
+	if (ioctl(fd, TIOCGWINSZ, &ws)) {
+		error("ioctl(TIOCGWINSZ): %m");
+		return -1;
+	}
+
+	job->ws_row = ws.ws_row;
+	job->ws_col = ws.ws_col;
+	debug2("winsize %u:%u", job->ws_row, job->ws_col);
+	return 0;
+}
+
+void pty_thread_create(srun_job_t *job)
+{
+	slurm_addr_t pty_addr;
+	uint16_t *ports;
+
+	if ((ports = slurm_get_srun_port_range()))
+		job->pty_fd = slurm_init_msg_engine_ports(ports);
+	else
+		job->pty_fd = slurm_init_msg_engine_port(0);
+
+	if (job->pty_fd < 0) {
+		error("init_msg_engine_port: %m");
+		return;
+	}
+	if (slurm_get_stream_addr(job->pty_fd, &pty_addr) < 0) {
+		error("slurm_get_stream_addr: %m");
+		return;
+	}
+	job->pty_port = slurm_get_port(&pty_addr);
+	debug2("initialized job control port %hu", job->pty_port);
+
+	slurm_thread_create_detached(NULL, _pty_thread, job);
+}
+
+static void _on_sigwinch(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(CONMGR, "Caught SIGWINCH, but conmgr work cancelled, ignoring.");
+		return;
+	}
+	debug2("Caught SIGWINCH");
+
+	slurm_mutex_lock(&winch_lock);
+	handle_sigwinch = true;
+	EVENT_SIGNAL(&winch_event);
+	slurm_mutex_unlock(&winch_lock);
+
+	return;
+}
+
+static void _notify_winsize_change(conn_t *conn, srun_job_t *job)
+{
+	pty_winsz_t winsz;
+	int len;
+	char buf[4];
+
+	winsz.cols = htons(job->ws_col);
+	winsz.rows = htons(job->ws_row);
+	memcpy(buf, &winsz.cols, 2);
+	memcpy(buf+2, &winsz.rows, 2);
+	len = slurm_write_stream(conn, buf, 4);
+	if (len < sizeof(winsz))
+		error("pty: window size change notification error: %m");
+}
+
+static void *_pty_thread(void *arg)
+{
+	conn_t *conn = NULL;
+	int fd = -1;
+	srun_job_t *job = (srun_job_t *) arg;
+	slurm_addr_t client_addr;
+	struct termios term;
+
+	conmgr_add_work_signal(SIGWINCH, _on_sigwinch, NULL);
+
+	if (!(conn = slurm_accept_msg_conn(job->pty_fd, &client_addr))) {
+		error("pty: accept failure: %m");
+		return NULL;
+	}
+
+	/* Set raw mode on local tty once slurmstepd has connected */
+	tcgetattr(job->input_fd, &term);
+	cfmakeraw(&term);
+	tcsetattr(job->input_fd, TCSANOW, &term);
+
+	fd = conn_g_get_fd(conn);
+
+	net_set_keep_alive(fd);
+	while (srun_job_state(job) <= SRUN_JOB_RUNNING) {
+		debug2("waiting for SIGWINCH");
+
+		slurm_mutex_lock(&winch_lock);
+		while (!handle_sigwinch)
+			EVENT_WAIT(&winch_event, &winch_lock);
+		handle_sigwinch = false;
+		slurm_mutex_unlock(&winch_lock);
+
+		set_winsize(STDOUT_FILENO, job);
+		_notify_winsize_change(conn, job);
+	}
+
+	(void) conn_blocking_g_shutdown(conn);
+	conn_g_destroy(conn, true);
+	return NULL;
+}

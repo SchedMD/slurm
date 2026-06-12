@@ -1,0 +1,80 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test sdiag --reset
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+proc sdiag_all { } {
+	global sdiag number
+	global jobs_submitted jobs_started
+
+	set matches 0
+	spawn $sdiag --all
+	expect {
+		-re "Jobs submitted: *($number)" {
+			set jobs_submitted $expect_out(1,string)
+			incr matches
+			exp_continue
+		}
+		-re "Jobs started: *($number)" {
+			set jobs_started $expect_out(1,string)
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sdiag not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		fail "sdiag --all failed ($matches != 2)"
+	}
+}
+
+sdiag_all
+
+set jobs_started   0
+set jobs_submitted 0
+set perm_denied    0
+spawn $sdiag --reset
+expect {
+	-re "permission denied" {
+		set perm_denied 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$perm_denied != 0} {
+	fail "Insufficient permission for this test"
+}
+
+sdiag_all
+
+subtest {$jobs_submitted == 0} "Verify sdiag job submit count cleared"
+subtest {$jobs_started == 0} "Verify sdiag job start count cleared"

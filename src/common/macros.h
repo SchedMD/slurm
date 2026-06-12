@@ -1,0 +1,305 @@
+/*****************************************************************************\
+ * src/common/macros.h - some standard macros for slurm
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  CODE-OCEC-09-009. All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef _MACROS_H
+#define _MACROS_H
+
+#include "config.h"
+
+#include <errno.h>              /* for errno   */
+#include <pthread.h>
+#include <stdbool.h>		/* for bool type */
+#include <stddef.h>		/* for NULL */
+#include <stdlib.h>		/* for abort() */
+#include <string.h>
+#include "src/common/log.h"	/* for error() */
+#include "src/common/strlcpy.h"
+
+#define STACK_SIZE (8 * 1024 * 1024)
+
+#ifndef MAX
+#  define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#  define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef ROUNDUP
+#  define ROUNDUP(a,b) ((a + (b - 1)) / b)
+#endif
+
+/* Avoid going over 32 bits for a constant to avoid warnings on some systems */
+#  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x00000000000000ffU)) << 56) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x000000000000ff00U)) << 40) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x0000000000ff0000U)) << 24) |                          \
+        (((uint64_t) (val) &                                                  \
+          (uint64_t) (0x00000000ff000000U)) <<  8) |                          \
+	(((uint64_t) (val)                  >>  8) &                          \
+	  (uint64_t) (0x00000000ff000000U))        |                          \
+	(((uint64_t) (val)                  >> 24) &                          \
+	  (uint64_t) (0x0000000000ff0000U))        |                          \
+	(((uint64_t) (val)                  >> 40) &                          \
+	  (uint64_t) (0x000000000000ff00U))        |                          \
+	(((uint64_t) (val)                  >> 56) &                          \
+	  (uint64_t) (0x00000000000000ffU)) ))
+
+#if SLURM_BIGENDIAN
+# define HTON_int64(x)	  ((int64_t)  (x))
+# define NTOH_int64(x)	  ((int64_t)  (x))
+# define HTON_uint64(x)	  ((uint64_t) (x))
+# define NTOH_uint64(x)	  ((uint64_t) (x))
+#elif HAVE___BUILTIN_BSWAP64
+# define HTON_int64(x) ((int64_t) __builtin_bswap64(x))
+# define NTOH_int64(x) ((int64_t) __builtin_bswap64(x))
+# define HTON_uint64(x) (__builtin_bswap64(x))
+# define NTOH_uint64(x) (__builtin_bswap64(x))
+#else
+# define HTON_int64(x)    ((int64_t) UINT64_SWAP_LE_BE (x))
+# define NTOH_int64(x)	  ((int64_t) UINT64_SWAP_LE_BE (x))
+# define HTON_uint64(x)   UINT64_SWAP_LE_BE (x)
+# define NTOH_uint64(x)   UINT64_SWAP_LE_BE (x)
+#endif	/* SLURM_BIGENDIAN */
+
+#define slurm_cond_init(cond, cont_attr)				\
+	do {								\
+		int err = pthread_cond_init(cond, cont_attr);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_cond_init(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_cond_signal(cond)						\
+	do {								\
+		int err = pthread_cond_signal(cond);			\
+		if (err) {						\
+			errno = err;					\
+			error("%s:%d %s: pthread_cond_signal(): %m",	\
+			      __FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+#define slurm_cond_broadcast(cond)					\
+	do {								\
+		int err = pthread_cond_broadcast(cond);			\
+		if (err) {						\
+			errno = err;					\
+			error("%s:%d %s: pthread_cond_broadcast(): %m",	\
+			      __FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+#define slurm_cond_wait(cond, mutex)					\
+	do {								\
+		int err = pthread_cond_wait(cond, mutex);		\
+		if (err) {						\
+			errno = err;					\
+			error("%s:%d %s: pthread_cond_wait(): %m",	\
+			      __FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+/* ignore timeouts, you must be able to handle them if
+ * calling cond_timedwait instead of cond_wait */
+#define slurm_cond_timedwait(cond, mutex, abstime)			\
+	do {								\
+		int err = pthread_cond_timedwait(cond, mutex, abstime);	\
+		if (err && (err != ETIMEDOUT)) {			\
+			errno = err;					\
+			error("%s:%d %s: pthread_cond_timedwait(): %m",	\
+			      __FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+#define slurm_cond_destroy(cond)					\
+	do {								\
+		int err = pthread_cond_destroy(cond);			\
+		if (err) {						\
+			errno = err;					\
+			error("%s:%d %s: pthread_cond_destroy(): %m",	\
+			      __FILE__, __LINE__, __func__);		\
+		}							\
+	} while (0)
+
+
+#define slurm_mutex_init(mutex)						\
+	do {								\
+		int err = pthread_mutex_init(mutex, NULL);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_mutex_init(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_mutex_destroy(mutex)					\
+	do {								\
+		int err = pthread_mutex_destroy(mutex);			\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_mutex_destroy(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_mutex_lock(mutex)						\
+	do {								\
+		int err = pthread_mutex_lock(mutex);			\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_mutex_lock(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_mutex_unlock(mutex)					\
+	do {								\
+		int err = pthread_mutex_unlock(mutex);			\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_mutex_unlock(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_rwlock_init(rwlock)					\
+	do {								\
+		int err = pthread_rwlock_init(rwlock, NULL);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_rwlock_init(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_rwlock_destroy(rwlock)					\
+	do {								\
+		int err = pthread_rwlock_destroy(rwlock);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_rwlock_destroy(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_rwlock_rdlock(rwlock)					\
+	do {								\
+		int err = pthread_rwlock_rdlock(rwlock);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_rwlock_rdlock(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_rwlock_wrlock(rwlock)					\
+	do {								\
+		int err = pthread_rwlock_wrlock(rwlock);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_rwlock_wrlock(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_rwlock_unlock(rwlock)					\
+	do {								\
+		int err = pthread_rwlock_unlock(rwlock);		\
+		if (err) {						\
+			errno = err;					\
+			fatal_abort("%s: pthread_rwlock_unlock(): %m",	\
+				    __func__);				\
+		}							\
+	} while (0)
+
+#define slurm_rwlock_trywrlock(rwlock) pthread_rwlock_trywrlock(rwlock)
+#define slurm_rwlock_tryrdlock(rwlock) pthread_rwlock_tryrdlock(rwlock)
+
+#define slurm_atoul(str) strtoul(str, NULL, 10)
+#define slurm_atoull(str) strtoull(str, NULL, 10)
+
+#ifndef strong_alias
+#  if USE_ALIAS
+#    define strong_alias(name, aliasname) \
+     extern __typeof__(name) aliasname __attribute__((alias(#name)))
+#  else
+#    define strong_alias(name, aliasname) \
+     __asm__(".global _" #aliasname); \
+     __asm__(".set _" #aliasname ", _" #name); \
+     extern __typeof__(name) aliasname
+#  endif
+#endif
+
+/* There are places where we put NO_VAL or INFINITE into a float or double
+ * Use fuzzy_equal below to test for those values rather than an comparison
+ * which could fail due to rounding errors. */
+#define FUZZY_EPSILON 0.00001
+#define fuzzy_equal(v1, v2) ((((v1)-(v2)) > -FUZZY_EPSILON) && (((v1)-(v2)) < FUZZY_EPSILON))
+
+/* Number of elements in a static array */
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+/* Number of elements in an allocated array */
+#define PTR_ARRAY_SIZE(x) (xsize(x) / sizeof((x)[0]))
+
+/* Get __typeof__(s->f) */
+#define STRUCT_FIELD_TYPEOF(s, f) __typeof__(((s *) (NULL))->f)
+
+#define SWAP(x, y) \
+	do { \
+		__typeof__(x) b = (x); \
+		(x) = (y); \
+		(y) = b; \
+	} while (0)
+
+/* macro to force stringification */
+#define XSTRINGIFY(s) XSTRINGIFY2(s)
+#define XSTRINGIFY2(s) #s
+
+/* Macro to stringify bool for logging */
+#define BOOL_CHARIFY(s) ((s) ? 'T' : 'F')
+/* Macro to stringify bool for logging */
+#define BOOL_STRINGIFY(s) ((s) ? "True" : "False")
+
+#endif /* !_MACROS_H */

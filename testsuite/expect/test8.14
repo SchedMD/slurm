@@ -1,0 +1,106 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirm that sbatch/salloc/srun option --reservation
+#          can now include a comma separated list
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set nodes_min            3
+set resv_name1           "resv1_$test_name"
+set resv_name2           "resv2_$test_name"
+set resv_name3           "resv3_$test_name"
+set wrong_resv_name      "wrong_resv_$test_name"
+set job_list             [list]
+set user_name            [get_my_user_name]
+
+# Make sure there are 3 nodes to create reservations
+set nodes_avail [llength [get_nodes_by_state]]
+if {$nodes_avail < $nodes_min} {
+	skip "Not enough nodes currently available ($nodes_avail avail < $nodes_min needed)."
+}
+
+proc cleanup {} {
+	global resv_name1 resv_name2 resv_name3 user_name job_list scontrol
+
+	run_command "$scontrol delete reservation=$resv_name3"
+	run_command "$scontrol delete reservation=$resv_name2"
+	run_command "$scontrol delete reservation=$resv_name1"
+	cancel_job $job_list
+}
+
+# Create reservations
+run_command -fail "$scontrol create reservation=$resv_name1 starttime=now duration=60 nodecnt=1 user=$user_name"
+run_command -fail "$scontrol create reservation=$resv_name2 starttime=now duration=60 nodecnt=1 user=$user_name"
+run_command -fail "$scontrol create reservation=$resv_name3 starttime=now duration=60 nodecnt=1 user=$user_name"
+
+# Test srun got all 3 reservations
+set result [run_command "$srun --reservation=$resv_name1,$resv_name2,$resv_name3 printenv SLURM_JOB_ID"]
+set status [dict get $result "exit_code"]
+set output [dict get $result "output"]
+set job_id [string trimright $output "\n"]
+lappend job_list $job_id
+subtest {$status == 0} "Verify srun --reservation succeeds for job ($job_id)"
+subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify srun job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
+
+# Test sbatch got all 3 reservations
+set job_id [submit_job "--reservation=$resv_name1,$resv_name2,$resv_name3 --wrap=\"sleep 1\""]
+lappend job_list $job_id
+subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job ($job_id)"
+subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify sbatch job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
+
+# Test salloc got all 3 reservations
+set result [run_command "$salloc --reservation=$resv_name1,$resv_name2,$resv_name3 sleep 1"]
+set status [dict get $result "exit_code"]
+set output [dict get $result "output"]
+regexp {\S+ job (\d+)} $output - job_id
+lappend job_list $job_id
+subtest {$status == 0} "Verify salloc --reservation succeeds for job ($job_id)"
+subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify salloc job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
+
+# Test reservation order is consistent
+set job_id [submit_job "--reservation=$resv_name2,$resv_name3,$resv_name1 --wrap=\"sleep 1\""]
+lappend job_list $job_id
+subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job ($job_id)"
+subtest {[get_job_param $job_id "Reservation"] eq "$resv_name2,$resv_name3,$resv_name1"} "Verify reservation order is consistent" "Reservation = $resv_name2,$resv_name3,$resv_name1"
+
+# Test job fails when at least 1 reservation is wrong
+set job_id [submit_job -xfail "--reservation=$resv_name1,$resv_name2,$resv_name3,wrong_resv_$test_name --wrap=\"sleep 1\""]
+lappend job_list $job_id
+subtest {$job_id == 0} "Verify job fails when at least 1 reservation is wrong"
+
+# Test jobs landed on a reservation's node
+set res1_nodes [get_reservation_param $resv_name1 Nodes]
+set res2_nodes [get_reservation_param $resv_name2 Nodes]
+set res3_nodes [get_reservation_param $resv_name3 Nodes]
+foreach job_id $job_list {
+	if {!$job_id} {
+		continue
+	}
+
+	# Wait for job to run to get the actual Nodes allocated
+	wait_for_job -fail $job_id "DONE"
+
+	set job_nodes [get_job_param $job_id  "Nodes"]
+	subtest {$job_nodes == $res2_nodes || $job_nodes == $res1_nodes || $job_nodes == $res3_nodes} "Verify job ($job_id) landed on a reservation's node" "$job_nodes not a resv node"
+}

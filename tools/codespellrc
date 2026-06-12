@@ -1,0 +1,13 @@
+[codespell]
+skip = .git,*.gif,*.tar,*.png,*.pdf,*.svg,
+    LICENSE*,
+    *.in,
+    *.m4,
+    configure,
+    ./auxdir,
+    expect/globals,
+    globals,
+    jquery.min.js,
+#quiet-level = 4
+ignore-words = tools/codespell_ignore
+builtin = clear,rare,code

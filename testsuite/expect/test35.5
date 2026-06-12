@@ -1,0 +1,123 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Cray dwstat command testing
+############################################################################
+# Copyright (C) SchedMD LLC.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
+}
+
+set matches 0
+set fail 0
+spawn $scontrol show dwstat
+expect {
+	-re "Error running dwstat" {
+		set fail 1
+		exp_continue
+	}
+	-re "pool *units *quantity *free *gran" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$fail == 1} {
+	set default_state_loc 0
+	set default_status_loc 0
+	spawn $scontrol show burst
+	expect {
+		-re "GetSysState=/opt/cray/dws/default" {
+			set default_state_loc 1
+			exp_continue
+		}
+		-re "GetSysStatus=/opt/cray/dws/default" {
+			set default_status_loc 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$default_state_loc == 0 && $default_status_loc == 1} {
+		skip "dwstat is not configured properly"
+	}
+	fail "dwstat is not configured properly"
+}
+if {$matches == 0} {
+	fail "dwstat output does not match expected form"
+}
+
+set matches 0
+spawn $scontrol show dwstat configurations
+expect {
+	-re "conf *state *inst *type *activs" {
+		set matches 1
+		exp_continue
+	}
+	-re "no scratch, cache, swap configurations" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	fail "'dwstat configurations' output does not match expected form"
+}
+
+set matches 0
+spawn $scontrol show dwstat sessions
+expect {
+	-re "sess *state *token *creator *owner *created *expiration *nodes" {
+		set matches 1
+		exp_continue
+	}
+	-re "no sessions" {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	fail "'dwstat sessions' output does not match expected form"
+}

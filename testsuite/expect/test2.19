@@ -1,0 +1,175 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that Allow/Deny Qos are enforced.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set user_name      ""
+set node_name      ""
+set host_name      ""
+set cluster_name   ""
+set acct1          "test${test_id}_acct_1"
+set acct2          "test${test_id}_acct_2"
+set qos_good       "test${test_id}_qos_good"
+set qos_bad        "test${test_id}_qos_bad"
+set part_name      "test${test_id}_part"
+
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+        skip "This test is disabled in Slurm versions older than 23.02 (see bugs 11979 and 14864)"
+}
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc set_part_val {part_type part_val} {
+	global scontrol part_name
+
+	run_command -fail "$scontrol update partitionname=$part_name $part_type=$part_val"
+}
+
+proc cleanup { } {
+	global scontrol sacctmgr part_name qos_good qos_bad acct1 acct2
+
+	log_debug "Cleaning up, if there are errors they may be ignored..."
+	wait_for_part_done $part_name
+
+	run_command "$scontrol delete partition=$part_name"
+
+	run_command "$sacctmgr -i delete qos $qos_good $qos_bad"
+	run_command "$sacctmgr -i delete account $acct1 $acct2"
+	log_debug "Cleanup done"
+}
+
+proc create_qos { acct qos } {
+	global sacctmgr user_name cluster_name
+
+	run_command -fail "$sacctmgr -i create qos $qos"
+	run_command -fail "$sacctmgr -i create account $acct qos=$qos cluster=$cluster_name"
+	run_command -fail "$sacctmgr -i create user $user_name account=$acct cluster=$cluster_name"
+}
+
+
+proc test_part {acct qos part qos_con } {
+	global srun part_name
+
+	set sub_job 0
+
+	spawn $srun -I5 -A $acct --qos $qos -p $part true
+	expect {
+		-re "error" {
+			if { $qos_con == 1 } {
+				log_debug "This error is expected"
+			} else {
+				log_error "This error should not have occurred"
+				return $::RETURN_ERROR
+			}
+			exp_continue
+		}
+		timeout {
+			fail "srun is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	return $::RETURN_SUCCESS
+}
+
+# Delete any vestigial qos or accounts
+cleanup
+
+# Setup
+set user_name [get_my_user_name]
+set node_name [lindex [get_nodes_by_state] 0]
+set cluster_name [get_config_param "ClusterName"]
+
+# NOTE: qos_good should always work and
+# qos_bad should always cause an error
+
+#
+# Create good QOS
+#
+create_qos $acct1 $qos_good
+
+#
+# Create bad QOS
+#
+create_qos $acct2 $qos_bad
+
+
+# Create partition
+run_command -fail "$scontrol create partition=$part_name nodes=$node_name"
+
+#
+# Set Allow Qos to good value
+#
+set_part_val allowqos $qos_good
+
+######Testing AllowQos######
+log_info "Testing AllowQos"
+
+#
+# Test partition with good Qos
+# 0 = good test / 1 = bad test
+#
+test_part $acct1 $qos_good $part_name 0
+
+#
+# Test partition with bad Qos
+# 0 = good test / 1 = bad test
+#
+test_part $acct2 $qos_bad $part_name 1
+
+#
+# Set Allow Qos back to all and set
+# Deny Qos to bad value
+#
+set_part_val allowqos ALL
+set_part_val denyqos $qos_bad
+
+######Testing DenyQos#####
+log_info "Testing DenyQos"
+
+#
+# Test partition with good Qos
+# 0 = good test / 1 = bad test
+#
+test_part $acct1 $qos_good $part_name 0
+
+#
+# Test partition with bad Qos
+# 0 = good test / 1 = bad test
+#
+test_part $acct2 $qos_bad $part_name 1
+
+sleep 5

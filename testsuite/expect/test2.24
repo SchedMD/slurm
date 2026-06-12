@@ -1,0 +1,133 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Checks that scontrol write config creates a slurm.conf
+#          with the correct values
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set option        ""
+set value         ""
+array set conf_val {}
+set new_conf      ""
+set opt_cnt       0
+
+if {![is_super_user]} {
+	skip "This test requires that the user be root or the SlurmUser"
+}
+
+proc cleanup {} {
+	global bin_rm new_conf
+
+	if {$new_conf ne ""} {
+		run_command "$bin_rm -f $new_conf"
+	}
+}
+
+#
+# User scontrol show config to get some values to check
+# against the new created file
+#
+log_user 0
+set val ""
+set option ""
+spawn $scontrol show config
+expect {
+	-re "^$" {
+		# break here since other config files are listed here
+		# scontrol write config only prints out the normal slurm.conf
+	}
+	-re "($re_word_str) *= ($format_time)" {
+		set option $expect_out(1,string)
+		set val $expect_out(2,string)
+		set conf_val($option) $val
+		incr opt_cnt
+		exp_continue
+	}
+	-re "($re_word_str) *= ($re_word_str)" {
+		set option $expect_out(1,string)
+		set val $expect_out(2,string)
+
+		# Exclude ENV variable that appear in scontrol show config
+		# Also "SuspendTime=NONE" gets written as "SuspendTime=0"
+		if {$option != "BOOT_TIME" &&
+		    $option != "HASH_VAL"  &&
+		    $option != "MULTIPLE_SLURMD" &&
+		    $option != "NEXT_JOB_ID" &&
+		    $option != "SLURM_CONF" &&
+		    $option != "SLURM_VERSION"} {
+			set conf_val($option) $val
+			incr opt_cnt
+		}
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+#
+# Execute scontrol write config and get the filename of the created file
+#
+regexp {Slurm config saved to (\S+)} [run_command_output -fail "$scontrol write config"] {} new_conf
+
+#
+# Loop through the hash and check that the parameters exist within
+# the new conf file
+#
+set tot_match 0
+foreach opt [array names conf_val] {
+
+	log_user 0
+	set match 0
+
+	spawn $bin_cat $new_conf
+	expect {
+		-re "$opt=$conf_val($opt)" {
+			set match 1
+			exp_continue
+		}
+		-re "#$opt=" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$match != 1} {
+		fail "$opt = $conf_val($opt) was not found in new config file"
+	} else {
+		incr tot_match
+	}
+}
+subtest {$tot_match == $opt_cnt} "Verify all values found in the new config file" "$tot_match != $opt_cnt"

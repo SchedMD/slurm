@@ -1,0 +1,192 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test federation functionality
+#          Test that submissions to clusters in federation get unique job id.
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set fed_name    "feda"
+set timeout	5
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup { } {
+	global fed_name
+
+	delete_federations $fed_name
+}
+
+# submit jobs to each cluster and ensure that they return a unique job id
+# job id should be cluster_id + job_id
+# local_id:   bits 0-25
+# cluster_id: bits26-31
+proc test_fed_job_id { cname cid} {
+	global fed_slurm_base number
+	set job_id 0
+	set rc 0
+
+	#bits 0-25
+	set max_local_id [expr 0x3FFFFFF]
+
+	set my_sbatch "${fed_slurm_base}/$cname/bin/sbatch"
+	spawn $my_sbatch --wrap="hostname" -o/dev/null
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			log_error "Job was not submitted"
+			incr rc
+		}
+		timeout {
+			log_error "sbatch is not responding"
+			incr rc
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_id <= $max_local_id} {
+		log_error "$cname didn't give back a federation jobid ($job_id)"
+		incr rc
+	}
+
+	set local_id [expr $job_id & $max_local_id]
+	set clust_id [expr $job_id >> 26]
+
+	log_debug "Fed JobID:$job_id Local JobID:$local_id Cluster ID:$clust_id"
+	if {!$rc && ($clust_id != $cid)} {
+		log_error "Jobid($job_id) from $cname didn't give correct partition id ($part_id != $cid)"
+		incr rc
+	}
+
+	return $rc
+}
+
+# submit jobs to non-federated cluster and make sure the jobid is not a
+# federated jobid.
+proc test_loc_job_id { cname } {
+	global fed_slurm_base number
+	set job_id 0
+	set rc 0
+
+	#bits 0-25
+	set max_local_id [expr 0x3FFFFFF]
+
+	set my_sbatch "${fed_slurm_base}/$cname/bin/sbatch"
+	spawn $my_sbatch --wrap="hostname" -o/dev/null
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			log_error "Job was not submitted"
+			incr rc
+		}
+		timeout {
+			log_error "sbatch is not responding"
+			incr rc
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$job_id > $max_local_id} {
+		log_error "$cname didn't give back a non-federation job id"
+		incr rc
+	}
+	log_debug "JobID:$job_id"
+
+	return $rc
+}
+
+if {![check_federation_setup]} {
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
+}
+
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
+}
+
+# Remove existing setup
+cleanup
+
+# add clusters to federation
+if [setup_federation $fed_name] {
+	fail "Failed to setup federation"
+}
+
+# Get cluster/fed info from db
+array set clusters [get_clusterfed_info $fed_name]
+
+log_info "Verify federation ids are returned when cluster is part of federation"
+if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
+    [test_fed_job_id $fedc2 [dict get $clusters($fedc2) id]] ||
+    [test_fed_job_id $fedc3 [dict get $clusters($fedc3) id]]} {
+	fail "Federation id was not returned"
+}
+
+
+# Verify that after clusters are removed from federation that they give normal
+# job ids again.
+if {[delete_federations $fed_name]} {
+	fail "Failed delete federation ($fed_name)"
+}
+
+sleep 2
+
+log_info "Verify local ids after being removed from federation"
+if {[test_loc_job_id $fedc1] ||
+    [test_loc_job_id $fedc2] ||
+    [test_loc_job_id $fedc3]} {
+	fail "Local ids could not be verified"
+}

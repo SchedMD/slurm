@@ -1,0 +1,292 @@
+<!--#include virtual="header.txt"-->
+
+<h1>High Throughput Computing Administration Guide</h1>
+
+<p>This document contains Slurm administrator information specifically
+for high throughput computing, namely the execution of many short jobs.
+Getting optimal performance for high throughput computing does require
+some tuning and this document should help you off to a good start.
+A working knowledge of Slurm should be considered a prerequisite
+for this material.</p>
+
+<h2 id="performance">Performance Results
+<a class="slurm_link" href="#performance"></a>
+</h2>
+
+<p>Slurm has also been validated to execute 500 simple batch jobs per second
+on a sustained basis with short bursts of activity at a much higher level.
+Actual performance depends upon the jobs to be executed plus the hardware and
+configuration used.</p>
+
+<h2 id="sys_config">System configuration
+<a class="slurm_link" href="#sys_config"></a>
+</h2>
+
+<p>Several system configuration parameters may require modification to support a large number
+of open files and TCP connections with large bursts of messages. Changes can
+be made using the <b>/etc/rc.d/rc.local</b> or <b>/etc/sysctl.conf</b>
+script to preserve changes after reboot. In either case, you can write values
+directly into these files
+(e.g. <i>"echo 32832 &gt; /proc/sys/fs/file-max"</i>).</p>
+<ul>
+<li><b>/proc/sys/fs/file-max</b>:
+The maximum number of concurrently open files.
+We recommend a limit of at least 32,832.</li>
+<li><b>/proc/sys/net/ipv4/tcp_max_syn_backlog</b>:
+The maximum number of SYN requests to keep in memory that we have yet to get
+the third packet in a 3-way handshake from.
+The default value is 1024 for systems with more than 128MiB of memory, and 128
+for low memory machines. If server suffers of overload, try to increase this
+number.</li>
+<li><b>/proc/sys/net/ipv4/tcp_syncookies</b>:
+Used to send out <i>syncookies</i> to hosts when the kernels syn backlog queue
+for a specific socket is overflowed.
+The default value is 0, which disables this functionality.
+Set the value to 1.
+<li><b>/proc/sys/net/ipv4/tcp_synack_retries</b>:
+How many times to retransmit the SYN,ACK reply to an SYN request.
+In other words, this tells the system how many times to try to establish a
+passive TCP connection that was started by another host.
+This variable takes an integer value, but should under no circumstances be
+larger than 255.
+Each retransmission will take approximately 30 to 40 seconds.
+The default value of 5, which results in a timeout of passive TCP connections
+of approximately 180 seconds and is generally satisfactory.
+<li><b>/proc/sys/net/core/somaxconn</b>:
+Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
+128 or more depending on OS version. Sites should consider a minimum value of
+4096 or 8192, or a higher value that is greater the sum of all nodes plus all
+active clients in the cluster.</li>
+<li><b>/proc/sys/net/ipv4/ip_local_port_range</b>:
+Identify the ephemeral ports available, which are used for many Slurm
+communications. The value may be raised to support a high volume of
+communications.
+For example, write the value "32768 65535" into the ip_local_port_range file
+in order to make that range of ports available.</li>
+</ul>
+
+<p>The transmit queue length (<b>txqueuelen</b>) may also need to be modified
+using the ifconfig command. A value of 4096 has been found to work well for one
+site with a very large cluster
+(e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
+
+<h2 id="munge_config">Munge configuration
+<a class="slurm_link" href="#munge_config"></a>
+</h2>
+
+<p>By default the Munge daemon runs with two threads, but a higher thread count
+can improve its throughput. We suggest starting the Munge daemon with ten
+threads for high throughput support (e.g. <i>"munged --num-threads 10"</i>).</p>
+
+<h2 id="user_limits">User limits
+<a class="slurm_link" href="#user_limits"></a>
+</h2>
+
+<p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
+be set quite high for memory size, open file count and stack size.</p>
+
+<h2 id="slurm_config">Slurm Configuration
+<a class="slurm_link" href="#slurm_config"></a>
+</h2>
+
+<p>Several Slurm configuration parameters should be adjusted to
+reflect the needs of high throughput computing. The changes described below
+will not be possible in all environments, but these are the configuration
+options that you may want to consider for higher throughput.</p>
+
+<ul>
+<li><b>AccountingStorageType</b>:
+Disabling storing accounting records by not setting this plugin.
+Turning accounting off provides minimal improvement in performance.
+If using the SlurmDBD increased speedup can be achieved by setting the
+CommitDelay option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
+<li><b>JobAcctGatherType</b>:
+Disabling the collection of job accounting information will improve job
+throughput. Disable collection of accounting by using the
+<i>jobacct_gather/none</i> plugin.</li>
+<li><b>JobCompType</b>:
+Disabling recording of job completion information will improve job
+throughput. Disable recording of job completion information by using the
+<i>jobcomp/none</i> plugin.</li>
+<li><b>JobSubmitPlugins</b>:
+Use of a lua job submit plugin is not recommended. slurmctld runs this
+script while holding internal locks, and only a single copy of this script
+can run at a time. This blocks most concurrency in slurmctld. Therefore, we
+do not recommend using it in a high throughput environment.</li>
+<li><b>MaxJobCount</b>:
+Controls how many jobs may be in the <b>slurmctld</b> daemon records at any
+point in time (pending, running, suspended or completed[temporarily]).
+The default value is 10,000.</li>
+<li><b>MessageTimeout</b>:
+Controls how long to wait for a response to messages.
+The default value is 10 seconds.
+While the <b>slurmctld</b> daemon is highly threaded, its responsiveness
+is load dependent. This value might need to be increased somewhat.</li>
+<li><b>MinJobAge</b>:
+Controls how soon the record of a completed job can be purged from the
+<b>slurmctld</b> memory and thus not visible using the <b>squeue</b> command.
+The record of jobs run will be preserved in accounting records and logs.
+The default value is 300 seconds. The value should be reduced to a few
+seconds if possible. Use of accounting records for older jobs can increase
+the job throughput rate compared with retaining old jobs in the memory of
+the slurmctld daemon.</li>
+<li><b>PriorityType</b>:
+The <i>priority/basic</i> is considerably faster than other options, but
+schedules jobs only on a First In First Out (FIFO) basis.</li>
+<li><b>PrologSlurmctld/EpilogSlurmctld</b>:
+Neither of these is recommended for a high throughput environment. When they
+are enabled a separate slurmctld thread has to be created for every job start
+(or task for a job array).
+Current architecture requires acquisition of a job write lock in every thread,
+which is a costly operation that severely limits scheduler throughput.
+<li><b>SchedulerParameters</b>:
+Many scheduling parameters are available.
+<ul>
+<li>Setting option <b>batch_sched_delay</b> will control how long the
+scheduling of batch jobs can be delayed. This effects only batch jobs.
+For example, if many jobs are submitted each second, the overhead of
+trying to schedule each one will adversely impact the rate at which jobs
+can be submitted. The default value is 3 seconds.</li>
+<li>Setting option <b>defer</b> will avoid attempting to schedule each job
+individually at job submit time, but defer it until a later time when
+scheduling multiple jobs simultaneously may be possible.
+This option may improve system responsiveness when large numbers of jobs
+(many hundreds) are submitted at the same time, but it will delay the
+initiation time of individual jobs.</li>
+<li>Setting the <b>defer_batch</b> option is similar to the <b>defer</b>
+option, as explained above. The difference is that <b>defer_batch</b> will
+allow interactive jobs to be started immediately, but jobs submitted with
+sbatch will be deferred to allow multiple jobs to accumulate and be scheduled
+at once.</li>
+<li><b>sched_min_interval</b> is yet another configuration parameter to control
+how frequently the scheduling logic runs. It can still be triggered on each
+job submit, job termination, or other state change which could permit a new
+job to be started. However that triggering does not cause the scheduling logic
+to be started immediately, but only within the configured <b>sched_interval</b>.
+For example, if sched_min_interval=2000000 (microseconds) and 100 jobs are submitted
+within a 2 second time window, then the scheduling logic will be executed one time
+rather than 100 times if sched_min_interval was set to 0 (no delay).</li>
+<li>Besides controlling how frequently the scheduling logic is executed, the
+<b>default_queue_depth</b> configuration parameter controls how many jobs are
+considered to be started in each scheduler iteration. The default value of
+default_queue_depth is 100 (jobs), which should be fine in most cases.</li>
+<li>The <i>sched/backfill</i> plugin has relatively high overhead if used with
+large numbers of job. Configuring <b>bf_max_job_test</b> to a modest size (say 100
+jobs or less) and <b>bf_interval</b> to 30 seconds or more will limit the
+overhead of backfill scheduling (<b>NOTE</b>: the default values are fine for
+both of these parameters). Other backfill options available for tuning backfill
+scheduling include <b>bf_max_job_user</b>, <b>bf_resolution</b> and
+<b>bf_window</b>. See the slurm.conf man page for details.</li>
+<li>A set of scheduling parameters currently used for running hundreds of jobs
+per second on a sustained basis on one cluster follows. Note that every
+environment is different and this set of parameters will not work well
+in every case, but it may serve as a good starting point.</li>
+<ul>
+<li>batch_sched_delay=20</li>
+<li>bf_continue</li>
+<li>bf_interval=300</li>
+<li>bf_min_age_reserve=10800</li>
+<li>bf_resolution=600</li>
+<li>bf_yield_interval=1000000</li>
+<li>partition_job_depth=500</li>
+<li>sched_max_job_start=200</li>
+<li>sched_min_interval=2000000</li>
+</ul>
+</ul></li>
+<li><b>SlurmctldParameters</b>:
+Many slurmctld daemon parameters are available.
+<ul>
+<li>Increasing <b>conmgr_max_connections</b> will allow slurmctld to accept
+more connections at once to avoid connect() timeouts during times of high load
+but not necessarily read or write timeouts. The trade off is that slurmctld will
+use more memory as each connection reserves memory to buffer inbound and
+outbound data along with the connection state. <b>conmgr_max_connections</b>
+should at least be the number of hardware CPU threads available but less than
+<code>sysctl net.nf_conntrack_max</code> and
+<code>sysctl net.core.somaxconn</code>. Enabling
+<code>sysctl net.ipv4.tcp_syncookies=1</code> is also suggested to
+allow the kernel to better manage larger bursts of incoming sockets.
+When modifying this parameter, you should monitor for relative changes in
+<code>sdiag</code>'s output. The <i>ave_time</i> field section under <i>Remote
+Procedure Call statistics</i> should be given special attention as changes to
+that can have a dramatic impact on overall response times. Increasing
+<b>conmgr_max_connections</b> too much could cause an <i>Out of Memory</i>
+event which will cause slurmctld to crash, potentially losing jobs and
+accounting. Sites are advised to try changing <b>MessageTimeout</b> and
+<b>TCPTimeout</b> before changing the <b>conmgr_max_connections</b> parameter.
+</li>
+<li>
+The <b>conmgr_threads</b> option controls the size of the thread pool that is
+used to process communications. Threads are used as needed to handle I/O or to
+process incoming RPCs and generate replies. The trade off is that slurmctld will
+use more memory for each additional thread. Increasing thread counts will also
+cause increased kernel scheduler contention when there are more threads than
+available hardware CPUs, increasing the potential for thread starvation. While
+processing incoming RPC requests, slurmctld usually has to obtain one or
+more of the global slurmctld locks. Each thread attempting to obtain a lock can
+cause increased contention with the scheduler threads. Lock contention will
+result in the job scheduler running slower or with noticeable delays, and
+increase the average time per RPC.
+Sites wishing for more RPC throughput can increase <b>conmgr_threads</b> from
+the defaults, while sites wishing to prioritize scheduler threads can decrease
+the thread count. We recommend trying to modify <b>conmgr_max_connections</b>
+and the <b>SchedulerParameters</b> to get the performance you want, before
+attempting to change <b>conmgr_threads</b>.
+You should monitor for changes in <code>sdiag</code>'s job start statistics
+when changing this parameter. In most cases, sites should consider reducing
+<b>conmgr_threads</b> instead of adding more threads, as having too many
+threads can cause locking overhead and cause <code>slurmctld</code> to hang.
+Increasing <b>conmgr_threads</b> also uses more memory, potentially causing an
+<i>Out of Memory</i> event for <code>slurmctld</code>, which could result in
+lost jobs and accounting.
+</li>
+</ul>
+<li><b>SchedulerType</b>:
+If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
+recommended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
+and eliminates logic used to sort the queue by priority.
+<li><b>SlurmctldDebug</b>:
+More detailed logging will decrease system throughput. Set to <i>error</i> or
+<i>info</i> for regular operations with high throughput workload.</li>
+<li><b>SlurmdDebug</b>:
+More detailed logging will decrease system throughput. Set to <i>error</i> or
+<i>info</i> for regular operations with high throughput workload.</li>
+<li><b>SlurmdLogFile</b>:
+Writing to local storage is recommended.</li>
+<li>The ability to do RPC rate limiting on a per-user basis is a new feature
+with 23.02. It acts as a virtual bucket of tokens that users consume with
+Remote Procedure Calls. This allows users to submit a large number of requests
+in a short period of time, but not a sustained high rate of requests that
+would add stress to the scheduler. You can define the maximum number of tokens
+with <b>rl_bucket_size</b>, the rate at which new tokens are added with
+<b>rl_refill_rate</b>, the frequency with which tokens are refilled with
+<b>rl_refill_period</b> and the number of entities to track with
+<b>rl_table_size</b>. It is enabled with <b>rl_enable</b>.</li>
+<li><b>Other</b>: Configure logging, accounting and other overhead to a minimum
+appropriate for your environment.</li>
+</ul>
+
+<h2 id="slurmdbd_config">SlurmDBD Configuration
+<a class="slurm_link" href="#slurmdbd_config"></a>
+</h2>
+
+<p>Turning accounting off provides a minimal improvement in performance.
+  If using SlurmDBD increased speedup can be achieved by setting the CommitDelay
+  option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a> to introduce a
+  delay between the time slurmdbd receives a connection from slurmctld and
+  when it commits the information to the database. This allows multiple
+  requests to be accumulated and reduces the number of commit requests
+  to the database.</p>
+
+<p>High job throughput leads to the database growing much faster than in a
+  typical environment, potentially to a size that becomes difficult to manage
+  depending on the capabilities of the database server. Sites are strongly
+  encouraged to make a plan for data retention early on and to configure the
+  relevant <a href="accounting.html#slurmdbd-archive-purge">Purge options</a> to
+  keep the database files at a manageable size. Also consider the frequency of
+  these purges as explained in the linked  documentation. Alternately, sites may
+  prefer to skip the storage of steps or jobs entirely through the relevant
+  <a href="slurm.conf.html#OPT_AccountingStorageEnforce">AccountingStorageEnforce</a>
+  options (<b>nosteps</b> and <b>nojobs</b>).</p>
+
+<!--#include virtual="footer.txt"-->

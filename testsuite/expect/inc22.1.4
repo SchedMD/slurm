@@ -1,0 +1,57 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test for jobs that ran on a node at a certain time from
+#          configuration set up in test22.1.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc22_1_4 {} {
+	global sacct job1_acct job2_acct job3_acct job1_start_str
+	global job1_end_str job2_start_str job2_end_str job3_start_str
+	global job3_end_str start_str end_str cluster1 cluster2
+	global sql_rem_clus1 sql_rem_clus2 users accounts
+	global test_job1 test_job2 test_job3
+
+	# Since there are 2 test clusters we will just use one
+	set cluster $cluster1
+
+	# Test for job 1
+	log_info "Search for job1 on cluster $cluster"
+	set output [run_command_output -fail "$sacct -p -M $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname --noheader"]
+	subtest {[regexp -all "$test_job1\." $output] == 2} "Test for job 1 submitted twice"
+
+	# Test for job2
+	log_info "Search for job2 on cluster $cluster"
+	set output [run_command_output -fail "$sacct -p -M $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname --noheader"]
+	subtest {[regexp -all "$test_job2\." $output] == 1} "Test for job 2"
+
+	# Test for job3
+	log_info "Search for job3 on cluster $cluster"
+	set output [run_command_output -fail "$sacct -p -M $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname --noheader"]
+	subtest {[regexp -all "$test_job3\." $output] == 1} "Test for job 3"
+}

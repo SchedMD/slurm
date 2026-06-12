@@ -1,0 +1,84 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          test that a scontrol can hold and release a whole job array
+#          or an individual job index.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id       0
+set array_in     2
+set array_size   4
+set file_script  "$test_dir/script"
+
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
+	skip "MaxArraySize is to small for this test"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#change this so it checks through all the jobs in the array
+proc check_hold_job {job} {
+	set job_dict [lindex [dict values [get_jobs $job]] 0]
+	subtest {[dict get $job_dict "Priority"] == 0} "Check job ($job) is on hold"
+}
+
+proc check_release_job { job } {
+	global scontrol number
+
+	set job_dict [lindex [dict values [get_jobs $job]] 0]
+	subtest {[dict get $job_dict "Priority"] != 0} "Check job ($job) is released"
+}
+
+################Test Starts Here################
+make_bash_script $file_script "sleep 10"
+
+set job_id [submit_job -fail "-N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script"]
+
+# hold the whole array then release individual jobs in the array
+log_debug "Holding entire job array"
+run_command -fail "$scontrol hold $job_id"
+check_hold_job ${job_id}_0
+check_hold_job ${job_id}_1
+
+log_debug "Releasing job index $array_in in the array"
+run_command -fail "$scontrol release ${job_id}_$array_in"
+check_hold_job ${job_id}_0
+check_release_job ${job_id}_$array_in
+
+log_debug "Releasing the entire job array"
+run_command -fail "$scontrol release $job_id"
+check_release_job ${job_id}_0
+check_release_job ${job_id}_1
+
+log_debug "Holding job index $array_in in the array"
+run_command -fail "$scontrol hold ${job_id}_$array_in"
+check_hold_job ${job_id}_$array_in
+
+log_debug "Releasing job index $array_in in the array"
+run_command -fail "$scontrol release ${job_id}_$array_in"
+check_release_job ${job_id}_$array_in

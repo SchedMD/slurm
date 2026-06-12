@@ -1,0 +1,107 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol change gres count with File is disabled.
+#          If a GRES is associated with a File then we should not be able to
+#          change it's count to anything other than zero as there is no
+#          mechanism to identify the specific GRES to remove (i.e. say we
+#          want to remove /dev/nvidia2 on a node with /dev/nvidia[0-3]).
+#          We use gres/gpu for this test since those need to be associated
+#          with specific device files.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set authorized     1
+set file_in        "$test_dir/input"
+
+if {![is_super_user]} {
+	skip "This test can't be run without being a super user of the cluster"
+}
+
+#
+# Identify a node with gres/gpu to work with
+#
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME"
+set timeout $max_job_delay
+set matches 0
+spawn $srun -n1 --gres=gpu:2 $file_in
+expect {
+        -re "HOST:($re_word_str)" {
+                incr matches
+		set host_name $expect_out(1,string)
+                exp_continue
+        }
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	skip "This test can't be run without a node with at least 2 gres/gpu"
+}
+
+#
+# Log current state for reference
+#
+set matches 0
+spawn $scontrol show node $host_name
+expect {
+        -re "gpu:" {
+                incr matches
+                exp_continue
+        }
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	fail "Something seems to be wrong with the state of node ($host_name)"
+}
+
+#
+# Now try to change the count of gres/gpu to 1.  Note that a count of zero
+# should work, but we want to see this request get rejected.
+#
+set matches 0
+spawn $scontrol update NodeName=$host_name Gres=gpu:1
+expect {
+        -re "Invalid generic resource" {
+            incr matches
+			log_debug "Error is expected, no worries"
+            exp_continue
+        }
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "Node GRES change request not rejected. Configuration of node ($host_name) is likely left in a bad state"
+}

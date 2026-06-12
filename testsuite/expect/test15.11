@@ -1,0 +1,104 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --nice and --job-name options.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id      0
+set job_name    "jobname$test_id"
+set name_read   ""
+
+if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
+	skip "Not compatible with priority/multifactor"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Test setting job's name and get priority
+#
+set priority1  0
+set matches    0
+set timeout $max_job_delay
+spawn $salloc -t1 --job-name=$job_name $bin_bash
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "$scontrol show job $job_id\r"
+		exp_continue
+	}
+	-re "Name=$job_name" {
+		set matches 1
+		exp_continue
+	}
+	-re "Priority=($number)" {
+		set priority1 $expect_out(1,string)
+		send "exit\r"
+		exp_continue
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "salloc failed to initiate job"
+}
+subtest {$matches != 0} "Verify that the job set the job name"
+
+#
+# Test setting job's name and get priority
+#
+set job_id     0
+set priority2  0
+spawn $salloc -t1 --nice=1000 $bin_bash
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "$scontrol show job $job_id\r"
+		exp_continue
+	}
+	-re "Priority=($number)" {
+		set priority2 $expect_out(1,string)
+		send "exit\r"
+		exp_continue
+        }
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+set delta_prio [expr $priority1 - $priority2]
+subtest {$delta_prio >= 950} "Verify that the job processed the nice option" "$delta_prio < 950"

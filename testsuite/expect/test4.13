@@ -1,0 +1,116 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that sinfo -O (--Format) option displays the
+#          correct user specified values.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_acct           "${test_name}_acct"
+set test_part           "${test_name}_part"
+set test_node           [lindex [get_nodes_by_state] 0]
+
+array set node_sinfo_vals { }
+array set part_sinfo_vals { }
+
+array set node_info {
+	AllocMem           allocmem
+	CPUTot             cpus
+	CPULoad            cpusload
+	CoresPerSocket     cores
+	TmpDisk            disk
+	AvailableFeatures  features
+	FreeMem            freemem
+	Gres               gres
+	NodeAddr           nodeaddr
+	NodeHostName       nodehost
+	RealMemory         memory
+	State              statecomplete
+	Sockets            sockets
+	ThreadsPerCore     threads
+	Version            version
+	Weight             weight
+}
+
+array set part_info {
+	State              available
+	MaxCPUsPerNode     maxcpuspernode
+	Nodes              nodelist
+	TotalNodes         nodes
+	PreemptMode        preemptmode
+	PriorityJobFactor  priorityjobfactor
+	PriorityTier       prioritytier
+	OverSubscribe      oversubscribe
+	RootOnly           root
+}
+
+if {![is_super_user]} {
+    skip "This test can't be run without being a super user of the cluster"
+}
+
+proc cleanup { } {
+	global scontrol test_part
+
+	run_command "$scontrol delete partitionname=$test_part"
+}
+
+log_info "=== Testing Node Information ==="
+set nodes_dict [get_nodes $test_node]
+foreach option [array names node_info] {
+	set node_sinfo_vals($node_info($option)) [dict get $nodes_dict $test_node $option]
+}
+
+foreach option [array names node_sinfo_vals] {
+	# Gres option (and potentially others) may include "(" and ")" as
+	# characters, they need to be escaped to be used as part of a regexp
+	set val_re [string map {\( \\( \) \\) \+ \\+} $node_sinfo_vals($option)]
+
+	set output [string trim [run_command_output -fail "$sinfo -n$test_node -O$option:256 -h"]]
+	if {$option eq "cpusload" || $option eq "freemem"} {
+		# CPULoad and FreeMem can change from one system call to another
+		subtest [regexp {\d+(?:\.\d+)?} $output] "Verify node $option field" "Expected a number but observed $output"
+	} else {
+		subtest [regexp -nocase $val_re $output] "Verify node $option field" "Expected $val_re but observed $output"
+	}
+}
+
+#
+# Add test partition
+#
+run_command -fail "$scontrol create partitionname=$test_part nodes=$test_node"
+set output [run_command_output -fail "$scontrol show partitionname=$test_part"]
+if {![regexp "PartitionName=$test_part" $output]} {
+	fail "Test partition was not created"
+}
+
+log_info "=== Testing Partition Information ==="
+set parts_dict [get_partitions $test_part]
+foreach option [array names part_info] {
+	set part_sinfo_vals($part_info($option)) [dict get $parts_dict $test_part $option]
+}
+
+foreach option [array names part_sinfo_vals] {
+	set output [string trim [run_command_output -fail "$sinfo -p$test_part -O$option -h"]]
+	subtest [regexp -nocase $part_sinfo_vals($option) $output] "Verify partition $option field" "Expected $part_sinfo_vals($option) but observed $output"
+}

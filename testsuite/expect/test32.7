@@ -1,0 +1,103 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validates that sgather -f ignores nonexistent source files.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id        0
+set hostname      ""
+set file_in       "$test_dir/input"
+set file_out      "$test_dir/output"
+set sgather_tmp   "/tmp/$test_name"
+set sgather_out   "${test_name}_sgather.out"
+
+if {[file executable $sgather] == 0} {
+	skip "$sgather does not exist"
+}
+
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
+	skip "This test is incompatible with SlurmdUser != root"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# Set env PATH to slurm dir
+set env(PATH) $slurm_dir/bin:$env(PATH)
+
+make_bash_script $file_in "
+env | grep SLURM_NNODES
+$bin_rm -f ${sgather_out}\*
+$srun $bin_rm -f $sgather_tmp
+$sgather $sgather_tmp $sgather_out
+echo GatherExitPart1=\$?
+$sgather -f $sgather_tmp $sgather_out
+echo GatherExitPart2=\$?
+$bin_rm -f ${sgather_out}\*
+exit 0
+"
+
+spawn $sbatch -N1-4 -o $file_out -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "Batch job was not submitted"
+}
+
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+set matches 0
+spawn $bin_cat $file_out
+expect {
+	-re "GatherExitPart1=1" {
+		incr matches
+		exp_continue
+	}
+	-re "GatherExitPart2=0" {
+		incr matches
+		exp_continue
+	}
+	eof {
+		log_debug "No worries about failing to open files, these are expected"
+		wait
+	}
+}
+
+if {$matches != 2} {
+	fail "Failed to ignore missing files ($matches != 2)"
+}

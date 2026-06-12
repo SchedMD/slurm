@@ -1,0 +1,168 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test GRES APIs.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_prog   "$test_name.prog"
+set cfgdir      [pwd]
+
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
+#	Many Cray-specific changes required in slurm.conf test files
+	skip "This test can not run on a Cray system"
+}
+
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
+
+#
+# Delete left-over programs and rebuild them
+#
+cleanup
+
+if [compile_against_libslurm -full $test_prog] {
+	fail "Cannot compile test program"
+}
+
+log_info "====test7.17.1===="
+set cpu_match 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.1" 8 4 2
+expect {
+	-re "failure" {
+		fail "Failure running test program test7.17.1"
+	}
+	-re "cpu_alloc=8" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$cpu_match == 1} "Verify correct number of cores" "$cpu_match"
+
+log_info "====test7.17.2===="
+set cpu_match 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.2" 16 8 2
+expect {
+	-re "failure" {
+		fail "Failure running program test7.17.2"
+	}
+	-re "cpu_alloc=16" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$cpu_match == 1} "Verify correct number of cpus" "$cpu_match"
+
+log_info "====test7.17.3===="
+set cpu_match 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.3" 16 8 2
+expect {
+	-re "failure" {
+		fail "Failure running test program test7.17.3"
+	}
+	-re "cpu_alloc=16" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$cpu_match == 1} "Number of cpus should be 16" "$cpu_match"
+
+log_info "====test7.17.4===="
+set cpu_match 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.4" 16 8 2
+expect {
+	-re "failure" {
+		fail "Failure running test program test7.17.4"
+	}
+	-re "cpu_alloc=ALL" {
+		set cpu_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$cpu_match == 1} "Number of cpus should be ALL" "$cpu_match"
+
+#######################################
+# Tests for expected failures
+#######################################
+
+# Run a job with invalid job allocation
+log_info "====test7.17.5===="
+set fail_match 0
+spawn ./$test_prog "gres/craynetworks:100" "$cfgdir" "/test7.17.5" 16 8 2
+expect {
+	-re "failure" {
+		log_debug "This error is expected"
+		set fail_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$fail_match == 1} "A job run with invalid job allocation (craynetworks:100) should fail" "$fail_match"
+
+# Run with no gres.conf file
+log_info "====test7.17.6===="
+set fail_match 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.6" 0 0 0
+expect {
+	-re "failure" {
+		log_debug "This error is expected"
+		set fail_match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$fail_match == 1} "A job run with no gres.conf file should fail" "$fail_match"
+
+# Test with invalid job allocation
+log_info "====test7.17.7===="
+set fail_match 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.7" 8 4 2
+expect {
+	-re "fatal" {
+		log_debug "This error is expected"
+		set fail_match 1
+		#exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$fail_match == 1} "A job run with invalid job allocation (gpu:2) should fail" "$fail_match"

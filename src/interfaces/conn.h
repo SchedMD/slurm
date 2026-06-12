@@ -1,0 +1,249 @@
+/*****************************************************************************\
+ *  conn.h - connection API definitions
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef _INTERFACES_CONN_H
+#define _INTERFACES_CONN_H
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <sys/uio.h>
+
+#include "src/common/slurm_time.h"
+
+typedef struct conn_s conn_t;
+
+typedef enum {
+	CONN_NULL = 0,
+	CONN_SERVER,
+	CONN_CLIENT,
+} conn_mode_t;
+
+typedef struct {
+	/* Function pointer type is the same as s2n_recv_fn */
+	int (*recv)(void *io_context, uint8_t *buf, uint32_t len);
+	/* Function pointer type is the same as s2n_send_fn */
+	int (*send)(void *io_context, const uint8_t *buf, uint32_t len);
+
+	/* Pointer to hand to recv() and send() callbacks */
+	void *io_context;
+} conn_callbacks_t;
+
+typedef struct {
+	/* file descriptor for incoming data */
+	int input_fd;
+	/* file descriptor for outgoing data */
+	int output_fd;
+	/* Ignore any errors for this connection */
+	bool maybe;
+	/* TLS connection mode (@see conn_mode_t) */
+	conn_mode_t mode;
+	/*
+	 * False: Enable any library based blinding delays
+	 * True: Disable any library based blinding delays which caller will
+	 *	need to be honored via call to conn_g_get_delay() after any
+	 *	conn_g_*() failure
+	 */
+	bool defer_blinding;
+	conn_callbacks_t callbacks;
+	/*
+         * False: Attempt TLS negotiation in conn_g_create()
+         * True: Defer TLS negotiation in conn_g_create() to explicit call
+         *      to conn_g_negotiate_tls()
+         */
+	bool defer_negotiation;
+	/*
+	 * server certificate used by CONN_CLIENT connections when server
+	 * certificate is not signed by a CA in our trust store
+	 */
+	char *cert;
+} conn_args_t;
+
+extern char *conn_mode_to_str(conn_mode_t mode);
+
+/*
+ * Return true if TLS is enabled for Slurm communications
+ * WARNING: conn_tls_enabled() is different than tls_available()
+ */
+extern bool conn_tls_enabled(void);
+
+extern int conn_g_init(void);
+extern int conn_g_fini(void);
+
+/*
+ * Get self signed public certificate pem.
+ */
+extern char *conn_g_get_own_public_cert(void);
+
+/*
+ * Load own certificate into store
+ *
+ * This is useful when certificate is not known on startup, and must be loaded
+ * later (e.g. slurmd getting a signed certificate from slurmctld)
+ *
+ * Set 'cert' to NULL to try to load certificate from file. This is only
+ * relevant to Slurm daemons that have statically configured certificates.
+ * If 'cert' is NULL, all other arguments will be ignored.
+ *
+ * Note that this certificate must be trusted by the configured CA trust store.
+ *
+ * IN cert - certificate PEM, or NULL if loading from file.
+ * IN cert_len - length of cert
+ * IN key - key PEM
+ * IN key_len - length of key
+ */
+extern int conn_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
+				uint32_t key_len);
+
+/*
+ * Load self-signed certificate into store
+ *
+ * This is needed for client commands that open listening sockets.
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_g_load_self_signed_cert(void);
+
+/*
+ * Returns true if own certificate has ever been loaded
+ */
+extern bool conn_g_own_cert_loaded(void);
+
+/*
+ * Load CA cert into trust store
+ * IN cert_file - path to CA certificate pem. Set to NULL to load CA certificate
+ *	pem file from the configuration in slurm.conf or in the default path
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_g_load_ca_cert(char *cert_file);
+
+/*
+ * Create new TLS connection
+ * IN conn_args - ptr to conn_args_t
+ * RET ptr to TLS state
+ */
+extern conn_t *conn_g_create(const conn_args_t *conn_args);
+/*
+ * Destroy connection state and release memory
+ * Note: Use FREE_NULL_CONN() instead of calling directly
+ * IN conn - connection to destroy
+ * IN close_fds - True to close input and output file descriptors
+ */
+extern void conn_g_destroy(conn_t *conn, bool close_fds);
+
+#define FREE_NULL_CONN(_X)                        \
+	do {                                      \
+		if (_X)                           \
+			conn_g_destroy(_X, true); \
+		_X = NULL;                        \
+	} while (0)
+
+/*
+ * Attempt TLS connection negotiation
+ * NOTE: Only to be called at start of connection and if defer_negotiation=true
+ * RET SLURM_SUCCESS or EWOULDBLOCK or error
+ */
+extern int conn_g_negotiate_tls(conn_t *conn);
+
+/*
+ * Return true if client is authenticated (mTLS)
+ * NOTE: Only to be called by server connections
+ */
+extern bool conn_g_is_client_authenticated(conn_t *conn);
+
+/*
+ * Retrieve connection read file descriptor.
+ * Needed for poll() and similar status monitoring.
+ * Assumes both read and write file descriptor are the same.
+ */
+extern int conn_g_get_fd(conn_t *conn);
+
+/*
+ * Set read/write fd's on TLS connection
+ * NOTE: This resets send/recv callbacks/contexts in TLS connection
+ * IN conn - TLS connection to reconfigure
+ * IN input_fd - new read fd
+ * IN output_fd - new write fd
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_g_set_fds(conn_t *conn, int input_fd, int output_fd);
+
+/*
+ * Set read/write fd's on TLS connection
+ * NOTE: This resets read/write fd's in TLS connection
+ * IN conn - TLS connection to reconfigure
+ * IN input_fd - new read fd
+ * IN output_fd - new write fd
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_g_set_callbacks(conn_t *conn, conn_callbacks_t *callbacks);
+
+/*
+ * Perform shutdown on connection
+ *
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS if connection was shutdown,
+ * SLURM_BLOCKED_ON_READ/SLURM_BLOCKED_ON_WRITE if blocked in either read/write
+ * direction, or error if shutdown was unsuccessful.
+ */
+extern int conn_g_shutdown(conn_t *conn);
+
+/*
+ * Perform blocking shutdown on connection
+ *
+ * WARNING: If underlying fd connection is non-blocking, this function will
+ * still block via poll(). It is recommended to use conn_g_shutdown and handle
+ * EWOULDBLOCK cases.
+ *
+ * NOTE: conn must have the underlying fd's set in its state in order to use
+ * this function.
+ *
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_blocking_g_shutdown(conn_t *conn);
+
+/*
+ * Get absolute time that next conn_g_*() should be delayed until after any
+ * failure
+ * NOTE: returned timespec may be {0,0} indicating no delay required
+ */
+extern timespec_t conn_g_get_delay(conn_t *conn);
+
+extern ssize_t conn_g_send(conn_t *conn, const void *buf, size_t n);
+extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count);
+extern uint32_t conn_g_peek(conn_t *conn);
+extern ssize_t conn_g_recv(conn_t *conn, void *buf, size_t n);
+
+#endif

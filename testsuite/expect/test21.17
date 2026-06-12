@@ -1,0 +1,187 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr modify a user
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
+set tu3         "${test_name}-user.3"
+set access_err  0
+
+# Cluster
+array set clus_req {}
+
+# Accounts
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# User
+array set user_req {}
+set user_req(cluster) $tc1,$tc2,$tc3
+set user_req(account) $ta1,$ta2,$ta3
+
+# Mod User
+array set user_mod_info {}
+set user_mod_info(cluster) $tc1,$tc2,$tc3
+array set user_mod_acct {
+	adminlevel  Operator
+}
+set user_mod_acct(defaultaccount) "'$ta2'"
+array set user_mod_assoc {}
+
+array set user_mod_info2 {}
+set user_mod_info2(cluster) $tc1,$tc2,$tc3
+array set user_mod_acct2 {
+	adminlevel None
+}
+array set user_mod_assoc2 {
+	fairshare  1700
+	maxcpumin  700000
+	maxjob     70
+	maxnode    700
+	maxwall    00:07:00
+}
+
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "yes" } {
+	set def_acct ""
+} else {
+	set def_acct $ta1
+}
+
+proc cleanup {} {
+	global ta1 ta2 ta3 tc1 tc2 tc3 tu1 tu2 tu3
+
+	remove_user "" "" "$tu1,$tu2,$tu3"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
+}
+
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
+}
+
+# Add users
+if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
+}
+
+# First test change the AdminLevel and DefaultAccount of a user
+# cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
+
+if [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]] {
+	fail "Unable to modify user 1 ($tu1)"
+}
+
+#
+# Use sacctmgr to list the test user modification
+#
+set matches 0
+spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "($tu1.$ta2.$user_mod_acct(adminlevel).|($tu2|$tu3).$def_acct.$user_mod_acct2(adminlevel).)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	fail "User modification 3 incorrect ($matches != 3)"
+}
+
+# Next, test change the limits of one user
+# cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
+
+if [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]] {
+	fail "Unable to modify user 2 ($tu2)"
+}
+
+#
+# Use sacctmgr to list the test user modifications
+#
+set matches 0
+spawn $sacctmgr -n -p list assoc users=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "($tu2.($tc1|$tc2|$tc3).$user_mod_assoc2(fairshare).$user_mod_assoc2(maxcpumin).$user_mod_assoc2(maxjob).$user_mod_assoc2(maxnode).$user_mod_assoc2(maxwall).|($tu1|$tu3).($tc1|$tc2|$tc3).1.....)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 27} {
+	fail "User modification 27 incorrect ($matches != 27)"
+}

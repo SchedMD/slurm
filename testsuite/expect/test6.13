@@ -1,0 +1,192 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test routing all signals through slurmctld rather than slurmd
+#          (undocumented --ctld option).
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# UCRL-CODE-217948.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
+set file_prog    "$test_name.prog"
+set job_id       0
+
+#
+# Cannot run the test if OverTimeLimit is set, since we test time limits.
+#
+regexp "($number)" [get_config_param "OverTimeLimit"] {} overtimelim
+if {$overtimelim != 0} {
+	skip "Cannot run this test when OverTimeLimit is set. Exiting now"
+}
+
+proc cleanup {} {
+	global job_id file_prog
+
+	cancel_job $job_id
+	file delete $file_prog
+}
+
+#
+# Delete left-over programs and rebuild them.
+# We use our own program to get ulimit values since the output
+# of the ulimit program is inconsistent across systems.
+#
+exec $bin_cc -O -o $file_prog ${file_prog}.c
+make_bash_script $file_in "
+ $srun ./$file_prog
+"
+
+#
+# Submit a job so we have something to work with
+#
+set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
+
+wait_for_job -fail $job_id RUNNING
+# Allow time for poe to start the step
+# This could take a while with launch/poe
+sleep 30
+
+#
+# Test verbose scancel
+#
+set matches 0
+spawn $scancel --signal=USR1 --ctld --verbose $job_id
+expect {
+	-re "Signal ($number) to job $job_id" {
+		set sig_num $expect_out(1,string)
+		if {$sig_num != 9} {
+			incr matches
+		} else {
+			incr matches -1
+		}
+		exp_continue
+	}
+	-re "Job is in transitional state, retrying" {
+		incr matches -1
+		exp_continue
+	}
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 1} "Test verbose scancel"
+
+wait_for_job -fail $job_id DONE
+
+#
+# Test output file
+#
+wait_for_file -fail $file_out
+set got_signal 0
+spawn cat $file_out
+expect {
+	-re "ERROR" {
+		fail "Failure running test program"
+	}
+	-re "Received SIGUSR1" {
+		set got_signal 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$got_signal == 1} "Verify SIGUSR1 received"
+
+#
+# Variation of above to test signal of batch script processes
+# Note that job termination sends SIGCONT/SIGTERM, hence the
+# duplicate sleep call
+#
+exec rm -f $file_in $file_out
+make_bash_script $file_in "
+ echo BEGIN
+ $bin_sleep 10
+ $bin_sleep 10
+ $bin_sleep 10
+ echo FINI
+"
+
+#
+# Submit a job so we have something to work with
+#
+set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
+
+wait_for_job -fail $job_id RUNNING
+sleep 5
+
+#
+# Test verbose scancel
+#
+set matches 0
+spawn $scancel --batch --signal=STOP --ctld --verbose $job_id
+expect {
+	-re "Signal ($number) to batch job $job_id" {
+		set sig_num $expect_out(1,string)
+		if {$sig_num != 9} {
+			incr matches
+		} else {
+			incr matches -1
+		}
+		exp_continue
+	}
+	-re "Job is in transitional state, retrying" {
+		incr matches -1
+		exp_continue
+	}
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 1} "Verify SIGSTOP received"
+
+wait_for_job -fail $job_id DONE
+
+#
+# Test output file
+#
+wait_for_file -fail $file_out
+set matches 0
+spawn cat $file_out
+expect {
+	-re "FINI" {
+		fail "Job not stopped"
+	}
+	-re "CANCELLED" {
+		set matches 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 1} "Expecting CANCELLED error message"

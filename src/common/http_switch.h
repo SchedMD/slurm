@@ -1,0 +1,72 @@
+/*****************************************************************************\
+ *  http_switch.h - Auto switch between HTTP and RPC requests
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef SLURM_HTTP_SWITCH_H
+#define SLURM_HTTP_SWITCH_H
+
+#include "stdbool.h"
+
+#include "src/conmgr/conmgr.h"
+
+/* True if plugins for HTTP loaded */
+extern bool http_switch_http_enabled(void);
+
+/* True if plugins for TLS wrapped HTTP loaded */
+extern bool http_switch_tls_enabled(void);
+
+/* Get connection type to switch between HTTP and Slurm RPCs */
+extern conmgr_con_type_t http_switch_con_type(void);
+
+/* Get connection flags needed to switch including TLS wrapping */
+extern conmgr_con_flags_t http_switch_con_flags(void);
+
+/*
+ * Handle switching between HTTP and Slurm RPCs in on_data() callback.
+ *
+ * Changes mode to CON_TYPE_RPC when fingerprints as Slurm RPC.
+ * Calls on_http() when fingerprint matches HTTP.
+ *
+ * IN conmgr_args - Args containing connection to fingerprint
+ * IN on_http - callback to call when fingerprint for HTTP matches
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_switch_on_data(conmgr_callback_args_t conmgr_args,
+			       int (*on_http)(conmgr_fd_t *con));
+
+/* Initialize all plugins and state needed for HTTP switching */
+extern void http_switch_init(void);
+extern void http_switch_fini(void);
+
+#endif

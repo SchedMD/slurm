@@ -1,0 +1,10 @@
+#
+# Instructions how to compile the example programs.
+#
+#export $SLURM_ROOT=slurm_install
+# for example SLRUM_ROOT=/home/david/clusters/master/linux
+#
+# gcc -g -O0 -o testpmi2 testpmi2.c -I$SLURM_ROOT/include $SLURM_ROOT/lib/libpmi2.so
+#
+# gcc -g -O0 -o testpmixring testpmixring.c -I$SLURM_ROOT/include $LSURM_ROOT/lib/libpmi2.so
+#

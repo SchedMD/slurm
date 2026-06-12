@@ -1,0 +1,126 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Check node information, both regular and long (--Node, --long,
+#          and --exact options).
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set matches     0
+
+#
+# Check the sinfo regular format
+#
+
+spawn $sinfo --Node
+expect {
+	-re "NODELIST" {
+		incr matches
+		exp_continue
+	}
+	-re "MIDPLANELIST" {
+		incr matches
+		exp_continue
+	}
+	-re "NODES " {
+		incr matches
+		exp_continue
+	}
+	-re "PARTITION" {
+		incr matches
+		exp_continue
+	}
+	-re "STATE" {
+		incr matches
+		exp_continue
+	}
+	-re "CPUS" {
+		incr matches -10
+		exp_continue
+	}
+	timeout {
+		fail "sinfo not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$matches == 4} "Check the sinfo regular format"
+
+
+#
+# Check the sinfo long format
+#
+
+set matches     0
+set ranges      0
+spawn $sinfo --Node --long --exact
+expect {
+	-re "NODELIST" {
+		incr matches
+		exp_continue
+	}
+	-re "MIDPLANELIST" {
+		incr matches
+		exp_continue
+	}
+	-re "NODES " {
+		incr matches
+		exp_continue
+	}
+	-re "PARTITION" {
+		incr matches
+		exp_continue
+	}
+	-re "STATE" {
+		incr matches
+		exp_continue
+	}
+	-re "CPUS" {
+		incr matches
+		exp_continue
+	}
+	-re "REASON" {
+		incr matches
+		exp_continue
+	}
+	-re "($number)(.)" {
+		if {$expect_out(2,string) eq "+"} {
+			set ranges 1
+		}
+		exp_continue
+	}
+	timeout {
+		fail "sinfo not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$ranges == 0} "Check for sinfo ranges"
+subtest {$matches == 6} "Check the sinfo long format"

@@ -1,0 +1,115 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirm that sbatch sets appropriate time limit (--time
+#          option)
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set job_id      0
+
+#
+# We must be SlurmUser or root in order to change the partition MaxTime limit,
+# otherwise this test may fail.
+#
+if {![is_super_user]} {
+	skip "You must be SlurmUser or root to run this test"
+}
+
+#
+# Since we make changes to configuration, define a cleanup function to restore
+# the configuration before exiting.
+#
+proc cleanup {} {
+	global job_id bin_rm file_in
+
+	cancel_job $job_id
+	reconfigure
+	exec $bin_rm -f $file_in
+}
+
+#
+# Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
+# time limits greater than MaxTime.
+#
+if [set_partition_maximum_time_limit "" -1] {
+	fail "Unable to reset partition MaxTime to UNLIMITED"
+}
+
+#
+# Delete left-over stdin/out/err files
+# Build stdin file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "
+  $bin_sleep 60
+"
+
+#
+# Submit a slurm job that will execute 'sleep'
+# Use scontrol to confirm time limit
+# Time format is "minutes"
+#
+set time_set  13
+set job_id [submit_job -fail "-N1 --output=none --error=none --time=$time_set $file_in"]
+set time_limit [get_job_param $job_id "TimeLimit"]
+if {![regexp "($number):($number):" $time_limit - hours mins]} {
+	fail "Unable to parse TimeLimit"
+}
+set time_get [expr $hours * 60 + $mins]
+subtest {$time_get == $time_set} "Confirm time limit of $time_set" "$time_get != $time_set"
+cancel_job $job_id
+
+#
+# Submit another slurm job that will execute 'sleep'
+# Use scontrol to confirm time limit
+# Time format is "hours:minutes:seconds"
+#
+set time_set "2:01:00"
+set job_id [submit_job -fail "-N1 --output=none --error=none --time=$time_set $file_in"]
+set time_limit [get_job_param $job_id "TimeLimit"]
+if {![regexp "($number):($number):" $time_limit - hours mins]} {
+	fail "Unable to parse TimeLimit"
+}
+set time_get [expr $hours * 60 + $mins]
+subtest {$time_get == 121} "Confirm time limit of $time_set" "$time_get != 121"
+cancel_job $job_id
+
+#
+# Submit another slurm job that will execute 'sleep'
+# Use scontrol to confirm time limit
+# Time format is "days-hours"
+#
+set time_set "1-1"
+set job_id [submit_job -fail "-N1 --output=none --error=none --time=$time_set $file_in"]
+set time_limit [get_job_param $job_id "TimeLimit"]
+if {![regexp "($number)-($number):($number):" $time_limit - days hours mins]} {
+	fail "Unable to parse TimeLimit"
+}
+set time_get [expr $days * 1440 + $hours * 60 + $mins]
+subtest {$time_get == 1500} "Confirm time limit of $time_set" "$time_get != 1500"
+cancel_job $job_id

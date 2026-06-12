@@ -1,0 +1,45 @@
+This job completion plugin runs a program after the job is completed.
+
+The JobCompType is jobcomp/script and the JobCompLoc is the pathname of the script to run.
+
+The plugin sets up the environment for the program to contain the following variables:
+ACCOUNT:	Job's account value
+ARRAYJOBID:	The job ID of the first element of a job array
+ARRAYTASKID:	The array index value for this element of a job array
+BATCH:		Was the job submitted as a batch job ("yes" or "no")
+CLUSTER:	The name of the cluster
+CONSTRAINTS:	Node features the job is constrained to use
+DB_FLAGS:	Flags to indicate the scheduling cycle that scheduled the job
+		and whether the job was started
+DEPENDENCY:	Original list of job IDs on which this job depends
+DERIVED_EC:	Highest exit code of the job and after a semicolon ":" the signal number
+ELIGIBLE:	The eligible time of the job (UNIX timestamp)
+END:		The end time of the job (UNIX timestamp)
+EXITCODE:	The exit code of the job and after a semicolon ":" the signal number
+GID:		The GID of the group the job was run for
+GROUPNAME:	The name of the group the job was run for
+HETJOBID:	The job ID of the heterogeneous job leader
+HETJOBOFFSET:	The zero origin offset within a collection of heterogeneous job components
+JOBID:		The job ID of the slurm job
+JOBNAME:	The name of the job
+JOBSTATE:	The state of the job when it ended
+LIMIT:		The time limit of the job (minutes or "UNLIMITED")
+NODECNT:	The number of nodes the job ran on
+NODES:		The nodes the job ran on or an empty string if it wasn't assigned
+PACKJOBID:	See HETJOBID
+PACKJOBOFFSET:	See HETJOBOFFSET
+PARTITION:	The partition the job ran on
+PATH:		Sets to the standard path
+PROCS:		Number of processors allocated to the job
+QOS:		The QOS of the job
+RESERVATION:	The reservation name of the job
+START:		The start time of the job (UNIX timestamp)
+STATEREASONPREV:The previous state of the job
+STDERR:		The job's STDERR path
+STDIN:		The job's STDIN path
+STDOUT:		The job's STDOUT path
+SUBMIT:		The submit time of the job (UNIX timestamp)
+TZ:		The time zone of the system the job ran on
+UID:		The UID of the user the job was run for
+USERNAME:	The username of the user the job was run for
+WORK_DIR:	The job's working directory

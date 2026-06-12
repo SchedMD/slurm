@@ -1,0 +1,237 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Related Software</h1>
+
+<p>Slurm source can be downloaded from
+<a href="https://www.schedmd.com/download-slurm/">
+https://www.schedmd.com/download-slurm/</a>.</p>
+
+<p>Note that the following related software is not written or maintained by
+SchedMD. Some of the software is required for certain functionality
+(e.g. MySQL or MariaDB are required to use slurmdbd) while other software
+was written to provide additional functionality for users or
+administrators.</p>
+<ul>
+<li><b>Authentication</b> plugins identifies the user originating
+a message.</li>
+<ul>
+<li><b>MUNGE</b> (recommended)<br>
+In order to compile the "auth/munge" authentication plugin for Slurm,
+you will need to build and install MUNGE, available from
+<a href="https://dun.github.io/munge/">https://dun.github.io/munge/</a> and
+<a href="http://packages.debian.org/src:munge">Debian</a> and
+<a href="http://fedoraproject.org/">Fedora</a> and
+<a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
+</ul>
+
+<li><b>Authentication</b> tools for users that work with Slurm.</li>
+<ul>
+<li><a href="https://github.com/hautreux/auks">AUKS</a><br>
+AUKS is an utility designed to ease Kerberos V credential support addition
+to non-interactive applications, like batch systems (Slurm, LSF, Torque, etc.).
+It includes a plugin for the Slurm workload manager. AUKS is not used as
+an authentication plugin by the Slurm code itself, but provides a mechanism
+for the application to manage Kerberos V credentials.</li>
+</ul>
+
+<li><b>Databases</b> can be used to store accounting information.
+See our <a href="accounting.html">Accounting</a> web page for more information.
+</li>
+<ul>
+<li><a href="http://www.mysql.com/">MySQL</a></li>
+<li><a href="https://mariadb.org/">MariaDB</a></li>
+</ul><br>
+
+<li><b>DRMAA (Distributed Resource Management Application API)</b><br>
+<a href="https://github.com/psnc-apps/slurm-drmaa">PSNC DRMAA</a> for Slurm
+is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
+<a href="http://www.drmaa.org/">DRMAA 1.0</a> (Distributed Resource Management Application API)
+<a href="http://www.ogf.org/documents/GFD.133.pdf">specification</a> for submission
+and control of jobs to <a href="https://slurm.schedmd.com">Slurm</a>.
+Using DRMAA, grid applications builders, portal developers and ISVs can use
+the same high-level API to link their software with different cluster/resource
+management systems.<br><br>
+There is a variant of PSNC DRMAA providing support for Slurm's --cluster option
+available from
+<a href="https://github.com/natefoo/slurm-drmaa">https://github.com/natefoo/slurm-drmaa</a>.<br><br>
+Perl 6 DRMAA bindings are available from
+<a href="https://github.com/scovit/Scheduler-DRMAA">https://github.com/scovit/Scheduler-DRMAA</a>.
+</li><br>
+
+<li><b>Hardware topology</b></li>
+<ul>
+<li><a href="http://www.open-mpi.org/projects/hwloc/">
+Portable Hardware Locality (hwloc)</a></li>
+<li><b>NOTE</b>: If you build Slurm or any MPI stack component with hwloc, note
+that versions 2.5.0 through 2.7.0 (inclusive) of hwloc have a bug that pushes an
+untouchable value into the environ array, causing a segfault when accessing it.
+It is advisable to build with hwloc version 2.7.1 or later.</li>
+<li>
+Used by slurmd and PMIx client to get hardware topology information.
+</li>
+</ul>
+
+<li><b>Hostlist</b><br>
+A Python program used for manipulation of Slurm hostlists including
+functions such as intersection and difference. Download the code from:<br>
+<a href="http://www.nsc.liu.se/~kent/python-hostlist">
+http://www.nsc.liu.se/~kent/python-hostlist</a><br><br>
+
+Lua bindings for hostlist functions are also available here:<br>
+<a href="https://github.com/grondo/lua-hostlist">
+https://github.com/grondo/lua-hostlist</a><br>
+<b>NOTE</b>: The Lua  hostlist functions do not support the bracketed numeric
+ranges anywhere except at the end of the name (i.e. "tux[0001-0100]"
+and "rack[0-3]_blade[0-63]" are not supported).</li><br>
+
+<li><b>MPI</b> versions supported</li>
+<ul>
+<li><a href="https://software.intel.com/en-us/intel-mpi-library">Intel MPI</a></li>
+<li><a href="https://www.mpich.org/">MPICH (a.k.a. MPICH2 / MPICH2)</a></li>
+<li><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH (a.k.a MVAPICH2)</a></li>
+<li><a href="https://www.open-mpi.org">Open MPI</a></li>
+</ul>
+
+<li><b>Command wrappers</b><br>
+There is a wrapper for Maui/Moab's showq command
+<a href="https://github.com/pedmon/slurm_showq">here</a>.</li><br>
+
+<li><b>Scripting interfaces</b></li>
+<ul>
+<li>A <b>Perl</b> interface is included in the Slurm distribution in the
+<i>contribs/perlapi</i> directory and packaged in the <i>perlapi</i> RPM.</li>
+
+<li><a href="https://github.com/pyslurm/">PySlurm</a> is a
+Python/Cython module to interface with Slurm.
+There is also a Python module to expand and collect hostlist expressions
+available <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
+here</a>.</li>
+</ul><br>
+
+<li><b>SPANK Plugins</b><br>
+SPANK provides a very generic interface for stackable plug-ins which
+may be used to dynamically modify the job launch code in Slurm. SPANK
+plugins may be built without access to Slurm source code. They need
+only be compiled against Slurm&lsquo;s spank.h header file, added to the
+SPANK config file plugstack.conf, and they will be loaded at runtime
+during the next job launch. Thus, the SPANK infrastructure provides
+administrators and other developers a low cost, low effort ability to
+dynamically modify the runtime behavior of Slurm job launch.
+Additional documentation can be found
+<a href="https://slurm.schedmd.com/spank.html">here</a>.</li><br>
+
+<li><b>Node Health Check</b><br>
+Probably the most comprehensive and lightweight health check tool out
+there is
+<a href="https://github.com/mej/nhc">LBNL Node Health Check</a>.
+It has integration with Slurm as well as Torque resource managers.</li><br>
+
+<li><b>Accounting Tools</b>
+<ul>
+<li><b>UBMoD</b> is a web based tool for displaying accounting data from various
+resource managers. It aggregates the accounting data from sacct into a MySQL
+data warehouse and provide a front end web interface for browsing the data.
+For more information, see the
+<a href="http://ubmod.sourceforge.net/resource-manager-slurm.html">UDMod home page</a> and
+<a href="https://github.com/ubccr/ubmod">source code</a>.<br></li>
+
+<li><a href="http://xdmod.sourceforge.net"><b>XDMoD</b></a> (XD Metrics on Demand)
+is an NSF-funded open source tool designed to audit and facilitate the utilization
+of the XSEDE cyberinfrastructure by providing a wide range of metrics on XSEDE
+resources, including resource utilization, resource performance, and impact on
+scholarship and research.</li>
+</ul></li><br>
+
+<li><b>STUBL (Slurm Tools and UBiLities)</b><br>
+STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
+<a href="https://github.com/ubccr/stubl">STUBL home page</a>.</li><br>
+
+<li><b>pestat</b><br>
+Prints a consolidated compute node status line, with one line per node
+including a list of jobs.<br>
+<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/pestat">
+Home page</a></li><br>
+<!-- It would be nice to provide our own perl-based version of pestat -->
+
+<li><b>Graphical Sdiag</b><br>
+The sdiag utility is a diagnostic tool that maintains statistics on Slurm's
+scheduling performance. You can run sdiag periodically or as you modify
+Slurm's configuration. However if you want a historical view of these
+statistics, you could save them in a time-series database and graph them over
+time as performed with this tool:
+<ul>
+<li><a href="https://github.com/fasrc/slurm-diamond-collector">
+  A collection of custom diamond collectors to gather various Slurm statistics</a></li>
+<li><a href="https://github.com/collectd/collectd/pull/1198">Collectd</a>
+  (for use with <a href="https://github.com/edf-hpc/jobmetrics">jobmetrics</a>)</li>
+</ul></li><br>
+
+<li><a id="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
+	<p>Some Slurm plugins (<a href="rest.html">slurmrestd</a>,
+	<a href="burst_buffer.html">burst_buffer/datawarp</a>,
+	<a href="burst_buffer.html">burst_buffer/lua</a>,
+	<a href="elasticsearch.html">jobcomp/elasticsearch</a>, and
+	<a href="jobcomp_kafka.html">jobcomp/kafka</a>) parse and/or
+	serialize JSON format data. These plugins and slurmrestd are designed to
+	make use of the <b>JSON-C library (&gt;= v0.15)</b> for this purpose.
+	Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b json-c-0.15-20200726 https://github.com/json-c/json-c.git json-c
+mkdir json-c-build
+cd json-c-build
+cmake ../json-c
+make
+sudo make install</pre>
+	Declare the package configuration path before compiling Slurm
+	(example provided for /bin/sh):
+	<pre>
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH</pre>
+</li><br>
+
+<li><a id="httpparser" href="https://github.com/nodejs/http-parser">
+    <b>HTTP Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> requires <b>libhttp_parser
+	(&gt;= v2.6.0)</b>. Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser
+cd http_parser
+make
+sudo make install</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-http-parser=/usr/local/</pre>
+</li><br>
+
+<li><a id="yaml" href="https://github.com/yaml/libyaml">
+    <b>YAML Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> and commands that recognize a
+	<code>--yaml</code> flag will be able to parse YAML if <b>libyaml
+	(&gt;= v0.2.5)</b> is present. Instructions for the build are as follows:
+	</p><pre>
+git clone --depth 1 --single-branch -b 0.2.5 https://github.com/yaml/libyaml libyaml
+cd libyaml
+./bootstrap
+./configure
+make
+sudo make install</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-yaml=/usr/local/</pre>
+</li><br>
+
+<li><a id="jwt" href="https://github.com/benmcollins/libjwt">
+    <b>JWT library</b></a>
+	<p><a href="jwt.html">JWT authentication</a> requires <b>libjwt
+	(&gt;= v1.10.0 and &lt; v2)</b>. Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b v1.12.0 https://github.com/benmcollins/libjwt.git libjwt
+cd libjwt
+autoreconf --force --install
+./configure --prefix=/usr/local
+make -j
+sudo make install</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-jwt=/usr/local/</pre>
+</li><br>
+
+</ul>
+
+<!--#include virtual="footer.txt"-->
