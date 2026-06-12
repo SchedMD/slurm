@@ -1,0 +1,59 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test21.30
+#          Tests if the QOS/Parent QOS MaxWall limit is used as
+#          job's TimeLimit if the job did't request --time
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc21_30_17 { } {
+	global srun acct bin_sleep maxwall_num
+
+	# If the partition has DefaultTime set it will mess up this test.
+	# Since there is currently no way to use scontrol to change default
+	# time to "none" just skip this subtest.
+	if { [get_partition_default_time_limit ""] != -1 } {
+		subskip "This test needs the default partition without a DefaultTime"
+		return
+	}
+
+	log_info "Starting Qos/Parent MaxWall applied to job without -t test"
+	set job_id 0
+
+	# Raise an error to abort the catch block
+	set exception_code [catch {
+
+		set job_id [submit_job -fail "--account=$acct -N1 -o /dev/null --wrap '$srun $bin_sleep 120'"]
+		subtest {![wait_for_job $job_id "RUNNING"]} "Job should run Qos/Parent MaxWall"
+		subtest {[get_job_param $job_id "TimeLimit"] == "00:0$maxwall_num:00"} "Job should have TimeLimit=00:0$maxwall_num:00"
+
+	} message] ; # Store the error message in $message
+
+	# Cancel job
+	cancel_job $job_id
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing MaxWall: $message"
+	}
+}

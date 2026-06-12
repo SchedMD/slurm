@@ -1,0 +1,68 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test for the qrerun --man option
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in    "$test_dir/input"
+set file_out   "$test_dir/output"
+
+if {[file executable $qrerun] == 0} {
+	skip "qrerun was not found"
+}
+
+if {[file executable $bin_perldoc] == 0} {
+	skip "$bin_perldoc does not exist"
+}
+
+# If perl-doc isn't installed there is sometimes a useless perldoc script
+# waiting for you telling you it isn't installed.  So we need to check for that.
+log_user 0
+spawn $bin_perldoc
+expect {
+	-re "You need to install the perl-doc" {
+		skip "$bin_perldoc not installed"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+make_bash_script $file_in "$qrerun --man >$file_out"
+exec $file_in
+set matches 0
+spawn $bin_cat $file_out
+expect {
+	-re "To rerun a job" {
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "qrerun did not return the man pages ($matches != 1)"
+}

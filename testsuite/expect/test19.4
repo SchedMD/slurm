@@ -1,0 +1,74 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          strigger --set --reconfig
+############################################################################
+# Copyright (C) 2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
+
+set uid [get_my_uid]
+set user [get_my_user_name]
+if {![regexp "${user}\\($number\\)" [get_config_param "SlurmUser"]] || $user eq "root"} {
+	skip "This test must run as the SlurmUser but this user cannot be root"
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$bin_echo JOB COMPLETED >$file_out"
+
+proc cleanup {} {
+	global bin_rm file_in file_out strigger uid
+
+	run_command -none -nolog "$strigger --clear --reconfig --user=$uid --quiet"
+	exec $bin_rm -f $file_in $file_out
+}
+
+run_command -fail "$strigger --clear --quiet --user=$uid"
+
+# Submit a job and create a trigger on a job completion event
+set job_id [submit_job -fail "--wrap \"$bin_sleep 60\""]
+wait_for_job -fail $job_id "RUNNING"
+if {![regexp "trigger set" [run_command_output -fail "$strigger --set -v --jobid=$job_id --fini --program=$file_in"]]} {
+	fail "Trigger creation failure"
+}
+
+# Verify that the trigger has been created
+if {![regexp "$file_in" [run_command_output -fail "$strigger --get -v --jobid=$job_id --fini --user=$uid"]]} {
+	fail "Trigger get failure"
+}
+
+#
+# Cancel the job to trigger a job completion event
+#
+run_command -fail "$scancel $job_id"
+# Triggers are only processed once every 15 seconds by default
+wait_for_file -fail -timeout 30 $file_out
+if {![regexp "JOB COMPLETED" [run_command_output -fail "$bin_cat $file_out"]]} {
+	fail "Trigger output file ($file_out) does not contain the expected contents"
+}

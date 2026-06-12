@@ -1,0 +1,14 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Slurm APIs</a></h1>
+
+<h3 id="overview">Overview<a class="slurm_link" href="#overview"></a></h3>
+<p>All of the Slurm commands utilize a collection of Application Programming
+Interfaces (APIs) exposed through the "slurm.h" and "slurmdb.h" headers.
+Slurm's APIs are fixed within each major release. They do change &mdash;
+significantly &mdash; between each major release.</p>
+
+<p>Developers are encouraged to target Slurm's <a href="rest_api.html">REST API
+</a> which provides for broader cross-version compatibility.</a>
+
+<!--#include virtual="footer.txt"-->

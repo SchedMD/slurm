@@ -1,0 +1,95 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --deadline option and time limit partition
+############################################################################
+# Copyright (C) 2015 CEA/DAM/DIF
+# Written by Aline Roy <aline.roy@cea.fr>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in        "$test_dir/script"
+set test_srun      "$test_dir/test_srun"
+set job_id         0
+set authorized     1
+set part_name      $test_name
+
+if {![is_super_user]} {
+	skip "Can not test more unless SlurmUser or root"
+}
+
+proc cleanup {} {
+	global job_id scontrol part_name
+
+	cancel_job $job_id
+	run_command "$scontrol delete PartitionName=$part_name"
+}
+
+#
+# Confirm the partition name does not already exist
+#
+if {[dict exists [get_partitions] $part_name]} {
+	fail "Partition ($part_name) already exists"
+}
+
+#
+# Identify usable nodes in default partition
+#
+set def_node [lindex [get_nodes_by_state] 0]
+if {$def_node eq ""} {
+	fail "Default partition seems to have no idle nodes"
+}
+
+#
+# Create a new partition with a MaxTime
+#
+run_command -fail "$scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30"
+
+#
+# Confirm the partition now exists
+#
+if {![dict exists [get_partitions] $part_name]} {
+	fail "Partition ($part_name) was not created"
+}
+
+# Check EnforcePartLimits value
+set enforcepartlimits [get_config_param "EnforcePartLimits"]
+log_debug "EnforcePartLimits=$enforcepartlimits"
+
+#
+# Run a job in this new partition and validate the time limit
+#
+set job_id [submit_job -none "-N1 --deadline now+1hour -p $part_name -t45  --wrap '$bin_sleep 1'"]
+
+if {$enforcepartlimits eq "NO"} {
+
+	#
+	# Job is not rejected at submit time
+	# verify time limit. Add a temporization to wait for update reason
+	#
+	subtest {$job_id != 0} "Job should be submitted"
+	subtest {![wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} "Reason should be PartitionTimeLimit"
+} else {
+	#
+	# Job should be rejected at submit time
+	#
+	subtest {$job_id == 0} "Job should be rejected"
+}

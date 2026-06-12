@@ -1,0 +1,372 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test federated scontrol notify <message>
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set fed_name    "feda"
+set user_name   ""
+set srun_job_cnt 0
+set my_sbatch   "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_srun     "${fed_slurm_base}/$fedc1/bin/srun"
+set my_squeue   "${fed_slurm_base}/$fedc1/bin/squeue"
+set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+set min_job_age [expr {$min_job_age + 65}]
+set file_in     "$test_dir/input"
+
+set jid(0) 0
+set jid(1) 0
+set jid(2) 0
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc srun { regex } {
+	global srun_spawn_id number file_in bin_sleep node_count my_srun
+
+	set matches 0
+	set job_id 0
+	spawn $my_srun $file_in
+	set srun_spawn_id $spawn_id
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "srun failure (expected $regex)"
+	}
+	return $job_id
+}
+
+proc sbatch { options } {
+	global number bin_sleep node_count my_sbatch
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N$node_count --exclusive "
+	append command $options
+	append command " --wrap \"sleep 900\""
+	set regex "Submitted batch job ($number)"
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Batch submit failure (expected $regex)"
+	}
+
+	sleep 2
+
+	return $job_id
+}
+
+proc squeue { regex } {
+	global my_squeue fedc1 fedc2 fedc3
+
+	set matches 0
+	set command "$my_squeue --noheader -M$fedc1,$fedc2,$fedc3 "
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Unexpected error in squeue (expected $regex)"
+	}
+}
+
+proc scontrol { fed id regex } {
+	global my_scontrol eol srun_spawn_id
+
+	set matches 0
+
+	log_debug "Executing $my_scontrol -M$fed notify $id from $fed"
+	log_debug "Output: [exec $my_scontrol -M$fed notify $id from $fed]"
+
+	if {$regex ne ""} {
+		set spawn_id $srun_spawn_id
+		expect {
+			-re "$regex" {
+				incr matches
+			}
+			timeout {
+				fail "scontrol not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		if {$matches != 1} {
+			fail "scontrol failure (expected $regex)"
+		}
+	}
+}
+
+proc my_cat { id } {
+	global bin_cat fedc1 fedc2 fedc3 eol
+
+	set matches 0
+
+	spawn cat $id
+	expect {
+		-re "error: from ($fedc1|$fedc2|$fedc3)" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "cat not responding"
+		}
+	}
+	if {$matches != 3} {
+		fail "cat failure (expected .+error from $fedc1|$fedc2|$fedc3. matches=$matches)"
+	}
+}
+
+proc cancel_federation_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global fed_name bin_bash bin_rm jid test_name
+
+	cancel_federation_jobs
+	exec $bin_rm -f slurm-$jid(0).out slurm-$jid(1).out slurm-$jid(2).out
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
+	delete_federations $fed_name
+}
+
+if {![check_federation_setup]} {
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
+}
+
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+cleanup
+
+# add clusters to federation
+if {[setup_federation $fed_name]} {
+	fail "Failed to setup federation"
+}
+
+# get number of nodes per cluster
+set node_count [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]]
+
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc1 set features=fa
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc2 set features=fb
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=fc
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+make_bash_script $file_in "sleep 300"
+
+set srun_spawn_id 0
+
+log_info "################################################################"
+log_info "Verify federated scontrol notify <message>"
+log_info "################################################################"
+
+cancel_federation_jobs
+
+set jid(0) [sbatch "-M$fedc1"]
+set jid(1) [sbatch "-M$fedc2"]
+
+wait_for_fed_job $jid(0) RUNNING $fedc1,$fedc2,$fedc3
+wait_for_fed_job $jid(1) RUNNING $fedc1,$fedc2,$fedc3
+
+set jid(2) [srun "srun: job ($number).+"]
+
+wait_for_fed_job $jid(2) RUNNING $fedc1,$fedc2,$fedc3
+
+set r0  "(\\s+($jid(0)).+$eol)"
+set r1  "(\\s+($jid(1)).+$eol)"
+set r2  "(\\s+($jid(2)).+$eol)"
+
+set regf1 "$fedc1\\s+$r0"
+set regf2 "$fedc2\\s+$r1"
+set regf3 "$fedc3\\s+$r2"
+
+squeue "$regf1$regf2$regf3"
+
+scontrol $fedc1 $jid(0) ""
+scontrol $fedc2 $jid(0) ""
+scontrol $fedc3 $jid(0) ""
+sleep 2
+my_cat "slurm-$jid(0).out"
+
+scontrol $fedc1 $jid(1) ""
+scontrol $fedc2 $jid(1) ""
+scontrol $fedc3 $jid(1) ""
+sleep 2
+my_cat "slurm-$jid(0).out"
+
+set spawn_id $srun_spawn_id
+scontrol $fedc1 $jid(2) "srun: from $fedc1"
+scontrol $fedc2 $jid(2) "srun: from $fedc2"
+scontrol $fedc3 $jid(2) "srun: from $fedc3"

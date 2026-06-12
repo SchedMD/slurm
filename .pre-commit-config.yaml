@@ -1,0 +1,85 @@
+---
+exclude: configure|.+\.in|.+\.m4|LICENSE.OpenSSL
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-executables-have-shebangs
+  - id: check-merge-conflict
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+
+- repo: https://github.com/psf/black
+  rev: 24.10.0
+  hooks:
+  - id: black
+    language_version: python3
+
+- repo: https://github.com/pycqa/flake8
+  rev: 7.1.1
+  hooks:
+  - id: flake8
+    args: [--config, tools/flake8]
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.3.0
+  hooks:
+  - id: codespell
+    exclude_types: [gif,tar,png,pdf,svg]
+    exclude: auxdir|expect/globals|jquery\.min\.js
+    args: [--config, tools/codespellrc]
+  - id: codespell
+    alias: codespell-apply
+    exclude_types: [gif,tar,png,pdf,svg]
+    exclude: auxdir|expect/globals|jquery\.min\.js
+    args: [--config, tools/codespellrc, -w]
+    stages: [manual]
+
+- repo: https://github.com/jorisroovers/gitlint
+  rev: v0.19.1
+  hooks:
+  - id: gitlint
+    args: [--config, tools/gitlint, --msg-filename]
+  - id: gitlint-ci
+    alias: gitlint-ci-draft
+    args: [--config, tools/gitlint]
+  # Enforce no-fixup/amend commits
+  - id: gitlint-ci
+    alias: gitlint-ci-nodraft
+    args: [--config, tools/gitlint, --contrib, CC2]
+  # Enforce internal email addresses
+  - id: gitlint-ci
+    alias: gitlint-ci-email
+    args: [--config, tools/gitlint]
+
+- repo: https://github.com/pecigonzalo/pre-commit-shfmt
+  rev: v2.2.0
+  hooks:
+    - id: shell-fmt
+      files: |
+        (?x)(
+          ^contribs/slurm_completion_help/|
+          ^testsuite/
+        )
+      args:
+        - --diff
+        - --write
+        - --simplify
+        - --list
+
+- repo: local
+  hooks:
+    - id: shellcheck
+      name: shellcheck
+      description: Test shell scripts with shellcheck
+      entry: shellcheck
+      language: python
+      types: [shell]
+      require_serial: true # shellcheck can detect sourcing this way
+      files: |
+        (?x)(
+          ^contribs/slurm_completion_help/|
+          ^testsuite/
+        )
+      args:
+        - --severity=warning

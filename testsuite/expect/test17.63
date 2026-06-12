@@ -1,0 +1,83 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --use-min-nodes option.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in         "$test_dir/input"
+set file_out        "$test_dir/output"
+set file_err        "$test_dir/error"
+set job_id          0
+set ncpus           0
+
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+}
+
+set nodes [get_nodes_by_request "-N2"]
+if {[llength $nodes] != 2} {
+	skip "Test needs to be able to use 2 nodes nodes in default partition"
+}
+
+set nodes_dict [get_nodes [join $nodes ',']]
+dict for {node params} $nodes_dict {
+	set cputot [dict get $params "CPUTot"]
+	if {$cputot > $ncpus} {
+		set ncpus $cputot
+	}
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Build script
+#
+make_bash_script $file_in "
+  $bin_printenv SLURM_NNODES
+  exit 0
+"
+
+#
+# Spawn a sbatch command to verify that the default output file is
+# created and contain the correct contents
+#
+set job_id [submit_job -fail "-N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+#
+# Check for desired output
+#
+set nodes 0
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "($number)" $output - nodes]} "Verify output file has the right format"
+subtest {$nodes == 1} "Verify that job allocated only 1 node thanks to --use-min-nodes"

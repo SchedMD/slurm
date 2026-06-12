@@ -1,0 +1,757 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Prolog and Epilog Guide</h1>
+
+<p>Slurm supports a multitude of prolog and epilog programs.
+Note that for security reasons, these programs do not have a search path set.
+Either specify fully qualified path names in the program or set the
+<span class="commandline">PATH</span>
+environment variable.
+The first table below identifies what prologs and epilogs are available for job
+allocations, when and where they run.</p>
+
+<center>
+	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
+		<colgroup><col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="40%">
+		</colgroup><tbody><tr>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Parameter
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Location
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Invoked by
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>User
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="40%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>When executed
+				</b></font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prolog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmdUser (normally user root)</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				First job or job step initiation on that node (by default);
+				PrologFlags=Alloc will force the script to be executed at
+				job allocation</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				PrologSlurmctld (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Head node (where slurmctld daemon runs)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmctld daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmctldUser</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				At job allocation</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Epilog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmdUser (normally user root)</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				At job termination</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				EpilogSlurmctld (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Head node (where slurmctld daemon runs)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmctld daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SlurmctldUser</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				At job termination</font></p>
+			</td>
+		</tr>
+	</tbody></table>
+</center>
+<br>
+<p>This second table below identifies what prologs and epilogs are available for job
+step allocations, when and where they run.</p>
+
+<center>
+	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="100%">
+		<colgroup><col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="15%">
+		<col width="40%">
+		</colgroup><tbody><tr>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Parameter
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" height="18" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Location
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Invoked by
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="15%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>User
+				</b></font></p>
+			</td>
+			<td bgcolor="#e0e0e0" width="40%">
+				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>When executed
+				</b></font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SrunProlog (from slurm.conf) or srun --prolog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun invocation node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun command</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prior to launching job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				TaskProlog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prior to launching job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun --task-prolog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Prior to launching job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				TaskEpilog (from slurm.conf)</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Completion job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun --task-epilog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Compute node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				slurmstepd daemon</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Completion job step</font></p>
+			</td>
+		</tr>
+		<tr>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				SrunEpilog (from slurm.conf) or srun --epilog</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun invocation node</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				srun command</font></p>
+			</td>
+			<td height="18" width="15%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				User invoking srun command</font></p>
+			</td>
+			<td width="40%">
+				<p align="LEFT"><font style="font-size: 8pt" size="1">
+				Completion job step</font></p>
+			</td>
+		</tr>
+	</tbody></table>
+</center>
+
+<p>By default the Prolog script is only run on any individual
+node when it first sees a job step from a new allocation; it does not
+run the Prolog immediately when an allocation is granted.  If no job steps
+from an allocation are run on a node, it will never run the Prolog for that
+allocation.  This Prolog behavior can be changed by the
+PrologFlags parameter.  The Epilog, on the other hand, always
+runs on every node of an allocation when the allocation is released.</p>
+
+<p>If multiple prolog and/or epilog scripts are specified,
+(e.g. "/etc/slurm/prolog.d/*") they will run in reverse alphabetical order
+(z-a -> Z-A -> 9-0).</p>
+
+<p>Prolog and Epilog scripts should be designed to be as short as possible
+and should not call Slurm commands (e.g. squeue, scontrol, sacctmgr, etc).
+Long running scripts can cause scheduling problems when jobs take a long time
+to start or finish. Slurm commands in these scripts can potentially lead to
+performance issues and should not be used.</p>
+
+<p>The task prolog is executed with the same environment as the user tasks to
+be initiated. The standard output of that program is read and processed as
+follows:<br>
+<span class="commandline">export name=value</span>
+sets an environment variable for the user task<br>
+<span class="commandline">unset name</span>
+clears an environment variable from the user task<br>
+<span class="commandline">print ...</span>
+writes to the task's standard output.<br></p>
+
+<p>A TaskProlog script can just be a bash script. Here is a very basic example:
+<pre>
+#!/bin/bash
+
+# The TaskProlog script can be used for any preliminary work needed
+# before running a job step, and it can also be used to modify the
+# user's environment. There are two main mechanisms for that, which
+# rely on printing commands to stdout:
+
+# Make a variable available for the user
+echo "export VARIABLE_1=HelloWorld"
+
+# Unset variables for the user
+echo "unset MANPATH"
+
+# We can also print messages if needed
+echo "print This message has been printed with TaskProlog"
+</pre></p>
+
+<p>The above functionality is limited to the task prolog script.</p>
+
+<h2 id="failure_handling">Failure Handling
+<a class="slurm_link" href="#failure_handling"></a>
+</h2>
+<p>If the Epilog fails (returns a non-zero exit code), this will result in the
+node being set to a DRAIN state.
+If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
+be logged.
+If the Prolog fails (returns a non-zero exit code), this will result in the
+node being set to a DRAIN state and the job requeued. The job will be placed
+in a held state unless nohold_on_prolog_fail is configured in
+SchedulerParameters.
+If the PrologSlurmctld fails (returns a non-zero exit code), this will cause
+the job to be requeued. Only batch jobs can be requeued. Interactive jobs
+(salloc and srun) will be cancelled if the PrologSlurmctld fails.</p>
+
+<p>If a task epilog or srun epilog fails (returns a non-zero exit code) this
+will only be logged.
+If a task prolog fails (returns a non-zero exit code), the task will be
+canceled.
+If the srun prolog fails (returns a non-zero exit code), the step will be
+canceled.</p>
+
+<h2 id="environment_variables">Environment Variables
+<a class="slurm_link" href="#environment_variables"></a>
+</h2>
+
+<p>Unless otherwise specified, these environment variables are available
+to all of the programs.</p>
+<ul>
+<li><b>CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</b>
+Specifies the percentage of a GPU that should be allocated to the job.
+The value is set only if the gres/mps plugin is configured and the job
+requests those resources.
+Available in Prolog and Epilog only.</li>
+
+<li><b>CUDA_VISIBLE_DEVICES</b>
+Specifies the GPU devices for the job allocation.
+The value is set only if the gres/gpu or gres/mps plugin is configured and the
+job requests those resources.
+Note that the environment variable set for the job may differ from that set for
+the Prolog and Epilog if Slurm is configured to constrain the device files
+visible to a job using Linux cgroup.
+This is because the Prolog and Epilog programs run <u>outside</u> of any Linux
+cgroup while the job runs <u>inside</u> of the cgroup and may thus have a
+different set of visible devices.
+For example, if a job is allocated the device "/dev/nvidia1", then
+the Prolog and Epilog will have <b>CUDA_VISIBLE_DEVICES=1</b> set, while the
+job will have <b>CUDA_VISIBLE_DEVICES=0</b> set (i.e. the first GPU device
+visible to the job).
+<b>CUDA_VISIBLE_DEVICES</b> will be set unless otherwise excluded via the
+<i>Flags</i> or <i>AutoDetect</i> options in <i>gres.conf</i>. See also
+<b>SLURM_JOB_GPUS</b>. Available in Prolog and Epilog only.</li>
+
+<li><b>GPU_DEVICE_ORDINAL</b>
+Specifies the GPU devices for the job allocation. The considerations for
+<b>CUDA_VISIBLE_DEVICES</b> also apply to <b>GPU_DEVICE_ORDINAL</b>.
+</li>
+
+<li><b>ROCR_VISIBLE_DEVICES</b>
+Specifies the GPU devices for the job allocation. The considerations for
+<b>CUDA_VISIBLE_DEVICES</b> also apply to <b>ROCR_VISIBLE_DEVICES</b>.
+</li>
+
+<li><b>SLURM_ARRAY_JOB_ID</b>
+If this job is part of a job array, this will be set to the job ID.
+Otherwise it will not be set.
+To reference this specific task of a job array, combine
+<b>SLURM_ARRAY_JOB_ID</b> with <b>SLURM_ARRAY_TASK_ID</b> (e.g.
+<code>scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</code>);
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_ARRAY_TASK_COUNT</b>
+If this job is part of a job array, this will be set to the number of
+tasks in the array. Otherwise it will not be set.
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_ARRAY_TASK_ID</b>
+If this job is part of a job array, this will be set to the task ID.
+Otherwise it will not be set.
+To reference this specific task of a job array, combine
+<b>SLURM_ARRAY_JOB_ID</b> with <b>SLURM_ARRAY_TASK_ID</b> (e.g.
+<code>scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</code>);
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_ARRAY_TASK_MAX</b>
+If this job is part of a job array, this will be set to the maximum
+task ID.
+Otherwise it will not be set.
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_ARRAY_TASK_MIN</b>
+If this job is part of a job array, this will be set to the minimum
+task ID.
+Otherwise it will not be set.
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_ARRAY_TASK_STEP</b>
+If this job is part of a job array, this will be set to the step
+size of task IDs.
+Otherwise it will not be set.
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_CLUSTER_NAME</b>
+Name of the cluster executing the job. Available in Prolog, PrologSlurmctld,
+Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_CONF</b>
+Location of the slurm.conf file. Available in Prolog, SrunProlog, TaskProlog,
+Epilog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_CPUS_ON_NODE</b>
+Count of processors available to the job on current node. Available in
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_DISTRIBUTION</b>
+Distribution type for the job. Available in SrunProlog, TaskProlog, SrunEpilog
+and TaskEpilog.</li>
+
+<li><b>SLURM_GPUS</b>
+Count of the GPUs available to the job. Available in SrunProlog, TaskProlog,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_GTID</b>
+Global Task IDs running on this node. Zero origin and comma separated.
+Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_JOB_ACCOUNT</b>
+Account name used for the job.</li>
+
+<li><b>SLURM_JOB_COMMENT</b>
+Comment added to the job.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_CONSTRAINTS</b>
+Features required to run the job.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_CPUS_PER_NODE</b>
+Count of processors available per node.</li>
+
+<li><b>SLURM_JOB_DERIVED_EC</b>
+The highest exit code of all of the job steps.
+Available in Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_END_TIME</b>
+The UNIX timestamp for a job's end time.</li>
+
+<li><b>SLURM_JOB_EXIT_CODE</b>
+The exit code of the job script (or salloc). The value is the status
+as returned by the <code>wait()</code> system call (See <code>wait(2)</code>).
+Available in Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_EXIT_CODE2</b>
+The exit code of the job script (or salloc). The value has the format
+<code>&lt;exit&gt;:&lt;sig&gt;</code>. The first number is the exit code,
+typically as set by the <code>exit()</code> function.
+The second number is the signal that caused the process to
+terminate if it was terminated by a signal.
+Available in Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_EXTRA</b>
+Extra field added to the job.
+Available in Prolog, PrologSlurmctld, Epilog, EpilogSlurmctld, and
+ResumeProgram (via SLURM_RESUME_FILE).</li>
+
+<li><b>SLURM_JOB_GID</b>
+Group ID of the job's owner.</li>
+
+<li><b>SLURM_JOB_GPUS</b>
+The GPU IDs of GPUs in the job allocation (if any).
+Available in the Prolog, SrunProlog, TaskProlog, Epilog, SrunEpilog and
+TaskProlog.</li>
+
+<li><b>SLURM_JOB_GROUP</b>
+Group name of the job's owner.
+Available in PrologSlurmctld and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_ID</b>
+Job ID.</li>
+
+<li><b>SLURM_JOBID</b>
+Job ID.</li>
+
+<li><b>SLURM_JOB_LICENSES</b>
+Name and count of any license(s) requested.</li>
+
+<li><b>SLURM_JOB_NAME</b>
+Name of the job.
+Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_JOB_NODELIST</b>
+Nodes assigned to job. A Slurm hostlist expression.
+<code>scontrol show hostnames</code> can be used to convert this to a list of
+individual host names.</li>
+
+<li><b>SLURM_JOB_NUM_NODES</b>
+Number of nodes assigned to a job.</li>
+
+<li><b>SLURM_JOB_OVERSUBSCRIBE</b>
+Set to NO, YES, or OK (oversubscribe disposition for the job; see
+<a href="squeue.html#OPT_%h">squeue --format</a> <code>%h</code>).
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_EXCLUSIVE</b>
+Set to NO, NODE, USER, MCS, or TOPO (exclusive disposition for the job; see
+<a href="squeue.html#OPT_Exclusive">squeue --Format Exclusive</a>.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_PARTITION</b>
+Partition that job runs in.</li>
+
+<li><b>SLURM_JOB_QOS</b>
+QOS assigned to job.</li>
+
+<li><b>SLURM_JOB_RESERVATION</b>
+Reservation requested for the job.</li>
+
+<li><b>SLURM_JOB_RESTART_COUNT</b>
+Number of times the job has been restarted.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_SELINUX_CONTEXT</b>
+Selinux context for the job in available.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_SLUID</b>
+SLUID for the current run of the job.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_START_TIME</b>
+The UNIX timestamp of a job's start time.</li>
+
+<li><b>SLURM_JOB_STDERR</b>
+Job's stderr path.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_STDIN</b>
+Job's stdin path.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_STDOUT</b>
+Job's stdout path.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_UID</b>
+User ID of the job's owner.</li>
+
+<li><b>SLURM_JOB_USER</b>
+User name of the job's owner.</li>
+
+<li><b>SLURM_JOB_WORK_DIR</b>
+Job's working directory. Available in Prolog, PrologSlurmctld, Epilog,
+EpilogSlurmctld.</li>
+
+<li><b>SLURM_LOCAL_GLOBALS_FILE</b>
+Globals file used to set up the environment for the testsuite. Available
+in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_LOCALID</b>
+Node local task ID for the process within a job. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_NNODES</b>
+Number of nodes assigned to a job. Available in SrunProlog, TaskProlog,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_NODEID</b>
+ID of current node relative to other nodes in a multi-node job. Available in
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_NTASKS</b>
+Number of tasks requested by the job.
+Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_PRIO_PROCESS</b>
+Scheduling priority (nice value) at the time of submission. Available in
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_PROCID</b>
+The MPI rank (or relative process ID) of the current process. Available in
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RESTART_COUNT</b>
+Number of times the job has been restarted. This is only set if the job
+has been restarted at least once. Available in SrunProlog, TaskProlog,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_AS</b>
+Resource limit on the job's address space. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_CORE</b>
+Resource limit on the size of a core file the job is able to produce.
+Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_CPU</b>
+Resource limit on the amount of CPU time a job is able to use. Available
+in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_DATA</b>
+Resource limit on the size of a job's data segment. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_FSIZE</b>
+Resource limit on the maximum size of files a job may create. Available in
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_MEMLOCK</b>
+Resource limit on the bytes of data that may be locked into RAM. Available
+in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_NOFILE</b>
+Resource limit on the number of file descriptors that can be opened by the
+job. Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_NPROC</b>
+Resource limit on the number of processes that can be opened by the calling
+process. Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_RSS</b>
+Resource limit on the job's resident set size. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RLIMIT_STACK</b>
+Resource limit on the job's process stack. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_SCRIPT_CONTEXT</b>
+Identifies which epilog or prolog program is currently running.
+The value is one of the following:
+<ul>
+<li><code>prolog_slurmctld</code></li>
+<li><code>epilog_slurmctld</code></li>
+<li><code>prolog_slurmd</code></li>
+<li><code>epilog_slurmd</code></li>
+<li><code>prolog_task</code></li>
+<li><code>epilog_task</code></li>
+<li><code>prolog_srun</code></li>
+<li><code>epilog_srun</code></li>
+</ul>
+</li>
+
+<li><b>SLURM_STEP_ID</b>
+Step ID of the current job. Available in SrunProlog, TaskProlog, SrunEpilog
+and TaskEpilog.</li>
+
+<li><b>SLURM_STEPID</b>
+Step ID of the current job. Available in SrunProlog and SrunEpilog.</li>
+
+<li><b>SLURM_SUBMIT_DIR</b>
+Directory from which the job was submitted or, if applicable, the directory
+specified by the <code>-D</code>/<code>--chdir</code> option. Available in
+SrunProlog, Taskprolog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_SUBMIT_HOST</b>
+Host from which the job was submitted. Available in SrunProlog, TaskProlog,
+SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_TASK_PID</b>
+Process ID of the process started for the task. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_TASKS_PER_NODE</b>
+Number of tasks per node. Available in SrunProlog, TaskProlog, SrunEpilog
+and TaskEpilog.</li>
+
+<li><b>SLURM_TOPOLOGY_ADDR</b>
+Set to the names of network switches or nodes that may be involved in the
+job's communications. Starts with the top level switch down to the node name.
+A period is used to separate each hardware component name. Available in
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_TOPOLOGY_ADDR_PATTERN</b>
+Set to the network component types that corresponds with the list of names
+from <b>SLURM_TOPOLOGY_ADDR</b>. Each component will be identified as either
+<u>switch</u> or <u>node</u>. A period is used to separate each component
+type. Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_WCKEY</b>
+User name of the job's wckey (if any).
+Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURMD_NODENAME</b>
+Name of the node running the task. In the case of a parallel job executing
+on multiple compute nodes, the various tasks will have this environment
+variable set to different values on each compute node. Available in Prolog,
+SrunProlog, TaskProlog, Epilog, SrunEpilog and TaskEpilog.</li>
+</ul>
+
+<p>Plugin functions may also be useful to execute logic at various well-defined
+points.</p>
+
+<p><a href="spank.html">SPANK</a> is another mechanism that may be useful
+to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
+
+<HR SIZE=4>
+
+<p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
+
+<!--#include virtual="footer.txt"-->

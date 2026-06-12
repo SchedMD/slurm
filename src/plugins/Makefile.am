@@ -1,0 +1,43 @@
+SUBDIRS = \
+	accounting_storage	\
+	acct_gather_energy	\
+	acct_gather_profile	\
+	acct_gather_interconnect\
+	acct_gather_filesystem  \
+	auth			\
+	burst_buffer		\
+	certgen			\
+	certmgr			\
+	cli_filter		\
+	compress		\
+	cred			\
+	data_parser		\
+	gpu			\
+	gres			\
+	hash			\
+	http_auth		\
+	http_parser		\
+	jobacct_gather		\
+	jobcomp			\
+	job_submit		\
+	metrics			\
+	mcs			\
+	mpi			\
+	namespace		\
+	node_features		\
+	preempt			\
+	prep			\
+	priority		\
+	proctrack		\
+	sched			\
+	select			\
+	serializer		\
+	site_factor		\
+	switch			\
+	task			\
+	tls			\
+	topology
+
+if WITH_CGROUP
+SUBDIRS += cgroup
+endif

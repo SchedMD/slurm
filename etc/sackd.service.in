@@ -1,0 +1,29 @@
+[Unit]
+Description=Slurm auth and cred kiosk daemon
+After=network-online.target remote-fs.target
+Wants=network-online.target
+#ConditionPathExists=@sysconfdir@/slurm.conf
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/sackd
+EnvironmentFile=-/etc/default/sackd
+User=slurm
+Group=slurm
+RuntimeDirectory=slurm
+RuntimeDirectoryMode=0755
+ExecStart=@sbindir@/sackd --systemd $SACKD_OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+LimitNOFILE=131072
+LimitMEMLOCK=infinity
+LimitSTACK=infinity
+@SYSTEMD_TASKSMAX_OPTION@
+
+# Uncomment the following lines to disable logging through journald.
+# NOTE: It may be preferable to set these through an override file instead.
+#StandardOutput=null
+#StandardError=null
+
+[Install]
+WantedBy=multi-user.target

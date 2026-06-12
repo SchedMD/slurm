@@ -1,0 +1,153 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirm that job time limit function works (--time and
+#          --kill-command options).
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# NOTE: If you increase sleep_time, change job time limits as well
+set sleep_time  180
+
+set inactive_limit  $sleep_time
+set kill_wait       $sleep_time
+set over_time_limit 0
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "InactiveLimit *= ($number)" {
+		set inactive_limit $expect_out(1,string)
+		exp_continue
+	}
+	-re "KillWait *= ($number)" {
+		set kill_wait $expect_out(1,string)
+		exp_continue
+	}
+	-re "OverTimeLimit *= UNLIMITED" {
+		set over_time_limit 9999
+		exp_continue
+	}
+	-re "OverTimeLimit *= ($number)" {
+		set over_time_limit $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$inactive_limit == 0} {
+	set inactive_limit $sleep_time
+}
+if {$inactive_limit < 120} {
+	skip "InactiveLimit ($inactive_limit) is too low for this test"
+}
+if {$kill_wait > 60} {
+	skip "KillWait ($kill_wait) is too high for this test"
+}
+if {$over_time_limit > 0} {
+	skip "OverTimeLimit too high for this test ($over_time_limit > 0)"
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  $bin_sleep $sleep_time
+  $bin_echo FINI
+"
+
+#
+# Execute a couple of three minute jobs; one with a one minute time
+# limit and the other with a four minute time limit. Confirm jobs
+# are terminated on a timeout as required. Note that Slurm time
+# limit enforcement has a resolution of about one minute.
+#
+# Ideally the job gets a "job exceeded timelimit" followed by a
+# "Terminated" message, but if the timing is bad only the "Terminated"
+# message gets sent. This is due to salloc recognizing job termination
+# prior to the message from slurmd being processed.
+#
+set timeout [expr $max_job_delay + $sleep_time]
+set job_id    0
+spawn $salloc -t1 --kill-command=KILL $file_in
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Job allocation time limit to be reached at" {
+		exp_continue
+	}
+	-re "FINI" {
+		fail "Job time limit not honored"
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+set completions 0
+set job_id      0
+spawn $salloc -t4 --kill-command=KILL $file_in
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Job allocation time limit to be reached at" {
+		exp_continue
+	}
+	-re "FINI" {
+		incr completions
+		exp_continue
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$completions != 1} {
+	fail "Job failed to complete properly ($completions)"
+}

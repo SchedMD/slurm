@@ -1,0 +1,88 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr show and clear stats
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without AccountStorageType=slurmdbd"
+}
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+#
+# sacctmgr show stats
+#
+set matches 0
+set rpc_rec_cnt 0
+spawn $sacctmgr show stats
+expect {
+	-re "sacctmgr show stats" {
+		incr matches
+		exp_continue
+	}
+	-re "Remote Procedure Call statistics by message type" {
+		incr matches
+		exp_continue
+	}
+	-re "DBD_FINI" {
+		incr matches
+		exp_continue
+	}
+	-re "Remote Procedure Call statistics by user" {
+		incr matches
+		exp_continue
+	}
+	-re "count:$number *ave_time:$number *total_time:$number" {
+		incr rpc_rec_cnt
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr show stats not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$rpc_rec_cnt > 0} {
+	incr matches
+}
+subtest {$matches == 5} "sacctmgr should show all expected sections" "$matches != 5"
+
+#
+# sacctmgr clear stats
+#
+set time_stamp_before [run_command_output "$bin_date +%s"]
+set time_stamp_after  0
+
+run_command -subtest "$sacctmgr clear stats"
+set output [run_command_output -fail "$sacctmgr show stats"]
+regexp -line "Data since +(\\S+) (\\S+) (\\S+) (\\S+) (\\d+) \\((\\d+)\\)" $output - - - - - - time_stamp_after
+
+subtest {$time_stamp_before <= $time_stamp_after} "Timestamp in show stats should be newer than before running clear stats" "$time_stamp_before > $time_stamp_after"

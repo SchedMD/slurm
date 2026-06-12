@@ -1,0 +1,88 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test21.30
+#          Tests if the MaxJobSubmit limit is enforced
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+# Test MaxJobsSubmits limit
+proc inc21_30_8 {} {
+	global sbatch srun acct bin_sleep maxjobsub_num
+
+	log_info "Starting MaxJobsSubmits limit test"
+	set check_num $maxjobsub_num
+	set tmp_job_id 0
+	set job_ids [list]
+
+	# Raise an error to abort the catch block
+	set exception_code [catch {
+
+		for {set inx 0} {$inx < $check_num} {incr inx} {
+			lappend job_ids [submit_job -fail "--account=$acct -t1 -n1 -o/dev/null --wrap '$srun $bin_sleep 300'"]
+		}
+
+		foreach job_id $job_ids {
+			subtest {![wait_for_job $job_id "RUNNING"]} "Job should run MaxJobsSubmits"
+		}
+
+		set output [run_command_output -xfail -subtest "$sbatch --account=$acct -t1 -n1 -o/dev/null --wrap '$bin_sleep 300'"]
+		subtest {![regexp {Submitted \S+ job (\d+)} $output - tmp_job_id]} "Job should NOT be submitted"
+		subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job violates policy message should be printed"
+
+		lappend job_ids $tmp_job_id
+		cancel_job $job_ids
+
+		# Test limit with job array
+		set tmp_job_id 0
+		set job_ids [list]
+
+		set upper_lim [expr $check_num - 1]
+		lappend job_ids [submit_job "--account=$acct -t1 -a0-$upper_lim -o/dev/null --wrap '$bin_sleep 120'"]
+		subtest {[lindex $job_ids end]} "Job array should be submitted"
+
+		# Add one more job, and check for error message
+		set output [run_command_output -xfail -subtest "$sbatch --account=$acct -n1 -t1 -o/dev/null --wrap '$bin_sleep 1'"]
+		subtest {![regexp {Submitted \S+ job (\d+)} $output - tmp_job_id]} "Job should NOT be submitted"
+		subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job violates policy message should be printed"
+
+		lappend job_ids $tmp_job_id
+		cancel_job $job_ids
+
+		# Test array too big
+		set tmp_job_id 0
+		set output [run_command_output -xfail -subtest "$sbatch --account=$acct -t1 -a0-$check_num -o/dev/null --wrap '$bin_sleep 1'"]
+		subtest {![regexp {Submitted \S+ job (\d+)} $output - tmp_job_id]} "Job array should NOT be submitted"
+		subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job violates policy message should be printed"
+		cancel_job $tmp_job_id
+
+	} message] ; # Store the error message in $message
+
+	# Perform local cleanup
+	lappend job_ids $tmp_job_id
+	cancel_job $job_ids
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing MaxJobsSubmits limit: $message"
+	}
+}

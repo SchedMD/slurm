@@ -1,0 +1,121 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test that an srun program can move from the foreground to the
+#          background.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/script"
+set test_timer  "$test_dir/test_timer"
+set test_srun   "$test_dir/test_srun"
+set stop_srun   "$test_dir/stop_srun"
+set job_id      0
+
+make_bash_script $test_timer "
+for i in \{1..10\}
+do
+	echo \"time \$i\"
+	sleep 3
+done
+echo \"Test finished\"
+"
+
+make_bash_script $stop_srun "
+$bin_sleep 10
+srun_proc=\$1
+echo \"suspending job, pid=\$srun_proc\"
+kill -s stop \$srun_proc
+"
+
+make_bash_script $test_srun "
+set -m
+$srun -v -t1 $test_timer &
+$stop_srun \$! &
+wait
+echo \"sending job to the background\"
+bg
+if \[ \$? != 0 \]; then
+	echo \"BG Failed\"
+fi
+$bin_sleep 10
+echo \"sending job to foreground\"
+fg
+if \[ \$? != 0 \]; then
+	echo \"FG Failed\"
+fi
+"
+
+make_bash_script $file_in "
+$bin_bash -i $test_srun
+"
+
+set timeout $max_job_delay
+set fg_match 0
+set bg_match 0
+set bg_time_num 0
+set fini_match 0
+set time_num 0
+spawn bash -i $file_in
+expect {
+	-re "sending job to the background" {
+		if {$time_num == 0} {
+			fail "srun is not generating output"
+		}
+		set bg_time_num $time_num
+		set bg_match 1
+		exp_continue
+	}
+	-re "sending job to foreground" {
+		if {$time_num == $bg_time_num} {
+			fail "srun is not progressing ($time_num == $bg_time_num)"
+		}
+		set fg_match 1
+		exp_continue
+	}
+	-re "time ($number)" {
+		incr time_num
+		exp_continue
+	}
+	-re "Test finished" {
+		set fini_match 1
+		exp_continue
+	}
+	-re "BG Failed" {
+		fail "Failed to find suspended srun job in background"
+	}
+	-re "FG Failed" {
+		fail "Failed to find background srun job to put in foreground"
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$fg_match == 1} "srun should be sent to the foreground"
+subtest {$bg_match == 1} "srun should be sent to the background"
+subtest {$time_num == 10} "srun should generate the right output"
+subtest {$fini_match == 1} "srun should finish the submitted program"

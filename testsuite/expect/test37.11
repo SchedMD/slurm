@@ -1,0 +1,311 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test federated sacct output
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set fed_name    "feda"
+set user_name   ""
+set srun_job_cnt 0
+set my_sbatch   "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_sacct    "${fed_slurm_base}/$fedc1/bin/sacct"
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+set min_job_age [expr {$min_job_age + 65}]
+set file_in     "$test_dir/input"
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc build_regex { jid cid state } {
+	global eol
+
+	return "(.*($jid.+$state\\s+$cid.*$eol))"
+}
+
+proc sbatch { args } {
+	global number bin_sleep node_count my_sbatch file_in
+
+	set matches 0
+	set job_id 0
+	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
+		--error=/dev/null --cluster-constraint="
+	append command $args
+	append command " $file_in"
+	set regex "Submitted batch job ($number)"
+
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Batch submit failure"
+	}
+	return $job_id
+}
+
+
+
+proc sacct { options regex } {
+	global my_sacct ji0 ji1 ji2
+
+	set matches 0
+	set command "$my_sacct --noheader -o\
+	jobid,submit,start,end,jobname,account,alloccpus,state,cluster -j\
+	$ji0,$ji1,$ji2 "
+	append command $options
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Unexpected error in squeue (expected $regex)"
+	}
+}
+
+
+proc cancel_federation_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global fed_name bin_bash bin_rm test_name
+
+	cancel_federation_jobs
+	delete_federations $fed_name
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
+}
+
+# Start test
+
+if {![check_federation_setup]} {
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
+}
+
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+cleanup
+
+# Add clusters to federation
+if {[setup_federation $fed_name]} {
+	fail "Failed to setup federation"
+}
+
+# Get number of nodes per cluster
+set node_count [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]]
+
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc1 set features=fa
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc2 set features=fb
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=fc
+expect {
+
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+make_bash_script $file_in "sleep 15"
+
+log_info "################################################################"
+log_info "Test scancel within federated clusters"
+log_info "################################################################"
+
+set ji0             [sbatch fa]
+set cid($ji0)       [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1             [sbatch fb]
+set cid($ji1)       [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2             [sbatch fc]
+set cid($ji2)       [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+
+sleep 5
+
+# Build regular expressions
+
+set runr1  [build_regex $jid($fedc1) $fedc1 RUNNING]
+set runr2  [build_regex $jid($fedc2) $fedc2 RUNNING]
+set runr3  [build_regex $jid($fedc3) $fedc3 RUNNING]
+set runrv1 [build_regex $jid($fedc2) $fedc1 REVOKED]
+set runrv2 [build_regex $jid($fedc3) $fedc1 REVOKED]
+
+set reg   "^$runr1|$runr2|$runr3"
+set reg_D "$reg\\s*($runrv1|$runrv2){2}"
+
+
+sacct ""    "$reg"
+sacct "-D"  "$reg_D"
+
+wait_for_fed_job $ji0 DONE $fedc1,$fedc2,$fedc3
+wait_for_fed_job $ji1 DONE $fedc1,$fedc2,$fedc3
+wait_for_fed_job $ji2 DONE $fedc1,$fedc2,$fedc3
+
+sleep 5
+
+# Build regular expressions
+
+set runr1 [build_regex $jid($fedc1) $fedc1 COMPLETED]
+set runr2 [build_regex $jid($fedc2) $fedc2 COMPLETED]
+set runr3 [build_regex $jid($fedc3) $fedc3 COMPLETED]
+
+set reg   "^$runr1|$runr2|$runr3"
+set reg_D "$reg\\s*($runrv1|$runrv2){2}"
+
+sacct ""    "$reg"
+sacct "-D"  "$reg_D"

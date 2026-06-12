@@ -1,0 +1,108 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test squeue sorting (--sort option).
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in      "$test_dir/input"
+set job_id1      0
+set job_id2      0
+set job_name1    "job_b"
+set job_name2    "job_a"
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$srun $bin_sleep 10"
+
+#
+# Submit a couple of jobs so we have something to look at
+#
+spawn $sbatch --output=/dev/null --error=/dev/null --job-name=$job_name1 -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	fail "srun job submit failure"
+}
+
+spawn $sbatch --output=/dev/null --error=/dev/null --job-name=$job_name2 --hold -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	fail "srun job submit failure"
+}
+
+#
+# Check the squeue sort output
+#
+
+set found_job1 0
+spawn $squeue --sort=j
+expect {
+	-re " $job_name1 " {
+		set found_job1 1
+		exp_continue
+	}
+	-re " $job_name2 " {
+		if {$found_job1 != 0} {
+			fail "squeue sort error"
+		}
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}

@@ -1,0 +1,115 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test3.11
+#          Make a list of lists with a series of parameters to test.
+#          All the tests in goodtests should pass, all those in badtests
+#          should fail.
+#
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc3_11_1 {} {
+	global cons_tres_actived def_node def_node_name
+	global def_partition
+	global part_cores part_node part_node_cnt part_node_cores
+	global user_name
+	global heterogeneous
+
+	set res_name "resv3.11.1"
+
+	# TEST 1
+	# Make a list of lists with a series of parameters to test.  All the tests
+	# in goodtests should pass, all those in badtests should fail.
+	#
+	log_info "+++++ STARTING TEST 1 +++++"
+	set badtests "
+	{}
+	{Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=midnight   Duration=600   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=ALL Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=  Nodes=   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=1,A}
+	{StartTime=now   Duration=5   User=$user_name Flags=ignore_jobs}
+	{StartTime=blah   Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=foo   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=badpartname Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=badtype,ignore_jobs}
+	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Licenses=DUMMY_FOR_TESTING Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node_name\[1\-2\] CoreCnt=1  User=$user_name}
+"
+	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
+	if {$cons_tres_actived == 1} {
+		set corecnt [ expr $part_node_cores + 1 ]
+		set more_badtests "StartTime=now Duration=5 Nodes=$part_node CoreCnt=$corecnt User=$user_name"
+		lappend badtests $more_badtests
+	}
+
+	foreach test $badtests {
+		set ret_code [create_res $res_name $test]
+		if {! [
+			subtest {$ret_code != 0} "Reservation {$test} should fail to be created"
+		]} {
+			delete_res $res_name
+		}
+	}
+
+	if {![is_super_user]} {
+		skip "Can not test more unless SlurmUser or root"
+	}
+
+	set corecnt [ expr $part_cores / 2 ]
+	set goodtests "
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now+5minutes   EndTime=now+10minutes   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=midnight   Duration=600   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=ALL   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   NodeCnt=1   User=$user_name Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition Flags=ignore_jobs}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
+"
+	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
+	if {$cons_tres_actived == 1 && $heterogeneous == 0} {
+		set more_goodtests "StartTime=now Duration=5 NodeCnt=$part_node_cnt CoreCnt=$corecnt User=$user_name"
+		lappend goodtests $more_goodtests
+	}
+
+	foreach test $goodtests {
+		set ret_code [create_res $res_name $test]
+		if [
+			subtest {$ret_code == 0} "Reservation {$test} should get succeed in getting created"
+		] {
+			set ret_code [delete_res $res_name]
+			if {$ret_code != 0} {
+				fail "Unable to delete a reservation"
+			} else {
+				log_debug "Reservation deleted as expected"
+			}
+		}
+	}
+}

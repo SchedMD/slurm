@@ -1,0 +1,96 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Verify head job isn't purged before other jobs in the array.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_script "$test_dir/script"
+set job_id      0
+
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+if {$min_job_age > 60} {
+	skip "MinJobAge too large for this test ($min_job_age > 60)"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_script "
+if \[ \$SLURM_ARRAY_TASK_ID == 4 \]
+then
+	exit 0
+fi
+sleep 60
+exit 0"
+
+# submit a batch job array
+spawn $sbatch -n1 --array=1-4 --output=/dev/null $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		log_debug "Job $job_id was submitted"
+		exp_continue
+	}
+	-re "error" {
+		fail "sbatch did not submit jobs"
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# wait for head job to complete
+wait_for_job -fail $job_id "DONE"
+
+# wait a while for job purge to happen
+log_debug "Waiting for job record purge to happen.."
+sleep 65
+
+# check that head job still exists
+set match 0
+spawn $squeue -tall --job=$job_id
+expect {
+	-re "${job_id}_4" {
+		incr match
+		exp_continue
+	}
+	-re "error" {
+		fail "Error running squeue"
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	fail "Head job not found"
+}

@@ -1,0 +1,6 @@
+usage:	scrontab [-u user] file
+	scrontab [-u user] [ -e | -l | -r | -v]
+	-e	Edit user's crontab (default action if stdin is a TTY)
+	-l	List user's crontab
+	-r	Delete user's crontab
+	-u	User to edit crontab for

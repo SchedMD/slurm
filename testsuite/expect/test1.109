@@ -1,0 +1,63 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --deadline and --begin option and --time_min too long
+############################################################################
+# Copyright (C) 2015 CEA/DAM/DIF
+# Written by Aline Roy <aline.roy@cea.fr>
+#
+# This fie is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Spawn a job with a deadline and no time limit and a time-min too long
+#
+set timeout [expr $max_job_delay + 1]
+set invalid_tl 0
+spawn $srun -v --begin now+5 --deadline now+600 --time-min 11 $bin_sleep 1
+expect {
+	-re "Invalid time-min specification" {
+		set invalid_tl 1
+		exp_continue
+	}
+	-re "Force Terminated job ($number)" {
+		exp_continue
+	}
+	-re "job ($number) queued and waiting for resources" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$job_id == 0} "Job with a deadline too short should not be submitted"
+subtest {$invalid_tl != 0} "Job submitted with a deadline too short should generate a deadline error"

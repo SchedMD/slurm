@@ -1,0 +1,9 @@
+Document: slurm-smd
+Title: slurm-smd Manual
+Author: SchedMD
+Abstract: The manual of the Slurm cluster resource manager.
+Section: System/Administration
+
+Format: HTML
+Index: /usr/share/doc/slurm-wlm-doc/html/slurm.html
+Files: /usr/share/doc/slurm-wlm-doc/html/*.html

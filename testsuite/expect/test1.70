@@ -1,0 +1,62 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          validates that srun standard input and output work
+#          with binary files.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_out    "$test_dir/out"
+set file_in     "$srun"
+
+file delete $file_out
+set sub_match 0
+spawn $srun -n1 -v -i $file_in -o $file_out -t1 cat
+expect {
+	-re "launching" {
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$sub_match != 1} {
+	fail "srun did not submit job"
+}
+
+spawn diff $file_in $file_out
+expect {
+	-re "differ" {
+		fail "Binary file and the output file do not match"
+	}
+	timeout {
+		fail "diff is not responding"
+	}
+	eof {
+		wait
+	}
+}

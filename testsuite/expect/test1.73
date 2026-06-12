@@ -1,0 +1,137 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validates that the OverTimeLimit value set in the
+#          slurm.conf file is enforced
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set config_dir      ""
+set conf_script     "$test_id\_conf_script"
+set bad_script      "$test_id\_bad_script"
+set good_script     "$test_id\_good_script"
+set good_job        "$test_id\_good_job_sc"
+set bad_job         "$test_id\_bad_job_sc"
+set timeout         [expr $max_job_delay + 500]
+
+if {![is_super_user]} {
+	skip "This test can't be run except as SlurmUser"
+}
+
+#
+# Get the slurm.conf path
+#
+set config_dir [get_conf_path]
+set config_file $config_dir/slurm.conf
+
+#
+# Copy the original slurm.conf file
+#
+save_conf $config_file
+
+proc cleanup {} {
+	global config_file
+	global bin_rm good_script bad_script good_job bad_job conf_script
+
+	# Restore the slurm.conf file back to original values
+	restore_conf $config_file
+	reconfigure
+	exec $bin_rm -f $good_script $bad_script $good_job $bad_job $conf_script
+}
+
+#
+# Slurm time limit enforcement is performed within one minute of the actual
+# job time limit, so a one minute limit job will be killed 60 to 120 seconds
+# after initiation. With OverTimeLimit=2, that is moved to 180 to 240 seconds.
+#
+make_bash_script $good_script "sleep 130"
+make_bash_script $good_job "
+$srun -t1 -v ./$good_script
+echo RC=$\?
+"
+
+make_bash_script $bad_script  "sleep 250"
+make_bash_script $bad_job "
+$srun -t1 -v ./$bad_script
+echo RC=$\?
+"
+
+proc check_rc { job } {
+	global number
+
+	set rc -1
+	spawn ./$job
+	expect {
+		-re "RC=($number)" {
+			set rc $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "echo is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $rc
+}
+
+#
+# Add OverTimeLimit value to slurm.conf and reconfigure
+#
+make_bash_script $conf_script "$bin_echo OverTimeLimit=2 >> $config_file"
+spawn ./$conf_script
+expect {
+	-re "Permission denied" {
+		fail "Unable to update slurm.conf"
+	}
+	eof {
+		wait
+	}
+}
+set match 0
+spawn tail $config_file
+expect {
+	-re "OverTimeLimit=2" {
+		set match 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	fail "slurm.conf was not updated"
+}
+reconfigure -fail
+
+set rc [check_rc $good_job]
+if {$rc != 0} {
+	fail "Bad job exit code ($rc != 0)"
+}
+
+set rc [check_rc $bad_job]
+if {$rc == 0} {
+	fail "Bad job exit code ($rc == 0)"
+}

@@ -1,0 +1,609 @@
+/*****************************************************************************\
+ *  http.c - Implementation for handling HTTP requests
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "slurm/slurm_errno.h"
+
+#include "src/common/http.h"
+#include "src/common/http_con.h"
+#include "src/common/http_mime.h"
+#include "src/common/http_request.h"
+#include "src/common/http_router.h"
+#include "src/common/openapi.h"
+#include "src/common/pack.h"
+#include "src/common/probes.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/conmgr/conmgr.h"
+
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/http_auth.h"
+#include "src/interfaces/metrics.h"
+
+#include "src/slurmctld/http.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
+
+static data_parser_t **parsers = NULL;
+
+static int _reply_error(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, int err)
+{
+	char *body = NULL, *at = NULL;
+	int rc = EINVAL;
+
+	xstrfmtcatat(body, &at, "slurmctld HTTP server request for '%s %s':\n",
+		     get_http_method_string(request->method),
+		     request->url.path);
+
+	if (err)
+		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
+
+	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
+				    true,
+				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				    MIME_TYPE_TEXT);
+
+	xfree(body);
+	return rc;
+}
+
+static int _auth(http_con_t *hcon, const char *name,
+		 const http_con_request_t *request, void *uid_ptr)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, uid_ptr, hcon,
+					   name, request))) {
+		(void) _reply_error(hcon, name, request, rc);
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _check_metrics_authorized(http_con_t *hcon, const char *name,
+				     const http_con_request_t *request, int *rc)
+{
+	uid_t uid = SLURM_AUTH_NOBODY;
+
+	if (!slurm_conf.metrics_auth)
+		return SLURM_SUCCESS;
+
+	/* Authenticate request and close it on any failure */
+	if (_auth(hcon, name, request, &uid))
+		return SLURM_ERROR;
+
+	/*
+	 * Only root and SlurmUser are allowed to access, unless
+	 * MetricsAuthUsers is set
+	 */
+	if (!slurm_conf.metrics_auth_users && (uid != 0) &&
+	    (uid != slurm_conf.slurm_user_id)) {
+		*rc = _reply_error(hcon, name, request, EPERM);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * If MetricsAuthUsers is set, only root and SlurmUser are allowed to
+	 * access w/o being in the list
+	 */
+	if (slurm_conf.metrics_auth_users && (uid != 0) &&
+	    (uid != slurm_conf.slurm_user_id)) {
+		char *save_ptr = NULL;
+		char *tmp = xstrdup(slurm_conf.metrics_auth_users);
+		char *tok = strtok_r(tmp, ",", &save_ptr);
+		char *username = uid_to_string_cached(uid);
+		bool found = false;
+
+		while (tok) {
+			if (!xstrcmp(tok, username)) {
+				found = true;
+				break;
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
+		if (!found) {
+			*rc = _reply_error(hcon, name, request, EPERM);
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _req_not_found(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
+{
+	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH);
+}
+
+/*
+ * Build a URL for the configured primary slurmctld with the same path and query
+ * as request. Return xmalloc'd string, or NULL if no controller config is
+ * found.
+ */
+static char *_primary_slurmctld_url(http_con_t *hcon,
+				    const http_con_request_t *request)
+{
+	char *location = NULL, *host_fmt = NULL;
+	const char *host;
+	const char *scheme_prefix;
+	bool use_https;
+
+	if (!slurm_conf.control_cnt || !slurm_conf.control_addr ||
+	    !slurm_conf.control_addr[0])
+		return NULL;
+
+	use_https = (request->url.scheme == URL_SCHEME_HTTPS) ||
+		    http_con_is_tls(hcon);
+	scheme_prefix = use_https ? "https://" : "http://";
+
+	host = slurm_conf.control_addr[0];
+	if (xstrchr(host, ':'))
+		/* Handle IPv6 literal */
+		xstrfmtcat(host_fmt, "[%s]", host);
+	else
+		host_fmt = xstrdup(host);
+
+	xstrfmtcat(location, "%s%s:%u%s", scheme_prefix, host_fmt,
+		   (unsigned int) slurm_conf.slurmctld_port,
+		   request->url.path ? request->url.path : "");
+	xfree(host_fmt);
+
+	if (request->url.query && request->url.query[0])
+		xstrfmtcat(location, "?%s", request->url.query);
+
+	return location;
+}
+
+/*
+ * If this slurmctld's listeners are in backup standby, send 303 with Location
+ * pointing at the configured primary (first SlurmctldHost). Return true if a
+ * response was sent, with *rc_out set to the send result.
+ */
+static bool _metrics_redirect_to_primary(http_con_t *hcon,
+					 const http_con_request_t *request,
+					 int *rc_out)
+{
+	char *location = NULL;
+	list_t *headers = NULL;
+	http_header_t *loc_hdr = NULL;
+
+	if (slurmctld_listeners_in_standby()) {
+		location = _primary_slurmctld_url(hcon, request);
+		if (!location) {
+			static const char body[] =
+				"slurmctld: primary mode controller address unavailable\n";
+
+			debug2("HTTP metrics: standby redirect target unavailable (configured primary SlurmctldHost)");
+
+			*rc_out = http_con_send_response(
+				hcon,
+				HTTP_STATUS_CODE_SRVERR_SERVICE_UNAVAILABLE,
+				NULL, true,
+				&SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				MIME_TYPE_TEXT);
+			return true;
+		}
+
+		debug2("HTTP metrics: standby sending 303 See Other to configured primary (SlurmctldHost[0]) for %s",
+		       (request->url.path && request->url.path[0]) ?
+		       request->url.path : "/");
+
+		headers = list_create((ListDelF) free_http_header);
+		loc_hdr = http_header_new("Location", location);
+		xfree(location);
+		list_append(headers, loc_hdr);
+
+		*rc_out = http_con_send_response(
+			hcon, HTTP_STATUS_CODE_REDIRECT_SEE_OTHER, headers,
+			true, NULL, NULL);
+		FREE_NULL_LIST(headers);
+		return true;
+	}
+	return false;
+}
+
+static int _req_metrics(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
+{
+	static const char body[] =
+		"slurmctld index of metrics endpoints:\n"
+		"  '/metrics/jobs': get job metrics\n"
+		"  '/metrics/nodes': get node metrics\n"
+		"  '/metrics/partitions': get partition metrics\n"
+		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n"
+		"  '/metrics/scheduler': get scheduler metrics\n";
+
+	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, true,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
+{
+	static const char body[] =
+		"slurmctld index of endpoints:\n"
+		"  '/{data_parser}/conf': dump slurm configuration\n"
+		"     ({data_parser} is the version)\n"
+		"  '/readyz': check slurmctld is servicing RPCs\n"
+		"  '/livez': check slurmctld is running\n"
+		"  '/healthz': check slurmctld is running\n"
+		"  '/metrics': print available metric endpoints\n";
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, true,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	buf_t *body = NULL;
+	int rc = EINVAL;
+
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if (_auth(hcon, name, request, &uid))
+			return SLURM_SUCCESS;
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+			return _reply_error(hcon, name, request, EPERM);
+
+		body = init_buf(BUF_SIZE);
+	}
+
+	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
+		if (body && (get_buf_offset(body) > 0))
+			status = HTTP_STATUS_CODE_SUCCESS_OK;
+		else
+			status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, true, body,
+				    MIME_TYPE_TEXT);
+	FREE_NULL_BUFFER(body);
+	return rc;
+}
+
+static int _send_metrics_resp(http_con_t *hcon, char *stats_str)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SUCCESS_OK;
+	int rc;
+
+	if (!stats_str) {
+		static const char body[] = "";
+		return http_con_send_response(
+			hcon, status, NULL, true,
+			&SHADOW_BUF_INITIALIZER(body, strlen(body)),
+			MIME_TYPE_TEXT);
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, true,
+				    &SHADOW_BUF_INITIALIZER(stats_str,
+							    strlen(stats_str)),
+				    MIME_TYPE_TEXT);
+	xfree(stats_str);
+
+	return rc;
+}
+
+extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
+			     const http_con_request_t *request, void *arg,
+			     void *path_arg)
+{
+	jobs_stats_t *stats;
+	char *stats_str = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
+
+	stats = statistics_get_jobs(true);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_JOBS, stats);
+
+	statistics_free_jobs(stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
+extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
+			      const http_con_request_t *request, void *arg,
+			      void *path_arg)
+{
+	nodes_stats_t *stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
+
+	stats = statistics_get_nodes(true);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_NODES, stats);
+
+	statistics_free_nodes(stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
+extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
+				   const http_con_request_t *request, void *arg,
+				   void *path_arg)
+{
+	jobs_stats_t *jobs_stats;
+	nodes_stats_t *nodes_stats;
+	partitions_stats_t *parts_stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+	slurmctld_lock_t part_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+		.node = WRITE_LOCK, /* required by statistics_get_nodes() */
+		.part = READ_LOCK,
+	};
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
+
+	lock_slurmctld(part_read_lock);
+	nodes_stats = statistics_get_nodes(false);
+	jobs_stats = statistics_get_jobs(false);
+	parts_stats = statistics_get_parts(nodes_stats, jobs_stats, false);
+	unlock_slurmctld(part_read_lock);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_PARTS, parts_stats);
+
+	statistics_free_nodes(nodes_stats);
+	statistics_free_parts(parts_stats);
+	statistics_free_jobs(jobs_stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
+extern int _req_metrics_ua(http_con_t *hcon, const char *name,
+			   const http_con_request_t *request, void *arg,
+			   void *path_arg)
+{
+	jobs_stats_t *jobs_stats;
+	users_accts_stats_t *ua_stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
+
+	jobs_stats = statistics_get_jobs(true);
+	ua_stats = statistics_get_users_accounts(jobs_stats);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_UA, ua_stats);
+
+	statistics_free_jobs(jobs_stats);
+	statistics_free_users_accounts(ua_stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
+extern int _req_metrics_sched(http_con_t *hcon, const char *name,
+			      const http_con_request_t *request, void *arg,
+			      void *path_arg)
+{
+	scheduling_stats_t *stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
+
+	stats = statistics_get_sched();
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_SCHED, stats);
+
+	statistics_free_sched(stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
+static int _req_livez(http_con_t *hcon, const char *name,
+		      const http_con_request_t *request, void *arg,
+		      void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
+		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+
+	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+}
+
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
+		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+
+	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+}
+
+static int _req_failed(http_request_event_t *event, http_con_t *hcon,
+		       const char *name, const http_con_request_t *request,
+		       int err)
+{
+	return _reply_error(hcon, name, request, err);
+}
+
+static int _req_conf(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	slurm_conf_t conf_shallow_copy = { 0 };
+	openapi_resp_config_t resp = {
+		.slurm_conf = &conf_shallow_copy,
+	};
+	slurmctld_lock_t conf_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+		.fed = READ_LOCK,
+	};
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	lock_slurmctld(conf_read_lock);
+	conf_shallow_copy = slurm_conf;
+	conf_shallow_copy.boot_time = slurmctld_config.boot_time;
+	conf_shallow_copy.version = SLURM_VERSION_STRING;
+	conf_shallow_copy.next_job_id = get_next_job_id(true);
+	if (!conf_shallow_copy.cluster_id)
+		conf_shallow_copy.cluster_id = NO_VAL16;
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, true, &resp,
+				sizeof(resp));
+	unlock_slurmctld(conf_read_lock);
+
+	return rc;
+}
+
+extern void http_init(void)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_init(NULL, NULL)))
+		fatal("http authentication plugins failed to load: %s",
+		      slurm_strerror(rc));
+
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL, NULL, NULL,
+						false)))
+		fatal("Unable to initialize data_parser plugins");
+
+	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics", _req_metrics, NULL,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs,
+			 NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes", _req_metrics_nodes,
+			 NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/partitions",
+			 _req_metrics_partitions, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/scheduler",
+			 _req_metrics_sched, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs-users-accts",
+			 _req_metrics_ua, NULL, NULL);
+
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/conf", _req_conf,
+			  _req_failed, DATA_PARSER_OPENAPI_CONF_RESP, NULL);
+}
+
+extern void http_fini(void)
+{
+	http_router_fini();
+	http_auth_g_fini();
+	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
+}
+
+extern int on_http_connection(conmgr_fd_t *con)
+{
+	static const http_con_server_events_t events = {
+		.on_request = http_router_on_request,
+	};
+	int rc = EINVAL;
+	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
+
+	rc = http_con_assign_server(ref, NULL, &events, NULL);
+
+	CONMGR_CON_UNLINK(ref);
+
+	return rc;
+}

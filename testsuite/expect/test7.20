@@ -1,0 +1,300 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test lua JobSubmitPlugin
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_lua_reject "${test_name}_scripts/reject.lua"
+set test_lua_pass   "${test_name}_scripts/pass.lua"
+set cwd             "[$bin_pwd]"
+set job_name        $test_name
+set is_skip         0
+
+set ta1     "$test_name-account.1"
+set tu1     [get_my_user_name]
+set tq1     "$test_name-qos.1"
+set tq2     "$test_name-qos.2"
+
+# account options
+array set acct_1 {}
+set acct_1(Organization)  "Account_Org_A1"
+set acct_1(Description)   "Test_Account_A1"
+set acct_1(Qos) $tq1
+set acct_1(Cluster) [get_config_param "ClusterName"]
+
+# user options
+array set user_req_1 {}
+set user_req_1(Account) $ta1
+set user_req_1(Qos) "$tq1,$tq2"
+
+# qos options
+array set qos_1 {}
+set qos_1(Description)    "test_qos_1"
+set qos_1(flags)          "denyonlimit"
+set qos_1(maxtresperuser) "cpu=1"
+array set qos_2 {}
+set qos_2(Description)    "test_qos_2"
+
+set access_err  0
+
+set timeout $max_job_delay
+
+# Create test assoc and accounts
+proc create_accounts {} {
+	global ta1 acct_1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
+	log_info "create account and QOS"
+
+	# Create test assoc and accounts
+	if [add_qos $tq1 [array get qos_1]] {
+		fail "Unable to add qos ($tq1)"
+	}
+	if [add_qos $tq2 [array get qos_2]] {
+		fail "Unable to add qos ($tq2)"
+	}
+	if [add_acct $ta1 [array get acct_1]] {
+		fail "Unable to add account ($ta1)"
+	}
+	if [add_user $tu1 [array get user_req_1]] {
+		fail "Unable to add user ($tu1)"
+	}
+}
+
+# Cleanup test assoc and accounts
+proc cleanup_accounts {} {
+	global ta1 tq1 tq2
+
+	#wait_for_account_done $ta1,$ta2
+
+	log_info "remove QOS: $tq1, $tq2"
+	remove_qos $tq1,$tq2
+
+	log_info "remove account: $ta1"
+	remove_acct "" $ta1
+}
+
+proc test_bin_pass { num bin args het_job count } {
+	global job_name salloc ta1 tq2 srun number eol is_skip bin_true
+
+	set got_init 0
+	set got_sub1 0
+	set got_sub2 0
+	set got_sub3 0
+	set rc -12345
+	set is_builtin [string equal [get_config_param "SchedulerType"] "sched/builtin"]
+
+	log_info "**** TEST PASS $num ****"
+	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
+	expect {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system$eol" {
+			if { $het_job && $is_builtin } {
+				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
+				set is_skip 1
+				return 0
+			}
+		}
+		-re "^(srun|salloc|sbatch): initialized$eol" {
+			incr got_init
+			exp_continue
+		}
+		# salloc: 0: submit1
+		-re "^(srun|salloc|sbatch): ($number: |)submit1$eol" {
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub1
+			}
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): ($number: |)submit2$eol" {
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub2
+			}
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): ($number: |)submit3$eol" {
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub3
+			}
+			exp_continue
+		}
+		timeout {
+			fail "[file tail $bin] not responding"
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	log_info "$bin rc:$rc init:$got_init sub1:$got_sub1 sub2:$got_sub2 sub3:$got_sub3 expected:$count"
+
+	if {($rc != 0) ||
+	    ($got_sub1 != $count) ||
+	    ($got_sub2 != $count) ||
+	    ($got_sub3 != $count)} {
+			fail "Invalid response from [file tail $bin]"
+	}
+}
+
+proc test_bin_fail { num bin args het_job count } {
+	global job_name ta1 tq1 tq2 srun number eol is_skip bin_true
+
+	set got_init 0
+	set got_sub1 0
+	set got_sub2 0
+	set got_sub3 0
+	set rc -12345
+	set is_builtin [string equal [get_config_param "SchedulerType"] "sched/builtin"]
+
+	log_info "**** TEST FAIL $num ****"
+	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
+	expect {
+		-re "^(srun|salloc|sbatch): error: .*: Requested operation not supported on this system$eol" {
+			if { $het_job && $is_builtin } {
+				log_warn "Hetjobs are not supported with sched/builtin this failure is expected"
+				set is_skip 1
+				return 0
+			}
+		}
+		-re "^(srun|salloc|sbatch): error: initialized$eol" {
+			incr got_init
+			exp_continue
+		}
+		#srun: error: submit1\r\n
+		#salloc: error: 0: submit1\r\n
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit1$eol" {
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub1
+			}
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit2$eol" {
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub2
+			}
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit3$eol" {
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub3
+			}
+			exp_continue
+		}
+		timeout {
+			fail "[file tail $bin] not responding"
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	log_info "$bin rc:$rc init:$got_init sub1:$got_sub1 sub2:$got_sub2 sub3:$got_sub3 expected:$count"
+
+	if {($rc == 0) ||
+	    ($got_sub1 != $count) ||
+	    ($got_sub2 != $count) ||
+	    ($got_sub3 != $count)} {
+		fail "Invalid response from [file tail $bin]"
+	}
+}
+
+if {![have_lua]} {
+	skip "LUA must be installed and enabled to test lua job_submit plugin."
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
+	skip "This test can't be run without enforcing limits"
+}
+
+# Verify cluster is able to run largest test job
+set nodes [get_nodes_by_request "--ntasks-per-node=5 -N3"]
+if { [llength $nodes] != 3 } {
+	skip "System too small for test, it needs '--ntasks-per-node=5 -N3'"
+}
+
+proc cleanup {} {
+	global config_dir
+
+	cleanup_accounts
+	restore_conf $config_dir/job_submit.lua
+	restore_conf $config_dir/slurm.conf
+	reconfigure
+}
+
+cleanup_accounts
+create_accounts
+
+set config_dir [get_conf_path]
+save_conf $config_dir/job_submit.lua
+save_conf $config_dir/slurm.conf
+
+# Activate lua plugin
+run_command "$bin_rm $config_dir/job_submit.lua"
+run_command -fail "$bin_cp $test_lua_reject $config_dir/job_submit.lua"
+exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_echo "\n### test7.20 additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
+reconfigure -fail
+
+# Sleep for 1 second to make sure that modify time is different from last copy.
+sleep 1
+file mtime $config_dir/job_submit.lua [timestamp]
+
+# Check that all job types are rejected
+test_bin_fail "R1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "$bin_true"} 0 1
+test_bin_fail "R2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "$bin_true"} 1 1
+test_bin_fail "R3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 $bin_true} 0 1
+test_bin_fail "R4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 $bin_true} 1 1
+test_bin_fail "R5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap $bin_true} 0 1
+test_bin_fail "R6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap $bin_true} 0 1
+test_bin_fail "R7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap $bin_true} 1 1
+test_bin_fail "R8" $sbatch {-t1 -J $job_name --comment=PASS -o /dev/null -W -A $ta1 --qos $tq2 -n1 : --comment=ERROR -n3 : --comment=ERROR -n5 --wrap $bin_true} 1 2
+
+run_command -fail "$bin_cp $test_lua_pass $config_dir/job_submit.lua"
+# Sleep for 1 second to make sure that modify time is different from last copy.
+sleep 1
+file mtime $config_dir/job_submit.lua [timestamp]
+
+# Check that passing works
+test_bin_pass "P1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "$bin_true"} 0 1
+test_bin_pass "P2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "$bin_true"} 1 3
+test_bin_pass "P3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 $bin_true} 0 1
+test_bin_pass "P4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 $bin_true} 1 3
+test_bin_pass "P5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap $bin_true} 0 1
+test_bin_pass "P6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap $bin_true} 0 1
+test_bin_pass "P7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap $bin_true} 1 3
+
+# Check that messages are still sent with failing QOS but passing filter
+test_bin_fail "F1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 "$bin_true"} 0 1
+test_bin_fail "F2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 : -n3 : -n1 "$bin_true"} 1 1
+test_bin_fail "F3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 $bin_true} 0 1
+test_bin_fail "F4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 : -n3 : -n1 $bin_true} 1 1
+test_bin_fail "F5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --wrap $bin_true} 0 1
+test_bin_fail "F6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap $bin_true} 0 1
+test_bin_fail "F7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap $bin_true} 1 3
+
+if {$is_skip} {
+	skip "Some subtests were skipped"
+}

@@ -1,0 +1,112 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          qdel command tests
+############################################################################
+# Copyright (C) 2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
+set job_id      0
+
+if {[file executable $qsub] == 0} {
+	skip "$qsub does not exist"
+}
+if {[file executable $qdel] == 0} {
+	skip "$qdel does not exist"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_in "sleep 60"
+spawn $qsub -l walltime=1:00 -o $file_out -e $file_err $file_in
+expect {
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "qsub not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "qsub failed to submit job"
+}
+
+#
+# Wait for job to start
+#
+wait_for_job -fail $job_id "RUNNING"
+
+set status 1
+spawn $qdel $job_id
+expect {
+	-re "Invalid job id" {
+		fail "qdel failed to delete job"
+	}
+	timeout {
+		fail "qdel not responding"
+	}
+	eof {
+		catch wait reason
+		set status [lindex $reason 3]
+	}
+}
+
+if {$status != 0} {
+	fail "It appears that the job was submitted, but we got a non-zero exit from qdel"
+}
+
+set status 0
+set matches 0
+spawn $qdel $job_id
+expect {
+	-re "already completing or completed" {
+		log_debug "We shouldn't see this because qdel doesn't print an error for this"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "qdel not responding"
+	}
+	eof {
+		catch wait reason
+		set status [lindex $reason 3]
+	}
+}
+
+# we should get an error code here from qdel, but no message
+if {($matches != 0) || ($status == 0)} {
+	fail "No error on attempt to cancel terminated job"
+}

@@ -1,0 +1,189 @@
+.TH "helpers.conf" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
+
+.SH "NAME"
+helpers.conf \- Slurm configuration file for the helpers plugin.
+
+.SH "DESCRIPTION"
+\fBhelpers.conf\fR is an ASCII file which defines parameters used by Slurm's
+"helpers" node feature plugin.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
+
+.SH "PARAMETERS"
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+The size of each line in the file is limited to 1024 characters.
+Changes to the configuration file take effect upon restart of
+Slurm daemons, daemon receipt of the SIGHUP signal, or execution
+of the command "scontrol reconfigure" unless otherwise noted.
+
+.TP
+\fBAllowUserBoot\fR=<\fIuser1\fR>[,<\fIuser2\fR>...]
+Controls which users are allowed to change the features with this plugin.
+Default is to allow ALL users.
+.IP
+
+.TP
+\fBBootTime\fR=<\fItime\fR>
+Controls how much time a node has to reboot before a timeout occurs and a
+failure is assumed. Default value is 300 seconds.
+.IP
+
+.TP
+\fBExecTime\fR=<\fItime\fR>
+Controls how much time the Helper program can run before a timeout occurs
+and a failure is assumed. Default value is 10 seconds.
+.IP
+
+.TP
+\fBFeature\fR=<\fIstring\fR> \fBHelper\fR=<\fIfile\fR> <\fBFlags\fR=<\fIflags\fR>
+Defines \fBFeature(s)\fR and a corresponding \fBHelper\fR program that reports
+and modifies the status of the feature(s). Multiple \fBFeature\fR entries are
+allowed, one for each feature and corresponding program/script. A comma
+separated list of features can also be defined for one \fBHelper\fR.
+
+Features can be defined per node by creating a unique file for each node. The
+controller must have a \fBhelpers.conf\fR that lists all possible helper
+features.
+
+.RS
+.TP
+Currently supported flags are:
+.IP
+
+.TP
+\fBrebootless\fR
+Indicate that the feature doesn't require a node reboot. If
+set, feature activation won't execute the \fIRebootProgram\fR, the node will
+just register that the node rebooted to slurmctld without an actual reboot.
+.RE
+.IP
+
+A single \fBhelpers.conf\fR can be created that defines features for specific
+nodes by prepending \fINodeName=<nodelist>\fR to the front of the \fBFeature\fR
+line. A \fBFeature\fR not prepended with \fINodeName\fR will apply to all
+nodes.
+
+.IP
+.nf
+# helpers.conf
+NodeName=n1_[1-10] Feature=a1,a2 Helper=/path/helper.sh
+NodeName=n2_[1-10] Feature=b1,b2 Helper=/path/helper.sh
+Feature=c1,c2 Helper=/path/helper.sh
+.fi
+
+If a feature is defined in the \fBhelpers.conf\fR and is not defined on a
+specific node in the \fBhelpers.conf\fR but is defined for that node in the
+slurm.conf, that feature is treated as a changeable/rebootable feature by the
+controller. For example, if feature \fIfa\fR is defined on node \fInode1\fR in
+the \fBslurm.conf\fR but is only listed on \fInode2\fR in the
+\fBhelpers.conf\fR, the feature will still trigger the node to be rebooted if
+not active.
+
+The \fBHelper\fR is an arbitrary program or script that reports and modifies
+the feature set on a given node. The helpers are site\-specific and are not
+included with Slurm. Features modified by the helpers require a reboot of
+the node using the \fBRebootProgram\fR.
+The \fBHelper\fR program/script must be executable by the \fBSlurmdUser\fR.
+The same program/script can be used to control multiple features. slurmd will
+execute the \fBHelper\fR in one of two ways:
+.IP
+.RS
+.LP
+1. Execute with no arguments to query the status of node features. It must
+return an exit code of 0 and either print a superset of the features expected
+by Slurm, or it can print nothing. Otherwise, the node will be drained.
+.LP
+2. Execute with a single argument of the feature to be activated on node reboot.
+In the case of multiple features the script is called multiple times.
+.RE
+
+.TP
+\fBMutuallyExclusive\fR=<\fIfeature_list\fR>
+Prevents certain features from being specified for the same job. There can be
+multiple \fBMutuallyExclusive\fR entries, each with their own list of features
+that are mutually exclusive among themselves (i.e. features on one line are
+only mutually exclusive with other features on the same line, but not mutually
+exclusive with features on other lines).
+.IP
+
+.SH "EXAMPLE"
+
+.TP
+\fB/etc/slurm/slurm.conf\fR:
+To enable the helpers plugin, the \fBslurm.conf\fR needs to have the following
+entry:
+.IP
+.nf
+NodeFeaturesPlugins=node_features/helpers
+.fi
+
+.TP
+\fB/etc/slurm/helpers.conf\fR:
+The following example \fBhelpers.conf\fR demonstrates that multiple features
+can use the same Helper script and that there can be multiple lists of
+features that are mutually exclusive. For example, with the following
+configuration a job cannot request both "nps1" and "nps2", nor can it request
+both "mig=on" and "mig=off". However, it could request "nps1" and "mig=on" at
+the same time.
+.IP
+.nf
+# helpers.conf
+Feature=nps1,nps2,nps4 Helper=/usr/local/bin/nps
+Feature=mig=on Helper=/usr/local/bin/mig
+Feature=mig=off Helper=/usr/local/bin/mig
+MutuallyExclusive=nps1,nps2,nps4
+MutuallyExclusive=mig=on,mig=off
+ExecTime=60
+BootTime=60
+AllowUserBoot=user1,user2
+.fi
+
+.TP
+\fBExample Helper script\fR:
+Helper scripts need to have the executable bit set and must exist on the
+nodes, where they will be executed by slurmd.
+When the helper script is called with no arguments it should return the
+feature(s) that are currently active for the node, with multiple features
+being new-line delimited. When the helper script is called with a feature
+to be enabled for the node, it should configure the node in a way that the
+specified feature will be enabled when the node reboots. This example script
+just writes the active feature name to a file but production scripts will
+probably be more complex.
+.IP
+.nf
+#!/bin/bash
+
+if [ "$1" = "nps1" ]; then
+    echo "$1" > /etc/slurm/feature
+elif [ "$1" = "nps2" ]; then
+    echo "$1" > /etc/slurm/feature
+elif [ "$1" = "nps4" ]; then
+    echo "$1" > /etc/slurm/feature
+else
+    cat /etc/slurm/feature
+fi
+.fi
+
+.SH "COPYING"
+Copyright (C) 2021 NVIDIA CORPORATION. All rights reserved.
+.br
+Copyright (C) 2021 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

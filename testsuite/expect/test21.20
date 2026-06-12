@@ -1,0 +1,284 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr QoS modify test
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set qs          QosLevel
+set qs1         tnormal
+set qs2         texpedite
+set qs3         tstandby
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
+set tu3         "${test_name}-user.3"
+set alo         Operator
+set access_err  0
+
+# Cluster
+array set clus_req {}
+
+# Accounts
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# User
+array set user_req {}
+set user_req(defaultaccount) $ta2
+set user_req(cluster) $tc1,$tc2,$tc3
+set user_req(account) $ta1,$ta2,$ta3
+set user_req(qos) $qs1,$qs2
+
+# Mod User 1
+array set user_mod_info {}
+set user_mod_info(cluster) $tc1,$tc2,$tc3
+set user_mod_info(account) "'$ta2'"
+array set user_mod_acct {}
+array set user_mod_assoc {}
+set user_mod_assoc(qoslevel) $qs3
+
+# Mod User 2
+array set user_mod_info2 {}
+set user_mod_info2(cluster) $tc1,$tc2,$tc3
+set user_mod_info2(account) "'$ta2'"
+array set user_mod_acct2 {}
+array set user_mod_assoc2 {}
+set user_mod_assoc2(qoslevel) "+$qs3"
+
+# Mod User 3
+array set user_mod_info3 {}
+set user_mod_info3(cluster) $tc1,$tc2,$tc3
+set user_mod_info3(account) "'$ta2'"
+array set user_mod_acct3 {}
+array set user_mod_assoc3 {}
+set user_mod_assoc3(qoslevel) "'-$qs2'"
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global ta1 ta2 ta3 tc1 tc2 tc3 tu1 tu2 tu3 qs1 qs2 qs3
+
+	remove_qos "$qs1,$qs2,$qs3"
+	remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$tu1,$tu2,$tu3"
+	remove_acct "" "$ta1,$ta2,$ta3"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
+}
+
+# Add qos
+if [add_qos "$qs1,$qs2,$qs3" ""] {
+	fail "Unable to add qoses ($qs1,$qs2,$qs3)"
+}
+
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
+}
+
+# Add users
+# cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
+if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
+}
+
+#
+# Use sacctmgr to list the test qos additions
+#
+set matches 0
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "(($tu1|$tu2|$tu3).($qs1|$qs2))." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 27} {
+	fail "Account addition 27 incorrect ($matches != 27)"
+}
+
+#modify user1 QoS
+
+# First array: information about user (ie. cluster,account,partition...)
+# Second array: account information about user (ie. adminlevel, default account, ...)
+# Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
+
+if [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]] {
+	fail "Unable to modify user 1 ($tu1)"
+}
+
+#
+# Use sacctmgr to list the test qos modifications
+#
+set matches 0
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "$tu1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "($tu2|$tu3).$qs2.$qs1." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 21} {
+	fail "Account addition 21 incorrect ($matches != 21)"
+}
+
+#modify user2 QoS
+
+# First array: information about user (ie. cluster,account,partition...)
+# Second array: account information about user (ie. adminlevel, default account, ...)
+# Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
+
+if [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]] {
+	fail "Unable to modify user 2 ($tu2)"
+}
+
+#
+# Use sacctmgr to list the test qos modifications
+#
+set matches 0
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "$tu1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$tu2.$qs2.$qs1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$tu3.$qs2.$qs1." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 15} {
+	fail "Account addition 15 incorrect ($matches != 15)"
+}
+
+
+#modify user3 QoS
+
+# First array: information about user (ie. cluster,account,partition...)
+# Second array: account information about user (ie. adminlevel, default account, ...)
+# Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
+
+if [mod_user $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array get user_mod_assoc3]] {
+	fail "Unable to modify user 3 ($tu3)"
+}
+
+#
+# Use sacctmgr to list the test qos modifications
+#
+set matches 0
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
+expect {
+	-re "There was a problem" {
+	    fail "There was a problem with the sacctmgr command"
+	}
+	-re "$tu1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$tu2.$qs2.$qs1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$tu3.$qs1." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 9} {
+	fail "Account addition 9 incorrect ($matches != 9)"
+}

@@ -1,0 +1,153 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test scancel --nodelist option.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by David Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in        "$test_dir/input"
+set num_procs      10
+set ii             0
+set job_id         ""
+set job_map        {}
+set found          0
+set tmp_job_list   {}
+set tmp_map_entry  {}
+set submitted_jobs {}
+set submitted_jobs_all {}
+set job_list       {}
+set job_index      -1
+
+proc cleanup {} {
+	global submitted_jobs_all
+
+	#
+	# Clean up any jobs submitted by this test, which were not mapped to a node,
+	# and thus not cancelled in the previous block of code
+	#
+	cancel_job $submitted_jobs_all
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$srun $bin_sleep 600"
+
+#
+# Submit some jobs so we have something to work with
+#
+set timeout 20
+for {set ii 0} {$ii < $num_procs} {incr ii} {
+	set job_id [submit_job -fail "-J $test_name --output=/dev/null --error=/dev/null -n1 -N1 $file_in"]
+	lappend submitted_jobs $job_id
+	lappend submitted_jobs_all $job_id
+}
+
+#
+# Run squeue and build a map, implemented as a list of list of lists, like so:
+# { {node1  {job1 job2 job3}}
+#   {node2  {job4 job5}}
+# }
+#
+# Only put jobs into the map if they were submitted by this test.
+#
+
+spawn $squeue -h -t running -n $test_name  -o "%10i %40N"
+expect {
+	-re "($number) *($re_word_str) *$eol" {
+		set job_id $expect_out(1,string)
+		set node_name $expect_out(2,string)
+
+		#This test doesn't need to track jobs that it didn't submit.
+		if { [lsearch $submitted_jobs $job_id] == -1 } {
+			exp_continue
+		}
+		#log_debug "Job $job_id: node $node_name"
+		#Insert into a table with node_name as the key, job_id as the value
+		set found 0
+		for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
+			if { [lindex [lindex $job_map $ii] 0] == $node_name } {
+				set tmp_map_entry [list $node_name [concat [lindex [lindex $job_map $ii] 1] $job_id]]
+				set job_map [lreplace $job_map $ii $ii $tmp_map_entry]
+				set found 1
+				break
+			}
+		}
+		if {$found == 0} {
+			lappend job_map [list $node_name [list $job_id] ]
+		}
+		exp_continue
+	}
+}
+#log_debug "Job map: $job_map"
+
+
+#
+# Issue an scancel command against each node in the map described above.
+# Remove entries from the internal list, and ensure that the list is
+# empty at the end of the scancel call.
+#
+
+for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
+	set node_name [lindex [lindex $job_map $ii] 0]
+	set job_list  [lindex [lindex $job_map $ii] 1]
+
+	if {$ii == 0} {
+		spawn $scancel -v -n $test_name --nodelist $node_name
+	} else {
+		spawn $scancel -v -n $test_name -w $node_name
+	}
+	expect {
+		-re "scancel: Terminating job ($number)" {
+			#Search for the terminated job in the list recently
+			#returned from squeue. Don't worry if an unknown job
+			#gets cancelled, because maybe one of our submitted
+			#jobs will start running while we cancel other jobs
+			#Issue cancel commands node by node until all the
+			#jobs submitted for this test are gone.
+
+			set job_id $expect_out(1,string)
+			set job_index [lsearch $job_list $job_id]
+			if {$job_index != -1} {
+				set job_list [lreplace $job_list $job_index $job_index]
+			}
+			set job_index [lsearch $submitted_jobs $job_id]
+			if {$job_index != -1} {
+				set submitted_jobs [lreplace $submitted_jobs $job_index $job_index]
+			}
+			exp_continue
+		}
+		timeout {
+			fail "scancel not responding while cancelling for node ($node_name)"
+		}
+		eof {
+			wait
+		}
+	}
+	if { [llength $job_list] != 0 } {
+		fail "scancel did not remove jobs ($job_list) from node ($node_name)"
+	}
+}

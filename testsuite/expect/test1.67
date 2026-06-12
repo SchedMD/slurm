@@ -1,0 +1,86 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test that an srun program can move from the background to the
+#          foreground.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/job_script"
+set test_timer  "$test_dir/test_timer"
+set test_srun   "$test_dir/test_srun"
+set job_id      0
+
+make_bash_script $test_timer "
+for i in \{1..10\}
+do
+	echo \"time \$i\"
+	sleep 5
+done
+echo \"Test finished\"
+"
+
+make_bash_script $test_srun "
+set -m
+$srun -t1 -v $test_timer &
+$bin_sleep 15
+echo \"sending job to foreground\"
+fg
+"
+
+make_bash_script $file_in "
+$bin_bash -i $test_srun
+"
+
+set timeout $max_job_delay
+set send_match 0
+set time_match 0
+set fini_match 0
+spawn bash -i $file_in
+expect {
+	-re "sending job to foreground" {
+		set send_match 1
+		if {$time_match == 0} {
+			fail "srun is not generating output"
+		}
+		exp_continue
+	}
+	-re "time ($number)" {
+		incr time_match
+		exp_continue
+	}
+	-re "Test finished" {
+		set fini_match 1
+		exp_continue
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$send_match == 1} "srun should be sent to the foreground"
+subtest {$time_match == 10} "srun should generate the correct output" "$time_match != 10"
+subtest {$fini_match == 1} "srun should finish the submitted program"

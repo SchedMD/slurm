@@ -1,0 +1,311 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test squeue filtering (--jobs, --nodelist, --states, --steps and
+#          --user options).
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in      "$test_dir/input"
+set job_id1      0
+set job_id2      0
+set step_id      0
+set job_name1    "$test_name.job1"
+set job_name2    "$test_name.job2"
+set node_cnt 1-1
+
+if {[param_contains [get_config_param "JobSubmitPlugins"] "all_partitions"]} {
+	skip "This test is incompatible with JobSubmitPlugins=all_partitions"
+}
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
+
+#
+# Submit a couple of jobs so we have something to look at
+#
+set job_id1 [submit_job -fail "-N$node_cnt -J$job_name1 --output=/dev/null --error=/dev/null -t5 $file_in"]
+set job_id2 [submit_job -fail "-N$node_cnt -J$job_name2 --output=/dev/null --error=/dev/null --hold -t5 $file_in"]
+
+#
+# Check the squeue job filter option
+#
+set job_found 0
+spawn $squeue --format=%i --jobs $job_id2
+expect {
+	-re "($number)" {
+		set tmp_id $expect_out(1,string)
+		if {$tmp_id == $job_id2} {
+			set job_found 1
+		} else {
+			fail "squeue reported invalid job_id"
+		}
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$job_found != 0} "Check the squeue job filter option" "squeue failed to locate desired job"
+
+#
+# Check the squeue state filter option
+#
+spawn $squeue --format=%t --noheader --states=PD
+expect {
+	-re "($re_word_str)" {
+		subtest {$expect_out(1,string) eq "PD"} "Check the squeue state filter option"
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check the squeue user filter option with name
+#
+
+set this_user [get_my_user_name]
+
+spawn $squeue --format=%u --noheader --user=$this_user
+expect {
+	-re "($re_word_str)" {
+		subtest {$expect_out(1,string) eq $this_user} "Check the squeue user filter option with name"
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check the squeue user filter option with id
+#
+set this_uid [get_my_uid]
+
+spawn $squeue --format=%u --noheader --user=$this_uid
+expect {
+	-re "($re_word_str)" {
+		subtest {$expect_out(1,string) eq $this_user} "Check the squeue user filter option with id"
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check the squeue node filter option
+#
+set match 0
+spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=dummy_name
+expect {
+
+	-re "Invalid node name dummy_name" {
+		log_debug "No worries. This error is expected"
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 1} "Check the squeue node filter option"
+
+# The node filtering really only works if the job has begun execution
+set node_name_set 0
+spawn $squeue --format=%N --noheader --jobs=$job_id1 --states=RUNNING
+expect {
+	-re "($re_word_str)" {
+		set node_name $expect_out(1,string)
+		set node_name_set 1
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$node_name_set == 1} {
+	spawn $squeue --format=%u --noheader --user=$this_uid --nodelist=$node_name
+	expect {
+		-re "($re_word_str)" {
+			set node_name_set 0
+			exp_continue
+		}
+		timeout {
+			fail "squeue not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+subtest {$node_name_set != 1} "Check squeue node name filtering"
+
+#
+# Check the squeue partition filter option
+#
+# First get partition name(s)
+set partition1 ""
+set partition2 ""
+spawn $squeue --format=%P --noheader
+expect {
+	-re "($re_word_str)" {
+		if {$partition1 eq ""} {
+			set partition1 $expect_out(1,string)
+			exp_continue
+		}
+		if {$expect_out(1,string) eq $partition1} {
+			set partition2 $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$partition2 eq ""} {
+	set partition2 $partition1
+}
+spawn $squeue --format=%P --noheader --partitions=$partition1
+expect {
+	-re "($re_word_str)" {
+		subtest {$expect_out(1,string) eq $partition1} "Check the squeue partition filter option"
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
+	subskip "squeue --steps doesn't work with stepmgr enabled jobs"
+} else {
+	#
+	# Wait long enough to make sure the job step is running and has
+	# started its job steps. Check the squeue job step filter option
+	#
+	wait_for_job -fail $job_id1 "RUNNING"
+	exec $bin_sleep 10
+	set job_found 0
+	spawn $squeue --format=%i --steps $job_id1.$step_id
+	expect {
+		-re "($number)\\.($number)" {
+			set tmp_id $expect_out(1,string)
+			if {$tmp_id == $job_id1} {
+				set job_found 1
+			} else {
+				fail "squeue reported invalid job_step_id"
+			}
+			exp_continue
+		}
+		timeout {
+			fail "squeue not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$job_found != 0} "Check the squeue job step filter option" "squeue failed to locate desired job step"
+}
+
+#
+# Filters the name associated with the job
+#
+set job_found 0
+spawn $squeue --format=%i --name $job_name1
+expect {
+	-re "($number)" {
+		set tmp_id $expect_out(1,string)
+		if {$tmp_id == $job_id1} {
+			set job_found 1
+		} else {
+			fail "squeue reported unexpected job_id ($tmp_id != $job_id1)"
+		}
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$job_found != 0} "squeue filters the name associated with job1" "squeue failed to locate job1"
+
+set job_found 0
+spawn $squeue --format=%i --name $job_name2
+expect {
+	-re "($number)" {
+		set tmp_id $expect_out(1,string)
+		if {$tmp_id == $job_id2} {
+			set job_found 1
+		} else {
+			fail "squeue reported unexpected job_id ($tmp_id != $job_id2)"
+		}
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$job_found != 0} "squeue filters the name associated with job2" "squeue failed to locate job2"

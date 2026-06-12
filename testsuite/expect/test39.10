@@ -1,0 +1,227 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test --mem-per-gpu option
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+
+proc run_gpu_per_job { mem_per_gpu } {
+	global file_in number srun test_name
+
+	set mem_size 0
+	spawn $srun --gpus=1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
+	expect {
+		-re "AllocTRES=cpu=($number),mem=($number)M" {
+			set mem_size $expect_out(2,string)
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$mem_size != $mem_per_gpu} {
+		fail "srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)"
+	}
+}
+
+proc run_gpu_per_node { mem_per_gpu } {
+	global file_in number srun test_name
+
+	set mem_size 0
+	spawn $srun --gpus-per-node=1 -N1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
+	expect {
+		-re "AllocTRES=cpu=($number),mem=($number)M" {
+			set mem_size $expect_out(2,string)
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$mem_size != $mem_per_gpu} {
+		fail "srun --mem-per-gpu failure ($mem_size != $mem_per_gpu)"
+	}
+}
+
+proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
+	global file_in number srun test_name
+
+	set mem_size 0
+	spawn $srun --gpus-per-task=$gpu_cnt -n1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
+	expect {
+		-re "AllocTRES=cpu=($number),mem=($number)M" {
+			set mem_size $expect_out(2,string)
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	set mem_target [expr $mem_per_gpu * $gpu_cnt]
+	if {$mem_size != $mem_target} {
+		fail "srun --mem-per-gpu failure ($mem_size != $mem_target)"
+	}
+}
+
+proc run_gpu_check_mem { srun_opts mem_target node_target } {
+	global file_in number srun test_name
+
+	set mem_size 0
+	set node_count 0
+
+	set output [run_command_output -fail "$srun $srun_opts -J $test_name -t1 $file_in"]
+	regexp "NumNodes=($number)"                $output - node_count
+	regexp "AllocTRES=cpu=($number),mem=($number)M" $output - - mem_size
+
+	if {$node_count < $node_target} {
+		fail "srun --mem-per-gpu failure, bad node count ($node_count < $node_target)"
+	}
+	if {$mem_size != $mem_target} {
+		fail "srun $srun_opts failure ($mem_size != $mem_target)"
+	}
+}
+
+if {![check_config_select "cons_tres"]} {
+        skip "This test is only compatible with select/cons_tres"
+}
+if {![param_contains [get_config_param "SelectTypeParameters"] "*MEMORY"]} {
+        skip "This test requires memory allocation management"
+}
+
+set nb_nodes  2
+set gpu_cnt   [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 2} {
+	skip "This test requires 2 or more GPUs on $nb_nodes nodes of the default partition"
+}
+
+set nodes [get_nodes_by_request "--gres=gpu:$gpu_cnt -t1 -N $nb_nodes"]
+if { [llength $nodes] != $nb_nodes } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:$gpu_cnt to $nb_nodes nodes"
+}
+
+# Get the node with the maximum number of GPUs
+dict for {node gpus} [get_gres_count "gpu" [join $nodes ,]] {
+	if {$gpus >= $gpu_cnt} {
+		set node_name $node
+		set gpu_cnt   $gpus
+	}
+}
+set node_memory [get_node_param $node_name "RealMemory"]
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Memory Size is $node_memory"
+log_debug "Node count used $nb_nodes"
+
+#
+# Build input script file
+#
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+$scontrol show job \$SLURM_JOB_ID
+exit 0"
+
+#
+# Run test job with global GPU count
+# Increase mem_per_gpu value 10x on each iteration
+#
+for {set inx 12} {$inx <= $node_memory} {set inx [expr $inx * 10]} {
+	run_gpu_per_job $inx
+}
+
+#
+# Run test job with gpus-per-node count
+# Increase mem_per_gpu value 10x on each iteration
+#
+for {set inx 12} {$inx <= $node_memory} {set inx [expr $inx * 10]} {
+	run_gpu_per_node $inx
+}
+
+#
+# Run test job with gpus-per-task count and one GPU
+# Increase mem_per_gpu value 10x on each iteration
+#
+for {set inx 12} {$inx <= $node_memory} {set inx [expr $inx * 10]} {
+	run_gpu_per_task $inx 1
+}
+
+#
+# Run test job with gpus-per-task count and two GPUs
+# Increase mem_per_gpu value 10x on each iteration
+#
+if {$gpu_cnt > 1} {
+	for {set inx 13} {$inx <= [expr $node_memory / 2]} \
+	    {set inx [expr $inx * 10]} {
+		run_gpu_per_task $inx 2
+	}
+}
+
+#
+# Test heterogeneous GPU allocation (gpu_cnt GPUs on one node, 1 GPU on another node)
+#
+if {$gpu_cnt > 1 && $nb_nodes > 1} {
+	set gpu_target [expr $gpu_cnt + 1]
+	set mem_spec 13
+	set node_target 2
+	set mem_target [expr $mem_spec * $gpu_target]
+	run_gpu_check_mem "--gpus=$gpu_target --mem-per-gpu=$mem_spec" $mem_target $node_target
+}
+
+#
+# Run test with --gpus=2 and mem_per_gpu value that pushed job to 2 nodes
+#
+if {$gpu_cnt > 1 && $nb_nodes > 1} {
+	set mem_spec [expr $node_memory / $gpu_cnt + 1]
+	set node_target 2
+	set mem_target [expr $mem_spec * $gpu_cnt]
+	run_gpu_check_mem "--gpus=$gpu_cnt --mem-per-gpu=$mem_spec" $mem_target $node_target
+}
+
+log_info "Testing --mem-per-gpu with --exclusive and --gres=gpu:1"
+for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
+	run_gpu_check_mem "--gres=gpu:1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
+}
+
+log_info "Testing --mem-per-gpu with --exclusie and --gpus=1"
+for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
+	run_gpu_check_mem "--gpus=1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
+}
+
+log_info "Testing --mem-per-gpu with --exclusie and --gpus-per-task=1"
+for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
+	run_gpu_check_mem "--gpus-per-task=1 --ntasks-per-node=1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
+}
+
+log_info "Testing --mem-per-gpu with --exclusie and --gpus-per-socket=1"
+for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
+	run_gpu_check_mem "--gpus-per-socket=1 --sockets-per-node=1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
+}

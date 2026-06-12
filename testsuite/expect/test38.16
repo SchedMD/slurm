@@ -1,0 +1,200 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test environment variables needed by MPI.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/job_script"
+set file_out    "$test_dir/output"
+set het_job_id  0
+set timeout     60
+
+proc cleanup {} {
+	global het_job_id
+
+	cancel_job $het_job_id
+}
+
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+if {$nb_nodes < 2} {
+	skip "Need 2 or more nodes in default partition"
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  $bin_env | grep SLURM_NODELIST
+"
+
+set component(0) 0
+set matches 0
+set timeout $max_job_delay
+spawn $salloc -t2 -N1 : -N1 $bin_bash
+expect {
+	-re "job ($number) has been allocated resources" {
+		set het_job_id $expect_out(1,string)
+		reset_bash_prompt
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#log_debug "Job initiated"
+	}
+	timeout {
+		fail "salloc: allocation not granted in $timeout seconds"
+	}
+	eof {
+		wait
+	}
+}
+if {$het_job_id == 0} {
+	fail "salloc failure"
+}
+
+log_debug "Collect Nodename for each job component"
+
+send "$squeue -j $het_job_id -o\"%N,%i\" --noheader\r"
+expect {
+	-re "--noheader" {
+		exp_continue
+	}
+	-re "($re_word_str),$het_job_id\\+($number)" {
+		set node_name $expect_out(1,string)
+		set index $expect_out(2,string)
+		set component($index) $node_name
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+}
+if {[array size component] != 2} {
+	fail "squeue failure ([array size component] != 2)"
+}
+
+log_info "Test environment variables needed by MPI"
+
+set matches 0
+send "$srun --label --mpi=none --het-group=0,1 -l -o$file_out $file_in\r"
+expect {
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+wait_for_file -fail $file_out
+
+set het_nodelist ""
+send "$bin_sort -d $file_out\r"
+expect {
+	-re "0: SLURM_NODELIST_HET_GROUP_0=$component(0)" {
+		incr matches
+		exp_continue
+	}
+	-re "0: SLURM_NODELIST_HET_GROUP_1=$component(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST_HET_GROUP_0=$component(0)" {
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST_HET_GROUP_1=$component(1)" {
+		incr matches
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "sort not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 0
+send "$bin_sort $file_out\r"
+expect {
+	-re "0: SLURM_NODELIST=($re_word_str)" {
+		set het_nodelist $expect_out(1,string)
+		incr matches
+		exp_continue
+	}
+	-re "1: SLURM_NODELIST=$het_nodelist" {
+		incr matches
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "sort not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$matches != 6} {
+	fail "srun failure ($matches != 6)"
+}
+
+send "exit\r"
+expect {
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+log_info "Validate combined hostlist"
+
+set matches 0
+spawn $scontrol show hostnames $het_nodelist
+expect {
+	-re "$component(0)|$component(1)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+}
+if {$matches != 2} {
+	fail "srun combined hostlist is bad ($matches != 2)"
+}

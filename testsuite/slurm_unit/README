@@ -1,0 +1,5 @@
+Unit Tests
+
+1. Ensure that "check" package is installed.
+2. From the top level build directory, execute "make check" as a non-root user,
+   which builds and executes unit tests with Check.

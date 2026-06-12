@@ -1,0 +1,31 @@
+##
+# Metadata for RPM/TAR makefile targets
+##
+# See src/api/Makefile.am for guidance on setting API_ values
+##
+  Meta:		1
+  Name:		slurm
+  Major:	26
+  Minor:	11
+  Micro:	0
+  Version:	26.11.0
+  Release:	0rc1
+
+##
+#  When making a new Major/Minor version update
+#  src/common/slurm_protocol_common.h
+#  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version
+#  it was so the slurmdbd can continue to send the old protocol version.
+#
+#  NOTE: The API version can not be the same as the Slurm version above.  The
+#        version in the code is referenced as a uint16_t which if 1403 was the
+#        API_CURRENT it would go over the limit.  So keep is a relatively
+#        small number.
+#
+#  NOTE: The values below are used to set up environment variables in
+#        the config.h file that may be used throughout Slurm, so don't remove
+#	 them.
+##
+  API_CURRENT:	46
+  API_AGE:	0
+  API_REVISION:	0

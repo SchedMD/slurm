@@ -1,0 +1,128 @@
+#!/bin/bash
+# Emulate dw_wlm_cli (Cray's DataWarp interface) for testing purposes
+# See "Flags=EmulateCray" in burst_buffer.conf man page
+#
+# create_persistent
+#
+if [ $2 == "create_persistent" ]; then
+   echo 'created'
+fi
+
+#
+# data_in
+#
+if [ $2 == "data_in" ]; then
+   sleep 3
+#   echo "foo"
+#   exit 1
+fi
+
+#
+# data_out
+#
+if [ $2 == "data_out" ]; then
+   sleep 20
+#   echo "foo"
+#   exit 1
+fi
+
+#
+# destroy_persistent is defunct, use teardown
+#
+if [ $2 == "destroy_persistent" ]; then
+   sleep 0.1
+fi
+
+#
+# job_process
+#
+if [ $2 == "job_process" ]; then
+   sleep 0.1
+fi
+
+#
+# paths
+#
+if [ $2 == "paths" ]; then
+   if [ $7 == "--pathfile" ]; then
+      echo 'DWPATHS=/tmp/dw' > $8
+   fi
+fi
+
+#
+# pre_run
+#
+if [ $2 == "pre_run" ]; then
+   sleep 5
+fi
+
+#
+# post_run
+#
+if [ $2 == "post_run" ]; then
+   sleep 0.1
+fi
+
+#
+# pools
+#
+if [ $2 == "pools" ]; then
+   echo '{"pools": [{"free": 29, "granularity": 214748364800, "id": "wlm_pool", "quantity": 29, "units": "bytes"}]}'
+fi
+if [ $2 == "poolsx" ]; then
+   echo '{ "pools": [ { "id":"dwcache", "units":"bytes", "granularity":16777216, "quantity":2048, "free":2048 } ] }'
+fi
+
+#
+# setup
+#
+if [ $2 == "setup" ]; then
+   sleep 6
+fi
+if [ $2 == "setupx" ]; then
+   sleep 0.1
+   echo 'dwpost - failed client status code %s 400
+Error creating instance: 400'
+   exit 1
+fi
+
+#
+# show_configurations
+#
+if [ $2 == "show_configurations" ]; then
+   echo '{ "configurations": [ ] }'
+fi
+
+#
+# show_instances
+#
+if [ $2 == "show_instances" ]; then
+   echo '{ "instances": [ ] }'
+fi
+if [ $2 == "show_instancesx" ]; then
+   echo '{ "instances": [
+ {"capacity": {"bytes": 1288490188800, "nodes": 2}, "created": 1478232104, "expiration": 0, "expired": false, "id": 75, "intact": true, "label": "I75-0", "limits": {"write_window_length": 86400, "write_window_multiplier": 10}, "links": {"configurations": [73], "session": 75}, "public": false, "state": {"actualized": true, "fuse_blown": false, "goal": "create", "mixed": false, "transitioning": false}}
+] }'
+fi
+
+#
+# show_instances
+#
+if [ $2 == "show_sessions" ]; then
+   echo '{ "sessions": [ ] }'
+fi
+# Create a job with ID 347 or the buffer will get torn down at slurmctld startup
+if [ $2 == "show_sessionsx" ]; then
+   echo '{ "sessions": [
+{"created": 1478232104, "creator": "SLURM", "expiration": 0, "expired": false, "id": 75, "links": {"client_nodes": ["nid00039"]}, "owner": 1001, "state": {"actualized": true, "fuse_blown": false, "goal": "create", "mixed": false, "transitioning": false}, "token": "347"}
+] }'
+fi
+
+#
+# teardown
+#
+if [ $2 == "teardown" ]; then
+   sleep 0.1
+fi
+
+exit 0

@@ -1,0 +1,140 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate Prolog and Epilog Environment Variables
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <http://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set prolog          "$test_dir/prolog"
+set epilog          "$test_dir/epilog"
+set prolog_out      "$test_dir/prolog.out"
+set epilog_out      "$test_dir/epilog.out"
+set test_node       [lindex [get_nodes_by_state] 0]
+set job_id          0
+
+proc cleanup { } {
+	global config_dir
+
+	restore_conf $config_dir/slurm.conf
+	reconfigure
+}
+
+proc check_prolog { pattern } {
+	global prolog_out bin_grep
+
+	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $prolog_out" $pattern]
+	subtest {$rc == 0} "Check for '$pattern' in prolog output"
+}
+
+proc check_epilog { pattern } {
+	global epilog_out bin_grep
+
+	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $epilog_out" $pattern]
+	subtest {$rc == 0} "Check for '$pattern' in epilog output"
+}
+
+# Get the location of the slurm.conf file
+set config_dir [get_conf_path]
+
+#
+# Copy slurm.conf file
+#
+save_conf $config_dir/slurm.conf
+
+make_bash_script $prolog "env > $prolog_out"
+make_bash_script $epilog "env > $epilog_out"
+
+# Ensure that Prolog, Epilog, and nohold_on_prolog_fail params are removed
+exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/^\(Epilog=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_dir/slurm.conf
+
+# Add \n in case the last line is commented out
+exec $bin_echo "" >> $config_dir/slurm.conf
+
+# Append Prolog and Epilog config to the slurm.conf
+exec $bin_echo "Prolog=$prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Epilog=$epilog" >> $config_dir/slurm.conf
+reconfigure -fail
+
+# Test whether env vars exist in Prolog and Epilog
+log_info "Checking for regular env vars"
+set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --comment=foo --extra=bar --wrap='hostname'"]
+
+wait_for_job $job_id "DONE"
+
+check_prolog "SLURM_CLUSTER_NAME="
+check_epilog "SLURM_CLUSTER_NAME="
+
+check_prolog "SLURM_JOB_COMMENT="
+check_epilog "SLURM_JOB_COMMENT="
+
+check_prolog "SLURM_JOB_EXTRA="
+check_epilog "SLURM_JOB_EXTRA="
+
+check_prolog "SLURM_JOB_ID="
+check_epilog "SLURM_JOB_ID="
+
+check_prolog "SLURM_JOB_PARTITION="
+check_epilog "SLURM_JOB_PARTITION="
+
+check_prolog "SLURM_JOB_UID="
+check_epilog "SLURM_JOB_UID="
+
+check_prolog "SLURM_JOB_USER="
+check_epilog "SLURM_JOB_USER="
+
+check_prolog "SLURM_SCRIPT_CONTEXT=prolog_slurmd"
+check_epilog "SLURM_SCRIPT_CONTEXT=epilog_slurmd"
+
+set test_node [get_nodes_by_request "--gres=gpu:1 -t1"]
+if {[llength $test_node] != 1} {
+	subskip "This test requires being able to submit job with --gres=gpu:1"
+} else {
+	log_info "Checking for GPU-related env vars"
+	set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --wrap='hostname' --gres=gpu:1"]
+
+	wait_for_job $job_id "DONE"
+
+	check_prolog "CUDA_VISIBLE_DEVICES="
+	check_epilog "CUDA_VISIBLE_DEVICES="
+	check_prolog "GPU_DEVICE_ORDINAL="
+	check_epilog "GPU_DEVICE_ORDINAL="
+	check_prolog "SLURM_JOB_GPUS="
+	check_epilog "SLURM_JOB_GPUS="
+	check_prolog "ROCR_VISIBLE_DEVICES="
+	check_epilog "ROCR_VISIBLE_DEVICES="
+}
+
+set test_node [get_nodes_by_request "--gres=mps:1 -t1"]
+if {[llength $test_node] != 1} {
+	subskip "This test requires being able to submit job with --gres=mps:1"
+} else {
+	log_info "Checking for MPS-related env vars"
+	set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --wrap='hostname' --gres=mps:1"]
+
+	wait_for_job $job_id "DONE"
+
+	check_prolog "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE="
+	check_epilog "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE="
+}

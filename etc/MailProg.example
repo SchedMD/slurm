@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Make strings lower case for nice email formatting
+SLURM_MAIL_TYPE=${SLURM_JOB_MAIL_TYPE,,}
+SLURM_JOB_STATE=${SLURM_JOB_STATE,,}
+
+MAIL_BODY=$(mktemp)
+
+function showParamIfSet {
+	name="$1"
+	value="$2"
+	if [ ${#value} -gt 0 ]
+	then
+		echo "    $name:'$value'" >> $MAIL_BODY
+	fi
+}
+
+echo "This is a notification email about job $SLURM_JOB_ID($SLURM_JOB_NAME) on cluster:$SLURM_CLUSTER_NAME, the job has $SLURM_MAIL_TYPE." >> $MAIL_BODY
+case $SLURM_MAIL_TYPE in
+	began)
+		echo "Job was queued for $SLURM_JOB_QUEUED_TIME" >> $MAIL_BODY
+		;;
+	ended|requeued|failed)
+		echo "Job was running for $SLURM_JOB_RUN_TIME and returned exit code: $SLURM_JOB_EXIT_CODE" >> $MAIL_BODY
+		;;
+esac
+
+echo "Job details:" >> $MAIL_BODY
+showParamIfSet "Array JobId" "$SLURM_ARRAY_JOB_ID"
+showParamIfSet "Array Task" "$SLURM_ARRAY_TASK"
+showParamIfSet "Array TaskId" "$SLURM_ARRAY_TASK_ID"
+showParamIfSet "Slurm Cluster Name" "$SLURM_CLUSTER_NAME"
+showParamIfSet "HetJobId" "$SLURM_HET_JOB_ID"  #SLURM_PACK_JOB_ID is a synonym
+showParamIfSet "HetJob List" "$SLURM_HET_JOB_NODELIST" #SLURM_PACK_NODELIST is a synonym
+showParamIfSet "HetJob Offset" "$SLURM_HET_JOB_OFFSET" #SLURM_PACK_JOB_OFFSET is a synonym
+showParamIfSet "Job Account" "$SLURM_JOB_ACCOUNT"
+showParamIfSet "Job Requested Features" "$SLURM_JOB_CONSTRAINTS"
+showParamIfSet "Slurm derived exit code" "$SLURM_JOB_DERIVED_EC"
+showParamIfSet "Slurm job exit code" "$SLURM_JOB_EXIT_CODE"
+showParamIfSet "Job gid" "$SLURM_JOB_GID"
+showParamIfSet "Job group name" "$SLURM_JOB_GROUP"
+showParamIfSet "JobId" "$SLURM_JOB_ID"
+showParamIfSet "Job requested licenses" "$SLURM_JOB_LICENSES"
+showParamIfSet "Job name" "$SLURM_JOB_NAME"
+showParamIfSet "Job node List" "$SLURM_JOB_NODELIST"
+showParamIfSet "Job partition" "$SLURM_JOB_PARTITION"
+showParamIfSet "Job queued time" "$SLURM_JOB_QUEUED_TIME"
+showParamIfSet "Job run time" "$SLURM_JOB_RUN_TIME"
+showParamIfSet "Job stage-out time" "$SLURM_JOB_STAGE_OUT_TIME"
+showParamIfSet "Job state" "$SLURM_JOB_STATE"
+showParamIfSet "Job stderr" "$SLURM_JOB_STDERR"
+showParamIfSet "Job stdin" "$SLURM_JOB_STDIN"
+showParamIfSet "Job stdout" "$SLURM_JOB_STDOUT"
+showParamIfSet "Job uid" "$SLURM_JOB_UID"
+showParamIfSet "Job user name" "$SLURM_JOB_USER"
+showParamIfSet "Job wckey" "$SLURM_JOB_WCKEY"
+showParamIfSet "Job working directory" "$SLURM_JOB_WORK_DIR"
+showParamIfSet "Mail type" "$SLURM_MAIL_TYPE"
+
+/usr/bin/mail "$@" < $MAIL_BODY
+
+rm $MAIL_BODY

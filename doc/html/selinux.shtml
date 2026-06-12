@@ -1,0 +1,135 @@
+<!--#include virtual="header.txt"-->
+
+<h1>SELinux</h1>
+
+<p>Starting with version 21.08, Slurm includes support for setting an SELinux
+context for jobs as a technology preview. The implementation may change in
+future releases, and support for it is not enabled by default.</p>
+
+<h2 id="ARCHITECTURE">Architecture
+<a class="slurm_link" href="#ARCHITECTURE"></a>
+</h2>
+
+<p>When enabled, the Slurm job submission commands &mdash; salloc, sbatch, and
+srun &mdash; will automatically set a field with the current operating context.
+This field can be overwritten by the <span class="commandline">--context</span>
+command line option.</p>
+
+<p>It is important to note that this value can be directly manipulated by the
+end-user, and it is up to site-specific scripts to validate and control access
+to these contexts. At this time MUNGE, which Slurm users to security identify
+users and hosts on the cluster, does not provide an SELinux context field, and
+as such there is no secure mechanism to send the current context to the Slurm
+controller. Thus the context, as provided at job submission time, <b>must</b>
+be validated by a job_submit plugin running within the slurmctld.</p>
+
+<p>Without such a script, no context is set or managed for a user's job.</p>
+
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
+
+<h3 id="pmix">Source:<a class="slurm_link" href="#pmix"></a></h3>
+
+<p>SELinux support is disabled by default and must be enabled at configure time.
+It requires the libselinux1 library and development headers to build.</p>
+
+<pre>configure --enable-selinux</pre>
+
+<h2 id="SETUP">Setup<a class="slurm_link" href="#SETUP"></a></h2>
+
+<p>Once a version of Slurm that supports SELinux is installed, you will need to
+enable and create a job_submit plugin that will perform verification of the
+SELinux context, before passing it along to the slurmctld. At this time, there
+is not a reliable and secure way to get/verify contexts internally so you MUST
+create this script and perform verification in the job_submit plugin.</p>
+
+<p>Example:</p>
+<pre>
+function slurm_job_submit(job_desc, part_list, submit_uid)
+  if job_desc.req_context then
+    local element = 0
+    for str in string.gmatch(job_desc.req_context, "([^:]+)") do
+      if element == 0 and str ~= "unconfined_u" then
+        slurm.log_user("Error: invalid SELinux context")
+        return slurm.ERROR
+      elseif element == 1 and str ~= "unconfined_r" then
+        slurm.log_user("Error: %s is not a valid SELinux role")
+        return slurm.ERROR
+      end
+      element = element + 1
+    end
+    job_desc.selinux_context = job_desc.req_context
+  else
+    -- Force a specific context if one wasn't requested
+    job_desc.selinux_context = unconfined_u:unconfined_r:slurm_t:s0
+  end
+  return slurm.SUCCESS
+end
+</pre>
+
+<p>Note that <b>job_desc.selinux_context</b> is set based on the contents of
+<b>job_desc.req_context</b> if they are considered valid.
+<b>job_desc.selinux_context</b> is what set the context that will be used.</p>
+
+<h2 id="INITIAL_TESTING">Initial Testing
+<a class="slurm_link" href="#INITIAL_TESTING"></a>
+</h2>
+
+<p>id is very useful for showing what context a user is currently in. As a test
+to make sure that we are switching contexts, you can run a quick test with srun.
+</p>
+
+<pre>
+mcmult@master:~$ srun id
+uid=1000(mcmult) gid=1000(mcmult) groups=1000(mcmult),27(sudo) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+mcmult@master:~$ srun --context=unconfined_u:unconfined_r:unconfined_t:s0 id
+uid=1000(mcmult) gid=1000(mcmult) groups=1000(mcmult),27(sudo) context=unconfined_u:unconfined_r:unconfined_t:s0
+</pre>
+
+<h2 id="ACCOUNTING">Accounting<a class="slurm_link" href="#ACCOUNTING"></a></h2>
+
+<p>There is currently no support for tracking the SELinux context in Slurm's
+accounting. This may change as support evolves in future releases.
+If you need to keep track of the SELinux Context, it is possible to store it in
+the admin comment field as part of your job_submit plugin as is show in the
+example below.</p>
+
+<p>Example:</p>
+<pre>
+function slurm_job_submit(job_desc, part_list, submit_uid)
+  if job_desc.req_context then
+    local element = 0
+    for str in string.gmatch(job_desc.req_context, "([^:]+)") do
+      if element == 0 and str ~= "unconfined_u" then
+        slurm.log_user("Error: invalid SELinux context")
+        return slurm.ERROR
+      elseif element == 1 and str ~= "unconfined_r" then
+        slurm.log_user("Error: %s is not a valid SELinux role")
+        return slurm.ERROR
+      end
+      element = element + 1
+    end
+    job_desc.selinux_context = job_desc.req_context
+  else
+    -- Force a specific context if one wasn't requested
+    job_desc.selinux_context = unconfined_u:unconfined_r:slurm_t:s0
+  end
+  <b>job_desc.admin_comment = "SELinuxContext=" .. job_desc.selinux_context</b>
+  return slurm.SUCCESS
+end
+</pre>
+
+<p>Note the addition of setting "job_desc.admin_comment" before returning. This
+will set the admin comment to show what context we will try to set for the job.
+</p>
+
+<h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
+
+<p>If you wish to use pam_slurm_adopt with SELinux, see the
+<a href=pam_slurm_adopt.html>pam_slurm_adopt</a> documentation for hints on how
+to get this working. Note that that when using this feature and
+pam_slurm_adopt at the same time that the ssh session may not land in the same
+context as the job.</p>
+
+<!--#include virtual="footer.txt"-->

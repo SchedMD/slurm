@@ -1,0 +1,121 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --bcast option.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_tmp    [string cat "/tmp/$test_name-" [pid]]
+set job_id      0
+set timeout     $max_job_delay
+
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
+	skip "This test is incompatible with SlurmdUser != root"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_in "echo \$0"
+spawn $salloc -N1-5 -t1 bash
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		reset_bash_prompt
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#log_debug "Job initiated"
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+}
+if {$job_id == 0} {
+	fail "Did not get job_id"
+}
+
+send "$srun rm -f $file_tmp\r"
+expect {
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "srun not responding"
+	}
+}
+
+set node_cnt -1
+send "echo SLURM_NNODES=\$SLURM_NNODES\r"
+expect {
+	-re "SLURM_NNODES=($number)" {
+		if { $node_cnt == -1 } {
+			set node_cnt $expect_out(1,string)
+		}
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "srun not responding"
+	}
+}
+
+set exec_cnt 0
+send "$srun -l --bcast=$file_tmp $file_in\r"
+expect {
+	-re "($number): $file_tmp" {
+		incr exec_cnt
+		exp_continue
+	}
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "srun not responding"
+	}
+}
+
+send "$srun -l rm -v $file_tmp\r"
+expect {
+	-re "$test_prompt" {
+		#break
+	}
+	timeout {
+		fail "srun not responding"
+	}
+}
+
+send "exit\r"
+expect {
+	eof {
+		wait
+	}
+}
+
+subtest {$exec_cnt == $node_cnt} "Executable count equals node count" "$exec_cnt != $node_cnt"

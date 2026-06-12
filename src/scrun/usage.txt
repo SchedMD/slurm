@@ -1,0 +1,59 @@
+Usage: scrun [GLOBAL OPTIONS]
+Global Options:
+	--cgroup-manager
+		Ignored.
+	--debug
+		Activate debug level logging.
+	-f file
+		Use specified slurm.conf for configuration.
+	--help, --usage
+		Show this help output and exit.
+	--log-format=(json|text)
+		Set the format used by logs (default: "text")
+	--root
+		Path to spool directory to hold state and sockets.
+		This should be a tmpfs and should be cleared on reboot.
+	--rootless
+		Ignored. All scrun commands are always rootless.
+	--systemd-cgroup
+		Ignored.
+	-v
+		Verbose mode. Multiple -v's increase verbosity.
+		Does not apply to anchor daemon.
+	-V, --version
+		Print version information and exit.
+
+Usage: scrun [GLOBAL OPTIONS] create [CREATE OPTIONS] <container-id>
+	Prepares a new container with container-id in current working directory.
+
+Create options:
+	--bundle value, -b value
+		Path to the root of the bundle directory, defaults to the current
+		directory.
+	--console-socket value
+		Path to an AF_UNIX socket which will receive a file descriptor
+		referencing the master end of the console's pseudoterminal.
+	--no-pivot
+		Ignored.
+	--no-new-keyring
+		Ignored.
+	--pid-file value
+		Specify the file to populate with process ID.
+	--preserve-fds
+		Ignored.
+
+Usage: scrun [GLOBAL OPTIONS] start <container-id>
+	Request Slurm start container (and job) via slurmd.
+
+Usage: scrun [GLOBAL OPTIONS] state <container-id>
+	Output OCI defined JSON state of container.
+
+Usage: scrun [GLOBAL OPTIONS] kill <container-id> [signal]
+	Send signal (default: SIGTERM) to container.
+
+Usage: scrun [GLOBAL OPTIONS] delete [DELETE OPTIONS] <container-id>
+	Release any resources held by container.
+
+Delete options:
+	--force
+		Ignored. All delete requests are forced.

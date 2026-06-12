@@ -1,0 +1,99 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr show problems
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set tc1		"$test_name-cluster-1"
+set tc2		"$test_name-cluster-2"
+set ta1		"$test_name-account.1"
+set ta2		"$test_name-account.2"
+set ta3		"$test_name-account.3"
+set tu1		"$test_name-user.1"
+set tu2		"$test_name-user.2"
+set tu3		$testsuite_user
+
+set access_err  0
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+if {![check_user_id $tu3]} {
+	skip "testsuite_user must be defined in globals.local (now is \"$testsuite_user\") and should be an existing user in the system"
+}
+
+proc cleanup {} {
+	global tu1 tu2 tu3 ta1 ta2 ta3 tc1 tc2
+
+	remove_user "" "" $tu1
+	remove_user "" "" $tu2
+	remove_user "" "" $tu3
+	remove_acct "" $ta1
+	remove_acct "" $ta2
+	remove_acct "" $ta3
+	remove_cluster $tc1
+	remove_cluster $tc2
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+#
+# Build test associations
+#
+add_cluster $tc1 [list]
+add_acct $ta1 [list "cluster" $tc1]
+add_acct $ta2 [list "parent" $ta1 "cluster" $tc1]
+add_user $tu1 [list "account" $ta1 cluster $tc1]
+add_user $tu2 [list "account" $ta2 cluster $tc1]
+add_user $tu3 [list "account" $ta2 cluster $tc1]
+remove_cluster $tc1
+add_cluster $tc2 [list]
+add_acct $ta3 [list "cluster" $tc2]
+
+#
+# Test for problems
+#
+set output [run_command -fail "$sacctmgr -p show problem"]
+subtest {[regexp -all "$ta1..Account has no Associations" $output] ==1} "Problem expected: $ta1..Account has no Associations"
+subtest {[regexp -all "$ta2..Account has no Associations" $output] ==1} "Problem expected: $ta2..Account has no Associations"
+subtest {[regexp -all "$tc2.$ta3..Account has no users" $output] ==1} "Problem expected: $tc2.$ta3..Account has no users"
+subtest {[regexp -all "$tu3.User has no Associations" $output] ==1} "Problem expected: $tu3.User has no Associations"
+subtest {[regexp -all "$tu1.User does not have a uid" $output] ==1} "Problem expected: $tu1.User does not have a uid"
+subtest {[regexp -all "$tu2.User does not have a uid" $output] ==1} "Problem expected: $tu2.User does not have a uid"

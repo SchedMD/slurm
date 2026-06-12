@@ -1,0 +1,163 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of default CPU binding support.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+############################################################################
+source ./globals
+
+proc get_cpu_bind { type name } {
+	global re_word_str scontrol
+
+	set cpu_bind "off"
+	spawn $scontrol show $type $name
+	expect {
+		-re "CpuBind=($re_word_str)" {
+			set cpu_bind $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_bind
+}
+
+proc set_cpu_bind { type name cpu_bind } {
+	global scontrol
+
+	spawn $scontrol update ${type}Name=$name CpuBind=$cpu_bind
+	expect {
+		-re "error" {
+			log_error "scontrol error setting CpuBind on node $node_name"
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_bind
+}
+
+proc run_prog { node_name cpu_bind } {
+	global srun partition bin_printenv number re_word_str
+
+	set matches 0
+	set found_cpu_bind ""
+	spawn $srun -p $partition -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME
+	expect {
+		-re "CpuBindType=($re_word_str)" {
+			set found_cpu_bind $expect_out(1,string)
+			if {[string first $cpu_bind $found_cpu_bind] != -1} {
+				set matches 1
+			}
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$matches == 1} "Node has the $cpu_bind cpu binding" "Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind"
+}
+
+if {![is_super_user]} {
+	skip "This test is only suitable for a super user (to restore down nodes)"
+}
+
+set partition [default_partition]
+set nb_nodes [get_partition_param $partition "TotalNodes"]
+if {$nb_nodes < 2} {
+	skip "Need 2 or more nodes in default partition"
+}
+
+#
+# Test if CPU affinity support is supported.
+#
+if {![param_contains [get_affinity_types] "affinity"]} {
+	skip "CPU affinity not supported on this system"
+}
+log_debug "Task affinity plugin installed"
+
+#
+# Identify some nodes to use
+#
+set timeout $max_job_delay
+set node_0 ""
+set node_1 ""
+set node_cnt 0
+spawn $srun -l -N2 -t1 $bin_printenv SLURMD_NODENAME
+expect {
+	-re "($number): ($re_word_str)" {
+		if {$expect_out(1,string) == 0} {
+			set node_0 $expect_out(2,string)
+			incr node_cnt
+		}
+		if {$expect_out(1,string) == 1} {
+			set node_1 $expect_out(2,string)
+			incr node_cnt
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$node_cnt != 2} {
+	fail "Unexpected resource count ($node_cnt != 2)"
+}
+
+log_debug "Determine the node and partition current CpuBind configuration"
+set partition_cpu_bind [get_cpu_bind "partition" $partition]
+set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
+set node_cpu_bind_1 [get_cpu_bind "node" $node_1]
+
+proc cleanup { } {
+	global node_0 node_cpu_bind_0 node_1 node_cpu_bind_1
+	global partition_cpu_bind partition
+
+	set_cpu_bind "node" $node_0 $node_cpu_bind_0
+	set_cpu_bind "node" $node_1 $node_cpu_bind_1
+	set_cpu_bind "partition" $partition $partition_cpu_bind
+}
+
+set_cpu_bind "node" $node_0 "core"
+set_cpu_bind "node" $node_1 "thread"
+set_cpu_bind "partition" $partition "socket"
+
+run_prog $node_0 "core"
+run_prog $node_1 "thread"
+
+set nodes_both ""
+append nodes_both $node_0 "," $node_1
+run_prog $nodes_both "socket"

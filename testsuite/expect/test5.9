@@ -1,0 +1,375 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that squeue -O (--Format) option displays the
+#          correct user specified values.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set cwd           "[$bin_pwd]"
+set test_node     ""
+set job_id        0
+set step_id       0
+set job_script    "job_script"
+set file_err      "$test_dir/error"
+set file_in       "$test_dir/$job_script"
+set file_out      "$test_dir/output"
+set test_acct     "${test_name}_acct"
+set network_param "ip"
+
+if {[param_contains [get_config_param "SwitchType"] "*slingshot"]} {
+	set network_param "depth"
+}
+
+############################Job Format Test############################
+
+#######################
+# Format value
+#######################
+# stderr
+set sq_format(stderr)        $file_err
+# stdout
+set sq_format(stdout)        $file_out
+# stdin
+set sq_format(stdin)         /dev/null
+# numcpus
+set sq_format(numcpus)       1
+# numtasks
+set sq_format(numtasks)      "DUMMY"
+# numnodes
+set sq_format(numnodes)      1
+# timelimit
+set sq_format(timelimit)     2
+# job
+set sq_format(name)          $job_script
+# account
+set sq_format(account)       $test_acct
+# cpus-per-task
+set sq_format(cpuspertask)   2
+# network
+set sq_format(network)       $network_param
+# requeue
+set sq_format(requeue)       1
+# profile
+set sq_format(profile)       Energy
+# ntasks-per-socket
+set sq_format(ntpersocket)   2
+# ntasks-per-node
+set sq_format(ntpernode)     2
+# state compact
+set sq_format(statecompact)  PD|R|CA|CR|CG|CD|F|TO|NF|SE
+# jobid
+set sq_format(jobid)         0
+# user
+set sq_format(username)      "DUMMY"
+# switches
+set sq_format(reqswitch)     1
+# partition
+set sq_format(partition)     [default_partition]
+# comment
+set sq_format(comment)       1234567890
+
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+	skip "This test is disabled in Slurm versions older than 23.02 (see bugs 15178 and 14864)"
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without AccountStorageType=slurmdbd"
+}
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator"
+}
+set available [llength [get_nodes_by_state]]
+if {$available < 2} {
+    skip "Not enough nodes currently available ($available avail, 2 needed)"
+}
+
+proc cleanup {} {
+	global job_id test_acct
+
+	cancel_job $job_id
+	remove_acct "" $test_acct
+}
+
+# Run a job to get a usable node to test
+set job_id [submit_job -fail "-o/dev/null -N1 --exclusive --wrap 'sleep 2'"]
+
+wait_for_job -fail $job_id "RUNNING"
+set test_node [get_job_param $job_id "NodeList"]
+lassign [get_node_cpus $test_node] cpu_tot sq_format(cpuspertask)
+
+set socket_cnt 1
+spawn $scontrol show node $test_node
+expect {
+	-re "CoresPerSocket=($number)" {
+		set sq_format(ntpersocket) $expect_out(1,string)
+		exp_continue
+	}
+	-re "Sockets=($number)" {
+		set socket_cnt $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+set core_cnt [expr $socket_cnt * $sq_format(ntpersocket)]
+if {$sq_format(ntpernode) > $core_cnt} {
+	set sq_format(ntpernode) $core_cnt
+}
+
+if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
+	fail "Failed to get number of threads or cores ThreadsPerCore=$sq_format(cpuspertask) & CoresPerSocket=$sq_format(ntpersocket)"
+}
+
+# Remove the tmp script and cancel tmp job
+cancel_job $job_id
+
+set sq_format(username) [get_my_user_name]
+
+set match 0
+spawn $sacctmgr add -i account $test_acct
+expect {
+	-re "Associations" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	fail "Account was not added"
+}
+
+set match 0
+spawn $sacctmgr add -i user $sq_format(username) account=$sq_format(account)
+expect {
+	-re "Association" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	fail "Account was not added"
+}
+
+#
+# Make a bash script
+#
+make_bash_script $file_in "$srun $bin_sleep 10000
+$srun $bin_sleep 200
+$srun $bin_sleep 100"
+
+spawn $sbatch -A$sq_format(account) -N$sq_format(numnodes) \
+    -n$sq_format(numcpus) -t$sq_format(timelimit) -c$sq_format(cpuspertask) \
+    --switch=$sq_format(reqswitch) --network=$sq_format(network) --requeue \
+    --profile=$sq_format(profile) --ntasks-per-socket=$sq_format(ntpersocket) \
+    --ntasks-per-node=$sq_format(ntpernode) -o$sq_format(stdout) \
+    --comment=$sq_format(comment) -e$sq_format(stderr) --exclusive \
+    -w$test_node $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		set sq_format(jobid) $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+wait_for_job -fail $job_id "RUNNING"
+
+# Wait for steps to start too
+sleep 5
+
+# The number of allocated CPUs can vary depending upon the allocation unit
+set match 0
+spawn $scontrol show job $job_id
+expect {
+	-re "NumCPUs=($number)" {
+		set sq_format(numcpus) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	-re "Tasks=($number)" {
+		set sq_format(numtasks) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	fail "scontrol did not provide correct job values ($match != 2)"
+}
+
+set match 0
+set cpu_match 0
+set cnt 0
+foreach option [array names sq_format] {
+	incr cnt 1
+	set this_match 0
+	spawn $squeue --job=$job_id --noheader -O$option:256
+	expect {
+		-re "$sq_format($option)" {
+			incr match 1
+			incr this_match 1
+			exp_continue
+		}
+		timeout {
+			fail "squeue is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$this_match != 0} "Verify job format value $option" "Failed to match $option with $sq_format($option)"
+}
+subtest {$match == $cnt} "Verify all expected job format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
+
+set match 0
+spawn $squeue --job=$job_id --noheader -Ocomment:4
+expect {
+	-re "12345" {
+		fail "Field width control failure"
+	}
+	-re "1234" {
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		fail "squeue is not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 1} "Verify comment field is seen"
+
+############################Step Format Test############################
+
+#####################
+# Format value
+#####################
+# jobid
+set sq_step_format(jobid)       $job_id
+# stepid
+set sq_step_format(stepid)      $job_id.$step_id
+# stepname
+set sq_step_format(stepname)    "sleep"
+# state
+set sq_step_format(stepstate)   "DUMMY"
+# network
+set sq_step_format(network)     "DUMMY"
+# numcpus
+set sq_step_format(numcpus)     $sq_format(numcpus)
+# numtasks
+set sq_step_format(numtasks)    "DUMMY"
+# username
+set sq_step_format(username)    $sq_format(username)
+
+set match 0
+spawn $scontrol show step $sq_step_format(stepid)
+expect {
+	-re "State=($re_word_str)" {
+		set sq_step_format(stepstate) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	-re "CPUs=($number)" {
+		set sq_step_format(numcpus) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	-re "Tasks=($number)" {
+		set sq_step_format(numtasks) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	-re "Network=($re_word_str)" {
+		set sq_step_format(network) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 4} "Verify scontrol step format" "scontrol did not provide correct step values ($match != 4)"
+
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
+	subskip "squeue --steps doesn't work with stepmgr enabled jobs"
+} else {
+	set match 0
+	set cpu_match 0
+	set cnt 0
+	foreach option [array names sq_step_format] {
+		incr cnt 1
+		set this_match 0
+		spawn $squeue --step=$sq_step_format(stepid) --noheader -O$option
+		expect {
+			-re "$sq_step_format($option)" {
+				incr match 1
+				incr this_match 1
+				exp_continue
+			}
+			timeout {
+				fail "squeue is not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		subtest {$this_match != 0} "Verify step format value $option" "Failed to match $option with $sq_step_format($option)"
+	}
+
+	subtest {$match == $cnt} "Verify all expected step format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
+}

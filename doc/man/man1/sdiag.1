@@ -1,0 +1,442 @@
+.TH sdiag "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+sdiag \- Scheduling diagnostic tool for Slurm
+
+.SH "SYNOPSIS"
+sdiag
+
+.SH "DESCRIPTION"
+sdiag shows information related to slurmctld execution about: threads, agents,
+jobs, and scheduling algorithms. The goal is to obtain data from slurmctld
+behavior helping to adjust configuration parameters or queues policies. The
+main reason behind is to know Slurm behavior under systems with a high throughput.
+.LP
+It has two execution modes. The default mode \fB\-\-all\fR shows several counters
+and statistics explained later, and there is another execution option
+\fB\-\-reset\fR for resetting those values.
+.LP
+Values are reset at midnight UTC time by default.
+.LP
+The first block of information is related to global slurmctld execution:
+
+.TP
+\fBServer thread count\fR
+The number of current active slurmctld threads. A high number would mean a high
+load processing events like job submissions, jobs dispatching, jobs completing,
+etc. If this is often close to MAX_SERVER_THREADS it could point to a potential
+bottleneck.
+.IP
+
+.TP
+\fBAgent queue size\fR
+Slurm design has scalability in mind and sending messages to thousands of nodes
+is not a trivial task. The agent mechanism helps to control communication
+between slurmctld and the slurmd daemons for a best effort. This value denotes
+the count of enqueued outgoing RPC requests in an internal retry list.
+.IP
+
+.TP
+\fBAgent count\fR
+Number of agent threads. Each of these agent threads can create in turn a group
+of up to 2 + AGENT_THREAD_COUNT active threads at a time.
+.IP
+
+.TP
+\fBAgent thread count\fR
+Total count of active threads created by all the agent threads.
+.IP
+
+.TP
+\fBDBD Agent queue size\fR
+Slurm queues up the messages intended for the SlurmDBD and processes them in a
+separate thread. If the SlurmDBD, or database, is down then this number will
+increase.
+
+The max queue size is configured in the slurm.conf with MaxDBDMsgs. If this number begins to grow more than half of the max queue size, the slurmdbd
+and the database should be investigated immediately.
+.IP
+
+.TP
+\fBJobs submitted\fR
+Number of jobs submitted since last reset
+.IP
+
+.TP
+\fBJobs started\fR
+Number of jobs started since last reset. This includes backfilled jobs.
+.IP
+
+.TP
+\fBJobs completed\fR
+Number of jobs completed since last reset.
+.IP
+
+.TP
+\fBJobs canceled\fR
+Number of jobs canceled since last reset.
+.IP
+
+.TP
+\fBJobs failed\fR
+Number of jobs failed due to slurmd or other internal issues since last reset.
+.IP
+
+.TP
+\fBJob states ts:\fR
+Lists the timestamp of when the following job state counts were gathered.
+.IP
+
+.TP
+\fBJobs pending:\fR
+Number of jobs pending at the given time of the time stamp above.
+.IP
+
+.TP
+\fBJobs running:\fR
+Number of jobs running at the given time of the time stamp above.
+.IP
+
+.LP
+The next block of information is related to main scheduling algorithm based
+on jobs priorities. A scheduling cycle implies to get the job_write_lock lock,
+then trying to get resources for jobs pending, starting from the most priority
+one and going in descending order. Once a job can not get the resources the
+loop keeps going but just for jobs requesting other partitions. Jobs with
+dependencies or affected  by accounts limits are not processed.
+
+.TP
+\fBLast cycle\fR
+Time in microseconds for last scheduling cycle.
+.IP
+
+.TP
+\fBMax cycle\fR
+Maximum time in microseconds for any scheduling cycle since last reset.
+.IP
+
+.TP
+\fBTotal cycles\fR
+Total run time in microseconds for all scheduling cycles since last reset.
+Scheduling is performed periodically and (depending upon configuration)
+when a job is submitted or a job is completed.
+.IP
+
+.TP
+\fBMean cycle\fR
+Mean time in microseconds for all scheduling cycles since last reset.
+.IP
+
+.TP
+\fBMean depth cycle\fR
+Mean of cycle depth. Depth means number of jobs processed in a scheduling cycle.
+.IP
+
+.TP
+\fBCycles per minute\fR
+Counter of scheduling executions per minute.
+.IP
+
+.TP
+\fBLast queue length\fR
+Length of jobs pending queue.
+.IP
+
+.LP
+The next block of information is related to backfilling scheduling algorithm.
+A backfilling scheduling cycle implies to get locks for jobs, nodes and
+partitions objects then trying to get resources for jobs pending. Jobs are
+processed based on priorities. If a job can not get resources the algorithm
+calculates when it could get them obtaining a future start time for the job.
+Then next job is processed and the algorithm tries to get resources for that
+job but avoiding to affect the \fIprevious ones\fR, and again it calculates
+the future start time if not current resources available. The backfilling
+algorithm takes more time for each new job to process since more priority jobs
+can not be affected. The algorithm itself takes measures for avoiding a long
+execution cycle and for taking all the locks for too long.
+
+.TP
+\fBTotal backfilled jobs (since last slurm start)\fR
+Number of jobs started thanks to backfilling since last slurm start.
+.IP
+
+.TP
+\fBTotal backfilled jobs (since last stats cycle start)\fR
+Number of jobs started thanks to backfilling since last time stats where reset.
+By default these values are reset at midnight UTC time.
+.IP
+
+.TP
+\fBTotal backfilled heterogeneous job components\fR
+Number of heterogeneous job components started thanks to backfilling since
+last Slurm start.
+.IP
+
+.TP
+\fBTotal cycles\fR
+Number of backfill scheduling cycles since last reset
+.IP
+
+.TP
+\fBLast cycle when\fR
+Time when last backfill scheduling cycle happened in the format
+"weekday Month MonthDay hour:minute.seconds year"
+.IP
+
+.TP
+\fBLast cycle\fR
+Time in microseconds of last backfill scheduling cycle.
+It counts only execution time, removing sleep time inside a scheduling cycle
+when it executes for an extended period time.
+Note that locks are released during the sleep time so that other work can
+proceed.
+.IP
+
+.TP
+\fBMax cycle\fR
+Time in microseconds of maximum backfill scheduling cycle execution since last reset.
+It counts only execution time, removing sleep time inside a scheduling cycle
+when it executes for an extended period time.
+Note that locks are released during the sleep time so that other work can
+proceed.
+.IP
+
+.TP
+\fBMean cycle\fR
+Mean time in microseconds of backfilling scheduling cycles since last reset.
+.IP
+
+.TP
+\fBLast depth cycle\fR
+Number of processed jobs during last backfilling scheduling cycle. It counts
+every job even if that job can not be started due to dependencies or limits.
+.IP
+
+.TP
+\fBLast depth cycle (try sched)\fR
+Number of processed jobs during last backfilling scheduling cycle. It counts
+only jobs with a chance to start using available resources. These
+jobs consume more scheduling time than jobs which are found can not be started
+due to dependencies or limits.
+.IP
+
+.TP
+\fBDepth Mean\fR
+Mean count of jobs processed during all backfilling scheduling cycles since last
+reset.
+Jobs which are found to be ineligible to run when examined by the backfill
+scheduler are not counted (e.g. jobs submitted to multiple partitions and
+already started, jobs which have reached a QOS or account limit such as
+maximum running jobs for an account, etc).
+.IP
+
+.TP
+\fBDepth Mean (try sched)\fR
+The subset of Depth Mean that the backfill scheduler attempted to schedule.
+.IP
+
+.TP
+\fBLast queue length\fR
+Number of jobs pending to be processed by backfilling algorithm.
+A job is counted once for each partition it is queued to use.
+A pending job array will normally be counted as one job (tasks of a job array
+which have already been started/requeued or individually modified will already
+have individual job records and are each counted as a separate job).
+.IP
+
+.TP
+\fBQueue length Mean\fR
+Mean count of jobs pending to be processed by backfilling algorithm.
+A job is counted once for each partition it requested.
+A pending job array will normally be counted as one job (tasks of a job array
+which have already been started/requeued or individually modified will already
+have individual job records and are each counted as a separate job).
+.IP
+
+.TP
+\fBLast table size\fR
+Count of different time slots tested by the backfill scheduler in its last
+iteration.
+.IP
+
+.TP
+\fBMean table size\fR
+Mean count of different time slots tested by the backfill scheduler.
+Larger counts increase the time required for the backfill operation.
+The table size is influenced by many scheduling parameters, including:
+bf_min_age_reserve, bf_min_prio_reserve, bf_resolution, and bf_window.
+.IP
+
+.TP
+\fBLatency for 1000 calls to gettimeofday()\fR
+Latency of 1000 calls to the gettimeofday() syscall in microseconds,
+as measured at controller startup.
+.IP
+
+.LP
+The next blocks of information report the most frequently issued
+remote procedure calls (RPCs), calls made for the Slurmctld daemon to perform
+some action.
+The fourth block reports the RPCs issued by message type.
+You will need to look up those RPC codes in the Slurm source code by looking
+them up in the file src/common/slurm_protocol_defs.h.
+The report includes the number of times each RPC is invoked, the total time
+consumed by all of those RPCs plus the average time consumed by each RPC in
+microseconds.
+The fifth block reports the RPCs issued by user ID, the total number of RPCs
+they have issued, the total time consumed by all of those RPCs plus the average
+time consumed by each RPC in microseconds.
+RPCs statistics are collected for the life of the slurmctld process unless
+explicitly \fB\-\-reset\fR.
+
+.LP
+The sixth block of information, labeled Pending RPC Statistics, shows
+information about pending outgoing RPCs on the slurmctld agent queue.
+The first section of this block shows types of RPCs on the queue and the
+count of each. The second section shows up to the first 25 individual RPCs
+pending on the agent queue, including the type and the destination host list.
+This information is cached and only refreshed on 30 second intervals.
+
+.SH "OPTIONS"
+
+.TP
+\fB\-a\fR, \fB\-\-all\fR
+Get and report information. This is the default mode of operation.
+.IP
+
+.TP
+\fB\-M\fR, \fB\-\-cluster\fR=<\fIstring\fR>
+The cluster to issue commands to. Only one cluster name may be specified.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with \fBFederationParameters=fed_display\fR configured.
+.IP
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print description of options and exit.
+.IP
+
+.TP
+\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
+Dump information as JSON using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
+.IP
+
+.TP
+\fB\-\-no-trunc\fR
+Do not truncate long lines to 80 char.
+.IP
+
+.TP
+\fB\-r\fR, \fB\-\-reset\fR
+Reset scheduler and RPC counters to 0. Only supported for Slurm operators and
+administrators.
+.IP
+
+.TP
+\fB\-i\fR, \fB\-\-sort\-by\-id\fR
+Sort Remote Procedure Call (RPC) data by message type ID and user ID.
+.IP
+
+.TP
+\fB\-t\fR, \fB\-\-sort\-by\-time\fR
+Sort Remote Procedure Call (RPC) data by total run time.
+.IP
+
+.TP
+\fB\-T\fR, \fB\-\-sort\-by\-time2\fR
+Sort Remote Procedure Call (RPC) data by average run time.
+.IP
+
+.TP
+\fB\-\-usage\fR
+Print list of options and exit.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print current version number and exit.
+.IP
+
+.TP
+\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
+Dump information as YAML using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
+.IP
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsdiag\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsdiag\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsdiag\fR or other Slurm client commands that send remote procedure
+calls to \fBslurmctld\fR from loops in shell scripts or other programs. Ensure
+that programs limit calls to \fBsdiag\fR to the minimum necessary for the
+information you are trying to gather.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsdiag\fR options may be set via environment variables. These
+environment variables, along with their corresponding options, are listed below.
+(Note: Command line options will always override these settings.)
+
+.TP 20
+\fBSLURM_CLUSTERS\fR
+Same as \fB\-\-cluster\fR
+.IP
+
+.TP 20
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+
+.TP
+\fBSLURM_JSON\fR
+Control JSON serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output JSON as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR
+Output JSON in pretty format to make it more readable.
+.IP
+.RE
+
+.TP
+\fBSLURM_YAML\fR
+Control YAML serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR Output YAML as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR Output YAML in pretty format to make it more readable.
+.RE
+.IP
+
+.SH "COPYING"
+Copyright (C) 2010\-2011 Barcelona Supercomputing Center.
+.br
+Copyright (C) 2010\-2022 SchedMD LLC.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+sinfo(1), squeue(1), scontrol(1), slurm.conf(5),

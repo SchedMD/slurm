@@ -1,0 +1,87 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validates that sgather -t changes the message timeout.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id        0
+set file_in       "$test_dir/input"
+set file_out      "$test_dir/output"
+set sgather_tmp   "/tmp/$test_name"
+set sgather_out   "$test_dir/sgather.out"
+set nnodes        2
+set chksum        0
+set chkcnt        0
+set sgather_time  20
+
+if {[file executable $sgather] == 0} {
+	skip "This test needs $sgather installed"
+}
+
+if {[get_config_param "MULTIPLE_SLURMD"] eq "yes"} {
+	skip "This test is incompatible with multiple slurmd systems"
+}
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
+	skip "This test is incompatible with SlurmdUser != root"
+}
+set nodes [get_nodes_by_request "-N $nnodes -t1"]
+if {[llength $nodes] != $nnodes} {
+	skip "This test requires $nnodes nodes in the default partition"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# $sgather -v --timeout=$sgather_time $sgather_tmp $sgather_out
+make_bash_script $file_in "
+env | grep SLURM_NNODES
+$srun $bin_cp -fv $sgather $sgather_tmp
+$sgather -v -t $sgather_time $sgather_tmp $sgather_out
+$bin_sum $sgather ${sgather_out}*
+$bin_rm -fv ${sgather_out}*
+$srun $bin_rm -fv $sgather_tmp
+exit 0
+"
+
+set job_id [submit_job -fail "-N $nnodes -o $file_out -t1 $file_in"]
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+# Verify file transmission
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "SLURM_NNODES=$nnodes" $output]} "Job should use $nnodes nodes"
+subtest {[regexp -all "$sgather\' -> \'$sgather_tmp" $output] == $nnodes} "Initial srun should copy the file to gather in all $nnodes nodes"
+subtest {[regexp "($number) *($number) $sgather" $output - chksum chkcnt]} "Job should should print the checksum and block count of the file to be gathered"
+subtest {[regexp -all "$chksum *$chkcnt ${sgather_out}" $output] == $nnodes} "sgather should send the exact same file (from each node)"
+subtest {![regexp "removed \'${sgather_tmp}" $output]} "sgather should remove the source file (not the final srun command)"
+foreach node $nodes {
+	subtest {[regexp "$chksum *$chkcnt ${sgather_out}.${node}" $output]} "sgather should send the file from $node"
+	subtest {[regexp "removed \'${sgather_out}.${node}" $output]} "Job srun should remove sent file from $node"
+}
+
+# Verify --timeout
+subtest {[regexp -all "executing \"scp -o ConnectTimeout=$sgather_time" $output] == $nnodes} "sgather should use the right -o ConnectTimeout option when launching scp in all nodes"

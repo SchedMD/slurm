@@ -1,0 +1,72 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Platforms</h1>
+<h2 id="os">Operating Systems<a class="slurm_link" href="#os"></a></h2>
+<ul>
+<li><b>FreeBSD</b> &mdash; Limited support, not actively tested.</li>
+<li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
+distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some
+features are limited to recent releases and newer Linux kernel versions.
+Currently supported distributions include:
+<ul>
+<li>Debian 11 (Bullseye)</li>
+<li>Debian 12 (Bookworm)</li>
+<li>Debian 13 (Trixie)</li>
+<li>RedHat Enterprise Linux 8 (RHEL8) and RHEL8 derivatives</li>
+<li>RedHat Enterprise Linux 9 (RHEL9) and RHEL9 derivatives</li>
+<li>RedHat Enterprise Linux 10 (RHEL10) and RHEL10 derivatives</li>
+<li>SUSE Linux Enterprise Server (SLES) 12</li>
+<li>SUSE Linux Enterprise Server (SLES) 15</li>
+<li>Ubuntu 20.04</li>
+<li>Ubuntu 22.04</li>
+<li>Ubuntu 24.04</li>
+</ul>
+</li>
+<li><b>NetBSD</b> &mdash; Limited support, not actively tested.</li>
+<li><b>macOS</b> &mdash; Slurm has run on macOS in the past, but does not
+currently. It should be possible to fix this with some adjustments to linker
+and compiler flags, and any patches would be appreciated.
+</ul>
+
+<h2 id="database">Databases<a class="slurm_link" href="#database"></a></h2>
+<p>Slurm will be built with support for MySQL if it finds supported
+development libraries at build time. Although it is possible to build Slurm
+against older versions of MySQL, it is not recommended. SchedMD recommends
+you use a currently supported version of MySQL or MariaDB.
+</p>
+
+<p>Further reading:
+<ul>
+<li><a href="quickstart_admin.html">Quick Start Administrator Guide</a></li>
+<li><a href="accounting.html">Accounting and Resource Limits</a></li>
+<li><a href="upgrades.html">Upgrade Guide</a></li>
+</ul>
+</p>
+
+<h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
+
+<p>Slurm has optional support for managing a variety of accelerator cards.
+Specific plugins have been developed for:</p>
+<ul>
+<li><b>gres/gpu</b> &mdash; several autodetection plugins are available for
+different vendors:
+<ul>
+<li><b>AutoDetect=nvml</b> enables autodetection of NVIDIA GPUs through their
+proprietary NVML library.</li>
+<li><b>AutoDetect=nvidia</b> also enables autodetection of NVIDIA GPUs, but
+through generic Linux interfaces rather than their proprietary library. This
+plugin doesn't detect MIGs or NVlinks.</li>
+<li><b>AutoDetect=rsmi</b> enables autodetection of AMD GPUs through their
+proprietary RSMI library (tested on x86_64 and arm64).</li>
+<li><b>AutoDetect=oneapi</b> enables autodetection of Intel GPUs through their
+proprietary oneAPI library.</li>
+<li><b>AutoDetect=nrt</b> enables autodetection of AWS Trainium/Inferentia
+devices.</li>
+</ul></li>
+<li><b>gres/mps</b> &mdash; NVIDIA CUDA Multi-Process Service provides ways to
+share GPUs between multiple compute processes</li>
+<li><b>gres/shard</b> &mdash; Generic mechanism that provides a way to share
+GPUs between multiple compute processes</li>
+</ul>
+
+<!--#include virtual="footer.txt"-->

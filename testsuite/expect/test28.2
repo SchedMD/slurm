@@ -1,0 +1,166 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          checks that the --array environment variables are correct, and
+#          checks that the --output and --error files were created and
+#          contain the correct information.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_script  "$test_dir/script"
+set file_out     "$test_dir/%A_%a.output"
+set file_error   "$test_dir/%A_%a.error"
+set job_id       0
+set array_begin  0
+set array_end    4
+set array_id     ""
+set array_in     ""
+set array_var    ""
+
+if {[get_config_param "MaxArraySize"] < [expr $array_end + 1]} {
+	skip "MaxArraySize is too small"
+}
+
+make_bash_script $file_script "
+$bin_echo array_id=\$SLURM_ARRAY_JOB_ID
+$bin_echo task_count=\$SLURM_ARRAY_TASK_COUNT
+$bin_echo task_id=\$SLURM_ARRAY_TASK_ID
+$bin_echo task_min=\$SLURM_ARRAY_TASK_MIN
+$bin_echo task_max=\$SLURM_ARRAY_TASK_MAX
+$bin_echo task_step=\$SLURM_ARRAY_TASK_STEP
+$bin_sleep aaaa
+exit 0
+"
+
+#
+# Submit a job array with no output or error flags and make sure the default
+# output file is created
+#
+set job_id 0
+spawn $sbatch --array=$array_begin-[expr $array_end -1] -t1 $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "sbatch did not submit job"
+}
+
+wait_for_job -fail $job_id "DONE"
+
+for {set cnt 0} {$cnt<$array_end} {incr cnt} {
+	wait_for_file -fail slurm-${job_id}_${cnt}.out
+}
+
+# submit a batch with an array from 0 to 3; array size 4
+set job_id 0
+spawn $sbatch --array=$array_begin-[expr $array_end -1] --output=$file_out --error=$file_error -t1 $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+
+}
+if {$job_id == 0} {
+	fail "sbatch did not submit jobs"
+}
+
+wait_for_job -fail $job_id "DONE"
+
+# Checks that the correct error and output files were created with the correct format
+for {set cnt 0} {$cnt<$array_end} {incr cnt} {
+	wait_for_file -fail $test_dir/${job_id}_${cnt}.output
+	wait_for_file -fail $test_dir/${job_id}_${cnt}.error
+}
+log_debug "Checking environment variables"
+# Checks that the array job ids are correct
+set max_inx [expr $array_end - 1]
+for {set index 0} {$index < $array_end} {incr index} {
+	set env_cnt 0
+	spawn $bin_cat $test_dir/${job_id}_${index}.output
+	expect {
+		-re "array_id=$job_id" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_count=$array_end" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_id=$index" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_min=0" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_max=$max_inx" {
+			incr env_cnt
+			exp_continue
+		}
+		-re "task_step=1" {
+			incr env_cnt
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$env_cnt != 6} {
+		fail "Missing environment variables in the job output file ($test_dir/${job_id}_${index}.output) ($env_cnt != 6)"
+	}
+}
+
+# checks the contents of of the error file
+for {set index 0} {$index < $array_end} {incr index} {
+	set err_match 0
+	spawn $bin_cat $test_dir/${job_id}_${index}.error
+	expect {
+		-re "$sleep_error_message" {
+			log_debug "Do not worry this error is expected"
+			incr err_match
+		}
+		eof {
+			wait
+		}
+	}
+	if {$err_match != 1} {
+		fail "Bad contents in the job error file ($test_dir/${job_id}_${index}.error)"
+	}
+}

@@ -1,0 +1,8 @@
+usr/lib/*/perl*/*/Slurm.pm
+usr/lib/*/perl*/*/Slurm/Bitstr.pm
+usr/lib/*/perl*/*/Slurm/Constant.pm
+usr/lib/*/perl*/*/Slurm/Hostlist.pm
+usr/lib/*/perl*/*/auto/Slurm/Slurm.so
+usr/lib/*/perl*/*/Slurmdb.pm
+usr/lib/*/perl*/*/auto/Slurmdb/Slurmdb.so
+usr/lib/*/perl*/*/auto/Slurmdb/autosplit.ix

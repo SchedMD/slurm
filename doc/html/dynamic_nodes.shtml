@@ -1,0 +1,162 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Dynamic Nodes</a></h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>Starting in Slurm 22.05, nodes can be dynamically added and removed from
+Slurm.
+</p>
+
+<h2 id="communications">Dynamic Node Communications
+<a class="slurm_link" href="#communications"></a>
+</h2>
+<p>
+For regular, non-dynamically created nodes, Slurm knows how to communicate with
+nodes by reading in the slurm.conf. This is why it is important for a
+non-dynamic setup that the slurm.conf is synchronized across the cluster. For
+dynamically created nodes, The controller automatically grabs the node's
+<b>NodeAddr</b> and <b>NodeHostname</b> for dynamic slurmd registrations. The
+controller then passes the node addresses to the clients so that they
+communicate, and even fanout, to other nodes.
+</p>
+
+<h2 id="config">Slurm Configuration
+<a class="slurm_link" href="#config"></a>
+</h2>
+
+<p>
+<dl>
+<dt><b>MaxNodeCount=#</b>
+<dd>
+Set to the number of possible nodes that can be active in a system at a time.
+See the slurm.conf <a href="slurm.conf.html#OPT_MaxNodeCount">man</a> page for
+more details.
+
+<dt><b>SelectType=select/cons_tres</b>
+<dd>Dynamic nodes are only supported with cons_tres.
+</dl>
+</p>
+
+<h3 id="partitions">Partition Assignment
+<a class="slurm_link" href="#partitions"></a>
+</h3>
+<p>
+Dynamic nodes can be automatically assigned to partitions at creation by using
+the partition's nodes <a href="slurm.conf.html#OPT_Nodes_1">ALL</a> keyword or
+<a href="slurm.conf.html#SECTION_NODESET-CONFIGURATION">NodeSets</a> and
+specifying a feature on the nodes.
+</p>
+
+<p>
+e.g.
+<pre>
+Nodeset=ns1 Feature=f1
+Nodeset=ns2 Feature=f2
+
+PartitionName=all  Nodes=ALL Default=yes
+PartitionName=dyn1 Nodes=ns1
+PartitionName=dyn2 Nodes=ns2
+PartitionName=dyn3 Nodes=ns1,ns2
+</pre>
+</a>
+
+<h2 id="create">Creating Nodes
+<a class="slurm_link" href="#create"></a>
+</h2>
+
+<p>
+Nodes can be created two ways:
+<ol>
+<li>
+<dl>
+<dt><b>Dynamic slurmd registration</b>
+<dd>
+<p>Using the slurmd <a href="slurmd.html#OPT_-Z">-Z</a> and
+<a href="slurmd.html#OPT_conf-<node-parameters>">--conf</a> options a slurmd
+will register with the controller and will automatically be added to the system.
+</p>
+
+<p>
+e.g.
+<pre>
+slurmd -Z --conf "RealMemory=80000 Gres=gpu:2 Feature=f1"
+</pre>
+</p>
+
+</dl>
+</li>
+<li>
+<dl>
+<dt><b>scontrol create NodeName= ...</b>
+<dd>
+<p>Create nodes using scontrol by specifying the same <b>NodeName</b>
+line that you would define in the slurm.conf. See slurm.conf
+<a href="slurm.conf.html#SECTION_NODE-CONFIGURATION">man</a> page for node
+options. Only <b>State=CLOUD</b> and <b>State=FUTURE</b> are supported. The
+node configuration should match what the slurmd will register with
+(e.g. slurmd -C) plus any additional attributes.
+</p>
+
+</p>
+e.g.
+<pre>
+scontrol create NodeName=d[1-100] CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=gpu:2 Feature=f1 State=cloud
+</pre>
+</p>
+</dl>
+</li>
+</ol>
+</p>
+
+<h2 id="gres">Automatic GPU Detection
+<a class="slurm_link" href="#gres"></a>
+</h2>
+<p>
+When a dynamic node is created with <a href="slurmd.html#OPT_-Z">slurmd -Z</a>,
+the slurmd will automatically detect and register GPUs when:
+</p>
+<ul>
+<li><b>--conf</b> does not specify any GPU GRES</li>
+<li><b>gres.conf</b> does not contain explicit GPU GRES records for the node</li>
+<li><b>gres.conf</b> does not contain <b>AutoDetect=off</b></li>
+</ul>
+<p>
+If <a hreg="gres.conf.html#OPT_AutoDetect"><b>AutoDetect</b></a> in
+<b>gres.conf</b> specifies a particular detection mechanism (e.g.,
+<b>NVML</b>, <b>NVIDIA</b>, <b>RSMI</b>, <b>oneAPI</b>, <b>NRT</b>), it will
+use that mechanism to try to detect a GPU. Otherwise, <b>slurmd</b> defaults
+to the <a href="gres.conf.html#OPT_AutoDetect">full</a> gpu detection method.
+</p>
+
+<h2 id="delete">Deleting Nodes
+<a class="slurm_link" href="#delete"></a>
+</h2>
+<p>
+Nodes can be deleted using <b>scontrol delete nodename=&lt;nodelist&gt;</b>.
+Only dynamic nodes that have no running jobs and that are not part of a
+reservation can be deleted.
+</p>
+
+<h2 id="topology">Topology
+<a class="slurm_link" href="#topology"></a>
+</h2>
+<p>
+Nodes can be dynamically added to and removed from topologies as described in
+the <a href="topology.html">Topology Guide</a>.
+</p>
+
+<h2 id="limitations">Limitations
+<a class="slurm_link" href="#limitations"></a>
+</h2>
+<p>
+<ol>
+<li>
+Dynamic nodes are not sorted internally and when added to Slurm they will
+potentially be alphabetically out of order internally &mdash; leading to
+suboptimal job allocations if node names represent topology of the nodes.
+</li>
+</ol>
+</p>
+
+<!--#include virtual="footer.txt"-->

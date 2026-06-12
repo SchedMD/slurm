@@ -1,0 +1,249 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test federated sreport functionality
+#          Use sreport to get cluster usage for the second hour from
+#          configuration set up in test22.1.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+# This function is wrapped in a catch block
+# Use error rather than fail within this function
+# in order to execute federation-specific cleanup
+proc inc22_1_fed {} {
+	global node0_down_end node0_cpus node1_cpus cluster1 sreport
+	global cluster1 my_pid accounts users cluster_cpus
+	global job1_end job1_cpus job2_elig job2_cpus account1 user1
+	global sql_rem_clus1 wckey1 wc_key_track cluster2
+	global fedname
+
+	# Since there are 2 test clusters we will just use one
+	set cluster "FED:$fedname"
+	set sql_rm $sql_rem_clus1
+
+	# Tue Jan 1 00:00:00 2008
+	set start_time "Tue Jan 1 00:00:00 2008"
+	set period_start [exec date +%s --date=$start_time]
+
+	# Tue Jan 1 01:00:00 2008
+	set end_time "Tue Jan 1 01:00:00 2008"
+	set period_end [exec date +%s --date=$end_time]
+
+	set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
+	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+
+	set reported [expr ($period_end - $period_start) * $cluster_cpus * 2]
+	set down [expr ($node0_down_end-$period_start) * $node0_cpus * 2]
+	set alloc_sec [expr ($job1_end-$period_start) * $job1_cpus *2]
+	set wckey_alloc_sec [expr $alloc_sec]
+	set resv [expr ($period_end - $job2_elig) * $job2_cpus * 2]
+	set idle [expr $reported - ($down + $alloc_sec + $resv)]
+	# Do the same logic inside the plugin to figure out the correct
+	# idle time and resv time
+	if {$idle < 0 } {
+		set resv [expr $resv + $idle]
+		set idle 0
+		if {$resv < 0} {
+			set resv 0
+		}
+	}
+	set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
+	set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
+	set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
+	set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
+	set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
+
+	log_debug "Regexes cluster.$idle.$down.$alloc.$resv.$reported"
+
+	log_info "Testing sreport for second hour"
+	set matches 0
+	spawn $sreport --federation cluster utilization  start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.$idle.$down.$alloc.$resv.$reported." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$matches == 1} "Test federated sreport for second hour" "We are looking for $cluster.$idle.$down.$alloc.$resv.$reported"
+
+	# Test the AccountUtilizationByUser report
+	set matches 0
+	spawn $sreport --federation cluster AccountUtilizationByUser  start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.root..$alloc." {
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$account1..$alloc." {
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$account1.$user1.$alloc." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$matches == 3} "Test the federated AccountUtilizationByUser report"
+
+	# Test the UserUtilizationByWckey report
+	set matches 0
+	spawn $sreport --federation cluster UserUtilizationByWckey  start=$start_str end=$end_str -tsecper -p -n
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.$user1..$wckey1.$alloc." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$wc_key_track} {
+		subskip "Test the federated UserUtilizationByWckey needs TrackWCKey"
+	} else {
+		subtest {$matches == 1} "Test the federated UserUtilizationByWckey report" "We are looking for $cluster.$user1.$wckey1.$alloc"
+	}
+
+
+	# Test the WckeyUtilizationByUser report
+	set matches 0
+	spawn $sreport --federation cluster WckeyUtilizationByUser  start=$start_str end=$end_str -tsecper -p -n
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.$wckey1...$alloc." {
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$wckey1.$user1..$alloc." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$wc_key_track} {
+		subskip "Test the federated WckeyUtilizationByUser needs TrackWCKey"
+	} else {
+		subtest {$matches == 2} "Test the federated WckeyUtilizationByUser report"
+	}
+
+	# Test the User Top report
+	set matches 0
+	spawn $sreport --federation user top  start=$start_str end=$end_str -tsecper -p -n
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.$user1..$account1.$alloc.$idle." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$matches == 1} "Test the federated User Top report" "We expected $cluster.$user1..$account1.$alloc.$idle"
+
+	# Test the Job Size report
+	set matches 0
+	spawn $sreport --federation job size AcctAsParent grouping=2,4  start=$start_str end=$end_str -tsec -p -n
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.$account1.0.$alloc_sec.0.$alloc_sec.100\\.00%." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$matches == 1} "Test the federated Job Size report"
+
+	# Test the Job Size by wckey report
+	set matches 0
+	spawn $sreport --federation job sizesbywckey grouping=2,4  start=$start_str end=$end_str -tsec -p -n
+	expect {
+		-re "There was a problem" {
+			error "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster.$wckey1.0.$wckey_alloc_sec.0.$wckey_alloc_sec.100\\.00%." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			error "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	subtest {$matches == 1} "Test the federated Job Size by wckey report"
+}

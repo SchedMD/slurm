@@ -1,0 +1,26 @@
+#!/bin/bash
+# Emulate dwstat (Cray's DataWarp interface) for testing purposes
+# See "Flags=EmulateCray" in burst_buffer.conf man page
+
+if [ $# == 0 ]; then
+   echo '    pool units quantity    free gran'
+   echo 'wlm_pool bytes  7.28TiB 7.28TiB 1GiB'
+   exit 0
+fi
+
+if [ $1 == "configurations" ]; then
+   echo '  conf state inst    type activs'
+   echo '   715 CA---  753 scratch      1'
+   echo '   716 CA---  754 scratch      1'
+   echo '   759 D--T-  807 scratch      0'
+   echo '   760 CA---  808 scratch      1'
+   exit 0
+fi
+
+if [ $1 == "sessions" ]; then
+   echo ' sess state      token creator owner             created expiration nodes'
+   echo '  832 CA---  783000000  tester 12345 2015-09-08T16:20:36      never    20'
+   echo '  833 CA---  784100000  tester 12345 2015-09-08T16:21:36      never     1'
+   echo '  903 D---- 1875700000  tester 12345 2015-09-08T17:26:05      never     0'
+   exit 0
+fi

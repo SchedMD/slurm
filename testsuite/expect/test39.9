@@ -1,0 +1,219 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test --gpu-freq options
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set number_commas  "\[0-9_,\]+"
+set freq_parse_nvml "GpuFreq=memory_freq:($number),graphics_freq:($number)"
+set freq_parse_generic "GpuFreq=control_disabled"
+set freq_parse_not_supported "Failed to get .* Not Supported"
+set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GPU frequency operations. Please set `Autodetect=nvml` in gres.conf to load the gpu/nvml plugin instead."
+set not_supported_msg "This test requires a GPU that supports frequency scaling."
+
+if {![have_nvml]} {
+	skip "NVML must be installed and enabled to test GPU frequency operations"
+}
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
+	skip "SlurmdUser must be root to test GPU frequency operations"
+}
+
+if {![check_config_select "cons_tres"]} {
+        skip "This test is only compatible with select/cons_tres"
+}
+
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
+if {$gpu_cnt < 1} {
+	skip "This test requires 1 or more GPU on 1 node of the default partition"
+}
+log_debug "GPU count is $gpu_cnt"
+
+# Test will be also skip if frequency scaling is disabled or not supported by
+# the GPU on TEST 1.
+
+#
+# Build input script file
+#
+print_time
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+$scontrol -dd show job \$SLURM_JOB_ID
+exit 0"
+
+#
+# Test of --gpu-freq=low,verbose
+#
+log_info "TEST 1"
+set timeout $max_job_delay
+set match 0
+spawn $srun --gpus-per-node=1 --gpu-freq=low,verbose -J $test_name -t1 $file_in
+expect {
+	-re $freq_parse_not_supported {
+		skip $not_supported_msg
+	}
+	-re $freq_parse_generic {
+		skip $generic_msg
+	}
+	-re $freq_parse_nvml {
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 1} "Verify srun --gpu-freq=low,verbose" "$match != 1"
+
+
+#
+# Test of --gpu-freq=medium,memory=medium,verbose
+#
+log_info "TEST 2"
+set match 0
+spawn $srun --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J $test_name -t1 $file_in
+expect {
+	-re $freq_parse_nvml {
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 1} "Verify srun --gpu-freq=medium,memory=medium,verbose" "$match != 1"
+
+#
+# Test of --gpu-freq=highm1,verbose
+#
+log_info "TEST 3"
+set match 0
+spawn $srun --gpus-per-node=1 --gpu-freq=highm1,verbose -J $test_name -t1 $file_in
+expect {
+	-re $freq_parse_nvml {
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 1} "Verify srun --gpu-freq=highm1,verbose" "$match != 1"
+
+#
+# Test of --gpu-freq=high,memory=high,verbose
+#
+log_info "TEST 4"
+set hostname "UNKNOWN"
+set match 0
+spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,verbose -J $test_name -t1 $file_in
+expect {
+	-re $freq_parse_nvml {
+		set high_freq $expect_out(1,string)
+		set high_mem  $expect_out(2,string)
+		incr match
+		exp_continue
+	}
+	-re " NodeList=($re_word_str)" {
+		set hostname $expect_out(1,string)
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {[subtest {$match == 2} "Verify srun --gpu-freq=x,memory=x,verbose" "$match != 2"]} {
+	log_info "TEST 5"
+	spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J $test_name -t1 $file_in
+	expect {
+		-re $freq_parse_nvml {
+			set medium_freq $expect_out(1,string)
+			set medium_mem  $expect_out(2,string)
+			incr match
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_info "TEST 6"
+	spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,verbose -J $test_name -t1 $file_in
+	expect {
+		-re $freq_parse_nvml {
+			set low_freq $expect_out(1,string)
+			set low_mem  $expect_out(2,string)
+			incr match
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {[subtest {$match == 4} "Verify srun --gpu-freq=x,memory=x,verbose" "$match != 4"]} {
+		subtest {$low_freq <= $medium_freq && $medium_freq <= $high_freq} "Verify frequencies order" "$low_freq > $medium_freq || $medium_freq > $high_freq"
+		subtest {$low_mem <= $medium_mem && $medium_mem <= $high_mem} "Verify memories" "$low_mem > $medium_mem || $medium_mem > $high_mem"
+	}
+}
+
+#
+# Test of --gpu-freq=verbose
+# Frequency will be system default (see "GpuFreqDef" in slurm.conf)
+#
+log_info "TEST 7"
+set match 0
+spawn $srun --gpus-per-node=1 --gpu-freq=verbose -J $test_name -t1 $file_in
+expect {
+	-re $freq_parse_nvml {
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match == 1} "Verify srun --gpu-freq=verbose" "$match != 1"
+
+print_time

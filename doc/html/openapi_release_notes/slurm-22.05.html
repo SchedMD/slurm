@@ -1,0 +1,960 @@
+<h2 id="22058">Slurm 22.05.8<a class="slurm_link" href="#22058"></a></h2>
+
+<h3>openapi/v0.0.38</h3>
+
+<h4>Fix invalid type for nice</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+			.components.schemas."v0.0.38_job_properties".properties.nice
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.38</h3>
+
+<h4>Populate POST /tres/ body<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/tres/".post.requestBody</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_tres_update"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_update_qos".type</td>
+</tr>
+</table>
+
+<h4>Add missing type field<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_update_account".type</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_update_users".type</td>
+</tr>
+</table>
+
+<h4>Add missing requestBody field<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post.requestBody</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/wckeys/".post.requestBody</td>
+</tr>
+</table>
+
+<h4>Add missing requestBody field<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange">.paths."/config".post.requestBody</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_set_config"</td>
+</tr>
+</table>
+
+<h4>Correct type of field accounts->accounting in wckeys<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new schema</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_accounting"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_wckey".properties.accounting</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">removed field</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_wckey".properties.accounts</td>
+</tr>
+</table>
+
+<h4>Use "QOS" in dbv0.0.38_qos_info<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_qos_info".properties.qos</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_qos_info".properties.QOS</td>
+</tr>
+</table>
+
+<h4>Add oversubscribe option to job submission properties</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field added</td>
+	<td class="tdchange">
+			.components.schemas."v0.0.38_job_properties".properties.oversubscribe
+	</td>
+</tr>
+</table>
+
+<h2 id="22057">Slurm 22.05.7<a class="slurm_link" href="#22057"></a></h2>
+
+<h3>openapi/v0.0.38</h3>
+
+<h4>Add missing fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field added</td>
+	<td class="tdchange">
+			.components.schemas."v0.0.38_partition".properties.maximum_memory_per_cpu
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field added</td>
+	<td class="tdchange">
+			.components.schemas."v0.0.38_partition".properties.default_memory_per_node
+	</td>
+</tr>
+</table>
+</table>
+
+<h2 id="22056">Slurm 22.05.6<a class="slurm_link" href="#22056"></a></h2>
+
+<h3>openapi/v0.0.38</h3>
+
+<h4>Fix misnamed reference to prior version</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+			.components.schemas."dbv0.0.38_tres_info".properties.tres
+	</td>
+</tr>
+</table>
+
+<h2 id="22054">Slurm 22.05.4<a class="slurm_link" href="#22054"></a></h2>
+
+<h3>openapi/v0.0.38</h3>
+
+<h4>Add missing field to job properties</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Add field prefer to jobs</td>
+	<td class="tdchange">
+			.components.schemas."v0.0.38_job_properties".properties.prefer
+	</td>
+</tr>
+</table>
+
+<h2 id="22050">Slurm 22.05.0<a class="slurm_link" href="#22050"></a></h2>
+
+<h3>openapi/dbv0.0.38</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new dbv0.0.38 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing dbv0.0.37 openapi plugin</li>
+			<li>all paths renamed from dbv0.0.37 to dbv0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add POST method for /associations<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations"</td>
+</tr>
+</table>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_job_step".properties.tres</td>
+</tr>
+</table>
+
+<h4>Add association fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_association".properties.is_default</li>
+			<li>.components.schemas."dbv0.0.38_association".properties.max.tres.group.minutes</li>
+			<li>.components.schemas."dbv0.0.38_association".properties.max.tres.group.active</li>
+			<li>.components.schemas."dbv0.0.38_association".properties.max.jobs.active</li>
+			<li>.components.schemas."dbv0.0.38_association".properties.max.jobs.accruing</li>
+			<li>.components.schemas."dbv0.0.38_association".properties.max.jobs.total</li>
+			<li>.components.schemas."dbv0.0.38_association".properties.max.tres.minutes.per.job</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add error response contents</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/account/{account_name}"[].responses.default[]</li>
+			<li>.paths."/accounts/"[].responses.default[]</li>
+			<li>.paths."/association/"[].responses.default[]</li>
+			<li>.paths."/associations/"[].responses.default[]</li>
+			<li>.paths."/cluster/{cluster_name}"[].responses.default[]</li>
+			<li>.paths."/clusters/"[].responses.default[]</li>
+			<li>.paths."/config/"[].responses.default[]</li>
+			<li>.paths."/diag/"[].responses.default[]</li>
+			<li>.paths."/job/{job_id}"[].responses.default[]</li>
+			<li>.paths."/jobs/"[].responses.default[]</li>
+			<li>.paths."/qos/{qos_name}/"[].responses.default[]</li>
+			<li>.paths."/qos/"[].responses.default[]</li>
+			<li>.paths."/tres/"[].responses.default[]</li>
+			<li>.paths."/users/"[].responses.default[]</li>
+			<li>.paths."/user/{user_name}"[].responses.default[]</li>
+			<li>.paths."/wckeys/"[].responses.default[]</li>
+			<li>.paths."/wckey/{wckey}"[].responses.default[]</li>
+			<li>.components.schemas."dbv0.0.38_meta"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_qos".properties.limits.max.jobs.per.account</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_qos".properties.limits.max.jobs.active_jobs.per.account</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_qos".properties.limits.properties.max.properties.jobs.properties.per.properties.user</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_qos".properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.user</td>
+</tr>
+</table>
+
+<h4>Add QOS fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_qos".properties.limits.properties.factor</li>
+			<li>.components.schemas."dbv0.0.38_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.account</li>
+			<li>.components.schemas."dbv0.0.38_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.user</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add diag fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."v0.0.38_diag".bf_table_size</li>
+			<li>.components.schemas."v0.0.38_diag".bf_table_size_mean</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Split up token and user</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">change array values</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.security</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add meta entry</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">field added</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."dbv0.0.38_diag".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_account_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_account_delete".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_wckey_add".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_wckey_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_wckey_delete".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_cluster_add".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_cluster_delete".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_user_update".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_user_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_user_delete".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_association_delete".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_associations_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_qos_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_qos_delete".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_associations".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_response_tres".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_tres_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_job_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_config_info".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_account_response".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_config_response".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_errors"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add missing response field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_response_association_delete".properties.removed_associations</li>
+			<li>.components.schemas."dbv0.0.38_error".properties.error_number</li>
+			<li>.components.schemas."dbv0.0.38_error".properties.source</li>
+			<li>.components.schemas."dbv0.0.38_error".properties.description</li>
+			<li>.components.schemas."/clusters/".properties.post.properties.requestBody</li>
+			<li>.components.schemas."dbv0.0.38_clusters_properties"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Switch field from object to array</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified field</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_user".properties.associations</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add missing field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new field</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_qos".properties.limits.properties.max.properties.tres.properties.minutes.properties.per.properties.qos</li>
+			<li>.components.schemas."dbv0.0.38_qos".properties.name</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Correct field type to reference</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified field</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_config_info".properties.tres</li>
+			<li>.components.schemas."dbv0.0.38".properties.het.properties.job_id</li>
+			<li>.components.schemas."dbv0.0.38".properties.het.properties.job_offset</li>
+			<li>.components.schemas."dbv0.0.38_job_step".properties.task</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add requestBody field and associated schema</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_update_users"</li>
+			<li>.paths."/users/".post.requestBody'</li>
+			<li>.components.schemas."dbv0.0.38_update_accounts"</li>
+			<li>.paths."/accounts/".post.requestBody'</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Correct parameter styles to "form"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/job/{job_id}"[].get.parameters[]|select(.name="job_id)"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Change operationId naming schema to include url path</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths[][].operationId</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Fix issue where association's QOS list consisted of IDs instead of names</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_association".properties.qos</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add POST method for /qos</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new method</td>
+	<td class="tdchange">.paths."/qos/".post</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_qos"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_update_qos"</td>
+</tr>
+</table>
+
+<h4>Move response fields in dbv0.0.37_diag under "statistics"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new parent field</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_diag".properties.statistics</li>
+		</ul>
+	</td>
+<tr class="trchange">
+</tr>
+	<td class="tdfield">subordinated fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_diag".properties.time_start</li>
+			<li>.components.schemas."dbv0.0.38_diag".properties.rollups</li>
+			<li>.components.schemas."dbv0.0.38_diag".properties.RPCs</li>
+			<li>.components.schemas."dbv0.0.38_diag".properties.users</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add with_deleted input parameter to GET /user, /users</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New parameter</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/user/{user_name}".get.parameters[] | select(.name=="with_deleted")</li>
+			<li>.paths."/users/".get.parameters[] | select(.name=="with_deleted")</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add deleted flag to /user, /users output</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New property</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_user".properties.flags</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add with_deleted input parameter to GET /qos</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New parameter</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/qos/".get.parameters[] | select(.name=="with_deleted")</li>
+			<li>.paths."/qos/{qos_name}".get.parameters[] | select(.name=="with_deleted")</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add with_deleted input parameter to GET /account, /accounts</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New parameter</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/account/{account_name}".get.parameters[] | select(.name=="with_deleted")</li>
+			<li>.paths."/accounts/".get.parameters[] | select(.name=="with_deleted")</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add container field to job description</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.38_job".properties.container</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Enforce limit to only DELETE or GET a single association instead of using
+required parameters.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">changed value</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/association/".get.parameters[].required</li>
+			<li>.paths."/association/".delete.parameters[].required</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add filter parameters to GET /associations</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new method</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/associations/".get.parameters</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.36</h3>
+
+<h4>Deprecation notice</h4>
+The dbv0.0.36 plugin has now been marked as deprecated.
+
+<h3>openapi/v0.0.38</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new v0.0.38 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing v0.0.37 openapi plugin</li>
+			<li>all paths renamed from v0.0.37 to v0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Correct multiple type mistakes<h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_job_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_task_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_max_tasks</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.association_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.billable_tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.deadline</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.delay_boot</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.derived_exit_code</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.group_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.job_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.last_sched_evaluation</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.max_cpus</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.max_nodes</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.nice</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_core</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_socket</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_board</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.cpus</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.node_count</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.het_job_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.het_job_offset</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.memory_per_node</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.memory_per_cpu</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.minimum_cpus_per_node</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.minimum_tmp_disk_per_node</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.priority</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.restart_cnt</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.sockets_per_board</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.sockets_per_node</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.time_limit</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.time_minimum</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.threads_per_core</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.user_id</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.allocated_nodes</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.cpus</td>
+</tr>
+</table>
+
+<h4>Fix errant space after JOB_CPUS_SET flag.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Fix response.</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.37_job_response_properties".properties.flags</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add new /licenses endpoint</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">add</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.38_license"</li>
+			<li>.components.schemas."v0.0.38_licenses"</li>
+			<li>.paths."/slurm/v0.0.38/licenses"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add meta entry</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">field added</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.38_diag".properties.meta</li>
+			<li>.components.schemas."v0.0.38_pings".properties.meta</li>
+			<li>.components.schemas."v0.0.38_partitions_response".properties.meta</li>
+			<li>.components.schemas."v0.0.38_reservations_response".properties.meta</li>
+			<li>.components.schemas."v0.0.38_job_submission_response".properties.meta</li>
+			<li>.components.schemas."v0.0.38_jobs_response".properties.meta</li>
+			<li>.components.schemas."v0.0.38_nodes_response".properties.meta</li>
+			<li>.components.schemas."v0.0.38_errors"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add error response contents</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/diag/"[].responses.default[]</li>
+			<li>.paths."/ping/"[].responses.default[]</li>
+			<li>.paths."/jobs/"[].responses.default[]</li>
+			<li>.paths."/job/{job_id}"[].responses.default[]</li>
+			<li>.paths."/job/submit"[].responses.default[]</li>
+			<li>.paths."/nodes/"[].responses.default[]</li>
+			<li>.paths."/node/{node_name}"[].responses.default[]</li>
+			<li>.paths."/partitions/"[].responses.default[]</li>
+			<li>.paths."/partition/{partition_name}"[].responses.default[]</li>
+			<li>.paths."/reservations/"[].responses.default[]</li>
+			<li>.paths."/reservation/{reservation_name}"[].responses.default[]</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Rename errno to error_number</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">rename</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."dbv0.0.38_error".properties.errnum</li>
+			<li>.components.schemas."dbv0.0.38_error".properties.error_number</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Correct parameter styles to "form"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/jobs/"[].parameters[]|select(.name="update_type)"</li>
+			<li>.paths."/job/{job_id}"[].get.parameters[]|select(.name="job_id)"</li>
+			<li>.paths."/job/{job_id}"[].post.parameters[]|select(.name="job_id)"</li>
+			<li>.paths."/nodes/"[].get.parameters[]|select(.name="update_time)"</li>
+			<li>.paths."/node/{node_name}"[].get.parameters[]|select(.name="node_name)"</li>
+			<li>.paths."/partitions/"[].get.parameters[]|select(.name="update_time)"</li>
+			<li>.paths."/partition/{partition_name}"[].get.parameters[]|select(.name="partition_name)"</li>
+			<li>.paths."/partition/{partition_name}"[].get.parameters[]|select(.name="update_time)"</li>
+			<li>.paths."/reservations/"[].get.parameters[]|select(.name="reservation_name)"</li>
+			<li>.paths."/reservations/"[].get.parameters[]|select(.name="update_time)"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Change operationId naming schema to include url path</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths[][].operationId</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Response changed to move "cores" into "sockets" to differentiate which
+	cores and sockets are allocated. Changed from named dictionary of node
+	names to array containing objects with nodename set.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Updated response.</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.38_job_resources".properties.allocated_nodes</li>
+			<li>.components.schemas."v0.0.38_node_allocation"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>New fields add to diag endpoint</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."v0.0.38_diag_rpcm".rpcs_by_message_type</li>
+			<li>.components.schemas."v0.0.38_diag_rpcm".rpcs_by_user</li>
+			<li>.components.schemas."v0.0.38_diag_rpcm"</li>
+			<li>.components.schemas."v0.0.38_diag_rpcu"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add container field to job description</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."v0.0.38_job_response_properties".properties.container</li>
+			<li>.components.schemas."v0.0.38_job_properties".properties.container</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add method to delete associations using filters</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new method</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/associations/".delete</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Rename response schema entry</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_association_delete"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations_delete"</td>
+</tr>
+</table>
+
+<h3>openapi/v0.0.36</h3>
+
+<h4>Deprecation notice</h4>
+The v0.0.36 plugin has now been marked as deprecated.
+
+<h3>openapi/v0.0.35</h3>
+
+<h4>Removal notice</h4>
+The v0.0.35 plugin has now been removed.

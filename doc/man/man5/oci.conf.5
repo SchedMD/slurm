@@ -1,0 +1,306 @@
+.TH "oci.conf" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
+
+.SH "NAME"
+oci.conf \- Slurm configuration file for containers.
+
+.SH "DESCRIPTION"
+Slurm supports calling OCI compliant runtimes. \fBoci.conf\fP is an ASCII
+file which defines parameters used by OCI runtime interface.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
+
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+Changes to the configuration file take effect upon restart of Slurm daemons.
+
+.SH "PARAMETERS"
+.LP
+The following oci.conf parameters are defined to control the behavior
+of the \fB\-\-container\fR argument of \fBsalloc\fR, \fBsrun\fR, and \fBsbatch\fR
+
+.TP
+\fBContainerPath\fR
+Specifies an override path pattern for placing the per-step spool directory.
+If this option is set, the resulting per-task OCI container bundle path will be
+created as a subdirectory of this path. Refer to the \fBOCI Pattern\fR section
+for details on pattern substitution.
+.sp
+By default, an uniquely generated subdirectory for each step is created under
+\fBSlurmdSpoolDir\fR.
+.IP
+
+.TP
+\fBCreateEnvFile=(null|newline|disabled)\fR
+Create environment file for container. File will have one environment variable
+per line if value is "newline". File will have each environment
+variable terminated by a NUL (aka '\\0') if value is "null". If value
+is "disabled", then the environment file will not be created.
+
+Value of "true" is treated as "null" for backwards compatibility.
+Value of "false" is treated as "disabled" for backwards compatibility.
+
+Note: When CreateEnvFile=newline, any environment variables with a newline will
+be dropped before writing to the environment file.
+.sp
+Default is "disabled".
+.IP
+
+.TP
+\fBDebugFlags\fR
+Override debug flags during container operations. See \fBdebugflags\fR in
+\fBslurm.conf\fR.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBDisableCleanup\fR
+Disable removal of the generated files handed to OCI runtime.
+.sp
+Default: false
+.IP
+
+.TP
+\fBDisableHooks\fR
+Comma separated list of hook types to disable.
+.sp
+Default: allow all hooks.
+.IP
+
+.TP
+\fBEnvExclude\fR
+Extended regular expression to filter environment before. This allows for
+excluding variables to avoid unwanted environment variables inside of
+containers.
+.sp
+Example: \fBEnvExclude\fR="^(SLURM_CONF|SLURM_CONF_SERVER)="
+.sp
+Default does not exclude any environment variables.
+.IP
+
+.TP
+\fBMountSpoolDir\fR
+Override pattern for path inside of container to mount \fBContainerPath\fR. See
+the section \fBOCI Pattern\fR for details on pattern replacement.
+.sp
+Default: see \fBContainerPath\fR
+.IP
+
+.TP
+\fBRunTimeEnvExclude\fR
+Extended regular expression to filter environment before calling any
+\fBRunTime*\fR commands. This allows for excluding variables to avoid unwanted
+inheritance inside of the OCI runtimes.
+.sp
+Example: \fBRunTimeEnvExclude\fR="^(SLURM_CONF|SLURM_CONF_SERVER)="
+.sp
+Default is not exclude any environment variables.
+.IP
+
+.TP
+\fBFileDebug\fR
+Override default file logging level during container operations. See
+\fBSlurmdDebug\fR in \fBslurm.conf\fR.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBIgnoreFileConfigJson=(true|false)\fR
+Ignore the existence of config.json in OCI bundle path and disable loading
+config.json if it is present.
+.sp
+Default is false.
+.IP
+
+.TP
+\fBRunTimeCreate\fR
+Pattern for OCI runtime create operation. See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBRunTimeDelete\fR
+Pattern for OCI runtime delete operation. See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBRunTimeKill\fR
+Pattern for OCI runtime kill operation. See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBRunTimeQuery\fR
+Pattern for OCI runtime query operation (also known as state). See the section
+\fBOCI Pattern\fR for details on pattern replacement.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBRunTimeRun\fR
+Pattern for OCI runtime run operation. This is not provided in the OCI runtime
+specification (<=v1.0) but is provided by multiple OCI runtimes to simplify
+execution of containers. If provided, it will be used in the place of create
+and start operations. It avoids the need to poll state of the container
+resulting in less monitoring overhead. See the section \fBOCI Pattern\fR for
+details on pattern replacement.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBRunTimeStart\fR
+Pattern for OCI runtime start operation. See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBSrunPath\fR
+Absolute path to srun executable.
+.sp
+Default: (search PATH)
+.IP
+
+.TP
+\fBSrunArgs\fR
+Additional arguments to pass to srun. Add one \fBSrunArgs\fR entry per
+argument.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBStdIODebug\fR
+Override default STDIO logging level during container operations. See
+\fBSlurmdDebug\fR in \fBslurm.conf\fR.
+.sp
+Default: (disabled)
+.IP
+
+.TP
+\fBSyslogDebug\fR
+Override default syslog logging level during container operations. See
+\fBSlurmdSyslogDebug\fR in \fBslurm.conf\fR.
+.sp
+Default: (disabled)
+.IP
+
+.SH "NOTES"
+.LP
+OCI container support is disabled if oci.conf does not exist. If disabled, any
+user passing \fB\-\-container\fR will be doing so in a purely advisor manner.
+
+.SH "OCI Pattern"
+
+All of the OCI patterns will replace the following characters:
+.LP
+\fBReplacements\fR:
+
+.TP
+\fB%%\fR
+Replace as "%".
+.IP
+
+.TP
+\fB%@\fR
+Replace as the command and arguments. Each argument will be
+enclosed with single quotes and escaped.
+.IP
+
+.TP
+\fB%b\fR
+Replace as OCI Bundle Path.
+.IP
+
+.TP
+\fB%e\fR
+Replace as path to file containing environment if
+\fBCreateEnvFile=true\fR.
+.IP
+
+.TP
+\fB%j\fR
+Replace as numeric job id.
+.IP
+
+.TP
+\fB%m\fR
+Replace with the per-step spool directory path of the container as patterned by
+\fBContainerPath\fR. If \fBContainerPath\fR is not set, this is replaced with
+a uniquely generated subdirectory under \fBSlurmdSpoolDir\fR as defined in
+\fBslurm.conf\fR(5), or defaults to "/var/spool/slurmd".
+.IP
+
+.TP
+\fB%n\fR
+Replace as nodename.
+.IP
+
+.TP
+\fB%p\fR
+Replace as PID of first processes forked off. Only for use in \fBRunTimeKill\fR
+or \fBRunTimeDelete\fR.
+.IP
+
+.TP
+\fB%r\fR
+Replace as original path to rootfs.
+.IP
+
+.TP
+\fB%s\fR
+Replace as numeric step id.
+.IP
+
+.TP
+\fB%t\fR
+Replace as numeric step task id.
+.IP
+
+.TP
+\fB%u\fR
+Replace as user name.
+.IP
+
+.TP
+\fB%U\fR
+Replace as numeric user id.
+.IP
+
+.TP
+\fB%Z\fR
+Replace as the job's working directory (the value of \fB\-\-chdir\fR).
+.IP
+
+.SH "COPYING"
+Copyright (C) 2021 SchedMD LLC.
+
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

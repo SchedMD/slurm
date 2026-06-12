@@ -1,0 +1,133 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that afternotok dependency is enforced.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id1       0
+set job_id2       0
+set script        "$test_dir/script"
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
+}
+
+make_bash_script $script "sleep 10"
+
+# Submit a job to depend on
+spawn $sbatch -t1 -o/dev/null $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if { $job_id1 == 0 } {
+	fail "sbatch did not submit job"
+}
+
+wait_for_job -fail $job_id1 "RUNNING"
+
+# Submit a job that depends on job above
+spawn $sbatch -t1 -dafternotok:$job_id1 -o/dev/null $script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if { $job_id2 == 0 } {
+	fail "sbatch did not submit job"
+}
+
+wait_for_job -fail $job_id1 "DONE"
+
+# Check exit code of the first job
+set match 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "ExitCode=0:0" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 1} "Check exit code of the first job" "Job $job_id1 did not exit with exit code 0, which could be due to a small configured MinJobAge value"
+
+# Check that the job with dependency is in the correct state and has correct
+# reason
+set match 0
+if {[param_contains [get_config_param "DependencyParameters"] "kill_invalid_depend"]} {
+	spawn $scontrol show job $job_id2
+	expect {
+		-re "JobState=CANCELLED Reason=Dependency Dependency=afternotok:${job_id1}" {
+			incr match 1
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+		subtest {$match == 1} "Check that the job with the dependency is in the correct state and has the correct reason" "Job $job_id2 should be in cancelled state and should have Reason=DependencyNeverSatisfied"
+	}
+} else {
+	# Wait for job 2 reason to populate
+	sleep 10
+	spawn $squeue --job=$job_id2 -o"%t|%r" --noheader
+	expect {
+		-re "PD|DependencyNeverSatisfied" {
+			incr match 1
+		}
+		timeout {
+			fail "squeue is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$match == 1} "Check that the job with the dependency is in the correct state and has the correct reason" "Job $job_id2 should be in pending state and should have Reason=DependencyNeverSatisfied, which could be due to a small configured MinJobAge value"
+}

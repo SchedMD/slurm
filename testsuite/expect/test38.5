@@ -1,0 +1,174 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test hetjob: squeue
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_het_jobs
+
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
+set job_id       0
+
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+if [in_fed] {
+	skip "This test should not be run in a federation"
+}
+
+proc sbatch {} {
+	global number sbatch file_in file_out bin_sleep
+
+	set matches 0
+	set job_id 0
+	set command "$sbatch -o $file_out $file_in"
+
+	spawn {*}$command
+	expect {
+		-re "Batch job submission failed" {
+			skip "Unable to execute test due to system configuration"
+		}
+		-re "Submitted batch job ($number)" {
+			incr matches
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Batch submit failure"
+	}
+
+	return $job_id
+}
+
+proc cleanup { } {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# Start test
+
+make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1 -t1
+#SBATCH hetjob
+#SBATCH --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1
+#SBATCH hetjob
+#SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
+
+$bin_sleep 10"
+
+log_info "\n################################################################\n"
+log_info "Submit hetjob and verify output from scontrol show job"
+log_info "\n################################################################\n"
+
+set job_id [sbatch]
+
+set matches 0
+set id_set  0
+set id_regex "\[0-9,-\]+"
+
+set format "jobid:.16,hetjoboffset:.16,hetjobid:.16,hetjobidset:.25"
+set regex "$job_id\\s+0\\s+$job_id\\s+($id_regex)"
+set header "JOBID\\s+HET_JOB_OFFSET\\s+HET_JOB_ID\\s+HET_JOB_ID_SET"
+
+spawn $squeue -j $job_id --Format=$format
+expect {
+	-re $header {
+		incr matches
+		exp_continue
+	}
+	-re $regex {
+		set id_set $expect_out(1,string)
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2 } {
+	fail "Problem with squeue test 1 ($matches != 2)"
+} else {
+	log_debug "Test 1 OK"
+}
+
+set js [parse_id_set $id_set $job_id]
+
+set j2 [lindex $js 0]
+set j3 [lindex $js 1]
+
+set matches 0
+set regex "$j2\\s+1\\s+$job_id\\s+$id_set"
+
+spawn $squeue --noheader -j $j2 --Format=$format
+expect {
+	-re $regex {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1 } {
+	fail "Problem with squeue test 2 ($matches != 1)"
+} else {
+	log_debug "Test 2 OK"
+}
+
+set matches 0
+set regex "$j3\\s+2\\s+$job_id\\s+$id_set"
+
+spawn $squeue --noheader -j $j3 --Format=$format
+expect {
+	-re $regex {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1 } {
+	fail "Problem with squeue test 3 ($matches != 1)"
+} else {
+	log_debug "Test 3 OK"
+}

@@ -1,0 +1,166 @@
+<!--#include virtual="header.txt"-->
+
+<h1>"Configless" Slurm</h1>
+
+<p>"Configless" Slurm is a feature that allows the compute nodes &mdash;
+specifically the slurmd process &mdash; and user commands running on login
+nodes to pull configuration information directly from the slurmctld instead of
+from a pre-distributed local file. Your cluster does require a central set of
+configuration files on the Slurm controllers &mdash; "configless" in Slurm's
+parlance means that the compute nodes, login nodes, and other cluster hosts
+do not need to be deployed with local copies of these files.</p>
+<p>The slurmd on startup will reach out to a slurmctld that you specify and the
+config files will be pulled to the node. This slurmctld can be identified by
+either an explicit option, or &mdash; preferably &mdash; through DNS SRV
+records defined within the cluster itself.</p>
+
+<p>If you have a <a href="quickstart_admin.html#login">login node</a> you
+will be running client commands
+from, those client commands will have to use the DNS record to get the
+configuration information from the controller when they run.
+If you expect to have a lot of traffic from a login node, this
+can generate a lot of requests for the configuration files. In cases like
+this, <a href="sackd.html">sackd</a> can be used to manage configuration files
+for the node reducing network requests.</p>
+
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
+
+<p>There are no extra steps required to install this feature. It is built in
+by default starting with Slurm 20.02.</p>
+
+<h2 id="SETUP">Setup<a class="slurm_link" href="#SETUP"></a></h2>
+
+<p>The slurmctld must first be configured to run in the configless mode.
+This is handled by setting <b>SlurmctldParameters=enable_configless</b> in
+slurm.conf and restarting slurmctld.</p>
+
+<p>Once enabled, you must configure the slurmd to get its configs from the
+slurmctld. This can be accomplished either by launching slurmd with the
+<b>--conf-server</b> option, or by setting a DNS SRV record and ensuring there
+is no local configuration file on the compute node.</p>
+
+<p>The <b>--conf-server</b> options takes precedence over the DNS record.</p>
+
+<p>The command line option takes "$host[:$port]", so an example would look like:
+</p>
+<pre>
+slurmd --conf-server slurmctl-primary:6817
+</pre>
+<p>
+Specifying the port is optional and will default to 6817 if it is not present.
+Multiple slurmctlds can be specified as a comma-separated list, in priority
+order (highest to lowest).
+</p>
+<pre>
+slurmd --conf-server slurmctl-primary:6817,slurmctl-secondary
+</pre>
+
+<p>The same information can be provided in a DNS SRV record. For example:</p>
+<pre>
+_slurmctld._tcp 3600 IN SRV 10 0 6817 slurmctl-backup
+_slurmctld._tcp 3600 IN SRV 0 0 6817 slurmctl-primary
+</pre>
+<p>
+Will provide the required information to the slurmd on startup. As shown above,
+multiple SRV records can be specified if you have deployed Slurm in an HA
+setup. The DNS SRV entry with the lowest priority should be your primary
+slurmctld, with higher priority values for backup slurmctlds.
+</p>
+
+<h2 id="INITIAL_TESTING">Initial Testing
+<a class="slurm_link" href="#INITIAL_TESTING"></a>
+</h2>
+
+<p>With the slurmctld configured and slurmd started, you can check in a couple
+places to make sure the configs are present on the node. Config files will be
+in <b>SlurmdSpoolDir</b> under the <b>/conf-cache/</b>, and a symlink to this
+location will be created automatically in <b>/run/slurm/conf</b>. You can
+confirm that reloading is working by adding a comment to your slurm.conf on the
+slurmctld node and running
+<span class="commandline">scontrol reconfig</span> and checking that the config
+was updated.</p>
+
+<h2 id="LIMITATIONS">Limitations
+<a class="slurm_link" href="#LIMITATIONS"></a>
+</h2>
+
+<p>Using "%n" in "SlurmdSpoolDir" or "SlurmdPidFile" will not be properly
+substituted for the NodeName unless slurmd is also launched with the "-N"
+option.</p>
+
+<p>If you are using systemd to launch slurmd, you must ensure that
+"ConditionPathExists=*" is not present in the unit file or the slurmd will not
+start. (The example slurmd.service file shipped in Slurm 20.02 and above does
+not include this entry.)</p>
+
+<p>If any of the supported config files "Include" additional config files,
+the Included configs will <b>ONLY</b> be shipped if their "Include" filename
+reference has no path separators and the file is located adjacent to slurm.conf.
+Any additional config files will need to be shared a different way or added to
+the parent config.
+</p>
+
+<p>If <b>Prolog</b>, <b>Epilog</b>, <b>TaskProlog</b>, and <b>TaskEpilog</b>
+scripts are specified in slurm.conf, the scripts will <b>ONLY</b> be shipped if
+the filenames referenced have no path separators and the file is located
+adjacent to slurm.conf.
+</p>
+
+<h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
+
+<p>Starting from Slurm 25.11, there's a new
+<b>SlurmctldParameters=reconfig_on_restart</b> option that will make every
+restart of slurmctld (process restart not triggered by "scontrol reconfigure")
+to trigger a reconfiguration request to all slurmd and sackd daemons. For
+"configless" systems this will ensure all processes are running the current
+configuration. Some caution should be taken if you intend to perform rolling
+upgrades on the cluster as this could lead to the daemons being upgraded sooner
+than expected.
+</p>
+
+<p>The order of precedence for determining what configuration source to use
+is as follows:</p>
+<ol>
+<li>The slurmd --conf-server $host[:$port] option</li>
+<li>The -f $config_file option</li>
+<li>The SLURM_CONF environment variable (if set)</li>
+<li>A local slurm config file:
+  <ol>
+    <li>The default slurm config file (likely /etc/slurm.conf)</li>
+    <li>For user commands, a cached slurm config file
+        (run/slurm/conf/slurm.conf)</li>
+  </ol>
+</li>
+<li>The SLURM_CONF_SERVER environment variable (if set)</li>
+<li>Any DNS SRV records (from lowest priority value to highest)</li>
+  <ul>
+    <li>The TTL (Time To Live) of the SRV record does not affect the validity
+    of the obtained configuration. The nodes will have to be notified of any
+    changes to the configuration file through an
+    <span class=commandline>scontrol reconfig</span> or a slurmd restart.</li>
+  </ul>
+</ol>
+
+<p>The following configuration files are supported. In addition, some
+admin-defined files (e.g., Prolog) may be included as described in
+the <a href=#LIMITATIONS>limitations</a> section.</p>
+<ul>
+<li>slurm.conf</li>
+<li>acct_gather.conf</li>
+<li>cgroup.conf</li>
+<li>cli_filter.lua</li>
+<li>gres.conf</li>
+<li>helpers.conf</li>
+<li>job_container.conf</li>
+<li>mpi.conf</li>
+<li>namespace.yaml</li>
+<li>oci.conf</li>
+<li>plugstack.conf</li>
+<li>scrun.lua</li>
+<li>topology.conf</li>
+<li>topology.yaml</li>
+</ul>
+
+<!--#include virtual="footer.txt"-->

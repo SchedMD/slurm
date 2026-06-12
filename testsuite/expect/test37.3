@@ -1,0 +1,464 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test federation functionality
+#          Test scontrol show federations
+#	   Test that persistent connections are made
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          federation/slurm/ (src)
+#          federation/fed1/bin
+#          federation/fed1/sbin
+#          federation/fed1/etc
+#          federation/fed1/...
+#          federation/fed2/...
+#          federation/fed3/...
+#          3. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set fed_name    "feda"
+set timeout	5
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup { } {
+	global fed_name
+
+	delete_federations $fed_name
+}
+
+proc test_fed_status {cname fed_flags cluster_list} {
+	# Match db info with what cluster has.
+	global fed_slurm_base fed_name eol
+	array set clusters $cluster_list
+	set matches 0
+	set lines 0
+	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
+	spawn $my_scontrol show federation
+	set expected_matches [array size clusters]
+	if {$expected_matches} {
+		# Match the fedname line
+		incr expected_matches
+	}
+	expect {
+		-re "$eol" {
+			incr lines
+			set line $expect_out(buffer)
+			log_debug "Line: $line"
+
+			if {[regexp "Federation: $fed_name" $line match]} {
+				log_debug "Matched: $match"
+				incr matches
+			} elseif {[regexp {Self:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Features:(\S*)} \
+					  $line match name host port id state features]} {
+				log_debug "Matched: $match"
+				if {$expected_matches &&
+				    [dict get $clusters($name) host]     eq $host &&
+				    [dict get $clusters($name) state]    eq $state &&
+				    [dict get $clusters($name) features] eq $features &&
+				    [dict get $clusters($name) conn]     eq "Self" &&
+				    [dict get $clusters($name) port]     == $port &&
+				    [dict get $clusters($name) id]       == $id} {
+					log_debug "Matched self: $name"
+					incr matches
+				}
+			} elseif {[regexp {Sibling:\s+(\S+):(\S+):(\d+) ID:(\d+) FedState:(\S*) Features:(\S*) PersistConnSend/Recv:(\S+)} \
+					  $line match name host port id state features conn]} {
+				log_debug "Matched: $match"
+				if {$expected_matches &&
+				    [dict get $clusters($name) host]     eq $host &&
+				    [dict get $clusters($name) state]    eq $state &&
+				    [dict get $clusters($name) features] eq $features &&
+				    [dict get $clusters($name) conn]     eq $conn &&
+				    [dict get $clusters($name) port]     == $port &&
+				    [dict get $clusters($name) id]       == $id} {
+					log_debug "Matched sibling: $name"
+					incr matches
+				}
+			}
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$lines != $expected_matches} {
+		fail "Line count and expected matches don't match ($lines != $expected_matches)"
+	}
+
+	if {$matches != $expected_matches} {
+		fail "Failed to match ($matches != $expected_matches)"
+	}
+}
+
+if {![check_federation_setup]} {
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
+}
+
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
+}
+
+# Remove existing setup
+cleanup
+
+# add clusters to federation
+if [setup_federation $fed_name] {
+	fail "Failed to setup federation"
+}
+
+# Get cluster/fed info from db
+array set clusters [get_clusterfed_info $fed_name]
+
+set fed_flags "None"
+
+log_info "Test from $fedc1"
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+log_info "Test from $fedc2"
+dict set clusters($fedc1) conn "Yes/Yes"
+dict set clusters($fedc2) conn Self
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc2 $fed_flags [array get clusters]
+
+log_info "Test from $fedc3"
+dict set clusters($fedc1) conn "Yes/Yes"
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn Self
+test_fed_status $fedc3 $fed_flags [array get clusters]
+
+log_info "Remove $fedc3 and test from $fedc1 and $fedc2"
+if [remove_cluster_from_fed $fedc3 $fed_name] {
+	fail "Unable to remove cluster 3 ($fedc3) from federation ($fed_name)"
+}
+array unset clusters $fedc3
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+dict set clusters($fedc1) conn "Yes/Yes"
+dict set clusters($fedc2) conn Self
+test_fed_status $fedc2 $fed_flags [array get clusters]
+
+log_info "Remove $fedc1 and test from $fedc2"
+if [remove_cluster_from_fed $fedc1 $fed_name] {
+	fail "Unable to remove cluster 1 ($fedc1) from federation ($fed_name)"
+}
+array unset clusters $fedc1
+dict set clusters($fedc2) conn Self
+test_fed_status $fedc2 $fed_flags [array get clusters]
+
+log_info "Remove $fedc2 and test from $fedc2"
+array unset clusters
+if [remove_cluster_from_fed $fedc2 $fed_name] {
+	fail "Unable to remove cluster 2 ($fedc2) from federation ($fed_name)"
+}
+test_fed_status $fedc2 $fed_flags [array get clusters]
+
+log_info "Add $fedc1 and test from $fedc1"
+if [add_cluster_to_fed $fedc1 $fed_name] {
+	fail "Unable to add cluster 1 ($fedc1) to federation ($fed_name)"
+}
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+log_info "Add $fedc2 and test from $fedc1"
+if [add_cluster_to_fed $fedc2 $fed_name] {
+	fail "Unable to add cluster 2 ($fedc2) to federation ($fed_name)"
+}
+sleep 5
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+log_info "Add $fedc3 and test from $fedc1"
+if [add_cluster_to_fed $fedc3 $fed_name] {
+	fail "Unable to add cluster 3 ($fedc3) to federation ($fed_name)"
+}
+sleep 5
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+
+#log_info "Test federation flags (LLC)"
+#set matches 0
+#spawn $sacctmgr -i modify federation $fed_name set flags+=LLC
+#expect {
+#	-re "Setting$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Flags\\s+\\+=\\s+LLC$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Modified federation...$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+$fed_name$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	timeout {
+#		fail "sacctmgr add not responding"
+#	}
+#	eof {
+#		wait
+#	}
+#}
+#if {$matches != 4} {
+#	fail "Setting LLC flag"
+#}
+#
+#set fed_flags "LLC"
+#array set clusters [get_clusterfed_info $fed_name]
+#dict set clusters($fedc1) conn Self
+#dict set clusters($fedc2) conn "Yes/Yes"
+#dict set clusters($fedc3) conn "Yes/Yes"
+#test_fed_status $fedc1 $fed_flags [array get clusters]
+#
+#
+#log_info "Test removal of federation flags (LLC)"
+#set matches 0
+#spawn $sacctmgr -i modify federation $fed_name set flags-=LLC
+#expect {
+#	-re "Setting$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Flags\\s+\\-=\\s+LLC$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+Modified federation...$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	-re "^\\s+$fed_name$eol" {
+#		incr matches
+#		exp_continue
+#	}
+#	timeout {
+#		fail "sacctmgr add not responding"
+#	}
+#	eof {
+#		wait
+#	}
+#}
+#if {$matches != 4} {
+#	fail "Removing federation flags (got $matches)"
+#}
+#
+#set fed_flags "None"
+#array set clusters [get_clusterfed_info $fed_name]
+#dict set clusters($fedc1) conn Self
+#dict set clusters($fedc2) conn "Yes/Yes"
+#dict set clusters($fedc3) conn "Yes/Yes"
+#test_fed_status $fedc1 $fed_flags [array get clusters]
+
+
+log_info "Test setting of cluster features"
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=fb,fa
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+=\\s+fb$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+=\\s+fa$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 5} {
+	fail "Unexpected error (got $matches)"
+}
+
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+log_info "Test modifying/add of cluster features"
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features+=fc
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+\\+=\\s+fc$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+log_info "Test modifying/remove of cluster features"
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features-=fb
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+-=\\s+fb$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+
+log_info "Test clearing of cluster features"
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "\\s+Feature\\s+=\\s+$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+array set clusters [get_clusterfed_info $fed_name]
+dict set clusters($fedc1) conn Self
+dict set clusters($fedc2) conn "Yes/Yes"
+dict set clusters($fedc3) conn "Yes/Yes"
+test_fed_status $fedc1 $fed_flags [array get clusters]
+
+log_info "Delete federation and test from $fedc1"
+delete_federations $fed_name
+array unset clusters
+test_fed_status $fedc2 $fed_flags [array get clusters]

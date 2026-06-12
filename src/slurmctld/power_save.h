@@ -1,0 +1,99 @@
+/*****************************************************************************\
+ *  power_save.h - Support node power saving mode. Nodes which have been
+ *  idle for an extended period of time will be placed into a power saving
+ *  mode by running an arbitrary script. This script can lower the voltage
+ *  or frequency of the nodes or can completely power the nodes off.
+ *  When the node is restored to normal operation, another script will be
+ *  executed. Many parameters are available to control this mode of operation.
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef _HAVE_POWER_SAVE_H
+#define _HAVE_POWER_SAVE_H
+
+#include "src/slurmctld/slurmctld.h"
+
+#include "src/common/power_action.h"
+
+/* Global Variables */
+extern list_t *resume_job_list;
+
+/*
+ * config_power_mgr - Read power management configuration
+ */
+extern void config_power_mgr(void);
+extern void config_power_mgr_fini(void);
+
+extern void power_save_init(void);
+extern void power_save_fini(void);
+
+/* Report if node power saving is enabled */
+extern bool power_save_test(void);
+
+/*
+ * Check if a power action is valid from name or check default action for type.
+ *
+ * IN type - type of the power action to check
+ * IN action_name - name of the power action to check
+ *
+ * RET true if the power action is valid, false otherwise
+ */
+extern bool power_save_valid_action_default(power_action_type_t type,
+					    char *action_name);
+
+/*
+ * Reboot compute nodes for a job using the configured
+ * RebootProgram / PowerAction for reboot.
+ *
+ * IN node_bitmap - bitmap of nodes to reboot
+ * IN features - optional features that the nodes need to be rebooted with
+ */
+extern void power_action_reboot(bitstr_t *bitmap, char *features);
+
+/*
+ * Parse settings for excluding nodes, partitions and states from being
+ * suspended.
+ *
+ * This creates node bitmaps. Must be done again when node bitmaps change.
+ */
+extern void power_save_exc_setup(void);
+
+/*
+ * Set node power times based on node, partition, and global settings.
+ *
+ * OUT (optional) suspend_time_set - return True if any node has a finite
+ *                                   suspend_time configured.
+ */
+extern void power_save_set_timeouts(bool *suspend_time_set);
+
+#endif /* _HAVE_POWER_SAVE_H */

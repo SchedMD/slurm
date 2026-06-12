@@ -1,0 +1,218 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Slurm Troubleshooting Guide</a></h1>
+
+<p>This guide is meant as a tool to help system administrators
+or operators troubleshoot Slurm failures and restore services.
+The <a href="faq.html">Frequently Asked Questions</a> document
+may also prove useful.</p>
+
+<ul>
+<li><a href="#resp">Slurm is not responding</a></li>
+<li><a href="#sched">Jobs are not getting scheduled</a></li>
+<li><a href="#completing">Jobs and nodes are stuck in COMPLETING state</a></li>
+<li><a href="#nodes">Nodes are getting set to a DOWN state</a></li>
+<li><a href="#network">Networking and configuration problems</a></li>
+</ul>
+
+
+<h2 id="resp">Slurm is not responding
+<a class="slurm_link" href="#resp"></a>
+</h2>
+
+<ol>
+<li>Execute "<i>scontrol ping</i>" to determine if the primary
+and backup controllers are responding.
+
+<li>If it responds for you, this could be a <a href="#network">networking
+or configuration problem</a> specific to some user or node in the
+cluster.</li>
+
+<li>If not responding, directly login to the machine and try again
+to rule out <a href="#network">network and configuration problems</a>.</li>
+
+<li>If still not responding, check if there is an active slurmctld
+daemon by executing "<i>ps -el | grep slurmctld</i>".</li>
+
+<li>If slurmctld is not running, restart it (typically as user root
+using the command "<i>/etc/init.d/slurm start</i>").
+You should check the log file (<i>SlurmctldLog</i> in the
+<i>slurm.conf</i> file) for an indication of why it failed.</li>
+
+<li>If slurmctld is running but not responding (a very rare situation),
+then kill and restart it (typically as user root using the commands
+"<i>/etc/init.d/slurm stop</i>" and then "<i>/etc/init.d/slurm start</i>").</li>
+
+<li>If it hangs again, increase the verbosity of debug messages
+(increase <i>SlurmctldDebug</i> in the <i>slurm.conf</i> file)
+and restart.
+Again check the log file for an indication of why it failed.</li>
+
+<li>If it continues to fail without an indication as to the failure
+mode, restart without preserving state (typically as user root
+using the commands "<i>/etc/init.d/slurm stop</i>"
+and then "<i>/etc/init.d/slurm startclean</i>").
+Note: All running jobs and other state information will be lost.</li>
+</ol>
+
+
+<h2 id="sched">Jobs are not getting scheduled
+<a class="slurm_link" href="#sched"></a>
+</h2>
+
+<p>This is dependent upon the scheduler used by Slurm.
+Executing the command "<i>scontrol show config | grep SchedulerType</i>"
+to determine this.
+For any scheduler, you can check priorities of jobs using the
+command "<i>scontrol show job</i>".</p>
+
+<ul>
+<li>If the scheduler type is <i>builtin</i>, then jobs will be executed
+in the order of submission for a given partition.
+Even if resources are available to initiate jobs immediately,
+it will be deferred until no previously submitted job is pending.</li>
+
+<li>If the scheduler type is <i>backfill</i>, then jobs will generally
+be executed in the order of submission for a given partition with one
+exception: later submitted jobs will be initiated early if doing so
+does not delay the expected execution time of an earlier submitted job.
+In order for backfill scheduling to be effective, users jobs should
+specify reasonable time limits.
+If jobs do not specify time limits, then all jobs will receive the
+same time limit (that associated with the partition), and the ability
+to backfill schedule jobs will be limited.
+The backfill scheduler does not alter job specifications of required
+or excluded nodes, so jobs which specify nodes will substantially
+reduce the effectiveness of backfill scheduling.
+See the <a href="faq.html#backfill">backfill documentation</a>
+for more details.</li>
+</ul>
+
+
+
+<h2 id="completing">Jobs and nodes are stuck in COMPLETING state
+<a class="slurm_link" href="#completing"></a>
+</h2>
+
+<p>This is typically due to non-killable processes associated with the job.
+Slurm will continue to attempt terminating the processes with SIGKILL, but
+some jobs may be stuck performing I/O and non-killable.
+This is typically due to a file system problem and may be addressed in
+a couple of ways.</p>
+<ol>
+<li>Fix the file system and/or reboot the node. <b>-OR-</b></li>
+<li>Set the node to a DOWN state and then return it to service
+("<i>scontrol update NodeName=&lt;node&gt; State=down Reason=hung_proc</i>"
+and "<i>scontrol update NodeName=&lt;node&gt; State=resume</i>").
+This permits other jobs to use the node, but leaves the non-killable
+process in place.
+If the process should ever complete the I/O, the pending SIGKILL
+should terminate it immediately. <b>-OR-</b></li>
+<li>Use the <b>UnkillableStepProgram</b> and <b>UnkillableStepTimeout</b>
+configuration parameters to automatically respond to processes which can not
+be killed, by sending email or rebooting the node. For more information,
+see the <i>slurm.conf</i> documentation.</li>
+</ol>
+<p>
+If it doesn't look like your job is stuck because of filesystem problems
+it may take some debugging to find the cause.  If you can reproduce
+the behavior you can set the SlurmdDebug level to 'debug' and restart
+slurmd on a node you'll use to reproduce the problem.  The slurmd.log
+file should then have more information to help troubleshoot the issue.
+
+Looking at slurmctld.log may also provide clues. If nodes stop responding,
+you may want to look into why since they may prevent job cleanup and
+cause jobs to remain in a COMPLETING state. When looking for connectivity
+problems, the relevant log entries should look something like this:
+<pre>
+error: Nodes node[00,03,25] not responding
+Node node00 now responding
+</pre>
+</p>
+
+
+<h2 id="nodes">Nodes are getting set to a DOWN state
+<a class="slurm_link" href="#nodes"></a>
+</h2>
+
+<ol>
+<li>Check the reason why the node is down using the command
+"<i>scontrol show node &lt;name&gt;</i>".
+This will show the reason why the node was set down and the
+time when it happened.
+If there is insufficient disk space, memory space, etc. compared
+to the parameters specified in the <i>slurm.conf</i> file then
+either fix the node or change <i>slurm.conf</i>.</li>
+
+<li>If the reason is "Not responding", then check communications
+between the control machine and the DOWN node using the command
+"<i>ping &lt;address&gt;</i>" being sure to specify the
+NodeAddr values configured in <i>slurm.conf</i>.
+If ping fails, then fix the network or addresses in <i>slurm.conf</i>.</li>
+
+<li>Next, login to a node that Slurm considers to be in a DOWN
+state and check if the slurmd daemon is running with the command
+"<i>ps -el | grep slurmd</i>".
+If slurmd is not running, restart it (typically as user root
+using the command "<i>/etc/init.d/slurm start</i>").
+You should check the log file (<i>SlurmdLog</i> in the
+<i>slurm.conf</i> file) for an indication of why it failed.
+You can get the status of the running slurmd daemon by
+executing the command "<i>scontrol show slurmd</i>" on
+the node of interest.
+Check the value of "Last slurmctld msg time" to determine
+if the slurmctld is able to communicate with the slurmd.</li>
+
+<li>If slurmd is running but not responding (a very rare situation),
+then kill and restart it (typically as user root using the commands
+"<i>/etc/init.d/slurm stop</i>" and then "<i>/etc/init.d/slurm start</i>").</li>
+
+<li>If still not responding, try again to rule out
+<a href="#network">network and configuration problems</a>.</li>
+
+<li>If still not responding, increase the verbosity of debug messages
+(increase <i>SlurmdDebug</i> in the <i>slurm.conf</i> file)
+and restart.
+Again check the log file for an indication of why it failed.</li>
+
+<li>If still not responding without an indication as to the failure
+mode, restart without preserving state (typically as user root
+using the commands "<i>/etc/init.d/slurm stop</i>"
+and then "<i>/etc/init.d/slurm startclean</i>").
+Note: All jobs and other state information on that node will be lost.</li>
+</ol>
+
+<h2 id="network">Networking and configuration problems
+<a class="slurm_link" href="#network"></a>
+</h2>
+
+<ol>
+<li>Check the controller and/or slurmd log files (<i>SlurmctldLog</i>
+and <i>SlurmdLog</i> in the <i>slurm.conf</i> file) for an indication
+of why it is failing.</li>
+
+<li>Check for consistent <i>slurm.conf</i> and credential files on
+the node(s) experiencing problems.</li>
+
+<li>If this is user-specific problem, check that the user is
+configured on the controller computer(s) as well as the
+compute nodes.
+The user doesn't need to be able to login, but his user ID
+must exist.</li>
+
+<li>Check that compatible versions of Slurm exists on all of
+the nodes (execute "<i>sinfo -V</i>" or "<i>rpm -qa | grep slurm</i>").
+The Slurm version number contains three period-separated numbers
+that represent both the major Slurm release and maintenance release level.
+The first two parts combine together to represent the major release, and match
+the year and month of that major release. The third number in the version
+designates a specific maintenance level:
+year.month.maintenance-release (e.g. 17.11.5 is major Slurm release 17.11, and
+maintenance version 5).
+Thus version 17.11.x was initially released in November 2017.
+Slurm daemons will support RPCs and state files from the two previous major
+releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
+commands with a version of 17.11.x, 17.02.x or 16.05.x).</li>
+</ol>
+
+<!--#include virtual="footer.txt"-->

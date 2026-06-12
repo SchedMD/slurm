@@ -1,0 +1,171 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validates that a resource can be added to a cluster after
+#          it has been created
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set test_cluster                     "${test_name}_cluster"
+set test_res1                        "${test_name}_res1"
+set test_res2                        "${test_name}_res2"
+set access_err                       0
+
+array set res1 {}
+set res1(count)                      50
+set res1(server)                     "${test_name}_server1"
+set res1(servertype)                 "${test_name}_server_type1"
+set res1(type)                       "license"
+
+array set res2 {}
+set res2(count)                      25
+set res2(server)                     "${test_name}_server2"
+set res2(servertype)                 "${test_name}_server_type2"
+set res2(type)                       "license"
+
+array set res1_cluster {}
+set res1_cluster(cluster)            $test_cluster
+set res1_cluster(server)             "${test_name}_server1"
+set res1_cluster(percentallowed)     25
+
+array set res2_cluster {}
+set res2_cluster(cluster)            $test_cluster
+set res2_cluster(server)             "${test_name}_server2"
+set res2_cluster(percentallowed)     25
+
+proc check_val { res_name } {
+	global sacctmgr test_cluster
+
+	set rc 0
+	spawn $sacctmgr -n show resource withcluster cluster=$test_cluster \
+	    format=name%-30
+	expect {
+		-re "$res_name" {
+			set rc 1
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $rc
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+    skip "This test can't be run without AccountStorageType=slurmdbd"
+} elseif {![is_super_user]} {
+    skip "This test can't be run without superuser permissions"
+}
+
+proc cleanup { } {
+	global test_res1 test_res2 test_cluster
+
+	remove_res $test_res1
+	remove_res $test_res2
+	remove_cluster $test_cluster
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+set added 0
+spawn $sacctmgr add -i cluster $test_cluster
+expect {
+	-re "Adding Cluster" {
+		set added 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$added != 1} {
+	fail "Test cluster was not added"
+}
+
+#
+# Add resources
+#
+add_resource $test_res1 [array get res1]
+if {[check_resource_limits $test_res1 [array get res1]]} {
+	fail "$test_res1 has bad values"
+}
+
+add_resource $test_res2 [array get res2]
+if {[check_resource_limits $test_res2 [array get res2]]} {
+	fail "$test_res2 has bad values"
+}
+
+#
+# Add a resources to the cluster
+#
+add_resource $test_res1 [array get res1_cluster]
+if {[check_val $test_res1] != 1} {
+	fail "sacctmgr did not add resource ($test_res1) to cluster ($test_cluster)"
+}
+
+#
+# Add another resource to the cluster
+#
+add_resource $test_res2 [array get res2_cluster]
+if {[check_val $test_res2] != 1} {
+	fail "sacctmgr did not add resource ($test_res2) to cluster ($test_cluster)"
+}
+
+#
+# Remove resource from the cluster
+#
+set deleted 0
+spawn $sacctmgr delete resource -i where name=$test_res1 \
+    server=$res1(server) cluster=$test_cluster
+expect {
+	-re "Deleting" {
+		set deleted 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$deleted != 1} {
+	fail "Resource ($test_res1) was not deleted"
+}
+
+if {[check_val $test_res2] != 1} {
+	fail "Only resource ($test_res2) should be associated with cluster ($test_cluster)"
+}

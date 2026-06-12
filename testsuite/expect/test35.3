@@ -1,0 +1,92 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Cray burst buffer use by job arrays
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set array_end   3
+set data_in     "DATA_IN_0123456789"
+set data_out    "DATA_OUT_9876543210"
+set input_data  "$test_dir/data.in"
+set output_data "$test_dir/data.out"
+set output_use  "$test_dir/%A_%a.output"
+set script_use  "$test_dir/use.bash"
+set tmp_file    "$test_dir/tmp_file"
+set job_id      0
+
+if {[get_my_uid] == 0} {
+	skip "This test can't be run as user root"
+}
+
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+run_command -fail "$bin_echo $data_in >$input_data"
+
+if [check_bb_emulate] {
+make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
+#DW stage_in type=file source=$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$output_data source=\$DW_JOB_STRIPED/$tmp_file
+$bin_cat $input_data
+$bin_echo $data_out >$output_data
+$scontrol show burst
+exit 0"
+} else {
+make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
+#DW stage_in type=file source=$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$output_data source=\$DW_JOB_STRIPED/$tmp_file
+$bin_cat \$DW_JOB_STRIPED/$tmp_file
+$bin_echo $data_out >\$DW_JOB_STRIPED/$tmp_file
+$scontrol show burst
+exit 0"
+}
+
+set job_id [submit_job -fail "-t1 -N1 --output=$output_use --array=1-${array_end} $script_use"]
+wait_for_job -fail -timeout 660 $job_id "DONE"
+
+for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
+	set job_array_id "${job_id}_${cnt}"
+	set output_file "$test_dir/${job_array_id}.output"
+	wait_for_file -fail -timeout 660 $output_file
+
+	set output [run_command_output -fail "$bin_cat $output_file"]
+	subtest {[regexp "JobID=$job_array_id" $output]} "Verify burst buffer is found" "for $job_array_id"
+	subtest {[regexp "$data_in" $output]} "Verify burst buffer input is found" "for $job_array_id"
+}
+
+set output [run_command_output -fail "$bin_cat $output_data"]
+subtest {[regexp "$data_out" $output]} "Verify burst buffer output is found"
+
+# Wait for stage-out completion
+sleep 5
+
+set output [run_command_output -fail "$scontrol show burst"]
+subtest {![regexp "JobID=$job_id" $output]} "Verify burst buffer is removed"

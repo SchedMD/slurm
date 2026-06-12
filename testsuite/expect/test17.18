@@ -1,0 +1,241 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of job dependencies and deferred begin time (--dependency
+#          and --begin options).
+############################################################################
+# Copyright (C) 2004-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set job_id1     0
+set job_id2     0
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$bin_sleep 5"
+
+#
+# Spawn a batch job that just sleeps for a while
+#
+set timeout $max_job_delay
+spawn $sbatch --output=/dev/null --error=/dev/null -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	fail "Batch submit failure"
+}
+
+#
+# Submit a dependent job
+#
+make_bash_script $file_in "$scontrol show job $job_id1"
+set match_state 0
+set timeout 30
+spawn $sbatch --dependency=afterany:$job_id1 --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	fail "Batch submit failure"
+}
+
+#
+# Confirm dependency info within second job
+#
+set match_jobid 0
+set purged_job 0
+spawn $scontrol show job $job_id2
+expect {
+	-re "Dependency=afterany:($number)" {
+		set match_jobid $expect_out(1,string)
+		exp_continue
+	}
+	-re "Invalid job id specified" {
+		set purged_job 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match_jobid == 0} {
+	regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+	if {$min_job_age < 60} {
+		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
+	} else {
+		fail "Dependency information is missing"
+	}
+} elseif {$match_jobid != $job_id1} {
+	fail "Dependency information not processed"
+}
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id2 "DONE"
+cancel_job $job_id1
+
+#
+# Inspect the job's output file
+#
+wait_for_file -fail $file_out
+
+spawn $bin_cat $file_out
+expect {
+#	Could be COMPLETED or COMPLETING
+	-re "JobState=COMPLET" {
+		set match_state 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$match_state == 0} {
+	fail "Dependent job not completed"
+}
+
+#
+# Submit a job to run at noon tomorrow
+#
+set job_id1 0
+spawn $sbatch --output=/dev/null --error=/dev/null --begin=noon-tomorrow $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	fail "Batch submit failure"
+}
+
+exec $bin_sleep 5
+set match 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobState=PENDING" {
+		incr match
+		exp_continue
+	}
+	-re "StartTime=($number)/($number)-12:00:00" {
+		incr match
+		exp_continue
+	}
+	-re "StartTime=($number)-($number)-($number)T12:00:00" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	fail "Unexpected JobState or StartTime ($match != 2)"
+}
+
+# Reset start time and test for completion
+spawn $scontrol update JobId=$job_id1 StartTime=now
+expect {
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+set delayed 0
+set is_done 0
+set purged_job 0
+while { $delayed < $max_job_delay } {
+	exec $bin_sleep 10
+	incr delayed +10
+	spawn $scontrol show job $job_id1
+	expect {
+		-re "JobState=COMPLETED" {
+			set is_done 1
+			exp_continue
+		}
+		-re "Invalid job id specified" {
+			set is_done 1
+			set purged_job 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$is_done == 1} {
+		break
+	}
+}
+if {$is_done == 0} {
+	fail "Unexpected JobState"
+}
+if {$purged_job == 1} {
+	regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+	if {$min_job_age < 60} {
+		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
+	} else {
+		fail "Could not find job ($job_id1)"
+	}
+}

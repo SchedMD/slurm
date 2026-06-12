@@ -1,0 +1,129 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job Exit Codes</h1>
+
+<p>A job's exit code (aka exit status, return code and completion
+code) is captured by Slurm and saved as part of the job record.  For
+sbatch jobs, the exit code that is captured is the output of the batch
+script.  For salloc jobs, the exit code will be the return value of
+the exit call that terminates the salloc session.  For srun, the exit
+code will be the return value of the command that srun executes.</p>
+
+<p>Any non-zero exit code will be assumed to be a job failure and will
+result in a Job State of FAILED with a Reason of
+"NonZeroExitCode".</p>
+
+<p>The exit code is an 8 bit unsigned number ranging between 0 and
+255.  While it is possible for a job to return a negative exit code,
+Slurm will display it as an unsigned value in the 0 - 255 range.</p>
+
+<h2 id="exitcodes">Job Step Exit Codes
+<a class="slurm_link" href="#exitcodes"></a>
+</h2>
+
+<p>When a job contains multiple job steps, the exit code of each
+executable invoked by srun is saved individually to the job step
+record.</p>
+
+<h2 id="signaled">Signaled Jobs<a class="slurm_link" href="#signaled"></a></h2>
+
+<p>When a job or step is sent a signal that causes its termination,
+Slurm also captures the signal number and saves it to the job or step
+record.</p>
+
+<h2 id="displayed">Displaying Exit Codes and Signals
+<a class="slurm_link" href="#displayed"></a>
+</h2>
+
+<p>Slurm displays a job's exit code in the output of the <b>scontrol
+show job</b> and the <b>sview</b> utility.  Slurm displays job step
+exit codes in the output of the <b>scontrol show step</b> and the
+<b>sview</b> utility.
+
+<p>When a signal was responsible for a job or step's termination, the
+signal number will be displayed after the exit code, delineated by a
+colon(:).</p>
+
+<h2 id="db">Database Job/Step Records<a class="slurm_link" href="#db"></a></h2>
+<p>The Slurm control daemon sends job and step records to the Slurm
+database when the Slurm accounting_storage plugin is installed.  Job
+and step records sent to the Slurm db can be viewed using the
+<b>sacct</b> command.  The default <b>sacct</b> output contains an
+ExitCode field whose format mirrors the output of <b>scontrol</b> and
+<b>sview</b> described above.</p>
+
+
+<h1 id="derived">Derived Exit Code and Comment String
+<a class="slurm_link" href="#derived"></a>
+</h1>
+
+<p>After reading the above description of a job's exit code, one can
+imagine a scenario where a central task of a batch job fails but the
+script returns an exit code of zero, indicating success.  In many
+cases, a user may not be able to ascertain the success or failure of a
+job until after they have examined the job's output files.</p>
+
+<p>The job includes a "derived exit code" field.
+It is initially set to the value of the highest
+exit code returned by all of the job's steps (srun invocations).  The
+job's derived exit code is determined by the Slurm control daemon
+and sent to the database when the accounting_storage plugin is
+enabled.</p>
+
+<p>In addition to the derived exit code, the job record in the Slurm
+database contains a comment string.  This is initialized to the job's
+comment string (when AccountingStoreFlags parameter in the
+slurm.conf contains 'job_comment') and can only be changed by the user.</p>
+
+<p>A new option has been added to the <b>sacctmgr</b> command to
+provide the user the means to modify these two fields of the job
+record.  No other modification to the job record is allowed.  For
+those who prefer a simpler command specifically designed to view and
+modify the derived exit code and comment string, the
+<b>sjobexitmod</b> wrapper has been created (see below).</p>
+
+<p>The user now has the means to annotate a job's exit code after it
+completes and provide a description of what failed.  This includes the
+ability to annotate a successful completion to jobs that appear to
+have failed but actually succeeded.</p>
+
+<h2 id="sjobexitmod">The sjobexitmod command
+<a class="slurm_link" href="#sjobexitmod"></a>
+</h2>
+
+<p>The sjobexitmod command is available to display and update the
+two derived exit fields of the Slurm db's job record.
+<b>sjobexitmod</b> can first be used to display the existing exit code
+/ string for a job:</p>
+
+<PRE>
+> sjobexitmod -l 123
+JobID Account NNodes NodeList     State ExitCode DerivedExitCode Comment
+----- ------- ------ -------- --------- -------- --------------- -------
+123        lc      1     tux0 COMPLETED      0:0             0:0
+</PRE>
+
+If a change is desired, <b>sjobexitmod</b> can modify the derived fields:
+
+<PRE>
+> sjobexitmod -e 49 -r "out of memory" 123
+
+ Modification of job 123 was successful.
+
+> sjobexitmod -l 123
+JobID Account NNodes NodeList     State ExitCode DerivedExitCode Comment
+----- ------- ------ -------- --------- -------- --------------- -------
+123        lc      1     tux0 COMPLETED      0:0            49:0 out of memory
+</PRE>
+
+<p>The existing <b>sacct</b> command also supports the two new derived
+exit fields:</p>
+
+<PRE>
+> sacct -X -j 123 -o JobID,NNodes,State,ExitCode,DerivedExitcode,Comment
+JobID   NNodes      State ExitCode DerivedExitCode        Comment
+------ ------- ---------- -------- --------------- --------------
+123          1  COMPLETED      0:0            49:0  out of memory
+</PRE>
+
+<!--#include virtual="footer.txt"-->

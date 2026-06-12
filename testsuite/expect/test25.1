@@ -1,0 +1,178 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm sprio functionality.
+#
+#          sprio all options all arguments
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set timeout     60
+set jobid1      0
+set jobid2      0
+set user_name     [get_my_user_name]
+set username_clip [string range $user_name 0 7]
+
+#
+# Remove the sprio format variable if found
+#
+if {[info exists env(SPRIO_FORMAT)]} {
+	unset env(SPRIO_FORMAT)
+}
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
+	skip "This test can't be run without a usable PriorityType"
+}
+set node [get_nodes_by_request "-n1 -N1 --exclusive"]
+if {[llength node] != 1} {
+	skip "This test needs to submit jobs to 1 exclusive node"
+}
+
+proc cleanup {} {
+	global jobid1 jobid2
+
+	cancel_job [list $jobid1 $jobid2]
+}
+
+#
+# Start a group of jobs
+#
+set jobid1 [submit_job "--output=/dev/null --error=/dev/null -w$node --exclusive --wrap '$bin_sleep 600'"]
+wait_for_job -fail $jobid1 "RUNNING"
+
+set jobid2 [submit_job "--output=/dev/null --error=/dev/null -w$node --exclusive --wrap '$bin_sleep 600'"]
+wait_for_job -fail $jobid2 "PENDING"
+
+#
+# Start testing sprio options and arguments
+#
+set soption "--noheader"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {![regexp "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" $output]} "Verify $soption option hides the header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-h"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {![regexp "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" $output]} "Verify $soption option hides the header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--jobs"
+set output [run_command_output -fail "$sprio $soption $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-j"
+set output [run_command_output -fail "$sprio $soption $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--long"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION    QOSNAME        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+\\S+\\s+\\S+\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+\\S+\\s+$number\\s+$number\\s*\\S*\\s*\$" $output]} "Verify $soption option shows the right values"
+
+set soption "-l"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION    QOSNAME        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+\\S+\\s+\\S+\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+\\S+\\s+$number\\s+$number\\s*\\S*\\s*\$" $output]} "Verify $soption option shows the right values"
+
+set soption "--norm"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float" $output]} "Verify $soption option shows the right values"
+
+set soption "-n"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float" $output]} "Verify $soption option shows the right values"
+
+set soption "--format"
+set output [run_command_output -fail "$sprio $soption \"%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N\" -j $jobid2"]
+subtest {[regexp "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC" $output]} "Verify $soption option shows the right header part 1"
+subtest {[regexp "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" $output]} "Verify $soption option shows the right header part 2"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float\\s+$number\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$number\\s*\$" $output]} "Verify $soption option shows the right values"
+
+set soption "-o"
+set output [run_command_output -fail "$sprio $soption \"%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N\" -j $jobid2"]
+subtest {[regexp "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC" $output]} "Verify $soption option shows the right header part 1"
+subtest {[regexp "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" $output]} "Verify $soption option shows the right header part 2"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float\\s+$number\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$number\\s*\$" $output]} "Verify $soption option shows the right values"
+
+set soption "-u"
+set output [run_command_output -fail "$sprio $soption $user_name"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+USER" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$username_clip" $output]} "Verify $soption option shows the right value"
+
+set soption "--user"
+set output [run_command_output -fail "$sprio $soption $user_name"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+USER" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$username_clip" $output]} "Verify $soption option shows the right value"
+
+set soption "--verbose"
+set output [run_command_output "$sprio $soption -j $jobid2"]
+subtest {[regexp "format.*job_flag.*jobs.*$jobid2.*verbose" $output]} "Verify $soption option shows initial verbose"
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-v"
+set output [run_command_output "$sprio $soption -j $jobid2"]
+subtest {[regexp "format.*job_flag.*jobs.*$jobid2.*verbose" $output]} "Verify $soption option shows initial verbose"
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--help"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "noheader.*jobs.*long.*norm.*format.*user.*verbose.*version.*weights" $output]} "Verify $soption option shows the several options"
+subtest {[regexp "Help options:" $output]} "Verify $soption option shows the Help options"
+subtest {[regexp "help *show this help message" $output]} "Verify $soption option shows the help option"
+subtest {[regexp "usage *display a brief summary of sprio options" $output]} "Verify $soption option shows the usage help"
+
+set soption "--usage"
+set output [run_command_output -fail "$sprio $soption job sizes"]
+subtest {[regexp "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.$eol   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." $output]} "Verify $soption option shows the usage info"
+
+set soption "--version"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "slurm $number\.$number\.$number" $output]} "Verify $soption option shows the right version format"
+
+set soption "-V"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "slurm $number\.$number\.$number" $output]} "Verify $soption option shows the right version format"
+
+set soption "--weights"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "Weights\\s+$number" $output]} "Verify $soption option shows the right value"
+
+set soption "-w"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "Weights\\s+$number" $output]} "Verify $soption option shows the right value"

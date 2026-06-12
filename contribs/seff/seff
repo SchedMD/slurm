@@ -1,0 +1,234 @@
+#!/usr/bin/perl
+
+# Copyright 2015 Princeton University Research Computing
+
+use warnings;
+use strict qw/vars/;
+
+use Getopt::Std;
+use POSIX qw/pow/;
+use Sys::Hostname;
+use lib "${FindBin::Bin}/../lib/perl";
+use Slurmdb ':all';
+use Slurm ':all';
+#use Data::Dumper;
+
+my $VERSION = "2.1";
+
+# This script is roughly equivalent to:
+# sacct -P -n -a --format JobID,User,Group,State,Cluster,AllocCPUS,REQMEM,TotalCPU,Elapsed,MaxRSS,ExitCode,NNodes,NTasks -j <job_id>
+
+my %opts;
+getopts('hvdf:',\%opts);
+
+if (exists $opts{v}) {
+    print "seff Version $VERSION\n";
+    exit 1;
+}
+if (exists $opts{h} || scalar @ARGV != 1) {
+    print "Usage: seff [Options] <Jobid>\n";
+    print "       Options:\n";
+    print "       -h    Help menu\n";
+    print "       -v    Version\n";
+    print "       -d    Debug mode: display raw Slurm data\n";
+    exit 1;
+}
+my $mydebug = 0;
+if (exists $opts{d}) {
+    $mydebug = 1;
+}
+my $jobid_arg = $ARGV[0];
+
+my $db_conn = Slurmdb::connection_get();
+my $slurm = Slurm::new();
+
+# Get cluster name from SLurm config file.
+my $conf = $slurm->load_ctl_conf();
+my $clustername = $conf->{'cluster_name'};
+
+my %job_cond = ();
+$job_cond{flags} = JOBCOND_FLAG_NO_TRUNC;
+$job_cond{cluster_list} = [$clustername];
+$job_cond{step_list} = $jobid_arg;
+$job_cond{usage_start} = 0;
+$job_cond{usage_end} = 0;
+
+# Get and test for a single job.
+my $jobs = Slurmdb::jobs_get($db_conn, \%job_cond);
+if (scalar @$jobs < 1) {
+    print STDERR "Job not found.\n";
+    exit 2;
+}
+my $job = @$jobs[0];
+#print Dumper($job);
+
+my $jobid = $job->{'jobid'};
+my $user = $job->{'user'};
+my $group = getgrgid($job->{'gid'});
+my $state = $slurm->job_state_string($job->{'state'});
+$clustername = $job->{'cluster'};
+
+my $ncpus = 1;
+if (exists $job->{'alloc_cpus'}) {
+    $ncpus = $job->{'alloc_cpus'};
+} else {
+    if (exists $job->{'tres_alloc_str'}) {
+	$ncpus = Slurmdb::find_tres_count_in_string($job->{'tres_alloc_str'}, TRES_CPU);
+    }
+}
+# Check for missing number of cpus
+if (($ncpus == INFINITE64) || ($ncpus == 0)) {
+	$ncpus = 1;
+}
+
+my $nnodes = 1;
+if (exists $job->{'alloc_nodes'}) {
+    $nnodes = $job->{'alloc_nodes'};
+} else {
+    if (exists $job->{'tres_alloc_str'}) {
+        $nnodes = Slurmdb::find_tres_count_in_string($job->{'tres_alloc_str'}, TRES_NODE);
+    }
+}
+# Check for missing number of nodes.
+if (($nnodes == INFINITE64) || ($nnodes == 0)) {
+	$nnodes = 1;
+}
+
+my $pernode = 1;
+if ($job->{'req_mem'} & MEM_PER_CPU) {
+	$pernode = 0;
+ }
+my $reqmem = Slurmdb::find_tres_count_in_string($job->{'tres_req_str'}, TRES_MEM);
+$reqmem = $reqmem * 1024;
+
+my $walltime = $job->{'elapsed'};
+# Only use hi-order byte for error code.
+my $exit_status = $job->{'exitcode'} >> 8;
+
+my $array_job_id = $job->{'array_job_id'};
+my $array_jobid = "";
+if ($array_job_id != 0) {
+    # Convert array_task_id to a signed long integer.
+    my $array_task_id = unpack('l', pack('l', $job->{'array_task_id'}));
+    if ($array_task_id == -2) {
+        print STDERR "Badly formatted array jobid $array_job_id with task_id = -2\n";
+        exit 3;
+    }
+    $array_jobid = "${array_job_id}_${array_task_id}";
+}
+my $tot_cpu_sec = 0;
+my $tot_cpu_usec = 0;
+my $mem = 0;
+my $maxmem = 0;
+my $avemem = 0;
+for my $step (@{$job->{'steps'}}) {
+    $tot_cpu_sec += $step->{'tot_cpu_sec'};
+    $tot_cpu_usec += $step->{'tot_cpu_usec'};
+
+    # TRES_MEM in tres_usage_in_tot is the sum of memory peaks of all tasks.
+    if (exists $step->{'stats'} && exists $step->{'stats'}{'tres_usage_in_tot'}) {
+        my $lmem = Slurmdb::find_tres_count_in_string($step->{'stats'}{'tres_usage_in_tot'}, TRES_MEM);
+	if ($lmem == INFINITE64) {
+	        $lmem = 0;
+	} else {
+		$lmem = $lmem / 1024;
+	}
+        if ($mem < $lmem) {
+	    $mem = $lmem;
+	    # Get the task MaxRSS seen in this step and the AveRSS.
+	    $maxmem = Slurmdb::find_tres_count_in_string($step->{'stats'}{'tres_usage_in_max'}, TRES_MEM);
+	    $avemem = Slurmdb::find_tres_count_in_string($step->{'stats'}{'tres_usage_in_ave'}, TRES_MEM);
+	    if ($maxmem == INFINITE64) {
+		    $maxmem = 0;
+	    }
+        }
+    }
+}
+my $cput = $tot_cpu_sec + int(($tot_cpu_usec / 1000000) + 0.5);
+
+if ($mydebug) {
+    print "Slurm data: JobID ArrayJobID User Group State Clustername Ncpus Nnodes Ntasks Reqmem PerNode Cput Walltime Mem ExitStatus\n";
+    print "Slurm data: $jobid $array_jobid $user $group $state $clustername $ncpus $nnodes $reqmem $pernode $cput $walltime $mem $exit_status\n\n";
+}
+print "Job ID: $jobid\n";
+if (length $array_jobid) {
+    print "Array Job ID: $array_jobid\n";
+}
+print "Cluster: $clustername\n";
+print "User/Group: $user/$group\n";
+if ($state eq "PENDING" || $state eq "RUNNING") {
+    print "State: $state\n";
+} else {
+    print "State: $state (exit code $exit_status)\n";
+}
+if ($ncpus == 1) {
+    print "Cores: $ncpus\n";
+} else {
+    print "Nodes: $nnodes\n";
+    printf "Cores per node: %d\n", $ncpus/$nnodes;
+}
+if ($state ne "PENDING") {
+    my $corewalltime = $walltime * $ncpus;
+    my $cpu_eff;
+    if ($corewalltime != 0) {
+        $cpu_eff = $cput / $corewalltime * 100;
+    } else {
+        $cpu_eff = 0.0;
+    }
+    printf("CPU Utilized: %s\n", time2str($cput));
+    printf("CPU Efficiency: %.2f%% of %s core-walltime\n", $cpu_eff, time2str($corewalltime));
+    printf("Job Wall-clock time: %s\n", time2str($walltime));
+    printf("Memory Utilized: %s\n", kbytes2str($mem));
+    my $mem_eff;
+    my $allocmem = Slurmdb::find_tres_count_in_string($job->{'tres_alloc_str'}, TRES_MEM);
+    $allocmem = $allocmem * 1024;
+    if ($allocmem != 0) {
+        $mem_eff = $mem / $allocmem * 100;
+    } else {
+        $mem_eff = 0.0;
+    }
+    if ($pernode) {
+        printf("Memory Efficiency: %.2f%% of %s (%s\/node)\n", $mem_eff, kbytes2str($allocmem), kbytes2str($allocmem / $nnodes));
+    } else {
+        printf("Memory Efficiency: %.2f%% of %s (%s\/core)\n", $mem_eff, kbytes2str($allocmem), kbytes2str($allocmem / $ncpus));
+    }
+    if (($maxmem != 0) && ($maxmem > $avemem)) {
+        printf("The task which had the largest memory consumption differs by %.02f%% from the average task max memory consumption\n", ($maxmem / $avemem) * 100);
+    }
+
+    if ($state eq "RUNNING") {
+        print "WARNING: Efficiency statistics can only be obtained after the job has ended as seff tool is based on the accounting database data.\n";
+    }
+} else {
+    print "Efficiency not available for jobs in the PENDING state.\n";
+}
+
+# Convert elapsed time to string.
+sub time2str {
+    my $time = shift;
+    my $days = int($time / 86400);
+    $time -= ($days * 86400);
+    my $hours = int($time / 3600);
+    $time -= ($hours * 3600);
+    my $minutes = int($time / 60);
+    my $seconds = $time % 60;
+
+    $days = $days < 1 ? '' : "$days-";
+    $time = $days . sprintf("%02s:%02s:%02s", $hours, $minutes, $seconds);
+    return $time;
+}
+
+# Convert memory to human-readable string.
+sub kbytes2str {
+    my $kbytes = shift;
+    if ($kbytes == 0) {
+        return sprintf("%.2f %sB", 0.0, 'M');
+    }
+    my $mul = 1024;
+
+    my $exp = int(log($kbytes) / log($mul));
+    my @pre = qw/ K M G T P E /;
+    my $pre = $pre[$exp];
+
+    return sprintf("%.2f %sB", ($kbytes / pow($mul, $exp)), $pre ? $pre : "");
+}

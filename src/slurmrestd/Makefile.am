@@ -1,0 +1,34 @@
+if WITH_SLURMRESTD
+SUBDIRS = plugins
+endif
+
+AUTOMAKE_OPTIONS = foreign
+
+SRCS = \
+	http.c http.h \
+	operations.c operations.h \
+	slurmrestd.c \
+	openapi.h openapi.c \
+	rest_auth.h rest_auth.c
+
+if WITH_SLURMRESTD
+AM_CPPFLAGS = -I$(top_srcdir)
+
+sbin_PROGRAMS = slurmrestd
+
+slurmrestd_SOURCES = $(SRCS)
+slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD)
+slurmrestd_LDFLAGS = $(CMD_LDFLAGS)
+
+slurmrestd_LDADD = $(LIB_SLURM)
+
+REF = usage.txt
+include $(top_srcdir)/make_ref.include
+noinst_LTLIBRARIES = $(LIB_REF)
+EXTRA_slurmrestd_DEPENDENCIES = $(LIB_REF)
+slurmrestd_LDADD += $(LIB_REF)
+
+endif
+force:
+$(slurmrestd_DEPENDENCIES) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

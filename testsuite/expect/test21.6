@@ -1,0 +1,125 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr add multiple clusters
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set dmatches    0
+set lmatch      0
+
+# Test Clusters
+set tc1		"${test_name}-cluster-1"
+set tc2		"${test_name}-cluster-2"
+set tc3		"${test_name}-cluster-3"
+
+# Cluster Limits
+array set cluster {}
+set cluster(Fairshare)     2500
+set cluster(GrpCPUs)       50
+set cluster(GrpJobs)       100
+set cluster(GrpMemory)     200
+set cluster(GrpSubmitJobs) 500
+set cluster(GrpNodes)      300
+set cluster(MaxCPUMins)    100000
+set cluster(MaxCPUs)       100
+set cluster(MaxJobs)       500
+set cluster(MaxSubmitJobs) 500
+set cluster(MaxNodes)      300
+set cluster(MaxWall)       01:00:00
+set cluster(DefaultQos)    "${test_name}_qos"
+set access_err  0
+set timeout	30
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global sacctmgr tc1 tc2 tc3 cluster
+
+	run_command "$sacctmgr -i delete cluster $tc1,$tc2,$tc3"
+	run_command "$sacctmgr -i delete qos $cluster(DefaultQos)"
+}
+
+#
+# Create tmp QOS
+#
+set qos_set 0
+spawn $sacctmgr -i add qos $cluster(DefaultQos)
+expect {
+	-re "Adding QOS" {
+		set qos_set 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$qos_set != 1} {
+	fail "QOS ($dqos) was not created"
+}
+
+#
+# NOTE: GrpWall, GrpCPUMins, and GrpCPURunMins are not add to test
+# because they are not valid for root associations of a cluster.
+#
+
+add_cluster "$tc1,$tc2,$tc3" [array get cluster]
+
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+# Check Cluster 1
+if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
+	fail "The association limits for cluster 1 ($tc1) are incorrect"
+}
+
+# Check Cluster 2
+if {![check_assoc_limit 1 cluster $tc2 [array get cluster]]} {
+	fail "The association limits for cluster 2 ($tc2) are incorrect"
+}
+
+# Check Cluster 3
+if {![check_assoc_limit 1 cluster $tc3 [array get cluster]]} {
+	fail "The association limits for cluster 3 ($tc3) are incorrect"
+}
+
+if {![check_acct_associations]} {
+	fail "Our associations don't line up"
+}

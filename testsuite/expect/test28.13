@@ -1,0 +1,117 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test requeue of only incomplete tasks in the job array.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_script "$test_dir/script"
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_script "
+if \[ \$SLURM_ARRAY_TASK_ID == 2 \]
+then
+	exit 0
+fi
+sleep 60
+exit 1"
+
+# submit a batch job array
+spawn $sbatch -n1 --array=1-4 --requeue --output=/dev/null $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		log_debug "Job $job_id was submitted"
+		exp_continue
+	}
+	-re "error" {
+		fail "sbatch did not submit jobs"
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# wait for task 2 to complete
+wait_for_job -fail ${job_id}_2 "DONE"
+sleep 5
+
+# check job array states
+spawn $squeue -tall --job=$job_id
+expect {
+	-re "error" {
+		fail "Error running squeue"
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# requeue only active tasks
+spawn $scontrol requeue incomplete $job_id
+expect {
+	-re "error" {
+		fail "Error running squeue"
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+sleep 5
+
+# check requeued job array states
+set match 0
+spawn $squeue -tall --job=$job_id
+expect {
+	-re " PD " {
+		incr match
+		exp_continue
+	}
+	-re "error" {
+		fail "Error running squeue"
+	}
+	timeout {
+		fail "squeue not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 3} {
+	fail "Failed to requeue desired count of job array elements ($match != 3)"
+}

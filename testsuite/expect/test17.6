@@ -1,0 +1,130 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirm that a job executes with the proper task count (--ntasks
+#          option).
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set tasks       0
+set task_cnt    2
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Submit a slurm job that will execute 'id' on $task_cnt tasks (or try anyway)
+#
+file delete $file_in $file_out
+make_bash_script $file_in "$srun $bin_id"
+set no_run 0
+spawn $sbatch --ntasks=$task_cnt --output=$file_out -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Batch job submission failed" {
+		log_debug "No worries, error not unexpected"
+		set no_run 1
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id != 0} {
+	spawn $scontrol show job $job_id
+	expect {
+		-re "NumCPUs=($number)" {
+			set tasks $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$tasks >= $task_cnt} "Verify sbatch --ntasks is satisfied"
+	wait_for_job -fail $job_id "DONE"
+	wait_for_file -fail $file_out
+} else {
+	if {$no_run == 0} {
+		fail "sbatch failed to create job"
+	}
+}
+
+#
+# Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
+#
+file delete $file_in $file_out
+make_bash_script $file_in "$srun -n $task_cnt --overcommit $bin_id"
+set job_id 0
+set tasks  0
+spawn $sbatch --ntasks=1 --output=$file_out -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	fail "Failed to submit job"
+}
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+spawn $bin_cat $file_out
+expect {
+	-re "uid=" {
+		incr tasks
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+subtest {$task_cnt == $tasks} "Check for proper number of tasks" "$task_cnt != $tasks"

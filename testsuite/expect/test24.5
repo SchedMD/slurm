@@ -1,0 +1,90 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of setting and viewing SiteFactor
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set jobid1 0
+set jobid2 0
+
+#
+# Check priority config and bail if not found.
+#
+if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
+	skip "This test can't be run without a usable PriorityType"
+}
+
+# Get the node to submit exclusive jobs to
+set node_list [get_nodes_by_request "-c1 -N1 --exclusive"]
+if { [llength $node_list] != 1 } {
+	skip "Insufficient nodes in default partition ($nodes)"
+}
+set node [lindex $node_list 0]
+
+proc cleanup {} {
+	global jobid1 jobid2
+
+	cancel_job [list $jobid1 $jobid2]
+}
+
+proc sprio_args { args regex match_cnt } {
+	global sprio
+
+	wait_for_command -subtest "$sprio $args" "\[regexp -all {$regex} \[dict get \$result output\]\] == $match_cnt"
+}
+
+proc update_job { jobid prio {error ""} } {
+	global scontrol
+
+	set cmd "$scontrol update jobid=$jobid sitefactor=$prio"
+	if {$error == ""} {
+		set result [run_command $cmd]
+		subtest {[dict get $result "exit_code"] == 0} "Verify that scontrol was a success"
+	} else {
+		set result [run_command -xfail $cmd]
+		subtest {[dict get $result "exit_code"] != 0} "Verify that scontrol failed"
+		subtest {[regexp $error [dict get $result "output"]]} "Validate the scontrol returns the expected error"
+	}
+}
+
+################################################################
+set jobid1 [submit_job -fail "-J$test_id -o/dev/null -e/dev/null -w $node --exclusive --wrap '$bin_sleep 300'"]
+wait_for_job -fail $jobid1 "RUNNING"
+set jobid2 [submit_job -fail "-J$test_id -o/dev/null -e/dev/null -w $node --exclusive --wrap '$bin_sleep 300'"]
+wait_for_job -fail $jobid2 "PENDING"
+
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 \[-\]*$number" 1
+update_job $jobid2 100
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 100" 1
+update_job $jobid2 -100
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 -100" 1
+update_job $jobid2 0
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 0" 1
+
+update_job $jobid2 2147483645
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 2147483645" 1
+update_job $jobid2 -2147483645
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 -2147483645" 1
+
+update_job $jobid2 2147483646 "scontrol: error: SiteFactor value out of range"
+update_job $jobid2 -2147483646 "scontrol: error: SiteFactor value out of range"

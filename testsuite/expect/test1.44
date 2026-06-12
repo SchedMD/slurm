@@ -1,0 +1,87 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Run "srun cat" and read srun's stdout SLOWLY, creating
+#          stdout back pressure in srun.  (srun used to lose data on stdout
+#          in this situation.)
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Chris Morrone <morrone2@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set cycle_count  3
+set target_lines 1000
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
+set file_err     "$test_dir/error"
+
+# Execute an srun job to cat input_file.  Read srun's stdout SLOWLY (1k/sec)
+# to create back pressure which used to reveal a stdout data-loss bug.
+# Write the srun's stdout to a file so that the caller can compare the sizes
+# of input_file and output_file.
+proc run_cat_backpressure { input_file output_file } {
+	global bin_cat srun timeout file_err
+
+	log_debug "Running run_cat_backpressure (This is slow)"
+	file delete $file_err $output_file
+	set iter 0
+
+	set output [open $output_file w]
+	set srun_output [open "| $srun -e $file_err -N1 -t1 $bin_cat $input_file" r]
+	while {![eof $srun_output]} {
+		puts -nonewline $output [read $srun_output 1]
+		incr iter
+		if {[expr $iter % 1000] == 0} {
+			puts -nonewline "."
+			sleep 1
+		}
+	}
+
+	puts ""
+	flush $output
+	close $output
+}
+
+#
+# Create a sizable text file
+#
+run_command -fail "yes line | head -$target_lines > $file_in"
+set stdin_lines [get_line_cnt $file_in]
+
+#
+# Run cycle_count jobs to copy job input to job output and compare sizes
+#
+set timeout $max_job_delay
+for {set inx 0} {$inx < $cycle_count} {incr inx} {
+	run_cat_backpressure $file_in $file_out
+	set stdout_lines [get_line_cnt $file_out]
+	if {$stdout_lines != $stdin_lines} {
+		if {$stdout_lines == 0} {
+			set message "stdout is empty. Is current working directory writable from compute nodes?"
+		} else {
+			set message "stdout is incomplete ($stdout_lines != $stdin_lines)"
+		}
+		fail $message
+	}
+}

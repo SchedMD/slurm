@@ -1,0 +1,101 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that squeue --priority lists each job per partition
+#          if the job is pending and submitted to multiple partitions.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in       "$test_dir/job_script"
+set job_id        0
+set nodes         ""
+set test_part_1   "${test_name}_part1"
+set test_part_2   "${test_name}_part2"
+
+if {![is_super_user]} {
+	skip "Can not test more unless SlurmUser"
+}
+
+proc cleanup {} {
+	global test_part_1 test_part_2 job_id scontrol
+
+	cancel_job $job_id
+
+	# Delete test partitions
+	run_command "$scontrol delete partitionname=$test_part_1"
+	run_command "$scontrol delete partitionname=$test_part_2"
+}
+
+# Remove any vestigial partitions
+cleanup
+
+if {[string length [default_partition]] == 0} {
+	skip "This test can not run without a default partition"
+}
+
+# Get a list of nodes
+set nodes [get_nodes_by_request "-N2"]
+if {[llength $nodes] == 0} {
+	fail "Did not get a valid node list"
+}
+set nodes [join $nodes ","]
+
+# Create 2 test partitions
+run_command -fail "$scontrol create partitionname=$test_part_1 priority=1 nodes=$nodes"
+run_command -fail "$scontrol create partitionname=$test_part_2 priority=2 nodes=$nodes"
+
+# Submit a job to check priority
+log_info "Test 1"
+make_bash_script $file_in "sleep 20"
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
+
+# Check partition
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition --state=PD"]
+subtest {[regexp "$test_part_1.+$test_part_2" $output]} "Both partitions should appear and $test_part_1 should be first priority with --priority and --sort"
+
+cancel_job $job_id
+
+# Switch up the partition priority to make sure the sort works
+run_command -fail "$scontrol update partitionname=$test_part_1 priority=2 nodes=$nodes"
+run_command -fail "$scontrol update partitionname=$test_part_2 priority=1 nodes=$nodes"
+
+# Submit another job to check priority
+log_info "Test 2"
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
+
+# Check partition
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition --state=PD"]
+subtest {[regexp "$test_part_2.+$test_part_1" $output]} "Both partitions should appear and $test_part_2 should be first priority with --priority and --sort"
+
+cancel_job $job_id
+
+# Submit a job that will run now to check that the --priority option for
+# squeue will only list the job running on the partition
+log_info "Test 3"
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in"]
+wait_for_job -fail $job_id RUNNING
+
+# Check partition
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition"]
+subtest {[regexp "$test_part_1" $output]} "$test_part_1 should appear as job is running on it"
+subtest {![regexp "$test_part_2" $output]} "$test_part_2 should NOT appear as job is NOT running on it and it's not PD"

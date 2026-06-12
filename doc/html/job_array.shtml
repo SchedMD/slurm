@@ -1,0 +1,372 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job Array Support</h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>Job arrays offer a mechanism for submitting and managing collections of
+similar jobs quickly and easily, useful for repetitive workloads that follow a
+common job pattern. This greatly improves overall performance, since job arrays
+with millions of tasks can be submitted in milliseconds (subject to configured
+size limits) and the scheduler can quickly identify cases when no more array
+tasks are eligible to start.
+All jobs must have the same initial options (e.g., size, time limit), however,
+it is possible to change some of these options after the job has begun
+execution using the scontrol command specifying the <i>JobID</i> of the array or
+individual <i>ArrayJobID</i>.</p>
+
+<pre>
+$ scontrol update job=101 ...
+$ scontrol update job=101_1 ...
+</pre>
+
+<p>Job arrays are only supported for batch jobs and the array index values are
+specified using the <i>--array</i> or <i>-a</i> option of the <i>sbatch</i>
+command. The option argument can be specific array index values, a range of
+index values, and an optional step size as shown in the examples below.
+Note that the minimum index value is zero and the maximum value is a Slurm
+configuration parameter (<i>MaxArraySize</i> minus one).
+Jobs which are part of a job array will have the environment variable
+<i>SLURM_ARRAY_TASK_ID</i> set to its array index value.</p>
+
+<pre>
+# Submit a job array with index values between 0 and 31
+$ sbatch --array=0-31    -N1 tmp
+
+# Submit a job array with index values of 1, 3, 5 and 7
+$ sbatch --array=1,3,5,7 -N1 tmp
+
+# Submit a job array with index values between 1 and 7
+# with a step size of 2 (i.e. 1, 3, 5 and 7)
+$ sbatch --array=1-7:2   -N1 tmp
+</pre>
+
+<p>A maximum number of simultaneously running tasks from the job array may be
+specified using a "%" separator.
+For example "--array=0-15%4" will limit the number of simultaneously
+running tasks from this job array to 4.</p>
+
+<p><b>NOTE</b>: Job array tasks still act like regular jobs, including in the
+enforcement of job-related limits (e.g., <b>MaxJobs</b>, <b>MaxSubmitJobs</b>).</p>
+
+<h2 id="env_vars">Job ID and Environment Variables
+<a class="slurm_link" href="#env_vars"></a>
+</h2>
+
+<p>Job arrays will have additional environment variables set.<br>
+<b>SLURM_ARRAY_JOB_ID</b> will be set to the first job ID of the array.<br>
+<b>SLURM_ARRAY_TASK_ID</b> will be set to the job array index value.<br>
+<b>SLURM_ARRAY_TASK_COUNT</b> will be set to the number of tasks in the job
+array.<br>
+<b>SLURM_ARRAY_TASK_MAX</b> will be set to the highest job array index
+value.<br>
+<b>SLURM_ARRAY_TASK_MIN</b> will be set to the lowest job array index value.</p>
+
+<p>Under normal circumstances, array jobs will have the first task of the array
+be a place holder for the rest of the array, causing it to be the last to run.
+As a result, the task with the lowest <i>SLURM_JOB_ID</i> will have the highest
+<i>SLURM_ARRAY_TASK_ID</i>.
+For example a job submission of this sort:<br>
+<code>sbatch --array=1-3 -N1 tmp</code><br>
+will generate a job array containing three jobs. If the sbatch command
+responds with:<br>
+<code>Submitted batch job 36</code><br>
+then the environment variables will be set as follows:</p>
+<pre>
+SLURM_JOB_ID=36
+SLURM_ARRAY_JOB_ID=36
+SLURM_ARRAY_TASK_ID=3
+SLURM_ARRAY_TASK_COUNT=3
+SLURM_ARRAY_TASK_MAX=3
+SLURM_ARRAY_TASK_MIN=1
+
+SLURM_JOB_ID=37
+SLURM_ARRAY_JOB_ID=36
+SLURM_ARRAY_TASK_ID=1
+SLURM_ARRAY_TASK_COUNT=3
+SLURM_ARRAY_TASK_MAX=3
+SLURM_ARRAY_TASK_MIN=1
+
+SLURM_JOB_ID=38
+SLURM_ARRAY_JOB_ID=36
+SLURM_ARRAY_TASK_ID=2
+SLURM_ARRAY_TASK_COUNT=3
+SLURM_ARRAY_TASK_MAX=3
+SLURM_ARRAY_TASK_MIN=1
+</pre>
+
+<p>Ordering of the tasks as shown above is not guaranteed. For example, there
+can be cases where individual tasks are created out of order when tasks are
+requeued. The task with the lowest JOB_ID may not have the highest TASK_ID if
+the tasks are not created sequentially due to the tasks being updated/modified
+before they start. Other edge cases may cause similar behavior.</p>
+
+<p>All Slurm commands and APIs recognize the SLURM_JOB_ID value.
+Most commands also recognize the SLURM_ARRAY_JOB_ID plus SLURM_ARRAY_TASK_ID
+values separated by an underscore as identifying an element of a job array.
+Using the example above, "37" or "36_1" would be equivalent ways to identify
+the second array element of job 36.
+A set of APIs has been developed to operate on an entire job array or select
+tasks of a job array in a single function call.
+The function response consists of an array identifying the various error codes
+for various tasks of a job ID.
+For example the <i>job_resume2()</i> function might return an array of error
+codes indicating that tasks 1 and 2 have already completed; tasks 3 through 5
+are resumed successfully, and tasks 6 through 99 have not yet started.</p>
+
+<h2 id="file_names">File Names<a class="slurm_link" href="#file_names"></a></h2>
+
+<p>Two additional options are available to specify a job's stdin, stdout, and
+stderr file names:
+<b>%A</b> will be replaced by the value of SLURM_ARRAY_JOB_ID (as defined above)
+and
+<b>%a</b> will be replaced by the value of SLURM_ARRAY_TASK_ID (as defined above).
+The default output file format for a job array is "slurm-%A_%a.out".
+An example of explicit use of the formatting is:<br>
+<i>sbatch -o slurm-%A_%a.out --array=1-3 -N1 tmp</i><br>
+which would generate output files names of this sort
+"slurm-36_1.out", "slurm-36_2.out" and "slurm-36_3.out".
+If these file name options are used without being part of a job array then
+"%A" will be replaced by the current job ID and "%a" will be replaced by
+4,294,967,294 (equivalent to 0xfffffffe or NO_VAL).</p>
+
+<h2 id="scancel">Scancel Command Use
+<a class="slurm_link" href="#scancel"></a>
+</h2>
+
+<p>If the job ID of a job array is specified as input to the scancel command
+then all elements of that job array will be cancelled.
+Alternately an array ID, optionally using regular expressions, may be specified
+for job cancellation.</p>
+
+<pre>
+# Cancel array ID 1 to 3 from job array 20
+$ scancel 20_[1-3]
+
+# Cancel array ID 4 and 5 from job array 20
+$ scancel 20_4 20_5
+
+# Cancel all elements from job array 20
+$ scancel 20
+
+# Cancel the current job or job array element (if job array)
+if [[-z $SLURM_ARRAY_JOB_ID]]; then
+  scancel $SLURM_JOB_ID
+else
+  scancel ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}
+fi
+</pre>
+
+<h2 id="squeue">Squeue Command Use<a class="slurm_link" href="#squeue"></a></h2>
+
+<p>When a job array is submitted to Slurm, only one job record is created.
+Additional job records will only be created when the state of a task in the
+job array changes, typically when a task is allocated resources or its state
+is modified using the scontrol command.
+By default, the squeue command will report all of the tasks associated with
+a single job record on one line and use a regular expression to indicate the
+"array_task_id" values as shown below.</p>
+
+<pre>
+$ squeue
+ JOBID     PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+1080_[5-1024]  debug   tmp   mac  PD  0:00      1 (Resources)
+1080_1         debug   tmp   mac   R  0:17      1 tux0
+1080_2         debug   tmp   mac   R  0:16      1 tux1
+1080_3         debug   tmp   mac   R  0:03      1 tux2
+1080_4         debug   tmp   mac   R  0:03      1 tux3
+</pre>
+
+<p>An option of "--array" or "-r" has also been added to the squeue command
+to print one job array element per line as shown below.
+The environment variable "SQUEUE_ARRAY" is equivalent to including the "--array"
+option on the squeue command line.</p>
+
+<pre>
+$ squeue -r
+ JOBID PARTITION  NAME  USER  ST  TIME  NODES NODELIST(REASON)
+1082_3     debug   tmp   mac  PD  0:00      1 (Resources)
+1082_4     debug   tmp   mac  PD  0:00      1 (Priority)
+  1080     debug   tmp   mac   R  0:17      1 tux0
+  1081     debug   tmp   mac   R  0:16      1 tux1
+1082_1     debug   tmp   mac   R  0:03      1 tux2
+1082_2     debug   tmp   mac   R  0:03      1 tux3
+</pre>
+
+<p>The squeue --step/-s and --job/-j options can accept job or step
+specifications of the same format.</p>
+
+<pre>
+$ squeue -j 1234_2,1234_3
+...
+$ squeue -s 1234_2.0,1234_3.0
+...
+</pre>
+
+<p>Two additional job output format field options have been added to squeue:<br>
+<b>%F</b> prints the array_job_id value<br>
+<b>%K</b> prints the array_task_id value<br>
+(all of the obvious letters to use were already assigned to other job fields).</p>
+
+<h2 id="scontrol">Scontrol Command Use
+<a class="slurm_link" href="#scontrol"></a>
+</h2>
+
+<p>Use of the <i>scontrol show job</i> option shows two new fields related to
+job array support.
+The <i>JobID</i> is a unique identifier for the job.
+The <i>ArrayJobID</i> is the <i>JobID</i> of the first element of the job
+array.
+The <i>ArrayTaskID</i> is the array index of this particular entry, either a
+single number of an expression identifying the entries represented by this
+job record (e.g. "5-1024").
+Neither field is displayed if the job is not part of a job array.
+The optional job ID specified with the <i>scontrol show job</i> or
+<i>scontrol show step</i> commands can identify job array elements by
+specifying <i>ArrayJobId</i> and <i>ArrayTaskId</i> with an underscore between
+them (e.g. &lt;ArrayJobID&gt;_&lt;ArrayTaskId&gt;).
+
+<p>The scontrol command will operate on all elements of a job array if the
+job ID specified is <i>ArrayJobID</i>.
+Individual job array tasks can be modified using the
+<i>ArrayJobID</i>_<i>ArrayTaskID</i> as shown below.</p>
+
+<pre>
+$ sbatch --array=1-4 -J array ./sleepme 86400
+Submitted batch job 21845
+
+$ squeue
+ JOBID   PARTITION     NAME     USER  ST  TIME NODES NODELIST
+ 21845_1    canopo    array    david  R  0:13  1     dario
+ 21845_2    canopo    array    david  R  0:13  1     dario
+ 21845_3    canopo    array    david  R  0:13  1     dario
+ 21845_4    canopo    array    david  R  0:13  1     dario
+
+$ scontrol update JobID=21845_2 name=arturo
+$ squeue
+ JOBID   PARTITION     NAME     USER  ST   TIME  NODES NODELIST
+ 21845_1    canopo    array    david  R   17:03   1    dario
+ 21845_2    canopo   arturo    david  R   17:03   1    dario
+ 21845_3    canopo    array    david  R   17:03   1    dario
+ 21845_4    canopo    array    david  R   17:03   1    dario
+
+</pre>
+
+<p>
+The scontrol hold, holdu, release, requeue, requeuehold, suspend and resume
+commands can also either operate on all elements of a job array or individual
+elements as shown below.
+</p>
+<pre>
+$ scontrol suspend 21845
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  S 25:12  1     dario
+21845_2    canopo   arturo    david  S 25:12  1     dario
+21845_3    canopo    array    david  S 25:12  1     dario
+21845_4    canopo    array    david  S 25:12  1     dario
+$ scontrol resume 21845
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  R 25:14  1     dario
+21845_2    canopo   arturo    david  R 25:14  1     dario
+21845_3    canopo    array    david  R 25:14  1     dario
+21845_4    canopo    array    david  R 25:14  1     dario
+
+scontrol suspend 21845_3
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  R 25:14  1     dario
+21845_2    canopo   arturo    david  R 25:14  1     dario
+21845_3    canopo    array    david  S 25:14  1     dario
+21845_4    canopo    array    david  R 25:14  1     dario
+scontrol resume 21845_3
+$ squeue
+ JOBID PARTITION      NAME     USER  ST TIME  NODES NODELIST
+21845_1    canopo    array    david  R 25:14  1     dario
+21845_2    canopo   arturo    david  R 25:14  1     dario
+21845_3    canopo    array    david  R 25:14  1     dario
+21845_4    canopo    array    david  R 25:14  1     dario
+
+</pre>
+
+<h2 id="dependencies">Job Dependencies
+<a class="slurm_link" href="#dependencies"></a>
+</h2>
+
+<p>A job which is to be dependent upon an entire job array should specify
+itself dependent upon the ArrayJobID.
+Since each array element can have a different exit code, the interpretation of
+the <i>afterok</i> and <i>afternotok</i> clauses will be based upon the highest
+exit code from any task in the job array.</p>
+
+<p>When a job dependency specifies the job ID of a job array:<br>
+The <i>after</i> clause is satisfied after all tasks in the job array start.<br>
+The <i>afterany</i> clause is satisfied after all tasks in the job array
+complete.<br>
+The <i>aftercorr</i> clause is satisfied after the corresponding task ID in the
+specified job has completed successfully (ran to completion with an exit code of
+zero).<br>
+The <i>afterok</i> clause is satisfied after all tasks in the job array
+complete successfully.<br>
+The <i>afternotok</i> clause is satisfied after all tasks in the job array
+complete with at least one tasks not completing successfully.</p>
+
+<p>Examples of use are shown below:</p>
+<pre>
+# Wait for specific job array elements
+sbatch --depend=after:123_4 my.job
+sbatch --depend=afterok:123_4:123_8 my.job2
+
+# Wait for entire job array to complete
+sbatch --depend=afterany:123 my.job
+
+# Wait for corresponding job array elements
+sbatch --depend=aftercorr:123 my.job
+
+# Wait for entire job array to complete successfully
+sbatch --depend=afterok:123 my.job
+
+# Wait for entire job array to complete and at least one task fails
+sbatch --depend=afternotok:123 my.job
+</pre>
+
+<h2 id="other_commands">Other Command Use
+<a class="slurm_link" href="#other_commands"></a>
+</h2>
+
+<p>The following Slurm commands do not currently recognize job arrays and their
+use requires the use of Slurm job IDs, which are unique for each array element:
+sbcast, sprio, sreport, sshare and sstat.
+The sacct, sattach and strigger commands have been modified to permit
+specification of either job IDs or job array elements.
+The sview command has been modified to permit display of a job's ArrayJobId
+and ArrayTaskId fields. Both fields are displayed with a value of "N/A" if
+the job is not part of a job array.</p>
+
+<h2 id="administration">System Administration
+<a class="slurm_link" href="#administration"></a>
+</h2>
+
+<p>A new configuration parameter has been added to control the maximum
+job array size: <b>MaxArraySize</b>. The smallest index that can be specified
+by a user is zero and the maximum index is MaxArraySize minus one.
+The default value of MaxArraySize is 1001.
+The maximum MaxArraySize supported in Slurm is 4000001.
+ Be mindful about the value of MaxArraySize as job arrays offer an easy way
+for users to submit large numbers of jobs very quickly.</p>
+
+<p>The sched/backfill plugin has been modified to improve performance with
+job arrays. Once one element of a job array is discovered to not be runnable
+or impact the scheduling of pending jobs, the remaining elements of that job
+array will be quickly skipped.</p>
+
+<p>Slurm creates a single job record when a job array is submitted.
+Additional job records are only created as needed, typically when a task
+of a job array is started, which provides a very scalable mechanism to
+manage large job counts.
+Each task of the job array will share the same ArrayJobId but will have their
+own unique ArrayTaskId. In addition to the ArrayJobId, each job will have a
+unique JobId that gets assigned as the tasks are started.</p>
+
+<!--#include virtual="footer.txt"-->

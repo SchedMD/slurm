@@ -1,0 +1,81 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --deadline and --begin option and --time_min OK
+############################################################################
+# Copyright (C) 2015 CEA/DAM/DIF
+# Written by Aline Roy <aline.roy@cea.fr>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set job_id      0
+
+#
+# Ensure that default partition has a DefaultTime big enough
+#
+run_command -fail "$scontrol update partitionname=[default_partition] DefaultTime=10"
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+	# Restore DefaultTime
+	reconfigure
+}
+#
+# Build input script file
+#
+make_bash_script $file_in "$bin_sleep 5"
+
+#
+# Spawn a batch job with a deadline and no time
+#
+set job_id [submit_job "--output=/dev/null --error=/dev/null --begin now+1 --deadline now+600 --time-min 5 $file_in"]
+subtest {$job_id != 0} "Verify batch job with a deadline and no time can be submitted"
+
+#
+# test status deadline in scontrol and sacct
+#
+wait_for_job -fail $job_id DONE
+
+spawn $scontrol show job $job_id
+expect {
+	-re "JobState=COMPLETED" {
+		exp_continue
+	}
+	-re "JobState=" {
+		fail "Invalid job state"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
+	set state [string trim [run_command_output -fail "$sacct -X -j $job_id --format State --parsable2 --noheader"]]
+	subtest {$state ne "DEADLINE"} "Verify batch submitted with a deadline is valid time-min"
+} else {
+	subskip "Unable to test status deadline in sacct without accounting enabled"
+}

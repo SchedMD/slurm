@@ -1,0 +1,106 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirm that as sbatch job executes as the appropriate user and
+#          group.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in              "$test_dir/input"
+set file_out             "$test_dir/output"
+set login_grp_info       ""
+set job_id               0
+set job_grp_info         ""
+set got_job_grps         0
+set got_login_grps       0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Execute 'id' to determine my user and group ID...
+#
+set login_grp_info [get_my_id]
+
+#
+# Submit a slurm job that will execute 'id'
+#
+make_bash_script $file_in "
+  $bin_id
+"
+
+spawn $sbatch -N1 -t1 --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	fail "Failed to submit job"
+}
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+
+#
+# Check for desired output
+#
+wait_for_file -fail $file_out
+spawn $bin_cat $file_out
+expect {
+	-re "(uid=.*\n)" {
+		set job_grp_info $expect_out(1,string)
+		set got_job_grps 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if {$got_job_grps == 0} {
+	fail "Did not get user info from slurm job"
+}
+
+#
+# Confirm the user id and group id in the slurm job matches that
+# of the local 'id' execution.
+#
+if {$login_grp_info ne $job_grp_info} {
+	fail "Login and sbatch user info mismatch"
+}

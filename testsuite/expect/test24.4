@@ -1,0 +1,232 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test of Fair Tree multifactor
+#
+# Note:    This script generates and then deletes files in the working directory
+#          named test24.4.prog
+############################################################################
+# Modified by Brigham Young University
+#      Ryan Cox <ryan_cox@byu.edu> and Levi Morrison <levi_morrison@byu.edu>
+#
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_prog   "$test_name.prog"
+set matches     0
+set expected_matches 35
+
+set damp [get_config_param "FairShareDampeningFactor"]
+if {$damp != 1} {
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
+}
+
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
+
+#
+# Delete left-over programs and rebuild them
+#
+file delete $test_prog
+
+if [compile_against_libslurm -full $test_prog "-ldl -lm -export-dynamic \
+				   ${build_dir}/src/slurmctld/locks.o \
+				   ${build_dir}/src/sshare/process.o -lgcov"] {
+	fail "Cannot compile test program"
+}
+
+# Usage: test24.4.prog
+spawn ./$test_prog
+expect {
+	"No last decay" {
+		log_debug "This error is expected. No worries"
+		exp_continue
+	}
+	"error: Can't save decay state" {
+		log_debug "This error is expected. No worries"
+		exp_continue
+	}
+
+	"root|||0.000000|240||1.000000||||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"root|u1|10|0.048077|0|0.000000|0.000000|1.000000|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"root|u2|10|0.048077|10|0.041667|0.041667|0.666667|1.153846||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aA||40|0.192308|45|0.187500|0.187500||1.025641||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aAA||30|0.750000|20|0.083333|0.444444||1.687500||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aAA|uAA1|1|1.000000|20|0.083333|1.000000|0.619048|1.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aAB||10|0.250000|25|0.104167|0.555556||0.450000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aAB|uAB1|1|0.500000|25|0.104167|1.000000|0.523810|0.500000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aAB|uAB2|1|0.500000|0|0.000000|0.000000|0.571429|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aB||60|0.288462|25|0.104167|0.104167||2.769231||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aBA||25|0.416667|25|0.104167|1.000000||0.416667||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aBA|uBA1|1|1.000000|25|0.104167|1.000000|0.714286|1.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aBB||35|0.583333|0|0.000000|0.000000||inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aBB|uBB1|1|1.000000|0|0.000000|0.000000|0.761905|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aC||0|0.000000|30|0.125000|0.125000||0.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aC|uC1|0|0.000000|30|0.125000|1.000000|0.047619|0.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aD||50|0.240385|110|0.458333|0.458333||0.524476||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aD|uD1|parent|0.240385|20|0.083333|0.181818|0.476190|||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aD|uD2|40|0.235294|20|0.083333|0.181818|0.238095|1.294118||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aD|uD3|50|0.294118|25|0.104167|0.227273|0.333333|1.294118||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aDA||parent|0.240385|45|0.187500|0.409091||||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aDA|uDA1|parent|0.240385|10|0.041667|0.090909|0.476190|||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aDA|uDA2|30|0.176471|10|0.041667|0.090909|0.380952|1.941176||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aDA|uDA3|50|0.294118|25|0.104167|0.227273|0.333333|1.294118||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aE||10|0.048077|0|0.000000|0.000000||inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aE|aE1|10|0.500000|0|0.000000|0.000000|1.000000|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aE|aE2|10|0.500000|0|0.000000|0.000000|1.000000|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aF||20|0.096154|0|0.000000|0.000000||inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aF|uF1|10|0.333333|0|0.000000|0.000000|1.000000|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aF|uF2|20|0.666667|0|0.000000|0.000000|1.000000|inf||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aG||8|0.038462|20|0.083333|0.083333||0.461538||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aG|uG1|10|0.500000|10|0.041667|0.500000|0.190476|1.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aGA||10|0.500000|10|0.041667|0.500000||1.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aGA|uGA1|20|0.500000|4|0.016667|0.400000|0.190476|1.250000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"aGA|uGA2|20|0.500000|6|0.025000|0.600000|0.095238|0.833333||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+
+	timeout {
+		fail "spawn IO not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != $expected_matches} {
+	log_debug "
+* Account aA, aB, and aC are general purpose algorithm tests with various shares, usage values, children counts, and depths
+* Account aD is used to test USE_PARENT. Any account that is USE_PARENT should have its children effectively reparented to the parent's parent. Any user with USE_PARENT should be ranked highest in its account, subject to ties with any other association with level_fs==1.0. uD2 and uD3 do NOT have the same level_fs; sshare doesn't show enough digits to visually distinguish.
+* Account aE and its children should have fairshare==1.0 as a result of tie handling code.
+* Account aF is similar to aE except its shares are different; they should still be 1.0.
+* Accounts aE and aF and their descendants and u1 (root) should have fairshare==1.0 or ranking is broken.
+* Account aG is set up so that uGA1 and uG1 will have equivalent fs factors due to the tie handling code but uGA2 will not."
+	fail "We didn't get the correct priorities from the plugin ($matches != $expected_matches)"
+}

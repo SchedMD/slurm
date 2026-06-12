@@ -1,0 +1,151 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr add an account
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set acmatches   0
+set damatches   0
+set dcmatches   0
+
+# Test Account and Cluster
+set tc1 "${test_name}-cluster-1"
+set ta1 "${test_name}-account.1"
+
+# account Limits
+array set acct {}
+set acct(Cluster)       $tc1
+set acct(Fairshare)     2500
+set acct(GrpCPUMins)    1000
+set acct(GrpCPURunMins) 100
+set acct(GrpCPUs)       20
+set acct(GrpJobs)       100
+set acct(GrpMemory)     200
+set acct(GrpSubmitJobs) 300
+set acct(GrpNodes)      100
+set acct(GrpWall)       00:45:00
+set acct(MaxCPUMins)    100000
+set acct(MaxCPUs)       200
+set acct(MaxJobs)       500
+set acct(MaxSubmitJobs) 400
+set acct(MaxNodes)      200
+set acct(MaxWall)       01:00:00
+set acct(DefaultQos)    "${test_name}_qos"
+set acct(QosLevel)      "${test_name}_qos"
+set acct(Organization)  "Account_Org_A1"
+set acct(Description)   "Test_Account_A1"
+
+set access_err  0
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global sacctmgr tc1 ta1 acct
+
+	run_command "$sacctmgr -i delete account $ta1"
+	run_command "$sacctmgr -i delete cluster $tc1"
+	run_command "$sacctmgr -i delete qos $acct(DefaultQos)"
+}
+
+#
+# Use sacctmgr to create a cluster
+#
+spawn $sacctmgr -i add cluster name=$tc1
+expect {
+	-re "privilege to perform this action" {
+		set access_err 1
+		exp_continue
+	}
+	-re "Adding Cluster" {
+		incr acmatches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+if {$acmatches != 1} {
+	fail "sacctmgr had a problem adding clusters ($acmatches != 1)"
+}
+
+if {![check_acct_associations]} {
+	fail "Our associations don't line up"
+}
+
+#
+# Create tmp QOS
+#
+set qos_set 0
+spawn $sacctmgr -i add qos $acct(DefaultQos)
+expect {
+	-re "Adding QOS" {
+		set qos_set 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$qos_set != 1} {
+	fail "QOS ($dqos1) was not created"
+}
+
+#
+# Use sacctmgr to add an account
+#
+
+add_acct $ta1 [array get acct]
+
+#
+# Use sacctmgr to list and check the test associations
+#
+if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
+	fail "The association limits for account ($ta1) are incorrect"
+}
+
+if {![check_acct_associations]} {
+	fail "Our associations don't line up"
+}

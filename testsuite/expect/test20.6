@@ -1,0 +1,105 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test the qalter -r option of altering a job's rerunnable flag
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in      "$test_dir/input"
+set job_id       0
+
+if {[file executable $qalter] == 0} {
+	skip "$qalter does not exits"
+}
+if {[file executable $qsub] == 0} {
+	skip "$qsub does not exits"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_in "sleep 50"
+
+proc check_rerun { arg job_id } {
+	global scontrol
+
+	set check_val 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Requeue=$arg" {
+			set check_val 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$check_val == 1} "Verify requeue for job was set correctly"
+}
+
+spawn $qsub -l walltime=1:00 -o /dev/null -e /dev/null $file_in
+expect {
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "qsub is not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$job_id != 0} "Verify job was submitted"
+
+spawn $qalter -r y $job_id
+expect {
+	timeout {
+		fail "qalter is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# 1 for "y" and 0 for "n"
+check_rerun 1 $job_id
+
+spawn $qalter -r n $job_id
+expect {
+	timeout {
+		fail "qalter is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# 1 for "y" and 0 for "n"
+check_rerun 0 $job_id

@@ -1,0 +1,167 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of nice value specification (--nice option).
+############################################################################
+# Copyright (C) 2005-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set job_id1     0
+set job_id2     0
+set job_id3     0
+set job_prio1   0
+set job_prio2   0
+set job_prio3   0
+
+proc cleanup {} {
+	global job_id1 job_id2 job_id3
+
+	cancel_job [list $job_id1 $job_id2 $job_id3]
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$bin_sleep 60"
+
+#
+# Submit three jobs with differing nice values
+#
+spawn $sbatch --output=/dev/null --error=/dev/null -t2 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	fail "sbatch submit failed"
+}
+
+spawn $sbatch --output=/dev/null --error=/dev/null -t2 --nice $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	fail "sbatch submit failed"
+}
+
+spawn $sbatch --output=/dev/null --error=/dev/null -t2 --nice=200 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id3 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id3 == 0} {
+	fail "sbatch submit failed"
+}
+
+exec $bin_rm -f $file_in
+
+#
+# Get the priority of each job job with scontrol
+#
+spawn $scontrol show job $job_id1
+expect {
+	-re "Priority=($number)" {
+		set job_prio1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+spawn $scontrol show job $job_id2
+expect {
+	-re "Priority=($number)" {
+		set job_prio2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+spawn $scontrol show job $job_id3
+expect {
+	-re "Priority=($number)" {
+		set job_prio3 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Make sure the job priorities are as expected
+#
+if {$job_prio1 == 0 || $job_prio2 == 0 || $job_prio3 == 0} {
+	fail "Failed to job priorities of each submitted job"
+} elseif {$job_prio1 < 1000 || $job_prio2 < 1000 || $job_prio3 < 1000} {
+	log_warn "PriorityWeight factors result in a job priority too low for this test"
+} else {
+	set diff2 [expr $job_prio1 - $job_prio2]
+	set diff3 [expr $job_prio1 - $job_prio3]
+	# Target for diff2 is 101
+	if {$diff2 < 91 || $diff2 > 111} {
+		fail "Job2 priority delta bad ($diff2, target is 101)"
+	}
+	# Target for diff3 is 202
+	if {$diff3 < 192 || $diff3 > 212} {
+		fail "Job3 priority delta bad ($diff3, target is 202)"
+	}
+}

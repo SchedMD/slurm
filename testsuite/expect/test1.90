@@ -1,0 +1,464 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of memory affinity support for NUMA systems.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_prog   "$test_name.prog"
+
+#
+# Test if memory affinity support is supported.
+#
+set affinity [param_contains [get_affinity_types] "affinity"]
+
+spawn ls /usr/include/numa.h
+expect {
+	-nocase "no such file" {
+		set affinity false
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {!$affinity} {
+	skip "Memory affinity not supported on this system"
+}
+log_info "Task affinity plugin installed with numa support"
+
+log_user 0
+set force 0
+spawn $scontrol show partition [default_partition]
+expect {
+	-re "OverSubscribe=FORCE" {
+		set force 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$force == 1} {
+	skip "Exclusive node allocation supported in default partition"
+}
+
+proc cleanup {} {
+	global file_prog test_status STATUS_FAIL
+
+	file delete $file_prog
+
+	if {$test_status == $STATUS_FAIL} {
+		log_warn "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration. SPANK plugins (e.g. auto-affinity.so)"
+	}
+}
+
+#
+# Build a test program to report affinity by task
+#
+exec $bin_cc $file_prog.c -o $file_prog -lnuma
+exec $bin_chmod 700 $file_prog
+
+#
+# Create an allocation
+#
+spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		reset_bash_prompt
+		exp_continue
+	}
+	-re $test_prompt {
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+}
+
+#
+# Run a job step to get allocated processor count and affinity
+#
+set full_mask -1
+set timeout $max_job_delay
+send "$srun -c1 ./$file_prog\r"
+expect {
+	-re "numa support not available" {
+		send "exit\r"
+		skip "Unable to test on this system"
+	}
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		set full_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt {
+	}
+}
+
+#
+# We probably bind to socket memory, so get that from the MEM_MASK
+# and use that number of tasks
+#
+if {$full_mask == 1} {
+	set task_cnt 1
+} elseif {$full_mask == 3} {
+	set task_cnt 2
+} elseif {$full_mask == 7} {
+	set task_cnt 3
+} elseif {$full_mask == 15} {
+	set task_cnt 4
+} elseif {$full_mask == 31} {
+	set task_cnt 5
+} elseif {$full_mask == 63} {
+	set task_cnt 6
+} elseif {$full_mask == 127} {
+	set task_cnt 7
+} elseif {$full_mask == 255} {
+	set task_cnt 8
+} else {
+	fail "Unable to get memory mask"
+}
+
+#
+# Run a job step with memory affinity
+#
+set cpu_mask 0
+set mem_mask 0
+send "$srun -n $task_cnt --mem-bind=rank ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr cpu_mask $expect_out(2,string)
+		incr mem_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$mem_mask == $full_mask} "Verify affinity mask for a job step with memory affinity" "Memory affinity mask inconsistency ($mem_mask,$full_mask)"
+
+#
+# Run all tasks all bound to the same CPU's memory (local CPU)
+#
+send "$srun -n $task_cnt  --distribution=*:block --cpu-bind=core --mem-bind=local ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		if {$expect_out(2,string) != $expect_out(3,string)} {
+			fail "Failed to use local memory for a task"
+		}
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+
+#
+# Run a job step with verbosity and all tasks using memory of CPU 0
+#
+set task_mask 0
+set verbose_cnt 0
+send "$srun -n $task_cnt --mem-bind=verbose,map_mem:0 ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $task_cnt} "Verify affinity mask for a job step with all tasks using memory of CPU 0" "Affinity mask inconsistent ($task_mask,$task_cnt)"
+
+set verbose_cnt 0
+send "$srun -n $task_cnt --mem-bind=verbose,map_mem:0 ./$file_prog\r"
+expect {
+	-re "mem-bind=MAP" {
+		incr verbose_cnt
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$verbose_cnt == $task_cnt} "Verify verbose messages count" "Verbose messages count inconsistent ($verbose_cnt,$task_cnt)"
+
+#
+# Run all tasks all bound to the same CPU's memory by specifying a map (for each CPU)
+#
+set cpu_cnt 0
+while {$cpu_cnt < $task_cnt} {
+	set mask_sum 0
+	set mask [ expr 1 << $cpu_cnt ]
+	send "$srun -n $task_cnt --mem-bind=map_mem:$cpu_cnt ./$file_prog\r"
+	expect {
+		-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+			incr mask_sum $expect_out(3,string)
+			exp_continue
+		}
+		-re "error" {
+			fail "Some error occurred"
+		}
+		timeout {
+			fail "salloc not responding or failure to recognize prompt"
+		}
+		-re $test_prompt
+	}
+	subtest {$mask_sum == $task_cnt * $mask} "Verify affinity mask for a job with all tasks bound to the same CPU's memory by specifying a map" "Affinity mask inconsistent ($mask_sum,$task_cnt)"
+	incr cpu_cnt 1
+}
+
+#
+# Run all tasks all bound to the same CPU's memory by specifying a mask (for each CPU)
+#
+set cpu_cnt 0
+while {$cpu_cnt < $task_cnt} {
+	set mask_sum 0
+	set mask [ expr 1 << $cpu_cnt ]
+	set mstr [ uint2hex $mask ]
+	send "$srun -n $task_cnt --mem-bind=mask_mem:$mstr ./$file_prog\r"
+	expect {
+		 -re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+			incr mask_sum $expect_out(3,string)
+			exp_continue
+		}
+		-re "error" {
+			fail "Some error occurred"
+		}
+		timeout {
+			fail "salloc not responding or failure to recognize prompt"
+		}
+		-re $test_prompt
+	}
+	subtest {$mask_sum == $task_cnt * $mask} "Verify affinity mask for a job with all tasks bound to the same CPU's memory by specifying a mask" "Affinity mask inconsistent ($mask_sum,$task_cnt)"
+	incr cpu_cnt 1
+}
+
+#
+# Generate forward and reverse masks and maps
+#
+set cpu_cnt 0
+set fwd_mask ""
+set fwd_map  ""
+set rev_mask ""
+set rev_map  ""
+set alt_mask ""
+set alt_map  ""
+set full_mask [ expr (1 << $task_cnt) - 1 ]
+while {$cpu_cnt < $task_cnt} {
+	set mask_sum 0
+	set mask [ expr 1 << $cpu_cnt ]
+	set mstr [ uint2hex  $mask ]
+	set fwd_mask "$fwd_mask,$mstr"
+	set fwd_map  "$fwd_map,$cpu_cnt"
+	set rev_mask "$mstr,$rev_mask"
+	set rev_map  "$cpu_cnt,$rev_map"
+	if { $cpu_cnt % 2 } {
+		set alt_mask "$mstr,$alt_mask"
+		set alt_map  "$cpu_cnt,$alt_map"
+	} else {
+		set alt_mask "$alt_mask,$mstr"
+		set alt_map  "$alt_map,$cpu_cnt"
+	}
+	if { $cpu_cnt == 0 } {
+		set fwd_mask "$mstr"
+		set fwd_map  "$cpu_cnt"
+		set rev_mask "$mstr"
+		set rev_map  "$cpu_cnt"
+		set alt_mask "$mstr"
+		set alt_map  "$cpu_cnt"
+	}
+	incr cpu_cnt 1
+}
+
+log_debug "full_mask: $full_mask"
+log_debug "fwd_map:  $fwd_map"
+log_debug "fwd_mask: $fwd_mask"
+log_debug "rev_map:  $rev_map"
+log_debug "rev_mask: $rev_mask"
+log_debug "alt_map:  $alt_map"
+log_debug "alt_mask: $alt_mask"
+
+#
+# Run all tasks bound to a different CPU's memory by specifying a forward map
+#
+set task_mask 0
+send "$srun -n $task_cnt --mem-bind=map_mem:$fwd_map ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a forward map" "Affinity mask inconsistent ($task_mask,$full_mask)"
+
+#
+# Run all tasks bound to a different CPU's memory by specifying a reverse map
+#
+set task_mask 0
+send "$srun -n $task_cnt --mem-bind=map_mem:$rev_map ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a reverse map" "Affinity mask inconsistent ($task_mask,$full_mask)"
+
+#
+# Run all tasks bound to a different CPU's memory by specifying an alternating map
+#
+set task_mask 0
+send "$srun -n $task_cnt --mem-bind=map_mem:$alt_map ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying an alternating map" "Affinity mask inconsistent ($task_mask,$full_mask)"
+
+#
+# Run all tasks bound to a different CPU's memory by specifying a forward mask
+#
+set task_mask 0
+send "$srun -n $task_cnt --mem-bind=mask_mem:$fwd_mask ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+		exp_continue
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a forward mask" "Affinity mask inconsistent ($task_mask,$full_mask)"
+
+#
+# Run all tasks bound to a different CPU's memory by specifying a reverse mask
+#
+set task_mask 0
+send "$srun -n $task_cnt --mem-bind=mask_mem:$rev_mask ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a reverse mask" "Affinity mask inconsistent ($task_mask,$full_mask)"
+
+#
+# Run all tasks bound to a different CPU's memory by specifying an alternating mask
+#
+set task_mask 0
+send "$srun -n $task_cnt --mem-bind=mask_mem:$alt_mask ./$file_prog\r"
+expect {
+	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
+		incr task_mask $expect_out(3,string)
+		exp_continue
+	}
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	-re $test_prompt
+}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying an alternating mask" "Affinity mask inconsistent ($task_mask,$full_mask)"
+
+#
+# Terminate the job, free the allocation
+#
+send "exit\r"
+expect {
+	-re "error" {
+		fail "Some error occurred"
+	}
+	timeout {
+		fail "salloc not responding or failure to recognize prompt"
+	}
+	eof {
+		wait
+	}
+}

@@ -1,0 +1,337 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Slurm Plugin API</a></h1>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+<p>A Slurm plugin is a dynamically linked code object which is loaded explicitly
+at run time by the Slurm libraries. A plugin provides a customized implementation
+of a well-defined API connected to tasks such as authentication, interconnect
+fabric, and task scheduling.</p>
+<h2 id="identification">Identification
+<a class="slurm_link" href="#identification"></a></h2>
+<p>A Slurm plugin identifies itself by a short character string formatted similarly
+to a MIME type: <i>&lt;major&gt;/&lt;minor&gt;</i>. The major type identifies
+which API the plugin implements. The minor type uniquely distinguishes a plugin
+from other plugins that implement that same API, by such means as the intended
+platform or the internal algorithm. For example, a plugin to interface to the
+Maui scheduler would give its type as &quot;sched/maui.&quot; It would implement
+the Slurm Scheduler API.</p>
+
+<h2 id="versioning">Versioning
+<a class="slurm_link" href="#versioning"></a>
+</h2>
+<p>Slurm plugins must provide a plugin_version symbol exactly matching that
+of the process they are loaded into. This is to avoid any potential issues if,
+e.g., an underlying struct definition is changed by a maintenance release.</p>
+
+<p>It is expected that the plugins are automatically build, packaged, and
+distributed alongside the libslurm library, Slurm commands, and daemons.</p>
+
+<p>The only exception to this is the SPANK plugin interface which only requires
+the Slurm release to match, while the maintenance release (micro version) may be
+changed. This is to reflect the additional ABI stability commitment that is
+maintained exclusively for that plugin interface.</p>
+
+<h2 id="data_objects">Data Objects
+<a class="slurm_link" href="#data_objects"></a></h2>
+
+<p>A plugin must define and export the following symbols:</p>
+<ul>
+<li><span class="commandline">char plugin_type[] = "";</span><br>
+A unique, short, formatted string to identify the plugin's purpose as
+described above. A &quot;null&quot; plugin (i.e., one that implements the desired
+API as stubs) should have a minor type of &quot;none.&quot;</li>
+<li><span class="commandline">char plugin_name[] = "";</span><br>
+A free-form string that identifies the plugin in human-readable terms,
+such as &quot;Kerberos authentication.&quot; Slurm will use this string to identify
+the plugin to end users.</li>
+<li><span class="commandline">const uint32_t plugin_version = SLURM_VERSION_NUMBER;</span><br>
+Identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+The micro version is not considered for <a href="spank.html">SPANK</a> plugins.
+</li></ul>
+
+<h2 id="api">API Functions in All Plugins
+<a class="slurm_link" href="#api"></a>
+</h2>
+<p class="commandline">extern int init(void);</p>
+<p style="margin-left:.2in"><b>Description</b>: If present, this function is called
+just after the plugin is loaded. This allows the plugin to perform any global
+initialization prior to any actual API calls.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the plugin's initialization
+was successful. Any other return value indicates to Slurm that the plugin should
+be unloaded and not used.</p>
+<p class="commandline">extern void fini(void);</p>
+<p style="margin-left:.2in"><b>Description</b>: If present, this function is called
+just before the plugin is unloaded. This allows the plugin to do any finalization
+after the last plugin-specific API call is made.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+<p>The functions need not appear. The plugin may provide either
+<span class="commandline">init()</span> or <span class="commandline">fini()</span> or both.</p>
+
+<h2 id="thread_safety">Thread Safety
+<a class="slurm_link" href="#thread_safety"></a>
+</h2>
+
+<p>Slurm is a multithreaded application. The Slurm plugin library may exercise
+the plugin functions in a re-entrant fashion. It is the responsibility of the
+plugin author to provide the necessarily mutual exclusion and synchronization
+in order to avoid the pitfalls of re-entrant code.</p>
+
+<h2 id="run_time">Run-time Support
+<a class="slurm_link" href="#run_time"></a>
+</h2>
+<p>The standard system libraries are available to the plugin. The Slurm libraries
+are also available and plugin authors are encouraged to make use of them rather
+than develop their own substitutes. Plugins should use the Slurm log to print
+error messages.</p>
+<p>The plugin author is responsible for specifying any specific non-standard libraries
+needed for correct operation. Plugins will not load if their dependent libraries
+are not available, so it is the installer's job to make sure the specified libraries
+are available.</p>
+<h2 id="performance">Performance
+<a class="slurm_link" href="#performance"></a>
+</h2>
+<p>All plugin functions are expected to execute very quickly. If any function
+entails delays (e.g. transactions with other systems), it should be written to
+utilize a thread for that functionality. This thread may be created by the
+<span class="commandline">init()</span> function and deleted by the
+<span class="commandline">fini()</span> functions. See <b>plugins/sched/backfill</b>
+for an example of how to do this.</p>
+
+<h2 id="structure">Data Structure Consistency
+<a class="slurm_link" href="#structure"></a>
+</h2>
+
+<p>
+  In certain situations Slurm iterates over different data structures elements
+  using counters. For example, with environment variable arrays.
+  In order to avoid buffer overflows and other undesired situations, when a
+  plugin modifies certain elements it must also update these counters accordingly.
+  Other situations may require other types of changes.
+</p>
+<p>
+  The following advice indicates which structures have arrays with associated
+  counters that must be maintained when modifying data, plus other possible
+  important information to take in consideration when manipulating these
+  structures.
+  This list is not fully exhaustive due to constant modifications in code,
+  but it is a first start point and basic guideline for most common situations.
+  Complete structure information can be seen in the <i>slurm/slurm.h.in</i>
+  file.
+</p>
+
+<h3 id="slurm_job_info_t">slurm_job_info_t (job_info_t) Data Structure
+<a class="slurm_link" href="#slurm_job_info_t"></a>
+</h3>
+<pre>
+  uint32_t env_size;
+  char **environment;
+
+  uint32_t spank_job_env_size;
+  char **spank_job_env;
+
+  uint32_t gres_detail_cnt;
+  char **gres_detail_str;
+</pre>
+<p>
+  These pairs of array pointers and element counters must kept updated in order
+  to avoid subsequent buffer overflows, so if you update the array you must
+  also update the related counter.
+</p>
+<pre>
+  char *nodes;
+  int32_t *node_inx;
+
+  int32_t *req_node_inx;
+  char *req_nodes;
+</pre>
+<p>
+  <i>node_inx</i> and <i>req_node_inx</i> represents a list of index pairs for
+  ranges of nodes defined in the <i>nodes</i> and <i>req_nodes</i> fields
+  respectively. In each case, both array variables must match the count.
+</p>
+<pre>
+  uint32_t het_job_id;
+  char *het_job_id_set;
+</pre>
+<p>
+  The <i>het_job_id</i> field should be the first element of the
+  <i>het_job_id_set</i> array.
+</p>
+
+<h3 id="job_step_info_t">job_step_info_t Data Structure
+<a class="slurm_link" href="#job_step_info_t"></a>
+</h3>
+<pre>
+  char *nodes;
+  int32_t *node_inx;
+</pre>
+<p>
+  <i>node_inx</i> represents a list of index pairs for range of nodes defined in
+  <i>nodes</i>. Both variables must match the node count.
+</p>
+
+<h3 id="priority_factors_object_t">priority_factors_object_t Data Structure
+<a class="slurm_link" href="#priority_factors_object_t"></a>
+</h3>
+<pre>
+  uint32_t tres_cnt;
+  char **tres_names;
+  double *tres_weights;
+</pre>
+<p>
+  This value must match the configured TRES on the system, otherwise
+  iteration over the <i>tres_names</i> or <i>tres_weights</i> arrays can cause
+  buffer overflows.
+</p>
+
+<h3 id="job_step_pids_t">job_step_pids_t Data Structure
+<a class="slurm_link" href="#job_step_pids_t"></a>
+</h3>
+<pre>
+  uint32_t pid_cnt;
+  uint32_t *pid;
+</pre>
+<p>
+  Array <i>pid</i> represents the list of Process IDs for the job step, and
+  <i>pid_cnt</i> is the counter that must match the size of the array.
+</p>
+
+<h3 id="slurm_step_layout_t">slurm_step_layout_t Data Structure
+<a class="slurm_link" href="#slurm_step_layout_t"></a>
+</h3>
+<pre>
+  uint32_t node_cnt;
+  char *node_list;
+</pre>
+<p>
+  The <i>node_list</i> array size must match <i>node_cnt</i>.
+</p>
+<pre>
+  uint16_t *tasks;
+  uint32_t node_cnt;
+  uint32_t task_cnt;
+</pre>
+<p>
+  In the <i>tasks</i> array, each element is the number of tasks assigned
+  to the corresponding node, to its size must match <i>node_cnt</i>. Moreover
+  <i>task_cnt</i> represents the sum of tasks registered in <i>tasks</i>.
+</p>
+<pre>
+  uint32_t **tids;
+</pre>
+<p>
+  <i>tids</i> is an array of length <i>node_cnt</i> of task ID arrays. Each
+  subarray is designated by the corresponding value in the <i>tasks</i> array,
+  so <i>tasks</i>, <i>tids</i> and <i>task_cnt</i> must be set to match this
+  layout.
+</p>
+
+<h3 id="slurm_step_launch_params_t">slurm_step_launch_params_t Data Structure
+<a class="slurm_link" href="#slurm_step_launch_params_t"></a>
+</h3>
+<pre>
+  uint32_t envc;
+  char **env;
+</pre>
+<p>
+  When modifying the environment variables in the <i>env</i> array, you must
+  also modify the <i>envc</i> counter accordingly to prevent buffer overflows
+  in subsequent loops over that array.
+</p>
+<pre>
+  uint32_t het_job_nnodes;
+  uint32_t het_job_ntasks;
+
+  uint16_t *het_job_task_cnts;
+  uint32_t **het_job_tids;
+  uint32_t *het_job_node_list;
+</pre>
+<p>
+  This <i>het_job_*</i> related variables must match the current heterogeneous
+  job configuration.
+  <br>
+  For example, if for whatever reason you are reducing the number of tasks for
+  a node in a heterogeneous job, you should at least remove that task ID from
+  <i>het_job_tids</i>, decrement <i>het_job_ntasks</i> and
+  <i>het_job_task_cnts</i>, and possibly decrement the number of nodes of the
+  heterogeneous job in <i>het_job_nnodes</i> and <i>het_job_node_list</i>.
+</p>
+<pre>
+  char **spank_job_env;
+  uint32_t spank_job_env_size;
+</pre>
+<p>
+  When modifying the <i>spank_job_env</i> structure, the
+  <i>spank_job_env_size</i> field must be updated to prevent buffer overflows
+  in subsequent loops over that array.
+</p>
+
+<h3 id="node_info_t">node_info_t Data Structure
+<a class="slurm_link" href="#node_info_t"></a>
+</h3>
+<pre>
+  char *features;
+  char *features_act;
+</pre>
+<p>
+  In a system containing Intel KNL processors the <i>features_act</i> field is
+  set by the plugin to match the currently running modes on the node. On other
+  systems the <i>features_act</i> is not usually used.
+  If you program such a plugin you must ensure that <i>features_act</i> contains
+  a subset of <i>features</i>.
+</p>
+<pre>
+char *reason;
+time_t reason_time;
+uint32_t reason_uid;
+</pre>
+<p>
+  If <i>reason</i> is modified then <i>reason_time</i> and <i>reason_uid</i>
+  should be updated.
+</p>
+
+<h3 id="reserve_info_t">reserve_info_t Data Structure
+<a class="slurm_link" href="#reserve_info_t"></a>
+</h3>
+<pre>
+  int32_t *node_inx;
+  uint32_t node_cnt;
+</pre>
+<p>
+  <i>node_inx</i> represents a list of index pairs for range of nodes associated
+  with the reservation and its count must equal <i>node_cnt</i>.
+</p>
+
+<h3 id="partition_info_t">partition_info_t Data Structure
+<a class="slurm_link" href="#partition_info_t"></a>
+</h3>
+<p>
+  No special advice.
+</p>
+
+<h3 id="slurm_step_layout_req_t">slurm_step_layout_req_t Data Structure
+<a class="slurm_link" href="#slurm_step_layout_req_t"></a>
+</h3>
+<p>
+  No special advice.
+</p>
+
+<h3 id="slurm_step_ctx_params_t">slurm_step_ctx_params_t
+<a class="slurm_link" href="#slurm_step_ctx_params_t"></a>
+</h3>
+<p>
+  No special advice.
+</p>
+
+<!--#include virtual="footer.txt"-->

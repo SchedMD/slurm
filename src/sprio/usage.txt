@@ -1,0 +1,2 @@
+Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [-p partitions]
+   [--federation] [--local] [--sibling] [--usage] [-hlnvVw]

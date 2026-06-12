@@ -1,0 +1,74 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --signal option.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_prog    "$test_name.prog"
+
+proc cleanup {} {
+	global file_prog
+
+	file delete $file_prog
+}
+
+#
+# Delete left-over programs and rebuild them.
+#
+exec $bin_rm -f $file_prog
+exec $bin_cc -o $file_prog $file_prog.c
+
+#
+# submit job to run 4 mins, but get signaled 2 mins before time limit
+# so it should execute between 1 and 2 minutes before signal
+#
+set began_flag 0
+set run_time   0
+set timeout [expr $max_job_delay + 120]
+spawn $srun -t4 --signal=2@120 ./$file_prog
+expect {
+	-re "Begin test" {
+		set began_flag 1
+		exp_continue
+	}
+	-re "Job ran for ($number) secs" {
+		set run_time $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$began_flag == 0} {
+	fail "Job never started"
+} elseif {$run_time < 59 || $run_time > 121} {
+	fail "Problem with time limit signal"
+}

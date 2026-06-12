@@ -1,0 +1,395 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Quality of Service (QOS)</h1>
+
+<p>One can specify a Quality of Service (QOS) for each job submitted
+to Slurm. The QOSs are defined in the Slurm database using the <i>sacctmgr</i>
+command. Jobs request a QOS using the "--qos=" option to the
+<i>sbatch</i>, <i>salloc</i>, and <i>srun</i> commands.</p>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#effects">Effects on Jobs</a>
+<ul>
+<li> <a href=#priority>Scheduling Priority</a>
+<li> <a href=#preemption>Preemption</a>
+<li> <a href=#limits>Resource Limits</a>
+</ul>
+<li> <a href=#partition>Partition QOS</a>
+<li> <a href=#relative>Relative QOS</a>
+<li> <a href=#qos_other>Other QOS Options</a>
+<li> <a href=#config>Configuration</a>
+<li> <a href=#examples>Examples</a>
+</li>
+</ul>
+
+<!-------------------------------------------------------------------------->
+
+<h2 id="effects">Effects on Jobs
+<a class="slurm_link" href="#priority"></a>
+</h2>
+
+<p>The QOS associated with a job will affect the job in three key ways:
+scheduling priority, preemption, and resource limits.</p>
+
+<h3 id="priority">Job Scheduling Priority
+<a class="slurm_link" href="#priority"></a>
+</h3>
+
+<p>Job scheduling priority is made up of a number of factors as
+described in the <a
+href="priority_multifactor.html">priority/multifactor</a> plugin.  One
+of the factors is the QOS priority.  Each QOS is defined in the Slurm
+database and includes an associated priority.  Jobs that request and
+are permitted a QOS will incorporate the priority associated with that
+QOS in the job's <a
+href="priority_multifactor.html#general">multi-factor priority
+calculation.</a></p>
+
+<p>To enable the QOS priority component of the multi-factor priority
+calculation, the "PriorityWeightQOS" configuration parameter must be
+defined in the slurm.conf file and assigned an integer value greater
+than zero.</p>
+
+<P> A job's QOS only affects is scheduling priority when the
+multi-factor plugin is loaded.</P>
+
+<!-------------------------------------------------------------------------->
+<h3 id="preemption">Job Preemption
+<a class="slurm_link" href="#preemption"></a>
+</h3>
+
+<p>Slurm offers two ways for a queued job to preempt a running job,
+free-up the running job's resources and allocate them to the queued
+job.  See the <a href="preempt.html"> Preemption description</a> for
+details.</p>
+
+<p>The preemption method is determined by the "PreemptType"
+configuration parameter defined in slurm.conf.  When the "PreemptType"
+is set to "preempt/qos", a queued job's QOS will be used to determine
+whether it can preempt a running job. It is important to note that the QOS
+used to determine if a job is eligible for preemption is the QOS associated
+with the job and not a <a href="#partition">Partition QOS</a>.</p>
+
+<P> The QOS can be assigned (using <i>sacctmgr</i>) a list of other
+QOSs that it can preempt.  When there is a queued job with a QOS that
+is allowed to preempt a running job of another QOS, the Slurm
+scheduler will preempt the running job.</P>
+
+<P> The QOS option PreemptExemptTime specifies the minimum run time before the
+job is considered for preemption. The QOS option takes precedence over the
+global option of the same name. A Partition QOS with PreemptExemptTime
+takes precedence over a job QOS with PreemptExemptTime, unless the job QOS
+has the OverPartQOS flag enabled.</p>
+
+<!-------------------------------------------------------------------------->
+<h3 id="limits">Resource Limits<a class="slurm_link" href="#limits"></a></h3>
+
+<p>Each QOS is assigned a set of limits which will be applied to the
+job.  The limits mirror the limits imposed by the
+user/account/cluster/partition association defined in the Slurm
+database and described in the <a href="resource_limits.html"> Resource
+Limits page</a>.  When limits for a QOS have been defined, they
+will take precedence over the association's limits.</p>
+
+<!-------------------------------------------------------------------------->
+<h2 id="partition">Partition QOS
+<a class="slurm_link" href="#partition"></a>
+</h2>
+<p>A QOS can be attached to a partition. This means the partition will have all
+the same limits as the QOS. This does not associate jobs with the QOS, nor does
+it give the job any priority or preemption characteristics of the assigned QOS.
+Jobs may separately request the same QOS or a different QOS to gain those
+characteristics. However, the Partition QOS limits will override the job's QOS.
+If the opposite is desired you may configure the job's QOS with
+<code>Flags=OverPartQOS</code> which will reverse the order of precedence.</p>
+
+<p>This functionality may be used to implement a true "floating"
+partition, in which a partition may access a limited amount of resources with no
+restrictions on which nodes it uses to get the resources. This is accomplished
+by assigning all nodes to the partition, then configuring a Partition QOS with
+<code>GrpTRES</code> set to the desired resource limits.</p>
+
+<p><b>NOTE</b>: Most QOS attributes are set using the <b>sacctmgr</b> command.
+However, setting a QOS as a partition QOS is accomplished in <b>slurm.conf</b>
+through the <a href="slurm.conf.html#OPT_QOS">QOS=</a> option in the
+configuration of the associated partition. The QOS should be created using
+<b>sacctmgr</b> before it is assigned as a partition QOS. It is possible to
+delete a QOS attached to a partition without deleting the attachment in the
+<b>slurm.conf</b>. This is not recommended and could cause unintended behavior.
+</p>
+
+<!-------------------------------------------------------------------------->
+<h2 id="relative">Relative QOS
+<a class="slurm_link" href="#relative"></a>
+</h2>
+<p>Starting in Slurm 23.11, a QOS may be configured to contain relative resource
+limits instead of absolute limits by setting <code>Flags=Relative</code>.
+When this flag is set, all resource limits are treated as percentages of the
+total resources available. Values higher than 100 are interpreted as 100%.
+Memory limits should be set with no units. Although the default units (M) will
+be displayed, the limits will be enforced as a percentage (1M = 1%).</p>
+
+<p><b>NOTE</b>: When <i>Flags=Relative</i> is added to a QOS, <b>slurmctld</b>
+must be restarted or reconfigured for the flag to take effect.</p>
+
+<p>Generally, the limits on a relative QOS will be calculated relative to the
+resources in the whole cluster. For example, <code>cpu=50</code> would be
+interpreted as 50% of all CPUs in the cluster.</p>
+
+<p>However, when a relative QOS is also assigned as a partition QOS, some unique
+conditions will apply:</p>
+<ol>
+<li>Limits will be calculated relative to the partition's resources;
+for example, <code>cpu=50</code> would be interpreted as 50% of all CPUs in the
+associated partition.</li>
+<li>Only one partition may have this QOS as its partition QOS.</li>
+<li>Jobs will not be allowed to use it as a normal QOS.<br>
+<b>NOTE</b>: To avoid unexpected job submission errors, it is recommended not
+to add a relative partition QOS to any association-based entities.
+</li>
+</ol>
+
+<!-------------------------------------------------------------------------->
+<h2 id="qos_other">Other QOS Options
+<a class="slurm_link" href="#qos_other"></a>
+</h2>
+<ul>
+<li><b>Flags</b> Used by the slurmctld to override or enforce certain
+characteristics. To clear a previously set value use the modify command with a
+new value of -1.
+<br>Valid options are:
+
+<ul>
+<li><b>DenyOnLimit</b> If set, jobs using this QOS will be rejected at
+submission time if they do not conform to the QOS 'Max' limits as
+stand-alone jobs.
+Jobs that go over these limits when other jobs are considered, but conform
+to the limits when considered individually will not be rejected. Instead they
+will pend until resources are available (as by default without DenyOnLimit).
+Group limits (e.g. <b>GrpTRES</b>) will also be treated like 'Max' limits
+(e.g. <b>MaxTRESPerNode</b>) and jobs will be denied if they would violate the
+limit as stand-alone jobs.
+This currently only applies to QOS and Association limits.</li>
+
+<li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
+any jobs submitted with this QOS that fall below the UsageThreshold
+will be held until their Fairshare Usage goes above the Threshold.</li>
+
+<li><b>NoDecay</b> If set, this QOS will not have its GrpTRESMins,
+GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife
+or PriorityUsageResetPeriod settings.  This allows
+a QOS to provide aggregate limits that, once consumed, will not be
+replenished automatically.  Such a QOS will act as a time-limited quota
+of resources for an association that has access to it.  Account/user
+usage will still be decayed for associations using the QOS.  The QOS
+GrpTRESMins and GrpWall limits can be increased or
+the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
+with this QOS to run (if pending with QOSGrp{TRES}MinutesLimit or
+QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).</li>
+
+<li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
+jobs using this QOS will not reserve resources in the backfill
+schedule's  map of resources allocated through time. This flag is
+intended for use with a QOS that may be preempted by jobs associated
+with all other QOS (e.g use with a "standby" QOS). If this flag is
+used with a QOS which can not be preempted by all other QOS, it could
+result in starvation of larger jobs.</li>
+
+<li><b>OverPartQOS</b> If set, jobs using this QOS will be able to
+override any limits used by the requested partition's QOS limits.</li>
+
+<li><b>PartitionMaxNodes</b> If set, jobs using this QOS will be able to
+override the requested partition's MaxNodes limit.</li>
+
+<li><b>PartitionMinNodes</b> If set, jobs using this QOS will be able to
+override the requested partition's MinNodes limit.</li>
+
+<li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to
+override the requested partition's TimeLimit.</li>
+
+<li><b>Relative</b> If set, the QOS limits will be treated as percentages of
+the cluster or partition instead of absolute limits (numbers should be less than
+100). The controller should be restarted or reconfigured after adding the
+<i>Relative</i> flag to the QOS.
+<br>If this is used as a partition QOS:
+<ol>
+<li>Limits will be calculated relative to the partition's resources.</li>
+<li>Only one partition may have this QOS as its partition QOS.</li>
+<li>Jobs will not be allowed to use it as a normal QOS.</li>
+</ol></li>
+
+<li><b>RequiresReservation</b> If set, jobs using this QOS must designate a
+reservation when submitting a job.  This option can be useful in
+restricting usage of a QOS that may have greater preemptive capability
+or additional resources to be allowed only within a reservation.</li>
+
+<li><b>UsageFactorSafe</b> If set, and <b>AccountingStorageEnforce</b> includes
+<b>Safe</b>, jobs will only be able to run if the job can run to completion
+with the <b>UsageFactor</b> applied.</li>
+</ul>
+</li>
+
+<li><b>GraceTime</b> Preemption grace time to be extended to a job
+  which has been selected for preemption.</li>
+
+<li><p><b>UsageFactor</b>
+A float that is factored into a job's TRES usage (e.g. RawUsage, TRESMins,
+TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
+second a job ran it would count for 2. If the usagefactor was .5, every second
+would only count for half of the time. A setting of 0 would add no timed usage
+from the job.</li>
+</p>
+
+<p>
+The usage factor only applies to the job's QOS and not the partition QOS.
+</p>
+
+<p>
+If the <b>UsageFactorSafe</b> flag <b>is</b> set and
+<b>AccountingStorageEnforce</b> includes <b>Safe</b>, jobs will only be
+able to run if the job can run to completion with the <b>UsageFactor</b>
+applied.
+</p>
+
+<p>
+If the <b>UsageFactorSafe</b> flag is <b>not</b> set and
+<b>AccountingStorageEnforce</b> includes <b>Safe</b>, a job will be able to be
+scheduled without the <b>UsageFactor</b> applied and will be able to run
+without being killed due to limits.
+</p>
+
+<p>
+If the <b>UsageFactorSafe</b> flag is <b>not</b> set and
+<b>AccountingStorageEnforce</b> does not include <b>Safe</b>, a job will be
+able to be scheduled without the <b>UsageFactor</b> applied and could be killed
+due to limits.
+</p>
+
+<p>
+See <b>AccountingStorageEnforce</b> in slurm.conf man page.
+</p>
+
+<p>
+Default is 1. To clear a previously set value use the modify command with a new
+value of -1.
+</p>
+
+<li><b>UsageThreshold</b>
+A float representing the lowest fairshare of an association allowable
+to run a job.  If an association falls below this threshold and has
+pending jobs or submits new jobs those jobs will be held until the
+usage goes back above the threshold.  Use <i>sshare</i> to see current
+shares on the system.</li>
+</ul>
+
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
+
+<P> To summarize the above, the QOSs and their associated limits are
+defined in the Slurm database using the <i>sacctmgr</i> utility.  The
+QOS will only influence job scheduling priority when the multi-factor
+priority plugin is loaded and a non-zero "PriorityWeightQOS" has been
+defined in the slurm.conf file.  The QOS will only determine job
+preemption when the "PreemptType" is defined as "preempt/qos" in the
+slurm.conf file.  Limits defined for a QOS (and described above) will
+override the limits of the user/account/cluster/partition
+association.</P>
+
+<h2 id="examples">QOS examples<a class="slurm_link" href="#examples"></a></h2>
+
+<p>QOS manipulation examples. All QOS operations are done using
+the sacctmgr command. The default output of 'sacctmgr show qos' is
+very long given the large number of limits and options available
+so it is best to use the format option which filters the display.</p>
+
+<p>By default when a cluster is added to the database a default
+qos named normal is created.</p>
+
+<pre>
+$ sacctmgr show qos format=name,priority
+      Name   Priority
+---------- ----------
+    normal          0
+</pre>
+
+<p>Add a new QOS</p>
+
+<pre>
+$ sacctmgr add qos zebra
+ Adding QOS(s)
+  zebra
+ Settings
+  Description    = QOS Name
+
+$ sacctmgr show qos format=name,priority
+      Name   Priority
+---------- ----------
+    normal          0
+     zebra          0
+</pre>
+
+<p>Set QOS priority</p>
+
+<pre>
+$ sacctmgr modify qos zebra set priority=10
+ Modified qos...
+  zebra
+
+$ sacctmgr show qos format=name,priority
+      Name   Priority
+---------- ----------
+    normal          0
+     zebra         10
+</pre>
+
+<p>Set some other limits</p>
+
+<pre>
+$ sacctmgr modify qos zebra set GrpTRES=cpu=24
+ Modified qos...
+  zebra
+
+$ sacctmgr show qos format=name,priority,GrpTRES
+      Name   Priority       GrpTRES
+---------- ---------- -------------
+    normal          0
+     zebra         10        cpu=24
+</pre>
+
+<p>Add a QOS to a user account</p>
+
+<pre>
+$ sacctmgr modify user crock set qos=zebra
+
+$ sacctmgr show assoc format=cluster,user,qos
+   Cluster       User                  QOS
+---------- ---------- --------------------
+canis_major                          normal
+canis_major      root                normal
+canis_major                          normal
+canis_major     crock                zebra
+</pre>
+
+<p>Users can belong to multiple QOSs</p>
+
+<pre>
+$ sacctmgr modify user crock set qos+=alligator
+$ sacctmgr show assoc format=cluster,user,qos
+   Cluster       User                  QOS
+---------- ---------- --------------------
+canis_major                          normal
+canis_major      root                normal
+canis_major                          normal
+canis_major     crock       alligator,zebra
+
+</pre>
+
+<p>Finally, delete a QOS</p>
+
+<pre>
+$ sacctmgr delete qos alligator
+ Deleting QOS(s)...
+  alligator
+</pre>
+
+<!--#include virtual="footer.txt"-->

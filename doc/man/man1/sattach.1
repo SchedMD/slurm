@@ -1,0 +1,182 @@
+.TH sattach "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+.LP
+sattach \- Attach to a Slurm job step.
+.SH "SYNOPSIS"
+.LP
+sattach [\fIoptions\fP] <jobid|sluid)>.<stepid>
+.SH "DESCRIPTION"
+.LP
+sattach attaches to a running Slurm job step. By attaching, it makes available
+the IO streams of all of the tasks of a running Slurm job step. It is also
+suitable for use with a parallel debugger like TotalView. It cannot be used to
+attach directly to extern or batch steps since the IO channels of these steps
+are not set or directly forwarded to a file.
+.PP
+A SLUID may be used in place of a numeric job ID to identify the job.
+
+.SH "OPTIONS"
+.LP
+
+.TP
+\fB\-\-error\-filter\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task. The filtering is performed locally in
+sattach.
+.IP
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display help information and exit.
+.IP
+
+.TP
+\fB\-\-input\-filter\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task. The filtering is performed locally in
+sattach.
+.IP
+
+.TP
+\fB\-l\fR, \fB\-\-label\fR
+Prepend each line of task standard output or standard error with the task
+number of its origin.
+.IP
+
+.TP
+\fB\-\-layout\fR
+Contacts the slurmctld to obtain the task layout information for the job step,
+prints the task layout information, and then exits without attaching to the
+job step.
+.IP
+
+.TP
+\fB\-\-output\-filter\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task. The filtering is performed locally in
+sattach.
+.IP
+
+.TP
+\fB\-\-pty\fR
+Execute task zero in pseudo terminal.
+Not compatible with the \fB\-\-input\-filter\fR, \fB\-\-output\-filter\fR, or
+\fB\-\-error\-filter\fR options.
+Notes: The terminal size and resize events are ignored by sattach.
+Proper operation requires that the job step be initiated by srun using the
+\-\-pty option.
+.IP
+
+.TP
+\fB\-Q\fR, \fB\-\-quiet\fR
+Suppress informational messages from sattach. Errors will still be displayed.
+.IP
+
+.TP
+\fB\-u\fR, \fB\-\-usage\fR
+Display brief usage message and exit.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Display Slurm version number and exit.
+.IP
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Increase the verbosity of sattach's informational messages. Multiple
+\fB\-v\fR's will further increase sattach's verbosity.
+.IP
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsattach\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsattach\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsattach\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBsattach\fR to the minimum
+necessary for the information you are trying to gather.
+
+.SH "INPUT ENVIRONMENT VARIABLES"
+.PP
+Upon startup, salloc will read and handle the options set in the following
+environment variables. Note: Command line options always override environment
+variables settings.
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sattach to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.TP
+\fBSLURM_EXIT_ERROR\fR
+Specifies the exit code generated when a Slurm error occurs
+(e.g. invalid options).
+This can be used by a script to distinguish application exit codes from
+various Slurm error conditions.
+.IP
+
+.SH "EXAMPLES"
+
+.TP
+Attach to job 15, step 0:
+.IP
+.nf
+$ sattach 15.0
+.fi
+
+.TP
+Attach to job with SLUID s4SNKN57XZTE00, step 1:
+.IP
+.nf
+$ sattach s4SNKN57XZTE00.1
+.fi
+
+.TP
+Limit the output to the 5th task of job 65386, step 15:
+.IP
+.nf
+$ sattach \-\-output\-filter 5 65386.15
+.fi
+
+.SH "COPYING"
+Copyright (C) 2006\-2007 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.br
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010\-2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBsinfo\fR(1), \fBsalloc\fR(1), \fBsbatch\fR(1), \fBsqueue\fR(1),
+\fBscancel\fR(1), \fBscontrol\fR(1),
+\fBslurm.conf\fR(5), \fBsched_setaffinity\fR (2), \fBnuma\fR (3)

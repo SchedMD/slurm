@@ -1,0 +1,143 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of batch job requeue.
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in       "$test_dir/input"
+set file_out      "$test_dir/output"
+set file_err      "$test_dir/error"
+set file_flag_1   "$test_dir/run1"
+set file_flag_2   "$test_dir/run2"
+set file_flag_3   "$test_dir/run3"
+set file_flag_4   "$test_dir/run4"
+set job_id        0
+set node_cnt      1-4
+
+if {![is_super_user]} {
+	skip "This test can't be run except as SlurmUser"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Delete left-over input script plus stdout/err files
+# Build input script file that runs two job steps
+#
+make_bash_script $file_in "
+    if   \[ -f $file_flag_3 \]
+    then
+        $bin_touch $file_flag_4
+    elif \[ -f $file_flag_2 \]
+    then
+        $bin_touch $file_flag_3
+    elif \[ -f $file_flag_1 \]
+    then
+        $bin_touch $file_flag_2
+    else
+        $bin_touch $file_flag_1
+    fi
+    $srun -n4 -O -l $bin_sleep 60
+"
+
+#
+# Spawn a srun batch job that uses stdout/err and confirm their contents
+#
+set timeout $max_job_delay
+set job_id [submit_job -fail "--requeue -N$node_cnt --output=$file_out --error=$file_err -t2 $file_in"]
+
+#
+# Wait for job to begin, then requeue it
+#
+wait_for_job -fail $job_id "RUNNING"
+exec $bin_sleep 15
+run_command -fail "$scontrol requeue $job_id"
+
+#
+# Wait for job to restart, then requeue it again
+#
+wait_for_job -fail $job_id "RUNNING"
+exec $bin_sleep 15
+run_command -fail "$scontrol requeue $job_id"
+
+#
+# Wait for job to complete and check for files
+#
+wait_for_job -fail $job_id "RUNNING"
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_flag_1
+wait_for_file -fail $file_flag_2
+wait_for_file -fail $file_flag_3
+if {[wait_for_file -timeout 5 $file_flag_4] == $::RETURN_SUCCESS} {
+	fail "File flag 4 ($file_flag_4) is found"
+}
+
+#
+# Now run the same test, but with job requeue disabled via the
+# srun --no-requeue option
+#
+file delete $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
+
+set job_id [submit_job -fail "--no-requeue --output=$file_out --error=$file_err -t2 $file_in"]
+
+#
+# Wait for job to begin, then requeue it
+#
+wait_for_job -fail $job_id "RUNNING"
+set disabled 0
+exec $bin_sleep 15
+spawn $scontrol requeue $job_id
+expect {
+	-re "Requested operation is presently disabled" {
+		set disabled 1
+		log_debug "This error was expected, no worries"
+		exp_continue
+	}
+	-re "error" {
+		fail "Some scontrol error happened"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$disabled != 0} "Verify --no-requeue option"
+
+#
+# Wait for job to complete and check for files
+#
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_flag_1
+if {[wait_for_file -timeout 5 $file_flag_2] == $::RETURN_SUCCESS} {
+	fail "File flag 2 ($file_flag_2) is found"
+}

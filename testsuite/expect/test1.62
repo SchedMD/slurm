@@ -1,0 +1,150 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of gres/gpu plugin (if configured).
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in "$test_dir/job_script"
+
+if {[check_config_select "linear"]} {
+    skip "Test requires SelectType!=linear"
+}
+
+make_bash_script $file_in {echo CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES}
+
+proc run_gpu_test { gres_cnt } {
+	global max_job_delay srun number file_in
+
+	set timeout $max_job_delay
+	set bad_format 0
+	set devices    0
+	set invalid    0
+	spawn $srun -N1 -n1 --gres=gpu:$gres_cnt -t1 $file_in
+	expect {
+		-re "Unable to allocate" {
+			incr invalid
+			exp_continue
+		}
+		-re "CUDA_VISIBLE_DEVICES=($number),($number),($number)" {
+			if {$expect_out(1,string) == $expect_out(2,string)} {
+				incr bad_format
+			} elseif {$expect_out(2,string) == $expect_out(3,string)} {
+				incr bad_format
+			} elseif {$expect_out(1,string) == $expect_out(3,string)} {
+				incr bad_format
+			}
+			incr devices +3
+			exp_continue
+		}
+		-re "CUDA_VISIBLE_DEVICES=($number),($number)" {
+			if {$expect_out(1,string) == $expect_out(2,string)} {
+				incr bad_format
+			}
+			incr devices +2
+			exp_continue
+		}
+		-re "CUDA_VISIBLE_DEVICES=($number)" {
+			incr devices
+			exp_continue
+		}
+		-re "CUDA_VISIBLE_DEVICES=" {
+			log_warn "This could indicate that gres.conf lacks device files for the GPUs"
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$invalid != 0} {
+		log_warn "Insufficient resources to test $gres_cnt GPUs"
+		return 0
+	} elseif {$bad_format != 0} {
+		fail "Duplicated device number in GRES allocation"
+	} elseif {$devices != $gres_cnt} {
+		fail "Expected $gres_cnt GPUs, but was allocated $devices"
+	}
+	return 0
+}
+
+proc run_gpu_fail { gres_spec } {
+	global max_job_delay srun number file_in
+
+	set timeout $max_job_delay
+	set bad_format 0
+	set devices    0
+	set invalid    0
+	spawn $srun -N1 -n1 --gres=$gres_spec -t1 $file_in
+	expect {
+		-re "Invalid" {
+			incr invalid
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$invalid == 0} {
+		fail "Failure to reject job with invalid GRES specification"
+	} else {
+		log_debug "Error is expected, no worries"
+	}
+	return
+}
+
+#
+# Test if gres/gpu is configured
+#
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
+if {$gpu_cnt < 1} {
+	skip "This test can not be run without gres/gpu configured"
+}
+log_debug "GPUs:$gpu_cnt"
+
+#
+# Spawn a job via srun to print environment variables and
+# check count GPU devices allocated
+#
+for {set inx 1} {$inx <= $gpu_cnt && $inx <= 3} {incr inx} {
+	run_gpu_test $inx
+}
+
+#
+# Spawn a job via srun with various invalid GRES specifications
+#
+log_info "Test various invalid GRES specifications"
+run_gpu_fail "gpu:"
+run_gpu_fail "gpu::"
+run_gpu_fail "gpu:tesla:"
+run_gpu_fail "gpu:tesla:INVALID_COUNT"
+run_gpu_fail "gpu:INVALID_TYPE:"
+run_gpu_fail "gpu:INVALID_TYPE:INVALID_COUNT"

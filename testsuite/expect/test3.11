@@ -1,0 +1,238 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol create, delete, and update for reservations.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./inc3.11.1
+source ./inc3.11.2
+source ./inc3.11.3
+source ./inc3.11.4
+source ./inc3.11.5
+source ./inc3.11.6
+source ./inc3.11.7
+source ./inc3.11.8
+source ./inc3.11.9
+source ./inc3.11.10
+source ./inc3.11.11
+
+set file_in         "$test_dir/input"
+set res_name        ""
+set res_name_save   ""
+set res_nodes       ""
+set res_nodecnt     0
+set res_thread_cnt  0
+set res_partition   ""
+set res_flags       ""
+set user_name       ""
+set def_oversubscribe_force 0
+set def_partition   ""
+set def_node        ""
+set def_node_name   ""
+set def_node_inx_min_int -1
+set def_node_inx_max_int -1
+set def_node_inx_min ""
+set def_node_inx_max ""
+set ii              0
+set log_cpu_cnt     0
+
+if {![is_super_user]} {
+	skip "This test can't be run except as SlurmUser"
+}
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+}
+
+set have_resv 0
+spawn $scontrol show res $res_name
+expect {
+	-re "ReservationName=($re_word_str)" {
+		incr have_resv
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$have_resv != 0} {
+	log_warn "$have_resv reservations exist at start of test which may interfere with the test"
+}
+
+#
+# Identify usable nodes in default partition
+#
+set def_partition [default_partition]
+if {$def_partition eq ""} {
+	fail "Failed to find default partition"
+}
+
+spawn $scontrol show partition $def_partition
+expect {
+	-re " OverSubscribe=FORCE" {
+		set def_oversubscribe_force 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+spawn $sinfo -h -o "=%N=" -tIDLE -p $def_partition
+expect {
+	-re "=(.+)=" {
+		set def_node $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$def_node eq ""} {
+	fail "Default partition seems to have no nodes"
+}
+
+# Some tests need nodenames in the regular form of node[min-max]
+# Note that the regular form needs to end with the number range
+set irregular_node_name 0
+set first_nodes [lindex [split $def_node ","] 0]
+if {![regexp -line {^([^[]+)\[(\d+)-(\d+)\]$} $first_nodes - def_node_name def_node_inx_min def_node_inx_max]} {
+	log_warn "Node name format not supported for all test"
+	set irregular_node_name 1
+} else {
+	# Avoid Octals
+	set def_node_inx_min_int [scan $def_node_inx_min "%d"]
+	set def_node_inx_max_int [scan $def_node_inx_max "%d"]
+}
+
+#
+# Determine system size
+#
+set core_spec 0
+set cores_per_socket 0
+set sockets_per_node 0
+set heterogeneous 0
+log_user 0
+spawn $scontrol show node $def_node -o
+expect {
+	-re "CoresPerSocket=($number)" {
+		if {$cores_per_socket == 0} {
+			set cores_per_socket $expect_out(1,string)
+		} elseif {$cores_per_socket != $expect_out(1,string)} {
+			set heterogeneous 1
+		}
+		exp_continue
+	}
+	-re "Sockets=($number)" {
+		if {$sockets_per_node == 0} {
+			set sockets_per_node $expect_out(1,string)
+		} elseif {$sockets_per_node != $expect_out(1,string)} {
+			set heterogeneous 1
+		}
+		exp_continue
+	}
+	-re "CoreSpecCount=($number)" {
+		if {$expect_out(1,string) > 0} {
+			set core_spec 1
+		}
+		exp_continue
+	}
+	-re "CPUSpecList=($number)" {
+		set core_spec 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$heterogeneous != 0} {
+	log_warn "Cluster is heterogeneous and some tests may fail"
+}
+set cores_per_node [expr $cores_per_socket * $sockets_per_node]
+set node_count [llength [get_nodes_by_state idle,alloc,comp]]
+set cluster_cpus [expr $cores_per_node * $node_count]
+
+set cr_socket 0
+if {[param_contains $select_type_parameters "CR_SOCKET*"]} {
+	set cr_socket 1
+}
+
+# Retrieve a node from partition and total cores in partition
+set states "idle"
+set node_list [get_nodes_by_state $states $def_partition]
+set part_node_cnt [llength $node_list]
+if {$part_node_cnt == 0} {
+	fail "Unable to get $states nodes in default partition ($def_partition)"
+}
+
+set part_node [lindex $node_list 0]
+set part_node_cores [get_node_cores $part_node]
+if {$part_node_cores == -1} {
+	fail "Unable to get cores from node ($part_node)"
+}
+set part_cores [get_part_total_cores $def_partition $states]
+if {$part_cores == 0} {
+	fail "Unable to get cores from $states nodes in default partition ($def_partition"
+}
+
+#
+# Get the user name
+#
+set user_name [get_my_user_name]
+
+set cons_tres_actived 0
+if {$def_oversubscribe_force == 0} {
+	if {[check_config_select "cons_tres"]} {
+		set cons_tres_actived 1
+	}
+}
+set exclusive [default_part_exclusive]
+if {$cons_tres_actived == 1} {
+	inc3_11_1
+} else {
+	subskip "TEST 3.11.1 skipped because it needs cons_tres"
+}
+inc3_11_2
+inc3_11_3
+inc3_11_4
+inc3_11_5
+inc3_11_6
+if {$cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
+	inc3_11_7
+	inc3_11_8
+} else {
+	subskip "TEST 3.11.7 skipped because it needs cons_tres and other conditions ($cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+	subskip "TEST 3.11.8 skipped because it needs cons_tres and other conditions ($cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+
+}
+if {$cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
+	inc3_11_9
+} else {
+	subskip "TEST 3.11.9 skipped because it needs cons_tres and other conditions ($cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0)"
+}
+inc3_11_10
+inc3_11_11

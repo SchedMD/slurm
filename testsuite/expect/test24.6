@@ -1,0 +1,313 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test non-normalized factors
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set timeout	60
+
+set ta1         "$test_name-account.1"
+set tq1         "$test_name-qos.1"
+
+set p1          "$test_name-part.1"
+set p2          "$test_name-part.2"
+
+set jobid1 0
+set jobid2 0
+set jobid3 0
+set jobid4 0
+
+set cwd "[$bin_pwd]"
+
+set access_err 0
+
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+        skip "This test is disabled in Slurm versions older than 23.02 (see bugs 14977 and 14864)"
+}
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
+	skip "This test can't be run without a usable PriorityType"
+}
+
+#
+# This test needs to be modified to use the core counts rather than CPU counts
+#
+set select_type_params [get_select_type_params ""]
+if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
+	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+}
+
+proc clean_assocs {} {
+	global ta1 tq1
+
+	remove_acct "" $ta1
+	remove_qos $tq1
+}
+
+proc cleanup {} {
+	global jobid1 jobid2 jobid3 jobid4 config_file
+
+	cancel_job [list $jobid1 $jobid2 $jobid3 $jobid4]
+
+	clean_assocs
+
+	restore_conf $config_file
+	reconfigure
+}
+
+proc part_cpu_cnt { partition } {
+	global sinfo number
+
+	set cpu_cnt 1
+	spawn $sinfo -h -o "%C" -p $partition --state=idle
+	expect {
+		-re "($number)(K?)\/($number)(K?)" {
+			set cpu_cnt $expect_out(3,string)
+			if {$expect_out(4,string) ne ""} {
+				set cpu_cnt [expr $cpu_cnt * 1024]
+			}
+
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_cnt
+}
+
+proc sub_job { args state } {
+	global number sbatch test_id bin_sleep
+
+	set jobid 0
+	set cmd "$sbatch -J$test_id -o/dev/null -e/dev/null --exclusive --wrap \"$bin_sleep 300\""
+	append cmd " $args"
+
+	spawn {*}$cmd
+	expect {
+		-re "Submitted batch job ($number)" {
+			set jobid $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$jobid == 0} {
+		fail "Did not get sbatch jobid"
+	}
+
+	wait_for_job -fail $jobid $state
+
+	return $jobid
+}
+
+proc sprio_args { args regex match_cnt } {
+	global sprio
+
+	set matches 0
+
+	spawn $sprio {*}$args
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sprio not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $match_cnt} {
+		fail "sprio $args failed to match '$regex' $match_cnt times"
+	}
+}
+
+proc update_job { jobid prio {error ""} } {
+	global scontrol
+
+	set matches 0
+
+	spawn $scontrol update jobid=$jobid sitefactor=$prio
+	set tmp_re ".*"
+	if {$error != ""} {
+		set tmp_re $error
+	}
+	expect {
+		-re $tmp_re {
+			incr matches
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {($error != "") && !$matches} {
+		fail "Didn't get expected error '$error'"
+	}
+}
+
+
+proc create_part { name nodes prio } {
+	global scontrol
+
+	spawn $scontrol create partitionname=$name priorityjobfactor=$prio nodes=$nodes
+	expect {
+		-re "error" {
+			fail "scontrol found error"
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	set found 0
+	spawn $scontrol show partitionname=$name
+	expect {
+		-re "PartitionName=$name" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 0} {
+		fail "scontrol did not create partition ($name)"
+	}
+}
+
+################################################################
+
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
+set config_path [get_conf_path]
+set config_file $config_path/slurm.conf
+
+save_conf $config_file
+
+exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_file
+exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_file
+set prio_conf "
+PriorityWeightAssoc     = 1
+PriorityWeightJobSize   = 1
+PriorityWeightPartition = 1
+PriorityWeightQOS       = 1
+PriorityWeightTRES=cpu=1
+PriorityFlags=NO_NORMAL_ALL
+"
+exec $bin_echo $prio_conf >> $config_file
+reconfigure -fail
+
+
+# verify NO_NORMAL_ALL shows. It sets multiple flags but show be collapsed to
+# the ALL flag.
+set match 0
+spawn $bin_bash -c "exec $scontrol show config | $bin_grep -i priorityflags"
+expect {
+	-re "NO_NORMAL_ALL" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {!$match} {
+	fail "Didn't find NO_NORMAL_ALL flag"
+}
+
+set idle_node [lindex [get_nodes_by_state] 0]
+if {$idle_node == ""} {
+	fail "No idle nodes"
+}
+log_info "idle: $idle_node"
+create_part $p1 $idle_node 10
+create_part $p2 $idle_node 20
+
+
+clean_assocs
+
+array set qos_req {}
+set qos_req(priority) 200
+if {[add_qos $tq1 [array get qos_req]]} {
+	fail "Unable to add qos ($tq1)"
+}
+
+array set acct_req {}
+set acct_req(priority) 100
+set acct_req(qos) $tq1
+if {[add_acct $ta1 [array get acct_req]]} {
+	fail "Unable to add account ($ta1)"
+}
+
+array set user_req {}
+set user_req(account) $ta1
+if {[add_user [get_my_user_name] [array get user_req]]} {
+	fail "Unable to add user to account ($ta1)"
+}
+
+set cpu_cnt [part_cpu_cnt $p1]
+set jobid1 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" RUNNING]
+set jobid2 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" PENDING]
+set jobid3 [sub_job "-n$cpu_cnt -p$p2 -A$ta1 --qos=$tq1" PENDING]
+set jobid4 [sub_job "-n$cpu_cnt -p$p1,$p2 -A$ta1 --qos=$tq1" PENDING]
+
+sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid2\\s+100\\s+10\\s+200\\s+cpu=$cpu_cnt" 1
+sprio_args "-j $jobid3 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid3\\s+100\\s+20\\s+200\\s+cpu=$cpu_cnt" 1
+sprio_args "-j $jobid4 -p$p1 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid4\\s+100\\s+10\\s+200\\s+cpu=$cpu_cnt" 1
+sprio_args "-j $jobid4 -p$p2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid4\\s+100\\s+20\\s+200\\s+cpu=$cpu_cnt" 1
