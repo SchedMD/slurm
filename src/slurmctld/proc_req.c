@@ -1864,13 +1864,49 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 
 static void _slurm_rpc_update_hres(slurm_msg_t *msg)
 {
+	int rc;
+	char *err_msg = NULL;
 	DEF_TIMERS;
+	slurmctld_lock_t ctld_locks = {
+		.conf = WRITE_LOCK,
+		.job = WRITE_LOCK,
+		.node = READ_LOCK,
+	};
 
 	START_TIMER;
-	hres_update(msg->data);
+	if (!validate_super_user(msg->auth_uid)) {
+		error("Security violation, UPDATE_HRES RPC from uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
 
+	/*
+	 * The job write lock is needed because nodes in the hres_select_t
+	 * structure can be modified.
+	 */
+	lock_slurmctld(ctld_locks);
+	rc = hres_update(msg->data, &err_msg);
+	/*
+	 * HRES updates will invalidate the current backfill plan. Force
+	 * backfill to break.
+	 */
+	if (rc == SLURM_SUCCESS)
+		slurm_conf.last_update = time(NULL);
+	unlock_slurmctld(ctld_locks);
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIMER_STR());
+
+	if (rc) {
+		debug2("%s %s", __func__, slurm_strerror(rc));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, rc, err_msg);
+		else
+			slurm_send_rc_msg(msg, rc);
+	} else {
+		debug2("%s success %s", __func__, TIMER_STR());
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+	xfree(err_msg);
 }
 
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */

@@ -101,6 +101,11 @@ typedef struct {
 } licenses_find_rec_by_nodes_t;
 
 typedef struct {
+	char *hres_name;
+	char *layer_name;
+} licenses_find_layer_t;
+
+typedef struct {
 	licenses_t *license_entry;
 	job_record_t *job_ptr;
 	time_t when;
@@ -563,6 +568,20 @@ static int _variable_find(void *x, void *key)
 	if (!xstrcmp(var->name, name))
 		return 1;
 
+	return 0;
+}
+
+static int _license_find_layer(void *x, void *key)
+{
+	licenses_t *lic = x;
+	licenses_find_layer_t *args = key;
+
+	if (lic->id.hres_id == NO_VAL16)
+		return 0;
+	if (xstrcmp(lic->name, args->hres_name))
+		return 0;
+	if (!xstrcasecmp(lic->hres_rec.layer_name, args->layer_name))
+		return 1;
 	return 0;
 }
 
@@ -1177,12 +1196,12 @@ static int _set_base(licenses_t *license)
 	if (license->hres_rec.base)
 		if (list_for_each_ro(license->hres_rec.base, _foreach_base_set,
 				     license) < 0)
-			return -1;
+			return ESLURM_HRES_BASE_OVERFLOW;
 
 	if (license->hres_rec.total < license->hres_rec.base_usage) {
 		error("%s HRes %s base greater than total", __func__,
 		      license->name);
-		return -1;
+		return ESLURM_INVALID_HRES_COUNT;
 	}
 
 	license->total = license->hres_rec.total;
@@ -1375,9 +1394,286 @@ extern int hres_init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int hres_update(hres_update_msg_t *msg)
+static void _propagate_mode3_node_update(licenses_t *leaf, bitstr_t *added,
+					 bitstr_t *removed)
 {
+	if (!bit_set_count(added) && !bit_set_count(removed))
+		return; /* No change */
+	for (licenses_t *parent = leaf->hres_rec.parent; parent;
+	     parent = parent->hres_rec.parent) {
+		bit_or(parent->node_bitmap, added);
+		bit_and_not(parent->node_bitmap, removed);
+		xfree(parent->nodes);
+		parent->nodes = bitmap2node_name(parent->node_bitmap);
+	}
+}
+
+static void _update_hres_nodes(licenses_t *lic, bitstr_t *new_nodes_bitmap)
+{
+	bitstr_t *added;
+	bitstr_t *removed;
+
+	if (!new_nodes_bitmap)
+		return;
+
+	/*
+	 * For mode 3, changes need to propagate up the tree to each parent
+	 * such that the parent is still a superset of all of their children.
+	 * To do this cleanly, compute the delta of the change.
+	 */
+	if (lic->mode == HRES_MODE_3) {
+		/* Added = new & ~old */
+		added = bit_copy(new_nodes_bitmap);
+		bit_and_not(added, lic->node_bitmap);
+		/* Removed = old & ~new */
+		removed = bit_copy(lic->node_bitmap);
+		bit_and_not(removed, new_nodes_bitmap);
+	}
+	/*
+	 * DO NOT FREE node_bitmap. Perform in-place alterations only, because
+	 * jobs with mode 3 HRES may have hres_select_t that alias to this
+	 * pointer.
+	 */
+	bit_copybits(lic->node_bitmap, new_nodes_bitmap);
+	xfree(lic->nodes);
+	lic->nodes = bitmap2node_name(lic->node_bitmap);
+
+	if (lic->mode != HRES_MODE_3)
+		return;
+
+	_propagate_mode3_node_update(lic, added, removed);
+
+	FREE_NULL_BITMAP(added);
+	FREE_NULL_BITMAP(removed);
+}
+
+static int _validate_nodes(licenses_t *license, char *nodes,
+			   bitstr_t **new_nodes_bitmap, char **err_msg)
+{
+	int rc;
+	hostlist_t *invalid_hostlist = NULL;
+
+	if (!nodes)
+		return SLURM_SUCCESS;
+
+	if ((license->mode == HRES_MODE_3) && (license->hres_rec.level))
+		return ESLURM_HRES_MODE3_NON_LEAF;
+
+	rc = node_name2bitmap(nodes, false, new_nodes_bitmap,
+			      &invalid_hostlist);
+	if (invalid_hostlist) {
+		char *str = hostlist_ranged_string_xmalloc(invalid_hostlist);
+
+		*err_msg = xstrdup_printf("Invalid nodes: %s", str);
+		xfree(str);
+		FREE_NULL_HOSTLIST(invalid_hostlist);
+		return ESLURM_INVALID_HRES_NODES;
+	} else if (rc) {
+		return ESLURM_INVALID_HRES_NODES;
+	}
+
+	if (license->mode != HRES_MODE_3) {
+		/*
+		 * Prevent layers with identical node sets. The mode 3 check
+		 * below for overlapping nodes is stricter, so this does not
+		 * need to happen for mode 3.
+		 */
+		licenses_find_rec_by_nodes_t args = {
+			.name = license->name,
+			.nodes = nodes,
+		};
+		licenses_t *hres_dup =
+			list_find_first_ro(cluster_license_list,
+					   _license_find_rec_by_nodes,
+					   &args);
+
+		if (hres_dup && (hres_dup != license))
+			return ESLURM_HRES_DUPLICATE_LAYER;
+	}
+	if (license->mode == HRES_MODE_3) {
+		licenses_t *overlap_lic;
+		bitstr_t *orig_bitmap = license->node_bitmap;
+
+		/* Swap to new bitmap for the search */
+		license->node_bitmap = *new_nodes_bitmap;
+		overlap_lic = list_find_first_ro(cluster_license_list,
+						 _license_find_overlap_mode3,
+						 license);
+		license->node_bitmap = orig_bitmap;
+		if (overlap_lic) {
+			*err_msg =
+				xstrdup_printf("Nodes=%s overlaps with layer=%s nodes=%s",
+					       nodes,
+					       overlap_lic->hres_rec.layer_name,
+					       overlap_lic->nodes);
+			return ESLURM_HRES_MODE3_OVERLAP;
+		}
+	}
+
 	return SLURM_SUCCESS;
+}
+
+static void _log_hres_update_req(hres_update_msg_t *msg)
+{
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
+		return;
+	info("%s:", __func__);
+	info("HRES Name=%s Layer=%s Nodes=%s Count=%u",
+	     msg->hres_name, msg->layer_name, msg->nodes, msg->count);
+	if (!msg->base)
+		return;
+	info("\tBase:");
+	list_for_each(msg->base, _foreach_variable_print, NULL);
+}
+
+static int _foreach_base_sum(void *x, void *arg)
+{
+	hres_variable_t *var = x;
+	uint32_t *sum = arg;
+
+	*sum += var->value;
+	return 0;
+}
+
+static int _update_hres_count_base(hres_update_msg_t *msg, licenses_t *lic,
+				   char **err_msg)
+{
+	int rc;
+	licenses_t tmp_lic = {
+		.name = lic->name,
+		.hres_rec.layer_name = lic->hres_rec.layer_name,
+	};
+	uint32_t orig_base_usage = lic->hres_rec.base_usage;
+	uint32_t own_base_usage = 0;
+	int64_t diff_base_usage = 0;
+
+	/*
+	 * base_usage also holds the base_usage propagated from children (mode
+	 * 3). Only this layer's own base is being replaced, so keep the rest.
+	 */
+	if (lic->hres_rec.base)
+		list_for_each_ro(lic->hres_rec.base, _foreach_base_sum,
+				 &own_base_usage);
+	tmp_lic.hres_rec.base_usage = orig_base_usage - own_base_usage;
+	/* Use a temporary licenses_t to validate base and count */
+	if (msg->base)
+		tmp_lic.hres_rec.base = msg->base;
+	else
+		tmp_lic.hres_rec.base = lic->hres_rec.base;
+
+	if (msg->count != NO_VAL)
+		tmp_lic.hres_rec.total = msg->count;
+	else
+		tmp_lic.hres_rec.total = lic->hres_rec.total;
+
+	/* Validate */
+	if ((rc = _set_base(&tmp_lic)))
+		return rc;
+	diff_base_usage = (int64_t) tmp_lic.hres_rec.base_usage -
+			  (int64_t) orig_base_usage;
+
+	if ((lic->mode == HRES_MODE_3) && list_count(msg->base)) {
+		/*
+		 * base_usage propagates up the tree. Validate the new base
+		 * does not exceed ancestors' total when propagated up.
+		 *
+		 * If msg->base != NULL but is empty (list_count() returns 0),
+		 * we don't need this check because zero base_usage is always
+		 * going to be <= total.
+		 */
+		for (licenses_t *parent = lic->hres_rec.parent; parent;
+		     parent = parent->hres_rec.parent) {
+			uint32_t new_base_usage;
+			char *tmp_layer = parent->hres_rec.layer_name;
+
+			if ((NO_VAL - diff_base_usage) <
+			    parent->hres_rec.base_usage) {
+				*err_msg = xstrdup_printf(
+					"base_usage would overflow at layer=%s",
+					tmp_layer);
+				return ESLURM_HRES_BASE_OVERFLOW;
+			}
+			new_base_usage =
+				parent->hres_rec.base_usage + diff_base_usage;
+			if (parent->hres_rec.total < new_base_usage) {
+				*err_msg = xstrdup_printf(
+					"At ancestor=%s base_usage propagated up=%u exceeds total=%u",
+					tmp_layer, new_base_usage,
+					parent->hres_rec.total);
+				return ESLURM_INVALID_HRES_COUNT;
+			}
+			/*
+			 * Note: Because parent base usage is summed up from
+			 * children, new base usage will always be >= 0, so
+			 * we don't need to test for underflow.
+			 */
+		}
+	}
+
+	/* Update the real license record */
+	if (msg->base)
+		SWAP(lic->hres_rec.base, msg->base);
+	lic->hres_rec.base_usage = tmp_lic.hres_rec.base_usage;
+	lic->hres_rec.total = tmp_lic.hres_rec.total;
+	lic->total = tmp_lic.total;
+
+	if ((lic->mode != HRES_MODE_3) || !diff_base_usage)
+		return SLURM_SUCCESS;
+
+	/* Propagate mode 3 base_usage/count up the tree. */
+	for (licenses_t *parent = lic->hres_rec.parent; parent;
+	     parent = parent->hres_rec.parent) {
+		parent->hres_rec.base_usage += diff_base_usage;
+		if (parent->total != INFINITE)
+			parent->total -= diff_base_usage;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int hres_update(hres_update_msg_t *msg, char **err_msg)
+{
+	int rc = SLURM_SUCCESS;
+	licenses_t *lic;
+	bitstr_t *new_nodes_bitmap = NULL;
+	foreach_license_print_t print_arg = {
+		.header = "Updated HRES",
+	};
+	licenses_find_layer_t find_layer = {
+		.hres_name = msg->hres_name,
+		.layer_name = msg->layer_name,
+	};
+
+	_log_hres_update_req(msg);
+	slurm_mutex_lock(&license_mutex);
+
+	if (!cluster_license_list) {
+		rc = ESLURM_INVALID_HRES_NAME;
+		goto fini;
+	}
+	lic = list_find_first_ro(cluster_license_list, _license_find_layer,
+				 &find_layer);
+	if (!lic) {
+		*err_msg = xstrdup_printf("HRES name=%s layer=%s not found",
+					  msg->hres_name, msg->layer_name);
+		rc = ESLURM_INVALID_HRES_NAME;
+		goto fini;
+	}
+	if ((rc = _validate_nodes(lic, msg->nodes, &new_nodes_bitmap, err_msg)))
+		goto fini;
+
+	if ((rc = _update_hres_count_base(msg, lic, err_msg)))
+		goto fini;
+
+	_update_hres_nodes(lic, new_nodes_bitmap);
+	last_license_update = time(NULL);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)
+		_foreach_license_print(lic, &print_arg);
+fini:
+	FREE_NULL_BITMAP(new_nodes_bitmap);
+	slurm_mutex_unlock(&license_mutex);
+	return rc;
 }
 
 static int _foreach_hres_filter_mode1(void *x, void *arg)
