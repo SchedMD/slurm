@@ -1037,8 +1037,6 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 		return SLURM_ERROR;
 	}
 
-	req.req_cluster = NULL;
-
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
