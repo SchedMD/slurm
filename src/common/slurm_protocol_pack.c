@@ -12811,6 +12811,30 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _unpack_hres_variable(void **object, uint16_t protocol_version,
+				 buf_t *buffer)
+{
+	hres_variable_t *var = xmalloc(sizeof(*var));
+
+	*object = var;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&var->name, buffer);
+		safe_unpack32(&var->value, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	hres_variable_free(var);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	license_info_msg_t *msg = xmalloc(sizeof(*msg));
@@ -12850,6 +12874,13 @@ static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 					msg->lic_array[i].last_deficit;
 			safe_unpack8(&msg->lic_array[i].mode, buffer);
 			safe_unpackstr(&msg->lic_array[i].nodes, buffer);
+			safe_unpackstr(&msg->lic_array[i].layer_name, buffer);
+			if (slurm_unpack_list(&msg->lic_array[i].base,
+					      _unpack_hres_variable,
+					      hres_variable_free,
+					      buffer, smsg->protocol_version) !=
+			    SLURM_SUCCESS)
+				goto unpack_error;
 		}
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);
