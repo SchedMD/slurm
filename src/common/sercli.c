@@ -146,69 +146,6 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 	dprintf(STDOUT_FILENO, "%s\n", full_type);
 }
 
-extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
-				       int obj_bytes, void *acct_db_conn,
-				       const char *mime_type,
-				       const char *data_parser,
-				       data_parser_dump_cli_ctxt_t *ctxt,
-				       openapi_resp_meta_t *meta)
-{
-	int rc = SLURM_SUCCESS;
-	data_parser_t *parser = NULL;
-	buf_t *out = NULL;
-	serialize_dump_state_t *state = NULL;
-
-	if (!xstrcasecmp(data_parser, "list")) {
-		dprintf(STDERR_FILENO, "Possible data_parser plugins:\n");
-		parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
-					   NULL, NULL, "list",
-					   _plugrack_foreach_list, false);
-		FREE_NULL_DATA_PARSER(parser);
-		return SLURM_SUCCESS;
-	}
-
-	if (!(parser = data_parser_cli_parser(data_parser, ctxt))) {
-		rc = ESLURM_DATA_INVALID_PARSER;
-		error("%s output not supported by %s",
-		      mime_type, SLURM_DATA_PARSER_VERSION);
-		goto cleanup;
-	}
-
-	if (acct_db_conn)
-		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
-				     acct_db_conn);
-
-	xassert(!meta->plugin.data_parser);
-	meta->plugin.data_parser = xstrdup(data_parser_get_plugin(parser));
-
-	out = init_buf(BUF_SIZE);
-
-	do {
-		rc = serdes_dump(&state, parser, type, obj, obj_bytes, out,
-				 mime_type, SER_FLAGS_NONE);
-
-		(void) printf("%.*s", get_buf_offset(out), get_buf_data(out));
-
-		set_buf_offset(out, 0);
-	} while (state);
-
-	printf("\n");
-
-cleanup:
-	xassert(!state);
-
-	/*
-	 * This is only called from the CLI just before exiting.
-	 * Skip the explicit free here to improve responsiveness.
-	 */
-#ifdef MEMORY_LEAK_DEBUG
-	FREE_NULL_BUFFER(out);
-	FREE_NULL_DATA_PARSER(parser);
-#endif
-
-	return rc;
-}
-
 extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
 				int argc, char **argv, const char *mime_type,
 				const char *data_parser)
@@ -304,6 +241,24 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 	return rc;
 }
 
+extern void data_parser_cli_free_ctxt(data_parser_t **parser_ptr)
+{
+	data_parser_dump_cli_ctxt_t *ctxt;
+
+	if (!parser_ptr || !*parser_ptr)
+		return;
+
+	ctxt = data_parser_get_error_arg(*parser_ptr);
+
+	/* free the parser first so no callback can touch the ctxt afterward */
+	FREE_NULL_DATA_PARSER(*parser_ptr);
+
+	free_openapi_resp_meta(ctxt->meta);
+	FREE_NULL_LIST(ctxt->errors);
+	FREE_NULL_LIST(ctxt->warnings);
+	xfree(ctxt);
+}
+
 extern int data_parser_dump_cli_resp(data_parser_type_t type, void *resp,
 				     int resp_bytes, data_parser_t *parser)
 {
@@ -360,24 +315,6 @@ extern int data_parser_dump_cli_single(data_parser_type_t type, void *response,
 	};
 
 	return data_parser_dump_cli_resp(type, &single, sizeof(single), parser);
-}
-
-extern void data_parser_cli_free_ctxt(data_parser_t **parser_ptr)
-{
-	data_parser_dump_cli_ctxt_t *ctxt;
-
-	if (!parser_ptr || !*parser_ptr)
-		return;
-
-	ctxt = data_parser_get_error_arg(*parser_ptr);
-
-	/* free the parser first so no callback can touch the ctxt afterward */
-	FREE_NULL_DATA_PARSER(*parser_ptr);
-
-	free_openapi_resp_meta(ctxt->meta);
-	FREE_NULL_LIST(ctxt->errors);
-	FREE_NULL_LIST(ctxt->warnings);
-	xfree(ctxt);
 }
 
 extern int data_parser_load_cli_or_exit(data_parser_t **parser_ptr,
