@@ -267,6 +267,101 @@ extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
 	return rc;
 }
 
+/*
+ * Dump object of given type to STDOUT using a parser from
+ * data_parser_cli_load(); the parser's ctxt selects the mime type.
+ */
+static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
+			   data_parser_t *parser)
+{
+	int rc = SLURM_SUCCESS;
+	buf_t *out = NULL;
+	serialize_dump_state_t *dump_state = NULL;
+	data_parser_dump_cli_ctxt_t *ctxt = data_parser_get_error_arg(parser);
+
+	xassert(parser);
+	xassert(ctxt);
+	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+	xassert(ctxt->mime_type);
+	xassert(ctxt->meta);
+
+	out = init_buf(BUF_SIZE);
+
+	do {
+		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
+				 ctxt->mime_type, SER_FLAGS_NONE);
+
+		(void) printf("%.*s", get_buf_offset(out), get_buf_data(out));
+
+		set_buf_offset(out, 0);
+	} while (dump_state);
+
+	printf("\n");
+
+	xassert(!dump_state);
+
+	FREE_NULL_BUFFER(out);
+	return rc;
+}
+
+extern int data_parser_dump_cli_resp(data_parser_type_t type, void *resp,
+				     int resp_bytes, data_parser_t *parser)
+{
+	int rc;
+	data_parser_dump_cli_ctxt_t *ctxt = data_parser_get_error_arg(parser);
+	/*
+	 * Every openapi_resp_* struct begins with the same
+	 * {meta, errors, warnings} prefix (the OPENAPI_RESP_STRUCT_*_FIELD
+	 * macros), and openapi_resp_single_t is exactly that prefix plus a
+	 * response field. Per C11 common-initial-sequence rules we may reach
+	 * the common fields of any response struct through this cast.
+	 */
+	openapi_resp_single_t *common = resp;
+
+	xassert(parser);
+	xassert(ctxt);
+	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+	xassert(!common->meta);
+	xassert(!common->errors);
+	xassert(!common->warnings);
+
+	common->meta = ctxt->meta;
+	common->errors = ctxt->errors;
+	common->warnings = ctxt->warnings;
+
+	rc = _cli_dump_state(type, resp, resp_bytes, parser);
+
+	/*
+	 * The ctxt owns the meta/errors/warnings -- unhook them from resp
+	 * before FREE_OPENAPI_RESP_COMMON_CONTENTS() so the parser survives
+	 * across multiple dumps.
+	 */
+	common->meta = NULL;
+	common->errors = NULL;
+	common->warnings = NULL;
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(common);
+
+	/*
+	 * Flush per-dump state so successive dumps with the same parser each
+	 * get a fresh errors/warnings/rc.
+	 */
+	list_flush(ctxt->errors);
+	list_flush(ctxt->warnings);
+	ctxt->rc = 0;
+
+	return rc;
+}
+
+extern int data_parser_dump_cli_single(data_parser_type_t type, void *response,
+				       data_parser_t *parser)
+{
+	openapi_resp_single_t single = {
+		.response = response,
+	};
+
+	return data_parser_dump_cli_resp(type, &single, sizeof(single), parser);
+}
+
 extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
 {
 	char *default_data_parser = (slurm_conf.data_parser_parameters ?

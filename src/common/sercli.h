@@ -60,6 +60,32 @@ typedef struct {
 } data_parser_dump_cli_ctxt_t;
 
 /*
+ * Dump a full openapi_resp_* struct to STDOUT using a parser from
+ * data_parser_cli_load().
+ * NOTE: injects the parser's ctxt meta/errors/warnings into resp's common
+ *	prefix for the dump, then unhooks and releases them, leaving the parser
+ *	reusable for a subsequent dump.
+ * IN type - data parser type for *resp
+ * IN resp - ptr to an openapi_resp_* struct to dump
+ * IN resp_bytes - sizeof(*resp); must be the full per-type size
+ * IN parser - parser from data_parser_cli_load()
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_dump_cli_resp(data_parser_type_t type, void *resp,
+				     int resp_bytes, data_parser_t *parser);
+
+/*
+ * Like data_parser_dump_cli_resp() but wraps a bare object in
+ * openapi_resp_single_t before dumping.
+ * IN type - data parser type for the wrapped response object
+ * IN response - ptr to the object to dump as the single response field
+ * IN parser - parser from data_parser_cli_load()
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_dump_cli_single(data_parser_type_t type, void *response,
+				       data_parser_t *parser);
+
+/*
  * Load a CLI dump context for a subsequent dump.
  * NOTE: call BEFORE the slurm_load_*() RPC so "list" can short-circuit it.
  * NOTE: for "list", prints plugin names to STDOUT (header on STDERR) and
