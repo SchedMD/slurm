@@ -1006,7 +1006,7 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_HET_JOB_ALLOC_INFO;
-	req_msg.data     = &req;
+	req_msg.data = &req;
 
 	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
