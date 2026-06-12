@@ -1093,7 +1093,9 @@ extern void mark_as_failed_forward(list_t **ret_list, char *node_name, int err)
 {
 	ret_data_info_t *ret_data_info = NULL;
 
-	debug3("problems with %s", node_name);
+	log_flag(NET, "%s: forward to %s failed: %s",
+		 __func__, node_name, slurm_strerror(err));
+
 	if (!*ret_list)
 		*ret_list = list_create(destroy_data_info);
 
