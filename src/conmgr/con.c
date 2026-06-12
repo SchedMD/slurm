@@ -2297,6 +2297,8 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 
 static int _unquiesce_fd(conmgr_fd_t *con)
 {
+	char flags_str[CON_FLAGS_STR_BYTES];
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (!con_flag(con, FLAG_QUIESCE))
@@ -2305,12 +2307,9 @@ static int _unquiesce_fd(conmgr_fd_t *con)
 	con_unset_flag(con, FLAG_QUIESCE);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: unquiesced connection flags=%s",
-			 __func__, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: unquiesced connection flags=%s",
+		 __func__,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	return SLURM_SUCCESS;
 }
