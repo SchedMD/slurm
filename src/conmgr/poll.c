@@ -507,6 +507,29 @@ static int _poll(const char *caller)
 	events_count = pctl.events_count;
 	fd_count = pctl.fd_count;
 
+	/*
+	 * _interrupt() can not send a wakeup byte while pctl.polling is false,
+	 * so an interrupt requested in the window between the poll being queued
+	 * and pctl.polling being set here is recorded in
+	 * pctl.interrupt.requested instead. Honor it now by skipping the
+	 * blocking poll() so the wakeup (e.g. on shutdown) is not lost.
+	 */
+	if (pctl.interrupt.requested) {
+		log_flag(CONMGR, "%s->%s: [POLL] skipping poll() to honor %d pending interrupt request(s)",
+			 caller, __func__, pctl.interrupt.requested);
+
+		/* Clear all events and interrupts */
+		for (int i = 0; i < events_count; i++) {
+			events[i] = (struct pollfd) {
+				.fd = -1,
+			};
+		}
+		pctl.interrupt.requested = 0;
+
+		slurm_mutex_unlock(&pctl.mutex);
+		return SLURM_SUCCESS;
+	}
+
 	if (!events_count || (fd_count <= 1)) {
 		/*
 		 * No point in running poll() when only file descriptor is the
@@ -667,12 +690,19 @@ static void _interrupt(const char *caller)
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
-	if (!pctl.polling) {
-		log_flag(CONMGR, "%s->%s: [POLL] skipping sending interrupt when not actively poll()ing",
-			 caller, __func__);
-	} else {
-		pctl.interrupt.requested++;
+	pctl.interrupt.requested++;
 
+	if (!pctl.polling) {
+		/*
+		 * There is no poll() to break out of right now, but record the
+		 * request so the next _poll() does not block. This avoids
+		 * losing an interrupt requested in the window between the poll
+		 * being queued (mgr.poll_active) and pctl.polling being set,
+		 * which could otherwise hang (e.g. on shutdown).
+		 */
+		log_flag(CONMGR, "%s->%s: [POLL] recording interrupt requested while not poll()ing requests=%d",
+			 caller, __func__, pctl.interrupt.requested);
+	} else {
 		/* Check for duplicate requests. */
 		if (pctl.interrupt.requested == 1) {
 			fd = pctl.interrupt.send;
