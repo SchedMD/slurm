@@ -55,6 +55,17 @@ The default is system.slice.
 .IP
 
 .TP
+\fBCgroupJobIdPaths\fR=\fI<yes|no>\fR
+If configured to "yes" then job\-level cgroup directories are named with the
+numeric job ID instead of with the SLUID (e.g.
+"\fI/sys/fs/cgroup/system.slice/slurmstepd.scope/job_123/\fR" instead of
+"\fI/sys/fs/cgroup/system.slice/slurmstepd.scope/sEKNKTV3WPV500/\fR").
+This restores the pre\-26.05 cgroup/v2 path layout and may be useful for sites
+with external tooling keyed on job IDs. Only applies to cgroup/v2.
+The default value is no.
+
+
+.TP
 \fBSystemdTimeout\fR=\fI<number>\fR
 On slow systems like virtual machines or when systemd is busy, it can take
 a lot of time to initialize and prepare the scope for slurmd during startup.
