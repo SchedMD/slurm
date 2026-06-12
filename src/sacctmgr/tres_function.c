@@ -120,15 +120,23 @@ static int _set_cond(int *start, int argc, char **argv,
  */
 int sacctmgr_list_tres(int argc, char **argv)
 {
-	list_t *tres_list;
+	list_t *tres_list = NULL;
 	list_itr_t *itr;
 	list_itr_t *itr2;
 	list_t *format_list = list_create(xfree_ptr);
-	list_t *print_fields_list;
+	list_t *print_fields_list = NULL;
 	slurmdb_tres_cond_t *tres_cond = xmalloc(sizeof(slurmdb_tres_cond_t));
 	slurmdb_tres_rec_t *tres;
-	int field_count, i;
+	int rc = SLURM_SUCCESS, i, field_count;
 	print_field_t *field;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, db_conn, orig_argc,
+					  orig_argv, mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	for (i = 0; i < argc; i++) {
 		int command_len = strlen(argv[i]);
@@ -139,9 +147,8 @@ int sacctmgr_list_tres(int argc, char **argv)
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_tres_cond(tres_cond);
-		FREE_NULL_LIST(format_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	if (!list_count(format_list)) {
@@ -154,22 +161,19 @@ int sacctmgr_list_tres(int argc, char **argv)
 
 	tres_list = slurmdb_tres_get(db_conn, tres_cond);
 	slurmdb_destroy_tres_cond(tres_cond);
+	tres_cond = NULL;
 
 	if (mime_type) {
-		int rc;
-		DATA_DUMP_CLI_SINGLE(OPENAPI_TRES_RESP, tres_list, orig_argc,
-				     orig_argv, db_conn, mime_type, data_parser,
-				     rc);
-		FREE_NULL_LIST(format_list);
-		FREE_NULL_LIST(tres_list);
-		return rc;
+		rc = data_parser_dump_cli_single(DATA_PARSER_OPENAPI_TRES_RESP,
+						 tres_list, parser);
+		goto cleanup;
 	}
 
 	if (!tres_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		FREE_NULL_LIST(format_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 
@@ -216,8 +220,14 @@ int sacctmgr_list_tres(int argc, char **argv)
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
-	FREE_NULL_LIST(tres_list);
-	FREE_NULL_LIST(print_fields_list);
 
-	return 0;
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
+	slurmdb_destroy_tres_cond(tres_cond);
+	FREE_NULL_LIST(format_list);
+	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(tres_list);
+
+	return rc;
 }

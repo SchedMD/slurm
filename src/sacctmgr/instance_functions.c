@@ -129,12 +129,20 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	slurmdb_instance_cond_t *instance_cond = xmalloc(
 		sizeof(slurmdb_instance_cond_t));
 	slurmdb_instance_rec_t *instance = NULL;
-	list_t *format_list; /* list of char * */
+	list_t *format_list = NULL; /* list of char * */
 	list_t *instance_list = NULL; /* list of slurmdb_instance_rec_t */
-	list_t *print_fields_list; /* list of print_field_t */
+	list_t *print_fields_list = NULL; /* list of print_field_t */
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
 	print_field_t *field = NULL;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, db_conn, orig_argc,
+					  orig_argv, mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	instance_cond->cluster_list = list_create(xfree_ptr);
 	format_list = list_create(xfree_ptr);
@@ -156,8 +164,8 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 			fprintf(stderr, " Couldn't get localtime from %ld",
 				(long) instance_cond->time_start);
 			exit_code = 1;
-			slurmdb_destroy_instance_cond(instance_cond);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto cleanup;
 		}
 		start_tm.tm_sec = 0;
 		start_tm.tm_min = 0;
@@ -182,37 +190,35 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_instance_cond(instance_cond);
-		FREE_NULL_LIST(format_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	instance_list = slurmdb_instances_get(db_conn, instance_cond);
 	slurmdb_destroy_instance_cond(instance_cond);
+	instance_cond = NULL;
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP, instance_list,
-				     orig_argc, orig_argv, db_conn, mime_type,
-				     data_parser, rc);
-		FREE_NULL_LIST(print_fields_list);
-		FREE_NULL_LIST(instance_list);
-		return rc;
+		rc = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_INSTANCES_RESP, instance_list,
+			parser);
+		goto cleanup;
 	}
 
 	if (!instance_list) {
 		exit_code = 1;
 		fprintf(stderr, " Error with request: %s\n",
 			slurm_strerror(errno));
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	itr = list_iterator_create(instance_list);
@@ -280,7 +286,13 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(instance_list);
+
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
+	slurmdb_destroy_instance_cond(instance_cond);
+	FREE_NULL_LIST(format_list);
 	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(instance_list);
 	return rc;
 }

@@ -365,7 +365,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
-	list_t *acct_list;
+	list_t *acct_list = NULL;
 	int i=0, cond_set=0, prev_set=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -379,7 +379,15 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	print_field_t *field = NULL;
 
 	list_t *format_list = list_create(xfree_ptr);
-	list_t *print_fields_list; /* types are of print_field_t */
+	list_t *print_fields_list = NULL; /* types are of print_field_t */
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, db_conn, orig_argc,
+					  orig_argv, mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	if (with_assoc_flag)
 		acct_cond->flags |= SLURMDB_ACCT_FLAG_WASSOC;
@@ -394,9 +402,8 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_account_cond(acct_cond);
-		FREE_NULL_LIST(format_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "Acc,Des,O");
 		if (acct_cond->flags & SLURMDB_ACCT_FLAG_WASSOC)
@@ -418,9 +425,8 @@ extern int sacctmgr_list_account(int argc, char **argv)
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			FREE_NULL_LIST(format_list);
-			slurmdb_destroy_account_cond(acct_cond);
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
+			goto cleanup;
 		}
 	}
 
@@ -428,28 +434,25 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		slurmdb_destroy_account_cond(acct_cond);
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	acct_list = slurmdb_accounts_get(db_conn, acct_cond);
 	slurmdb_destroy_account_cond(acct_cond);
+	acct_cond = NULL;
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list,
-				     orig_argc, orig_argv, db_conn, mime_type,
-				     data_parser, rc);
-		FREE_NULL_LIST(print_fields_list);
-		FREE_NULL_LIST(acct_list);
-		return rc;
+		rc = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_ACCOUNTS_RESP, acct_list, parser);
+		goto cleanup;
 	}
 
 	if (!acct_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	itr = list_iterator_create(acct_list);
@@ -574,8 +577,14 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(acct_list);
+
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
+	slurmdb_destroy_account_cond(acct_cond);
+	FREE_NULL_LIST(format_list);
 	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(acct_list);
 
 	return rc;
 }
