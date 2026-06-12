@@ -11,11 +11,11 @@ def setup():
 
     atf.require_config_parameter("MpiDefault", "pmi2")
 
-    atf.require_nodes(1, [("CPUS", 4)])
+    atf.require_nodes(1, [("CPUs", 4)])
     atf.require_slurm_running()
 
     atf.require_lmod()
-    atf.module_load("openmpi")
+    atf.module_load("mpich")
 
 
 def test_expect():
