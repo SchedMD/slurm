@@ -202,6 +202,7 @@ static void _init_slurm_cgroup_conf(void)
 	slurm_cgroup_conf.constrain_devices = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
 	slurm_cgroup_conf.constrain_swap_space = false;
+	slurm_cgroup_conf.cgroup_job_id_paths = false;
 	slurm_cgroup_conf.enable_controllers = false;
 	slurm_cgroup_conf.enable_extra_controllers = NULL;
 	slurm_cgroup_conf.ignore_systemd = false;
@@ -254,6 +255,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packstr(slurm_cgroup_conf.enable_extra_controllers, buffer);
 	packbool(slurm_cgroup_conf.signal_children_processes, buffer);
 	pack64(slurm_cgroup_conf.systemd_timeout, buffer);
+	packbool(slurm_cgroup_conf.cgroup_job_id_paths, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -299,6 +301,7 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackstr(&slurm_cgroup_conf.enable_extra_controllers, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.signal_children_processes, buffer);
 	safe_unpack64(&slurm_cgroup_conf.systemd_timeout, buffer);
+	safe_unpackbool(&slurm_cgroup_conf.cgroup_job_id_paths, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -316,6 +319,7 @@ static void _read_slurm_cgroup_conf(void)
 {
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN, _defunct_option},
+		{"CgroupJobIdPaths", S_P_BOOLEAN},
 		{"CgroupMountpoint", S_P_STRING},
 		{"CgroupSlice", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
@@ -376,6 +380,9 @@ static void _read_slurm_cgroup_conf(void)
 			slurm_cgroup_conf.cgroup_slice = tmp_str;
 			tmp_str = NULL;
 		}
+
+		(void) s_p_get_boolean(&slurm_cgroup_conf.cgroup_job_id_paths,
+				       "CgroupJobIdPaths", tbl);
 
 		/* Cores constraints related conf items */
 		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_cores,
@@ -605,6 +612,8 @@ extern list_t *cgroup_get_conf_list(void)
 	add_key_pair(cgroup_conf_l, "CgroupMountpoint", "%s",
 		     cg_conf->cgroup_mountpoint);
 	add_key_pair(cgroup_conf_l, "CgroupSlice", "%s", cg_conf->cgroup_slice);
+	add_key_pair_bool(cgroup_conf_l, "CgroupJobIdPaths",
+			  cg_conf->cgroup_job_id_paths);
 	add_key_pair_bool(cgroup_conf_l, "ConstrainCores",
 			  cg_conf->constrain_cores);
 	add_key_pair_bool(cgroup_conf_l, "ConstrainRAMSpace",

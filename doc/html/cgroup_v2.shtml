@@ -681,6 +681,14 @@ or with systemd &lt; 244.
 this parameter should not be used because <i>/sys/fs/cgroup</i> will be the only
 cgroup directory.
 </li>
+<li><b>CgroupJobIdPaths=[yes|no]</b>: If configured to "yes" then job-level
+cgroup directories are named with the numeric job ID instead of with the SLUID
+(e.g. "<i>/sys/fs/cgroup/system.slice/slurmstepd.scope/job_123/</i>" instead of
+"<i>/sys/fs/cgroup/system.slice/slurmstepd.scope/sEKNKTV3WPV500/</i>").
+This restores the pre-26.05 cgroup/v2 path layout and may be useful for sites
+with external tooling keyed on job IDs.
+The default value is no.
+</li>
 </ul>
 
 <h3 id="ignored_params">Ignored parameters
