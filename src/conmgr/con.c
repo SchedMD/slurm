@@ -2102,6 +2102,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	const char *func_name = NULL;
 	void *func_arg = NULL;
 	conmgr_fd_t *con = conmgr_args.con;
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	xassert(!arg);
 
@@ -2136,14 +2137,11 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(list_is_empty(con->out));
 	xassert(!get_buf_offset(con->in));
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name, con->input_fd, con->output_fd,
-			 (uintptr_t) con->tls, con->on_extract.func_name,
-			 (uintptr_t) con->on_extract.func_arg, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+		 __func__, con->name, con->input_fd, con->output_fd,
+		 (uintptr_t) con->tls, con->on_extract.func_name,
+		 (uintptr_t) con->on_extract.func_arg,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	/*
 	 * Swap out func() and args to allow calling func() on failure
@@ -2226,14 +2224,10 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] END: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name, input_fd, output_fd,
-			 (uintptr_t) conn, func_name, (uintptr_t) func_arg,
-			 flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] END: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+		 __func__, con->name, input_fd, output_fd,
+		 (uintptr_t) conn, func_name, (uintptr_t) func_arg,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	/* Close connection as file descriptors are now extracted */
 	con_unset_flag(con, FLAG_WAIT_ON_EXTRACT);
@@ -2244,17 +2238,14 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	return;
 
 failed:
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] FAILED: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name,
-			 ((input_fd > 0) ? input_fd : con->input_fd),
-			 ((output_fd > 0) ? output_fd : con->output_fd),
-			 (uintptr_t) (conn ? conn : (conn_t *) con->tls),
-			 con->on_extract.func_name,
-			 (uintptr_t) con->on_extract.func_arg, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] FAILED: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+		 __func__, con->name,
+		 ((input_fd > 0) ? input_fd : con->input_fd),
+		 ((output_fd > 0) ? output_fd : con->output_fd),
+		 (uintptr_t) (conn ? conn : (conn_t *) con->tls),
+		 con->on_extract.func_name,
+		 (uintptr_t) con->on_extract.func_arg,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	con_unset_flag(con, FLAG_WAIT_ON_EXTRACT);
 	close_con(true, con);
