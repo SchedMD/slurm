@@ -12534,6 +12534,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(SELECT_TYPE_PARAM, select_type_param, "SelectTypeParameters", "Scheduler consumable resource selection type"),
 	/* select_conf_key_pairs is not populated or used anywhere */
 	add_skip(select_conf_key_pairs),
+	add_parse(CSV_STRING, serializer_params, "SerializerParameters", "Parameters for serializer plugins"),
 	add_parse(STRING, site_factor_plugin, "PrioritySiteFactorPlugin", "Plugin for computing site-specific priority factors"),
 	add_parse(STRING, site_factor_params, "PrioritySiteFactorParameters", "Parameters for the site-specific priority factor plugin"),
 	add_skip(slurm_conf),
@@ -12798,6 +12799,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(select_type),
 	add_skip(select_conf_key_pairs),
 	add_skip(select_type_param),
+	add_skip(serializer_params),
 	add_skip(site_factor_plugin),
 	add_skip(site_factor_params),
 	add_parse(STRING, slurm_conf, "SLURM_CONF", "Pathname of slurm config file"),

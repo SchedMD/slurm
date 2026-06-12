@@ -402,6 +402,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ScronParameters", S_P_STRING},
 	{"SelectType", S_P_STRING},
 	{"SelectTypeParameters", S_P_STRING},
+	{"SerializerParameters", S_P_STRING},
 	{"SlurmctldAddr", S_P_STRING},
 	{"SlurmctldDebug", S_P_STRING},
 	{"SlurmctldHttpAuthParameters", S_P_STRING},
@@ -2850,6 +2851,7 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->scron_params);
 	xfree(conf->select_type);
 	FREE_NULL_LIST(conf->select_conf_key_pairs);
+	xfree(conf->serializer_params);
 	xfree(conf->site_factor_params);
 	xfree(conf->site_factor_plugin);
 	xfree(conf->slurm_conf);
@@ -3036,6 +3038,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	xfree(conf->scron_params);
 	xfree(conf->select_type);
 	conf->select_type_param = NO_VAL16;
+	xfree(conf->serializer_params);
 	conf->slurm_user_id = SLURM_AUTH_NOBODY;
 	xfree(conf->slurm_user_name);
 	conf->slurmd_user_id = SLURM_AUTH_NOBODY;
@@ -5056,6 +5059,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
 
 	s_p_get_string(&conf->scron_params, "ScronParameters", hashtbl);
+
+	(void) s_p_get_string(&conf->serializer_params, "SerializerParameters",
+			      hashtbl);
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
