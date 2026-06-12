@@ -1979,16 +1979,16 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	is_same = (con->input_fd == con->output_fd);
 
 	if (!has_in && !has_out) {
+		char flags_str[CON_FLAGS_STR_BYTES];
+
 		xassert(con->polling_input_fd == PCTL_TYPE_NONE);
 		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 		xassert(type == PCTL_TYPE_NONE);
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: skipping connection flags=%s",
-				 __func__, flags);
-			xfree(flags);
-		}
+		log_flag(CONMGR, "%s: skipping connection flags=%s",
+			 __func__,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 
 		return;
 	}
