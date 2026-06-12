@@ -77,7 +77,7 @@ typedef struct {
 } hres_select_t;
 
 typedef struct {
-	list_t *base;
+	list_t *base; /* list of hres_variable_t */
 	uint32_t base_usage;
 	uint16_t depth; /* depth of layout */
 	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
