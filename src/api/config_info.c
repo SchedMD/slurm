@@ -1094,6 +1094,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "SerializerParameters", "%s",
 		     conf->serializer_params);
 
+	add_key_pair(ret_list, "SerializerPlugins", "%s",
+		     conf->serializer_plugins);
+
 	add_key_pair(ret_list, "SlurmUser", "%s(%u)",
 		     conf->slurm_user_name, conf->slurm_user_id);
 
