@@ -60,7 +60,7 @@ static bitstr_t	*saved_gpus;
 
 /* ROCM release version >= 6.0.0 required for gathering usage */
 #define RSMI_REQ_VERSION_USAGE 6
-
+#define RSMI_MAX_VERSION 7
 /*
  * PCI information about a GPU device.
  */
@@ -661,9 +661,9 @@ static void _rsmi_get_version(char *version, unsigned int len)
 		version[0] = '\0';
 	} else {
 		snprintf(version, len, "%s", rsmi_version.build);
-		if (rsmi_version.major < RSMI_REQ_VERSION_USAGE) {
+		if (rsmi_version.major < RSMI_REQ_VERSION_USAGE || rsmi_version.major > RSMI_MAX_VERSION) {
 			get_usage = false;
-			error("%s: GPU usage accounting disabled. RSMI version >= 6.0.0 required.",
+			error("%s: GPU usage accounting disabled. RSMI version >= 6.0.0 and <= 7.0.0 required.",
 			      __func__);
 		}
 	}
