@@ -711,7 +711,11 @@ int main(int argc, char **argv)
 		slurmscriptd_run_slurmscriptd(argc, argv, binary);
 	}
 
-	/* Init probes AFTER slurmscriptd */
+	/*
+	 * Register slurmctld-only probes. Their callbacks read state
+	 * (reconfig_reqs, listeners) that is not initialized on the
+	 * slurmscriptd code path, so they must not be registered there.
+	 */
 	probe_init();
 	probe_register("rpc-listeners", _probe_listeners, NULL);
 	probe_register("primary", _probe_primary, NULL);
