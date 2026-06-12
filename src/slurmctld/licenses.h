@@ -113,7 +113,7 @@ typedef struct {
 	bitstr_t *node_bitmap;
 	char *nodes;
 	uint8_t mode;
-	hres_rec_t hres_rec; /* mode_3 specific structure*/
+	hres_rec_t hres_rec;
 } licenses_t;
 
 /*
