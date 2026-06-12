@@ -171,6 +171,7 @@ typedef struct {
 
 typedef struct {
 	const char *het_job_id_set;
+	bool leader_stepmgr;
 	bool log_submit;
 } foreach_het_job_finalize_t;
 
@@ -967,6 +968,16 @@ static int _foreach_het_job_finalize(void *x, void *arg)
 	job_ptr->het_job_id_set = xstrdup(args->het_job_id_set);
 	if (args->log_submit)
 		log_flag(HETJOB, "Submit %pJ", job_ptr);
+
+	/*
+	 * Stepmgr-on-stepd must agree across all components, so align
+	 * each component to the leader.
+	 */
+	if (args->leader_stepmgr)
+		job_ptr->bit_flags |= STEPMGR_ENABLED;
+	else
+		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
+
 	return 0;
 }
 
@@ -1299,6 +1310,10 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	(void) list_for_each(submit_job_list, _foreach_het_job_finalize,
 			     &(foreach_het_job_finalize_t) {
 				     .het_job_id_set = het_job_id_set,
+				     .leader_stepmgr =
+					     first_job_ptr &&
+					     (first_job_ptr->bit_flags &
+					      STEPMGR_ENABLED),
 			     });
 	xfree(het_job_id_set);
 
@@ -4307,6 +4322,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	(void) list_for_each(submit_job_list, _foreach_het_job_finalize,
 			     &(foreach_het_job_finalize_t) {
 				     .het_job_id_set = het_job_id_set,
+				     .leader_stepmgr =
+					     first_job_ptr &&
+					     (first_job_ptr->bit_flags &
+					      STEPMGR_ENABLED),
 				     .log_submit =
 					     (error_code == SLURM_SUCCESS),
 			     });
