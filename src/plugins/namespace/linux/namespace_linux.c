@@ -1028,7 +1028,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		if (rc) {
 			error("%s: CloneNSScript %s failed with rc=%d",
 			      __func__, ns_conf->clonensscript, rc);
-			goto exit2;
+			goto exit1;
 		}
 	}
 
