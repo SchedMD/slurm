@@ -65,6 +65,16 @@
 #define PMIX_APP_ARGV "pmix.app.argv"
 #endif
 
+/*
+ * PMIx older than 3.2.0 lack the PMIX_REGEX type and always return a plain
+ * string when generating regexs, so fall back to PMIX_STRING.
+ */
+#ifdef PMIX_REGEX
+#define PMIXP_REGEX_TYPE PMIX_REGEX
+#else
+#define PMIXP_REGEX_TYPE PMIX_STRING
+#endif
+
 #define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
 	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
 
@@ -390,7 +400,7 @@ static void _build_node2task_map(pmixp_namespace_t *nsptr, uint32_t *node2tasks)
 static int _set_mapsinfo(list_t *lresp)
 {
 	pmix_info_t *kvp;
-	char *regexp, *input, *map = NULL, *pos = NULL;
+	char *regexp = NULL, *input, *map = NULL, *pos = NULL;
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
 	hostlist_t *hl = nsptr->hl;
 	int rc, i, j;
@@ -401,9 +411,11 @@ static int _set_mapsinfo(list_t *lresp)
 	rc = PMIx_generate_regex(input, &regexp);
 	xfree(input);
 	if (rc != PMIX_SUCCESS) {
+		free(regexp);
 		return SLURM_ERROR;
 	}
-	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIX_STRING);
+	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIXP_REGEX_TYPE);
+	free(regexp);
 	regexp = NULL;
 	list_append(lresp, kvp);
 
@@ -431,10 +443,12 @@ static int _set_mapsinfo(list_t *lresp)
 	xfree(node2tasks);
 
 	if (rc != PMIX_SUCCESS) {
+		free(regexp);
 		return SLURM_ERROR;
 	}
 
-	PMIXP_KVP_CREATE(kvp, PMIX_PROC_MAP, regexp, PMIX_STRING);
+	PMIXP_KVP_CREATE(kvp, PMIX_PROC_MAP, regexp, PMIXP_REGEX_TYPE);
+	free(regexp);
 	regexp = NULL;
 	list_append(lresp, kvp);
 
