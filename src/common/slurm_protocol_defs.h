@@ -2016,7 +2016,9 @@ enum {
 };
 
 /*
- * Fuzzy name comparison for remote licenses
+ * Fuzzy name comparison for remote licenses. "name" MUST refer to a remote
+ * license with the key assumption that no '@' characters exist in the server
+ * name portion.
  * query IN - query string
  * name IN - license name
  * RET rc - 0 for no match, 1 for exact match, 2 for fuzzy match
