@@ -718,6 +718,7 @@ test_102_11  Test sacctmgr archive dump uses configured Purge*After when no dura
 test_102_12  Test sacctmgr load, confirm that typed GRES can get parsed correctly
 test_102_13  Test sacctmgr show assoc withsubaccounts matches the account
              lineage and not a partition named like the account
+test_102_17  Test sacctmgr TresDecayHalfLife set, show, inherit and dump/load
 
 test_103_#   Testing of salloc options.
 =======================================
