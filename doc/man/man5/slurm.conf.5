@@ -5141,8 +5141,8 @@ Allocate cores within a node using block distribution by default.
 This is a pseudo\-best\-fit algorithm that minimizes the number of
 boards and minimizes the number of sockets (within minimum boards)
 used for the allocation.
-This default behavior can be overridden specifying a particular
-"\-m" parameter with srun/salloc/sbatch.
+This default behavior can be overridden by specifying a particular
+\fB\-\-distribution\fR option at job submission.
 Without this option, cores will be allocated cyclically across the sockets.
 .IP
 
@@ -5154,7 +5154,7 @@ serial jobs as idle resources will tend to be highly fragmented, resulting
 in parallel jobs being distributed across many nodes.
 Note that node \fBWeight\fR takes precedence over how many idle resources are
 on each node.
-Also see the partition configuration parameter \fBLLN\fR
+Also see the partition configuration parameter \fBLLN\fR to
 use the least loaded nodes in selected partitions.
 .IP
 
@@ -5170,8 +5170,8 @@ If the job starts ten tasks across those two nodes without this option, it will
 start five tasks on each of the two nodes.
 With this option, eight tasks will be started on the first node and two tasks
 on the second node.
-This can be superseded by "NoPack" in srun's "\-\-distribution" option.
-CR_Pack_Nodes only applies when the "block" task distribution method is used.
+This only applies when \fB\-\-distribution=block\fR option is used.
+This can be superseded by setting the \fBNoPack\fR distribution option.
 .IP
 
 .TP
