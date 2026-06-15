@@ -77,7 +77,7 @@ static size_t _print_request(char *request, const size_t bytes,
 	return wrote;
 }
 
-static void _path_id(void *item, const char **key, uint32_t *key_len)
+static void _path_id(void *item, const void **key, uint32_t *key_len)
 {
 	path_t *rpath = item;
 

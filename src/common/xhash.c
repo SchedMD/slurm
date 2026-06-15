@@ -66,8 +66,7 @@ struct xhash_st {
 	uint32_t		count;    /* user items count                */
 	xhash_freefunc_t	freefunc; /* function used to free items     */
 	xhash_item_t*		ht;       /* hash table                      */
-	xhash_idfunc_t		identify; /* function returning a unique str
-					     key */
+	xhash_idfunc_t		identify; /* function returning a unique key */
 };
 
 xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
@@ -111,7 +110,7 @@ void* xhash_get_str(xhash_t* table, const char* key)
 void* xhash_add(xhash_t* table, void* item)
 {
 	xhash_item_t* hash_item = NULL;
-	const char *key = NULL;
+	const void *key = NULL;
 	uint32_t keylen = 0;
 
 	if (!table || !item)

@@ -45,15 +45,15 @@ typedef struct xhash_st xhash_t;
 
 /**
   * This function will be used to generate unique identifier from a
-  * stored item by returning a string.
-  * Beware that string conflict cause an item to be unfindable by the
+  * stored item by returning a key.
+  * Beware that key conflict cause an item to be unfindable by the
   * hash table.
   *
   * @param item takes one of the items stored by the lists in the hash
   *             table.
   * @returns unique identifier in 'key' and the length of the key in 'key_len'
   */
-typedef void (*xhash_idfunc_t)(void* item, const char** key, uint32_t* key_len);
+typedef void (*xhash_idfunc_t)(void *item, const void **key, uint32_t *key_len);
 
 /** This type of function is used to free data inserted into xhash table */
 typedef void (*xhash_freefunc_t)(void* item);

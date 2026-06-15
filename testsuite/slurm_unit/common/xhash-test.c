@@ -49,7 +49,7 @@ typedef struct hashable_st {
 	uint32_t idn;
 } hashable_t;
 
-void hashable_identify(void* voiditem, const char** key, uint32_t* key_len)
+void hashable_identify(void *voiditem, const void **key, uint32_t *key_len)
 {
 	hashable_t* item = (hashable_t*)voiditem;
 	*key = item->id;
