@@ -1332,6 +1332,7 @@ extern int namespace_p_recv_stepd(int fd)
 
 	plugin_disabled = _is_plugin_disabled(ns_conf->basepath);
 
+	free_buf(buf);
 	return SLURM_SUCCESS;
 rwfail:
 	free_buf(buf);
