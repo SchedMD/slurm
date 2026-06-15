@@ -186,7 +186,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 openapi_slurmctld_la_LIBADD =
 am_openapi_slurmctld_la_OBJECTS = api.lo assoc_mgr.lo control.lo \
-	diag.lo jobs.lo nodes.lo partitions.lo reservations.lo \
+	diag.lo hres.lo jobs.lo nodes.lo partitions.lo reservations.lo \
 	resources.lo
 openapi_slurmctld_la_OBJECTS = $(am_openapi_slurmctld_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -214,9 +214,9 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/api.Plo ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/control.Plo ./$(DEPDIR)/diag.Plo \
-	./$(DEPDIR)/jobs.Plo ./$(DEPDIR)/nodes.Plo \
-	./$(DEPDIR)/partitions.Plo ./$(DEPDIR)/reservations.Plo \
-	./$(DEPDIR)/resources.Plo
+	./$(DEPDIR)/hres.Plo ./$(DEPDIR)/jobs.Plo \
+	./$(DEPDIR)/nodes.Plo ./$(DEPDIR)/partitions.Plo \
+	./$(DEPDIR)/reservations.Plo ./$(DEPDIR)/resources.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -530,8 +530,8 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 
 pkglib_LTLIBRARIES = openapi_slurmctld.la
 openapi_slurmctld_la_SOURCES = \
-	api.c api.h assoc_mgr.c control.c diag.c jobs.c nodes.c partitions.c \
-	reservations.c resources.c
+	api.c api.h assoc_mgr.c control.c diag.c hres.c jobs.c nodes.c \
+	partitions.c reservations.c resources.c
 
 openapi_slurmctld_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
@@ -614,6 +614,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_mgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/control.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hres.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodes.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partitions.Plo@am__quote@ # am--include-marker
@@ -752,6 +753,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/assoc_mgr.Plo
 	-rm -f ./$(DEPDIR)/control.Plo
 	-rm -f ./$(DEPDIR)/diag.Plo
+	-rm -f ./$(DEPDIR)/hres.Plo
 	-rm -f ./$(DEPDIR)/jobs.Plo
 	-rm -f ./$(DEPDIR)/nodes.Plo
 	-rm -f ./$(DEPDIR)/partitions.Plo
@@ -806,6 +808,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/assoc_mgr.Plo
 	-rm -f ./$(DEPDIR)/control.Plo
 	-rm -f ./$(DEPDIR)/diag.Plo
+	-rm -f ./$(DEPDIR)/hres.Plo
 	-rm -f ./$(DEPDIR)/jobs.Plo
 	-rm -f ./$(DEPDIR)/nodes.Plo
 	-rm -f ./$(DEPDIR)/partitions.Plo
