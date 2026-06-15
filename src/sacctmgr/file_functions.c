@@ -506,7 +506,8 @@ static int _print_out_assoc(list_t *assoc_list, bool user, bool add)
 	slurm_addto_char_list(format_list,
 			      "Share,GrpTRESM,GrpTRESR,GrpTRES,GrpJ,GrpJobsA,"
 			      "GrpMEM,GrpN,GrpS,GrpW,MaxTRESM,MaxTRES,"
-			      "MaxTRESPerN,MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS");
+			      "MaxTRESPerN,MaxJ,MaxS,MaxN,MaxW,QOS,DefaultQOS,"
+			      "TresDecayHalfLife");
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
 	FREE_NULL_LIST(format_list);
@@ -975,6 +976,19 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			file_opts->assoc_rec.qos_list = NULL;
 			changed = 1;
 		}
+	}
+
+	if (file_opts->assoc_rec.tres_decay_hl &&
+	    xstrcmp(assoc->tres_decay_hl, file_opts->assoc_rec.tres_decay_hl)) {
+		mod_assoc.tres_decay_hl = file_opts->assoc_rec.tres_decay_hl;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed TresDecayHalfLife",
+			   type, name,
+			   assoc->tres_decay_hl,
+			   file_opts->assoc_rec.tres_decay_hl);
 	}
 
 	if (changed) {
@@ -1542,6 +1556,17 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   type, name,
 			   qos_rec->priority,
 			   qos_rec_in->priority);
+	}
+
+	if (qos_rec_in->tres_decay_hl &&
+	    xstrcmp(qos_rec->tres_decay_hl, qos_rec_in->tres_decay_hl)) {
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed TresDecayHalfLife",
+			   type, name,
+			   qos_rec->tres_decay_hl,
+			   qos_rec_in->tres_decay_hl);
 	}
 
 	if (!fuzzy_equal(qos_rec_in->usage_factor, NO_VAL) &&
@@ -2291,6 +2316,20 @@ extern int print_file_add_limits_to_line(char **line,
 		xfree(temp_char);
 	}
 
+	if (assoc->tres_decay_hl) {
+		sacctmgr_initialize_g_tres_list();
+		/*
+		 * Raw seconds: a unit suffix on the memory TRES would not
+		 * load back, and a time string would put a colon in the line
+		 * where the option split takes one for a separator.
+		 */
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->tres_decay_hl, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_RAW, 0, NULL);
+		xstrfmtcat(*line, ":TresDecayHalfLife=%s", tmp_char);
+		xfree(tmp_char);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -2485,6 +2524,20 @@ extern int file_print_qos(void *x, void *arg)
 
 	if (qos_rec->priority && (qos_rec->priority != INFINITE))
 		xstrfmtcat(*line, ":Priority=%u", qos_rec->priority);
+
+	if (qos_rec->tres_decay_hl) {
+		sacctmgr_initialize_g_tres_list();
+		/*
+		 * Raw seconds: a unit suffix on the memory TRES would not
+		 * load back, and a time string would put a colon in the line
+		 * where the option split takes one for a separator.
+		 */
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos_rec->tres_decay_hl, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_RAW, 0, NULL);
+		xstrfmtcat(*line, ":TresDecayHalfLife=%s", tmp_char);
+		xfree(tmp_char);
+	}
 
 	if ((qos_rec->usage_factor != 1) &&
 	    !fuzzy_equal(qos_rec->usage_factor, INFINITE))
@@ -2984,7 +3037,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					"MaxTRESRunMinsPerAcct%22,"
 					"MaxTRESRunMinsPerUser%22,"
 					"MaxJobsPerAcct,"
-					"MaxSubmitJobsPerAcct,MinTRES");
+					"MaxSubmitJobsPerAcct,MinTRES,"
+					"TresDecayHalfLife");
 
 				print_fields_list =
 					sacctmgr_process_format_list(

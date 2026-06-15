@@ -508,6 +508,15 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			exit_code = 1;
 			set = 1;
 		}
+	} else if (!xstrncasecmp(type, "TresDecayHalfLife",
+				 MAX(command_len, 4))) {
+		int tres_set = sacctmgr_set_tres_time_rec_field(
+			&assoc->tres_decay_hl, value, tres_flags);
+
+		if (tres_set > 0)
+			set = 1;
+		else if (tres_set < 0)
+			exit_code = 1;
 	}
 
 	return set;
@@ -728,6 +737,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_QOS_RAW:
 		field->print_routine(field, &assoc->qos_list, last);
+		break;
+	case PRINT_TRESDECAYHL:
+		field->print_routine(field, &assoc->tres_decay_hl, last);
 		break;
 	case PRINT_USER:
 		field->print_routine(field, assoc->user, last);

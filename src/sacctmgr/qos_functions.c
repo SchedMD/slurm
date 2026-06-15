@@ -632,6 +632,15 @@ extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 				" Bad RawUsage value: %s\n",
 				value);
 		}
+	} else if (!xstrncasecmp(type, "TresDecayHalfLife",
+				 MAX(command_len, 4))) {
+		int tres_set = sacctmgr_set_tres_time_rec_field(
+			&qos->tres_decay_hl, value, tres_flags);
+
+		if (tres_set > 0)
+			set = 1;
+		else if (tres_set < 0)
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "UsageFactor",
 				 MAX(command_len, 6))) {
 		if (get_double(value, &qos->usage_factor,
@@ -1096,6 +1105,9 @@ extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 		break;
 	case PRINT_LF:
 		field->print_routine(field, &qos->limit_factor, last);
+		break;
+	case PRINT_TRESDECAYHL:
+		field->print_routine(field, &qos->tres_decay_hl, last);
 		break;
 	default:
 		field->print_routine(field, NULL, last);

@@ -144,6 +144,7 @@ typedef enum {
 	PRINT_FEDSTATE,
 	PRINT_FEDSTATERAW,
 	PRINT_TRES,
+	PRINT_TRESDECAYHL,
 	PRINT_NODECNT,
 	PRINT_NODEINX,
 	PRINT_CLUSTER_NODES,
@@ -323,6 +324,8 @@ extern void sacctmgr_print_coord_list(
 	print_field_t *field, void *input, int last);
 
 extern void sacctmgr_print_tres(print_field_t *field, void *input, int last);
+extern void sacctmgr_print_tres_time(print_field_t *field, void *input,
+				     int last);
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
 extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster);
 extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed);
@@ -365,6 +368,8 @@ extern slurmdb_wckey_rec_t *sacctmgr_find_wckey_from_list(
 	list_t *wckey_list, char *user, char *name, char *cluster);
 
 extern void sacctmgr_initialize_g_tres_list(void);
+extern int sacctmgr_set_tres_time_rec_field(char **dest, char *value,
+					    uint32_t tres_flags);
 extern int sacctmgr_set_tres_rec_field(char **dest, char *value,
 				       uint32_t tres_flags);
 
