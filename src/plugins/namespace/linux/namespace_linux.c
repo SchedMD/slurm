@@ -290,6 +290,7 @@ extern int namespace_p_restore(char *dir_name, bool recover)
 	 */
 	if (!(dp = opendir(ns_conf->basepath))) {
 		error("%s: Unable to open %s", __func__, ns_conf->basepath);
+		FREE_NULL_LIST(steps);
 		return SLURM_ERROR;
 	}
 
