@@ -2483,6 +2483,21 @@ static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
 			    gres_js->gres_bit_step_alloc[node_offset]);
 	}
 
+	/*
+	 * Exclude GRES already allocated to this step on a previous pass of
+	 * _foreach_step_alloc_outer(), which calls this twice: pass 1 with a core
+	 * bitmap (cores-local GRES only) and pass 2 with no core bitmap (any
+	 * GRES). For overlapping steps (decr_job_alloc == false) the job's
+	 * gres_bit_step_alloc is never updated, so without this the second
+	 * pass can re-select a GRES already picked in pass 1, consuming a
+	 * gres_alloc slot and leaving the step short one device.
+	 */
+	if (gres_ss->gres_bit_alloc && gres_ss->gres_bit_alloc[node_offset] &&
+	    !gres_id_shared(gres_state_job->config_flags)) {
+		bit_and_not(gres_bit_avail,
+			    gres_ss->gres_bit_alloc[node_offset]);
+	}
+
 	for (int i = 0; i < len && gres_alloc; i++) {
 		if (!bit_test(gres_bit_avail, i) ||
 		    bit_test(gres_bit_alloc, i) ||
