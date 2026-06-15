@@ -47,8 +47,12 @@
 #include "src/conmgr/signals.h"
 
 #define CTIME_STR_LEN 72
-
 #define MAGIC_LOG_WORK_ARGS 0xbaF9100a
+#define LOG_WORK(work, fmt, ...) \
+	do { \
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) \
+			_log_work(work, __func__, fmt, ##__VA_ARGS__); \
+	} while (false)
 
 typedef struct {
 	int magic; /* MAGIC_LOG_WORK_ARGS */
@@ -128,9 +132,6 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 	char *con_name = NULL, *depend = NULL, *sched = NULL, *fmtstr = NULL;
 	char *delay = NULL, *signal = NULL, *callback = NULL;
 	const char *status = NULL;
-
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_CONMGR))
-		return;
 
 	if (work->ref) {
 		conmgr_fd_t *con = fd_get_ref(work->ref);
@@ -283,11 +284,11 @@ static work_t *_run_work(work_t *work)
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 
-	_log_work(work, __func__, "BEGIN");
+	LOG_WORK(work, "BEGIN");
 
 	work->callback.func(args, work->callback.arg);
 
-	_log_work(work, __func__, "END");
+	LOG_WORK(work, "END");
 
 	if (args.con)
 		next = _on_con_work_complete(args.con, work);
@@ -319,8 +320,7 @@ static void _handle_work_run(work_t *work)
 {
 	xassert(work->magic == MAGIC_WORK);
 
-	_log_work(work, __func__, "Enqueueing work. work:%u",
-		  list_count(mgr.work));
+	LOG_WORK(work, "Enqueueing work. work:%u", list_count(mgr.work));
 
 	/* add to work list and signal a thread if watch is active */
 	list_append(mgr.work, work);
@@ -348,40 +348,40 @@ static void _handle_work_pending(work_t *work)
 	}
 
 	if (depend & CONMGR_WORK_DEP_TIME_DELAY) {
-		_log_work(work, __func__, "Enqueueing delayed work. delayed_work:%u",
-			  list_count(mgr.delayed_work));
+		LOG_WORK(work, "Enqueueing delayed work. delayed_work:%u",
+			 list_count(mgr.delayed_work));
 		add_work_delayed(work);
 		return;
 	}
 
 	if (depend & CONMGR_WORK_DEP_CON_WRITE_COMPLETE) {
+		char flags_str[CON_FLAGS_STR_BYTES];
+
 		xassert(con);
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			_log_work(work, __func__, "Enqueueing connection write complete work. pending_writes=%u pending_write_complete_work:%u flags=%s",
-				  list_count(con->out),
-				  list_count(con->write_complete_work), flags);
-			xfree(flags);
-		}
+		LOG_WORK(work, "Enqueueing connection write complete work. pending_writes=%u pending_write_complete_work:%u flags=%s",
+			 list_count(con->out),
+			 list_count(con->write_complete_work),
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 
 		list_append(con->write_complete_work, work);
 		return;
 	}
 
 	if (depend & CONMGR_WORK_DEP_SIGNAL) {
-		_log_work(work, __func__, "Enqueueing signal work");
+		LOG_WORK(work, "Enqueueing signal work");
 		add_work_signal(work);
 		return;
 	}
 
 	if (con) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			_log_work(work, __func__, "Enqueueing connection work. pending_work:%u flags=%s",
-				  list_count(con->work), flags);
-			xfree(flags);
-		}
+		char flags_str[CON_FLAGS_STR_BYTES];
+
+		LOG_WORK(work, "Enqueueing connection work. pending_work:%u flags=%s",
+			 list_count(con->work),
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 
 		list_append(con->work, work);
 

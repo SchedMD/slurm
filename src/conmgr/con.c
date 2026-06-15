@@ -176,26 +176,35 @@ static const char *_con_flag_string(con_flags_t flag)
 	fatal_abort("invalid type");
 }
 
-extern char *con_flags_string(const con_flags_t flags)
+extern char *con_flags_print(const con_flags_t flags, char *str, size_t bytes)
 {
-	char *str = NULL, *at = NULL;
 	uint32_t matched = 0;
+	char *ptr = str;
 
-	if (flags == FLAG_NONE)
-		return xstrdup(_con_flag_string(FLAG_NONE));
+	if (flags == FLAG_NONE) {
+		(void) snprintf(ptr, bytes, "%s", _con_flag_string(FLAG_NONE));
+		return ptr;
+	}
 
 	/* skip FLAG_NONE */
-	for (int i = 1; i < ARRAY_SIZE(con_flags); i++) {
+	for (int i = 1; (bytes > 0) && (i < ARRAY_SIZE(con_flags)); i++) {
 		if ((con_flags[i].flag & flags) == con_flags[i].flag) {
-			xstrfmtcatat(str, &at, "%s%s", (str ? "|" : ""),
-				     con_flags[i].string);
+			int wrote = snprintf(ptr, bytes, "%s%s",
+					     (matched ? "|" : ""),
+					     con_flags[i].string);
+			if ((wrote < 0) || (wrote >= bytes))
+				return "INVALID";
+
 			matched |= con_flags[i].flag;
+			bytes -= wrote;
+			ptr += wrote;
 		}
 	}
 
-	if (flags ^ matched)
-		xstrfmtcatat(str, &at, "%s0x%08"PRIx32, (str ? "|" : ""),
-			     (flags ^ matched));
+	if ((flags ^ matched) && (bytes > 0) &&
+	    (snprintf(ptr, bytes, "%s0x%08" PRIx32,
+		      (matched ?  "|" : ""), (flags ^ matched)) >= bytes))
+		return "INVALID";
 
 	return str;
 }
@@ -692,6 +701,9 @@ extern int add_connection(conmgr_con_type_t type,
 	static const size_t unix_socket_path_max =
 		sizeof(((struct sockaddr_un *) NULL)->sun_path);
 	const conmgr_timeouts_t *timeouts_ptr = NULL;
+	char in_modes_str[FCNTL_MODES_STR_BYTES];
+	char out_modes_str[FCNTL_MODES_STR_BYTES];
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	if (timeouts)
 		timeouts_ptr = timeouts;
@@ -857,23 +869,15 @@ extern int add_connection(conmgr_con_type_t type,
 	/* Always set last_read for connect timeout */
 	con->last_read = timespec_now();
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char in_modes_str[FCNTL_MODES_STR_BYTES];
-		char out_modes_str[FCNTL_MODES_STR_BYTES];
-		char *flags = con_flags_string(con->flags);
-
-		log_flag(CONMGR, "%s: [%s] new connection input_fd=%d(%s) output_fd=%d(%s) flags=%s",
-			 __func__, con->name, input_fd,
-			 (has_in ? fcntl_modes_to_string(in_modes, in_modes_str,
-							 sizeof(in_modes_str)) :
-			  ""), output_fd,
-			 (has_out ? fcntl_modes_to_string(out_modes,
-							  out_modes_str,
-							  sizeof(out_modes_str))
-			  : ""), flags);
-
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] new connection input_fd=%d(%s) output_fd=%d(%s) flags=%s",
+		 __func__, con->name, input_fd,
+		 (has_in ?
+		  fcntl_modes_to_string(in_modes, in_modes_str,
+					sizeof(in_modes_str)) : ""),
+		 output_fd, (has_out ?
+			     fcntl_modes_to_string(out_modes, out_modes_str,
+						   sizeof(out_modes_str)) : ""),
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	if (tls_conn)
 		tls_adopt(con, tls_conn);
@@ -1968,16 +1972,16 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	is_same = (con->input_fd == con->output_fd);
 
 	if (!has_in && !has_out) {
+		char flags_str[CON_FLAGS_STR_BYTES];
+
 		xassert(con->polling_input_fd == PCTL_TYPE_NONE);
 		xassert(con->polling_output_fd == PCTL_TYPE_NONE);
 		xassert(type == PCTL_TYPE_NONE);
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: skipping connection flags=%s",
-				 __func__, flags);
-			xfree(flags);
-		}
+		log_flag(CONMGR, "%s: skipping connection flags=%s",
+			 __func__,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
 
 		return;
 	}
@@ -2091,6 +2095,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	const char *func_name = NULL;
 	void *func_arg = NULL;
 	conmgr_fd_t *con = conmgr_args.con;
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	xassert(!arg);
 
@@ -2125,14 +2130,11 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(list_is_empty(con->out));
 	xassert(!get_buf_offset(con->in));
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name, con->input_fd, con->output_fd,
-			 (uintptr_t) con->tls, con->on_extract.func_name,
-			 (uintptr_t) con->on_extract.func_arg, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+		 __func__, con->name, con->input_fd, con->output_fd,
+		 (uintptr_t) con->tls, con->on_extract.func_name,
+		 (uintptr_t) con->on_extract.func_arg,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	/*
 	 * Swap out func() and args to allow calling func() on failure
@@ -2215,14 +2217,10 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] END: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name, input_fd, output_fd,
-			 (uintptr_t) conn, func_name, (uintptr_t) func_arg,
-			 flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] END: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+		 __func__, con->name, input_fd, output_fd,
+		 (uintptr_t) conn, func_name, (uintptr_t) func_arg,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	/* Close connection as file descriptors are now extracted */
 	con_unset_flag(con, FLAG_WAIT_ON_EXTRACT);
@@ -2233,17 +2231,14 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	return;
 
 failed:
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] FAILED: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name,
-			 ((input_fd > 0) ? input_fd : con->input_fd),
-			 ((output_fd > 0) ? output_fd : con->output_fd),
-			 (uintptr_t) (conn ? conn : (conn_t *) con->tls),
-			 con->on_extract.func_name,
-			 (uintptr_t) con->on_extract.func_arg, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: [%s] FAILED: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+		 __func__, con->name,
+		 ((input_fd > 0) ? input_fd : con->input_fd),
+		 ((output_fd > 0) ? output_fd : con->output_fd),
+		 (uintptr_t) (conn ? conn : (conn_t *) con->tls),
+		 con->on_extract.func_name,
+		 (uintptr_t) con->on_extract.func_arg,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	con_unset_flag(con, FLAG_WAIT_ON_EXTRACT);
 	close_con(true, con);
@@ -2295,6 +2290,8 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 
 static int _unquiesce_fd(conmgr_fd_t *con)
 {
+	char flags_str[CON_FLAGS_STR_BYTES];
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (!con_flag(con, FLAG_QUIESCE))
@@ -2303,12 +2300,9 @@ static int _unquiesce_fd(conmgr_fd_t *con)
 	con_unset_flag(con, FLAG_QUIESCE);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: unquiesced connection flags=%s",
-			 __func__, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: unquiesced connection flags=%s",
+		 __func__,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	return SLURM_SUCCESS;
 }
@@ -2363,6 +2357,8 @@ extern bool conmgr_con_is_quiesced(conmgr_fd_ref_t *con)
 
 static int _quiesce_fd(conmgr_fd_t *con)
 {
+	char flags_str[CON_FLAGS_STR_BYTES];
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (con_flag(con, FLAG_QUIESCE))
@@ -2372,12 +2368,9 @@ static int _quiesce_fd(conmgr_fd_t *con)
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: quiesced connection flags=%s",
-			 __func__, flags);
-		xfree(flags);
-	}
+	log_flag(CONMGR, "%s: quiesced connection flags=%s",
+		 __func__,
+		 con_flags_print(con->flags, flags_str, sizeof(flags_str)));
 
 	return SLURM_SUCCESS;
 }
@@ -2675,11 +2668,9 @@ static int _foreach_log_connection(void *x, void *arg)
 	};
 	char last_read[CTIME_STR_LEN] = "", *last_read_delim = "";
 	char last_write[CTIME_STR_LEN] = "", *last_write_delim = "";
-	char *flags = NULL;
+	char flags_str[CON_FLAGS_STR_BYTES];
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	flags = con_flags_string(con->flags);
 
 	if (con->last_read.tv_sec) {
 		last_read_delim = "@";
@@ -2701,7 +2692,8 @@ static int _foreach_log_connection(void *x, void *arg)
 
 	probe_log(log, "connection: [%s]+%d status_code=%s flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
 		  con->name, con->refs, slurm_strerror(con->status_code),
-		  flags, conmgr_con_type_string(con->type),
+		  con_flags_print(con->flags, flags_str, sizeof(flags_str)),
+		  conmgr_con_type_string(con->type),
 	     con->input_fd, con->output_fd, &con->address,
 	     BOOL_CHARIFY(con->tls),
 	     (con->tls_in ? get_buf_offset(con->tls_in) : 0),
@@ -2715,8 +2707,6 @@ static int _foreach_log_connection(void *x, void *arg)
 	     BOOL_CHARIFY(con->on_extract.func),
 	     pollctl_type_to_string(con->polling_input_fd),
 	     pollctl_type_to_string(con->polling_output_fd));
-
-	xfree(flags);
 
 	if (con->work) {
 		log_con_work_args_t args = {
