@@ -5078,7 +5078,7 @@ CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
 count of cores or hyper\-threads on the node depending upon the desired minimum
 resource allocation.
-The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
+The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR. and
 \fBThreadsPerCore\fR may optionally be configured and result in job
 allocations which have improved locality; however doing so will prevent
 more than one job from being allocated on each core.
@@ -5099,7 +5099,7 @@ satisfy a job's resource requirement, but multiple jobs are not
 allocated threads on the same core.
 The count of CPUs allocated to a job is rounded up to account for every
 CPU on an allocated core, which may also impact total allocated memory
-if it is derived from \-\-mem-per-cpu.
+if it is derived from \fB\-\-mem\-per\-cpu\fR.
 .IP
 
 .TP
@@ -5135,7 +5135,7 @@ plugin to further adjust selection behavior:
 Allocate one task per core by default.
 Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
-\fBNOTE\fR: This option cannot be used with CR_CPU*.
+\fBNOTE\fR: This option cannot be used with \fBCR_CPU*\fR.
 .IP
 
 .TP
@@ -5213,16 +5213,16 @@ This can be overridden with \fB\-\-gres\-flags=multiple\-tasks\-per\-sharing\fR.
 Disable topology\-aware task distribution for steps. By default, when a
 topology plugin is configured, tasks are distributed to nodes following
 topology order. This option reverts to the standard bitmap order.
-.IP
-
-.LP
-\fBNOTE\fR: If memory isn't configured as a consumable resource (CR_CPU,
-CR_Core or CR_Socket without _Memory) memory can be oversubscribed and will not
-be constrained by task/cgroup even if it is configured in cgroup.conf. In this
-case the \fI--mem\fR option is only used to filter out nodes with lower
-configured memory and does not take running jobs into account. For instance,
-two jobs requesting all the memory of a node can run at the same time.
 .RE
+
+.IP
+\fBNOTE\fR: If memory isn't configured as a consumable resource (\fBCR_CPU\fR,
+\fBCR_Core\fR, or \fBCR_Socket\fR without \fB_Memory\fR), memory can be
+oversubscribed and will not be constrained by \fBtask/cgroup\fR even if it is
+configured in \fBcgroup.conf\fR. In this case the \fB--mem\fR option is only
+used to filter out nodes with lower configured memory and does not take running
+jobs into account. For instance, two jobs requesting all the memory of a node
+can run at the same time.
 .IP
 
 .TP
