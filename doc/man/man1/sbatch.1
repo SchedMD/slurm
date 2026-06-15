@@ -2445,6 +2445,12 @@ Enable slurmstepd step management per\-job if it isn't enabled system wide.
 This enables job steps to be managed by a single extern slurmstepd associated
 with the job to manage steps. This is beneficial for jobs that submit many
 steps inside their allocations. \fBPrologFlags=contain\fR must be set.
+
+\fBNOTE\fR: For heterogeneous jobs, this option cannot be configured
+independently per component.
+The \fB\-\-stepmgr\fR setting on the first component (the heterogeneous job
+leader) is applied to the whole job; the setting on any other component is
+overridden to match the leader.
 .IP
 
 .TP
@@ -3602,6 +3608,18 @@ Only set if \fB\-\-runtime\fR is specified.
 .TP
 \fBSLURM_SHARDS_ON_NODE\fR
 Number of GPU Shards available to the step on this node.
+.IP
+
+.TP
+\fBSLURM_STEPMGR\fR
+Hostname of the \fBslurmstepd\fR(8) managing the job's steps, set when step
+management is enabled for the job (see \fB\-\-stepmgr\fR). Client commands use
+it to contact the step manager directly instead of querying \fBslurmctld\fR.
+.IP
+
+.TP
+\fBSLURM_STEPMGR_HET_GROUP_#\fR
+For a heterogeneous job allocation, the step manager host of each component.
 .IP
 
 .TP
