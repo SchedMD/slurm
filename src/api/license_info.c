@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_info.c - get/print the job state information of slurm
+ *  license_info.c - Get/update HRES and licenses
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
