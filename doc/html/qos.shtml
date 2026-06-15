@@ -188,7 +188,11 @@ the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
 with this QOS to run (if pending with QOSGrp{TRES}MinutesLimit or
 QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
 Note that this flag does not affect PriorityUsageResetPeriod, which still
-zeroes these counters on its own schedule.</li>
+zeroes these counters on its own schedule.
+This flag covers the whole QOS; to stop a single TRES decaying while the rest
+of the QOS carries on, see
+<a href="resource_limits.html#tresdecayhalflife">TresDecayHalfLife</a>, which
+this flag takes precedence over.</li>
 
 <li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
 jobs using this QOS will not reserve resources in the backfill

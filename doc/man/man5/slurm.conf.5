@@ -3339,6 +3339,10 @@ set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
 Applicable only if PriorityType=priority/multifactor.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00,
 or days\-hr). The default value is 7\-0 (7 days).
+Individual associations and QOS may override this for the \fBGrpTRESMins\fR
+usage of a given TRES; see \fBTresDecayHalfLife\fR in \fBsacctmgr\fR(1). Such
+an override still applies when this is set to 0. Fairshare usage and
+\fBGrpWall\fR always use this value.
 .IP
 
 .TP

@@ -445,7 +445,8 @@ output, it will not be enforced.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin. The time is decayed using the value of PriorityDecayHalfLife
-or PriorityUsageResetPeriod as set in the slurm.conf. When this limit
+or PriorityUsageResetPeriod as set in the slurm.conf; the decay rate can
+be overridden per TRES with \fBTresDecayHalfLife\fR. When this limit
 is reached all associated jobs running will be killed and all future
 jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
@@ -597,7 +598,73 @@ Remove the specified <qos> value from the current \fIQosLevel\fP.
 .RE
 .RE
 .TP
+\fBTresDecayHalfLife\fR=TRES=<\fIseconds\fR>[,TRES=<\fIseconds\fR>,...]
+How fast \fBGrpTRESMins\fR usage decays for each TRES, overriding
+\fBPriorityDecayHalfLife\fR for that TRES only. A longer half\-life decays the
+usage more slowly, so the \fBGrpTRESMins\fR quota replenishes more slowly; a
+shorter one replenishes it faster. This is the reverse of most limits, where a
+larger number is more permissive. \fB0\fR is the extreme case: that TRES never
+decays, which turns its \fBGrpTRESMins\fR into an allocation that does not
+replenish. A TRES that is not listed keeps decaying at
+\fBPriorityDecayHalfLife\fR. Use \fBTRES=\-1\fR to remove an override.
 
+A bare number is seconds. The \fImin\fR:\fIsec\fR,
+\fIhr\fR:\fImin\fR:\fIsec\fR, \fIdays\fR\-\fIhr\fR and
+\fIdays\fR\-\fIhr\fR:\fImin\fR:\fIsec\fR forms are also accepted and
+converted to seconds, and seconds is what is stored, displayed and dumped. A
+value with a single colon is \fImin\fR:\fIsec\fR, not \fIhr\fR:\fImin\fR.
+
+\fBNOTE\fR: A bare number here is seconds, unlike \fBGrpTRESMins\fR and
+\fBPriorityDecayHalfLife\fR, where a bare number is minutes. Do not carry a
+value across from either without converting it.
+
+This affects the \fBGrpTRESMins\fR usage counter only. Fairshare usage
+(\fBRawUsage\fR) and \fBGrpWall\fR always decay at
+\fBPriorityDecayHalfLife\fR.
+
+An association with no value of its own inherits the nearest ancestor's, the
+same as the \fBMax\fR limits do. Inheritance is per TRES, so setting one TRES
+does not clear the values inherited for the others.
+
+\fBNOTE\fR: \fBTRES=\-1\fR removes only this association's own value, so the
+nearest ancestor's applies again. Once an ancestor sets a half\-life for a TRES
+there is no way for a descendant to put that TRES back on
+\fBPriorityDecayHalfLife\fR; the closest equivalent is to set the same value
+the global uses.
+
+\fBNOTE\fR: \fBTRES+=\fR and \fBTRES\-=\fR are not accepted here. Since 0
+means never decay, subtracting past the stored value would silently freeze that
+TRES rather than shorten its half\-life, and adding to a TRES already at 0 would
+silently start it decaying again. Give an absolute value instead.
+\fBINFINITE\fR and \fBUNLIMITED\fR are not accepted either: they would store
+0, meaning never decay, rather than "no limit". Use \fBTRES=\-1\fR to remove an
+override.
+
+\fBNOTE\fR: A change takes effect on the next pass of the decay thread, which
+runs every \fBPriorityCalcPeriod\fR, not immediately.
+
+\fBNOTE\fR: \fBPriorityUsageResetPeriod\fR is a separate mechanism and still
+applies. It zeroes every usage counter on its schedule, including a TRES whose
+half\-life is 0, so the two should not normally be combined when the intent is
+an allocation that never replenishes.
+
+\fBNOTE\fR: A coordinator may lengthen a half\-life or set it to 0, both of
+which are more constrictive, but may not shorten one, may not set one on a
+TRES where no ancestor has set one, and may not remove one with
+\fBTRES\fR=\fB\-1\fR. Removing an override falls back to whatever the TRES
+inherits, which may be \fBPriorityDecayHalfLife\fR, so it cannot be shown to be
+no less constrictive than the value it replaces.
+
+\fBNOTE\fR: This only applies when using the Priority Multifactor plugin.
+
+Use \fBscontrol show assoc_mgr\fR to see the half\-lives the controller is
+using, and \fBsshare \-o Account,User,GrpTRESMins,GrpTRESRaw\fR to see the
+usage they apply to. To clear accumulated usage see \fBRawUsage\fR, but note
+that it clears fairshare usage and every TRES on the record, and for an
+account every association beneath it; there is no per\-TRES reset.
+.IP
+
+.LP
 See the \fBEXAMPLES\fR section below.
 .IP
 
@@ -986,6 +1053,12 @@ Valid QOSs for this association.
 .TP
 \fBQosRaw\fR
 Numeric IDs of valid QOSs for this association.
+.IP
+
+.TP
+\fBTresDecayHalfLife\fR
+Per\-TRES half\-life, in seconds, for the decay of this association's
+\fBGrpTRESMins\fR usage. 0 for a TRES means that TRES never decays.
 .IP
 
 .TP
@@ -1889,7 +1962,8 @@ Refer to the \fBTRES information\fR section below for further details.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin. The time is decayed using the value of PriorityDecayHalfLife
-or PriorityUsageResetPeriod as set in the slurm.conf. When this limit
+or PriorityUsageResetPeriod as set in the slurm.conf; the decay rate can
+be overridden per TRES with \fBTresDecayHalfLife\fR. When this limit
 is reached all associated jobs running will be killed and all future jobs
 submitted with this QOS will be delayed until they are able to run
 inside the limit.
@@ -2211,6 +2285,15 @@ only \- it cannot be used as a filter to list accounts.
 .IP
 
 .TP
+\fBTresDecayHalfLife\fR=TRES=<\fIseconds\fR>[,TRES=<\fIseconds\fR>,...]
+How fast this QOS's \fBGrpTRESMins\fR usage decays for each TRES, as described
+under \fBTresDecayHalfLife\fR in the
+\fBGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fR section, with two
+differences: a QOS has no parent to inherit from, and the \fBNoDecay\fR flag
+takes precedence, since it stops this QOS decaying anything at all.
+.IP
+
+.TP
 \fBUsageFactor\fR
 A float that is factored into a job's TRES usage (e.g. RawUsage, TRESMins,
 TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
@@ -2479,6 +2562,12 @@ The default preemption mechanism is specified by the cluster\-wide
 .TP
 \fBPriority\fR
 QOS priority factor to be used by the priority/multifactor plugin.
+.IP
+
+.TP
+\fBTresDecayHalfLife\fR
+Per\-TRES half\-life, in seconds, for the decay of this QOS's
+\fBGrpTRESMins\fR usage. 0 for a TRES means that TRES never decays.
 .IP
 
 .TP
@@ -3374,6 +3463,12 @@ Maximum wall clock time each job can use in this association.
 \fBQOS\fR=
 Comma\-separated list of Quality of Service names (Defined in sacctmgr).
 .IP
+
+.TP
+\fBTresDecayHalfLife\fR=
+Per\-TRES half\-life, in seconds, for the decay of \fBGrpTRESMins\fR
+usage. 0 for a TRES means that TRES never decays.
+.IP
 .RE
 
 After the entry for the root account you will have entries for the other
@@ -3475,6 +3570,13 @@ Name of organization that owns this account.
 .TP
 \fBQOS\fR(=,+=,\-=)
 Comma\-separated list of Quality of Service names (Defined in sacctmgr).
+.IP
+
+.TP
+\fBTresDecayHalfLife\fR=
+Per\-TRES half\-life, in seconds, for the decay of \fBGrpTRESMins\fR
+usage. 0 for a TRES means that TRES never decays.
+.IP
 .RE
 
 
@@ -3532,6 +3634,12 @@ Maximum wall clock time each job from this user can use.
 .TP
 \fBQOS\fR(=,+=,\-=)
 Comma\-separated list of Quality of Service names (Defined in sacctmgr).
+.IP
+
+.TP
+\fBTresDecayHalfLife\fR=
+Per\-TRES half\-life, in seconds, for the decay of \fBGrpTRESMins\fR
+usage. 0 for a TRES means that TRES never decays.
 .IP
 .RE
 
@@ -3911,6 +4019,28 @@ $ sacctmgr show assoc format=cluster,account,qos
      zebra           g             expedite
      zebra      banana             expedite
      zebra          g1      expedite,normal
+.fi
+
+Give the account science a CPU\-minute allocation that does not replenish,
+while everything else keeps decaying at \fBPriorityDecayHalfLife\fR:
+
+.nf
+$ sacctmgr modify account name=science set GrpTRESMins=cpu=100000
+$ sacctmgr modify account name=science set TresDecayHalfLife=cpu=0
+$ sshare \-o Account,GrpTRESMins,GrpTRESRaw \-A science
+.fi
+
+Once the 100000 CPU\-minutes are used the account's pending jobs are held with
+reason \fIAssocGrpCPUMinutesLimit\fR, and stay held until an administrator
+clears the usage, since nothing decays it back. Jobs already running when the
+budget is crossed are killed with reason \fITimeLimit\fR, unless
+\fIAccountingStorageEnforce\fR includes \fBSafe\fR.
+
+To let a GPU allocation renew on a 30 day half\-life while CPU stays frozen:
+
+.nf
+$ sacctmgr modify account name=science set \\
+     TresDecayHalfLife=cpu=0,gres/gpu=30\-0
 .fi
 
 An example of listing trackable resources:

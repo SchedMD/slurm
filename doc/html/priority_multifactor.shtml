@@ -369,6 +369,11 @@ Priority Plugin. See slurm.conf(5) man page for more details.</p>
   PriorityUsageResetPeriod must be set to some interval.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
   days-hr).  The default value is 7-0 (7 days).
+  Individual associations and QOS may override this for the GrpTRESMins usage
+  of a given TRES; see
+  <a href="resource_limits.html#tresdecayhalflife">TresDecayHalfLife</a>.
+  Such an override still applies when this is set to 0.
+  Fair-share usage and GrpWall always use this value.
 <DT> PriorityCalcPeriod
 <DD> The period of time in minutes in which the half-life decay will
   be re-calculated.  The default value is 5 (minutes).
