@@ -160,6 +160,7 @@ WhitespaceSensitiveMacros:
   - 'log_flag'
   - 'log_flag_hex'
   - 'log_flag_hex_range'
+  - 'LOG_WORK'
   - 'probe_log'
   - 'sched_debug'
   - 'sched_debug2'
