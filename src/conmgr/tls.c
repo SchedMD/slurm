@@ -428,6 +428,12 @@ again:
 	}
 }
 
+/*
+ * WARNING: This acquires mgr.mutex and then the con->tls_out rwlock. To avoid
+ * deadlock, callers of any tls_g_*() function that may result in a call to
+ * _send() must not hold the con->out or con->tls_out rwlock across the call.
+ * See tls_handle_encrypt() for the con->out case this rule prevents.
+ */
 static int _send(void *io_context, const uint8_t *src, uint32_t len)
 {
 	conmgr_fd_t *con = io_context;
