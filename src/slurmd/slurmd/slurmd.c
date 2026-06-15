@@ -254,7 +254,6 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
-static void *_service_msg(void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -740,14 +739,62 @@ _wait_for_all_threads(int secs)
 	verbose("all threads complete");
 }
 
-static void *_service_msg(void *arg)
+static void _service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	const slurm_addr_t *addr = &msg->address;
 	slurmd_rpc_t *this_rpc = args->this_rpc;
+	int rc = EINVAL;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(NET, "%s: [%pA] RPC servicing cancelled",
+			 __func__, &msg->address);
+		FREE_NULL_CONN(msg->conn);
+		FREE_NULL_MSG(msg);
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+		xfree(args);
+		return;
+	}
+
+	if ((rc = _increment_thd_count(false))) {
+		xassert(rc == EWOULDBLOCK);
+
+		/*
+		 * Servicing the connection will be deferred which means the
+		 * thread count should no longer consider processing this
+		 * connection until the delay is complete and this function is
+		 * called again.
+		 */
+		_decrement_thd_count();
+
+		/*
+		 * Backoff attempts to avoid needless lock contention while
+		 * avoiding having a new thread created
+		 */
+		args->delay = timespec_add(args->delay, MAX_THREAD_DELAY_INC);
+		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
+			args->delay = MAX_THREAD_DELAY_MAX;
+
+		warning("%s: [%pA] deferring servicing connection for %s",
+			__func__, &args->msg->address,
+			TIMESPEC_STR(args->delay, false));
+
+		if (conmgr_args.ref)
+			conmgr_add_work_con_delayed_fifo(conmgr_args.con,
+							 _service_msg, args,
+							 args->delay.tv_sec,
+							 args->delay.tv_nsec);
+		else
+			conmgr_add_work_delayed_fifo(_service_msg, args,
+						     args->delay.tv_sec,
+						     args->delay.tv_nsec);
+
+		return;
+	}
+
 	xassert(this_rpc);
 	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 	xfree(args);
@@ -763,10 +810,9 @@ static void *_service_msg(void *arg)
 		 rpc_num2string(msg->msg_type));
 
 	FREE_NULL_CONN(msg->conn);
-	slurm_free_msg(msg);
+	FREE_NULL_MSG(msg);
 
 	_decrement_thd_count();
-	return NULL;
 }
 
 static int _load_gres()
@@ -2035,49 +2081,6 @@ static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	conf->lfd = -1;
 }
 
-/* Try to process connection if thread max has not been hit */
-static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	service_msg_args_t *args = arg;
-	int rc = SLURM_ERROR;
-
-	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
-
-	if (!(rc = _increment_thd_count(false))) {
-		log_flag(NET, "%s: [%s] detaching new thread for RPC connection",
-			 __func__, conmgr_fd_get_name(conmgr_args.con));
-
-		slurm_thread_create_detached(NULL, _service_msg, args);
-	} else {
-		xassert(rc == EWOULDBLOCK);
-
-		/*
-		 * Servicing the connection will be deferred which means the
-		 * thread count should no longer consider processing this
-		 * connection until the delay is complete and this function is
-		 * called again.
-		 */
-		_decrement_thd_count();
-
-		/*
-		 * Backoff attempts to avoid needless lock contention while
-		 * avoiding having a new thread created
-		 */
-		args->delay = timespec_add(args->delay, MAX_THREAD_DELAY_INC);
-		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
-			args->delay = MAX_THREAD_DELAY_MAX;
-
-		warning("%s: [%pA] deferring servicing connection for %s",
-			__func__, &args->msg->address,
-			TIMESPEC_STR(args->delay, false));
-
-		conmgr_add_work_con_delayed_fifo(conmgr_args.con,
-						 _try_service_msg, args,
-						 args->delay.tv_sec,
-						 args->delay.tv_nsec);
-	}
-}
-
 static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
 			void *arg)
 {
@@ -2090,8 +2093,8 @@ static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
 	msg->conn = conn;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		log_flag(NET, "%s: [%s] connection work cancelled",
-			 __func__, conmgr_con_get_name(msg->conmgr_con));
+		log_flag(NET, "%s: [%pA] connection work cancelled",
+			 __func__, &msg->address);
 		FREE_NULL_CONN(msg->conn);
 		FREE_NULL_MSG(msg);
 		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
@@ -2099,7 +2102,7 @@ static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
 		return;
 	}
 
-	_try_service_msg(conmgr_args, args);
+	_service_msg(conmgr_args, args);
 }
 
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
