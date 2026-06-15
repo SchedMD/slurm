@@ -2078,8 +2078,8 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
-			   void *arg)
+static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
+			void *arg)
 {
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
@@ -2161,9 +2161,8 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 
 	CONMGR_CON_UNLINK(msg->conmgr_con);
 
-	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
-					      XSTRINGIFY(_on_extract_fd),
-							 args))) {
+	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract,
+					      XSTRINGIFY(_on_extract), args))) {
 		error("%s: [%s] Extracting FDs failed: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
 		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
