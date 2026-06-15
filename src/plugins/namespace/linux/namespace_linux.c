@@ -816,12 +816,12 @@ static int _create_ns(stepd_step_rec_t *step)
 	if (mount(job_mount, job_mount, NULL, MS_BIND, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
 		rc = SLURM_ERROR;
-		goto end_it;
+		goto exit2;
 	}
 	if (mount(job_mount, job_mount, NULL, MS_PRIVATE | MS_REC, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
 		rc = SLURM_ERROR;
-		goto end_it;
+		goto exit2;
 	}
 
 	if (mkdir(ns_base, 0700)) {
