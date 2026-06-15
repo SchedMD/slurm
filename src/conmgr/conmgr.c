@@ -392,10 +392,16 @@ extern int conmgr_set_params(const char *params)
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_THREADS));
 
-			mgr.workers.conf_threads = count;
+			if ((count < 1) || (count > INT_MAX)) {
+				error("%s: Ignoring invalid %s: thread count must be >= 1; using default",
+				      __func__, tok);
+			} else {
+				mgr.workers.conf_threads = (int) count;
 
-			log_flag(CONMGR, "%s: %s set %lu threads",
-				 __func__, tok, count);
+				log_flag(CONMGR, "%s: %s set %d threads",
+					 __func__, tok,
+					 mgr.workers.conf_threads);
+			}
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_MAX_CONN,
 				  strlen(CONMGR_PARAM_MAX_CONN))) {
 			const unsigned long count =
