@@ -3060,6 +3060,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->shares_raw       = ret_assoc->shares_raw;
 
+	if (!assoc->tres_decay_hl)
+		assoc->tres_decay_hl = ret_assoc->tres_decay_hl;
+
 	assoc->uid              = ret_assoc->uid;
 
 	/* Don't send any usage info since we don't know if the usage

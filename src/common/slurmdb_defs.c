@@ -846,6 +846,8 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		xfree(assoc->parent_acct);
 		xfree(assoc->partition);
 		FREE_NULL_LIST(assoc->qos_list);
+		xfree(assoc->tres_decay_hl);
+		xfree(assoc->tres_decay_hl_ctld);
 		xfree(assoc->user);
 
 		/* Account with previously deleted users */
@@ -980,6 +982,8 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
 		FREE_NULL_LIST(qos->preempt_list);
 		xfree(qos->relative_tres_cnt);
+		xfree(qos->tres_decay_hl);
+		xfree(qos->tres_decay_hl_ctld);
 		slurmdb_destroy_qos_usage(qos->usage);
 		slurmdb_destroy_qos_usage(qos->usage_het);
 	}
@@ -3574,6 +3578,9 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 	out->priority = in->priority;
 	out->comment = xstrdup(in->comment);
 
+	xfree(out->tres_decay_hl);
+	out->tres_decay_hl = xstrdup(in->tres_decay_hl);
+
 	FREE_NULL_LIST(out->qos_list);
 	out->qos_list = slurm_copy_char_list(in->qos_list);
 }
@@ -3695,6 +3702,9 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->preempt_exempt_time = in->preempt_exempt_time;
 
 	out->priority = in->priority;
+
+	xfree(out->tres_decay_hl);
+	out->tres_decay_hl = xstrdup(in->tres_decay_hl);
 
 	out->usage_factor = in->usage_factor;
 	out->usage_thres = in->usage_thres;
