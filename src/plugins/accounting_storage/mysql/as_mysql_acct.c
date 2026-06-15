@@ -250,11 +250,11 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	    acct_cond->assoc_cond->acct_list &&
 	    list_count(acct_cond->assoc_cond->acct_list)) {
 		int set = 0;
-		xstrcatat(*extra, at, " && (");
+		xstrcatat(*extra, at, " and (");
 		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcatat(*extra, at, " || ");
+				xstrcatat(*extra, at, " or ");
 			xstrfmtcatat(*extra, at, "name='%s'", object);
 			set = 1;
 		}
@@ -265,11 +265,11 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	if (acct_cond->description_list
 	    && list_count(acct_cond->description_list)) {
 		int set = 0;
-		xstrcatat(*extra, at, " && (");
+		xstrcatat(*extra, at, " and (");
 		itr = list_iterator_create(acct_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcatat(*extra, at, " || ");
+				xstrcatat(*extra, at, " or ");
 			xstrfmtcatat(*extra, at, "description='%s'", object);
 			set = 1;
 		}
@@ -279,10 +279,10 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 
 	if (acct_cond->flags != SLURMDB_ACCT_FLAG_NONE) {
 		if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD_NO) {
-			xstrfmtcatat(*extra, at, " && !(flags & %u)",
+			xstrfmtcatat(*extra, at, " and not (flags & %u)",
 				     SLURMDB_ACCT_FLAG_USER_COORD);
 		} else if (acct_cond->flags & SLURMDB_ACCT_FLAG_USER_COORD) {
-			xstrfmtcatat(*extra, at, " && (flags & %u)",
+			xstrfmtcatat(*extra, at, " and (flags & %u)",
 				     SLURMDB_ACCT_FLAG_USER_COORD);
 		}
 	}
@@ -290,11 +290,11 @@ static void _setup_acct_cond_limits(slurmdb_account_cond_t *acct_cond,
 	if (acct_cond->organization_list
 	    && list_count(acct_cond->organization_list)) {
 		int set = 0;
-		xstrcatat(*extra, at, " && (");
+		xstrcatat(*extra, at, " and (");
 		itr = list_iterator_create(acct_cond->organization_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcatat(*extra, at, " || ");
+				xstrcatat(*extra, at, " or ");
 			xstrfmtcatat(*extra, at, "organization='%s'", object);
 			set = 1;
 		}
@@ -320,7 +320,7 @@ static int _foreach_add_acct(void *x, void *arg)
 	slurmdb_acct_flags_t base_flags;
 
 	/* Check to see if it is already in the acct_table */
-	query = xstrdup_printf("select name from %s where name='%s' and !deleted",
+	query = xstrdup_printf("select name from %s where name='%s' and not deleted",
 			       acct_table, name);
 	result = mysql_db_query_ret(add_acct_cond->mysql_conn, query, 0);
 
@@ -759,7 +759,7 @@ extern list_t *as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " or name='%s'", object);
 		}
 
 	}
@@ -872,7 +872,7 @@ extern list_t *as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				     object);
 		xstrfmtcatat(assoc_char, &assoc_char_pos,
 			     "%st2.lineage like '%%/%s/%%'",
-			     assoc_char ? " || " : "", object);
+			     assoc_char ? " or " : "", object);
 	}
 
 	if (name_char)
@@ -988,7 +988,7 @@ extern list_t *as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (acct_cond->flags & SLURMDB_ACCT_FLAG_DELETED)
-		xstrcatat(extra, &at, "where (deleted=0 || deleted=1)");
+		xstrcatat(extra, &at, "where (deleted=0 or deleted=1)");
 	else
 		xstrcatat(extra, &at, "where deleted=0");
 
@@ -1012,11 +1012,11 @@ empty:
 		itr = list_iterator_create(user.coord_accts);
 		while ((coord = list_next(itr))) {
 			if (set) {
-				xstrfmtcat(extra, " || name='%s'",
+				xstrfmtcat(extra, " or name='%s'",
 					   coord->name);
 			} else {
 				set = 1;
-				xstrfmtcat(extra, " && (name='%s'",
+				xstrfmtcat(extra, " and (name='%s'",
 					   coord->name);
 			}
 		}

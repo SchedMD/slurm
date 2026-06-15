@@ -197,18 +197,18 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (tres_cond->with_deleted)
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
+		xstrcat(extra, "where (deleted=0 or deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
 
 	if (tres_cond->id_list
 	    && list_count(tres_cond->id_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(tres_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "id='%s'", object);
 			set = 1;
 		}
@@ -219,12 +219,12 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	if (tres_cond->type_list
 	    && list_count(tres_cond->type_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(tres_cond->type_list);
 		while ((object = list_next(itr))) {
 			char *slash;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			if (!(slash = strchr(object, '/')))
 				xstrfmtcat(extra, "type='%s'", object);
 			else {
@@ -235,7 +235,7 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 				char *name = slash;
 				*slash = '\0';
 				name++;
-				xstrfmtcat(extra, "(type='%s' && name='%s')",
+				xstrfmtcat(extra, "(type='%s' and name='%s')",
 					   object, name);
 			}
 			set = 1;
@@ -247,11 +247,11 @@ extern list_t *as_mysql_get_tres(mysql_conn_t *mysql_conn, uid_t uid,
 	if (tres_cond->name_list
 	    && list_count(tres_cond->name_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(tres_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}

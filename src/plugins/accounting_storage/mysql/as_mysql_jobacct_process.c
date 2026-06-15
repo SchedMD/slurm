@@ -312,7 +312,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		char *sluid_ids = NULL;
 
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -355,20 +355,20 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 			if (job_cond->flags & JOBCOND_FLAG_DUP)
 				xstrfmtcat(
 					*extra,
-					"(t1.job_db_inx in (%s) || t1.sluid in (%s))",
+					"(t1.job_db_inx in (%s) or t1.sluid in (%s))",
 					sluid_ids, sluid_ids);
 			else
 				xstrfmtcat(*extra, "t1.job_db_inx in (%s)",
 					   sluid_ids);
-			sep = " || ";
+			sep = " or ";
 		}
 		if (job_ids) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
 				xstrfmtcat(*extra,
-					   "%st1.id_job in (%s) || "
+					   "%st1.id_job in (%s) or "
 					   "t1.het_job_id in (select "
 					   "t4.het_job_id from \"%s_%s\" as "
-					   "t4 where t4.id_job in (%s) && "
+					   "t4 where t4.id_job in (%s) and "
 					   "t4.het_job_id)",
 					   sep, job_ids, cluster_name,
 					   job_table, job_ids);
@@ -378,9 +378,9 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 			else
 				xstrfmtcat(
 					*extra,
-					"%st1.id_job in (%s) || t1.het_job_id in (%s)",
+					"%st1.id_job in (%s) or t1.het_job_id in (%s)",
 					sep, job_ids, job_ids);
-			sep = " || ";
+			sep = " or ";
 		}
 		if (het_job_offset) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
@@ -388,14 +388,14 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 					   sep, het_job_ids);
 			else
 				xstrfmtcat(*extra, "%s(t1.het_job_id in (%s) "
-					   "&& t1.het_job_offset in (%s))",
+					   "and t1.het_job_offset in (%s))",
 					   sep, het_job_ids, het_job_offset);
-			sep = " || ";
+			sep = " or ";
 		}
 		if (array_job_ids) {
 			xstrfmtcat(*extra, "%s(t1.id_array_job in (%s))",
 				   sep, array_job_ids);
-			sep = " || ";
+			sep = " or ";
 		}
 
 		if (array_task_ids) {
@@ -437,10 +437,10 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * (-E > time_eligible)
 		 */
 		xstrfmtcat(*extra,
-			   "(t1.time_eligible && "
-			   "(( t1.time_start && (%ld < t1.time_start)) || "
-			   " (!t1.time_start &&  t1.time_end && (%ld < t1.time_end)) || "
-			   " (!t1.time_start && !t1.time_end && (t1.state=%d))) && "
+			   "(t1.time_eligible and "
+			   "(( t1.time_start and (%ld < t1.time_start)) or "
+			   " (not t1.time_start and t1.time_end and (%ld < t1.time_end)) or "
+			   " (not t1.time_start and not t1.time_end and (t1.state=%d))) and "
 			   "(%ld > t1.time_eligible))",
 			   job_cond->usage_start,
 			   job_cond->usage_start,
@@ -451,8 +451,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		xstrfmtcat(*extra,
 			   "(select count(time_start) from "
 			   "\"%s_%s\" where "
-			   "(time_start <= %ld && (time_end >= %ld "
-			   "|| time_end = 0)) && job_db_inx=t1.job_db_inx)",
+			   "(time_start <= %ld and (time_end >= %ld "
+			   "or time_end = 0)) and job_db_inx=t1.job_db_inx)",
 			   cluster_name, suspend_table,
 			   job_cond->usage_end ?
 			   job_cond->usage_end : job_cond->usage_start,
@@ -468,8 +468,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * (-E > time_start)
 		 */
 		xstrfmtcat(*extra,
-			   "(t1.time_start && "
-			   "((%ld < t1.time_end || (!t1.time_end && t1.state=%d))) && "
+			   "(t1.time_start and "
+			   "((%ld < t1.time_end or (not t1.time_end and t1.state=%d))) and "
 			   "((%ld > t1.time_start)))",
 			   job_cond->usage_start, base_state,
 			   job_cond->usage_end);
@@ -493,7 +493,7 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * Job ending *in* the time window with the specified state.
 		 */
 		xstrfmtcat(*extra,
-		           "(t1.state='%u' && (t1.time_end && "
+		           "(t1.state='%u' and (t1.time_end and "
 		           "(t1.time_end between %ld and %ld)))",
 		           base_state, job_cond->usage_start,
 			   job_cond->usage_end);
@@ -556,7 +556,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if (!extra)
 			xstrcat(extra, " where ");
 		else
-			xstrcat(extra, " && ");
+			xstrcat(extra, " and ");
 		xstrfmtcat(extra, "((%s.lineage like '%%/0-%s/%%')",
 			   prefix, user->name);
 		if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_COORD_DBD) &&
@@ -565,7 +565,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
 				xstrfmtcat(extra,
-					   " || (%s.lineage like '%%/%s/%%')",
+					   " or (%s.lineage like '%%/%s/%%')",
 					   prefix, coord->name);
 			}
 			list_iterator_destroy(itr);
@@ -580,15 +580,15 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc "
 			       "left join \"%s_%s\" as t3 "
-			       "on t1.id_resv=t3.id_resv && "
-			       "((t1.time_start && "
-			       "(t3.time_start < t1.time_start && "
-			       "(t3.time_end >= t1.time_start || "
-			       "t3.time_end = 0))) || "
-			       "(t1.time_start = 0 && "
-			       "((t3.time_start < t1.time_submit && "
-			       "(t3.time_end >= t1.time_submit || "
-			       "t3.time_end = 0)) || "
+			       "on t1.id_resv=t3.id_resv and "
+			       "((t1.time_start and "
+			       "(t3.time_start < t1.time_start and "
+			       "(t3.time_end >= t1.time_start or "
+			       "t3.time_end = 0))) or "
+			       "(t1.time_start = 0 and "
+			       "((t3.time_start < t1.time_submit and "
+			       "(t3.time_end >= t1.time_submit or "
+			       "t3.time_end = 0)) or "
 			       "(t3.time_start > t1.time_submit))))",
 			       job_fields, cluster_name, job_table,
 			       cluster_name, assoc_table,
@@ -607,7 +607,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 	if (job_cond->flags & JOBCOND_FLAG_RUNAWAY) {
 		if (extra)
-			xstrcat(extra, " && (t1.time_end=0)");
+			xstrcat(extra, " and (t1.time_end=0)");
 		else
 			xstrcat(extra, " where (t1.time_end=0)");
 	}
@@ -816,8 +816,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				query = xstrdup_printf(
 					"select time_start, time_end from "
 					"\"%s_%s\" where "
-					"(time_start < %ld && (time_end >= %ld "
-					"|| time_end = 0)) && job_db_inx=%s "
+					"(time_start < %ld and (time_end >= %ld "
+					"or time_end = 0)) and job_db_inx=%s "
 					"order by time_start",
 					cluster_name, suspend_table,
 					job_cond->usage_end,
@@ -974,9 +974,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					break;
 				}
 				if (set)
-					xstrcat(extra, " || ");
+					xstrcat(extra, " or ");
 				else
-					xstrcat(extra, " && (");
+					xstrcat(extra, " and (");
 
 				/*
 				 * The stepid could be negative so use
@@ -994,9 +994,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		}
 
 		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
-				       "where t1.job_db_inx=%s && "
-				       "t1.time_start <= %ld && "
-				       "(!t1.time_end || t1.time_end >= %ld)",
+				       "where t1.job_db_inx=%s and "
+				       "t1.time_start <= %ld and "
+				       "(not t1.time_end or t1.time_end >= %ld)",
 				       step_fields, cluster_name,
 				       step_table, db_inx_char,
 				       job_cond->usage_end,
@@ -1253,7 +1253,7 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select cluster_nodes, time_start, "
 			       "time_end from \"%s_%s\" where node_name='' "
-			       "&& cluster_nodes !=''",
+			       "and cluster_nodes !=''",
 			       (char *)list_peek(job_cond->cluster_list),
 			       event_table);
 
@@ -1262,8 +1262,8 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			job_cond->usage_end = now;
 
 		xstrfmtcat(query,
-			   " && ((time_start < %ld) "
-			   "&& (time_end >= %ld || time_end = 0))",
+			   " and ((time_start < %ld) "
+			   "and (time_end >= %ld or time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
@@ -1385,7 +1385,7 @@ extern int setup_job_cluster_cond_limits(mysql_conn_t *mysql_conn,
 		itr = list_iterator_create(job_cond->resv_list);
 		while ((object = list_next(itr))) {
 			if (my_set)
-				xstrcat(query, " || ");
+				xstrcat(query, " or ");
 			xstrfmtcat(query, "resv_name='%s'", object);
 			my_set = 1;
 		}
@@ -1410,13 +1410,13 @@ no_resv:
 	if (job_cond->resvid_list && list_count(job_cond->resvid_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->resvid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_resv='%s'", object);
 			set = 1;
 		}
@@ -1427,14 +1427,14 @@ no_resv:
 	if (job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->state_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 
 			_state_time_string(extra, cluster_name,
 					   (uint32_t)slurm_atoul(object),
@@ -1448,7 +1448,7 @@ no_resv:
 	/* Don't show revoked sibling federated jobs w/out -D */
 	if (!(job_cond->flags & JOBCOND_FLAG_DUP))
 		xstrfmtcat(*extra, " %s (t1.state != %"PRIu64")",
-			   *extra ? "&&" : "where",
+			   *extra ? "and" : "where",
 			   JOB_REVOKED);
 
 	return SLURM_SUCCESS;
@@ -1469,13 +1469,13 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->acct_list && list_count(job_cond->acct_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.account='%s'", object);
 			set = 1;
 		}
@@ -1486,13 +1486,13 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->associd_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_assoc='%s'", object);
 			set = 1;
 		}
@@ -1504,14 +1504,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	    list_count(job_cond->constraint_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->constraint_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " && ");
+				xstrcat(*extra, " and ");
 			if (object[0])
 				xstrfmtcat(*extra,
 					   "t1.constraints like '%%%s%%'",
@@ -1528,7 +1528,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->db_flags != SLURMDB_JOB_FLAG_NOTSET) {
 		set = 1;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1543,14 +1543,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->reason_list && list_count(job_cond->reason_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->reason_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.state_reason_prev='%s'",
 				   object);
 			set = 1;
@@ -1562,14 +1562,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->userid_list && list_count(job_cond->userid_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->userid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_user='%s'", object);
 			set = 1;
 		}
@@ -1580,13 +1580,13 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->groupid_list && list_count(job_cond->groupid_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->groupid_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_group='%s'", object);
 			set = 1;
 		}
@@ -1597,14 +1597,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->jobname_list && list_count(job_cond->jobname_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->jobname_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.job_name='%s'", object);
 			set = 1;
 		}
@@ -1615,13 +1615,13 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.partition='%s'", object);
 			set = 1;
 		}
@@ -1632,13 +1632,13 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->qos_list && list_count(job_cond->qos_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(job_cond->qos_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.id_qos='%s'", object);
 			set = 1;
 		}
@@ -1648,7 +1648,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 	if (job_cond->cpus_min) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1670,7 +1670,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 	if (job_cond->nodes_min) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1688,7 +1688,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 
 	if (job_cond->timelimit_min) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
@@ -1715,43 +1715,43 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			if (!(job_cond->flags &
 			      JOBCOND_FLAG_NO_DEFAULT_USAGE)) {
 				if (*extra)
-					xstrcat(*extra, " && (");
+					xstrcat(*extra, " and (");
 				else
 					xstrcat(*extra, " where (");
 
 				xstrfmtcat(*extra,
-					   "(t1.time_submit < %ld) && "
-					   "(t1.time_end >= %ld ||"
+					   "(t1.time_submit < %ld) and "
+					   "(t1.time_end >= %ld or"
 					   " t1.time_end = 0))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
 			}
 		} else if (job_cond->usage_start) {
 			if (*extra)
-				xstrcat(*extra, " && (");
+				xstrcat(*extra, " and (");
 			else
 				xstrcat(*extra, " where (");
 
 			if (!job_cond->usage_end)
 				xstrfmtcat(*extra,
 					   "(t1.time_end >= %ld "
-					   "|| t1.time_end = 0))",
+					   "or t1.time_end = 0))",
 					   job_cond->usage_start);
 			else
 				xstrfmtcat(*extra,
 					   "(t1.time_eligible "
-					   "&& t1.time_eligible < %ld "
-					   "&& (t1.time_end >= %ld "
-					   "|| t1.time_end = 0)))",
+					   "and t1.time_eligible < %ld "
+					   "and (t1.time_end >= %ld "
+					   "or t1.time_end = 0)))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
 		} else if (job_cond->usage_end) {
 			if (*extra)
-				xstrcat(*extra, " && (");
+				xstrcat(*extra, " and (");
 			else
 				xstrcat(*extra, " where (");
 			xstrfmtcat(*extra,
-				   "(t1.time_eligible && "
+				   "(t1.time_eligible and "
 				   "t1.time_eligible < %ld))",
 				   job_cond->usage_end);
 		}
@@ -1760,14 +1760,14 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (job_cond->wckey_list && list_count(job_cond->wckey_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 
 		itr = list_iterator_create(job_cond->wckey_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.wckey='%s'", object);
 			set = 1;
 		}

@@ -161,13 +161,13 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 	if (resv_cond->id_list && list_count(resv_cond->id_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.id_resv=%s", prefix, object);
 			set = 1;
 		}
@@ -178,13 +178,13 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 	if (resv_cond->name_list && list_count(resv_cond->name_list)) {
 		set = 0;
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.resv_name='%s'",
 				   prefix, object);
 			set = 1;
@@ -198,16 +198,16 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 			resv_cond->time_end = now;
 
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
 			   "(t1.time_start < %ld "
-			   "&& (t1.time_end >= %ld || t1.time_end = 0)))",
+			   "and (t1.time_end >= %ld or t1.time_end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if (resv_cond->time_end) {
 		if (*extra)
-			xstrcat(*extra, " && (");
+			xstrcat(*extra, " and (");
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra,
@@ -514,7 +514,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 			 * entry. */
 			query = xstrdup_printf(
 				"update \"%s_%s\" set time_end=%ld "
-				"where deleted=0 && id_resv=%u "
+				"where deleted=0 and id_resv=%u "
 				"and time_start=%ld;",
 				resv->cluster, resv_table,
 				resv->time_start,

@@ -149,11 +149,11 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 	if (qos_cond->description_list &&
 	    list_count(qos_cond->description_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(qos_cond->description_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "description='%s'", object);
 			set = 1;
 		}
@@ -164,11 +164,11 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 	if (qos_cond->id_list &&
 	    list_count(qos_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(qos_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "id='%s'", object);
 			set = 1;
 		}
@@ -179,11 +179,11 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 	if (qos_cond->name_list &&
 	    list_count(qos_cond->name_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(qos_cond->name_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "name='%s'", object);
 			set = 1;
 		}
@@ -193,10 +193,10 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 
 	if ((qos_cond->preempt_mode != NO_VAL16) && qos_cond->preempt_mode) {
 		set = 1;
-		xstrfmtcat(*extra, " && (preempt_mode&%d",
+		xstrfmtcat(*extra, " and (preempt_mode&%d",
 			   qos_cond->preempt_mode);
 		if (qos_cond->preempt_mode & PREEMPT_MODE_COND_OFF)
-			xstrcat(*extra, " || preempt_mode=0");
+			xstrcat(*extra, " or preempt_mode=0");
 		xstrcat(*extra, ")");
 	}
 
@@ -928,7 +928,7 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " or name='%s'", object);
 		}
 
 		qos_rec = xmalloc(sizeof(slurmdb_qos_rec_t));
@@ -1143,11 +1143,11 @@ extern list_t *as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!name_char)
 			xstrfmtcat(name_char, "id='%s'", row[0]);
 		else
-			xstrfmtcat(name_char, " || id='%s'", row[0]);
+			xstrfmtcat(name_char, " or id='%s'", row[0]);
 		if (!assoc_char)
 			xstrfmtcat(assoc_char, "id_qos='%s'", row[0]);
 		else
-			xstrfmtcat(assoc_char, " || id_qos='%s'", row[0]);
+			xstrfmtcat(assoc_char, " or id_qos='%s'", row[0]);
 		xstrfmtcat(extra,
 			   ", qos=replace(qos, ',%s,', if(qos=',%s,', '', ','))"
 			   ", delta_qos=replace(delta_qos, ',+%s,', if(delta_qos=',+%s,', '', ','))"
@@ -1353,7 +1353,7 @@ extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (qos_cond->flags & QOS_COND_FLAG_WITH_DELETED)
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
+		xstrcat(extra, "where (deleted=0 or deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
 

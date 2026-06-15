@@ -264,7 +264,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 		   the updated assocs back to the slurmctlds
 		*/
 		xstrfmtcat(sel_query, "select id_assoc from \"%s_%s\" "
-			   "where (user='%s' && acct!='%s' && is_def=1);",
+			   "where (user='%s' and acct!='%s' and is_def=1);",
 			   assoc->cluster, assoc_table,
 			   assoc->user, assoc->acct);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", sel_query);
@@ -302,7 +302,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 	if (run_update) {
 		use_query = query ? query : &reset_query;
 		xstrfmtcat(*use_query,
-			   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' && acct!='%s' && is_def=1);",
+			   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' and acct!='%s' and is_def=1);",
 			   assoc->cluster, assoc_table, (long)now,
 			   assoc->user, assoc->acct);
 		if (reset_query) {
@@ -696,7 +696,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 
 	/* We want all direct sub accounts and user accounts */
 	xstrfmtcatat(query, &query_pos,
-		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
+		     "select distinct %s from \"%s_%s\" where deleted!=1 and id_assoc!=%u and lineage like '%s%%' and ((user = '' and parent_acct = '%s') or (user != '' and acct = '%s')) order by lineage;",
 		     object, assoc->cluster, assoc_table,
 		     assoc->id, lineage, acct, acct);
 	xfree(object);
@@ -949,22 +949,22 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	 * entries we don't want.
 	 */
 	if (assoc_cond->flags & ASSOC_COND_FLAG_WITH_DELETED)
-		xstrfmtcat(*extra, " (t1.deleted=0 || t1.deleted=1)");
+		xstrfmtcat(*extra, " (t1.deleted=0 or t1.deleted=1)");
 	else
 		xstrfmtcat(*extra, " t1.deleted=0");
 
 	if (assoc_cond->flags & ASSOC_COND_FLAG_ONLY_DEFS) {
 		set = 1;
-		xstrfmtcat(*extra, " && (%s.is_def=1)", prefix);
+		xstrfmtcat(*extra, " and (%s.is_def=1)", prefix);
 	}
 
 	if (assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			if (assoc_cond->flags & ASSOC_COND_FLAG_SUB_ACCTS) {
 				xstrfmtcat(*extra,
 					   "%s.lineage like '%%/%s/%%'",
@@ -982,11 +982,11 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	if (assoc_cond->def_qos_id_list
 	    && list_count(assoc_cond->def_qos_id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->def_qos_id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.def_qos_id='%s'",
 				   prefix, object);
 			set = 1;
@@ -997,11 +997,11 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 
 	if (assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.user='%s'", prefix, object);
 			set = 1;
 		}
@@ -1010,17 +1010,17 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	} else if (assoc_cond->user_list) {
 		/* we want all the users, but no non-user associations */
 		set = 1;
-		xstrfmtcat(*extra, " && (%s.user!='')", prefix);
+		xstrfmtcat(*extra, " and (%s.user!='')", prefix);
 	}
 
 	if (assoc_cond->partition_list
 	    && list_count(assoc_cond->partition_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.partition='%s'",
 				   prefix, object);
 			set = 1;
@@ -1031,11 +1031,11 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 
 	if (assoc_cond->id_list && list_count(assoc_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->id_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.id_assoc=%s", prefix, object);
 			set = 1;
 		}
@@ -1046,11 +1046,11 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 	if (assoc_cond->parent_acct_list
 	    && list_count(assoc_cond->parent_acct_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->parent_acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "%s.parent_acct='%s'",
 				   prefix, object);
 			set = 1;
@@ -1440,7 +1440,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		added++;
 
 		if (name_char)
-			xstrfmtcat(name_char, " || id_assoc=%s",
+			xstrfmtcat(name_char, " or id_assoc=%s",
 				   row[MASSOC_ID]);
 		else
 			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
@@ -1873,7 +1873,7 @@ static int _process_remove_assoc_results(remove_common_args_t *args,
 		}
 		list_append(args->ret_list, object);
 		if (args->assoc_char)
-			xstrfmtcat(args->assoc_char, " || id_assoc=%s",
+			xstrfmtcat(args->assoc_char, " or id_assoc=%s",
 				   row[RASSOC_ID]);
 		else
 			xstrfmtcat(args->assoc_char, "id_assoc=%s",
@@ -1977,11 +1977,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		if (user->coord_accts && list_count(user->coord_accts)) {
 			slurmdb_coord_rec_t *coord = NULL;
 			bool added = false;
-			xstrcat(query, " || (user='' && (");
+			xstrcat(query, " or (user='' and (");
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
 				xstrfmtcat(query, "%sacct='%s'",
-					   added ? " || " : "", coord->name);
+					   added ? " or " : "", coord->name);
 				added = true;
 			}
 			list_iterator_destroy(itr);
@@ -1999,12 +1999,12 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		while ((row = mysql_fetch_row(result))) {
 			if (set) {
 				xstrfmtcat(extra,
-					   " || (t1.lineage like '%s%%')",
+					   " or (t1.lineage like '%s%%')",
 					   row[0]);
 			} else {
 				set = 1;
 				xstrfmtcat(extra,
-					   " && ((t1.lineage like '%s%%')",
+					   " and ((t1.lineage like '%s%%')",
 					   row[0]);
 			}
 		}
@@ -2494,7 +2494,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		int has_def_acct = 0;
 
 		/* Check if there is already a default account. */
-		query = xstrdup_printf("select id_assoc from \"%s_%s\" where user='%s' && acct!='%s' && is_def=1 && deleted!=1;",
+		query = xstrdup_printf("select id_assoc from \"%s_%s\" where user='%s' and acct!='%s' and is_def=1 and deleted!=1;",
 				       assoc_in->cluster, assoc_table,
 				       assoc_in->user, assoc_in->acct);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -2577,12 +2577,12 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		xstrfmtcat(vals, ", '%s'", parent);
 		xstrfmtcat(extra, ", parent_acct='%s', user=''",
 			   parent);
-		xstrfmtcat(update, " && user=''");
+		xstrfmtcat(update, " and user=''");
 	} else {
 		char *part = assoc->partition;
 		xstrcat(cols, ", user");
 		xstrfmtcat(vals, ", '%s'", assoc->user);
-		xstrfmtcat(update, " && user='%s'", assoc->user);
+		xstrfmtcat(update, " and user='%s'", assoc->user);
 		xstrfmtcat(extra, ", user='%s'", assoc->user);
 
 		/*
@@ -2593,7 +2593,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 			part = "";
 		xstrcat(cols, ", `partition`");
 		xstrfmtcat(vals, ", '%s'", part);
-		xstrfmtcat(update, " && `partition`='%s'", part);
+		xstrfmtcat(update, " and `partition`='%s'", part);
 		xstrfmtcat(extra, ", `partition`='%s'", part);
 	}
 
@@ -3637,10 +3637,10 @@ is_same_user:
 	   taken care of above. */
 	if (assoc_cond->user_list && !list_count(assoc_cond->user_list)) {
 		debug4("no user specified looking at users");
-		xstrcat(extra, " && user != '' ");
+		xstrcat(extra, " and user != '' ");
 	} else if (!assoc_cond->user_list) {
 		debug4("no user specified looking at accounts");
-		xstrcat(extra, " && user = '' ");
+		xstrcat(extra, " and user = '' ");
 	}
 
 	if ((rc = setup_assoc_limits(assoc, &tmp_char1, &tmp_char2,
@@ -3913,12 +3913,12 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			if (list_count(assoc_cond->partition_list))
 				xstrfmtcat(args.name_char, "%slineage='%s'",
-					   args.name_char ? " || " : "",
+					   args.name_char ? " or " : "",
 					   row[1]);
 			else
 				xstrfmtcat(args.name_char,
 					   "%slineage like '%s%%'",
-					   args.name_char ? " || " : "",
+					   args.name_char ? " or " : "",
 					   row[1]);
 		}
 		mysql_free_result(result);

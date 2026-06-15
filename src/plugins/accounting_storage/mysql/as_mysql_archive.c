@@ -5292,7 +5292,7 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	switch (type) {
 	case PURGE_TXN:
 		query = xstrdup_printf("update \"%s\" set deleted = 1 where "
-				       "%s <= %ld && cluster='%s' "
+				       "%s <= %ld and cluster='%s' "
 				       "LIMIT %d",
 				       sql_table, col_name, period_end,
 				       cluster_name,
@@ -5332,7 +5332,7 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "%s > 0 && %s <= %ld "
+				       "%s > 0 and %s <= %ld "
 				       "LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       col_name, period_end,
@@ -5416,7 +5416,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	switch (type) {
 	case PURGE_TXN:
 		query = xstrdup_printf("select %s from \"%s\" where "
-				       "deleted = 1 && cluster='%s' "
+				       "deleted = 1 and cluster='%s' "
 				       "LIMIT %d",
 				       cols, sql_table,
 				       cluster_name,
@@ -5502,7 +5502,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	case PURGE_TXN:
 		query = xstrdup_printf(
 			"select %s from \"%s\" where %s <= %ld "
-			"&& cluster='%s' order by %s asc LIMIT 1",
+			"and cluster='%s' order by %s asc LIMIT 1",
 			col_name, table, col_name, period_end, cluster,
 			col_name);
 		break;
@@ -5527,7 +5527,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where %s > 0 "
-				       "&& %s <= %ld order by %s asc LIMIT 1",
+				       "and %s <= %ld order by %s asc LIMIT 1",
 				       col_name, cluster, table, col_name,
 				       col_name, period_end, col_name);
 		break;
@@ -5714,7 +5714,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 	case PURGE_TXN:
 		purge_query = xstrdup_printf(
 			"delete from \"%s\" where "
-			"deleted=1 && cluster='%s' LIMIT %d",
+			"deleted=1 and cluster='%s' LIMIT %d",
 			sql_table, cluster_name,
 			slurmdbd_conf->max_purge_limit);
 

@@ -1152,7 +1152,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		time_str = xstrdup_printf(
-			"(time_start < %ld && time_start >= %ld)",
+			"(time_start < %ld and time_start >= %ld)",
 			usage_end, usage_start);
 
 		itr = list_iterator_create(id_switch_list);
@@ -1180,7 +1180,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 				 */
 				query = xstrdup_printf(
 					"insert into \"%s\" (creation_time, mod_time, id, id_tres, time_start, alloc_secs) "
-					"select creation_time, %ld, %u, id_tres, time_start, @ASUM:=SUM(alloc_secs) from \"%s\" where (id=%u || id=%u) && %s group by id_tres, time_start on duplicate key update alloc_secs=@ASUM;",
+					"select creation_time, %ld, %u, id_tres, time_start, @ASUM:=SUM(alloc_secs) from \"%s\" where (id=%u or id=%u) and %s group by id_tres, time_start on duplicate key update alloc_secs=@ASUM;",
 					use_table,
 					now, id_switch->old, use_table,
 					id_switch->new, id_switch->old,
@@ -1188,12 +1188,12 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 
 				/* Delete all traces of the new id */
 				xstrfmtcat(query,
-					   "delete from \"%s\" where id=%u && %s;",
+					   "delete from \"%s\" where id=%u and %s;",
 					   use_table, id_switch->new, time_str);
 
 				/* Now we just need to switch the ids */
 				xstrfmtcat(query,
-					   "update \"%s\" set mod_time=%ld, id=%u where id=%u && %s;",
+					   "update \"%s\" set mod_time=%ld, id=%u where id=%u and %s;",
 					   use_table, now, id_switch->new, id_switch->old, time_str);
 
 
@@ -1903,7 +1903,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 		job_db_inx = old_db_inx;
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%d where "
-			   "job_db_inx=%"PRIu64" && time_end=0;",
+			   "job_db_inx=%"PRIu64" and time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_db_inx);
 
@@ -1931,7 +1931,7 @@ extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 	else
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%d where "
-			   "job_db_inx=%"PRIu64" && time_end=0;",
+			   "job_db_inx=%"PRIu64" and time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   (int)job_ptr->suspend_time, job_ptr->db_index);
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
@@ -2024,7 +2024,7 @@ again:
 			   event_time, suspended_char);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set time_end=%ld where (%s) "
-			   "&& time_end=0;",
+			   "and time_end=0;",
 			   mysql_conn->cluster_name, suspend_table,
 			   event_time, suspended_char);
 		xfree(suspended_char);

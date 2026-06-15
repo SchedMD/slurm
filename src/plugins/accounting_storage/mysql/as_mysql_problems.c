@@ -55,11 +55,11 @@ static int _setup_assoc_cond_limits(
 
 	if (assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.acct='%s'", object);
 			set = 1;
 		}
@@ -69,11 +69,11 @@ static int _setup_assoc_cond_limits(
 
 	if (assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.user='%s'", object);
 			set = 1;
 		}
@@ -82,17 +82,17 @@ static int _setup_assoc_cond_limits(
 	} else if (user_query) {
 		/* we want all the users, but no non-user associations */
 		set = 1;
-		xstrcat(*extra, " && (t1.user!='')");
+		xstrcat(*extra, " and (t1.user!='')");
 	}
 
 	if (assoc_cond->partition_list
 	    && list_count(assoc_cond->partition_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		xstrcat(*extra, " and (");
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(*extra, " || ");
+				xstrcat(*extra, " or ");
 			xstrfmtcat(*extra, "t1.`partition`='%s'", object);
 			set = 1;
 		}
@@ -126,11 +126,11 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		int set = 0;
 		list_itr_t *itr = NULL;
 		char *object = NULL;
-		xstrcat(query, " && (");
+		xstrcat(query, " and (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(query, " || ");
+				xstrcat(query, " or ");
 			xstrfmtcat(query, "name='%s'", object);
 			set = 1;
 		}
@@ -166,7 +166,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 				xstrcat(query, " union ");
 			xstrfmtcat(query,
 				   "select distinct id_assoc from \"%s_%s\" "
-				   "where deleted=0 && "
+				   "where deleted=0 and "
 				   "acct='%s'",
 				   cluster_name, assoc_table, row[0]);
 		}
@@ -264,7 +264,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 		if (query)
 			xstrcat(query, " union ");
 
-		xstrfmtcat(query, "select distinct %s, '%s' as cluster from \"%s_%s\" as t1 left join \"%s_%s\" as t2 on t2.lineage like concat(t1.lineage, '0-%%') %s && t1.user='' && t2.lineage is NULL",
+		xstrfmtcat(query, "select distinct %s, '%s' as cluster from \"%s_%s\" as t1 left join \"%s_%s\" as t2 on t2.lineage like concat(t1.lineage, '0-%%') %s and t1.user='' and t2.lineage is NULL",
 			   tmp, cluster_name, cluster_name,
 			   assoc_table, cluster_name,
 			   assoc_table, extra);
@@ -332,11 +332,11 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 	    assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		int set = 0;
 		char *object = NULL;
-		xstrcat(query, " && (");
+		xstrcat(query, " and (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(query, " || ");
+				xstrcat(query, " or ");
 			xstrfmtcat(query, "name='%s'", object);
 			set = 1;
 		}
@@ -383,7 +383,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 				xstrcat(query, " union ");
 			xstrfmtcat(query,
 				   "select distinct id_assoc from \"%s_%s\" "
-				   "where deleted=0 && "
+				   "where deleted=0 and "
 				   "user='%s'",
 				   cluster_name, assoc_table, row[0]);
 		}

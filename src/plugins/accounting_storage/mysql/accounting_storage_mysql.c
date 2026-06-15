@@ -385,7 +385,7 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 	if (ret_list) {
 		/* Check for only running jobs */
 		xstrfmtcatat(query, &pos,
-			     " and t1.time_end=0 && t1.state<%d limit 1",
+			     " and t1.time_end=0 and t1.state<%d limit 1",
 			     JOB_COMPLETE);
 	}
 
@@ -747,25 +747,25 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"set @s = concat(@s, "
 		"'@mtpj := CONCAT(@mtpj, "
-		"if (@mtpj != \\\'\\\' && max_tres_pj != \\\'\\\', "
+		"if (@mtpj != \\\'\\\' and max_tres_pj != \\\'\\\', "
 		"\\\',\\\', \\\'\\\'), max_tres_pj), "
 		"@mtpn := CONCAT(@mtpn, "
-		"if (@mtpn != \\\'\\\' && max_tres_pn != \\\'\\\', "
+		"if (@mtpn != \\\'\\\' and max_tres_pn != \\\'\\\', "
 		"\\\',\\\', \\\'\\\'), max_tres_pn), "
 		"@mtmpj := CONCAT(@mtmpj, "
-		"if (@mtmpj != \\\'\\\' && max_tres_mins_pj != \\\'\\\', "
+		"if (@mtmpj != \\\'\\\' and max_tres_mins_pj != \\\'\\\', "
 		"\\\',\\\', \\\'\\\'), max_tres_mins_pj), "
 		"@mtrm := CONCAT(@mtrm, "
-		"if (@mtrm != \\\'\\\' && max_tres_run_mins != \\\'\\\', "
+		"if (@mtrm != \\\'\\\' and max_tres_run_mins != \\\'\\\', "
 		"\\\',\\\', \\\'\\\'), max_tres_run_mins), "
 		"@my_acct_new := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
-		"acct = \\\'', @my_acct, '\\\' && user=\\\'\\\''); "
+		"acct = \\\'', @my_acct, '\\\' and user=\\\'\\\''); "
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
 		"set @my_acct = @my_acct_new; "
-		"UNTIL without_limits || @my_acct = '' END REPEAT; "
+		"UNTIL without_limits or @my_acct = '' END REPEAT; "
 		"select @mj, @mja, @mpt, @msj, "
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
 		"@def_qos_id, @qos, @delta_qos, @prio;"
@@ -2230,7 +2230,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 		xassert(cluster_name);
 		xstrfmtcat(query,
 			   "update \"%s_%s\" set mod_time=%ld%s "
-			   "where deleted=0 && %s;",
+			   "where deleted=0 and %s;",
 			   cluster_name, table, now, vals, cond_char);
 		xstrfmtcat(query,
 			   "insert into %s "
@@ -2242,7 +2242,7 @@ extern int modify_common(mysql_conn_t *mysql_conn,
 	} else {
 		xstrfmtcat(query,
 			   "update %s set mod_time=%ld%s "
-			   "where deleted=0 && %s;",
+			   "where deleted=0 and %s;",
 			   table, now, vals, cond_char);
 		xstrfmtcat(query,
 			   "insert into %s "
@@ -2301,7 +2301,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 		 * parent (which will happen in addto_update_list()).
 		 */
 		query = xstrdup_printf(
-			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0 order by t2.lineage;",
+			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s and t2.deleted=0 order by t2.lineage;",
 			cluster_name, assoc_table, assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -2320,7 +2320,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 		while ((row = mysql_fetch_row(result))) {
 			slurmdb_assoc_rec_t *rem_assoc = NULL;
 			if (loc_assoc_char)
-				xstrcat(loc_assoc_char, " || ");
+				xstrcat(loc_assoc_char, " or ");
 			xstrfmtcat(loc_assoc_char, "id_assoc=%s", row[0]);
 
 			rem_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -2346,7 +2346,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 	if (has_jobs)
 		goto just_update;
 
-	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
+	query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld and (%s);",
 			       cluster_name, assoc_table,
 			       day_old, loc_assoc_char);
 
@@ -2521,13 +2521,13 @@ extern int remove_common(remove_common_args_t *args)
 			if (cluster_centric) {
 				query = xstrdup_printf(
 					"delete from \"%s_%s\" where "
-					"creation_time>%ld && (%s);",
+					"creation_time>%ld and (%s);",
 					cluster_name, table, day_old,
 					name_char);
 			} else {
 				query = xstrdup_printf(
 					"delete from %s where "
-					"creation_time>%ld && (%s);",
+					"creation_time>%ld and (%s);",
 					table, day_old, name_char);
 			}
 		}
@@ -2535,14 +2535,14 @@ extern int remove_common(remove_common_args_t *args)
 		if (cluster_centric) {
 			xstrfmtcatat(query, &pos,
 				     "update \"%s_%s\" set mod_time=%ld, "
-				     "deleted=1 where deleted=0 && (%s);",
+				     "deleted=1 where deleted=0 and (%s);",
 				     cluster_name, table, now, name_char);
 		} else if (table == federation_table) {
 			xstrfmtcatat(query, &pos,
 				     "update %s set "
 				     "mod_time=%ld, deleted=1, "
 				     "flags=DEFAULT "
-				     "where deleted=0 && (%s);",
+				     "where deleted=0 and (%s);",
 				     federation_table, now, name_char);
 		} else if (table == qos_table) {
 			xstrfmtcatat(
@@ -2577,12 +2577,12 @@ extern int remove_common(remove_common_args_t *args)
 				"usage_factor=DEFAULT, "
 				"usage_thres=DEFAULT, "
 				"limit_factor=DEFAULT "
-				"where deleted=0 && (%s);",
+				"where deleted=0 and (%s);",
 				qos_table, now, name_char);
 		} else {
 			xstrfmtcatat(query, &pos,
 				     "update %s set mod_time=%ld, deleted=1 "
-				     "where deleted=0 && (%s);",
+				     "where deleted=0 and (%s);",
 				     table, now, name_char);
 		}
 	}

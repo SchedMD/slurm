@@ -942,11 +942,11 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (user_cond->assoc_cond && user_cond->assoc_cond->user_list
 	    && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
@@ -955,7 +955,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET)
-		xstrfmtcat(extra, " && admin_level=%u",
+		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 
 	ret_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
@@ -1000,7 +1000,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!name_char)
 			xstrfmtcat(name_char, "(name='%s'", object);
 		else
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " or name='%s'", object);
 
 		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 
@@ -1156,7 +1156,7 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 		return false;
 	}
 
-	query = xstrdup_printf("select distinct acct from \"%s_%s\" where deleted=0 && (%s) && (",
+	query = xstrdup_printf("select distinct acct from \"%s_%s\" where deleted=0 and (%s) and (",
 			       cluster_name, assoc_table, user_char);
 
 	/*
@@ -1167,7 +1167,7 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 	itr = list_iterator_create(coord->coord_accts);
 	while ((coord_acct = (list_next(itr)))) {
 		xstrfmtcat(query, "%sacct != '%s'", sep_str, coord_acct->name);
-		sep_str = " && ";
+		sep_str = " and ";
 	}
 	list_iterator_destroy(itr);
 	xstrcat(query, ");");
@@ -1260,9 +1260,9 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (!object[0])
 				continue;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			else
-				xstrcat(extra, " && (");
+				xstrcat(extra, " and (");
 
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
@@ -1275,7 +1275,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	ret_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
 
 	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
-		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
+		xstrfmtcat(extra, " and admin_level=%u", user_cond->admin_level);
 	}
 
 	if (!extra && !ret_list) {
@@ -1355,7 +1355,7 @@ no_user_table:
 		}
 		xstrfmtcatat(assoc_char, &assoc_char_pos,
 			     "%st2.lineage like '%%/0-%s/%%'",
-			     assoc_char ? " || " : "", object);
+			     assoc_char ? " or " : "", object);
 
 		user_rec->name = xstrdup(object);
 		if (addto_update_list(mysql_conn->update_list,
@@ -1496,7 +1496,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (user_list && list_count(user_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, "(");
 
@@ -1505,7 +1505,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (!object[0])
 				continue;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "user='%s'", object);
 			set = 1;
 		}
@@ -1516,7 +1516,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (acct_list && list_count(acct_list)) {
 		set = 0;
 		if (extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, "(");
 
@@ -1525,7 +1525,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (!object[0])
 				continue;
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "acct='%s'", object);
 			set = 1;
 		}
@@ -1540,7 +1540,7 @@ extern list_t *as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf(
-		"select user, acct from %s where deleted=0 && %s order by user",
+		"select user, acct from %s where deleted=0 and %s order by user",
 		acct_coord_table, extra);
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -1668,7 +1668,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (user_cond->with_deleted)
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
+		xstrcat(extra, "where (deleted=0 or deleted=1)");
 	else
 		xstrcat(extra, "where deleted=0");
 
@@ -1697,11 +1697,11 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	    user_cond->assoc_cond->user_list
 	    && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (set)
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
@@ -1710,7 +1710,7 @@ extern list_t *as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (user_cond->admin_level != SLURMDB_ADMIN_NOTSET) {
-		xstrfmtcat(extra, " && admin_level=%u",
+		xstrfmtcat(extra, " and admin_level=%u",
 			   user_cond->admin_level);
 	}
 
@@ -1732,7 +1732,7 @@ empty:
 				xfree(extra);
 				return NULL;
 			}
-			xstrfmtcat(extra, " && name='%s'", user.name);
+			xstrfmtcat(extra, " and name='%s'", user.name);
 		}
 	}
 
@@ -2061,8 +2061,8 @@ static int _get_indirect_acct_coords(void *x, void *arg)
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
 		     "%sselect distinct t1.user, t2.acct from "
-		     "\"%s\" as t1, \"%s_%s\" as t2 where t1.deleted=0 && "
-		     "t2.deleted=0 && t2.user='' && (t1.acct != t2.acct) && "
+		     "\"%s\" as t1, \"%s_%s\" as t2 where t1.deleted=0 and "
+		     "t2.deleted=0 and t2.user='' and (t1.acct != t2.acct) and "
 		     "t2.lineage like concat('%%/', t1.acct, '/%%')",
 		     create_string->query ? " union " : "",
 		     acct_coord_table,
@@ -2080,8 +2080,8 @@ static int _get_accts_with_user_coords_users(void *x, void *arg)
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
 		     "%sselect distinct t2.acct, t2.user from \"%s_%s\" as t1, "
-		     "\"%s_%s\" as t2 where t1.deleted=0 && "
-		     "t2.deleted=0 && (t1.flags & %u) && t2.lineage like "
+		     "\"%s_%s\" as t2 where t1.deleted=0 and "
+		     "t2.deleted=0 and (t1.flags & %u) and t2.lineage like "
 		     "concat('%%/', t1.acct, '/0-%%')",
 		     create_string->query ? " union " : "",
 		     cluster_name, assoc_table,
@@ -2101,8 +2101,8 @@ static int _get_accts_with_user_coords_indirect(void *x, void *arg)
 	 * accounts.
 	 */
 	xstrfmtcatat(create_string->query, &create_string->query_pos,
-		     "%sselect distinct acct from \"%s_%s\" where deleted=0 && "
-		     "user='' && acct!='%s' && lineage like concat('%%/%s/%%')",
+		     "%sselect distinct acct from \"%s_%s\" where deleted=0 and "
+		     "user='' and acct!='%s' and lineage like concat('%%/%s/%%')",
 		     create_string->query ? " union " : "",
 		     cluster_name, assoc_table,
 		     create_string->extra, create_string->extra);

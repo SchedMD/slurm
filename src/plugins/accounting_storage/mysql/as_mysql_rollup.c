@@ -915,9 +915,9 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	 * state.  We handle those later with the reservations.
 	 */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "!(state & %"PRIu64") && (time_start < %ld "
-			       "&& (time_end >= %ld "
-			       "|| time_end = 0)) "
+			       "not (state & %"PRIu64") and (time_start < %ld "
+			       "and (time_end >= %ld "
+			       "or time_end = 0)) "
 			       "order by node_name, time_start",
 			       event_str, cluster_name, event_table,
 			       NODE_STATE_MAINT,
@@ -1160,7 +1160,7 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
 
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "(time_start < %ld && time_end >= %ld) "
+			       "(time_start < %ld and time_end >= %ld) "
 			       "order by time_start",
 			       resv_str, cluster_name, resv_table,
 			       curr_end, curr_start);
@@ -1473,9 +1473,9 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		/* now get the jobs during this time only  */
 		query = xstrdup_printf("select %s from \"%s_%s\" as job "
 				       "FORCE INDEX (rollup) "
-				       "where (job.time_eligible && "
-				       "job.time_eligible < %ld && "
-				       "(job.time_end >= %ld || "
+				       "where (job.time_eligible and "
+				       "job.time_eligible < %ld and "
+				       "(job.time_end >= %ld or "
 				       "job.time_end = 0)) "
 				       "group by job.job_db_inx "
 				       "order by job.id_assoc, "
@@ -1531,8 +1531,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"select %s from \"%s_%s\" where "
-					"(time_start < %ld && (time_end >= %ld "
-					"|| time_end = 0)) && job_db_inx=%s "
+					"(time_start < %ld and (time_end >= %ld "
+					"or time_end = 0)) and job_db_inx=%s "
 					"order by time_start",
 					suspend_str, cluster_name,
 					suspend_table,
@@ -2099,7 +2099,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			"id_alt, id_tres, time_start, alloc_secs) "
 			"select %ld, %ld, id, id_alt, id_tres, "
 			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
-			"(time_start < %ld && time_start >= %ld) "
+			"(time_start < %ld and time_start >= %ld) "
 			"group by id, id_alt, id_tres on duplicate key update "
 			"mod_time=%ld, alloc_secs=@ASUM;",
 			cluster_name,
@@ -2115,7 +2115,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			"id_alt, id_tres, time_start, alloc_secs) "
 			"select %ld, %ld, id, id_alt, id_tres, "
 			"%ld, @ASUM:=SUM(alloc_secs) from \"%s_%s\" where "
-			"(time_start < %ld && time_start >= %ld) "
+			"(time_start < %ld and time_start >= %ld) "
 			"group by id, id_alt, id_tres on duplicate key update "
 			"mod_time=%ld, alloc_secs=@ASUM;",
 			cluster_name,
@@ -2142,7 +2142,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			   "@ISUM:=SUM(idle_secs), "
 			   "@OSUM:=SUM(over_secs), "
 			   "@PSUM:=SUM(plan_secs) from \"%s_%s\" where "
-			   "(time_start < %ld && time_start >= %ld) "
+			   "(time_start < %ld and time_start >= %ld) "
 			   "group by deleted, id_tres "
 			   "on duplicate key update "
 			   "mod_time=%ld, count=@CPU, "
@@ -2163,7 +2163,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 				   "select %ld, %ld, "
 				   "id, id_alt, id_tres, %ld, "
 				   "@ASUM:=SUM(alloc_secs) "
-				   "from \"%s_%s\" where (time_start < %ld && "
+				   "from \"%s_%s\" where (time_start < %ld and "
 				   "time_start >= %ld) "
 				   "group by id, id_alt, id_tres "
 				   "on duplicate key update "
