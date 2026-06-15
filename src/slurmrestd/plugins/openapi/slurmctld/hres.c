@@ -32,3 +32,34 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "api.h"
+
+/* based on _print_license_info() from scontrol */
+extern int op_handler_licenses(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+	license_info_msg_t *msg = NULL;
+	openapi_resp_license_info_msg_t resp = { 0 };
+
+	if (ctxt->method != HTTP_REQUEST_GET)
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	else if ((rc = slurm_load_licenses(0, &msg, 0))) {
+		if (errno)
+			rc = errno;
+		resp_error(ctxt, rc, __func__,
+			   "slurm_load_licenses() was unable to load licenses");
+	}
+
+	if (msg) {
+		resp.licenses = msg;
+		resp.last_update = msg->last_update;
+	}
+
+	DATA_DUMP(ctxt->parser, OPENAPI_LICENSES_RESP, resp, ctxt->resp);
+
+	slurm_free_license_info_msg(msg);
+	return rc;
+}
