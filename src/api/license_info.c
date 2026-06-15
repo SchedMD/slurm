@@ -106,3 +106,35 @@ slurm_load_licenses(time_t t,
 
 	return SLURM_SUCCESS;
 }
+
+extern int slurm_update_hres(hres_update_msg_t *msg)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req_msg.msg_type = REQUEST_UPDATE_HRES;
+	req_msg.data = msg;
+
+	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					    working_cluster_rec);
+	if (rc != SLURM_SUCCESS) {
+		if (errno)
+			rc = errno;
+		return rc;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		break;
+	default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		break;
+	}
+	return rc;
+}
