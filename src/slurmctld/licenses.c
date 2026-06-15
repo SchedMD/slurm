@@ -3096,20 +3096,6 @@ extern void license_set_job_tres_cnt(list_t *license_list,
 		assoc_mgr_unlock(&locks);
 }
 
-static void _pack_hres_variable(void *object, uint16_t protocol_version,
-				buf_t *buffer)
-{
-	hres_variable_t *var = object;
-
-	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		packstr(var->name, buffer);
-		pack32(var->value, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-	}
-}
-
 /*
  * Please update src/common/slurm_protocol_pack.c _unpack_license_info_msg() if
  * this changes.
@@ -3134,7 +3120,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack8(lic->mode, buffer);
 		packstr(lic->nodes, buffer);
 		packstr(lic->hres_rec.layer_name, buffer);
-		slurm_pack_list(lic->hres_rec.base, _pack_hres_variable,
+		slurm_pack_list(lic->hres_rec.base, slurm_pack_hres_variable,
 				buffer, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);

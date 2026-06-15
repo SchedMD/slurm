@@ -12811,6 +12811,20 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurm_pack_hres_variable(void *object, uint16_t protocol_version,
+				     buf_t *buffer)
+{
+	hres_variable_t *var = object;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(var->name, buffer);
+		pack32(var->value, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
 static int _unpack_hres_variable(void **object, uint16_t protocol_version,
 				 buf_t *buffer)
 {
