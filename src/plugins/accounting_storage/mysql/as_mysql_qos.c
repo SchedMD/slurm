@@ -53,6 +53,7 @@ static char *mqos_req_inx[] = {
 	"max_tres_pn",
 	"max_tres_pu",
 	"min_tres_pj",
+	"tres_decay_hl",
 };
 
 enum {
@@ -70,6 +71,7 @@ enum {
 	MQOS_MTPN,
 	MQOS_MTPU,
 	MQOS_MITPJ,
+	MQOS_TDHL,
 	MQOS_COUNT
 };
 
@@ -708,6 +710,19 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrfmtcat(*extra, ", min_tres_pj='%s'", qos->min_tres_pj);
 	}
 
+	if (qos->tres_decay_hl) {
+		if (!for_add) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", tres_decay_hl");
+		slurmdb_combine_tres_strings(
+			&qos->tres_decay_hl, NULL, tres_str_flags);
+		xstrfmtcat(*vals, ", '%s'", qos->tres_decay_hl);
+		xstrfmtcat(*extra, ", tres_decay_hl='%s'",
+			   qos->tres_decay_hl);
+	}
+
 end_modify:
 
 	return SLURM_SUCCESS;
@@ -996,6 +1011,11 @@ extern list_t *as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		qos_rec->preempt_mode = qos->preempt_mode;
 		qos_rec->priority = qos->priority;
+
+		mod_tres_str(&qos_rec->tres_decay_hl,
+			     qos->tres_decay_hl, row[MQOS_TDHL],
+			     NULL, "tres_decay_hl", &vals,
+			     qos_rec->id, 0);
 
 		if (qos->preempt_list) {
 			list_itr_t *new_preempt_itr =
@@ -1306,6 +1326,7 @@ extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"usage_thres",
 		"min_tres_pj",
 		"limit_factor",
+		"tres_decay_hl",
 	};
 	enum {
 		QOS_REQ_NAME,
@@ -1344,6 +1365,7 @@ extern list_t *as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_UT,
 		QOS_REQ_MITPJ,
 		QOS_REQ_LF,
+		QOS_REQ_TDHL,
 		QOS_REQ_COUNT
 	};
 
@@ -1527,6 +1549,9 @@ empty:
 			qos->limit_factor = atof(row[QOS_REQ_LF]);
 		else
 			qos->limit_factor = (double)INFINITE;
+
+		if (row[QOS_REQ_TDHL][0])
+			qos->tres_decay_hl = xstrdup(row[QOS_REQ_TDHL]);
 	}
 	mysql_free_result(result);
 

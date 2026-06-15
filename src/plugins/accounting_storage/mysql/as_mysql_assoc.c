@@ -110,6 +110,7 @@ char *assoc_req_inx[] = {
 	"id_parent",
 	"lineage",
 	"flags",
+	"tres_decay_hl",
 };
 enum {
 	ASSOC_REQ_ID,
@@ -144,6 +145,7 @@ enum {
 	ASSOC_REQ_ID_PAR,
 	ASSOC_REQ_LINEAGE,
 	ASSOC_REQ_FLAGS,
+	ASSOC_REQ_TDHL,
 	ASSOC_REQ_COUNT
 };
 
@@ -179,6 +181,7 @@ static char *massoc_req_inx[] = {
 	"max_tres_pn",
 	"lineage",
 	"flags",
+	"tres_decay_hl",
 };
 
 enum {
@@ -197,6 +200,7 @@ enum {
 	MASSOC_MTPN,
 	MASSOC_LINEAGE,
 	MASSOC_FLAGS,
+	MASSOC_TDHL,
 	MASSOC_COUNT
 };
 
@@ -659,6 +663,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		"qos",
 		"delta_qos",
 		"lineage",
+		"tres_decay_hl",
 	};
 
 	enum {
@@ -681,6 +686,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
 		ASSOC_LINEAGE,
+		ASSOC_TDHL,
 		ASSOC_COUNT
 	};
 
@@ -792,6 +798,16 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 				&tmp_char, assoc->max_tres_run_mins,
 				tres_str_flags);
 			mod_assoc->max_tres_run_mins = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
+		}
+
+		if (assoc->tres_decay_hl) {
+			tmp_char = xstrdup(row[ASSOC_TDHL]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->tres_decay_hl,
+				tres_str_flags);
+			mod_assoc->tres_decay_hl = tmp_char;
 			tmp_char = NULL;
 			modified = 1;
 		}
@@ -1518,6 +1534,12 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			     alt_assoc.max_tres_run_mins, "max_tres_run_mins",
 			     &vals, mod_assoc->id, 1);
 
+		mod_tres_str(&mod_assoc->tres_decay_hl,
+			     assoc->tres_decay_hl, row[MASSOC_TDHL],
+			     alt_assoc.tres_decay_hl,
+			     "tres_decay_hl", &vals,
+			     mod_assoc->id, 1);
+
 		if (result2)
 			mysql_free_result(result2);
 
@@ -2159,6 +2181,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->shares_raw = 1;
 
+		if (row[ASSOC_REQ_TDHL][0])
+			assoc->tres_decay_hl = xstrdup(row[ASSOC_REQ_TDHL]);
+
 		if (!without_parent_info && parent_acct &&
 		    (!last_acct || !last_cluster
 		     || xstrcmp(parent_acct, last_acct)
@@ -2559,6 +2584,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		assoc->grp_tres = xstrdup(assoc_in->grp_tres);
 		assoc->grp_tres_mins = xstrdup(assoc_in->grp_tres_mins);
 		assoc->grp_tres_run_mins = xstrdup(assoc_in->grp_tres_run_mins);
+		assoc->tres_decay_hl = xstrdup(assoc_in->tres_decay_hl);
 
 		assoc->is_def = is_def;
 
