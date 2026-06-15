@@ -152,7 +152,7 @@ static bool powersave_wait_called = false;
 /* Function definitions: */
 
 /* Fetch key from xhash_t item. Called from function ptr */
-static void _resp_map_key_id(void *item, const char **key, uint32_t *key_len)
+static void _resp_map_key_id(void *item, const void **key, uint32_t *key_len)
 {
 	script_response_t *lua_resp = (script_response_t *)item;
 

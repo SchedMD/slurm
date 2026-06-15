@@ -330,7 +330,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr,
 		       will_run_data_t *will_run);
 static int  _yield_locks(int64_t usec);
-static void _bf_map_key_id(void *item, const char **key, uint32_t *key_len);
+static void _bf_map_key_id(void *item, const void **key, uint32_t *key_len);
 static void _bf_map_free(void *item);
 
 /* Log resources to be allocated to a pending job */
@@ -1707,13 +1707,13 @@ static int _set_hetjob_details(void *x, void *arg)
 }
 
 /* Fetch key from xhash_t item. Called from function ptr */
-static void _bf_map_key_id(void *item, const char **key, uint32_t *key_len)
+static void _bf_map_key_id(void *item, const void **key, uint32_t *key_len)
 {
 	bf_user_usage_t *user = (bf_user_usage_t *)item;
 
 	xassert(user);
 
-	*key = (char *)&user->uid;
+	*key = &user->uid;
 	*key_len = sizeof(uid_t);
 }
 
@@ -1744,7 +1744,7 @@ static slurmdb_bf_usage_t *_bf_map_find_add(xhash_t* map, uid_t uid)
 	bf_user_usage_t *user;
 	xassert(map != NULL);
 
-	if (!(user = xhash_get(map, (char *)&uid, sizeof(uid_t))))
+	if (!(user = xhash_get(map, &uid, sizeof(uid))))
 		user = _bf_map_add_user(map, uid);
 	return &user->bf_usage;
 }

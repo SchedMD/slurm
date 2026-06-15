@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  xtree.h - functions used for hash table manament
+ *  xhash.h - functions used for hash table management
  *****************************************************************************
  *  Copyright (C) 2012 CEA/DAM/DIF
  *
@@ -45,15 +45,15 @@ typedef struct xhash_st xhash_t;
 
 /**
   * This function will be used to generate unique identifier from a
-  * stored item by returning a string.
-  * Beware that string conflict cause an item to be unfindable by the
+  * stored item by returning a key.
+  * Beware that key conflict cause an item to be unfindable by the
   * hash table.
   *
   * @param item takes one of the items stored by the lists in the hash
   *             table.
   * @returns unique identifier in 'key' and the length of the key in 'key_len'
   */
-typedef void (*xhash_idfunc_t)(void* item, const char** key, uint32_t* key_len);
+typedef void (*xhash_idfunc_t)(void *item, const void **key, uint32_t *key_len);
 
 /** This type of function is used to free data inserted into xhash table */
 typedef void (*xhash_freefunc_t)(void* item);
@@ -72,7 +72,7 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc);
 /** @returns an item from a key searching through the hash table. NULL if not
  * found.
  */
-void* xhash_get(xhash_t* table, const char* key, uint32_t len);
+void *xhash_get(xhash_t *table, const void *key, uint32_t len);
 
 /** @returns an item from a key string searching through the hash table.
  *  NULL if not found. Wrapper to xhash_get
@@ -86,7 +86,8 @@ void* xhash_get_str(xhash_t* table, const char* key);
  * @param item is the user item to add. It has to be initialized in order for
  *             the idfunc function to be able to calculate the final unique
  *             key string associated with it.
- * @returns item or NULL in case of error.
+ * @returns item, or NULL if table/item are invalid or the key is already
+ *          present in the table.
  */
 void* xhash_add(xhash_t* table, void* item);
 
@@ -94,7 +95,7 @@ void* xhash_add(xhash_t* table, void* item);
  * memory associated with the item even if freefunc was not null at init time.
  * @returns the removed item value.
  */
-void* xhash_pop(xhash_t* table, const char* key, uint32_t len);
+void *xhash_pop(xhash_t *table, const void *key, uint32_t len);
 
 /** Remove an item associated with a key string from the hash table but
  *      does not call the table's free_func on the item.
@@ -107,7 +108,7 @@ void* xhash_pop_str(xhash_t* table, const char* key);
 /** Remove an item associated with a key from the hash table.
  * If found and freefunc at init time was not null, free the item's memory.
  */
-void xhash_delete(xhash_t* table, const char* key, uint32_t len);
+void xhash_delete(xhash_t *table, const void *key, uint32_t len);
 
 /** Remove an item associated with a string key from the hash table
  *      Wrapper to xhash_delete

@@ -118,7 +118,7 @@ static void _dump_hash(void);
 static node_record_t *_find_node_record(char *name, bool test_alias,
 					bool log_missing);
 static void _list_delete_config(void *config_entry);
-static void _node_record_hash_identity(void *item, const char **key,
+static void _node_record_hash_identity(void *item, const void **key,
 				       uint32_t *key_len);
 
 /*
@@ -185,7 +185,7 @@ static void _list_delete_config(void *config_entry)
  * xhash helper function to index node_record per name field
  * in node_hash_table
  */
-static void _node_record_hash_identity(void *item, const char **key,
+static void _node_record_hash_identity(void *item, const void **key,
 				       uint32_t *key_len)
 {
 	node_record_t *node_ptr = item;

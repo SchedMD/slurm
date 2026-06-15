@@ -563,14 +563,14 @@ static char *_create_hash_rec_id(slurmdb_assoc_rec_t *assoc, bool parent)
 			      assoc->cluster);
 }
 
-static void _arch_hash_rec_id(void *item, const char **key, uint32_t *key_len)
+static void _arch_hash_rec_id(void *item, const void **key, uint32_t *key_len)
 {
 	slurmdb_hierarchical_rec_t *arch_rec = item;
 
 	xfree(arch_rec->key);
 	arch_rec->key = _create_hash_rec_id(arch_rec->assoc, false);
 	*key = arch_rec->key;
-	*key_len = strlen(*key);
+	*key_len = strlen(arch_rec->key);
 }
 
 static int _list_copy_coord(void *x, void *key)

@@ -49,7 +49,7 @@ typedef struct hashable_st {
 	uint32_t idn;
 } hashable_t;
 
-void hashable_identify(void* voiditem, const char** key, uint32_t* key_len)
+void hashable_identify(void *voiditem, const void **key, uint32_t *key_len)
 {
 	hashable_t* item = (hashable_t*)voiditem;
 	*key = item->id;
@@ -234,6 +234,66 @@ START_TEST(test_walk)
 }
 END_TEST
 
+static void crash_on_null_free(void *item)
+{
+	ck_assert_msg(item != NULL, "freefunc invoked with NULL item");
+}
+
+START_TEST(test_edge_keys)
+{
+	xhash_t *ht = xhash_init(hashable_identify, crash_on_null_free);
+	hashable_t empty = { "", 0 };
+	hashable_t other = { "x", 1 };
+
+	ck_assert_msg(xhash_add(ht, &empty) != NULL, "empty-key add failed");
+	ck_assert_msg(xhash_add(ht, &other) != NULL, "second add failed");
+
+	/* NULL key on _str wrappers must return without crashing */
+	ck_assert_msg(xhash_get_str(ht, NULL) == NULL, "NULL key get not null");
+	ck_assert_msg(xhash_pop_str(ht, NULL) == NULL, "NULL key pop not null");
+	xhash_delete_str(ht, NULL);
+	ck_assert_msg(xhash_count(ht) == 2, "NULL key altered count");
+
+	/* Missed delete must not invoke freefunc with NULL */
+	xhash_delete_str(ht, "absent");
+	ck_assert_msg(xhash_count(ht) == 2, "missed delete altered count");
+
+	/* Empty-string key round-trips through add/get/delete */
+	ck_assert_msg(xhash_get_str(ht, "") == &empty, "empty-key get failed");
+	xhash_delete_str(ht, "");
+	ck_assert_msg(xhash_get_str(ht, "") == NULL,
+		      "empty-key delete left item");
+	ck_assert_msg(xhash_get_str(ht, "x") == &other,
+		      "non-empty entry collateral damage");
+	ck_assert_msg(xhash_count(ht) == 1, "bad count after empty-key delete");
+
+	xhash_free(ht);
+}
+END_TEST
+
+START_TEST(test_duplicate_add)
+{
+	xhash_t *ht = xhash_init(hashable_identify, NULL);
+	hashable_t a = { "k", 1 };
+	hashable_t b = { "k", 2 };
+	hashable_t c = { "other", 3 };
+
+	ck_assert_msg(xhash_add(ht, &a) == &a,
+		      "first add returned wrong value");
+	ck_assert_msg(xhash_add(ht, &c) == &c, "distinct-key add failed");
+	ck_assert_msg(xhash_count(ht) == 2, "bad count after first two adds");
+
+	/* Duplicate key must be rejected with NULL and not displace original */
+	ck_assert_msg(xhash_add(ht, &b) == NULL,
+		      "duplicate add did not return NULL");
+	ck_assert_msg(xhash_count(ht) == 2, "duplicate add altered count");
+	ck_assert_msg(xhash_get_str(ht, "k") == &a,
+		      "duplicate add displaced original");
+
+	xhash_free(ht);
+}
+END_TEST
+
 /*****************************************************************************
  * TEST SUITE                                                                *
  ****************************************************************************/
@@ -249,6 +309,8 @@ Suite *xhash_suite(void)
 	tcase_add_test(tc_core, test_delete);
 	tcase_add_test(tc_core, test_count);
 	tcase_add_test(tc_core, test_walk);
+	tcase_add_test(tc_core, test_edge_keys);
+	tcase_add_test(tc_core, test_duplicate_add);
 	suite_add_tcase(s, tc_core);
 	return s;
 }

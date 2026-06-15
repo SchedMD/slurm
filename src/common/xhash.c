@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  xtree.c - functions used for hash table manament
+ *  xhash.c - functions used for hash table management
  *****************************************************************************
  *  Copyright (C) 2012 CEA/DAM/DIF
  *
@@ -66,8 +66,7 @@ struct xhash_st {
 	uint32_t		count;    /* user items count                */
 	xhash_freefunc_t	freefunc; /* function used to free items     */
 	xhash_item_t*		ht;       /* hash table                      */
-	xhash_idfunc_t		identify; /* function returning a unique str
-					     key */
+	xhash_idfunc_t		identify; /* function returning a unique key */
 };
 
 xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
@@ -83,7 +82,7 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
 	return table;
 }
 
-static xhash_item_t* xhash_find(xhash_t* table, const char* key, uint32_t len)
+static xhash_item_t *xhash_find(xhash_t *table, const void *key, uint32_t len)
 {
 	xhash_item_t* hash_item = NULL;
 
@@ -93,7 +92,7 @@ static xhash_item_t* xhash_find(xhash_t* table, const char* key, uint32_t len)
 	return hash_item;
 }
 
-void* xhash_get(xhash_t* table, const char* key, uint32_t key_len)
+void *xhash_get(xhash_t *table, const void *key, uint32_t key_len)
 {
 	xhash_item_t* item = xhash_find(table, key, key_len);
 	if (!item)
@@ -103,26 +102,30 @@ void* xhash_get(xhash_t* table, const char* key, uint32_t key_len)
 
 void* xhash_get_str(xhash_t* table, const char* key)
 {
+	if (!key)
+		return NULL;
 	return xhash_get(table, key, strlen(key));
 }
 
 void* xhash_add(xhash_t* table, void* item)
 {
 	xhash_item_t* hash_item = NULL;
-	const char *key = NULL;
+	const void *key = NULL;
 	uint32_t keylen = 0;
 
 	if (!table || !item)
 		return NULL;
+	table->identify(item, &key, &keylen);
+	if (xhash_find(table, key, keylen))
+		return NULL;
 	hash_item = xmalloc(sizeof(xhash_item_t));
 	hash_item->item    = item;
-	table->identify(item, &key, &keylen);
 	HASH_ADD_KEYPTR(hh, table->ht, key, keylen, hash_item);
 	++table->count;
 	return hash_item->item;
 }
 
-void* xhash_pop(xhash_t* table, const char* key, uint32_t len)
+void *xhash_pop(xhash_t *table, const void *key, uint32_t len)
 {
 	void* item_item;
 	xhash_item_t* item = xhash_find(table, key, len);
@@ -137,20 +140,24 @@ void* xhash_pop(xhash_t* table, const char* key, uint32_t len)
 
 void* xhash_pop_str(xhash_t* table, const char* key)
 {
+	if (!key)
+		return NULL;
 	return xhash_pop(table, key, strlen(key));
 }
 
-void xhash_delete(xhash_t* table, const char* key, uint32_t len)
+void xhash_delete(xhash_t *table, const void *key, uint32_t len)
 {
-	if (!table || !key || !len)
+	if (!table || !key)
 		return;
 	void* item_item = xhash_pop(table, key, len);
-	if (table->freefunc)
+	if (item_item && table->freefunc)
 		table->freefunc(item_item);
 }
 
 void xhash_delete_str(xhash_t* table, const char* key)
 {
+	if (!key)
+		return;
 	return xhash_delete(table, key, strlen(key));
 }
 

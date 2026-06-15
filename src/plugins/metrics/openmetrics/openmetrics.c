@@ -139,21 +139,21 @@ static void _free_xhash_full(void *item)
 }
 
 /* Fetch key from xhash_t item. Called from function ptr */
-static void _make_xhash_id_name(void *item, const char **key, uint32_t *key_len)
+static void _make_xhash_id_name(void *item, const void **key, uint32_t *key_len)
 {
 	list_t *l = (list_t *) item;
 	metric_t *m = list_peek(l);
 
 	*key = m->name;
-	*key_len = strlen(*key);
+	*key_len = strlen(m->name);
 }
 
 /* Fetch key from xhash_t item. Called from function ptr */
-static void _make_xhash_id(void *item, const char **key, uint32_t *key_len)
+static void _make_xhash_id(void *item, const void **key, uint32_t *key_len)
 {
 	metric_t *m = (metric_t *) item;
 	*key = m->id;
-	*key_len = strlen(*key);
+	*key_len = strlen(m->id);
 }
 
 static openmetrics_set_t *_init_ometrics_set()
@@ -216,18 +216,15 @@ static int _metrics_add(metric_set_t *set, metric_t *m)
 
 	hash_id = _make_hash_id(m->name, m->keyval);
 
-	if (xhash_get_str(ometrics_set->full_hash, hash_id)) {
-		error("Duplicate key when adding metric: %s", m->name);
-		xfree(hash_id);
-		return SLURM_ERROR;
-	}
-
 	if (!m->id)
 		m->id = hash_id;
 	else
 		xfree(hash_id);
 
-	xhash_add(ometrics_set->full_hash, m);
+	if (!xhash_add(ometrics_set->full_hash, m)) {
+		error("Duplicate key when adding metric: %s", m->name);
+		return SLURM_ERROR;
+	}
 
 	name_list = xhash_get_str(ometrics_set->name_hash, m->name);
 	if (!name_list) {
