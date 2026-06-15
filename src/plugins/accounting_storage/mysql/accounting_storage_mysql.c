@@ -709,6 +709,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @mtpn = ''; "
 		"set @mtmpj = ''; "
 		"set @mtrm = ''; "
+		"set @tdhl = ''; "
 		"set @prio = NULL; "
 		"set @def_qos_id = NULL; "
 		"set @qos = ''; "
@@ -763,6 +764,9 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@mtrm := CONCAT(@mtrm, "
 		"if (@mtrm != \\\'\\\' and max_tres_run_mins != \\\'\\\', "
 		"\\\',\\\', \\\'\\\'), max_tres_run_mins), "
+		"@tdhl := CONCAT(@tdhl, "
+		"if (@tdhl != \\\'\\\' and tres_decay_hl != \\\'\\\', "
+		"\\\',\\\', \\\'\\\'), tres_decay_hl), "
 		"@my_acct_new := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
 		"acct = \\\'', @my_acct, '\\\' and user=\\\'\\\''); "
@@ -773,7 +777,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"UNTIL without_limits or @my_acct = '' END REPEAT; "
 		"select @mj, @mja, @mpt, @msj, "
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
-		"@def_qos_id, @qos, @delta_qos, @prio;"
+		"@def_qos_id, @qos, @delta_qos, @prio, @tdhl;"
 		"END;";
 	/*
 	 * When 25.05 is no longer supported we can remove get_lineage, it is

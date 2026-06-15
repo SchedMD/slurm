@@ -163,6 +163,7 @@ enum {
 	ASSOC2_REQ_QOS,
 	ASSOC2_REQ_DELTA_QOS,
 	ASSOC2_REQ_PRIO,
+	ASSOC2_REQ_TDHL,
 };
 
 static char *massoc_req_inx[] = {
@@ -531,6 +532,9 @@ static int _set_assoc_limits_for_add(
 		tres_str_flags);
 	slurmdb_combine_tres_strings(
 		&assoc->max_tres_run_mins, row[ASSOC2_REQ_MTRM],
+		tres_str_flags);
+	slurmdb_combine_tres_strings(
+		&assoc->tres_decay_hl, row[ASSOC2_REQ_TDHL],
 		tres_str_flags);
 
 	if (assoc->qos_list) {
@@ -1400,6 +1404,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				if (row2[ASSOC2_REQ_MTRM][0])
 					alt_assoc.max_tres_run_mins =
 						row2[ASSOC2_REQ_MTRM];
+				if (row2[ASSOC2_REQ_TDHL][0])
+					alt_assoc.tres_decay_hl =
+						row2[ASSOC2_REQ_TDHL];
 			}
 		}
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -1985,6 +1992,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	char *parent_mtpn = NULL;
 	char *parent_mtmpj = NULL;
 	char *parent_mtrm = NULL;
+	char *parent_tdhl = NULL;
 	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
@@ -2271,6 +2279,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 					parent_mtrm = xstrdup(
 						row2[ASSOC2_REQ_MTRM]);
 
+				xfree(parent_tdhl);
+				if (row2[ASSOC2_REQ_TDHL][0])
+					parent_tdhl = xstrdup(
+						row2[ASSOC2_REQ_TDHL]);
+
 				xfree(parent_qos);
 				if (row2[ASSOC2_REQ_QOS][0])
 					parent_qos =
@@ -2353,6 +2366,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_run_mins, parent_mtrm,
+			TRES_STR_FLAG_SORT_ID);
+		slurmdb_combine_tres_strings(
+			&assoc->tres_decay_hl, parent_tdhl,
 			TRES_STR_FLAG_SORT_ID);
 
 		assoc->qos_list = list_create(xfree_ptr);
@@ -2447,6 +2463,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	xfree(parent_mtpn);
 	xfree(parent_mtmpj);
 	xfree(parent_mtrm);
+	xfree(parent_tdhl);
 	mysql_free_result(result);
 
 	FREE_NULL_LIST(delta_qos_list);
