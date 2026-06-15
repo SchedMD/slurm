@@ -132,6 +132,14 @@ static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
 static slurmdb_assoc_rec_t **assoc_hash = NULL;
 static int *assoc_mgr_tres_old_pos = NULL;
 
+/*
+ * How many association and QoS records carry a half-life. The decay thread
+ * uses this to skip a pass entirely when PriorityDecayHalfLife is 0 and
+ * nothing wants a different rate, so it has to fall back to 0 once the last
+ * half-life is removed rather than latch on for the life of the process.
+ */
+static int tres_decay_hl_cnt = 0;
+
 static uint32_t _get_children_level_shares(slurmdb_assoc_rec_t *assoc);
 static void _reset_children_usages(list_t *children_list);
 
@@ -3060,9 +3068,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->shares_raw       = ret_assoc->shares_raw;
 
-	if (!assoc->tres_decay_hl)
-		assoc->tres_decay_hl = ret_assoc->tres_decay_hl;
-
 	assoc->uid              = ret_assoc->uid;
 
 	/* Don't send any usage info since we don't know if the usage
@@ -4162,6 +4167,44 @@ static int _foreach_update_assoc_notify(void *x, void *arg)
 	return 1;
 }
 
+/*
+ * NO_VAL64 marks a TRES with no half-life of its own. The decay code puts
+ * PriorityDecayHalfLife in its place at use time, so this array never goes
+ * stale when that setting changes.
+ */
+static void _set_tres_decay_hl_array(uint64_t **tres_decay_hl_ctld,
+				     char *tres_str)
+{
+	/*
+	 * Leave the array absent when no TRES has a half-life.
+	 * assoc_mgr_set_tres_cnt_array() fills it in before it looks at the
+	 * string, so calling it unconditionally gave every association and
+	 * every QoS g_tres_count entries for a feature almost nobody enables.
+	 * It also made _decay_usage_tres_raw()'s NULL branch unreachable, so
+	 * each record paid a per-TRES lookup that only returned the global
+	 * factor it would have used anyway.
+	 */
+	if (!tres_str || !tres_str[0]) {
+		if (*tres_decay_hl_ctld)
+			tres_decay_hl_cnt--;
+		xfree(*tres_decay_hl_ctld);
+		return;
+	}
+
+	/*
+	 * Track both transitions so a change is visible before the next pass
+	 * recounts. This can drift high -- a destroyed record has nothing to
+	 * decrement it -- which only costs a pass that finds nothing to do. It
+	 * cannot drift low: xfree() leaves the array NULL, so a second removal
+	 * has nothing to subtract.
+	 */
+	if (!*tres_decay_hl_ctld)
+		tres_decay_hl_cnt++;
+
+	assoc_mgr_set_tres_cnt_array(tres_decay_hl_ctld, tres_str, NO_VAL64, 1,
+				     false, NULL);
+}
+
 extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 {
 	slurmdb_assoc_rec_t *rec;
@@ -4353,6 +4396,18 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 					&rec->max_tres_run_mins_ctld,
 					rec->max_tres_run_mins, INFINITE64, 1,
 					false, NULL);
+			}
+
+			if (object->tres_decay_hl) {
+				xfree(rec->tres_decay_hl);
+				if (object->tres_decay_hl[0]) {
+					rec->tres_decay_hl =
+						object->tres_decay_hl;
+					object->tres_decay_hl = NULL;
+				}
+				_set_tres_decay_hl_array(
+					&rec->tres_decay_hl_ctld,
+					rec->tres_decay_hl);
 			}
 
 			if (object->max_jobs != NO_VAL)
@@ -5281,6 +5336,18 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 					&rec->min_tres_pj_ctld,
 					rec->min_tres_pj, INFINITE64, 1,
 					relative, rec->relative_tres_cnt);
+			}
+
+			if (object->tres_decay_hl) {
+				xfree(rec->tres_decay_hl);
+				if (object->tres_decay_hl[0]) {
+					rec->tres_decay_hl =
+						object->tres_decay_hl;
+					object->tres_decay_hl = NULL;
+				}
+				_set_tres_decay_hl_array(
+					&rec->tres_decay_hl_ctld,
+					rec->tres_decay_hl);
 			}
 
 			if (object->preempt_bitstr) {
@@ -6945,6 +7012,23 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 	return diff_cnt;
 }
 
+extern bool assoc_mgr_tres_decay_hl_in_use(void)
+{
+	return (tres_decay_hl_cnt > 0);
+}
+
+/*
+ * Nothing in here can decrement the count when a record is destroyed:
+ * slurmdb_free_assoc_rec_members() frees the array from libcommon, which
+ * clients call too, so it cannot touch a slurmctld-side count. The decay thread
+ * already walks every record on each pass, so it recounts as it goes and hands
+ * the total back here.
+ */
+extern void assoc_mgr_set_tres_decay_hl_cnt(int cnt)
+{
+	tres_decay_hl_cnt = cnt;
+}
+
 /* tres read lock needs to be locked before this is called. */
 extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 {
@@ -6970,6 +7054,8 @@ extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
 				     assoc->max_tres_run_mins, INFINITE64, 1,
 				     false, NULL);
+	_set_tres_decay_hl_array(&assoc->tres_decay_hl_ctld,
+				 assoc->tres_decay_hl);
 }
 
 /* tres read and qos write locks need to be locked before this is called. */
@@ -7019,6 +7105,9 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,
 				     qos->min_tres_pj, INFINITE64, 1,
 				     relative, qos->relative_tres_cnt);
+	/* Never relative: a half-life is a duration, not a share. */
+	_set_tres_decay_hl_array(&qos->tres_decay_hl_ctld,
+				 qos->tres_decay_hl);
 }
 
 /* qos write and tres read lock needs to be locked before this is called. */
@@ -7386,6 +7475,58 @@ static bool _check_incr(uint32_t a, uint32_t b)
 	return false;
 }
 
+/*
+ * A coordinator may not end up less constrictive than the parent. For a decay
+ * half-life that is inverted from every other limit: a longer half-life makes
+ * the quota replenish more slowly, and 0 means it never replenishes at all, so
+ * those are the constrictive directions and a shorter one is what to refuse.
+ */
+static bool _find_tres_decay_hl_decr(uint64_t *a, uint64_t *b, int *tres_pos)
+{
+	for (int i = 0; i < g_tres_count; i++) {
+		bool cur_set = b && (b[i] != NO_VAL64);
+
+		/* Nothing asked for on this TRES, and no override to lose. */
+		if ((a[i] == NO_VAL64) && !cur_set)
+			continue;
+
+		/*
+		 * A requested NO_VAL64 with an override currently in place is
+		 * an explicit removal (TresDecayHalfLife=<tres>=-1). Losing
+		 * that override falls back to whatever this TRES inherits --
+		 * possibly PriorityDecayHalfLife, which slurmdbd cannot see
+		 * -- so it can never be shown to be no more constrictive.
+		 * Refuse it the same as asking for NO_VAL64 outright.
+		 */
+		if (a[i] == NO_VAL64) {
+			*tres_pos = i;
+			return true;
+		}
+
+		/* Never decaying is the most constrictive value there is. */
+		if (!a[i])
+			continue;
+
+		/*
+		 * Nothing above sets this TRES, so what it inherits is
+		 * PriorityDecayHalfLife, which slurmdbd does not have. Refuse
+		 * rather than compare against a value we cannot see. A NULL
+		 * array means no TRES on that record has one at all.
+		 */
+		if (!cur_set) {
+			*tres_pos = i;
+			return true;
+		}
+
+		if (!b[i] || (a[i] < b[i])) {
+			*tres_pos = i;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static bool _find_tres_incr(uint64_t *a, uint64_t *b, int *tres_pos)
 {
 	for (int i = 0; i < g_tres_count; i++)
@@ -7567,6 +7708,19 @@ extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
 					  curr->max_tres_pn_ctld, &tres_pos))) {
 			if (str)
 				*str = _make_tres_str("MaxTRESPn", tres_pos);
+			goto end_it;
+		}
+	}
+	if (assoc->tres_decay_hl) {
+		assoc_mgr_set_tres_cnt_array(&assoc->tres_decay_hl_ctld,
+					     assoc->tres_decay_hl, NO_VAL64, 1,
+					     false, NULL);
+		if ((rc = _find_tres_decay_hl_decr(assoc->tres_decay_hl_ctld,
+						   curr->tres_decay_hl_ctld,
+						   &tres_pos))) {
+			if (str)
+				*str = _make_tres_str("TresDecayHalfLife",
+						      tres_pos);
 		}
 	}
 
