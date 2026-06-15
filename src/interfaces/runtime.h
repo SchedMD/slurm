@@ -36,4 +36,46 @@
 #ifndef _INTERFACES_RUNTIME_H
 #define _INTERFACES_RUNTIME_H
 
+#include <stdbool.h>
+#include <stdio.h>
+
+#include "src/common/slurm_opt.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+struct option;
+
+/* Forward declaration to avoid pulling slurmd.h into this header. */
+typedef struct slurmd_config slurmd_conf_t;
+
+typedef enum {
+	RUNTIME_CTXT_INVALID = 0,
+	RUNTIME_CTXT_SUBMIT, /* srun/salloc/sbatch/slurmrestd */
+	RUNTIME_CTXT_SLURMD,
+	RUNTIME_CTXT_SLURMSTEPD,
+	RUNTIME_CTXT_INVALID_MAX
+} runtime_context_t;
+
+/*
+ * Initialize the runtime plugin.
+ * IN plugin_name - Plugin name or NULL for default
+ * IN context - Calling context for plugin
+ * RET SLURM_SUCCESS or error
+ */
+extern int runtime_g_init(const char *plugin_name, runtime_context_t context);
+extern void runtime_g_fini(void);
+
+/* Set up the runtime for the step. Runs in slurmstepd. */
+extern int runtime_g_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			   slurm_addr_t *cli, slurm_msg_t *msg);
+
+/* Clean up the runtime for the step. Runs in slurmstepd. */
+extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step);
+
+/* Prepare the runtime for the specified task. Runs in slurmstepd. */
+extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
+				stepd_step_task_info_t *task);
+
+/* Run the specified task within the runtime. Runs in slurmstepd. */
+extern void runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			  stepd_step_task_info_t *task);
 #endif
