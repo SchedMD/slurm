@@ -33,7 +33,31 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+
 #include "api.h"
+
+static int _update_hres(openapi_ctxt_t *ctxt)
+{
+	int rc;
+	data_t *ppath = data_set_list(data_new());
+	hres_update_msg_t *msg = xmalloc(sizeof(*msg));
+
+	msg->count = NO_VAL;
+
+	if ((rc = DATA_PARSE(ctxt->parser, HRES_UPDATE_MSG, *msg, ctxt->query,
+			     ppath)))
+		goto cleanup;
+	if ((rc = slurm_update_hres(msg)))
+		rc = resp_error(ctxt, rc, __func__, "Failure to update HRES");
+
+cleanup:
+	slurm_free_hres_update_msg(msg);
+	FREE_NULL_DATA(ppath);
+	return rc;
+}
 
 /* based on _print_license_info() from scontrol */
 extern int op_handler_licenses(openapi_ctxt_t *ctxt)
@@ -62,4 +86,13 @@ extern int op_handler_licenses(openapi_ctxt_t *ctxt)
 
 	slurm_free_license_info_msg(msg);
 	return rc;
+}
+
+extern int op_handler_hres(openapi_ctxt_t *ctxt)
+{
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	return _update_hres(ctxt);
 }
