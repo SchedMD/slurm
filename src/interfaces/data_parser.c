@@ -53,7 +53,7 @@
 #define PARSE_MAGIC 0x0ea0b1be
 #define LATEST_PLUGIN_NAME "latest"
 
-struct data_parser_s {
+typedef struct data_parser_s {
 	int magic;
 	int plugin_offset;
 	/* arg returned by plugin init() */
@@ -61,7 +61,7 @@ struct data_parser_s {
 	const char *plugin_type; /* ptr to plugin plugin_type - do not xfree */
 	char *params; /* parameters from _new - must xfree */
 	char *plugin_string; /* plugin_type+params - must xfree */
-};
+} data_parser_t;
 
 typedef struct {
 	int (*parse)(void *arg, data_parser_type_t type, void *dst,
