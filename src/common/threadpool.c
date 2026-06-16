@@ -898,16 +898,14 @@ static void _parse_params(const int default_count, const char *params)
 				  strlen(THREADPOOL_PARAM))) {
 			const char *value = (tok + strlen(THREADPOOL_PARAM));
 
+			threadpool.enabled = false;
+
 			if (!xstrcasecmp(value, "enabled"))
-				threadpool.enabled = true;
+				warning("threadpool is unavailable in Slurm 26.05");
 			else if (!xstrcasecmp(value, "disabled"))
-				threadpool.enabled = false;
+				; /* do nothing */
 			else
 				fatal("Invalid parameter %s", tok);
-
-			log_flag(THREAD, "%s: threadpool is %s",
-				 __func__,
-				 (threadpool.enabled ? "enabled" : "disabled"));
 		} else if (
 			!xstrncasecmp(tok, THREADPOOL_PARAM_PREALLOCATE,
 				      strlen(THREADPOOL_PARAM_PREALLOCATE))) {
