@@ -392,23 +392,30 @@ extern int conmgr_set_params(const char *params)
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_THREADS));
 
-			mgr.workers.conf_threads = count;
+			if ((count < 1) || (count > INT_MAX)) {
+				error("%s: Ignoring invalid %s: thread count must be >= 1; using default",
+				      __func__, tok);
+			} else {
+				mgr.workers.conf_threads = (int) count;
 
-			log_flag(CONMGR, "%s: %s set %lu threads",
-				 __func__, tok, count);
+				log_flag(CONMGR, "%s: %s set %d threads",
+					 __func__, tok,
+					 mgr.workers.conf_threads);
+			}
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_MAX_CONN,
 				  strlen(CONMGR_PARAM_MAX_CONN))) {
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
 
-			if (count < 1)
-				fatal("%s: There must be at least 1 max connection",
-				      __func__);
+			if (count < 1) {
+				error("%s: Ignoring invalid %s: max connections must be >= 1; using default",
+				      __func__, tok);
+			} else {
+				mgr.conf_max_connections = count;
 
-			mgr.conf_max_connections = count;
-
-			log_flag(CONMGR, "%s: %s activated with %lu max connections",
-				 __func__, tok, count);
+				log_flag(CONMGR, "%s: %s activated with %lu max connections",
+					 __func__, tok, count);
+			}
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_QUIESCE_TIMEOUT,
 				  strlen(CONMGR_PARAM_QUIESCE_TIMEOUT))) {
 			const char *value =
@@ -416,12 +423,13 @@ extern int conmgr_set_params(const char *params)
 
 			if ((rc = parse_timespec(value, false,
 						 &mgr.timeouts.quiesce)))
-				fatal("%s: Invalid timeout: %s -> %s",
-				      __func__, value, slurm_strerror(rc));
-
-			log_flag(CONMGR, "%s: %s activated with %s",
-				 __func__, tok,
-				 TIMESPEC_STR(mgr.timeouts.quiesce, false));
+				error("%s: Ignoring invalid timeout %s: %s; using default",
+				      __func__, tok, slurm_strerror(rc));
+			else
+				log_flag(CONMGR, "%s: %s activated with %s",
+					 __func__, tok,
+					 TIMESPEC_STR(mgr.timeouts.quiesce,
+						      false));
 		} else if (!xstrcasecmp(tok, CONMGR_PARAM_POLL_ONLY)) {
 			log_flag(CONMGR, "%s: %s activated", __func__, tok);
 			pollctl_set_mode(POLL_MODE_POLL);
@@ -433,13 +441,13 @@ extern int conmgr_set_params(const char *params)
 
 			if ((rc = parse_timespec(value, false,
 						 &mgr.timeouts.write_complete)))
-				fatal("%s: Invalid timeout: %s -> %s",
-				      __func__, value, slurm_strerror(rc));
-
-			log_flag(CONMGR, "%s: %s activated with %s",
-				 __func__, tok,
-				 TIMESPEC_STR(mgr.timeouts.write_complete,
-					      false));
+				error("%s: Ignoring invalid timeout %s: %s; using default",
+				      __func__, tok, slurm_strerror(rc));
+			else
+				log_flag(CONMGR, "%s: %s activated with %s",
+					 __func__, tok,
+					 TIMESPEC_STR(mgr.timeouts.write_complete,
+						      false));
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_READ_TIMEOUT,
 					 strlen(CONMGR_PARAM_READ_TIMEOUT))) {
 			const char *value =
@@ -447,12 +455,12 @@ extern int conmgr_set_params(const char *params)
 
 			if ((rc = parse_timespec(value, false,
 						 &mgr.timeouts.read)))
-				fatal("%s: Invalid timeout: %s -> %s",
-				      __func__, value, slurm_strerror(rc));
-
-			log_flag(CONMGR, "%s: %s activated with %s",
-				 __func__, tok,
-				 TIMESPEC_STR(mgr.timeouts.read, false));
+				error("%s: Ignoring invalid timeout %s: %s; using default",
+				      __func__, tok, slurm_strerror(rc));
+			else
+				log_flag(CONMGR, "%s: %s activated with %s",
+					 __func__, tok,
+					 TIMESPEC_STR(mgr.timeouts.read, false));
 		} else if (!xstrncasecmp(tok, CONMGR_PARAM_WRITE_TIMEOUT,
 					 strlen(CONMGR_PARAM_WRITE_TIMEOUT))) {
 			const char *value =
@@ -460,12 +468,12 @@ extern int conmgr_set_params(const char *params)
 
 			if ((rc = parse_timespec(value, false,
 						 &mgr.timeouts.write)))
-				fatal("%s: Invalid timeout: %s -> %s",
-				      __func__, value, slurm_strerror(rc));
-
-			log_flag(CONMGR, "%s: %s activated with %s",
-				 __func__, tok,
-				 TIMESPEC_STR(mgr.timeouts.write, false));
+				error("%s: Ignoring invalid timeout %s: %s; using default",
+				      __func__, tok, slurm_strerror(rc));
+			else
+				log_flag(CONMGR, "%s: %s activated with %s",
+					 __func__, tok,
+					 TIMESPEC_STR(mgr.timeouts.write, false));
 		} else if (
 			!xstrncasecmp(tok, CONMGR_PARAM_CONNECT_TIMEOUT,
 				      strlen(CONMGR_PARAM_CONNECT_TIMEOUT))) {
@@ -474,12 +482,13 @@ extern int conmgr_set_params(const char *params)
 
 			if ((rc = parse_timespec(value, false,
 						 &mgr.timeouts.connect)))
-				fatal("%s: Invalid timeout: %s -> %s",
-				      __func__, value, slurm_strerror(rc));
-
-			log_flag(CONMGR, "%s: %s activated with %s",
-				 __func__, tok,
-				 TIMESPEC_STR(mgr.timeouts.connect, false));
+				error("%s: Ignoring invalid timeout %s: %s; using default",
+				      __func__, tok, slurm_strerror(rc));
+			else
+				log_flag(CONMGR, "%s: %s activated with %s",
+					 __func__, tok,
+					 TIMESPEC_STR(mgr.timeouts.connect,
+						      false));
 		} else {
 			log_flag(CONMGR, "%s: Ignoring parameter %s",
 				 __func__, tok);
