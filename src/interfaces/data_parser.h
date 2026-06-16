@@ -654,6 +654,8 @@ typedef enum {
 	DATA_PARSER_H_VARIABLE, /* hierarchy_layer_t */
 	DATA_PARSER_H_VARIABLE_PTR, /* hierarchy_layer_t* */
 	DATA_PARSER_H_VARIABLE_LIST, /* list_t* hierarchy_layer_t* */
+	DATA_PARSER_HRES_UPDATE_MSG, /* hres_update_msg_t */
+	DATA_PARSER_HRES_UPDATE_MSG_PTR, /* hres_update_msg_t* */
 	DATA_PARSER_SLUID, /* sluid_t */
 	DATA_PARSER_SLUID_PTR, /* sluid_t* */
 	DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP, /* openapi_resp_resource_layout_t */

@@ -9517,6 +9517,17 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(hres_update_msg_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(HRES_UPDATE_MSG)[] = {
+	add_parse(H_VARIABLE_LIST, base, "base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource count for the layer; omit to leave unchanged"),
+	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update"),
+	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update"),
+	add_parse(STRING, nodes, "nodes", "Nodes assigned to the layer"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(PART_PRIO_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(PART_PRIO)[] = {
 	add_parse(STRING, part, "partition", "Partition name"),
@@ -13405,6 +13416,7 @@ static const parser_t parsers[] = {
 	addpap(STATS_MSG, stats_info_response_msg_t, NULL, NULL),
 	addpap(NODE, node_info_t, NULL, NULL),
 	addpap(LICENSE, slurm_license_info_t, NULL, NULL),
+	addpap(HRES_UPDATE_MSG, hres_update_msg_t, NULL, NULL),
 	addpap(JOB_INFO, slurm_job_info_t, NULL, NULL),
 	addpap(JOB_RES, job_resources_t, NULL, NULL),
 	addpap(LISTJOBS_INFO, listjobs_info_t, NULL, NULL),
