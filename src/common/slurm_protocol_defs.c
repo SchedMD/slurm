@@ -1704,6 +1704,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->network);
 		xfree(msg->origin_cluster);
 		xfree(msg->partition);
+		xfree(msg->prefer);
 		xfree(msg->qos);
 		xfree(msg->req_context);
 		xfree(msg->req_nodes);
