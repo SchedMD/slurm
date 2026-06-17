@@ -1778,6 +1778,23 @@ before it registers with the slurmctld daemon. If \fBHealthCheckNodeState\fR is
 \fBSTART_ONLY\fR or \fBREBOOT_ONLY\fR, it will be executed only when the slurmd
 daemon is first started or when slurmd reports back after a reboot.
 By default, no program will be executed.
+
+Environment variables provided to the script:
+.IP
+.RS
+.TP
+\fBSLURMD_NODENAME\fR
+Node name.
+.IP
+.TP
+\fBSLURM_NODE_IS_HEALTHY\fR
+The controller's evaluation of the node's current health; "yes" if healthy,
+"no" if unhealthy (down, drained, draining, failing, or in maintenance), or
+unset if health information is not available (during startup execution before
+node registration or if the node doesn't support this option).
+This allows the program to get this information without querying
+\fBscontrol\fR or \fBsinfo\fR.
+.RE
 .IP
 
 .TP
