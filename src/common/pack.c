@@ -287,6 +287,25 @@ extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes)
 	return SLURM_SUCCESS;
 }
 
+extern int buf_append_str(buf_t *buf, const char *str)
+{
+	int rc;
+	size_t bytes;
+
+	if (!str)
+		return SLURM_SUCCESS;
+
+	bytes = strlen(str);
+
+	if (!bytes)
+		return SLURM_SUCCESS;
+
+	if ((rc = buf_append_bytes(buf, str, bytes)))
+		return rc;
+
+	return SLURM_SUCCESS;
+}
+
 /* init_buf - create an empty buffer of the given size */
 buf_t *init_buf(uint32_t size)
 {

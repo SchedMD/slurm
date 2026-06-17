@@ -144,6 +144,17 @@ extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);
 extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes);
 
 /*
+ * Append a NUL-terminated string to a buf_t but will not append NUL-terminator
+ * to the buffer.
+ *
+ * IN buf - buffer to append to
+ * IN str - NUL-terminated string to append; NULL is treated as an empty
+ *	string (a no-op success)
+ * RET SLURM_SUCCESS or error (EINVAL / ESLURM_DATA_TOO_LARGE / ENOMEM)
+ */
+extern int buf_append_str(buf_t *buf, const char *str);
+
+/*
  * Extract Buffer head pointer
  * NOTE: Use xfer_buf_data() macro instead
  * IN/OUT my_buf_ptr - Pointer to buffer (will be xfree()ed and set to NULL)
