@@ -481,6 +481,11 @@ static int _write_conf(const char *dir, const char *name, const char *content,
 		goto rwfail;
 	}
 
+	if (fchmod(fd, mode) < 0) {
+		error("%s: could not chmod config file `%s`", __func__, file);
+		goto rwfail;
+	}
+
 	if (content)
 		safe_write(fd, content, strlen(content));
 
