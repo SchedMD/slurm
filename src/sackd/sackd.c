@@ -250,6 +250,7 @@ static bool _slurm_conf_file_exists(void)
 static void _establish_config_source(void)
 {
 	config_response_msg_t *configs;
+	mode_t mode = 0755;
 	uint32_t fetch_type = CONFIG_REQUEST_SACKD;
 
 	/* Reconfigured child process does not need to fetch configs again. */
@@ -269,9 +270,9 @@ static void _establish_config_source(void)
 	 * If that fails, attempt to destroy it, then make a new directory.
 	 * If that fails again, we're out of luck.
 	 */
-	if (mkdir(dir, 0755) < 0) {
+	if (mkdir(dir, mode) < 0) {
 		(void) rmdir_recursive(dir, true);
-		if (mkdir(dir, 0755) < 0)
+		if (mkdir(dir, mode) < 0)
 			fatal("%s: failed to create a clean cache dir at %s",
 			      __func__, dir);
 	}
