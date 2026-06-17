@@ -909,32 +909,56 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con_flag(con, FLAG_IS_LISTEN)) {
-		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
-			 __func__, con->name,
-			 (uintptr_t) con->events->on_listen_connect);
+	xassert(!con_flag(con, FLAG_IS_LISTEN));
 
-		arg = con->events->on_listen_connect(conmgr_args, con->new_arg);
+	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+		 __func__, con->name,
+		 (uintptr_t) con->events->on_connection);
 
-		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-			 __func__, con->name,
-			 (uintptr_t) con->events->on_listen_connect,
-			 (uintptr_t) arg);
-	} else {
-		log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
-			 __func__, con->name,
-			 (uintptr_t) con->events->on_connection);
+	arg = con->events->on_connection(conmgr_args, con->new_arg);
 
-		arg = con->events->on_connection(conmgr_args, con->new_arg);
-
-		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-			 __func__, con->name,
-			 (uintptr_t) con->events->on_connection,
-			 (uintptr_t) arg);
-	}
+	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+		 __func__, con->name,
+		 (uintptr_t) con->events->on_connection,
+		 (uintptr_t) arg);
 
 	if (!arg) {
 		error("%s: [%s] closing connection due to NULL return from on_connection",
+		      __func__, con->name);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, SLURM_COMMUNICATIONS_REJECTED);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	slurm_mutex_lock(&mgr.mutex);
+	con->arg = arg;
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+extern void wrap_on_listen_connection(conmgr_callback_args_t conmgr_args,
+				      void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(con_flag(con, FLAG_IS_LISTEN));
+
+	log_flag(CONMGR, "%s: [%s] BEGIN func=0x%"PRIxPTR,
+		 __func__, con->name,
+		 (uintptr_t) con->events->on_listen_connect);
+
+	arg = con->events->on_listen_connect(conmgr_args, con->new_arg);
+
+	log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+		 __func__, con->name,
+		 (uintptr_t) con->events->on_listen_connect,
+		 (uintptr_t) arg);
+
+	if (!arg) {
+		error("%s: [%s] closing connection due to NULL return from on_listen_connect",
 		      __func__, con->name);
 		slurm_mutex_lock(&mgr.mutex);
 		con_set_status_code(con, SLURM_COMMUNICATIONS_REJECTED);

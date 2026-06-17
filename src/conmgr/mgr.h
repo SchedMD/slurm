@@ -641,6 +641,12 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
+ * Wraps on_listen_connect() callback
+ */
+extern void wrap_on_listen_connection(conmgr_callback_args_t conmgr_args,
+				      void *arg);
+
+/*
  * Extract connection file descriptors
  */
 extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg);

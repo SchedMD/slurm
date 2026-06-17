@@ -662,7 +662,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 				con_set_polling(con, PCTL_TYPE_CONNECTED,
 						__func__);
 
-				add_work_con_fifo(true, con, wrap_on_connection,
+				add_work_con_fifo(true, con,
+						  wrap_on_listen_connection,
 						  con);
 
 				log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_listen_connect() callback.",
