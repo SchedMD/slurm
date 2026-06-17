@@ -277,6 +277,9 @@ static void _establish_config_source(void)
 			      __func__, dir);
 	}
 
+	if (chmod(dir, mode) < 0)
+		fatal("%s: failed to chmod cache dir at %s", __func__, dir);
+
 	if (disable_reconfig)
 		fetch_type = CONFIG_REQUEST_SLURM_CONF;
 
