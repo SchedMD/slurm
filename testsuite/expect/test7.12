@@ -33,7 +33,8 @@ source ./globals
 set file_in     "$test_dir/input"
 set job_id      0
 set step_id	0
-set pid_count	1
+# Two pids expected, slurmstepd and the sleep itself
+set pid_count	2
 set test_prog   "$test_name.prog"
 
 proc cleanup {} {
