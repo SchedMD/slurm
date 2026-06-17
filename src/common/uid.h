@@ -172,4 +172,16 @@ extern char *gid_to_string(gid_t gid);
  */
 extern char *gid_to_string_or_null(gid_t gid);
 
+/*
+ * Drop all supplementary groups from the calling process.
+ *
+ * Best-effort: if the process lacks CAP_SETGID the groups are left intact and a
+ * warning is logged (the inherited groups must already be correct).
+ *
+ * IN uid - target user (used only for the warning message)
+ * IN gid - primary group to keep (supplementary copies of it are ignored)
+ * RET SLURM_SUCCESS, or an errno if querying the current groups failed
+ */
+extern int drop_supplementary_groups(uid_t uid, gid_t gid);
+
 #endif /*__SLURM_UID_UTILITY_H__*/
