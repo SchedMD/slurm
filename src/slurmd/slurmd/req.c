@@ -2899,7 +2899,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 		send_registration_msg(SLURM_SUCCESS);
 	}
 
-	run_script_health_check();
+	run_script_health_check(HC_HEALTH_HEALTHY);
 
 	/* Take this opportunity to enforce any job memory limits */
 	job_mem_limit_enforce();
