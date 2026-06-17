@@ -106,7 +106,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 				  int hl_count);
 static void _destroy_forward_struct(forward_struct_t *forward_struct);
 
-void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
+static void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 {
 	if (fwd_tree) {
 		FREE_NULL_HOSTLIST(fwd_tree->tree_hl);
