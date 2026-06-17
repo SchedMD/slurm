@@ -80,6 +80,7 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
@@ -317,6 +318,8 @@ extern void exec_task(int local_proc_id)
 	if (step->container)
 		container_task_init(task);
 
+	runtime_g_task_init(conf, step, task);
+
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;
 	if (step->het_job_task_offset != NO_VAL)
@@ -513,6 +516,8 @@ extern void exec_task(int local_proc_id)
 
 	if (step->container)
 		container_run(task);
+
+	runtime_g_run(conf, step, task);
 
 	execve(task->argv[0], task->argv, step->env);
 	saved_errno = errno;
