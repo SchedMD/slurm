@@ -150,16 +150,31 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con_flag(con, FLAG_IS_LISTEN)) {
-		if (con->events->on_listen_finish)
-			con->events->on_listen_finish(conmgr_args, arg);
-	} else if (con->events->on_finish) {
+	xassert(!con_flag(con, FLAG_IS_LISTEN));
+
+	if (con->events->on_finish)
 		con->events->on_finish(conmgr_args, arg);
-	}
 
 	slurm_mutex_lock(&mgr.mutex);
 	con_unset_flag(con, FLAG_WAIT_ON_FINISH);
 	/* on_finish must free arg */
+	con->arg = NULL;
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+static void _on_listener_finish_wrapper(conmgr_callback_args_t conmgr_args,
+					void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(con_flag(con, FLAG_IS_LISTEN));
+
+	if (con->events->on_listen_finish)
+		con->events->on_listen_finish(conmgr_args, arg);
+
+	slurm_mutex_lock(&mgr.mutex);
+	con_unset_flag(con, FLAG_WAIT_ON_FINISH);
+	/* on_listen_finish must free arg */
 	con->arg = NULL;
 	slurm_mutex_unlock(&mgr.mutex);
 }
@@ -1069,7 +1084,13 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_flag(con, FLAG_WAIT_ON_FINISH);
 
 		/* notify caller of closing */
-		add_work_con_fifo(true, con, _on_finish_wrapper, con->arg);
+		if (con_flag(con, FLAG_IS_LISTEN))
+			add_work_con_fifo(true, con,
+					  _on_listener_finish_wrapper,
+					  con->arg);
+		else
+			add_work_con_fifo(true, con, _on_finish_wrapper,
+					  con->arg);
 		return 0;
 	}
 
