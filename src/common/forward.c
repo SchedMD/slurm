@@ -143,6 +143,23 @@ static int _forward_get_addr(forward_struct_t *fwd_struct, char *name,
 	return SLURM_SUCCESS;
 }
 
+static void _fwd_msg_free(forward_msg_t *fwd_msg)
+{
+	if (!fwd_msg)
+		return;
+
+	/*
+	 * alias_addrs members are borrowed from fwd_struct->alias_addrs in the
+	 * _forward_thread() path and must not be freed here; NULL them before
+	 * destroy_forward(). In the cancel path they are already NULL.
+	 */
+	fwd_msg->header.forward.alias_addrs.net_cred = NULL;
+	fwd_msg->header.forward.alias_addrs.node_addrs = NULL;
+	fwd_msg->header.forward.alias_addrs.node_list = NULL;
+	destroy_forward(&fwd_msg->header.forward);
+	xfree(fwd_msg);
+}
+
 static void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = arg;
@@ -385,16 +402,13 @@ cleanup:
 
 	conn_g_destroy(conn, true);
 	hostlist_destroy(hl);
-	fwd_ptr->alias_addrs.net_cred = NULL;
-	fwd_ptr->alias_addrs.node_addrs = NULL;
-	fwd_ptr->alias_addrs.node_list = NULL;
-	destroy_forward(fwd_ptr);
 	FREE_NULL_BUFFER(buffer);
 	fwd_struct->thread_count--;
 	xassert(fwd_struct->thread_count >= 0);
 	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
-	xfree(fwd_msg);
+
+	_fwd_msg_free(fwd_msg);
 
 	HISTOGRAM_ADD_DURATION(&forward_stats.run, ts_start);
 
