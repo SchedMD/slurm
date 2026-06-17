@@ -47,6 +47,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
+#include "slurm/slurm_errno.h"
+
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -299,4 +305,33 @@ extern void become_slurm_user(void)
 		fatal("Can not set uid to SlurmUser(%u): %m",
 		      slurm_conf.slurm_user_id);
 	}
+}
+
+extern int restrict_privileges(void)
+{
+#if HAVE_SYS_PRCTL_H
+	int rc;
+
+	/* Stop any new privilege from being gained */
+	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0) {
+		rc = errno;
+		error("Unable to disable new privileges: %s",
+		      slurm_strerror(rc));
+		return rc;
+	}
+
+	/*
+	 * With keepcaps off, the kernel clears the permitted/effective/ambient
+	 * capability sets when setresuid() transitions the uid away from 0.
+	 * Combined with PR_SET_NO_NEW_PRIVS, no capabilities can be regained at
+	 * exec().
+	 */
+	if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) < 0) {
+		rc = errno;
+		error("Unable to clear keepcaps: %s",
+		      slurm_strerror(rc));
+		return rc;
+	}
+#endif
+	return SLURM_SUCCESS;
 }
