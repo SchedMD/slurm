@@ -83,6 +83,7 @@
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
@@ -871,6 +872,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 
 	cgroup_conf_destroy();
 	switch_g_fini();
+	runtime_g_fini();
 
 	xfree(cli);
 	xfree(conf->block_map);
@@ -1427,7 +1429,8 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (namespace_g_init() != SLURM_SUCCESS) ||
-	    (topology_g_init() != SLURM_SUCCESS))
+	    (topology_g_init() != SLURM_SUCCESS) ||
+	    runtime_g_init(NULL, RUNTIME_CTXT_SLURMSTEPD))
 		fatal("Couldn't load all plugins");
 
 	/*
