@@ -52,14 +52,14 @@
 #include <unistd.h>
 
 #include "src/common/data.h"
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
+#include "src/common/print_fields.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/list.h"
-#include "src/common/hostlist.h"
-#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
-#include "src/common/print_fields.h"
 
 #define BRIEF_FIELDS "jobid,state,exitcode"
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
