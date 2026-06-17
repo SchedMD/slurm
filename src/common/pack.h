@@ -132,6 +132,17 @@ extern int try_grow_buf(buf_t *buffer, uint32_t size);
  * RET SLURM_SUCCESS or error
  */
 extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);
+
+/*
+ * Append a binary-safe chunk of memory to a buf_t, growing it as needed.
+ * The appended data is not NUL-terminated.
+ * IN buf - buffer to append to
+ * IN ptr - pointer to the bytes to append; may be NULL only if bytes is 0
+ * IN bytes - number of bytes to append
+ * RET SLURM_SUCCESS or error (EINVAL / ESLURM_DATA_TOO_LARGE / ENOMEM)
+ */
+extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes);
+
 /*
  * Extract Buffer head pointer
  * NOTE: Use xfer_buf_data() macro instead
