@@ -151,12 +151,12 @@ create_pidfile(const char *pidfile, uid_t uid)
 {
 	FILE *fp;
 	int fd;
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
 
-	fd = open(pidfile, O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC,
-		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	fd = open(pidfile, O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, mode);
 	if (fd < 0) {
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;
