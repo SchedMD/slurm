@@ -36,4 +36,26 @@
 #ifndef _OPENSSL_HELPER_H
 #define _OPENSSL_HELPER_H
 
+/*
+ * Disable OpenSSL atexit() cleanup, which tears down libcrypto global state.
+ *
+ * This is used to avoid running libcrypto's atexit() handler while another
+ * thread is still using libcrypto, since Slurm often calls exit() without
+ * joining all threads.
+ *
+ * A deliberate consequence is that libcrypto global state is never freed, and
+ * may show up as leaked memory in valgrind.
+ *
+ * Call this from a plugin's init() before any libcrypto use (e.g. before
+ * s2n_init()), so the atexit() handler is disabled before OpenSSL registers
+ * it. It resolves the caller's shared object from plugin_addr and searches its
+ * dependency tree for libcrypto.
+ *
+ * This is a no-op if the caller's object has no libcrypto dependency, or if
+ * libcrypto was already initialized before this call.
+ *
+ * IN plugin_addr - address of any symbol in the calling plugin's shared object
+ */
+extern void openssl_helper_disable_atexit(const void *plugin_addr);
+
 #endif
