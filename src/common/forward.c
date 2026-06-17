@@ -660,9 +660,9 @@ static void _cancel_fwd(fwd_tree_t *fwd_tree, fwd_tree_t *fwd_tree_in,
 		free(name);
 	}
 	slurm_cond_signal(fwd_tree->notify);
-	FREE_NULL_HOSTLIST(fwd_tree->tree_hl);
 	slurm_mutex_unlock(fwd_tree->tree_mutex);
-	xfree(fwd_tree);
+
+	_destroy_tree_fwd(fwd_tree);
 
 	_fail_remaining_fwds(&fwd_tree_in->ret_list, fwd_tree_in->tree_mutex,
 			     fwd_tree_in->notify, hl, sp_hl, j, hl_count);
@@ -738,24 +738,21 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 			free(name);
 		}
 
+		/* Always track forwarding in thread_count. */
 		slurm_mutex_lock(&global_forward_mutex);
+		thread_count++;
+		xassert(thread_count > 0);
 		if (shutdown_requested) {
 			slurm_mutex_unlock(&global_forward_mutex);
+
+			slurm_mutex_lock(fwd_tree->tree_mutex);
+			(*fwd_tree->p_thr_count)++;
+			slurm_mutex_unlock(fwd_tree->tree_mutex);
 
 			_cancel_fwd(fwd_tree, fwd_tree_in, hl, sp_hl, j,
 				    hl_count);
 			return;
 		}
-
-		/*
-		 * Lock and increase thread counter, we need that to protect
-		 * the start_msg_tree waiting loop that was originally designed
-		 * around a "while ((count < host_count))" loop. In case where a
-		 * fwd thread was not able to get all the return codes from
-		 * children, the waiting loop was deadlocked.
-		 */
-		thread_count++;
-		xassert(thread_count > 0);
 		slurm_mutex_unlock(&global_forward_mutex);
 
 		slurm_mutex_lock(fwd_tree->tree_mutex);
