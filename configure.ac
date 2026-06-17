@@ -506,6 +506,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
+		 src/plugins/gpu/amd/Makefile
 		 src/plugins/gpu/nrt/Makefile
 		 src/plugins/gpu/nvidia/Makefile
 		 src/plugins/gpu/nvml/Makefile
