@@ -259,7 +259,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             failures.append(reason)
         return
 
-    reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED)"
+    reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED). Fixed in 25.11.7+."
     component = "sbin/slurmdbd"
     if (
         component in bin_path
@@ -268,8 +268,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "acct_storage_g_close_connection" in bt
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
-        # TODO: An initial fix landed in 25.11.4+, but it seems not fully fixed.
-        if get_version(component) >= (25, 11, 4):
+        if get_version(component) >= (25, 11, 7):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -281,8 +280,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "clusteracct_storage_g_node_up" in bt
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
-        # TODO: An initial fix landed in 25.11.4+, but it seems not fully fixed.
-        if get_version(component) >= (25, 11, 4):
+        if get_version(component) >= (25, 11, 7):
             failures.append(reason)
         else:
             xfailures.append(reason)
