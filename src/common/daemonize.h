@@ -89,4 +89,13 @@ extern int restrict_privileges(void);
  */
 extern int start_new_session(void);
 
+/*
+ * Request that the calling process is sent sig when its parent process exits.
+ * A no-op on platforms without prctl() support.
+ *
+ * IN sig - signal to deliver on parent death
+ * RET SLURM_SUCCESS or an errno on failure
+ */
+extern int set_parent_death_signal(int sig);
+
 #endif /* !_HAVE_DAEMONIZE_H */

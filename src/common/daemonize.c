@@ -356,3 +356,20 @@ extern int start_new_session(void)
 
 	return SLURM_SUCCESS;
 }
+
+extern int set_parent_death_signal(int sig)
+{
+#if HAVE_SYS_PRCTL_H
+	/*
+	 * Set the parent death signal after dropping credentials, as the kernel
+	 * clears it on a credential change.
+	 */
+	if (prctl(PR_SET_PDEATHSIG, sig) < 0) {
+		int rc = errno;
+		error("Unable to autosend signal to child processes on process exit: %s",
+		      slurm_strerror(rc));
+		return rc;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
