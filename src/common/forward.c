@@ -700,8 +700,8 @@ static void _cancel_fwd_msg(forward_msg_t *fwd_msg,
 	}
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
 	FREE_NULL_HOSTLIST(cur_hl);
-	destroy_forward(&fwd_msg->header.forward);
-	xfree(fwd_msg);
+
+	_fwd_msg_free(fwd_msg);
 
 	_fail_remaining_fwds(&fwd_struct->ret_list, &fwd_struct->forward_mutex,
 			     &fwd_struct->notify, hl, sp_hl, j, hl_count);
