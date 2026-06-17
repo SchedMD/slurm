@@ -183,17 +183,18 @@ envcount (char **env)
 }
 
 /*
- * _setenvfs() (stolen from pdsh)
+ * setenvfs() - set an environment variable; args are printf style.
  *
- * Set a variable in the callers environment.  Args are printf style.
- * XXX Space is allocated on the heap and will never be reclaimed.
+ * setenv() copies the name and value into glibc-managed storage, so
+ * the local buffer is freed on return (no leak).
+ *
  * Example: setenvfs("RMS_RANK=%d", rank);
  */
 int
 setenvfs(const char *fmt, ...)
 {
 	va_list ap;
-	char *buf, *bufcpy, *loc;
+	char *buf, *loc;
 	int rc, size;
 
 	buf = xmalloc(ENV_BUFSIZE);
@@ -202,19 +203,24 @@ setenvfs(const char *fmt, ...)
 	va_end(ap);
 
 	size = strlen(buf);
-	bufcpy = xstrdup(buf);
-	xfree(buf);
-
 	if (size >= MAX_ENV_STRLEN) {
-		if ((loc = strchr(bufcpy, '=')))
-			loc[0] = '\0';
-		error("environment variable %s is too long", bufcpy);
-		xfree(bufcpy);
-		rc = ENOMEM;
-	} else {
-		rc = putenv(bufcpy);
+		if ((loc = strchr(buf, '=')))
+			*loc = '\0';
+		error("environment variable %s is too long", buf);
+		xfree(buf);
+		return ENOMEM;
 	}
 
+	loc = strchr(buf, '=');
+	if (!loc || (loc == buf)) {
+		error("%s: invalid environment entry: %s", __func__, buf);
+		xfree(buf);
+		return EINVAL;
+	}
+	*loc++ = '\0';
+
+	rc = setenv(buf, loc, 1);
+	xfree(buf);
 	return rc;
 }
 
