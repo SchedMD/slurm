@@ -29,8 +29,9 @@ int main(int argc, char *argv[])
 	int world_size, universe_size = 0, *universe_sizep, rank, flag, rc;
 	MPI_Comm everyone;	/* intercommunicator */
 
-	if (argc < 2) {
-		printf("FAILURE: Usage %s <client_program>\n", argv[0]);
+	if (argc < 3) {
+		printf("FAILURE: Usage %s <client_program> <ntasks>\n",
+		       argv[0]);
 		exit(1);
 	}
 
@@ -44,19 +45,24 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	//printf("server rank:%d\n",rank);
 
-	/* NOTE: Ideally MPI_UNIVERSE_SIZE would be the size of the job
-	 * allocation. Presently it is the size of the job step allocation.
-	 * In any case, additional tasks can be spawned */
+	/*
+	 * NOTE: Slurm reports MPI_UNIVERSE_SIZE as the task count of the
+	 * current step. The server runs as a single-task step, so this is 1
+	 * and we fall back below. We pick 4 to match the job allocation.
+	 */
 	MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_UNIVERSE_SIZE,
 			  &universe_sizep, &flag);
 	if (flag) {
 		universe_size = *universe_sizep;
-		//printf("MPI_UNIVERSE_SIZE is %d\n", universe_size);
+		printf("MPI_UNIVERSE_SIZE is %d\n", universe_size);
 	}
-	if (universe_size < 2)
-		universe_size = 5;
+	if (universe_size < 2) {
+		universe_size = atoi(argv[2]);
+		printf("Manually setting MPI_UNIVERSE_SIZE to %d\n",
+		       universe_size);
+	}
 
-	rc = MPI_Comm_spawn(argv[1], MPI_ARGV_NULL, universe_size-1,
+	rc = MPI_Comm_spawn(argv[1], MPI_ARGV_NULL, universe_size,
 			    MPI_INFO_NULL, 0, MPI_COMM_SELF, &everyone,
 			    MPI_ERRCODES_IGNORE);
 	if (rc != MPI_SUCCESS) {
