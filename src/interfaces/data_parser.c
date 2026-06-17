@@ -60,6 +60,8 @@ typedef struct data_parser_s {
 	void *plugin_ctxt;
 	/* on_error callback arg from _new() - shallow pointer */
 	void *error_arg;
+	/* on_warn callback arg from _new() - shallow pointer */
+	void *warn_arg;
 	const char *plugin_type; /* ptr to plugin plugin_type - do not xfree */
 	char *params; /* parameters from _new - must xfree */
 	char *plugin_string; /* plugin_type+params - must xfree */
@@ -209,6 +211,7 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 	parser->plugin_type = plugins->types[plugin_index];
 	parser->params = params;
 	parser->error_arg = error_arg;
+	parser->warn_arg = warn_arg;
 
 	START_TIMER;
 	funcs = plugins->functions[plugin_index];
@@ -499,6 +502,16 @@ extern void *data_parser_get_error_arg(data_parser_t *parser)
 	xassert(parser->magic == PARSE_MAGIC);
 
 	return parser->error_arg;
+}
+
+extern void *data_parser_get_warn_arg(data_parser_t *parser)
+{
+	if (!parser)
+		return NULL;
+
+	xassert(parser->magic == PARSE_MAGIC);
+
+	return parser->warn_arg;
 }
 
 static const char *_get_plugin_version(const char *plugin_type)
