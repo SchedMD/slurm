@@ -162,6 +162,12 @@ create_pidfile(const char *pidfile, uid_t uid)
 		return -1;
 	}
 
+	if (fchmod(fd, mode) < 0) {
+		error("Unable to chmod pidfile `%s': %m", pidfile);
+		(void) close(fd);
+		return -1;
+	}
+
 	if (!(fp = fdopen(fd, "w"))) {
 		error("Unable to access pidfile at `%s': %m", pidfile);
 		(void) close(fd);
