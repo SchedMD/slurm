@@ -55,6 +55,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/print_fields.h"
+#include "src/common/sercli.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/accounting_storage.h"
@@ -247,7 +248,7 @@ void print_fields(type_t type, void *object);
 /* options.c */
 int  get_data(void);
 void parse_command_line(int argc, char **argv);
-void do_list(int argc, char **argv);
+void do_list(data_parser_t *parser);
 void do_list_completion(void);
 void sacct_init(void);
 void sacct_fini(void);
