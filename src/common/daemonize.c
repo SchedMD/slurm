@@ -335,3 +335,24 @@ extern int restrict_privileges(void)
 #endif
 	return SLURM_SUCCESS;
 }
+
+extern int start_new_session(void)
+{
+	/*
+	 * Detach from the controlling terminal to prevent TIOCSTI input
+	 * injection. EPERM means we are already a session leader.
+	 */
+	if (setsid() < 0) {
+		int rc = errno;
+		if (rc == EPERM) {
+			debug2("%s: already a session leader: %s",
+			       __func__, slurm_strerror(rc));
+		} else {
+			error("%s: Unable to setsid(): %s",
+			      __func__, slurm_strerror(rc));
+			return rc;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}

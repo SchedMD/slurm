@@ -81,4 +81,12 @@ extern void become_slurm_user(void);
  */
 extern int restrict_privileges(void);
 
+/*
+ * Start a new session (setsid()) to detach from the controlling terminal.
+ * Being already a session leader (EPERM) is treated as success.
+ *
+ * RET SLURM_SUCCESS or an errno on failure
+ */
+extern int start_new_session(void);
+
 #endif /* !_HAVE_DAEMONIZE_H */
