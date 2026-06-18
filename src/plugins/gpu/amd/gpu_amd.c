@@ -44,6 +44,8 @@
 
 #define GPU_AMD_DEV_DIR "/dev/dri"
 #define GPU_AMD_DRM_DIR "/sys/class/drm"
+#define GPU_AMD_LINK_SELF (-1)
+#define GPU_AMD_MAX_XGMI_NODES 64 /* AMDGPU_XGMI_MAX_CONNECTED_NODES */
 #define GPU_AMD_PCI_NAME_MAX 16 /* at most %04x:%02x:%02x.%d */
 #define GPU_AMD_PCI_SLOT_NAME_SCAN \
 	"PCI_SLOT_NAME=%" XSTRINGIFY(GPU_AMD_PCI_NAME_MAX) "s"
@@ -62,7 +64,15 @@ typedef struct {
 	char *name; /* lowercased GPU model, owned and freed per element */
 	char *pci_address; /* PCI slot name, owned and freed per element */
 	int render_minor; /* DRM render node minor */
+	unsigned long long xgmi_id; /* XGMI node ID, valid when xgmi_ok */
+	bool xgmi_ok; /* whether the XGMI node ID was read */
 } amd_card_t;
+
+/* One XGMI hive node, read from a device/xgmi_hive_info/nodeN symlink. */
+typedef struct {
+	int node_num; /* N in the nodeN symlink name */
+	unsigned long long xgmi_id; /* the hive node's XGMI node ID */
+} amd_xgmi_node_t;
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "GPU AMD plugin";
@@ -398,11 +408,212 @@ static void _emit_gpu_gres(uint32_t cpu_cnt, list_t *gres_list, char *file,
 }
 
 /*
- * Log the number of GPUs detected on this node, at info.
+ * Read a card's XGMI node ID from device/xgmi_device_id.
+ *
+ * card_num (IN) The DRM card number.
+ * xgmi_id (OUT) The XGMI node id.
+ *
+ * Returns true if the card exposes an XGMI node ID, false otherwise.
+ */
+static bool _read_xgmi_node_id(int card_num, unsigned long long *xgmi_id)
+{
+	char *line = NULL;
+	bool ok = false;
+
+	xassert(xgmi_id);
+
+	if (!(line = _read_card_attr(card_num, "xgmi_device_id")))
+		return false;
+	ok = (sscanf(line, "%llu", xgmi_id) == 1);
+	xfree(line);
+
+	return ok;
+}
+
+/*
+ * Order XGMI hive nodes by hive node number. The kernel hands the XGMI
+ * firmware the hive node list in that order and copies its answer back by
+ * position, so the xgmi_num_links columns follow it, the same alignment the
+ * kernel's own xgmi_port_num attribute relies on.
+ *
+ * a (IN) First hive node to compare (amd_xgmi_node_t).
+ * b (IN) Second hive node to compare (amd_xgmi_node_t).
+ *
+ * Returns negative, zero, or positive as a sorts before, at, or after b.
+ */
+static int _sort_xgmi_node(const void *a, const void *b)
+{
+	const amd_xgmi_node_t *na = a, *nb = b;
+
+	xassert(a);
+	xassert(b);
+
+	return slurm_sort_int_list_asc(&na->node_num, &nb->node_num);
+}
+
+/*
+ * Map each xgmi_num_links column to the XGMI node ID of its hive node by
+ * reading the nodeN symlinks (device/xgmi_hive_info/nodeN/xgmi_device_id) in
+ * hive node number order. A column count that differs from the hive node
+ * count makes the caller emit the placeholder Links instead of a guessed
+ * pairing.
+ *
+ * card_num (IN) The DRM card number.
+ * col_xgmi_id (OUT) XGMI node ID of each column, GPU_AMD_MAX_XGMI_NODES
+ *	entries.
+ *
+ * Returns the number of columns mapped, or 0 on error.
+ */
+static int _xgmi_hive_node_ids(int card_num, unsigned long long *col_xgmi_id)
+{
+	char *dir_path = NULL;
+	DIR *dr = NULL;
+	struct dirent *de = NULL;
+	int ncolumns = 0;
+	amd_xgmi_node_t hive_nodes[GPU_AMD_MAX_XGMI_NODES] = { { 0 } };
+
+	xassert(col_xgmi_id);
+
+	dir_path = _card_device_path(card_num, "xgmi_hive_info");
+
+	if (!(dr = opendir(dir_path))) {
+		log_flag(GRES, "%s: card%d: cannot open xgmi_hive_info, using empty links",
+			 __func__, card_num);
+		xfree(dir_path);
+		return 0;
+	}
+
+	while ((ncolumns < GPU_AMD_MAX_XGMI_NODES) && (de = readdir(dr))) {
+		char *path = NULL, *line = NULL;
+
+		if (sscanf(de->d_name, "node%d",
+			   &hive_nodes[ncolumns].node_num) != 1)
+			continue;
+		path = xstrdup_printf("%s/%s/xgmi_device_id", dir_path,
+				      de->d_name);
+		line = _read_sysfs_line(path);
+		xfree(path);
+		if (!line)
+			continue;
+		if (sscanf(line, "%llu", &hive_nodes[ncolumns].xgmi_id) == 1)
+			ncolumns++;
+		xfree(line);
+	}
+	closedir(dr);
+	xfree(dir_path);
+
+	if (!ncolumns) {
+		log_flag(GRES, "%s: card%d: xgmi_hive_info has no readable hive nodes, using empty links",
+			 __func__, card_num);
+		return 0;
+	}
+
+	/* Order by hive node number so columns line up with xgmi_num_links */
+	qsort(hive_nodes, ncolumns, sizeof(*hive_nodes), _sort_xgmi_node);
+	for (int i = 0; i < ncolumns; i++)
+		col_xgmi_id[i] = hive_nodes[i].xgmi_id;
+
+	return ncolumns;
+}
+
+/*
+ * Build the GRES Links string for the GPU at gpu_index: a comma-separated link
+ * count to each GPU, -1 for itself, 0 for no connection. xgmi_num_links gives
+ * the count per hive node, whose XGMI node IDs map the columns to GPU indexes.
+ *
+ * gpu_index (IN) The GPU whose links to build.
+ *
+ * Returns the links string, or NULL when there is no XGMI hive or the topology
+ * is inconsistent.
+ */
+static char *_xgmi_links_create(int gpu_index)
+{
+	const amd_card_t *self = &amdgpu_cards[gpu_index];
+	const char *sep = "";
+
+	char *line = NULL, *tok = NULL, *save = NULL, *links_str = NULL;
+	int ncols = 0, nhive_nodes = 0;
+	uint8_t link_cnt[GPU_AMD_MAX_XGMI_NODES] = { 0 };
+	unsigned long long col_xgmi_id[GPU_AMD_MAX_XGMI_NODES] = { 0 };
+	int *links = NULL;
+
+	if (!self->xgmi_ok)
+		return NULL;
+
+	if (!(line = _read_card_attr(self->card, "xgmi_num_links")))
+		return NULL;
+
+	/* uint8_t num_links columns, "%02x " (amdgpu_xgmi_show_num_links()) */
+	while ((ncols < GPU_AMD_MAX_XGMI_NODES) &&
+	       (tok = xstrtoken(line, " ", &save))) {
+		unsigned int num_links = 0;
+
+		if (sscanf(tok, "%x", &num_links) != 1)
+			break;
+		link_cnt[ncols++] = (uint8_t) num_links;
+	}
+	xfree(line);
+
+	/* The columns and the hive node list must line up one-to-one */
+	if (!(nhive_nodes = _xgmi_hive_node_ids(self->card, col_xgmi_id)))
+		return NULL;
+	if (nhive_nodes != ncols) {
+		log_flag(GRES, "%s: card%d: xgmi_num_links columns (%d) do not line up with hive nodes (%d), using empty links",
+			 __func__, self->card, ncols, nhive_nodes);
+		return NULL;
+	}
+
+	links = xcalloc(amdgpu_ncards, sizeof(*links));
+	links[gpu_index] = GPU_AMD_LINK_SELF;
+
+	/*
+	 * Match each hive column to a kept card by XGMI node id. The hive lists
+	 * only local GPUs, so an unmatched column is a local hive node the
+	 * plugin did not keep and stays out of the GPU-to-GPU Links.
+	 */
+	for (int i = 0; i < ncols; i++) {
+		bool is_gpu_peer = false;
+
+		/* Self column */
+		if (col_xgmi_id[i] == self->xgmi_id)
+			continue;
+		for (int j = 0; j < amdgpu_ncards; j++) {
+			if (!amdgpu_cards[j].xgmi_ok ||
+			    (amdgpu_cards[j].xgmi_id != col_xgmi_id[i]))
+				continue;
+			links[j] = link_cnt[i];
+			is_gpu_peer = true;
+			break;
+		}
+		if (!is_gpu_peer)
+			log_flag(GRES, "%s: card%d: XGMI node ID %llu is a local hive node not among the matched cards, skipping",
+				 __func__, self->card, col_xgmi_id[i]);
+	}
+
+	for (int i = 0; i < amdgpu_ncards; i++) {
+		xstrfmtcat(links_str, "%s%d", sep, links[i]);
+		sep = ",";
+	}
+
+	xfree(links);
+	return links_str;
+}
+
+/*
+ * Log the node's GPU capabilities at info, after discovery: the detected
+ * count and how many GPUs expose each capability the plugin reads.
  */
 static void _log_capabilities(void)
 {
+	int xgmi_gpus = 0;
+
 	info("%d GPU system device(s) detected", amdgpu_ncards);
+
+	for (int i = 0; i < amdgpu_ncards; i++) {
+		if (amdgpu_cards[i].xgmi_ok)
+			xgmi_gpus++;
+	}
+	info("    inter-GPU XGMI links: %d/%d", xgmi_gpus, amdgpu_ncards);
 }
 
 /*
@@ -483,6 +694,7 @@ static int _discover_gpus(void)
 			xfree(mode);
 		}
 		kept->card = cards[i];
+		kept->xgmi_ok = _read_xgmi_node_id(cards[i], &kept->xgmi_id);
 		amdgpu_ncards++;
 	}
 
@@ -576,8 +788,9 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 		}
 		debug2("    Core Affinity Range - Abstract: %s", cores);
 
-		/* Links: emit-order placeholder */
-		links = gres_links_create_empty(i, amdgpu_ncards);
+		/* Per-peer XGMI link counts, or a device-order placeholder. */
+		if (!(links = _xgmi_links_create(i)))
+			links = gres_links_create_empty(i, amdgpu_ncards);
 		debug2("    Links: %s", links);
 
 		_emit_gpu_gres(node_config->cpu_cnt, gres_list_system, file,
