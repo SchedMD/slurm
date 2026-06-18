@@ -326,6 +326,30 @@ void ping_nodes (void)
 	}
 }
 
+/*
+ * Queue a health check agent for the hosts in args, or free args if it has no
+ * hosts. Each queued agent gets a matching ping_begin()/ping_end() pair.
+ * IN args - agent args to queue (ownership taken) or free when empty
+ */
+static void _queue_health_check(agent_arg_t *args)
+{
+	char *host_str = NULL;
+
+	if (!args->node_count) {
+		hostlist_destroy(args->hostlist);
+		xfree(args);
+		return;
+	}
+
+	hostlist_uniq(args->hostlist);
+	host_str = hostlist_ranged_string_xmalloc(args->hostlist);
+	debug("Spawning health check agent for %s", host_str);
+	xfree(host_str);
+	ping_begin();
+	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(args);
+}
+
 extern void run_health_check_individual(node_record_t *node_ptr)
 {
 	agent_arg_t *check_agent_args = NULL;
@@ -350,7 +374,6 @@ extern void run_health_check_individual(node_record_t *node_ptr)
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void)
 {
-	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
 	node_record_t *node_ptr;
 	int node_test_cnt = 0;
@@ -454,19 +477,7 @@ extern void run_health_check(void)
 	if (!node_ptr)
 		base_node_loc = 0;
 
-	if (check_agent_args->node_count == 0) {
-		hostlist_destroy(check_agent_args->hostlist);
-		xfree (check_agent_args);
-	} else {
-		hostlist_uniq(check_agent_args->hostlist);
-		host_str = hostlist_ranged_string_xmalloc(
-				check_agent_args->hostlist);
-		debug("Spawning health check agent for %s", host_str);
-		xfree(host_str);
-		ping_begin();
-		set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(check_agent_args);
-	}
+	_queue_health_check(check_agent_args);
 }
 
 /* Update acct_gather data for every node that is not DOWN */
