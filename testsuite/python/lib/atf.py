@@ -5750,9 +5750,13 @@ def run_check_test(source_file, build_args=""):
         quiet=True,
     )
 
-    # Run the libcheck test setting an xml output
+    # Run the libcheck test setting an xml output. Also export `srcdir`
+    # so the test can locate any sidecar file (e.g. topology.conf)
+    src_dir = os.path.dirname(f"{properties['testsuite_check_dir']}/{source_file}")
     result = run_command(
-        check_test, quiet=True, env_vars=f"CK_XML_LOG_FILE_NAME={xml_test}"
+        check_test,
+        quiet=True,
+        env_vars=f"CK_XML_LOG_FILE_NAME={xml_test} srcdir={src_dir}",
     )
 
     # Parse the xml output
