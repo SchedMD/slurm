@@ -61,8 +61,8 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
-#include "./serializer-test.data1.c"
-#include "./serializer-test.data2.c"
+#include "./serializer_data1.c"
+#include "./serializer_data2.c"
 
 #define BYTES_IN_MiB (1024 * 1024)
 
