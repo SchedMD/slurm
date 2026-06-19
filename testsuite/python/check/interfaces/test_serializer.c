@@ -31,6 +31,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * This is a port of the old slurm_unit serializer-test.c. It runs under the
+ * test_100_1 pytest meta-runner (compiled and run by atf.run_check_test() as a
+ * single translation unit, so the large JSON data blobs are #include'd rather
+ * than linked).
+ *
+ * It tests the serializer/json plugin for round-trip correctness.
+ */
+
 #define _GNU_SOURCE
 #include <limits.h>
 
@@ -47,6 +56,7 @@
 #include <check.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -91,7 +101,7 @@ typedef struct {
 
 #endif /* HAVE_MALLINFO2 */
 
-const char *mime_types[] = {
+static const char *mime_types[] = {
 	MIME_TYPE_YAML,
 	MIME_TYPE_JSON,
 };
@@ -134,6 +144,9 @@ static const struct {
 		} \
 	} while (0)
 
+#ifdef assert
+#undef assert
+#endif
 #define assert(expr) \
 	do { \
 		if (get_log_level() >= LOG_LEVEL_DEBUG) \
@@ -142,6 +155,37 @@ static const struct {
 			ck_assert_msg(expr, NULL); \
 	} while (0)
 
+static void setup(void)
+{
+	log_options_t log_opts = LOG_OPTS_INITIALIZER;
+	const char *debug_env = getenv("SLURM_DEBUG");
+	const char *debug_flags_env = getenv("SLURM_DEBUG_FLAGS");
+
+	if (debug_env)
+		log_opts.stderr_level = log_string2num(debug_env);
+	if (debug_flags_env)
+		debug_str2flags(debug_flags_env, &slurm_conf.debug_flags);
+	log_init("serializer-test", log_opts, 0, NULL);
+
+	ck_assert(!slurm_conf_init(NULL));
+
+	/*
+	 * Load the serializer plugins on demand. The bound serializer for
+	 * application/json is whichever plugin in PluginDir registers it; the
+	 * test environment provides serializer/json (asserted by test_mimetype).
+	 */
+	serializer_required(MIME_TYPE_JSON);
+	serializer_required(MIME_TYPE_YAML);
+}
+
+static void teardown(void)
+{
+	serializer_g_fini();
+	slurm_conf_destroy();
+	log_fini();
+}
+
+/* serialize src to a string, re-parse it, and verify the round-trip matches */
 static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 		      const serializer_flags_t flags)
 {
@@ -167,9 +211,25 @@ static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 	FREE_NULL_DATA(verify_src);
 }
 
-START_TEST(test_parse)
+START_TEST(test_mimetype)
 {
-	/* should fail */
+	const char *ptr = NULL;
+
+	ck_assert(resolve_mime_type(MIME_TYPE_JSON, &ptr) != NULL);
+	ck_assert(ptr != NULL);
+	ck_assert(!xstrcmp(ptr, MIME_TYPE_JSON_PLUGIN));
+
+	ptr = NULL;
+	ck_assert(resolve_mime_type("application/jsonrequest", &ptr) != NULL);
+	ck_assert(ptr != NULL);
+	ck_assert(!xstrcmp(ptr, MIME_TYPE_JSON_PLUGIN));
+}
+
+END_TEST
+
+START_TEST(test_parse_invalid)
+{
+	/* malformed JSON that the parser must reject */
 	static const char
 		*sf[] = {
 			"\"taco",
@@ -182,8 +242,6 @@ START_TEST(test_parse)
 			"{[",
 			"{[}",
 			"[{}",
-			/* json-c won't reject= "[]]", */
-			/* json-c won't reject= "{}}", */
 			"[\"taco",
 			"{\"taco",
 			"{\"taco:",
@@ -198,7 +256,7 @@ START_TEST(test_parse)
 			":",
 			",:,",
 			"\"\\\"",
-			"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[",
+			"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[",
 			"{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:test}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
 			"{\"taco\"::taco}",
 			"{::taco}",
@@ -206,13 +264,11 @@ START_TEST(test_parse)
 			"\xFF",
 			"\xFE\xFF",
 			"\xFF\xFE",
-			/* "\x00\x00\xFE\xFF", - can't test this with cstrings */
 			"\xFE\xFF\x00\x00",
 			"\xFEtaco",
 			"\xFFtaco",
 			"\xFE\xFFtaco",
 			"\xFF\xFEtaco",
-			/* "\x00\x00\xFE\xFFtaco", - can't test this with cstrings */
 			"\xFE\xFF\x00\x00taco",
 			"\x01",
 			"\x02",
@@ -222,10 +278,6 @@ START_TEST(test_parse)
 			"\x06",
 			"\x07",
 			"\x08",
-			/* json-c won't reject= "\"taco\"\"", */
-			/* json-c won't reject= "\"\"\"", */
-			/* json-c won't reject= "\"\"taco\"", */
-			/* json-c won't reject= "\"\"\"\"", */
 			"\\u10FFFF",
 			"\\u10FFFFFFFFFFFFFFFFFFFFFFF",
 			"\\u0",
@@ -235,61 +287,51 @@ START_TEST(test_parse)
 			"*\"tacos\"taco\"\"",
 			"*,0",
 		};
-	/* should parse */
-	static const char
-		*s[] = {
-			"\"taco\"",
-			"\"\\\"taco\\\"\"",
-			/*
-		 * The numbers following should be parsable without the list but
-		 * json-c rejects them
-		 */
-			"[ 100 ]",
-			"[ 100.389 ]",
-			"[ -100.389 ]",
-			"[ 1.1238e10 ]",
-			"[ -1.1238e10 ]",
-			"{ \"taco\": \"tacos\" }",
-			"[ \"taco1\", \"taco2\", ]",
-			"[ " /*,*/
-			" \"taco1\", \"taco2\", \"taco3\" " /*json-c fails: ,,,,, */
-			" ]",
-			"[ true, false" /*, Infinity, inf, +inf, -inf, -Infinity, +Infinity, nan, null, ~*/
-			" ]",
-			"{\t\t\t\n}" //json-c fails: \"dict\": \t\r\n\n\n\n\n\n\n"
-			//json-c fails: 	"[//this is a comment\n"
-			//json-c fails: 		"{\"true\": TRUE, \"false\t\n\": FALSE},\t  \t     "
-			//json-c fails: 		"{    \"inf\": [ INFINITY, INF, +inf, -inf, -INFINITY, -INFINITY ]}   \t\t\t,"
-			//json-c fails: 		"{"
-			//json-c fails: 			"\"nan\": { \"nan\": [-NaN, +NaN, NaN]},"
-			//json-c fails: 			"\"number0\": 0,"
-			//json-c fails: 			"\"number1\": 1,"
-			//json-c fails: 			"\"true\": true,"
-			//json-c fails: 			"\"NULL\": [NULL, ~]"
-			//json-c fails: 		"}, "
-			//json-c fails: 		"{ \"items\": "
-			//json-c fails: 			"{"
-			//json-c fails: 				"\"taco\": \"taco\", "
-			//json-c fails: 				"\"some numbers\t\": ["
-			//json-c fails: 					"100, 12342.22, -232.22, +32.2323, 1e10, -1e10, 1121.3422e3, -3223.33e121"
-			//json-c fails: 				"]"
-			//json-c fails: 			"}, empty: [], empty2: {}\t\n\r\n"
-			//json-c fails: 		"}"
-			//json-c fails: 	"]/* this is also a comment */"
-			"}/*******[],{}///********/\n\n\n\t\r\n\t\t\t\n\n\n",
-			"{ }", //json-c fails: taco: \"\\u0074\\u0061\\u0063\\u006f\\u0073\", taco_key_unquoted_222:\t\t\ttaco_unquoted_1, test_hex:0x1028242322, 0x82382232: \"hex tacos ffeb=\\uffeb\" }",
-			"[ \"\\u0024\", \"\\u00a3\", \"\\u00c0\", \"\\u0418\", \"\\u0939\", \"\\u20ac\", \"\\ud55c\"," /* \"\\u10348\", \"\\uE01EF\" */
-			" ]",
-			"[]", //json-c fails: " ",
-			"[]", //json-c fails: "null",
-			"{}",
-			"[]",
-			"[[]   \t]",
-			"[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]",
-			"[{\"test\":\"test\"}]", //json-c fails: "[{test:test,,,,,,,,,,,,,,,,,,,,,,,,,,,}]",
-			"{\"test\":[]}", //json-c fails: "{test:[]}",
-			"{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":\"test\"}}}}}}}}}}}}}}}}}}}}}}}}}}",
-		};
+
+	for (int i = 0; i < ARRAY_SIZE(sf); i++) {
+		int rc;
+		data_t *d = NULL;
+
+		rc = serialize_g_string_to_data(&d, sf[i], strlen(sf[i]),
+						MIME_TYPE_JSON);
+		debug("expected fail source %d=%d -> %pD\n%s\n\n\n\n", i, rc, d,
+		      sf[i]);
+		assert_ptr_null(d, ==);
+
+		FREE_NULL_DATA(d);
+	}
+}
+
+END_TEST
+
+START_TEST(test_parse_valid)
+{
+	/* valid JSON that must parse, match, and round-trip */
+	static const char *s[] = {
+		"\"taco\"",
+		"\"\\\"taco\\\"\"",
+		"[ 100 ]",
+		"[ 100.389 ]",
+		"[ -100.389 ]",
+		"[ 1.1238e10 ]",
+		"[ -1.1238e10 ]",
+		"{ \"taco\": \"tacos\" }",
+		"[ \"taco1\", \"taco2\", ]",
+		"[ \"taco1\", \"taco2\", \"taco3\" ]",
+		"[ true, false ]",
+		"{\t\t\t\n}",
+		"{ }",
+		"[ \"\\u0024\", \"\\u00a3\", \"\\u00c0\", \"\\u0418\", \"\\u0939\", \"\\u20ac\", \"\\ud55c\" ]",
+		"[]",
+		"[]",
+		"{}",
+		"[]",
+		"[[]   \t]",
+		"[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]",
+		"[{\"test\":\"test\"}]",
+		"{\"test\":[]}",
+		"{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":\"test\"}}}}}}}}}}}}}}}}}}}}}}}}}}",
+	};
 	data_t *c[] = {
 		data_set_string(data_new(), "taco"),
 		data_set_string(data_new(), "\"taco\""),
@@ -305,8 +347,8 @@ START_TEST(test_parse)
 		data_set_dict(data_new()),
 		data_set_dict(data_new()),
 		data_set_list(data_new()),
-		data_set_list(data_new()), //json-c fails: data_new(),
-		data_set_list(data_new()), //json-c fails: data_new(),
+		data_set_list(data_new()),
+		data_set_list(data_new()),
 		data_set_dict(data_new()),
 		data_set_list(data_new()),
 		data_set_list(data_new()),
@@ -316,13 +358,13 @@ START_TEST(test_parse)
 		data_set_dict(data_new()),
 	};
 
-	data_set_int(data_list_append(c[2]), 100),
-		data_set_float(data_list_append(c[3]), 100.389),
-		data_set_float(data_list_append(c[4]), -100.389),
-		data_set_float(data_list_append(c[5]), 1.1238e10),
-		data_set_float(data_list_append(c[6]), -1.1238e10),
+	data_set_int(data_list_append(c[2]), 100);
+	data_set_float(data_list_append(c[3]), 100.389);
+	data_set_float(data_list_append(c[4]), -100.389);
+	data_set_float(data_list_append(c[5]), 1.1238e10);
+	data_set_float(data_list_append(c[6]), -1.1238e10);
 
-		data_set_string(data_key_set(c[7], "taco"), "tacos");
+	data_set_string(data_key_set(c[7], "taco"), "tacos");
 
 	data_set_string(data_list_append(c[8]), "taco1");
 	data_set_string(data_list_append(c[8]), "taco2");
@@ -333,64 +375,6 @@ START_TEST(test_parse)
 
 	data_set_bool(data_list_append(c[10]), true);
 	data_set_bool(data_list_append(c[10]), false);
-	//json-c fails: data_set_float(data_list_append(c[10]), INFINITY);
-	//json-c fails: data_set_float(data_list_append(c[10]), INFINITY);
-	//json-c fails: data_set_float(data_list_append(c[10]), INFINITY);
-	//json-c fails: data_set_float(data_list_append(c[10]), -INFINITY);
-	//json-c fails: data_set_float(data_list_append(c[10]), -INFINITY);
-	//json-c fails: data_set_float(data_list_append(c[10]), -INFINITY);
-	//json-c fails: data_set_float(data_list_append(c[10]), NAN);
-	//json-c fails: data_set_null(data_list_append(c[10]));
-	//json-c fails: data_set_null(data_list_append(c[10]));
-
-	//json-c fails: {
-	//json-c fails: 	data_t *d, *d2, *d3, *d4;
-	//json-c fails: 	d = data_set_list(data_key_set(c[11], "dict"));
-	//json-c fails: 	d2 = data_set_dict(data_list_append(d));
-	//json-c fails: 	data_set_bool(data_key_set(d2, "true"), true);
-	//json-c fails: 	data_set_bool(data_key_set(d2, "false\t\n"), false);
-	//json-c fails: 	d2 = data_set_dict(data_list_append(d));
-	//json-c fails: 	d3 = data_set_list(data_key_set(d2, "inf"));
-	//json-c fails: 	data_set_float(data_list_append(d3), INFINITY);
-	//json-c fails: 	data_set_float(data_list_append(d3), INFINITY);
-	//json-c fails: 	data_set_float(data_list_append(d3), INFINITY);
-	//json-c fails: 	data_set_float(data_list_append(d3), -INFINITY);
-	//json-c fails: 	data_set_float(data_list_append(d3), -INFINITY);
-	//json-c fails: 	data_set_float(data_list_append(d3), -INFINITY);
-	//json-c fails: 	d2 = data_set_dict(data_list_append(d));
-	//json-c fails: 	d3 = data_set_dict(data_key_set(d2, "nan"));
-	//json-c fails: 	d4 = data_set_list(data_key_set(d3, "nan"));
-	//json-c fails: 	data_set_float(data_list_append(d4), -NAN);
-	//json-c fails: 	data_set_float(data_list_append(d4), NAN);
-	//json-c fails: 	data_set_float(data_list_append(d4), NAN);
-	//json-c fails: 	data_set_int(data_set_dict(data_key_set(d2, "number0")), 0);
-	//json-c fails: 	data_set_int(data_set_dict(data_key_set(d2, "number1")), 1);
-	//json-c fails: 	data_set_bool(data_set_dict(data_key_set(d2, "true")), true);
-	//json-c fails: 	d3 = data_set_list(data_key_set(d2, "NULL"));
-	//json-c fails: 	data_set_null(data_list_append(d3));
-	//json-c fails: 	data_set_null(data_list_append(d3));
-	//json-c fails: 	d2 = data_set_dict(data_list_append(d));
-	//json-c fails: 	d3 = data_set_dict(data_key_set(d2, "items"));
-	//json-c fails: 	data_set_string(data_key_set(d3, "taco"), "taco");
-	//json-c fails: 	d4 = data_set_list(data_key_set(d3, "some numbers\t"));
-	//json-c fails: 	data_set_int(data_list_append(d4), 100);
-	//json-c fails: 	data_set_float(data_list_append(d4), 12342.22);
-	//json-c fails: 	data_set_float(data_list_append(d4), -232.22);
-	//json-c fails: 	data_set_float(data_list_append(d4), 32.2323);
-	//json-c fails: 	data_set_float(data_list_append(d4), 1e10);
-	//json-c fails: 	data_set_float(data_list_append(d4), -1e10);
-	//json-c fails: 	data_set_float(data_list_append(d4), 1121.3422e3);
-	//json-c fails: 	data_set_float(data_list_append(d4), -3223.33e121);
-	//json-c fails: 	data_set_list(data_key_set(d2, "empty"));
-	//json-c fails: 	data_set_dict(data_key_set(d2, "empty2"));
-	//json-c fails: }
-
-	//json-c fails: data_set_string(data_key_set(c[12], "taco"), "tacos");
-	//json-c fails: data_set_string(data_key_set(c[12], "taco_key_unquoted_222"),
-	//json-c fails: 		"taco_unquoted_1");
-	//json-c fails: data_set_int(data_key_set(c[12], "test_hex"), 0x1028242322);
-	//json-c fails: data_set_string(data_key_set(c[12], "2184716850"),
-	//json-c fails: 		"hex tacos ffeb=\uffeb");
 
 	data_set_string(data_list_append(c[13]), "\U00000024");
 	data_set_string(data_list_append(c[13]), "\U000000a3");
@@ -399,8 +383,6 @@ START_TEST(test_parse)
 	data_set_string(data_list_append(c[13]), "\U00000939");
 	data_set_string(data_list_append(c[13]), "\U000020ac");
 	data_set_string(data_list_append(c[13]), "\U0000d55c");
-	//json-c corrupts: data_set_string(data_list_append(c[13]), "\U00010348");
-	//json-c corrupts: data_set_string(data_list_append(c[13]), "\U000E01EF");
 
 	data_set_list(data_list_append(c[18]));
 
@@ -424,35 +406,19 @@ START_TEST(test_parse)
 		data_set_string(t, "test");
 	}
 
-	for (int i = 0; i < ARRAY_SIZE(sf); i++) {
-		int rc;
-		data_t *d = NULL;
-
-		rc = serialize_g_string_to_data(&d, sf[i], strlen(sf[i]),
-						MIME_TYPE_JSON);
-		debug("expected fail source %d=%d -> %pD\n%s\n\n\n\n",
-		      i, rc, d, sf[i]);
-		/* json-c doesn't fail - skipping ck_assert_int_eq(rc, 0); */
-		assert_ptr_null(d, ==);
-
-		FREE_NULL_DATA(d);
-	}
-
 	for (int i = 0; i < ARRAY_SIZE(s); i++) {
 		int rc;
 		data_t *d = NULL;
-		char *str = NULL;
 
 		rc = serialize_g_string_to_data(&d, s[i], strlen(s[i]),
 						MIME_TYPE_JSON);
-		debug("expected pass source %d=%d -> %pD\n%s\n\n\n\n",
-		      i, rc, d, s[i]);
+		debug("expected pass source %d=%d -> %pD\n%s\n\n\n\n", i, rc, d,
+		      s[i]);
 		assert_int_eq(rc, 0);
 
 		data_convert_tree(d, DATA_TYPE_NONE);
-		rc = data_check_match(c[i], d, false);
-		debug("expected match %d: %pD %s %pD\n", i, c[i], (rc ? "==" : "!="), d);
-		assert_msg(rc, "verify failed: %s", s[i]);
+		assert_msg(data_check_match(c[i], d, false),
+			   "verify failed: %s", s[i]);
 
 		for (int f = 0; f < ARRAY_SIZE(flag_combinations); f++) {
 			for (int m = 0; m < ARRAY_SIZE(mime_types); m++) {
@@ -470,8 +436,6 @@ START_TEST(test_parse)
 		}
 
 		FREE_NULL_DATA(d);
-		FREE_NULL_DATA(c[i]);
-		xfree(str);
 	}
 
 	for (int i = 0; i < ARRAY_SIZE(c); i++)
@@ -480,11 +444,42 @@ START_TEST(test_parse)
 
 END_TEST
 
-START_TEST(test_mimetype)
+START_TEST(test_compliance_large)
 {
-	const char *ptr = NULL;
-	ck_assert(resolve_mime_type(MIME_TYPE_JSON, &ptr) != NULL);
-	ck_assert(ptr != NULL);
+	/*
+	 * Verify that the same JSON file can be parsed and dumped with same
+	 * contents.
+	 */
+	for (int i = 0; i < ARRAY_SIZE(test_json); i++) {
+		int rc;
+		data_t *data = NULL;
+		const int len = strlen(test_json[i].source);
+
+		debug("source %s:\n%s\n\n\n\n", test_json[i].tag,
+		      test_json[i].source);
+
+		rc = serialize_g_string_to_data(&data, test_json[i].source, len,
+						MIME_TYPE_JSON);
+		assert_int_eq(rc, 0);
+
+		for (int f = 0; f < ARRAY_SIZE(flag_combinations); f++) {
+			for (int m = 0; m < ARRAY_SIZE(mime_types); m++) {
+				const char *mptr = NULL;
+				const char *mime_type =
+					resolve_mime_type(mime_types[m], &mptr);
+
+				if (mime_type)
+					_test_run(test_json[i].tag, data,
+						  mime_type,
+						  flag_combinations[f]);
+				else
+					debug("skipping test with %s",
+					      mime_types[m]);
+			}
+		}
+
+		FREE_NULL_DATA(data);
+	}
 }
 
 END_TEST
@@ -681,139 +676,29 @@ START_TEST(test_bandwidth)
 
 END_TEST
 
-START_TEST(test_compliance)
+extern int main(int argc, char **argv)
 {
-	/*
-	 * Verify that the same JSON file can be parsed and dumped with same
-	 * contents
-	 */
-	for (int i = 0; i < ARRAY_SIZE(test_json); i++) {
-		int rc;
-		data_t *data = NULL;
-		const int len = strlen(test_json[i].source);
-
-		debug("source %s:\n%s\n\n\n\n",
-		      test_json[i].tag, test_json[i].source);
-
-		rc = serialize_g_string_to_data(&data, test_json[i].source, len,
-						MIME_TYPE_JSON);
-		assert_int_eq(rc, 0);
-
-		for (int f = 0; f < ARRAY_SIZE(flag_combinations); f++) {
-			for (int m = 0; m < ARRAY_SIZE(mime_types); m++) {
-				const char *mptr = NULL;
-				const char *mime_type =
-					resolve_mime_type(mime_types[m], &mptr);
-
-				if (mime_type)
-					_test_run(test_json[i].tag, data,
-						  mime_type,
-						  flag_combinations[f]);
-				else
-					debug("skipping test with %s",
-					      mime_types[m]);
-			}
-		}
-
-		FREE_NULL_DATA(data);
-	}
-}
-
-END_TEST
-
-extern Suite *suite_data(void)
-{
-	Suite *s = suite_create("Serializer");
-	TCase *tc_core = tcase_create("Serializer");
-
-	/* we are abusing JSON so tests will take a while */
-	tcase_set_timeout(tc_core, 3000);
-
-	tcase_add_test(tc_core, test_mimetype);
-	tcase_add_test(tc_core, test_parse);
-	tcase_add_test(tc_core, test_compliance);
-	tcase_add_test(tc_core, test_bandwidth);
-
-	suite_add_tcase(s, tc_core);
-	return s;
-}
-
-extern int main(void)
-{
-	enum print_output po = CK_ENV;
-	enum fork_status fs = CK_FORK_GETENV;
+	int failures;
+	TCase *tcase = tcase_create("serializer");
+	Suite *suite = suite_create("serializer");
 	SRunner *sr = NULL;
-	int number_failed, fd, rc;
-	char *slurm_unit_conf_filename;
-	const char *debug_env = getenv("SLURM_DEBUG");
-	const char *debug_flags_env = getenv("SLURM_DEBUG_FLAGS");
-	const char slurm_unit_conf_content[] =
-		"ClusterName=slurm_unit\n"
-		"PluginDir=../../../src/plugins/serializer/json/.libs:"
-		"../../../src/plugins/serializer/yaml/.libs/\n"
-		"SlurmctldHost=slurm_unit\n";
-	const size_t csize = sizeof(slurm_unit_conf_content);
 
-	log_options_t log_opts = LOG_OPTS_INITIALIZER;
+	tcase_add_unchecked_fixture(tcase, setup, teardown);
+	/* generous timeout: the bandwidth and large-dataset cases run a while */
+	tcase_set_timeout(tcase, 3000);
 
-	if (debug_env)
-		log_opts.stderr_level = log_string2num(debug_env);
-	if (debug_flags_env)
-		debug_str2flags(debug_flags_env, &slurm_conf.debug_flags);
+	tcase_add_test(tcase, test_mimetype);
+	tcase_add_test(tcase, test_parse_invalid);
+	tcase_add_test(tcase, test_parse_valid);
+	tcase_add_test(tcase, test_compliance_large);
+	tcase_add_test(tcase, test_bandwidth);
 
-	log_init("serializer-test", log_opts, 0, NULL);
+	suite_add_tcase(suite, tcase);
 
-	/* Call slurm_init() with a mock slurm.conf*/
-	slurm_unit_conf_filename = xstrdup("slurm_unit.conf-XXXXXX");
-	if ((fd = mkstemp(slurm_unit_conf_filename)) == -1) {
-		error("error creating slurm_unit.conf (%s)",
-		      slurm_unit_conf_filename);
-		return EXIT_FAILURE;
-	} else {
-		debug("fake slurm.conf created: %s", slurm_unit_conf_filename);
-	}
-
-	/*
-	 * PluginDir=. is needed as loading the slurm.conf will check for the
-	 * existence of the dir. As 'make check' doesn't install anything the
-	 * normal PluginDir might not exist. As we don't load any plugins for
-	 * these test this should be ok.
-	 */
-	rc = write(fd, slurm_unit_conf_content, csize);
-	if (rc < csize) {
-		error("error writing slurm_unit.conf (%s)",
-		      slurm_unit_conf_filename);
-		return EXIT_FAILURE;
-	}
-
-	/* Do not load any plugins, we are only testing serializers */
-	if (slurm_conf_init(slurm_unit_conf_filename)) {
-		error("slurm_conf_init() failed");
-		return EXIT_FAILURE;
-	}
-
-	unlink(slurm_unit_conf_filename);
-	xfree(slurm_unit_conf_filename);
-	close(fd);
-
-	/* force load of JSON and YAML and all others if present */
-	serializer_required(MIME_TYPE_JSON);
-	serializer_required(MIME_TYPE_YAML);
-
-	if (log_opts.stderr_level >= LOG_LEVEL_DEBUG) {
-		/* automatically be gdb friendly when debug logging */
-		po = CK_VERBOSE;
-		fs = CK_NOFORK;
-	}
-
-	sr = srunner_create(suite_data());
-	srunner_set_fork_status(sr, fs);
-	srunner_run_all(sr, po);
-	number_failed = srunner_ntests_failed(sr);
+	sr = srunner_create(suite);
+	srunner_run_all(sr, CK_VERBOSE);
+	failures = srunner_ntests_failed(sr);
 	srunner_free(sr);
 
-	serializer_g_fini();
-	slurm_fini();
-	log_fini();
-	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+	return failures;
 }
