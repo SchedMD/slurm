@@ -1,5 +1,5 @@
 [general]
-extra-path=tools/
+extra-path=tools/gitlint-extra
 ignore=body-is-missing
 ignore-fixup-commits=false
 ignore-fixup-amend-commits=false
