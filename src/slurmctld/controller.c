@@ -605,7 +605,7 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 		error("Retrying initial connection to slurmdbd");
 		_init_db_conn();
 		if (!slurm_conf.cluster_id) {
-			error("Still don't know my ClusterID");
+			error("Still don't know my ClusterID: %m");
 			continue;
 		}
 		if (!assoc_mgr_init(acct_db_conn, args, errno))
