@@ -271,7 +271,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	if ((con->input_fd == con->output_fd) || (con->output_fd < 0))
+	if ((con->input_fd == con->output_fd) || con_flag(con, FLAG_WRITE_EOF))
 		con_unset_flag(con, FLAG_QUIESCE);
 
 	if (con->input_fd < 0) {
@@ -292,7 +292,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
 	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
-	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
+	    !con_flag(con, FLAG_READ_EOF) && !con_flag(con, FLAG_WRITE_EOF)) {
 		/* Attempt graceful TLS shutdown once */
 		con_set_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
