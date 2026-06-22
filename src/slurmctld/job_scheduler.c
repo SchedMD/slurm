@@ -4465,7 +4465,9 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 	if (job_ptr->part_ptr == NULL)
 		return;
 	part_node_cnt = job_ptr->part_ptr->total_nodes;
-	part_cpu_cnt  = job_ptr->part_ptr->total_cpus;
+	part_cpu_cnt = job_ptr->part_ptr->total_cpus;
+	if (!part_node_cnt || !part_cpu_cnt)
+		return;
 	if (part_cpu_cnt > part_node_cnt)
 		delay_start.part_cpus_per_node = part_cpu_cnt / part_node_cnt;
 
@@ -4516,6 +4518,15 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		return -1;
 	}
 
+	if (job_ptr->part_ptr_list)
+		job_ptr->part_ptr = part_ptr;
+
+	if (!part_ptr->node_bitmap || !part_ptr->total_nodes ||
+	    !part_ptr->total_cpus) {
+		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		return 0;
+	}
+
 	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
 		if (node_name2bitmap(job_ptr->details->req_nodes, false,
 				     &avail_bitmap, NULL)) {
@@ -4528,10 +4539,7 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	}
 
 	/* Consider only nodes in this job's partition */
-	if (part_ptr->node_bitmap)
-		bit_and(avail_bitmap, part_ptr->node_bitmap);
-	else
-		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	bit_and(avail_bitmap, part_ptr->node_bitmap);
 	if (job_req_node_filter(job_ptr, avail_bitmap, true))
 		job_start_data->rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
@@ -4697,13 +4705,17 @@ extern int job_start_data(job_record_t *job_ptr,
 	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
 		return ESLURM_DISABLED;
 
-	if (job_ptr->part_ptr_list)
+	if (job_ptr->part_ptr_list) {
+		part_record_t *save_part_ptr = job_ptr->part_ptr;
+
 		(void) list_for_each(job_ptr->part_ptr_list,
 				     _foreach_job_start_data_part,
 				     &job_start_data);
-	else
+		job_ptr->part_ptr = save_part_ptr;
+	} else {
 		(void) _foreach_job_start_data_part(job_ptr->part_ptr,
 						    &job_start_data);
+	}
 
 	return job_start_data.rc;
 }
