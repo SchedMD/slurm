@@ -4,6 +4,8 @@ import re
 import sys
 import os
 import codecs
+import subprocess
+import tempfile
 
 canonical_url = "https://slurm.schedmd.com/"
 
@@ -265,12 +267,23 @@ def version_rewrite(matchobj):
 
 files = []
 version = sys.argv[1]
+base_dir = os.path.realpath(os.getcwd())
 for f in sys.argv[4:]:
+    f = os.path.realpath(f)
+    if not f.startswith(base_dir + os.sep):
+        raise ValueError("Path %r is outside the working directory" % f)
     dirname, basefilename = os.path.split(f)
-    posLastDot = basefilename.rfind(".")
-    mhtmlname = basefilename[:posLastDot] + ".mhtml"
-    cmd = "man2html < " + f + "> " + mhtmlname
-    os.system(cmd)
+    safe_basename = os.path.basename(basefilename)
+    posLastDot = safe_basename.rfind(".")
+    mhtmlname = safe_basename[:posLastDot] + ".mhtml"
+    fd, tmp_path = tempfile.mkstemp(dir=".")
+    try:
+        with os.fdopen(fd, 'wb') as stdout_file:
+            subprocess.run(["man2html", f], stdout=stdout_file, check=True)
+        os.rename(tmp_path, mhtmlname)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
     print(">>>>>>> " + mhtmlname)
     files.append(mhtmlname)
 
