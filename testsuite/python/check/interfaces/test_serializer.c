@@ -71,13 +71,13 @@
 typedef unsigned __int128 uint128_t;
 
 typedef struct {
-	uint128_t arena;    /* non-mmapped space allocated from system */
-	uint128_t ordblks;  /* number of free chunks */
-	uint128_t smblks;   /* number of fastbin blocks */
-	uint128_t hblks;    /* number of mmapped regions */
-	uint128_t hblkhd;   /* space in mmapped regions */
-	uint128_t usmblks;  /* always 0, preserved for backwards compatibility */
-	uint128_t fsmblks;  /* space available in freed fastbin blocks */
+	uint128_t arena; /* non-mmapped space allocated from system */
+	uint128_t ordblks; /* number of free chunks */
+	uint128_t smblks; /* number of fastbin blocks */
+	uint128_t hblks; /* number of mmapped regions */
+	uint128_t hblkhd; /* space in mmapped regions */
+	uint128_t usmblks; /* always 0, preserved for backwards compatibility */
+	uint128_t fsmblks; /* space available in freed fastbin blocks */
 	uint128_t uordblks; /* total allocated space */
 	uint128_t fordblks; /* total free space */
 	uint128_t keepcost; /* top-most, releasable (via malloc_trim) space */
@@ -105,40 +105,42 @@ static const struct {
 	const char *source;
 	const char *tag;
 	const int run_count; /* diff count to avoid test running too long */
-} test_json[] = {
-	{ test_json1, "twitter-dataset", 25 },
-	{ test_json2, "NOAA-ocean-temps", 50 }
-};
+} test_json[] = { { test_json1, "twitter-dataset", 25 },
+		  { test_json2, "NOAA-ocean-temps", 50 } };
 
-#define assert_ptr_null(X, OP) do {             \
-	if (get_log_level() >= LOG_LEVEL_DEBUG) \
-		xassert(X OP NULL);             \
-	else                                    \
-		ck_assert(X OP NULL);           \
-} while (0)
+#define assert_ptr_null(X, OP) \
+	do { \
+		if (get_log_level() >= LOG_LEVEL_DEBUG) \
+			xassert(X OP NULL); \
+		else \
+			ck_assert(X OP NULL); \
+	} while (0)
 
-#define assert_int_eq(X, Y) do {                \
-	if (get_log_level() >= LOG_LEVEL_DEBUG) \
-		xassert(X == Y);                \
-	else                                    \
-		ck_assert_int_eq(X, Y);         \
-} while (0)
+#define assert_int_eq(X, Y) \
+	do { \
+		if (get_log_level() >= LOG_LEVEL_DEBUG) \
+			xassert(X == Y); \
+		else \
+			ck_assert_int_eq(X, Y); \
+	} while (0)
 
-#define assert_msg(expr, ...) do {                   \
-	if (get_log_level() >= LOG_LEVEL_DEBUG) {    \
-		if (!(expr))                         \
-			fatal_abort(__VA_ARGS__);    \
-	} else {                                     \
-		ck_assert_msg(expr, ## __VA_ARGS__); \
-	}                                            \
-} while (0)
+#define assert_msg(expr, ...) \
+	do { \
+		if (get_log_level() >= LOG_LEVEL_DEBUG) { \
+			if (!(expr)) \
+				fatal_abort(__VA_ARGS__); \
+		} else { \
+			ck_assert_msg(expr, ##__VA_ARGS__); \
+		} \
+	} while (0)
 
-#define assert(expr) do {                       \
-	if (get_log_level() >= LOG_LEVEL_DEBUG) \
-		xassert(expr);                  \
-	else                                    \
-		ck_assert_msg(expr, NULL);      \
-} while (0)
+#define assert(expr) \
+	do { \
+		if (get_log_level() >= LOG_LEVEL_DEBUG) \
+			xassert(expr); \
+		else \
+			ck_assert_msg(expr, NULL); \
+	} while (0)
 
 static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 		      const serializer_flags_t flags)
@@ -148,8 +150,8 @@ static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 	data_t *verify_src = NULL;
 	int rc;
 
-	rc = serialize_g_data_to_string(&output, &output_len, src,
-					mime_type, flags);
+	rc = serialize_g_data_to_string(&output, &output_len, src, mime_type,
+					flags);
 	assert_int_eq(rc, 0);
 
 	debug("dumped %s with %s:\n%s\n\n\n\n", tag, mime_type, output);
@@ -159,7 +161,7 @@ static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 	assert_int_eq(rc, 0);
 
 	assert_msg(data_check_match(src, verify_src, false),
-		      "match verification failed");
+		   "match verification failed");
 
 	xfree(output);
 	FREE_NULL_DATA(verify_src);
@@ -168,120 +170,126 @@ static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 START_TEST(test_parse)
 {
 	/* should fail */
-	static const char *sf[] = {
-		"\"taco",
-		"taco\"",
-		"[",
-		"]",
-		"{",
-		"}",
-		"[{",
-		"{[",
-		"{[}",
-		"[{}",
-		/* json-c won't reject= "[]]", */
-		/* json-c won't reject= "{}}", */
-		"[\"taco",
-		"{\"taco",
-		"{\"taco:",
-		"{taco:",
-		"{\"taco\":",
-		"[taco:",
-		"[\"taco\":",
-		"[\"taco\",:",
-		",,,,]",
-		",:,,]",
-		"\\,",
-		":",
-		",:,",
-		"\"\\\"",
-		"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[",
-		"{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:test}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
-		"{\"taco\"::taco}",
-		"{::taco}",
-		"\xFE",
-		"\xFF",
-		"\xFE\xFF",
-		"\xFF\xFE",
-		/* "\x00\x00\xFE\xFF", - can't test this with cstrings */
-		"\xFE\xFF\x00\x00",
-		"\xFEtaco",
-		"\xFFtaco",
-		"\xFE\xFFtaco",
-		"\xFF\xFEtaco",
-		/* "\x00\x00\xFE\xFFtaco", - can't test this with cstrings */
-		"\xFE\xFF\x00\x00taco",
-		"\x01",
-		"\x02",
-		"\x03",
-		"\x04",
-		"\x05",
-		"\x06",
-		"\x07",
-		"\x08",
-		/* json-c won't reject= "\"taco\"\"", */
-		/* json-c won't reject= "\"\"\"", */
-		/* json-c won't reject= "\"\"taco\"", */
-		/* json-c won't reject= "\"\"\"\"", */
-		"\\u10FFFF",
-		"\\u10FFFFFFFFFFFFFFFFFFFFFFF",
-		"\\u0",
-		"\\uTACOS",
-		"\\u000TACOS",
-		"tacos\"tacos\"taco\"\"",
-		"*\"tacos\"taco\"\"",
-		"*,0",
-	};
+	static const char
+		*sf[] = {
+			"\"taco",
+			"taco\"",
+			"[",
+			"]",
+			"{",
+			"}",
+			"[{",
+			"{[",
+			"{[}",
+			"[{}",
+			/* json-c won't reject= "[]]", */
+			/* json-c won't reject= "{}}", */
+			"[\"taco",
+			"{\"taco",
+			"{\"taco:",
+			"{taco:",
+			"{\"taco\":",
+			"[taco:",
+			"[\"taco\":",
+			"[\"taco\",:",
+			",,,,]",
+			",:,,]",
+			"\\,",
+			":",
+			",:,",
+			"\"\\\"",
+			"[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[",
+			"{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:{test:test}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+			"{\"taco\"::taco}",
+			"{::taco}",
+			"\xFE",
+			"\xFF",
+			"\xFE\xFF",
+			"\xFF\xFE",
+			/* "\x00\x00\xFE\xFF", - can't test this with cstrings */
+			"\xFE\xFF\x00\x00",
+			"\xFEtaco",
+			"\xFFtaco",
+			"\xFE\xFFtaco",
+			"\xFF\xFEtaco",
+			/* "\x00\x00\xFE\xFFtaco", - can't test this with cstrings */
+			"\xFE\xFF\x00\x00taco",
+			"\x01",
+			"\x02",
+			"\x03",
+			"\x04",
+			"\x05",
+			"\x06",
+			"\x07",
+			"\x08",
+			/* json-c won't reject= "\"taco\"\"", */
+			/* json-c won't reject= "\"\"\"", */
+			/* json-c won't reject= "\"\"taco\"", */
+			/* json-c won't reject= "\"\"\"\"", */
+			"\\u10FFFF",
+			"\\u10FFFFFFFFFFFFFFFFFFFFFFF",
+			"\\u0",
+			"\\uTACOS",
+			"\\u000TACOS",
+			"tacos\"tacos\"taco\"\"",
+			"*\"tacos\"taco\"\"",
+			"*,0",
+		};
 	/* should parse */
-	static const char *s[] = {
-		"\"taco\"",
-		"\"\\\"taco\\\"\"",
-		/*
+	static const char
+		*s[] = {
+			"\"taco\"",
+			"\"\\\"taco\\\"\"",
+			/*
 		 * The numbers following should be parsable without the list but
 		 * json-c rejects them
 		 */
-		"[ 100 ]",
-		"[ 100.389 ]",
-		"[ -100.389 ]",
-		"[ 1.1238e10 ]",
-		"[ -1.1238e10 ]",
-		"{ \"taco\": \"tacos\" }",
-		"[ \"taco1\", \"taco2\", ]",
-		"[ "/*,*/" \"taco1\", \"taco2\", \"taco3\" " /*json-c fails: ,,,,, */ " ]",
-		"[ true, false" /*, Infinity, inf, +inf, -inf, -Infinity, +Infinity, nan, null, ~*/ " ]",
-		"{\t\t\t\n}" //json-c fails: \"dict\": \t\r\n\n\n\n\n\n\n"
-		//json-c fails: 	"[//this is a comment\n"
-		//json-c fails: 		"{\"true\": TRUE, \"false\t\n\": FALSE},\t  \t     "
-		//json-c fails: 		"{    \"inf\": [ INFINITY, INF, +inf, -inf, -INFINITY, -INFINITY ]}   \t\t\t,"
-		//json-c fails: 		"{"
-		//json-c fails: 			"\"nan\": { \"nan\": [-NaN, +NaN, NaN]},"
-		//json-c fails: 			"\"number0\": 0,"
-		//json-c fails: 			"\"number1\": 1,"
-		//json-c fails: 			"\"true\": true,"
-		//json-c fails: 			"\"NULL\": [NULL, ~]"
-		//json-c fails: 		"}, "
-		//json-c fails: 		"{ \"items\": "
-		//json-c fails: 			"{"
-		//json-c fails: 				"\"taco\": \"taco\", "
-		//json-c fails: 				"\"some numbers\t\": ["
-		//json-c fails: 					"100, 12342.22, -232.22, +32.2323, 1e10, -1e10, 1121.3422e3, -3223.33e121"
-		//json-c fails: 				"]"
-		//json-c fails: 			"}, empty: [], empty2: {}\t\n\r\n"
-		//json-c fails: 		"}"
-		//json-c fails: 	"]/* this is also a comment */"
-		"}/*******[],{}///********/\n\n\n\t\r\n\t\t\t\n\n\n",
-		"{ }", //json-c fails: taco: \"\\u0074\\u0061\\u0063\\u006f\\u0073\", taco_key_unquoted_222:\t\t\ttaco_unquoted_1, test_hex:0x1028242322, 0x82382232: \"hex tacos ffeb=\\uffeb\" }",
-		"[ \"\\u0024\", \"\\u00a3\", \"\\u00c0\", \"\\u0418\", \"\\u0939\", \"\\u20ac\", \"\\ud55c\"," /* \"\\u10348\", \"\\uE01EF\" */" ]",
-		"[]", //json-c fails: " ",
-		"[]", //json-c fails: "null",
-		"{}",
-		"[]",
-		"[[]   \t]",
-		"[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]",
-		"[{\"test\":\"test\"}]", //json-c fails: "[{test:test,,,,,,,,,,,,,,,,,,,,,,,,,,,}]",
-		"{\"test\":[]}", //json-c fails: "{test:[]}",
-		"{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":\"test\"}}}}}}}}}}}}}}}}}}}}}}}}}}",
-	};
+			"[ 100 ]",
+			"[ 100.389 ]",
+			"[ -100.389 ]",
+			"[ 1.1238e10 ]",
+			"[ -1.1238e10 ]",
+			"{ \"taco\": \"tacos\" }",
+			"[ \"taco1\", \"taco2\", ]",
+			"[ " /*,*/
+			" \"taco1\", \"taco2\", \"taco3\" " /*json-c fails: ,,,,, */
+			" ]",
+			"[ true, false" /*, Infinity, inf, +inf, -inf, -Infinity, +Infinity, nan, null, ~*/
+			" ]",
+			"{\t\t\t\n}" //json-c fails: \"dict\": \t\r\n\n\n\n\n\n\n"
+			//json-c fails: 	"[//this is a comment\n"
+			//json-c fails: 		"{\"true\": TRUE, \"false\t\n\": FALSE},\t  \t     "
+			//json-c fails: 		"{    \"inf\": [ INFINITY, INF, +inf, -inf, -INFINITY, -INFINITY ]}   \t\t\t,"
+			//json-c fails: 		"{"
+			//json-c fails: 			"\"nan\": { \"nan\": [-NaN, +NaN, NaN]},"
+			//json-c fails: 			"\"number0\": 0,"
+			//json-c fails: 			"\"number1\": 1,"
+			//json-c fails: 			"\"true\": true,"
+			//json-c fails: 			"\"NULL\": [NULL, ~]"
+			//json-c fails: 		"}, "
+			//json-c fails: 		"{ \"items\": "
+			//json-c fails: 			"{"
+			//json-c fails: 				"\"taco\": \"taco\", "
+			//json-c fails: 				"\"some numbers\t\": ["
+			//json-c fails: 					"100, 12342.22, -232.22, +32.2323, 1e10, -1e10, 1121.3422e3, -3223.33e121"
+			//json-c fails: 				"]"
+			//json-c fails: 			"}, empty: [], empty2: {}\t\n\r\n"
+			//json-c fails: 		"}"
+			//json-c fails: 	"]/* this is also a comment */"
+			"}/*******[],{}///********/\n\n\n\t\r\n\t\t\t\n\n\n",
+			"{ }", //json-c fails: taco: \"\\u0074\\u0061\\u0063\\u006f\\u0073\", taco_key_unquoted_222:\t\t\ttaco_unquoted_1, test_hex:0x1028242322, 0x82382232: \"hex tacos ffeb=\\uffeb\" }",
+			"[ \"\\u0024\", \"\\u00a3\", \"\\u00c0\", \"\\u0418\", \"\\u0939\", \"\\u20ac\", \"\\ud55c\"," /* \"\\u10348\", \"\\uE01EF\" */
+			" ]",
+			"[]", //json-c fails: " ",
+			"[]", //json-c fails: "null",
+			"{}",
+			"[]",
+			"[[]   \t]",
+			"[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]",
+			"[{\"test\":\"test\"}]", //json-c fails: "[{test:test,,,,,,,,,,,,,,,,,,,,,,,,,,,}]",
+			"{\"test\":[]}", //json-c fails: "{test:[]}",
+			"{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":\"test\"}}}}}}}}}}}}}}}}}}}}}}}}}}",
+		};
 	data_t *c[] = {
 		data_set_string(data_new(), "taco"),
 		data_set_string(data_new(), "\"taco\""),
@@ -309,12 +317,12 @@ START_TEST(test_parse)
 	};
 
 	data_set_int(data_list_append(c[2]), 100),
-	data_set_float(data_list_append(c[3]), 100.389),
-	data_set_float(data_list_append(c[4]), -100.389),
-	data_set_float(data_list_append(c[5]), 1.1238e10),
-	data_set_float(data_list_append(c[6]), -1.1238e10),
+		data_set_float(data_list_append(c[3]), 100.389),
+		data_set_float(data_list_append(c[4]), -100.389),
+		data_set_float(data_list_append(c[5]), 1.1238e10),
+		data_set_float(data_list_append(c[6]), -1.1238e10),
 
-	data_set_string(data_key_set(c[7], "taco"), "tacos");
+		data_set_string(data_key_set(c[7], "taco"), "tacos");
 
 	data_set_string(data_list_append(c[8]), "taco1");
 	data_set_string(data_list_append(c[8]), "taco2");
@@ -402,7 +410,9 @@ START_TEST(test_parse)
 			t = data_set_list(data_list_append(t));
 	}
 
-	data_set_string(data_key_set(data_set_dict(data_list_append(c[20])), "test"), "test");
+	data_set_string(data_key_set(data_set_dict(data_list_append(c[20])),
+				     "test"),
+			"test");
 
 	data_set_list(data_key_set(c[21], "test"));
 
@@ -467,6 +477,7 @@ START_TEST(test_parse)
 	for (int i = 0; i < ARRAY_SIZE(c); i++)
 		FREE_NULL_DATA(c[i]);
 }
+
 END_TEST
 
 START_TEST(test_mimetype)
@@ -475,6 +486,7 @@ START_TEST(test_mimetype)
 	ck_assert(resolve_mime_type(MIME_TYPE_JSON, &ptr) != NULL);
 	ck_assert(ptr != NULL);
 }
+
 END_TEST
 
 #ifdef HAVE_MALLINFO2
@@ -520,32 +532,36 @@ static void _print_tracked_mem(mem_track_t *track, const char *type)
 	};
 
 	printf("\t%s Total non-mmapped bytes (arena):       %zu/%zuB %zu/%zuMiB\n",
-	       type, avg.arena, track->peak.arena,
-	       (avg.arena / 1048576), (track->peak.arena / 1048576));
-	printf("\t%s # of free chunks (ordblks):            %zu/%zu\n",
-	       type, avg.ordblks, track->peak.ordblks);
-	printf("\t%s # of free fastbin blocks (smblks):     %zu/%zu\n",
-	       type, avg.smblks, track->peak.smblks);
-	printf("\t%s # of mapped regions (hblks):           %zu/%zu\n",
-	       type, avg.hblks, track->peak.hblks);
-	printf("\t%s Bytes in mapped regions (hblkhd):      %zu/%zu\n",
-	       type, avg.hblkhd, track->peak.hblkhd);
-	printf("\t%s Max. total allocated space (usmblks):  %zu/%zu\n",
-	       type, avg.usmblks, track->peak.usmblks);
-	printf("\t%s Free bytes held in fastbins (fsmblks): %zu/%zu\n",
-	       type, avg.fsmblks, track->peak.fsmblks);
-	printf("\t%s Total allocated space (uordblks):      %zu/%zu\n",
-	       type, avg.uordblks, track->peak.uordblks);
-	printf("\t%s Total free space (fordblks):           %zu/%zu\n",
-	       type, avg.fordblks, track->peak.fordblks);
-	printf("\t%s Topmost releasable block (keepcost):   %zu/%zu\n\n",
-	       type, avg.keepcost, track->peak.keepcost);
+	       type, avg.arena, track->peak.arena, (avg.arena / 1048576),
+	       (track->peak.arena / 1048576));
+	printf("\t%s # of free chunks (ordblks):            %zu/%zu\n", type,
+	       avg.ordblks, track->peak.ordblks);
+	printf("\t%s # of free fastbin blocks (smblks):     %zu/%zu\n", type,
+	       avg.smblks, track->peak.smblks);
+	printf("\t%s # of mapped regions (hblks):           %zu/%zu\n", type,
+	       avg.hblks, track->peak.hblks);
+	printf("\t%s Bytes in mapped regions (hblkhd):      %zu/%zu\n", type,
+	       avg.hblkhd, track->peak.hblkhd);
+	printf("\t%s Max. total allocated space (usmblks):  %zu/%zu\n", type,
+	       avg.usmblks, track->peak.usmblks);
+	printf("\t%s Free bytes held in fastbins (fsmblks): %zu/%zu\n", type,
+	       avg.fsmblks, track->peak.fsmblks);
+	printf("\t%s Total allocated space (uordblks):      %zu/%zu\n", type,
+	       avg.uordblks, track->peak.uordblks);
+	printf("\t%s Total free space (fordblks):           %zu/%zu\n", type,
+	       avg.fordblks, track->peak.fordblks);
+	printf("\t%s Topmost releasable block (keepcost):   %zu/%zu\n\n", type,
+	       avg.keepcost, track->peak.keepcost);
 }
 #else /* !HAVE_MALLINFO2 */
 /* avoid compile errors for undefined/unused variables */
-typedef struct {int a; int b;} mem_track_t;
-#define _track_mem(track) ((void)(track))
-#define _print_tracked_mem(track, type) ((void)(track))
+typedef struct {
+	int a;
+	int b;
+} mem_track_t;
+
+#define _track_mem(track) ((void) (track))
+#define _print_tracked_mem(track, type) ((void) (track))
 #endif /* !HAVE_MALLINFO2 */
 
 static void _test_bandwidth_str(const char *tag, const char *source,
@@ -576,8 +592,8 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 		_track_mem(&read_mem);
 
 		START_TIMER;
-		rc = serialize_g_string_to_data(&data, source,
-						test_json_len, MIME_TYPE_JSON);
+		rc = serialize_g_string_to_data(&data, source, test_json_len,
+						MIME_TYPE_JSON);
 		END_TIMER3(__func__, INFINITE);
 		duration = timespec_diff_ns(TIMER_END_TS, TIMER_START_TS).diff;
 
@@ -646,11 +662,11 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 	printf("\tfastest read=%f MiB/sec \n\tfastest write=%f MiB/sec\n\n",
 	       fastest_read_rate, fastest_write_rate);
 
-	printf("\tavg read=%lf sec\n\tavg write=%lf sec\n\n",
-	       read_diff, write_diff);
+	printf("\tavg read=%lf sec\n\tavg write=%lf sec\n\n", read_diff,
+	       write_diff);
 
-	printf("\tavg read=%f MiB/sec \n\tavg write=%f MiB/sec\n\n",
-	       read_rate, write_rate);
+	printf("\tavg read=%f MiB/sec \n\tavg write=%f MiB/sec\n\n", read_rate,
+	       write_rate);
 
 	_print_tracked_mem(&read_mem, "read");
 	_print_tracked_mem(&write_mem, "write");
@@ -662,6 +678,7 @@ START_TEST(test_bandwidth)
 		_test_bandwidth_str(test_json[i].tag, test_json[i].source,
 				    test_json[i].run_count);
 }
+
 END_TEST
 
 START_TEST(test_compliance)
@@ -678,8 +695,8 @@ START_TEST(test_compliance)
 		debug("source %s:\n%s\n\n\n\n",
 		      test_json[i].tag, test_json[i].source);
 
-		rc = serialize_g_string_to_data(&data, test_json[i].source,
-						len, MIME_TYPE_JSON);
+		rc = serialize_g_string_to_data(&data, test_json[i].source, len,
+						MIME_TYPE_JSON);
 		assert_int_eq(rc, 0);
 
 		for (int f = 0; f < ARRAY_SIZE(flag_combinations); f++) {
@@ -701,6 +718,7 @@ START_TEST(test_compliance)
 		FREE_NULL_DATA(data);
 	}
 }
+
 END_TEST
 
 extern Suite *suite_data(void)
