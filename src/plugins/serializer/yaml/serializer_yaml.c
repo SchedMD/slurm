@@ -710,8 +710,7 @@ yaml_fail:
 
 #undef _yaml_emitter_error
 
-extern int serialize_p_data_to_string(char **dest, size_t *length,
-				      const data_t *src,
+extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
 				      serializer_flags_t flags)
 {
 	yaml_emitter_t emitter;

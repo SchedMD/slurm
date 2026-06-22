@@ -823,7 +823,7 @@ static char *_print_data_t(const data_t *d, char *buffer, int size)
 	return buffer;
 }
 
-static char *_print_data_json(const data_t *d, char *buffer, int size)
+static char *_print_data_json(data_t *d, char *buffer, int size)
 {
 	char *nbuf = NULL;
 

@@ -270,8 +270,7 @@ static json_object *_data_to_json(const data_t *d, serializer_flags_t flags)
 	};
 }
 
-extern int serialize_p_data_to_string(char **dest, size_t *length,
-				      const data_t *src,
+extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
 				      serializer_flags_t flags)
 {
 	struct json_object *jobj = NULL;

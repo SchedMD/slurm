@@ -149,7 +149,7 @@ static void teardown(void)
 }
 
 /* serialize src to a string, re-parse it, and verify the round-trip matches */
-static void _test_run(const char *tag, const data_t *src, const char *mime_type,
+static void _test_run(const char *tag, data_t *src, const char *mime_type,
 		      const serializer_flags_t flags)
 {
 	char *output = NULL;

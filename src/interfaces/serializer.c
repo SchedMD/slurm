@@ -64,7 +64,7 @@ strong_alias(serialize_g_dump, slurm_serialize_g_dump);
 typedef struct {
 	int (*init)(serializer_flags_t flags);
 	void (*fini)(void);
-	int (*data_to_string)(char **dest, size_t *length, const data_t *src,
+	int (*data_to_string)(char **dest, size_t *length, data_t *src,
 			      serializer_flags_t flags);
 	int (*string_to_data)(data_t **dest, const char *src, size_t length);
 	int (*dump)(serialize_dump_state_t **state_ptr, data_parser_t *parser,
@@ -210,8 +210,8 @@ static plugin_mime_type_t *_find_serializer(const char *mime_type)
 			       (void *) mime_type);
 }
 
-extern int serialize_g_data_to_string(char **dest, size_t *length,
-				      const data_t *src, const char *mime_type,
+extern int serialize_g_data_to_string(char **dest, size_t *length, data_t *src,
+				      const char *mime_type,
 				      serializer_flags_t flags)
 {
 	DEF_TIMERS;
