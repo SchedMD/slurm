@@ -1167,13 +1167,8 @@ static int _foreach_base_set(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int _foreach_license_set_base(void *x, void *key)
+static int _set_base(licenses_t *license)
 {
-	licenses_t *license = x;
-
-	if (license->mode == HRES_MODE_OFF)
-		return 0;
-
 	if (license->hres_rec.base)
 		if (list_for_each_ro(license->hres_rec.base, _foreach_base_set,
 				     license) < 0)
@@ -1189,6 +1184,18 @@ static int _foreach_license_set_base(void *x, void *key)
 
 	if (license->total != INFINITE)
 		license->total -= license->hres_rec.base_usage;
+	return 0;
+}
+
+static int _foreach_license_set_base(void *x, void *key)
+{
+	licenses_t *license = x;
+
+	if (license->mode == HRES_MODE_OFF)
+		return 0;
+
+	if (_set_base(license))
+		return -1;
 
 	if ((license->mode == HRES_MODE_3) &&
 	    (license->hres_rec.parent_id != NO_VAL16)) {
