@@ -3548,7 +3548,10 @@ typedef struct {
  */
 typedef struct slurm_license_info {
 	char *name;          /* license name */
-	uint32_t total;      /* total number of available licenses */
+	uint32_t base_usage; /* total usage of base */
+	uint32_t conf_total; /* total number of configured licenses */
+	uint32_t total;      /* total number of available licenses:
+			      *   configured - base_usage */
 	uint32_t in_use;     /* number of license in use */
 	uint32_t available;  /* number of available license */
 	uint8_t remote;      /* non-zero if remote license (not

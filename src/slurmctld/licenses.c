@@ -3119,6 +3119,11 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 {
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);
+		pack32(lic->hres_rec.base_usage, buffer);
+		if (lic->mode == HRES_MODE_OFF)
+			pack32(lic->total, buffer);
+		else
+			pack32(lic->hres_rec.total, buffer);
 		pack32(lic->total, buffer);
 		pack32(lic->used, buffer);
 		pack32(lic->reserved, buffer);

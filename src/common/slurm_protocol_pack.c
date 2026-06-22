@@ -12849,6 +12849,8 @@ static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 		/* Decode individual license data */
 		for (int i = 0; i < msg->num_lic; i++) {
 			safe_unpackstr(&msg->lic_array[i].name, buffer);
+			safe_unpack32(&msg->lic_array[i].base_usage, buffer);
+			safe_unpack32(&msg->lic_array[i].conf_total, buffer);
 			safe_unpack32(&msg->lic_array[i].total, buffer);
 			safe_unpack32(&msg->lic_array[i].in_use, buffer);
 			safe_unpack32(&msg->lic_array[i].reserved, buffer);
