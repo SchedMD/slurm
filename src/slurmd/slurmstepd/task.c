@@ -86,7 +86,6 @@
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/task.h"
@@ -315,9 +314,6 @@ extern void exec_task(int local_proc_id)
 	int saved_errno, status;
 	uint32_t node_offset = 0, task_offset = 0;
 
-	if (step->container)
-		container_task_init(task);
-
 	runtime_g_task_init(conf, step, task);
 
 	if (step->het_job_node_offset != NO_VAL)
@@ -513,9 +509,6 @@ extern void exec_task(int local_proc_id)
 			   step->step_id.job_id, step->step_id.step_id,
 			   step->node_name);
 	}
-
-	if (step->container)
-		container_run(task);
 
 	runtime_g_run(conf, step, task);
 

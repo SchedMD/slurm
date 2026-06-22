@@ -94,7 +94,6 @@
 #include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -838,9 +837,6 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	 */
 	proctrack_g_destroy(step->cont_id);
 
-	if (step->container)
-		cleanup_container();
-
 	runtime_g_cleanup(conf, step);
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
@@ -1510,34 +1506,6 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	if (rc) {
 		error("%s: %s", __func__, slurm_strerror(rc));
 		return rc;
-	}
-
-	if (step->container) {
-	        struct priv_state sprivs;
-		int rc;
-
-		if (drop_privileges(step, false, &sprivs, true) < 0) {
-			error("%s: drop_priviledges failed", __func__);
-			return SLURM_ERROR;
-		}
-		rc = setup_container();
-		if (reclaim_privileges(&sprivs) < 0) {
-			error("%s: reclaim_priviledges failed", __func__);
-			return SLURM_ERROR;
-		}
-
-		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
-			debug2("%s: container %s requested but containers are not configured on this node",
-			       __func__, step->container->bundle);
-		} else if (rc) {
-			error("%s: container setup failed: %s",
-			      __func__, slurm_strerror(rc));
-			stepd_step_rec_destroy();
-			return SLURM_ERROR;
-		} else {
-			debug2("%s: container %s successfully setup",
-			       __func__, step->container->bundle);
-		}
 	}
 
 	step->jmgr_pid = getpid();
