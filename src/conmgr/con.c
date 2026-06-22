@@ -800,6 +800,7 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
 	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
 	con_assign_flag(con, FLAG_READ_EOF, !has_in);
+	con_assign_flag(con, FLAG_WRITE_EOF, !has_out);
 	con_assign_flag(con, FLAG_IS_FIFO, is_fifo);
 	con_assign_flag(con, FLAG_IS_CHR, is_chr);
 
