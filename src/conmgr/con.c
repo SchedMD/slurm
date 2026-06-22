@@ -1915,6 +1915,7 @@ static void _on_change_polling_fail(conmgr_fd_t *con, int rc,
 			con->polling_output_fd = PCTL_TYPE_UNSUPPORTED;
 			con_unset_flag(con, FLAG_CAN_WRITE);
 			con_unset_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
+			con_set_flag(con, FLAG_WRITE_EOF);
 		}
 	} else {
 		/* Attempt graceful closing of connection */
