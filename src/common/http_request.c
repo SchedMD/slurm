@@ -39,6 +39,7 @@
 #include "src/common/http_mime.h"
 #include "src/common/http_router.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/openapi.h"
 #include "src/common/read_config.h"
 #include "src/common/serdes.h"
@@ -58,6 +59,7 @@ typedef struct {
 	char *path;
 	http_request_on_request_t on_request;
 	http_request_on_error_t on_error;
+	const char *on_error_func;
 	data_parser_type_t reply_type;
 	void *arg;
 } bound_request_t;
@@ -73,6 +75,19 @@ typedef struct http_request_event_s {
 	const char *write_mime;
 	const http_con_request_t *request;
 } http_request_event_t;
+
+static int _on_error(http_request_event_t *event, int rc)
+{
+	bound_request_t *breq = event->breq;
+
+	log_flag(NET, "%s: Calling %s(%p) on error for %s %s: %s",
+		 __func__, breq->on_error_func, breq->arg,
+		 get_http_method_string(event->request->method),
+		 event->request->url.path, slurm_strerror(rc));
+
+	return breq->on_error(event, event->hcon, event->name, event->request,
+			      rc);
+}
 
 static int _on_request(http_con_t *hcon, const char *name,
 		       const http_con_request_t *request, void *arg,
@@ -95,14 +110,14 @@ static int _on_request(http_con_t *hcon, const char *name,
 					   name, request))) {
 		error("%s: [%s] Rejecting HTTP authentication: %s",
 		      __func__, name, slurm_strerror(rc));
-		return breq->on_error(&event, hcon, name, request, rc);
+		return _on_error(&event, rc);
 	}
 
 	if ((rc = http_resolve_mime_types(name, request, &event.read_mime,
 					  &event.write_mime))) {
 		error("%s: [%s] Rejecting HTTP mime headers: %s",
 		      __func__, name, slurm_strerror(rc));
-		return breq->on_error(&event, hcon, name, request, rc);
+		return _on_error(&event, rc);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
@@ -136,14 +151,16 @@ static void _breq_free(http_router_on_request_event_t on_request,
 
 static void _bind(data_parser_t *parser, http_request_method_t method,
 		  const char *path, http_request_on_request_t on_request,
-		  http_request_on_error_t on_error,
-		  data_parser_type_t reply_type, void *arg)
+		  const char *on_request_func, http_request_on_error_t on_error,
+		  const char *on_error_func, data_parser_type_t reply_type,
+		  void *arg)
 {
 	bound_request_t *breq = xmalloc(sizeof(*breq));
 	*breq = (bound_request_t) {
 		.magic = BOUND_REQUEST_MAGIC,
 		.on_request = on_request,
 		.on_error = on_error,
+		.on_error_func = on_error_func,
 		.reply_type = reply_type,
 		.arg = arg,
 		.path = xstrdup(path),
@@ -154,18 +171,23 @@ static void _bind(data_parser_t *parser, http_request_method_t method,
 		xstrsubstitute(breq->path, OPENAPI_DATA_PARSER_PARAM,
 			       data_parser_get_plugin_version(parser));
 
-	http_router_bind(method, breq->path, _on_request, _breq_free, breq);
+	http_router_bind_funcname(method, breq->path, _on_request,
+				  on_request_func, _breq_free,
+				  XSTRINGIFY(_breq_free), breq);
 }
 
-extern void http_request_bind(data_parser_t **parsers,
-			      http_request_method_t method, const char *path,
-			      http_request_on_request_t on_request,
-			      http_request_on_error_t on_error,
-			      data_parser_type_t reply_type, void *arg)
+extern void http_request_bind_funcname(data_parser_t **parsers,
+				       http_request_method_t method,
+				       const char *path,
+				       http_request_on_request_t on_request,
+				       const char *on_request_func,
+				       http_request_on_error_t on_error,
+				       const char *on_error_func,
+				       data_parser_type_t reply_type, void *arg)
 {
 	if (reply_type == DATA_PARSER_TYPE_INVALID) {
-		_bind(NULL, method, path, on_request, on_error, reply_type,
-		      arg);
+		_bind(NULL, method, path, on_request, on_request_func, on_error,
+		      on_error_func, reply_type, arg);
 		return;
 	}
 
@@ -174,7 +196,8 @@ extern void http_request_bind(data_parser_t **parsers,
 
 	for (int i = 0; parsers[i]; i++)
 		if (data_parser_g_resolve_type_string(parsers[i], reply_type))
-			_bind(parsers[i], method, path, on_request, on_error,
+			_bind(parsers[i], method, path, on_request,
+			      on_request_func, on_error, on_error_func,
 			      reply_type, arg);
 }
 
@@ -185,8 +208,6 @@ extern int http_request_reply(http_request_event_t *event, int rc,
 	bound_request_t *breq = event->breq;
 	data_parser_t *parser = breq->parser;
 	http_con_t *hcon = event->hcon;
-	const char *name = event->name;
-	const http_con_request_t *request = event->request;
 	const char *write_mime = event->write_mime;
 	http_status_code_t status = http_status_from_error(rc);
 
@@ -200,13 +221,12 @@ extern int http_request_reply(http_request_event_t *event, int rc,
 		xassert(breq->reply_type < DATA_PARSER_TYPE_MAX);
 
 		if (!(buffer = try_init_buf(BUF_SIZE)))
-			return breq->on_error(event, hcon, name, request,
-					      ENOMEM);
+			return _on_error(event, ENOMEM);
 
 		if ((rc = serdes_dump_buf(parser, breq->reply_type, reply,
 					  reply_bytes, buffer, write_mime,
 					  SER_FLAGS_NONE)))
-			rc = breq->on_error(event, hcon, name, request, rc);
+			rc = _on_error(event, rc);
 		else
 			rc = http_con_send_response(hcon, status, headers,
 						    close_header, buffer,
