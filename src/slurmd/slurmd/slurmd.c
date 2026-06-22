@@ -147,7 +147,7 @@ decl_static_data(usage_txt);
 
 uint32_t slurm_daemon = IS_SLURMD;
 
-#define MAX_THREADS		256
+#define MAX_THREADS 256
 #define DEF_WORKPOOL_THREAD_COUNT 6
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
@@ -228,7 +228,7 @@ static int       _core_spec_init(void);
 static void _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
-static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static int _increment_thd_count(bool block);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
