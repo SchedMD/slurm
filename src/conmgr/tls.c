@@ -217,7 +217,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
 	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
-	if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_WRITE_EOF)) {
 		log_flag(CONMGR, "%s: [%s] cancelling TLS shutdown",
 			 __func__, con->name);
 		_shutdown_complete(true, con);
@@ -255,7 +255,8 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(tls == con->tls);
 		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
-		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+		if (con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF)) {
 			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() completed after connection closed",
 				 __func__, con->name);
 			_shutdown_complete(true, con);
