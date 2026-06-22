@@ -853,6 +853,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	if (((con->input_fd < 0) && (con->output_fd < 0))) {
 		xassert(con_flag(con, FLAG_READ_EOF));
+		xassert(con_flag(con, FLAG_WRITE_EOF));
 		/* connection already closed */
 	} else if (con_flag(con, FLAG_IS_CONNECTED) ||
 		   con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
@@ -869,7 +870,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		_set_time(args);
 		con->last_read = args->time;
 
-		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
+		if (con_flag(con, FLAG_IS_SOCKET) &&
+		    !con_flag(con, FLAG_WRITE_EOF)) {
 			/* Query outbound MSS now kernel should know the answer */
 			add_work_con_fifo(true, con, _update_mss, NULL);
 		}
@@ -890,7 +892,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			 * needs to be done
 			 */
 		}
-	} else if (!con_flag(con, FLAG_READ_EOF)) {
+	} else if (!con_flag(con, FLAG_READ_EOF) &&
+		   !con_flag(con, FLAG_WRITE_EOF)) {
 		xassert(!con_flag(con, FLAG_CAN_READ) &&
 			!con_flag(con, FLAG_CAN_WRITE));
 
@@ -973,7 +976,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	}
 
 	/* handle out going data */
-	if ((con->output_fd >= 0) && con->tls_out &&
+	if (!con_flag(con, FLAG_WRITE_EOF) && con->tls_out &&
 	    !list_is_empty(con->tls_out)) {
 		if (con_flag(con, FLAG_CAN_WRITE) ||
 		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
@@ -987,7 +990,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		}
 	}
 
-	if ((con->output_fd >= 0) && !list_is_empty(con->out)) {
+	if (!con_flag(con, FLAG_WRITE_EOF) && !list_is_empty(con->out)) {
 		if (con->tls) {
 			if (con_flag(con, FLAG_IS_TLS_CONNECTED)) {
 				log_flag(CONMGR, "%s: [%s] %u pending writes to encrypt",
@@ -1012,7 +1015,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
-		if (con->output_fd < 0) {
+		if (con_flag(con, FLAG_WRITE_EOF)) {
 			/* output_fd is already closed so no more write()s */
 			queue_work = true;
 		} else if (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED) {
@@ -1089,7 +1092,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	if (is_tls && !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
-	    !con_flag(con, FLAG_READ_EOF)) {
+	    !con_flag(con, FLAG_READ_EOF) && !con_flag(con, FLAG_WRITE_EOF)) {
 		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(!con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
@@ -1119,7 +1122,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(is_tls);
 
-		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+		if (con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF)) {
 			log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown cleanup on closed connection",
 				 __func__, con->name);
 			add_work_con_fifo(true, con, tls_shutdown, NULL);
