@@ -352,6 +352,7 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 		add_work_con_fifo(true, con, _close_output_fd,
 				  ((void *) (uint64_t) con->output_fd));
 
+	con_set_flag(con, FLAG_WRITE_EOF);
 	con->output_fd = -1;
 }
 
