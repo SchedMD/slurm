@@ -2519,6 +2519,7 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 	new_config_ptr->weight      = config_ptr->weight;
 	new_config_ptr->feature     = xstrdup(config_ptr->feature);
 	new_config_ptr->gres        = xstrdup(config_ptr->gres);
+	new_config_ptr->topology_str = xstrdup(config_ptr->topology_str);
 
 	_queue_consolidate_config_list();
 
