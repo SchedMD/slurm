@@ -2184,6 +2184,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* clear all polling states */
 	con_set_flag(con, FLAG_READ_EOF);
+	con_set_flag(con, FLAG_WRITE_EOF);
 	con_unset_flag(con, FLAG_CAN_READ);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
