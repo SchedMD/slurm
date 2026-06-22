@@ -1,5 +1,5 @@
 ############################################################################
-# Copyright (C) SchedMD LLC.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
 import atf
 import pytest
@@ -15,12 +15,12 @@ def setup():
 
 
 def test_json():
-    """Verify sinfo --json has the correct format and meta data command"""
+    """Verify sshare --json has the correct format and meta data command"""
 
-    expected_command = ["sinfo", "--json"]
+    expected_command = ["sshare", "--json"]
 
-    output = atf.run_command_output("sinfo --json", fatal=True)
+    output = atf.run_command_output("sshare --json", fatal=True)
     json_data = json.loads(output)
     assert json_data is not None
-    if atf.get_version("bin/sinfo") >= (26, 5):
+    if atf.get_version("bin/sshare") >= (26, 5):
         assert json_data["meta"]["command"] == expected_command

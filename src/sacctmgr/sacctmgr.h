@@ -230,6 +230,8 @@ extern list_t *g_res_list;
 extern list_t *g_tres_list;
 extern const char *mime_type; /* user requested JSON or YAML */
 extern const char *data_parser; /* data_parser args */
+extern int orig_argc; /* used when dumping meta data */
+extern char **orig_argv;
 
 extern bool user_case_norm;
 extern bool resource_case_norm;

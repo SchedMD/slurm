@@ -15,26 +15,16 @@ def setup():
     atf.require_slurm_running()
 
 
-def test_json():
-    """Verify sacctmgr --json has the correct format"""
+@pytest.mark.parametrize(
+    "entry", ["accounts", "associations", "clusters", "qos", "wckeys", "users", "tres"]
+)
+def test_json(entry):
+    """Verify sacctmgr --json has the correct format and meta data command"""
 
-    output = atf.run_command_output("sacctmgr --json show accounts", fatal=True)
-    assert json.loads(output) is not None
+    expected_command = ["sacctmgr", "--json", "show", entry]
 
-    output = atf.run_command_output("sacctmgr --json show associations", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("sacctmgr --json show clusters", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("sacctmgr --json show qos", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("sacctmgr --json show wckeys", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("sacctmgr --json show users", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("sacctmgr --json show tres", fatal=True)
-    assert json.loads(output) is not None
+    output = atf.run_command_output(f"sacctmgr --json show {entry}", fatal=True)
+    json_data = json.loads(output)
+    assert json_data is not None
+    if atf.get_version("bin/sacctmgr") >= (26, 5):
+        assert json_data["meta"]["command"] == expected_command

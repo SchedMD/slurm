@@ -606,8 +606,8 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 
 	/* need a new array with a NULL terminator */
 	if (argc > 0) {
-		argvnt = xcalloc(argc, sizeof(*argv));
-		memcpy(argvnt, argv, (sizeof(*argv) * (argc - 1)));
+		argvnt = xcalloc((argc + 1), sizeof(*argv));
+		memcpy(argvnt, argv, (sizeof(*argv) * argc));
 	}
 
 	if (isatty(STDIN_FILENO))

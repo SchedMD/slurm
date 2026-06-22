@@ -14,29 +14,27 @@ def setup():
     atf.require_slurm_running()
 
 
-def test_json():
-    """Verify scontrol --json has the correct format"""
+@pytest.mark.parametrize(
+    "action",
+    [
+        "show licenses",
+        "ping",
+        "show jobs",
+        "show job",
+        "show steps",
+        "show nodes",
+        "show partitions",
+        "show reservations",
+    ],
+)
+def test_json(action):
+    """Verify scontrol --json has the correct format and meta data command"""
 
-    output = atf.run_command_output("scontrol show licenses --json", fatal=True)
-    assert json.loads(output) is not None
+    expected_command = ["scontrol", "--json"]
+    expected_command.extend(action.split())
 
-    output = atf.run_command_output("scontrol ping --json", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("scontrol show jobs --json", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("scontrol show job --json", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("scontrol show steps --json", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("scontrol show nodes --json", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("scontrol show partitions --json", fatal=True)
-    assert json.loads(output) is not None
-
-    output = atf.run_command_output("scontrol show reservations --json", fatal=True)
-    assert json.loads(output) is not None
+    output = atf.run_command_output(f"scontrol --json {action}", fatal=True)
+    json_data = json.loads(output)
+    assert json_data is not None
+    if atf.get_version("bin/scontrol") >= (26, 5):
+        assert json_data["meta"]["command"] == expected_command

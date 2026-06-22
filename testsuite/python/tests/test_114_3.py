@@ -15,7 +15,12 @@ def setup():
 
 
 def test_json():
-    """Verify squeue --json has the correct format"""
+    """Verify squeue --json has the correct format and meta data command"""
+
+    expected_command = ["squeue", "--json"]
 
     output = atf.run_command_output("squeue --json", fatal=True)
-    assert json.loads(output) is not None
+    json_data = json.loads(output)
+    assert json_data is not None
+    if atf.get_version("bin/squeue") >= (26, 5):
+        assert json_data["meta"]["command"] == expected_command
