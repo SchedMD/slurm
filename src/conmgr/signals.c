@@ -354,6 +354,9 @@ static void _atfork_child(void)
 	 * inherited lock state is undefined in the child, so the lock itself is
 	 * reinitialized rather than acquired.
 	 */
+
+	_reset_all_signal_handlers(&signal_handlers, signal_handler_count);
+
 	lock = (pthread_rwlock_t) PTHREAD_RWLOCK_INITIALIZER;
 	one_time_init = false;
 	signal_handlers = NULL;
