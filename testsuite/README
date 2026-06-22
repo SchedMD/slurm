@@ -798,6 +798,7 @@ test_111_5   /commands/sinfo/test_--state.py
 test_112_#   Testing of slurmrestd options.
 ===========================================
 test_112_1   /commands/slurmrestd/test_options.py
+test_112_41  Test slurmrestd v0.0.41 requests
 test_112_42  Test slurmrestd v0.0.42 requests
 test_112_43  Test slurmrestd v0.0.43 requests
 test_112_44  Test slurmrestd v0.0.44 requests
@@ -938,6 +939,7 @@ test_125_1   /parameters/slurm/BurstBufferType/datawarp/test_datawarp.py
 test_126_#   Testing of EnforcePartLimits.
 ==========================================
 test_126_1   /parameters/slurm/EnforcePartLimits/test_enforcePartLimits.py
+test_126_2   Test het job with per-component QoS/limit aggregation (DenyOnLimit)
 
 test_127_#   Testing of Epilog.
 ===============================
@@ -998,11 +1000,13 @@ test_140_#   Testing --tres options.
 ====================================
 test_140_1   Test --tres-per-task option
 test_140_2   Test --tres-bind validation
+test_140_3   Test license alloc/used and hold across batch job requeue
 
 test_141_#   Testing PowerSave/Cloud operations.
 ================================================
 test_141_1   Test state cycle, timeouts, scontrol commands, PowerDownOnIdle, and Node Features reboot
 test_141_2   Testing Global,Per-Partition,Per-Node Cloud Options
+test_141_3   Test node reboot and power down/up actions via slurmctld and slurmd
 
 test_143_#   Testing --switches.
 ================================
@@ -1041,6 +1045,7 @@ test_147_2   Test SPANK remote spank init failure modes
 test_149_#   Testing AcctGatherProfileType.
 ===========================================
 test_149_1   Test acct_gather_profile/influxdb
+test_149_2   Test acct_gather_profile/influxdb grouped fields and extra tags
 test_149_3   Test acct_gather_profile/hdf5 task profile consistency
 
 test_150_#   Testing topology plugins.
@@ -1049,6 +1054,7 @@ test_150_1   Test topology/block
 test_150_2   Test "--nodelist" + "--segment"
 test_150_3   Test topology-aware task distribution
 test_150_4   Test topology/flat alpha_step_rank with dynamic nodes
+test_150_5   Test slurmd first-registration gate for topology/instance/extra fields
 
 test_151_#   Testing Oversubscribe
 ===========================================
@@ -1081,6 +1087,7 @@ test_156_1   Test "--hint=nomultithread"
 test_157_#   Testing of JobSubmitPlugins.
 ============================================
 test_157_1   Test job_desc with JobSubmitPlugins=lua
+test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
 
 test_158_#   Testing of Licenses
 ============================================
