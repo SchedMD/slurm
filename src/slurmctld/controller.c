@@ -1089,6 +1089,9 @@ int main(int argc, char **argv)
 
 		sync_job_priorities();
 
+		if (recover && !reconfiguring)
+			relaunch_unsent_batch_jobs();
+
 		if (mcs_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
 

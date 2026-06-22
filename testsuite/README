@@ -1108,3 +1108,7 @@ test_162_2   Test swait's steps-drained push path
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
 test_163_1   Test completed accounting preserves short memory peaks
+
+test_164_#   Testing batch job launch recovery.
+=================================================
+test_164_1   Test a batch job survives a slurmctld reconfigure during its prolog
