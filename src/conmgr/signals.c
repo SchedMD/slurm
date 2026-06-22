@@ -348,6 +348,9 @@ static void _atfork_child(void)
 	 * Force state to return to default state before it was initialized at
 	 * forking as all of the prior state is completely unusable.
 	 */
+
+	_reset_all_signal_handlers(&signal_handlers, signal_handler_count);
+
 	lock = (pthread_rwlock_t) PTHREAD_RWLOCK_INITIALIZER;
 	one_time_init = false;
 	signal_handlers = NULL;
