@@ -271,14 +271,17 @@ static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	int fd;
+	signal_handler_t *handlers = NULL;
+	work_t **cancel_work = NULL;
+	int cancel_work_count = 0;
+	int count = 0;
+	int fd = SIGNAL_FD_FAILED;
 
 	xassert(arg == conmgr_args.con);
 
 	slurm_rwlock_wrlock(&lock);
 
-	fd = signal_fd;
-	signal_fd = -1;
+	SWAP(fd, signal_fd);
 
 	xassert(fd != -1);
 	fd_close(&fd);
@@ -286,10 +289,52 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(conmgr_args.con == signal_con);
 	signal_con = NULL;
 
+	/* Swap out handlers array before cleanup */
+	SWAP(signal_handler_count, count);
+	SWAP(signal_handlers, handlers);
+
+	/*
+	 * Detach pending signal work under the lock so cancellation can run
+	 * outside. handle_work() takes mgr.mutex, and the rest of this file
+	 * uses mgr.mutex -> signals.lock; calling handle_work() under
+	 * signals.lock would invert the order against the watch thread.
+	 */
+	SWAP(signal_work_count, cancel_work_count);
+	SWAP(signal_work, cancel_work);
+
+	for (int i = 0; i < count; i++) {
+		signal_handler_t *handler = &handlers[i];
+
+		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
+		xassert(handler->signal > 0);
+
+		if (sigaction(handler->signal, &handler->prior, &handler->new))
+			fatal("%s: unable to revert %s: %m",
+			      __func__, strsignal(handler->signal));
+
+		/* clear handler entirely */
+		*handler = (signal_handler_t) {
+			.magic = ~MAGIC_SIGNAL_HANDLER,
+		};
+	}
+
+	xfree(handlers);
+
 	log_flag(CONMGR, "%s: [%s] closed signal pipe",
 			 __func__, conmgr_con_get_name(conmgr_args.ref));
 
 	slurm_rwlock_unlock(&lock);
+
+	for (int i = 0; i < cancel_work_count; i++) {
+		work_t *work = cancel_work[i];
+
+		xassert(work->magic == MAGIC_WORK);
+
+		work->status = CONMGR_WORK_STATUS_CANCELLED;
+		handle_work(false, work);
+	}
+
+	xfree(cancel_work);
 }
 
 static void _atfork_child(void)
@@ -372,7 +417,10 @@ extern void signal_mgr_stop(void)
 extern void signal_mgr_fini(void)
 {
 	signal_handler_t *handlers = NULL;
-	int signal_fd_close = -1, count = 0;
+	work_t **cancel_work = NULL;
+	int cancel_work_count = 0;
+	int count = 0;
+	int fd = SIGNAL_FD_FAILED;
 
 	signal_mgr_stop();
 
@@ -383,21 +431,26 @@ extern void signal_mgr_fini(void)
 		return;
 	}
 
-	xassert(one_time_init);
-	/* should already be cleaned up by signal_mgr_stop() */
-	xassert(!signal_con);
+	/*
+	 * Fallback in case _on_finish() did not run before fini (e.g., the
+	 * conmgr watch loop already exited before processing close_con).
+	 * The cleanup is idempotent: if _on_finish() ran first, the SWAPs
+	 * just produce NULL/0 locals and the loops below run zero times.
+	 */
 
-	/* try to be as atomic as possible to close(signal_fd) */
-	signal_fd_close = signal_fd;
-	signal_fd = SIGNAL_FD_FAILED;
-	fd_close(&signal_fd_close);
+	SWAP(fd, signal_fd);
+	if (fd != SIGNAL_FD_FAILED)
+		fd_close(&fd);
 
-	/* Swap out handlers array before cleanup */
+	signal_con = NULL;
+
 	SWAP(signal_handler_count, count);
 	SWAP(signal_handlers, handlers);
+	SWAP(signal_work_count, cancel_work_count);
+	SWAP(signal_work, cancel_work);
 
-	for (int i = 0; i < signal_handler_count; i++) {
-		signal_handler_t *handler = &handlers[signal_handler_count];
+	for (int i = 0; i < count; i++) {
+		signal_handler_t *handler = &handlers[i];
 
 		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
 		xassert(handler->signal > 0);
@@ -406,7 +459,6 @@ extern void signal_mgr_fini(void)
 			fatal("%s: unable to revert %s: %m",
 			      __func__, strsignal(handler->signal));
 
-		/* clear handler entirely */
 		*handler = (signal_handler_t) {
 			.magic = ~MAGIC_SIGNAL_HANDLER,
 		};
@@ -414,20 +466,18 @@ extern void signal_mgr_fini(void)
 
 	xfree(handlers);
 
-	for (int i = 0; i < signal_work_count; i++) {
-		work_t *work = NULL;
+	slurm_rwlock_unlock(&lock);
 
-		SWAP(signal_work[i], work);
+	for (int i = 0; i < cancel_work_count; i++) {
+		work_t *work = cancel_work[i];
+
 		xassert(work->magic == MAGIC_WORK);
 
 		work->status = CONMGR_WORK_STATUS_CANCELLED;
 		handle_work(true, work);
 	}
 
-	xfree(signal_work);
-	signal_work_count = 0;
-
-	slurm_rwlock_unlock(&lock);
+	xfree(cancel_work);
 }
 
 extern bool is_signal_connection(conmgr_fd_t *con)
