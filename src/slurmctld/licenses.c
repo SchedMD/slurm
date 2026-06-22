@@ -276,6 +276,11 @@ static int _foreach_license_print(void *x, void *arg)
 			_print_path(license_entry->hres_rec.path_idx,
 				    license_entry->hres_rec.depth);
 		}
+		if (license_entry->hres_rec.base) {
+			info("\tbase:");
+			list_for_each(license_entry->hres_rec.base,
+				      _foreach_variable_print, NULL);
+		}
 		if (license_entry->hres_rec.variables) {
 			info("\tvariable:");
 			list_for_each(license_entry->hres_rec.variables,
