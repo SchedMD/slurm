@@ -125,7 +125,8 @@ typedef enum {
 	FLAG_IS_CHR = SLURM_BIT(13),
 	/* @see CON_FLAG_TCP_NODELAY */
 	FLAG_TCP_NODELAY = CON_FLAG_TCP_NODELAY,
-	/* SLURM_BIT(15) is unused */
+	/* connection received write EOF for output_fd */
+	FLAG_WRITE_EOF = SLURM_BIT(15),
 	/* SLURM_BIT(16) is unused */
 	/* SLURM_BIT(17) is unused */
 	/* @see CON_FLAG_TLS_SERVER */
@@ -152,9 +153,9 @@ typedef enum {
 #define FLAGS_MASK_STATE \
 	(FLAG_ON_DATA_TRIED | FLAG_IS_SOCKET | FLAG_IS_LISTEN | \
 	 FLAG_WAIT_ON_FINISH | FLAG_CAN_WRITE | FLAG_CAN_READ | \
-	 FLAG_READ_EOF | FLAG_IS_CONNECTED | FLAG_WORK_ACTIVE | \
-	 FLAG_CAN_QUERY_OUTPUT_BUFFER | FLAG_IS_FIFO | FLAG_IS_CHR | \
-	 FLAG_IS_TLS_SHUTTING_DOWN | FLAG_INITIATE_TLS_SHUTDOWN)
+	 FLAG_READ_EOF | FLAG_WRITE_EOF | FLAG_IS_CONNECTED | \
+	 FLAG_WORK_ACTIVE | FLAG_CAN_QUERY_OUTPUT_BUFFER | FLAG_IS_FIFO | \
+	 FLAG_IS_CHR | FLAG_IS_TLS_SHUTTING_DOWN | FLAG_INITIATE_TLS_SHUTDOWN)
 
 /* con_flags_t macro helpers to test, set, and unset flags */
 #define con_flag(con, flag) ((con)->flags & (flag))
