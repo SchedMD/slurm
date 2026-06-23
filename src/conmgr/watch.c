@@ -779,12 +779,10 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (!list_is_empty(con->work) ||
-	    !list_is_empty(con->write_complete_work)) {
-		log_flag(CONMGR, "%s: [%s] outstanding work for connection output_fd=%d work=%u write_complete_work=%u",
-			 __func__, con->name, con->output_fd,
-			 list_count(con->work),
-			 list_count(con->write_complete_work));
+	if (!list_is_empty(con->work)) {
+		log_flag(CONMGR, "%s: [%s] outstanding work for connection input_fd=%d work=%u",
+			 __func__, con->name, con->input_fd,
+			 list_count(con->work));
 
 		/*
 		 * Must finish all outstanding work before deletion.
