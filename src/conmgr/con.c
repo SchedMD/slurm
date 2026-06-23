@@ -1093,6 +1093,9 @@ static void _send_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(CONMGR, "%s: [%s] Canceled sending file descriptor %d.",
 			 __func__, con->name, fd);
+	} else if (con_flag(con, FLAG_WRITE_EOF)) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over closed output_fd=%d",
+			 __func__, con->name, fd, con->output_fd);
 	} else if (con->output_fd < 0) {
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
 			 __func__, con->name, fd, con->output_fd);
