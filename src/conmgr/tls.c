@@ -155,6 +155,7 @@ static void _wait_close(conmgr_fd_t *con)
 	/* Soft close the connection to stop any more activity */
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 	con_set_flag(con, FLAG_READ_EOF);
+	con_set_flag(con, FLAG_WRITE_EOF);
 	con_set_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 	con_unset_flag(con, FLAG_CAN_WRITE);
