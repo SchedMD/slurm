@@ -508,8 +508,9 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 	slurmdb_destroy_cluster_cond(cluster_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list, argc,
-				     argv, db_conn, mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list,
+				     orig_argc, orig_argv, db_conn, mime_type,
+				     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(cluster_list);
 		return rc;

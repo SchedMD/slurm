@@ -1204,8 +1204,9 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 	slurmdb_destroy_qos_cond(qos_cond);
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_QOS_RESP, qos_list, argc,
-				     argv, db_conn, mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_QOS_RESP, qos_list,
+				     orig_argc, orig_argv, db_conn, mime_type,
+				     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(qos_list);
 		return rc;

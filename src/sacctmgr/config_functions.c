@@ -265,8 +265,9 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 
 	if (mime_type) {
 		int rc;
-		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_STATS_RESP, stats_rec, argc, argv,
-				     db_conn, mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_STATS_RESP, stats_rec,
+				     orig_argc, orig_argv, db_conn, mime_type,
+				     data_parser, rc);
 		slurmdb_destroy_stats_rec(stats_rec);
 		return rc;
 	}

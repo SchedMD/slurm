@@ -200,7 +200,7 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 
 	if (mime_type) {
 		DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP, instance_list,
-				     argc, argv, db_conn, mime_type,
+				     orig_argc, orig_argv, db_conn, mime_type,
 				     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(instance_list);

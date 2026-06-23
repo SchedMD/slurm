@@ -89,6 +89,8 @@ extern int sibling_flag; /* show sibling jobs (if any fed job). */
 extern uint32_t euid; /* send request to the slurmctld in behave of this user */
 extern const char *mime_type; /* user requested JSON or YAML */
 extern const char *data_parser; /* data_parser args */
+extern int orig_argc; /* used when dumping meta data */
+extern char **orig_argv;
 
 extern job_info_msg_t *old_job_info_ptr;
 extern node_info_msg_t *old_node_info_ptr;

@@ -134,8 +134,8 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 		for (int i = 0; i < print_cnt; i++)
 			msg.reservation_array[i] = *resvs[i];
 
-		DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc, argv, NULL,
-			      mime_type, data_parser, rc);
+		DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, orig_argc,
+			      orig_argv, NULL, mime_type, data_parser, rc);
 
 		if (rc)
 			exit_code = 1;

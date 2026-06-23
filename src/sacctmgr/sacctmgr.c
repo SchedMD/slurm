@@ -74,6 +74,8 @@ list_t *g_res_list = NULL;
 list_t *g_tres_list = NULL;
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
 const char *data_parser = NULL; /* data_parser args */
+int orig_argc; /* used when dumping meta data */
+char **orig_argv = NULL;
 
 /* by default, normalize all usernames and resource names to lower case */
 bool user_case_norm = true;
@@ -121,6 +123,12 @@ int main(int argc, char **argv)
 		{"yaml", optional_argument, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
+
+	/* Copy order of argv here since getopt_long() may reorder it */
+	orig_argc = argc;
+	orig_argv = xcalloc((argc + 1), sizeof(*orig_argv));
+	for (int i = 0; i < argc; i++)
+		orig_argv[i] = argv[i];
 
 	command_name      = argv[0];
 	rollback_flag     = 1;
@@ -254,8 +262,9 @@ int main(int argc, char **argv)
 		 * "list".
 		 * TODO: After Bug 18109 is fixed, replace this logic:
 		 */
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, NULL, argc, argv,
-				     NULL, mime_type, data_parser, exit_code);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, NULL, orig_argc,
+				     orig_argv, NULL, mime_type, data_parser,
+				     exit_code);
 	} else {
 		/* We are running interactively multiple commands */
 		int input_field_count = 0;
@@ -299,6 +308,7 @@ int main(int argc, char **argv)
 	FREE_NULL_LIST(g_qos_list);
 	FREE_NULL_LIST(g_res_list);
 	FREE_NULL_LIST(g_tres_list);
+	xfree(orig_argv);
 #endif
 
 	exit(exit_code);
@@ -454,8 +464,9 @@ static int _ping(int argc, char **argv)
 	}
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_PING_RESP, pings, argc,
-				     argv, db_conn, mime_type, data_parser, rc);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_PING_RESP, pings,
+				     orig_argc, orig_argv, db_conn, mime_type,
+				     data_parser, rc);
 	} else  {
 		for (int i = 0; pings[i].hostname; i++) {
 			_print_db_ping(&pings[i]);
@@ -822,8 +833,8 @@ static void _dump_it(int argc, char **argv)
 			.slurmdb_conf = slurmdbd_conf,
 		};
 
-		DATA_DUMP_CLI(OPENAPI_SLURMDBD_CONF_RESP, resp, argc, argv,
-			      db_conn, mime_type, data_parser, rc);
+		DATA_DUMP_CLI(OPENAPI_SLURMDBD_CONF_RESP, resp, orig_argc,
+			      orig_argv, db_conn, mime_type, data_parser, rc);
 	}
 
 	slurmdbd_free_conf(slurmdbd_conf);
