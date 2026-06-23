@@ -283,7 +283,7 @@ static void _update_mss(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
+	if (con_flag(con, FLAG_IS_SOCKET) && !con_flag(con, FLAG_WRITE_EOF))
 		con->mss = fd_get_maxmss(con->output_fd, con->name);
 }
 
