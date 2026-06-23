@@ -1917,9 +1917,23 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	/* NOTREACHED */
 }
 
+static void _setenvf_key(const char *key, const char *fmt, va_list ap)
+{
+	va_list ap_copy;
+
+	if (getenv(key))
+		return;
+
+	va_copy(ap_copy, ap);
+	if (vsetenvf(NULL, key, fmt, ap_copy) < 0)
+		error("unable to set %s in environment", key);
+	va_end(ap_copy);
+}
+
 /*
- * Set <base>[_PACK_GROUP_<N>] env var if not already set. Skips when the
- * suffixed key already exists in the environment
+ * Set env var <base> if not part of a hetjob. For hetjob components emit
+ * both <base>_HET_GROUP_<N> and the legacy <base>_PACK_GROUP_<N>
+ * Skips a key when it is already set in the environment.
  */
 __attribute__((format(printf, 3, 4))) static void _setenvf_het(
 	char *base, int het_job_offset, const char *fmt, ...)
@@ -1928,18 +1942,22 @@ __attribute__((format(printf, 3, 4))) static void _setenvf_het(
 	va_list ap;
 
 	/* If we are a local_het_step we treat it like a normal step */
-	if (local_het_step || (het_job_offset == -1))
-		key = xstrdup(base);
-	else
-		xstrfmtcat(key, "%s_PACK_GROUP_%d", base, het_job_offset);
-
-	if (!getenv(key)) {
+	if (local_het_step || (het_job_offset == -1)) {
 		va_start(ap, fmt);
-		if (vsetenvf(NULL, key, fmt, ap) < 0)
-			error("unable to set %s in environment", key);
+		_setenvf_key(base, fmt, ap);
 		va_end(ap);
+		return;
 	}
+
+	va_start(ap, fmt);
+	xstrfmtcat(key, "%s_HET_GROUP_%d", base, het_job_offset);
+	_setenvf_key(key, fmt, ap);
 	xfree(key);
+
+	xstrfmtcat(key, "%s_PACK_GROUP_%d", base, het_job_offset);
+	_setenvf_key(key, fmt, ap);
+	xfree(key);
+	va_end(ap);
 }
 
 static void _set_env_vars(resource_allocation_response_msg_t *resp,
