@@ -710,6 +710,7 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 			 __func__, con->name, slurm_strerror(rc));
 
 		con_set_flag(con, FLAG_READ_EOF);
+		con_set_flag(con, FLAG_WRITE_EOF);
 	} else {
 		log_flag(CONMGR, "%s: [%s] adopted TLS state",
 			 __func__, con->name);
