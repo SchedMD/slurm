@@ -1581,7 +1581,8 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 		if (!con_flag(con, FLAG_READ_EOF))
 			input_fd = con->input_fd;
 
-		output_fd = con->output_fd;
+		if (!con_flag(con, FLAG_WRITE_EOF))
+			output_fd = con->output_fd;
 	}
 
 	slurm_mutex_unlock(&mgr.mutex);
@@ -1600,7 +1601,8 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 		/* Catch connection state changing during kernel queries */
 		if ((input_fd != con->input_fd) ||
 		    (output_fd != con->output_fd) ||
-		    con_flag(con, FLAG_READ_EOF))
+		    con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF))
 			rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
 
 		slurm_mutex_unlock(&mgr.mutex);
