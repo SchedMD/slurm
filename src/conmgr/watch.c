@@ -195,7 +195,7 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 	}
 
 	if ((con->polling_output_fd != PCTL_TYPE_UNSUPPORTED) &&
-	    ((con->output_fd >= 0) && !con_flag(con, FLAG_CAN_WRITE))) {
+	    !con_flag(con, FLAG_WRITE_EOF) && !con_flag(con, FLAG_CAN_WRITE)) {
 		slurm_mutex_unlock(&mgr.mutex);
 
 		/*
@@ -207,17 +207,17 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 		return;
 	}
 
-	if ((con->output_fd >= 0) &&
+	if (!con_flag(con, FLAG_WRITE_EOF) &&
 	    con_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER)) {
 		int rc = EINVAL;
 		int bytes = -1;
 		int output_fd = con->output_fd;
 
+		xassert(output_fd >= 0);
+
 		slurm_mutex_unlock(&mgr.mutex);
 
-		if (output_fd >= 0)
-			rc = fd_get_buffered_output_bytes(output_fd, &bytes,
-							  con->name);
+		rc = fd_get_buffered_output_bytes(output_fd, &bytes, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
 
