@@ -631,6 +631,7 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 	xassert(con_flag(con, FLAG_IS_LISTEN));
 	xassert(con_flag(con, FLAG_IS_SOCKET));
 	xassert(con->output_fd == -1);
+	xassert(con_flag(con, FLAG_WRITE_EOF));
 	xassert(list_is_empty(con->write_complete_work));
 
 	/* connection may have a running thread, do nothing */
