@@ -195,6 +195,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl);
 static int _validate_bcast_exclude(slurm_conf_t *conf);
 static uint16_t *_parse_srun_ports(const char *);
+static void _parse_slurmctld_params(const char *slurmctld_params);
 
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
@@ -5182,9 +5183,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->slurmctld_params,
 			      "SlurmctldParameters", hashtbl);
-	if (running_in_slurmctld() &&
-	    xstrcasestr(conf->slurmctld_params, "cloud_reg_addrs"))
-		error("The SlurmctldParameters option \"cloud_reg_addrs\" is defunct, please remove it from slurm.conf.");
+	_parse_slurmctld_params(conf->slurmctld_params);
 
 	if (s_p_get_string(&temp_str, "SlurmdDebug", hashtbl)) {
 		conf->slurmd_debug = log_string2num(temp_str);
@@ -6216,6 +6215,16 @@ extern void parse_slurmd_params(const char *slurmd_params)
 
 	if (xstrcasestr(slurmd_params, "contain_spank"))
 		slurm_conf.conf_flags |= CONF_FLAG_CONTAIN_SPANK;
+}
+
+static void _parse_slurmctld_params(const char *slurmctld_params)
+{
+	if (!slurmctld_params)
+		return;
+
+	if (running_in_slurmctld() &&
+	    xstrcasestr(slurmctld_params, "cloud_reg_addrs"))
+		error("The SlurmctldParameters option \"cloud_reg_addrs\" is defunct, please remove it from slurm.conf.");
 }
 
 extern void destroy_config_plugin_params(void *object)
