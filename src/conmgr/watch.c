@@ -574,7 +574,7 @@ static bool can_extract(conmgr_fd_t *con, const bool is_tls)
 
 	/* Extract as failure state as file descriptor already closed */
 	if ((con->input_fd < 0) || (con->output_fd < 0) ||
-	    con_flag(con, FLAG_READ_EOF))
+	    con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_WRITE_EOF))
 		return true;
 
 	/* Do not extract while waiting for fingerprint */
