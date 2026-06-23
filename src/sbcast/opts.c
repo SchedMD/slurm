@@ -118,7 +118,6 @@ static void _fill_in_selected_step_from_controller(void)
 {
 	job_info_msg_t *job_info_msg = NULL;
 	slurm_job_info_t *job = NULL;
-	char *job_id_str = NULL;
 
 	if (!_need_hetjob_components(&job_info_msg))
 		return;
@@ -127,11 +126,17 @@ static void _fill_in_selected_step_from_controller(void)
 	params.selected_steps = list_create(slurm_destroy_selected_step);
 
 	for (int i = 0; i < job_info_msg->record_count; i++, job++) {
-		job_id_str = xstrdup_printf("%u+%u", job->het_job_id,
-					    job->het_job_offset);
-		list_append(params.selected_steps,
-			    slurm_parse_step_str(job_id_str));
-		xfree(job_id_str);
+		/*
+		 * Send the component's own job_id; target slurmd's
+		 * _get_job_uid() can't match "<leader>+<offset>".
+		 */
+		slurm_selected_step_t *sel = xmalloc(sizeof(*sel));
+		sel->array_task_id = NO_VAL;
+		sel->het_job_offset = NO_VAL;
+		sel->step_id = SLURM_STEP_ID_INITIALIZER;
+		sel->step_id.job_id = job->step_id.job_id;
+		sel->step_id.sluid = job->step_id.sluid;
+		list_append(params.selected_steps, sel);
 	}
 
 	xassert(list_count(params.selected_steps) >= 2);
