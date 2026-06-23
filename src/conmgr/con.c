@@ -1128,6 +1128,10 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over non-socket",
 			 __func__, con->name, fd);
 		rc = EAFNOSUPPORT;
+	} else if (con_flag(con, FLAG_WRITE_EOF)) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over closed output_fd=%d",
+			 __func__, con->name, fd, con->output_fd);
+		rc = SLURM_COMMUNICATIONS_INVALID_FD;
 	} else if (con->output_fd < 0) {
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
 			 __func__, con->name, fd, con->output_fd);
