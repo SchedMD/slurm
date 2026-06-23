@@ -224,19 +224,16 @@ setenvfs(const char *fmt, ...)
 	return rc;
 }
 
-int setenvf(char ***envp, const char *name, const char *fmt, ...)
+extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 {
 	char *value;
-	va_list ap;
 	int size, rc;
 
 	if (!name || name[0] == '\0')
 		return EINVAL;
 
 	value = xmalloc(ENV_BUFSIZE);
-	va_start(ap, fmt);
 	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
-	va_end(ap);
 
 	size = strlen(name) + strlen(value) + 2;
 	if (size >= MAX_ENV_STRLEN) {
@@ -255,6 +252,18 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	}
 
 	xfree(value);
+	return rc;
+}
+
+int setenvf(char ***envp, const char *name, const char *fmt, ...)
+{
+	va_list ap;
+	int rc;
+
+	va_start(ap, fmt);
+	rc = vsetenvf(envp, name, fmt, ap);
+	va_end(ap);
+
 	return rc;
 }
 

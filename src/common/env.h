@@ -27,9 +27,10 @@
 #ifndef _ENV_H
 #define _ENV_H
 
+#include <stdarg.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
@@ -103,6 +104,8 @@ int	envcount (char **env);
 char *	getenvp(char **env, const char *name);
 int	setenvf(char ***envp, const char *name, const char *fmt, ...)
 		__attribute__ ((format (printf, 3, 4)));
+extern int vsetenvf(char ***envp, const char *name, const char *fmt,
+		    va_list ap);
 int	setenvfs(const char *fmt, ...);
 void	unsetenvp(char **env, const char *name);
 
