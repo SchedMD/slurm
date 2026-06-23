@@ -1,1 +1,3 @@
-Usage: swait [-hQvV] [--follow] [--timeout=SECS] [--usage] [<jobid>[_<task>] | s<sluid>][.<stepid>]
+Usage: swait [-hQvV] [--follow] [--json[=data_parser]] [--timeout=SECS]
+             [--usage] [--yaml[=data_parser]]
+             [[<jobid>[_<task>] | s<sluid>][.<stepid>]]

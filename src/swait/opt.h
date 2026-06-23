@@ -56,7 +56,10 @@
 typedef struct {
 	uint32_t array_job_id; /* array master id from input, or NO_VAL */
 	uint32_t array_task_id; /* task offset from input, or NO_VAL */
+	char *data_parser; /* --json/--yaml argument; NULL for the default.
+			    * Points into argv, so it is never freed. */
 	bool follow; /* --follow: stream every step end until drain (ALL) */
+	bool json; /* --json: emit JSON instead of human lines */
 	uint16_t mode; /* derived steps_sub_mode_t */
 	bool quiet; /* --quiet */
 	slurm_step_id_t target; /* SLUID and/or job_id from argv/env;
@@ -65,6 +68,7 @@ typedef struct {
 				 * the STEP target or NO_VAL */
 	uint32_t timeout; /* --timeout, seconds; 0 disables */
 	int verbose; /* count of -v; bumps stderr log level */
+	bool yaml; /* --yaml: emit YAML instead of human lines */
 } swait_opt_t;
 
 extern swait_opt_t opt;

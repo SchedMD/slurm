@@ -1,4 +1,4 @@
-Usage: swait [OPTIONS] [<jobid>[_<task>] | s<sluid>][.<stepid>]
+Usage: swait [OPTIONS] [[<jobid>[_<task>] | s<sluid>][.<stepid>]]
 
 Block until a job's steps complete.
 
@@ -7,10 +7,17 @@ steps have all drained. With <jobid>.<stepid> it waits for that one step.
 With --follow it reports every step's completion until the steps drain.
 
 If no job id is given, swait reads SLURM_JOB_SLUID, then SLURM_JOB_ID.
-The target job must have been launched with stepmgr enabled.
+The target job must have stepmgr enabled (site-wide, or per-job with
+--stepmgr). A step id and --follow additionally need the job's stepmgr
+to be Slurm 26.11 or newer.
 
 Options:
       --follow            report every step's completion until they drain
+                          (not with a step id)
+      --json[=data_parser]
+                          print completions as JSON, one object per line
+                          (--json=list lists the data_parser plugins)
+                          (mutually exclusive with --yaml)
   -Q, --quiet             suppress info messages (stderr) and step output
                           (mutually exclusive with --verbose)
       --timeout=SECS      give up after SECS seconds
@@ -18,6 +25,10 @@ Options:
   -v, --verbose           verbosity level
                           (mutually exclusive with --quiet)
   -V, --version           output version information and exit
+      --yaml[=data_parser]
+                          print completions as YAML documents
+                          (--yaml=list lists the data_parser plugins)
+                          (mutually exclusive with --json)
 
 Help options:
   -h, --help              show this help message

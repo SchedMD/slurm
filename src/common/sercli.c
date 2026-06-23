@@ -392,13 +392,15 @@ extern data_parser_t *data_parser_cli_parser(const char *data_parser, void *arg)
 extern int sercli_dump_str(data_parser_type_t type, void *db_conn, void *src,
 			   ssize_t src_bytes, char **dst_ptr,
 			   const char *mime_type,
-			   const serializer_flags_t flags, const char *caller)
+			   const serializer_flags_t flags,
+			   const char *data_parser, const char *caller)
 {
 	int rc = EINVAL;
 	data_parser_t *parser = NULL;
 	data_parser_dump_cli_ctxt_t ctxt = {
 		.magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC,
-		.data_parser = SLURM_DATA_PARSER_VERSION,
+		.data_parser =
+			(data_parser ? data_parser : SLURM_DATA_PARSER_VERSION),
 	};
 	buf_t *buf = NULL;
 

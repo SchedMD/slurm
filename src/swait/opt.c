@@ -48,6 +48,7 @@
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/swait/opt.h"
 
@@ -57,6 +58,8 @@
 #define OPT_LONG_AUTOCOMP 0x102
 #define OPT_LONG_TIMEOUT 0x103
 #define OPT_LONG_FOLLOW 0x104
+#define OPT_LONG_JSON 0x105
+#define OPT_LONG_YAML 0x106
 
 swait_opt_t opt = {
 	.array_job_id = NO_VAL,
@@ -173,11 +176,13 @@ extern void parse_command_line(int argc, char **argv)
 		{ "autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP },
 		{ "follow", no_argument, 0, OPT_LONG_FOLLOW },
 		{ "help", no_argument, 0, OPT_LONG_HELP },
+		{ "json", optional_argument, 0, OPT_LONG_JSON },
 		{ "quiet", no_argument, 0, 'Q' },
 		{ "timeout", required_argument, 0, OPT_LONG_TIMEOUT },
 		{ "usage", no_argument, 0, OPT_LONG_USAGE },
 		{ "verbose", no_argument, 0, 'v' },
 		{ "version", no_argument, 0, 'V' },
+		{ "yaml", optional_argument, 0, OPT_LONG_YAML },
 		{ NULL, 0, 0, 0 }
 	};
 
@@ -218,6 +223,14 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_FOLLOW:
 			opt.follow = true;
 			break;
+		case OPT_LONG_JSON:
+			opt.json = true;
+			opt.data_parser = optarg;
+			break;
+		case OPT_LONG_YAML:
+			opt.yaml = true;
+			opt.data_parser = optarg;
+			break;
 		default:
 			info("Try \"swait --help\" for more information");
 			exit(SWAIT_RC_ERROR);
@@ -229,12 +242,21 @@ extern void parse_command_line(int argc, char **argv)
 		exit(SWAIT_RC_ERROR);
 	}
 
+	if (opt.json && opt.yaml) {
+		error("--json and --yaml are mutually exclusive");
+		exit(SWAIT_RC_ERROR);
+	}
+
 	if ((argc - optind) > 1) {
 		error("too many positional arguments (expected at most one job id)");
 		exit(SWAIT_RC_ERROR);
 	}
 	if ((argc - optind) == 1)
 		argv_jobid = argv[optind];
+
+	/* --json=list only prints the plugin list, so it needs no target. */
+	if ((opt.json || opt.yaml) && !xstrcasecmp(opt.data_parser, "list"))
+		return;
 
 	_resolve_target(argv_jobid, &id);
 	opt.target = id.step_id;

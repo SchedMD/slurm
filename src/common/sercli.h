@@ -150,17 +150,20 @@ extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
  * IN mime_type - mime type for dumping
  * IN flags - optional flags to specify to serilzier to change presentation of
  *	data
+ * IN data_parser - data_parser plugin to dump with, or NULL for the default
  * IN caller - __func__ from caller for logging
  * RET SLURM_SUCCESS or error
  */
 extern int sercli_dump_str(data_parser_type_t type, void *db_conn, void *src,
 			   ssize_t src_bytes, char **dst_ptr,
 			   const char *mime_type,
-			   const serializer_flags_t flags, const char *caller);
+			   const serializer_flags_t flags,
+			   const char *data_parser, const char *caller);
 
-#define SERCLI_DUMP_STR(type, db_conn, src, dst, mime_type, flags) \
+#define SERCLI_DUMP_STR(type, db_conn, src, dst, mime_type, flags, \
+			data_parser) \
 	sercli_dump_str(DATA_PARSER_##type, db_conn, &(src), sizeof(src), \
-			&(dst), mime_type, flags, __func__)
+			&(dst), mime_type, flags, data_parser, __func__)
 
 /*
  * Parse given string into target struct dst

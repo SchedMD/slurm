@@ -11122,6 +11122,38 @@ static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
 };
 #undef add_parse
 
+PARSE_DISABLED(SRUN_STEPS_DRAINED_MSG)
+
+/*
+ * Dump a swait step-completion notification; the drain terminator carries
+ * only step_id, a per-step notification also exit_code/state.
+ * IN  obj - srun_steps_drained_msg_t pointer
+ * OUT dst - object data
+ * RET SLURM_SUCCESS or an error
+ */
+static int DUMP_FUNC(SRUN_STEPS_DRAINED_MSG)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	srun_steps_drained_msg_t *msg = obj;
+	int rc = SLURM_SUCCESS;
+
+	data_set_dict(dst);
+
+	if ((rc = DUMP(SLURM_STEP_ID, msg->step_id,
+		       data_key_set(dst, "step_id"), args)))
+		return rc;
+
+	if (msg->step_id.step_id == NO_VAL)
+		return rc;
+
+	if ((rc = DUMP(PROCESS_EXIT_CODE, msg->exit_code,
+		       data_key_set(dst, "exit_code"), args)))
+		return rc;
+
+	return DUMP(JOB_STATE, msg->state, data_key_set(dst, "state"), args);
+}
+
 #define add_flag_eq(flag_value, mask, flag_string, hidden, desc)	\
 	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value),	\
 			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
@@ -13446,6 +13478,8 @@ static const parser_t parsers[] = {
 	addpap(LISTSTEPS_INFO, liststeps_info_t, NULL, NULL),
 	addpap(CONTROLLER_PING, controller_ping_t, NULL, NULL),
 	addpap(SLURMDBD_PING, slurmdbd_ping_t, NULL, NULL),
+	addpc(SRUN_STEPS_DRAINED_MSG, srun_steps_drained_msg_t, NEED_NONE, OBJECT, "swait step-completion notification"),
+	addpp(SRUN_STEPS_DRAINED_MSG_PTR, srun_steps_drained_msg_t *, SRUN_STEPS_DRAINED_MSG, false, NULL, NULL),
 	addpap(STEP_INFO, job_step_info_t, NULL, NULL),
 	addpap(PARTITION_INFO, partition_info_t, NEW_FUNC(PARTITION_INFO), FREE_FUNC(PARTITION_INFO)),
 	addpap(SINFO_DATA, sinfo_data_t, NULL, NULL),

@@ -48,6 +48,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/sercli.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -58,6 +59,8 @@
 #include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/conn.h"
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/swait/opt.h"
 
@@ -70,6 +73,14 @@
  * race; the loser becomes a no-op.
  */
 static pthread_mutex_t exit_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Serializes each completion's dump and its stdout write so that a record
+ * from one _on_msg() callback cannot interleave with another's. Under
+ * --follow the workerpool runs multiple callbacks concurrently.
+ */
+static pthread_mutex_t print_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool dump_failed; /* a completion could not be serialized; print_lock */
 static bool exit_decided;
 static int exit_rc;
 
@@ -77,6 +88,29 @@ static char *my_cert;
 static char *my_host;
 static uint16_t my_port;
 static char *stepmgr_node;
+static data_parser_t *dump_parser;
+
+/*
+ * The plugin dump_parser resolved, as its data_parser/<ver>[+flags] string.
+ * _print_serialized() dumps through this rather than opt.data_parser so the
+ * dump uses the same plugin the pre-flight validated: DataParserParameters
+ * is honored, and sercli_dump_str()'s compiled-in fallback never silently
+ * diverges from the plugin the user asked for.
+ */
+static char *dump_parser_str;
+
+/*
+ * Mime type selected by --json/--yaml.
+ * RET mime type, or NULL when neither was given
+ */
+static const char *_dump_mime_type(void)
+{
+	if (opt.json)
+		return MIME_TYPE_JSON;
+	if (opt.yaml)
+		return MIME_TYPE_YAML;
+	return NULL;
+}
 
 /*
  * query slurmctld for job's stepmgr node
@@ -293,6 +327,39 @@ static int _resolve_stepmgr_addr(const char *node, slurm_addr_t *addr)
 }
 
 /*
+ * Serialize one notification body to stdout via the data_parser plugin
+ * (DATA_PARSER_SRUN_STEPS_DRAINED_MSG), as a compact JSON object on one line
+ * (--json) or a YAML document (--yaml). No-op under --quiet or no body.
+ * IN body - notification body (per-step result or whole-set drain terminator)
+ * IN dump_parser_str - resolved data_parser/<ver>[+flags] string naming the
+ *	plugin main()'s pre-flight validated; NULL falls back to the
+ *	compiled-in default
+ */
+static void _print_serialized(srun_steps_drained_msg_t *body,
+			      const char *dump_parser_str)
+{
+	char *out = NULL;
+	int rc;
+
+	if (opt.quiet || !body)
+		return;
+
+	slurm_mutex_lock(&print_lock);
+	rc = SERCLI_DUMP_STR(SRUN_STEPS_DRAINED_MSG, NULL, *body, out,
+			     _dump_mime_type(), SER_FLAGS_COMPACT,
+			     dump_parser_str);
+	if (rc || !out)
+		dump_failed = true;
+	else {
+		printf("%s\n", out);
+		fflush(stdout);
+	}
+	slurm_mutex_unlock(&print_lock);
+
+	xfree(out);
+}
+
+/*
  * Print one step's completion to stdout unless --quiet.
  * IN body - per-step notification body (exit_code NO_VAL means never-launched)
  */
@@ -306,6 +373,11 @@ static void _print_step(srun_steps_drained_msg_t *body)
 
 	if (opt.quiet || !body)
 		return;
+
+	if (opt.json || opt.yaml) {
+		_print_serialized(body, dump_parser_str);
+		return;
+	}
 
 	launched = (body->exit_code != NO_VAL);
 	if (launched)
@@ -348,6 +420,17 @@ static void _print_drain(srun_steps_drained_msg_t *body)
 	/* A pre-26.11 stepmgr sends no body, so job_id unpacks as 0. */
 	if (!job_id && (opt.target.job_id != NO_VAL))
 		job_id = opt.target.job_id;
+
+	if (opt.json || opt.yaml) {
+		srun_steps_drained_msg_t resolved;
+
+		if (!body)
+			return;
+		resolved = *body;
+		resolved.step_id.job_id = job_id;
+		_print_serialized(&resolved, dump_parser_str);
+		return;
+	}
 
 	if (job_id) {
 		printf("JobId=%u steps drained\n", job_id);
@@ -624,11 +707,36 @@ int main(int argc, char **argv)
 
 	parse_command_line(argc, argv);
 
+	if (opt.json || opt.yaml)
+		serializer_required(_dump_mime_type());
+
 	if (opt.verbose || opt.quiet) {
 		log_opts.stderr_level += opt.verbose;
 		log_opts.stderr_level -= opt.quiet;
 		log_alter(log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
+
+	/*
+	 * Load before resolving the stepmgr so --json=list and an invalid
+	 * data_parser exit without contacting the controller. A no-op when
+	 * neither --json nor --yaml was given, since _dump_mime_type() is
+	 * then NULL.
+	 */
+	data_parser_load_cli_or_exit(&dump_parser, NULL, argc, argv,
+				     _dump_mime_type(), opt.data_parser);
+
+	/* Fail now rather than once per completion. */
+	if (dump_parser &&
+	    !data_parser_g_resolve_type_string(
+		    dump_parser, DATA_PARSER_SRUN_STEPS_DRAINED_MSG)) {
+		error("%s cannot print step completions; run with %s=list to see the available plugins",
+		      data_parser_get_plugin(dump_parser),
+		      opt.yaml ? "--yaml" : "--json");
+		exit(SWAIT_RC_ERROR);
+	}
+
+	if (dump_parser)
+		dump_parser_str = xstrdup(data_parser_get_plugin(dump_parser));
 
 	stepmgr_node = _resolve_stepmgr(&opt.target);
 
@@ -661,11 +769,21 @@ int main(int argc, char **argv)
 		conmgr_run(true);
 	}
 
+	/* A completion we could not serialize is an error, not a clean wait. */
+	if (dump_failed && !exit_rc)
+		exit_rc = SWAIT_RC_ERROR;
+
 	verbose("exiting rc=%d", exit_rc);
 	conmgr_fini();
 	workerpool_fini();
 
+	if (opt.json || opt.yaml) {
+		data_parser_cli_free_ctxt(&dump_parser);
+		serializer_g_fini();
+	}
+
 #ifdef MEMORY_LEAK_DEBUG
+	xfree(dump_parser_str);
 	xfree(stepmgr_node);
 	xfree(my_host);
 	xfree(my_cert);

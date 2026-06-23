@@ -254,7 +254,7 @@ static int _process_conf(topology_ctx_array_t *tctx_array)
 
 		if (!(SERCLI_DUMP_STR(TOPOLOGY_CONF_ARRAY, NULL, (*tctx_array),
 				      dump_str, MIME_TYPE_YAML,
-				      SER_FLAGS_NO_TAG)))
+				      SER_FLAGS_NO_TAG, NULL)))
 			debug2("%s", dump_str);
 
 		xfree(dump_str);
@@ -412,7 +412,7 @@ extern char *topology_g_get_config(void)
 	};
 
 	(void) SERCLI_DUMP_STR(TOPOLOGY_CONF_ARRAY, NULL, tctx_array, dump_str,
-			       MIME_TYPE_YAML, SER_FLAGS_NO_TAG);
+			       MIME_TYPE_YAML, SER_FLAGS_NO_TAG, NULL);
 
 	return dump_str;
 }
