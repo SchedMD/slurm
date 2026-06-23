@@ -1391,6 +1391,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int gres_invalid_nodes = 0;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
+	uint32_t orig_next_step_node_inx = 0;
 	node_rank_order_t *order_map = NULL;
 	int order_cnt = 0;
 	gres_stepmgr_step_test_args_t gres_test_args = {
@@ -1408,6 +1409,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
+
+	orig_next_step_node_inx = job_resrcs_ptr->next_step_node_inx;
 
 	*return_code = SLURM_SUCCESS;
 	if (job_ptr->node_bitmap == NULL) {
@@ -1854,7 +1857,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	if (step_spec->relative != NO_VAL16) {
 		/*
 		 * Remove first (step_spec->relative) nodes from
-		 * available list
+		 * available list. Relative placement must always start at the
+		 * first remaining node after the offset is applied rather than
+		 * using the cyclic next-step index from prior allocations.
 		 */
 		bitstr_t *relative_nodes = NULL;
 		relative_nodes = bit_pick_cnt(job_ptr->node_bitmap,
@@ -1866,6 +1871,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 		bit_and_not(nodes_avail, relative_nodes);
 		FREE_NULL_BITMAP(relative_nodes);
+		job_resrcs_ptr->next_step_node_inx = 0;
 	} else {
 		nodes_idle = bit_copy(nodes_avail);
 		list_for_each(job_ptr->step_list, _mark_busy_nodes, nodes_idle);
@@ -2164,6 +2170,9 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_picked);
 	xfree(order_map);
 	xfree(usable_cpu_cnt);
+
+	job_resrcs_ptr->next_step_node_inx = orig_next_step_node_inx;
+
 	if (*return_code == SLURM_SUCCESS) {
 		*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	} else if (*return_code == ESLURM_NODE_NOT_AVAIL) {
