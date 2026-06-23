@@ -241,6 +241,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	size = strlen(name) + strlen(value) + 2;
 	if (size >= MAX_ENV_STRLEN) {
 		error("environment variable %s is too long", name);
+		xfree(value);
 		return ENOMEM;
 	}
 
