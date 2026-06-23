@@ -1549,9 +1549,17 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			con_assign_flag(con, FLAG_READ_EOF,
 					pollctl_events_has_hangup(events));
 	}
-	if (fd == con->output_fd)
+	if (fd == con->output_fd) {
 		con_assign_flag(con, FLAG_CAN_WRITE,
 				pollctl_events_can_write(events));
+
+		/* Avoid setting FLAG_WRITE_EOF if FLAG_CAN_WRITE */
+		if (!con_flag(con, FLAG_CAN_WRITE) &&
+		    !con_flag(con, FLAG_WRITE_EOF) &&
+		    (con->output_fd != con->input_fd))
+			con_assign_flag(con, FLAG_WRITE_EOF,
+					pollctl_events_has_hangup(events));
+	}
 
 	log_flag(CONMGR, "%s: [%s] fd=%d flags=%s",
 		 __func__, con->name, fd,
