@@ -6213,6 +6213,9 @@ static void _parse_slurmctld_params(const char *slurmctld_params)
 	if (running_in_slurmctld() &&
 	    xstrcasestr(slurmctld_params, "cloud_reg_addrs"))
 		error("The SlurmctldParameters option \"cloud_reg_addrs\" is defunct, please remove it from slurm.conf.");
+
+	if (xstrcasestr(slurmctld_params, "health_check_report"))
+		slurm_conf.conf_flags |= CONF_FLAG_HC_REPORT_HEALTH;
 }
 
 extern void destroy_config_plugin_params(void *object)
