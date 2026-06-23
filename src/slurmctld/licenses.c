@@ -418,6 +418,28 @@ static int _license_find_variables_rec(void *x, void *key)
 	return 1;
 }
 
+/* Find a mode 3 HRES record that overlaps nodes and is on the same level */
+static int _license_find_overlap_mode3(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	licenses_t *license_key = key;
+
+	if (license_entry->mode != HRES_MODE_3)
+		return 0;
+	/* Don't match on self */
+	if (license_entry == license_key)
+		return 0;
+	/* Must be the same HRES ID */
+	if (license_entry->id.hres_id != license_key->id.hres_id)
+		return 0;
+	/* Must be the same level */
+	if (license_entry->hres_rec.level != license_key->hres_rec.level)
+		return 0;
+
+	return bit_overlap_any(license_entry->node_bitmap,
+			       license_key->node_bitmap);
+}
+
 /* Find a license_t record by license name (for use by list_find_first) */
 static int _license_find_rec_by_nodes(void *x, void *key)
 {
@@ -1195,6 +1217,26 @@ static int _sort_hres(void *void1, void *void2)
 	return 0;
 }
 
+static int _foreach_license_mode3_no_overlap(void *x, void *arg)
+{
+	licenses_t *license = x;
+	licenses_t *overlap_lic;
+
+	if (license->mode != HRES_MODE_3)
+		return 0;
+
+	overlap_lic = list_find_first_ro(cluster_license_list,
+					 _license_find_overlap_mode3, license);
+	if (overlap_lic) {
+		error("%s: HRES=%s: layer=%s nodes=%s overlaps with layer=%s nodes=%s. Mode 3 layers on the same level must be disjoint.",
+		      __func__, license->name, license->hres_rec.layer_name,
+		      license->nodes, overlap_lic->hres_rec.layer_name,
+		      overlap_lic->nodes);
+		return -1;
+	}
+	return 0;
+}
+
 extern int hres_init(void)
 {
 	licenses_t *root = NULL;
@@ -1227,6 +1269,10 @@ extern int hres_init(void)
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_path,
 			     NULL) < 0)
 		fatal("Can't set MODE3 path");
+
+	if (list_for_each_ro(cluster_license_list,
+			     _foreach_license_mode3_no_overlap, NULL) < 0)
+		fatal("Invalid MODE3");
 
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_cnt,
 			     &root) < 0)
