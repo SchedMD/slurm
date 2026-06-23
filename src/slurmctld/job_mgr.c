@@ -8669,6 +8669,19 @@ static int _unroll_min_max_node(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * A job that gave a task count but no node count needs one node per
+ * ntasks_per_node tasks; without that directive assume one task per node.
+ */
+static uint32_t _implicit_max_nodes(job_details_t *detail_ptr)
+{
+	if (detail_ptr->ntasks_per_node)
+		return ROUNDUP(detail_ptr->num_tasks,
+			       detail_ptr->ntasks_per_node);
+
+	return detail_ptr->num_tasks;
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
 static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
@@ -9018,7 +9031,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	} else if ((detail_ptr->max_nodes == 0) &&
 		   (detail_ptr->num_tasks != 0) &&
 		   (detail_ptr->num_tasks != NO_VAL)) {
-		detail_ptr->max_nodes = detail_ptr->num_tasks;
+		detail_ptr->max_nodes = _implicit_max_nodes(detail_ptr);
 		job_ptr->bit_flags |= JOB_IMPLICIT_MAX_NODES;
 	}
 
