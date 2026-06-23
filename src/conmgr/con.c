@@ -2185,7 +2185,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* Catch file descriptors being closed for any reason before now */
 	if (((con->input_fd < 0) || con_flag(con, FLAG_READ_EOF)) &&
-	    (con->output_fd < 0)) {
+	    ((con->output_fd < 0) || con_flag(con, FLAG_WRITE_EOF))) {
 		log_flag(CONMGR, "%s: [%s] invalid input_fd and output_fd",
 			 __func__, con->name);
 		goto failed;
