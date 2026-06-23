@@ -90,6 +90,7 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* Connection must already be soft closed */
 	xassert(con_flag(con, FLAG_READ_EOF));
+	xassert(con_flag(con, FLAG_WRITE_EOF));
 
 	SWAP(tls, con->tls);
 	xassert(tls);
