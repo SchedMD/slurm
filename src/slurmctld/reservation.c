@@ -183,6 +183,7 @@ typedef struct {
 	uint16_t protocol_version;
 	uint32_t resv_packed;
 	uid_t uid;
+	char *username;
 } foreach_pack_resv_t;
 
 typedef struct {
@@ -219,8 +220,8 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 				char ***account_list, bool *account_not);
-static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
-			    bool *user_not, bool strict);
+static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
+			   bool *user_not, bool strict, char ***username_list);
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static int _cmp_resv_id(void *x, void *y);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
@@ -235,6 +236,7 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
 static uint32_t _get_job_duration(job_record_t *job_ptr, bool reboot);
 static bool _is_account_valid(char *account);
+static bool _is_username_valid(char *username);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
@@ -264,6 +266,7 @@ static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 			      slurmctld_resv_t *old_resv_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
+static char *_resolve_uid_name(uid_t uid, bool locked);
 static void _restore_resv(slurmctld_resv_t *dest_resv,
 			  slurmctld_resv_t *src_resv);
 static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
@@ -297,7 +300,8 @@ static int  _valid_job_access_resv(job_record_t *job_ptr,
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _resv_node_replace(slurmctld_resv_t *resv_ptr);
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid);
+				  list_t *user_assoc_list, uid_t uid,
+				  char *username);
 
 static void _free_resv_select_members(resv_select_t *resv_select)
 {
@@ -692,6 +696,11 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 					   sizeof(uid_t));
 	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
+	resv_copy_ptr->username_list =
+		xcalloc(resv_orig_ptr->user_cnt, sizeof(char *));
+	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
+		resv_copy_ptr->username_list[i] =
+			xstrdup(resv_orig_ptr->username_list[i]);
 
 	return resv_copy_ptr;
 }
@@ -813,7 +822,14 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	dest_resv->users = src_resv->users;
 	src_resv->users = NULL;
 
+	for (i = 0; i < dest_resv->user_cnt; i++)
+		xfree(dest_resv->username_list[i]);
+	xfree(dest_resv->username_list);
+	dest_resv->username_list = src_resv->username_list;
+	src_resv->username_list = NULL;
+
 	dest_resv->user_cnt = src_resv->user_cnt;
+	src_resv->user_cnt = 0;
 	xfree(dest_resv->user_list);
 	dest_resv->user_list = src_resv->user_list;
 	src_resv->user_list = NULL;
@@ -868,6 +884,9 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->tres_fmt_str);
 		xfree(resv_ptr->users);
 		xfree(resv_ptr->user_list);
+		for (i = 0; i < resv_ptr->user_cnt; i++)
+			xfree(resv_ptr->username_list[i]);
+		xfree(resv_ptr->username_list);
 		xfree(resv_ptr);
 	}
 }
@@ -1176,6 +1195,25 @@ static void _generate_resv_name(resv_desc_msg_t *resv_ptr)
 	resv_ptr->name = name;
 }
 
+/* Validate a username */
+static bool _is_username_valid(char *username)
+{
+	slurmdb_user_rec_t user_rec, *user_ptr;
+
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS))
+		return true; /* don't worry about user validity */
+
+	memset(&user_rec, 0, sizeof(user_rec));
+	user_rec.uid = NO_VAL;
+	user_rec.name = username;
+
+	if (assoc_mgr_fill_in_user(acct_db_conn, &user_rec, accounting_enforce,
+				   &user_ptr, false)) {
+		return false;
+	}
+	return true;
+}
+
 /* Validate an account name */
 static bool _is_account_valid(char *account)
 {
@@ -1282,6 +1320,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					       sizeof(slurmdb_assoc_rec_t));
 					assoc.acct = resv_ptr->account_list[j];
 					assoc.uid  = resv_ptr->user_list[i];
+					assoc.user = resv_ptr->username_list[i];
 					rc = assoc_mgr_get_user_assocs(
 						acct_db_conn, &assoc,
 						accounting_enforce,
@@ -1299,6 +1338,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				memset(&assoc, 0,
 				       sizeof(slurmdb_assoc_rec_t));
 				assoc.uid = resv_ptr->user_list[i];
+				assoc.user = resv_ptr->username_list[i];
 				rc = assoc_mgr_get_user_assocs(
 					    acct_db_conn, &assoc,
 					    accounting_enforce,
@@ -1342,6 +1382,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 		for (i=0; i < resv_ptr->user_cnt; i++) {
 			memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc.uid = resv_ptr->user_list[i];
+			assoc.user = resv_ptr->username_list[i];
 			rc = assoc_mgr_get_user_assocs(
 				    acct_db_conn, &assoc,
 				    accounting_enforce, assoc_list);
@@ -2135,9 +2176,15 @@ static int _handle_add_remove_names(
 			for (j=0; j < *object_cnt; j++) {
 				switch (not_flag) {
 				case RESV_CTLD_USER_NOT:
-					found_it = _check_uid(
-						resv_ptr->user_list[j],
-						uid_list[i]);
+					if (resv_ptr->user_list[j] != NO_VAL)
+						found_it = _check_uid(
+							resv_ptr->user_list[j],
+							uid_list[i]);
+					else
+						found_it = _check_char(
+							resv_ptr->username_list
+								[j],
+							alter_list[i]);
 					break;
 				case RESV_CTLD_ACCT_NOT:
 					found_it = _check_char(
@@ -2158,11 +2205,17 @@ static int _handle_add_remove_names(
 				xfree(*object_str);
 
 			(*object_cnt)--;
+			if (not_flag & RESV_CTLD_USER_NOT)
+				xfree(resv_ptr->username_list[j]);
+			else if (not_flag & RESV_CTLD_ACCT_NOT)
+				xfree(resv_ptr->account_list[j]);
 			for (k=j; k<*object_cnt; k++) {
 				switch (not_flag) {
 				case RESV_CTLD_USER_NOT:
 					resv_ptr->user_list[k] =
 						resv_ptr->user_list[k+1];
+					resv_ptr->username_list[k] =
+						resv_ptr->username_list[k + 1];
 					break;
 				case RESV_CTLD_ACCT_NOT:
 					resv_ptr->account_list[k] =
@@ -2183,9 +2236,15 @@ static int _handle_add_remove_names(
 			for (j=0; j<*object_cnt; j++) {
 				switch (not_flag) {
 				case RESV_CTLD_USER_NOT:
-					found_it = _check_uid(
-						resv_ptr->user_list[j],
-						uid_list[i]);
+					if (resv_ptr->user_list[j] != NO_VAL)
+						found_it = _check_uid(
+							resv_ptr->user_list[j],
+							uid_list[i]);
+					else
+						found_it = _check_char(
+							resv_ptr->username_list
+								[j],
+							alter_list[i]);
 					break;
 				case RESV_CTLD_ACCT_NOT:
 					found_it = _check_char(
@@ -2211,8 +2270,12 @@ static int _handle_add_remove_names(
 			case RESV_CTLD_USER_NOT:
 				xrecalloc(resv_ptr->user_list,
 					  (*object_cnt + 1), sizeof(uid_t));
-				resv_ptr->user_list[(*object_cnt)++] =
+				resv_ptr->user_list[(*object_cnt)] =
 					uid_list[i];
+				xrecalloc(resv_ptr->username_list,
+					  (*object_cnt + 1), sizeof(char *));
+				resv_ptr->username_list[(*object_cnt)++] =
+					xstrdup(alter_list[i]);
 				break;
 			case RESV_CTLD_ACCT_NOT:
 				xrecalloc(resv_ptr->account_list,
@@ -2383,14 +2446,18 @@ inval:
  * OUT user_not  - true of user_list is that of users to be blocked
  *                 from reservation access
  * IN strict     - true if an invalid user invalidates the reservation
+ * OUT username_list - a list of the usernames, CALLER MUST XFREE this
+ *		       plus each individual record
  * RETURN 0 on success
  */
 static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
-			   bool *user_not, bool strict)
+			   bool *user_not, bool strict, char ***username_list)
 {
 	char *last = NULL, *tmp = NULL, *tok;
 	int u_cnt = 0, i;
 	uid_t *u_list, u_tmp;
+	char **uname_list;
+	*username_list = (char **) NULL;
 
 	*user_cnt = 0;
 	*user_list = (uid_t *) NULL;
@@ -2401,6 +2468,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 
 	i = strlen(users);
 	u_list = xcalloc((i + 2), sizeof(uid_t));
+	uname_list = xcalloc((i + 2), sizeof(char *));
 	tmp = xstrdup(users);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
@@ -2417,11 +2485,18 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 			goto inval;
 		}
 		if (uid_from_string(tok, &u_tmp) != SLURM_SUCCESS) {
-			info("Reservation request has invalid user %s", tok);
-			if (strict)
-				goto inval;
+			if (!_is_username_valid(tok)) {
+				info("Reservation request has invalid user %s",
+				     tok);
+				if (strict)
+					goto inval;
+			} else {
+				u_list[u_cnt] = (uid_t) NO_VAL;
+				uname_list[u_cnt++] = xstrdup(tok);
+			}
 		} else {
-			u_list[u_cnt++] = u_tmp;
+			u_list[u_cnt] = u_tmp;
+			uname_list[u_cnt++] = xstrdup(tok);
 		}
 		tok = strtok_r(NULL, ",", &last);
 	}
@@ -2431,15 +2506,22 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 	if (u_cnt > 0) {
 		*user_cnt  = u_cnt;
 		*user_list = u_list;
+		*username_list = uname_list;
 		return SLURM_SUCCESS;
 	}
 
 	xfree(u_list);
+	for (i = 0; i < u_cnt; i++)
+		xfree(uname_list[i]);
+	xfree(uname_list);
 	info("Reservation request has no valid users");
 	return ESLURM_USER_ID_MISSING;
 
  inval:	xfree(tmp);
 	xfree(u_list);
+	for (i = 0; i < u_cnt; i++)
+		xfree(uname_list[i]);
+	xfree(uname_list);
 	return SLURM_ERROR;
 }
 
@@ -2487,11 +2569,14 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 			u_type[u_cnt] = 3;	/* set */
 
 		if (uid_from_string(tok, &u_tmp) != SLURM_SUCCESS) {
-			info("Reservation request has invalid user %s", tok);
-			goto inval;
+			if (!_is_username_valid(tok)) {
+				info("Reservation request has invalid user %s", tok);
+				goto inval;
+			}
+			u_tmp = (uid_t) NO_VAL;
 		}
 
-		u_name[u_cnt] = tok;
+		u_name[u_cnt] = xstrdup(tok);
 		u_list[u_cnt++] = u_tmp;
 		tok = strtok_r(NULL, ",", &last);
 	}
@@ -2500,13 +2585,16 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 		/* Just a reset of user list */
 		xfree(resv_ptr->users);
 		xfree(resv_ptr->user_list);
+		for (i = 0; i < resv_ptr->user_cnt; i++)
+			xfree(resv_ptr->username_list[i]);
+		xfree(resv_ptr->username_list);
 		if (users[0] != '\0')
 			resv_ptr->users = xstrdup(users);
 		resv_ptr->user_cnt  = u_cnt;
 		resv_ptr->user_list = u_list;
+		resv_ptr->username_list = u_name;
 		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 		xfree(u_cpy);
-		xfree(u_name);
 		xfree(u_type);
 		return SLURM_SUCCESS;
 	}
@@ -2517,6 +2605,8 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 inval:
 	xfree(u_cpy);
 	xfree(u_list);
+	for (i = 0; i < u_cnt; i++)
+		xfree(u_name[i]);
 	xfree(u_name);
 	xfree(u_type);
 
@@ -2537,6 +2627,7 @@ static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups)
 {
 	char *last = NULL, *g_cpy = NULL, *tok, *tok2, *resv_groups = NULL;
 	bool plus = false, minus = false;
+	int i;
 
 	if (!groups)
 		return ESLURM_GROUP_ID_MISSING;
@@ -2609,12 +2700,16 @@ static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups)
 
 	xfree(resv_ptr->groups);
 	xfree(resv_ptr->user_list);
+	for (i = 0; i < resv_ptr->user_cnt; i++)
+		xfree(resv_ptr->username_list[i]);
+	xfree(resv_ptr->username_list);
 	resv_ptr->user_cnt = 0;
 
 	if (resv_groups && resv_groups[0] != '\0') {
 		resv_ptr->user_list =
 			get_groups_members(resv_groups, &resv_ptr->user_cnt);
-
+		resv_ptr->username_list =
+			xcalloc(resv_ptr->user_cnt, sizeof(char *));
 		if (resv_ptr->user_cnt) {
 			resv_ptr->groups = resv_groups;
 			resv_groups = NULL;
@@ -3684,6 +3779,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	int account_cnt = 0, user_cnt = 0;
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
+	char **username_list = NULL;
 	list_t *license_list = NULL;
 	uint32_t total_node_cnt = 0;
 	bool account_not = false, user_not = false, qos_not = false,
@@ -3861,8 +3957,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			goto bad_parse;
 	}
 	if (resv_desc_ptr->users) {
-		rc = _build_uid_list(resv_desc_ptr->users,
-				     &user_cnt, &user_list, &user_not, true);
+		rc = _build_uid_list(resv_desc_ptr->users, &user_cnt,
+				     &user_list, &user_not, true,
+				     &username_list);
 		if (rc)
 			goto bad_parse;
 	}
@@ -3870,7 +3967,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	if (resv_desc_ptr->groups) {
 		user_list =
 			get_groups_members(resv_desc_ptr->groups, &user_cnt);
-
+		username_list = xcalloc(user_cnt, sizeof(char *));
 		if (!user_list) {
 			rc = ESLURM_GROUP_ID_MISSING;
 			goto bad_parse;
@@ -4170,8 +4267,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr->groups = resv_desc_ptr->groups;
 	resv_desc_ptr->groups = NULL;
 	resv_ptr->user_cnt	= user_cnt;
+	user_cnt = 0;
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
+	resv_ptr->username_list = username_list;
+	username_list = NULL;
 	resv_ptr->qos = resv_desc_ptr->qos;
 	resv_desc_ptr->qos = NULL;
 	resv_ptr->qos_list = qos_list;
@@ -4218,6 +4318,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	FREE_NULL_LIST(qos_list);
 	FREE_NULL_LIST(allowed_parts_list);
 	_free_resv_select_members(&resv_select);
+	for (i = 0; i < user_cnt; i++)
+		xfree(username_list[i]);
+	xfree(username_list);
 	xfree(user_list);
 	return rc;
 }
@@ -5022,7 +5125,8 @@ static int _foreach_pack_resv(void *x, void *arg)
 	foreach_pack_resv_t *args = arg;
 
 	if (args->check_permissions &&
-	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid))
+	    !_validate_user_access(resv_ptr, args->assoc_list, args->uid,
+				   args->username))
 		return 0;
 
 	_pack_resv(resv_ptr, args->buffer, false, args->protocol_version);
@@ -5037,7 +5141,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	buf_t *buffer;
 	time_t now = time(NULL);
 	list_t *assoc_list = NULL;
-	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	foreach_pack_resv_t pack_args = {
 		.protocol_version = protocol_version,
 		.uid = uid,
@@ -5073,6 +5177,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 					      accounting_enforce, assoc_list)
 		    != SLURM_SUCCESS)
 			goto no_assocs;
+		pack_args.username = _resolve_uid_name(uid, true);
 	}
 
 	/* write individual reservation records */
@@ -5080,6 +5185,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 
 no_assocs:
 	if (pack_args.check_permissions) {
+		xfree(pack_args.username);
 		FREE_NULL_LIST(assoc_list);
 		assoc_mgr_unlock(&locks);
 	}
@@ -5195,10 +5301,11 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		}
 	}
 	if (resv_ptr->users) {
-		int rc, user_cnt = 0;
+		int i, rc, user_cnt = 0;
 		uid_t *user_list = NULL;
-		rc = _build_uid_list(resv_ptr->users,
-				     &user_cnt, &user_list, &user_not, false);
+		char **username_list = NULL;
+		rc = _build_uid_list(resv_ptr->users, &user_cnt, &user_list,
+				     &user_not, false, &username_list);
 		if (rc == SLURM_ERROR) {
 			error("Reservation %s has invalid users specification (%s)",
 			      resv_ptr->name, resv_ptr->users);
@@ -5208,8 +5315,12 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			      resv_ptr->name, resv_ptr->users);
 		} else {
 			xfree(resv_ptr->user_list);
+			for (i = 0; i < resv_ptr->user_cnt; i++)
+				xfree(resv_ptr->username_list[i]);
+			xfree(resv_ptr->username_list);
 			resv_ptr->user_cnt = user_cnt;
 			resv_ptr->user_list = user_list;
+			resv_ptr->username_list = username_list;
 			if (user_not)
 				resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
 			else
@@ -5218,7 +5329,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	}
 
 	if (resv_ptr->groups) {
-		int user_cnt = 0;
+		int user_cnt = 0, i;
 		uid_t *user_list = get_groups_members(resv_ptr->groups,
 						      &user_cnt);
 
@@ -5227,6 +5338,11 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			      resv_ptr->name, resv_ptr->groups);
 		} else {
 			xfree(resv_ptr->user_list);
+			for (i = 0; i < resv_ptr->user_cnt; i++)
+				xfree(resv_ptr->username_list[i]);
+			xfree(resv_ptr->username_list);
+			resv_ptr->username_list =
+				xcalloc(user_cnt, sizeof(char *));
 			resv_ptr->user_list = user_list;
 			resv_ptr->user_cnt = user_cnt;
 			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
@@ -5779,7 +5895,28 @@ static bool _check_assoc_access_each(char *access_list, list_t *assoc_list)
 	return !args.found_denied && (!any_allowed || args.found_allowed);
 }
 
-static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
+/*
+ * Look up username corresponding to uid in assoc_mgr.
+ * IN uid - user id to use when looking up the username.
+ * IN locked - if the assoc_mgr read lock is locked or not.
+ * RET username that corresponds to the input uid (caller must xfree()).
+ */
+static char *_resolve_uid_name(uid_t uid, bool locked)
+{
+	slurmdb_user_rec_t user_rec, *user_ptr = NULL;
+	char *name = NULL;
+
+	memset(&user_rec, 0, sizeof(user_rec));
+	user_rec.uid = uid;
+
+	if ((assoc_mgr_fill_in_user(acct_db_conn, &user_rec, accounting_enforce,
+				    &user_ptr, locked) == SLURM_SUCCESS) &&
+	    user_ptr)
+		name = xstrdup(user_ptr->name);
+	return name;
+}
+
+static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid, char *user)
 {
 	bool user_found = false;
 	bool is_allow_list = !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT);
@@ -5788,7 +5925,12 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
 		return true;
 
 	for (int i = 0; i < resv_ptr->user_cnt; i++) {
-		if (resv_ptr->user_list[i] == uid) {
+		if (resv_ptr->user_list[i] != NO_VAL) {
+			if (resv_ptr->user_list[i] == uid) {
+				user_found = true;
+				break;
+			}
+		} else if (user && !xstrcmp(resv_ptr->username_list[i], user)) {
 			user_found = true;
 			break;
 		}
@@ -5800,7 +5942,8 @@ static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
  * Validate if the user has access to this reservation.
  */
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
-				  list_t *user_assoc_list, uid_t uid)
+				  list_t *user_assoc_list, uid_t uid,
+				  char *username)
 {
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
@@ -5809,7 +5952,7 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 						user_assoc_list);
 	}
 
-	return _check_uid_access(resv_ptr, uid);
+	return _check_uid_access(resv_ptr, uid, username);
 }
 
 /*
@@ -7277,8 +7420,9 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 				  slurmctld_resv_t *resv_ptr,
 				  bool show_security_violation_error)
 {
-	bool account_good = false;
+	bool account_good = false, allowed;
 	int i;
+	char *username = NULL;
 
 	if (!resv_ptr) {
 		info("Reservation name not found (%s)", job_ptr->resv_name);
@@ -7326,7 +7470,11 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 			return SLURM_SUCCESS;
 	} else {
 no_assocs:
-		if (!_check_uid_access(resv_ptr, job_ptr->user_id))
+		username = _resolve_uid_name(job_ptr->user_id, false);
+		allowed =
+			_check_uid_access(resv_ptr, job_ptr->user_id, username);
+		xfree(username);
+		if (!allowed)
 			goto end_it;
 		if ((resv_ptr->user_cnt != 0) && (resv_ptr->account_cnt == 0))
 			return SLURM_SUCCESS;
@@ -8236,14 +8384,15 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *)x;
 	int *updated = (int *)arg;
-	int user_cnt = 0;
+	int user_cnt = 0, i;
 	uid_t *tmp_uids;
+	char **username_list = NULL;
 
 	if (!resv_ptr->groups)
 		return 0;
 
 	tmp_uids = get_groups_members(resv_ptr->groups, &user_cnt);
-
+	username_list = xcalloc(user_cnt, sizeof(char *));
 	/*
 	 * If the lists are different sizes clearly we are different.
 	 * If the memory isn't the same they are different as well
@@ -8254,7 +8403,13 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 		   sizeof(*tmp_uids) * user_cnt)) {
 		char *old_assocs = xstrdup(resv_ptr->assoc_list);
 
+		for (i = 0; i < resv_ptr->user_cnt; i++)
+			xfree(resv_ptr->username_list[i]);
+		xfree(resv_ptr->username_list);
+		resv_ptr->username_list = username_list;
+		username_list = NULL;
 		resv_ptr->user_cnt = user_cnt;
+		user_cnt = 0;
 		xfree(resv_ptr->user_list);
 		resv_ptr->user_list = tmp_uids;
 		tmp_uids = NULL;
@@ -8269,6 +8424,9 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 		xfree(old_assocs);
 	}
 
+	for (i = 0; i < user_cnt; i++)
+		xfree(username_list[i]);
+	xfree(username_list);
 	xfree(tmp_uids);
 
 	return 0;
@@ -8996,9 +9154,10 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 
 	slurmdb_assoc_rec_t assoc;
 	list_t *assoc_list = NULL;
-	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 	bool found_it = false;
 	slurmctld_resv_t *resv_ptr;
+	char *username = NULL;
 
 	/* Make sure we have node write locks. */
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -9032,9 +9191,11 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	    != SLURM_SUCCESS)
 		goto end_it;
 
-	if (_validate_user_access(resv_ptr, assoc_list, uid))
+	username = _resolve_uid_name(uid, true);
+	if (_validate_user_access(resv_ptr, assoc_list, uid, username))
 		found_it = true;
 end_it:
+	xfree(username);
 	FREE_NULL_LIST(assoc_list);
 	assoc_mgr_unlock(&locks);
 
