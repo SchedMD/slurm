@@ -184,4 +184,19 @@ extern char *gid_to_string_or_null(gid_t gid);
  */
 extern int drop_supplementary_groups(uid_t uid, gid_t gid);
 
+/*
+ * Set the supplementary group list of the calling process.
+ *
+ * Best-effort on capability: if the process lacks CAP_SETGID the existing
+ * groups are left intact and a warning is logged (the inherited groups must
+ * already be correct). Any other setgroups() failure is returned as an errno.
+ *
+ * IN uid - target user (used only for the warning message)
+ * IN gids - supplementary group list to install
+ * IN ngids - number of entries in gids
+ * RET SLURM_SUCCESS (incl. the EPERM best-effort case), or an errno on a
+ *     non-EPERM setgroups() failure
+ */
+extern int set_supplementary_groups(uid_t uid, gid_t *gids, int ngids);
+
 #endif /*__SLURM_UID_UTILITY_H__*/

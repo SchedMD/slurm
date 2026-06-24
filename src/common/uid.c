@@ -861,3 +861,24 @@ extern int drop_supplementary_groups(uid_t uid, gid_t gid)
 	warning("Unable to drop supplementary groups: %s", slurm_strerror(rc));
 	return rc;
 }
+
+extern int set_supplementary_groups(uid_t uid, gid_t *gids, int ngids)
+{
+	int rc;
+
+	if (!setgroups(ngids, gids))
+		return SLURM_SUCCESS;
+
+	rc = errno;
+
+#ifdef __linux__
+	if (rc == EPERM) {
+		warning("Process lacks CAP_SETGID to set supplementary groups. Supplementary groups should be configured for user (uid=%d) prior to starting process.",
+			uid);
+		return SLURM_SUCCESS;
+	}
+#endif /* __linux__ */
+
+	error("%s: Unable to setgroups(): %s", __func__, slurm_strerror(rc));
+	return rc;
+}
