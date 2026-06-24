@@ -5061,6 +5061,11 @@ nodes is not recommended and may result in valid job allocation requests being
 rejected. The linear plugin is not designed to track generic resources on a
 node. In cases where generic resources (such as GPUs) need to be tracked,
 the cons_tres plugin should be used instead.
+
+\fBNOTE\fR: This plugin enforces partition \fBOverSubscribe\fR limits
+differently than \fBselect/cons_tres\fR.  A limit on the number of jobs sharing
+resources (e.g. \fBFORCE:2\fR) will be compared against all jobs running on the
+involved nodes, including jobs started through an overlapping partition.
 .RE
 .IP
 
@@ -8169,6 +8174,7 @@ Whole\-node exclusive partitions can be configured with \fBExclusive=node\fR
 Note that a value of "YES" or "FORCE" can negatively impact performance
 for systems with many thousands of running jobs.
 The default value is "NO".
+Enforcement of this parameter is more rudimentary if \fBselect/linear\fR is used.
 For more information see the following web pages:
 .br
 .na
