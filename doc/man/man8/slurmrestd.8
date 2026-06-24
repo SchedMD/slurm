@@ -516,7 +516,7 @@ this daemon to run anything as the root user on the cluster.
 .IP
 
 .TP
-\fBSLURMRESTD_YAML\fR or \fBSLURM_YAML\fR
+\fBSLURM_YAML\fR
 Control YAML serialization:
 .IP
 .RS
@@ -535,6 +535,8 @@ Output YAML without datatype !!tags.
 Output YAML in pretty format to make it more readable.
 .RE
 .IP
+\fBNOTE\fR: The \fBSLURMRESTD_YAML\fR environment variable is a deprecated alias
+for \fBSLURM_YAML\fR and will be removed in a future release.
 
 .SH "SIGNALS"
 
