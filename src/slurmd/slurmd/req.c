@@ -250,8 +250,6 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 	int stepmgr_fd = -1;
 	uint16_t protocol_version;
 
-	step_id->step_het_comp = NO_VAL; /* het jobs aren't supported. */
-
 	job_uid = _get_job_uid(step_id);
 	if (job_uid == INFINITE) {
 		error("No stepd for %pI from uid %u for rpc %s",
