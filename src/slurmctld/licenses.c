@@ -71,6 +71,12 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 typedef struct {
+	uint16_t curr_hres_id;
+	uint16_t depth;
+	char *first_leaf;
+} foreach_uniform_depth_t;
+
+typedef struct {
 	licenses_id_t id;
 	slurmctld_resv_t *resv_ptr;
 } bf_licenses_find_resv_t;
@@ -1130,10 +1136,6 @@ static int _foreach_license_set_cnt(void *x, void *key)
 		license->hres_rec.layers_cnt = (*root)->hres_rec.layers_cnt;
 		license->hres_rec.leaf_cnt = (*root)->hres_rec.leaf_cnt;
 		*root = license;
-	} else if (!license->hres_rec.level && !(*root)->hres_rec.level &&
-		   (license->hres_rec.depth != (*root)->hres_rec.depth)) {
-		error("%s %s isn't a perfect tree", __func__, license->name);
-		return -1;
 	}
 
 	if (!license->hres_rec.level)
@@ -1237,6 +1239,51 @@ static int _foreach_license_mode3_no_overlap(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_license_mode3_uniform_depth(void *x, void *arg)
+{
+	licenses_t *license = x;
+	foreach_uniform_depth_t *args = arg;
+
+	if (license->mode != HRES_MODE_3)
+		return 0;
+	if (license->hres_rec.level)
+		return 0; /* Not a leaf */
+	if (args->curr_hres_id != license->id.hres_id) {
+		/* New HRES record */
+		args->curr_hres_id = license->id.hres_id;
+		args->depth = license->hres_rec.depth;
+		args->first_leaf = license->hres_rec.layer_name;
+		return 0;
+	}
+	if (args->depth != license->hres_rec.depth) {
+		error("%s: HRES=%s has non-uniform depth: leaf=%s depth=%hu != leaf=%s depth=%hu",
+		      __func__, license->name, license->hres_rec.layer_name,
+		      license->hres_rec.depth, args->first_leaf,
+		      args->depth);
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Validate that all leaf layers have the same depth within each mode 3 HRES.
+ * _sort_hres() sorts by HRES ID, so all leaves of the same HRES ID will be
+ * found before encountering any leaves of a different HRES ID.
+ */
+static bool _is_uniform_depth(void)
+{
+	foreach_uniform_depth_t arg = {
+		.curr_hres_id = NO_VAL16,
+		.depth = NO_VAL16,
+	};
+
+	if (list_for_each_ro(cluster_license_list,
+			     _foreach_license_mode3_uniform_depth, &arg) < 0)
+		return false;
+	return true;
+}
+
 extern int hres_init(void)
 {
 	licenses_t *root = NULL;
@@ -1269,6 +1316,9 @@ extern int hres_init(void)
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_path,
 			     NULL) < 0)
 		fatal("Can't set MODE3 path");
+
+	if (!_is_uniform_depth())
+		fatal("MODE3 HRES is not a uniform depth tree");
 
 	if (list_for_each_ro(cluster_license_list,
 			     _foreach_license_mode3_no_overlap, NULL) < 0)
