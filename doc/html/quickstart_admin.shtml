@@ -28,14 +28,14 @@
 </ul>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
-<p>Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
-general overview.</p>
 
-<p>Also see <a href="platforms.html">Platforms</a> for a list of supported
-computer platforms.</p>
+<p>See also:</p>
 
-<p>For information on performing an upgrade, please see the
-<a href="upgrades.html">Upgrade Guide</a>.</p>
+<ul>
+<li><a href="quickstart.html">Quick Start User Guide</a></li>
+<li><a href="platforms.html">Platforms</a></li>
+<li><a href="upgrades.html">Upgrade Guide</a></li>
+</ul>
 
 <h2 id="quick_start">Super Quick Start
 <a class="slurm_link" href="#quick_start"></a>
