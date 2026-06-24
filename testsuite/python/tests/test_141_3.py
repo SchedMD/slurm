@@ -111,7 +111,7 @@ def setup():
     )
     atf.get_run_dir_path()
     atf.require_config_parameter("ReturnToService", 2)
-    atf.require_config_parameter("DebugFlags", "POWER")
+    atf.require_config_parameter_includes("DebugFlags", "POWER")
     atf.require_nodes(2)
     atf.require_config_parameter("SuspendTime", suspend_time)
     atf.require_config_parameter("SuspendTimeout", suspend_timeout)

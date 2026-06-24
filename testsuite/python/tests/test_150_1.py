@@ -21,9 +21,8 @@ def setup():
     atf.require_config_parameter("", "", source="topology")
     # This is where we write the actual data
     overwrite_topology_conf()
-    atf.add_config_parameter_value(
-        "SchedulerParameters", "bf_interval=1,sched_interval=1"
-    )
+    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=1")
+    atf.require_config_parameter_includes("SchedulerParameters", "sched_interval=1")
     atf.require_slurm_running()
 
 

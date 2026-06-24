@@ -21,8 +21,8 @@ def setup():
     atf.require_config_parameter("MetricsType", "metrics/openmetrics")
 
     # JWT is needed for HTTP auth to access metrics endpoints
-    atf.require_config_parameter("AuthAltTypes", "auth/jwt")
-    atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
+    atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt")
+    atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt", source="slurmdbd")
 
     # Define two partitions: debug and power
     atf.require_config_parameter(

@@ -32,7 +32,7 @@ def setup():
     atf.require_config_parameter("TrackWcKey", "yes")
     atf.require_config_parameter("TrackWcKey", "yes", source="slurmdbd")
     # Reducing bf_interval makes the test faster when using het jobs.
-    atf.add_config_parameter_value("SchedulerParameters", "bf_interval=2")
+    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=2")
     atf.require_slurm_running()
 
     # Basic account and user setup
