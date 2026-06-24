@@ -1035,8 +1035,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->container = xstrdup(opt_local->container);
 	xfree(step_req->container_id);
 	step_req->container_id = xstrdup(opt_local->container_id);
-	xfree(step_req->container_type);
-	step_req->container_type = xstrdup(opt_local->container_type);
+	xfree(step_req->runtime);
+	step_req->runtime = xstrdup(opt_local->runtime);
 
 	rc = gres_step_state_validate(step_req->cpus_per_tres,
 				     step_req->tres_per_step,

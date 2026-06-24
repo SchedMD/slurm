@@ -1685,7 +1685,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->comment);
 		xfree(msg->container);
 		xfree(msg->container_id);
-		xfree(msg->container_type);
+		xfree(msg->runtime);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_tres);
 		free_cron_entry(msg->crontab_entry);
@@ -1884,7 +1884,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->comment);
 		xfree(job->container);
 		xfree(job->container_id);
-		xfree(job->container_type);
+		xfree(job->runtime);
 		xfree(job->cpus_per_tres);
 		xfree(job->cronspec);
 		xfree(job->dependency);
@@ -2190,7 +2190,7 @@ extern void slurm_free_job_step_create_request_msg(
 	if (msg) {
 		xfree(msg->container);
 		xfree(msg->container_id);
-		xfree(msg->container_type);
+		xfree(msg->runtime);
 		xfree(msg->cpus_per_tres);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
@@ -4462,7 +4462,7 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 		xfree(msg->cluster);
 		xfree(msg->container);
 		xfree(msg->container_id);
-		xfree(msg->container_type);
+		xfree(msg->runtime);
 		xfree(msg->job_name);
 		xfree(msg->cwd);
 		xfree(msg->tres_per_node);

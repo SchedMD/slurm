@@ -191,7 +191,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CONSOLIDATE_SEGMENTS", LONG_OPT_CONSOLIDATE_SEGMENTS },
   { "SBATCH_CONTAINER", LONG_OPT_CONTAINER },
   { "SBATCH_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
-  { "SBATCH_CONTAINER_TYPE", LONG_OPT_CONTAINER_TYPE },
+  { "SBATCH_RUNTIME", LONG_OPT_RUNTIME },
   { "SBATCH_CONSTRAINT", 'C' },
   { "SBATCH_CORE_SPEC", 'S' },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
@@ -717,8 +717,8 @@ static bool _opt_verify(void)
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
-	if (opt.container_type && !getenv("SLURM_CONTAINER_TYPE"))
-		setenvf(NULL, "SLURM_CONTAINER_TYPE", "%s", opt.container_type);
+	if (opt.runtime && !getenv("SLURM_RUNTIME"))
+		setenvf(NULL, "SLURM_RUNTIME", "%s", opt.runtime);
 
 	/*
 	 * NOTE: this burst_buffer_file processing is intentionally different
@@ -1086,7 +1086,7 @@ static void _usage(void)
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--chdir=directory] [--oversubscribe] [-m dist] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--contiguous]\n"
-"              [--container=path] [--container-id=id] [--container-type=type]\n"
+"              [--container=path] [--container-id=id] [--runtime=name]\n"
 "              [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid[+time]] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]] [--wait]\n"
@@ -1213,7 +1213,7 @@ static void _help(void)
 "Container options:\n"
 "      --container=path        Container path\n"
 "      --container-id=id       Container identifier\n"
-"      --container-type=type   Container Type\n"
+"      --runtime=name          Runtime plugin type\n"
 "\n"
 "Consumable resources related options:\n"
 "      --exclusive[=user]      allocate nodes in exclusive mode when\n"

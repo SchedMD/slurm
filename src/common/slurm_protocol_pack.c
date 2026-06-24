@@ -2461,7 +2461,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		pack32(msg->max_nodes, buffer);
 		packstr(msg->container, buffer);
 		packstr(msg->container_id, buffer);
-		packstr(msg->container_type, buffer);
+		packstr(msg->runtime, buffer);
 		pack32(msg->cpu_count, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
@@ -2572,7 +2572,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->max_nodes, buffer);
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
-		safe_unpackstr(&msg->container_type, buffer);
+		safe_unpackstr(&msg->runtime, buffer);
 		safe_unpack32(&msg->cpu_count, buffer);
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
@@ -3124,7 +3124,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->cluster, buffer);
 		safe_unpackstr(&step->container, buffer);
 		safe_unpackstr(&step->container_id, buffer);
-		safe_unpackstr(&step->container_type, buffer);
+		safe_unpackstr(&step->runtime, buffer);
 		safe_unpackstr(&step->partition, buffer);
 		safe_unpackstr(&step->srun_host, buffer);
 		safe_unpackstr(&step->resv_ports, buffer);
@@ -3380,7 +3380,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->comment, buffer);
 		safe_unpackstr(&job->container, buffer);
 		safe_unpackstr(&job->container_id, buffer);
-		safe_unpackstr(&job->container_type, buffer);
+		safe_unpackstr(&job->runtime, buffer);
 		safe_unpackstr(&job->cpus_per_tres, buffer);
 
 		safe_unpack_time(&job->deadline, buffer);
@@ -6638,7 +6638,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->contiguous, buffer);
 		packstr(msg->container, buffer);
 		packstr(msg->container_id, buffer);
-		packstr(msg->container_type, buffer);
+		packstr(msg->runtime, buffer);
 		pack16(msg->core_spec, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->kill_on_node_fail, buffer);
@@ -7067,7 +7067,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->contiguous, buffer);
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
-		safe_unpackstr(&msg->container_type, buffer);
+		safe_unpackstr(&msg->runtime, buffer);
 		safe_unpack16(&msg->core_spec, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->kill_on_node_fail, buffer);
@@ -7240,7 +7240,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->contiguous, buffer);
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
-		safe_unpackstr(&msg->container_type, buffer);
+		safe_unpackstr(&msg->runtime, buffer);
 		safe_unpack16(&msg->core_spec, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->kill_on_node_fail, buffer);

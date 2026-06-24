@@ -3396,10 +3396,9 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 	if (job_desc->tres_per_task)
 		debug3("   TRES_per_task=%s", job_desc->tres_per_task);
 
-	if (job_desc->container_type || job_desc->container ||
-	    job_desc->container_id)
-		debug3("   container-type=%s container=%s container-id=%s",
-		       job_desc->container_type, job_desc->container,
+	if (job_desc->runtime || job_desc->container || job_desc->container_id)
+		debug3("   runtime=%s container=%s container-id=%s",
+		       job_desc->runtime, job_desc->container,
 		       job_desc->container_id);
 }
 
@@ -3560,7 +3559,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 	job_ptr_pend->container = xstrdup(job_ptr->container);
 	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
-	job_ptr_pend->container_type = xstrdup(job_ptr->container_type);
+	job_ptr_pend->runtime = xstrdup(job_ptr->runtime);
 	job_ptr_pend->extra = xstrdup(job_ptr->extra);
 	if ((extra_constraints_parse(job_ptr_pend->extra,
 				     &job_ptr_pend->extra_constraints)) !=
@@ -8745,7 +8744,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->extra = xstrdup(job_desc->extra);
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
-	job_ptr->container_type = xstrdup(job_desc->container_type);
+	job_ptr->runtime = xstrdup(job_desc->runtime);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
@@ -18819,7 +18818,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->comment           = xstrdup(job_ptr->comment);
 	job_desc->container = xstrdup(job_ptr->container);
 	job_desc->container_id = xstrdup(job_ptr->container_id);
-	job_desc->container_type = xstrdup(job_ptr->container_type);
+	job_desc->runtime = xstrdup(job_ptr->runtime);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);

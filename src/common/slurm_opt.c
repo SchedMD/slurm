@@ -928,14 +928,55 @@ static slurm_cli_opt_t slurm_opt_container_id = {
 	.reset_func = arg_reset_container_id,
 };
 
-COMMON_STRING_OPTION(container_type);
-static slurm_cli_opt_t slurm_opt_container_type = {
-	.name = "container-type",
+static int _print_runtime_plugin(void *x, void *arg)
+{
+	char *type = x;
+	char *sep = xstrrchr(type, '/');
+
+	fprintf(stderr, "\t%s\n", sep ? sep + 1 : type);
+
+	return 0;
+}
+
+static void _print_runtime_list(void)
+{
+	list_t *plugins = plugin_get_plugins_of_type("runtime");
+
+	fprintf(stderr, "Runtime plugin types are...\n");
+
+	if (!plugins)
+		return;
+
+	list_for_each_ro(plugins, _print_runtime_plugin, NULL);
+	FREE_NULL_LIST(plugins);
+}
+
+static int arg_set_runtime(slurm_opt_t *opt, const char *arg)
+{
+	if (!xstrcasecmp(arg, "list")) {
+		if (opt->scron_opt)
+			return SLURM_ERROR;
+		_print_runtime_list();
+		exit(0);
+	}
+
+	xfree(opt->runtime);
+	/* Normalize to the fully qualified "runtime/<name>" plugin name. */
+	if (!xstrncmp(arg, "runtime/", 8))
+		opt->runtime = xstrdup(arg);
+	else
+		opt->runtime = xstrdup_printf("runtime/%s", arg);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET_AND_RESET(runtime);
+static slurm_cli_opt_t slurm_opt_runtime = {
+	.name = "runtime",
 	.has_arg = required_argument,
-	.val = LONG_OPT_CONTAINER_TYPE,
-	.set_func = arg_set_container_type,
-	.get_func = arg_get_container_type,
-	.reset_func = arg_reset_container_type,
+	.val = LONG_OPT_RUNTIME,
+	.set_func = arg_set_runtime,
+	.get_func = arg_get_runtime,
+	.reset_func = arg_reset_runtime,
 };
 
 COMMON_STRING_OPTION_SET(context);
@@ -4403,7 +4444,6 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_consolidate_segments,
 	&slurm_opt_container,
 	&slurm_opt_container_id,
-	&slurm_opt_container_type,
 	&slurm_opt_context,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
@@ -4512,6 +4552,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_resources,
 	&slurm_opt_reservation,
 	&slurm_opt_resv_ports,
+	&slurm_opt_runtime,
 	&slurm_opt_segment_size,
 	&slurm_opt_send_libs,
 	&slurm_opt_signal,
@@ -5924,7 +5965,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	job_desc->container = xstrdup(opt_local->container);
 	job_desc->container_id = xstrdup(opt_local->container_id);
-	job_desc->container_type = xstrdup(opt_local->container_type);
+	job_desc->runtime = xstrdup(opt_local->runtime);
 
 	if (opt_local->core_spec != NO_VAL16)
 		job_desc->core_spec = opt_local->core_spec;

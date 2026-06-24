@@ -302,7 +302,6 @@ struct job_record {
 	char *comment;			/* arbitrary comment */
 	char *container;		/* OCI container bundle path */
 	char *container_id;		/* OCI container id */
-	char *container_type;		/* Job container type */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
 					 * completing */
@@ -483,6 +482,7 @@ struct job_record {
 	uint16_t resv_port_cnt;		/* count of MPI ports reserved per node */
 	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
+	char *runtime; /* Job runtime plugin type */
 	char *sched_nodes;		/* list of nodes scheduled for job */
 	char *selinux_context;		/* SELinux context */
 	uint32_t site_factor;		/* factor to consider in priority */
@@ -622,7 +622,7 @@ typedef struct {
 					/* DO NOT ALPHABETIZE */
 	char *container;		/* OCI Container bundle path */
 	char *container_id;		/* OCI Container ID */
-	char *container_type;		/* Job container type */
+	char *runtime; /* Job runtime plugin type */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */
