@@ -13950,14 +13950,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if ((job_desc->deadline) && (!IS_JOB_RUNNING(job_ptr))) {
-		char time_str[256];
-		slurm_make_time_str(&job_ptr->deadline, time_str,
-				    sizeof(time_str));
 		if (job_desc->deadline < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
 		} else if (privileged) {
+			char time_str[256];
 			/* update deadline */
 			job_ptr->deadline = job_desc->deadline;
+			slurm_make_time_str(&job_ptr->deadline, time_str,
+					    sizeof(time_str));
 			sched_info("%s: setting deadline to %s for %pJ",
 				   __func__, time_str, job_ptr);
 			/*
@@ -13967,7 +13967,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			sched_info("%s: Attempt to extend end time for %pJ",
+			sched_info("%s: Attempt to extend deadline for %pJ",
 				   __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
@@ -14363,8 +14363,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				   SLURM_SUCCESS) {
 				FREE_NULL_LIST(detail_ptr->prefer_list);
 				xfree(detail_ptr->prefer);
-				detail_ptr->features = old_prefer;
-				detail_ptr->feature_list = old_list;
+				detail_ptr->prefer = old_prefer;
+				detail_ptr->prefer_list = old_list;
 				error_code = ESLURM_INVALID_PREFER;
 			} else {
 				sched_info("%s: setting prefer to %s for %pJ",
@@ -15204,7 +15204,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_desc->site_factor = user_site_factor;
 	}
 	if (job_desc->site_factor != NO_VAL) {
-		sched_info("%s: setting AdinPrioFactor to %u for %pJ",
+		sched_info("%s: setting AdminPrioFactor to %u for %pJ",
 			   __func__, job_desc->site_factor, job_ptr);
 		job_ptr->site_factor = job_desc->site_factor;
 	}
