@@ -267,9 +267,15 @@ static int _foreach_license_print(void *x, void *arg)
 		     license_entry->nodes, license_entry->total,
 		     license_entry->used);
 		if (license_entry->mode == HRES_MODE_3) {
+			licenses_t *parent = license_entry->hres_rec.parent;
+			uint16_t parent_id = NO_VAL16;
+
+			if (parent)
+				parent_id = parent->id.lic_id;
+
 			info("\tidx=%u parent_id=%u depth=%u level=%u layers_cnt=%u, leaf_cnt=%u",
 			     license_entry->hres_rec.idx,
-			     license_entry->hres_rec.parent_id,
+			     parent_id,
 			     license_entry->hres_rec.depth,
 			     license_entry->hres_rec.level,
 			     license_entry->hres_rec.layers_cnt,
@@ -413,7 +419,7 @@ static int _license_find_root_rec(void *x, void *key)
 	if (!_license_find_rec(x, key))
 		return 0;
 	if ((license_entry->mode == HRES_MODE_3) &&
-	    (license_entry->hres_rec.parent_id != NO_VAL16))
+	    (license_entry->hres_rec.parent))
 		return 0;
 	return 1;
 }
@@ -483,7 +489,7 @@ static int _license_find_root_mode3(void *x, void *key)
 	licenses_id_t *id = key;
 
 	if ((license_entry->id.hres_id == id->hres_id) &&
-	    (license_entry->hres_rec.parent_id == NO_VAL16))
+	    (!license_entry->hres_rec.parent))
 		return 1;
 
 	return 0;
@@ -1052,7 +1058,6 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 				return -1;
 			}
 
-			license->hres_rec.parent_id = NO_VAL16;
 			/* root is last, reset idx for next HRES */
 			args->idx = 0;
 			args->prev_hres_id = license->id.hres_id;
@@ -1078,7 +1083,7 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 				license->hres_rec.topology_name = NULL;
 			}
 			parent->hres_rec.level = license->hres_rec.level + 1;
-			license->hres_rec.parent_id = parent->id.lic_id;
+			license->hres_rec.parent = parent;
 		}
 	}
 	return 0;
@@ -1102,11 +1107,11 @@ static int _foreach_license_set_path(void *x, void *key)
 					_foreach_license_set_path, license);
 	}
 
-	if (license->id.lic_id != child->hres_rec.parent_id)
+	if (license != child->hres_rec.parent)
 		return 0;
 
 	if (!license->hres_rec.depth) { /* first check */
-		if (license->hres_rec.parent_id == NO_VAL16) { /* root */
+		if (!license->hres_rec.parent) { /* root */
 			license->hres_rec.depth = 1;
 		} else {
 			list_for_each_ro(cluster_license_list,
@@ -1198,12 +1203,9 @@ static int _foreach_license_set_base(void *x, void *key)
 		return -1;
 
 	if ((license->mode == HRES_MODE_3) &&
-	    (license->hres_rec.parent_id != NO_VAL16)) {
-		licenses_t *parent =
-			list_find_first_ro(cluster_license_list,
-					   _license_find_parent, license);
-		xassert(parent);
-		parent->hres_rec.base_usage += license->hres_rec.base_usage;
+	    (license->hres_rec.parent)) {
+		license->hres_rec.parent->hres_rec.base_usage +=
+			license->hres_rec.base_usage;
 	}
 
 	return 0;

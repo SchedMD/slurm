@@ -76,6 +76,7 @@ typedef struct {
 	int topology_idx;
 } hres_select_t;
 
+typedef struct slurm_licenses licenses_t;
 typedef struct {
 	list_t *base; /* list of hres_variable_t */
 	uint32_t base_usage;
@@ -85,7 +86,7 @@ typedef struct {
 	uint16_t layers_cnt; /* count of layers, set only for root*/
 	uint16_t leaf_cnt; /* count of leafs, set only for root*/
 	uint16_t level; /* level - 0 for leaf */
-	uint16_t parent_id; /* lic_id of parent - NO_VAL16 for root */
+	licenses_t *parent; /* pointer to parent - NULL for root */
 	path_idx_t path_idx;
 	int topology_idx;
 	char *topology_name;
@@ -93,7 +94,7 @@ typedef struct {
 	list_t *variables; /* list of hres_variable_t */
 } hres_rec_t;
 
-typedef struct {
+struct slurm_licenses {
 	licenses_id_t id;
 	char *		name;		/* name associated with a license */
 	bool op_or; /* Whether the licenses were requested with AND or OR */
@@ -109,7 +110,7 @@ typedef struct {
 	char *nodes;
 	uint8_t mode;
 	hres_rec_t hres_rec;
-} licenses_t;
+};
 
 /*
  * In the future this should change to a more performant data structure.
