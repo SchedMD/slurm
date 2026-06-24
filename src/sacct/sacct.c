@@ -173,21 +173,36 @@ list_t *jobs = NULL;
 int main(int argc, char **argv)
 {
 	int rc = 0;
+	data_parser_t *parser = NULL;
 
 	slurm_init(NULL);
 	sacct_init();
 	parse_command_line(argc, argv);
 
+	if (params.mimetype) {
+		rc = data_parser_cli_load(&parser, acct_db_conn, argc, argv,
+					  params.mimetype, params.data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
+
 	if (!params.mimetype &&
 	    !(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
 	    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
 		print_fields_header(print_fields_list);
-	if (get_data() == SLURM_ERROR)
+	if (get_data() == SLURM_ERROR) {
+		if (params.mimetype)
+			data_parser_cli_free_ctxt(&parser);
 		exit(1);
+	}
 	if (params.opt_completion)
 		do_list_completion();
 	else
-		do_list(argc, argv);
+		do_list(parser);
+
+cleanup:
+	if (params.mimetype)
+		data_parser_cli_free_ctxt(&parser);
 
 	sacct_fini();
 
@@ -196,5 +211,6 @@ int main(int argc, char **argv)
 	log_fini();
 #endif
 
-	return (rc);
+	/* Collapse load errno to 1 to match sacct's historic exit. */
+	return (rc ? 1 : 0);
 }

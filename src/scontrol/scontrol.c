@@ -303,13 +303,15 @@ int main(int argc, char **argv)
 		   !xstrcmp(data_parser, "list")) {
 		/*
 		 * We are only listing the available data parser plugins.
-		 * Calling DATA_DUMP_CLI_SINGLE() with a dummy type to get to
-		 * "list".
-		 * TODO: After Bug 18109 is fixed, replace this logic:
+		 * data_parser_cli_load() prints the plugin list and returns a
+		 * NULL parser before any RPC would be made.
 		 */
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, NULL, orig_argc,
-				     orig_argv, NULL, mime_type, data_parser,
-				     exit_code);
+		data_parser_t *parser = NULL;
+
+		exit_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		data_parser_cli_free_ctxt(&parser);
 	} else {
 		/* We are running interactively multiple commands */
 		int input_field_count = 0;
@@ -532,15 +534,15 @@ static void _write_config(char *file_name)
 	}
 }
 
-static void _dump_config(int argc, char **argv,
+static void _dump_config(data_parser_t *parser,
 			 slurm_conf_t *slurm_ctl_conf_ptr)
 {
 	openapi_resp_config_t resp = {
 		.slurm_conf = slurm_ctl_conf_ptr,
 	};
 
-	DATA_DUMP_CLI(OPENAPI_CONF_RESP, resp, orig_argc, orig_argv, NULL,
-		      mime_type, data_parser, exit_code);
+	exit_code = data_parser_dump_cli_resp(DATA_PARSER_OPENAPI_CONF_RESP,
+					      &resp, sizeof(resp), parser);
 }
 
 /*
@@ -551,6 +553,17 @@ static void _print_config(char *config_param, int argc, char **argv)
 {
 	int error_code;
 	slurm_conf_t *slurm_conf_ptr = NULL;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		error_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (error_code)
+			exit_code = 1;
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	if (old_slurm_conf_ptr) {
 		error_code =
@@ -579,7 +592,7 @@ static void _print_config(char *config_param, int argc, char **argv)
 
 	if (slurm_conf_ptr) {
 		if (mime_type) {
-			_dump_config(argc, argv, slurm_conf_ptr);
+			_dump_config(parser, slurm_conf_ptr);
 		} else {
 			slurm_print_ctl_conf(stdout, slurm_conf_ptr);
 			fprintf(stdout, "\n");
@@ -587,6 +600,10 @@ static void _print_config(char *config_param, int argc, char **argv)
 	}
 	if (slurm_conf_ptr && !mime_type)
 		_print_ping(argc, argv);
+
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 }
 
 /* Print slurmd status on localhost.
@@ -609,14 +626,23 @@ static void _print_ping(int argc, char **argv)
 	static const char *state[2] = { "DOWN", "UP" };
 	char mode[64];
 	bool down_msg = false;
-	controller_ping_t *pings = ping_all_controllers();
+	controller_ping_t *pings = NULL;
+	data_parser_t *parser = NULL;
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_PING_ARRAY_RESP, pings, orig_argc,
-				     orig_argv, NULL, mime_type, data_parser,
-				     exit_code);
-		xfree(pings);
-		return;
+		exit_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (exit_code || !parser)
+			goto cleanup;
+	}
+
+	pings = ping_all_controllers();
+
+	if (mime_type) {
+		exit_code = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_PING_ARRAY_RESP, pings, parser);
+		goto cleanup;
 	}
 
 	exit_code = 1;
@@ -635,13 +661,17 @@ static void _print_ping(int argc, char **argv)
 		fprintf(stdout, "Slurmctld(%s) at %s is %s\n",
 			mode, ping->hostname, state[ping->pinged]);
 	}
-	xfree(pings);
 
 	if (down_msg && (getuid() == 0)) {
 		fprintf(stdout, "*****************************************\n");
 		fprintf(stdout, "** RESTORE SLURMCTLD DAEMON TO SERVICE **\n");
 		fprintf(stdout, "*****************************************\n");
 	}
+
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
+	xfree(pings);
 }
 
 /*

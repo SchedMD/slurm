@@ -59,9 +59,9 @@
 #define OPT_LONG_YAML 0x104
 
 static int _addto_name_char_list(list_t *char_list, char *names, bool gid);
-static int _single_cluster(int argc, char **argv,
+static int _single_cluster(data_parser_t *parser,
 			   shares_request_msg_t *req_msg);
-static int _multi_cluster(int argc, char **argv, shares_request_msg_t *req_msg);
+static int _multi_cluster(data_parser_t *parser, shares_request_msg_t *req_msg);
 static char *   _convert_to_name(uint32_t id, bool is_gid);
 static void     _print_version( void );
 static void	_usage(void);
@@ -82,6 +82,7 @@ int main (int argc, char **argv)
 	char *temp = NULL;
 	int option_index;
 	bool all_users = 0;
+	data_parser_t *parser = NULL;
 
 	static struct option long_options[] = {
 		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
@@ -259,18 +260,32 @@ int main (int argc, char **argv)
 		fprintf(stderr, "Accounts requested:\n\t: all\n");
 	}
 
+	if (mimetype) {
+		exit_code = data_parser_cli_load(&parser, NULL, argc, argv,
+						 mimetype, data_parser);
+		if (exit_code || !parser) {
+			data_parser_cli_free_ctxt(&parser);
+			FREE_NULL_LIST(req_msg.acct_list);
+			FREE_NULL_LIST(req_msg.user_list);
+			/* Collapse load errno to 1 to match sshare's exit_code. */
+			exit(exit_code ? 1 : 0);
+		}
+	}
+
 	if (clusters)
-		exit_code = _multi_cluster(argc, argv, &req_msg);
+		exit_code = _multi_cluster(parser, &req_msg);
 	else
-		exit_code = _single_cluster(argc, argv, &req_msg);
+		exit_code = _single_cluster(parser, &req_msg);
+
+	if (mimetype)
+		data_parser_cli_free_ctxt(&parser);
 
 	FREE_NULL_LIST(req_msg.acct_list);
 	FREE_NULL_LIST(req_msg.user_list);
 	exit(exit_code);
 }
 
-
-static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
+static int _single_cluster(data_parser_t *parser, shares_request_msg_t *req_msg)
 {
 	int rc = SLURM_SUCCESS;
 	shares_response_msg_t *resp_msg = NULL;
@@ -282,8 +297,8 @@ static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 	}
 
 	if (mimetype) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_SHARES_RESP, resp_msg, argc, argv,
-				     NULL, mimetype, data_parser, rc);
+		rc = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_SHARES_RESP, resp_msg, parser);
 	} else {
 		process(resp_msg, options);
 	}
@@ -293,7 +308,7 @@ static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 	return rc;
 }
 
-static int _multi_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
+static int _multi_cluster(data_parser_t *parser, shares_request_msg_t *req_msg)
 {
 	list_itr_t *itr;
 	bool first = true;
@@ -306,7 +321,7 @@ static int _multi_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 		else
 			printf("\n");
 		printf("CLUSTER: %s\n", working_cluster_rec->name);
-		rc2 = _single_cluster(argc, argv, req_msg);
+		rc2 = _single_cluster(parser, req_msg);
 		if (rc2)
 			rc = 1;
 	}

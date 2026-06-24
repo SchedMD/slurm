@@ -928,7 +928,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
-	list_t *user_list;
+	list_t *user_list = NULL;
 	int i=0, cond_set=0, prev_set=0;
 	list_itr_t *itr = NULL;
 	list_itr_t *itr2 = NULL;
@@ -939,7 +939,15 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	int field_count = 0;
 
 	list_t *format_list = list_create(xfree_ptr);
-	list_t *print_fields_list; /* types are of print_field_t */
+	list_t *print_fields_list = NULL; /* types are of print_field_t */
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, db_conn, orig_argc,
+					  orig_argv, mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	user_cond->with_assocs = with_assoc_flag;
 	user_cond->assoc_cond = xmalloc(sizeof(slurmdb_assoc_cond_t));
@@ -955,9 +963,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
-		FREE_NULL_LIST(format_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	if (!list_count(format_list)) {
@@ -988,9 +995,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			FREE_NULL_LIST(format_list);
-			slurmdb_destroy_user_cond(user_cond);
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
+			goto cleanup;
 		}
 	}
 
@@ -998,28 +1004,25 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	FREE_NULL_LIST(format_list);
 
 	if (exit_code) {
-		slurmdb_destroy_user_cond(user_cond);
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	user_list = slurmdb_users_get(db_conn, user_cond);
 	slurmdb_destroy_user_cond(user_cond);
+	user_cond = NULL;
 
 	if (mime_type) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_USERS_RESP, user_list, orig_argc,
-				     orig_argv, db_conn, mime_type, data_parser,
-				     rc);
-		FREE_NULL_LIST(print_fields_list);
-		FREE_NULL_LIST(user_list);
-		return rc;
+		rc = data_parser_dump_cli_single(DATA_PARSER_OPENAPI_USERS_RESP,
+						 user_list, parser);
+		goto cleanup;
 	}
 
 	if (!user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
-		FREE_NULL_LIST(print_fields_list);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto cleanup;
 	}
 
 	itr = list_iterator_create(user_list);
@@ -1219,8 +1222,14 @@ extern int sacctmgr_list_user(int argc, char **argv)
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	FREE_NULL_LIST(user_list);
+
+cleanup:
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
+	slurmdb_destroy_user_cond(user_cond);
+	FREE_NULL_LIST(format_list);
 	FREE_NULL_LIST(print_fields_list);
+	FREE_NULL_LIST(user_list);
 
 	return rc;
 }

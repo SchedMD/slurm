@@ -91,9 +91,13 @@ extern void parse_command_line(int argc, char **argv);
 int main(int argc, char **argv)
 {
 	int rc = 0;
+	data_parser_t *parser = NULL;
 
 	slurm_init(NULL);
 	parse_command_line(argc, argv);
+
+	rc = data_parser_load_cli_or_exit(&parser, NULL, argc, argv,
+					  params.mimetype, params.data_parser);
 
 	if (params.mode == STAT_COMMAND_RESET) {
 		req.command_id = STAT_COMMAND_RESET;
@@ -109,10 +113,9 @@ int main(int argc, char **argv)
 			_sort_rpc();
 
 			if (params.mimetype) {
-				DATA_DUMP_CLI_SINGLE(OPENAPI_DIAG_RESP, buf,
-						     argc, argv, NULL,
-						     params.mimetype,
-						     params.data_parser, rc);
+				rc = data_parser_dump_cli_single(
+					DATA_PARSER_OPENAPI_DIAG_RESP, buf,
+					parser);
 			} else {
 				rc = _print_stats();
 			}
@@ -122,6 +125,9 @@ int main(int argc, char **argv)
 		} else
 			slurm_perror("slurm_get_statistics");
 	}
+
+	if (params.mimetype)
+		data_parser_cli_free_ctxt(&parser);
 
 	exit(rc);
 }

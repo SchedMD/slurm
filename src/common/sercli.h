@@ -53,76 +53,85 @@ typedef struct {
 	int magic; /* DATA_PARSER_DUMP_CLI_CTXT_MAGIC */
 	int rc;
 	list_t *errors;
+	const char *mime_type;
 	list_t *warnings;
 	const char *data_parser;
+	openapi_resp_meta_t *meta;
 } data_parser_dump_cli_ctxt_t;
 
 /*
- * Dump object of given type to STDOUT
- * This function is only intended for the simple dump of the data and then
- * exiting of the CLI command.
- * IN type - data parser type for *obj
- * IN obj_bytes - sizeof(*obj)
+ * Release a parser from data_parser_cli_load() and the dump ctxt it carries
+ * (meta, errors, warnings), then NULL *parser_ptr.
+ * NOTE: frees the parser first so no callback can touch the ctxt afterward.
+ * NOTE: no-op when *parser_ptr is NULL (the "list"/error/no-mime paths).
+ */
+extern void data_parser_cli_free_ctxt(data_parser_t **parser_ptr);
+
+/*
+ * data_parser_cli_load() for one-shot tools with no cleanup label: on the
+ * "list" short-circuit or a load error, release the ctxt and exit().
+ * NOTE: no-op returning SLURM_SUCCESS when mime_type is unset, so it is safe
+ *	to call unconditionally.
+ * IN/OUT parser_ptr - set to the new parser, or NULL on "list"/error
  * IN acct_db_conn - slurmdb connection or NULL
- * IN mime_type - dump object as given mime type
- * IN data_parser - data_parser parameters
- * IN meta - ptr to meta instance
+ * IN argc/argv - program argv (used to populate meta)
+ * IN mime_type - mime type the caller intends to dump (load skipped if unset)
+ * IN data_parser - data_parser parameters; "list" prints plugin list
+ * RET SLURM_SUCCESS or error (only returns on the dump path)
+ */
+extern int data_parser_load_cli_or_exit(data_parser_t **parser_ptr,
+					void *acct_db_conn, int argc,
+					char **argv, const char *mime_type,
+					const char *data_parser);
+
+/*
+ * Dump a full openapi_resp_* struct to STDOUT using a parser from
+ * data_parser_cli_load().
+ * NOTE: injects the parser's ctxt meta/errors/warnings into resp's common
+ *	prefix for the dump, then unhooks and releases them, leaving the parser
+ *	reusable for a subsequent dump.
+ * IN type - data parser type for *resp
+ * IN resp - ptr to an openapi_resp_* struct to dump
+ * IN resp_bytes - sizeof(*resp); must be the full per-type size
+ * IN parser - parser from data_parser_cli_load()
  * RET SLURM_SUCCESS or error
  */
-extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
-				       int obj_bytes, void *acct_db_conn,
-				       const char *mime_type,
-				       const char *data_parser,
-				       data_parser_dump_cli_ctxt_t *ctxt,
-				       openapi_resp_meta_t *meta);
+extern int data_parser_dump_cli_resp(data_parser_type_t type, void *resp,
+				     int resp_bytes, data_parser_t *parser);
 
 /*
- * Dump object to stdout
+ * Like data_parser_dump_cli_resp() but wraps a bare object in
+ * openapi_resp_single_t before dumping.
+ * IN type - data parser type for the wrapped response object
+ * IN response - ptr to the object to dump as the single response field
+ * IN parser - parser from data_parser_cli_load()
+ * RET SLURM_SUCCESS or error
  */
-#define DATA_DUMP_CLI(type, src, argc, argv, db_conn, mime_type, \
-		      data_parser_str, rc) \
-	do { \
-		data_parser_dump_cli_ctxt_t dump_ctxt = { \
-			.magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC, \
-			.data_parser = data_parser_str, \
-		}; \
-		__typeof__(src) *src_ptr = &src; \
-		if (!src.OPENAPI_RESP_STRUCT_META_FIELD_NAME) \
-			src.OPENAPI_RESP_STRUCT_META_FIELD_NAME = \
-				data_parser_cli_meta(argc, argv, mime_type); \
-		if (!src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME) \
-			src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME = \
-				dump_ctxt.errors = \
-					list_create(free_openapi_resp_error); \
-		else \
-			dump_ctxt.errors = \
-				src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME; \
-		if (!src.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME) \
-			src.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME = \
-				dump_ctxt.warnings = list_create( \
-					free_openapi_resp_warning); \
-		else \
-			dump_ctxt.warnings = \
-				src.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME; \
-		rc = data_parser_dump_cli_stdout( \
-			DATA_PARSER_##type, src_ptr, sizeof(*src_ptr), \
-			db_conn, mime_type, data_parser_str, &dump_ctxt, \
-			src.OPENAPI_RESP_STRUCT_META_FIELD_NAME); \
-		FREE_OPENAPI_RESP_COMMON_CONTENTS(src_ptr); \
-	} while (false)
+extern int data_parser_dump_cli_single(data_parser_type_t type, void *response,
+				       data_parser_t *parser);
 
 /*
- * Dump object as single field to in common openapi response dictionary
+ * Load a CLI dump context for a subsequent dump.
+ * NOTE: call BEFORE the slurm_load_*() RPC so "list" can short-circuit it.
+ * NOTE: for "list", prints plugin names to STDOUT (header on STDERR) and
+ *	returns SLURM_SUCCESS with *parser_ptr NULL and nothing allocated; the
+ *	caller detects a NULL parser and skips the dump.
+ * NOTE: otherwise heap-allocates the dump ctxt (errors/warnings/meta) and the
+ *	parser that carries it as its callback arg, assigns acct_db_conn, and
+ *	sets meta->plugin.data_parser; release with
+ *	data_parser_cli_free_ctxt().
+ * NOTE: on a load error it frees everything it allocated and returns
+ *	*parser_ptr NULL, so the caller need not free on the error path.
+ * IN/OUT parser_ptr - set to the new parser, or NULL on "list"/error
+ * IN acct_db_conn - slurmdb connection or NULL
+ * IN argc/argv - program argv (used to populate meta)
+ * IN mime_type - mime type the caller intends to dump
+ * IN data_parser - data_parser parameters; "list" prints plugin list
+ * RET SLURM_SUCCESS or error
  */
-#define DATA_DUMP_CLI_SINGLE(type, src, argc, argv, db_conn, mime_type, \
-			     data_parser, rc) \
-	do { \
-		openapi_resp_single_t openapi_resp = { \
-			.response = src, \
-		}; \
-		DATA_DUMP_CLI(type, openapi_resp, argc, argv, db_conn, \
-			      mime_type, data_parser, rc); \
-	} while (false)
+extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
+				int argc, char **argv, const char *mime_type,
+				const char *data_parser);
 
 /*
  * Dump given target struct src into string

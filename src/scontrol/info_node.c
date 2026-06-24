@@ -179,8 +179,17 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 	node_info_msg_t *node_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
 	hostlist_t *host_list = NULL;
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	uint16_t show_flags = 0;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		error_code =
+			data_parser_cli_load(&parser, NULL, orig_argc,
+					     orig_argv, mime_type, data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	if (all_flag)
 		show_flags |= SHOW_ALL;
@@ -194,7 +203,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_node error");
-		return;
+		goto cleanup;
 	}
 
 	if (quiet_flag == -1) {
@@ -210,24 +219,20 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror("slurm_load_partitions error");
-		return;
+		goto cleanup;
 	}
 	slurm_populate_node_partitions(node_info_ptr, part_info_ptr);
 
 	if (node_list == NULL) {
 		if (mime_type) {
-			int rc;
 			openapi_resp_node_info_msg_t resp = {
 				.nodes = node_info_ptr,
 				.last_update = node_info_ptr->last_update,
 			};
 
-			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, orig_argc,
-				      orig_argv, NULL, mime_type, data_parser,
-				      rc);
-
-			if (rc)
-				exit_code = 1;
+			error_code = data_parser_dump_cli_resp(
+				DATA_PARSER_OPENAPI_NODES_RESP, &resp,
+				sizeof(resp), parser);
 		} else {
 			scontrol_print_node(NULL, node_info_ptr);
 		}
@@ -249,7 +254,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 		}
 
 		if (mime_type) {
-			int rc, count = 0;
+			int count = 0;
 			char *node_name;
 			node_info_msg_t msg = {
 				.last_update = node_info_ptr->last_update,
@@ -284,12 +289,9 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 			msg.record_count = count;
 
-			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, orig_argc,
-				      orig_argv, NULL, mime_type, data_parser,
-				      rc);
-
-			if (rc)
-				exit_code = 1;
+			error_code = data_parser_dump_cli_resp(
+				DATA_PARSER_OPENAPI_NODES_RESP, &resp,
+				sizeof(resp), parser);
 
 			xfree(msg.node_array);
 		} else {
@@ -303,7 +305,12 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 		hostlist_destroy(host_list);
 	}
-	return;
+
+cleanup:
+	if (error_code)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 }
 
 /*

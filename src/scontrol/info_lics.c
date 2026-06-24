@@ -91,9 +91,18 @@ static slurm_license_info_t ** _license_sort(license_info_msg_t
 extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 {
 	int cc;
-	license_info_msg_t *msg;
+	int rc = SLURM_SUCCESS;
+	license_info_msg_t *msg = NULL;
 	uint16_t show_flags;
 	static time_t last_update;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	show_flags = 0;
 	/* call the controller to get the meat
@@ -105,7 +114,7 @@ extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_license error");
-		return;
+		goto cleanup;
 	}
 
 	last_update = time(NULL);
@@ -113,26 +122,24 @@ extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 	 * Print the info
 	 */
 	if (mime_type) {
-		int rc;
 		openapi_resp_license_info_msg_t resp = {
 			.licenses = msg,
 			.last_update = msg->last_update,
 		};
 
-		DATA_DUMP_CLI(OPENAPI_LICENSES_RESP, resp, orig_argc, orig_argv,
-			      NULL, mime_type, data_parser, rc);
-
-		if (rc)
-			exit_code = 1;
+		rc = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_LICENSES_RESP, &resp, sizeof(resp),
+			parser);
 	} else {
 		_print_license_info(name, msg);
 	}
 
-	/* free at last
-	 */
+cleanup:
+	if (rc)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 	slurm_free_license_info_msg(msg);
-
-	return;
 }
 
 static int _match_license_name(const char *query, const char *name, bool fuzzy)

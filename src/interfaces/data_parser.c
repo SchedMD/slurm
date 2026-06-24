@@ -53,15 +53,19 @@
 #define PARSE_MAGIC 0x0ea0b1be
 #define LATEST_PLUGIN_NAME "latest"
 
-struct data_parser_s {
+typedef struct data_parser_s {
 	int magic;
 	int plugin_offset;
-	/* arg returned by plugin init() */
-	void *arg;
+	/* opaque context returned by the plugin's new() */
+	void *plugin_ctxt;
+	/* on_error callback arg from _new() - shallow pointer */
+	void *error_arg;
+	/* on_warn callback arg from _new() - shallow pointer */
+	void *warn_arg;
 	const char *plugin_type; /* ptr to plugin plugin_type - do not xfree */
 	char *params; /* parameters from _new - must xfree */
 	char *plugin_string; /* plugin_type+params - must xfree */
-};
+} data_parser_t;
 
 typedef struct {
 	int (*parse)(void *arg, data_parser_type_t type, void *dst,
@@ -152,7 +156,8 @@ extern int data_parser_g_parse(data_parser_t *parser, data_parser_type_t type,
 	xassert(plugins->functions[parser->plugin_offset]);
 
 	START_TIMER;
-	rc = funcs->parse(parser->arg, type, dst, dst_bytes, src, parent_path);
+	rc = funcs->parse(parser->plugin_ctxt, type, dst, dst_bytes, src,
+			  parent_path);
 	END_TIMER2(__func__);
 
 	return rc;
@@ -179,7 +184,7 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
 	xassert(plugins->functions[parser->plugin_offset]);
 
 	START_TIMER;
-	rc = funcs->dump(parser->arg, type, src, src_bytes, dst);
+	rc = funcs->dump(parser->plugin_ctxt, type, src, src_bytes, dst);
 	END_TIMER2(__func__);
 
 	return rc;
@@ -205,12 +210,15 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 	parser->plugin_offset = plugin_index;
 	parser->plugin_type = plugins->types[plugin_index];
 	parser->params = params;
+	parser->error_arg = error_arg;
+	parser->warn_arg = warn_arg;
 
 	START_TIMER;
 	funcs = plugins->functions[plugin_index];
-	parser->arg = funcs->new(on_parse_error, on_dump_error, on_query_error,
-				 error_arg, on_parse_warn, on_dump_warn,
-				 on_query_warn, warn_arg, params);
+	parser->plugin_ctxt =
+		funcs->new (on_parse_error, on_dump_error, on_query_error,
+			    error_arg, on_parse_warn, on_dump_warn,
+			    on_query_warn, warn_arg, params);
 	xstrfmtcat(parser->plugin_string, "%s%s", parser->plugin_type,
 		   (parser->params ? parser->params : ""));
 	END_TIMER2(__func__);
@@ -486,6 +494,26 @@ extern const char *data_parser_get_plugin(data_parser_t *parser)
 	return parser->plugin_string;
 }
 
+extern void *data_parser_get_error_arg(data_parser_t *parser)
+{
+	if (!parser)
+		return NULL;
+
+	xassert(parser->magic == PARSE_MAGIC);
+
+	return parser->error_arg;
+}
+
+extern void *data_parser_get_warn_arg(data_parser_t *parser)
+{
+	if (!parser)
+		return NULL;
+
+	xassert(parser->magic == PARSE_MAGIC);
+
+	return parser->warn_arg;
+}
+
 static const char *_get_plugin_version(const char *plugin_type)
 {
 	static const char prefix[] = PARSE_MAJOR_TYPE "/";
@@ -540,12 +568,12 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 
 	START_TIMER;
 	if (plugins)
-		funcs->free(parser->arg);
+		funcs->free(parser->plugin_ctxt);
 	END_TIMER2(__func__);
 
 	xfree(parser->params);
 	xfree(parser->plugin_string);
-	parser->arg = NULL;
+	parser->plugin_ctxt = NULL;
 	parser->plugin_offset = -1;
 	parser->magic = ~PARSE_MAGIC;
 	xfree(parser);
@@ -591,7 +619,7 @@ extern int data_parser_g_assign(data_parser_t *parser,
 	xassert(type < DATA_PARSER_ATTR_MAX);
 
 	START_TIMER;
-	rc = funcs->assign(parser->arg, type, obj);
+	rc = funcs->assign(parser->plugin_ctxt, type, obj);
 	END_TIMER2(__func__);
 
 	return rc;
@@ -662,7 +690,7 @@ extern int data_parser_g_resolve_openapi_type(data_parser_t *parser,
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->resolve_openapi_type(parser->arg, type, field);
+	return funcs->resolve_openapi_type(parser->plugin_ctxt, type, field);
 }
 
 extern const char *data_parser_g_resolve_type_string(data_parser_t *parser,
@@ -679,7 +707,7 @@ extern const char *data_parser_g_resolve_type_string(data_parser_t *parser,
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->resolve_type_str(parser->arg, type);
+	return funcs->resolve_type_str(parser->plugin_ctxt, type);
 }
 
 extern int data_parser_g_increment_reference(data_parser_t *parser,
@@ -696,7 +724,7 @@ extern int data_parser_g_increment_reference(data_parser_t *parser,
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->inc_ref(parser->arg, type, references_ptr);
+	return funcs->inc_ref(parser->plugin_ctxt, type, references_ptr);
 }
 
 extern int data_parser_g_populate_schema(data_parser_t *parser,
@@ -714,8 +742,8 @@ extern int data_parser_g_populate_schema(data_parser_t *parser,
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->populate_schema(parser->arg, type, references_ptr, dst,
-				      schemas);
+	return funcs->populate_schema(parser->plugin_ctxt, type, references_ptr,
+				      dst, schemas);
 }
 
 extern int data_parser_g_populate_parameters(data_parser_t *parser,
@@ -734,7 +762,7 @@ extern int data_parser_g_populate_parameters(data_parser_t *parser,
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->populate_parameters(parser->arg, parameter_type,
+	return funcs->populate_parameters(parser->plugin_ctxt, parameter_type,
 					  query_type, references_ptr, dst,
 					  schemas);
 }
@@ -752,7 +780,7 @@ extern void data_parser_g_release_references(data_parser_t *parser,
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->release_refs(parser->arg, references_ptr);
+	return funcs->release_refs(parser->plugin_ctxt, references_ptr);
 }
 
 extern bool data_parser_g_is_complex(data_parser_t *parser)
@@ -767,7 +795,7 @@ extern bool data_parser_g_is_complex(data_parser_t *parser)
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->is_complex(parser->arg);
+	return funcs->is_complex(parser->plugin_ctxt);
 }
 
 extern bool data_parser_g_is_deprecated(data_parser_t *parser)
@@ -782,7 +810,7 @@ extern bool data_parser_g_is_deprecated(data_parser_t *parser)
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(parser->plugin_offset < plugins->count);
 
-	return funcs->is_deprecated(parser->arg);
+	return funcs->is_deprecated(parser->plugin_ctxt);
 }
 
 extern int data_parser_g_dump_flags(data_parser_t *parser, data_t *dst)
@@ -800,5 +828,5 @@ extern int data_parser_g_dump_flags(data_parser_t *parser, data_t *dst)
 
 	funcs = plugins->functions[parser->plugin_offset];
 
-	return funcs->dump_flags(parser->arg, dst);
+	return funcs->dump_flags(parser->plugin_ctxt, dst);
 }

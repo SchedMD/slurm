@@ -1272,7 +1272,7 @@ static void _print_env(slurmdb_job_rec_t *job)
  * At this point, we have already selected the desired data,
  * so we just need to print it for the user.
  */
-extern void do_list(int argc, char **argv)
+extern void do_list(data_parser_t *parser)
 {
 	list_itr_t *itr = NULL;
 	list_itr_t *itr_step = NULL;
@@ -1281,9 +1281,8 @@ extern void do_list(int argc, char **argv)
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if (params.mimetype) {
-		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_JOBS_RESP, jobs, argc,
-				     argv, acct_db_conn, params.mimetype,
-				     params.data_parser, errno);
+		errno = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_SLURMDBD_JOBS_RESP, jobs, parser);
 		return;
 	}
 

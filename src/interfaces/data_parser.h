@@ -899,6 +899,20 @@ extern const char *data_parser_get_plugin_version(data_parser_t *parser);
 extern const char *data_parser_get_plugin_params(data_parser_t *parser);
 
 /*
+ * Get the on_error arg that was passed to data_parser_g_new().
+ * IN parser - parser instance or NULL
+ * RET the stored error_arg (NULL if parser is NULL)
+ */
+extern void *data_parser_get_error_arg(data_parser_t *parser);
+
+/*
+ * Get the on_warn arg that was passed to data_parser_g_new().
+ * IN parser - parser instance or NULL
+ * RET the stored warn_arg (NULL if parser is NULL)
+ */
+extern void *data_parser_get_warn_arg(data_parser_t *parser);
+
+/*
  * Free data parser instance
  * IN parser - parser to free
  * IN skip_unloading - skip unloading plugins

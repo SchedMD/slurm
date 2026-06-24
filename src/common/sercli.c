@@ -146,65 +146,194 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 	dprintf(STDOUT_FILENO, "%s\n", full_type);
 }
 
-extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
-				       int obj_bytes, void *acct_db_conn,
-				       const char *mime_type,
-				       const char *data_parser,
-				       data_parser_dump_cli_ctxt_t *ctxt,
-				       openapi_resp_meta_t *meta)
+extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
+				int argc, char **argv, const char *mime_type,
+				const char *data_parser)
 {
 	int rc = SLURM_SUCCESS;
+	data_parser_dump_cli_ctxt_t *ctxt = NULL;
 	data_parser_t *parser = NULL;
-	buf_t *out = NULL;
-	serialize_dump_state_t *state = NULL;
+
+	xassert(parser_ptr);
+	xassert(!*parser_ptr);
 
 	if (!xstrcasecmp(data_parser, "list")) {
+		data_parser_t *list_parser = NULL;
+
+		/*
+		 * "list" short-circuit: print the plugin list and return with
+		 * *parser_ptr NULL (nothing allocated). The caller sees a NULL
+		 * parser and exits without dumping.
+		 */
 		dprintf(STDERR_FILENO, "Possible data_parser plugins:\n");
-		parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
-					   NULL, NULL, "list",
-					   _plugrack_foreach_list, false);
-		FREE_NULL_DATA_PARSER(parser);
+		list_parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL, "list",
+						_plugrack_foreach_list, false);
+		FREE_NULL_DATA_PARSER(list_parser);
 		return SLURM_SUCCESS;
 	}
+
+	ctxt = xmalloc(sizeof(*ctxt));
+	ctxt->magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC;
+	ctxt->data_parser = data_parser;
+	ctxt->mime_type = mime_type;
+	ctxt->errors = list_create(free_openapi_resp_error);
+	ctxt->warnings = list_create(free_openapi_resp_warning);
+	ctxt->meta = data_parser_cli_meta(argc, argv, mime_type);
 
 	if (!(parser = data_parser_cli_parser(data_parser, ctxt))) {
 		rc = ESLURM_DATA_INVALID_PARSER;
 		error("%s output not supported by %s",
 		      mime_type, SLURM_DATA_PARSER_VERSION);
-		goto cleanup;
+		free_openapi_resp_meta(ctxt->meta);
+		FREE_NULL_LIST(ctxt->errors);
+		FREE_NULL_LIST(ctxt->warnings);
+		xfree(ctxt);
+		return rc;
 	}
 
 	if (acct_db_conn)
 		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
 				     acct_db_conn);
 
-	xassert(!meta->plugin.data_parser);
-	meta->plugin.data_parser = xstrdup(data_parser_get_plugin(parser));
+	xassert(!ctxt->meta->plugin.data_parser);
+	ctxt->meta->plugin.data_parser =
+		xstrdup(data_parser_get_plugin(parser));
+
+	*parser_ptr = parser;
+	return rc;
+}
+
+/*
+ * Dump object of given type to STDOUT using a parser from
+ * data_parser_cli_load(); the parser's ctxt selects the mime type.
+ */
+static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
+			   data_parser_t *parser)
+{
+	int rc = SLURM_SUCCESS;
+	buf_t *out = NULL;
+	serialize_dump_state_t *dump_state = NULL;
+	data_parser_dump_cli_ctxt_t *ctxt = data_parser_get_error_arg(parser);
+
+	xassert(parser);
+	xassert(ctxt);
+	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+	xassert(ctxt->mime_type);
+	xassert(ctxt->meta);
 
 	out = init_buf(BUF_SIZE);
 
 	do {
-		rc = serdes_dump(&state, parser, type, obj, obj_bytes, out,
-				 mime_type, SER_FLAGS_NONE);
+		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
+				 ctxt->mime_type, SER_FLAGS_NONE);
 
 		(void) printf("%.*s", get_buf_offset(out), get_buf_data(out));
 
 		set_buf_offset(out, 0);
-	} while (state);
+	} while (dump_state);
 
 	printf("\n");
 
-cleanup:
-	xassert(!state);
+	xassert(!dump_state);
+
+	FREE_NULL_BUFFER(out);
+	return rc;
+}
+
+extern void data_parser_cli_free_ctxt(data_parser_t **parser_ptr)
+{
+	data_parser_dump_cli_ctxt_t *ctxt;
+
+	if (!parser_ptr || !*parser_ptr)
+		return;
+
+	ctxt = data_parser_get_error_arg(*parser_ptr);
+
+	/* free the parser first so no callback can touch the ctxt afterward */
+	FREE_NULL_DATA_PARSER(*parser_ptr);
+
+	free_openapi_resp_meta(ctxt->meta);
+	FREE_NULL_LIST(ctxt->errors);
+	FREE_NULL_LIST(ctxt->warnings);
+	xfree(ctxt);
+}
+
+extern int data_parser_dump_cli_resp(data_parser_type_t type, void *resp,
+				     int resp_bytes, data_parser_t *parser)
+{
+	int rc;
+	data_parser_dump_cli_ctxt_t *ctxt = data_parser_get_error_arg(parser);
+	/*
+	 * Every openapi_resp_* struct begins with the same
+	 * {meta, errors, warnings} prefix (the OPENAPI_RESP_STRUCT_*_FIELD
+	 * macros), and openapi_resp_single_t is exactly that prefix plus a
+	 * response field. Per C11 common-initial-sequence rules we may reach
+	 * the common fields of any response struct through this cast.
+	 */
+	openapi_resp_single_t *common = resp;
+
+	xassert(parser);
+	xassert(ctxt);
+	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+	xassert(!common->meta);
+	xassert(!common->errors);
+	xassert(!common->warnings);
+
+	common->meta = ctxt->meta;
+	common->errors = ctxt->errors;
+	common->warnings = ctxt->warnings;
+
+	rc = _cli_dump_state(type, resp, resp_bytes, parser);
 
 	/*
-	 * This is only called from the CLI just before exiting.
-	 * Skip the explicit free here to improve responsiveness.
+	 * The ctxt owns the meta/errors/warnings -- unhook them from resp
+	 * before FREE_OPENAPI_RESP_COMMON_CONTENTS() so the parser survives
+	 * across multiple dumps.
 	 */
-#ifdef MEMORY_LEAK_DEBUG
-	FREE_NULL_BUFFER(out);
-	FREE_NULL_DATA_PARSER(parser);
-#endif
+	common->meta = NULL;
+	common->errors = NULL;
+	common->warnings = NULL;
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(common);
+
+	/*
+	 * Flush per-dump state so successive dumps with the same parser each
+	 * get a fresh errors/warnings/rc.
+	 */
+	list_flush(ctxt->errors);
+	list_flush(ctxt->warnings);
+	ctxt->rc = 0;
+
+	return rc;
+}
+
+extern int data_parser_dump_cli_single(data_parser_type_t type, void *response,
+				       data_parser_t *parser)
+{
+	openapi_resp_single_t single = {
+		.response = response,
+	};
+
+	return data_parser_dump_cli_resp(type, &single, sizeof(single), parser);
+}
+
+extern int data_parser_load_cli_or_exit(data_parser_t **parser_ptr,
+					void *acct_db_conn, int argc,
+					char **argv, const char *mime_type,
+					const char *data_parser)
+{
+	int rc;
+
+	if (!mime_type)
+		return SLURM_SUCCESS;
+
+	rc = data_parser_cli_load(parser_ptr, acct_db_conn, argc, argv,
+				  mime_type, data_parser);
+
+	if (rc || !*parser_ptr) {
+		data_parser_cli_free_ctxt(parser_ptr);
+		exit(rc ? 1 : 0);
+	}
 
 	return rc;
 }

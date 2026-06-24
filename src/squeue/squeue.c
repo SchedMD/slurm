@@ -218,6 +218,14 @@ static int _query_job_states(int argc, char **argv)
 	job_state_response_msg_t *jsr = NULL;
 	job_state_args_t args = { 0 };
 	job_info_msg_t *job_msg = NULL;
+	data_parser_t *parser = NULL;
+
+	if (params.mimetype) {
+		rc = data_parser_cli_load(&parser, NULL, argc, argv,
+					  params.mimetype, params.data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
 
 	if (params.job_list) {
 		args.job_ids_count = list_count(params.job_list);
@@ -237,8 +245,9 @@ static int _query_job_states(int argc, char **argv)
 			.jobs = jsr,
 		};
 
-		DATA_DUMP_CLI(OPENAPI_JOB_STATE_RESP, resp, argc, argv, NULL,
-			      params.mimetype, params.data_parser, rc);
+		rc = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_JOB_STATE_RESP, &resp, sizeof(resp),
+			parser);
 		goto cleanup;
 	}
 
@@ -285,6 +294,8 @@ static int _query_job_states(int argc, char **argv)
 			 params.format_list);
 
 cleanup:
+	if (params.mimetype)
+		data_parser_cli_free_ctxt(&parser);
 #ifdef MEMORY_LEAK_DEBUG
 	slurm_free_job_info_msg(job_msg);
 	xfree(args.job_ids);
@@ -299,8 +310,12 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 {
 	static job_info_msg_t *old_job_ptr;
 	job_info_msg_t *new_job_ptr = NULL;
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	uint16_t show_flags = 0;
+	data_parser_t *parser = NULL;
+
+	if (!old_job_ptr && params.only_state)
+		return _query_job_states(argc, argv);
 
 	if (params.all_flag || (params.job_list && list_count(params.job_list)))
 		show_flags |= SHOW_ALL;
@@ -314,6 +329,14 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 	/* We require detail data when CPUs are requested */
 	if ((params.format && strstr(params.format, "C")) || params.detail_flag)
 		show_flags |= SHOW_DETAIL;
+
+	if (params.mimetype) {
+		error_code = data_parser_cli_load(&parser, NULL, argc, argv,
+						  params.mimetype,
+						  params.data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	if (old_job_ptr) {
 		if (clear_old)
@@ -341,8 +364,6 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
-	} else if (params.only_state) {
-		return (error_code = _query_job_states(argc, argv));
 	} else if (params.job_id || params.sluid) {
 		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 		step_id.job_id = params.job_id;
@@ -358,12 +379,12 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
-		return SLURM_ERROR;
+		error_code = SLURM_ERROR;
+		goto cleanup;
 	}
 	old_job_ptr = new_job_ptr;
 
 	if (params.mimetype) {
-		int rc;
 		squeue_filter_jobs_for_json(new_job_ptr);
 		openapi_resp_job_info_msg_t resp = {
 			.jobs = new_job_ptr,
@@ -371,12 +392,10 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 			.last_update = new_job_ptr->last_update,
 		};
 
-		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv, NULL,
-			      params.mimetype, params.data_parser, rc);
-#ifdef MEMORY_LEAK_DEBUG
-		slurm_free_job_info_msg(new_job_ptr);
-#endif
-		return rc;
+		error_code = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_JOB_INFO_RESP, &resp, sizeof(resp),
+			parser);
+		goto cleanup;
 	}
 
 	if (params.job_id || params.user_id)
@@ -414,21 +433,38 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 	print_jobs_array(new_job_ptr->job_array, new_job_ptr->record_count,
 			 params.format_list) ;
 	return SLURM_SUCCESS;
+
+cleanup:
+	if (params.mimetype)
+		data_parser_cli_free_ctxt(&parser);
+#ifdef MEMORY_LEAK_DEBUG
+	slurm_free_job_info_msg(new_job_ptr);
+#endif
+	return error_code;
 }
 
 
 /* _print_job_step - print the specified job step's information */
 static int _print_job_steps(bool clear_old, int argc, char **argv)
 {
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	static job_step_info_response_msg_t * old_step_ptr = NULL;
-	static job_step_info_response_msg_t  * new_step_ptr;
+	static job_step_info_response_msg_t *new_step_ptr = NULL;
 	uint16_t show_flags = 0;
+	data_parser_t *parser = NULL;
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
 	if (params.local_flag)
 		show_flags |= SHOW_LOCAL;
+
+	if (params.mimetype) {
+		error_code = data_parser_cli_load(&parser, NULL, argc, argv,
+						  params.mimetype,
+						  params.data_parser);
+		if (error_code || !parser)
+			goto cleanup;
+	}
 
 	if (old_step_ptr) {
 		if (clear_old)
@@ -449,24 +485,21 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 	}
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
-		return SLURM_ERROR;
+		error_code = SLURM_ERROR;
+		goto cleanup;
 	}
 	old_step_ptr = new_step_ptr;
 
 	if (params.mimetype) {
-		int rc;
 		openapi_resp_job_step_info_msg_t resp = {
 			.steps = new_step_ptr,
 			.last_update = new_step_ptr->last_update,
 		};
 
-		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv, NULL,
-			      params.mimetype, params.data_parser, rc);
-
-#ifdef MEMORY_LEAK_DEBUG
-		slurm_free_job_step_info_response_msg(new_step_ptr);
-#endif
-		return rc;
+		error_code = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_STEP_INFO_MSG, &resp, sizeof(resp),
+			parser);
+		goto cleanup;
 	}
 
 	if (params.verbose) {
@@ -489,4 +522,12 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 			   new_step_ptr->job_step_count,
 			   params.format_list );
 	return SLURM_SUCCESS;
+
+cleanup:
+	if (params.mimetype)
+		data_parser_cli_free_ctxt(&parser);
+#ifdef MEMORY_LEAK_DEBUG
+	slurm_free_job_step_info_response_msg(new_step_ptr);
+#endif
+	return error_code;
 }
