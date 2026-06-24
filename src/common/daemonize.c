@@ -42,12 +42,14 @@
 
 #include <fcntl.h>
 #include <grp.h>
+#include <signal.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #if HAVE_SYS_PRCTL_H
+#include <sched.h>
 #include <sys/prctl.h>
 #endif
 
@@ -57,9 +59,11 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
-#include "src/common/read_config.h"
+#include "src/common/xsignal.h"
 
 /*
  * Double-fork and go into background.
@@ -307,6 +311,33 @@ extern void become_slurm_user(void)
 	}
 }
 
+/*
+ * Unshare the requested Linux namespaces for the calling process. A no-op on
+ * platforms without unshare() support.
+ *
+ * IN unshare_sysv - unshare the System V semaphore namespace
+ * IN unshare_files - unshare the file descriptor table
+ * RET SLURM_SUCCESS or an errno on failure
+ */
+static int _unshare_namespaces(bool unshare_sysv, bool unshare_files)
+{
+#if HAVE_SYS_PRCTL_H
+	int unshared = 0;
+
+	if (unshare_files)
+		unshared |= CLONE_FILES;
+	if (unshare_sysv)
+		unshared |= CLONE_SYSVSEM;
+
+	if (unshared && unshare(unshared)) {
+		int rc = errno;
+		error("Unable to unshare(): %s", slurm_strerror(rc));
+		return rc;
+	}
+#endif
+	return SLURM_SUCCESS;
+}
+
 extern int restrict_privileges(void)
 {
 #if HAVE_SYS_PRCTL_H
@@ -371,5 +402,82 @@ extern int set_parent_death_signal(int sig)
 		return rc;
 	}
 #endif
+	return SLURM_SUCCESS;
+}
+
+extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
+		       bool drop_groups, bool unshare_sysv, bool unshare_files,
+		       bool drop_priv, bool kill_child_on_exit,
+		       bool reset_signals, bool new_session)
+{
+	int rc = EINVAL;
+
+	/* Refuse the nobody user; resolve gid from the user if not set */
+	if (uid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+	if (gid == SLURM_AUTH_NOBODY)
+		gid = gid_from_uid(uid);
+
+	/* gid resolution failed */
+	if (gid == (gid_t) -1)
+		return EINVAL;
+
+	if (gids) {
+		if ((rc = set_supplementary_groups(uid, gids, gids_count)))
+			return rc;
+	} else if (drop_groups && (rc = drop_supplementary_groups(uid, gid))) {
+		return rc;
+	}
+
+	if ((rc = _unshare_namespaces(unshare_sysv, unshare_files)))
+		return rc;
+
+	if (drop_priv && (rc = restrict_privileges()))
+		return rc;
+
+	if (new_session && (rc = start_new_session()))
+		return rc;
+
+#ifdef __linux__
+	if (setresgid(gid, gid, gid)) {
+		rc = errno;
+		error("%s: Unable to setresgid(): %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+	if (setresuid(uid, uid, uid)) {
+		rc = errno;
+		error("%s: Unable to setresuid(): %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+#else
+	if (setgid(gid)) {
+		rc = errno;
+		error("Unable to setgid(): %s", slurm_strerror(rc));
+		return rc;
+	}
+	if (setuid(uid)) {
+		rc = errno;
+		error("Unable to setuid(): %s", slurm_strerror(rc));
+		return rc;
+	}
+#endif
+
+	if (reset_signals)
+		xsignal_reset_all();
+
+	if (kill_child_on_exit && (rc = set_parent_death_signal(SIGKILL)))
+		return rc;
+
+#if HAVE_SYS_PRCTL_H
+	/*
+	 * Always allow normal user process to be dumpable even if privileged
+	 * user was restricted
+	 */
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		error("%s: Unable to set process as dumpable: %m", __func__);
+#endif
+
 	return SLURM_SUCCESS;
 }

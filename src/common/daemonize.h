@@ -40,6 +40,9 @@
 #ifndef _HAVE_DAEMONIZE_H
 #define _HAVE_DAEMONIZE_H
 
+#include <stdbool.h>
+#include <sys/types.h>
+
 /*
  * Fork process into background and inherit new session.
  *
@@ -97,5 +100,35 @@ extern int start_new_session(void);
  * RET SLURM_SUCCESS or an errno on failure
  */
 extern int set_parent_death_signal(int sig);
+
+/*
+ * Restrict process to given user/group.
+ *
+ * Drops the calling (privileged) process down to the target uid/gid as a
+ * lockdown step before exec()ing untrusted code.
+ *
+ * A root target is permitted, but since dropping capabilities relies on the
+ * uid changing away from 0, a root target keeps its capabilities.
+ *
+ * IN uid - target user (SLURM_AUTH_NOBODY is rejected with ESLURM_AUTH_NOBODY)
+ * IN gid - target group (SLURM_AUTH_NOBODY resolves to the user's group)
+ * IN gids - if non-NULL, set these supplementary groups (overrides drop_groups)
+ * IN gids_count - number of entries in gids
+ * IN drop_groups - when gids is NULL, drop all inherited supplementary groups
+ *	(via drop_supplementary_groups()); if false, leave them intact
+ * IN unshare_sysv - unshare the System V semaphore namespace
+ * IN unshare_files - unshare the file descriptor table
+ * IN drop_priv - disable new privileges (PR_SET_NO_NEW_PRIVS) and ensure
+ *	capabilities are dropped on the uid change (keepcaps off)
+ * IN kill_child_on_exit - request SIGKILL when the parent process exits
+ * IN reset_signals - reset the blocked signal mask and signal dispositions to
+ *	their defaults
+ * IN new_session - setsid() to detach from the controlling terminal
+ * RET SLURM_SUCCESS or an errno on failure
+ */
+extern int become_user(uid_t uid, gid_t gid, gid_t *gids, int gids_count,
+		       bool drop_groups, bool unshare_sysv, bool unshare_files,
+		       bool drop_priv, bool kill_child_on_exit,
+		       bool reset_signals, bool new_session);
 
 #endif /* !_HAVE_DAEMONIZE_H */
