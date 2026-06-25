@@ -2343,16 +2343,24 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 {
 	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
 
-	if (!filter->step_id.job_id) {
-		/* 0 is never a valid job so just return now */
-		goto done;
-	} else if (filter->step_id.sluid) {
+	if (filter->step_id.sluid) {
 		args->job_ptr = find_sluid(filter->step_id.sluid);
-		if (args->job_ptr)
+		if (!args->job_ptr) {
+			if (args->null_callback)
+				args->control =
+					args->null_callback(filter,
+							    args->callback_arg);
+		} else if (args->job_ptr->het_job_list) {
+			/* Expand het leader into all its components. */
+			xassert(args->job_ptr->het_job_id > 0);
+			(void) list_for_each(args->job_ptr->het_job_list,
+					     _foreach_by_het_job, args);
+		} else {
 			_foreach_by_job_callback(args->job_ptr, args);
-		else if (args->null_callback)
-			args->control =
-				args->null_callback(filter, args->callback_arg);
+		}
+		goto done;
+	} else if (!filter->step_id.job_id) {
+		/* 0 is never a valid job so just return now */
 		goto done;
 	} else if (filter->step_id.job_id == NO_VAL) {
 		/* walk all jobs */
