@@ -276,7 +276,6 @@ static void *_launch_one_app(void *data)
 	_launch_app_data_t *opts = (_launch_app_data_t *) data;
 	slurm_opt_t *opt_local = opts->opt_local;
 	srun_job_t *job  = opts->job;
-	bool got_alloc   = opts->got_alloc;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
 
@@ -318,7 +317,7 @@ static void *_launch_one_app(void *data)
 
 	if (!launch_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
 				opt_local)) {
-		(void) launch_step_wait(job, got_alloc, opt_local);
+		slurm_step_launch_wait_finish(job->step_ctx);
 
 		if (job->step_ctx->launch_state->ret_code > mpi_plugin_rc)
 			mpi_plugin_rc = job->step_ctx->launch_state->ret_code;
