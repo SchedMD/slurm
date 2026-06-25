@@ -175,6 +175,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_DELAYED_ERROR),
 		"Kernel reported delayed socket error after successful write(), client side likely closed",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_SHUTTING_DOWN),
+		"Process is shutting down and closing all communications",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
