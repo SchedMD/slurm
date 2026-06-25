@@ -2848,6 +2848,10 @@ static int _foreach_license_copy(void *x, void *arg)
 	licenses_t *license_entry_dest = xmalloc(sizeof(licenses_t));
 	list_t *license_list_dest = arg;
 
+	/*
+	 * HRES and nodes intentionally not copied as they are unused by
+	 * consumers of this function.
+	 */
 	license_entry_dest->name = xstrdup(license_entry_src->name);
 	license_entry_dest->total = license_entry_src->total;
 	license_entry_dest->used = license_entry_src->used;
@@ -2866,6 +2870,10 @@ static int _foreach_license_light_copy(void *x, void *arg)
 	licenses_t *license_entry_dest = xmalloc(sizeof(licenses_t));
 	list_t *license_list_dest = arg;
 
+	/*
+	 * HRES and nodes and name intentionally not copied as they are unused
+	 * by consumers of this function.
+	 */
 	license_entry_dest->total = license_entry_src->total;
 	license_entry_dest->used = license_entry_src->used;
 	license_entry_dest->last_deficit = license_entry_src->last_deficit;
