@@ -951,9 +951,9 @@ test_128_#   Testing of PreemptType.
 test_128_1   /parameters/slurm/PreemptType/partition_prio/test_preemption_by_partition.py
 test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel"
 
-test_129_#   Testing of PreserveCaseUser.
-=========================================
-test_129_1   /parameters/slurm/PreserveCaseUser/test_PreserveCaseUser.py
+test_129_#   Testing of preserve-case slurmdbd parameters.
+===========================================================
+test_129_1   PreserveCaseUser and PreserveCaseAll behavior
 
 test_130_#   Testing of PriorityType.
 =====================================
