@@ -80,10 +80,6 @@ static bool _need_hetjob_components(job_state_response_msg_t **jsr)
 	job_state_response_job_t *jobs = NULL;
 	int rc;
 
-	/* If <jobid>+<offset> specified we target single component. */
-	if (params.selected_step->het_job_offset != NO_VAL)
-		return false;
-
 	if (!jsr) {
 		error("jsr pointer is NULL before calling slurm_load_job_state().");
 		exit(1);
@@ -103,8 +99,17 @@ static bool _need_hetjob_components(job_state_response_msg_t **jsr)
 
 	jobs = (*jsr)->jobs;
 
-	if (jobs->job_id != jobs->het_job_id)
+	if ((jobs->job_id != jobs->het_job_id) ||
+	    (params.selected_step->het_job_offset != NO_VAL)) {
+		/*
+		 * Single component (--jobid=N+M or non-hetjob). Rewrite
+		 * selected_step with the resolved job_id so downstream
+		 * slurmd's _get_job_uid() can match the local stepd.
+		 */
+		params.selected_step->step_id.job_id = jobs->job_id;
+		params.selected_step->het_job_offset = NO_VAL;
 		return false;
+	}
 
 	if ((*jsr)->jobs_count < 2)
 		fatal("slurm_load_job_state(%u) returned less than 2 records",
