@@ -5435,12 +5435,6 @@ Disable the ability to register new triggers.
 .IP
 
 .TP
-\fBenable_async_reply\fR
-Enable \fBslurmctld\fR to reply to incoming (supported) RPCs asynchronously
-without blocking a thread in the conmgr thread pool.
-.IP
-
-.TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
 When enabled the slurmd will be permitted to retrieve config files and
@@ -5611,7 +5605,8 @@ Allow any user able to run in a reservation to delete it.
 \fBthreadpool\fR=\fI<enabled|disabled>\fR
 Enable or disable using the threadpool in slurmctld to avoid overhead of
 allocating new process threads by preserving previously created threads.
-The default value is "disabled".
+The default value is "enabled". Sites that wish to restore the prior
+behavior of allocating a new thread per request may set this to "disabled".
 .IP
 
 .TP

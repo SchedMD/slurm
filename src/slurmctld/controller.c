@@ -257,7 +257,6 @@ static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
 static list_t *reconfig_reqs = NULL;
 static bool under_systemd = false;
-static bool reply_async = false;
 
 /* Array of listening sockets */
 static struct {
@@ -821,12 +820,6 @@ int main(int argc, char **argv)
 	http_switch_init();
 	if (http_switch_http_enabled())
 		http_init();
-
-	/* Check if asynchronous reples are enabled */
-	if (xstrcasestr(slurm_conf.slurmctld_params, "enable_async_reply")) {
-		reply_async = true;
-		log_flag(NET, "Asynchronous replies are enabled");
-	}
 
 	/* open ports must happen after become_slurm_user() */
 	_open_ports();
@@ -1729,7 +1722,7 @@ static int _on_primary_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		rc = slurm_send_rc_msg(msg, EINVAL);
 		FREE_NULL_MSG(msg);
 		return rc;
-	} else if (reply_async && !this_rpc->keep_msg) {
+	} else if (!this_rpc->keep_msg) {
 		rc = _service_connection(this_rpc, msg);
 	} else {
 		/*
