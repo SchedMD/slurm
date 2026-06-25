@@ -2383,6 +2383,12 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					err_code = error_code =
 						ESLURM_REBOOT_IN_PROGRESS;
 				}
+			} else if (state_val == NODE_STATE_UNKNOWN) {
+				/*
+				 * Node has not registered yet; leave it UNKNOWN
+				 * (drain/fail cleared above) until registration
+				 * sets its real state.
+				 */
 			} else {
 				info("Invalid node state specified %u",
 				     state_val);
