@@ -1150,6 +1150,12 @@ static int _foreach_base_set(void *x, void *arg)
 	hres_variable_t *var = x;
 	licenses_t *license = arg;
 
+	if ((var->value >= NO_VAL) ||
+	    ((NO_VAL - var->value) <= license->hres_rec.base_usage)) {
+		error("%s: HRES=%s layer=%s base overflows",
+		      __func__, license->name, license->hres_rec.layer_name);
+		return -1;
+	}
 	license->hres_rec.base_usage += var->value;
 
 	return SLURM_SUCCESS;
@@ -1163,8 +1169,9 @@ static int _foreach_license_set_base(void *x, void *key)
 		return 0;
 
 	if (license->hres_rec.base)
-		list_for_each_ro(license->hres_rec.base, _foreach_base_set,
-				 license);
+		if (list_for_each_ro(license->hres_rec.base, _foreach_base_set,
+				     license) < 0)
+			return -1;
 
 	if (license->hres_rec.total < license->hres_rec.base_usage) {
 		error("%s HRes %s base greater than total", __func__,
