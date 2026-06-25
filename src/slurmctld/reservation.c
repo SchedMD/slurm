@@ -2511,8 +2511,6 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 	}
 
 	xfree(u_list);
-	for (i = 0; i < u_cnt; i++)
-		xfree(uname_list[i]);
 	xfree(uname_list);
 	info("Reservation request has no valid users");
 	return ESLURM_USER_ID_MISSING;
