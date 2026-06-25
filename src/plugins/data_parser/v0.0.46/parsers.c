@@ -8851,6 +8851,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_PERSIST_CONN_RC)[] = {
 	add_flag_hidden_bit(PERSIST_FLAG_RECONNECT, "Reconnect"),
 	add_flag_hidden_bit(PERSIST_FLAG_ALREADY_INITED, "AlreadyInited"),
 	add_flag_bit(PERSIST_FLAG_P_USER_CASE, "PreserveCaseUser"),
+	add_flag_bit(PERSIST_FLAG_P_RESOURCE_CASE, "PreserveCaseResource"),
 	add_flag_hidden_bit(PERSIST_FLAG_SUPPRESS_ERR, "SuppressError"),
 	add_flag_hidden_bit(PERSIST_FLAG_EXT_DBD, "ExternalDBD"),
 	add_flag_hidden_bit(PERSIST_FLAG_DONT_UPDATE_CLUSTER, "DontUpdateCluster"),
