@@ -118,43 +118,6 @@ static const struct {
 } test_json[] = { { test_json1, "twitter-dataset", 25 },
 		  { test_json2, "NOAA-ocean-temps", 50 } };
 
-#define assert_ptr_null(X, OP) \
-	do { \
-		if (get_log_level() >= LOG_LEVEL_DEBUG) \
-			xassert(X OP NULL); \
-		else \
-			ck_assert(X OP NULL); \
-	} while (0)
-
-#define assert_int_eq(X, Y) \
-	do { \
-		if (get_log_level() >= LOG_LEVEL_DEBUG) \
-			xassert(X == Y); \
-		else \
-			ck_assert_int_eq(X, Y); \
-	} while (0)
-
-#define assert_msg(expr, ...) \
-	do { \
-		if (get_log_level() >= LOG_LEVEL_DEBUG) { \
-			if (!(expr)) \
-				fatal_abort(__VA_ARGS__); \
-		} else { \
-			ck_assert_msg(expr, ##__VA_ARGS__); \
-		} \
-	} while (0)
-
-#ifdef assert
-#undef assert
-#endif
-#define assert(expr) \
-	do { \
-		if (get_log_level() >= LOG_LEVEL_DEBUG) \
-			xassert(expr); \
-		else \
-			ck_assert_msg(expr, NULL); \
-	} while (0)
-
 static void setup(void)
 {
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
@@ -196,16 +159,16 @@ static void _test_run(const char *tag, const data_t *src, const char *mime_type,
 
 	rc = serialize_g_data_to_string(&output, &output_len, src, mime_type,
 					flags);
-	assert_int_eq(rc, 0);
+	ck_assert_int_eq(rc, 0);
 
 	debug("dumped %s with %s:\n%s\n\n\n\n", tag, mime_type, output);
 
 	rc = serialize_g_string_to_data(&verify_src, output, output_len,
 					mime_type);
-	assert_int_eq(rc, 0);
+	ck_assert_int_eq(rc, 0);
 
-	assert_msg(data_check_match(src, verify_src, false),
-		   "match verification failed");
+	ck_assert_msg(data_check_match(src, verify_src, false),
+		      "match verification failed");
 
 	xfree(output);
 	FREE_NULL_DATA(verify_src);
@@ -296,7 +259,7 @@ START_TEST(test_parse_invalid)
 						MIME_TYPE_JSON);
 		debug("expected fail source %d=%d -> %pD\n%s\n\n\n\n", i, rc, d,
 		      sf[i]);
-		assert_ptr_null(d, ==);
+		ck_assert_ptr_null(d);
 
 		FREE_NULL_DATA(d);
 	}
@@ -414,11 +377,11 @@ START_TEST(test_parse_valid)
 						MIME_TYPE_JSON);
 		debug("expected pass source %d=%d -> %pD\n%s\n\n\n\n", i, rc, d,
 		      s[i]);
-		assert_int_eq(rc, 0);
+		ck_assert_int_eq(rc, 0);
 
 		data_convert_tree(d, DATA_TYPE_NONE);
-		assert_msg(data_check_match(c[i], d, false),
-			   "verify failed: %s", s[i]);
+		ck_assert_msg(data_check_match(c[i], d, false),
+			      "verify failed: %s", s[i]);
 
 		for (int f = 0; f < ARRAY_SIZE(flag_combinations); f++) {
 			for (int m = 0; m < ARRAY_SIZE(mime_types); m++) {
@@ -460,7 +423,7 @@ START_TEST(test_compliance_large)
 
 		rc = serialize_g_string_to_data(&data, test_json[i].source, len,
 						MIME_TYPE_JSON);
-		assert_int_eq(rc, 0);
+		ck_assert_int_eq(rc, 0);
 
 		for (int f = 0; f < ARRAY_SIZE(flag_combinations); f++) {
 			for (int m = 0; m < ARRAY_SIZE(mime_types); m++) {
@@ -600,7 +563,7 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 		if (timespec_is_after(fastest_read, duration))
 			fastest_read = duration;
 
-		assert_int_eq(rc, 0);
+		ck_assert_int_eq(rc, 0);
 	}
 
 	for (int i = 0; i < run_count; i++) {
@@ -627,7 +590,7 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 		xfree(output);
 		output_len = 0;
 
-		assert_int_eq(rc, 0);
+		ck_assert_int_eq(rc, 0);
 	}
 
 	FREE_NULL_DATA(data);
