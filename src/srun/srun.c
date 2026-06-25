@@ -310,7 +310,6 @@ static void *_launch_one_app(void *data)
 		xfree(opt_local->argv[0]);
 		opt_local->argv[0] = xstrdup(opt_local->srun_opt->bcast_file);
 	}
-relaunch:
 	slurm_mutex_lock(&srun_sig_forward_lock);
 	srun_sig_forward = true;
 	slurm_mutex_unlock(&srun_sig_forward_lock);
@@ -319,8 +318,8 @@ relaunch:
 
 	if (!launch_step_launch(job, &cio_fds, &global_rc, &step_callbacks,
 				opt_local)) {
-		if (launch_step_wait(job, got_alloc, opt_local) == -1)
-			goto relaunch;
+		(void) launch_step_wait(job, got_alloc, opt_local);
+
 		if (job->step_ctx->launch_state->ret_code > mpi_plugin_rc)
 			mpi_plugin_rc = job->step_ctx->launch_state->ret_code;
 	}
