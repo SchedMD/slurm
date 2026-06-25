@@ -1616,15 +1616,6 @@ cleanup:
 	return rc;
 }
 
-extern int launch_step_wait(srun_job_t *job, bool got_alloc,
-			    slurm_opt_t *opt_local)
-{
-	int rc = 0;
-
-	slurm_step_launch_wait_finish(job->step_ctx);
-	return rc;
-}
-
 extern int launch_step_terminate(void)
 {
 	return _step_signal(SIGKILL);
