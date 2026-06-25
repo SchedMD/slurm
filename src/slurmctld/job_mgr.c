@@ -2373,8 +2373,8 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 		args->job_ptr = find_job_array_rec(filter->step_id.job_id,
 						   filter->array_task_id);
 	else if (filter->het_job_offset != NO_VAL)
-		args->job_ptr = find_job_record(filter->step_id.job_id +
-						filter->het_job_offset);
+		args->job_ptr = find_het_job_record(filter->step_id.job_id,
+						    filter->het_job_offset);
 	else /* not array task or het component */
 		args->job_ptr = find_job(&filter->step_id);
 
