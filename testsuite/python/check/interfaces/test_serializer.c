@@ -71,8 +71,8 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
-#include "./serializer_data1.c"
-#include "./serializer_data2.c"
+#include "public_datasets/twitter.json.c"
+#include "public_datasets/noaa_global_temps.json.c"
 
 #define BYTES_IN_MiB (1024 * 1024)
 
