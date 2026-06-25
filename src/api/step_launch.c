@@ -688,7 +688,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 /*
  * Block until all tasks have finished (or failed to start altogether).
  */
-void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
+extern void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 {
 	step_launch_state_t *sls;
 	struct timespec ts = {0, 0};
