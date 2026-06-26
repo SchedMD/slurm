@@ -364,7 +364,8 @@ int main(int argc, char **argv)
 			if (alloc)
 				break;
 		}
-		if ((errno != EAGAIN) || (retries >= MAX_RETRIES))
+		if (((errno != ESLURM_MAX_JOB_COUNT) && (errno != EAGAIN)) ||
+		    (retries >= MAX_RETRIES))
 			break;
 		if (retries == 0)
 			error("%s", msg);

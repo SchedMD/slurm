@@ -163,10 +163,11 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 static bool _retry(void)
 {
 	static int  retries = 0;
-	static char *msg = "Slurm controller not responding, "
-		"sleeping and retrying.";
+	char *msg = "Slurm controller not responding, sleeping and retrying.";
 
-	if (errno == EAGAIN) {
+	if ((errno == ESLURM_MAX_JOB_COUNT) || (errno == EAGAIN)) {
+		if (errno == ESLURM_MAX_JOB_COUNT)
+			msg = "Slurm job queue full, sleeping and retrying.";
 		if (retries == 0)
 			error("%s", msg);
 		else if (retries < MAX_RETRIES)

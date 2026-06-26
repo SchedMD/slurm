@@ -922,6 +922,8 @@ head2 SLURM ERRNO
 
 =item * ESLURM_INVALID_NODE_COUNT                       2006
 
+=item * ESLURM_MAX_JOB_COUNT                            2007
+
 =item * ESLURM_JOB_MISSING_SIZE_SPECIFICATION           2008
 
 =item * ESLURM_JOB_SCRIPT_MISSING                       2009
