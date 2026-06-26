@@ -218,6 +218,16 @@ extern char *con_flags_print(const con_flags_t flags, char *str, size_t bytes)
 static int _close_con_for_each(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
+
+	/*
+	 * When conmgr is shutting down, connections are torn down because we
+	 * are going away, not because of a peer/I/O failure. Record that as the
+	 * close reason, but only when a shutdown was actually requested and only
+	 * if a genuine error was not already observed on this connection.
+	 */
+	if (mgr.shutdown_requested && !con->status_code)
+		con_set_status_code(con, SLURM_SHUTTING_DOWN);
+
 	close_con(true, con);
 	return 1;
 }
