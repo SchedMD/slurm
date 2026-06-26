@@ -35,7 +35,13 @@
 
 #include "config.h"
 
+#include <getopt.h>
+
 #include "slurm/slurm.h"
+
+#include "src/common/slurm_opt.h"
+
+#include "src/interfaces/runtime.h"
 
 /*
  * These variables are required by the generic plugin interface.  See plugin.h
@@ -44,3 +50,36 @@
 const char plugin_name[] = "no-op runtime plugin";
 const char plugin_type[] = "runtime/none";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+extern int runtime_p_init(runtime_context_t context)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_fini(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			   slurm_addr_t *cli, slurm_msg_t *msg)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void runtime_p_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step)
+{
+	/* no-op */
+}
+
+extern void runtime_p_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
+				stepd_step_task_info_t *task)
+{
+	/* no-op */
+}
+
+extern void runtime_p_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			  stepd_step_task_info_t *task)
+{
+	/* no-op */
+}
