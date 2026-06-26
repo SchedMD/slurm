@@ -62,6 +62,12 @@ if atf.get_version() < (26, 11):
             "Ticket 24549: Only test http_router starting at Slurm 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "interfaces/test_serializer.c",
+            "serializer JSON compliance test introduced in Slurm 26.11",
+        )
+    )
 if atf.get_version() < (26, 5):
     xfail_tests.append(
         (

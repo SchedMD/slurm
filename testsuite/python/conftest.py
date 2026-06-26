@@ -1077,7 +1077,7 @@ def openapi_spec(request, module_setup):
     """
     openapi_specs = None
     version = request.param
-    json_file = f"{atf.properties['testsuite_data_dir']}/openapi_spec_v{version}.json"
+    json_file = f"{atf.properties['testsuite_data_dir']}/openapi_specs/openapi_spec_v{version}.json"
     with open(json_file, "r") as f:
         openapi_specs = json.load(f)
         f.close()

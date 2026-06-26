@@ -23,7 +23,6 @@ TESTS += xhash-test \
 	 data-test \
 	 dns-test \
 	 http-test \
-	 serializer-test \
 	 sluid-test \
 	 xbase64-test \
 	 xstring-test \
@@ -42,8 +41,6 @@ dns_test_CFLAGS  = $(MYCFLAGS)
 dns_test_LDADD   = $(LDADD) @CHECK_LIBS@
 http_test_CFLAGS  = $(MYCFLAGS)
 http_test_LDADD   = $(LDADD) @CHECK_LIBS@
-serializer_test_CFLAGS  = $(MYCFLAGS)
-serializer_test_LDADD   = $(LDADD) @CHECK_LIBS@
 sluid_test_CFLAGS = $(MYCFLAGS)
 sluid_test_LDADD = $(LDADD) @CHECK_LIBS@
 xbase64_test_CFLAGS = $(MYCFLAGS)

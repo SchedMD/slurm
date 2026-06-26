@@ -5739,7 +5739,14 @@ def run_check_test(source_file, build_args=""):
     )
     xml_test = check_test + ".xml"
 
-    build_args = " ".join([build_args, "-lcheck -lm -lsubunit"])
+    # Add python/data to the include path
+    build_args = " ".join(
+        [
+            build_args,
+            "-lcheck -lm -lsubunit",
+            f"-I{properties['testsuite_data_dir']}",
+        ]
+    )
 
     compile_against_libslurm(
         f"{properties['testsuite_check_dir']}/{source_file}",
