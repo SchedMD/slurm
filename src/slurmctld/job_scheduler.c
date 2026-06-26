@@ -1164,7 +1164,7 @@ static int _schedule(bool full_queue)
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	bool is_job_array_head;
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	static bool assoc_limit_stop = false;
 	static int sched_timeout = 0;
 	static int sched_max_job_start = 0;
@@ -1190,7 +1190,7 @@ static int _schedule(bool full_queue)
 	if (slurmctld_config.shutdown_time)
 		return 0;
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *tmp_ptr;
 
 		if (xstrcasestr(slurm_conf.sched_params, "assoc_limit_stop"))
@@ -1363,7 +1363,7 @@ static int _schedule(bool full_queue)
 			if (sched_interval == -1) {
 				sched_debug("schedule() returning, sched_interval=-1");
 				/*
-				 * Exit without setting sched_update.  This gets
+				 * Exit without setting loaded.  This gets
 				 * verbose, but makes this setting easy to
 				 * happen.
 				 *
@@ -1402,7 +1402,7 @@ static int _schedule(bool full_queue)
 			sched_max_job_start = 0;
 		}
 
-		sched_update = slurm_conf.last_update;
+		loaded = true;
 		if (slurm_conf.sched_params && strlen(slurm_conf.sched_params))
 			info("SchedulerParameters=%s", slurm_conf.sched_params);
 	}
@@ -2176,17 +2176,14 @@ extern int sort_job_queue2(void *x, void *y)
 	bool expedited1 = false, expedited2 = false;
 	het_job_details_t *details = NULL;
 	bool has_resv1, has_resv2;
-	static time_t config_update = 0;
-	static bool preemption_enabled = true;
+	static int preemption_enabled = -1;
 	uint32_t job_id1, job_id2;
 	uint32_t p1, p2;
 
 	/* The following block of code is designed to minimize run time in
 	 * typical configurations for this frequently executed function. */
-	if (config_update != slurm_conf.last_update) {
-		preemption_enabled = slurm_preemption_enabled();
-		config_update = slurm_conf.last_update;
-	}
+	if (preemption_enabled < 0)
+		preemption_enabled = slurm_preemption_enabled() ? 1 : 0;
 
 	/*
 	 * Expedited Requeue jobs are defined as "infinite" priority.

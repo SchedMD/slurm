@@ -1961,13 +1961,21 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t *msg)
 	}
 }
 
+static bool _defer_sched(void)
+{
+	static int defer = -1;
+
+	if (defer < 0)
+		defer = xstrcasestr(slurm_conf.sched_params, "defer") ? 1 : 0;
+
+	return defer;
+}
+
 /* _slurm_rpc_epilog_complete - process RPC noting the completion of
  * the epilog denoting the completion of a job it its entirety */
 static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
-	static time_t config_update = 0;
-	static bool defer_sched = false;
 	DEF_TIMERS;
 	/* Locks: Read configuration, write job, write node */
 	slurmctld_lock_t job_write_lock = {
@@ -1986,12 +1994,6 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	/* Only throttle on non-composite messages, the lock should
 	 * already be set earlier. */
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
-		if (config_update != slurm_conf.last_update) {
-			defer_sched = (xstrcasestr(slurm_conf.sched_params,
-						   "defer"));
-			config_update = slurm_conf.last_update;
-		}
-
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 	}
@@ -2030,7 +2032,7 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		 * calls can be very high for large machine or large number
 		 * of managed jobs.
 		 */
-		if (!LOTS_OF_AGENTS && !defer_sched)
+		if (!LOTS_OF_AGENTS && !_defer_sched())
 			schedule(false);	/* Has own locking */
 		else
 			queue_job_scheduler();

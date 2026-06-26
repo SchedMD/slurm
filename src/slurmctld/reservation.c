@@ -9139,8 +9139,7 @@ extern void job_resv_clear_magnetic_flag(job_record_t *job_ptr)
 
 extern bool validate_resv_uid(char *resv_name, uid_t uid)
 {
-	static time_t sched_update = 0;
-	static bool user_resv_delete = false;
+	static int user_resv_delete = -1;
 
 	slurmdb_assoc_rec_t assoc;
 	list_t *assoc_list = NULL;
@@ -9155,13 +9154,12 @@ extern bool validate_resv_uid(char *resv_name, uid_t uid)
 	if (!resv_name)
 		return false;
 
-	if (sched_update != slurm_conf.last_update) {
+	if (user_resv_delete < 0) {
 		if (xstrcasestr(slurm_conf.slurmctld_params,
 		                "user_resv_delete"))
-			user_resv_delete = true;
+			user_resv_delete = 1;
 		else
-			user_resv_delete = false;
-		sched_update = slurm_conf.last_update;
+			user_resv_delete = 0;
 	}
 
 	if (!(resv_ptr = find_resv_name(resv_name)))

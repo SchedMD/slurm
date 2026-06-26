@@ -2212,21 +2212,20 @@ static int _foreach_preempt_job(void *x, void *arg)
 static void _preempt_jobs(list_t *preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	preempt_jobs_args_t args = {
 		.kill_pending = kill_pending,
 		.preemptor_ptr = preemptor_ptr,
 	};
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
+		loaded = true;
 		preempt_send_user_signal = false;
 		if (xstrcasestr(slurm_conf.preempt_params,
 				"send_user_signal") ||
 		    xstrcasestr(slurm_conf.slurmctld_params,
 				"preempt_send_user_signal"))
 			preempt_send_user_signal = true;
-
-		sched_update = slurm_conf.last_update;
 	}
 
 	list_for_each_ro(preemptee_job_list, _foreach_preempt_job, &args);
