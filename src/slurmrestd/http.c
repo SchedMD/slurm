@@ -35,6 +35,7 @@
 
 #include "src/common/http.h"
 #include "src/common/http_con.h"
+#include "src/common/http_router.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
@@ -92,8 +93,9 @@ static void _connection_finish(http_context_t *ctxt)
 		conmgr_request_shutdown();
 }
 
-static int _on_request(http_con_t *hcon, const char *name,
-		       const http_con_request_t *request, void *arg)
+static int _req_not_found(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
 {
 	http_context_t *ctxt = arg;
 	int rc = EINVAL;
@@ -152,7 +154,7 @@ static void _on_close(const char *name, slurm_err_t status_code, void *arg)
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	static const http_con_server_events_t events = {
-		.on_request = _on_request,
+		.on_request = http_router_on_request,
 		.on_close = _on_close,
 	};
 	conmgr_fd_t *con = conmgr_args.con;
@@ -230,4 +232,14 @@ extern void http_context_free_null_auth(http_context_t *context)
 	xassert(context->magic == MAGIC);
 
 	FREE_NULL_REST_AUTH(context->auth);
+}
+
+extern void http_init(void)
+{
+	http_router_init(_req_not_found);
+}
+
+extern void http_fini(void)
+{
+	http_router_fini();
 }

@@ -102,6 +102,12 @@ const conmgr_events_t *http_events_get(void);
  */
 extern slurm_err_t http_events_get_last_status_code(void);
 
+/* Initialize the HTTP router and bind slurmrestd's directly-served paths */
+extern void http_init(void);
+
+/* Tear down the HTTP router */
+extern void http_fini(void);
+
 typedef struct {
 	conmgr_fd_t *con; /* assigned connection */
 	uint16_t http_major; /* HTTP major version */

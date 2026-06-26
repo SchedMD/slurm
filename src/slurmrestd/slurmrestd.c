@@ -737,6 +737,8 @@ int main(int argc, char **argv)
 	conmgr_add_work_signal(SIGPIPE, _sigpipe_handler, NULL);
 	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
+	http_init();
+
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
 
@@ -850,6 +852,7 @@ int main(int argc, char **argv)
 	destroy_operations();
 	destroy_openapi();
 	conmgr_fini();
+	http_fini();
 	workerpool_fini();
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
