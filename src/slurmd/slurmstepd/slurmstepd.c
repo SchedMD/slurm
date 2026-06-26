@@ -1259,6 +1259,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	slurm_addr_t *cli = NULL;
 	slurm_msg_t *msg = NULL;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	char *runtime = NULL;
 
 	/* receive conf from slurmd */
 	if (!(conf = _read_slurmd_conf_lite(sock)))
@@ -1361,6 +1362,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	switch (step_type) {
 	case LAUNCH_BATCH_JOB:
 		step_id = ((batch_job_launch_msg_t *) msg->data)->step_id;
+		runtime = ((batch_job_launch_msg_t *) msg->data)->runtime;
 		break;
 	case LAUNCH_TASKS:
 	{
@@ -1368,6 +1370,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		task_msg = (launch_tasks_request_msg_t *)msg->data;
 
 		step_id = task_msg->step_id;
+		runtime = task_msg->runtime;
 
 		if (task_msg->job_ptr &&
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
@@ -1428,7 +1431,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (namespace_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS) ||
-	    runtime_g_init(NULL, RUNTIME_CTXT_SLURMSTEPD))
+	    runtime_g_init(runtime, RUNTIME_CTXT_SLURMSTEPD))
 		fatal("Couldn't load all plugins");
 
 	/*
