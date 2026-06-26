@@ -4215,7 +4215,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	if ((job_count + i) > slurm_conf.max_job_cnt) {
 		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
 		      __func__, slurm_conf.max_job_cnt);
-		return EAGAIN;
+		return ESLURM_MAX_JOB_COUNT;
 	}
 
 	error_code = _job_create(job_desc, allocate, will_run, cron,

@@ -237,6 +237,10 @@ slurm_errtab_t slurm_errtab[] = {
 		"Node count specification invalid",
 	},
 	{
+		ERRTAB_ENTRY(ESLURM_MAX_JOB_COUNT),
+		"MaxJobCount limit reached",
+	},
+	{
 		ERRTAB_ENTRY(ESLURM_JOB_MISSING_SIZE_SPECIFICATION),
 		"Job size specification needs to be provided",
 	},
