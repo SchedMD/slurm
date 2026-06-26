@@ -1827,6 +1827,12 @@ extern bool permit_job_expansion(void);
 /* True if running jobs are allowed to shrink, false otherwise. */
 extern bool permit_job_shrink(void);
 
+/* True if SchedulerParameters=ignore_prefer_validation is set. */
+extern bool ignore_prefer_validation(void);
+
+/* True if SchedulerParameters=ignore_constraint_validation is set. */
+extern bool ignore_constraint_validation(void);
+
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification

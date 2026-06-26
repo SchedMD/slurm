@@ -4151,7 +4151,6 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 {
 	static time_t sched_update = 0;
 	static bool defer_batch = false, defer_sched = false;
-	static bool ignore_prefer_val = false, ignore_constraint_val = false;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	job_record_t *job_ptr;
@@ -4193,17 +4192,6 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 
 		if (xstrcasestr(slurm_conf.sched_params, "allow_zero_lic"))
 			validate_cfgd_licenses = false;
-
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_prefer_validation"))
-			ignore_prefer_val = true;
-		else
-			ignore_prefer_val = false;
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_constraint_validation"))
-			ignore_constraint_val = true;
-		else
-			ignore_constraint_val = false;
 	}
 
 	if (job_desc->array_bitmap)
@@ -4339,8 +4327,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		(!top_prio) || (!independent) ||
 		(job_desc->het_job_offset != NO_VAL) || defer_this ||
-		(job_ptr->details->prefer && ignore_prefer_val) ||
-		(job_ptr->details->features && ignore_constraint_val);
+		(job_ptr->details->prefer && ignore_prefer_validation()) ||
+		(job_ptr->details->features && ignore_constraint_validation());
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
@@ -4351,17 +4339,18 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	 * If we have a prefer feature list check that, if not check the
 	 * normal features.
 	 */
-	if (job_ptr->details->prefer && !ignore_prefer_val) {
+	if (job_ptr->details->prefer && !ignore_prefer_validation()) {
 		job_ptr->details->features_use = job_ptr->details->prefer;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->prefer_list;
-	} else if (!ignore_constraint_val) {
+	} else if (!ignore_constraint_validation()) {
 		job_ptr->details->features_use = job_ptr->details->features;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->feature_list;
 	} else {
 		/*
-		 * Set features_use to "" because ignore_constraint_val is set.
+		 * Set features_use to "" because ignore_constraint_validation()
+		 * is true.
 		 * We also set no_alloc to true to avoid actually allocating
 		 * with this setup.
 		 * We are using an empty string rather than NULL because
@@ -12207,6 +12196,28 @@ extern bool permit_job_shrink(void)
 	}
 
 	return permit_job_shrink;
+}
+
+extern bool ignore_prefer_validation(void)
+{
+	static int ignore = -1;
+
+	if (ignore < 0)
+		ignore = xstrcasestr(slurm_conf.sched_params,
+				     "ignore_prefer_validation") ? 1 : 0;
+
+	return ignore;
+}
+
+extern bool ignore_constraint_validation(void)
+{
+	static int ignore = -1;
+
+	if (ignore < 0)
+		ignore = xstrcasestr(slurm_conf.sched_params,
+				     "ignore_constraint_validation") ? 1 : 0;
+
+	return ignore;
 }
 
 static int _find_hres(void *x, void *key)

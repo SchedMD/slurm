@@ -1186,7 +1186,6 @@ static int _schedule(bool full_queue)
 	uint32_t prio_reserve;
 	DEF_TIMERS;
 	job_node_select_t job_node_select = { 0 };
-	static bool ignore_prefer_val = false;
 
 	if (slurmctld_config.shutdown_time)
 		return 0;
@@ -1402,12 +1401,6 @@ static int _schedule(bool full_queue)
 		} else {
 			sched_max_job_start = 0;
 		}
-
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_prefer_validation"))
-			ignore_prefer_val = true;
-		else
-			ignore_prefer_val = false;
 
 		sched_update = slurm_conf.last_update;
 		if (slurm_conf.sched_params && strlen(slurm_conf.sched_params))
@@ -1816,7 +1809,8 @@ next_task:
 			 * without it in a second attempt by resetting
 			 * state_reason to FAIL_CONSTRAINTS.
 			 */
-			if (ignore_prefer_val && job_ptr->details->prefer &&
+			if (ignore_prefer_validation() &&
+			    job_ptr->details->prefer &&
 			    job_ptr->details->prefer_list &&
 			    (job_ptr->details->prefer_list ==
 			     job_ptr->details->feature_list_use) &&
@@ -5626,8 +5620,6 @@ static int _valid_feature_list(job_record_t *job_ptr,
 			       valid_feature_t *valid_feature,
 			       bool is_reservation)
 {
-	static time_t sched_update = 0;
-	static bool ignore_prefer_val = false, ignore_constraint_val = false;
 	bool is_prefer_list, skip_validation;
 
 	if (!valid_feature->feature_list) {
@@ -5636,25 +5628,10 @@ static int _valid_feature_list(job_record_t *job_ptr,
 		return valid_feature->rc;
 	}
 
-	if (sched_update != slurm_conf.last_update) {
-		sched_update = slurm_conf.last_update;
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_prefer_validation"))
-			ignore_prefer_val = true;
-		else
-			ignore_prefer_val = false;
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_constraint_validation"))
-			ignore_constraint_val = true;
-		else
-			ignore_constraint_val = false;
-
-	}
-
 	is_prefer_list = (valid_feature->feature_list ==
 			  job_ptr->details->prefer_list);
-	skip_validation = (is_prefer_list && ignore_prefer_val) ||
-			  (!is_prefer_list && ignore_constraint_val);
+	skip_validation = (is_prefer_list && ignore_prefer_validation()) ||
+			  (!is_prefer_list && ignore_constraint_validation());
 
 	valid_feature->skip_validation = skip_validation;
 
