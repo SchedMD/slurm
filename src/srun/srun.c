@@ -275,7 +275,7 @@ static void *_launch_one_app(void *data)
 	static bool            launch_fini  = false;
 	_launch_app_data_t *opts = (_launch_app_data_t *) data;
 	slurm_opt_t *opt_local = opts->opt_local;
-	srun_job_t *job  = opts->job;
+	srun_job_t *job = opts->job;
 	slurm_step_io_fds_t cio_fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	slurm_step_launch_callbacks_t step_callbacks;
 
