@@ -158,6 +158,8 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	http_context_t *ctxt = NULL;
 
+	xassert(arg == HTTP_CONNECTION_ARG_MAGIC);
+
 	ctxt = xmalloc(sizeof(*ctxt) + http_con_bytes());
 	ctxt->magic = MAGIC;
 	ctxt->con = conmgr_fd_new_ref(con);

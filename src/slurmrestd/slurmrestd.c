@@ -816,7 +816,7 @@ int main(int argc, char **argv)
 					    &conmgr_timeouts_disabled,
 					    STDIN_FILENO, STDOUT_FILENO,
 					    http_events_get(), flags, NULL, 0,
-					    NULL, operations_router)))
+					    NULL, HTTP_CONNECTION_ARG_MAGIC)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 	} else if (run_mode.listen) {
@@ -826,7 +826,7 @@ int main(int argc, char **argv)
 						 CON_TYPE_RAW, flags,
 						 socket_listen,
 						 http_events_get(),
-						 operations_router))
+						 HTTP_CONNECTION_ARG_MAGIC))
 			fatal("Unable to create sockets");
 
 		umask(mask);
