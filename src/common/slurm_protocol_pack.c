@@ -9882,7 +9882,8 @@ static void _pack_job_state_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		pack32(msg->count, buffer);
 		for (int i = 0; i < msg->count; i++) {
-			pack32(msg->job_ids[i].step_id.job_id, buffer);
+			pack_step_id(&msg->job_ids[i].step_id, buffer,
+				     smsg->protocol_version);
 			pack32(msg->job_ids[i].array_task_id, buffer);
 			pack32(msg->job_ids[i].het_job_offset, buffer);
 		}
@@ -9921,11 +9922,13 @@ static int _unpack_job_state_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		for (int i = 0; i < js->count; i++) {
 			/*
 			 * Do not use slurm_unpack_selected_step to avoid
-			 * unpacking the step id which is unused in this rpc.
+			 * unpacking array_bitmap which is unused in this rpc.
 			 */
 			js->job_ids[i] = (slurm_selected_step_t)
 				SLURM_SELECTED_STEP_INITIALIZER;
-			safe_unpack32(&js->job_ids[i].step_id.job_id, buffer);
+			safe_unpack_step_id_members(&js->job_ids[i].step_id,
+						    buffer,
+						    smsg->protocol_version);
 			safe_unpack32(&js->job_ids[i].array_task_id, buffer);
 			safe_unpack32(&js->job_ids[i].het_job_offset, buffer);
 		}
