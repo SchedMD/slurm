@@ -4845,6 +4845,7 @@ function __slurm_comp_squeue_flags() {
 		__slurm_compreply_list "$(__slurm_helpformat2 "$cmd $steps_flag")"
 		;;
 	-j | --job?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
+	-J | --job-name) __slurm_compreply_list "$(__slurm_jobnames)" ;;
 	-L | --license?(s)) __slurm_compreply_list "$(__slurm_licenses)" ;;
 	-w | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;

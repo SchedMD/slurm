@@ -1,5 +1,5 @@
-Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]
-              [-n name] [-o format] [--only-job-state] [-p partitions]
+Usage: squeue [-A account] [--clusters names] [-i seconds] [--jobs jobids]
+              [-J job_names] [-o format] [--only-job-state] [-p partitions]
               [--qos qos] [--reservation reservation] [--sort fields] [--start]
               [--step step_id] [-t states] [-u user_name] [--usage]
               [-L licenses] [-w nodes] [--federation] [--local] [--sibling]

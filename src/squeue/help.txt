@@ -7,8 +7,9 @@ Usage: squeue [OPTIONS]
   -h, --noheader                  no headers on output
       --hide                      do not display jobs in hidden partitions
   -i, --iterate=seconds           specify an iteration period
-  -j, --job=job(s)                comma separated list of jobs IDs
+  -j, --jobs=job(s)               comma separated list of jobs IDs
                                   to view, default is all
+  -J, --job-name=job_name(s)      comma separated list of job names to view
       --json[=data_parser]        Produce JSON output
       --local                     Report information only about jobs on the
                                   local cluster. Overrides --federation.
@@ -17,7 +18,6 @@ Usage: squeue [OPTIONS]
   -M, --clusters=cluster_name     cluster to issue commands to.  Default is
                                   current cluster.  cluster with no name will
                                   reset to default. Implies --local.
-  -n, --name=job_name(s)          comma separated list of job names to view
       --noconvert                 don't convert units from their original type
                                   (e.g. 2048M won't be converted to 2G).
   -o, --format=format             format specification
@@ -43,7 +43,6 @@ Usage: squeue [OPTIONS]
                                   default is pending and running,
                                   '--states=all' reports all states
   -u, --user=user_name(s)         comma separated list of users to view
-      --name=job_name(s)          comma separated list of job names to view
   -v, --verbose                   verbosity level
   -V, --version                   output version information and exit
   -w, --nodelist=hostlist         list of nodes to view, default is all nodes
