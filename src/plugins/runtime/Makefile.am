@@ -1,3 +1,3 @@
 # Makefile for runtime plugins
 
-SUBDIRS = oci
+SUBDIRS = none oci
