@@ -119,23 +119,14 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
  * IN step_callbacks - callbacks for various points in the life of the step.
  * IN opt_local - options used for step creation
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
+ *
+ * NOTE: slurm_step_launch_wait_finish() should be called after this to block
+ * until all tasks have finished.
  */
 extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			      uint32_t *global_rc,
 			      slurm_step_launch_callbacks_t *step_callbacks,
 			      slurm_opt_t *opt_local);
-
-/*
- * launch_step_wait() is called to wait for the job step to be finished.
- *
- * IN/OUT job - the job waiting to finish.
- * IN got_alloc - if the resource allocation was created inside srun
- * IN opt_local - options used for step creation
- *
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int launch_step_wait(srun_job_t *job, bool got_alloc,
-			    slurm_opt_t *opt_local);
 
 /*
  * launch_step_terminate() is called to end the job step.
