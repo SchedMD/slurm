@@ -87,6 +87,7 @@ typedef struct {
 	uint16_t leaf_cnt; /* count of leafs, set only for root*/
 	uint16_t level; /* level - 0 for leaf */
 	licenses_t *parent; /* pointer to parent - NULL for root */
+	char *parent_name;
 	path_idx_t path_idx;
 	int topology_idx;
 	char *topology_name;

@@ -334,6 +334,7 @@ extern void license_free_rec(void *x)
 		FREE_NULL_BITMAP(license_entry->node_bitmap);
 		xfree(license_entry->nodes);
 		xfree(license_entry->hres_rec.layer_name);
+		xfree(license_entry->hres_rec.parent_name);
 		xfree(license_entry->hres_rec.topology_name);
 		FREE_NULL_LIST(license_entry->hres_rec.variables);
 		xfree(license_entry);
