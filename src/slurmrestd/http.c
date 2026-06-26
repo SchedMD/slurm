@@ -36,6 +36,8 @@
 #include "src/common/http.h"
 #include "src/common/http_con.h"
 #include "src/common/http_router.h"
+#include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
@@ -234,9 +236,45 @@ extern void http_context_free_null_auth(http_context_t *context)
 	FREE_NULL_REST_AUTH(context->auth);
 }
 
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
+{
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, false, NULL, NULL);
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
+{
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, false, NULL, NULL);
+}
+
+static int _req_livez(http_con_t *hcon, const char *name,
+		      const http_con_request_t *request, void *arg,
+		      void *path_arg)
+{
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, false, NULL, NULL);
+}
+
 extern void http_init(void)
 {
 	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
 }
 
 extern void http_fini(void)
