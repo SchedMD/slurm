@@ -166,7 +166,7 @@ static bool _retry(void)
 	static char *msg = "Slurm controller not responding, "
 		"sleeping and retrying.";
 
-	if ((errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) || (errno == EAGAIN)) {
+	if (errno == EAGAIN) {
 		if (retries == 0)
 			error("%s", msg);
 		else if (retries < MAX_RETRIES)

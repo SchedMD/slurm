@@ -7602,12 +7602,9 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if ((error_code = _copy_job_desc_to_job_record(job_desc,
-						       job_pptr,
-						       &req_bitmap,
-						       &exc_bitmap))) {
-		if (error_code == SLURM_ERROR)
-			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
+	if ((error_code =
+		     _copy_job_desc_to_job_record(job_desc, job_pptr,
+						  &req_bitmap, &exc_bitmap))) {
 		job_ptr = *job_pptr;
 		goto cleanup_fail;
 	}
