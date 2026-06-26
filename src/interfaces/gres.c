@@ -478,6 +478,7 @@ static int	_post_plugin_gres_conf(void *x, void *arg);
 static void *	_step_state_dup(gres_step_state_t *gres_ss);
 static void *	_step_state_dup2(gres_step_state_t *gres_ss,
 				 int job_node_index);
+static bool _shared_topo_bit_drained(gres_node_state_t *gres_ns, int topo_inx);
 static int	_unload_plugin(slurm_gres_context_t *gres_ctx);
 static void	_validate_slurm_conf(list_t *slurm_conf_list,
 				     slurm_gres_context_t *gres_ctx);
@@ -7355,12 +7356,19 @@ static void _xstrfmtcat_shared_gres_used(char **str, const char *sep,
 					 int topo_inx)
 {
 	uint64_t alloc = gres_ns->topo_gres_cnt_alloc[topo_inx];
-	uint64_t avail = gres_ns->topo_gres_cnt_avail[topo_inx];
+	uint64_t total = gres_ns->topo_gres_cnt_avail[topo_inx];
 
-	if (!alloc && _is_shared_gres_full_alloc(gres_ns, topo_inx))
-		xstrfmtcat(*str, "%s-/%" PRIu64, sep, avail);
-	else
-		xstrfmtcat(*str, "%s%" PRIu64 "/%" PRIu64, sep, alloc, avail);
+	if (_shared_topo_bit_drained(gres_ns, topo_inx)) {
+		if (alloc)
+			xstrfmtcat(*str, "%sd%" PRIu64 "/%" PRIu64, sep, alloc,
+				   total);
+		else
+			xstrfmtcat(*str, "%sd/%" PRIu64, sep, total);
+	} else if (!alloc && _is_shared_gres_full_alloc(gres_ns, topo_inx)) {
+		xstrfmtcat(*str, "%s-/%" PRIu64, sep, total);
+	} else {
+		xstrfmtcat(*str, "%s%" PRIu64 "/%" PRIu64, sep, alloc, total);
+	}
 }
 
 static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
@@ -7399,12 +7407,11 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 
 			is_shared = gres_is_shared_name(gres_name);
 			if (is_shared) {
-				uint64_t alloc;
 				_xstrfmtcat_shared_gres_used(
 					&topo_gres_cnt_alloc_str, "", gres_ns,
 					i);
-				alloc = gres_ns->topo_gres_cnt_alloc[i];
-				gres_alloc_cnt += alloc;
+				gres_alloc_cnt +=
+					gres_ns->topo_gres_cnt_alloc[i];
 			} else if (gres_ns->topo_gres_bitmap[i]) {
 				topo_gres_bitmap =
 					bit_copy(gres_ns->
@@ -7418,12 +7425,11 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 					continue;
 				bit_set(topo_printed, j);
 				if (is_shared) {
-					uint64_t alloc;
 					_xstrfmtcat_shared_gres_used(
 						&topo_gres_cnt_alloc_str, ",",
 						gres_ns, j);
-					alloc = gres_ns->topo_gres_cnt_alloc[j];
-					gres_alloc_cnt += alloc;
+					gres_alloc_cnt +=
+						gres_ns->topo_gres_cnt_alloc[j];
 				} else if (gres_ns->topo_gres_bitmap[j]) {
 					if (!topo_gres_bitmap) {
 						topo_gres_bitmap =

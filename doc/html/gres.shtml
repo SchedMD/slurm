@@ -1516,4 +1516,15 @@ allocated as either a whole GPU or up to 5 shards.</li>
 </ul></li>
 </ul>
 
+<p>A GPU that is drained takes no new shards,
+and its entry starts with <code>d</code>. These forms are not in the example
+above:</p>
+
+<ul>
+<li><code>d/5</code> means the backing GPU is drained with no shards
+allocated.</li>
+<li><code>d3/5</code> means the backing GPU is drained but still has 3 shards
+allocated from before the drain.</li>
+</ul>
+
 <!--#include virtual="footer.txt"-->
