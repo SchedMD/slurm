@@ -70,8 +70,8 @@ extern int url_parser_g_init(void)
 	const char *url_parser_type = NULL;
 	char *failed_types = NULL;
 	char *url_parser_types[] = {
-		HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN,
 		URL_PARSER_PREFIX URL_PARSER_INTERNAL_PLUGIN,
+		HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN,
 	};
 
 	slurm_rwlock_wrlock(&context_lock);

@@ -79,8 +79,8 @@ extern int http_parser_g_init(void)
 	char *plugin_type = HTTP_PARSER_MAJOR_TYPE;
 	const char *http_parser_type = NULL;
 	char *default_http_parser_types[] = {
-		HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN,
 		HTTP_PARSER_PREFIX LLHTTP_PARSER_PLUGIN,
+		HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN,
 	};
 	char *failed_types = NULL;
 
