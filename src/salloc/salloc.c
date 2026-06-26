@@ -364,8 +364,7 @@ int main(int argc, char **argv)
 			if (alloc)
 				break;
 		}
-		if (((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
-		     (errno != EAGAIN)) || (retries >= MAX_RETRIES))
+		if ((errno != EAGAIN) || (retries >= MAX_RETRIES))
 			break;
 		if (retries == 0)
 			error("%s", msg);
