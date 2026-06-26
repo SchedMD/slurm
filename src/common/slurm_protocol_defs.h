@@ -766,6 +766,7 @@ typedef struct launch_tasks_request_msg {
 	char    **env;
 	char    **argv;
 	char *container;	/* OCI Container Bundle Path */
+	char *runtime; /* runtime plugin type */
 	char     *cwd;
 	uint16_t cpu_bind_type;	/* --cpu-bind=                    */
 	char     *cpu_bind;	/* binding map for map/mask_cpu           */
@@ -967,6 +968,7 @@ typedef struct batch_job_launch_msg {
 	uint32_t array_job_id;	/* job array master job ID */
 	uint32_t array_task_id;	/* job array ID or NO_VAL */
 	char *container;	/* OCI Container Bundle path */
+	char *runtime; /* runtime plugin type */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */

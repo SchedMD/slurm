@@ -2243,6 +2243,7 @@ typedef struct {
 	uint32_t envc;
 	char **env;
 	char *container; /* OCI Container bundle path */
+	char *runtime; /* runtime plugin type */
 	char *cwd;
 	uint32_t msg_timeout; /* timeout set for sending message */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */

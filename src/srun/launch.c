@@ -687,6 +687,7 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->argv = opt_local->argv;
 	launch_params->buffered_stdio = !srun_opt->unbuffered;
 	launch_params->container = opt_local->container;
+	launch_params->runtime = opt_local->runtime;
 	launch_params->cpu_bind = srun_opt->cpu_bind;
 	launch_params->cpu_bind_type = srun_opt->cpu_bind_type;
 	launch_params->cpu_freq_gov = opt_local->cpu_freq_gov;

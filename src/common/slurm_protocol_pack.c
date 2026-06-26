@@ -2203,6 +2203,7 @@ static void _pack_launch_params(slurm_step_launch_params_t *msg, buf_t *buffer,
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
 		pack16(msg->oom_kill_step, buffer);
+		packstr(msg->runtime, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		if (!msg) {
 			packbool(false, buffer);
@@ -2360,6 +2361,7 @@ static int _unpack_launch_params(slurm_step_launch_params_t **params,
 		safe_unpackstr(&msg->tres_bind, buffer);
 		safe_unpackstr(&msg->tres_freq, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
+		safe_unpackstr(&msg->runtime, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		bool need_unpack;
 		safe_unpackbool(&need_unpack, buffer);
@@ -8417,6 +8419,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		} else {
 			packbool(false, buffer);
 		}
+		packstr(msg->runtime, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32_array(msg->gids, msg->ngids, buffer);
@@ -8700,6 +8703,7 @@ static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 					       smsg->protocol_version))
 				goto unpack_error;
 		}
+		safe_unpackstr(&msg->runtime, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
@@ -10345,6 +10349,7 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
+		packstr(msg->runtime, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(msg->het_job_id, buffer);
 
@@ -10547,6 +10552,7 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->cpu_freq_max, buffer);
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackbool(&msg->oom_kill_step, buffer);
+		safe_unpackstr(&msg->runtime, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);

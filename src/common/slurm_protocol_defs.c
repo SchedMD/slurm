@@ -1824,6 +1824,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			xfree(msg->argv);
 		}
 		xfree(msg->container);
+		xfree(msg->runtime);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
@@ -2155,6 +2156,7 @@ extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params)
 	xfree_array(params->argv);
 	env_array_free(params->env);
 	xfree(params->container);
+	xfree(params->runtime);
 	xfree(params->cwd);
 	xfree(params->output_filename);
 	xfree(params->error_filename);
@@ -2288,6 +2290,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	}
 	xfree(msg->acctg_freq);
 	xfree(msg->container);
+	xfree(msg->runtime);
 	xfree(msg->cwd);
 	xfree(msg->cpt_compact_array);
 	xfree(msg->cpt_compact_reps);
