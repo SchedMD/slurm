@@ -156,9 +156,7 @@ typedef struct {
 	char *access_str;
 	bool check_denied;
 	bool check_allowed;
-	bool found_denied;
-	bool found_allowed;
-} foreach_check_assoc_access_t;
+} check_assoc_access_t;
 
 typedef struct {
 	time_t end_time;
@@ -5806,91 +5804,83 @@ static bool _access_str_any_allowed(char *access_str)
 	return false;
 }
 
-static int _foreach_check_assoc_access(void *x, void *arg)
+/*
+ * Reject if the association or a parent association is denied.
+ * Otherwise, check if explicitly allowed.
+ */
+static int _assoc_has_access(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *assoc = x;
-	foreach_check_assoc_access_t *data = arg;
+	check_assoc_access_t *data = arg;
 
 	char *access_str = data->access_str;
 	char deny_id_str[30];
 	char *allow_id_str;
 
+	bool check_allowed = data->check_allowed;
+	bool found_allowed = false;
 	while (assoc) {
 		snprintf(deny_id_str, sizeof(deny_id_str), ",-%u,", assoc->id);
 
 		/* Check if ,-%u, is in list */
-		if (data->check_denied && xstrstr(access_str, deny_id_str)) {
-			data->found_denied = true;
-			return -1;
-		}
+		if (data->check_denied && xstrstr(access_str, deny_id_str))
+			return 0;
 
 		/* Check if ,%u, is in list */
-		if (data->check_allowed) {
+		if (check_allowed) {
 			/*
 			 * Remove '-' to change "deny" string to "allow" string
 			 */
 			allow_id_str = deny_id_str + 1;
 			allow_id_str[0] = ',';
 			if (xstrstr(access_str, allow_id_str)) {
-				data->found_allowed = true;
+				found_allowed = true;
 				if (data->check_denied) {
 					/* Keep checking for denied only */
-					data->check_allowed = false;
+					check_allowed = false;
 				} else {
-					return -1;
+					return 1;
 				}
 			}
 		}
 		assoc = assoc->usage->parent_assoc_ptr;
 	}
 
-	return 0;
+	/* This assoc was not explicitly denied */
+	return !data->check_allowed || found_allowed;
 }
 
-static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
+/*
+ * _check_assoc_access: Check if the given association(s) have access.
+ *
+ * Pass either assoc or assoc_list, with the other set to NULL.
+ *
+ * assoc:      Check this single association has access.
+ * assoc_list: Check if any association in the list has access.
+ *
+ * Return: True if any association(s) given have access. False otherwise.
+ */
+static bool _check_assoc_access(char *access_list,
+				slurmdb_assoc_rec_t *assoc,
+				list_t *assoc_list)
 {
-	xassert(access_list);
-	xassert(assoc);
-
-	/*
-	 * Reject if the association or a parent association is denied.
-	 * Otherwise, check if explicitly allowed.
-	 */
 	bool any_denied = xstrchr(access_list, '-');
 	bool any_allowed = _access_str_any_allowed(access_list);
-	foreach_check_assoc_access_t args = {
+	check_assoc_access_t args = {
 		.access_str = access_list,
 		.check_denied = any_denied,
 		.check_allowed = any_allowed,
-		.found_denied = false,
-		.found_allowed = false,
 	};
-	(void) _foreach_check_assoc_access(assoc, &args);
 
-	return !args.found_denied && (!any_allowed || args.found_allowed);
-}
-
-static bool _check_assoc_access_each(char *access_list, list_t *assoc_list)
-{
 	xassert(access_list);
-	xassert(assoc_list);
 
-	/*
-	 * Reject if any association or parent association is denied.
-	 * Otherwise, check if any is explicitly allowed.
-	 */
-	bool any_denied = xstrchr(access_list, '-');
-	bool any_allowed = _access_str_any_allowed(access_list);
-	foreach_check_assoc_access_t args = {
-		.access_str = access_list,
-		.check_denied = any_denied,
-		.check_allowed = any_allowed,
-		.found_denied = false,
-		.found_allowed = false,
-	};
-	(void) list_for_each(assoc_list, _foreach_check_assoc_access, &args);
-
-	return !args.found_denied && (!any_allowed || args.found_allowed);
+	if (assoc_list) {
+		xassert(!assoc); /* only assoc_list */
+		return list_find_first_ro(assoc_list, _assoc_has_access, &args);
+	} else {
+		xassert(assoc); /* only assoc */
+		return _assoc_has_access(assoc, &args);
+	}
 }
 
 /*
@@ -5946,8 +5936,8 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
 	    resv_ptr->assoc_list) {
-		return _check_assoc_access_each(resv_ptr->assoc_list,
-						user_assoc_list);
+		return _check_assoc_access(resv_ptr->assoc_list,
+					   NULL, user_assoc_list);
 	}
 
 	return _check_uid_access(resv_ptr, uid, username);
@@ -7464,7 +7454,7 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 		}
 
 		if (_check_assoc_access(resv_ptr->assoc_list,
-					job_ptr->assoc_ptr))
+					job_ptr->assoc_ptr, NULL))
 			return SLURM_SUCCESS;
 	} else {
 no_assocs:

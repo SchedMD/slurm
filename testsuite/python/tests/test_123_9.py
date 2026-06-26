@@ -260,6 +260,64 @@ def reservation(request):
             )
 
 
+@pytest.fixture
+def extra_assoc():
+    atf.run_command(
+        f"sacctmgr -i add user {test_user} account={extra_acct}",
+        user=slurm_user,
+        fatal=True,
+    )
+    yield
+    atf.run_command(
+        f"sacctmgr -i delete user {test_user} account={extra_acct}",
+        user=slurm_user,
+        fatal=False,
+    )
+
+
+@pytest.fixture
+def show_submit_resv():
+    resv = "res_show_submit"
+    atf.run_command(
+        f"scontrol create reservationname={resv} start=now duration=10 "
+        f"nodecnt=1 account=-{test_acct} user={test_user}",
+        user=slurm_user,
+        fatal=True,
+    )
+    yield resv
+    atf.run_command(f"scontrol delete reservationname={resv}", user=slurm_user)
+
+
+@pytest.fixture
+def delete_submit_resv():
+    resv = "res_del_submit"
+    atf.run_command(
+        f"scontrol create reservationname={resv} start=now duration=10 "
+        f"nodecnt=1 account=-{test_acct} user={test_user} flags=USER_DELETE",
+        user=slurm_user,
+        fatal=True,
+    )
+    yield resv
+    # The test deletes the reservation, so it may already be gone at teardown
+    atf.run_command(
+        f"scontrol delete reservationname={resv}", user=slurm_user, xfail=True
+    )
+
+
+@pytest.fixture
+def skip_submit_resv():
+    resv = "res_skip_submit"
+    # Skipping requires a recurring reservation (DAILY)
+    atf.run_command(
+        f"scontrol create reservationname={resv} start=now duration=10 "
+        f"nodecnt=1 account=-{test_acct} user={test_user} flags=USER_DELETE,DAILY",
+        user=slurm_user,
+        fatal=True,
+    )
+    yield resv
+    atf.run_command(f"scontrol delete reservationname={resv}", user=slurm_user)
+
+
 def show_as_slurm_user(res_name):
     show = atf.run_command(f"scontrol show reservation {res_name}", user=slurm_user)
     assert (
@@ -298,6 +356,16 @@ def run_job_as_test_user(case, res_name):
         assert "Access denied" in run["stderr"]
 
 
+def assert_submit_allowed(resv, acct):
+    assert (
+        atf.run_job_exit(
+            f"-N1 --account={acct} --reservation={resv} true",
+            user=test_user,
+        )
+        == 0
+    ), "Reservation submission with allowed account should succeed"
+
+
 @pytest.mark.parametrize(
     "reservation", TEST_CASES, indirect=True, ids=lambda c: c["name"]
 )
@@ -311,3 +379,68 @@ def test_reservation_access(reservation):
     show_as_test_user(case, res_name)
     run_job_as_slurm_user(res_name)
     run_job_as_test_user(case, res_name)
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 24457: mixed denied/allowed reservation association access fixed in 26.11",
+)
+def test_show_matches_submit(extra_assoc, show_submit_resv):
+    """A user who can submit to a mixed-access reservation can view it."""
+
+    resv = show_submit_resv
+
+    # The denied account cannot submit
+    denied = atf.run_job(
+        f"-N1 --account={test_acct} --reservation={resv} true",
+        user=test_user,
+        xfail=True,
+    )
+    assert (
+        denied["exit_code"] != 0
+    ), "Reservation submission with denied account should fail"
+    assert (
+        "Access denied" in denied["stderr"]
+    ), f"Expected 'Access denied', got: {denied['stderr']}"
+
+    # The allowed account can submit, so the reservation should be visible
+    assert_submit_allowed(resv, extra_acct)
+    assert resv in atf.get_reservations(
+        user=test_user
+    ), "Reservation visibility should match submission access"
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 24457: mixed denied/allowed reservation association access fixed in 26.11",
+)
+def test_delete_matches_submit(extra_assoc, delete_submit_resv):
+    """A user who can submit to a mixed-access reservation can delete it."""
+
+    resv = delete_submit_resv
+
+    # The allowed account can submit, so the user can delete the reservation
+    assert_submit_allowed(resv, extra_acct)
+    atf.run_command(
+        f"scontrol delete reservationname={resv}",
+        user=test_user,
+        fatal=True,
+    )
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 24457: mixed denied/allowed reservation association access fixed in 26.11",
+)
+def test_skip_matches_submit(extra_assoc, skip_submit_resv):
+    """A user who can submit to a mixed-access reservation can skip it."""
+
+    resv = skip_submit_resv
+
+    # The allowed account can submit, so the user can skip the reservation
+    assert_submit_allowed(resv, extra_acct)
+    atf.run_command(
+        f"scontrol update reservationname={resv} skip",
+        user=test_user,
+        fatal=True,
+    )
