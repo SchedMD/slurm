@@ -1674,6 +1674,26 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		    !job_ptr->limit_set.qos) {
 			job_fail_qos(job_ptr, __func__, true);
 		} else if (job_ptr->qos_ptr) {
+			/*
+			 * _get_qos_info() resolves a multi-QOS job to the
+			 * highest priority member; keep a running/suspended job
+			 * on its dispatched member (qos_id) instead so reload
+			 * does not misattribute its QOS TRES usage (cf.
+			 * _foreach_cache_update_job()).
+			 */
+			if (job_ptr->qos_list && !IS_JOB_PENDING(job_ptr)) {
+				slurmdb_qos_rec_t *charged_qos_ptr =
+					list_find_first(
+						job_ptr->qos_list,
+						slurmdb_find_qos_in_list,
+						&job_ptr->qos_id);
+				if (charged_qos_ptr)
+					job_ptr->qos_ptr = charged_qos_ptr;
+				else
+					verbose("%s: dispatched QOS %u for %pJ no longer in its QOS list, using highest priority",
+						__func__, job_ptr->qos_id,
+						job_ptr);
+			}
 			job_ptr->qos_id = job_ptr->qos_ptr->id;
 			if (job_ptr->state_reason == FAIL_QOS) {
 				job_ptr->state_reason = WAIT_NO_REASON;
