@@ -735,6 +735,16 @@ static int _foreach_build_job_queue(void *x, void *arg)
 		(void) _build_job_queue_for_part(job_ptr->part_ptr, setup_job);
 	}
 
+	/*
+	 * _build_job_queue_for_qos() leaves job_ptr->qos_ptr at the last qos_list
+	 * member it tested. The job_queue entries already captured their own
+	 * qos_ptr, so reset the live pointer to the highest-priority member (the
+	 * pending default) instead of leaving accounting (acct_policy and the
+	 * priority decay both key on job_ptr->qos_ptr) on a stale QOS member.
+	 */
+	if (job_ptr->qos_list)
+		job_ptr->qos_ptr = list_peek(job_ptr->qos_list);
+
 	return 0;
 }
 
