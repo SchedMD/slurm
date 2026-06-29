@@ -21,7 +21,7 @@ def setup():
     for i in range(2):
         feature_helpers_dict[f"f{i+1}"] = {"Helper": helper_script}
     atf.require_config_parameter("Feature", feature_helpers_dict, source="helpers")
-    atf.require_config_parameter("DebugFlags", "POWER")
+    atf.require_config_parameter_includes("DebugFlags", "POWER")
     atf.require_config_parameter("RebootProgram", f"{atf.module_tmp_path}/rebooter.sh")
     atf.require_slurm_running()
 

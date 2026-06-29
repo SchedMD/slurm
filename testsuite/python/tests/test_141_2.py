@@ -34,7 +34,8 @@ def suspend_time_val(value):
 @pytest.fixture
 def setup(request):
     atf.require_nodes(1, [("CPUs", 4), ("RealMemory", 40)])
-    atf.require_config_parameter("ReconfigFlags", "KeepPartInfo,KeepPartState")
+    atf.require_config_parameter_includes("ReconfigFlags", "KeepPartInfo")
+    atf.require_config_parameter_includes("ReconfigFlags", "KeepPartState")
     atf.require_config_parameter("MaxNodeCount", max_nodes)
     atf.require_config_parameter("ResumeProgram", "/bin/true")
     atf.require_config_parameter("SuspendProgram", "/bin/true")
@@ -79,7 +80,8 @@ def setup(request):
         user=atf.properties["slurm-user"],
     )
 
-    atf.set_config_parameter("ReconfigFlags", "None")
+    # Reconfigure without KeepPart* flags
+    atf.set_config_parameter("ReconfigFlags", None)
 
 
 @pytest.mark.skipif(

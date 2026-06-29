@@ -63,9 +63,8 @@ def setup():
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("MinJobAge", 2)
 
-    atf.add_config_parameter_value(
-        "SchedulerParameters", "bf_interval=1,sched_interval=1"
-    )
+    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=1")
+    atf.require_config_parameter_includes("SchedulerParameters", "sched_interval=1")
 
     atf.require_config_file("resources.yaml", resources_yaml)
 

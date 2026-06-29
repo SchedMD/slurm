@@ -17,7 +17,7 @@ test_user = pwd.getpwuid(os.getuid())[0]
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_accounting(modify=True)
-    atf.require_config_parameter("AccountingStorageEnforce", "associations")
+    atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
     atf.require_slurm_running()
 
 

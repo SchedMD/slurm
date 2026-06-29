@@ -76,7 +76,7 @@ def setup():
 
     atf.require_auto_config("wants to change partitions, modify/create nodes")
     atf.require_accounting(modify=True)
-    atf.require_config_parameter("AccountingStorageEnforce", "limits")
+    atf.require_config_parameter_includes("AccountingStorageEnforce", "limits")
 
     # Gather a list of nodes that meet the RealMemory Requirement (node_list)
     atf.require_nodes(4, [("RealMemory", max_mem_node + 1)])

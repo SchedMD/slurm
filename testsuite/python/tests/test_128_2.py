@@ -11,9 +11,8 @@ pytestmark = pytest.mark.slow
 def setup():
     atf.require_config_parameter("PreemptType", "preempt/partition_prio")
     atf.require_config_parameter("PreemptMode", "SUSPEND,GANG")
-    atf.require_config_parameter(
-        "SchedulerParameters", "bf_interval=1,sched_interval=1"
-    )
+    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=1")
+    atf.require_config_parameter_includes("SchedulerParameters", "sched_interval=1")
     atf.require_nodes(1, [("CPUs", 2), ("RealMemory", 512)])
     atf.require_config_parameter("DefMemPerNode", "128")
     atf.require_config_parameter(
