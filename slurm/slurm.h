@@ -3721,7 +3721,7 @@ extern char *slurm_read_hostfile(const char *filename, int n);
  * slurm_allocation_msg_thr_create - startup a message handler talking
  * with the controller dealing with messages from the controller during an
  * allocation.
- * IN port - port we are listening for messages on from the controller
+ * OUT port - port we are listening for messages on from the controller
  * IN callbacks - callbacks for different types of messages
  * RET allocation_msg_thread_t * or NULL on failure
  */
