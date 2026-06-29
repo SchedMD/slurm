@@ -29113,6 +29113,7 @@ fi
   # We will use a for loop to check for any.
   # Unless _x_ac_hpe_ss_dirs is overwritten with --with-hpe-slingshot
   _x_ac_hpe_ss_dirs="/usr"
+  _x_ac_hpe_ss_libs="lib64 lib"
 
 
 # Check whether --with-hpe-slingshot was given.
@@ -29176,8 +29177,20 @@ printf "%s\n" "#define HAVE_STRUCT_CXI_RSRC_USE 1" >>confdefs.h
 fi
 
 
+	_x_ac_hpe_ss_libcxi=""
+	for bit in $_x_ac_hpe_ss_libs; do
+		if test -f "$_x_ac_hpe_ss_dir/$bit/libcxi.so"; then
+			_x_ac_hpe_ss_libcxi="$_x_ac_hpe_ss_dir/$bit/libcxi.so"
+			break
+		fi
+	done
+	if test -z "$_x_ac_hpe_ss_libcxi"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: HPE Slingshot: unable to find libcxi.so under $_x_ac_hpe_ss_dir/{lib64,lib}" >&5
+printf "%s\n" "$as_me: WARNING: HPE Slingshot: unable to find libcxi.so under $_x_ac_hpe_ss_dir/{lib64,lib}" >&2;}
+		_x_ac_hpe_ss_libcxi="$_x_ac_hpe_ss_dir/lib64/libcxi.so"
+	fi
 
-printf "%s\n" "#define HPE_SLINGSHOT_LIB \"$_x_ac_hpe_ss_dir/lib64/libcxi.so\"" >>confdefs.h
+printf "%s\n" "#define HPE_SLINGSHOT_LIB \"$_x_ac_hpe_ss_libcxi\"" >>confdefs.h
 
 	CFLAGS="$cflags_save"
 	break;
