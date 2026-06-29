@@ -119,6 +119,8 @@ typedef struct node_record node_record_t;
 #define DEFAULT_MAIL_PROG_ALT       "/usr/bin/mail"
 #define DEFAULT_MAX_ARRAY_SIZE      1001
 #define DEFAULT_MAX_BATCH_REQUEUE   5
+#define DEFAULT_MAX_NODE_FAIL_REQUEUE 5
+#define DEFAULT_MAX_PREEMPT_REQUEUE 0
 #define DEFAULT_MAX_DBD_MSGS        10000
 #define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MAX_JOB_ID          0x03ff0000

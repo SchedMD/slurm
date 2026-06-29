@@ -155,6 +155,8 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, max_array_sz, uint32_t);
 	STORE_FIELD(hv, conf, max_batch_requeue, uint32_t);
+	STORE_FIELD(hv, conf, max_node_fail_requeue, uint32_t);
+	STORE_FIELD(hv, conf, max_preempt_requeue, uint32_t);
 	STORE_FIELD(hv, conf, max_dbd_msgs, uint32_t);
 
 	STORE_FIELD(hv, conf, max_job_cnt, uint32_t);
@@ -451,6 +453,8 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, mail_prog, charp, FALSE);
 	FETCH_FIELD(hv, conf, max_array_sz, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, max_batch_requeue, uint32_t, TRUE);
+	FETCH_FIELD(hv, conf, max_node_fail_requeue, uint32_t, TRUE);
+	FETCH_FIELD(hv, conf, max_preempt_requeue, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, max_dbd_msgs, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_cnt, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_id, uint32_t, FALSE);

@@ -365,6 +365,8 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 		    (job_ptr->state_reason != WAIT_HELD) &&
 		    (job_ptr->state_reason != WAIT_HELD_USER) &&
 		    (job_ptr->state_reason != WAIT_MAX_REQUEUE) &&
+		    (job_ptr->state_reason != WAIT_MAX_NODE_FAIL_REQUEUE) &&
+		    (job_ptr->state_reason != WAIT_MAX_PREEMPT_REQUEUE) &&
 		    (job_ptr->state_reason != WAIT_RESV_INVALID) &&
 		    (job_ptr->state_reason != WAIT_RESV_DELETED)) {
 			job_ptr->state_reason = WAIT_HELD;

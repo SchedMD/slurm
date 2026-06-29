@@ -3971,6 +3971,10 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 
 		pack32(conf->max_array_sz, buffer);
 		pack32(conf->max_batch_requeue, buffer);
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+			pack32(conf->max_node_fail_requeue, buffer);
+			pack32(conf->max_preempt_requeue, buffer);
+		}
 		pack32(conf->max_dbd_msgs, buffer);
 		packstr(conf->mail_domain, buffer);
 		packstr(conf->mail_prog, buffer);
@@ -4789,6 +4793,10 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 
 		safe_unpack32(&conf->max_array_sz, buffer);
 		safe_unpack32(&conf->max_batch_requeue, buffer);
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+			safe_unpack32(&conf->max_node_fail_requeue, buffer);
+			safe_unpack32(&conf->max_preempt_requeue, buffer);
+		}
 		safe_unpack32(&conf->max_dbd_msgs, buffer);
 		safe_unpackstr(&conf->mail_domain, buffer);
 		safe_unpackstr(&conf->mail_prog, buffer);
@@ -5519,6 +5527,11 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 
 		safe_unpack16(&conf->wait_time, buffer);
 		safe_unpackstr(&conf->x11_params, buffer);
+	}
+
+	if (protocol_version < SLURM_26_11_PROTOCOL_VERSION) {
+		conf->max_node_fail_requeue = DEFAULT_MAX_NODE_FAIL_REQUEUE;
+		conf->max_preempt_requeue = DEFAULT_MAX_PREEMPT_REQUEUE;
 	}
 
 	*conf_ptr = conf;

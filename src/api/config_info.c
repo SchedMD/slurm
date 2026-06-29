@@ -853,6 +853,12 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "MaxBatchRequeue", "%u",
 		     conf->max_batch_requeue);
 
+	add_key_pair(ret_list, "MaxNodeFailRequeue", "%u",
+		     conf->max_node_fail_requeue);
+
+	add_key_pair(ret_list, "MaxPreemptRequeue", "%u",
+		     conf->max_preempt_requeue);
+
 	add_key_pair(ret_list, "MaxDBDMsgs", "%u", conf->max_dbd_msgs);
 
 	add_key_pair(ret_list, "MaxJobCount", "%u", conf->max_job_cnt);
