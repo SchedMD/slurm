@@ -184,7 +184,7 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 	}
 
 	if (opts.join_container) {
-		list_t *fd_map = list_create(NULL);
+		list_t *fd_map = list_create(stepd_destroy_ns_fd_map);
 		int rc = stepd_get_namespace_fds(fd, fd_map, protocol_version);
 		if (rc == -1) {
 			error("stepd_get_ns_fds failed");

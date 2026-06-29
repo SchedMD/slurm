@@ -94,15 +94,12 @@ enum ns_l_types {
 
 typedef struct {
 	bool enabled;
-	int fd;
 	int flag;
 	char *path;
 	char *proc_name;
 } ns_l_t;
 
-static ns_l_t ns_l_enabled[NS_L_END] = { { false, -1, 0, NULL, NULL },
-					 { false, -1, 0, NULL, NULL },
-					 { false, -1, 0, NULL, NULL } };
+static ns_l_t ns_l_enabled[NS_L_END];
 
 static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 			  char **src_bind)
@@ -213,10 +210,8 @@ extern int init(void)
 extern void fini(void)
 {
 #ifdef MEMORY_LEAK_DEBUG
-	for (int i = 0; i < NS_L_END; i++) {
+	for (int i = 0; i < NS_L_END; i++)
 		xfree(ns_l_enabled[i].path);
-		fd_close(&ns_l_enabled[i].fd);
-	}
 	free_ns_conf();
 #endif
 	debug("%s unloaded", plugin_name);
@@ -295,6 +290,7 @@ extern int namespace_p_restore(char *dir_name, bool recover)
 	 */
 	if (!(dp = opendir(ns_conf->basepath))) {
 		error("%s: Unable to open %s", __func__, ns_conf->basepath);
+		FREE_NULL_LIST(steps);
 		return SLURM_ERROR;
 	}
 
@@ -384,6 +380,31 @@ typedef struct {
 	int rc;
 } _mount_dir_args_t;
 
+/*
+ * Build per-DirConf paths:
+ *   *backing_base = "<base_path>/<job_id>" if base_path is set,
+ *                   else a copy of src_bind.
+ *   *mount_path   = "<backing_base>/<dir->path>" with all but the leading
+ *                   '/' separator turned into '_' (so directory paths
+ *                   nest as flat names under backing_base).
+ * Caller xfree()s both outputs.
+ */
+static void _build_dir_paths(const ns_dir_t *dir, const char *src_bind,
+			     uint32_t job_id, char **backing_base,
+			     char **mount_path)
+{
+	if (dir->base_path)
+		xstrfmtcat(*backing_base, "%s/%u", dir->base_path, job_id);
+	else
+		*backing_base = xstrdup(src_bind);
+
+	xstrfmtcat(*mount_path, "%s/%s", *backing_base, dir->path);
+	for (char *t = *mount_path + strlen(*backing_base) + 1; *t; t++) {
+		if (*t == '/')
+			*t = '_';
+	}
+}
+
 static int _mount_dir(void *x, void *arg)
 {
 	ns_dir_t *dir = x;
@@ -406,16 +427,8 @@ static int _mount_dir(void *x, void *arg)
 		return rc;
 	}
 
-	if (dir->base_path)
-		xstrfmtcat(backing_base, "%s/%u", dir->base_path, args->job_id);
-	else
-		backing_base = xstrdup(args->path);
-
-	xstrfmtcat(mount_path, "%s/%s", backing_base, dir->path);
-	for (char *t = mount_path + strlen(backing_base) + 1; *t; t++) {
-		if (*t == '/')
-			*t = '_';
-	}
+	_build_dir_paths(dir, args->path, args->job_id, &backing_base,
+			 &mount_path);
 
 	if (dir->base_path) {
 		rc = mkdir(backing_base, 0700);
@@ -496,16 +509,8 @@ static int _chown_dir(void *x, void *arg)
 	if (dir->tmpfs)
 		return 0;
 
-	if (dir->base_path)
-		xstrfmtcat(backing_base, "%s/%u", dir->base_path, args->job_id);
-	else
-		backing_base = xstrdup(args->path);
-
-	xstrfmtcat(mount_path, "%s/%s", backing_base, dir->path);
-	for (char *t = mount_path + strlen(backing_base) + 1; *t; t++) {
-		if (*t == '/')
-			*t = '_';
-	}
+	_build_dir_paths(dir, args->path, args->job_id, &backing_base,
+			 &mount_path);
 
 	rc = lchown(mount_path, args->uid, -1);
 	if (rc)
@@ -820,12 +825,12 @@ static int _create_ns(stepd_step_rec_t *step)
 	if (mount(job_mount, job_mount, NULL, MS_BIND, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
 		rc = SLURM_ERROR;
-		goto end_it;
+		goto exit2;
 	}
 	if (mount(job_mount, job_mount, NULL, MS_PRIVATE | MS_REC, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
 		rc = SLURM_ERROR;
-		goto end_it;
+		goto exit2;
 	}
 
 	if (mkdir(ns_base, 0700)) {
@@ -1032,7 +1037,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		if (rc) {
 			error("%s: CloneNSScript %s failed with rc=%d",
 			      __func__, ns_conf->clonensscript, rc);
-			goto exit2;
+			goto exit1;
 		}
 	}
 
@@ -1073,6 +1078,7 @@ extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 {
 	char *job_mount = NULL, *ns_base = NULL;
 	ns_fd_map_t *tmp_map = NULL;
+	int fd;
 
 	xassert(ns_map);
 
@@ -1085,23 +1091,20 @@ extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 		if (!ns_l_enabled[i].enabled)
 			continue;
 
-		if (ns_l_enabled[i].fd == -1) {
-			ns_l_enabled[i].fd =
-				open(ns_l_enabled[i].path, O_RDONLY);
-			if (ns_l_enabled[i].fd == -1) {
-				error("%s: %m", __func__);
-				goto end_it;
-			}
+		fd = open(ns_l_enabled[i].path, O_RDONLY);
+		if (fd == -1) {
+			error("%s: open failed for %s: %m",
+			      __func__, ns_l_enabled[i].path);
+			goto end_it;
 		}
 		tmp_map = xmalloc(sizeof(*tmp_map));
 		tmp_map->type = ns_l_enabled[i].flag;
-		tmp_map->fd = ns_l_enabled[i].fd;
+		tmp_map->fd = fd;
 		list_append(ns_map, tmp_map);
 		tmp_map = NULL;
 	}
 
 end_it:
-
 	xfree(job_mount);
 	xfree(ns_base);
 
@@ -1112,6 +1115,7 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 			    bool step_create)
 {
 	char *job_mount = NULL, *ns_base = NULL;
+	int fds[NS_L_END];
 	int rc = SLURM_SUCCESS;
 
 	if (plugin_disabled)
@@ -1130,32 +1134,32 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 
 	_create_paths(step_id->job_id, &job_mount, &ns_base, NULL);
 
-	/* Open all namespaces first, however we cannot assume this is shared */
+	for (int i = 0; i < NS_L_END; i++)
+		fds[i] = -1;
+
+	/*
+	 * Open all namespace fds first; once we setns() into a user namespace
+	 * we may lose the capabilities needed to open the remaining ones.
+	 */
 	for (int i = 0; i < NS_L_END; i++) {
 		if (!ns_l_enabled[i].enabled)
 			continue;
-		/* This is called on the slurmd so we can't use ns_fd. */
-		ns_l_enabled[i].fd = open(ns_l_enabled[i].path, O_RDONLY);
-		if (ns_l_enabled[i].fd == -1) {
+		fds[i] = open(ns_l_enabled[i].path, O_RDONLY);
+		if (fds[i] == -1) {
 			error("%s: open failed for %s: %m",
 			      __func__, ns_l_enabled[i].path);
-			xfree(job_mount);
-			xfree(ns_base);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto cleanup;
 		}
 	}
 	for (int i = 0; i < NS_L_END; i++) {
 		if (!ns_l_enabled[i].enabled)
 			continue;
-		rc = setns(ns_l_enabled[i].fd, 0);
-		fd_close(&ns_l_enabled[i].fd);
-		if (rc) {
+		if (setns(fds[i], 0)) {
 			error("%s: setns failed for %s: %m",
 			      __func__, ns_l_enabled[i].path);
-			/* closed after error() */
-			xfree(job_mount);
-			xfree(ns_base);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto cleanup;
 		}
 		log_flag(NAMESPACE, "%ps entered %s namespace", step_id,
 			 ns_l_enabled[i].path);
@@ -1163,10 +1167,13 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 
 	log_flag(NAMESPACE, "%ps entered namespace", step_id);
 
+cleanup:
+	for (int i = 0; i < NS_L_END; i++)
+		fd_close(&fds[i]);
 	xfree(job_mount);
 	xfree(ns_base);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _delete_dir_job_path(void *x, void *arg)
@@ -1335,6 +1342,7 @@ extern int namespace_p_recv_stepd(int fd)
 
 	plugin_disabled = _is_plugin_disabled(ns_conf->basepath);
 
+	free_buf(buf);
 	return SLURM_SUCCESS;
 rwfail:
 	free_buf(buf);

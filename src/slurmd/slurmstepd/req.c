@@ -1476,7 +1476,7 @@ rwfail:
 
 static int _handle_get_ns_fd(int fd, uid_t uid, pid_t remote_pid)
 {
-	list_t *ns_map = list_create(NULL);
+	list_t *ns_map = list_create(stepd_destroy_ns_fd_map);
 
 	debug("%s: for %pI %ps", __func__, &step->step_id, &step->step_id);
 
@@ -1511,7 +1511,7 @@ rwfail:
 
 static int _handle_get_ns_fds(int fd, uid_t uid, pid_t remote_pid)
 {
-	list_t *ns_map = list_create(NULL);
+	list_t *ns_map = list_create(stepd_destroy_ns_fd_map);
 	int ns_count = 0;
 
 	debug("%s: for %pI %ps", __func__, &step->step_id, &step->step_id);
