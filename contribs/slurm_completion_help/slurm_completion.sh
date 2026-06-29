@@ -1660,6 +1660,7 @@ function __slurm_comp_sacct_flags() {
 	-o | --format | --field?(s)) __slurm_compreply_list "$(__slurm_helpformat "$cmd")" ;;
 	-g | --gid?(s) | --group) __slurm_compreply_list "$(__slurm_linux_groups) $(__slurm_linux_gids)" ;;
 	-j | --job?(s)) __slurm_compreply "$(__slurm_jobs) $(__slurm_jobsteps)" ;;
+	-J | --job-name) __slurm_compreply_list "$(__slurm_jobnames)" ;;
 	--name?(s)) __slurm_compreply_list "$(__slurm_jobnames)" ;;
 	-N | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	-r | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
