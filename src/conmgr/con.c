@@ -284,6 +284,16 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
+	/*
+	 * Record that a close was explicitly requested and wake up the
+	 * connection watch loop. This is necessary for a connection whose input
+	 * is already closed, which would otherwise not wake the watch loop.
+	 */
+	if (!con_flag(con, FLAG_CLOSE_REQUESTED)) {
+		con_set_flag(con, FLAG_CLOSE_REQUESTED);
+		EVENT_SIGNAL(&mgr.watch_sleep);
+	}
+
 	if ((con->input_fd == con->output_fd) || con_flag(con, FLAG_WRITE_EOF))
 		con_unset_flag(con, FLAG_QUIESCE);
 
