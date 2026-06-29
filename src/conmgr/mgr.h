@@ -129,7 +129,8 @@ typedef enum {
 	FLAG_WRITE_EOF = SLURM_BIT(15),
 	/* @see CON_FLAG_ENABLE_TLS_SHUTDOWN */
 	FLAG_ENABLE_TLS_SHUTDOWN = CON_FLAG_ENABLE_TLS_SHUTDOWN,
-	/* SLURM_BIT(17) is unused */
+	/* an explicit close of the connection has been requested */
+	FLAG_CLOSE_REQUESTED = SLURM_BIT(17),
 	/* @see CON_FLAG_TLS_SERVER */
 	FLAG_TLS_SERVER = CON_FLAG_TLS_SERVER,
 	/* @see CON_FLAG_TLS_CLIENT */
@@ -156,7 +157,8 @@ typedef enum {
 	 FLAG_WAIT_ON_FINISH | FLAG_CAN_WRITE | FLAG_CAN_READ | \
 	 FLAG_READ_EOF | FLAG_WRITE_EOF | FLAG_IS_CONNECTED | \
 	 FLAG_WORK_ACTIVE | FLAG_CAN_QUERY_OUTPUT_BUFFER | FLAG_IS_FIFO | \
-	 FLAG_IS_CHR | FLAG_IS_TLS_SHUTTING_DOWN | FLAG_INITIATE_TLS_SHUTDOWN)
+	 FLAG_IS_CHR | FLAG_IS_TLS_SHUTTING_DOWN | \
+	 FLAG_INITIATE_TLS_SHUTDOWN | FLAG_CLOSE_REQUESTED)
 
 /* con_flags_t macro helpers to test, set, and unset flags */
 #define con_flag(con, flag) ((con)->flags & (flag))
