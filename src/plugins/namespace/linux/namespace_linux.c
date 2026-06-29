@@ -94,15 +94,12 @@ enum ns_l_types {
 
 typedef struct {
 	bool enabled;
-	int fd;
 	int flag;
 	char *path;
 	char *proc_name;
 } ns_l_t;
 
-static ns_l_t ns_l_enabled[NS_L_END] = { { false, -1, 0, NULL, NULL },
-					 { false, -1, 0, NULL, NULL },
-					 { false, -1, 0, NULL, NULL } };
+static ns_l_t ns_l_enabled[NS_L_END];
 
 static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 			  char **src_bind)
@@ -213,10 +210,8 @@ extern int init(void)
 extern void fini(void)
 {
 #ifdef MEMORY_LEAK_DEBUG
-	for (int i = 0; i < NS_L_END; i++) {
+	for (int i = 0; i < NS_L_END; i++)
 		xfree(ns_l_enabled[i].path);
-		fd_close(&ns_l_enabled[i].fd);
-	}
 	free_ns_conf();
 #endif
 	debug("%s unloaded", plugin_name);
