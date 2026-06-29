@@ -1113,10 +1113,11 @@ test_161_#   Testing topology/torus3d.
 ========================================
 test_161_1   Test topology/torus3d placements, constraints, and --segment
 
-test_162_#   Testing of swait.
-==============================
+test_162_#   Testing of swait and stepmgr/async-step integration.
+=================================================================
 test_162_1   Test swait against a stepmgr-enabled cluster
 test_162_2   Test swait's steps-drained push path
+test_162_3   Test scontrol visibility and reconfigure-survival of async steps
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
