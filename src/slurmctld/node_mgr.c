@@ -1524,7 +1524,15 @@ static void _require_node_reg(node_record_t *node_ptr)
 	if (IS_NODE_EXTERNAL(node_ptr))
 		return;
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
-	node_ptr->last_response = time(NULL);
+	/*
+	 * Only refresh an existing grace period; don't start one for a node
+	 * that has never responded (last_response == 0). Otherwise an UNKNOWN
+	 * node would get a last_response and ping_nodes() would start the
+	 * SlurmdTimeout clock and mark it DOWN for "Not responding" even though
+	 * it never responded.
+	 */
+	if (node_ptr->last_response)
+		node_ptr->last_response = time(NULL);
 	node_ptr->boot_time = 0;
 	ping_nodes_now = true;
 }
