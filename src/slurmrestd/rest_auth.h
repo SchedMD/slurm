@@ -100,11 +100,14 @@ extern void *rest_auth_g_get_db_conn(rest_auth_context_t *context);
 /*
  * Setup locks and register REST authentication plugins.
  * 	Only call once!
- * IN become_user - notify auth plugin user requests become user mode
+ * IN become_user_mode - notify auth plugin user requests become user mode
+ * IN unshare_sysv - unshare the System V semaphore namespace
+ * IN unshare_files - unshare the file descriptor table
  * IN plugin_handles - array of rest_plugins to init
  * IN plugin_count - number of plugins in plugin_handles array
  */
-extern int init_rest_auth(bool become_user,
+extern int init_rest_auth(bool become_user_mode, bool unshare_sysv,
+			  bool unshare_files,
 			  const plugin_handle_t *plugin_handles,
 			  const size_t plugin_count);
 

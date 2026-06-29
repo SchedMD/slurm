@@ -194,3 +194,30 @@ xsignal_unblock(int sigarray[])
 
 	return _sigmask(SIG_UNBLOCK, &set, NULL);
 }
+
+extern void xsignal_reset_all(void)
+{
+	sigset_t empty;
+
+	/*
+	 * Deliberately use the raw signal calls rather than the xsignal_*
+	 * wrappers above: this must reset the state even under conmgr (the
+	 * wrappers no-op when conmgr_enabled()), e.g. before exec()ing.
+	 */
+	sigemptyset(&empty);
+	if (sigprocmask(SIG_SETMASK, &empty, NULL))
+		debug("%s: sigprocmask() failed: %m", __func__);
+
+	for (int sig = 1; sig < NSIG; sig++) {
+		struct sigaction sa = {
+			.sa_handler = SIG_DFL,
+		};
+
+		/* SIGKILL and SIGSTOP dispositions cannot be changed */
+		if ((sig == SIGKILL) || (sig == SIGSTOP))
+			continue;
+
+		/* Ignore invalid/reserved signal numbers */
+		(void) sigaction(sig, &sa, NULL);
+	}
+}

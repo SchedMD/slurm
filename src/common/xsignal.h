@@ -91,4 +91,12 @@ int xsignal_unblock(int sigarray[]);
  */
 int xsignal_sigset_create(int sigarray[], sigset_t *setp);
 
+/*
+ * Reset the blocked signal mask and all signal dispositions to their defaults
+ * so an exec()ed process starts with a clean signal state (the mask and SIG_IGN
+ * dispositions are otherwise inherited across exec()). Unlike the other
+ * xsignal_* calls this is not gated by conmgr_enabled().
+ */
+extern void xsignal_reset_all(void);
+
 #endif /* !_XSIGNAL_H */

@@ -53,6 +53,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/daemonize.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -140,7 +141,7 @@ static data_parser_t **parsers = NULL;
 static bool unshare_sysv = true;
 static bool unshare_files = true;
 static bool check_user = true;
-static bool become_user = false;
+static bool become_user_mode = false;
 static http_status_code_t *response_status_codes = NULL;
 
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
@@ -255,7 +256,7 @@ static void _parse_env(void)
 #endif /* NDEBUG */
 				check_user = false;
 			} else if (!xstrcasecmp(token, "become_user")) {
-				become_user = true;
+				become_user_mode = true;
 			} else {
 				fatal("Unexpected value in SLURMRESTD_SECURITY=%s",
 				      token);
@@ -536,59 +537,6 @@ static void _parse_commandline(int argc, char **argv)
 }
 
 /*
- * Check for supplementary group that could result in an unintended privilege
- * escalation
- */
-static void _check_gids(void)
-{
-	gid_t *gids = NULL;
-	bool need_drop = false;
-	int gid_count = getgroups(0, NULL);
-
-	if (gid_count < 0)
-		fatal("%s: getgroups(0, NULL) failed: %m", __func__);
-
-	if (!gid_count)
-		return;
-
-	gids = xcalloc(gid_count, sizeof(*gids));
-
-	if ((gid_count = getgroups(gid_count, gids)) < 0)
-		fatal("%s: getgroups() failed: %m", __func__);
-
-	for (int i = 0; i < gid_count; i++) {
-		/*
-		 * Ignore same gid being in supplementary groups
-		 * as it won't change permissions
-		 */
-		if (gids[i] == gid)
-			continue;
-
-		need_drop = true;
-		debug("%s: Supplementary group %d needs to be dropped",
-		      __func__, gids[i]);
-	}
-
-	xfree(gids);
-
-	if (!need_drop)
-		return;
-
-	debug("%s: Dropping all supplementary groups", __func__);
-
-	if (!setgroups(0, NULL))
-		return;
-
-#ifdef __linux__
-	if (errno == EPERM)
-		fatal("slurmrestd process lacks CAP_SETGID to drop supplementary groups. Supplementary groups must be removed from slurmrestd user (uid=%d,gid=%d) prior to starting slurmrestd.",
-		      uid, gid);
-#endif /* __linux__ */
-
-	fatal("Unable to drop supplementary groups: %m");
-}
-
-/*
  * slurmrestd is merely a translator from REST to Slurm.
  * Try to lock down any extra unneeded permissions.
  */
@@ -597,35 +545,23 @@ static void _lock_down(void)
 	if ((getuid() == SLURM_AUTH_NOBODY) || (getgid() == SLURM_AUTH_NOBODY))
 		fatal("slurmrestd must not be run as nobody");
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1)
-		fatal("Unable to disable new privileges: %m");
-#endif
+	if (become_user_mode) {
+		if (getuid())
+			fatal("slurmrestd must run as root in become_user mode");
 
-	if (unshare_sysv && unshare(CLONE_SYSVSEM))
-		fatal("Unable to unshare System V namespace: %m");
-	if (unshare_files && unshare(CLONE_FILES))
-		fatal("Unable to unshare file descriptors: %m");
+		if (getgid())
+			fatal("slurmrestd must run as root in become_user mode");
+	} else {
+		/* uid/gid default to 0 ("unset"); target the current user */
+		if (!uid)
+			uid = geteuid();
+		if (!gid)
+			gid = gid_from_uid(uid);
 
-	if (uid != 0 && (gid == 0))
-		gid = gid_from_uid(uid);
-	if (gid)
-		_check_gids();
-	if (gid != 0 && setgid(gid))
-		fatal("Unable to setgid: %m");
-	if (uid != 0 && setuid(uid))
-		fatal("Unable to setuid: %m");
-
-	if (become_user && getuid())
-		fatal("slurmrestd must run as root in become_user mode");
-
-	if (become_user && getgid())
-		fatal("slurmrestd must run as root in become_user mode");
-
-#ifdef PR_SET_DUMPABLE
-	if (prctl(PR_SET_DUMPABLE, 1) < 0)
-		error("%s: Unable to set process as dumpable: %m", __func__);
-#endif
+		if (become_user(uid, gid, NULL, 0, true, unshare_sysv,
+				unshare_files, true, false, false, true))
+			exit(1);
+	}
 }
 
 /*
@@ -650,9 +586,9 @@ static void _check_user(void)
 	if (gid_from_uid(slurm_conf.slurm_user_id) == getgid())
 		fatal("slurmrestd should not be run with SlurmUser's group.");
 
-	if (!getuid() && !become_user)
+	if (!getuid() && !become_user_mode)
 		fatal("slurmrestd should not be run as the root user.");
-	if (!getgid() && !become_user)
+	if (!getgid() && !become_user_mode)
 		fatal("slurmrestd should not be run with the root group.");
 
 	if ((gid_count = getgroups(0, NULL)) > 0) {
@@ -665,7 +601,7 @@ static void _check_user(void)
 			if (list[i] == slurm_conf.slurm_user_id)
 				fatal("slurmrestd should not be run with SlurmUser's group.");
 
-			if (!list[i] && !become_user)
+			if (!list[i] && !become_user_mode)
 				fatal("slurmrestd should not be run with the root group.");
 
 			if (list[i] == SLURM_AUTH_NOBODY)
@@ -832,7 +768,8 @@ int main(int argc, char **argv)
 				      auth_plugin_types[i]);
 	}
 
-	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
+	if (init_rest_auth(become_user_mode, unshare_sysv, unshare_files,
+			   auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
 	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,

@@ -39,13 +39,14 @@
 
 #define _GNU_SOURCE
 
-#include <stdlib.h>
-#include <pwd.h>
-#include <grp.h>
 #include <ctype.h>
 #include <errno.h>
+#include <grp.h>
 #include <limits.h>
+#include <pwd.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -795,4 +796,89 @@ char *gid_to_string_or_null(gid_t gid)
 	xfree(buf_malloc);
 
 	return name;
+}
+
+extern int drop_supplementary_groups(uid_t uid, gid_t gid)
+{
+	int rc = EINVAL;
+	gid_t *gids = NULL;
+	bool need_drop = false;
+	int gid_count = getgroups(0, NULL);
+
+	if (gid_count < 0) {
+		rc = errno;
+		error("%s: getgroups(0, NULL) failed: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
+	if (!gid_count)
+		return SLURM_SUCCESS;
+
+	gids = xcalloc(gid_count, sizeof(*gids));
+
+	if ((gid_count = getgroups(gid_count, gids)) < 0) {
+		rc = errno;
+		error("%s: getgroups() failed: %s",
+		      __func__, slurm_strerror(rc));
+		xfree(gids);
+		return rc;
+	}
+
+	for (int i = 0; i < gid_count; i++) {
+		/*
+		 * Ignore same gid being in supplementary groups
+		 * as it won't change permissions
+		 */
+		if (gids[i] == gid)
+			continue;
+
+		need_drop = true;
+		debug("%s: Supplementary group %d needs to be dropped",
+		      __func__, gids[i]);
+	}
+
+	xfree(gids);
+
+	if (!need_drop)
+		return SLURM_SUCCESS;
+
+	debug("%s: Dropping all supplementary groups", __func__);
+
+	if (!setgroups(0, NULL))
+		return SLURM_SUCCESS;
+
+	rc = errno;
+
+#ifdef __linux__
+	if (rc == EPERM) {
+		warning("Process lacks CAP_SETGID to drop supplementary groups. Supplementary groups should be removed from user (uid=%d,gid=%d) prior to starting process.",
+			uid, gid);
+		return SLURM_SUCCESS;
+	}
+#endif /* __linux__ */
+
+	warning("Unable to drop supplementary groups: %s", slurm_strerror(rc));
+	return rc;
+}
+
+extern int set_supplementary_groups(uid_t uid, gid_t *gids, int ngids)
+{
+	int rc;
+
+	if (!setgroups(ngids, gids))
+		return SLURM_SUCCESS;
+
+	rc = errno;
+
+#ifdef __linux__
+	if (rc == EPERM) {
+		warning("Process lacks CAP_SETGID to set supplementary groups. Supplementary groups should be configured for user (uid=%d) prior to starting process.",
+			uid);
+		return SLURM_SUCCESS;
+	}
+#endif /* __linux__ */
+
+	error("%s: Unable to setgroups(): %s", __func__, slurm_strerror(rc));
+	return rc;
 }
