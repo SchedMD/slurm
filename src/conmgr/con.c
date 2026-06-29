@@ -306,7 +306,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		if (!locked)
 			slurm_mutex_unlock(&mgr.mutex);
 
-		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
+		log_flag(CONMGR, "%s: [%s] input already closed; close requested",
 			 __func__, con->name);
 		return;
 	}
