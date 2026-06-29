@@ -40,9 +40,12 @@
 #include "src/common/http_mime.h"
 #include "src/common/http_router.h"
 #include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/probes.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/interfaces/http_auth.h"
 
@@ -253,12 +256,79 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 				      NULL, false, NULL, NULL);
 }
 
+static int _reply_error(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, int err)
+{
+	char *body = NULL, *at = NULL;
+	int rc;
+
+	xstrfmtcatat(body, &at, "slurmrestd HTTP server request for '%s %s':\n",
+		     get_http_method_string(request->method),
+		     request->url.path);
+
+	if (err)
+		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
+
+	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
+				    true,
+				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				    MIME_TYPE_TEXT);
+
+	xfree(body);
+	return rc;
+}
+
+static int _auth(http_con_t *hcon, const char *name,
+		 const http_con_request_t *request, void *uid_ptr)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, uid_ptr, hcon,
+					   name, request))) {
+		(void) _reply_error(hcon, name, request, rc);
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _req_readyz(http_con_t *hcon, const char *name,
 		       const http_con_request_t *request, void *arg,
 		       void *path_arg)
 {
-	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
-				      NULL, false, NULL, NULL);
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	buf_t *body = NULL;
+	int rc = EINVAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if (_auth(hcon, name, request, &uid))
+			return SLURM_SUCCESS;
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+			return _reply_error(hcon, name, request, EPERM);
+
+		body = init_buf(BUF_SIZE);
+	}
+
+	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
+		if (body && (get_buf_offset(body) > 0))
+			status = HTTP_STATUS_CODE_SUCCESS_OK;
+		else
+			status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, true, body,
+				    MIME_TYPE_TEXT);
+	FREE_NULL_BUFFER(body);
+	return rc;
 }
 
 static int _req_livez(http_con_t *hcon, const char *name,
