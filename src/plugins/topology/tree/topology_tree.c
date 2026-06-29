@@ -475,17 +475,26 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 	int lst_count = 0;
 	bitstr_t *fwd_bitmap = NULL;		/* nodes in forward list */
 
+	/* A top-level leaf has no children; relay its own nodes as one list. */
+	if (!ctx->switch_table[parent].num_switches) {
+		lst_count =
+			_relay_switch_sublist(nodes_bitmap, parent, 0,
+					      &fwd_bitmap, sp_hl, count, ctx);
+		goto fini;
+	}
+
 	for (int i = 0; i < ctx->switch_table[parent].num_switches; i++) {
 		int k = ctx->switch_table[parent].switch_index[i];
 
-		lst_count += _relay_switch_sublist(nodes_bitmap, k, i,
-						   &fwd_bitmap, sp_hl, count,
-						   ctx);
+		lst_count +=
+			_relay_switch_sublist(nodes_bitmap, k, i, &fwd_bitmap,
+					      sp_hl, count, ctx);
 		if (lst_count == *msg_count)
 			break; /* all nodes in message are in a child list */
 	}
-	*msg_count -= lst_count;
 
+fini:
+	*msg_count -= lst_count;
 	FREE_NULL_BITMAP(fwd_bitmap);
 	return lst_count;
 }
