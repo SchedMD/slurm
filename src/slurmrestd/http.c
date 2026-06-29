@@ -44,6 +44,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/http_auth.h"
+
 #include "src/conmgr/conmgr.h"
 
 #include "src/slurmrestd/http.h"
@@ -289,6 +291,13 @@ static int _req_root(http_con_t *hcon, const char *name,
 
 extern void http_init(void)
 {
+	int rc;
+
+	if ((rc = http_auth_g_init(slurm_conf.slurmrestd_http_auth_params, NULL,
+				   NULL)))
+		fatal("http authentication plugins failed to load: %s",
+		      slurm_strerror(rc));
+
 	http_router_init(_req_not_found);
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
@@ -300,4 +309,5 @@ extern void http_init(void)
 extern void http_fini(void)
 {
 	http_router_fini();
+	http_auth_g_fini();
 }
