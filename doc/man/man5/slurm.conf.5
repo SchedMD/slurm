@@ -2402,10 +2402,26 @@ The value may not exceed 65533.
 
 .TP
 \fBMaxBatchRequeue\fR
-Maximum number of times a batch job may be automatically requeued before
-being marked as JobHeldAdmin. (Mainly useful when the \fBSchedulerParameters\fR
-option \fBnohold_on_prolog_fail\fR is enabled.)
+Maximum number of times a batch job may be requeued due to launch or
+prolog failures before being held. (Mainly useful when the
+\fBSchedulerParameters\fR option \fBnohold_on_prolog_fail\fR is enabled.)
 The default value is 5.
+.IP
+
+.TP
+\fBMaxNodeFailRequeue\fR
+Maximum number of times a batch job may be requeued after an allocated
+node fails before the job is held. This can limit jobs suspected of repeatedly
+triggering node failures from being requeued indefinitely; Slurm does not
+diagnose whether the job or node caused the failure. A value of 0 disables the
+limit. The default value is 5.
+.IP
+
+.TP
+\fBMaxPreemptRequeue\fR
+Maximum number of times a batch job may be requeued due to preemption or
+operator requeue before the job is held. A value of 0 disables the limit.
+The default value is 0.
 .IP
 
 .TP

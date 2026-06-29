@@ -322,6 +322,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"MailProg", S_P_STRING},
 	{"MaxArraySize", S_P_UINT32},
 	{"MaxBatchRequeue", S_P_UINT32},
+	{"MaxNodeFailRequeue", S_P_UINT32},
+	{"MaxPreemptRequeue", S_P_UINT32},
 	{"MaxDBDMsgs", S_P_UINT32},
 	{"MaxJobCount", S_P_UINT32},
 	{"MaxJobId", S_P_UINT32},
@@ -2970,6 +2972,8 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	xfree(conf->mail_prog);
 	conf->max_array_sz = NO_VAL;
 	conf->max_batch_requeue = NO_VAL;
+	conf->max_node_fail_requeue = NO_VAL;
+	conf->max_preempt_requeue = NO_VAL;
 	conf->max_dbd_msgs = 0;
 	conf->max_job_cnt = NO_VAL;
 	conf->max_job_id = NO_VAL;
@@ -4396,6 +4400,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint32(&conf->max_batch_requeue, "MaxBatchRequeue",
 			    hashtbl))
 		conf->max_batch_requeue = DEFAULT_MAX_BATCH_REQUEUE;
+
+	if (!s_p_get_uint32(&conf->max_node_fail_requeue, "MaxNodeFailRequeue",
+			    hashtbl))
+		conf->max_node_fail_requeue = DEFAULT_MAX_NODE_FAIL_REQUEUE;
+
+	if (!s_p_get_uint32(&conf->max_preempt_requeue, "MaxPreemptRequeue",
+			    hashtbl))
+		conf->max_preempt_requeue = DEFAULT_MAX_PREEMPT_REQUEUE;
 
 	if (!s_p_get_uint32(&conf->max_dbd_msgs, "MaxDBDMsgs", hashtbl))
 		conf->max_dbd_msgs = 0;

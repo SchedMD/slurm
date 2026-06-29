@@ -471,6 +471,8 @@ struct job_record {
 	slurmdb_qos_rec_t *qos_blocking_ptr; /* internal use only, DON'T PACK */
 	uint8_t reboot;			/* node reboot requested before start */
 	uint16_t restart_cnt;		/* count of restarts */
+	uint32_t node_fail_requeue_cnt;	/* count of node-failure requeues */
+	uint32_t preempt_requeue_cnt;	/* count of preemption/operator requeues */
 	time_t resize_time;		/* time of latest size change */
 	uint32_t resv_id;		/* reservation ID */
 	list_t *resv_list;		/* Filled in if the job is requesting
