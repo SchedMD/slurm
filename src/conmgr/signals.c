@@ -342,11 +342,18 @@ static void _atfork_child(void)
 	/*
 	 * Force state to return to default state before it was initialized at
 	 * forking as all of the prior state is completely unusable.
+	 *
+	 * No locking is taken (or possible) here: per POSIX the child created
+	 * by fork() runs only the calling thread, so this handler is
+	 * single-threaded and nothing else can race on these statics. The
+	 * inherited lock state is undefined in the child, so the lock itself is
+	 * reinitialized rather than acquired.
 	 */
 	lock = (pthread_rwlock_t) PTHREAD_RWLOCK_INITIALIZER;
 	one_time_init = false;
 	signal_handlers = NULL;
 	signal_handler_count = 0;
+	/* coverity[missing_lock] */
 	signal_work = NULL;
 	signal_work_count = 0;
 	signal_fd = -1;

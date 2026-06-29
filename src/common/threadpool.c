@@ -807,6 +807,8 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	 */
 	if (id_ptr) {
 		if (threadpool.enabled) {
+			xassert(thread);
+
 			slurm_mutex_lock(&threadpool.mutex);
 
 			_assign_wait(thread, id_ptr, caller);
