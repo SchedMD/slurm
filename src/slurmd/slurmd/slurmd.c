@@ -756,10 +756,6 @@ static void *_service_msg(void *arg)
 		 __func__, conmgr_con_get_name(conmgr_con),
 		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type), addr);
 
-	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
-		 conmgr_con_get_name(conmgr_con), rpc_num2string(msg->msg_type),
-		 msg->auth_uid, addr, msg->protocol_version);
-
 	/* Release conmgr connection as it will have been closed */
 	CONMGR_CON_UNLINK(msg->conmgr_con);
 	slurmd_req(msg);
