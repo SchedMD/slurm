@@ -46,6 +46,28 @@
 
 typedef struct {
 	persist_conn_t *pcon;
+	int fd; /* underlying input fd, captured at accept for log/db ids */
+
+	/* Peer identity (filled in from REQUEST_PERSIST_INIT). */
+	char *cluster_name;
+	char *rem_host;
+	uint16_t rem_port;
+
+	/* Negotiated protocol version. */
+	uint16_t version;
+
+	/*
+	 * Auth state cached from REQUEST_PERSIST_INIT.
+	 * auth_cred is borrowed from pcon, do not destroy it.
+	 */
+	void *auth_cred;
+	uid_t auth_uid;
+	gid_t auth_gid;
+	bool auth_ids_set;
+
+	/* PERSIST_FLAG_* bits applicable to this connection. */
+	uint16_t flags;
+
 	persist_conn_t *pcon_send;
 	pthread_mutex_t pcon_send_lock;
 	void *db_conn; /* database connection */
