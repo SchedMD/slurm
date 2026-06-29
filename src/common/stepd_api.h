@@ -374,6 +374,13 @@ extern int stepd_get_namespace_fds(int fd, list_t *fd_map,
 				   uint16_t protocol_version);
 
 /*
+ * ListDelF for an ns_fd_map_t * entry: closes the fd it owns and frees
+ * the wrapper. Pass to list_create() when building a list whose entries
+ * own their fds.
+ */
+extern void stepd_destroy_ns_fd_map(void *x);
+
+/*
  * Request to get the BPF token for a step in a user namespace.
  *
  * fd needs to be a connection to the socket of the extern slurmstepd.

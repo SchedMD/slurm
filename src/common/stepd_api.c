@@ -84,6 +84,7 @@ strong_alias(stepd_gethostbyname, slurm_stepd_gethostbyname);
 strong_alias(xfree_struct_hostent, slurm_xfree_struct_hostent);
 strong_alias(stepd_get_namespace_fd, slurm_stepd_get_namespace_fd);
 strong_alias(stepd_get_namespace_fds, slurm_stepd_get_namespace_fds);
+strong_alias(stepd_destroy_ns_fd_map, slurm_stepd_destroy_ns_fd_map);
 
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
@@ -472,8 +473,23 @@ extern int stepd_get_namespace_fds(int fd, list_t *fd_map,
 	return fd_count;
 
 rwfail:
-	list_destroy(fd_map);
+	/*
+	 * fd_map is owned by the caller. Flush so any partially-received fds
+	 * are closed via the list's destructor, but do not destroy the list
+	 * itself - the caller will.
+	 */
+	list_flush(fd_map);
 	return SLURM_ERROR;
+}
+
+extern void stepd_destroy_ns_fd_map(void *x)
+{
+	ns_fd_map_t *entry = x;
+
+	if (!entry)
+		return;
+	fd_close(&entry->fd);
+	xfree(entry);
 }
 
 /*

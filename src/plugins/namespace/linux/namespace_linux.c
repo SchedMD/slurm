@@ -1073,6 +1073,7 @@ extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 {
 	char *job_mount = NULL, *ns_base = NULL;
 	ns_fd_map_t *tmp_map = NULL;
+	int fd;
 
 	xassert(ns_map);
 
@@ -1085,23 +1086,20 @@ extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 		if (!ns_l_enabled[i].enabled)
 			continue;
 
-		if (ns_l_enabled[i].fd == -1) {
-			ns_l_enabled[i].fd =
-				open(ns_l_enabled[i].path, O_RDONLY);
-			if (ns_l_enabled[i].fd == -1) {
-				error("%s: %m", __func__);
-				goto end_it;
-			}
+		fd = open(ns_l_enabled[i].path, O_RDONLY);
+		if (fd == -1) {
+			error("%s: open failed for %s: %m",
+			      __func__, ns_l_enabled[i].path);
+			goto end_it;
 		}
 		tmp_map = xmalloc(sizeof(*tmp_map));
 		tmp_map->type = ns_l_enabled[i].flag;
-		tmp_map->fd = ns_l_enabled[i].fd;
+		tmp_map->fd = fd;
 		list_append(ns_map, tmp_map);
 		tmp_map = NULL;
 	}
 
 end_it:
-
 	xfree(job_mount);
 	xfree(ns_base);
 

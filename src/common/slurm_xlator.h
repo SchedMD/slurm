@@ -549,6 +549,7 @@
 #define xfree_struct_hostent		slurm_xfree_struct_hostent
 #define stepd_get_namespace_fd		slurm_stepd_get_namespace_fd
 #define stepd_get_namespace_fds slurm_stepd_get_namespace_fds
+#define stepd_destroy_ns_fd_map slurm_stepd_destroy_ns_fd_map
 
 /* cgroup.[ch] functions */
 #define cgroup_conf_init		slurm_cgroup_conf_init
