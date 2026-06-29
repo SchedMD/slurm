@@ -3261,7 +3261,8 @@ function __slurm_comp_scancel_flags() {
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	-n | --name | --jobname) __slurm_compreply "$(__slurm_jobnames)" ;;
+	-J | --job-name) __slurm_compreply "$(__slurm_jobnames)" ;;
+	-n | --jobname | --name) __slurm_compreply "$(__slurm_jobnames)" ;;
 	-w | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
