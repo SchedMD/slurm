@@ -33,8 +33,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/http.h"
 #include "src/common/http_con.h"
+#include "src/common/http_mime.h"
 #include "src/common/http_router.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
@@ -268,9 +271,26 @@ static int _req_livez(http_con_t *hcon, const char *name,
 				      NULL, false, NULL, NULL);
 }
 
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
+{
+	static const char body[] =
+		"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.";
+	buf_t buf = SHADOW_BUF_INITIALIZER(body, strlen(body));
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
+				      NULL, true, &buf, MIME_TYPE_TEXT);
+}
+
 extern void http_init(void)
 {
 	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
 			 NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
