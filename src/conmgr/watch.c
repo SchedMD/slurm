@@ -195,7 +195,7 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 	}
 
 	if ((con->polling_output_fd != PCTL_TYPE_UNSUPPORTED) &&
-	    ((con->output_fd >= 0) && !con_flag(con, FLAG_CAN_WRITE))) {
+	    !con_flag(con, FLAG_WRITE_EOF) && !con_flag(con, FLAG_CAN_WRITE)) {
 		slurm_mutex_unlock(&mgr.mutex);
 
 		/*
@@ -207,17 +207,17 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 		return;
 	}
 
-	if ((con->output_fd >= 0) &&
+	if (!con_flag(con, FLAG_WRITE_EOF) &&
 	    con_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER)) {
 		int rc = EINVAL;
 		int bytes = -1;
 		int output_fd = con->output_fd;
 
+		xassert(output_fd >= 0);
+
 		slurm_mutex_unlock(&mgr.mutex);
 
-		if (output_fd >= 0)
-			rc = fd_get_buffered_output_bytes(output_fd, &bytes,
-							  con->name);
+		rc = fd_get_buffered_output_bytes(output_fd, &bytes, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
 
@@ -283,7 +283,7 @@ static void _update_mss(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1))
+	if (con_flag(con, FLAG_IS_SOCKET) && !con_flag(con, FLAG_WRITE_EOF))
 		con->mss = fd_get_maxmss(con->output_fd, con->name);
 }
 
@@ -352,6 +352,7 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 		add_work_con_fifo(true, con, _close_output_fd,
 				  ((void *) (uint64_t) con->output_fd));
 
+	con_set_flag(con, FLAG_WRITE_EOF);
 	con->output_fd = -1;
 }
 
@@ -573,7 +574,7 @@ static bool can_extract(conmgr_fd_t *con, const bool is_tls)
 
 	/* Extract as failure state as file descriptor already closed */
 	if ((con->input_fd < 0) || (con->output_fd < 0) ||
-	    con_flag(con, FLAG_READ_EOF))
+	    con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_WRITE_EOF))
 		return true;
 
 	/* Do not extract while waiting for fingerprint */
@@ -630,6 +631,7 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 	xassert(con_flag(con, FLAG_IS_LISTEN));
 	xassert(con_flag(con, FLAG_IS_SOCKET));
 	xassert(con->output_fd == -1);
+	xassert(con_flag(con, FLAG_WRITE_EOF));
 	xassert(list_is_empty(con->write_complete_work));
 
 	/* connection may have a running thread, do nothing */
@@ -777,12 +779,10 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (!list_is_empty(con->work) ||
-	    !list_is_empty(con->write_complete_work)) {
-		log_flag(CONMGR, "%s: [%s] outstanding work for connection output_fd=%d work=%u write_complete_work=%u",
-			 __func__, con->name, con->output_fd,
-			 list_count(con->work),
-			 list_count(con->write_complete_work));
+	if (!list_is_empty(con->work)) {
+		log_flag(CONMGR, "%s: [%s] outstanding work for connection input_fd=%d work=%u",
+			 __func__, con->name, con->input_fd,
+			 list_count(con->work));
 
 		/*
 		 * Must finish all outstanding work before deletion.
@@ -852,6 +852,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	if (((con->input_fd < 0) && (con->output_fd < 0))) {
 		xassert(con_flag(con, FLAG_READ_EOF));
+		xassert(con_flag(con, FLAG_WRITE_EOF));
 		/* connection already closed */
 	} else if (con_flag(con, FLAG_IS_CONNECTED) ||
 		   con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
@@ -868,7 +869,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		_set_time(args);
 		con->last_read = args->time;
 
-		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
+		if (con_flag(con, FLAG_IS_SOCKET) &&
+		    !con_flag(con, FLAG_WRITE_EOF)) {
 			/* Query outbound MSS now kernel should know the answer */
 			add_work_con_fifo(true, con, _update_mss, NULL);
 		}
@@ -889,7 +891,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			 * needs to be done
 			 */
 		}
-	} else if (!con_flag(con, FLAG_READ_EOF)) {
+	} else if (!con_flag(con, FLAG_READ_EOF) &&
+		   !con_flag(con, FLAG_WRITE_EOF)) {
 		xassert(!con_flag(con, FLAG_CAN_READ) &&
 			!con_flag(con, FLAG_CAN_WRITE));
 
@@ -972,7 +975,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	}
 
 	/* handle out going data */
-	if ((con->output_fd >= 0) && con->tls_out &&
+	if (!con_flag(con, FLAG_WRITE_EOF) && con->tls_out &&
 	    !list_is_empty(con->tls_out)) {
 		if (con_flag(con, FLAG_CAN_WRITE) ||
 		    (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED)) {
@@ -986,7 +989,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		}
 	}
 
-	if ((con->output_fd >= 0) && !list_is_empty(con->out)) {
+	if (!con_flag(con, FLAG_WRITE_EOF) && !list_is_empty(con->out)) {
 		if (con->tls) {
 			if (con_flag(con, FLAG_IS_TLS_CONNECTED)) {
 				log_flag(CONMGR, "%s: [%s] %u pending writes to encrypt",
@@ -1011,7 +1014,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
-		if (con->output_fd < 0) {
+		if (con_flag(con, FLAG_WRITE_EOF)) {
 			/* output_fd is already closed so no more write()s */
 			queue_work = true;
 		} else if (con->polling_output_fd == PCTL_TYPE_UNSUPPORTED) {
@@ -1088,7 +1091,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	if (is_tls && !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
-	    !con_flag(con, FLAG_READ_EOF)) {
+	    !con_flag(con, FLAG_READ_EOF) && !con_flag(con, FLAG_WRITE_EOF)) {
 		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(!con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
@@ -1118,7 +1121,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(is_tls);
 
-		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+		if (con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF)) {
 			log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown cleanup on closed connection",
 				 __func__, con->name);
 			add_work_con_fifo(true, con, tls_shutdown, NULL);
@@ -1545,9 +1549,17 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 			con_assign_flag(con, FLAG_READ_EOF,
 					pollctl_events_has_hangup(events));
 	}
-	if (fd == con->output_fd)
+	if (fd == con->output_fd) {
 		con_assign_flag(con, FLAG_CAN_WRITE,
 				pollctl_events_can_write(events));
+
+		/* Avoid setting FLAG_WRITE_EOF if FLAG_CAN_WRITE */
+		if (!con_flag(con, FLAG_CAN_WRITE) &&
+		    !con_flag(con, FLAG_WRITE_EOF) &&
+		    (con->output_fd != con->input_fd))
+			con_assign_flag(con, FLAG_WRITE_EOF,
+					pollctl_events_has_hangup(events));
+	}
 
 	log_flag(CONMGR, "%s: [%s] fd=%d flags=%s",
 		 __func__, con->name, fd,

@@ -109,6 +109,7 @@ static const struct {
 	T(FLAG_IS_FIFO),
 	T(FLAG_IS_CHR),
 	T(FLAG_TCP_NODELAY),
+	T(FLAG_WRITE_EOF),
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
@@ -270,7 +271,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
-	if ((con->input_fd == con->output_fd) || (con->output_fd < 0))
+	if ((con->input_fd == con->output_fd) || con_flag(con, FLAG_WRITE_EOF))
 		con_unset_flag(con, FLAG_QUIESCE);
 
 	if (con->input_fd < 0) {
@@ -291,7 +292,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
 	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
-	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
+	    !con_flag(con, FLAG_READ_EOF) && !con_flag(con, FLAG_WRITE_EOF)) {
 		/* Attempt graceful TLS shutdown once */
 		con_set_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
@@ -799,6 +800,7 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_IS_SOCKET, is_socket);
 	con_assign_flag(con, FLAG_IS_LISTEN, is_listen);
 	con_assign_flag(con, FLAG_READ_EOF, !has_in);
+	con_assign_flag(con, FLAG_WRITE_EOF, !has_out);
 	con_assign_flag(con, FLAG_IS_FIFO, is_fifo);
 	con_assign_flag(con, FLAG_IS_CHR, is_chr);
 
@@ -1091,6 +1093,9 @@ static void _send_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(CONMGR, "%s: [%s] Canceled sending file descriptor %d.",
 			 __func__, con->name, fd);
+	} else if (con_flag(con, FLAG_WRITE_EOF)) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over closed output_fd=%d",
+			 __func__, con->name, fd, con->output_fd);
 	} else if (con->output_fd < 0) {
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
 			 __func__, con->name, fd, con->output_fd);
@@ -1123,6 +1128,10 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd)
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over non-socket",
 			 __func__, con->name, fd);
 		rc = EAFNOSUPPORT;
+	} else if (con_flag(con, FLAG_WRITE_EOF)) {
+		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over closed output_fd=%d",
+			 __func__, con->name, fd, con->output_fd);
+		rc = SLURM_COMMUNICATIONS_INVALID_FD;
 	} else if (con->output_fd < 0) {
 		log_flag(CONMGR, "%s: [%s] Unable to send file descriptor %d over invalid output_fd=%d",
 			 __func__, con->name, fd, con->output_fd);
@@ -1572,7 +1581,8 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 		if (!con_flag(con, FLAG_READ_EOF))
 			input_fd = con->input_fd;
 
-		output_fd = con->output_fd;
+		if (!con_flag(con, FLAG_WRITE_EOF))
+			output_fd = con->output_fd;
 	}
 
 	slurm_mutex_unlock(&mgr.mutex);
@@ -1591,7 +1601,8 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 		/* Catch connection state changing during kernel queries */
 		if ((input_fd != con->input_fd) ||
 		    (output_fd != con->output_fd) ||
-		    con_flag(con, FLAG_READ_EOF))
+		    con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF))
 			rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
 
 		slurm_mutex_unlock(&mgr.mutex);
@@ -1913,6 +1924,7 @@ static void _on_change_polling_fail(conmgr_fd_t *con, int rc,
 			con->polling_output_fd = PCTL_TYPE_UNSUPPORTED;
 			con_unset_flag(con, FLAG_CAN_WRITE);
 			con_unset_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
+			con_set_flag(con, FLAG_WRITE_EOF);
 		}
 	} else {
 		/* Attempt graceful closing of connection */
@@ -2173,7 +2185,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* Catch file descriptors being closed for any reason before now */
 	if (((con->input_fd < 0) || con_flag(con, FLAG_READ_EOF)) &&
-	    (con->output_fd < 0)) {
+	    ((con->output_fd < 0) || con_flag(con, FLAG_WRITE_EOF))) {
 		log_flag(CONMGR, "%s: [%s] invalid input_fd and output_fd",
 			 __func__, con->name);
 		goto failed;
@@ -2181,6 +2193,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* clear all polling states */
 	con_set_flag(con, FLAG_READ_EOF);
+	con_set_flag(con, FLAG_WRITE_EOF);
 	con_unset_flag(con, FLAG_CAN_READ);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
@@ -2433,7 +2446,8 @@ extern int conmgr_quiesce_con(conmgr_fd_ref_t *ref)
 static bool _is_output_open(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	return (!con_flag(con, FLAG_READ_EOF) && (con->output_fd >= 0));
+	return (!con_flag(con, FLAG_READ_EOF) &&
+		!con_flag(con, FLAG_WRITE_EOF));
 }
 
 extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)

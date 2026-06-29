@@ -90,6 +90,7 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* Connection must already be soft closed */
 	xassert(con_flag(con, FLAG_READ_EOF));
+	xassert(con_flag(con, FLAG_WRITE_EOF));
 
 	SWAP(tls, con->tls);
 	xassert(tls);
@@ -154,6 +155,7 @@ static void _wait_close(conmgr_fd_t *con)
 	/* Soft close the connection to stop any more activity */
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 	con_set_flag(con, FLAG_READ_EOF);
+	con_set_flag(con, FLAG_WRITE_EOF);
 	con_set_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 	con_unset_flag(con, FLAG_CAN_WRITE);
@@ -217,7 +219,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
 	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
-	if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_WRITE_EOF)) {
 		log_flag(CONMGR, "%s: [%s] cancelling TLS shutdown",
 			 __func__, con->name);
 		_shutdown_complete(true, con);
@@ -255,7 +257,8 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(tls == con->tls);
 		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
-		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+		if (con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF)) {
 			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() completed after connection closed",
 				 __func__, con->name);
 			_shutdown_complete(true, con);
@@ -707,6 +710,7 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 			 __func__, con->name, slurm_strerror(rc));
 
 		con_set_flag(con, FLAG_READ_EOF);
+		con_set_flag(con, FLAG_WRITE_EOF);
 	} else {
 		log_flag(CONMGR, "%s: [%s] adopted TLS state",
 			 __func__, con->name);
