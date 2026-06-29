@@ -454,7 +454,7 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 			char *buf;
 			buf = hostlist_ranged_string_xmalloc((*sp_hl)[*count]);
 			debug("ROUTE: ... sublist[%d] switch=%s :: %s",
-			      i, ctx->switch_table[i].name, buf);
+			      i, ctx->switch_table[k].name, buf);
 			xfree(buf);
 		}
 		(*count)++;
