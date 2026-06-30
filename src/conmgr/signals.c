@@ -154,6 +154,27 @@ static void _register_signal_handler(int signal)
 	signal_handler_count++;
 }
 
+static void _reset_all_signal_handlers(signal_handler_t **handlers, int count)
+{
+	for (int i = 0; i < count; i++) {
+		signal_handler_t *handler = &(*handlers)[i];
+
+		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
+		xassert(handler->signal > 0);
+
+		if (sigaction(handler->signal, &handler->prior, &handler->new))
+			fatal("%s: unable to revert %s: %m",
+			      __func__, strsignal(handler->signal));
+
+		/* clear handler entirely */
+		*handler = (signal_handler_t) {
+			.magic = ~MAGIC_SIGNAL_HANDLER,
+		};
+	}
+
+	xfree(*handlers);
+}
+
 /* caller must hold write lock */
 static void _init_signal_handler(void)
 {
@@ -302,23 +323,7 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	SWAP(signal_work_count, cancel_work_count);
 	SWAP(signal_work, cancel_work);
 
-	for (int i = 0; i < count; i++) {
-		signal_handler_t *handler = &handlers[i];
-
-		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
-		xassert(handler->signal > 0);
-
-		if (sigaction(handler->signal, &handler->prior, &handler->new))
-			fatal("%s: unable to revert %s: %m",
-			      __func__, strsignal(handler->signal));
-
-		/* clear handler entirely */
-		*handler = (signal_handler_t) {
-			.magic = ~MAGIC_SIGNAL_HANDLER,
-		};
-	}
-
-	xfree(handlers);
+	_reset_all_signal_handlers(&handlers, count);
 
 	log_flag(CONMGR, "%s: [%s] closed signal pipe",
 			 __func__, conmgr_con_get_name(conmgr_args.ref));
@@ -449,22 +454,7 @@ extern void signal_mgr_fini(void)
 	SWAP(signal_work_count, cancel_work_count);
 	SWAP(signal_work, cancel_work);
 
-	for (int i = 0; i < count; i++) {
-		signal_handler_t *handler = &handlers[i];
-
-		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
-		xassert(handler->signal > 0);
-
-		if (sigaction(handler->signal, &handler->prior, &handler->new))
-			fatal("%s: unable to revert %s: %m",
-			      __func__, strsignal(handler->signal));
-
-		*handler = (signal_handler_t) {
-			.magic = ~MAGIC_SIGNAL_HANDLER,
-		};
-	}
-
-	xfree(handlers);
+	_reset_all_signal_handlers(&handlers, count);
 
 	slurm_rwlock_unlock(&lock);
 
