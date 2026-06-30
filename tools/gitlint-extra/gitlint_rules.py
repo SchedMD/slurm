@@ -27,6 +27,7 @@ class TrailerType(ExtendedEnum):
     CID = "CID"
     CO_AUTHOR = "Co-authored-by"
     ISSUE = "Issue"
+    LINK = "Link"
     SIGNED_OFF = "Signed-off-by"
     TICKET = "Ticket"
 
