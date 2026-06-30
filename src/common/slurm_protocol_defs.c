@@ -2049,6 +2049,18 @@ extern void slurm_free_hres_update_msg(hres_update_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_node_hres_info(void *x)
+{
+	node_hres_info_t *hres_info = x;
+
+	if (!hres_info)
+		return;
+
+	xfree(hres_info->hres_name);
+	xfree(hres_info->layer_name);
+	xfree(hres_info);
+}
+
 extern void slurm_free_node_reg_resp_msg(
 	slurm_node_reg_resp_msg_t *msg)
 {

@@ -1215,6 +1215,11 @@ typedef struct {
 	list_t *nodes;
 } resource_layout_msg_t;
 
+typedef struct {
+	char *hres_name;
+	char *layer_name;
+} node_hres_info_t;
+
 /*
  * Persistent-connection protocol: flags, connection-type enum, and
  * wire message bodies.
@@ -1850,6 +1855,7 @@ extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
 extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg);
 extern void slurm_free_hres_update_msg(hres_update_msg_t *msg);
 extern void hres_variable_free(void *x);
+extern void slurm_free_node_hres_info(void *x);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);

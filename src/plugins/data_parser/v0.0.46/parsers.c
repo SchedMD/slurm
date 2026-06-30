@@ -9528,6 +9528,14 @@ static const parser_t PARSER_ARRAY(HRES_UPDATE_MSG)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(node_hres_info_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NODE_HRES_INFO)[] = {
+	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update with node"),
+	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update with node"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(PART_PRIO_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(PART_PRIO)[] = {
 	add_parse(STRING, part, "partition", "Partition name"),
@@ -13417,6 +13425,7 @@ static const parser_t parsers[] = {
 	addpap(NODE, node_info_t, NULL, NULL),
 	addpap(LICENSE, slurm_license_info_t, NULL, NULL),
 	addpap(HRES_UPDATE_MSG, hres_update_msg_t, NULL, NULL),
+	addpap(NODE_HRES_INFO, node_hres_info_t, NULL, slurm_free_node_hres_info),
 	addpap(JOB_INFO, slurm_job_info_t, NULL, NULL),
 	addpap(JOB_RES, job_resources_t, NULL, NULL),
 	addpap(LISTJOBS_INFO, listjobs_info_t, NULL, NULL),
@@ -13691,6 +13700,7 @@ static const parser_t parsers[] = {
 	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
 	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
+	addpl(NODE_HRES_INFO_LIST, NODE_HRES_INFO_PTR, NEED_NONE),
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
