@@ -558,6 +558,12 @@ extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
  */
 extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap);
 
+/*
+ * node_rank_order_cmp - qsort comparator for node_rank_order_t, sorting by
+ *	node_rank then node_inx (both ascending).
+ */
+extern int node_rank_order_cmp(const void *x, const void *y);
+
 /* used for stepmgr and omits sensitive fields */
 extern void node_record_pack(void *in,
 			     uint16_t protocol_version,

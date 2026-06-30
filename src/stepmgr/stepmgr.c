@@ -1133,22 +1133,6 @@ static int _next_node_inx(int *cur_pos, int *check_cnt, int node_cnt,
 	return SLURM_ERROR;
 }
 
-static int _cmp_node_rank(const void *x, const void *y)
-{
-	const node_rank_order_t *nx = x;
-	const node_rank_order_t *ny = y;
-
-	if (nx->node_rank > ny->node_rank)
-		return 1;
-	else if (nx->node_rank < ny->node_rank)
-		return -1;
-	if (nx->node_inx > ny->node_inx)
-		return 1;
-	else if (nx->node_inx < ny->node_inx)
-		return -1;
-	return 0;
-}
-
 /*
  * Advance past the current topology unit in order_map, returning the index of
  * the first entry whose node_rank differs from order_map[pos].
@@ -1866,7 +1850,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 		if (job_resrcs_ptr->node_ranks)
 			qsort(order_map, order_cnt, sizeof(*order_map),
-			      _cmp_node_rank);
+			      node_rank_order_cmp);
 	}
 
 	/*
