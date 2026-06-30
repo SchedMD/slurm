@@ -99,6 +99,12 @@ typedef struct node_select_stats {
 	char *alloc_tres_fmt_str;	/* allocated TRES */
 } node_select_stats_t;
 
+/* Pairs a node index with its topology rank for rank-based ordering. */
+typedef struct {
+	uint32_t node_inx;
+	uint32_t node_rank;
+} node_rank_order_t;
+
 typedef struct node_record node_record_t;
 struct node_record {
 	char *arch;			/* computer architecture */

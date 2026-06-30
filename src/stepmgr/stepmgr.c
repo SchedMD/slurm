@@ -58,6 +58,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
+#include "src/common/node_conf.h"
 #include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -97,11 +98,6 @@ typedef struct {
 	int job_node_inx;
 	list_t *node_gres_list;
 } foreach_gres_filter_t;
-
-typedef struct {
-	uint32_t node_inx;
-	uint32_t node_rank;
-} node_rank_order_t;
 
 static bool _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs,
