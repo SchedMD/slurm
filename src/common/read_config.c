@@ -2854,10 +2854,12 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->slurm_conf);
 	xfree(conf->slurm_user_name);
 	xfree(conf->slurmctld_addr);
+	xfree(conf->slurmctld_http_auth_params);
 	xfree(conf->slurmctld_logfile);
 	xfree(conf->slurmctld_pidfile);
 	xfree(conf->slurmctld_primary_off_prog);
 	xfree(conf->slurmctld_primary_on_prog);
+	xfree(conf->slurmd_http_auth_params);
 	xfree(conf->slurmd_logfile);
 	xfree(conf->slurmctld_params);
 	xfree(conf->slurmd_params);
