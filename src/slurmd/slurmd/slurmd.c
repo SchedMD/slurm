@@ -73,6 +73,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
+#include "src/common/events.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/forward.h"
@@ -186,6 +187,15 @@ typedef struct {
 static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
+
+/*
+ * count of detached threads servicing new_thread RPCs. Not gated by
+ * MAX_THREADS (concurrency is intentionally unbounded); tracked only so
+ * shutdown/reconfigure can wait for in-flight script handlers to finish.
+ */
+static int active_script_threads = 0;
+static pthread_mutex_t script_mutex = PTHREAD_MUTEX_INITIALIZER;
+static event_signal_t script_event = EVENT_INITIALIZER("SCRIPT_THREADS");
 
 /*
  * Global data for resource specialization
@@ -712,11 +722,13 @@ _wait_for_all_threads(int secs)
 {
 	struct timespec ts;
 	int rc;
+	bool timed_out = false;
 
 	ts.tv_sec  = time(NULL);
 	ts.tv_nsec = 0;
 	ts.tv_sec += secs;
 
+	/* Drain conmgr-worker RPC threads. */
 	slurm_mutex_lock(&active_mutex);
 	while (active_threads > 0) {
 		verbose("waiting on %d active threads", active_threads);
@@ -728,15 +740,42 @@ _wait_for_all_threads(int secs)
 			if (rc == ETIMEDOUT) {
 				error("Timeout waiting for completion of %d threads",
 				      active_threads);
-				slurm_cond_signal(&active_cond);
-				slurm_mutex_unlock(&active_mutex);
-				return;
+				timed_out = true;
+				break;
 			}
 		}
 	}
 	slurm_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
-	verbose("all threads complete");
+
+	/*
+	 * Drain detached new_thread script handlers under the same deadline so
+	 * shutdown/reconfigure never tears down (or exec's) out from under a
+	 * running script. A timeout on active_threads above falls through to
+	 * here rather than returning early. EVENT_WAIT_TIMED() does not surface
+	 * ETIMEDOUT, so re-check the deadline explicitly to avoid spinning once
+	 * it passes.
+	 */
+	slurm_mutex_lock(&script_mutex);
+	while (active_script_threads > 0) {
+		verbose("waiting on %d active script threads",
+			active_script_threads);
+		if (secs == NO_VAL16) { /* Wait forever */
+			EVENT_WAIT(&script_event, &script_mutex);
+		} else {
+			EVENT_WAIT_TIMED(&script_event, ts, &script_mutex);
+			if (timespec_is_after(timespec_now(), ts)) {
+				error("Timeout waiting for completion of %d script threads",
+				      active_script_threads);
+				timed_out = true;
+				break;
+			}
+		}
+	}
+	slurm_mutex_unlock(&script_mutex);
+
+	if (!timed_out)
+		verbose("all threads complete");
 }
 
 static void _service_msg(conmgr_callback_args_t conmgr_args, void *arg)
