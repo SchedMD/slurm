@@ -5592,6 +5592,21 @@ This is beneficial for jobs that submit many steps inside their allocations.
 .IP
 
 .TP
+\fBfast_power_up_launch\fR
+Launch a job that is waiting on nodes to power up or reboot as soon as the last
+of its nodes registers, rather than on the next periodic poll of the slurmctld
+background thread (which can add up to 30 seconds of delay). This covers jobs
+waiting on a reboot requested with \fBsbatch \-\-reboot\fR or by a node feature
+change, as well as jobs waiting on nodes to resume from power save. Each
+registration of a powering\-up node scans the job list, so sites that
+simultaneously power up very large numbers of nodes while holding a very large
+number of jobs may prefer to leave this disabled. Unset by default.
+Jobs wait on node power up when power saving is configured with
+\fBResumeProgram\fR, and on node reboot when \fBRebootProgram\fR is
+configured. See https://slurm.schedmd.com/power_save.html for more details.
+.IP
+
+.TP
 \fBidle_on_node_suspend\fR
 Mark nodes as idle, regardless of current state, when suspending nodes with
 \fBSuspendProgram\fR so that nodes will be eligible to be resumed at a later

@@ -336,6 +336,22 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
         option.</p>
       </dd>
 
+      <dt id="fast_power_up_launch"><b>fast_power_up_launch</b><a class=
+      "slurm_link" href="#fast_power_up_launch"></a>
+      </dt>
+
+      <dd>
+        <p>Launch a job that is waiting on nodes to power up or reboot as soon
+        as the last of its nodes registers, rather than on the next periodic
+        poll of the slurmctld background thread (which can add up to 30 seconds
+        of delay). This covers jobs waiting on a reboot requested with
+        <code>sbatch --reboot</code> or by a node feature change, as well as
+        jobs waiting on nodes to resume from power save. Each registration of a
+        powering-up node scans the job list, so sites that simultaneously power
+        up very large numbers of nodes while holding a very large number of
+        jobs may prefer to leave this disabled. Unset by default.</p>
+      </dd>
+
       <dt id="idle_on_node_suspend"><b>idle_on_node_suspend</b><a class=
       "slurm_link" href="#idle_on_node_suspend"></a>
       </dt>

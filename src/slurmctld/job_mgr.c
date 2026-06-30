@@ -9466,6 +9466,42 @@ static void _test_job_config_complete(job_record_t *job_ptr)
 	}
 }
 
+static int _foreach_launch_ready_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	node_record_t *node_ptr = arg;
+
+	if (!IS_JOB_CONFIGURING(job_ptr))
+		return 0;
+	if (!job_ptr->node_bitmap ||
+	    !bit_test(job_ptr->node_bitmap, node_ptr->index))
+		return 0;
+
+	_test_job_config_complete(job_ptr);
+
+	return 0;
+}
+
+extern void launch_ready_jobs_on_node(node_record_t *node_ptr)
+{
+	static int fast_power_up_launch = -1;
+
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (fast_power_up_launch == -1)
+		fast_power_up_launch =
+			(xstrcasestr(slurm_conf.slurmctld_params,
+				     "fast_power_up_launch") != NULL);
+
+	if (!fast_power_up_launch || !node_ptr)
+		return;
+
+	list_for_each(job_list, _foreach_launch_ready_job, node_ptr);
+}
+
 static int _foreach_het_job_configuring_test(void *x, void *arg)
 {
 	job_record_t *het_job = x;
