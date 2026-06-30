@@ -1,0 +1,36 @@
+FROM slurm-preempt AS base
+
+COPY src/slurmctld/acct_policy.c /slurm-src/src/slurmctld/acct_policy.c
+COPY src/slurmctld/acct_policy.h /slurm-src/src/slurmctld/acct_policy.h
+COPY src/slurmctld/node_scheduler.c /slurm-src/src/slurmctld/node_scheduler.c
+COPY src/slurmctld/proc_req.c /slurm-src/src/slurmctld/proc_req.c
+COPY src/plugins/sched/backfill/backfill.c /slurm-src/src/plugins/sched/backfill/backfill.c
+
+WORKDIR /slurm-src
+RUN make -j$(nproc) && make install
+
+COPY docker-e2e/test-atf-preempt.sh /slurm-src/docker-e2e/test-atf-preempt.sh
+COPY docker-e2e/entrypoint-hier-preempt.sh /slurm-src/docker-e2e/entrypoint-hier-preempt.sh
+RUN chmod +x /slurm-src/docker-e2e/test-atf-preempt.sh \
+             /slurm-src/docker-e2e/entrypoint-hier-preempt.sh
+
+# Override entrypoint to run the ATF-style test suite
+ENTRYPOINT ["/bin/bash", "-c", "\
+set -e && \
+dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key 2>/dev/null && \
+chown munge: /etc/munge/munge.key && chmod 400 /etc/munge/munge.key && \
+runuser -u munge -- munged && sleep 1 && \
+mysql_install_db --user=mysql --datadir=/var/lib/mysql 2>/dev/null || true && \
+mysqld_safe --datadir=/var/lib/mysql & \
+for i in $(seq 1 15); do mysqladmin ping 2>/dev/null && break; sleep 1; done && \
+mysql -u root -e 'CREATE DATABASE IF NOT EXISTS slurm_acct_db;' && \
+mysql -u root -e \"CREATE USER IF NOT EXISTS 'slurm'@'localhost' IDENTIFIED BY 'slurmpass';\" && \
+mysql -u root -e \"GRANT ALL ON slurm_acct_db.* TO 'slurm'@'localhost';\" && \
+mysql -u root -e 'FLUSH PRIVILEGES;' && \
+slurmdbd && sleep 3 && \
+for i in $(seq 1 10); do sacctmgr show cluster 2>/dev/null && break; sleep 1; done && \
+sacctmgr -i add cluster linux && \
+slurmctld && sleep 2 && slurmd -N localhost && sleep 2 && \
+for i in $(seq 1 30); do scontrol update nodename=localhost state=idle 2>/dev/null; state=$(sinfo -h -o '%T' 2>/dev/null || echo ''); [[ \"$state\" == *idle* ]] && break; sleep 1; done && \
+echo '=== Slurm ready ===' && sinfo && echo '' && \
+bash /slurm-src/docker-e2e/test-atf-preempt.sh"]
