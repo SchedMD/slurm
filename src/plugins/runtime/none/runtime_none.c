@@ -78,8 +78,9 @@ extern void runtime_p_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
 	/* no-op */
 }
 
-extern void runtime_p_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			  stepd_step_task_info_t *task)
+extern int runtime_p_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			 stepd_step_task_info_t *task)
 {
-	/* no-op */
+	/* The runtime does nothing; the caller execs the task. */
+	return ESLURM_NOT_SUPPORTED;
 }

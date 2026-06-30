@@ -1382,11 +1382,16 @@ extern void runtime_p_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
 	_container_task_init(conf, step, task);
 }
 
-extern void runtime_p_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			  stepd_step_task_info_t *task)
+extern int runtime_p_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			 stepd_step_task_info_t *task)
 {
-	if (!step->container)
-		return;
+	if (step->container)
+		_container_run(conf, step, task);
 
-	_container_run(conf, step, task);
+	/*
+	 * _container_run() only returns when no container was run (none
+	 * requested or OCI not configured), so exec the task directly.
+	 */
+	execve(task->argv[0], task->argv, step->env);
+	return errno;
 }

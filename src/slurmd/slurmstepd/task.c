@@ -510,15 +510,19 @@ extern void exec_task(int local_proc_id)
 			   step->node_name);
 	}
 
-	runtime_g_run(conf, step, task);
+	saved_errno = runtime_g_run(conf, step, task);
 
-	execve(task->argv[0], task->argv, step->env);
-	saved_errno = errno;
+	if (saved_errno == ESLURM_NOT_SUPPORTED) {
+		/* The runtime did not exec the task, so exec it here. */
+		execve(task->argv[0], task->argv, step->env);
+		saved_errno = errno;
+	}
 
 	/*
-	 * print error message and clean up if execve() returns:
+	 * runtime_g_run() and execve() only return on failure:
+	 * print error message and clean up.
 	 */
-	if ((errno == ENOENT) &&
+	if ((saved_errno == ENOENT) &&
 	    ((fd = open(task->argv[0], O_RDONLY)) >= 0)) {
 		char buf[256], *eol;
 		int sz;

@@ -54,8 +54,8 @@ typedef struct {
 	void (*cleanup)(slurmd_conf_t *conf, stepd_step_rec_t *step);
 	void (*task_init)(slurmd_conf_t *conf, stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task);
-	void (*run)(slurmd_conf_t *conf, stepd_step_rec_t *step,
-		    stepd_step_task_info_t *task);
+	int (*run)(slurmd_conf_t *conf, stepd_step_rec_t *step,
+		   stepd_step_task_info_t *task);
 } opts_t;
 
 /*
@@ -161,9 +161,17 @@ extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
 	ops.task_init(conf, step, task);
 }
 
-extern void runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			  stepd_step_task_info_t *task)
+extern int runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			 stepd_step_task_info_t *task)
 {
+	int rc;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	ops.run(conf, step, task);
+
+	rc = ops.run(conf, step, task);
+
+	/* The plugin execs the task or returns ESLURM_NOT_SUPPORTED. */
+	xassert(rc != SLURM_SUCCESS);
+
+	return rc;
 }

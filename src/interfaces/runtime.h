@@ -75,7 +75,14 @@ extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step);
 extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
 				stepd_step_task_info_t *task);
 
-/* Run the specified task within the runtime. Runs in slurmstepd. */
-extern void runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			  stepd_step_task_info_t *task);
+/*
+ * Run the specified task within the runtime. Runs in slurmstepd.
+ * The plugin execs the task and only returns on failure, or returns
+ * ESLURM_NOT_SUPPORTED without exec'ing to have the caller exec the task.
+ * RET ESLURM_NOT_SUPPORTED if the caller must exec the task, otherwise the
+ *	errno from the failed exec
+ */
+extern int runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			 stepd_step_task_info_t *task);
+
 #endif
