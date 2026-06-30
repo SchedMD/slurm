@@ -5,10 +5,7 @@ import os
 import re
 
 # SchedMD
-from ..cmds import (
-    perform,
-    run_cmd,
-)
+from ..cmds import perform, run_cmd
 
 # from ..log import (
 #     log,

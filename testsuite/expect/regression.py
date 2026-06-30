@@ -27,14 +27,14 @@
 """This script makes it easier to run the Slurm expect test scripts."""
 
 from __future__ import print_function
+
 import json
 import os
 import re
+import signal
 import sys
 import time
-import signal
-from optparse import OptionParser
-from optparse import OptionValueError
+from optparse import OptionParser, OptionValueError
 from subprocess import Popen
 
 

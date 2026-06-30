@@ -2,12 +2,8 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 # SchedMD
-from utils.log import (
-    log,
-)
-from utils.cmds import (
-    run_cmd,
-)
+from utils.cmds import run_cmd
+from utils.log import log
 
 
 def get_pids_from_exe(exe_path, verbose=True) -> list:
