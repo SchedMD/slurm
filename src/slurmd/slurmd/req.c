@@ -5382,15 +5382,18 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_LAUNCH_PROLOG,
 		.from_slurmctld = true,
 		.func = _rpc_prolog,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_BATCH_JOB_LAUNCH,
 		.from_slurmctld = true,
 		.func = _rpc_batch_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_LAUNCH_TASKS,
 		.func = _rpc_launch_tasks,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SIGNAL_TASKS,
@@ -5405,6 +5408,7 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_UPDATE_JOB_MEM,
 		.from_slurmctld = true,
 		.func = _rpc_update_job_mem,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_TERMINATE_TASKS,
@@ -5414,11 +5418,13 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_KILL_PREEMPTED,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_KILL_TIMELIMIT,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_REATTACH_TASKS,
@@ -5428,55 +5434,66 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_SUSPEND_INT,
 		.from_slurmctld = true,
 		.func = _rpc_suspend_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ABORT_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_abort_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_TERMINATE_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_terminate_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SHUTDOWN,
 		.from_slurmctld = true,
 		.func = _rpc_shutdown,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RECONFIGURE,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
 		.func = _rpc_set_slurmd_debug_flags,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
 		.func = _rpc_set_slurmd_debug,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_REBOOT_NODES,
 		.from_slurmctld = true,
 		.func = _rpc_reboot,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RUN_POWER_ACTION,
 		.from_slurmctld = true,
 		.func = _rpc_run_power_action,
+		.new_thread = true,
 	},
 	{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
 		.from_slurmctld = true,
 		.func = _rpc_ping,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_PING,
@@ -5487,20 +5504,24 @@ static slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_health_check,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_NODE_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_node_health_check,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_UPDATE,
 		.from_slurmctld = true,
 		.func = _rpc_acct_gather_update,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
 		.func = _rpc_acct_gather_energy,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_JOB_ID,
