@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 from pathlib import Path
+
+import pytest
+
+import atf
 
 xfail_tests = []
 skip_tests = []

@@ -1,12 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import logging
-import re
 import math
+import re
 
+import pytest
+
+import atf
 
 program = "acct_gather"
 

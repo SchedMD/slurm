@@ -20,8 +20,9 @@ second run promptly once eligible.
 import os
 import re
 
-import atf
 import pytest
+
+import atf
 
 test_name = os.path.splitext(os.path.basename(__file__))[0]
 LIC_NAME = f"lrq_{test_name.replace('.', '_')}"

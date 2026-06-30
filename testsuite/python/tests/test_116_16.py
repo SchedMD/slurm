@@ -1,11 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-import pexpect
 import re
 import time
+
+import pexpect
+import pytest
+
+import atf
 
 
 # Setup

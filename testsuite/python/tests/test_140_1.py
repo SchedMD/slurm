@@ -2,11 +2,12 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 
-import atf
+import re
 
 # from os import stat
 import pytest
-import re
+
+import atf
 
 pytestmark = pytest.mark.slow
 

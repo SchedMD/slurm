@@ -1,11 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import json
-import pytest
-import re
 import logging
+import re
+
+import pytest
+
+import atf
 
 file_in1 = "input1"
 file_in2 = "input2"

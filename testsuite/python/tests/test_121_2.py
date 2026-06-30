@@ -11,9 +11,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import re
+
+import pytest
+
+import atf
 
 mps_cnt = 100
 mps_nodes = []

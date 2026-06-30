@@ -1,10 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-import resource
 import pathlib
+import resource
+
+import pytest
+
+import atf
 
 
 # Setup

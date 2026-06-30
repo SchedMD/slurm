@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import re
+
 import pytest
+
+import atf
 
 steps_submitted = 30
 memory = 6

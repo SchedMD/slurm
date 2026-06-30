@@ -50,8 +50,9 @@ limit wall time; env checks wait for COMPLETED on tiny scripts.
 import os
 import re
 
-import atf
 import pytest
+
+import atf
 
 # Allowed token sets for display
 JOB_OVERSUBSCRIBE_TOKENS = {"NO", "YES", "OK"}

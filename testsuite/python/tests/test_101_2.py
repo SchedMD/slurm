@@ -2,9 +2,11 @@
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
 import json
-import re
-import pytest
 import logging
+import re
+
+import pytest
+
 import atf
 
 

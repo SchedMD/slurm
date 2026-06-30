@@ -1,11 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import datetime
 import os
-import pytest
 import re
+
+import pytest
+
+import atf
 
 # Period Boundaries
 # Mon Dec 31 23:00:00 2007

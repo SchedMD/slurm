@@ -5,9 +5,9 @@ import csv
 import logging
 from pathlib import Path
 
-import atf
 import pytest
 
+import atf
 
 acctg_freq = 2
 sacct_base_fields = [

@@ -2,10 +2,10 @@
 # to signal readiness when registration is complete.
 # It then waits for a short period, printing any signals received.
 
-import signal
-import time
-import sys
 import pathlib
+import signal
+import sys
+import time
 
 
 def receiveSignal(signalNumber, frame):

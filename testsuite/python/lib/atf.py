@@ -3,35 +3,35 @@
 # Copyright (C) SchedMD LLC.
 ##############################################################################
 import collections
+import copy
 import datetime
 import enum
 import errno
+import glob
+import json
 
 # import glob
 import logging
 import math
 import os
-import pwd
 import pathlib
-import pytest
+import pwd
 import re
-import glob
 import shutil
-import stat
+import signal
 import socket
+import stat
 import subprocess
 import sys
 import time
 import traceback
-import copy
+
+import jsondiff
+import jsonpatch
+import pytest
 
 # slurmrestd
 import requests
-import signal
-
-import json
-import jsondiff
-import jsonpatch
 import yaml
 
 # This module will be (un)imported in require_openapi_generator()

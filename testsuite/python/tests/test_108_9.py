@@ -2,8 +2,10 @@
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
 import re
-import atf
+
 import pytest
+
+import atf
 
 
 def setup_module():

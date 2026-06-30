@@ -1,10 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-import re
 import logging
+import re
+
+import pytest
+
+import atf
 
 ERROR_TYPE = "error"
 OUTPUT_TYPE = "output"

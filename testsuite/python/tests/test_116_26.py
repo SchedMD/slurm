@@ -1,9 +1,9 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import pytest
 
+import atf
 
 node_count = 2
 slurm_user = atf.properties["slurm-user"]

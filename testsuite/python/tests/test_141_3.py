@@ -1,11 +1,12 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-from pathlib import Path
 import time
+from pathlib import Path
+
+import pytest
 
 import atf
-import pytest
 
 pytestmark = pytest.mark.slow
 

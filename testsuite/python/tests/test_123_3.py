@@ -1,10 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import pytest
-import atf
 import datetime
 import logging
+
+import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

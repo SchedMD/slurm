@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-import atf
 import logging
+
 import pytest
+
+import atf
 
 # Ticket 24975: "sacctmgr load" failed when the input file contained a typed
 # TRES (e.g. "gres/gpu:a100") because the ':' that separates the GRES name

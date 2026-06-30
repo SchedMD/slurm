@@ -3,10 +3,12 @@
 ############################################################################
 
 import os
-import atf
-import pytest
 import re
 import time
+
+import pytest
+
+import atf
 
 test_name = os.path.splitext(os.path.basename(__file__))[0]
 part_name = f"{test_name}_partition"

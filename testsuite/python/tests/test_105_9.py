@@ -34,8 +34,9 @@ Untested (not covered by this file):
 - Node down or timeout while waiting for epilog complete.
 - Requeue delay removed (no cred_expire wait before relaunch).
 """
-import atf
 import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

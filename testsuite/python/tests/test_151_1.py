@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import pytest
-import atf
 import time
+
+import pytest
+
+import atf
 
 
 def _all_jobs_of_state(job_ids=[], desired="RUNNING", timeout=60):

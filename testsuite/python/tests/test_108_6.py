@@ -1,10 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import re
 
+import pytest
+
+import atf
 
 switch_name = "s0"
 nodes = list(atf.get_nodes(live=False).keys())

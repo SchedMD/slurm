@@ -1,13 +1,15 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import os
 
 # import re
 # import time
 import pwd
+
+import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

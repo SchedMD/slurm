@@ -1,10 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import os
-import pytest
 import re
+
+import pytest
+
+import atf
 
 
 @pytest.fixture(scope="function")

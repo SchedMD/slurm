@@ -4,8 +4,9 @@
 import os
 import re
 
-import atf
 import pytest
+
+import atf
 
 node_count = 1
 cpu_allowed_list_regex = re.compile(r"([0-9]+):\s*Cpus_allowed_list:\s*([0-9\-,]+)")

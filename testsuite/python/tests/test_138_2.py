@@ -2,6 +2,7 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import pytest
+
 import atf
 
 script_name = "./script.sh"

@@ -1,6 +1,8 @@
-import atf
-import pytest
 import os
+
+import pytest
+
+import atf
 
 spank_tmp = ""
 

@@ -1,10 +1,11 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 ############################################################################
-import atf
 import itertools
+
 import pytest
 
+import atf
 
 topology_yaml = """
 - topology: topo1

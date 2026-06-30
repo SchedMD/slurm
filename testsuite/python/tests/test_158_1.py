@@ -1,13 +1,14 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-
 import csv
 import io
 import json
 import re
+
+import pytest
+
+import atf
 
 
 def get_cluster_names(remote_license):

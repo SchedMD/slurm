@@ -1,15 +1,17 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import getpass
 import json
-import jsonpatch
-import random
 import logging
-import time
 import os
+import random
+import time
+
+import jsonpatch
+import pytest
+
+import atf
 
 random.seed()
 
@@ -273,12 +275,12 @@ def test_specification(openapi_spec):
 def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
     from openapi_client import ApiClient as Client
     from openapi_client import Configuration as Config
-    from openapi_client.models.v0043_openapi_accounts_resp import (
-        V0043OpenapiAccountsResp,
-    )
     from openapi_client.models.v0043_account import V0043Account
     from openapi_client.models.v0043_assoc_short import V0043AssocShort
     from openapi_client.models.v0043_coord import V0043Coord
+    from openapi_client.models.v0043_openapi_accounts_resp import (
+        V0043OpenapiAccountsResp,
+    )
 
     # make sure account doesn't already exist
     resp = slurmdb.slurmdb_v0043_get_account_with_http_info(account_name)
@@ -403,8 +405,8 @@ def test_db_diag(slurmdb, admin_level):
 
 
 def test_db_wckeys(slurmdb, create_coords, admin_level):
-    from openapi_client.models.v0043_wckey import V0043Wckey
     from openapi_client.models.v0043_openapi_wckey_resp import V0043OpenapiWckeyResp
+    from openapi_client.models.v0043_wckey import V0043Wckey
 
     wckeys = V0043OpenapiWckeyResp(
         wckeys=[
@@ -472,10 +474,10 @@ def test_db_wckeys(slurmdb, create_coords, admin_level):
 
 
 def test_db_clusters(slurmdb, admin_level):
+    from openapi_client.models.v0043_cluster_rec import V0043ClusterRec
     from openapi_client.models.v0043_openapi_clusters_resp import (
         V0043OpenapiClustersResp,
     )
-    from openapi_client.models.v0043_cluster_rec import V0043ClusterRec
 
     clusters = V0043OpenapiClustersResp(
         clusters=[
@@ -531,9 +533,9 @@ def test_db_clusters(slurmdb, admin_level):
 
 
 def test_db_users(slurmdb, admin_level):
-    from openapi_client.models.v0043_openapi_users_resp import V0043OpenapiUsersResp
     from openapi_client.models.v0043_assoc_short import V0043AssocShort
     from openapi_client.models.v0043_coord import V0043Coord
+    from openapi_client.models.v0043_openapi_users_resp import V0043OpenapiUsersResp
     from openapi_client.models.v0043_user import V0043User
     from openapi_client.models.v0043_user_default import V0043UserDefault
     from openapi_client.models.v0043_wckey import V0043Wckey
@@ -657,16 +659,15 @@ def test_db_users(slurmdb, admin_level):
 
 
 def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
-    from openapi_client.models.v0043_openapi_assocs_resp import V0043OpenapiAssocsResp
     from openapi_client.models.v0043_assoc import V0043Assoc
     from openapi_client.models.v0043_assoc_short import V0043AssocShort
     from openapi_client.models.v0043_coord import V0043Coord
-    from openapi_client.models.v0043_user import V0043User
-    from openapi_client.models.v0043_wckey import V0043Wckey
-
+    from openapi_client.models.v0043_openapi_assocs_resp import V0043OpenapiAssocsResp
     from openapi_client.models.v0043_uint32_no_val_struct import (
         V0043Uint32NoValStruct as V0043Uint32NoVal,
     )
+    from openapi_client.models.v0043_user import V0043User
+    from openapi_client.models.v0043_wckey import V0043Wckey
 
     associations = V0043OpenapiAssocsResp(
         associations=[
@@ -907,15 +908,14 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
 
 
 def test_db_qos(slurmdb, create_coords, admin_level):
-    from openapi_client.models.v0043_qos import V0043Qos
-    from openapi_client.models.v0043_tres import V0043Tres
-    from openapi_client.models.v0043_openapi_slurmdbd_qos_resp import (
-        V0043OpenapiSlurmdbdQosResp,
-    )
     from openapi_client.models.v0043_float64_no_val_struct import (
         V0043Float64NoValStruct as V0043Float64NoVal,
     )
-
+    from openapi_client.models.v0043_openapi_slurmdbd_qos_resp import (
+        V0043OpenapiSlurmdbdQosResp,
+    )
+    from openapi_client.models.v0043_qos import V0043Qos
+    from openapi_client.models.v0043_tres import V0043Tres
     from openapi_client.models.v0043_uint32_no_val_struct import (
         V0043Uint32NoValStruct as V0043Uint32NoVal,
     )
@@ -1063,10 +1063,9 @@ def test_db_config(slurmdb, admin_level):
 
 
 def test_jobs(slurm, slurmdb):
-    from openapi_client.models.v0043_job_submit_req import V0043JobSubmitReq
     from openapi_client.models.v0043_job_desc_msg import V0043JobDescMsg
     from openapi_client.models.v0043_job_info import V0043JobInfo
-
+    from openapi_client.models.v0043_job_submit_req import V0043JobSubmitReq
     from openapi_client.models.v0043_uint32_no_val_struct import (
         V0043Uint32NoValStruct as V0043Uint32NoVal,
     )
@@ -1340,10 +1339,10 @@ def test_licenses(slurm):
     [[], ["IGNORE_JOBS"], ["IGNORE_JOBS", "MAGNETIC"]],
 )
 def test_reservations(slurm, flags, admin_level):
-    from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
     from openapi_client.models.v0043_reservation_desc_msg import V0043ReservationDescMsg
-    from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
+    from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
     from openapi_client.models.v0043_uint32_no_val_struct import V0043Uint32NoValStruct
+    from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
 
     resv_name = "test_resv"
     users = ["root", "atf"]
@@ -1478,10 +1477,10 @@ def test_reservations(slurm, flags, admin_level):
 )
 def test_resv_crash(slurm, admin_level, cleanup_crash):
     """Check for xfree crash (bug 23038)"""
-    from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
     from openapi_client.models.v0043_reservation_desc_msg import V0043ReservationDescMsg
-    from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
+    from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
     from openapi_client.models.v0043_uint32_no_val_struct import V0043Uint32NoValStruct
+    from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
 
     # Don't overlap with other resv in case of restd crash/restart
     resv_name = "crash_test_resv"

@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-import atf
-import pytest
 import logging
+
+import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

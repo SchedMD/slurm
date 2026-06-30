@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import pytest
-import atf
 import logging
+
+import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

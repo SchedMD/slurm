@@ -1,13 +1,14 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import logging
-import pytest
 import re
-import time
 import subprocess
+import time
 
+import pytest
+
+import atf
 
 port_range = 9
 srun_port_lower = 60000

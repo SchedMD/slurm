@@ -1,10 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-import re
 import os
+import re
+
+import pytest
+
+import atf
 
 # Global test variables
 file_in = "input"

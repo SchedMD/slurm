@@ -3,8 +3,9 @@
 ############################################################################
 import re
 
-import atf
 import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

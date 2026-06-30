@@ -1,11 +1,13 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-import atf
-import pytest
 import logging
-import re
 import math
+import re
+
+import pytest
+
+import atf
 
 job_rss = 200  # MB
 sleep_secs = 8

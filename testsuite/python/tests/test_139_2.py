@@ -6,8 +6,9 @@
 EXTERNAL nodes have no slurmd, so the controller must not flag them as
 NODE_STATE_NO_RESPOND when transitioning back to IDLE via `state=resume`.
 """
-import atf
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

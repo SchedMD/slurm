@@ -9,9 +9,9 @@ submit completed jobs, wait for slurmdbd to receive the record, then verify
 that sacct reports the same token families used by scontrol show job.
 """
 
-import atf
 import pytest
 
+import atf
 
 JOB_OVERSUBSCRIBE_TOKENS = {"NO", "YES", "OK"}
 JOB_EXCLUSIVE_TOKENS = {"NO", "NODE", "USER", "MCS", "TOPO"}
