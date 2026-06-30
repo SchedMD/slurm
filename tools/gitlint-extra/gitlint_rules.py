@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 from enum import Enum
-from itertools import groupby, takewhile, chain
+from itertools import chain, groupby, takewhile
 from typing import Any
 
 from gitlint.rules import CommitRule, RuleViolation
