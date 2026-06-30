@@ -716,6 +716,26 @@ static int _increment_thd_count(bool block)
 	return rc;
 }
 
+/*
+ * Detached new_thread script handlers are not gated by MAX_THREADS; these
+ * only track in-flight handlers so _wait_for_all_threads() can drain them.
+ */
+static void _increment_script_thd_count(void)
+{
+	slurm_mutex_lock(&script_mutex);
+	active_script_threads++;
+	slurm_mutex_unlock(&script_mutex);
+}
+
+static void _decrement_script_thd_count(void)
+{
+	slurm_mutex_lock(&script_mutex);
+	if (active_script_threads > 0)
+		active_script_threads--;
+	EVENT_BROADCAST(&script_event);
+	slurm_mutex_unlock(&script_mutex);
+}
+
 /* secs IN - wait up to this number of seconds for all threads to complete */
 static void
 _wait_for_all_threads(int secs)
@@ -852,6 +872,45 @@ static void _service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_MSG(msg);
 
 	_decrement_thd_count();
+}
+
+/*
+ * Detached-thread entry for new_thread RPCs. Runs the handler to completion
+ * off the conmgr worker pool, without taking a MAX_THREADS slot. The fd was
+ * already extracted (msg->conn owns it, msg->conmgr_con is NULL), so the
+ * handler replies via msg->conn. Owns args/msg/conn and frees them here.
+ * The active_script_threads count was incremented by the caller before this
+ * thread was created.
+ */
+static void *_service_msg_thread(void *arg)
+{
+	service_msg_args_t *args = arg;
+	slurm_msg_t *msg = args->msg;
+	const slurm_addr_t *addr = &msg->address;
+	slurmd_rpc_t *this_rpc = args->this_rpc;
+
+	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
+	xassert(this_rpc && this_rpc->new_thread);
+	xassert(!msg->conmgr_con && msg->conn);
+
+	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+	xfree(args);
+
+	log_flag(NET, "%s: [%pA] processing new RPC msg_type[0x%x]=%s in detached thread",
+		 __func__, addr, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type));
+
+	slurmd_req(msg, this_rpc);
+
+	log_flag(NET, "%s: finished processing RPC msg_type[0x%x]=%s",
+		 __func__, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type));
+
+	FREE_NULL_CONN(msg->conn);
+	FREE_NULL_MSG(msg);
+
+	_decrement_script_thd_count();
+	return NULL;
 }
 
 static int _load_gres()
@@ -2138,6 +2197,20 @@ static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
 		FREE_NULL_MSG(msg);
 		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 		xfree(args);
+		return;
+	}
+
+	if (args->this_rpc->new_thread) {
+		/*
+		 * Ownership of args (and thus msg + the extracted msg->conn)
+		 * passes to the detached thread. Increment here, on the conmgr
+		 * worker, before spawning: conmgr_quiesce()/conmgr_run() only
+		 * return once no worker is active, so the count is guaranteed
+		 * visible to _wait_for_all_threads() before shutdown/reconfig
+		 * can proceed. The thread is not gated by MAX_THREADS.
+		 */
+		_increment_script_thd_count();
+		slurm_thread_create_detached(NULL, _service_msg_thread, args);
 		return;
 	}
 
