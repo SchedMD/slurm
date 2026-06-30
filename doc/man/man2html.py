@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
+import codecs
+import os
 import re
 import sys
-import os
-import codecs
 
 canonical_url = "https://slurm.schedmd.com/"
 
