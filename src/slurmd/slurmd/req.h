@@ -46,6 +46,15 @@ typedef struct {
 	slurm_msg_type_t msg_type;
 	bool from_slurmctld;
 	void (*func)(slurm_msg_t *msg);
+	/*
+	 * Run the handler in a dedicated detached thread instead of on the
+	 * conmgr worker. The framework extracts the fd, then hands msg/conn
+	 * ownership to the detached thread, which runs the handler to
+	 * completion, replies via msg->conn, and frees msg/conn. These
+	 * threads are not counted against MAX_THREADS; their concurrency is
+	 * intentionally unbounded.
+	 */
+	bool new_thread;
 } slurmd_rpc_t;
 
 /*
