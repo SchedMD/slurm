@@ -749,6 +749,7 @@ test_105_7   Test accounting for GPU resources with various allocation options
 test_105_8   Test of job account (--account option).
 test_105_9   Test sbatch --requeue=expedite option (success, failure, epilog failure cases)
 test_105_10  Test --oom-kill-step option
+test_105_11  Test sbatch --parsable output format
 
 test_106_#   Testing of sbcast options.
 =======================================
@@ -880,7 +881,7 @@ test_116_51 /commands/srun/test_--exclusive=allocation
 test_116_52 /commands/srun/test_--exclusive_with_LaunchParamsExclAlloc
 test_116_53  Test MPI/PMIx signaling
 test_116_54  Test MPI/PMI2 signaling (requires MPICH)
-test_116_55  Test srun --async stdout submit message and --parsable
+test_116_55  Test srun --async CLI behavior
 
 test_117_#   Testing of sstat options.
 ======================================
@@ -1112,10 +1113,11 @@ test_161_#   Testing topology/torus3d.
 ========================================
 test_161_1   Test topology/torus3d placements, constraints, and --segment
 
-test_162_#   Testing of swait.
-==============================
+test_162_#   Testing of swait and stepmgr/async-step integration.
+=================================================================
 test_162_1   Test swait against a stepmgr-enabled cluster
 test_162_2   Test swait's steps-drained push path
+test_162_3   Test scontrol visibility and reconfigure-survival of async steps
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
