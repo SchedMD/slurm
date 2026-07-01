@@ -1575,6 +1575,27 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 	return SLURM_SUCCESS;
 }
 
+static int _validate_hres_update_nodes(char *hres_name, char *layer_name,
+				       char *nodes, licenses_t **lic_to_update,
+				       bitstr_t **new_nodes_bitmap,
+				       char **err_msg)
+{
+	licenses_find_layer_t find_layer = {
+		.hres_name = hres_name,
+		.layer_name = layer_name,
+	};
+
+	*lic_to_update = list_find_first_ro(cluster_license_list,
+					    _license_find_layer, &find_layer);
+	if (!(*lic_to_update)) {
+		*err_msg = xstrdup_printf("HRES name=%s layer=%s not found",
+					  hres_name, layer_name);
+		return ESLURM_INVALID_HRES_NAME;
+	}
+	return _validate_nodes(*lic_to_update, nodes, new_nodes_bitmap,
+			       err_msg);
+}
+
 static void _log_hres_update_req(hres_update_msg_t *msg)
 {
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
@@ -1701,10 +1722,6 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg)
 	foreach_license_print_t print_arg = {
 		.header = "Updated HRES",
 	};
-	licenses_find_layer_t find_layer = {
-		.hres_name = msg->hres_name,
-		.layer_name = msg->layer_name,
-	};
 
 	_log_hres_update_req(msg);
 	slurm_mutex_lock(&license_mutex);
@@ -1713,15 +1730,9 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg)
 		rc = ESLURM_INVALID_HRES_NAME;
 		goto fini;
 	}
-	lic = list_find_first_ro(cluster_license_list, _license_find_layer,
-				 &find_layer);
-	if (!lic) {
-		*err_msg = xstrdup_printf("HRES name=%s layer=%s not found",
-					  msg->hres_name, msg->layer_name);
-		rc = ESLURM_INVALID_HRES_NAME;
-		goto fini;
-	}
-	if ((rc = _validate_nodes(lic, msg->nodes, &new_nodes_bitmap, err_msg)))
+	if ((rc = _validate_hres_update_nodes(msg->hres_name, msg->layer_name,
+					      msg->nodes, &lic,
+					      &new_nodes_bitmap, err_msg)))
 		goto fini;
 
 	if ((rc = _update_hres_count_base(msg, lic, err_msg)))
