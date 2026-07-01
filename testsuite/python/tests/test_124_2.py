@@ -77,14 +77,6 @@ def setup():
     atf.run_command(f"sacctmgr -i remove qos {QOS_LOW} {QOS_HIGH}", user=su, quiet=True)
 
 
-@pytest.fixture(autouse=True)
-def cancel_jobs_after_test():
-    # Both tests submit the same blocker/victim pair; cancel between tests so the
-    # QOS_HIGH per-user cap is free for the next test's blocker to start.
-    yield
-    atf.cancel_all_jobs(quiet=True)
-
-
 def used_gpu_for_qos(qos_name):
     """Per-user gres/gpu USED for our user under the named QOS, parsed from
     `scontrol -o show assoc_mgr flags=qos` (one QOS per line). Fails loudly if
