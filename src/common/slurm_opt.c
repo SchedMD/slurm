@@ -45,12 +45,12 @@
 #endif
 
 #include "src/common/cpu_frequency.h"
-#include "src/interfaces/gres.h"
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
+#include "src/common/plugin.h"
 #include "src/common/proc_args.h"
-#include "src/interfaces/acct_gather_profile.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/spank.h"
@@ -62,8 +62,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/common/slurm_opt.h"
-
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 
 #define COMMON_STRING_OPTION(field)	\
