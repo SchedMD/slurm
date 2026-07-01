@@ -179,6 +179,20 @@ struct file_read_info {
 	bool eof;
 };
 
+/*
+ * Gracefully close an eio object's file descriptor. When the object wraps a
+ * TLS connection, shut it down first (sends a close_notify so the peer sees a
+ * clean close) before closing the fd. The conn itself is destroyed later by
+ * eio_obj_destroy().
+ * IN obj - eio object whose fd to close
+ */
+static void _shutdown_and_close(eio_obj_t *obj)
+{
+	(void) conn_blocking_g_shutdown(obj->conn);
+	if (obj->fd > STDERR_FILENO)
+		close(obj->fd);
+	obj->fd = -1;
+}
 
 /**********************************************************************
  * Listening socket functions
@@ -188,11 +202,8 @@ _listening_socket_readable(eio_obj_t *obj)
 {
 	debug3("Called _listening_socket_readable");
 	if (obj->shutdown == true) {
-		if (obj->fd != -1) {
-			if (obj->fd > STDERR_FILENO)
-				close(obj->fd);
-			obj->fd = -1;
-		}
+		if (obj->fd != -1)
+			_shutdown_and_close(obj);
 		debug2("  false, shutdown");
 		return false;
 	}
@@ -273,9 +284,7 @@ _server_readable(eio_obj_t *obj)
 
 	if (obj->shutdown) {
 		if (obj->fd != -1) {
-			if (obj->fd > STDERR_FILENO)
-				close(obj->fd);
-			obj->fd = -1;
+			_shutdown_and_close(obj);
 			s->in_eof = true;
 			s->out_eof = true;
 		}
@@ -320,9 +329,7 @@ static int _server_read(eio_obj_t *obj, list_t *objs)
 					}
 				}
 			}
-			if (obj->fd > STDERR_FILENO)
-				close(obj->fd);
-			obj->fd = -1;
+			_shutdown_and_close(obj);
 			s->in_eof = true;
 			s->out_eof = true;
 			list_enqueue(s->cio->free_outgoing, s->in_msg);
@@ -401,9 +408,7 @@ static int _server_read(eio_obj_t *obj, list_t *objs)
 			if (s->cio->sls)
 				step_launch_notify_io_failure(
 					s->cio->sls, s->node_id);
-			if (obj->fd > STDERR_FILENO)
-				close(obj->fd);
-			obj->fd = -1;
+			_shutdown_and_close(obj);
 			s->in_eof = true;
 			s->out_eof = true;
 			list_enqueue(s->cio->free_outgoing, s->in_msg);
@@ -684,9 +689,7 @@ static bool _file_readable(eio_obj_t *obj)
 	}
 	if (obj->shutdown == true) {
 		debug3("  false, shutdown");
-		if (obj->fd > STDERR_FILENO)
-			close(obj->fd);
-		obj->fd = -1;
+		_shutdown_and_close(obj);
 		read_info->eof = true;
 		return false;
 	}
