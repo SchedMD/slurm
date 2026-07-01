@@ -227,8 +227,14 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 	out = init_buf(BUF_SIZE);
 
 	do {
-		if ((rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes,
-				      out, ctxt->mime_type, SER_FLAGS_NONE))) {
+		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
+				 ctxt->mime_type, SER_FLAGS_NONE);
+
+		/* Try to provide large enough buffer before failing */
+		if ((rc == ENOSPC) && !(rc = try_grow_buf(out, BUF_SIZE)))
+			continue;
+
+		if (rc) {
 			error("Dumping failed: %s", slurm_strerror(rc));
 			xassert(!dump_state);
 		} else {
