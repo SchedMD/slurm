@@ -898,6 +898,7 @@ static int _read_io_init_msg(int fd, conn_t *conn, client_io_t *cio,
 	return SLURM_SUCCESS;
 
 fail:
+	(void) conn_blocking_g_shutdown(conn);
 	conn_g_destroy(conn, false);
 	xfree(msg.io_key);
 	if (fd > STDERR_FILENO)
