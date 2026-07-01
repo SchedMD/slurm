@@ -306,6 +306,7 @@ const static entry_t jsra[] = {
 		.str = "AssocMaxSubmitJobLimit",
 	},
 	[WAIT_MAX_REQUEUE] = {
+		/* Keep legacy spelling for backward compatibility. */
 		.str = "JobHoldMaxRequeue",
 	},
 	[WAIT_ARRAY_TASK_LIMIT] = {
@@ -881,6 +882,12 @@ const static entry_t jsra[] = {
 	},
 	[WAIT_MPI_PORTS_BUSY] = {
 		.str = "MpiPortsBusy",
+	},
+	[WAIT_MAX_NODE_FAIL_REQUEUE] = {
+		.str = "JobHeldMaxNodeFailRequeue",
+	},
+	[WAIT_MAX_PREEMPT_REQUEUE] = {
+		.str = "JobHeldMaxPreemptRequeue",
 	},
 };
 

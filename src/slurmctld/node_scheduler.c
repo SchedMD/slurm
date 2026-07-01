@@ -2634,7 +2634,9 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)
 		    && (job_ptr->state_reason != WAIT_HELD)
 		    && (job_ptr->state_reason != WAIT_HELD_USER)
-		    && (job_ptr->state_reason != WAIT_MAX_REQUEUE)) {
+		    && (job_ptr->state_reason != WAIT_MAX_REQUEUE)
+		    && (job_ptr->state_reason != WAIT_MAX_NODE_FAIL_REQUEUE)
+		    && (job_ptr->state_reason != WAIT_MAX_PREEMPT_REQUEUE)) {
 			job_ptr->state_reason = WAIT_HELD;
 		}
 		return ESLURM_JOB_HELD;
