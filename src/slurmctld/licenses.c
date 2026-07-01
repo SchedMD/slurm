@@ -1512,7 +1512,10 @@ static void _update_hres_nodes(licenses_t *lic, bitstr_t *new_nodes_bitmap)
 static int _validate_nodes(licenses_t *license, char *nodes,
 			   bitstr_t **new_nodes_bitmap, char **err_msg)
 {
-	int rc;
+	char *tmp_nodes = NULL, *tmp_dup_nodes = NULL;
+	bool additive = false;
+	bool subtractive = false;
+	int rc = SLURM_SUCCESS;
 	hostlist_t *invalid_hostlist = NULL;
 
 	if (!nodes)
@@ -1521,7 +1524,18 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 	if ((license->mode == HRES_MODE_3) && (license->hres_rec.level))
 		return ESLURM_HRES_MODE3_NON_LEAF;
 
-	rc = node_name2bitmap(nodes, false, new_nodes_bitmap,
+	if (nodes[0] == '+') {
+		/* Add existing nodes instead of replacing existing nodes. */
+		additive = true;
+		tmp_nodes = nodes + 1;
+	} else if (nodes[0] == '-') {
+		/* Remove from existing nodes */
+		subtractive = true;
+		tmp_nodes = nodes + 1;
+	} else {
+		tmp_nodes = nodes;
+	}
+	rc = node_name2bitmap(tmp_nodes, false, new_nodes_bitmap,
 			      &invalid_hostlist);
 	if (invalid_hostlist) {
 		char *str = hostlist_ranged_string_xmalloc(invalid_hostlist);
@@ -1533,6 +1547,16 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 	} else if (rc) {
 		return ESLURM_INVALID_HRES_NODES;
 	}
+	if (additive) {
+		bit_or(*new_nodes_bitmap, license->node_bitmap);
+		tmp_dup_nodes = bitmap2node_name(*new_nodes_bitmap);
+	} else if (subtractive) {
+		bit_not(*new_nodes_bitmap);
+		bit_and(*new_nodes_bitmap, license->node_bitmap);
+		tmp_dup_nodes = bitmap2node_name(*new_nodes_bitmap);
+	} else {
+		tmp_dup_nodes = xstrdup(nodes);
+	}
 
 	if (license->mode != HRES_MODE_3) {
 		/*
@@ -1542,15 +1566,18 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 		 */
 		licenses_find_rec_by_nodes_t args = {
 			.name = license->name,
-			.nodes = nodes,
+			.nodes = tmp_dup_nodes,
 		};
+
 		licenses_t *hres_dup =
 			list_find_first_ro(cluster_license_list,
 					   _license_find_rec_by_nodes,
 					   &args);
 
-		if (hres_dup && (hres_dup != license))
-			return ESLURM_HRES_DUPLICATE_LAYER;
+		if (hres_dup && (hres_dup != license)) {
+			rc = ESLURM_HRES_DUPLICATE_LAYER;
+			goto fini;
+		}
 	}
 	if (license->mode == HRES_MODE_3) {
 		licenses_t *overlap_lic;
@@ -1565,14 +1592,17 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 		if (overlap_lic) {
 			*err_msg =
 				xstrdup_printf("Nodes=%s overlaps with layer=%s nodes=%s",
-					       nodes,
+					       tmp_dup_nodes,
 					       overlap_lic->hres_rec.layer_name,
 					       overlap_lic->nodes);
-			return ESLURM_HRES_MODE3_OVERLAP;
+			rc = ESLURM_HRES_MODE3_OVERLAP;
+			goto fini;
 		}
 	}
 
-	return SLURM_SUCCESS;
+fini:
+	xfree(tmp_dup_nodes);
+	return rc;
 }
 
 static int _validate_hres_update_nodes(char *hres_name, char *layer_name,
