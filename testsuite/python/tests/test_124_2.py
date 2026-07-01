@@ -3,9 +3,13 @@
 ############################################################################
 # A running multi-QOS job (--qos=low,high) forced to start under the
 # non-highest-priority member must stay attributed to it across a state reload.
-# Before the fix, "scontrol reconfigure" re-resolved the running job to the
+# Before the fix, reloading job state re-resolved the running job to the
 # highest-priority member, flipping its QOS and inflating that member's per-user
 # gres/gpu usage (spuriously tripping QOSMaxGRESPerUser).
+#
+# Two reload paths are exercised, because they are not equivalent: an in-place
+# "scontrol reconfigure" and a slurmctld restart (which reloads job state from
+# StateSaveLocation via job_mgr_load_job_state, the path the fix targets).
 ############################################################################
 import atf
 import re
@@ -73,6 +77,14 @@ def setup():
     atf.run_command(f"sacctmgr -i remove qos {QOS_LOW} {QOS_HIGH}", user=su, quiet=True)
 
 
+@pytest.fixture(autouse=True)
+def cancel_jobs_after_test():
+    # Both tests submit the same blocker/victim pair; cancel between tests so the
+    # QOS_HIGH per-user cap is free for the next test's blocker to start.
+    yield
+    atf.cancel_all_jobs(quiet=True)
+
+
 def used_gpu_for_qos(qos_name):
     """Per-user gres/gpu USED for our user under the named QOS, parsed from
     `scontrol -o show assoc_mgr flags=qos` (one QOS per line). Fails loudly if
@@ -118,6 +130,37 @@ def test_multiqos_gres_usage_survives_reconfigure():
 
     # State reload. Pre-fix this re-attributed the running job_id2 to QOS_HIGH.
     atf.run_command("scontrol reconfigure", user=su, fatal=True)
+
+    # Attribution must be unchanged.
+    assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW, "QOS flipped on reload"
+    assert used_gpu_for_qos(QOS_LOW) == JOB_GPUS, "QOS_LOW usage lost on reload"
+    assert used_gpu_for_qos(QOS_HIGH) == BLOCK_GPUS, "QOS_HIGH usage inflated on reload"
+
+
+def test_multiqos_gres_usage_survives_restart():
+    # job_id1: blocker fills QOS_HIGH's per-user gpu cap.
+    job_id1 = atf.submit_job_sbatch(
+        f'--account={ACCT} --qos={QOS_HIGH} --gres=gpu:{BLOCK_GPUS} -N1 --wrap "sleep 600"',
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id1, "RUNNING", fatal=True)
+
+    # job_id2: multi-QOS job cannot fit under QOS_HIGH -> forced onto QOS_LOW.
+    job_id2 = atf.submit_job_sbatch(
+        f'--account={ACCT} --qos={QOS_LOW},{QOS_HIGH} --gres=gpu:{JOB_GPUS} -N1 --wrap "sleep 600"',
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id2, "RUNNING", fatal=True)
+
+    # Baseline: job_id2 charged to QOS_LOW, job_id1 to QOS_HIGH.
+    assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW
+    assert used_gpu_for_qos(QOS_LOW) == JOB_GPUS
+    assert used_gpu_for_qos(QOS_HIGH) == BLOCK_GPUS
+
+    # State reload via slurmctld restart (job_mgr_load_job_state path). Pre-fix
+    # this re-attributed the running job_id2 to QOS_HIGH.
+    atf.restart_slurmctld()
+    atf.wait_for_job_state(job_id2, "RUNNING", fatal=True)
 
     # Attribution must be unchanged.
     assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW, "QOS flipped on reload"
