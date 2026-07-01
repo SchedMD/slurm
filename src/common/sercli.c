@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/sercli.h"
 #include "src/common/pack.h"
 #include "src/common/plugin.h"
@@ -225,12 +227,16 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 	out = init_buf(BUF_SIZE);
 
 	do {
-		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
-				 ctxt->mime_type, SER_FLAGS_NONE);
-
-		(void) printf("%.*s", get_buf_offset(out), get_buf_data(out));
-
-		set_buf_offset(out, 0);
+		if ((rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes,
+				      out, ctxt->mime_type, SER_FLAGS_NONE))) {
+			error("Dumping failed: %s", slurm_strerror(rc));
+			xassert(!dump_state);
+		} else {
+			xassert(out->magic == BUF_MAGIC);
+			(void) printf("%.*s", get_buf_offset(out),
+				      get_buf_data(out));
+			set_buf_offset(out, 0);
+		}
 	} while (dump_state);
 
 	printf("\n");
