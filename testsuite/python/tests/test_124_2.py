@@ -72,7 +72,9 @@ def setup():
 
     yield
 
-    atf.run_command(f"sacctmgr -i modify user {user} set qos=normal", user=su, quiet=True)
+    atf.run_command(
+        f"sacctmgr -i modify user {user} set qos=normal", user=su, quiet=True
+    )
     atf.run_command(f"sacctmgr -i remove account {ACCT}", user=su, quiet=True)
     atf.run_command(f"sacctmgr -i remove qos {QOS_LOW} {QOS_HIGH}", user=su, quiet=True)
 
@@ -84,7 +86,9 @@ def used_gpu_for_qos(qos_name):
     a format change never silently reads as 0."""
     su = atf.properties["slurm-user"]
     user = atf.get_user_name()
-    out = atf.run_command_output("scontrol -o show assoc_mgr flags=qos", user=su, fatal=True)
+    out = atf.run_command_output(
+        "scontrol -o show assoc_mgr flags=qos", user=su, fatal=True
+    )
     for line in out.splitlines():
         name = re.search(r"QOS=([^\s(]+)\(", line)
         if not name or name.group(1) != qos_name:
