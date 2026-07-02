@@ -190,7 +190,7 @@ extern int conn_g_init(void)
 		 * Load self-signed certificate in client commands and
 		 * slurmstepd
 		 */
-		if ((!running_in_daemon() && !running_in_slurmstepd()) &&
+		if ((!running_in_daemon() || running_in_slurmstepd()) &&
 		    conn_g_load_self_signed_cert()) {
 			error("Could not load self-signed TLS certificate");
 			rc = SLURM_ERROR;
