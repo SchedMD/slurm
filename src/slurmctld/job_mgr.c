@@ -12230,8 +12230,10 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 	    xstrchr(job_ptr2->licenses, '|'))
 		return false;
 
-	if (list_find_first_ro(job_ptr1->license_list, _find_hres, NULL) ||
-	    list_find_first_ro(job_ptr2->license_list, _find_hres, NULL))
+	if ((job_ptr1->license_list &&
+	     list_find_first_ro(job_ptr1->license_list, _find_hres, NULL)) ||
+	    (job_ptr2->license_list &&
+	     list_find_first_ro(job_ptr2->license_list, _find_hres, NULL)))
 		return false;
 
 	return true;
