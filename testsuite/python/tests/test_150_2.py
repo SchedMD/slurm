@@ -76,3 +76,118 @@ def test_segment_nodelist():
         )
         == 0
     ), "Job should fail requested node count > number of specified nodes"
+
+
+def test_segment_update():
+    """Test scontrol update job SegmentSize on a pending job."""
+
+    atf.require_version((26, 11), "bin/scontrol")
+
+    job_id = atf.submit_job_sbatch(
+        '--hold -N 4 --segment=2 --exclusive --mem=1 --wrap="true"',
+        fatal=True,
+    )
+    assert atf.get_job_parameter(job_id, "SegmentSize") == 2
+
+    # SegmentSize=4 -> success (4 % 4 == 0).
+    atf.run_command(f"scontrol update JobId={job_id} SegmentSize=4", fatal=True)
+    assert atf.get_job_parameter(job_id, "SegmentSize") == 4
+
+    # SegmentSize > min_nodes is allowed.
+    atf.run_command(f"scontrol update JobId={job_id} SegmentSize=8", fatal=True)
+    assert atf.get_job_parameter(job_id, "SegmentSize") == 8
+
+    # SegmentSize=3 -> rejected (4 % 3 != 0), value unchanged.
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} SegmentSize=3", xfail=True
+    )
+    assert result["exit_code"] != 0, "SegmentSize=3 must be rejected for N=4"
+    assert atf.get_job_parameter(job_id, "SegmentSize") == 8
+
+    # SegmentSize=0 clears segmentation.
+    atf.run_command(f"scontrol update JobId={job_id} SegmentSize=0", fatal=True)
+    assert atf.get_job_parameter(job_id, "SegmentSize") is None
+
+    atf.cancel_jobs([job_id], quiet=True)
+
+
+def test_segment_update_not_pending():
+    """SegmentSize cannot be updated on a non-pending job."""
+
+    atf.require_version((26, 11), "bin/scontrol")
+
+    job_id = atf.submit_job_sbatch(
+        "-N 2 --exclusive --mem=1 --wrap='sleep infinity'", fatal=True
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} SegmentSize=2", xfail=True
+    )
+    assert result["exit_code"] != 0, "SegmentSize update must fail for non-pending job"
+
+    atf.cancel_jobs([job_id], quiet=True)
+
+
+def test_spread_consolidate_segments_update():
+    """Test scontrol update job SpreadSegments and ConsolidateSegments."""
+
+    atf.require_version((26, 11), "bin/scontrol")
+
+    job_id = atf.submit_job_sbatch(
+        '--hold -N 4 --segment=2 --exclusive --mem=1 --wrap="true"',
+        fatal=True,
+    )
+    assert atf.get_job_parameter(job_id, "SpreadSegments") is None
+    assert atf.get_job_parameter(job_id, "ConsolidateSegments") is None
+
+    # Enable both flags.
+    atf.run_command(f"scontrol update JobId={job_id} SpreadSegments=Yes", fatal=True)
+    assert atf.get_job_parameter(job_id, "SpreadSegments") == "Yes"
+
+    atf.run_command(
+        f"scontrol update JobId={job_id} ConsolidateSegments=Yes", fatal=True
+    )
+    assert atf.get_job_parameter(job_id, "ConsolidateSegments") == "Yes"
+
+    # Setting an already-set flag is a silent no-op.
+    atf.run_command(f"scontrol update JobId={job_id} SpreadSegments=Yes", fatal=True)
+    assert atf.get_job_parameter(job_id, "SpreadSegments") == "Yes"
+
+    # Clear flags.
+    atf.run_command(f"scontrol update JobId={job_id} SpreadSegments=No", fatal=True)
+    assert atf.get_job_parameter(job_id, "SpreadSegments") is None
+
+    atf.run_command(
+        f"scontrol update JobId={job_id} ConsolidateSegments=No", fatal=True
+    )
+    assert atf.get_job_parameter(job_id, "ConsolidateSegments") is None
+
+    atf.cancel_jobs([job_id], quiet=True)
+
+
+def test_spread_consolidate_segments_update_not_pending():
+    """SpreadSegments/ConsolidateSegments cannot be updated on a non-pending job."""
+
+    atf.require_version((26, 11), "bin/scontrol")
+
+    job_id = atf.submit_job_sbatch(
+        "-N 2 --exclusive --mem=1 --wrap='sleep infinity'", fatal=True
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} SpreadSegments=Yes", xfail=True
+    )
+    assert (
+        result["exit_code"] != 0
+    ), "SpreadSegments update must fail for non-pending job"
+
+    result = atf.run_command(
+        f"scontrol update JobId={job_id} ConsolidateSegments=Yes", xfail=True
+    )
+    assert (
+        result["exit_code"] != 0
+    ), "ConsolidateSegments update must fail for non-pending job"
+
+    atf.cancel_jobs([job_id], quiet=True)

@@ -908,6 +908,38 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "WCKey", MAX(taglen, 1))) {
 			job_msg.wckey = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "SegmentSize", MAX(taglen, 7))) {
+			if (parse_uint16(val, &job_msg.segment_size)) {
+				error("Invalid SegmentSize value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "SpreadSegments",
+					 MAX(taglen, 6))) {
+			if (!xstrncasecmp(val, "YES", MAX(vallen, 1))) {
+				job_msg.bitflags |= SPREAD_SEGMENTS;
+			} else if (!xstrncasecmp(val, "NO", MAX(vallen, 1))) {
+				job_msg.bitflags |= RESET_SPREAD_SEGMENTS;
+			} else {
+				error("Invalid SpreadSegments value: %s", val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "ConsolidateSegments",
+					 MAX(taglen, 11))) {
+			if (!xstrncasecmp(val, "YES", MAX(vallen, 1))) {
+				job_msg.bitflags |= CONSOLIDATE_SEGMENTS;
+			} else if (!xstrncasecmp(val, "NO", MAX(vallen, 1))) {
+				job_msg.bitflags |= RESET_CONSOLIDATE_SEGMENTS;
+			} else {
+				error("Invalid ConsolidateSegments value: %s",
+				      val);
+				exit_code = 1;
+				return 0;
+			}
+			update_cnt++;
 		} else if (!xstrncasecmp(tag, "StdErr", MAX(taglen, 6))) {
 			job_msg.std_err = val;
 			update_cnt++;

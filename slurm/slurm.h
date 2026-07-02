@@ -1269,6 +1269,9 @@ typedef enum {
 					  * while resources are available */
 #define JOB_IMPLICIT_MAX_NODES SLURM_BIT(47) /* max_nodes was implicitly set
 					      * from num_tasks */
+#define RESET_SPREAD_SEGMENTS SLURM_BIT(48) /* Reset SPREAD_SEGMENTS */
+#define RESET_CONSOLIDATE_SEGMENTS SLURM_BIT(49) /* Reset
+						  * CONSOLIDATE_SEGMENTS */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

@@ -3956,6 +3956,7 @@ function __scontrol_update_jobid() {
 		"clusters="
 		"clusterfeatures="
 		"comment="
+		"consolidatesegments="
 		"contiguous="
 		"corespec="
 		"cpuspertask="
@@ -3999,7 +4000,9 @@ function __scontrol_update_jobid() {
 		"irequeue="
 		"reservationname="
 		"resetaccruetime="
+		"segmentsize="
 		"sitefactor="
+		"spreadsegments="
 		"stderr="
 		"stdin="
 		"stdout="
@@ -4042,6 +4045,7 @@ function __scontrol_update_jobid() {
 	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	clusterfeature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
+	consolidatesegments) __slurm_compreply "$(__slurm_boolean)" ;;
 	contiguous) __slurm_compreply "$(__slurm_boolean)" ;;
 	dependency) __slurm_comp_dependency ;;
 	excnodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
@@ -4061,6 +4065,7 @@ function __scontrol_update_jobid() {
 	reqnodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	irequeue) __slurm_compreply "${binary[*]}" ;;
 	reservationname?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
+	spreadsegments) __slurm_compreply "$(__slurm_boolean)" ;;
 	stderr) _filedir ;;
 	stdin) _filedir ;;
 	stdout) _filedir ;;

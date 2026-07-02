@@ -9945,6 +9945,8 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 	job_desc_msg->bitflags &= ~TRES_STR_CALC;
 	job_desc_msg->bitflags &= ~JOB_WAS_RUNNING;
 	job_desc_msg->bitflags &= ~RESET_ACCRUE_TIME;
+	job_desc_msg->bitflags &= ~RESET_CONSOLIDATE_SEGMENTS;
+	job_desc_msg->bitflags &= ~RESET_SPREAD_SEGMENTS;
 	if (!cron)
 		job_desc_msg->bitflags &= ~CRON_JOB;
 
@@ -13770,6 +13772,87 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	} else {
 		error_code = _unroll_min_max_node(job_ptr);
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_desc->segment_size != NO_VAL16) {
+		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if (job_desc->segment_size) {
+			uint32_t nodes_cnt;
+
+			if (detail_ptr->job_size_bitmap)
+				nodes_cnt = detail_ptr->max_nodes;
+			else
+				nodes_cnt = detail_ptr->min_nodes;
+
+			if ((nodes_cnt > job_desc->segment_size) &&
+			    (nodes_cnt % job_desc->segment_size)) {
+				info("%s: SegmentSize=%u does not fit job size (%u) for %pJ",
+				     __func__, job_desc->segment_size,
+				     nodes_cnt, job_ptr);
+				error_code = ESLURM_INVALID_NODE_COUNT;
+			}
+		}
+		if ((error_code == SLURM_SUCCESS) &&
+		    (detail_ptr->segment_size != job_desc->segment_size)) {
+			info("%s: setting SegmentSize from %u to %u for %pJ",
+			     __func__, detail_ptr->segment_size,
+			     job_desc->segment_size, job_ptr);
+			detail_ptr->segment_size = job_desc->segment_size;
+			update_accounting = true;
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_desc->bitflags & (SPREAD_SEGMENTS | RESET_SPREAD_SEGMENTS)) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if ((job_desc->bitflags & SPREAD_SEGMENTS) &&
+			   (job_desc->bitflags & RESET_SPREAD_SEGMENTS)) {
+			error("%s: SpreadSegments cannot be both set and cleared for %pJ",
+			      __func__, job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+		} else if (job_desc->bitflags & RESET_SPREAD_SEGMENTS) {
+			if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
+				info("%s: clearing SpreadSegments for %pJ",
+				     __func__, job_ptr);
+				job_ptr->bit_flags &= ~SPREAD_SEGMENTS;
+			}
+		} else if (!(job_ptr->bit_flags & SPREAD_SEGMENTS)) {
+			info("%s: setting SpreadSegments for %pJ",
+			     __func__, job_ptr);
+			job_ptr->bit_flags |= SPREAD_SEGMENTS;
+		}
+	}
+
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_desc->bitflags &
+	    (CONSOLIDATE_SEGMENTS | RESET_CONSOLIDATE_SEGMENTS)) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+		} else if ((job_desc->bitflags & CONSOLIDATE_SEGMENTS) &&
+			   (job_desc->bitflags & RESET_CONSOLIDATE_SEGMENTS)) {
+			error("%s: ConsolidateSegments cannot be both set and cleared for %pJ",
+			      __func__, job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+		} else if (job_desc->bitflags & RESET_CONSOLIDATE_SEGMENTS) {
+			if (job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
+				info("%s: clearing ConsolidateSegments for %pJ",
+				     __func__, job_ptr);
+				job_ptr->bit_flags &= ~CONSOLIDATE_SEGMENTS;
+			}
+		} else if (!(job_ptr->bit_flags & CONSOLIDATE_SEGMENTS)) {
+			info("%s: setting ConsolidateSegments for %pJ",
+			     __func__, job_ptr);
+			job_ptr->bit_flags |= CONSOLIDATE_SEGMENTS;
+		}
 	}
 
 	if (error_code != SLURM_SUCCESS)
