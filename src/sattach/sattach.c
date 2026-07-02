@@ -617,10 +617,12 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	case RESPONSE_LAUNCH_TASKS:
 		debug2("received task launch");
 		_launch_handler(mts, msg);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
 	case MESSAGE_TASK_EXIT:
 		debug2("received task exit");
 		_exit_handler(mts, msg);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
