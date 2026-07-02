@@ -517,12 +517,18 @@ fail:
 
 static void _msg_thr_wait(message_thread_state_t *mts)
 {
-	/* Wait for all known running tasks to complete */
+	/*
+	 * Wait for all known running tasks to complete, or until a signal
+	 * requests a detach (_on_detach_signal() sets detach_requested and wakes
+	 * the cond).
+	 */
 	slurm_mutex_lock(&mts->lock);
-	while (bit_set_count(mts->tasks_exited)
-	       < bit_set_count(mts->tasks_started)) {
+	while (!detach_requested && (bit_set_count(mts->tasks_exited) <
+				     bit_set_count(mts->tasks_started))) {
 		slurm_cond_wait(&mts->cond, &mts->lock);
 	}
+	if (detach_requested)
+		verbose("Detaching on signal");
 	slurm_mutex_unlock(&mts->lock);
 }
 
