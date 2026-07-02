@@ -629,10 +629,22 @@ static bool
 _node_state_equal (int i, const char *str)
 {
 	int len = strlen (str);
+	uint32_t flags = i & NODE_STATE_FLAGS;
+	const char *flag_str;
 
 	if ((xstrncasecmp(node_state_string_compact(i), str, len) == 0) ||
 	    (xstrncasecmp(node_state_string(i),         str, len) == 0))
 		return (true);
+
+	/*
+	 * Also match the canonical flag name (e.g. REBOOT_REQUESTED) as
+	 * printed by StateComplete via node_state_flag_string(), so filter
+	 * names stay in sync with the states sinfo displays.
+	 */
+	while ((flag_str = node_state_flag_string_single(&flags))) {
+		if (xstrncasecmp(flag_str, str, len) == 0)
+			return (true);
+	}
 	return (false);
 }
 
