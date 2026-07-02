@@ -559,6 +559,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"Features", S_P_STRING},
 		{"Gres", S_P_STRING},
 		{"GresConf", S_P_STRING},
+		{"HRES", S_P_STRING},
 		{"MemSpecLimit", S_P_UINT64},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
@@ -668,6 +669,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);
 		s_p_get_string(&n->gres_conf, "GresConf", tbl);
+
+		if (!s_p_get_string(&n->hres_str, "HRES", tbl))
+			s_p_get_string(&n->hres_str, "HRES", dflt);
 
 		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl))
 			s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit",
@@ -941,6 +945,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->hostnames);
 	xfree(n->gres);
 	xfree(n->gres_conf);
+	xfree(n->hres_str);
 	xfree(n->nodenames);
 	xfree(n->parameters);
 	xfree(n->port_str);
