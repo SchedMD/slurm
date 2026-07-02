@@ -630,8 +630,17 @@ static int _send_exit_msg(uint32_t *tid, int n, int status)
 
 		slurm_msg_set_r_uid(&resp, srun->uid);
 
-		if (_send_srun_resp_msg(&resp, step->nnodes) != SLURM_SUCCESS)
+		if (_send_srun_resp_msg(&resp, step->nnodes) != SLURM_SUCCESS) {
 			error("Failed to send MESSAGE_TASK_EXIT: %m");
+			/*
+			 * Backstop for an attached (sattach) client that went
+			 * away without its IO connection closing: clear its
+			 * resp_addr so it is not retried on later messages.
+			 */
+			if (srun->attached)
+				memset(&srun->resp_addr, 0,
+				       sizeof(srun->resp_addr));
+		}
 	}
 	list_iterator_destroy(i);
 
