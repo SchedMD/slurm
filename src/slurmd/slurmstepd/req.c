@@ -1365,6 +1365,8 @@ static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 	if (!srun->protocol_version)
 		srun->protocol_version = NO_VAL16;
 
+	srun->attached = true;
+
 	/*
 	 * Check if jobstep is actually running.
 	 */

@@ -71,6 +71,9 @@ typedef struct {
 				      resp_addr. */
 	uid_t uid;		   /* user id for job */
 	uint16_t protocol_version; /* protocol_version of the srun */
+	bool attached;		   /* true if added by an attach (sattach) so
+				      its resp_addr may be cleared once the
+				      client disconnects or becomes unreachable */
 } srun_info_t;
 
 typedef enum {
