@@ -19,6 +19,7 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
   # We will use a for loop to check for any.
   # Unless _x_ac_hpe_ss_dirs is overwritten with --with-hpe-slingshot
   _x_ac_hpe_ss_dirs="/usr"
+  _x_ac_hpe_ss_libs="lib64 lib"
 
   AC_ARG_WITH(
     [hpe-slingshot],
@@ -58,7 +59,19 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
                         #include <libcxi/libcxi.h>
                        ])
 	AC_SUBST(HPE_SLINGSHOT_CFLAGS)
-	AC_DEFINE_UNQUOTED(HPE_SLINGSHOT_LIB, "$_x_ac_hpe_ss_dir/lib64/libcxi.so", [Full path of libcxi.so])
+	_x_ac_hpe_ss_libcxi=""
+	for bit in $_x_ac_hpe_ss_libs; do
+		if test -f "$_x_ac_hpe_ss_dir/$bit/libcxi.so"; then
+			_x_ac_hpe_ss_libcxi="$_x_ac_hpe_ss_dir/$bit/libcxi.so"
+			break
+		fi
+	done
+	if test -z "$_x_ac_hpe_ss_libcxi"; then
+		AC_MSG_WARN([HPE Slingshot: unable to find libcxi.so under $_x_ac_hpe_ss_dir/{lib64,lib}])
+		_x_ac_hpe_ss_libcxi="$_x_ac_hpe_ss_dir/lib64/libcxi.so"
+	fi
+	AC_DEFINE_UNQUOTED(HPE_SLINGSHOT_LIB, "$_x_ac_hpe_ss_libcxi",
+	                   [Full path of libcxi.so])
 	CFLAGS="$cflags_save"
 	break;
       fi
