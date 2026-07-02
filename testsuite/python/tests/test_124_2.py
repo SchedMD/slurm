@@ -90,7 +90,9 @@ def used_gpu_for_qos(qos_name):
         if not name or name.group(1) != qos_name:
             continue
         used = re.search(
-            re.escape(user) + r"\(\d+\)=\{[^}]*gres/gpu=\S*?\((\d+)\)", line
+            re.escape(user)
+            + r"\(\d+\)=\{[^}]*?MaxTRESPU=[^}]*?gres/gpu=[^()]*\((\d+)\)",
+            line,
         )
         if not used:
             pytest.fail(f"cannot parse gres/gpu usage for QOS {qos_name}")
