@@ -61,6 +61,8 @@
 
 #include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/conn.h"
+
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -214,6 +216,13 @@ static void *_x11_server_on_connection(conmgr_callback_args_t conmgr_args,
 	int rc = EINVAL;
 	x11_con_t *x11con = NULL;
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
+
+	/*
+	 * This is a persistent connection, so send a TLS close_notify on close
+	 * (so the peer sees EOF rather than an error) when TLS is in use.
+	 */
+	if (conn_tls_enabled())
+		flags |= CON_FLAG_ENABLE_TLS_SHUTDOWN;
 
 	log_flag(NET, "%s: [%s] User application X11 client connected to our fake X11 server, setting up X11 tunnel now",
 		 __func__, conmgr_con_get_name(con));
