@@ -1277,6 +1277,19 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 			/* Avoid calling on_s2n_error for blocking */
 			on_s2n_block(conn, s2n_shutdown_send);
 			return rc;
+		} else if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_IO) {
+			/*
+			 * The underlying socket write failed, which means the
+			 * peer already tore down its end of the connection
+			 * before we could send our close_notify. There is
+			 * nothing left to shut down, so this is not an error:
+			 * the connection is already gone, which is the goal of
+			 * shutdown. Real protocol errors still fall through to
+			 * on_s2n_error() below.
+			 */
+			log_flag(TLS, "%s: s2n_shutdown_send peer already gone for fd:%d->%d: %s",
+				 plugin_type, conn->input_fd, conn->output_fd,
+				 s2n_strerror(s2n_errno, NULL));
 		} else {
 			on_s2n_error(conn, s2n_shutdown_send);
 			rc = errno;
