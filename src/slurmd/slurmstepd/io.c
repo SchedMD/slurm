@@ -138,6 +138,8 @@ struct client_io_info {
 
 	/* true if writing to a file, false if writing to a socket */
 	bool is_local_file;
+
+	srun_info_t *srun;
 };
 
 
@@ -1715,6 +1717,7 @@ extern int io_client_connect(srun_info_t *srun)
 	client->labelio = false;
 	client->taskid_width = 0;
 	client->is_local_file = false;
+	client->srun = srun;
 
 	/* client object adds itself to step->clients in _client_writable */
 
