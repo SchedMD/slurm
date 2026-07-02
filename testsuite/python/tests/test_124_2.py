@@ -80,10 +80,6 @@ def setup():
 
 
 def used_gpu_for_qos(qos_name):
-    """Per-user gres/gpu USED for our user under the named QOS, parsed from
-    `scontrol -o show assoc_mgr flags=qos` (one QOS per line). Fails loudly if
-    the QOS line is present but the per-user gres/gpu value cannot be parsed, so
-    a format change never silently reads as 0."""
     su = atf.properties["slurm-user"]
     user = atf.get_user_name()
     out = atf.run_command_output(
@@ -100,6 +96,25 @@ def used_gpu_for_qos(qos_name):
         )
         if not used:
             pytest.fail(f"cannot parse gres/gpu usage for QOS {qos_name}")
+        return int(used.group(1))
+    return 0
+
+
+def used_gpu_for_acct_under_qos(qos_name):
+    su = atf.properties["slurm-user"]
+    out = atf.run_command_output(
+        "scontrol -o show assoc_mgr flags=qos", user=su, fatal=True
+    )
+    for line in out.splitlines():
+        name = re.search(r"QOS=([^\s(]+)\(", line)
+        if not name or name.group(1) != qos_name:
+            continue
+        used = re.search(
+            re.escape(ACCT) + r"=\{[^}]*?MaxTRESPA=[^}]*?gres/gpu=[^()]*\((\d+)\)",
+            line,
+        )
+        if not used:
+            pytest.fail(f"cannot parse account gres/gpu usage for QOS {qos_name}")
         return int(used.group(1))
     return 0
 
@@ -125,6 +140,8 @@ def test_multiqos_gres_usage_survives_reconfigure():
     assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW
     assert used_gpu_for_qos(QOS_LOW) == JOB_GPUS
     assert used_gpu_for_qos(QOS_HIGH) == BLOCK_GPUS
+    assert used_gpu_for_acct_under_qos(QOS_LOW) == JOB_GPUS
+    assert used_gpu_for_acct_under_qos(QOS_HIGH) == BLOCK_GPUS
 
     # State reload. Pre-fix this re-attributed the running job_id2 to QOS_HIGH.
     atf.run_command("scontrol reconfigure", user=su, fatal=True)
@@ -133,6 +150,12 @@ def test_multiqos_gres_usage_survives_reconfigure():
     assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW, "QOS flipped on reload"
     assert used_gpu_for_qos(QOS_LOW) == JOB_GPUS, "QOS_LOW usage lost on reload"
     assert used_gpu_for_qos(QOS_HIGH) == BLOCK_GPUS, "QOS_HIGH usage inflated on reload"
+    assert (
+        used_gpu_for_acct_under_qos(QOS_LOW) == JOB_GPUS
+    ), "QOS_LOW acct usage lost on reload"
+    assert (
+        used_gpu_for_acct_under_qos(QOS_HIGH) == BLOCK_GPUS
+    ), "QOS_HIGH acct usage inflated on reload"
 
 
 def test_multiqos_gres_usage_survives_restart():
@@ -154,6 +177,8 @@ def test_multiqos_gres_usage_survives_restart():
     assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW
     assert used_gpu_for_qos(QOS_LOW) == JOB_GPUS
     assert used_gpu_for_qos(QOS_HIGH) == BLOCK_GPUS
+    assert used_gpu_for_acct_under_qos(QOS_LOW) == JOB_GPUS
+    assert used_gpu_for_acct_under_qos(QOS_HIGH) == BLOCK_GPUS
 
     # State reload via slurmctld restart (job_mgr_load_job_state path). Pre-fix
     # this re-attributed the running job_id2 to QOS_HIGH.
@@ -164,3 +189,9 @@ def test_multiqos_gres_usage_survives_restart():
     assert atf.get_job_parameter(job_id2, "QOS") == QOS_LOW, "QOS flipped on reload"
     assert used_gpu_for_qos(QOS_LOW) == JOB_GPUS, "QOS_LOW usage lost on reload"
     assert used_gpu_for_qos(QOS_HIGH) == BLOCK_GPUS, "QOS_HIGH usage inflated on reload"
+    assert (
+        used_gpu_for_acct_under_qos(QOS_LOW) == JOB_GPUS
+    ), "QOS_LOW acct usage lost on reload"
+    assert (
+        used_gpu_for_acct_under_qos(QOS_HIGH) == BLOCK_GPUS
+    ), "QOS_HIGH acct usage inflated on reload"
