@@ -72,6 +72,7 @@ static bool handle_sigwinch = false;
 /* Set by pty_thread_fini() to wake _pty_thread() so it can shut down cleanly. */
 static bool pty_shutdown = false;
 static pthread_t pty_tid = 0;
+static int pty_listen_fd = -1;
 
 /*
  * Static prototypes
@@ -116,6 +117,7 @@ void pty_thread_create(srun_job_t *job)
 	job->pty_port = slurm_get_port(&pty_addr);
 	debug2("initialized job control port %hu", job->pty_port);
 
+	pty_listen_fd = job->pty_fd;
 	slurm_thread_create(NULL, &pty_tid, _pty_thread, job);
 }
 
@@ -212,6 +214,14 @@ extern void pty_thread_fini(void)
 	pty_shutdown = true;
 	EVENT_SIGNAL(&winch_event);
 	slurm_mutex_unlock(&winch_lock);
+
+	/*
+	 * If slurmstepd never connected, _pty_thread() is still blocked in
+	 * accept(); shut down the listen socket to unblock it so the join
+	 * below does not hang.
+	 */
+	if (pty_listen_fd >= 0)
+		shutdown(pty_listen_fd, SHUT_RDWR);
 
 	slurm_thread_join(pty_tid);
 	pty_tid = 0;
