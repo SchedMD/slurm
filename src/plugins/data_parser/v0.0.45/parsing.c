@@ -1638,12 +1638,21 @@ extern int dump(void *src, ssize_t src_bytes,
 		break;
 	case PARSER_MODEL_FLAG_ARRAY:
 		verify_parser_not_sliced(parser);
-		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
-			(data_get_type(dst) == DATA_TYPE_LIST));
 		xassert(parser->ptr_offset == NO_VAL);
 
-		if (data_get_type(dst) != DATA_TYPE_LIST)
-			data_set_list(dst);
+		if (parser->single_flag) {
+			xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
+				(data_get_type(dst) == DATA_TYPE_STRING));
+
+			if (data_get_type(dst) != DATA_TYPE_STRING)
+				data_set_string(dst, "");
+		} else {
+			xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
+				(data_get_type(dst) == DATA_TYPE_LIST));
+
+			if (data_get_type(dst) != DATA_TYPE_LIST)
+				data_set_list(dst);
+		}
 
 		rc = _dump_flag_bit_array(args, src, dst, parser);
 		break;
