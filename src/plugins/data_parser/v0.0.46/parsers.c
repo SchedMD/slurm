@@ -12280,6 +12280,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_equal_desc(LOG_LEVEL_DEBUG3, INFINITE16, "debug3", "Log errors and verbose informational messages and even more debugging messages"),
 	add_flag_equal_desc(LOG_LEVEL_DEBUG4, INFINITE16, "debug4", "Log errors and verbose informational messages and even more debugging messages"),
 	add_flag_equal_desc(LOG_LEVEL_DEBUG5, INFINITE16, "debug5", "Log errors and verbose informational messages and even more debugging messages"),
+	add_flag_equal_desc(LOG_LEVEL_END, INFINITE16, "default", "Log at default level (currently same as fatal)"),
 };
 
 /* based on _validate_and_set_defaults() TaskPluginParam handling */
