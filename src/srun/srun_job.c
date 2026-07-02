@@ -1575,6 +1575,8 @@ extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc)
 {
+	pty_thread_fini();
+
 	if (got_alloc) {
 		cleanup_allocation();
 
