@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include <s2n.h>
+#include <signal.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -1246,6 +1247,10 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 	int rc = SLURM_SUCCESS;
+	int shutdown_rc = S2N_SUCCESS;
+	int saved_errno = 0;
+	sigset_t sigpipe_set, oldset, pending;
+	bool sigpipe_was_pending = false;
 
 	xassert(conn);
 	xassert(conn->magic == TLS_CONN_MAGIC);
@@ -1270,7 +1275,41 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 	 * successful/intentional shutdown. Without this shutdown, peers would
 	 * get s2n_recv() == -1 and assume the connection failed.
 	 */
-	if (s2n_shutdown_send(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+
+	/*
+	 * s2n issues its socket write() without MSG_NOSIGNAL, so sending our
+	 * close_notify to a peer that has already closed raises SIGPIPE (s2n
+	 * requires the application to prevent it). Block SIGPIPE around only
+	 * this shutdown write and drain the instance our write may raise, so
+	 * callers that treat SIGPIPE as fatal (e.g. srun) are not killed by a
+	 * routine connection teardown. Record whether SIGPIPE was already
+	 * pending so an unrelated instance is left intact.
+	 */
+	sigemptyset(&sigpipe_set);
+	sigaddset(&sigpipe_set, SIGPIPE);
+	sigemptyset(&pending);
+	pthread_sigmask(SIG_BLOCK, &sigpipe_set, &oldset);
+	sigpending(&pending);
+	sigpipe_was_pending = sigismember(&pending, SIGPIPE);
+
+	shutdown_rc = s2n_shutdown_send(conn->s2n_conn, &blocked);
+	saved_errno = errno;
+
+	if (!sigpipe_was_pending) {
+		struct timespec zero = { 0, 0 };
+
+		/*
+		 * Consume the SIGPIPE our write may have raised, if any.
+		 * sigtimedwait() returns -1 with EAGAIN when none is pending.
+		 */
+		while ((sigtimedwait(&sigpipe_set, NULL, &zero) == -1) &&
+		       (errno == EINTR))
+			;
+	}
+	pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+	errno = saved_errno;
+
+	if (shutdown_rc != S2N_SUCCESS) {
 		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
 			rc = SLURM_BLOCKED_ON_WRITE;
 
