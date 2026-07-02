@@ -213,6 +213,7 @@ static void *_x11_server_on_connection(conmgr_callback_args_t conmgr_args,
 	conmgr_fd_ref_t *con = conmgr_args.ref;
 	int rc = EINVAL;
 	x11_con_t *x11con = NULL;
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	log_flag(NET, "%s: [%s] User application X11 client connected to our fake X11 server, setting up X11 tunnel now",
 		 __func__, conmgr_con_get_name(con));
@@ -230,10 +231,9 @@ static void *_x11_server_on_connection(conmgr_callback_args_t conmgr_args,
 	 * will be forwarded to the host running srun, as if the application
 	 * were running on the host running srun.
 	 */
-	if ((rc = conmgr_create_connect_socket(CON_TYPE_RPC, CON_FLAG_NONE,
-					       &alloc_node, sizeof(alloc_node),
-					       &events, srun_tls_cert,
-					       x11con))) {
+	if ((rc = conmgr_create_connect_socket(CON_TYPE_RPC, flags, &alloc_node,
+					       sizeof(alloc_node), &events,
+					       srun_tls_cert, x11con))) {
 		error("%s: [%s] Failed to connect to srun at %pA: %s",
 		      __func__, conmgr_con_get_name(con), &alloc_node,
 		      slurm_strerror(rc));
