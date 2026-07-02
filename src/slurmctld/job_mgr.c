@@ -9582,7 +9582,8 @@ void job_time_limit(void)
 		}
 
 		/* Give srun command warning message about pending timeout */
-		if (job_ptr->end_time <= (now + PERIODIC_TIMEOUT * 2))
+		if (job_ptr->end_time <=
+		    (now + get_periodic_check_interval() * 2))
 			srun_timeout (job_ptr);
 
 		/*
@@ -19369,7 +19370,8 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time)
 	    !(job_ptr->warn_flags & WARN_SENT) &&
 	    (ignore_time ||
 	     (job_ptr->warn_time &&
-	      ((job_ptr->warn_time + PERIODIC_TIMEOUT + time(NULL)) >=
+	      ((job_ptr->warn_time + get_periodic_check_interval() +
+		time(NULL)) >=
 	       job_ptr->end_time)))) {
 		/*
 		 * If --signal B option was not specified,

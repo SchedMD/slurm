@@ -72,6 +72,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/parse_value.h"
 #include "src/common/port_mgr.h"
 #include "src/common/probes.h"
 #include "src/common/proc_args.h"
@@ -624,6 +625,36 @@ static void _fini_acct_storage(void)
 {
 	acct_storage_g_fini();
 	slurm_persist_conn_recv_server_fini();
+}
+
+extern uint16_t get_periodic_check_interval(void)
+{
+	static time_t config_update = (time_t) -1;
+	static uint16_t periodic_check_interval = PERIODIC_TIMEOUT;
+	char *tmp_ptr;
+	uint16_t tmp_interval = PERIODIC_TIMEOUT;
+
+	if (config_update == slurm_conf.last_update)
+		return periodic_check_interval;
+
+	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+					"periodic_check_interval="))) {
+		if (s_p_handle_uint16(&tmp_interval,
+				      "periodic_check_interval",
+				      tmp_ptr) ||
+		    !tmp_interval || (tmp_interval == INFINITE16)) {
+			error("SlurmctldParameters option periodic_check_interval=%s "
+			      "is invalid, using default %u",
+			      tmp_ptr, PERIODIC_TIMEOUT);
+			tmp_interval = PERIODIC_TIMEOUT;
+		}
+		xfree(tmp_ptr);
+	}
+
+	periodic_check_interval = tmp_interval;
+	config_update = slurm_conf.last_update;
+
+	return periodic_check_interval;
 }
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -2827,7 +2858,8 @@ static void *_slurmctld_background(void *no_data)
 
 		validate_all_reservations(true, true);
 
-		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
+		if (difftime(now, last_timelimit_time) >=
+		    get_periodic_check_interval()) {
 			lock_slurmctld(job_write_lock);
 			now = time(NULL);
 			last_timelimit_time = now;
