@@ -65,8 +65,12 @@
 
 #include "src/api/step_io.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/sattach/attach.h"
 #include "src/sattach/opt.h"
+
+#define SATTACH_CONMGR_THREADS CONMGR_THREAD_COUNT_MIN
 
 static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
@@ -178,6 +182,9 @@ int sattach(int argc, char **argv)
 				      opt.labelio, NO_VAL, NO_VAL);
 	client_io_handler_start(io);
 
+	conmgr_init(0, SATTACH_CONMGR_THREADS, 0);
+	conmgr_run(false);
+
 	if (opt.pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
@@ -204,6 +211,10 @@ int sattach(int argc, char **argv)
 		_mpir_dump_proctable();
 
 	_msg_thr_wait(mts);
+
+	/* Stop conmgr before tearing down the state its signal work references. */
+	conmgr_fini();
+
 	_msg_thr_destroy(mts);
 	slurm_job_step_layout_free(layout);
 	client_io_handler_finish(io);
