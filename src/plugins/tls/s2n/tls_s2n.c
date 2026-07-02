@@ -1256,28 +1256,33 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 		return SLURM_SUCCESS;
 	}
 
-	log_flag(TLS, "%s: Attempting s2n_shutdown for fd:%d->%d",
+	log_flag(TLS, "%s: Attempting s2n_shutdown_send for fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
 
-	/* Attempt graceful shutdown at TLS layer */
-	if (s2n_shutdown(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+	/*
+	 * Half-close the TLS connection: send our close_notify but do not wait
+	 * to receive the peer's. This lets both peers shut down gracefully in
+	 * any order without blocking on (or failing against) a dead or slow
+	 * peer. s2n_shutdown_send() only writes, so it can only block on write.
+	 *
+	 * In "persistent" connections, this shutdown on the TLS layer allows
+	 * peers to get s2n_recv() == 0, which indicates a
+	 * successful/intentional shutdown. Without this shutdown, peers would
+	 * get s2n_recv() == -1 and assume the connection failed.
+	 */
+	if (s2n_shutdown_send(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
 		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
-			if (s2n_errno == S2N_BLOCKED_ON_READ)
-				rc = SLURM_BLOCKED_ON_READ;
-			else if (s2n_errno == S2N_BLOCKED_ON_WRITE)
-				rc = SLURM_BLOCKED_ON_WRITE;
-			else
-				rc = EWOULDBLOCK;
+			rc = SLURM_BLOCKED_ON_WRITE;
 
 			/* Avoid calling on_s2n_error for blocking */
-			on_s2n_block(conn, s2n_shutdown);
+			on_s2n_block(conn, s2n_shutdown_send);
 			return rc;
 		} else {
-			on_s2n_error(conn, s2n_shutdown);
+			on_s2n_error(conn, s2n_shutdown_send);
 			rc = errno;
 		}
 	} else {
-		log_flag(TLS, "%s: Successfully did s2n_shutdown for  fd:%d->%d.",
+		log_flag(TLS, "%s: Successfully did s2n_shutdown_send for fd:%d->%d.",
 			 plugin_type, conn->input_fd, conn->output_fd);
 	}
 
