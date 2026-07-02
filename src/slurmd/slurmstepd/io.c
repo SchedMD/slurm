@@ -887,7 +887,7 @@ static void *_window_manager(void *arg)
 				error("%s: read window size error: %m",
 				      __func__);
 			}
-			return NULL;
+			break;
 		}
 		memcpy(&winsz.cols, buf, 2);
 		memcpy(&winsz.rows, buf+2, 2);
