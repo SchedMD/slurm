@@ -253,6 +253,15 @@ int sattach(int argc, char **argv)
 
 	_msg_thr_destroy(mts);
 	slurm_job_step_layout_free(layout);
+	/*
+	 * Force the IO servers closed rather than waiting for the remaining task
+	 * stdout/stderr. sattach is detaching, so it should exit promptly even
+	 * while the step (and its output) keeps running; without this,
+	 * client_io_handler_finish() would block until every remote stdout/stderr
+	 * stream reached EOF. srun, by contrast, only aborts on error and
+	 * otherwise waits for all output.
+	 */
+	client_io_handler_abort(io);
 	client_io_handler_finish(io);
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
