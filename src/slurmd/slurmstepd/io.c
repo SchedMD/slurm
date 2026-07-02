@@ -139,6 +139,11 @@ struct client_io_info {
 	/* true if writing to a file, false if writing to a socket */
 	bool is_local_file;
 
+	/*
+	 * The sattach client this I/O client was created for by an attach, or
+	 * NULL. Used to clear the srun's resp_addr when the client disconnects
+	 * so stepd stops sending it messages (e.g. MESSAGE_TASK_EXIT).
+	 */
 	srun_info_t *srun;
 };
 
@@ -228,6 +233,29 @@ static struct io_buf *_build_connection_okay_message(void);
 /**********************************************************************
  * IO client socket functions
  **********************************************************************/
+
+/*
+ * An attached (sattach) client closed its I/O connection (socket EOF), so it is
+ * gone: a live client signals stdin EOF with an app-layer message, not a socket
+ * close. Reciprocate its TLS close_notify, stop writing to it, and clear its
+ * srun's resp_addr so stepd sends it no more messages (e.g. MESSAGE_TASK_EXIT),
+ * rather than discovering it is gone via a failed write. This is the peer's own
+ * close, distinct from a stepd-initiated teardown (io_close_all()).
+ * IN obj - eio client object whose socket reached EOF
+ */
+static void _attached_client_gone(eio_obj_t *obj)
+{
+	struct client_io_info *client = obj->arg;
+
+	if (!client->srun || !client->srun->attached || client->out_eof)
+		return;
+
+	(void) conn_blocking_g_shutdown(obj->conn);
+	memset(&client->srun->resp_addr, 0, sizeof(client->srun->resp_addr));
+	client->out_eof = true;
+	_free_all_outgoing_msgs(client->msg_queue);
+}
+
 static bool
 _client_readable(eio_obj_t *obj)
 {
@@ -329,6 +357,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 		if (n <= 0) { /* got eof or fatal error */
 			debug5("  got eof or error _client_read header, n=%d", n);
 			client->in_eof = true;
+			_attached_client_gone(obj);
 			list_enqueue(step->free_incoming, client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_SUCCESS;
@@ -388,6 +417,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 		if (n <= 0) { /* got eof (or unhandled error) */
 			debug5("  got eof on _client_read body");
 			client->in_eof = true;
+			_attached_client_gone(obj);
 			list_enqueue(step->free_incoming, client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_SUCCESS;
@@ -489,6 +519,16 @@ again:
 			return SLURM_SUCCESS;
 		} else {
 			client->out_eof = true;
+			/*
+			 * Backstop for the rare case where a write races ahead
+			 * of the socket-EOF detection in _client_read(): a
+			 * write failure also means this attached (sattach)
+			 * client is gone, so clear its srun's resp_addr to stop
+			 * sending it messages (e.g. MESSAGE_TASK_EXIT).
+			 */
+			if (client->srun && client->srun->attached)
+				memset(&client->srun->resp_addr, 0,
+				       sizeof(client->srun->resp_addr));
 			_free_all_outgoing_msgs(client->msg_queue);
 			return SLURM_SUCCESS;
 		}
