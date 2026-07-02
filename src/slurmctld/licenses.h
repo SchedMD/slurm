@@ -131,6 +131,29 @@ extern int license_init(char *licenses);
 
 extern int hres_init(void);
 extern int hres_update(hres_update_msg_t *msg, char **err_msg);
+
+/*
+ * hres_add_nodes
+ * Add nodes to the specified HRES layers.
+ * Mode 3 restriction - Only allow adding nodes to a single leaf layer.
+ *
+ * IN hres_info - List of HRES layers to which the nodes will be added
+ * IN node_names - Names of nodes to add
+ * IN node_bitmap (optional) - Bitmap of nodes to add. If not given, it will be
+ *                             resolved from node_names.
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int hres_add_nodes(list_t *hres_info, char *node_names,
+			  bitstr_t *node_bitmap);
+
+/*
+ * hres_rm_node
+ * Remove a node from all HRES layers.
+ *
+ * IN node_ptr - node to remove
+ */
+extern void hres_rm_node(node_record_t *node_ptr);
+
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
 extern bool hres_select_check(hres_select_t *hres_select,
