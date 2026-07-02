@@ -3,8 +3,9 @@
 ############################################################################
 """Test PMIx graceful termination on task failure."""
 
-import atf
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

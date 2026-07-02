@@ -5,8 +5,9 @@
 ############################################################################
 import time
 
-import atf
 import pytest
+
+import atf
 
 BOGUS_JOBID = 4294967292
 BOGUS_SLUID = "s0000000000001"

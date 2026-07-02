@@ -14,8 +14,9 @@ submitted with and without a CountOnly GRES request, under several
 -m/--distribution settings; the two distributions must match.
 """
 
-import atf
 import pytest
+
+import atf
 
 SOCKETS = 2
 CORES_PER_SOCKET = 4

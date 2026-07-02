@@ -10,9 +10,11 @@ verify the autofill behavior of gres_get_dynamic_gpu_str() called from
 _dynamic_init().
 """
 
-import atf
-import pytest
 import re
+
+import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

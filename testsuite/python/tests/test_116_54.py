@@ -9,9 +9,11 @@ socket _errhandler() equivalent, so only the explicit MPI_Abort() path is
 covered here.
 """
 
-import atf
 import os
+
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

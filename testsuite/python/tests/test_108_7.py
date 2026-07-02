@@ -1,11 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-import time
 import os
 import re
+import time
+
+import pytest
+
+import atf
 
 file_out1 = "output1"
 file_out2 = "output2"

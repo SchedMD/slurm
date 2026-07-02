@@ -1,8 +1,9 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-import atf
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

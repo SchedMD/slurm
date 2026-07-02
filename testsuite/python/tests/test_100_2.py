@@ -1,11 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-
 import logging
 import re
+
+import pytest
+
+import atf
 
 
 # Setup

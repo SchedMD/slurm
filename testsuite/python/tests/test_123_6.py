@@ -2,7 +2,9 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import os
+
 import pytest
+
 import atf
 
 test_name = os.path.splitext(os.path.basename(__file__))[0]

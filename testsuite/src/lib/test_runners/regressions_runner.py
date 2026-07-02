@@ -6,26 +6,14 @@ import re
 from time import perf_counter
 
 # SchedMD
-from db.test_db import (
-    insert_or_update_many,
-)
-from test_runners.runner_ui import (
-    # color_state,
-    print_status_line,
-    print_test_line,
-)
+from db.test_db import insert_or_update_many
+from test_runners.runner_ui import print_status_line, print_test_line  # color_state,
 
 # from utils.log import (
 #     # log_new_line,
 # )
-from utils.cmds import (
-    perform,
-    run_cmd,
-    # run_cmd_or_exit,
-)
-from utils.fs import (
-    write_str_to_new_file,
-)
+from utils.cmds import perform, run_cmd  # run_cmd_or_exit,
+from utils.fs import write_str_to_new_file
 
 stats_dict = {}
 

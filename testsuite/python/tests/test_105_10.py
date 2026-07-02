@@ -3,9 +3,9 @@
 ############################################################################
 from pathlib import Path
 
-import atf
 import pytest
 
+import atf
 
 oom_started = "Allocating"
 oom_finished = "Done."

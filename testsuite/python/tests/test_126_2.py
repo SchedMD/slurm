@@ -43,8 +43,9 @@ Gres=r1:2 each (2 per partition).
 import os
 import time
 
-import atf
 import pytest
+
+import atf
 
 test_name = os.path.splitext(os.path.basename(__file__))[0]
 # Partitions: CPU (2 nodes), GPU (2 nodes)

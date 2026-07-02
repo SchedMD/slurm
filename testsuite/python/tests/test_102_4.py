@@ -1,8 +1,9 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

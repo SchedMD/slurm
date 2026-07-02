@@ -2,9 +2,9 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 
-import atf
 import pytest
 
+import atf
 
 # Features used throughout the file. Kept as module-level constants so the
 # setup fixture and the individual tests stay in sync.

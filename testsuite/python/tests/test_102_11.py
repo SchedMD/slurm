@@ -2,8 +2,9 @@
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
 
-import atf
 import pytest
+
+import atf
 
 # (archive-dump keyword, slurmdbd.conf parameter)
 purge_types = [

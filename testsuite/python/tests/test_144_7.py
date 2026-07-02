@@ -1,12 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
+import re
+from pathlib import Path
 
 # import logging
 import pytest
-import re
-from pathlib import Path
+
+import atf
 
 pytestmark = pytest.mark.slow
 

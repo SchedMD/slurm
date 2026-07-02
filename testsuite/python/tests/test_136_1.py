@@ -1,11 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
+import re
 
 # import os
 import pytest
-import re
+
+import atf
 
 total_cpus = 0
 total_cores = 0

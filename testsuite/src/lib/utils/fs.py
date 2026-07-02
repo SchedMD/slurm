@@ -10,11 +10,7 @@ import sys
 from utils.cmds import run_cmd
 
 # SchedMD
-from utils.log import (
-    log,
-    log_header,
-    # log_new_line,
-)
+from utils.log import log, log_header  # log_new_line,
 
 
 # Filesystem

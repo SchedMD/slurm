@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import re
+
+import pytest
+
+import atf
 
 IMEX_CHANNEL_PATH = "/dev/nvidia-caps-imex-channels"
 NUM_NODES = 8

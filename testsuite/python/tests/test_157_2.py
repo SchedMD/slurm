@@ -1,9 +1,9 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-import atf
 import pytest
 
+import atf
 
 job_submit_lua = """
 function slurm_job_modify(job_desc, job_rec, part_list, modify_uid)

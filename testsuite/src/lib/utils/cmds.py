@@ -7,10 +7,7 @@ import sys
 import time
 
 # SchedMD
-from utils.log import (
-    log,
-    log_new_line,
-)
+from utils.log import log, log_new_line
 
 CMD_HOOK = "CMD: "
 

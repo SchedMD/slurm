@@ -3,8 +3,9 @@
 ############################################################################
 import re
 
-import atf
 import pytest
+
+import atf
 
 register_order = ["node102", "node12", "node101", "node11"]
 alpha_order = ["node11", "node12", "node101", "node102"]

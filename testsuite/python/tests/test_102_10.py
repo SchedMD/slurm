@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import logging
+
+import pytest
+
+import atf
 
 # Global variables
 qos1 = "qos1"

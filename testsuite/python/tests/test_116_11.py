@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 from datetime import datetime
+
+import pytest
+
+import atf
 
 
 # Setup

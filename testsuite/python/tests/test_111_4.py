@@ -1,8 +1,9 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import pytest
+
+import atf
 
 # A list of the nodes used in the test
 node_list = []

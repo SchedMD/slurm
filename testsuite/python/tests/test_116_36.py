@@ -1,9 +1,10 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import pexpect
+import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

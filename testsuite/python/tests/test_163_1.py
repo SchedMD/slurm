@@ -3,8 +3,9 @@
 ############################################################################
 from pathlib import Path
 
-import atf
 import pytest
+
+import atf
 
 memory_tolerance = 0.05
 low_mem_mib = 64

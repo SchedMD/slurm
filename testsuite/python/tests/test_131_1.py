@@ -1,11 +1,12 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
-import atf
-import pytest
-
 # import re
 import json
+
+import pytest
+
+import atf
 
 
 # Setup

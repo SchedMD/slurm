@@ -1,10 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import os
-import pytest
 import shutil
+
+import pytest
+
+import atf
 
 # import time
 

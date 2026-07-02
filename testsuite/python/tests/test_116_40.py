@@ -1,11 +1,13 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
-import pexpect
-import re
 import json
+import re
+
+import pexpect
+import pytest
+
+import atf
 
 suser = atf.properties["slurm-user"]
 

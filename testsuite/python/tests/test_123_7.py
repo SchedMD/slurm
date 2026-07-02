@@ -3,10 +3,12 @@
 ############################################################################
 
 import os
-import atf
-import pytest
 import re
 import time
+
+import pytest
+
+import atf
 
 pytestmark = pytest.mark.slow
 

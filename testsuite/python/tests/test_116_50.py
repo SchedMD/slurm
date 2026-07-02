@@ -1,11 +1,12 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import json
-import pytest
 import re
 
+import pytest
+
+import atf
 
 # Global variables that will be set by tests
 file_prog = None

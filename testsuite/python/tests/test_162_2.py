@@ -4,8 +4,9 @@
 # Verify swait's steps-drained push path (REQUEST_STEPS_DRAINED_SUBSCRIBE
 # subscribe + SRUN_STEPS_DRAINED push from stepmgr).
 ############################################################################
-import atf
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

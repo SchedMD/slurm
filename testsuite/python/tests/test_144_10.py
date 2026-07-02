@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import re
+
+import pytest
+
+import atf
 
 gpu_uuid0 = "GPU-a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 gpu_uuid1 = "GPU-f9e8d7c6-b5a4-3210-fedc-ba9876543210"

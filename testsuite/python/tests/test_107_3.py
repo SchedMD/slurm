@@ -1,9 +1,11 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import os
 import logging
+import os
+
 import pytest
+
 import atf
 
 pytestmark = pytest.mark.slow

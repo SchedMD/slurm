@@ -1,8 +1,9 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
 import pytest
+
+import atf
 
 # Note that node_prefix needs to be known or handled properly in s2n variant
 node_prefix = "node"

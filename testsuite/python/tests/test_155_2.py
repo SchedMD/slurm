@@ -5,9 +5,9 @@ import csv
 import logging
 from pathlib import Path
 
-import atf
 import pytest
 
+import atf
 
 id_cols = ["Step", "Node", "Series"]
 summarized_cols = [

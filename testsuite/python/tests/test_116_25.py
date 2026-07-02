@@ -1,12 +1,14 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import atf
-import pytest
 import pathlib
+import re
 import signal
 import time
-import re
+
+import pytest
+
+import atf
 
 
 # Setup

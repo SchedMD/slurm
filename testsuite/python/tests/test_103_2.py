@@ -3,8 +3,9 @@
 ############################################################################
 import re
 
-import atf
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="module", autouse=True)

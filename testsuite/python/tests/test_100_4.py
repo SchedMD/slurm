@@ -15,9 +15,11 @@ Key environment factors that affect coredump generation:
   - sudoers config: "Defaults rlimit_core=default" is required
   - Container capabilities (some restrict core dumps)
 """
-import atf
 import logging
+
 import pytest
+
+import atf
 
 
 @pytest.fixture(scope="function", autouse=True)

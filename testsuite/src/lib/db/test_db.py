@@ -5,13 +5,8 @@
 import sqlite3 as db
 
 # SchedMD
-from utils.fs import (
-    delete_file,
-    file_exists,
-)
-from utils.log import (
-    log,
-)
+from utils.fs import delete_file, file_exists
+from utils.log import log
 
 TESTS_TABLE = "tests"
 db_name = ""

@@ -1,22 +1,20 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import _pytest
+import json
 
 # import inspect
 import logging
 import os
+import re
+import shutil
+import sys
+from pathlib import Path
+
+import _pytest
 
 # import pwd
 import pytest
-import re
-
-import shutil
-import sys
-
-from pathlib import Path
-
-import json
 
 sys.path.append(sys.path[0] + "/lib")
 import atf

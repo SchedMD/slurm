@@ -32,9 +32,9 @@ against one being broken without breaking the others.
 """
 import re
 
-import atf
 import pytest
 
+import atf
 
 PORT_BASE = 61500
 

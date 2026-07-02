@@ -8,48 +8,24 @@ import sys
 
 # SchedMD
 sys.path.append(sys.path[0] + "/src/lib")
+from cli import get_args, test_parser
 from db.test_db import (
     get_new_run_list,
     reset_suite_run_ids,
     setup_db_if_new,
     update_records_from_dirs,
 )
-from cli import (
-    get_args,
-    test_parser,
-)
-from utils.cmds import (
-    perform,
-)
-from utils.conf import (
-    get_vars_from_conf,
-)
-from utils.fs import (
-    create_dir,
-    file_exists,
-    # exit_if_not_exists,
-)
-from utils.log import (
-    log,
-    log_header,
-    # log_new_line,
-    # print_pretty_dict,
-)
-from utils.ps import (
-    is_tool,
-)
-from utils.test.test_list import (
-    get_unit_tl_from_build_dir,
-    get_tl_from_dir,
-)
-from test_runners.unit_runner import (
-    get_unit_run_stats,
-    run_unit_tests,
-)
 from test_runners.regressions_runner import (
     get_regressions_run_stats,
     run_regressions_tests,
 )
+from test_runners.unit_runner import get_unit_run_stats, run_unit_tests
+from utils.cmds import perform
+from utils.conf import get_vars_from_conf
+from utils.fs import create_dir, file_exists  # exit_if_not_exists,
+from utils.log import log, log_header  # log_new_line,; print_pretty_dict,
+from utils.ps import is_tool
+from utils.test.test_list import get_tl_from_dir, get_unit_tl_from_build_dir
 
 # Set needed python version
 REQUIRED_PYTHON_VERSION = "3.8"
