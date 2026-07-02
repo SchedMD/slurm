@@ -877,7 +877,13 @@ static void *_window_manager(void *arg)
 		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (len < 4) {
-			if (errno != SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT) {
+			/*
+			 * A plain socket EOF (ZERO_BYTES_SENT) or a TLS
+			 * close_notify (SHUTDOWN_ERROR) just means the client
+			 * closed the pty window connection; not an error.
+			 */
+			if ((errno != SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT) &&
+			    (errno != SLURM_COMMUNICATIONS_SHUTDOWN_ERROR)) {
 				error("%s: read window size error: %m",
 				      __func__);
 			}
