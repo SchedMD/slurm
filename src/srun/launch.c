@@ -1171,7 +1171,7 @@ extern void launch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			cio_fds->out.fd = open(job->ofname->name,
 					       file_flags, 0644);
 			if (errno == ENOENT) {
-				mkdirpath(job->ofname->name, 0755, false);
+				mkdirpath(job->ofname->name, 0777, false);
 				cio_fds->out.fd = open(job->ofname->name,
 						       file_flags, 0644);
 			}
@@ -1203,7 +1203,7 @@ extern void launch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			cio_fds->err.fd = open(job->efname->name,
 					       file_flags, 0644);
 			if (errno == ENOENT) {
-				mkdirpath(job->efname->name, 0755, false);
+				mkdirpath(job->efname->name, 0777, false);
 				cio_fds->err.fd = open(job->efname->name,
 						       file_flags, 0644);
 			}
