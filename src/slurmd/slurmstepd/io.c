@@ -1138,7 +1138,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			}
 
 			if (errno == ENOENT && !tried_mkdir) {
-				mkdir_rc = mkdirpath(task->ofname, 0755, false);
+				mkdir_rc = mkdirpath(task->ofname, 0777, false);
 				tried_mkdir = true;
 				if (mkdir_rc == SLURM_SUCCESS) {
 					debug("%s: Could not open stdout file '%s': '%s'. Retrying after successful path creation.",
@@ -1270,7 +1270,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			}
 
 			if (errno == ENOENT && !tried_mkdir) {
-				mkdir_rc = mkdirpath(task->efname, 0755, false);
+				mkdir_rc = mkdirpath(task->efname, 0777, false);
 				tried_mkdir = true;
 				if (mkdir_rc == SLURM_SUCCESS) {
 					debug("%s: Could not open stderr file '%s': '%s'. Retrying after successful path creation.",
