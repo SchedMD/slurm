@@ -71,6 +71,7 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/certgen.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gpu.h"
@@ -1411,6 +1412,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	 * Init all plugins after receiving the slurm.conf from the slurmd.
 	 */
 	if ((auth_g_init() != SLURM_SUCCESS) ||
+	    (certgen_g_init() != SLURM_SUCCESS) ||
 	    (conn_g_init() != SLURM_SUCCESS) ||
 	    (cgroup_g_init() != SLURM_SUCCESS) ||
 	    (hash_g_init() != SLURM_SUCCESS) ||
