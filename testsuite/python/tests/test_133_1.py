@@ -18,7 +18,23 @@ def compiled_program(tmp_path):
     return test_program
 
 
-@pytest.mark.parametrize("test_case", list(range(1, 6)))
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        1,
+        2,
+        3,
+        4,
+        5,
+        pytest.param(
+            6,
+            marks=pytest.mark.skipif(
+                atf.get_version("sbin/slurmctld") < (26, 5),
+                reason="Ticket 25473: leaf-relay fan-out fix in 26.05+",
+            ),
+        ),
+    ],
+)
 def test_topologyparam_routetree(compiled_program, test_case):
     """Test the TopologyParam=RouteTree"""
     # cwd = str(pathlib.Path(__file__).resolve().parent)
