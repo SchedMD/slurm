@@ -1170,6 +1170,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "SlurmSchedLogLevel", "%u",
 		     conf->sched_log_level);
 
+	add_key_pair(ret_list, "SlurmstepdParameters", "%s",
+		     conf->slurmstepd_params);
+
 	add_key_pair(ret_list, "SlurmctldPidFile", "%s",
 		     conf->slurmctld_pidfile);
 

@@ -687,6 +687,13 @@ extern int main(int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
+	/*
+	 * auth/slurm calls conmgr_init and we need to apply conmgr params
+	 * before conmgr init.
+	 */
+	if (slurm_conf.slurmstepd_params)
+		conmgr_set_params(slurm_conf.slurmstepd_params);
+
 	conmgr_init(0, DEF_CONMGR_THREAD_COUNT, 0);
 
 	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
