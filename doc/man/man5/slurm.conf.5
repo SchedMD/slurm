@@ -5270,6 +5270,63 @@ can run at the same time.
 .IP
 
 .TP
+\fBSerializerParameters\fR
+Comma-separated list of flags applied to all serializer plugins.
+.IP
+.RS
+.TP 10
+\fBcompact\fR
+Use compact output with minimal whitespace.
+.IP
+
+.TP
+\fBpretty\fR
+Use human-readable output with indentation and newlines.
+This is the default.
+.IP
+
+.TP
+\fBcomplex\fR
+Include the special floating-point values "Infinity" and "NaN" directly.
+By default these are replaced with placeholder numbers to ensure broad
+compatibility with various parsers.
+.IP
+
+.TP
+\fBno_tag\fR
+Do not emit YAML tags.  These tags ensure accurate preservation of data types;
+when set, some types may be inferred incorrectly.
+.RE
+.IP
+
+.TP
+\fBSerializerPlugins\fR
+Comma-separated list of serializer plugins to load.
+Defaults to all serializer plugins found on the system.
+Acceptable values at present are:
+.IP
+.RS
+.TP 10
+\fBjson\fR
+Serialize to and from JSON.
+
+\fBNOTE\fR: This serializer is currently required for default Slurm deployments;
+omitting it from the list of plugins may cause daemons to fail at startup.
+.IP
+
+.TP
+\fByaml\fR
+Serialize to and from YAML.
+.IP
+
+.TP
+\fBurl\-encoded\fR
+Deserialize from URL-encoded form data. Parsing only; serialization to
+URL-encoded form is not supported.
+.RE
+.IP
+
+.TP
 \fBSlurmctldAddr\fR
 An optional address to be used for communications to the currently active
 slurmctld daemon, normally used with Virtual IP addressing of the currently
