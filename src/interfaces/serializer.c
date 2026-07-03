@@ -381,6 +381,9 @@ extern int serializer_g_init(void)
 		rc = (*func_ptr->init)(flags);
 	}
 
+	if (!rc && !_find_serializer(MIME_TYPE_JSON))
+		warning("No serializer plugin loaded for %s.", MIME_TYPE_JSON);
+
 	slurm_mutex_unlock(&init_mutex);
 
 	return rc;
