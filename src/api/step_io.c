@@ -905,7 +905,6 @@ static int _read_io_init_msg(int fd, conn_t *conn, client_io_t *cio,
 	return SLURM_ERROR;
 }
 
-
 static bool
 _is_fd_ready(int fd)
 {
