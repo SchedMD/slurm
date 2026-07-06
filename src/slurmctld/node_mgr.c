@@ -2520,6 +2520,17 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 	new_config_ptr->feature     = xstrdup(config_ptr->feature);
 	new_config_ptr->gres        = xstrdup(config_ptr->gres);
 	new_config_ptr->topology_str = xstrdup(config_ptr->topology_str);
+	new_config_ptr->cpu_bind = config_ptr->cpu_bind;
+	new_config_ptr->suspend_time = config_ptr->suspend_time;
+	new_config_ptr->parameters = xstrdup(config_ptr->parameters);
+	new_config_ptr->tres_weights_str =
+		xstrdup(config_ptr->tres_weights_str);
+	if (config_ptr->tres_weights) {
+		new_config_ptr->tres_weights =
+			xcalloc(slurmctld_tres_cnt, sizeof(double));
+		memcpy(new_config_ptr->tres_weights, config_ptr->tres_weights,
+		       slurmctld_tres_cnt * sizeof(double));
+	}
 
 	_queue_consolidate_config_list();
 
