@@ -1066,6 +1066,7 @@ test_150_2   Test "--nodelist" + "--segment"
 test_150_3   Test topology-aware task distribution
 test_150_4   Test topology/flat alpha_step_rank with dynamic nodes
 test_150_5   Test slurmd first-registration gate for topology/instance/extra fields
+test_150_7   Test topology preserved when a partial node update splits the config
 
 test_151_#   Testing Oversubscribe
 ===========================================
