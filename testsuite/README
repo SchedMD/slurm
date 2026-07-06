@@ -882,6 +882,7 @@ test_116_52 /commands/srun/test_--exclusive_with_LaunchParamsExclAlloc
 test_116_53  Test MPI/PMIx signaling
 test_116_54  Test MPI/PMI2 signaling (requires MPICH)
 test_116_55  Test srun --async CLI behavior
+test_116_56  Test srun --relative
 
 test_117_#   Testing of sstat options.
 ======================================
