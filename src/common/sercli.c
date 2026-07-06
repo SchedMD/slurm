@@ -213,7 +213,7 @@ extern int data_parser_cli_load(data_parser_t **parser_ptr, void *acct_db_conn,
 static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 			   data_parser_t *parser)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = EINVAL;
 	buf_t *out = NULL;
 	serialize_dump_state_t *dump_state = NULL;
 	data_parser_dump_cli_ctxt_t *ctxt = data_parser_get_error_arg(parser);
@@ -230,10 +230,28 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
 				 ctxt->mime_type, SER_FLAGS_NONE);
 
-		if ((rc == ENOSPC) || !rc) {
+		if (!rc || ((rc == ENOSPC) && dump_state)) {
+			const size_t bytes = get_buf_offset(out);
+
 			xassert(out->magic == BUF_MAGIC);
-			(void) printf("%.*s", get_buf_offset(out),
-				      get_buf_data(out));
+			/* ENOSPC without any output means no progress */
+			xassert((rc != ENOSPC) || (bytes > 0));
+
+			errno = 0;
+			if (fwrite(get_buf_data(out), 1, bytes, stdout) !=
+			    bytes) {
+				rc = (errno ? errno : EIO);
+				error("Writing dump failed: %s",
+				      slurm_strerror(rc));
+				if (dump_state)
+					(void) serdes_dump(&dump_state, parser,
+							   type, obj, obj_bytes,
+							   NULL,
+							   ctxt->mime_type,
+							   SER_FLAGS_NONE);
+				break;
+			}
+
 			set_buf_offset(out, 0);
 		}
 
@@ -244,7 +262,17 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 		}
 	} while (dump_state);
 
-	printf("\n");
+	errno = 0;
+	if (!rc && (printf("\n") < 0)) {
+		rc = (errno ? errno : EIO);
+		error("Writing dump failed: %s", slurm_strerror(rc));
+	}
+
+	errno = 0;
+	if (!rc && fflush(stdout)) {
+		rc = (errno ? errno : EIO);
+		error("Flushing dump failed: %s", slurm_strerror(rc));
+	}
 
 	xassert(!dump_state);
 
