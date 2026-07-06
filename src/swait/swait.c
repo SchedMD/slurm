@@ -364,8 +364,9 @@ static void _print_drain(srun_steps_drained_msg_t *body)
 
 /*
  * conmgr on-message callback: authenticate, dispatch on msg_type, free msg.
- * On SRUN_STEPS_DRAINED, renders the completion per mode, sets
- * exit_decided, and requests conmgr shutdown.
+ * On SRUN_STEPS_DRAINED, renders the completion(s) per mode; in --follow (ALL)
+ * mode it prints each step and keeps waiting until the whole-set drain, which
+ * sets exit_decided and requests conmgr shutdown.
  * IN args      - conmgr callback args
  * IN msg       - unpacked message; freed before return
  * IN unpack_rc - non-zero if message unpack failed
@@ -403,7 +404,12 @@ static int _on_msg(conmgr_callback_args_t args, slurm_msg_t *msg, int unpack_rc,
 		srun_steps_drained_msg_t *body = msg->data;
 		bool unobserved = false;
 
-		/* Whole-set / per-step drain: final line, then stop. */
+		if ((opt.mode == STEPS_DRAINED_SUB_ALL) && body &&
+		    (body->step_id.step_id != NO_VAL)) {
+			_print_step(body);
+			break;
+		}
+
 		if (opt.mode != STEPS_DRAINED_SUB_STEP) {
 			_print_drain(body);
 		} else if (body && (body->step_id.step_id != NO_VAL)) {

@@ -4,11 +4,13 @@ Block until a job's steps complete.
 
 With no step id, swait waits until the job's running and pending --async
 steps have all drained. With <jobid>.<stepid> it waits for that one step.
+With --follow it reports every step's completion until the steps drain.
 
 If no job id is given, swait reads SLURM_JOB_SLUID, then SLURM_JOB_ID.
 The target job must have been launched with stepmgr enabled.
 
 Options:
+      --follow            report every step's completion until they drain
   -Q, --quiet             suppress info messages (stderr) and step output
                           (mutually exclusive with --verbose)
       --timeout=SECS      give up after SECS seconds

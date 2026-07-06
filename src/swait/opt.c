@@ -56,6 +56,7 @@
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_AUTOCOMP 0x102
 #define OPT_LONG_TIMEOUT 0x103
+#define OPT_LONG_FOLLOW 0x104
 
 swait_opt_t opt = {
 	.array_job_id = NO_VAL,
@@ -170,6 +171,7 @@ extern void parse_command_line(int argc, char **argv)
 	int opt_char = 0, option_index = 0;
 	static struct option long_options[] = {
 		{ "autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP },
+		{ "follow", no_argument, 0, OPT_LONG_FOLLOW },
 		{ "help", no_argument, 0, OPT_LONG_HELP },
 		{ "quiet", no_argument, 0, 'Q' },
 		{ "timeout", required_argument, 0, OPT_LONG_TIMEOUT },
@@ -213,6 +215,9 @@ extern void parse_command_line(int argc, char **argv)
 				exit(SWAIT_RC_ERROR);
 			}
 			break;
+		case OPT_LONG_FOLLOW:
+			opt.follow = true;
+			break;
 		default:
 			info("Try \"swait --help\" for more information");
 			exit(SWAIT_RC_ERROR);
@@ -239,7 +244,13 @@ extern void parse_command_line(int argc, char **argv)
 	}
 	FREE_NULL_BITMAP(id.array_bitmap);
 
-	if (opt.target.step_id != NO_VAL)
+	if (opt.follow && (opt.target.step_id != NO_VAL)) {
+		error("--follow waits on the whole job; do not combine it with a step id");
+		exit(SWAIT_RC_ERROR);
+	}
+	if (opt.follow)
+		opt.mode = STEPS_DRAINED_SUB_ALL;
+	else if (opt.target.step_id != NO_VAL)
 		opt.mode = STEPS_DRAINED_SUB_STEP;
 	else
 		opt.mode = STEPS_DRAINED_SUB_DRAIN;

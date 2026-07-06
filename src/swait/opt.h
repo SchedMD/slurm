@@ -56,6 +56,7 @@
 typedef struct {
 	uint32_t array_job_id; /* array master id from input, or NO_VAL */
 	uint32_t array_task_id; /* task offset from input, or NO_VAL */
+	bool follow; /* --follow: stream every step end until drain (ALL) */
 	uint16_t mode; /* derived steps_sub_mode_t */
 	bool quiet; /* --quiet */
 	slurm_step_id_t target; /* SLUID and/or job_id from argv/env;
