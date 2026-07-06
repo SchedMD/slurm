@@ -5052,19 +5052,24 @@ the cons_tres plugin should be used instead.
 
 .TP
 \fBSelectTypeParameters\fR
-The permitted values of \fBSelectTypeParameters\fR depend upon the
-configured value of \fBSelectType\fR.
-The only supported options for \fBSelectType=select/linear\fR are
-\fBCR_ONE_TASK_PER_CORE\fR and
-\fBCR_Memory\fR, which treats memory as a consumable resource and
-prevents memory over subscription with job preemption or gang scheduling.
-By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
-considering their memory consumption.
-By default \fBSelectType=select/cons_tres\fR uses \fBCR_Core_Memory\fR, which
-allocates Core to jobs while considering their memory consumption.
+Controls how the \fBSelectType\fR algorithm will allocate nodes to jobs.
+Multiple comma\-separated options may be provided as long as no conflicts
+described below are present. The permitted values depend upon the configured
+value of \fBSelectType\fR.
 
-The following options are supported by the \fBSelectType=select/cons_tres\fR
-plugin:
+
+By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
+considering their memory consumption. The only supported options for
+\fBselect/linear\fR are \fBCR_ONE_TASK_PER_CORE\fR (described below) and
+\fBCR_Memory\fR, which treats memory as a consumable resource and
+prevents memory over\-subscription with job preemption or gang scheduling.
+
+By default \fBSelectType=select/cons_tres\fR uses \fBCR_Core_Memory\fR, which
+allocates cores to jobs while considering their memory consumption.
+
+Any one of the following options may be used with the \fBselect/cons_tres\fR
+plugin to determine whether CPU resources are consumed by socket, core, or
+logical CPU, and whether memory is consumed:
 .IP
 .RS
 .TP
@@ -5073,7 +5078,7 @@ CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
 count of cores or hyper\-threads on the node depending upon the desired minimum
 resource allocation.
-The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
+The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR. and
 \fBThreadsPerCore\fR may optionally be configured and result in job
 allocations which have improved locality; however doing so will prevent
 more than one job from being allocated on each core.
@@ -5081,14 +5086,8 @@ more than one job from being allocated on each core.
 
 .TP
 \fBCR_CPU_Memory\fR
-CPUs and memory are consumable resources.
-Configure the number of \fBCPUs\fR on each node, which may be equal to the
-count of cores or hyper\-threads on the node depending upon the desired minimum
-resource allocation.
-The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR and
-\fBThreadsPerCore\fR may optionally be configured and result in job
-allocations which have improved locality; however doing so will prevent
-more than one job from being allocated on each core.
+CPUs and memory are consumable resources. Refer to \fBCR_CPU\fR for details of
+how CPUs are consumed.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
 
@@ -5099,27 +5098,44 @@ On nodes with hyper\-threads, each thread is counted as a CPU to
 satisfy a job's resource requirement, but multiple jobs are not
 allocated threads on the same core.
 The count of CPUs allocated to a job is rounded up to account for every
-CPU on an allocated core. This will also impact total allocated memory when
--\-mem\-per\-cpu is used to be multiply of total number of CPUs on allocated cores.
+CPU on an allocated core, which may also impact total allocated memory
+if it is derived from \fB\-\-mem\-per\-cpu\fR.
 .IP
 
 .TP
 \fBCR_Core_Memory\fR
-Cores and memory are consumable resources.
-On nodes with hyper\-threads, each thread is counted as a CPU to
-satisfy a job's resource requirement, but multiple jobs are not
-allocated threads on the same core.
-The count of CPUs allocated to a job may be rounded up to account for every
-CPU on an allocated core.
+Cores and memory are consumable resources. Refer to \fBCR_Core\fR for details of
+how cores are consumed.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
+
+.TP
+\fBCR_Socket\fR
+Sockets are consumable resources.
+On nodes with multiple cores, each core or thread is counted as a CPU
+to satisfy a job's resource requirement, but multiple jobs are not
+allocated resources on the same socket.
+.IP
+
+.TP
+\fBCR_Socket_Memory\fR
+Sockets and memory are consumable resources. Refer to \fBCR_Socket\fR for
+details of how sockets are consumed.
+Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
+.RE
+
+.IP
+Any number of the following options may be used with the \fBselect/cons_tres\fR
+plugin to further adjust selection behavior:
+.IP
+.RS
 
 .TP
 \fBCR_ONE_TASK_PER_CORE\fR
 Allocate one task per core by default.
 Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
-\fBNOTE\fR: This option cannot be used with CR_CPU*.
+\fBNOTE\fR: This option cannot be used with \fBCR_CPU*\fR.
 .IP
 
 .TP
@@ -5128,8 +5144,8 @@ Allocate cores within a node using block distribution by default.
 This is a pseudo\-best\-fit algorithm that minimizes the number of
 boards and minimizes the number of sockets (within minimum boards)
 used for the allocation.
-This default behavior can be overridden specifying a particular
-"\-m" parameter with srun/salloc/sbatch.
+This default behavior can be overridden by specifying a particular
+\fB\-\-distribution\fR option at job submission.
 Without this option, cores will be allocated cyclically across the sockets.
 .IP
 
@@ -5141,7 +5157,7 @@ serial jobs as idle resources will tend to be highly fragmented, resulting
 in parallel jobs being distributed across many nodes.
 Note that node \fBWeight\fR takes precedence over how many idle resources are
 on each node.
-Also see the partition configuration parameter \fBLLN\fR
+Also see the partition configuration parameter \fBLLN\fR to
 use the least loaded nodes in selected partitions.
 .IP
 
@@ -5157,8 +5173,8 @@ If the job starts ten tasks across those two nodes without this option, it will
 start five tasks on each of the two nodes.
 With this option, eight tasks will be started on the first node and two tasks
 on the second node.
-This can be superseded by "NoPack" in srun's "\-\-distribution" option.
-CR_Pack_Nodes only applies when the "block" task distribution method is used.
+This only applies when \fB\-\-distribution=block\fR option is used.
+This can be superseded by setting the \fBNoPack\fR distribution option.
 .IP
 
 .TP
@@ -5168,23 +5184,6 @@ least loaded device (in terms of already allocated fraction). This way jobs are
 spread across GRES devices on the node, instead of the default behavior where
 the first available device is used.
 This option is only supported by select/cons_tres plugin.
-.IP
-
-.TP
-\fBCR_Socket\fR
-Sockets are consumable resources.
-On nodes with multiple cores, each core or thread is counted as a CPU
-to satisfy a job's resource requirement, but multiple jobs are not
-allocated resources on the same socket.
-.IP
-
-.TP
-\fBCR_Socket_Memory\fR
-Memory and sockets are consumable resources.
-On nodes with multiple cores, each core or thread is counted as a CPU
-to satisfy a job's resource requirement, but multiple jobs are not
-allocated resources on the same socket.
-Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
 
 .TP
@@ -5214,16 +5213,16 @@ This can be overridden with \fB\-\-gres\-flags=multiple\-tasks\-per\-sharing\fR.
 Disable topology\-aware task distribution for steps. By default, when a
 topology plugin is configured, tasks are distributed to nodes following
 topology order. This option reverts to the standard bitmap order.
-.IP
-
-.LP
-\fBNOTE\fR: If memory isn't configured as a consumable resource (CR_CPU,
-CR_Core or CR_Socket without _Memory) memory can be oversubscribed and will not
-be constrained by task/cgroup even if it is configured in cgroup.conf. In this
-case the \fI--mem\fR option is only used to filter out nodes with lower
-configured memory and does not take running jobs into account. For instance,
-two jobs requesting all the memory of a node can run at the same time.
 .RE
+
+.IP
+\fBNOTE\fR: If memory isn't configured as a consumable resource (\fBCR_CPU\fR,
+\fBCR_Core\fR, or \fBCR_Socket\fR without \fB_Memory\fR), memory can be
+oversubscribed and will not be constrained by \fBtask/cgroup\fR even if it is
+configured in \fBcgroup.conf\fR. In this case the \fB--mem\fR option is only
+used to filter out nodes with lower configured memory and does not take running
+jobs into account. For instance, two jobs requesting all the memory of a node
+can run at the same time.
 .IP
 
 .TP
