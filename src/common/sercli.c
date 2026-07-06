@@ -230,18 +230,17 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
 				 ctxt->mime_type, SER_FLAGS_NONE);
 
-		/* Try to provide large enough buffer before failing */
-		if ((rc == ENOSPC) && !(rc = try_grow_buf(out, BUF_SIZE)))
-			continue;
-
-		if (rc) {
-			error("Dumping failed: %s", slurm_strerror(rc));
-			xassert(!dump_state);
-		} else {
+		if ((rc == ENOSPC) || !rc) {
 			xassert(out->magic == BUF_MAGIC);
 			(void) printf("%.*s", get_buf_offset(out),
 				      get_buf_data(out));
 			set_buf_offset(out, 0);
+		}
+
+		if (rc && ((rc != ENOSPC) || !dump_state)) {
+			error("Dumping failed: %s", slurm_strerror(rc));
+			xassert(!dump_state);
+			break;
 		}
 	} while (dump_state);
 
