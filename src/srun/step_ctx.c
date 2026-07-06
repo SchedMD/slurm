@@ -321,11 +321,13 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 			close(sock);
 	} else {
 		if (step_resp->state == JOB_PENDING) {
+			bool newly_pending =
+				(step_req->step_id.step_id == NO_VAL);
 			/*
 			 * Controller queued the step with a real step_id.
 			 * Record it.
 			 */
-			if (step_req->step_id.step_id == NO_VAL)
+			if (newly_pending)
 				step_req->step_id.step_id =
 					step_resp->step_id.step_id;
 			if (step_req->array_task_id != NO_VAL) {
@@ -347,6 +349,9 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 				errno = ESLURM_STEP_QUEUED;
 				return NULL;
 			}
+
+			if (newly_pending)
+				info("%ps queued", &step_req->step_id);
 
 			*retry_cause = ESLURM_STEP_QUEUED;
 			errnum = _wait_pending_step(sock, timeout,
