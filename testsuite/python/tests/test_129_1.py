@@ -2,6 +2,7 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 # import re
+import json
 import os
 import pwd
 
@@ -52,3 +53,33 @@ User - {user}:DefaultAccount=test_account
     assert (
         user_out == user
     ), f"Case was not be preserved for imported user name ({user_out})"
+
+
+def test_PreserveCaseAll_sets_case_flags():
+    """Verify PreserveCaseAll enables every preserve-case connection flag"""
+
+    atf.require_version(
+        (26, 11),
+        "sbin/slurmdbd",
+        reason="PreserveCaseAll was added in 26.11",
+    )
+    atf.require_version(
+        (26, 11),
+        "bin/sacctmgr",
+        reason="PreserveCaseAll JSON validation requires 26.11 sacctmgr",
+    )
+
+    atf.set_config_parameter("Parameters", "PreserveCaseAll", source="slurmdbd")
+
+    expected_flags = {"PreserveCaseResource", "PreserveCaseUser"}
+    output = atf.run_command_output(
+        "sacctmgr --json show configuration",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    config = json.loads(output)["slurmdbd_conf"]
+    flags = set(config.get("PersistConnFlags", []))
+
+    assert (
+        expected_flags <= flags
+    ), f"PreserveCaseAll did not set all flags. Expected superset of {expected_flags}, got {flags}"
