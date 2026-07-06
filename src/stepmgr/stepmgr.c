@@ -1897,7 +1897,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		uint32_t cnt = 0;
 		bitstr_t *node_bitmap = NULL;
 
-		if ((step_spec->flags & SSF_OVERLAP_FORCE)) {
+		if ((step_spec->flags & SSF_OVERLAP_FORCE) ||
+		    (step_spec->relative != NO_VAL16)) {
 			cnt = bit_set_count(nodes_avail);
 			node_bitmap = nodes_avail;
 		} else if (nodes_idle) {
