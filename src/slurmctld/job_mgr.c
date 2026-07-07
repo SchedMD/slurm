@@ -7079,9 +7079,17 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 	job_desc.min_nodes = detail_ptr->min_nodes;
-	/* _part_access_check looks for NO_VAL instead of 0 */
-	job_desc.max_nodes = detail_ptr->max_nodes ?
-		detail_ptr->max_nodes : NO_VAL;;
+	/*
+	 * _part_access_check looks for NO_VAL instead of 0. An implicit
+	 * max_nodes without --ntasks-per-node is a loose bound; don't let it
+	 * reject the job against MaxNodes (get_node_cnts() still clamps).
+	 */
+	if ((job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
+	    !detail_ptr->ntasks_per_node)
+		job_desc.max_nodes = NO_VAL;
+	else
+		job_desc.max_nodes =
+			detail_ptr->max_nodes ? detail_ptr->max_nodes : NO_VAL;
 	if (check_min_time && job_ptr->time_min)
 		job_desc.time_limit = job_ptr->time_min;
 	else
