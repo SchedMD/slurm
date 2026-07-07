@@ -1420,6 +1420,7 @@ done:
 	}
 	if (srun) {
 		xfree(srun->key);
+		xfree(srun->tls_cert);
 		xfree(srun);
 	}
 	return SLURM_SUCCESS;
@@ -1427,6 +1428,7 @@ done:
 rwfail:
 	if (srun) {
 		xfree(srun->key);
+		xfree(srun->tls_cert);
 		xfree(srun);
 	}
 	xfree(pids);
