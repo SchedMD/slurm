@@ -362,6 +362,8 @@ typedef struct {
 				   * than this in months or days  */
 	uint32_t purge_jobenv; /* purge job environments older
 				* than this in months or days  */
+	char *serializer_params; /* SerializerParameters */
+	char *serializer_plugins; /* SerializerPlugins */
 	char *storage_loc; /* database name		*/
 	char *storage_pass_script;
 	char *storage_user;

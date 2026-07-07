@@ -262,6 +262,12 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	add_key_pair(my_list, "SLURMDBD_VERSION", "%s", SLURM_VERSION_STRING);
 
+	add_key_pair(my_list, "SerializerParameters", "%s",
+		     slurmdbd_conf->serializer_params);
+
+	add_key_pair(my_list, "SerializerPlugins", "%s",
+		     slurmdbd_conf->serializer_plugins);
+
 	add_key_pair(my_list, "SlurmUser", "%s(%u)", slurm_conf.slurm_user_name,
 		     slurm_conf.slurm_user_id);
 

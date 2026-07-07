@@ -8894,6 +8894,8 @@ static const parser_t PARSER_ARRAY(SLURMDBD_CONF)[] = {
 	add_parse(SLURMDB_PURGE, purge_usage, "PurgeUsageAfter", "purge usage data older than this in hours, days, or months"),
 	add_parse(SLURMDB_PURGE, purge_jobscript, "PurgeJobScriptAfter", "purge job scripts older than this in hours, days, or months"),
 	add_parse(SLURMDB_PURGE, purge_jobenv, "PurgeJobEnvAfter", "purge job environments older than this in hours, days, or months"),
+	add_parse(CSV_STRING, serializer_params, "SerializerParameters", "Parameters for serializer plugins"),
+	add_parse(CSV_STRING, serializer_plugins, "SerializerPlugins", "Serializer plugins to load"),
 	add_parse(STRING, storage_loc, "StorageLoc", "name of the database where accounting records are written (default slurm_acct_db)"),
 	add_parse(STRING, storage_pass_script, "StoragePassScript", "path to executable script that emits ephemeral DB authentication tokens used in place of StoragePass"),
 	add_parse(STRING, storage_user, "StorageUser", "username used to connect to the accounting database (defaults to the user running slurmdbd)"),

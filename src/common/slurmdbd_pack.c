@@ -1396,6 +1396,8 @@ static void _pack_slurmdbd_conf(const persist_msg_t *pmsg,
 		pack32(msg->purge_usage, buffer);
 		pack32(msg->purge_jobscript, buffer);
 		pack32(msg->purge_jobenv, buffer);
+		packstr(msg->serializer_params, buffer);
+		packstr(msg->serializer_plugins, buffer);
 		/* never send storage_loc */
 		packstr("", buffer);
 		/* never send storage_pass_script */
@@ -1475,6 +1477,8 @@ static int _unpack_slurmdbd_conf(persist_msg_t *pmsg,
 		safe_unpack32(&build_ptr->purge_usage, buffer);
 		safe_unpack32(&build_ptr->purge_jobscript, buffer);
 		safe_unpack32(&build_ptr->purge_jobenv, buffer);
+		safe_unpackstr(&build_ptr->serializer_params, buffer);
+		safe_unpackstr(&build_ptr->serializer_plugins, buffer);
 		safe_unpackstr(&build_ptr->storage_loc, buffer);
 		safe_unpackstr(&build_ptr->storage_pass_script, buffer);
 		safe_unpackstr(&build_ptr->storage_user, buffer);
