@@ -1802,6 +1802,7 @@ extern void slurm_free_step_id(slurm_step_id_t *msg);
 extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 extern void slurm_free_update_node_msg(update_node_msg_t * msg);
+extern void slurm_free_update_tres_msg(update_tres_msg_t *msg);
 extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg);
 extern void slurm_free_update_part_msg(partition_info_t *msg);
 extern void slurm_free_delete_part_msg(delete_part_msg_t * msg);

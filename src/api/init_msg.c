@@ -170,6 +170,13 @@ void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 	update_node_msg->weight = NO_VAL;
 }
 
+extern void slurm_init_update_tres_msg(update_tres_msg_t *update_tres_msg)
+{
+	memset(update_tres_msg, 0, sizeof(*update_tres_msg));
+	update_tres_msg->count = NO_VAL64;
+	update_tres_msg->action = (update_mode_t) NO_VAL;
+}
+
 /*
  * slurm_init_trigger_msg - initialize trigger clear/update message
  * OUT trigger_info_msg - user defined trigger descriptor

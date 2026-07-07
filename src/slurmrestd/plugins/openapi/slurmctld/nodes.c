@@ -96,6 +96,27 @@ cleanup:
 	FREE_NULL_DATA(ppath);
 }
 
+static void _update_tres(ctxt_t *ctxt)
+{
+	int rc;
+	data_t *ppath = data_set_list(data_new());
+	update_tres_msg_t *tres_msg = xmalloc(sizeof(*tres_msg));
+
+	slurm_init_update_tres_msg(tres_msg);
+
+	if ((rc = DATA_PARSE(ctxt->parser, UPDATE_TRES_MSG, *tres_msg,
+			     ctxt->query, ppath)))
+		goto cleanup;
+
+	if (!rc && slurm_update_tres(tres_msg))
+		resp_error(ctxt, errno, __func__,
+			   "Failure to update TRES %s on %s", tres_msg->name,
+			   tres_msg->node_names);
+
+cleanup:
+	slurm_free_update_tres_msg(tres_msg);
+	FREE_NULL_DATA(ppath);
+}
 
 static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
@@ -192,6 +213,18 @@ cleanup:
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(req_ptr);
 	xfree(req.response);
 	xfree(node_msg.extra);
+}
+
+extern int op_handler_tres(openapi_ctxt_t *ctxt)
+{
+	if (ctxt->method == HTTP_REQUEST_POST)
+		_update_tres(ctxt);
+	else
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+
+	return SLURM_SUCCESS;
 }
 
 extern int op_handler_nodes(openapi_ctxt_t *ctxt)

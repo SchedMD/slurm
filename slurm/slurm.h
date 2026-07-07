@@ -3516,6 +3516,32 @@ typedef struct slurm_update_node_msg {
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 
+/*
+ * Administrative drain or resume of individual TRES.
+ *
+ * name says what to operate on and node_names says where it lives; one of
+ * select_all, index, uuid or count says which TRES, and action says
+ * whether to drain them, resume them, or make them the entire drained set.
+ * The selectors are mutually exclusive: callers must not set more than one,
+ * and the controller rejects the request if they do. The one exception is a
+ * uuid and an index together, which name a single device two ways: the uuid
+ * selects it and the index is checked against where it currently sits, so a
+ * line reported by "scontrol show drainedtres" can be handed back as-is.
+ *
+ * node_names is required for node-local TRES ("gres/...", "cpu", "mem"), which
+ * is every TRES currently supported here.
+ */
+typedef struct {
+	update_mode_t action; /* how name's drained set is updated */
+	uint64_t count; /* count of TRES units, or NO_VAL64 */
+	char *index; /* index range list, e.g. "0,2-3" */
+	char *name; /* "gres/<name>[:<type>]", "cpu" or "mem" */
+	char *node_names; /* nodelist expression */
+	char *reason; /* why, required unless action is UPDATE_REMOVE */
+	uint16_t select_all; /* non-zero: every TRES of name */
+	char *uuid; /* comma separated device UUIDs */
+} update_tres_msg_t;
+
 typedef struct job_sbcast_cred_msg {
 	char         *node_list;	/* assigned list of nodes */
 	void *sbcast_cred;		/* opaque data structure */
@@ -4773,6 +4799,20 @@ extern int slurm_update_node(update_node_msg_t *node_msg);
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int slurm_delete_node(update_node_msg_t *node_msg);
+
+/*
+ * slurm_init_update_tres_msg - initialize TRES update message
+ * OUT update_tres_msg - user defined TRES update descriptor.
+ */
+extern void slurm_init_update_tres_msg(update_tres_msg_t *update_tres_msg);
+
+/*
+ * slurm_update_tres - issue RPC to drain or resume individual TRES,
+ *	only usable by user root
+ * IN tres_msg - description of the TRES update
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_tres(update_tres_msg_t *tres_msg);
 
 /*****************************************************************************\
  *	SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS

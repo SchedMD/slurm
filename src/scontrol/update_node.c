@@ -185,17 +185,7 @@ scontrol_update_node (int argc, char **argv)
 			}
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
-			int len;
-
-			if (*val == '"')
-				reason_str = xstrdup(val + 1);
-			else
-				reason_str = xstrdup(val);
-
-			len = strlen(reason_str) - 1;
-			if ((len >= 0) && (reason_str[len] == '"'))
-				reason_str[len] = '\0';
-
+			reason_str = scontrol_strip_quotes(val);
 			node_msg.reason = reason_str;
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "ResumeAfter", MAX(tag_len, 1))) {

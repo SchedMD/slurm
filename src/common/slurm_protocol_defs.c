@@ -2115,6 +2115,18 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	}
 }
 
+extern void slurm_free_update_tres_msg(update_tres_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->index);
+		xfree(msg->name);
+		xfree(msg->node_names);
+		xfree(msg->reason);
+		xfree(msg->uuid);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg)
 {
 	if (msg) {
@@ -5438,6 +5450,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_NODE:
 	case REQUEST_DELETE_NODE:
 		slurm_free_update_node_msg(data);
+		break;
+	case REQUEST_UPDATE_TRES:
+		slurm_free_update_tres_msg(data);
 		break;
 	case REQUEST_RUN_POWER_ACTION:
 		slurm_free_run_power_action_msg(data);

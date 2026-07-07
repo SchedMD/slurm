@@ -278,6 +278,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_TRES_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_TRES_NCT, /* slurmdb_tres_nct_rec_t */
 	DATA_PARSER_TRES_NCT_PTR, /* slurmdb_tres_nct_rec_t* */
+	DATA_PARSER_TRES_ACTION, /* uint32_t (placeholder for update_mode_t) */
 	DATA_PARSER_USER_ID, /* User from numeric UID */
 	DATA_PARSER_USER_ID_STRING, /* char * - user id string */
 	DATA_PARSER_USER_ID_STRING_LIST, /* list_t of string user id */
@@ -380,6 +381,8 @@ typedef enum {
 	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* Remove when 25.11 is no longer supported: was removed field node_info_t->select_nodeinfo */
 	DATA_PARSER_UPDATE_NODE_MSG, /* update_node_msg_t */
 	DATA_PARSER_UPDATE_NODE_MSG_PTR, /* update_node_msg_t* */
+	DATA_PARSER_UPDATE_TRES_MSG, /* update_tres_msg_t */
+	DATA_PARSER_UPDATE_TRES_MSG_PTR, /* update_tres_msg_t* */
 	DATA_PARSER_OPENAPI_CREATE_NODE_REQ, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_CREATE_NODE_REQ_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_LICENSES_RESP, /* openapi_resp_license_info_msg_t */

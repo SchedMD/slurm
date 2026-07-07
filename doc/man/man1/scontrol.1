@@ -847,17 +847,18 @@ coordinator to \fBrelease\fR the job without admin intervention.
 
 .TP
 \fBupdate\fR <\fISPECIFICATION\fR>
-Update job, step, node, partition, reservation, or HRES layer configuration
-per the supplied specification. \fISPECIFICATION\fP is in the same format as the
-Slurm configuration file and the output of the \fIshow\fP command described
-above. It may be desirable to execute the \fIshow\fP command (described above)
-on the specific entity you want to update, then use cut\-and\-paste tools to
-enter updated configuration values to the \fIupdate\fP. Note that while most
-configuration values can be changed using this command, not all can be changed
-using this mechanism. In particular, the hardware configuration of a node or
-the physical addition or removal of nodes from the cluster may only be
-accomplished through editing the Slurm configuration file and executing
-the \fIreconfigure\fP command (described above).
+Update job, step, node, TRES, partition, reservation, or HRES layer
+configuration per the supplied specification. \fISPECIFICATION\fP is in the
+same format as the Slurm configuration file and the output of the \fIshow\fP
+command described above. It may be desirable to execute the \fIshow\fP command
+(described above) on the specific entity you want to update, then use
+cut\-and\-paste tools to enter updated configuration values to the
+\fIupdate\fP. Note that while most configuration values can be changed using
+this command, not all can be changed using this mechanism. In particular, the
+hardware configuration of a node or the physical addition or removal of nodes
+from the cluster may only be accomplished through editing the Slurm
+configuration file and executing the \fIreconfigure\fP command (described
+above).
 .IP
 
 .TP
@@ -1884,6 +1885,8 @@ FOR UPDATE COMMAND.
 INFINITE, NONE, and \-1 are always accepted on create.
 
 .SH "NODES \- SPECIFICATIONS FOR UPDATE COMMAND"
+To drain or resume individual TRES on a node rather than change the node
+itself, see \fBTRES \- SPECIFICATIONS FOR UPDATE COMMAND\fR below.
 
 .TP
 \fBNodeName\fR=<\fIname\fR>
@@ -2152,6 +2155,19 @@ scheduler will power it up and registration will follow. A
 While all of the above states are valid, some of them are not valid new
 node states given their prior state.
 
+\fBNOTE\fR: \fBDEGRADED\fR cannot be set with \fBState\fR; the controller
+maintains it on its own while any of the node's TRES are drained.
+\fBState\fR=\fBRESUME\fR returns those that are present to service along
+with the node. An absent GRES index stays drained, and \fBDEGRADED\fR
+stays with it.
+\fBState\fR=\fBUNDRAIN\fR, \fBState\fR=\fBRESUME_KEEP_TRES\fR, and
+\fBState\fR=\fBIDLE\fR leave drained TRES alone, so under those a node
+leaves \fBDEGRADED\fR only once every drained TRES has been returned to
+service with \fBscontrol update TresName=... Action=Resume\fR, which is
+also how a subset of them is resumed.
+A node that was drained for exceeding \fBMaxDrainedTres\fR is drained again at
+its next registration unless the offending TRES are resumed first.
+
 \fBNOTE\fR: The scontrol command should not be used to change node state on
 Cray systems. Use Cray tools such as \fIxtprocadmin\fR instead.
 .IP
@@ -2339,6 +2355,16 @@ the process of completing.
 .IP
 
 .TP
+\fBDEGRADED\fR
+One or more of the node's TRES (GRES, CPUs, or memory) have been drained with
+\fBscontrol update TresName=...\fR, or automatically because a device is
+absent, and are unavailable to new jobs, while the
+rest of the node stays schedulable. The drained TRES are listed by
+\fBDrainedTRES\fR. The flag is cleared once everything has been returned to
+service.
+.IP
+
+.TP
 \fBDRAIN\fR
 The node is not accepting any new jobs and any currently running jobs will
 complete.
@@ -2413,6 +2439,39 @@ Indicates the node is in an advanced reservation and not generally available.
 .RE
 
 .TP
+\fBDrainedTRES\fR
+The node's TRES that have been marked unavailable with \fBscontrol update
+TresName=...\fR, or automatically because a device is absent, as a
+comma\-separated list. Omitted when nothing on the
+node is drained. Each entry carries the \fBReason\fR that was given for it in
+parentheses, or "no reason" when none was recorded. The entries take these
+forms:
+.IP
+.RS
+.TP
+\fIname\fR\fB(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
+Drained devices of a device\-tracked GRES, by index (e.g.
+"gpu(IDX:0,2\-3)(ecc_errors)"). Devices sharing the same reason are grouped
+into one entry.
+.IP
+.TP
+\fIname\fR[\fB:\fR\fItype\fR]\fB:\fR\fIcount\fR\fB(\fR\fIreason\fR\fB)\fR
+A drained count of a count\-only GRES (e.g. "bandwidth:lustre:2(bad_results)").
+.IP
+.TP
+\fBcpu(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
+Drained CPUs, as abstract CPU IDs (e.g. "cpu(IDX:0,2\-3)(flaky_cores)").
+.IP
+.TP
+\fBmem:\fR\fIMiB\fR\fB(\fR\fIreason\fR\fB)\fR
+Memory removed from the schedulable pool, in MiB (e.g. "mem:4096(bad_dimm)").
+.RE
+.IP
+Shared GRES (\fBshard\fR, \fBmps\fR) are not listed here; see the \fBNOTE\fR on
+shared GRES under \fBTRES \- SPECIFICATIONS FOR UPDATE COMMAND\fR below.
+.IP
+
+.TP
 The meaning of the energy information is as follows:
 .IP
 .RS
@@ -2439,6 +2498,136 @@ If the reported value is "n/s" (not supported), the node does not support the
 configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
 accounting for nodes is disabled.
 .RE
+
+.SH "TRES \- SPECIFICATIONS FOR UPDATE COMMAND"
+Drain or resume individual TRES. A drained TRES is excluded from future
+allocations while the rest of the node stays schedulable; the node is marked
+\fBDEGRADED\fR for as long as anything on it is drained.
+
+.TP
+\fBTresName\fR=<\fItres\fR>
+Identify the TRES to be updated. This specification is required. \fItres\fR is
+"gres/<\fIname\fR>[:<\fItype\fR>]", \fBcpu\fR, or \fBmem\fR (\fBmemory\fR is
+accepted as an alias). \fBAction\fR must be given to say what to do with the
+TRES, and a selector must be given to say which TRES: \fBIndex\fR
+for device\-tracked GRES and CPUs, \fBUuid\fR for device\-tracked GRES whose
+devices report a UUID, and \fBCount\fR for count\-only TRES, which have no
+individual identity. \fBIndex\fR and \fBUuid\fR may be given together to name
+one device both ways, unless either of them is \fBALL\fR, which already selects
+every device of \fBTresName\fR and so cannot be combined with another
+selector. \fBCount\fR may not be combined with either.
+.IP
+
+.TP
+\fBAction\fR=Drain|Resume|SetDrain
+What to do with the selected TRES of \fBTresName\fR.
+.RS
+.TP
+\fBDrain\fR
+.RS
+Drain the selected TRES in addition to any already drained. Requires
+\fBReason\fR.
+.RE
+.TP
+\fBResume\fR
+.RS
+Resume the selected TRES. \fBReason\fR is not accepted, since a resume has
+nothing to record one against.
+.RE
+.TP
+\fBSetDrain\fR
+Make the drained set of \fBTresName\fR exactly the selected TRES: those
+that are not drained are drained, and drained TRES that were not
+selected are resumed. Requires \fBReason\fR, which is recorded against every
+selected TRES.
+
+\fBNOTE\fR: \fBSetDrain\fR is scoped to what \fBTresName\fR names. It never
+disturbs a different TRES, and when \fBTresName\fR carries a type it never
+disturbs a different type. Running the same \fBSetDrain\fR twice makes no
+further change, which \fBDrain\fR of a count does not guarantee.
+.RE
+.IP
+
+.TP
+\fBCount\fR=<\fIcount\fR>|ALL
+Select a count of \fBTresName\fR TRES units, or \fBALL\fR for all of them. For
+\fBmem\fR, \fIcount\fR is in MiB.
+.IP
+
+.TP
+\fBIndex\fR=<\fIindexes\fR>|ALL
+Select specific device or CPU indexes of \fBTresName\fR. \fIindexes\fR is a
+range list such as "2" or "0,2\-3", or \fBALL\fR for all of them. For GRES the
+indexes match what \fBscontrol show node\fR prints; if \fBTresName\fR carries a
+type, every listed index must be of that type. For CPUs the indexes are
+abstract CPU IDs; selecting any thread marks the entire physical core.
+.IP
+
+.TP
+\fBNodeName\fR=<\fInodelist\fR>
+Identify the node or nodes the TRES lives on. Required for node\-local TRES,
+which is every TRES currently supported here: \fBgres/\fR, \fBcpu\fR, and
+\fBmem\fR. Accepts the same node list forms as \fBscontrol update NodeName\fR.
+The named nodes are not otherwise modified; only the state of \fBTresName\fR on
+them changes.
+.IP
+
+.TP
+\fBReason\fR=<\fIreason\fR>
+Why the selected TRES are being drained. Required with
+\fBAction\fR=\fBDrain\fR and \fBAction\fR=\fBSetDrain\fR, and recorded against
+each TRES so that \fBscontrol show node\fR can report a reason
+per TRES. Use quotes to enclose a reason having more than one word.
+.IP
+
+.TP
+\fBUuid\fR=<\fIuuids\fR>|ALL
+Select specific devices of \fBTresName\fR by UUID. \fIuuids\fR is a
+comma\-separated list of device UUIDs, or \fBALL\fR for all of them. A UUID
+comes from devices found through autodetect (GPUs), or from the \fBUUID\fR
+option in \fBgres.conf\fR(5). UUID matching is exact and case\-sensitive.
+
+\fBNOTE\fR: May be given together with \fBIndex\fR (but not when either is
+\fBALL\fR), so that a line reported by "\fBscontrol show drainedtres\fR" can
+be used as a selector unchanged. The UUID names the device and the index must
+agree with where that device currently sits; if they name different devices the
+request is rejected, which catches an index that is not where that UUID
+sits.
+
+\fBNOTE\fR: \fBUuid\fR resolves through the saved slots. An empty slot is
+not found, so a UUID that has gone absent is not a selector. \fBIndex\fR
+and \fBALL\fR include that index.
+
+\fBNOTE\fR: \fBAction\fR=\fBResume\fR that names an absent device by \fBUuid\fR
+is rejected with "GRES device is absent from node". \fBIndex\fR names a device
+the node last reported, so it does not select an absent device. \fBALL\fR
+leaves an absent device drained.
+
+\fBNOTE\fR: With \fBAction\fR=\fBSetDrain\fR, \fBALL\fR also selects an absent
+device. The absent device stays drained and takes the new \fBReason\fR.
+.IP
+
+.PP
+\fBNOTE\fR: On a GRES with a saved UUID order, an absent device keeps its
+index. A report that would move a remaining device is rejected. A GRES
+with no UUID map keeps slurmd's order, and a drain stays on its index. See
+<https://slurm.schedmd.com/gres.html#Draining_GRES_Anchoring>.
+.PP
+\fBNOTE\fR: Shared GRES (\fBshard\fR and \fBmps\fR) cannot be drained directly.
+Drain the sharing GRES that backs them instead (e.g. \fBscontrol update
+TresName=gres/gpu NodeName=tux1 Index=3 Action=Drain Reason=bad_gpu\fR); the
+shards or MPS TRES on that device then become unavailable to new jobs.
+.PP
+\fBNOTE\fR: Draining a TRES does not affect jobs that are already using it.
+Running allocations keep the resource until they finish; only new allocations
+are prevented.
+.PP
+\fBNOTE\fR: How much of a node's TRES may be drained before the node itself is
+drained is governed by \fBMaxDrainedTres\fR in \fBslurm.conf\fR(5).
+.PP
+\fBNOTE\fR: The drained TRES on a node are reported by the
+\fBDrainedTRES\fR field of \fBscontrol show node\fR.
+.IP
 
 .SH "PARTITIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
@@ -3691,6 +3880,9 @@ following table.
 .br
 .sp
 \fBscontrol update hres:       \fR Admin
+.br
+.sp
+\fBscontrol update tres:       \fR Admin
 .br
 .sp
 \fBscontrol create partition:  \fR Admin

@@ -993,6 +993,49 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_update_tres_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_tres_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->action, buffer);
+		pack64(msg->count, buffer);
+		packstr(msg->index, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->node_names, buffer);
+		packstr(msg->reason, buffer);
+		pack16(msg->select_all, buffer);
+		packstr(msg->uuid, buffer);
+	}
+}
+
+static int _unpack_update_tres_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_tres_msg_t *msg = xmalloc(sizeof(*msg));
+	uint32_t uint32_tmp;
+
+	slurm_init_update_tres_msg(msg);
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&uint32_tmp, buffer);
+		msg->action = uint32_tmp;
+		safe_unpack64(&msg->count, buffer);
+		safe_unpackstr(&msg->index, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack16(&msg->select_all, buffer);
+		safe_unpackstr(&msg->uuid, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_tres_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_run_power_action_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	run_power_action_msg_t *msg = smsg->data;
@@ -15646,6 +15689,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_DELETE_NODE:
 		_pack_update_node_msg(msg, buffer);
 		break;
+	case REQUEST_UPDATE_TRES:
+		_pack_update_tres_msg(msg, buffer);
+		break;
 	case REQUEST_RUN_POWER_ACTION:
 		_pack_run_power_action_msg(msg, buffer);
 		break;
@@ -16210,6 +16256,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_UPDATE_NODE:
 	case REQUEST_DELETE_NODE:
 		rc = _unpack_update_node_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_TRES:
+		rc = _unpack_update_tres_msg(msg, buffer);
 		break;
 	case REQUEST_RUN_POWER_ACTION:
 		rc = _unpack_run_power_action_msg(msg, buffer);

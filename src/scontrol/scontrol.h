@@ -149,6 +149,23 @@ extern void	scontrol_top_job(char *job_str);
 extern int	scontrol_update_job (int argc, char **argv);
 extern int 	scontrol_create_node(int argc, char **argv);
 extern int	scontrol_update_node (int argc, char **argv);
+
+/*
+ * scontrol_update_tres - drain or resume individual TRES
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints
+ *			error message and returns 0
+ */
+extern int scontrol_update_tres(int argc, char **argv);
+
+/*
+ * scontrol_strip_quotes - copy a value with one layer of surrounding double
+ *	quotes removed, as used for free-form Reason= text.
+ * IN val - value that may be wrapped in one pair of double quotes
+ * RET newly allocated xstring, caller must xfree()
+ */
+extern char *scontrol_strip_quotes(const char *val);
 extern int	scontrol_update_part (int argc, char **argv);
 extern int	scontrol_update_res (int argc, char **argv);
 extern int	scontrol_update_step (int argc, char **argv);

@@ -1959,7 +1959,7 @@ static void _update_it(int argc, char **argv)
 	int i, error_code = SLURM_SUCCESS;
 	int hres_tag = 0;
 	int node_tag = 0, part_tag = 0, job_tag = 0;
-	int res_tag = 0;
+	int res_tag = 0, tres_tag = 0;
 	int debug_tag = 0, step_tag = 0;
 	int (*suspend_exc_func)(char *update_str, update_mode_t mode) = NULL;
 	int jerror_code = SLURM_SUCCESS;
@@ -1989,6 +1989,8 @@ static void _update_it(int argc, char **argv)
 			hres_tag = 1;
 		} else if (!xstrncasecmp(tag, "NodeName", MAX(tag_len, 3))) {
 			node_tag = 1;
+		} else if (!xstrncasecmp(tag, "TresName", MAX(tag_len, 4))) {
+			tres_tag = 1;
 		} else if (!xstrncasecmp(tag, "PartitionName",
 					MAX(tag_len, 3))) {
 			part_tag = 1;
@@ -2021,8 +2023,9 @@ static void _update_it(int argc, char **argv)
 	 * partition and reservation tags, possibly before the jobid tag, but
 	 * none of the other updates have a jobid tag, so check jobtag first.
 	 * Likewise, check restag next, because reservations can have a
-	 * partition tag.  The order of the rest doesn't matter because there
-	 * aren't any other duplicate tags.  */
+	 * partition tag.  Check trestag before nodetag, because a TRES drain
+	 * names the node its TRES lives on.  The order of the rest doesn't
+	 * matter because there aren't any other duplicate tags.  */
 
 	if (job_tag)
 		jerror_code = scontrol_update_job (argc, argv);
@@ -2032,6 +2035,8 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_res (argc, argv);
 	else if (hres_tag)
 		error_code = scontrol_update_hres(argc, argv);
+	else if (tres_tag)
+		error_code = scontrol_update_tres(argc, argv);
 	else if (node_tag)
 		error_code = scontrol_update_node (argc, argv);
 	else if (part_tag)
@@ -2046,8 +2051,7 @@ static void _update_it(int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
-		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-			"\"JobId\", \"HRESName\", or \"SlurmctldDebug\"\n");
+		fprintf(stderr, "\"PartitionName\", \"Reservation\", \"JobId\", \"HRESName\", \"TresName\", or \"SlurmctldDebug\"\n");
 	}
 
 	if (error_code) {

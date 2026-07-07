@@ -8880,6 +8880,12 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 #undef add_parse_req
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(TRES_ACTION)[] = {
+	add_flag_equal(UPDATE_ADD, INFINITE, "drain"),
+	add_flag_equal(UPDATE_REMOVE, INFINITE, "resume"),
+	add_flag_equal(UPDATE_SET, INFINITE, "set_drain"),
+};
+
 static const flag_bit_t PARSER_FLAG_ARRAY(ADMIN_LVL)[] = {
 	add_flag_equal(AUTH_LEVEL_NOTSET, INFINITE16, "Not Set"),
 	add_flag_equal(AUTH_LEVEL_USER, INFINITE16, "None"),
@@ -11005,6 +11011,23 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 };
 #undef add_parse
 #undef add_removed
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(update_tres_msg_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(update_tres_msg_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(UPDATE_TRES_MSG)[] = {
+	add_parse_req(TRES_ACTION, action, "action", "Whether to drain the selected TRES, resume them, or make them the entire drained set"),
+	add_parse(UINT64_NO_VAL, count, "count", "Count of TRES units to select"),
+	add_parse(STRING, index, "index", "TRES to select, as an index range list"),
+	add_parse_req(STRING, name, "name", "TRES to drain or resume: gres/<name>[:<type>], cpu, or mem"),
+	add_parse(HOSTLIST_STRING, node_names, "nodes", "Nodes the TRES lives on; required for node-local TRES"),
+	add_parse(STRING, reason, "reason", "Why the TRES are being drained; required unless resuming"),
+	add_parse(BOOL16, select_all, "select_all", "Select everything the named TRES covers on the node"),
+	add_parse(STRING, uuid, "uuid", "Devices to select, as a comma-separated UUID list"),
+};
+#undef add_parse
+#undef add_parse_req
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_resp_meta_t, mtype, false, field, 0, path, desc)
@@ -14071,6 +14094,8 @@ static const parser_t parsers[] = {
 	addpap(JOB_DESC_MSG, job_desc_msg_t, NEW_FUNC(JOB_DESC_MSG), (parser_free_func_t) slurm_free_job_desc_msg),
 	addpap(CRON_ENTRY, cron_entry_t, NULL, NULL),
 	addpap(UPDATE_NODE_MSG, update_node_msg_t, NULL, NULL),
+	addpap(UPDATE_TRES_MSG, update_tres_msg_t, NULL,
+	       (parser_free_func_t) slurm_free_update_tres_msg),
 	addpanp(OPENAPI_META, openapi_resp_meta_t, NULL, free_openapi_resp_meta),
 	addpap(OPENAPI_ERROR, openapi_resp_error_t, NULL, free_openapi_resp_error),
 	addpap(OPENAPI_WARNING, openapi_resp_warning_t, NULL, free_openapi_resp_warning),
@@ -14263,6 +14288,7 @@ static const parser_t parsers[] = {
 	addfa(OPEN_MODE, uint8_t),
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
 	addfa(ADMIN_LVL, uint16_t), /* slurm_auth_level_t */
+	addfa(TRES_ACTION, uint32_t), /* update_mode_t */
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),

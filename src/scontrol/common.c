@@ -83,3 +83,20 @@ extern char *scontrol_process_plus_minus(char plus_or_minus, char *src,
 
 	return ret;
 }
+
+extern char *scontrol_strip_quotes(const char *val)
+{
+	char *str;
+	int len;
+
+	if (*val == '"')
+		str = xstrdup(val + 1);
+	else
+		str = xstrdup(val);
+
+	len = strlen(str) - 1;
+	if ((len >= 0) && (str[len] == '"'))
+		str[len] = '\0';
+
+	return str;
+}
