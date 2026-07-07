@@ -54,10 +54,12 @@
 typedef struct {
 	uint32_t array_job_id; /* array master id from input, or NO_VAL */
 	uint32_t array_task_id; /* task offset from input, or NO_VAL */
+	uint16_t mode; /* derived steps_sub_mode_t */
 	bool quiet; /* --quiet */
 	slurm_step_id_t target; /* SLUID and/or job_id from argv/env;
 				 * for array tasks, job_id holds the per-task
-				 * assigned id after ctld discovery */
+				 * assigned id after ctld discovery; step_id is
+				 * the STEP target or NO_VAL */
 	uint32_t timeout; /* --timeout, seconds; 0 disables */
 	int verbose; /* count of -v; bumps stderr log level */
 } swait_opt_t;

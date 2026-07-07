@@ -96,13 +96,19 @@ static int _validate_selected_step(const slurm_selected_step_t *id,
 		error("%s: het-job offsets are not supported", src);
 		return SLURM_ERROR;
 	}
+	if (id->step_id.step_het_comp != NO_VAL) {
+		error("%s: het steps are not supported", src);
+		return SLURM_ERROR;
+	}
 	if (id->array_bitmap) {
 		error("%s: array-task ranges are not supported, pass one task offset",
 		      src);
 		return SLURM_ERROR;
 	}
-	if (id->step_id.step_id != NO_VAL) {
-		error("%s: swait operates on a job, not a step", src);
+	if ((id->step_id.step_id != NO_VAL) &&
+	    (id->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)) {
+		error("%s: cannot wait on a special step (batch, extern, or interactive)",
+		      src);
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -232,4 +238,9 @@ extern void parse_command_line(int argc, char **argv)
 		opt.array_task_id = id.array_task_id;
 	}
 	FREE_NULL_BITMAP(id.array_bitmap);
+
+	if (opt.target.step_id != NO_VAL)
+		opt.mode = STEPS_DRAINED_SUB_STEP;
+	else
+		opt.mode = STEPS_DRAINED_SUB_DRAIN;
 }
