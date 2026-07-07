@@ -1853,6 +1853,8 @@ static int _handle_getpw(int fd, uid_t socket_uid, pid_t remote_pid)
 		found = 0;
 	}
 
+	xfree(name);
+
 	safe_write(fd, &found, sizeof(int));
 
 	if (!found)
@@ -1955,6 +1957,8 @@ static int _handle_getgr(int fd, uid_t uid, pid_t remote_pid)
 		found = step->ngids;
 	}
 
+	xfree(name);
+
 	safe_write(fd, &found, sizeof(int));
 
 	if (!found)
@@ -2043,6 +2047,7 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 		}
 	}
 	xfree(nodename);
+	xfree(address_str);
 
 	safe_write(fd, &found, sizeof(int));
 
