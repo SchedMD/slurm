@@ -682,8 +682,26 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 
 	slurm_mutex_lock(&stepmgr_mutex);
 
-	if (!job_has_running_step(job_step_ptr) &&
-	    !job_step_ptr->pending_async_steps) {
+	/*
+	 * Reject a subscription that can never be notified. A STEP request
+	 * needs its target step still present and not already completing; a
+	 * special step (batch/extern/interactive) is an unsupported target,
+	 * not a drained one. DRAIN and ALL need the job to still have
+	 * running or pending --async steps.
+	 */
+	if (request->mode == STEPS_DRAINED_SUB_STEP) {
+		step_record_t *step_ptr =
+			find_step_record(job_step_ptr, &request->step_id);
+		if (request->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID) {
+			rc_msg.return_code = ESLURM_NOT_SUPPORTED;
+			goto unlock_reply;
+		}
+		if (!step_ptr || (step_ptr->state & JOB_COMPLETING)) {
+			rc_msg.return_code = ESLURM_STEPS_DRAINED;
+			goto unlock_reply;
+		}
+	} else if (!job_has_running_step(job_step_ptr) &&
+		   !job_step_ptr->pending_async_steps) {
 		rc_msg.return_code = ESLURM_STEPS_DRAINED;
 		goto unlock_reply;
 	}
