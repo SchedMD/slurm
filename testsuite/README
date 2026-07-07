@@ -70,7 +70,7 @@ test1.8    Confirm that basic srun stdin, stdout, and stderr options work
 	   (--input, --output, and --error option respectively).
 test1.9    Test of srun verbose mode (--verbose option).
 test1.12   Test srun --overlap
-test1.14   Test exclusive resource allocation for a step (--exclusive option).
+test1.14   Test exclusive GRES/GPU allocation for a job (--exclusive option).
 test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
 test1.32   Test of srun signal forwarding
@@ -884,6 +884,7 @@ test_116_57  Test srun in het job nested in non-het job
 test_116_58  Test srun --async --kill-on-bad-exit kills remaining tasks
 test_116_59  Test the --runtime job submission option and its runtime plugins
 test_116_60  Test the srun/salloc/sbatch --runtime=list option
+test_116_61  Verify a pending sync step is assigned a real step ID at submission
 
 test_117_#   Testing of sstat options.
 ======================================
