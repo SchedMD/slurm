@@ -183,6 +183,8 @@ extern int read_slurmdbd_conf(void)
 		{"PurgeSuspendMonths", S_P_UINT32},
 		{"PurgeTXNMonths", S_P_UINT32},
 		{"PurgeUsageMonths", S_P_UINT32},
+		{"SerializerParameters", S_P_STRING},
+		{"SerializerPlugins", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StepPurge", S_P_UINT32},
 		{"StorageBackupHost", S_P_STRING},
@@ -612,6 +614,11 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->purge_usage
 					|= SLURMDB_PURGE_MONTHS;
 		}
+
+		s_p_get_string(&slurm_conf.serializer_params,
+			       "SerializerParameters", tbl);
+		s_p_get_string(&slurm_conf.serializer_plugins,
+			       "SerializerPlugins", tbl);
 
 		s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser", tbl);
 
