@@ -37,148 +37,46 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <pthread.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <sys/un.h>
 
 #include "slurm/slurm.h"
 
-#include "src/common/eio.h"
-#include "src/common/fd.h"
-#include "src/common/forward.h"
-#include "src/common/half_duplex.h"
+#include "src/common/duplex_relay.h"
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_common.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
 
-#include "src/interfaces/auth.h"
-#include "src/interfaces/conn.h"
+#define MAGIC_X11_CON 0xba59504c
 
-struct allocation_msg_thread {
-	slurm_allocation_callbacks_t callback;
-	eio_handle_t *handle;
-	pthread_t id;
-};
+typedef struct {
+	int magic; /* MAGIC_X11_CON */
+	conmgr_fd_ref_t *con;
+	slurm_msg_t *resp_msg;
+} x11_con_t;
 
-static void _handle_msg(void *arg, slurm_msg_t *msg);
-static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
-static bool msg_thr_start_done = false;
-static struct io_operations message_socket_ops = {
-	.readable = &eio_message_socket_readable,
-	.handle_read = &eio_message_socket_accept,
-	.handle_msg = &_handle_msg
-};
+typedef struct {
+	void (*func)(slurm_allocation_callbacks_t *callbacks, slurm_msg_t *msg);
+	uint16_t msg_type;
+} alloc_rpc_t;
 
-static void *_msg_thr_internal(void *arg)
+static void _handle_ping(slurm_allocation_callbacks_t *callbacks,
+			 slurm_msg_t *msg)
 {
-	int signals[] = {SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGTERM,
-			 SIGUSR1, SIGUSR2, 0};
-
-	debug("Entering _msg_thr_internal");
-	xsignal_block(signals);
-	slurm_mutex_lock(&msg_thr_start_lock);
-	slurm_cond_signal(&msg_thr_start_cond);
-	msg_thr_start_done = true;
-	slurm_mutex_unlock(&msg_thr_start_lock);
-	eio_handle_mainloop((eio_handle_t *)arg);
-	debug("Leaving _msg_thr_internal");
-
-	return NULL;
+	debug3("received ping message");
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
-extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
-	uint16_t *port,
-	const slurm_allocation_callbacks_t *callbacks)
+static void _handle_job_complete(slurm_allocation_callbacks_t *callbacks,
+				 slurm_msg_t *msg)
 {
-	int sock = -1;
-	eio_obj_t *obj;
-	struct allocation_msg_thread *msg_thr = NULL;
-	int cc;
-	uint16_t *ports;
+	srun_job_complete_msg_t *comp = msg->data;
+	debug3("job complete message received");
 
-	debug("Entering slurm_allocation_msg_thr_create()");
-
-	msg_thr = (struct allocation_msg_thread *)xmalloc(
-		sizeof(struct allocation_msg_thread));
-
-	/* Initialize the callback pointers */
-	if (callbacks != NULL) {
-		/* copy the user specified callback pointers */
-		memcpy(&(msg_thr->callback), callbacks,
-		       sizeof(slurm_allocation_callbacks_t));
-	} else {
-		/* set all callbacks to NULL */
-		memset(&(msg_thr->callback), 0,
-		       sizeof(slurm_allocation_callbacks_t));
-	}
-
-	ports = slurm_get_srun_port_range();
-	if (ports)
-		cc = net_stream_listen_ports(&sock, port, ports, false);
-	else
-		cc = net_stream_listen(&sock, port);
-	if (cc < 0) {
-		error("unable to initialize step launch listening socket: %m");
-		xfree(msg_thr);
-		return NULL;
-	}
-	debug("port from net_stream_listen is %hu", *port);
-	obj = eio_obj_create(sock, &message_socket_ops, (void *)msg_thr);
-
-	msg_thr->handle = eio_handle_create(slurm_conf.eio_timeout);
-	if (!msg_thr->handle) {
-		error("failed to create eio handle");
-		xfree(msg_thr);
-		return NULL;
-	}
-	eio_new_initial_obj(msg_thr->handle, obj);
-	slurm_mutex_lock(&msg_thr_start_lock);
-	slurm_thread_create(NULL, &msg_thr->id, _msg_thr_internal,
-			    msg_thr->handle);
-	while (!msg_thr_start_done) {
-		/*
-		 * Wait until the message thread has blocked signals
-		 * before continuing.
-		 */
-		slurm_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
-	}
-	slurm_mutex_unlock(&msg_thr_start_lock);
-
-	return (allocation_msg_thread_t *)msg_thr;
-}
-
-extern void slurm_allocation_msg_thr_destroy(
-	allocation_msg_thread_t *arg)
-{
-	struct allocation_msg_thread *msg_thr =
-		(struct allocation_msg_thread *)arg;
-	if (msg_thr == NULL)
-		return;
-
-	debug2("slurm_allocation_msg_thr_destroy: clearing up message thread");
-	eio_signal_shutdown(msg_thr->handle);
-	slurm_thread_join(msg_thr->id);
-	eio_handle_destroy(msg_thr->handle);
-	xfree(msg_thr);
-}
-
-static void _handle_node_fail(struct allocation_msg_thread *msg_thr,
-			      slurm_msg_t *msg)
-{
-	srun_node_fail_msg_t *nf = msg->data;
-
-	if (msg_thr->callback.node_fail != NULL)
-		(msg_thr->callback.node_fail)(nf);
+	if (callbacks->job_complete != NULL)
+		(callbacks->job_complete)(comp);
 }
 
 /*
@@ -186,156 +84,357 @@ static void _handle_node_fail(struct allocation_msg_thread *msg_thr,
  * Job will be killed shortly after timeout.
  * This RPC can arrive multiple times with the same or updated timeouts.
  */
-static void _handle_timeout(struct allocation_msg_thread *msg_thr,
+static void _handle_timeout(slurm_allocation_callbacks_t *callbacks,
 			    slurm_msg_t *msg)
 {
 	srun_timeout_msg_t *to = msg->data;
 
 	debug3("received timeout message");
 
-	if (msg_thr->callback.timeout != NULL)
-		(msg_thr->callback.timeout)(to);
+	if (callbacks->timeout != NULL)
+		(callbacks->timeout)(to);
 }
 
-static void _handle_user_msg(struct allocation_msg_thread *msg_thr,
+static void _handle_user_msg(slurm_allocation_callbacks_t *callbacks,
 			     slurm_msg_t *msg)
 {
 	srun_user_msg_t *um = msg->data;
 	debug3("received user message");
 
-	if (msg_thr->callback.user_msg != NULL)
-		(msg_thr->callback.user_msg)(um);
+	if (callbacks->user_msg != NULL)
+		(callbacks->user_msg)(um);
 }
 
-static void _handle_ping(struct allocation_msg_thread *msg_thr,
-			     slurm_msg_t *msg)
+static void _handle_node_fail(slurm_allocation_callbacks_t *callbacks,
+			      slurm_msg_t *msg)
 {
-	debug3("received ping message");
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	srun_node_fail_msg_t *nf = msg->data;
+
+	if (callbacks->node_fail != NULL)
+		(callbacks->node_fail)(nf);
 }
 
-static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
-				 slurm_msg_t *msg)
-{
-	srun_job_complete_msg_t *comp = msg->data;
-	debug3("job complete message received");
-
-	if (msg_thr->callback.job_complete != NULL)
-		(msg_thr->callback.job_complete)(comp);
-}
-
-static void _handle_suspend(struct allocation_msg_thread *msg_thr,
+static void _handle_suspend(slurm_allocation_callbacks_t *callbacks,
 			    slurm_msg_t *msg)
 {
 	suspend_msg_t *sus_msg = msg->data;
 	debug3("received suspend message");
 
-	if (msg_thr->callback.job_suspend != NULL)
-		(msg_thr->callback.job_suspend)(sus_msg);
+	if (callbacks->job_suspend != NULL)
+		(callbacks->job_suspend)(sus_msg);
 }
 
-static void _net_forward(struct allocation_msg_thread *msg_thr,
-			 slurm_msg_t *forward_msg)
+static void _x11_con_free(x11_con_t *x11con)
 {
-	net_forward_msg_t *msg = forward_msg->data;
-	int *local, *remote;
+	if (!x11con)
+		return;
 
-	local = xmalloc(sizeof(*local));
-	remote = xmalloc(sizeof(*remote));
-
-	*remote = conn_g_get_fd(forward_msg->conn);
-	net_set_nodelay(*remote, true, NULL);
-
-	if (msg->port) {
-		/* connect to host and given tcp port */
-		slurm_addr_t local_addr;
-		memset(&local_addr, 0, sizeof(local_addr));
-		slurm_set_addr(&local_addr, msg->port, msg->target);
-
-		*local = slurm_open_stream(&local_addr, false);
-		if (*local == -1) {
-			error("%s: failed to open x11 port `%s:%d`: %m",
-			      __func__, msg->target, msg->port);
-			goto error;
-		}
-		net_set_nodelay(*local, true, NULL);
-	} else if (msg->target) {
-		int rc;
-
-		/* connect to local unix socket */
-		if ((rc = slurm_open_unix_stream(msg->target, 0, local))) {
-			error("%s: failed to open x11 display on `%s`: %s",
-			      __func__, msg->target, slurm_strerror(rc));
-			goto error;
-		}
-	}
-
-	/*
-	 * Setup is successful, let the remote end know. This must happen
-	 * before eio takes over managing the rest of the traffic on the port.
-	 */
-	slurm_send_rc_msg(forward_msg, SLURM_SUCCESS);
-
-	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote,
-					   forward_msg->conn)) {
-		goto error;
-	}
-
-	/* prevent the upstream call path from closing the connection */
-	forward_msg->conn = NULL;
-
-	return;
-
-error:
-	slurm_send_rc_msg(forward_msg, SLURM_ERROR);
-	xfree(local);
-	xfree(remote);
+	xassert(x11con->magic == MAGIC_X11_CON);
+	x11con->magic = ~MAGIC_X11_CON;
+	conmgr_con_queue_close_free(&x11con->con);
+	FREE_NULL_MSG(x11con->resp_msg);
+	xfree(x11con);
 }
 
-static void
-_handle_msg(void *arg, slurm_msg_t *msg)
+static void _x11_con_duplex_relay_assign(conmgr_callback_args_t conmgr_args,
+					 void *arg)
 {
-	struct allocation_msg_thread *msg_thr =
-		(struct allocation_msg_thread *)arg;
-	uid_t req_uid;
-	uid_t uid = getuid();
+	x11_con_t *x11con = arg;
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	int rc = SLURM_ERROR;
 
-	req_uid = auth_g_get_uid(msg->auth_cred);
-
-	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
-	    (req_uid != uid)) {
-		error ("Security violation, slurm message from uid %u",
-		       req_uid);
+	xassert(x11con->magic == MAGIC_X11_CON);
+	if ((rc = duplex_relay_assign(con, x11con->con))) {
+		error("%s: [%s] Failed to initialize second connection in duplex relay",
+		      __func__, conmgr_con_get_name(con));
+		/*
+		 * duplex_relay_assign() failed before reassigning the
+		 * connection's events, so con still references x11con through
+		 * its arg and the _x11_con_on_finish() callback. Close con and
+		 * let _x11_con_on_finish() free x11con to avoid a
+		 * use-after-free.
+		 */
+		conmgr_con_queue_close(con);
 		return;
 	}
 
-	switch (msg->msg_type) {
-	case SRUN_PING:
-		_handle_ping(msg_thr, msg);
-		break;
-	case SRUN_JOB_COMPLETE:
-		_handle_job_complete(msg_thr, msg);
-		break;
-	case SRUN_TIMEOUT:
-		_handle_timeout(msg_thr, msg);
-		break;
-	case SRUN_USER_MSG:
-		_handle_user_msg(msg_thr, msg);
-		break;
-	case SRUN_NODE_FAIL:
-		_handle_node_fail(msg_thr, msg);
-		break;
-	case SRUN_REQUEST_SUSPEND:
-		_handle_suspend(msg_thr, msg);
-		break;
-	case SRUN_NET_FORWARD:
-		debug2("received network forwarding RPC");
-		_net_forward(msg_thr, msg);
-		break;
-	default:
+	log_flag(NET, "%s: [%s] Opened and initialized connection to local x11 server, X11 tunnel is ready now",
+		 __func__, conmgr_con_get_name(con));
+
+	/* Cleanup state but avoid closing the connections */
+	CONMGR_CON_UNLINK(x11con->con);
+
+	_x11_con_free(x11con);
+}
+
+static void *_x11_con_on_connection(conmgr_callback_args_t conmgr_args,
+				    void *arg)
+{
+	x11_con_t *x11con = arg;
+	int rc;
+
+	if ((rc = conmgr_con_queue_write_msg(x11con->con, x11con->resp_msg))) {
+		error("%s: [%s] Failed to write SLURM_SUCCESS back to slurmstepd: %s",
+		      __func__, conmgr_con_get_name(conmgr_args.ref),
+		      slurm_strerror(rc));
+		_x11_con_free(x11con);
+		return NULL;
+	}
+
+	conmgr_add_work_con_fifo(conmgr_args.con, _x11_con_duplex_relay_assign,
+				 arg);
+
+	return arg;
+}
+
+static void _x11_con_on_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	x11_con_t *x11con = arg;
+
+	if (!x11con)
+		return;
+
+	xassert(x11con->magic == MAGIC_X11_CON);
+
+	_x11_con_free(x11con);
+}
+
+static int _x11_con_on_data(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	/*
+	 * This should never be called, connection should be quiesced until
+	 * on_data() is reassigned by duplex_relay.
+	 */
+	xassert(false);
+
+	return SLURM_ERROR;
+}
+
+static void _handle_net_forward(slurm_allocation_callbacks_t *callbacks,
+				slurm_msg_t *msg)
+{
+	conmgr_fd_ref_t *con = msg->conmgr_con;
+	net_forward_msg_t *forward_msg = msg->data;
+	slurm_addr_t local_x11_server_addr = { 0 };
+	socklen_t addrlen = sizeof(local_x11_server_addr);
+	static const conmgr_events_t events = {
+		.on_connection = _x11_con_on_connection,
+		.on_data = _x11_con_on_data,
+		.on_finish = _x11_con_on_finish,
+	};
+	int rc;
+	x11_con_t *x11con = NULL;
+	return_code_msg_t *success_rc_msg;
+
+	if (forward_msg->port) {
+		slurm_set_addr(&local_x11_server_addr, forward_msg->port,
+			       forward_msg->target);
+	} else if (forward_msg->target) {
+		local_x11_server_addr =
+			sockaddr_from_unix_path(forward_msg->target);
+		addrlen = sizeof(struct sockaddr_un);
+	}
+
+	x11con = xmalloc(sizeof(*x11con));
+	*x11con = (x11_con_t) {
+		.magic = MAGIC_X11_CON,
+		.resp_msg = xmalloc(sizeof(*x11con->resp_msg)),
+	};
+
+	CONMGR_CON_LINK(con, x11con->con);
+
+	/*
+	 * Prepare SLURM_SUCCESS response message now to be sent later in
+	 * _x11_con_on_connection().
+	 */
+	success_rc_msg = xmalloc(sizeof(*success_rc_msg));
+	success_rc_msg->return_code = SLURM_SUCCESS;
+	slurm_resp_msg_init(x11con->resp_msg, msg, RESPONSE_SLURM_RC,
+			    success_rc_msg);
+
+	if ((rc = conmgr_create_connect_socket(CON_TYPE_RAW, CON_FLAG_QUIESCE,
+					       &local_x11_server_addr, addrlen,
+					       &events, NULL, x11con))) {
+		error("Failed to connect to local X11 server at '%pA': %s",
+		      &local_x11_server_addr, slurm_strerror(rc));
+		/*
+		 * Send the error rc to slurmstepd before _x11_con_free() closes
+		 * the shared connection, otherwise the queued close may tear it
+		 * down before the response is flushed.
+		 */
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+		_x11_con_free(x11con);
+		return;
+	}
+
+	/*
+	 * _x11_con_on_connection() will send SLURM_SUCCESS back, this ensures
+	 * that it sends the rc back *before* starting duplex_relay.
+	 */
+	log_flag(NET, "%s: [%s] Connected to local X11 server, will send SLURM_SUCCESS back to slurmstepd to continue setting up X11 tunnel",
+		 __func__, conmgr_con_get_name(con));
+
+	/*
+	 * make sure _on_msg() doesn't close the connection as it will stay
+	 * alive for the duplex relay.
+	 */
+	CONMGR_CON_UNLINK(msg->conmgr_con);
+}
+
+static alloc_rpc_t alloc_rpcs[] = {
+	{
+		.msg_type = SRUN_PING,
+		.func = _handle_ping,
+	},
+	{
+		.msg_type = SRUN_JOB_COMPLETE,
+		.func = _handle_job_complete,
+	},
+	{
+		.msg_type = SRUN_TIMEOUT,
+		.func = _handle_timeout,
+	},
+	{
+		.msg_type = SRUN_USER_MSG,
+		.func = _handle_user_msg,
+	},
+	{
+		.msg_type = SRUN_NODE_FAIL,
+		.func = _handle_node_fail,
+	},
+	{
+		.msg_type = SRUN_REQUEST_SUSPEND,
+		.func = _handle_suspend,
+	},
+	{
+		.msg_type = SRUN_NET_FORWARD,
+		.func = _handle_net_forward,
+	},
+	{
+		/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+
+	log_flag(NET, "%s: [%s] New connection accepted by alloc_msg listener",
+		 __func__, conmgr_con_get_name(con));
+
+	return arg;
+}
+
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+
+	log_flag(NET, "%s: [%s] connection finished",
+		 __func__, conmgr_con_get_name(con));
+}
+
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
+{
+	slurm_allocation_callbacks_t *callbacks = arg;
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	uid_t uid = getuid();
+	alloc_rpc_t *this_rpc = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (!msg->auth_ids_set) {
+		error("%s: [%s] Security violation, rejecting unauthenticated slurm message",
+		      __func__, conmgr_con_get_name(con));
+		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto end;
+	}
+
+	log_flag(AUDIT_RPCS, "allocate_msg _on_msg: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 conmgr_con_get_name(con), rpc_num2string(msg->msg_type),
+		 msg->auth_uid, &msg->address, msg->protocol_version);
+
+	if (unpack_rc) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_con_get_name(con),
+		      slurm_strerror(unpack_rc));
+		rc = unpack_rc;
+		goto end;
+	}
+
+	if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
+	    (msg->auth_uid != 0) && (msg->auth_uid != uid)) {
+		error ("Security violation, slurm message from uid %u",
+		       msg->auth_uid);
+		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto end;
+	}
+
+	for (this_rpc = alloc_rpcs; this_rpc->msg_type; this_rpc++) {
+		if (this_rpc->msg_type == msg->msg_type)
+			break;
+	}
+
+	if (!this_rpc->msg_type) {
 		error("%s: received spurious message type: %s",
 		      __func__, rpc_num2string(msg->msg_type));
-		break;
+		goto end;
 	}
-	return;
+
+	this_rpc->func(callbacks, msg);
+
+end:
+	conmgr_con_queue_close(msg->conmgr_con);
+	FREE_NULL_MSG(msg);
+	return rc;
+}
+
+static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+
+	log_flag(NET, "%s: [%s] alloc_msg listener now open",
+		 __func__, conmgr_con_get_name(con));
+
+	return arg;
+}
+
+static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+
+	log_flag(NET, "%s: [%s] alloc_msg listener connection finished",
+		 __func__, conmgr_con_get_name(con));
+}
+
+extern int slurm_alloc_msg_listener_create(uint16_t *port,
+					   slurm_allocation_callbacks_t
+						   *callbacks)
+{
+	int listen_fd = -1;
+	static const conmgr_events_t events = {
+		.on_listen_connect = _on_listen_connect,
+		.on_listen_finish = _on_listen_finish,
+		.on_connection = _on_connection,
+		.on_msg = _on_msg,
+		.on_finish = _on_finish,
+	};
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
+	int rc = SLURM_SUCCESS;
+
+	if (conn_tls_enabled())
+		flags |= CON_FLAG_TLS_FINGERPRINT;
+
+	if (slurm_init_msg_engine_srun_ports(&listen_fd, port) !=
+	    SLURM_SUCCESS) {
+		fatal("Unable to open listening socket for messages");
+	}
+	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, NULL,
+					   &events, flags, callbacks))) {
+		fatal("%s: unable to process fd:%d error:%s",
+		      __func__, listen_fd, slurm_strerror(rc));
+	}
+
+	return rc;
 }

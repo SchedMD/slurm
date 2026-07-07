@@ -82,13 +82,6 @@ typedef struct job_resources job_resources_t;
 typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
 
-/* Define allocation_msg_thread_t below to avoid including extraneous
- * slurm headers */
-#ifndef __allocation_msg_thread_t_defined
-#  define  __allocation_msg_thread_t_defined
-typedef struct allocation_msg_thread allocation_msg_thread_t;
-#endif
-
 #ifndef __sbcast_cred_t_defined
 #  define  __sbcast_cred_t_defined
 typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
@@ -3718,24 +3711,16 @@ extern int slurm_het_job_lookup(slurm_step_id_t step_id, list_t **resp);
 extern char *slurm_read_hostfile(const char *filename, int n);
 
 /*
- * slurm_allocation_msg_thr_create - startup a message handler talking
+ * slurm_alloc_msg_listener_create - startup a message handler talking
  * with the controller dealing with messages from the controller during an
  * allocation.
- * IN port - port we are listening for messages on from the controller
+ * OUT port - port we are listening for messages on from the controller
  * IN callbacks - callbacks for different types of messages
- * RET allocation_msg_thread_t * or NULL on failure
+ * RET SLURM_SUCCESS or error
  */
-extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(uint16_t *port,
-				const slurm_allocation_callbacks_t *callbacks);
-
-/*
- * slurm_allocation_msg_thr_destroy - shutdown the message handler talking
- * with the controller dealing with messages from the controller during an
- * allocation.
- * IN msg_thr - allocation_msg_thread_t pointer allocated with
- *              slurm_allocation_msg_thr_create
- */
-extern void slurm_allocation_msg_thr_destroy(allocation_msg_thread_t *msg_thr);
+extern int slurm_alloc_msg_listener_create(uint16_t *port,
+					   slurm_allocation_callbacks_t
+						   *callbacks);
 
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution

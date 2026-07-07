@@ -47,59 +47,17 @@ set env(SALLOC_TIMELIMIT)     2
 #
 # Spawn a job via salloc using these environment variables
 #
-set matches 0
-set timeout $max_job_delay
-spawn $salloc -N1 $bin_bash
-expect {
-	-re "debug:  Entering _msg_thr_internal" {
-		incr matches
-		exp_continue
-	}
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		reset_bash_prompt
-		exp_continue
-	}
-	-re $test_prompt {
-		#log_debug "Job initiated"
-	}
-	timeout {
-		fail "salloc not responding"
-	}
-	eof {
-		wait
-	}
-}
-
+set output [run_command_output -fail "$salloc -N1 true"]
+regexp "Granted job allocation ($number)" $output - job_id
 if {$job_id == 0} {
 	fail "Job was not submitted"
 }
 
-set timeout 5
-send "$scontrol show job $job_id\r"
-expect {
-	-re "TimeLimit=($number):($number):" {
-		set time_limit [expr $expect_out(1,string) * 60 + \
-		                     $expect_out(2,string)]
-		if {$time_limit == 2} {
-			incr matches
-		} else {
-			fail "TimeLimit not set"
-		}
-		exp_continue
-	}
-	-re $test_prompt {
-		send "exit\r"
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+# Check that SALLOC_DEBUG and SALLOC_TIMELIMIT were used
+subtest {[regexp {salloc: nodes\s+: 1}       $output]} "salloc should report nodes: 1"
+subtest {[regexp {salloc: time\s+: 00:02:00} $output]} "salloc should report time: 00:02:00"
+subtest {[regexp {salloc: verbose\s+: 2}     $output]} "salloc should report verbose: 2"
 
-if {$matches != 2} {
-	fail "processed $matches of 2 environment variables"
-}
+# Double-check that SALLOC_TIMELIMIT is registered in the controller
+set time_limit [get_job_param $job_id "TimeLimit"]
+subtest {$time_limit == "00:02:00"} "TimeLimit should be 2 minutes"

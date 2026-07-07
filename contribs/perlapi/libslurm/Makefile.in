@@ -476,7 +476,6 @@ test_sources = \
 	$(perl_dir)/t/04-alloc.c \
 	$(perl_dir)/t/05-signal.t \
 	$(perl_dir)/t/06-complete.t \
-	$(perl_dir)/t/07-spawn.t \
 	$(perl_dir)/t/08-conf.t \
 	$(perl_dir)/t/09-resource.t \
 	$(perl_dir)/t/10-job.t \

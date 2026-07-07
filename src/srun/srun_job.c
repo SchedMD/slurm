@@ -1576,8 +1576,6 @@ extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc)
 {
 	if (got_alloc) {
-		cleanup_allocation();
-
 		/* Tell slurmctld that we were cancelled */
 		if (srun_job_state(job) >= SRUN_JOB_CANCELLED)
 			slurm_complete_job(&job->step_id, NO_VAL);

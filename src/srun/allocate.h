@@ -70,9 +70,6 @@ list_t *allocate_het_job_nodes(void);
 /* dummy function to handle all signals we want to ignore */
 void ignore_signal(int signo);
 
-/* clean up the msg thread polling for information from the controller */
-int cleanup_allocation(void);
-
 /*
  * Test if an allocation would occur now given the job request.
  * Do not actually allocate resources
