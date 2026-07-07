@@ -279,8 +279,22 @@ static int _register_mime_types(list_t *mime_types_list, size_t plugin_index,
 				const char **mime_type)
 {
 	while (*mime_type) {
-		plugin_mime_type_t *pmt = xmalloc(sizeof(*pmt));
+		plugin_mime_type_t *pmt;
 
+		/*
+		 * Two plugins claiming the same MIME type makes the active
+		 * serializer for that type depend on plugin load order (see
+		 * _find_serializer() -> list_find_first()). Refuse to start
+		 * rather than silently bind to an arbitrary one.
+		 */
+		if ((pmt = list_find_first(mime_types_list,
+					   _find_serializer_full_type,
+					   (void *) *mime_type)))
+			fatal("%s: serializer plugin %s cannot register MIME type \"%s\": already registered by plugin %s",
+			      __func__, plugins->types[plugin_index],
+			      *mime_type, plugins->types[pmt->index]);
+
+		pmt = xmalloc(sizeof(*pmt));
 		pmt->index = plugin_index;
 		pmt->mime_type = *mime_type;
 		pmt->magic = PMT_MAGIC;
