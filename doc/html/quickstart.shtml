@@ -22,7 +22,7 @@ The user commands include: <b>sacct</b>, <b>sacctmgr</b>, <b>salloc</b>,
 <b>sattach</b>, <b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,
 <b>scrontab</b>, <b>sdiag</b>, <b>sh5util</b>, <b>sinfo</b>, <b>sprio</b>,
 <b>squeue</b>, <b>sreport</b>, <b>srun</b>, <b>sshare</b>, <b>sstat</b>,
-<b>strigger</b> and <b>sview</b>.
+<b>strigger</b>, <b>sview</b>, and <b>swait</b>.
 All of the commands can run anywhere in the cluster.</p>
 
 <div class="figure">
