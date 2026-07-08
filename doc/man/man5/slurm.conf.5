@@ -5057,12 +5057,11 @@ Multiple comma\-separated options may be provided as long as no conflicts
 described below are present. The permitted values depend upon the configured
 value of \fBSelectType\fR.
 
-
 By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
 considering their memory consumption. The only supported options for
 \fBselect/linear\fR are \fBCR_ONE_TASK_PER_CORE\fR (described below) and
 \fBCR_Memory\fR, which treats memory as a consumable resource and
-prevents memory over\-subscription with job preemption or gang scheduling.
+prevents memory oversubscription with job preemption or gang scheduling.
 
 By default \fBSelectType=select/cons_tres\fR uses \fBCR_Core_Memory\fR, which
 allocates cores to jobs while considering their memory consumption.
@@ -5078,7 +5077,7 @@ CPUs are consumable resources.
 Configure the number of \fBCPUs\fR on each node, which may be equal to the
 count of cores or hyper\-threads on the node depending upon the desired minimum
 resource allocation.
-The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR. and
+The node's \fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR, and
 \fBThreadsPerCore\fR may optionally be configured and result in job
 allocations which have improved locality; however doing so will prevent
 more than one job from being allocated on each core.
@@ -5135,6 +5134,7 @@ plugin to further adjust selection behavior:
 Allocate one task per core by default.
 Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
+
 \fBNOTE\fR: This option cannot be used with \fBCR_CPU*\fR.
 .IP
 
@@ -5173,7 +5173,7 @@ If the job starts ten tasks across those two nodes without this option, it will
 start five tasks on each of the two nodes.
 With this option, eight tasks will be started on the first node and two tasks
 on the second node.
-This only applies when \fB\-\-distribution=block\fR option is used.
+This only applies when the \fB\-\-distribution=block\fR option is used.
 This can be superseded by setting the \fBNoPack\fR distribution option.
 .IP
 
@@ -5189,7 +5189,7 @@ This option is only supported by select/cons_tres plugin.
 .TP
 \fBMULTIPLE_SHARING_GRES_PJ\fR
 By default, only one sharing gres per job is allowed on each node from shared
-gres requests. This allows multiple sharing gres' to be used on a single node
+gres requests. This allows multiple sharing gres to be used on a single node
 to satisfy shared gres requirements per job.
 Example: If there are 10 shards to a gpu and 12 shards are requested, instead of
 being denied the job will be allocated with 2 gpus. 1 using 10 shards and the
@@ -5219,7 +5219,7 @@ topology order. This option reverts to the standard bitmap order.
 \fBNOTE\fR: If memory isn't configured as a consumable resource (\fBCR_CPU\fR,
 \fBCR_Core\fR, or \fBCR_Socket\fR without \fB_Memory\fR), memory can be
 oversubscribed and will not be constrained by \fBtask/cgroup\fR even if it is
-configured in \fBcgroup.conf\fR. In this case the \fB--mem\fR option is only
+configured in \fBcgroup.conf\fR. In this case the \fB\-\-mem\fR option is only
 used to filter out nodes with lower configured memory and does not take running
 jobs into account. For instance, two jobs requesting all the memory of a node
 can run at the same time.
