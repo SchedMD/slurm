@@ -824,7 +824,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	int node_id, j, num_tasks;
 	slurm_msg_t req;
 	signal_tasks_msg_t msg;
-	hostlist_t *hl;
+	hostlist_t *hl, *node_hl;
 	char *name = NULL;
 	list_t *ret_list = NULL;
 	list_itr_t *itr;
@@ -842,10 +842,12 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	slurm_mutex_lock(&sls->lock);
 
 	hl = hostlist_create(NULL);
+	node_hl = hostlist_create(sls->layout->node_list);
 	for (node_id = 0;
 	     node_id < ctx->step_resp->step_layout->node_cnt;
 	     node_id++) {
 		bool active = false;
+		char *host = hostlist_shift(node_hl);
 		num_tasks = sls->layout->tasks[node_id];
 		for (j = 0; j < num_tasks; j++) {
 			if (!bit_test(sls->tasks_exited,
@@ -856,13 +858,11 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 			}
 		}
 
-		if (!active)
-			continue;
-
-		name = nodelist_nth_host(sls->layout->node_list, node_id);
-		hostlist_push_host(hl, name);
-		free(name);
+		if (active)
+			hostlist_push_host(hl, host);
+		free(host);
 	}
+	hostlist_destroy(node_hl);
 
 	slurm_mutex_unlock(&sls->lock);
 
