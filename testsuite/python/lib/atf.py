@@ -455,6 +455,19 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/slurmctld/job_mgr.c" in bt
+        and "_kill_job_step" in bt
+        and "job_ptr->job_id == job_step_kill_msg->step_id.job_id" in bt
+    ):
+        # TODO: Add version when i51060 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
