@@ -13,6 +13,10 @@ This file also covers the related --parsable output: the submit message
 moved from stderr info() to stdout printf so the step id can be captured
 with $(...). --parsable strips the prefix to mirror sbatch --parsable, and
 on srun it requires --async.
+
+srun has no IO connection to an async step, but --label, --unbuffered, and
+--input are propagated through launch_params to the slurmstepd, which honors
+them when writing the output file (or opening stdin) on the compute node.
 """
 
 import re
@@ -1000,3 +1004,167 @@ def test_async_export_specific_var():
     assert (
         output == value
     ), f"--export={sentinel}={value} should set the variable; got {output!r}"
+
+
+# ---------------------------------------------------------------------------
+# Compute-node I/O options (--label, --unbuffered, --input)
+# ---------------------------------------------------------------------------
+
+
+def _submit_async_under_sbatch(
+    srun_args, batch_args="-N1 -n1 -t1", marker_name="srun_marker"
+):
+    """Submit `srun --async --parsable <srun_args>` from an sbatch script.
+
+    Returns (job_id, marker_path); the marker captures srun's stdout/stderr
+    (the bare "<jid>.<sid>" line). The script ends with `swait` so it exits
+    once the async step drains.
+    """
+    marker = marker_name
+    script = f"{marker_name}.sh"
+    atf.make_bash_script(
+        script,
+        f"""srun --async --parsable {srun_args} > {marker} 2>&1
+swait
+""",
+    )
+    job_id = atf.submit_job_sbatch(f"{batch_args} {script}", fatal=True)
+    return job_id, marker
+
+
+def _read_step_id(marker_path):
+    """Wait for the parsable submit line (<jid>.<sid>) and return (jid, sid)."""
+    atf.wait_for_file(marker_path, fatal=True)
+    for _ in atf.timer(fatal=True):
+        text = atf.run_command_output(f"cat {marker_path}")
+        for line in text.splitlines():
+            match = PARSABLE_RE.match(line.strip())
+            if match:
+                return int(match.group(1)), int(match.group(2))
+
+
+def test_async_label_applied_on_compute_node():
+    """`--label` prefixes each output line with "<taskid>: ".
+
+    The labelio flag is honored by the slurmstepd that writes the output
+    file, so a single-task async step produces "0: <line>".
+    """
+    out_file = "label.out"
+
+    job_id, marker = _submit_async_under_sbatch(
+        f"--label -o {out_file} bash -c 'echo plain'",
+        marker_name="label_marker",
+    )
+    _jid, step_id = _read_step_id(marker)
+    atf.wait_for_step_accounted(job_id, step_id, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    atf.wait_for_file(out_file, fatal=True)
+    text = ""
+    for _ in atf.timer():
+        text = atf.run_command_output(f"cat {out_file}").strip()
+        if text == "0: plain":
+            break
+    assert (
+        text == "0: plain"
+    ), f"--label should prefix each line with '<taskid>: '; got {text!r}"
+
+
+def test_async_unbuffered_accepted():
+    """`--unbuffered` is accepted with `--async` and the line is written intact.
+
+    For a single-line `echo`, buffered and unbuffered output are
+    indistinguishable, so this only pins that the flag is accepted.
+    """
+    out_file = "unbuffered.out"
+
+    job_id, marker = _submit_async_under_sbatch(
+        f"--unbuffered -o {out_file} bash -c 'echo plain'",
+        marker_name="unbuffered_marker",
+    )
+    _jid, step_id = _read_step_id(marker)
+    atf.wait_for_step_accounted(job_id, step_id, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    atf.wait_for_file(out_file, fatal=True)
+    text = ""
+    for _ in atf.timer():
+        text = atf.run_command_output(f"cat {out_file}").strip()
+        if text == "plain":
+            break
+    assert text == "plain", f"--unbuffered output should be 'plain'; got {text!r}"
+
+
+def test_async_file_input_supported():
+    """`--input <file>` feeds the named file into the task's stdin.
+
+    slurmstepd opens the file as the task's stdin, so file-based redirection
+    works for --async even though srun has no IO connection: `cat` echoes the
+    file's contents to the output.
+    """
+    in_file = "input.txt"
+    sentinel = "INPUT_REACHES_TASK"
+    atf.run_command(f"echo {sentinel} > {in_file}", fatal=True)
+
+    out_file = "input_test.out"
+
+    job_id, marker = _submit_async_under_sbatch(
+        f"--input {in_file} -o {out_file} cat",
+        marker_name="input_marker",
+    )
+    _jid, step_id = _read_step_id(marker)
+    atf.wait_for_step_accounted(job_id, step_id, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    atf.wait_for_file(out_file, fatal=True)
+    text = ""
+    for _ in atf.timer():
+        text = atf.run_command_output(f"cat {out_file}")
+        if sentinel in text:
+            break
+    assert sentinel in text, (
+        f"--input file content should reach the task's stdin and be "
+        f"echoed by `cat`; got {text!r}"
+    )
+
+
+@pytest.mark.parametrize("input_form", ["all", "0"])
+def test_async_terminal_input_not_forwarded(input_form):
+    """`--input=all` / `--input=<taskid>` do not forward srun's own stdin.
+
+    srun has no IO connection to an async step, so these terminal-forwarding
+    forms cannot deliver srun's stdin to the task. A sentinel piped into srun
+    must therefore never reach the output file (unlike --input=<file>).
+    """
+    sentinel = "SHOULD_NOT_REACH_TASK"
+    out_file = f"no_forward_{input_form}.out"
+    marker = f"no_forward_{input_form}_marker"
+    script = f"no_forward_{input_form}.sh"
+
+    # A plain `cat` would block forever: the taskid form leaves the task's
+    # stdin an open pipe that detached srun never feeds, hanging the step until
+    # the time limit. Read with a timeout and echo back whatever, if anything,
+    # actually arrived.
+    task = """bash -c 'read -t 3 -r line; printf %s "$line"'"""
+    atf.make_bash_script(
+        script,
+        f"echo {sentinel} | srun --async --parsable --input={input_form}"
+        f" -o {out_file} {task} > {marker} 2>&1\nswait\n",
+    )
+    job_id = atf.submit_job_sbatch(f"-N1 -n1 -t1 {script}", fatal=True)
+
+    # The parsable id prints at submit time, so reaching it proves srun
+    # accepted --input=<form> rather than rejecting it at validation.
+    _jid, step_id = _read_step_id(marker)
+    # Step accounting proves the task actually ran, so an empty (or, for
+    # --input=all, absent) output file reflects stdin not being forwarded
+    # rather than a step that never started.
+    atf.wait_for_step_accounted(job_id, step_id, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    # Output may be empty or absent; the piped sentinel must never appear.
+    text = atf.run_command_output(f"cat {out_file}")
+    assert sentinel not in text, (
+        f"--input={input_form} must not forward srun's stdin to an async task; "
+        f"sentinel unexpectedly reached the output: {text!r}"
+    )
