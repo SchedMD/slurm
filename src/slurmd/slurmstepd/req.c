@@ -1420,6 +1420,7 @@ done:
 	}
 	if (srun) {
 		xfree(srun->key);
+		xfree(srun->tls_cert);
 		xfree(srun);
 	}
 	return SLURM_SUCCESS;
@@ -1427,6 +1428,7 @@ done:
 rwfail:
 	if (srun) {
 		xfree(srun->key);
+		xfree(srun->tls_cert);
 		xfree(srun);
 	}
 	xfree(pids);
@@ -1852,6 +1854,8 @@ static int _handle_getpw(int fd, uid_t socket_uid, pid_t remote_pid)
 		found = 0;
 	}
 
+	xfree(name);
+
 	safe_write(fd, &found, sizeof(int));
 
 	if (!found)
@@ -1954,6 +1958,8 @@ static int _handle_getgr(int fd, uid_t uid, pid_t remote_pid)
 		found = step->ngids;
 	}
 
+	xfree(name);
+
 	safe_write(fd, &found, sizeof(int));
 
 	if (!found)
@@ -2042,6 +2048,7 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 		}
 	}
 	xfree(nodename);
+	xfree(address_str);
 
 	safe_write(fd, &found, sizeof(int));
 
@@ -2287,19 +2294,19 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 			};
 
 			step_partial_comp(&req, uid, true, &rem, &max_rc);
-
-			safe_write(fd, &rc, sizeof(int));
-			safe_write(fd, &errnum, sizeof(int));
-
-			jobacctinfo_destroy(jobacct);
-
-			rc = SLURM_SUCCESS;
 		} else {
 			error("Asked to complete a stepmgr step but we don't have a job_step_ptr. This should never happen.");
 			rc = SLURM_ERROR;
 		}
 		slurm_mutex_unlock(&stepmgr_mutex);
-		return rc;
+		jobacctinfo_destroy(jobacct);
+
+		if (rc != SLURM_SUCCESS)
+			return rc;
+
+		safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, &errnum, sizeof(int));
+		return SLURM_SUCCESS;
 	}
 
 	/*
