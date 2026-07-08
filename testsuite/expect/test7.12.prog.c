@@ -37,7 +37,12 @@ int main(int argc, char **argv)
 	list_itr_t *itr;
 	job_info_msg_t *job_info_msg;
 	slurm_job_info_t *job_ptr;
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25, 11, 0)
+	/* SLURM_STEP_ID_INITIALIZER added in 25.11 */
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+#else
+	slurm_step_id_t step_id = { 0 };
+#endif
 
 	if (argc < 3) {
 		printf("Usage: job_id step_id\n");
