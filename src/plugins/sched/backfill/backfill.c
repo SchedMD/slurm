@@ -2466,7 +2466,13 @@ static void _attempt_backfill(void)
 		job_ptr->bit_flags |= BACKFILL_SCHED;
 		job_ptr->last_sched_eval = now;
 		job_ptr->part_ptr = part_ptr;
-		job_ptr->priority = bf_job_priority;
+		/*
+		 * Don't reset priority changed during yield - job entry may be
+		 * out of priority order now, but continuing because bf_continue
+		 * is set in that case.
+		 */
+		if (!job_ptr->direct_set_prio)
+			job_ptr->priority = bf_job_priority;
 		job_ptr->qos_ptr = qos_ptr;
 		if (qos_ptr)
 			job_ptr->qos_id = qos_ptr->id;
