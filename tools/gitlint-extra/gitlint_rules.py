@@ -22,6 +22,7 @@ class ExtendedEnum(Enum):
 
 
 class TrailerType(ExtendedEnum):
+    CASE = "Case"
     CHANGELOG = "Changelog"
     CHERRY_PICK = "Cherry-picked"
     CID = "CID"
