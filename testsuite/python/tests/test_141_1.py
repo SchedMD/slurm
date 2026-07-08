@@ -658,7 +658,7 @@ def test_scontrol_power_down_force():
 
     # Change power save thread minimum interval and restart slurmctld
     atf.require_config_parameter_includes(
-        "SlurmctldParameters", f"power_save_min_interval={power_interval}"
+        "SlurmctldParameters", ("power_save_min_interval", power_interval)
     )
     atf.restart_slurmctld(clean=True)
 

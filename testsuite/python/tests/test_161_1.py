@@ -80,7 +80,7 @@ def setup():
         component="sbin/slurmd",
         reason="topology/torus3d was added in 26.05",
     )
-    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=1")
+    atf.require_config_parameter_includes("SchedulerParameters", ("bf_interval", 1))
     atf.require_nodes(32)
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")

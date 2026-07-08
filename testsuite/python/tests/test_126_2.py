@@ -126,8 +126,8 @@ def setup():
             },
         },
     )
-    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=1")
-    atf.require_config_parameter_includes("SchedulerParameters", "sched_interval=1")
+    atf.require_config_parameter_includes("SchedulerParameters", ("bf_interval", 1))
+    atf.require_config_parameter_includes("SchedulerParameters", ("sched_interval", 1))
     atf.require_slurm_running()
 
 
