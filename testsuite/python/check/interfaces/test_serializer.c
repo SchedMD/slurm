@@ -181,12 +181,14 @@ START_TEST(test_mimetype)
 
 	ck_assert(resolve_mime_type(MIME_TYPE_JSON, &ptr) != NULL);
 	ck_assert(ptr != NULL);
-	ck_assert(!xstrcmp(ptr, MIME_TYPE_JSON_PLUGIN));
+	ck_assert(!xstrcmp(ptr, MIME_TYPE_JSON_PLUGIN) ||
+		  !xstrcmp(ptr, MIME_TYPE_XJSON_PLUGIN));
 
 	ptr = NULL;
 	ck_assert(resolve_mime_type("application/jsonrequest", &ptr) != NULL);
 	ck_assert(ptr != NULL);
-	ck_assert(!xstrcmp(ptr, MIME_TYPE_JSON_PLUGIN));
+	ck_assert(!xstrcmp(ptr, MIME_TYPE_JSON_PLUGIN) ||
+		  !xstrcmp(ptr, MIME_TYPE_XJSON_PLUGIN));
 }
 
 END_TEST
