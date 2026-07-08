@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 			rc = slurm_submit_batch_job(desc, &resp);
 		if (rc >= 0)
 			break;
-		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
+		if (errno == ESLURM_MAX_JOB_COUNT) {
 			msg = "Slurm job queue full, sleeping and retrying";
 		} else if ((errno == ESLURM_NODES_BUSY) ||
 			   (errno == ESLURM_PORTS_BUSY)) {

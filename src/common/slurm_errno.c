@@ -245,8 +245,8 @@ slurm_errtab_t slurm_errtab[] = {
 		"Node count specification invalid",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_ERROR_ON_DESC_TO_RECORD_COPY),
-		"Unable to create job record, try again",
+		ERRTAB_ENTRY(ESLURM_MAX_JOB_COUNT),
+		"MaxJobCount limit reached",
 	},
 	{
 		ERRTAB_ENTRY(ESLURM_JOB_MISSING_SIZE_SPECIFICATION),
