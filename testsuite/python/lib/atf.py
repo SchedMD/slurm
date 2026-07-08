@@ -3313,12 +3313,12 @@ def require_config_parameter_includes(name, value, source="slurm"):
 
     Args:
         name (string): The parameter name.
-        value (string or list[string]): The value we want to be in the list.
-            If a list/tuple of acceptable values is given, the parameter is
-            considered to already satisfy the requirement if ANY of them is
-            present. In auto-config mode, when none are present, the FIRST
-            listed value is added — so callers should list their preferred
-            default first.
+        value: The required value, in one of these forms:
+            * string: A single token that must be present in the comma list.
+            * (key, val) tuple: A "key=val" pair.
+              (e.g. ``('sched_interval', 1)`` in ``SchedulerParameters``).
+            * list: A set of acceptable alternatives (strings or tuples).
+              The requirement is satisfied if ANY of them is satisfied.
         source (string): Name of the config file without the .conf prefix.
 
     Returns:
@@ -3328,6 +3328,10 @@ def require_config_parameter_includes(name, value, source="slurm"):
         >>> # Single value:
         >>> require_config_parameter_includes('SlurmdParameters', 'config_overrides')
         >>>
+        >>> # key=value: replaces any existing 'sched_interval=<other>' token:
+        >>> require_config_parameter_includes(
+        ...     'SchedulerParameters', ('sched_interval', 1))
+        >>>
         >>> # Any of several acceptable values; if none present in auto-config,
         >>> # adds 'CR_Core_Memory' (the first listed):
         >>> require_config_parameter_includes(
@@ -3335,20 +3339,57 @@ def require_config_parameter_includes(name, value, source="slurm"):
         ...     ['CR_Core_Memory', 'CR_Memory'],
         ... )
     """
-    values = [value] if isinstance(value, str) else list(value)
+    # A list means "one of these alternatives"; anything else is a single
+    # requirement (string token, or (key, val) tuple). Wrap the single case
+    # in a list so we can iterate uniformly below.
+    values = value if isinstance(value, list) else [value]
     if not values:
         pytest.fail(
             f"require_config_parameter_includes({name!r}, ...) needs at least one value"
         )
 
-    already_present = any(
-        config_parameter_includes(name, v, source=source, live=False, quiet=True)
-        for v in values
-    )
+    def _as_token(v):
+        """Render a requirement as the token that must appear in the list."""
+        if isinstance(v, tuple):
+            if len(v) != 2:
+                pytest.fail("Only supporting key-value tuples")
+            return f"{v[0]}={v[1]}"
+        return str(v)
+
+    def _is_satisfied(v):
+        return config_parameter_includes(
+            name, _as_token(v), source=source, live=False, quiet=True
+        )
+
+    already_present = any(_is_satisfied(v) for v in values)
 
     if properties["auto-config"]:
-        if not already_present:
-            add_config_parameter_value(name, values[0], source=source)
+        if already_present:
+            return
+        first = values[0]
+        if isinstance(first, tuple):
+            # (key, val): replace any existing "key=<other>" token in place;
+            # otherwise append. This avoids ambiguous duplicate keys.
+            key, _ = first
+            kv_token = _as_token(first)
+            current = get_config_parameter(name, live=False, quiet=True, source=source)
+            tokens = current.split(",") if current else []
+            key_prefix = f"{key.casefold()}="
+            match_idx = next(
+                (
+                    i
+                    for i, t in enumerate(tokens)
+                    if t.casefold().startswith(key_prefix)
+                ),
+                None,
+            )
+            if match_idx is not None:
+                tokens[match_idx] = kv_token
+                set_config_parameter(name, ",".join(tokens), source=source)
+            else:
+                add_config_parameter_value(name, kv_token, source=source)
+        else:
+            add_config_parameter_value(name, _as_token(first), source=source)
     else:
         if not already_present:
             pytest.skip(
