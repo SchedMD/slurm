@@ -65,8 +65,12 @@
 
 #include "src/api/step_io.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/sattach/attach.h"
 #include "src/sattach/opt.h"
+
+#define SATTACH_CONMGR_THREADS CONMGR_THREAD_COUNT_MIN
 
 static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
@@ -113,6 +117,31 @@ static struct io_operations message_socket_ops = {
 };
 
 static struct termios termdefaults;
+
+/* Set by _on_detach_signal(); guarded by the message thread state lock. */
+static bool detach_requested = false;
+
+/*
+ * conmgr signal work run when a detach signal (SIGINT etc.) is received. It
+ * wakes _msg_thr_wait() so sattach falls through to its normal teardown, which
+ * gracefully shuts down (TLS included) the I/O connections; the step is left
+ * running. conmgr catches the signal and runs this from a worker thread (not
+ * the signal handler itself), so waking the condition variable here is safe.
+ * IN conmgr_args - conmgr callback state
+ * IN arg - message_thread_state_t to signal
+ */
+static void _on_detach_signal(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	message_thread_state_t *mts = arg;
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	slurm_mutex_lock(&mts->lock);
+	detach_requested = true;
+	slurm_cond_broadcast(&mts->cond);
+	slurm_mutex_unlock(&mts->lock);
+}
 
 /**********************************************************************
  * sattach
@@ -178,6 +207,20 @@ int sattach(int argc, char **argv)
 				      opt.labelio, NO_VAL, NO_VAL);
 	client_io_handler_start(io);
 
+	/*
+	 * Use conmgr solely to catch signals so a Ctrl-C (or termination)
+	 * detaches cleanly through the normal teardown path, which gracefully
+	 * shuts down the I/O connections (TLS close_notify) instead of dropping
+	 * them abruptly. conmgr_run() is non-blocking and processes signals from
+	 * a background thread.
+	 */
+	conmgr_init(0, SATTACH_CONMGR_THREADS, 0);
+	conmgr_add_work_signal(SIGINT, _on_detach_signal, mts);
+	conmgr_add_work_signal(SIGTERM, _on_detach_signal, mts);
+	conmgr_add_work_signal(SIGQUIT, _on_detach_signal, mts);
+	conmgr_add_work_signal(SIGHUP, _on_detach_signal, mts);
+	conmgr_run(false);
+
 	if (opt.pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
@@ -204,8 +247,21 @@ int sattach(int argc, char **argv)
 		_mpir_dump_proctable();
 
 	_msg_thr_wait(mts);
+
+	/* Stop conmgr before tearing down the state its signal work references. */
+	conmgr_fini();
+
 	_msg_thr_destroy(mts);
 	slurm_job_step_layout_free(layout);
+	/*
+	 * Force the IO servers closed rather than waiting for the remaining task
+	 * stdout/stderr. sattach is detaching, so it should exit promptly even
+	 * while the step (and its output) keeps running; without this,
+	 * client_io_handler_finish() would block until every remote stdout/stderr
+	 * stream reached EOF. srun, by contrast, only aborts on error and
+	 * otherwise waits for all output.
+	 */
+	client_io_handler_abort(io);
 	client_io_handler_finish(io);
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
@@ -470,12 +526,18 @@ fail:
 
 static void _msg_thr_wait(message_thread_state_t *mts)
 {
-	/* Wait for all known running tasks to complete */
+	/*
+	 * Wait for all known running tasks to complete, or until a signal
+	 * requests a detach (_on_detach_signal() sets detach_requested and wakes
+	 * the cond).
+	 */
 	slurm_mutex_lock(&mts->lock);
-	while (bit_set_count(mts->tasks_exited)
-	       < bit_set_count(mts->tasks_started)) {
+	while (!detach_requested && (bit_set_count(mts->tasks_exited) <
+				     bit_set_count(mts->tasks_started))) {
 		slurm_cond_wait(&mts->cond, &mts->lock);
 	}
+	if (detach_requested)
+		verbose("Detaching on signal");
 	slurm_mutex_unlock(&mts->lock);
 }
 
@@ -570,10 +632,12 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	case RESPONSE_LAUNCH_TASKS:
 		debug2("received task launch");
 		_launch_handler(mts, msg);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
 	case MESSAGE_TASK_EXIT:
 		debug2("received task exit");
 		_exit_handler(mts, msg);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");

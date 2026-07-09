@@ -397,6 +397,13 @@ typedef enum {
 	/* output_fd is a socket with TCP_NODELAY set */
 	CON_FLAG_TCP_NODELAY = SLURM_BIT(14),
 	/*
+	 * Send a TLS close_notify (half-close via s2n_shutdown_send()) before
+	 * closing the connection, so the peer's next read returns EOF instead of
+	 * an error. Used for persistent connections where the peer must be able
+	 * to tell an intentional close from a failure. Normal RPCs omit this.
+	 */
+	CON_FLAG_ENABLE_TLS_SHUTDOWN = SLURM_BIT(16),
+	/*
 	 * Incoming and outgoing is wrapped by TLS (or connection will fail)
 	 * in CONN_SERVER mode.
 	 * Mutually exclusive with CON_FLAG_TLS_CLIENT.

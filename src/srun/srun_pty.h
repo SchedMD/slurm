@@ -45,6 +45,10 @@
 typedef struct srun_job signal_job_t;
 
 void pty_thread_create(srun_job_t *job);
+
+/* Signal the pty thread to shut down cleanly and wait for it to exit. */
+extern void pty_thread_fini(void);
+
 int set_winsize(int fd, srun_job_t *job);
 
 #endif /* !_SIGNALS_H */

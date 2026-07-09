@@ -122,7 +122,7 @@ expect {
 			fail "Output filtering by task failed"
 		} else {
 			incr matches
-			exec $bin_kill -KILL $attach_pid
+			exec $bin_kill -TERM $attach_pid
 		}
 		exp_continue
 	}

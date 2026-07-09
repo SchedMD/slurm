@@ -127,7 +127,8 @@ typedef enum {
 	FLAG_TCP_NODELAY = CON_FLAG_TCP_NODELAY,
 	/* connection received write EOF for output_fd */
 	FLAG_WRITE_EOF = SLURM_BIT(15),
-	/* SLURM_BIT(16) is unused */
+	/* @see CON_FLAG_ENABLE_TLS_SHUTDOWN */
+	FLAG_ENABLE_TLS_SHUTDOWN = CON_FLAG_ENABLE_TLS_SHUTDOWN,
 	/* SLURM_BIT(17) is unused */
 	/* @see CON_FLAG_TLS_SERVER */
 	FLAG_TLS_SERVER = CON_FLAG_TLS_SERVER,
