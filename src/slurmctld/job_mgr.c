@@ -2771,7 +2771,8 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		goto endit;
 
 	if (job_ptr->het_job_list &&
-	    (job_step_kill_msg->signal == SIGKILL) &&
+	    ((job_step_kill_msg->signal == SIGKILL) ||
+	     (job_step_kill_msg->signal == SIG_TERM_KILL)) &&
 	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
 		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
 			.job_step_kill_msg = job_step_kill_msg,
