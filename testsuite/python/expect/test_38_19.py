@@ -11,7 +11,7 @@ def setup():
     atf.require_expect()
 
     # Just to make the test faster
-    atf.require_config_parameter_includes("SchedulerParameters", "bf_interval=1")
+    atf.require_config_parameter_includes("SchedulerParameters", ("bf_interval", 1))
 
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_Core")

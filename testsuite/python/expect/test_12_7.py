@@ -13,7 +13,7 @@ def setup():
     atf.require_expect()
 
     # Just to make this test faster
-    atf.require_config_parameter_includes("SchedulerParameters", "requeue_delay=15")
+    atf.require_config_parameter_includes("SchedulerParameters", ("requeue_delay", 15))
 
     atf.require_accounting()
     atf.require_config_parameter("JobRequeue", 1)

@@ -50,13 +50,13 @@ def setup():
         "Licenses", f"{LIC_NAME}:{LIC_TOTAL}", source="slurm"
     )
     atf.require_config_parameter_includes(
-        "SchedulerParameters", "requeue_delay=0", source="slurm"
+        "SchedulerParameters", ("requeue_delay", 0), source="slurm"
     )
     atf.require_config_parameter_includes(
-        "SchedulerParameters", "bf_interval=1", source="slurm"
+        "SchedulerParameters", ("bf_interval", 1), source="slurm"
     )
     atf.require_config_parameter_includes(
-        "SchedulerParameters", "sched_interval=1", source="slurm"
+        "SchedulerParameters", ("sched_interval", 1), source="slurm"
     )
     atf.require_slurm_running()
 
