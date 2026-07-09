@@ -35,6 +35,10 @@ def setup():
     atf.module_load("openmpi")
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmd") < (25, 11, 7),
+    reason="Ticket 25376: mpi/pmix issue due to PMIX_STRING vs PMIX_REGEX. Fixed in 25.11.7",
+)
 def test_mpi_basic_functionality(mpi_program):
     """Test basic MPI functionality via srun with different distributions."""
 
