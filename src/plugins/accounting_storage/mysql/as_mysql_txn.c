@@ -83,6 +83,10 @@ extern list_t *as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if (!txn_cond)
 		goto empty;
 
+	if (as_mysql_validate_cluster_list(txn_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	/* handle query for associations first */
 	if (txn_cond->acct_list && list_count(txn_cond->acct_list)) {
 		set = 0;

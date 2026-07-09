@@ -1149,6 +1149,31 @@ extern void reset_mysql_conn(mysql_conn_t *mysql_conn)
 	list_flush(mysql_conn->update_list);
 }
 
+static int _find_unsafe_cluster(void *x, void *key)
+{
+	char *cluster_name = x;
+
+	return (cluster_name && strpbrk(cluster_name, "'\"\\`"));
+}
+
+extern int as_mysql_validate_cluster_list(list_t *cluster_list)
+{
+	char *cluster_name;
+
+	if (!cluster_list || !list_count(cluster_list))
+		return SLURM_SUCCESS;
+
+	if ((cluster_name = list_find_first(cluster_list,
+					    _find_unsafe_cluster, NULL))) {
+		error("%s: rejecting unsafe cluster name '%s'",
+		      __func__, cluster_name);
+		errno = ESLURM_INVALID_CLUSTER_NAME;
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int create_cluster_assoc_table(
 	mysql_conn_t *mysql_conn, char *cluster_name)
 {

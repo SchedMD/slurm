@@ -5807,6 +5807,13 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
+	if (arch_cond->job_cond) {
+		list_t *cluster_list = arch_cond->job_cond->cluster_list;
+		if (as_mysql_validate_cluster_list(cluster_list) !=
+		    SLURM_SUCCESS)
+			return SLURM_ERROR;
+	}
+
 	if (arch_cond->job_cond && arch_cond->job_cond->cluster_list
 	    && list_count(arch_cond->job_cond->cluster_list)) {
 		use_cluster_list = arch_cond->job_cond->cluster_list;
