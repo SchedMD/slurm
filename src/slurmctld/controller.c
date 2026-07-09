@@ -88,6 +88,7 @@
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
+#include "src/common/workerpool.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
 
@@ -770,6 +771,7 @@ int main(int argc, char **argv)
 
 	threadpool_init(SLURMCTLD_THREADPOOL_PREALLOCATE,
 			slurm_conf.slurmctld_params);
+	workerpool_init(0, 0, slurm_conf.slurmctld_params);
 
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
@@ -1286,6 +1288,7 @@ int main(int argc, char **argv)
 
 	http_fini();
 	http_switch_fini();
+	workerpool_fini();
 	/* Multiple threads never exit naturally during shutdown */
 	threadpool_fini();
 	rate_limit_shutdown();
