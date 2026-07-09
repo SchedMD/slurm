@@ -11575,6 +11575,8 @@ static int _unpack_forward_data_msg(slurm_msg_t *smsg, buf_t *buffer)
 	safe_unpackstr(&msg->address, buffer);
 	safe_unpack32(&msg->len, buffer);
 	safe_unpackmem_xmalloc(&msg->data, &uint32_tmp, buffer);
+	if (msg->len != uint32_tmp)
+		goto unpack_error;
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
