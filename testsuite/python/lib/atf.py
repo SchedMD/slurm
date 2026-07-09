@@ -28,6 +28,7 @@ import traceback
 
 import jsondiff
 import jsonpatch
+import pexpect
 import pytest
 
 # slurmrestd
@@ -2014,6 +2015,62 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
         )
 
     return tuple(int(n) for p in version_str.split(".") for n in [p.split("-")[0]])
+
+
+# Unique PS1 sentinel used to synchronize on the shell prompt with pexpect.
+# The set form uses '\$' (literal backslash + dollar) so the *echoed input*
+# of the PS1 assignment does not match the *expect regex* below, which has
+# no backslash. Bash interprets '\$' in PS1 as the prompt-escape that renders
+# as '$' for a normal user and '#' for root -- hence '[\$\#]' in the regex.
+_PEXPECT_PROMPT_SET = "PS1='[TEST_PROMPT]\\$ '"
+_PEXPECT_PROMPT_RE = re.compile(r"\[TEST_PROMPT\][\$\#] ")
+
+
+def run_command_pexpect(cmd):
+    """Spawn `cmd` under pexpect with live transcript logging.
+
+    Args:
+        cmd (string): the command line to pass to `pexpect.spawn`.
+
+    Returns:
+        A `pexpect.spawn` child with `logfile_read` set to `sys.stdout`.
+
+    Example:
+        >>> child = atf.run_command_pexpect("salloc")
+        >>> child.expect("Nodes.*are ready for job")   # cmd-specific sync
+        >>> atf.setup_pexpect_prompt(child)            # switch to prompt sync
+        >>> child.sendline("hostname")
+        >>> atf.wait_pexpect_prompt(child)
+        >>> # child.before now contains the output of `hostname`
+    """
+    child = pexpect.spawn(cmd, encoding="utf-8")
+    child.logfile_read = sys.stdout
+    return child
+
+
+def setup_pexpect_prompt(child):
+    """Install a unique PS1 sentinel on a pexpect child shell.
+
+    Note: `wait_pexpect_prompt` consumes the buffer up to the sentinel
+    prompt, so any output that arrived before this call -- including
+    command startup messages -- will only be available via `child.before`
+    (not via subsequent `expect()` calls). Wait for any cmd-specific
+    startup output BEFORE calling this.
+    """
+    child.sendline("unset PROMPT_COMMAND")
+    child.sendline(_PEXPECT_PROMPT_SET)
+    wait_pexpect_prompt(child)
+
+
+def wait_pexpect_prompt(child):
+    """Wait for the pexpect-managed shell prompt sentinel to appear.
+
+    Blocks until the unique PS1 sentinel configured by
+    `setup_pexpect_prompt()` is seen on the stream. Use this after any
+    `sendline()` to know the shell has finished the previous command and
+    is ready for the next one.
+    """
+    child.expect(_PEXPECT_PROMPT_RE)
 
 
 def require_expect():
