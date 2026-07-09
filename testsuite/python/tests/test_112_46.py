@@ -1712,6 +1712,70 @@ def test_nodes(slurm, admin_level):
         assert node.extra == extra
 
 
+def test_slurmrestd_slurm_nodes_update_time(slurm, admin_level):
+    """GET /nodes with update_time from a prior last_update succeeds."""
+    resp = slurm.slurm_v0046_get_nodes()
+    assert not resp.errors, f"unexpected errors: {resp.errors}"
+    assert resp.last_update is not None, "GET /nodes missing last_update"
+    node_name = None
+    for node in resp.nodes:
+        if node.name:
+            node_name = node.name
+            break
+    assert node_name, "expected at least one node from GET /nodes"
+    expected_nodes = {node.name for node in resp.nodes if node.name}
+    before_update = resp.last_update.number
+
+    atf.run_command(
+        f"scontrol update nodename={node_name} " "comment=slurmrestd-nodes-update-time",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    update_time = str(before_update)
+    r = atf.request_slurmrestd(f"slurm/v0.0.46/nodes?update_time={update_time}")
+    assert r.status_code == 200, (
+        f"GET /nodes with update_time={update_time} "
+        f"returned HTTP {r.status_code}: {r.text[:500]}"
+    )
+    body = r.json()
+    assert not body.get("errors"), (
+        f"GET /nodes with update_time={update_time} "
+        f"returned errors: {body.get('errors')}"
+    )
+    assert not body.get("warnings"), (
+        f"GET /nodes with update_time={update_time} "
+        f"returned warnings: {body.get('warnings')}"
+    )
+    nodes = body.get("nodes")
+    assert nodes, "expected the changed node to be returned for a diverged update_time"
+    changed = next((n for n in nodes if n.get("name") == node_name), None)
+    assert changed, f"changed node {node_name} missing from response"
+    assert (
+        changed.get("comment") == "slurmrestd-nodes-update-time"
+    ), f"changed node {node_name} did not reflect the updated comment"
+    returned_nodes = {n.get("name") for n in nodes if n.get("name")}
+    assert returned_nodes >= expected_nodes, (
+        "expected the entire node collection to be returned for a diverged "
+        f"update_time, missing: {expected_nodes - returned_nodes}"
+    )
+    after_update = body.get("last_update", {}).get("number")
+    assert after_update, "response missing last_update"
+    assert (
+        after_update >= before_update
+    ), f"last_update ({after_update}) went backwards past update_time ({before_update})"
+
+
+def test_slurmrestd_slurm_nodes_update_time_no_change(slurm):
+    """GET /nodes with a future update_time returns 304 Not Modified."""
+    r = atf.request_slurmrestd("slurm/v0.0.46/nodes?update_time=4102444800")
+    assert r.status_code == 304, (
+        f"GET /nodes with a future update_time "
+        f"returned HTTP {r.status_code}: {r.text[:500]}"
+    )
+    assert not r.text, f"expected an empty body on 304, got: {r.text[:500]}"
+
+
 def test_ping(slurm):
     resp = slurm.slurm_v0046_get_ping()
     assert len(resp.warnings) == 0
