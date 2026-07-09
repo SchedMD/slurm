@@ -263,30 +263,6 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 	if (results == NULL)
 		return SLURM_ERROR;
 
-	if (results->step_memsw_failcnt > 0) {
-		/*
-		 * reports the number of times that the memory plus swap space
-		 * limit has reached the value in memory.memsw.limit_in_bytes.
-		 */
-		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	} else if (results->step_mem_failcnt > 0) {
-		/*
-		 * reports the number of times that the memory limit has reached
-		 * the value set in memory.limit_in_bytes.
-		 */
-		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	}
-
-	if (results->job_memsw_failcnt > 0) {
-		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	} else if (results->job_mem_failcnt > 0) {
-		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	}
-
 	if (results->oom_kill_cnt) {
 		error("Detected %"PRIu64" oom_kill event%s in %ps. Some of the step tasks have been OOM Killed.",
 		      results->oom_kill_cnt,
@@ -306,6 +282,32 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 	xfree(results);
 
 	return rc;
+}
+
+extern void task_cgroup_memory_log_events(stepd_step_rec_t *step)
+{
+	cgroup_oom_t *results = NULL;
+
+	if (!oom_inited || !(results = cgroup_g_step_get_oom(step)))
+		return;
+
+	if (results->step_memsw_failcnt > 0) {
+		/*
+		 * Reports the number of times that the swap space limit has
+		 * been reached.
+		 */
+		info("%ps hit swap limit %"PRIu64" times during execution. This may or may not result in some failure.",
+		     &step->step_id, results->step_memsw_failcnt);
+	} else if (results->step_mem_failcnt > 0) {
+		/*
+		 * Reports the number of times that the memory space limit has
+		 * been reached.
+		 */
+		info("%ps hit memory limit %"PRIu64" times during execution. This may or may not result in some failure.",
+		     &step->step_id, results->step_mem_failcnt);
+	}
+
+	xfree(results);
 }
 
 extern int task_cgroup_memory_add_pid(stepd_step_rec_t *step, pid_t pid,

@@ -217,23 +217,19 @@ extern int task_p_pre_launch(stepd_step_rec_t *step)
  */
 extern int task_p_post_term(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
-	static bool ran = false;
-	int rc = SLURM_SUCCESS;
+	if (use_memory && !step->oom_error &&
+	    (task_cgroup_memory_check_oom(step) == ENOMEM))
+		step->oom_error = true;
 
-	/*
-	 * Only run this on the first call since this will run for
-	 * every task on the node.
-	 */
-	if (use_memory && !ran) {
-		rc = task_cgroup_memory_check_oom(step);
-		ran = true;
-	}
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /* task_p_post_step() is called after termination of the step (all the task). */
 extern int task_p_post_step(stepd_step_rec_t *step)
 {
+	if (use_memory)
+		task_cgroup_memory_log_events(step);
+
 	return fini();
 }
 

@@ -49,6 +49,13 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *step);
 /* detect if oom ran on a step or job and print notice of said event */
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step);
 
+/*
+ * Read the memory limit counters from the cgroup and log whether the step or
+ * job hit their memory or memory+swap limit. Must be called once at the end of
+ * the step.
+ */
+extern void task_cgroup_memory_log_events(stepd_step_rec_t *step);
+
 /* add a pid to the cgroup */
 extern int task_cgroup_memory_add_pid(stepd_step_rec_t *step, pid_t pid,
 				      uint32_t taskid);
