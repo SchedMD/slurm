@@ -114,8 +114,19 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 		query.show_flags = SHOW_ALL | SHOW_DETAIL | SHOW_MIXED;
 
 	if (!name) {
-		if ((slurm_load_node(query.update_time, &node_info_ptr,
-				     query.show_flags))) {
+		int rc = slurm_load_node(query.update_time, &node_info_ptr,
+					 query.show_flags);
+
+		if (rc == SLURM_NO_CHANGE_IN_DATA) {
+			/*
+			 * Nothing changed since query.update_time. Propagate
+			 * SLURM_NO_CHANGE_IN_DATA so the REST layer replies with
+			 * HTTP 304 (Not Modified) per RFC 7232, rather than a
+			 * 200 with an empty node list.
+			 */
+			ctxt->rc = SLURM_NO_CHANGE_IN_DATA;
+			goto done;
+		} else if (rc) {
 			resp_error(ctxt, errno, __func__,
 				   "Failure to query nodes");
 			goto done;
@@ -134,8 +145,14 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 		int rc;
 		partition_info_msg_t *part_info_ptr = NULL;
 
-		if ((rc = slurm_load_partitions(query.update_time,
-						&part_info_ptr,
+		/*
+		 * Always load current partitions (update_time=0) to build the
+		 * node<->partition mapping. Passing query.update_time here would
+		 * return SLURM_NO_CHANGE_IN_DATA when partitions are unchanged
+		 * since that time, even though nodes did change, causing a
+		 * spurious failure.
+		 */
+		if ((rc = slurm_load_partitions(0, &part_info_ptr,
 						query.show_flags))) {
 			resp_error(ctxt, rc, __func__,
 				   "Unable to query partitions");
