@@ -36,6 +36,13 @@ set skips              0
 set job_id             0
 set mpi_arg            "--mpi=pmix"
 
+# Disable OpenMPI's shared-memory BTL and force TCP for MPI transport to
+# avoid false failure in multi-slurmd setup.
+# The problem is that OpenMPI's sm BTL names its /dev/shm segments as
+# "sm_segment.<gethostname>.<uid>.<jobid_hex>.<my_node_rank>". With an
+# identical hostname these collide, leading to segfaults and false failures.
+set env(OMPI_MCA_btl) "self,tcp"
+
 proc run_pmix_het_job {comp_count} {
 	global eol max_job_delay number srun mpi_arg
 
