@@ -1799,6 +1799,11 @@ extern list_t *as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
+	if (job_cond &&
+	    (as_mysql_validate_cluster_list(job_cond->cluster_list) !=
+	     SLURM_SUCCESS))
+		return NULL;
+
 	/*
 	 * This clause must be kept in sync with the access check in
 	 * _cluster_get_jobs().

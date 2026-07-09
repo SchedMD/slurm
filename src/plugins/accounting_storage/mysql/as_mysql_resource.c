@@ -814,6 +814,11 @@ extern list_t *as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if (res_cond &&
+	    (as_mysql_validate_cluster_list(res_cond->cluster_list) !=
+	     SLURM_SUCCESS))
+		return NULL;
+
 	_setup_res_cond(res_cond, &extra);
 
 	xfree(tmp);
@@ -939,6 +944,10 @@ extern list_t *as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	/* force to only do non-deleted server resources */
 	res_cond->with_deleted = 0;
+
+	if (as_mysql_validate_cluster_list(res_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 
 	_setup_res_cond(res_cond, &extra);
 	query_clusters = _setup_clus_res_cond(res_cond, &clus_extra);
@@ -1118,6 +1127,10 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
 		return NULL;
 	}
+
+	if (as_mysql_validate_cluster_list(res_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 
 	_setup_res_limits(res, NULL, &tmp, &vals, 0, &send_update);
 
