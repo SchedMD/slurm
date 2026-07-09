@@ -12283,6 +12283,8 @@ static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
 	safe_unpackstr(&msg->address, buffer);
 	safe_unpack32(&msg->len, buffer);
 	safe_unpackmem_xmalloc(&msg->data, &temp32, buffer);
+	if (msg->len != temp32)
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
