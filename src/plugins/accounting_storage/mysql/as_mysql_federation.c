@@ -443,6 +443,10 @@ extern list_t *as_mysql_get_federations(
 		goto empty;
 	}
 
+	if (as_mysql_validate_cluster_list(federation_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	_setup_federation_cond_limits(federation_cond, &extra);
 
 empty:
@@ -531,6 +535,9 @@ extern list_t *as_mysql_modify_federations(
 
 	/* force to only do non-deleted federations */
 	fed_cond->with_deleted = 0;
+	if (as_mysql_validate_cluster_list(fed_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 	_setup_federation_cond_limits(fed_cond, &extra);
 	_setup_federation_rec_limits(fed, &tmp_char1, &tmp_char2, &vals);
 	xfree(tmp_char1);
@@ -663,6 +670,9 @@ extern list_t *as_mysql_remove_federations(mysql_conn_t *mysql_conn,
 
 	/* force to only do non-deleted federations */
 	fed_cond->with_deleted = 0;
+	if (as_mysql_validate_cluster_list(fed_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 	_setup_federation_cond_limits(fed_cond, &extra);
 
 	if (!extra) {

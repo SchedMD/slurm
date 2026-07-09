@@ -662,6 +662,10 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
+	if (as_mysql_validate_cluster_list(resv_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	with_usage = resv_cond->with_usage;
 
 	if (resv_cond->nodes) {

@@ -3448,6 +3448,10 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if (as_mysql_validate_cluster_list(add_assoc->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	memset(&add_assoc_cond, 0, sizeof(add_assoc_cond));
 
 	if (!add_assoc->user_list && !add_assoc->assoc.parent_acct)
@@ -3606,6 +3610,10 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if (as_mysql_validate_cluster_list(assoc_cond->cluster_list) !=
+	    SLURM_SUCCESS)
 		return NULL;
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
@@ -3864,6 +3872,10 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if (as_mysql_validate_cluster_list(assoc_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
@@ -4047,6 +4059,10 @@ extern list_t *as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
+	if (as_mysql_validate_cluster_list(assoc_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	if ((slurm_conf.private_data & PRIVATE_DATA_USERS) ||
 	    ((assoc_cond->flags & ASSOC_COND_FLAG_WITH_USAGE) &&
 	     (slurm_conf.private_data & PRIVATE_DATA_USAGE))) {
@@ -4122,6 +4138,9 @@ extern int as_mysql_assoc_remove_default(mysql_conn_t *mysql_conn,
 
 	if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT))
 		return ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
+
+	if (as_mysql_validate_cluster_list(cluster_list) != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	slurmdb_init_assoc_rec(&assoc, 0);
 	assoc.acct = "";
