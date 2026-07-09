@@ -6001,6 +6001,10 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	if (new_cluster_list)
 		FREE_NULL_LIST(use_cluster_list);
 
+	if ((rc == SLURM_SUCCESS) && (arch_cond->purge_txn != NO_VAL))
+		rc = _archive_purge_table(PURGE_TXN, 0, mysql_conn, "",
+					  arch_cond);
+
 	return rc;
 }
 
