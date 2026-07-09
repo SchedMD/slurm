@@ -7,6 +7,14 @@ import pytest
 
 import atf
 
+pytestmark = [
+    pytest.mark.xfail_teardown(
+        reason="Issue 50974: Sometimes slurmd was not able to stop normally in 25.11",
+        known_fail_msg="Not all Slurm daemons were successfully stopped",
+        condition=atf.get_version() < (26, 5),
+    ),
+]
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
