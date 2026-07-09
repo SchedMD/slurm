@@ -2632,7 +2632,6 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
 	xassert(job_ptr);
-	xassert(job_ptr->job_id == job_step_kill_msg->step_id.job_id);
 
 	START_TIMER;
 
