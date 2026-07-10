@@ -2134,23 +2134,43 @@ static int _shepherd_spawn(srun_job_t *job, list_t *srun_job_list,
 	int shepherd_pipe[2], rc;
 	pid_t shepherd_pid;
 	char buf[1];
+	sigset_t block_mask, old_mask;
 
 	if (pipe(shepherd_pipe)) {
 		error("pipe: %m");
 		return -1;
 	}
 
+	/*
+	 * Block all signals across the fork(). conmgr resets the child's signal
+	 * dispositions to their defaults on fork(), so without a blocked mask
+	 * the shepherd, which must outlive srun to clean up the job/step on
+	 * abnormal termination, could be killed by a signal and not give it a
+	 * chance to cleanup the job. The shepherd never needs to act on a
+	 * signal, so it inherits and keeps the fully blocked mask; the parent
+	 * restores its original mask below.
+	 */
+	sigfillset(&block_mask);
+	pthread_sigmask(SIG_BLOCK, &block_mask, &old_mask);
+
 	shepherd_pid = fork();
 	if (shepherd_pid == -1) {
 		error("fork: %m");
+		pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 		return -1;
 	}
 	if (shepherd_pid != 0) {
+		pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 		close(shepherd_pipe[0]);
 		return shepherd_pipe[1];
 	}
 
-	/* Wait for parent to notify of completion or I/O error on abort */
+	/*
+	 * Shepherd child: keep all signals blocked so teardown signals cannot
+	 * kill us before the cleanup below completes.
+	 *
+	 * Wait for parent to notify of completion or I/O error on abort.
+	 */
 	close(shepherd_pipe[1]);
 	while (1) {
 		rc = read(shepherd_pipe[0], buf, 1);
