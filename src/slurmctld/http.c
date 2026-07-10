@@ -502,6 +502,10 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
 	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
 		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
 
