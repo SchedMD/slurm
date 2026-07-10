@@ -156,6 +156,16 @@ typedef struct slurmd_config {
 	char *dynamic_feature;		/* Dynamic feature to register with */
 } slurmd_conf_t;
 
+/*
+ * Health hint for run_script_health_check(). HC_HEALTH_UNKNOWN leaves
+ * SLURM_NODE_IS_HEALTHY unset (no ctld-supplied state, e.g. at startup).
+ */
+typedef enum {
+	HC_HEALTH_UNKNOWN = 0,
+	HC_HEALTH_HEALTHY,
+	HC_HEALTH_UNHEALTHY,
+} hc_node_health_t;
+
 extern slurmd_conf_t * conf;
 extern int fini_job_cnt;
 extern uint32_t *fini_job_id;
@@ -170,7 +180,7 @@ extern bool tres_packed;
 int send_registration_msg(uint32_t status);
 
 /* Run the health check program if configured */
-int run_script_health_check(void);
+extern int run_script_health_check(hc_node_health_t node_health);
 
 /* shutdown the slurmd daemon */
 extern void slurmd_shutdown(void);

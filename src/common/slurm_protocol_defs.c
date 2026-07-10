@@ -1644,6 +1644,11 @@ extern void slurm_free_node_info_request_msg(node_info_request_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_node_health_check_msg(node_health_check_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_node_info_single_msg(node_info_single_msg_t *msg)
 {
 	if (msg) {
@@ -5421,6 +5426,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		slurm_free_set_debug_level_msg(data);
 		break;
+	case REQUEST_NODE_HEALTH_CHECK:
+		slurm_free_node_health_check_msg(data);
+		break;
 	case REQUEST_CONTAINER_PTY:
 	case REQUEST_CONTAINER_START:
 	case REQUEST_CONTAINER_STATE:
@@ -6658,6 +6666,9 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_WITH_CONFIG)
 			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_NODE_HEALTH_CHECK)
+			slurm_free_node_health_check_msg(
+				agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}

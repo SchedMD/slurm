@@ -2885,7 +2885,13 @@ static void _rpc_ping(slurm_msg_t *msg)
 	}
 }
 
-static void _rpc_health_check(slurm_msg_t *msg)
+/*
+ * Reply to a health-check RPC, then run the configured HealthCheckProgram.
+ * IN msg - health-check request from slurmctld
+ * IN node_health - health hint exported as SLURM_NODE_IS_HEALTHY
+ *	(HC_HEALTH_UNKNOWN leaves the variable unset)
+ */
+static void _do_health_check(slurm_msg_t *msg, hc_node_health_t node_health)
 {
 	/* If the reply can't be sent this indicates that
 	 * 1. The network is broken OR
@@ -2899,7 +2905,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 		send_registration_msg(SLURM_SUCCESS);
 	}
 
-	run_script_health_check();
+	run_script_health_check(node_health);
 
 	/* Take this opportunity to enforce any job memory limits */
 	job_mem_limit_enforce();
@@ -2907,6 +2913,19 @@ static void _rpc_health_check(slurm_msg_t *msg)
 	_file_bcast_cleanup();
 }
 
+static void _rpc_health_check(slurm_msg_t *msg)
+{
+	/* The plain RPC carries no verdict; leave SLURM_NODE_IS_HEALTHY unset. */
+	_do_health_check(msg, HC_HEALTH_UNKNOWN);
+}
+
+static void _rpc_node_health_check(slurm_msg_t *msg)
+{
+	node_health_check_msg_t *req = msg->data;
+
+	_do_health_check(msg, req->healthy ? HC_HEALTH_HEALTHY :
+					     HC_HEALTH_UNHEALTHY);
+}
 
 static void _rpc_acct_gather_update(slurm_msg_t *msg)
 {
@@ -5489,6 +5508,11 @@ slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_health_check,
+	},
+	{
+		.msg_type = REQUEST_NODE_HEALTH_CHECK,
+		.from_slurmctld = true,
+		.func = _rpc_node_health_check,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_UPDATE,

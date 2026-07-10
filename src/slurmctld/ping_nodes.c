@@ -326,15 +326,71 @@ void ping_nodes (void)
 	}
 }
 
+/*
+ * Return true when ctld considers node_ptr out of service for the
+ * health-check health signal: down, draining or drained, failing, or in
+ * maintenance. Mirrors the offline/online check in NHC
+ * IN node_ptr - node to classify
+ * RET true if the node is unhealthy, false otherwise
+ */
+static bool _node_unhealthy_for_hc(node_record_t *node_ptr)
+{
+	/*
+	 * We include maint in this check as common health check programs
+	 * treat a node in maintenance reservation the same as a down node
+	 */
+	return (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
+		IS_NODE_FAIL(node_ptr) || IS_NODE_MAINT(node_ptr));
+}
+
+/*
+ * Queue a health check agent for the hosts in args, or free args if it has no
+ * hosts. Each queued agent gets a matching ping_begin()/ping_end() pair.
+ * IN args - agent args to queue (ownership taken) or free when empty
+ */
+static void _queue_health_check(agent_arg_t *args)
+{
+	char *host_str = NULL;
+
+	if (!args->node_count) {
+		purge_agent_args(args);
+		return;
+	}
+
+	hostlist_uniq(args->hostlist);
+	host_str = hostlist_ranged_string_xmalloc(args->hostlist);
+	debug("Spawning health check agent for %s", host_str);
+	xfree(host_str);
+	ping_begin();
+	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(args);
+}
+
 extern void run_health_check_individual(node_record_t *node_ptr)
 {
 	agent_arg_t *check_agent_args = NULL;
 
 	check_agent_args = xmalloc(sizeof(agent_arg_t));
-	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
 	check_agent_args->retry = 0;
 	check_agent_args->protocol_version = node_ptr->protocol_version;
 	check_agent_args->hostlist = hostlist_create(NULL);
+
+	/*
+	 * When slurmd can report node health (by default on 26.11+, or on
+	 * 26.05 with health_check_report), send the verdict-carrying
+	 * RPC; otherwise fall back to the plain RPC.
+	 */
+	if ((slurm_conf.conf_flags & CONF_FLAG_HC_REPORT_HEALTH) &&
+	    (node_ptr->protocol_version >= SLURM_26_05_PROTOCOL_VERSION)) {
+		/* When 26.05 is no longer supported keep only if section */
+		node_health_check_msg_t *report_msg =
+			xmalloc(sizeof(*report_msg));
+		report_msg->healthy = !_node_unhealthy_for_hc(node_ptr);
+		check_agent_args->msg_type = REQUEST_NODE_HEALTH_CHECK;
+		check_agent_args->msg_args = report_msg;
+	} else {
+		check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	}
 
 	hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 	check_agent_args->node_count++;
@@ -350,8 +406,11 @@ extern void run_health_check_individual(node_record_t *node_ptr)
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void)
 {
-	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
+	agent_arg_t *healthy_agent_args = NULL;
+	agent_arg_t *unhealthy_agent_args = NULL;
+	node_health_check_msg_t *healthy_msg = NULL, *unhealthy_msg = NULL;
+	bool report = (slurm_conf.conf_flags & CONF_FLAG_HC_REPORT_HEALTH);
 	node_record_t *node_ptr;
 	int node_test_cnt = 0;
 	int node_limit = 0;
@@ -387,6 +446,24 @@ extern void run_health_check(void)
 	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	check_agent_args->hostlist = hostlist_create(NULL);
 
+	healthy_msg = xmalloc(sizeof(*healthy_msg));
+	healthy_msg->healthy = true;
+	healthy_agent_args = xmalloc(sizeof(agent_arg_t));
+	healthy_agent_args->msg_type = REQUEST_NODE_HEALTH_CHECK;
+	healthy_agent_args->msg_args = healthy_msg;
+	healthy_agent_args->retry = 0;
+	healthy_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	healthy_agent_args->hostlist = hostlist_create(NULL);
+
+	unhealthy_msg = xmalloc(sizeof(*unhealthy_msg));
+	unhealthy_msg->healthy = false;
+	unhealthy_agent_args = xmalloc(sizeof(agent_arg_t));
+	unhealthy_agent_args->msg_type = REQUEST_NODE_HEALTH_CHECK;
+	unhealthy_agent_args->msg_args = unhealthy_msg;
+	unhealthy_agent_args->retry = 0;
+	unhealthy_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	unhealthy_agent_args->hostlist = hostlist_create(NULL);
+
 	/* Sync plugin internal data with
 	 * node select_nodeinfo. This is important
 	 * after reconfig otherwise select_nodeinfo
@@ -396,6 +473,7 @@ extern void run_health_check(void)
 	select_g_select_nodeinfo_set_all();
 
 	for (; (node_ptr = next_node(&base_node_loc)); base_node_loc++) {
+		agent_arg_t *args = check_agent_args;
 		if (run_cyclic &&
 		    (node_test_cnt++ >= node_limit))
 				break;
@@ -442,31 +520,34 @@ extern void run_health_check(void)
 					continue;
 			}
 		}
-		if (check_agent_args->protocol_version >
-		    node_ptr->protocol_version)
-			check_agent_args->protocol_version =
-				node_ptr->protocol_version;
-		hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
-		check_agent_args->node_count++;
+		/*
+		 * When slurmd can report node health (by default on 26.11+,
+		 * or on 26.05 with health_check_report), send the
+		 * verdict-carrying RPC; otherwise fall back to the plain RPC.
+		 *
+		 * When 26.05 is no longer supported check_agent_args can be
+		 * removed and the protocol version guard can be removed.
+		 */
+		if (report && (node_ptr->protocol_version >=
+			       SLURM_26_05_PROTOCOL_VERSION)) {
+			if (_node_unhealthy_for_hc(node_ptr))
+				args = unhealthy_agent_args;
+			else
+				args = healthy_agent_args;
+		}
+		if (args->protocol_version > node_ptr->protocol_version)
+			args->protocol_version = node_ptr->protocol_version;
+		hostlist_push_host(args->hostlist, node_ptr->name);
+		args->node_count++;
 		if (PACK_FANOUT_ADDRS(node_ptr))
-			check_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+			args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 	if (!node_ptr)
 		base_node_loc = 0;
 
-	if (check_agent_args->node_count == 0) {
-		hostlist_destroy(check_agent_args->hostlist);
-		xfree (check_agent_args);
-	} else {
-		hostlist_uniq(check_agent_args->hostlist);
-		host_str = hostlist_ranged_string_xmalloc(
-				check_agent_args->hostlist);
-		debug("Spawning health check agent for %s", host_str);
-		xfree(host_str);
-		ping_begin();
-		set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(check_agent_args);
-	}
+	_queue_health_check(check_agent_args);
+	_queue_health_check(healthy_agent_args);
+	_queue_health_check(unhealthy_agent_args);
 }
 
 /* Update acct_gather data for every node that is not DOWN */

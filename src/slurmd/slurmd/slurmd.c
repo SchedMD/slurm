@@ -564,7 +564,7 @@ main (int argc, char **argv)
 
 	if (original &&
 	    !(slurm_conf.health_check_node_state & HEALTH_CHECK_REBOOT_ONLY))
-		run_script_health_check();
+		run_script_health_check(HC_HEALTH_UNKNOWN);
 
 	record_launched_jobs();
 
@@ -3410,10 +3410,11 @@ static void _resource_spec_fini(void)
 /*
  * Run the configured health check program
  *
- * Returns the run result. If the health check program
- * is not defined, returns success immediately.
+ * IN node_health - ctld's view of node health; exported to the program as
+ *     SLURM_NODE_IS_HEALTHY={yes,no} when known
+ * RET run result, or SLURM_SUCCESS if no health check program is configured
  */
-extern int run_script_health_check(void)
+extern int run_script_health_check(hc_node_health_t node_health)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -3443,6 +3444,10 @@ extern int run_script_health_check(void)
 		cmd_argv[1] = NULL;
 
 		setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
+		if (node_health != HC_HEALTH_UNKNOWN)
+			setenvf(&env, "SLURM_NODE_IS_HEALTHY", "%s",
+				(node_health == HC_HEALTH_HEALTHY) ? "yes" :
+								     "no");
 		/*
 		 * We need to set the pointer after we alter or we may be
 		 * pointing to the wrong place otherwise.
