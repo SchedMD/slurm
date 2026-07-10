@@ -491,7 +491,7 @@ static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
 static int _poll(const char *caller)
 {
 	int nfds = -1, rc = SLURM_SUCCESS, events_count = 0;
-	int fd_count = 0;
+	int fd_count = 0, event_i = 0;
 	struct pollfd *events = NULL;
 
 	slurm_mutex_lock(&pctl.mutex);
@@ -522,7 +522,7 @@ static int _poll(const char *caller)
 	log_flag(CONMGR, "%s->%s: [POLL] BEGIN: poll() with %d file descriptors",
 		 caller, __func__, pctl.fd_count);
 
-	for (int i = 0, event_i = 0; i < pctl.events_count; i++) {
+	for (int i = 0; i < pctl.events_count; i++) {
 		if ((pctl.fds[i].fd < 0))
 			continue;
 
@@ -537,6 +537,12 @@ static int _poll(const char *caller)
 		events[event_i].revents = 0;
 		event_i++;
 	}
+
+	/* Clear events for non-populated FD event slots */
+	for (int i = event_i; i < events_count; i++)
+		events[i] = (struct pollfd) {
+			.fd = -1,
+		};
 
 	slurm_mutex_unlock(&pctl.mutex);
 
