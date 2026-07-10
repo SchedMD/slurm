@@ -79,26 +79,39 @@ def test_rocr_visible_devices_uuid():
 def test_step_uuid_isolation():
     """Verify each step gets its own GPU UUID in CUDA_VISIBLE_DEVICES"""
 
+    n_steps = 2
+
     job_file = atf.module_tmp_path / "job_file"
     step_file = atf.module_tmp_path / "step_file"
     job_output_file = atf.module_tmp_path / "job_output"
+    # Force all steps to overlap so each holds its GPU while the others allocate
+    barrier_dir = atf.module_tmp_path / "step_barrier"
 
     job_output_file.unlink(missing_ok=True)
+    atf.run_command(f"rm -rf {barrier_dir} && mkdir -p {barrier_dir}", fatal=True)
     atf.make_bash_script(
         step_file,
-        "echo STEP_ID:$SLURM_STEP_ID CUDA_VISIBLE_DEVICES:$CUDA_VISIBLE_DEVICES\nexit 0",
+        f"""echo STEP_ID:$SLURM_STEP_ID CUDA_VISIBLE_DEVICES:$CUDA_VISIBLE_DEVICES
+touch {barrier_dir}/step.$SLURM_STEP_ID
+for _ in $(seq 1 100); do
+    [ "$(ls {barrier_dir} | wc -l)" -ge {n_steps} ] && exit 0
+    sleep 0.1
+done
+echo "TIMEOUT waiting for all {n_steps} steps" >&2
+exit 1""",
     )
     atf.make_bash_script(
         job_file,
         f"""
-        srun --exact -n1 --gpus=1 --mem=0 {step_file} &
-        srun --exact -n1 --gpus=1 --mem=0 {step_file} &
+        for _ in $(seq 1 {n_steps}); do
+            srun --exact -n1 --gpus=1 --mem=0 {step_file} &
+        done
         wait
         exit 0""",
     )
 
     job_id = atf.submit_job_sbatch(
-        f"--cpus-per-gpu=1 --gpus=2 -N1 -n2 -t1 -o {job_output_file} {job_file}",
+        f"--cpus-per-gpu=1 --gpus={n_steps} -N1 -n{n_steps} -t1 -o {job_output_file} {job_file}",
         fatal=True,
     )
 
@@ -111,8 +124,8 @@ def test_step_uuid_isolation():
         output,
     )
     assert (
-        len(uuids) == 2
-    ), f"Expected 2 steps with GPU UUID, got {len(uuids)}: {output}"
+        len(uuids) == n_steps
+    ), f"Expected {n_steps} steps with GPU UUID, got {len(uuids)}: {output}"
     assert (
-        uuids[0] != uuids[1]
-    ), f"Each step should get a different GPU UUID, but both got {uuids[0]}"
+        len(set(uuids)) == n_steps
+    ), f"Each step should get a different GPU UUID, but got duplicates: {uuids}"
