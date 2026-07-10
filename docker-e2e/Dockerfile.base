@@ -1,0 +1,30 @@
+# Base image: full Slurm build from the checked-out source (current PR state).
+# Produces image `slurm-preempt` used by Dockerfile.atf-preempt for fast
+# incremental rebuilds of individual .c files.
+FROM ubuntu:22.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential gcc make autoconf automake libtool pkg-config \
+        libmunge-dev munge \
+        libmariadb-dev mariadb-server mariadb-client \
+        python3 python3-pip \
+        libjson-c-dev libyaml-dev libhttp-parser-dev \
+        libncurses-dev libreadline-dev zlib1g-dev libssl-dev \
+        ca-certificates procps sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# ATF test harness dependency
+RUN pip3 install --no-cache-dir pytest
+
+COPY . /slurm-src
+WORKDIR /slurm-src
+
+RUN ( test -x ./configure || ./autogen.sh ) && \
+    ./configure --prefix=/usr --sysconfdir=/etc/slurm \
+        --enable-developer --disable-optimizations 2>&1 | tail -20 && \
+    make -j$(nproc) 2>&1 | tail -20 && \
+    make install 2>&1 | tail -5
+
+RUN mkdir -p /etc/slurm /var/spool/slurmctld /var/spool/slurmd /var/log/slurm && \
+    useradd -m slurm 2>/dev/null || true

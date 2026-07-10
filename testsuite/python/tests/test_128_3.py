@@ -232,6 +232,63 @@ def test_preemption_minimum_victims(hierarchy):
         f"Expected 3 still running, got {still_running}"
 
 
+def test_preemption_prefers_own_account(hierarchy):
+    """Verify preemption relieves the preemptor's OWN association limit.
+
+    This is the leaf+parent-both-at-limit case that motivates the association
+    affinity tiebreak in slurm_find_preemptable_jobs():
+
+      proj1 (leaf) is at its own 2-CPU limit AND pillar (parent) is at 4/4.
+        proj1: 2x q_low  (leaf 2/2)
+        proj2: 2x q_low  (pillar now 4/4)
+      proj1 submits a q_high requesting 1 CPU.
+
+    Preempting a *proj2* victim would free the parent but leave proj1 at 2/2,
+    so the job would stay PENDING with AssocGrpCpuLimit. The scheduler must
+    preempt one of proj1's OWN q_low jobs, which relieves both the leaf and the
+    parent. Without the affinity tiebreak, the equal-priority victims are
+    ordered arbitrarily and this fails nondeterministically.
+    """
+
+    proj1_jobs = []
+    for i in range(2):
+        jid = atf.submit_job_sbatch(
+            f'-A {hierarchy["proj1"]} -q {hierarchy["qos_low"]} '
+            f'-n1 -o /dev/null --wrap "sleep 300"',
+            fatal=True,
+        )
+        proj1_jobs.append(jid)
+        assert atf.wait_for_job_state(jid, "RUNNING"), \
+            f"proj1 q_low job {jid} did not start"
+
+    proj2_jobs = []
+    for i in range(2):
+        jid = atf.submit_job_sbatch(
+            f'-A {hierarchy["proj2"]} -q {hierarchy["qos_low"]} '
+            f'-n1 -o /dev/null --wrap "sleep 300"',
+            fatal=True,
+        )
+        proj2_jobs.append(jid)
+        assert atf.wait_for_job_state(jid, "RUNNING"), \
+            f"proj2 q_low job {jid} did not start"
+
+    # proj1 leaf 2/2, pillar 4/4. Submit q_high from proj1.
+    job_high = atf.submit_job_sbatch(
+        f'-A {hierarchy["proj1"]} -q {hierarchy["qos_high"]} '
+        f'-n1 -o /dev/null --wrap "sleep 60"',
+        fatal=True,
+    )
+    assert atf.wait_for_job_state(job_high, "RUNNING", timeout=30), \
+        f"q_high job {job_high} stuck — own-account preemption did not resolve leaf GrpTRES"
+
+    own_preempted = sum(
+        1 for jid in proj1_jobs
+        if atf.get_job_parameter(jid, "JobState") == "PREEMPTED"
+    )
+    assert own_preempted >= 1, \
+        "Expected a proj1 (own-account) victim to be preempted to relieve the leaf limit"
+
+
 def test_multi_cpu_cross_account_preemption(hierarchy):
     """Verify preemption works for multi-CPU jobs across accounts.
 

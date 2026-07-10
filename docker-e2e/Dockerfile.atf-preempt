@@ -4,6 +4,7 @@ COPY src/slurmctld/acct_policy.c /slurm-src/src/slurmctld/acct_policy.c
 COPY src/slurmctld/acct_policy.h /slurm-src/src/slurmctld/acct_policy.h
 COPY src/slurmctld/node_scheduler.c /slurm-src/src/slurmctld/node_scheduler.c
 COPY src/slurmctld/proc_req.c /slurm-src/src/slurmctld/proc_req.c
+COPY src/interfaces/preempt.c /slurm-src/src/interfaces/preempt.c
 COPY src/plugins/sched/backfill/backfill.c /slurm-src/src/plugins/sched/backfill/backfill.c
 
 WORKDIR /slurm-src
