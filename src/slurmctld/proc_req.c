@@ -528,6 +528,8 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
 	conf_ptr->slurmd_user_id      = conf->slurmd_user_id;
 	conf_ptr->slurmd_user_name    = xstrdup(conf->slurmd_user_name);
+	conf_ptr->slurmrestd_http_auth_params =
+		xstrdup(conf->slurmrestd_http_auth_params);
 	conf_ptr->slurmrestd_params = xstrdup(conf->slurmrestd_params);
 	conf_ptr->slurmstepd_params = xstrdup(conf->slurmstepd_params);
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);

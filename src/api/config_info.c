@@ -1168,6 +1168,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "SlurmdUser", "%s(%u)",
 		     conf->slurmd_user_name, conf->slurmd_user_id);
 
+	add_key_pair(ret_list, "SlurmrestdHttpAuthParameters", "%s",
+		     conf->slurmrestd_http_auth_params);
+
 	add_key_pair(ret_list, "SlurmrestdParameters", "%s",
 		     conf->slurmrestd_params);
 
