@@ -522,7 +522,7 @@ static int _poll(const char *caller)
 	log_flag(CONMGR, "%s->%s: [POLL] BEGIN: poll() with %d file descriptors",
 		 caller, __func__, pctl.fd_count);
 
-	for (int i = 0, t = 0; i < pctl.events_count; i++) {
+	for (int i = 0, event_i = 0; i < pctl.events_count; i++) {
 		if ((pctl.fds[i].fd < 0))
 			continue;
 
@@ -530,12 +530,12 @@ static int _poll(const char *caller)
 		xassert(pctl.fds[i].type < PCTL_TYPE_INVALID_MAX);
 		xassert(pctl.fds[i].type != PCTL_TYPE_NONE);
 		xassert(pctl.fds[i].type != PCTL_TYPE_UNSUPPORTED);
-		xassert(t < fd_count);
+		xassert(event_i < fd_count);
 
-		pctl.events[t].fd = pctl.fds[i].fd;
-		pctl.events[t].events = _fd_type_to_events(pctl.fds[i].type);
-		pctl.events[t].revents = 0;
-		t++;
+		events[event_i].fd = pctl.fds[i].fd;
+		events[event_i].events = _fd_type_to_events(pctl.fds[i].type);
+		events[event_i].revents = 0;
+		event_i++;
 	}
 
 	slurm_mutex_unlock(&pctl.mutex);
