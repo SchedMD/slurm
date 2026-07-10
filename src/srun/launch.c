@@ -1221,10 +1221,9 @@ extern void launch_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
  */
 extern bool launch_step_retry_errno(int rc)
 {
-	if ((rc == EAGAIN) ||
-	    (rc == ESLURM_DISABLED) ||
-	    (rc == ESLURM_NODES_BUSY) ||
-	    (rc == ESLURM_PORTS_BUSY) ||
+	if ((rc == EAGAIN) || (rc == ESLURM_DISABLED) ||
+	    (rc == ESLURM_NODES_BUSY) || (rc == ESLURM_PORTS_BUSY) ||
+	    (rc == ESLURM_STEP_QUEUED) ||
 	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
 		return true;
 	return false;

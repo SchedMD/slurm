@@ -219,11 +219,8 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 	} else {
 		if (step_resp->state == JOB_PENDING) {
 			/*
-			 * Async pending step: controller queued it
-			 * with a real step_id but did not launch.
-			 * Surface step_id to caller via step_req;
-			 * no ctx (srun returns SUCCESS for --async
-			 * without a live step).
+			 * Controller queued the step with a real step_id.
+			 * Record it.
 			 */
 			if (step_req->step_id.step_id == NO_VAL)
 				step_req->step_id.step_id =
@@ -232,9 +229,20 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 				step_req->step_id.job_id =
 					step_resp->step_id.job_id;
 			slurm_free_job_step_create_response_msg(step_resp);
+
+			if (srun_opt->async) {
+				/* Fire-and-forget; srun returns SUCCESS. */
+				if (sock != -1)
+					close(sock);
+				errno = ESLURM_STEP_QUEUED;
+				return NULL;
+			}
+
+			errnum = _wait_pending_step(sock, timeout, timed_out,
+						    ESLURM_STEP_QUEUED);
 			if (sock != -1)
 				close(sock);
-			errno = ESLURM_STEP_QUEUED;
+			errno = errnum;
 			return NULL;
 		}
 
