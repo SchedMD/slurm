@@ -968,6 +968,7 @@ test_128_#   Testing of PreemptType.
 ====================================
 test_128_1   /parameters/slurm/PreemptType/partition_prio/test_preemption_by_partition.py
 test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel"
+test_128_3   Test hetjob is exempt from preemption under SUSPEND,GANG
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
