@@ -36,6 +36,7 @@
 #include "config.h"
 
 #include <glob.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -292,10 +293,20 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 
 	if (cred) {
 		slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
+		uint64_t alloc_mem;
 
 		if (cred_arg->job_account)
 			setenvf(&env, "SLURM_JOB_ACCOUNT", "%s",
 				cred_arg->job_account);
+		if (!is_epilog) {
+			if (slurm_cred_get_job_mem(cred, conf->node_name,
+						   &alloc_mem))
+				setenvf(&env, "SLURM_JOB_ALLOC_MEM_PER_NODE",
+					"%" PRIu64, alloc_mem);
+			else
+				debug2("%s: unable to get SLURM_JOB_ALLOC_MEM_PER_NODE on node %s",
+				       __func__, conf->node_name);
+		}
 		if (cred_arg->job_comment)
 			setenvf(&env, "SLURM_JOB_COMMENT", "%s",
 				cred_arg->job_comment);

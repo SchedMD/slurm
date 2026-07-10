@@ -432,14 +432,33 @@ extern char *slurm_cred_get_signature_key(slurm_cred_t *cred)
 	return key;
 }
 
-extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,
-			       const char *func_name,
-			       uint64_t *job_mem_limit,
-			       uint64_t *step_mem_limit)
+static int _get_rep_count_inx(uint32_t *rep_count, uint32_t rep_count_size,
+			      int inx, bool quiet)
 {
-	slurm_cred_arg_t *cred = credential->arg;
-	int rep_idx = -1;
-	int node_id = -1;
+	if (!quiet)
+		return slurm_get_rep_count_inx(rep_count, rep_count_size, inx);
+
+	for (int i = 0; i < rep_count_size; i++) {
+		if (!rep_count[i])
+			return -1;
+	}
+
+	return slurm_get_rep_count_inx(rep_count, rep_count_size, inx);
+}
+
+static bool _get_job_mem(slurm_cred_arg_t *cred, char *node_name,
+			 const char *func_name, uint64_t *job_mem_limit,
+			 bool quiet)
+{
+	int node_id = -1, rep_idx = -1;
+
+	if (!cred->job_hostlist || !cred->job_mem_alloc ||
+	    !cred->job_mem_alloc_rep_count || !cred->job_mem_alloc_size) {
+		if (!quiet)
+			error("%s: job memory allocation data is incomplete",
+			      func_name);
+		return false;
+	}
 
 	/*
 	 * Batch steps only have the job_hostlist set and will always be 0 here.
@@ -448,20 +467,42 @@ extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,
 		rep_idx = 0;
 	} else if ((node_id =
 		    nodelist_find(cred->job_hostlist, node_name)) >= 0) {
-		rep_idx = slurm_get_rep_count_inx(cred->job_mem_alloc_rep_count,
-					          cred->job_mem_alloc_size,
-						  node_id);
+		rep_idx = _get_rep_count_inx(cred->job_mem_alloc_rep_count,
+					     cred->job_mem_alloc_size, node_id,
+					     quiet);
 
-	} else {
+	} else if (!quiet) {
 		error("Unable to find %s in job hostlist: `%s'",
 		      node_name, cred->job_hostlist);
 	}
 
-	if (rep_idx < 0)
-		error("%s: node_id=%d, not found in job_mem_alloc_rep_count requested job memory not reset.",
-		      func_name, node_id);
-	else
-		*job_mem_limit = cred->job_mem_alloc[rep_idx];
+	if (rep_idx < 0) {
+		if (!quiet)
+			error("%s: node_id=%d, not found in job_mem_alloc_rep_count requested job memory not reset.",
+			      func_name, node_id);
+		return false;
+	}
+
+	*job_mem_limit = cred->job_mem_alloc[rep_idx];
+	return true;
+}
+
+extern bool slurm_cred_get_job_mem(slurm_cred_t *credential, char *node_name,
+				   uint64_t *job_mem_limit)
+{
+	return _get_job_mem(credential->arg, node_name, NULL, job_mem_limit,
+			    true);
+}
+
+extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,
+			       const char *func_name, uint64_t *job_mem_limit,
+			       uint64_t *step_mem_limit)
+{
+	slurm_cred_arg_t *cred = credential->arg;
+	int rep_idx = -1;
+	int node_id = -1;
+
+	(void) _get_job_mem(cred, node_name, func_name, job_mem_limit, false);
 
 	if (!step_mem_limit) {
 		log_flag(CPU_BIND, "%s: Memory extracted from credential for %ps job_mem_limit= %"PRIu64,
