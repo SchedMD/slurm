@@ -958,6 +958,14 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_FILE_UNREADABLE),
 		"Unable to load file for reading",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_STEP_TIMED_OUT),
+		"Timed out waiting for pending step",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_STEP_CANCELLED),
+		"Pending step cancelled",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{
