@@ -1050,6 +1050,7 @@ test_145_3   Test job with --constraint will not preempt other jobs if resources
 test_146_#   Testing partitions.
 ================================
 test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
+test_146_2   Test MaxNodes
 
 test_147_#   Testing SPANK.
 ===========================
