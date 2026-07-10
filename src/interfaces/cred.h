@@ -245,6 +245,13 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 			    cred_data_enum_t cred_data_type);
 
 /*
+ * Get the job memory allocation for a node without logging errors.
+ * RET - true on success, false if the allocation cannot be determined
+ */
+extern bool slurm_cred_get_job_mem(slurm_cred_t *cred, char *node_name,
+				   uint64_t *job_mem_limit);
+
+/*
  * Return index in rep_count array corresponding to absolute node index
  * cred - job credential to use for memory setting
  * node_name - name of host
