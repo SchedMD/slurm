@@ -11531,6 +11531,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_node_health_check_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	node_health_check_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packbool(msg->healthy, buffer);
+	}
+}
+
+static int _unpack_node_health_check_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	node_health_check_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackbool(&msg->healthy, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_health_check_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_suspend_exc_update_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	suspend_exc_update_msg_t *msg = smsg->data;
@@ -13328,6 +13353,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		_pack_set_debug_level_msg(msg, buffer);
 		break;
+	case REQUEST_NODE_HEALTH_CHECK:
+		_pack_node_health_check_msg(msg, buffer);
+		break;
 	case REQUEST_SET_SUSPEND_EXC_NODES:
 	case REQUEST_SET_SUSPEND_EXC_PARTS:
 	case REQUEST_SET_SUSPEND_EXC_STATES:
@@ -13871,6 +13899,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_SET_DEBUG_LEVEL:
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		rc = _unpack_set_debug_level_msg(msg, buffer);
+		break;
+	case REQUEST_NODE_HEALTH_CHECK:
+		rc = _unpack_node_health_check_msg(msg, buffer);
 		break;
 	case REQUEST_SET_SUSPEND_EXC_NODES:
 	case REQUEST_SET_SUSPEND_EXC_PARTS:
