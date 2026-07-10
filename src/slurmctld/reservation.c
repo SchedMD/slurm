@@ -7774,6 +7774,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	 * attracted to a magnetic reservation
 	 */
 	if ((job_ptr->bit_flags & JOB_MAGNETIC) && (job_ptr->resv_name) &&
+	    (job_ptr->resv_ptr) &&
+	    !(job_ptr->resv_ptr->flags & RESERVE_FLAG_FLEX) &&
 	    (job_end_time > job_ptr->resv_ptr->end_time)) {
 		return ESLURM_RESERVATION_INVALID;
 	}
