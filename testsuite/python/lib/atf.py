@@ -288,12 +288,17 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         return
         return
 
-    reason = "Ticket 24822: Known issue shutting down slurmd/slurmctld with OpenSSL"
-    components = ["sbin/slurmd", "sbin/slurmctld"]
+    reason = (
+        "Ticket 24822: Known issue shutting down slurmd/slurmctld/srun with OpenSSL"
+    )
+    components = ["sbin/slurmd", "sbin/slurmctld", "bin/srun"]
     component_match = next((c for c in components if c in bin_path), None)
     if (
         component_match
-        and "Program terminated with signal SIGABRT" in bt
+        and (
+            "Program terminated with signal SIGABRT" in bt
+            or "Program terminated with signal SIGSEGV" in bt
+        )
         and "OPENSSL_cleanup" in bt
     ):
         if get_version(component_match) >= (26, 5):
