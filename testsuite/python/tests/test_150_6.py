@@ -102,6 +102,9 @@ def setup():
         "sbin/slurmctld",
         reason="Ticket 25473: leaf-relay fan-out fix in 26.05+",
     )
+    atf.require_version(
+        (25, 5), "bin/scontrol", reason="The topology.yaml option was added in 25.05"
+    )
     atf.require_nodes(32)
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
