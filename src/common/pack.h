@@ -74,7 +74,7 @@ typedef struct {
 	bool shadow;
 } buf_t;
 
-#define get_buf_data(__buf) (__buf->head)
+#define get_buf_data(__buf) ((__buf)->head)
 #define get_buf_offset(__buf) (__buf->processed)
 #define set_buf_offset(__buf, __val) (__buf->processed = __val)
 #define remaining_buf(__buf) (__buf->size - __buf->processed)
