@@ -336,6 +336,11 @@ try_again:
 				      __func__, deadlock_attempt,
 				      MAX_DEADLOCK_ATTEMPTS, errno, err_str);
 			}
+		} else if ((errno == ER_CHECKREAD) &&
+			   xstrcasestr(mysql_get_server_info(db_conn),
+				       "mariadb")) {
+			fatal("%s: a concurrent transaction modified a row read by this transaction: %d %s\nSet innodb_snapshot_isolation=OFF in MariaDB, it is not supported by Slurm.\n%s",
+			      __func__, errno, err_str, query);
 		} else if (errno == ER_LOCK_WAIT_TIMEOUT) {
 			/* FIXME: If we get ER_LOCK_WAIT_TIMEOUT here we need
 			 * to restart the connections, but it appears restarting
