@@ -77,7 +77,7 @@ typedef struct {
 #define get_buf_data(__buf) ((__buf)->head)
 #define get_buf_offset(__buf) ((__buf)->processed)
 #define set_buf_offset(__buf, __val) ((__buf)->processed = (__val))
-#define remaining_buf(__buf) (__buf->size - __buf->processed)
+#define remaining_buf(__buf) ((__buf)->size - (__buf)->processed)
 #define size_buf(__buf) (__buf->size)
 
 /* Initialize shadow buffer to point at data with size of bytes */
