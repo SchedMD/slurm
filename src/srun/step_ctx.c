@@ -118,14 +118,15 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
  * timeout elapses.  Used while a step is queued waiting on resources.
  * IN sock - step request listener socket, or -1
  * IN timeout - in milliseconds
- * OUT timed_out - set true if the poll timed out
  * IN retry_errno - errno to return so the caller retries the create
- * RET errno to surface (retry_errno, or ESLURM_ALREADY_DONE if cancelled)
+ * RET errno to surface: retry_errno if woken to retry,
+ *	ESLURM_STEP_TIMED_OUT if the poll timed out, or ESLURM_ALREADY_DONE
+ *	if cancelled
  */
-static int _wait_pending_step(int sock, int timeout, bool *timed_out,
-			      int retry_errno)
+static int _wait_pending_step(int sock, int timeout, int retry_errno)
 {
 	int errnum = retry_errno;
+	bool timed_out = false;
 	struct pollfd fds[2];
 	DEF_TIMERS;
 
@@ -140,8 +141,10 @@ static int _wait_pending_step(int sock, int timeout, bool *timed_out,
 		long elapsed_time;
 		END_TIMER;
 		elapsed_time = (TIMER_DURATION_USEC() / MSEC_IN_SEC);
-		if (elapsed_time >= timeout)
+		if (elapsed_time >= timeout) {
+			timed_out = true;
 			break;
+		}
 		time_left = timeout - elapsed_time;
 		i = poll(fds, 2, time_left);
 
@@ -149,9 +152,11 @@ static int _wait_pending_step(int sock, int timeout, bool *timed_out,
 		if (fds[1].revents & POLLIN)
 			break;
 
-		if (i == 0)
-			*timed_out = true;
-		if (i >= 0)
+		if (i == 0) {
+			timed_out = true;
+			break;
+		}
+		if (i > 0)
 			break;
 		if ((errno == EINTR) || (errno == EAGAIN))
 			continue;
@@ -166,6 +171,9 @@ static int _wait_pending_step(int sock, int timeout, bool *timed_out,
 	}
 	slurm_mutex_unlock(&srun_destroy_sig_lock);
 
+	if (timed_out && (errnum != ESLURM_ALREADY_DONE))
+		errnum = ESLURM_STEP_TIMED_OUT;
+
 	return errnum;
 }
 
@@ -174,13 +182,17 @@ static int _wait_pending_step(int sock, int timeout, bool *timed_out,
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
  * IN srun_opt - srun options
- * OUT timed_out - indicate if poll timed-out
+ * OUT retry_cause - why the step could not be created yet, so the caller can
+ *	report it alongside ESLURM_STEP_TIMED_OUT
  * RET the step context or NULL on failure with slurm errno set
+ *	(ESLURM_STEP_TIMED_OUT while waiting on a queued step)
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
-extern slurm_step_ctx_t *step_ctx_create_timeout(
-	job_step_create_request_msg_t *step_req, int timeout, bool *timed_out,
-	srun_opt_t *srun_opt)
+extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
+							 *step_req,
+						 int timeout,
+						 srun_opt_t *srun_opt,
+						 int *retry_cause)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
@@ -190,6 +202,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 	int errnum = 0;
 
 	xassert(step_req);
+	xassert(retry_cause);
 
 	/* Don't need a port for async steps since they're fire and forget */
 	if (!srun_opt->async) {
@@ -209,7 +222,8 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 
 	rc = slurm_job_step_create(step_req, &step_resp);
 	if ((rc < 0) && launch_step_retry_errno(errno)) {
-		errnum = _wait_pending_step(sock, timeout, timed_out, errno);
+		*retry_cause = errno;
+		errnum = _wait_pending_step(sock, timeout, errno);
 		if (sock != -1)
 			close(sock);
 		errno = errnum;
@@ -238,7 +252,8 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 				return NULL;
 			}
 
-			errnum = _wait_pending_step(sock, timeout, timed_out,
+			*retry_cause = ESLURM_STEP_QUEUED;
+			errnum = _wait_pending_step(sock, timeout,
 						    ESLURM_STEP_QUEUED);
 			if (sock != -1)
 				close(sock);

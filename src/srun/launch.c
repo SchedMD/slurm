@@ -1223,7 +1223,7 @@ extern bool launch_step_retry_errno(int rc)
 {
 	if ((rc == EAGAIN) || (rc == ESLURM_DISABLED) ||
 	    (rc == ESLURM_NODES_BUSY) || (rc == ESLURM_PORTS_BUSY) ||
-	    (rc == ESLURM_STEP_QUEUED) ||
+	    (rc == ESLURM_STEP_QUEUED) || (rc == ESLURM_STEP_TIMED_OUT) ||
 	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
 		return true;
 	return false;
@@ -1315,7 +1315,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 	      step_req->name, step_req->relative);
 
 	for (i = 0;; i++) {
-		bool timed_out = false;
+		int retry_cause = SLURM_SUCCESS;
 
 		slurm_mutex_lock(&srun_destroy_sig_lock);
 		tmp_srun_destroy_sig = srun_destroy_sig;
@@ -1345,7 +1345,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 			job->step_ctx =
 				step_ctx_create_timeout(step_req, step_wait,
-							&timed_out, srun_opt);
+							srun_opt, &retry_cause);
 		}
 		rc = errno;
 		if (job->step_ctx ||
@@ -1377,10 +1377,10 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 					"being configured, please wait",
 					step_req->step_id.job_id);
 			} else {
-				if (timed_out)
+				if (rc == ESLURM_STEP_TIMED_OUT)
 					info("Job %u step creation temporarily disabled, retrying (%s)",
 					     step_req->step_id.job_id,
-					     slurm_strerror(rc));
+					     slurm_strerror(retry_cause));
 				else
 					verbose("Step completed in JobId=%u, retrying",
 						step_req->step_id.job_id);
@@ -1391,10 +1391,10 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 					step_req->step_id.job_id,
 					slurm_strerror(rc));
 			else {
-				if (timed_out)
+				if (rc == ESLURM_STEP_TIMED_OUT)
 					info("Job %u step creation still disabled, retrying (%s)",
 					     step_req->step_id.job_id,
-					     slurm_strerror(rc));
+					     slurm_strerror(retry_cause));
 				else
 					verbose("Step completed in JobId=%u, retrying",
 						step_req->step_id.job_id);
