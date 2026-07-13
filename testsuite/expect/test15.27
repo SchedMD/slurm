@@ -56,7 +56,7 @@ proc check_alloc { } {
 	wait_for_job_acct -fail $job_id end
 
 	# Get number of allocated CPUs from sacct
-	set sacct_cpu [string trim [run_command_output -fail "$sacct --job=$job_id --allocation --format AllocCPUS --noheader"]]
+	set sacct_cpu [string trim [run_command_output -fail "$sacct --jobs=$job_id --allocation --format AllocCPUS --noheader"]]
 	if {$sacct_cpu == 0} {
 		fail "Number of cpus is invalid"
 	}

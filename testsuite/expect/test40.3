@@ -56,7 +56,7 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types batch_mps } {
 		wait_for_command_match -fail "$sacct -n -o JobID --parsable2 -j $job_id" "$job_id.0"
 	}
 
-	set output [run_command_output -fail "$sacct --job=$job_id --parsable2 --start=now-15minutes --format JobID,ReqTRES,AllocTRES --noheader"]
+	set output [run_command_output -fail "$sacct --jobs=$job_id --parsable2 --start=now-15minutes --format JobID,ReqTRES,AllocTRES --noheader"]
 	set job_tres_dict [dict create]
 	foreach line [split $output "\n"] {
 		lassign [split $line "|"] JobID ReqTRES AllocTRES
