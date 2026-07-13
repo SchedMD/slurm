@@ -384,7 +384,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
-    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock(): Invalid argument. Fixed in 25.11.6+"
+    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock()/unlock(): Invalid argument. Fixed in 25.11.6+"
     component = "sbin/slurmd"
     if (
         component in bin_path
@@ -392,7 +392,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "src/common/log.c" in bt
         and "in fatal_abort" in bt
         and "in _forward_thread" in bt
-        and "%s: pthread_mutex_lock(): %m" in bt
+        and (
+            "%s: pthread_mutex_lock(): %m" in bt
+            or "%s: pthread_mutex_unlock(): %m" in bt
+        )
     ):
         if get_version(component) >= (25, 11, 6):
             failures.append(reason)
