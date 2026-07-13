@@ -193,7 +193,7 @@ $ squeue -r
 1082_2     debug   tmp   mac   R  0:03      1 tux3
 </pre>
 
-<p>The squeue --step/-s and --job/-j options can accept job or step
+<p>The squeue --steps/-s and --jobs/-j options can accept job or step
 specifications of the same format.</p>
 
 <pre>
