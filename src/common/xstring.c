@@ -81,6 +81,7 @@ strong_alias(xstrdup, slurm_xstrdup);
 strong_alias(xstrdup_printf, slurm_xstrdup_printf);
 strong_alias(_xstrdup_vprintf, slurm_xstrdup_vprintf);
 strong_alias(xstrndup, slurm_xstrndup);
+strong_alias(try_xstrndup, slurm_try_xstrndup);
 strong_alias(xbasename, slurm_xbasename);
 strong_alias(xdirname, slurm_xdirname);
 strong_alias(_xstrsubstitute, slurm_xstrsubstitute);
@@ -522,6 +523,26 @@ char * xstrndup(const char *str, size_t n)
 
 	siz = strnlen(str, n);
 	result = xmalloc(siz + 1);
+
+	(void) memcpy(result, str, siz);
+	result[siz] = '\0';
+
+	return result;
+}
+
+extern char *try_xstrndup(const char *str, const size_t n)
+{
+	size_t siz = 0;
+	char *result = NULL;
+
+	if (!str)
+		return NULL;
+
+	siz = strnlen(str, n);
+	result = try_xmalloc(siz + 1);
+
+	if (!result)
+		return NULL;
 
 	(void) memcpy(result, str, siz);
 	result[siz] = '\0';

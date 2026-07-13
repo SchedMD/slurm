@@ -412,6 +412,7 @@
 #define _xstrfmtcatat slurm_xstrfmtcatat
 #define _xmemcat slurm_xmemcat
 #define xstrdup slurm_xstrdup
+#define try_xstrndup slurm_try_xstrndup
 #define xstrdup_printf slurm_xstrdup_printf
 #define _xstrdup_vprintf slurm_xstrdup_vprintf
 #define xstrndup slurm_xstrndup
