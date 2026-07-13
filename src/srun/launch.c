@@ -1356,7 +1356,13 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 					opt_local->verbose;
 			break;
 		}
-		rc = errno;
+
+		if (rc == ESLURM_STEP_CANCELLED) {
+			/* step_ctx_create_timeout() logged the cancel. */
+			_free_built_launch_params(step_req);
+			slurm_free_job_step_create_request_msg(step_req);
+			return SLURM_ERROR;
+		}
 
 		if (((opt_local->immediate != 0) &&
 		     ((opt_local->immediate == 1) ||
