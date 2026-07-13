@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include <stdint.h>
+#include <sys/socket.h>
 
 #include "slurm/slurm_errno.h"
 
@@ -246,6 +247,27 @@ extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args, void *arg)
 	int rc;
 	conmgr_fd_t *con = conmgr_args.con;
 	slurm_msg_t *msg = NULL;
+
+	/*
+	 * Secure by default: when TLS is enabled, reject any non-TLS inbound
+	 * inet RPC before parsing or dispatching it. Unix domain sockets are
+	 * exempt (local).
+	 */
+	if (conn_tls_enabled() && !con_flag(con, FLAG_TLS_SERVER) &&
+	    !con_flag(con, FLAG_TLS_CLIENT) &&
+	    (con->address.ss_family != AF_LOCAL)) {
+		debug("%s: [%s] rejecting non-TLS RPC connection",
+		      __func__, con->name);
+		/*
+		 * Reply at the pending request's version (the peer chose it, so
+		 * the peer can parse the reply) rather than a local constant,
+		 * which could be out of the peer's supported range in a
+		 * mixed-version cluster.
+		 */
+		return conmgr_con_reply_rc_and_close(
+			conmgr_args.ref, ESLURM_TLS_REQUIRED,
+			conmgr_con_peek_rpc_protocol_version(conmgr_args.ref));
+	}
 
 	rc = _try_parse_rpc(con, &msg);
 
