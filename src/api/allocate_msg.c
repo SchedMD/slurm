@@ -423,9 +423,6 @@ extern int slurm_alloc_msg_listener_create(uint16_t *port,
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
 	int rc = SLURM_SUCCESS;
 
-	if (conn_tls_enabled())
-		flags |= CON_FLAG_TLS_FINGERPRINT;
-
 	if (slurm_init_msg_engine_srun_ports(&listen_fd, port) !=
 	    SLURM_SUCCESS) {
 		fatal("Unable to open listening socket for messages");
