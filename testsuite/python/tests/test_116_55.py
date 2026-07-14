@@ -118,10 +118,7 @@ def test_async_submit_and_complete():
         job_id, 0, fatal=True
     ), f"async step {job_id}.0 should be recorded in accounting"
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
-    atf.wait_for_file(out_file, fatal=True)
-    assert "hello-from-async" in atf.run_command_output(
-        f"cat {out_file}", fatal=True
-    ), f"Async step output file {out_file} should contain step stdout"
+    atf.assert_file_contents(out_file, "hello-from-async")
 
 
 @pytest.mark.parametrize(
@@ -410,11 +407,7 @@ swait
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
     for i, out in enumerate(out_files):
-        atf.wait_for_file(out, fatal=True)
-        text = atf.run_command_output(f"cat {out}", fatal=True)
-        assert (
-            f"done-{i}" in text
-        ), f"Output for step {i} should contain its marker; got {text!r}"
+        atf.assert_file_contents(out, f"done-{i}")
 
 
 def test_async_sattach_does_not_succeed():
@@ -468,12 +461,7 @@ def test_async_output_filename_per_task_substitution():
     ), f"async step {job_id}.0 should be recorded in accounting"
 
     for i, f in enumerate(expected_files):
-        atf.wait_for_file(f, fatal=True)
-        text = atf.run_command_output(f"cat {f}", fatal=True).strip()
-        assert (
-            text == f"task-{i}"
-        ), f"Per-task output for task {i} should be 'task-{i}'; got {text!r}"
-    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+        atf.assert_file_contents(f, f"task-{i}")
 
 
 def test_async_step_killed_when_alloc_ends():
@@ -746,10 +734,7 @@ def test_async_output_filename_pattern_j():
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
     expected = f"pat_j-{job_id}.out"
-    atf.wait_for_file(expected, fatal=True)
-    assert f"jobid-{job_id}" in atf.run_command_output(
-        f"cat {expected}", fatal=True
-    ), f"%j output file {expected} should contain the job id"
+    atf.assert_file_contents(expected, f"jobid-{job_id}")
 
 
 def test_async_output_filename_pattern_J():
@@ -771,10 +756,7 @@ def test_async_output_filename_pattern_J():
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
     expected = f"pat_J-{job_id}.0.out"
-    atf.wait_for_file(expected, fatal=True)
-    assert "hello" in atf.run_command_output(
-        f"cat {expected}", fatal=True
-    ), f"%J output file {expected} should contain step output"
+    atf.assert_file_contents(expected, "hello")
 
 
 def test_async_output_filename_pattern_s():
@@ -813,10 +795,7 @@ swait
 
     for sid in step_ids:
         expected = f"pat_s-{sid}.out"
-        atf.wait_for_file(expected, fatal=True)
-        assert f"step-{sid}" in atf.run_command_output(
-            f"cat {expected}", fatal=True
-        ), f"%s output file {expected} should contain 'step-{sid}'"
+        atf.assert_file_contents(expected, f"step-{sid}")
 
 
 # ---------------------------------------------------------------------------
@@ -845,10 +824,14 @@ def test_async_ntasks_request():
     ), f"async step {job_id}.0 should be recorded in accounting"
 
     atf.wait_for_file(out_file, fatal=True)
-    procids = set(atf.run_command_output(f"cat {out_file}", fatal=True).split())
-    assert procids == {
-        str(i) for i in range(num_tasks)
-    }, f"Expected task procids {{0..{num_tasks-1}}}, got {procids!r}"
+    expected_procids = {str(i) for i in range(num_tasks)}
+    procids = set()
+    for _ in atf.timer():
+        procids = set(atf.run_command_output(f"cat {out_file}", fatal=True).split())
+        if procids == expected_procids:
+            break
+    else:
+        assert False, f"Expected task procids {expected_procids}, got {procids!r}"
 
     ntasks_str = (
         atf.run_command_output(
@@ -883,11 +866,11 @@ def test_async_cpus_per_task():
     ), f"async step {job_id}.0 should be recorded in accounting"
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    atf.wait_for_file(out_file, fatal=True)
-    value = atf.run_command_output(f"cat {out_file}", fatal=True).strip()
-    assert value == str(
-        cpus
-    ), f"SLURM_CPUS_PER_TASK should be {cpus} inside async step; got {value!r}"
+    atf.assert_file_contents(
+        out_file,
+        str(cpus),
+        message=f"SLURM_CPUS_PER_TASK should be {cpus} inside async step",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -970,11 +953,11 @@ swait
     ), f"async step {job_id}.0 should be recorded in accounting"
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    atf.wait_for_file(out_file, fatal=True)
-    output = atf.run_command_output(f"cat {out_file}", fatal=True).strip()
-    assert (
-        output == "val=unset"
-    ), f"--export=NONE should suppress {sentinel}; got {output!r}"
+    atf.assert_file_contents(
+        out_file,
+        "val=unset",
+        message=f"--export=NONE should suppress {sentinel}",
+    )
 
 
 def test_async_export_specific_var():
@@ -999,11 +982,11 @@ def test_async_export_specific_var():
     ), f"async step {job_id}.0 should be recorded in accounting"
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    atf.wait_for_file(out_file, fatal=True)
-    output = atf.run_command_output(f"cat {out_file}", fatal=True).strip()
-    assert (
-        output == value
-    ), f"--export={sentinel}={value} should set the variable; got {output!r}"
+    atf.assert_file_contents(
+        out_file,
+        value,
+        message=f"--export={sentinel}={value} should set the variable",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1059,15 +1042,11 @@ def test_async_label_applied_on_compute_node():
     atf.wait_for_step_accounted(job_id, step_id, fatal=True)
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    atf.wait_for_file(out_file, fatal=True)
-    text = ""
-    for _ in atf.timer():
-        text = atf.run_command_output(f"cat {out_file}").strip()
-        if text == "0: plain":
-            break
-    assert (
-        text == "0: plain"
-    ), f"--label should prefix each line with '<taskid>: '; got {text!r}"
+    atf.assert_file_contents(
+        out_file,
+        "0: plain",
+        message="--label should prefix each line with '<taskid>: '",
+    )
 
 
 def test_async_unbuffered_accepted():
@@ -1086,13 +1065,11 @@ def test_async_unbuffered_accepted():
     atf.wait_for_step_accounted(job_id, step_id, fatal=True)
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    atf.wait_for_file(out_file, fatal=True)
-    text = ""
-    for _ in atf.timer():
-        text = atf.run_command_output(f"cat {out_file}").strip()
-        if text == "plain":
-            break
-    assert text == "plain", f"--unbuffered output should be 'plain'; got {text!r}"
+    atf.assert_file_contents(
+        out_file,
+        "plain",
+        message="--unbuffered output should be 'plain'",
+    )
 
 
 def test_async_file_input_supported():
@@ -1116,15 +1093,10 @@ def test_async_file_input_supported():
     atf.wait_for_step_accounted(job_id, step_id, fatal=True)
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
 
-    atf.wait_for_file(out_file, fatal=True)
-    text = ""
-    for _ in atf.timer():
-        text = atf.run_command_output(f"cat {out_file}")
-        if sentinel in text:
-            break
-    assert sentinel in text, (
-        f"--input file content should reach the task's stdin and be "
-        f"echoed by `cat`; got {text!r}"
+    atf.assert_file_contents(
+        out_file,
+        sentinel,
+        message=("--input file content should reach the task's stdin"),
     )
 
 
