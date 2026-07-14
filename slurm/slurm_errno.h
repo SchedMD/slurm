@@ -302,6 +302,9 @@ typedef enum {
 
 	ESLURM_INVALID_MAX_PIDS,
 	ESLURM_INVALID_LAYOUT,
+	ESLURM_INVALID_JOB_ARRAY_ID_RANGE,
+	ESLURM_INVALID_JOB_ARRAY_ID_STEP,
+	ESLURM_MAX_ARRAY_TASKS,
 	/* End of reserved slurmctld error range. Not a real error code. */
 	ESLURM_CTLD_ERROR_END = 2999,
 

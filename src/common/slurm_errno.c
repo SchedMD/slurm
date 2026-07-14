@@ -1018,6 +1018,18 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_INVALID_LAYOUT),
 		"Invalid layout specification",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_JOB_ARRAY_ID_RANGE),
+		"Job Array ID range end can not be less than its start",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_JOB_ARRAY_ID_STEP),
+		"Job Array ID step size must be greater than zero and less than MaxArraySize",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_MAX_ARRAY_TASKS),
+		"Job Array exceeds the maximum number of tasks (max_array_tasks)",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{
