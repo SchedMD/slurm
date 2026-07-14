@@ -1,3 +1,25 @@
+## Changes in 25.11.7
+
+* slurmctld - return 303 See Other from GET /metrics/* when in backup standby, pointing to the configured primary controller
+* Prevent the slurmctld's background thread from waiting on the purge files thread while holding the job and node write locks.
+* Prevent slurmctld crash when a HetJob component fails to start.
+* Requeue --no-requeue jobs when powering-up nodes are drained and requeue_on_resume_failure SchedulerParameter is set.
+* Fix JobAccountGather failing on glibc 2.43+ due to a sscanf() %Nc behavior change.
+* Fix sdiag RPC-by-user and RPC-by-type output for a full user stats table.
+* Fix a regression in slurm 25.05 that caused requeued jobs to lose their license/HRES requests, which results in Slurm allowing the job to run without having sufficient licenses/HRES.
+* Fix slurmctld crash and shutdown/reconfigure deadlock caused by accounting_storage callers racing the plugin teardown.
+* Fixed a crash caused by a race condition in the mysql code caused by checking the connection before it was safely locked.
+* accounting_storage/slurmdbd - Fix slurmctld performance regression caused by unnecessary lock contention when packing a message to the slurmdbd agent.
+* Fix warning in shtml2html.py when using Python 3.14+
+* Fix runtime-added assoc/wckey uid NO_VAL under use_client_ids.
+* Fix potential crash when reconfiguring with auth/slurm.
+* slurmctld - Prevent segfaulting from dereferencing stale QOS, association, or user pointers after updating the assoc_mgr.
+* Fix memory leak in slurmstepd's PMIx startup.
+* Fix pmix jobs failing on startup when requesting a large number of tasks.
+* Make --test-only evaluate multi-partition jobs against the candidate partition being tested.
+* Prevent slurmctld from crashing with a divide-by-zero when --test-only uses an empty partition before a usable one.
+* Fix slurmctld crashing when using job arrays that request mode 3 HRES.
+
 ## Changes in 25.11.6
 
 * scontrol - Allow updating InstanceId for batches of nodes as is possible for updating NodeAddr and NodeHosts.
