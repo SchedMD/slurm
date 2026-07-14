@@ -141,7 +141,52 @@ def get_coredumps():
     return list(core_set)
 
 
-def classify_coredump(bin_path, bt_file, failures, xfailures):
+def resolve_core_binary(core_path, execfn_path):
+    """Return the on-disk binary whose build-id matches the executable
+    recorded in the coredump, or None if no match is found.
+
+    Handles the case where a symlink like may have been swapped between
+    in upgrades/mixed versions setups.
+    """
+
+    # Get the build-id of the coredump
+    core_bid = None
+    result = run_command(
+        f"DEBUGINFOD_URLS= eu-unstrip -n --core {core_path}",
+        quiet=True,
+        user="root",
+        timeout=300,
+    )
+    for line in result["stdout"].splitlines():
+        m = re.match(r"\S+\s+([0-9a-f]+)", line)
+        if m:
+            core_bid = m.group(1)
+            break
+    else:
+        logging.warning(f"Unable to extract build-id from coredump {core_path}")
+        return None
+
+    candidates = [os.path.realpath(execfn_path)]
+    sp = properties.get("slurm-prefix")
+    if sp and execfn_path.startswith(sp + "/"):
+        rel = execfn_path[len(sp) + 1 :]
+        for key in ("old-slurm-prefix", "new-slurm-prefix"):
+            if key in properties:
+                candidates.append(f"{properties[key]}/{rel}")
+
+    for cand in candidates:
+        out = run_command_output(f"readelf -n {cand}", quiet=True, user="root")
+        m = re.search(r"Build ID:\s+([0-9a-f]+)", out)
+        if os.path.exists(cand) and m and m.group(1) == core_bid:
+            return cand
+
+    logging.warning(
+        f"No binary matches build-id {core_bid} for coredump {core_path} (candidates tried: {candidates})"
+    )
+    return None
+
+
+def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
     """
     Append a known reason either to failures or xfailures lists based on a list
     of known coredumps, either to ignore them in old versions, or to report a
@@ -160,7 +205,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_handle_connection" in bt
         and "has_in || has_out" in bt
     ):
-        if get_version(component) >= (25, 5):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -178,7 +223,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "fatal_abort" in bt
         and "pthread_mutex_lock" in bt
     ):
-        if get_version(component) >= (25, 5):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -195,7 +240,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "service_conn" in bt
         and "__xassert_failed" in bt
     ):
-        if get_version(component)[:2] != (25, 5):
+        if get_version(component, slurm_prefix=slurm_prefix)[:2] != (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -209,7 +254,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "src/common/persist_conn.c" in bt
         and "_service_connection" in bt
     ):
-        if get_version(component) >= (26, 5):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -226,7 +271,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_process_service_connection" in bt
         and "l != NULL" in bt
     ):
-        if get_version(component) >= (25, 5):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -246,13 +291,14 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     ):
         # Fixed in 25.11.5 and 25.5.8
         if (
-            (get_version(component) < (25, 5))
+            (get_version(component, slurm_prefix=slurm_prefix) < (25, 5))
             or (
-                (25, 5) < get_version(component) and get_version(component) < (25, 5, 8)
+                (25, 5) < get_version(component, slurm_prefix=slurm_prefix)
+                and get_version(component, slurm_prefix=slurm_prefix) < (25, 5, 8)
             )
             or (
-                (25, 11) < get_version(component)
-                and get_version(component) < (25, 11, 5)
+                (25, 11) < get_version(component, slurm_prefix=slurm_prefix)
+                and get_version(component, slurm_prefix=slurm_prefix) < (25, 11, 5)
             )
         ):
             xfailures.append(reason)
@@ -269,7 +315,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "acct_storage_g_close_connection" in bt
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
-        if get_version(component) >= (25, 11, 7):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -281,7 +327,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "clusteracct_storage_g_node_up" in bt
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
-        if get_version(component) >= (25, 11, 7):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -301,7 +347,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         )
         and "OPENSSL_cleanup" in bt
     ):
-        if get_version(component_match) >= (26, 5):
+        if get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -317,7 +363,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
     ):
         # "slurmstepd -V" won't work, but slurmd should have the same version
-        if get_version("sbin/slurmd") >= (25, 11, 6):
+        if get_version("sbin/slurmd", slurm_prefix=slurm_prefix) >= (25, 11, 6):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -334,7 +380,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "dest=0x0" in bt
     ):
         # "slurmstepd -V" won't work, but slurmd should have the same version
-        if get_version("sbin/slurmd") > (25, 11, 6):
+        if get_version("sbin/slurmd", slurm_prefix=slurm_prefix) > (25, 11, 6):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -350,7 +396,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "slurm_receive_msgs" in bt
         and "g_context_num > 0" in bt
     ):
-        if get_version(component) >= (25, 5):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -378,7 +424,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "in close_con" in bt
         and "con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_IS_LISTEN)" in bt
     ):
-        if get_version(component) >= (25, 5, 8):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 5, 8):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -397,7 +443,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             or "%s: pthread_mutex_unlock(): %m" in bt
         )
     ):
-        if get_version(component) >= (25, 11, 6):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -413,7 +459,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "in slurmdb_destroy_assoc_usage" in bt
         and "in slurmdb_free_assoc_rec_members" in bt
     ):
-        if get_version(component) >= (25, 11, 6):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 6):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -445,7 +491,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_slurm_rpc_step_complete" in bt
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
-        if get_version(component) >= (25, 11):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11):
             failures.append(reason)
         else:
             xfailures.append(reason)
