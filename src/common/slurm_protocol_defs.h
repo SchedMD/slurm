@@ -1635,12 +1635,14 @@ extern char *slurm_sort_node_list_str(char *node_list);
  * bitmap entry.
  *
  * IN tok - An array expression. For example: "[1,3-5,8]"
- * IN array_bitmap - Matching entries in tok are set in this bitmap.
+ * IN/OUT array_bitmap - Matching entries in tok are set in this bitmap.
  * IN max - maximum size of the job array.
- * RET true if tok is a valid array expression, v
+ * RET SLURM_SUCCESS if tok is a valid array expression, otherwise an
+ *     ESLURM_INVALID_JOB_ARRAY_ID_* error code describing why it is not.
  */
-extern bool slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
-				  uint32_t max);
+extern int slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
+				 uint32_t max);
+
 /*
  * Take a string representation of an array range or comma separated values
  * and translate that into a bitmap.

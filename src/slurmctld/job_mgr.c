@@ -8025,7 +8025,7 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	static bool loaded = false;
 	static uint32_t max_task_cnt = NO_VAL;
 	uint32_t task_cnt;
-	bool valid = true;
+	int rc = SLURM_SUCCESS;
 	char *tmp, *tok, *last = NULL;
 
 	FREE_NULL_BITMAP(job_desc->array_bitmap);
@@ -8059,23 +8059,26 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 
 	tmp = xstrdup(job_desc->array_inx);
 	tok = strtok_r(tmp, ",", &last);
-	while (tok && valid) {
-		valid = slurm_parse_array_tok(tok, job_desc->array_bitmap,
-					      max_array_size);
+	while (tok && (rc == SLURM_SUCCESS)) {
+		rc = slurm_parse_array_tok(tok, job_desc->array_bitmap,
+					   max_array_size);
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp);
 
-	if (valid && (max_task_cnt < max_array_size)) {
+	if (rc != SLURM_SUCCESS)
+		return false;
+
+	if (max_task_cnt < max_array_size) {
 		task_cnt = bit_set_count(job_desc->array_bitmap);
 		if (task_cnt > max_task_cnt) {
 			debug("max_array_tasks exceeded (%u > %u)",
 			      task_cnt, max_task_cnt);
-			valid = false;
+			return false;
 		}
 	}
 
-	return valid;
+	return true;
 }
 
 /* Make sure a job descriptor's strings are not huge, which could result in
