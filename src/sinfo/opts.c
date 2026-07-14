@@ -70,7 +70,6 @@
 
 /* FUNCTIONS */
 static list_t *_build_state_list(char *str);
-static list_t *_build_all_states_list(void);
 static list_t *_build_part_list(char *parts);
 static char *_get_prefix(char *token);
 static void  _help( void );
@@ -469,8 +468,15 @@ static list_t *_build_state_list(char *state_str)
 
 	if (state_str == NULL)
 		return NULL;
-	if (xstrcasecmp (state_str, "all") == 0 )
-		return _build_all_states_list ();
+	if (xstrcasecmp(state_str, "all") == 0) {
+		sinfo_state_t *id = xmalloc(sizeof(*id));
+
+		id->state = SINFO_STATE_ALL;
+		id->op = SINFO_STATE_OP_NORM;
+		state_ids = list_create(xfree_ptr);
+		list_append(state_ids, id);
+		return state_ids;
+	}
 
 	orig = str = xstrdup (state_str);
 	state_ids = list_create(xfree_ptr);
@@ -501,34 +507,6 @@ static list_t *_build_state_list(char *state_str)
 
 	xfree (orig);
 	return (state_ids);
-}
-
-/*
- * _build_all_states_list - build a list containing all possible node states
- * RET List of enum job_states values
- */
-static list_t *_build_all_states_list(void)
-{
-	list_t *my_list;
-	int i;
-	uint16_t *state_id;
-
-	my_list = list_create( NULL );
-	for (i = 0; i < NODE_STATE_END; i++) {
-		state_id = xmalloc( sizeof( uint16_t ) );
-		*state_id = (uint16_t) i;
-		list_append( my_list, state_id );
-	}
-
-	state_id = xmalloc( sizeof( uint16_t ) );
-	*state_id = NODE_STATE_DRAIN;
-	list_append( my_list, state_id );
-
-	state_id = xmalloc( sizeof( uint16_t ) );
-	*state_id = NODE_STATE_COMPLETING;
-	list_append( my_list, state_id );
-
-	return my_list;
 }
 
 /*

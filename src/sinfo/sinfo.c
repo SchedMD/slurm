@@ -675,6 +675,10 @@ static bool _filter_node_state(uint32_t node_state, node_info_t *node_ptr)
 	bool match = false;
 	uint32_t base_state;
 	node_info_t tmp_node, *tmp_node_ptr = &tmp_node;
+
+	if (node_state == SINFO_STATE_ALL)
+		return true;
+
 	tmp_node_ptr->node_state = node_state;
 
 	if (node_state == NODE_STATE_DRAIN) {
