@@ -868,13 +868,13 @@ extern void delete_job_desc_files(uint32_t job_id)
 
 static uint32_t _max_switch_wait(uint32_t input_wait)
 {
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	static uint32_t max_wait = 300;	/* default max_switch_wait, seconds */
 	int i;
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *tmp_ptr;
-		sched_update = slurm_conf.last_update;
+		loaded = true;
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "max_switch_wait="))) {
 			/*                  0123456789012345 */
@@ -3111,8 +3111,7 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 
 extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
 {
-	static time_t sched_update = 0;
-	static bool requeue_on_resume_failure = false;
+	static int requeue_on_resume_failure = -1;
 	list_itr_t *iter;
 	job_record_t *job_ptr = NULL;
 	foreach_kill_job_by_t foreach_kill_job_by = {
@@ -3120,12 +3119,10 @@ extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
 		.now = time(NULL),
 	};
 
-	if (sched_update != slurm_conf.last_update) {
+	if (requeue_on_resume_failure < 0)
 		requeue_on_resume_failure =
 			xstrcasestr(slurm_conf.sched_params,
-				    "requeue_on_resume_failure");
-		sched_update = slurm_conf.last_update;
-	}
+				    "requeue_on_resume_failure") ? 1 : 0;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -4149,9 +4146,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 			uid_t submit_uid, bool cron, job_record_t **job_pptr,
 			char **err_msg, uint16_t protocol_version)
 {
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	static bool defer_batch = false, defer_sched = false;
-	static bool ignore_prefer_val = false, ignore_constraint_val = false;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	job_record_t *job_ptr;
@@ -4164,9 +4160,9 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *tmp_ptr;
-		sched_update = slurm_conf.last_update;
+		loaded = true;
 		defer_batch = defer_sched = false;
 		if (xstrcasestr(slurm_conf.sched_params, "defer_batch"))
 			defer_batch = true;
@@ -4193,17 +4189,6 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 
 		if (xstrcasestr(slurm_conf.sched_params, "allow_zero_lic"))
 			validate_cfgd_licenses = false;
-
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_prefer_validation"))
-			ignore_prefer_val = true;
-		else
-			ignore_prefer_val = false;
-		if (xstrcasestr(slurm_conf.sched_params,
-				"ignore_constraint_validation"))
-			ignore_constraint_val = true;
-		else
-			ignore_constraint_val = false;
 	}
 
 	if (job_desc->array_bitmap)
@@ -4339,8 +4324,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		(!top_prio) || (!independent) ||
 		(job_desc->het_job_offset != NO_VAL) || defer_this ||
-		(job_ptr->details->prefer && ignore_prefer_val) ||
-		(job_ptr->details->features && ignore_constraint_val);
+		(job_ptr->details->prefer && ignore_prefer_validation()) ||
+		(job_ptr->details->features && ignore_constraint_validation());
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
@@ -4351,17 +4336,18 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	 * If we have a prefer feature list check that, if not check the
 	 * normal features.
 	 */
-	if (job_ptr->details->prefer && !ignore_prefer_val) {
+	if (job_ptr->details->prefer && !ignore_prefer_validation()) {
 		job_ptr->details->features_use = job_ptr->details->prefer;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->prefer_list;
-	} else if (!ignore_constraint_val) {
+	} else if (!ignore_constraint_validation()) {
 		job_ptr->details->features_use = job_ptr->details->features;
 		job_ptr->details->feature_list_use =
 			job_ptr->details->feature_list;
 	} else {
 		/*
-		 * Set features_use to "" because ignore_constraint_val is set.
+		 * Set features_use to "" because ignore_constraint_validation()
+		 * is true.
 		 * We also set no_alloc to true to avoid actually allocating
 		 * with this setup.
 		 * We are using an empty string rather than NULL because
@@ -5475,16 +5461,14 @@ static uint64_t _get_def_mem(part_record_t *part_ptr, uint64_t *tres_req_cnt)
 
 static bool _get_whole_hetjob(void)
 {
-	static time_t sched_update = 0;
-	static bool whole_hetjob = false;
+	static int whole_hetjob = -1;
 
-	if (sched_update != slurm_conf.last_update) {
-		sched_update = slurm_conf.last_update;
+	if (whole_hetjob < 0) {
 		if (xstrcasestr(slurm_conf.sched_params, "whole_hetjob") ||
 		    xstrcasestr(slurm_conf.sched_params, "whole_pack"))
-			whole_hetjob = true;
+			whole_hetjob = 1;
 		else
-			whole_hetjob = false;
+			whole_hetjob = 0;
 	}
 
 	return whole_hetjob;
@@ -7808,7 +7792,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 /* Translate a job array expression into the equivalent bitmap */
 static bool _valid_array_inx(job_desc_msg_t *job_desc)
 {
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	static uint32_t max_task_cnt = NO_VAL;
 	uint32_t task_cnt;
 	bool valid = true;
@@ -7828,10 +7812,10 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 		return false;
 	}
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *key;
+		loaded = true;
 		max_task_cnt = max_array_size;
-		sched_update = slurm_conf.last_update;
 		if ((key = xstrcasestr(slurm_conf.sched_params,
 		                       "max_array_tasks="))) {
 			key += 16;
@@ -7868,13 +7852,13 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
  * a denial of service attack due to memory demands by the slurmctld */
 static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 {
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	static int max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
 	static int max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *tmp_ptr;
-		sched_update = slurm_conf.last_update;
+		loaded = true;
 
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "max_script_size="))) {
@@ -8573,20 +8557,17 @@ _set_multi_core_data(job_desc_msg_t * job_desc)
 static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 {
 	static uint16_t default_batch_wait = NO_VAL16;
-	static time_t sched_update = 0;
 
 	if (!job_desc->script)
 		return 0;
 
-	if ((default_batch_wait != NO_VAL16) &&
-	    (sched_update == slurm_conf.last_update))
+	if (default_batch_wait != NO_VAL16)
 		return default_batch_wait;
 
 	if (xstrcasestr(slurm_conf.sched_params, "sbatch_wait_nodes"))
 		default_batch_wait = 1;
 	else
 		default_batch_wait = 0;
-	sched_update = slurm_conf.last_update;
 
 	return default_batch_wait;
 }
@@ -8594,7 +8575,7 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 static int _unroll_min_max_node(job_record_t *job_ptr)
 {
 	static int max_unroll = -1;
-	static time_t topo_update = 0;
+	static bool loaded = false;
 	job_details_t *detail_ptr = job_ptr->details;
 	int i;
 
@@ -8604,9 +8585,9 @@ static int _unroll_min_max_node(job_record_t *job_ptr)
 	if (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES)
 		return SLURM_SUCCESS;
 
-	if (topo_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *tmp_ptr;
-		topo_update = slurm_conf.last_update;
+		loaded = true;
 		char *unroll_opt_str = "TopoMaxSizeUnroll=";
 
 		if ((topology_get_plugin_id() == TOPOLOGY_PLUGIN_BLOCK) &&
@@ -12178,16 +12159,14 @@ static void _realloc_nodes(job_record_t *job_ptr, bitstr_t *orig_node_bitmap)
 
 extern bool permit_job_expansion(void)
 {
-	static time_t sched_update = 0;
-	static bool permit_job_expansion = false;
+	static int permit_job_expansion = -1;
 
-	if (sched_update != slurm_conf.last_update) {
-		sched_update = slurm_conf.last_update;
+	if (permit_job_expansion < 0) {
 		if (xstrcasestr(slurm_conf.sched_params,
 		                "permit_job_expansion"))
-			permit_job_expansion = true;
+			permit_job_expansion = 1;
 		else
-			permit_job_expansion = false;
+			permit_job_expansion = 0;
 	}
 
 	return permit_job_expansion;
@@ -12195,18 +12174,38 @@ extern bool permit_job_expansion(void)
 
 extern bool permit_job_shrink(void)
 {
-	static time_t sched_update = 0;
-	static bool permit_job_shrink = false;
+	static int permit_job_shrink = -1;
 
-	if (sched_update != slurm_conf.last_update) {
-		sched_update = slurm_conf.last_update;
+	if (permit_job_shrink < 0) {
 		if (xstrcasestr(slurm_conf.sched_params, "disable_job_shrink"))
-			permit_job_shrink = false;
+			permit_job_shrink = 0;
 		else
-			permit_job_shrink = true;
+			permit_job_shrink = 1;
 	}
 
 	return permit_job_shrink;
+}
+
+extern bool ignore_prefer_validation(void)
+{
+	static int ignore = -1;
+
+	if (ignore < 0)
+		ignore = xstrcasestr(slurm_conf.sched_params,
+				     "ignore_prefer_validation") ? 1 : 0;
+
+	return ignore;
+}
+
+extern bool ignore_constraint_validation(void)
+{
+	static int ignore = -1;
+
+	if (ignore < 0)
+		ignore = xstrcasestr(slurm_conf.sched_params,
+				     "ignore_constraint_validation") ? 1 : 0;
+
+	return ignore;
 }
 
 static int _find_hres(void *x, void *key)
@@ -17798,8 +17797,7 @@ reply:
 static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 			   uint32_t flags)
 {
-	static time_t config_update = 0;
-	static bool requeue_nohold_prolog = true;
+	static int requeue_nohold_prolog = -1;
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
 	bool requeue_fini_called = false;
@@ -17807,11 +17805,10 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	time_t now = time(NULL);
 	uint32_t completing_flags = 0;
 
-	if (config_update != slurm_conf.last_update) {
-		requeue_nohold_prolog = (xstrcasestr(slurm_conf.sched_params,
-						     "nohold_on_prolog_fail"));
-		config_update = slurm_conf.last_update;
-	}
+	if (requeue_nohold_prolog < 0)
+		requeue_nohold_prolog =
+			xstrcasestr(slurm_conf.sched_params,
+				    "nohold_on_prolog_fail") ? 1 : 0;
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&

@@ -3274,7 +3274,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
 	int threads1, threads2;	/* total threads on node */
-	static time_t sched_update = 0;
+	static bool loaded = false;
 	static double conf_node_reg_mem_percent = -1;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -3289,15 +3289,15 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	       __func__, reg_msg->node_name,
 	       node_state_string(node_ptr->node_state));
 
-	if (sched_update != slurm_conf.last_update) {
+	if (!loaded) {
 		char *tmp_ptr;
+		loaded = true;
 		if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
 						"node_reg_mem_percent="))) {
 			if (s_p_handle_double(&conf_node_reg_mem_percent,
 					      "node_reg_mem_percent",
 					      tmp_ptr))
 				conf_node_reg_mem_percent = -1;
-			sched_update = slurm_conf.last_update;
 			xfree(tmp_ptr);
 		}
 	}
