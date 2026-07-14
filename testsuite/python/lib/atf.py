@@ -481,6 +481,36 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
 
+def classify_teardown_failure(message, xfail_teardowns, failures, xfailures):
+    """
+    Append a teardown failure message either to failures or xfailures based on a
+    list of known teardown failures, either to xfail them in old versions, or to
+    report a failure message that helps QA operations.
+
+    This is the generic teardown-failure counterpart of classify_coredump():
+    instead of matching a coredump backtrace, it matches the failure message
+    against the xfail_teardown markers declared by the test module.
+
+    xfail_teardowns is the list of kwargs dicts from the module's
+    xfail_teardown markers, each with:
+        reason: human-readable explanation shown in the xfail report.
+        known_fail_msg: substring matched against the teardown failure message.
+        condition: boolean gate; xfail only when condition is truthy.
+    Reading the markers is pytest-specific, so it is left to the caller (the
+    module_teardown fixture in conftest.py).
+    """
+    for xfail in xfail_teardowns:
+        known_fail_msg = xfail.get("known_fail_msg")
+        if not known_fail_msg or known_fail_msg not in message:
+            continue
+        if not xfail.get("condition", True):
+            continue
+        xfailures.append(xfail.get("reason") or message)
+        return
+
+    failures.append(message)
+
+
 def run_command(
     command,
     fatal=False,

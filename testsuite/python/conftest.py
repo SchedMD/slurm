@@ -20,6 +20,17 @@ sys.path.append(sys.path[0] + "/lib")
 import atf
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "xfail_teardown(reason, known_fail_msg, condition): "
+        "convert a matching module-teardown failure into xfail. "
+        "reason: human-readable explanation shown in the xfail report "
+        "known_fail_msg: substring matched against the teardown failure message. "
+        "condition: boolean gate; xfail only when condition is truthy ",
+    )
+
+
 def pytest_collection_modifyitems(session, config, items):
     """
     Create a json file from --collect-file with filenames and marks.
@@ -423,18 +434,33 @@ def module_setup(request, tmp_path_factory):
     os.chdir(request.config.invocation_dir)
 
     # Teardown
-    module_teardown()
+    module_teardown(request)
 
 
-def module_teardown():
+def module_teardown(request=None):
     failures = []
     xfailures = []
+    module_node = request.node if request is not None else None
+
+    # Reading the xfail_teardown markers is pytest-specific, so it is done here;
+    # the classification of each teardown failure (failure vs xfail) lives in
+    # atf.classify_teardown_failure().
+    xfail_teardowns = (
+        [marker.kwargs for marker in module_node.iter_markers("xfail_teardown")]
+        if module_node is not None
+        else []
+    )
 
     if atf.properties["auto-config"]:
         if atf.properties["slurm-started"] is True:
             # Cancel all jobs
             if not atf.cancel_all_jobs(quiet=True):
-                failures.append("Not all jobs were successfully cancelled")
+                atf.classify_teardown_failure(
+                    "Not all jobs were successfully cancelled",
+                    xfail_teardowns,
+                    failures,
+                    xfailures,
+                )
 
             # TODO: Remove once t23622 and t24793 are fixed
             job_states = {}
@@ -449,7 +475,12 @@ def module_teardown():
 
             # Stop Slurm if we started it
             if not atf.stop_slurm(fatal=False, quiet=True):
-                failures.append("Not all Slurm daemons were successfully stopped")
+                atf.classify_teardown_failure(
+                    "Not all Slurm daemons were successfully stopped",
+                    xfail_teardowns,
+                    failures,
+                    xfailures,
+                )
 
         # Restore the Slurm database
         atf.restore_accounting_database(atf.properties["sql-db-backup"])
@@ -510,8 +541,11 @@ def module_teardown():
 
             # Generate the .bt file if binary was found
             if not bin_path:
-                failures.append(
-                    f"Coredump detected ({coredump}), but unable to get binary, gdb info: {gdb_out}"
+                atf.classify_teardown_failure(
+                    f"Coredump detected ({coredump}), but unable to get binary, gdb info: {gdb_out}",
+                    xfail_teardowns,
+                    failures,
+                    xfailures,
                 )
             else:
                 bt_file = f"{coredump}.bt"
