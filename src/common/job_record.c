@@ -3239,6 +3239,8 @@ extern int job_record_unpack(job_record_t **out,
 				    job_ptr, buffer, protocol_version) !=
 			    SLURM_SUCCESS)
 				goto unpack_error;
+
+			job_record_set_flags(job_ptr);
 		}
 
 		/*
@@ -3404,6 +3406,8 @@ extern int job_record_unpack(job_record_t **out,
 				    job_ptr, buffer, protocol_version) !=
 			    SLURM_SUCCESS)
 				goto unpack_error;
+
+			job_record_set_flags(job_ptr);
 		}
 
 		/*
@@ -3565,6 +3569,8 @@ extern int job_record_unpack(job_record_t **out,
 				    job_ptr, buffer, protocol_version) !=
 			    SLURM_SUCCESS)
 				goto unpack_error;
+
+			job_record_set_flags(job_ptr);
 		}
 
 		/*
@@ -3755,4 +3761,45 @@ extern multi_core_data_t *job_record_create_mc(void)
 	/* Other fields initialized to zero by xmalloc */
 
 	return mc_ptr;
+}
+
+static bool _tres_per_task_is_cpu_only(char *tres_per_task)
+{
+	char *tres_type = NULL;
+	char *name = NULL, *type = NULL, *save_ptr = NULL;
+	uint64_t cnt = 0;
+	int rc;
+
+	if (!tres_per_task || !tres_per_task[0])
+		return true;
+
+	while (((rc = slurm_get_next_tres(
+			 &tres_type, tres_per_task, &name, &type,
+			 &cnt, &save_ptr)) == SLURM_SUCCESS) &&
+	       save_ptr) {
+
+		rc = xstrcasecmp(tres_type, "cpu");
+		xfree(tres_type);
+		xfree(name);
+		xfree(type);
+
+		if (rc)
+			return false;
+
+		rc = SLURM_SUCCESS;
+	}
+
+	return (rc == SLURM_SUCCESS);
+}
+
+extern void job_record_set_flags(job_record_t *job_ptr)
+{
+	if (!job_ptr || !job_ptr->details)
+		return;
+
+	if (job_ptr->details->overcommit &&
+	    _tres_per_task_is_cpu_only(job_ptr->tres_per_task))
+		job_ptr->bit_flags |= ALLOW_OVERCOMMIT_TRES_PER_TASK;
+	else
+		job_ptr->bit_flags &= ~ALLOW_OVERCOMMIT_TRES_PER_TASK;
 }

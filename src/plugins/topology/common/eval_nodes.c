@@ -263,7 +263,7 @@ static uint32_t _reduce_res_core_by_task_cnt(topology_eval_t* topo_eval,
 	bool one_task_per_node = false;
 	uint16_t res_cores_per_gpu =  node_ptr->res_cores_per_gpu;
 
-	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
+	if (job_ptr->bit_flags & ALLOW_OVERCOMMIT_TRES_PER_TASK)
 		one_task_per_node = true;
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
 	     SLURM_DIST_PLANE) && !one_task_per_node) {
