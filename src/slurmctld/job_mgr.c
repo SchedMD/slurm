@@ -8019,7 +8019,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 }
 
 /* Translate a job array expression into the equivalent bitmap */
-static bool _valid_array_inx(job_desc_msg_t *job_desc)
+static int _valid_array_inx(job_desc_msg_t *job_desc)
 {
 	static bool loaded = false;
 	static uint32_t max_task_cnt = NO_VAL;
@@ -8028,17 +8028,21 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	char *tmp, *tok, *last = NULL;
 
 	FREE_NULL_BITMAP(job_desc->array_bitmap);
-	if (!job_desc->array_inx || !job_desc->array_inx[0])
-		return true;
+	/* No --array at all, so this is not a job array request. */
+	if (!job_desc->array_inx)
+		return SLURM_SUCCESS;
+
+	if (!job_desc->array_inx[0])
+		return ESLURM_EMPTY_JOB_ARRAY_ID;
 	if (!job_desc->script || !job_desc->script[0])
-		return false;
+		return ESLURM_BATCH_ONLY;
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurm_conf.max_array_sz;
 	}
 	if (max_array_size == 0) {
 		verbose("Job arrays disabled, MaxArraySize=0");
-		return false;
+		return ESLURM_INVALID_ARRAY;
 	}
 
 	if (!loaded) {
@@ -8065,19 +8069,27 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
 	}
 	xfree(tmp);
 
-	if (rc != SLURM_SUCCESS)
-		return false;
+	if (rc != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(job_desc->array_bitmap);
+		return rc;
+	}
+
+	if (bit_ffs(job_desc->array_bitmap) == -1) {
+		FREE_NULL_BITMAP(job_desc->array_bitmap);
+		return ESLURM_EMPTY_JOB_ARRAY_ID;
+	}
 
 	if (max_task_cnt < max_array_size) {
 		task_cnt = bit_set_count(job_desc->array_bitmap);
 		if (task_cnt > max_task_cnt) {
 			debug("max_array_tasks exceeded (%u > %u)",
 			      task_cnt, max_task_cnt);
-			return false;
+			FREE_NULL_BITMAP(job_desc->array_bitmap);
+			return ESLURM_MAX_ARRAY_TASKS;
 		}
 	}
 
-	return true;
+	return SLURM_SUCCESS;
 }
 
 /* Make sure a job descriptor's strings are not huge, which could result in
@@ -8307,10 +8319,9 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (rc != SLURM_SUCCESS)
 		goto fini;
 
-	if (!_valid_array_inx(job_desc)) {
-		rc = ESLURM_INVALID_ARRAY;
+	rc = _valid_array_inx(job_desc);
+	if (rc != SLURM_SUCCESS)
 		goto fini;
-	}
 
 	if (job_desc->x11 && !(slurm_conf.prolog_flags & PROLOG_FLAG_X11)) {
 		rc = ESLURM_X11_NOT_AVAIL;
