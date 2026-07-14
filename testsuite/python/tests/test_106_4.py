@@ -5,6 +5,10 @@ import pytest
 
 import atf
 
+sbcast_src = "sbcast_src"
+sbcast_tgt = "sbcast_tgt"
+job_marker = "job_marker"
+
 
 def setup_module():
     atf.require_nodes(1, [("CPUs", 1)])
@@ -23,10 +27,6 @@ def sbcast_job(request):
             "bin/sbcast",
             reason="Ticket 22180: SLUID availability added in 26.05+",
         )
-
-    sbcast_src = atf.module_tmp_path / "sbcast_src"
-    sbcast_tgt = atf.module_tmp_path / "sbcast_tgt"
-    job_marker = atf.module_tmp_path / "job_marker"
 
     script = "sbcast_wait.sh"
     atf.make_bash_script(
@@ -50,14 +50,14 @@ exit 1""",
 
     identifier = str(atf.get_job_parameter(job_id, request.param))
 
-    return identifier, job_id, sbcast_src, sbcast_tgt, job_marker
+    return identifier, job_id
 
 
 @pytest.mark.parametrize("sbcast_job", ["JobId", "SLUID"], indirect=True)
 def test_sbcast(sbcast_job):
     """Verify sbcast -j <identifier> broadcasts a file to the job's nodes."""
 
-    identifier, job_id, sbcast_src, sbcast_tgt, job_marker = sbcast_job
+    identifier, job_id = sbcast_job
 
     atf.run_command(f"sbcast -j {identifier} -f {sbcast_src} {sbcast_tgt}", fatal=True)
 
