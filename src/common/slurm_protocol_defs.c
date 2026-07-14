@@ -3950,6 +3950,10 @@ extern char *node_state_string_compact(uint32_t inx)
 
 	if (inx & NODE_STATE_INVALID_REG)
 		return "INVAL";
+	if (inx == NODE_STATE_PLANNED)
+		return "PLND";
+	if (inx == NODE_STATE_RES)
+		return "RESV";
 
 	inx = (inx & NODE_STATE_BASE);
 
