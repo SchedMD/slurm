@@ -5,17 +5,21 @@
 Meta-test: This is not testing Slurm but the test environment.
 
 This test intentionally runs a python app that crashes to verify that the resulting
-coredump file is created and detected by atf.get_coredumps().
-This ensures that module_teardown() in conftest.py will detect and report
-daemon/client crashes.
+coredump file is created and detected by atf.get_coredumps(), and that the
+build-id-based binary resolution used by module_teardown() (via
+atf.resolve_core_binary()) can identify the crashing binary from the core.
+This ensures that module_teardown() in conftest.py will detect, symbolize
+and report daemon/client crashes correctly.
 
 Key environment factors that affect coredump generation:
   - /proc/sys/kernel/core_pattern  (kernel setting, shared with host in Docker)
   - RLIMIT_CORE (ulimit -c) for the crashing process
   - sudoers config: "Defaults rlimit_core=default" is required
   - Container capabilities (some restrict core dumps)
+  - readelf (binutils) and eu-unstrip (elfutils) available in the container
 """
 import logging
+import os
 
 import pytest
 
@@ -61,3 +65,10 @@ def test_coredumps(sudo_cmd, sudo_msg, cwd_key, cwd_msg):
     assert (
         len(coredumps) == 1
     ), f"One coredump should be generated {sudo_msg} in {cwd_msg}, but got {coredumps}."
+
+    # Assert atf.resolve_core_binary() works correctly
+    python3_path = atf.run_command_output("which python3", quiet=True).strip()
+    resolved = atf.resolve_core_binary(coredumps[0], python3_path)
+    assert resolved == os.path.realpath(
+        python3_path
+    ), f"resolve_core_binary should return {os.path.realpath(python3_path)} for the python3 core generated {sudo_msg} in {cwd_msg}, but got {resolved}. Check that elfutils (eu-unstrip) and readelf are installed in the container."
