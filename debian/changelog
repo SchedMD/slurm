@@ -1,5 +1,5 @@
-slurm-smd (25.11.7-0pre1) UNRELEASED; urgency=medium
+slurm-smd (25.11.7-1) UNRELEASED; urgency=medium
 
   * Initial release.
 
- -- Tim McMullan <mcmullan@schedmd.com>  Thu, 05 Jul 2024 17:14:32 -0400
+ -- Tim McMullan <tmcmullan@nvidia.com>  Tue, 14 Jul 2026 10:46:54 -0600
