@@ -5962,11 +5962,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      &i_last);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, &i_last,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s(4): invalid JobId=%s", __func__, job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto endit;
 	}
 
@@ -16002,11 +16001,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		goto reply;
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      &i_last);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, &i_last,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
 
@@ -18223,11 +18221,10 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      NULL);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, NULL,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, sus_ptr->job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
 
@@ -18707,11 +18704,10 @@ extern int job_requeue2(slurm_msg_t *msg, requeue_msg_t *req_ptr, bool preempt)
 		goto reply;
 	}
 
-	array_bitmap = slurm_array_str2bitmap(end_ptr + 1, max_array_size,
-					      NULL);
-	if (!array_bitmap) {
+	rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, NULL,
+				    &array_bitmap);
+	if (rc != SLURM_SUCCESS) {
 		info("%s: invalid JobId=%s", __func__, job_id_str);
-		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
 

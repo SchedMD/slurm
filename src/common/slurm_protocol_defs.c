@@ -956,19 +956,19 @@ extern int slurm_parse_array_tok(char *tok, bitstr_t *array_bitmap,
 	return SLURM_SUCCESS;
 }
 
-extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
-					int32_t *i_last_p)
+extern int slurm_array_str2bitmap(char *str, uint32_t max_array_size,
+				  int32_t *i_last_p, bitstr_t **bitmap_p)
 {
 	bitstr_t *array_bitmap;
 	char *tmp, *tok;
 	int rc = SLURM_SUCCESS;
 	int32_t i_last = -1;
 
+	xassert(bitmap_p);
 	xassert(max_array_size != NO_VAL);
 
+	*bitmap_p = NULL;
 	array_bitmap = bit_alloc(max_array_size);
-	if (!array_bitmap)
-		return NULL;
 
 	tmp = xstrdup(str);
 	tok = strtok_r(tmp, ",", &str);
@@ -980,18 +980,21 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 
 	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(array_bitmap);
-		return NULL;
+		return rc;
 	}
+
 	i_last = bit_fls(array_bitmap);
 	if (i_last < 0) {
 		FREE_NULL_BITMAP(array_bitmap);
-		return NULL;
+		return ESLURM_EMPTY_JOB_ARRAY_ID;
 	}
 
 	if (i_last_p)
 		*i_last_p = i_last;
 
-	return array_bitmap;
+	*bitmap_p = array_bitmap;
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1114,16 +1117,16 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 		bitstr_t *array_bitmap;
 
 		if (!max_array_size || (max_array_size == NO_VAL))
-			return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
+			return ESLURM_INVALID_ARRAY;
 
 		close_bracket = xstrchr(end_ptr + 2, ']');
 		if (!close_bracket || (close_bracket[1] != '\0'))
 			return ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC;
 
-		array_bitmap = slurm_array_str2bitmap(end_ptr + 1,
-						      max_array_size, NULL);
-		if (!array_bitmap)
-			return ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC;
+		rc = slurm_array_str2bitmap(end_ptr + 1, max_array_size, NULL,
+					    &array_bitmap);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 		id->array_bitmap = array_bitmap;
 		end_ptr = close_bracket + 1;
 	} else if (*end_ptr == '_') {
