@@ -3673,6 +3673,15 @@ extern uint32_t parse_node_state_flag(char *flag_str)
 	return 0; /* No flags */
 }
 
+extern const char *node_state_flag_index(int index, uint32_t *flag)
+{
+	if ((index < 0) || (index >= (int) ARRAY_SIZE(node_state_flags)))
+		return NULL;
+	if (flag)
+		*flag = node_state_flags[index].flag;
+	return node_state_flags[index].str;
+}
+
 extern char *node_state_string(uint32_t inx)
 {
 	int  base            = (inx & NODE_STATE_BASE);

@@ -1858,6 +1858,15 @@ extern char *node_state_string_complete(uint32_t inx);
  */
 extern uint32_t parse_node_state_flag(char *flag_str);
 
+/*
+ * Look up a node state flag by its index in the node state flag table, e.g.
+ * to enumerate every flag without hard-coding the set of flag bits.
+ * IN  index - table index, starting at 0
+ * OUT flag  - the flag's bit value (may be NULL)
+ * RET the flag's name, or NULL once index is past the end of the table
+ */
+extern const char *node_state_flag_index(int index, uint32_t *flag);
+
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 extern void  accounting_enforce_string(uint16_t enforce,
 				       char *str, int str_len);

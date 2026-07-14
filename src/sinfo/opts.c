@@ -562,47 +562,32 @@ _node_state_list (void)
 	if (all_states)
 		return (all_states);
 
-	all_states = xstrdup (node_state_string(0));
+	/* Base states (skip the internal ERROR state) */
+	all_states = xstrdup(node_state_string(0));
 	for (i = 1; i < NODE_STATE_END; i++) {
-		/* Skip NODE_STATE_ERROR */
-		if (i != NODE_STATE_ERROR) {
-			xstrcat(all_states, ",");
-			xstrcat(all_states, node_state_string(i));
-		}
+		if (i == NODE_STATE_ERROR)
+			continue;
+		xstrfmtcat(all_states, ",%s", node_state_string(i));
 	}
 
-	xstrcat(all_states,
-		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PLANNED,BLOCKED");
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_COMPLETING));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_POWERING_DOWN));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_POWERED_DOWN));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_POWER_DOWN));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_POWERING_UP));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_POWER_UP));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_INVALID_REG));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_FAIL));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_MAINT));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_REQUESTED));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_ISSUED));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_EXTERNAL));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_DYNAMIC_FUTURE));
-	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_DYNAMIC_NORM));
+	/* sinfo-specific combined base+DRAIN states */
+	xstrcat(all_states, ",DRAINED,DRAINING");
+
+	/*
+	 * Every node state flag, taken from the shared node_state_flags[]
+	 * table so this stays in sync with _node_state_id(). Skip NODE_RESUME,
+	 * which is a transient action rather than a reported state.
+	 */
+	for (i = 0;; i++) {
+		uint32_t flag;
+		const char *name = node_state_flag_index(i, &flag);
+
+		if (!name)
+			break;
+		if (flag == NODE_RESUME)
+			continue;
+		xstrfmtcat(all_states, ",%s", name);
+	}
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
@@ -628,23 +613,11 @@ static void _print_node_states(void)
 static bool
 _node_state_equal (int i, const char *str)
 {
-	int len = strlen (str);
-	uint32_t flags = i & NODE_STATE_FLAGS;
-	const char *flag_str;
+	int len = strlen(str);
 
 	if ((xstrncasecmp(node_state_string_compact(i), str, len) == 0) ||
 	    (xstrncasecmp(node_state_string(i),         str, len) == 0))
 		return (true);
-
-	/*
-	 * Also match the canonical flag name (e.g. REBOOT_REQUESTED) as
-	 * printed by StateComplete via node_state_flag_string(), so filter
-	 * names stay in sync with the states sinfo displays.
-	 */
-	while ((flag_str = node_state_flag_string_single(&flags))) {
-		if (xstrncasecmp(flag_str, str, len) == 0)
-			return (true);
-	}
 	return (false);
 }
 
@@ -658,62 +631,50 @@ static int
 _node_state_id (char *str)
 {
 	int i;
-	int len = strlen (str);
+	int len = strlen(str);
+	uint32_t flag;
 
 	for (i = 0; i < NODE_STATE_END; i++) {
 		if (_node_state_equal (i, str))
 			return (i);
 	}
 
-	if ((xstrncasecmp("BLOCKED", str, len) == 0) ||
-	    (xstrncasecmp("BLOCK", str, len) == 0))
-		return NODE_STATE_BLOCKED;
-	if ((xstrncasecmp("INVALID_REG", str, len) == 0) ||
-	    (xstrncasecmp("INVAL", str, len) == 0))
-		return NODE_STATE_INVALID_REG;
-	if ((xstrncasecmp("PLANNED", str, len) == 0) ||
-	    (xstrncasecmp("PLND", str, len) == 0))
-		return NODE_STATE_PLANNED;
+	/*
+	 * The DRAIN family is order-sensitive (DRAIN is a prefix of DRAINED
+	 * and DRAINING) and DRAINED/DRAINING map to combined base+flag
+	 * states, so handle them before the generic flag lookup.
+	 */
 	if (xstrncasecmp("DRAIN", str, len) == 0)
 		return NODE_STATE_DRAIN;
 	if (xstrncasecmp("DRAINED", str, len) == 0)
 		return NODE_STATE_DRAIN | NODE_STATE_IDLE;
-	if ((xstrncasecmp("RESV", str, len) == 0) ||
-	    (xstrncasecmp("RESERVED", str, len) == 0))
-		return NODE_STATE_RES;
 	if ((xstrncasecmp("DRAINING", str, len) == 0) ||
 	    (xstrncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
-	if (_node_state_equal(NODE_STATE_DYNAMIC_FUTURE, str))
-		return NODE_STATE_DYNAMIC_FUTURE;
-	if (_node_state_equal(NODE_STATE_DYNAMIC_NORM, str))
-		return NODE_STATE_DYNAMIC_NORM;
-	if (_node_state_equal (NODE_STATE_COMPLETING, str))
-		return NODE_STATE_COMPLETING;
+
+	/*
+	 * Match any node state flag by its canonical name from the shared
+	 * node_state_flags[] table (see slurm_protocol_defs.c); a newly added
+	 * flag is then usable with --states without changing sinfo.
+	 * NODE_RESUME is excluded: it is a transient action flag, not a state
+	 * a node is ever reported in.
+	 */
+	if ((flag = parse_node_state_flag(str)) && (flag != NODE_RESUME))
+		return flag;
+
+	/*
+	 * Match a flag by its compact or long display form (e.g. RESV, PLND,
+	 * BOOT, BOOT^, REBOOT^) via the shared node state string functions,
+	 * so sinfo does not keep its own copies of those strings.
+	 */
+	for (i = 0; node_state_flag_index(i, &flag); i++) {
+		if ((flag != NODE_RESUME) && _node_state_equal(flag, str))
+			return flag;
+	}
+
+	/* Legacy alias not derivable from any node state string. */
 	if (xstrncasecmp("NO_RESPOND", str, len) == 0)
 		return NODE_STATE_NO_RESPOND;
-	if (_node_state_equal(NODE_STATE_POWER_UP, str))
-		return NODE_STATE_POWER_UP;
-	if (_node_state_equal (NODE_STATE_POWERING_DOWN, str))
-		return NODE_STATE_POWERING_DOWN;
-	if (_node_state_equal (NODE_STATE_POWERED_DOWN, str))
-		return NODE_STATE_POWERED_DOWN;
-	if (_node_state_equal (NODE_STATE_POWER_DOWN, str))
-		return NODE_STATE_POWER_DOWN;
-	if (_node_state_equal (NODE_STATE_POWERING_UP, str))
-		return NODE_STATE_POWERING_UP;
-	if (_node_state_equal (NODE_STATE_FAIL, str))
-		return NODE_STATE_FAIL;
-	if (_node_state_equal (NODE_STATE_MAINT, str))
-		return NODE_STATE_MAINT;
-	if (_node_state_equal (NODE_STATE_REBOOT_REQUESTED, str))
-		return NODE_STATE_REBOOT_REQUESTED;
-	if (_node_state_equal (NODE_STATE_REBOOT_ISSUED, str))
-		return NODE_STATE_REBOOT_ISSUED;
-	if (_node_state_equal(NODE_STATE_CLOUD, str))
-		return NODE_STATE_CLOUD;
-	if (_node_state_equal(NODE_STATE_EXTERNAL, str))
-		return NODE_STATE_EXTERNAL;
 
 	return (-1);
 }
