@@ -1838,6 +1838,12 @@ Preemption grace time in seconds to be extended to a job which has been
 selected for preemption. The default value is zero, meaning no preemption grace
 time is allowed on this QOS. This value is only applicable for QOS
 \fIPreemptMode=CANCEL\fR and \fIPreemptMode=REQUEUE\fR.
+
+\fBNOTE\fR: A job selected for preemption that exits before \fIGraceTime\fR
+expires will be handled according to \fIPreemptMode\fR regardless of why
+it exited (most visible if \fIPreemptMode=REQUEUE\fR).  Slurm cannot
+distinguish between an exit caused by the preemption signal and an
+unrelated exit that occurs within \fIGraceTime\fR.
 .IP
 
 .TP
