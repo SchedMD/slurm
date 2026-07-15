@@ -291,7 +291,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr,
 		       will_run_data_t *will_run);
-static int  _yield_locks(int64_t usec);
+static int _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated);
 static void _bf_map_key_id(void *item, const char **key, uint32_t *key_len);
 static void _bf_map_free(void *item);
 
@@ -1235,8 +1235,13 @@ static int _clear_job_estimates(void *x, void *arg)
 /*
  * Return non-zero to break the backfill loop if change in job, node,
  * reservation or partition state or the backfill scheduler needs to be stopped.
+ * IN usec - Number of usec to sleep while yielding
+ * IN job_ptr - If job_updated is set, set BF_CURRENT_JOB_NOT_UPDATED in
+ *		bit_flags while locks are yielded, then unset it
+ * OUT job_updated - If not NULL, set to true if the job's values were updated
+ *		     during the yield, else false.
  */
-static int _yield_locks(int64_t usec)
+static int _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated)
 {
 	slurmctld_lock_t all_locks = {
 		.conf = READ_LOCK,
@@ -1255,6 +1260,10 @@ static int _yield_locks(int64_t usec)
 	config_update = slurm_conf.last_update;
 	resv_update = last_resv_update;
 
+	xassert(!job_updated || job_ptr);
+
+	if (job_updated)
+		job_ptr->bit_flags |= BF_CURRENT_JOB_NOT_UPDATED;
 	unlock_slurmctld(all_locks);
 	while (!stop_backfill) {
 		bf_sleep_usec += _my_sleep(usec);
@@ -1269,6 +1278,14 @@ static int _yield_locks(int64_t usec)
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	}
 	lock_slurmctld(all_locks);
+
+	if (job_updated) {
+		/* _update_job() removes BF_CURRENT_JOB_NOT_UPDATED */
+		*job_updated =
+			!(job_ptr->bit_flags & BF_CURRENT_JOB_NOT_UPDATED);
+		job_ptr->bit_flags &= ~BF_CURRENT_JOB_NOT_UPDATED;
+	}
+
 	slurm_mutex_lock(&config_lock);
 	if (config_flag)
 		load_config = true;
@@ -2468,7 +2485,7 @@ static void _attempt_backfill(void)
 			/* Sync planned nodes before yielding locks */
 			nodes_planned = true;
 			_handle_planned(nodes_planned);
-			if (_yield_locks(yield_sleep)) {
+			if (_yield_locks(yield_sleep, NULL, NULL)) {
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
@@ -2829,6 +2846,7 @@ TRY_LATER:
 
 		if (many_rpcs || (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			uint32_t save_time_limit = job_ptr->time_limit;
+			bool job_updated = false;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
@@ -2840,7 +2858,7 @@ TRY_LATER:
 			/* Sync planned nodes before yielding locks */
 			nodes_planned = true;
 			_handle_planned(nodes_planned);
-			if (_yield_locks(yield_sleep)) {
+			if (_yield_locks(yield_sleep, job_ptr, &job_updated)) {
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
@@ -2902,7 +2920,34 @@ TRY_LATER:
 				continue;
 			}
 
-			job_ptr->time_limit = save_time_limit;
+			/*
+			 * Reset the backfill timelimit vars if job updated
+			 * since the job_ptr's timelimit, time_min, and deadline
+			 * could have been changed.
+			 */
+			if (job_updated) {
+				/*
+				 * Reset orig_time_limit if job_ptr->time_limit
+				 * was updated by user during yield.
+				 */
+				if ((job_ptr->time_limit != orig_time_limit) &&
+				    (job_ptr->limit_set.time != 1))
+					orig_time_limit = job_ptr->time_limit;
+				else
+					job_ptr->time_limit = orig_time_limit;
+
+				if (!_validate_deadline(job_ptr, now,
+							&deadline_time_limit))
+					continue;
+
+				_set_backfill_timelimits(deadline_time_limit,
+							 part_ptr->max_time,
+							 qos_flags, job_ptr,
+							 &comp_time_limit,
+							 &time_limit);
+			} else {
+				job_ptr->time_limit = save_time_limit;
+			}
 			job_ptr->part_ptr = part_ptr;
 			job_ptr->qos_ptr = qos_ptr;
 			if (qos_ptr)
