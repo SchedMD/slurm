@@ -31,7 +31,7 @@ import os
 proc_id = os.environ['SLURM_PROCID']
 if proc_id == '{num_tasks - 2}':
     sys.exit(2)
-time.sleep(15)
+time.sleep(60)
 print('{error_text}')"""
     )
     py_file.close()
