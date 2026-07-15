@@ -5423,7 +5423,7 @@ DNS, this step can be avoided by configuring this option.
 .IP
 
 .TP
-\fBconmgr_max_connections\fR=\fI<connection_count>\fR
+\fBconmgr_max_connections\fR=<\fIconnection_count\fR>
 Specify the maximum number of connections to be processed at any given time.
 This does not influence the maximum number of pending connections as that is
 controlled by the kernel. Increasing this value will increase \fBslurmctld\fR's
@@ -5432,7 +5432,7 @@ increasing this value. Defaults to 512.
 .IP
 
 .TP
-\fBconmgr_threads\fR=\fI<thread_count>\fR
+\fBconmgr_threads\fR=<\fIthread_count\fR>
 Alias for \fBworkerpool_threads\fR.
 .IP
 
@@ -5442,33 +5442,33 @@ Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
 .IP
 
 .TP
-\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering an outbound connection attempt to be
+\fBconmgr_connect_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering an outbound connection attempt to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_read_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a read from a file descriptor to be
+\fBconmgr_read_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a read from a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_quiesce_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering quiesce to be timed out. Upon timeout,
+\fBconmgr_quiesce_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering quiesce to be timed out. Upon timeout,
 all (non-listening) active connections will be closed to allow the quiesce to
 start. Defaults to two times value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
+\fBconmgr_wait_write_delay\fR=<\fIseconds\fR>
 When waiting for kernel to flush outgoing buffer, poll kernel for changes every
-\fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
+<\fIseconds\fR> for changes. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_write_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a write from a file descriptor to be
+\fBconmgr_write_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a write from a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
@@ -5645,7 +5645,7 @@ Allow any user able to run in a reservation to delete it.
 .IP
 
 .TP
-\fBthreadpool\fR=\fI<enabled|disabled>\fR
+\fBthreadpool\fR=<\fIenabled|disabled\fR>
 Enable or disable using the threadpool in slurmctld to avoid overhead of
 allocating new process threads by preserving previously created threads.
 The default value is "enabled". Sites that wish to restore the prior
@@ -5653,13 +5653,13 @@ behavior of allocating a new thread per request may set this to "disabled".
 .IP
 
 .TP
-\fBthreadpool_preallocate\fR=\fI<thread_count>\fR
+\fBthreadpool_preallocate\fR=<\fIthread_count\fR>
 The number of process threads to preallocate at startup for thread pool.
 The default value is 32.
 .IP
 
 .TP
-\fBthreadpool_preserve\fR=\fI<thread_count>\fR
+\fBthreadpool_preserve\fR=<\fIthread_count\fR>
 The number of idle process threads to maintain in thread pool before allowing
 threads to exit.
 The default value is 128.
@@ -5675,7 +5675,7 @@ startup time considerably. The default value is 1. Maximum permitted value is
 .IP
 
 .TP
-\fBworkerpool_threads\fR=\fI<thread_count>\fR
+\fBworkerpool_threads\fR=<\fIthread_count\fR>
 The number of process threads in the worker pool used for internal processing.
 In most cases, you should decrease \fBworkerpool_threads\fR to
 improve scheduling performance. Defaults to twice the number of CPUs available,
@@ -5909,7 +5909,7 @@ Equivalent to the now deprecated FastSchedule=2 option.
 .IP
 
 .TP
-\fBconmgr_max_connections\fR=\fI<connection_count>\fR
+\fBconmgr_max_connections\fR=<\fIconnection_count\fR>
 Specify the maximum number of connections to be processed at any given time.
 This does not influence the maximum number of pending connections as that is
 controlled by the kernel. Increasing this value will increase \fBslurmd\fR's
@@ -5918,7 +5918,7 @@ increasing this value. Defaults to 512.
 .IP
 
 .TP
-\fBconmgr_threads\fR=\fI<thread_count>\fR
+\fBconmgr_threads\fR=<\fIthread_count\fR>
 Alias for \fBworkerpool_threads\fR.
 .IP
 
@@ -5928,33 +5928,33 @@ Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
 .IP
 
 .TP
-\fBconmgr_connect_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering an outbound connection attempt to be
+\fBconmgr_connect_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering an outbound connection attempt to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_read_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a read from a file descriptor to be
+\fBconmgr_read_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a read from a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_quiesce_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering quiesce to be timed out. Upon timeout,
+\fBconmgr_quiesce_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering quiesce to be timed out. Upon timeout,
 all (non-listening) active connections will be closed to allow the quiesce to
 start. Defaults to two times value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_wait_write_delay\fR=\fI<seconds>\fR
+\fBconmgr_wait_write_delay\fR=<\fIseconds\fR>
 When waiting for kernel to flush outgoing buffer, poll kernel for changes every
-\fI<seconds>\fR for changes. Defaults to the value of \fBMessageTimeout\fR.
+<\fIseconds\fR> for changes. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
 .TP
-\fBconmgr_write_timeout\fR=\fI<seconds>\fR
-Wait \fI<seconds>\fR before considering a write from a file descriptor to be
+\fBconmgr_write_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a write from a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
 .IP
 
@@ -6002,7 +6002,7 @@ namespace.
 .IP
 
 .TP
-\fBworkerpool_threads\fR=\fI<thread_count>\fR
+\fBworkerpool_threads\fR=<\fIthread_count\fR>
 The number of process threads in the worker pool used for handling internal
 processing. Defaults to 6 threads.
 .RE
