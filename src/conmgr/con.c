@@ -109,6 +109,7 @@ static const struct {
 	T(FLAG_IS_FIFO),
 	T(FLAG_IS_CHR),
 	T(FLAG_TCP_NODELAY),
+	T(FLAG_ENABLE_TLS_SHUTDOWN),
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
@@ -278,12 +279,13 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		return;
 	}
 
-	if (!mgr.shutdown_requested && con->tls &&
+	if (con_flag(con, FLAG_ENABLE_TLS_SHUTDOWN) &&
+	    !mgr.shutdown_requested && con->tls &&
 	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
 	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
 	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
-		/* Attempt graceful TLS shutdown once */
+		/* Send our TLS close_notify one time only before closing */
 		con_set_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
 		if (!locked)
