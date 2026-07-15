@@ -713,7 +713,10 @@ The more frequently executed scheduling logic only starts jobs on a first-in
 first-out (FIFO) basis and lacks logic for concurrently scheduling all
 components of a heterogeneous job.</p>
 
-<p>Heterogeneous jobs are not supported on GANG scheduling operations.</p>
+<p>A heterogeneous job is excluded from GANG scheduling operations,
+including <i>PreemptMode=SUSPEND</i>, and from oversubscription while
+<i>GANG</i> is enabled. See
+<a href="preempt.html#hetjob">heterogeneous job preemption</a>.</p>
 
 <p>Slurm's Perl APIs do not support heterogeneous jobs.</p>
 
