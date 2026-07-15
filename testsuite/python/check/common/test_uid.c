@@ -137,13 +137,25 @@ START_TEST(test_uid_lookup_time)
 	printf("uncached slow lookup: %s (%ld us)\n", TIMER_STR(), timer_us);
 	ck_assert(timer_us > 50000);
 
-	START_TIMER;
-	ck_assert(uid_from_string_cached("ckuser0000042", &u) == SLURM_SUCCESS);
-	END_TIMER;
-	ck_assert(u == UID_BASE + 42);
-	timer_us = TIMER_DURATION_USEC();
-	printf("cached fast lookup: %s (%ld us)\n", TIMER_STR(), timer_us);
-	ck_assert(timer_us < 50);
+	/* average of N calls */
+	{
+		const int N = 1000;
+		double avg_us;
+
+		START_TIMER;
+		for (int i = 0; i < N; i++) {
+			ck_assert(uid_from_string_cached("ckuser0000042", &u) ==
+				  SLURM_SUCCESS);
+			ck_assert(u == UID_BASE + 42);
+		}
+		END_TIMER;
+		avg_us = (double) TIMER_DURATION_USEC() / N;
+		printf("cached fast lookup: %.3f us average over %d calls\n",
+		       avg_us, N);
+		ck_assert_msg(avg_us < 50.0,
+			      "cached lookup average %.3f us exceeds 50 us threshold",
+			      avg_us);
+	}
 
 	uid_cache_clear();
 	slow_lookup_enabled = false;
