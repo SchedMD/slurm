@@ -6286,6 +6286,7 @@ extern int slurm_remote_license_fuzzy_match(const char *query, const char *name)
 	split = xstrchr(name, '@');
 	if (split)
 		cnt = split - name;
+
 	/*
 	 * fuzzy match cases
 	 * check1:
