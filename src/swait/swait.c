@@ -50,6 +50,7 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -59,7 +60,7 @@
 
 #include "src/swait/opt.h"
 
-#define SWAIT_CONMGR_THREADS 3
+#define SWAIT_WORKERPOOL_THREADS 3
 
 /*
  * exit_lock arbitrates between _on_msg (steps-drained: keep exit_rc=0) and
@@ -525,7 +526,8 @@ int main(int argc, char **argv)
 
 	stepmgr_node = _resolve_stepmgr(&opt.target);
 
-	conmgr_init(0, SWAIT_CONMGR_THREADS, 0);
+	workerpool_init(0, SWAIT_WORKERPOOL_THREADS, NULL);
+	conmgr_init(0, SWAIT_WORKERPOOL_THREADS, 0);
 
 	setup_rc = _setup_steps_drained_listener();
 	if (setup_rc == ESLURM_STEPS_DRAINED) {
@@ -552,6 +554,7 @@ int main(int argc, char **argv)
 
 	verbose("exiting rc=%d", exit_rc);
 	conmgr_fini();
+	workerpool_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 	xfree(stepmgr_node);
