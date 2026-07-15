@@ -26,7 +26,7 @@ socket, or CPU is shared, it means that more than one job can be assigned to it.
 </P></LI></UL>
 </P>
 <P>
-The following table describes this new functionality in more detail:
+The following table describes this functionality in more detail:
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>Selection Setting</TH>
@@ -122,7 +122,7 @@ track the CPU usage on each node.
 </P><P>
 The sharing functionality in the
 <CODE>select/cons_tres</CODE> plugin also supports the
-new <CODE>OverSubscribe=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>OverSubscribe=FORCE:3</CODE>
+<CODE>OverSubscribe=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>OverSubscribe=FORCE:3</CODE>
 is configured with a consumable resource plugin and <CODE>CR_Core</CODE> or
 <CODE>CR_Core_Memory</CODE>, then the plugin will
 run up to 3 jobs on each <U>core</U> of each node in the partition. If
@@ -189,6 +189,19 @@ could have up to 8 jobs running on it at one time.</TD>
 </TR>
 </TABLE>
 <P>
+The per-partition tracking shown above is specific to
+<CODE>select/cons_tres</CODE>. Because <CODE>select/linear</CODE> only
+counts the number of jobs on each node, its limit counts every job sharing the
+node regardless of which partition it came from. For example, a shared job from
+an <CODE>OverSubscribe=YES</CODE> partition counts against the limit of an
+overlapping <CODE>OverSubscribe=FORCE:2</CODE> partition, so the latter
+partition will not start any more jobs on nodes with two or more already running.
+</P>
+<P>
+With either plugin, the limit applied to a job is the one set on the partition
+it was submitted to, not the limit of any overlapping partition.
+</P>
+<P>
 Note that the "mixed shared setting" configuration (row #2 above) introduces the
 possibility of <B>starvation</B> between jobs in each partition. If a set of
 nodes are running jobs from the <CODE>OverSubscribe=NO</CODE> partition, then these
@@ -197,9 +210,7 @@ jobs submitted to the <CODE>OverSubscribe=FORCE</CODE> partition have a higher
 priority. This works in reverse also, and in fact it's easier for jobs from the
 <CODE>OverSubscribe=FORCE</CODE> partition to hold onto the nodes longer because the
 consumable resource "sharing" provides more resource availability for new jobs
-to begin running "on top of" the existing jobs. This happens with the
-<CODE>select/linear</CODE> plugin also, so it's not specific to the
-<CODE>select/cons_tres</CODE> plugin.
+to begin running "on top of" the existing jobs.
 </P>
 
 <h2 id="memory_management">Memory Management

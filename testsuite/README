@@ -400,7 +400,6 @@ test17.10  Test of processors, memory, and temporary disk space
 	   constraints options (--mincpus, --mem, and --tmp options).
 	   Also test that priority zero job is not started (--hold
 	   option).
-test17.11  Test of oversubscribe and contiguous options, also uses --hold option.
 test17.12  Verify node configuration specification (--constraint option)
 test17.13  Verify the appropriate job environment variables are set
 test17.14  Verify that user environment variables are propagated to the job
@@ -1073,6 +1072,8 @@ test_151_#   Testing Oversubscribe
 ===========================================
 test_151_1   Test oversubscribe with sharing partitions
 test_151_2   Test OverSubscribe and Exclusive intent in scontrol and env vars
+test_151_3   Test oversubscribe and contiguous options.
+test_151_4   Test per-partition OverSubscribe job count for FORCE and YES
 
 test_152_#   Testing switch/nvidia_imex.
 ========================================
