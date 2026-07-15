@@ -5951,9 +5951,13 @@ def run_check_test(source_file, build_args=""):
 
     # Run the libcheck test setting an xml output. Also export `srcdir`
     # so the test can locate any sidecar file (e.g. topology.conf)
+    #
+    # stdbuf -oL forces line-buffered stdout so printf() output survives
+    # libcheck's _exit() on assertion failure (default fully-buffered pipe
+    # would otherwise discard the buffered lines).
     src_dir = os.path.dirname(f"{properties['testsuite_check_dir']}/{source_file}")
     result = run_command(
-        check_test,
+        f"stdbuf -oL {check_test}",
         quiet=True,
         env_vars=f"CK_XML_LOG_FILE_NAME={xml_test} srcdir={src_dir}",
     )
