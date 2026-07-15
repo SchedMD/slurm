@@ -90,26 +90,15 @@ def wait_for_srun_ports_clear(lo, hi, timeout=90):
     logging.debug(
         f"[PORT_WAIT] Waiting for ports {lo}-{hi} to be released (timeout: {timeout}s)"
     )
-    start_time = time.time()
 
-    while True:
-        elapsed = time.time() - start_time
+    for t in atf.timer(timeout=timeout, fatal=True, quiet=True):
         if is_port_range_available(lo, hi):
-            logging.debug(f"[PORT_WAIT] All ports available after {elapsed:.1f}s")
-            return True
+            logging.debug("[PORT_WAIT] All ports available")
+            break
 
-        if elapsed >= timeout:
-            logging.debug(
-                f"[PORT_WAIT] TIMEOUT after {elapsed:.1f}s - some port not yet available"
-            )
-            return False
-
-        if elapsed > 5 and int(elapsed) % 10 == 0:
-            logging.debug(
-                f"[PORT_WAIT] Still waiting... some ports not yet available (elapsed: {elapsed:.1f}s)"
-            )
-
-        time.sleep(1)
+        logging.debug(
+            f"[PORT_WAIT] Still waiting... some ports not yet available ({t:.1f}s remaining)"
+        )
 
 
 @pytest.mark.parametrize("nodes", [1, 10, 48, 49, 96, 100, 144])
