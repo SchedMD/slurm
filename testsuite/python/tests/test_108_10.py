@@ -4,6 +4,8 @@
 import json
 import re
 
+import pytest
+
 import atf
 
 
@@ -49,6 +51,25 @@ def submit_requeueable_job():
     return job_id
 
 
+def submit_blocking_job():
+    """Submit an exclusive job that takes every idle node, so any additional
+    pending job stays PENDING for Resources. Returns the blocker job_id.
+    """
+    idle_nodes = [
+        name
+        for name, info in atf.get_nodes(quiet=True).items()
+        if "IDLE" in str(info.get("state", ""))
+    ]
+    if not idle_nodes:
+        pytest.fail("Unable to get idle nodes to submit the blocking job")
+
+    blocker_id = atf.submit_job_sbatch(
+        f"-N{len(idle_nodes)} --exclusive --wrap 'srun sleep infinity'", fatal=True
+    )
+    atf.wait_for_job_state(blocker_id, "RUNNING", fatal=True)
+    return blocker_id
+
+
 # scontrol update job
 def test_update_admincomment_by_sluid():
     """Update AdminComment via SLUID and verify with scontrol show job <SLUID>."""
@@ -75,10 +96,21 @@ def test_hold_release_by_sluid():
     and reason to JobHeldAdmin. Release restores priority and clears the hold.
     """
 
+    # Submit the main job with --hold so it stays PENDING for JobHeldUser.
     job_id = submit_pending_job()
     sluid = get_and_assert_sluid(job_id)
 
-    # The job is already held from submission.
+    # Assert the initial hold state.
+    job = atf.get_job(job_id)
+    assert (
+        job.get("Priority") == 0
+    ), f"Job should have Priority=0 initially, got {job.get('Priority')}"
+    assert "JobHeldUser" in str(
+        job.get("Reason", "")
+    ), f"Job should have Reason=JobHeldUser initially, got {job.get('Reason')}"
+
+    # Submit a blocking job so that after release the main job it stays PENDING
+    blocker_id = submit_blocking_job()
     atf.run_command(
         f"scontrol release {sluid}",
         user=atf.properties["slurm-user"],
@@ -88,18 +120,18 @@ def test_hold_release_by_sluid():
     priority = atf.get_job_parameter(job_id, "Priority")
     assert int(priority) > 0, f"Expected Priority > 0 after release, got {priority}"
 
-    # Hold by SLUID
+    # Hold first, then free the resources.
     atf.run_command(
         f"scontrol hold {sluid}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
-    priority = atf.get_job_parameter(job_id, "Priority")
-    reason = atf.get_job_parameter(job_id, "Reason")
-    assert int(priority) == 0, f"Expected Priority=0 after hold, got {priority}"
-    assert (
-        "JobHeldAdmin" in reason
-    ), f"Expected Reason=JobHeldAdmin after hold, got {reason}"
+    atf.cancel_jobs([blocker_id], fatal=True)
+
+    for _ in atf.timer(fatal=True):
+        job = atf.get_job(job_id)
+        if job.get("Priority") == 0 and "JobHeldAdmin" in str(job.get("Reason", "")):
+            break
 
 
 def test_hold_release_mixed_ids():
@@ -107,9 +139,22 @@ def test_hold_release_mixed_ids():
 
     job_id1 = submit_pending_job()
     job_id2 = submit_pending_job()
+    sluid1 = get_and_assert_sluid(job_id1)
     sluid2 = get_and_assert_sluid(job_id2)
 
-    # Both are held from submission. Release them first.
+    # Assert the initial hold state on both.
+    for jid in [job_id1, job_id2]:
+        job = atf.get_job(jid)
+        assert (
+            job.get("Priority") == 0
+        ), f"Job {jid} should have Priority=0 initially, but got {job.get('Priority')}"
+        assert "JobHeldUser" in str(
+            job.get("Reason", "")
+        ), f"Job {jid} should have Reason=JobHeldUser initially, but got {job.get('Reason')}"
+
+    # Submit a blocking job so that after release the main job it stays PENDING,
+    # even if its priority is updated and could potentially be run.
+    blocker_id = submit_blocking_job()
     atf.run_command(
         f"scontrol release {job_id1} {sluid2}",
         user=atf.properties["slurm-user"],
@@ -122,21 +167,22 @@ def test_hold_release_mixed_ids():
         ), f"Expected Priority > 0 after release for job {jid}, got {priority}"
 
     # Hold both: one by job_id, one by SLUID
-    sluid1 = get_and_assert_sluid(job_id1)
     atf.run_command(
         f"scontrol hold {job_id1} {sluid2}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
+
+    # Cancel the blocking job so we can verify the main job is JobHeldAdmin
+    atf.cancel_jobs([blocker_id], fatal=True)
+
     for jid in [job_id1, job_id2]:
-        priority = atf.get_job_parameter(jid, "Priority")
-        reason = atf.get_job_parameter(jid, "Reason")
-        assert (
-            int(priority) == 0
-        ), f"Expected Priority=0 after hold for job {jid}, got {priority}"
-        assert (
-            "JobHeldAdmin" in reason
-        ), f"Expected Reason=JobHeldAdmin for job {jid}, got {reason}"
+        for _ in atf.timer(fatal=True):
+            job = atf.get_job(jid)
+            if job.get("Priority") == 0 and "JobHeldAdmin" in str(
+                job.get("Reason", "")
+            ):
+                break
 
     # Release both: swap id types (SLUID for job1, numeric for job2)
     atf.run_command(
