@@ -482,7 +482,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 
 	if (xstrcmp(resv->assocs, row[RESV_ASSOCS]) ||
 	    (resv->flags != slurm_atoul(row[RESV_FLAGS])) ||
-	    xstrcmp(resv->nodes, row[RESV_NODE_INX]) ||
+	    xstrcmp(resv->nodes, row[RESV_NODES]) ||
 	    xstrcmp(resv->tres_str, row[RESV_TRES]) ||
 	    xstrcmp(resv->comment, row[RESV_COMMENT]))
 		set = 1;
