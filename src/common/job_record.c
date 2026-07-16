@@ -3234,10 +3234,11 @@ extern int job_record_unpack(job_record_t **out,
 		gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
 
 		safe_unpackbool(&need_unpack, buffer);
-		if (need_unpack &&
-		    (_load_job_details(job_ptr, buffer, protocol_version) !=
-		     SLURM_SUCCESS)) {
-			goto unpack_error;
+		if (need_unpack) {
+			if (_load_job_details(
+				    job_ptr, buffer, protocol_version) !=
+			    SLURM_SUCCESS)
+				goto unpack_error;
 		}
 
 		/*
@@ -3398,10 +3399,11 @@ extern int job_record_unpack(job_record_t **out,
 		gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
 
 		safe_unpackbool(&need_unpack, buffer);
-		if (need_unpack &&
-		    (_load_job_details(job_ptr, buffer, protocol_version) !=
-		     SLURM_SUCCESS)) {
-			goto unpack_error;
+		if (need_unpack) {
+			if (_load_job_details(
+				    job_ptr, buffer, protocol_version) !=
+			    SLURM_SUCCESS)
+				goto unpack_error;
 		}
 
 		/*
@@ -3558,10 +3560,11 @@ extern int job_record_unpack(job_record_t **out,
 		gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
 
 		safe_unpackbool(&need_unpack, buffer);
-		if (need_unpack &&
-		    (_load_job_details(job_ptr, buffer, protocol_version) !=
-		     SLURM_SUCCESS)) {
-			goto unpack_error;
+		if (need_unpack) {
+			if (_load_job_details(
+				    job_ptr, buffer, protocol_version) !=
+			    SLURM_SUCCESS)
+				goto unpack_error;
 		}
 
 		/*
