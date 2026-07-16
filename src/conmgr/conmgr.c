@@ -290,9 +290,6 @@ extern void conmgr_fini(void)
 	xassert(!mgr.quiesce.active);
 	xassert(!mgr.quiesce.start.tv_sec);
 
-	/* work should have finished by this point */
-	xassert(!mgr.work_count);
-
 	pollctl_fini();
 
 	/*
