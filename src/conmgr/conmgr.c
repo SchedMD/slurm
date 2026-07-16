@@ -269,6 +269,13 @@ extern void conmgr_fini(void)
 	/* tell all timers about being canceled */
 	cancel_delayed_work(false);
 
+	/* Wait for all outstanding work to finish */
+	while (mgr.work_count) {
+		log_flag(CONMGR, "%s: waiting for %d outstanding work to drain before shutdown",
+			 __func__, mgr.work_count);
+		EVENT_WAIT(&mgr.watch_sleep, &mgr.mutex);
+	}
+
 	/*
 	 * At this point, there should be no threads running.
 	 * It should be safe to shutdown the mgr.
