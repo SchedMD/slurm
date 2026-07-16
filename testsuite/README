@@ -1143,3 +1143,4 @@ test_164_1   Test a batch job survives a slurmctld reconfigure during its prolog
 test_165_#   Testing multi-partition allocated partition recovery and ordering
 ==============================================================================
 test_165_1   Test multi-partition job/array keeps partition on restart
+test_165_2   Test completing job keeps partition on recovery
