@@ -1,0 +1,587 @@
+<!--#include virtual="header.txt"-->
+
+<h1>pam_slurm_adopt</h1>
+
+<p>The purpose of this module is to prevent users from sshing into nodes that
+they do not have a running job on, and to track the ssh connection and any
+other spawned processes for accounting and to ensure complete job cleanup when
+the job is completed. This module does this by determining the job which
+originated the ssh connection. The user's connection is "adopted" into the
+"external" step of the job. When access is denied, the user will receive a
+relevant error message.</p>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#INSTALLATION">Installation</a></li>
+<li><a href="#SLURM_CONFIG">Slurm Configuration</a></li>
+<li><a href="#ssh_config">SSH Configuration</a></li>
+<li><a href="#PAM_CONFIG">PAM Configuration</a></li>
+<li><a href="#admin_access">Administrative Access Configuration</a></li>
+<li><a href="#OPTIONS">pam_slurm_adopt Module Options</a></li>
+<li><a href="#firewall">Firewalls, IP Addresses, etc.</a></li>
+<li><a href="#selinux">SELinux</a></li>
+<li><a href="#LIMITATIONS">Limitations</a></li>
+</ul>
+
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
+
+<h3 id="source">Source:<a class="slurm_link" href="#source"></a></h3>
+
+<p>In your Slurm source directory, navigate to ./contribs/pam_slurm_adopt/
+and run the following as <b>root</b>:</p>
+
+<pre>make &amp;&amp; make install</pre>
+
+<p>This will place pam_slurm_adopt.a, pam_slurm_adopt.la,
+and pam_slurm_adopt.so in /lib/security/ (on Debian systems) or
+/lib64/security/ (on RedHat/SUSE systems). This install location
+is not affected by configure's --prefix flag; use --with-pam_dir=PATH
+to modify the install location if desired.</p>
+
+<h3 id="rpm">RPM:<a class="slurm_link" href="#rpm"></a></h3>
+
+<p>The included slurm.spec will build a slurm-pam_slurm RPM which will install
+pam_slurm_adopt. Refer to the
+<a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
+Administrator Guide</a> for instructions on managing an RPM-based install.</p>
+
+<h3 id="deb">DEB:<a class="slurm_link" href="#deb"></a></h3>
+
+<p>The included debian packaging scripts will build the
+slurm-smd-libpam-slurm-adopt package which will install pam_slurm_adopt.
+<a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
+Administrator Guide</a> for instructions on managing an DEB-based install.</p>
+
+<h2 id="SLURM_CONFIG">Slurm Configuration
+<a class="slurm_link" href="#SLURM_CONFIG"></a>
+</h2>
+
+<p><b>PrologFlags=contain</b> must be set in the slurm.conf. This sets up the
+"extern" step into which ssh-launched processes will be adopted. You must also
+enable the task/cgroup plugin in slurm.conf. See the
+<a href="https://slurm.schedmd.com/cgroups.html">Slurm cgroups guide.</a>
+<b>CAUTION</b> This option must be in place <i>before</i> using this module.
+The module bases its checks on local steps that have already been launched. Jobs
+launched without this option do not have an extern step, so pam_slurm_adopt will
+not have access to those jobs.</p>
+
+<p><b>LaunchParameters=ulimit_pam_adopt</b> will set RLIMIT_RSS in processes
+adopted by the external step, similar to tasks running in regular steps.</p>
+
+<p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
+
+<h2 id="ssh_config">SSH Configuration
+<a class="slurm_link" href="#ssh_config"></a>
+</h2>
+
+<p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
+should be on by default).</p>
+
+<p>Ensure that only supported <b>AuthenticationMethods</b> are enabled in
+sshd_config (on the compute nodes). At this time, only <b>publickey</b> and
+<b>password</b> are supported. In particular <b>keyboard-interactive</b> is
+explicitly unsupported and must be removed from <b>AuthenticationMethods</b>.
+If this step is not observed process adoption will be broken
+and SSH sessions will persist even after the job ends. See
+<a href="#LIMITATIONS"> Limitations</a> for more information.</p>
+
+<h2 id="PAM_CONFIG">PAM Configuration
+<a class="slurm_link" href="#PAM_CONFIG"></a>
+</h2>
+
+<p>For initial testing (see <b>warning</b> below), add the following line to the
+appropriate file in /etc/pam.d, such as system-auth or sshd (you may use either
+the "required" or "sufficient" PAM control flag):</p>
+
+<pre>
+account    required      pam_slurm_adopt.so
+</pre>
+
+<p> The order of plugins is very important. pam_slurm_adopt.so should be the
+last PAM module in the account stack. Included files such as common-account
+should normally be included before pam_slurm_adopt.
+
+You might have the following account stack in sshd:</p>
+
+<pre>
+account    required      pam_nologin.so
+account    include       password-auth
+...
+-account    required      pam_slurm_adopt.so
+</pre>
+
+<p>Note the "-" before the account entry for pam_slurm_adopt. It allows
+PAM to fail gracefully if the pam_slurm_adopt.so file is not found. If Slurm
+is on a shared filesystem, such as NFS, then this is suggested to avoid being
+locked out of a node while the shared filesystem is mounting or down.</p>
+
+<p>pam_slurm_adopt must be used with the task/cgroup task plugin and the
+proctrack/cgroup proctrack plugin.
+The pam_systemd module will conflict with pam_slurm_adopt, so you need to
+disable it in all files that are included in sshd or system-auth (e.g.
+password-auth, common-session, etc.).</p>
+
+<p><b>WARNING</b>: The default configuration for pam_slurm_adopt is meant to
+ensure an admin is not locked out of a node during testing. Production
+environments should consider setting both
+<a href="#action_adopt_failure">action_adopt_failure</a> and
+<a href="#action_generic_failure">action_generic_failure</a> to <b>deny</b>
+after successful testing; otherwise, plugin failures may allow users to log in
+unconfined. Future examples on this page will include these flags.</p>
+
+<p>When using pam_slurm_adopt, <b>pam_systemd</b> must be disabled (as noted
+above), which means user session features such as the runtime directory
+<code>/run/user/$UID</code> and XDG environment variables are not automatically
+set up. A partial workaround is to provide <b>XDG_RUNTIME_DIR</b> via a per-user
+directory in <code>/dev/shm</code> using a <b>TaskProlog</b>:</p>
+
+TaskProlog:
+<pre>
+MY_XDG_RUNTIME_DIR=/dev/shm/${SLURM_JOB_USER}
+mkdir -p $MY_XDG_RUNTIME_DIR
+chmod 700 $MY_XDG_RUNTIME_DIR
+echo "export XDG_RUNTIME_DIR=$MY_XDG_RUNTIME_DIR"
+</pre>
+
+<p><b>NOTE</b>: This does not fully substitute for a systemd user session.
+Features that depend on a running user bus or systemd user services (e.g., some
+dbus-dependent software) will not work with this approach.</p>
+
+<p>You must also make sure a different PAM
+module isn't short-circuiting the account stack before it gets to
+pam_slurm_adopt.so. From the example above, the following two lines have been
+commented out in the included password-auth file:</p>
+
+<pre>
+#account    sufficient    pam_localuser.so
+#-session   optional      pam_systemd.so
+</pre>
+
+<p>Note: This may involve editing a file that is auto-generated.
+Do not run the config script that generates the file or your
+changes will be erased.</p>
+
+<h2 id="admin_access">Administrative Access Configuration
+<a class="slurm_link" href="#admin_access"></a>
+</h2>
+
+<p>
+pam_slurm_adopt will always allow the root user access, and will do so even
+before checking for slurm configuration. If you wish to also allow other admins
+to the system with their own user accounts, this can be accomplished by stacking
+other modules along with pam_slurm_adopt.
+<p>
+
+<p>
+Stacking pam_access with pam_slurm_adopt is one way to permit administrative
+access, with two possible implementations with subtle differences in behavior.
+Both will require editing the pam_access configuration file
+(/etc/security/access.conf). In the following example, the access.conf file will
+allow members of the group "wheel" to log in.
+</p>
+
+<pre>
++:(wheel):ALL
+-:ALL:ALL
+</pre>
+
+<p>
+Then you will need to stack the modules in the /etc/pam.d/sshd file.  The order
+here matters, and each ordering has different implications. In the example
+below, pam_slurm adopt is listed first as "sufficient", followed by pam_access.
+In this configuration when the admin has a job running, their ssh session
+will be adopted into the job. If they do not, access will be permitted by
+pam_access, but note that pam_slurm_adopt will still emit the "access denied"
+message.
+</p>
+
+<pre>
+account    sufficient    pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
+account    required      pam_access.so
+</pre>
+
+<p>
+Flipping this order, with pam_access(sufficient) before
+pam_slurm_adopt(required), members of the administrative group will bypass
+pam_slurm_adopt entirely.
+</p>
+
+<pre>
+account    sufficient    pam_access.so
+account    required      pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
+</pre>
+
+<p>
+The pam_listfile module is another module that can be stacked with
+pam_slurm_adopt and achieve similar results.  In the following example, it will
+allow all users in the specified file to log in, skipping the pam_slurm_adopt
+module.  This can also be flipped similar to pam_access, with the same
+implications.
+</p>
+
+<pre>
+account    sufficient    pam_listfile.so item=user sense=allow onerr=fail file=/path/to/allowed_users_file
+account    required      pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
+</pre>
+
+<p>
+The pam_listfile module can also be configured to look for membership of a
+group. In this example, instead of checking the user, the plugin checks that
+the user belongs to one of the groups specified in the 'groupfile'.
+If pam_systemd is needed for those users, you can link it to the
+pam_listfile.so module in the session phase, as shown below.
+If the pam_listfile module succeeds, the evaluation continues (success=ignore).
+Otherwise, the next module (pam_systemd) is ignored (default=1 skips the next
+module). The pam_systemd module will only be used for admin users in this
+example.
+</p>
+<pre>
+account    sufficient                    pam_listfile.so item=group sense=allow onerr=fail file=/path/to/allowed_users_file
+-account   required                      pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
+
+session    [default=1 success=ignore]    pam_listfile.so item=group sense=allow onerr=fail file=/etc/groupfile
+-session   optional                      pam_systemd.so
+</pre>
+
+<p>
+More information about the capabilities and configuration options for pam_access
+and pam_listfile can be found in their respective man pages.
+</p>
+
+<h2 id="OPTIONS">pam_slurm_adopt Module Options
+<a class="slurm_link" href="#OPTIONS"></a>
+</h2>
+
+<p>
+This module is configurable. Add these options to the end of the pam_slurm_adopt
+line in the appropriate file in /etc/pam.d/ (e.g., sshd or system-auth):
+</p>
+
+<pre>
+account sufficient pam_slurm_adopt.so optionname=optionvalue
+</pre>
+
+<p>This module has the following options:</p>
+
+<dl>
+
+<dt>
+  <b id="action_no_jobs">action_no_jobs</b>
+  <a class="slurm_link" href="#action_no_jobs"></a>
+</dt>
+<dd>
+The action to perform if the user has no jobs on the node. Configurable
+values are:
+
+<dl>
+<dt></dt>
+<dd>
+<dl>
+  <dt>
+    <b id="action_no_jobs_ignore">ignore</b>
+    <a class="slurm_link" href="#action_no_jobs_ignore"></a>
+  </dt>
+<dd>Do nothing. Fall through to the next pam module.</dd>
+<dt>
+  <b id="action_no_jobs_deny">deny</b> (default)
+  <a class="slurm_link" href="#action_no_jobs_deny"></a>
+</dt>
+<dd>Deny the connection.</dd>
+</dl>
+</dd>
+</dl>
+
+</dd>
+
+<dt>
+  <b id="action_unknown">action_unknown</b>
+  <a class="slurm_link" href="#action_unknown"></a>
+</dt>
+<dd>
+The action to perform when the user has multiple jobs on the node <b>and</b>
+the RPC does not locate the source job. If the RPC mechanism works properly in
+your environment, this option will likely be relevant <b>only</b> when
+connecting from a login node. Configurable values are:
+
+<dl>
+<dt></dt>
+<dd>
+<dl>
+<dt>
+  <b id="action_unknown_newest">newest</b> (default)
+  <a class="slurm_link" href="#action_unknown_newest"></a>
+</dt>
+<dd>Pick the newest job added to the node. If the newest jobs were started in
+the same second, pick the job with the greatest id.
+</dd>
+<dt>
+  <b id="action_unknown_allow">allow</b>
+  <a class="slurm_link" href="#action_unknown_allow"></a>
+</dt>
+<dd>Let the connection through without adoption.</dd>
+<dt>
+  <b id="action_unknown_deny">deny</b>
+  <a class="slurm_link" href="#action_unknown_deny"></a>
+</dt>
+<dd>Deny the connection.</dd>
+</dl>
+</dd>
+</dl>
+
+</dd>
+
+<dt>
+  <b id="action_adopt_failure">action_adopt_failure</b>
+  <a class="slurm_link" href="#action_adopt_failure"></a>
+</dt>
+<dd>The action to perform if the process is unable to be adopted into any
+job for whatever reason. If the process cannot be adopted into the job
+identified by the callerid RPC, it will fall through to the action_unknown
+code and try to adopt there. A failure at that point or if there is only
+one job will result in this action being taken. Configurable values are:
+
+<dl>
+<dt></dt>
+<dd>
+<dl>
+<dt>
+  <b id="action_adopt_failure_allow">allow</b> (default)
+  <a class="slurm_link" href="#action_adopt_failure_allow"></a>
+</dt>
+<dd>Let the connection through without adoption.
+<br><b>WARNING</b>: This value allows connections that were not able to be
+adopted into a job, which could allow users complete access to a node, not just
+to their allocated resources. This value is recommended for testing purposes
+only, we recommend using "deny" in production systems.</dd>
+<dt>
+  <b id="action_adopt_failure_deny">deny</b>
+  <a class="slurm_link" href="#action_adopt_failure_deny"></a>
+</dt>
+<dd>Deny the connection.</dd>
+</dl>
+</dd>
+</dl>
+
+</dd>
+
+<dt>
+  <b id="action_generic_failure">action_generic_failure</b>
+  <a class="slurm_link" href="#action_generic_failure"></a>
+</dt>
+<dd>The action to perform if there are certain failures such as the
+inability to talk to the local <i>slurmd</i> or if the kernel doesn't offer
+the correct facilities. Configurable values are:
+
+<dl>
+<dt></dt>
+<dd>
+<dl>
+<dt>
+  <b id="action_generic_failure_ignore">ignore</b> (default)
+  <a class="slurm_link" href="#action_generic_failure_ignore"></a>
+</dt>
+<dd>Do nothing. Fall through to the next PAM module, even if this module is set
+as "required" or "requisite".
+<br><b>WARNING</b>: This value does not deny connections pam_slurm_adopt was
+unable to handle normally, which could allow users complete access to a node,
+not just to their allocated resources. This value is recommended for testing
+purposes only, we recommend using "deny" in production systems.</dd>
+<dt>
+  <b id="action_generic_failure_allow">allow</b>
+  <a class="slurm_link" href="#action_generic_failure_allow"></a>
+</dt>
+<dd>Let the connection through without adoption.
+<br><b>WARNING</b>: This value explicitly allows connections pam_slurm_adopt was
+unable to handle normally, which could allow users complete access to a node,
+not just to their allocated resources. This value is recommended for testing
+purposes only, we recommend using "deny" in production systems.</dd>
+<dt>
+  <b id="action_generic_failure_deny">deny</b>
+  <a class="slurm_link" href="#action_generic_failure_deny"></a>
+</dt>
+<dd>Deny the connection.</dd>
+</dl>
+</dd>
+</dl>
+
+</dd>
+
+<dt>
+  <b id="disable_x11">disable_x11</b>
+  <a class="slurm_link" href="#disable_x11"></a>
+</dt>
+<dd>Turn off Slurm built-in X11 forwarding support. Configurable values are:
+
+<dl>
+<dt></dt>
+<dd>
+<dl>
+<dt>
+  <b id="disable_x11_0">0</b> (default)
+  <a class="slurm_link" href="#disable_x11_0"></a>
+</dt>
+<dd>If the job the connection is adopted into has Slurm's X11 forwarding
+enabled, the DISPLAY variable will be overwritten with the X11 tunnel
+endpoint details.</dd>
+<dt>
+  <b id="disable_x11_1">1</b>
+  <a class="slurm_link" href="#disable_x11_1"></a>
+</dt>
+<dd>Do not check for Slurm's X11 forwarding support, and do not alter the
+DISPLAY variable.</dd>
+</dl>
+</dd>
+</dl>
+
+</dd>
+
+<dt>
+  <b id="join_container">join_container</b>
+  <a class="slurm_link" href="#join_container"></a>
+</dt>
+<dd>Control the interaction with the namespace plugins.
+Configurable values are:
+<dl>
+<dt></dt>
+<dd>
+<dl>
+<dt>
+  <b id="join_container_true">true</b> (default)
+  <a class="slurm_link" href="#join_container_true"></a>
+</dt>
+<dd>Attempt to join a namespace created by the namespace plugins.</dd>
+<dt>
+  <b id="join_container_false">false</b>
+  <a class="slurm_link" href="#join_container_false"></a>
+</dt>
+<dd>Do not attempt to join a namespace.</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+
+<dt>
+  <b id="log_level">log_level</b>
+  <a class="slurm_link" href="#log_level"></a>
+</dt>
+<dd>See <a href="https://slurm.schedmd.com/slurm.conf.html#OPT_SlurmdDebug">
+SlurmdDebug</a> in slurm.conf for available options.
+The default log_level is <b>info</b>.
+</dd>
+
+<dt>
+  <b id="nodename">nodename</b>
+  <a class="slurm_link" href="#nodename"></a>
+</dt>
+<dd>If the NodeName defined in <b>slurm.conf</b> is different than this node's
+hostname (as reported by <b>hostname -s</b>), then this must be set to the
+NodeName in <b>slurm.conf</b> that this host operates as.
+</dd>
+
+<dt>
+  <b id="service">service</b>
+  <a class="slurm_link" href="#service"></a>
+</dt>
+<dd>The pam service name for which this module should run. By default
+it only runs for sshd for which it was designed for. A
+different service name can be specified like "login" or "*" to
+allow the module to in any service context. For local pam logins
+this module could cause unexpected behavior or even security
+issues. Therefore if the service name does not match then this
+module will not perform the adoption logic and returns
+PAM_IGNORE immediately.
+</dd>
+
+</dl>
+
+<h3 id="firewall">Firewalls, IP Addresses, etc.
+<a class="slurm_link" href="#firewall"></a>
+</h3>
+
+<p><i>slurmd</i> should be accessible on any IP address from which a user might
+launch ssh. The RPC to determine the source job must be able to reach the
+<i>slurmd</i> port on that particular IP address. If there is no <i>slurmd</i>
+on the source node, such as on a <a href="quickstart_admin.html#login">login
+node</a>, it is better to have the RPC be
+rejected rather than silently dropped. This will allow better responsiveness to
+the RPC initiator.</p>
+
+<h3 id="selinux">SELinux<a class="slurm_link" href="#selinux"></a></h3>
+
+<p>SELinux may conflict with pam_slurm_adopt, but it is generally possible for
+them to work side by side. This is an example type enforcement file that was
+used on a fairly stock Debian system. It is provided to give some direction
+and to show what is required to get this working but may require additional
+modification.</p>
+
+<pre>
+module pam_slurm_adopt 1.0;
+
+require {
+	type sshd_t;
+	type var_spool_t;
+	type unconfined_t;
+	type initrc_var_run_t;
+	class sock_file write;
+	class dir { read search };
+	class unix_stream_socket connectto;
+}
+
+#============= sshd_t ==============
+allow sshd_t initrc_var_run_t:dir search;
+allow sshd_t initrc_var_run_t:sock_file write;
+allow sshd_t unconfined_t:unix_stream_socket connectto;
+allow sshd_t var_spool_t:dir read;
+allow sshd_t var_spool_t:sock_file write;
+</pre>
+
+<p>It is possible for some plugins to require more permissions than this.
+Notably, namespace/tmpfs will require something more like this:</p>
+
+<pre>
+module pam_slurm_adopt 1.0;
+
+require {
+	type nsfs_t;
+	type var_spool_t;
+	type initrc_var_run_t;
+	type unconfined_t;
+	type sshd_t;
+	class sock_file write;
+	class dir { read search };
+	class unix_stream_socket connectto;
+	class fd use;
+	class file read;
+	class capability sys_admin;
+}
+
+#============= sshd_t ==============
+allow sshd_t initrc_var_run_t:dir search;
+allow sshd_t initrc_var_run_t:sock_file write;
+allow sshd_t nsfs_t:file read;
+allow sshd_t unconfined_t:fd use;
+allow sshd_t unconfined_t:unix_stream_socket connectto;
+allow sshd_t var_spool_t:dir read;
+allow sshd_t var_spool_t:sock_file write;
+allow sshd_t self:capability sys_admin;
+</pre>
+
+<h2 id="LIMITATIONS">Limitations
+<a class="slurm_link" href="#LIMITATIONS"></a>
+</h2>
+
+<p>Internally, some AuthenticationMethods cause sshd to fork an extra process
+during the login flow, which sshd partially offloads the authentication
+dialogue to. This can confuse PAM modules, and may break process adoption
+with pam_slurm_adopt.</p>
+
+<p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
+won't necessarily be in the same context as the job it is associated with.</p>
+
+<p>When using namespace/linux and the user namespace is configured, the
+pam_limits module may not be able to set memlock, sigpending, msgqueue, nice, or
+rtprio.</p>
+
+<!--#include virtual="footer.txt"-->

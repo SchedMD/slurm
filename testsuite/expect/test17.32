@@ -1,0 +1,68 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --overcommit option.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Submit a slurm job that will print slurm env vars and execute 'id'
+#
+file delete $file_in $file_out
+make_bash_script $file_in "
+  $bin_env | grep SLURM | $bin_sort
+  $srun $bin_id"
+
+#
+# Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
+#
+set task_cnt 10
+set job_id [submit_job -fail "--ntasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+set output [run_command_output -fail "$bin_cat $file_out"]
+set tasks       [regexp -all "uid=" $output]
+set nprocs      [regexp -all "SLURM_NPROCS=$task_cnt" $output]
+set overcommits [regexp -all "SLURM_OVERCOMMIT=1" $output]
+set matches     [expr $nprocs + $overcommits]
+
+subtest {$matches == 2} "Verify that the desired allocation env vars were set" "$matches != 2"
+subtest {$tasks == $task_cnt} "Verify that the proper number of tasks were executed" "$tasks != $task_cnt"

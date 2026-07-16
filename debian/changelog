@@ -1,0 +1,5 @@
+slurm-smd (26.11.0-0rc1) UNRELEASED; urgency=medium
+
+  * Initial release.
+
+ -- Tim McMullan <mcmullan@schedmd.com>  Fri, 05 Jul 2024 17:14:32 -0400

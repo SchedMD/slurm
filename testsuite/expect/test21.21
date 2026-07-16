@@ -1,0 +1,412 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr add an account to this cluster and try using it with
+#          salloc, sbatch and srun.  We also test limits here as well.
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+source ./inc21.21_tests
+
+set test_qos    "${test_name}_qos"
+set file_in     "$test_dir/input"
+set ta          "${test_name}-account.1"
+set maxcpu      MaxCpus
+set maxcpu_num  0
+set grcpu       GrpCpus
+set grcpu_num   0
+set timeout     60
+set test_node   " "
+# cr_core = 1 / cr_cpu = 0
+set selectparam 0
+set one_task_pc 0
+set job_list    [list]
+set job_id      0
+
+# test maxjob maxnode maxsubmit maxwall
+array set acct_mod_desc {}
+array set acct_mod_acct_vals {}
+array set acct_mod_assoc_vals {
+	grpnode           "-N 1"
+	grpwall           "-t 1"
+	grpcpus           ""
+	grpcpumins        ""
+	grpjobsub         "2 4"
+	grpcpurunmins     ""
+	maxnode           "-N 1"
+	maxwall           "-t 10"
+	maxcpus           ""
+	maxcpumins        ""
+	maxjobsub         "2 4"
+}
+
+array set acct_mod_assoc_test_vals {
+	grpnode      -1
+	grpwall      -1
+	grpcpus      -1
+	grpcpumins   -1
+	grpjob       -1
+	grpsubmit    -1
+	maxnode      -1
+	maxwall      -1
+	maxcpus      -1
+	maxcpumins   -1
+	maxjob       -1
+	maxsubmit    -1
+}
+
+#
+# Check test requirements
+#
+if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
+	skip "This test is only compatible with priority/multifactor plugin"
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin."
+}
+
+if {[check_config_select "linear"]} {
+	set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+	if {$nb_nodes < 2} {
+		skip "This test is incompatible with select/linear and only one node"
+	}
+}
+
+if {[param_contains [get_config_param "SchedulerParameters"] "defer"]} {
+	skip "This test is not compatible with SchedulerParameters containing defer"
+}
+
+# Determine what the selecttype param is
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_CORE*"]} {
+	set selectparam 1
+}
+if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
+	set one_task_pc 1
+}
+
+# Define global cleanup routine so it can be called on exit
+proc cleanup { } {
+	global sacctmgr ta test_qos job_list
+
+	# Cancel any lingering jobs
+	cancel_job $job_list
+
+	#
+	# Use sacctmgr to delete the test account
+	#
+	run_command "$sacctmgr -i delete account $ta"
+
+	#
+	# Remove test QoS
+	#
+	run_command "$sacctmgr -i delete qos $test_qos"
+}
+
+cleanup
+
+set got_node 0
+spawn $srun -N1 -t1 printenv SLURM_NODELIST
+expect {
+	-re "($re_word_str)" {
+		set test_node $expect_out(1,string)
+		set got_node 1
+		exp_continue
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$got_node != 1} {
+	fail "Did not get node for testing"
+}
+
+lassign [get_node_cpus $test_node] totcpus nthreads
+
+if {$totcpus == 0} {
+	fail "No cpus were found"
+} else {
+	# Set assoc CPU values
+	set acct_mod_assoc_vals(grpcpus) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(maxcpus) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(grpcpumins) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(maxcpumins) "-n [expr $totcpus - $nthreads]"
+	set acct_mod_assoc_vals(grpcpurunmins) "-n [expr $totcpus - $nthreads]"
+}
+
+proc assoc_setup { limit_type limit_val } {
+	global acct_mod_assoc_test_vals
+	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals ta
+
+	set new_limit [lindex $limit_val 1]
+	set acct_mod_assoc_test_vals($limit_type) $new_limit
+
+	return [mod_acct $ta [array get acct_mod_desc] [array get acct_mod_assoc_test_vals] [array get acct_mod_acct_vals]]
+}
+
+proc _test_limits { } {
+	global file_in srun sbatch squeue scancel bin_id number bin_rm ta maxjob_lim maxsub_lim
+	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals acct_mod_assoc_test_vals one_task_pc nthreads
+
+	# Test jobs within the association limits
+	foreach option [array names acct_mod_assoc_vals] {
+		log_info "Setting up association limit $option..."
+		if {$option ne "maxjobsub" && $option ne "grpjobsub"} {
+			if [assoc_setup $option $acct_mod_assoc_vals($option)] {
+				fail "Unable to modify account ($ta)"
+			}
+
+			if {$option eq "maxcpumins" && $one_task_pc} {
+				set acct_mod_assoc_vals(maxcpumins) "-n [expr [lindex $acct_mod_assoc_vals(maxcpumins) 1] / $nthreads]"
+			}
+
+			if {$option eq "grpwall"} {
+				inc21_21_grpwall $option $acct_mod_assoc_vals($option)
+			} elseif {![string compare -length 3 $option "grp"]} {
+				inc21_21_grp_test $option $acct_mod_assoc_vals($option)
+			} else {
+				#
+				# Test value within the association limit
+				#
+				inc21_21_good $option $acct_mod_assoc_vals($option)
+
+				#
+				# Test value over the association limit
+				#
+				inc21_21_bad $option $acct_mod_assoc_vals($option)
+			}
+			# Reset the limit
+			set acct_mod_assoc_test_vals($option) "-1"
+
+		} else {
+			inc21_21_submit_test $option
+		}
+		# Reset usage
+		reset_account_usage "" $ta
+	}
+}
+
+#
+# Identify the user and his current default account
+#
+set acct_name ""
+set user_name [get_my_user_name]
+
+spawn $sacctmgr show user $user_name
+expect {
+	-re "$user_name *($re_word_str)" {
+		set acct_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr to add an account
+#
+set aamatches 0
+spawn $sacctmgr -i add account $ta
+expect {
+	-re "Adding Account" {
+		incr aamatches
+		exp_continue
+	}
+	-re "Nothing new added" {
+		log_warn "vestigial account $ta found"
+		incr aamatches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$aamatches != 1} {
+	fail "sacctmgr had a problem adding account"
+}
+
+#
+# Add self to this new account
+#
+spawn $sacctmgr -i create user name=$user_name account=$ta
+expect {
+	timeout {
+		fail "sacctmgr add not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Add test QoS
+#
+set match 0
+spawn $sacctmgr -i create qos $test_qos
+expect {
+	-re "Adding QOS" {
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	fail "QOS ($test_qos) was not created"
+}
+
+spawn $sacctmgr -i mod account $ta set qos=$test_qos
+expect {
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Spawn a job via salloc using this account
+#
+set matches   0
+set timeout   $max_job_delay
+spawn $salloc -N1 --account=$ta
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "$scontrol show job $job_id\r"
+		send "exit\r"
+		exp_continue
+	}
+	-re "Account=$ta" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "salloc failed to initiate job"
+} elseif {$matches != 1} {
+	fail "salloc failed to use desired account"
+}
+
+#
+# Spawn a job via sbatch using this account
+#
+make_bash_script $file_in "$bin_id"
+set job_id [submit_job -fail "-N1 --account=$ta --output=none $file_in"]
+lappend job_list $job_id
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "Account=$ta" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "sbatch failed to use specified account"
+}
+cancel_job $job_id
+
+#
+# Spawn a job via srun using this account
+#
+set job_id 0
+spawn $srun -N1 -v --account=$ta -t1 $bin_id
+expect {
+	-re "launching StepId=($number)\\.$re_word_str" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "Did not get srun job_id"
+} else {
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		 -re "Account=$ta" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "srun failed to use specified account"
+	}
+}
+
+#
+# Run included tests if limits are enforced
+#
+if [param_contains [get_config_param "AccountingStorageEnforce"] "limits"] {
+	_test_limits
+} else {
+	subskip "Tests requiring limits enforcement were skipped"
+}

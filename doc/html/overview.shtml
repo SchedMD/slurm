@@ -1,0 +1,242 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Overview</a></h1>
+
+<p>Slurm is an open source,
+fault-tolerant, and highly scalable cluster management and job scheduling system
+for large and small Linux clusters. Slurm requires no kernel modifications for
+its operation and is relatively self-contained. As a cluster workload manager,
+Slurm has three key functions. First, it allocates exclusive and/or non-exclusive
+access to resources (compute nodes) to users for some duration of time so they
+can perform work. Second, it provides a framework for starting, executing, and
+monitoring work (normally a parallel job) on the set of allocated nodes.
+Finally, it arbitrates contention for resources by managing a queue of
+pending work.
+Optional plugins can be used for
+<a href="accounting.html">accounting</a>,
+<a href="reservations.html">advanced reservation</a>,
+<a href="gang_scheduling.html">gang scheduling</a> (time sharing for
+parallel jobs), backfill scheduling,
+<a href="topology.html">topology optimized resource selection</a>,
+<a href="resource_limits.html">resource limits</a> by user or account,
+and sophisticated <a href="priority_multifactor.html"> multifactor job
+prioritization</a> algorithms.
+
+<h2 id="architecture">Architecture
+<a class="slurm_link" href="#architecture"></a>
+</h2>
+<p>Slurm has a centralized manager, <b>slurmctld</b>, to monitor resources and
+work. There may also be a backup manager to assume those responsibilities in the
+event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which
+can be compared to a remote shell: it waits for work, executes that work, returns
+status, and waits for more work.
+The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
+There is an optional <b>slurmdbd</b> (Slurm DataBase Daemon) which can be used
+to record accounting information for multiple Slurm-managed clusters in a
+single database.
+There is an optional
+<a href="rest.html"><b>slurmrestd</b> (Slurm REST API Daemon)</a>
+which can be used to interact with Slurm through its
+<a href="https://en.wikipedia.org/wiki/Representational_state_transfer">
+REST API</a>.
+User tools include <b>srun</b> to initiate jobs,
+<b>scancel</b> to terminate queued or running jobs,
+<b>sinfo</b> to report system status,
+<b>squeue</b> to report the status of jobs, and
+<b>sacct</b> to get information about jobs and job steps that are running or have completed.
+The <b>sview</b> commands graphically reports system and
+job status including network topology.
+There is an administrative tool <b>scontrol</b> available to monitor
+and/or modify configuration and state information on the cluster.
+The administrative tool used to manage the database is <b>sacctmgr</b>.
+It can be used to identify the clusters, valid users, valid accounts, etc.
+APIs are available for all functions.</p>
+
+<div class="figure">
+  <img src="arch.gif" width="550"><br>
+  Figure 1. Slurm components
+</div>
+
+<p>Slurm has a general-purpose plugin mechanism available to easily support various
+infrastructures. This permits a wide variety of Slurm configurations using a
+building block approach. These plugins presently include:
+<ul>
+<li>Accounting Storage:
+  Primarily Used to store historical data about jobs.  When used with
+  SlurmDBD (Slurm Database Daemon), it can also supply a
+  limits based system along with historical system status.
+</li>
+
+<li>Account Gather Energy:
+  Gather energy consumption data per job or nodes in the system.
+  This plugin is integrated with the
+  Accounting Storage and Job Account Gather plugins.
+</li>
+
+<li>Authentication of communications:
+  Provides authentication mechanism between various components of Slurm.
+</li>
+
+<li><a href="containers.html">Containers</a>:
+  HPC workload container support and implementations.
+</li>
+
+<li>Credential (Digital Signature Generation):
+  Mechanism used to generate a digital signature, which is used to validate
+  that job step is authorized to execute on specific nodes.
+  This is distinct from the plugin used for
+  Authentication since the job step
+  request is sent from the user's srun command rather than directly from the
+  slurmctld daemon, which generates the job step credential and its
+  digital signature.
+</li>
+
+<li><a href="gres.html">Generic Resources</a>: Provide interface to
+  control generic resources, including Graphical Processing Units (GPUs).
+</li>
+
+<li><a href="job_submit_plugins.html">Job Submit</a>:
+  Custom plugin to allow site specific control over job requirements at
+  submission and update.
+</li>
+
+<li>Job Accounting Gather:
+  Gather job step resource utilization data.
+</li>
+
+<li>Job Completion Logging:
+  Log a job's termination data. This is typically a subset of data stored by
+  an Accounting Storage Plugin.
+</li>
+
+<li>Launchers:
+  Controls the mechanism used by the <a href="srun.html">'srun'</a> command
+  to launch the tasks.
+</li>
+
+<li>MPI:
+  Provides different hooks for the various MPI implementations.
+  For example, this can set MPI specific environment variables.
+</li>
+
+<li><a href="preempt.html">Preempt</a>:
+  Determines which jobs can preempt other jobs and the preemption mechanism
+  to be used.
+</li>
+
+<li>Priority:
+  Assigns priorities to jobs upon submission and on an ongoing basis
+  (e.g. as they age).
+</li>
+
+<li>Process tracking (for signaling):
+  Provides a mechanism for identifying the processes associated with each job.
+  Used for job accounting and signaling.
+</li>
+
+<li>Scheduler:
+  Plugin determines how and when Slurm schedules jobs.
+</li>
+
+<li>Node selection:
+  Plugin used to determine the resources used for a job allocation.
+</li>
+
+<li><a href="site_factor.html">Site Factor (Priority)</a>:
+  Assigns a specific site_factor component of a job's multifactor priority to
+  jobs upon submission and on an ongoing basis (e.g. as they age).
+</li>
+
+<li>Switch or interconnect:
+  Plugin to interface with a switch or interconnect.
+  For most systems (Ethernet or InfiniBand) this is not needed.
+</li>
+
+<li>Task Affinity:
+  Provides mechanism to bind a job and its individual tasks to specific
+  processors.
+</li>
+
+<li>Network Topology:
+  Optimizes resource selection based upon the network topology.
+  Used for both job allocations and advanced reservation.
+</li>
+
+</ul>
+
+<p>The entities managed by these Slurm daemons, shown in Figure 2, include <b>nodes</b>,
+the compute resource in Slurm, <b>partitions</b>, which group nodes into logical
+sets, <b>jobs</b>, or allocations of resources assigned to a user for
+a specified amount of time, and <b>job steps</b>, which are sets of (possibly
+parallel) tasks within a job.
+The partitions can be considered job queues, each of which has an assortment of
+constraints such as job size limit, job time limit, users permitted to use it, etc.
+Priority-ordered jobs are allocated nodes within a partition until the resources
+(nodes, processors, memory, etc.) within that partition are exhausted. Once
+a job is assigned a set of nodes, the user is able to initiate parallel work in
+the form of job steps in any configuration within the allocation. For instance,
+a single job step may be started that utilizes all nodes allocated to the job,
+or several job steps may independently use a portion of the allocation.
+Slurm provides resource management for the processors allocated to a job,
+so that multiple job steps can be simultaneously submitted and queued until
+there are available resources within the job's allocation.</p>
+
+<div class="figure">
+  <img src="entities.gif" width="550"><br>
+  Figure 2. Slurm entities
+</div>
+
+
+<h2 id="configurability">Configurability
+<a class="slurm_link" href="#configurability"></a>
+</h2>
+<p>Node state monitored include: count of processors, size of real memory, size
+of temporary disk space, and state (UP, DOWN, etc.). Additional node information
+includes weight (preference in being allocated work) and features (arbitrary information
+such as processor speed or type).
+Nodes are grouped into partitions, which may contain overlapping nodes so they are
+best thought of as job queues.
+Partition information includes: name, list of associated nodes, state (UP or DOWN),
+maximum job time limit, maximum node count per job, group access list,
+priority (important if nodes are in multiple partitions) and shared node access policy
+with optional over-subscription level for gang scheduling (e.g. YES, NO or FORCE:2).
+Bit maps are used to represent nodes and scheduling
+decisions can be made by performing a small number of comparisons and a series
+of fast bit map manipulations. A sample (partial. Slurm configuration file follows.</p>
+<pre>
+#
+# Sample /etc/slurm.conf
+#
+SlurmctldHost=linux0001  # Primary server
+SlurmctldHost=linux0002  # Backup server
+#
+AuthType=auth/munge
+Epilog=/usr/local/slurm/sbin/epilog
+PluginDir=/usr/local/slurm/lib
+Prolog=/usr/local/slurm/sbin/prolog
+SlurmctldPort=7002
+SlurmctldTimeout=120
+SlurmdPort=7003
+SlurmdSpoolDir=/var/tmp/slurmd.spool
+SlurmdTimeout=120
+StateSaveLocation=/usr/local/slurm/slurm.state
+TmpFS=/tmp
+#
+# Node Configurations
+#
+NodeName=DEFAULT CPUs=4 TmpDisk=16384 State=IDLE
+NodeName=lx[0001-0002] State=DRAINED
+NodeName=lx[0003-8000] RealMemory=2048 Weight=2
+NodeName=lx[8001-9999] RealMemory=4096 Weight=6 Feature=video
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT MaxTime=30 MaxNodes=2
+PartitionName=login Nodes=lx[0001-0002] State=DOWN
+PartitionName=debug Nodes=lx[0003-0030] State=UP Default=YES
+PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
+PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
+PartitionName=batch Nodes=lx[0041-9999]
+</pre>
+
+<!--#include virtual="footer.txt"-->

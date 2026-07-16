@@ -1,0 +1,305 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that srun -N uses the MaxNode and GrpNode limit in
+#          QoS and that the first limit on the GrpNode and MaxNode
+#          limit is used in an association.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set node_cnt    0
+set cluster     [get_config_param "ClusterName"]
+set node_name   ""
+set user        [get_my_user_name]
+set acct        "${test_name}_acct"
+set acct_c1     "${test_name}_acct_c_1"
+set acct_c2     "${test_name}_acct_c_2"
+set qos         "${test_name}_qos"
+set access_err  0
+array set mod_qos_vals {}
+array set mod_acct_desc_vals {}
+array set mod_acct_vals {}
+array set mod_acct_assoc_vals {}
+set mod_acct_assoc_vals(qos) $qos
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without AccountStorageType=slurmdbd"
+} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
+	skip "This test can't be run without AccountingStorageEnforce=limits"
+} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "qos"]} {
+	skip "This test can't be run without AccountingStorageEnforce=qos"
+}
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator"
+}
+
+proc cleanup { } {
+	global acct acct_c1 acct_c2 qos
+
+	remove_acct "" "$acct,$acct_c1,$acct_c2"
+	if {[remove_qos "$qos"] != 0} {
+		log_warn "Unable to remove QOS (are you authorized)?"
+	}
+}
+
+proc srun_test {exp_cnt account} {
+	global srun acct node_cnt number bin_printenv
+
+	set job_id 0
+	set count 0
+
+	spawn $srun -l -t1 -A $account -N1-$node_cnt $bin_printenv SLURM_JOB_ID
+	expect {
+		-re "$number: ($number)" {
+			incr count
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "($number)-($number):($number)" {
+#			NOTE: POE format
+			incr count [expr $expect_out(2,string) - $expect_out(1,string) + 1]
+			set job_id $expect_out(3,string)
+			exp_continue
+		}
+		-re "$number:($number)" {
+#			NOTE: POE format
+			incr count
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "srun is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id == 0} {
+		if {$exp_cnt != 0} {
+			fail "Did not get job id"
+		}
+	} else {
+		wait_for_job -fail $job_id DONE
+	}
+
+	subtest {$count == $exp_cnt} "Correct number of tasks should be run" "$count != $exp_cnt"
+}
+
+proc add_child {parent child maxnode grpnode} {
+	global user cluster
+
+	set acct_req(cluster) $cluster
+	set acct_req(parent) $parent
+	set acct_req(maxnode) $maxnode
+	set acct_req(grpnode) $grpnode
+
+	set user_req(cluster) $cluster
+	set user_req(account) $child
+
+	if { [add_acct $child [array get acct_req]] } {
+		fail "Child account was not added"
+	}
+
+	if { [add_user $user [array get user_req]] } {
+		fail "User was not added to child account"
+	}
+	return 0
+}
+
+# Remove any vestigial test accounts
+cleanup
+
+# Setup
+set node_cnt [llength [get_nodes_by_state idle,alloc,comp]]
+if {$node_cnt < 3} {
+	skip "Default partition has too few nodes ($node_cnt < 3)"
+}
+
+# Wait for 3 nodes to be in idle state
+if {[wait_for_node idle 3]} {
+	skip "Default Partition lacks 3 idle nodes"
+}
+set node_cnt [llength [get_nodes_by_state]]
+
+# Add parent account (off root)
+if {[add_child "root" $acct -1 -1]} {
+	fail "Unable to add child account ($acct)"
+}
+
+# Now run test using MaxNode limits of the qos
+if {[add_qos $qos ""]} {
+	fail "Qos ($qos) was not added"
+}
+
+# Add child account
+if {[add_child $acct $acct_c1 [expr $node_cnt - 1] -1]} {
+	fail "Unable to add child account ($acct)"
+}
+
+# Add another child account
+if {[add_child $acct_c1 $acct_c2 [expr $node_cnt - 2] -1]} {
+	fail "Unable to add child account ($acct_c2)"
+}
+
+log_info "############################# Test QoS Limits #################################"
+
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	fail "Account was not modified"
+}
+# base line test
+srun_test $node_cnt $acct
+
+set mod_qos_vals(MaxNodes) [expr $node_cnt - 1]
+mod_qos $qos [array get mod_qos_vals]
+set mod_qos_vals(MaxNodes) -1
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "MaxTRESPJ=node=[expr $node_cnt - 1]" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
+srun_test [expr $node_cnt-1] $acct
+
+# now make sure the maxnodes of the QOS overrides the association
+set mod_acct_assoc_vals(maxnodes) 1
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	fail "Account was not modified"
+}
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "MaxTRESPJ=node=1" $output] && [regexp "MaxTRESPJ=node=[expr $node_cnt - 1]" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
+srun_test [expr $node_cnt-1] $acct
+
+# Reset acct maxnodes
+set mod_acct_assoc_vals(maxnodes) -1
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	fail "Account was not modified"
+}
+
+# Now run test using GrpNode limits of qos
+set mod_qos_vals(GrpNodes) [expr $node_cnt - 1]
+mod_qos $qos [array get mod_qos_vals]
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 1]" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
+srun_test [expr $node_cnt-1] $acct
+
+# now make sure the grpnodes of the QOS overrides the association
+set mod_acct_assoc_vals(grpnodes) 1
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	fail "Account was not modified"
+}
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 1]" $output] && [regexp "GrpTRES=.*node=1" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
+srun_test [expr $node_cnt-1] $acct
+
+# Now make sure maxnodes is the max of the association and grpnodes of the
+# QOS doesn't override it.
+set mod_acct_assoc_vals(grpnodes) -1
+set mod_acct_assoc_vals(maxnodes) 1
+
+if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
+	fail "Account was not modified"
+}
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=N" $output] && [regexp "MaxTRESPJ=node=1" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
+srun_test 1 $acct
+set mod_acct_assoc_vals(maxnodes) -1
+
+
+log_info "##################### Test limits based on associations #####################"
+
+#
+# MaxNodes Limit
+#
+log_info "Testing Association MaxNode Limits"
+
+set mod_qos_vals(GrpNodes) -1
+if {[mod_qos $qos [array get mod_qos_vals]]} {
+	fail "QOS was not modified"
+}
+# reset
+if {[mod_acct $acct  [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]]} {
+	fail "Account was not modified"
+}
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=N" $output] && ![regexp "MaxTRESPJ=node" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
+# Run srun test on parent and child accounts
+srun_test $node_cnt $acct
+srun_test [expr $node_cnt - 1] $acct_c1
+srun_test [expr $node_cnt - 2] $acct_c2
+
+#
+# GrpNodes Limit
+#
+log_info "Testing GrpNode Limits"
+
+# Modify child with GrpNode
+set mod_acct_assoc_vals(MaxNode) -1
+set mod_acct_assoc_vals(GrpNode) [expr $node_cnt - 1]
+mod_acct $acct_c1 [array get mod_acct_desc] [array get mod_acct_vals] [array get mod_acct_assoc_vals]
+
+# Modify child with GrpNode
+set mod_acct_assoc_vals(MaxNode) -1
+set mod_acct_assoc_vals(GrpNode) [expr $node_cnt - 2]
+mod_acct $acct_c2 [array get mod_acct_desc] [array get mod_acct_vals] [array get mod_acct_assoc_vals]
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 1]" $output] && ![regexp "MaxTRESPJ=node" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct_c1 user=$user qos=$qos"]
+}
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 2]" $output] && ![regexp "MaxTRESPJ=node" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct_c2 user=$user qos=$qos"]
+}
+
+# Run srun test on parent and child accounts
+srun_test $node_cnt $acct
+srun_test [expr $node_cnt - 1] $acct_c1
+srun_test [expr $node_cnt - 2] $acct_c2

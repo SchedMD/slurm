@@ -1,0 +1,164 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test association plus partition/job QoS unique node limits enforced
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set file_in          "$test_dir/input"
+set test_acct        "${test_name}_acct"
+set test_part        "${test_name}_part"
+set job_qos          "${test_name}_job_qos"
+set part_qos         "${test_name}_part_qos"
+set job_id1          0
+set job_id2          0
+set job_id3          0
+set job_id4          0
+
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+        skip "This test is disabled in Slurm versions older than 23.02 (see bugs 14968 and 14864)"
+}
+
+proc cleanup { } {
+	global test_acct job_qos part_qos scontrol sacctmgr test_part
+
+	# Cancel all jobs
+	wait_for_part_done $test_part
+
+	# Delete the test QOS
+	run_command -none "$sacctmgr -i delete qos $job_qos,$part_qos"
+
+	# Delete account
+	run_command -none "$sacctmgr -i delete account $test_acct"
+
+	# Delete partition
+	run_command -none "$scontrol delete partitionname=$test_part"
+}
+
+proc run_job_test { } {
+	global file_in sbatch scontrol test_acct
+	global test_part job_qos number re_word_str
+	global nb_nodes
+
+	# Time to wait for scheduling logic to set job's Reason to GrpNodeLimit.
+	# For some configurations this might need to be set higher.
+	# Starting at 10 seconds.
+	set sleep_for_reason_set 10
+
+	# Submit 1 node job
+	set job_id1 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N1 $file_in"]
+
+	# Wait for job to start and get its info
+	wait_for_job -fail $job_id1 "RUNNING"
+
+	set hostname [get_job_param $job_id1 "NodeList"]
+
+	# Submit 1 node job EXCLUDING first job's node
+	set job_id2 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --exclude=$hostname --mem=10 -o /dev/null -N1 $file_in"]
+
+	# Submit 1 node job INCLUDING first job's node
+	set job_id3 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname --mem=10 -o /dev/null -N1 $file_in"]
+
+	# Check if job's are waiting on GrpNodeLimit
+	sleep $sleep_for_reason_set
+
+	set reason [get_job_param $job_id2 "Reason"]
+	subtest {$reason eq "AssocGrpNodeLimit" ||
+		 $reason eq "QOSGrpNodeLimit"} "Job 2 ($job_id2) should be waiting on GrpNodeLimit"
+
+	set reason [get_job_param $job_id3 "Reason"]
+	subtest {$reason ne "AssocGrpNodeLimit" &&
+		 $reason ne "QOSGrpNodeLimit"} "Job 3 ($job_id3) should NOT be waiting on GrpNodeLimit"
+
+	cancel_job $job_id1
+	cancel_job $job_id2
+	cancel_job $job_id3
+
+	# Try to submit 2-node job while there is 1-node limit
+	if {$nb_nodes < 2} {
+		subskip "We need 2 or more nodes for some subtests"
+		return
+	}
+	set job_id4 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N2 $file_in"]
+	sleep $sleep_for_reason_set
+	set reason [get_job_param $job_id4 "Reason"]
+	subtest {$reason eq "AssocGrpNodeLimit" ||
+		 $reason eq "QOSGrpNodeLimit"} "Job 4 ($job_id4) should be waiting on GrpNodeLimit"
+	cancel_job $job_id4
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
+	skip "This test can't be run without enforcing limits"
+}
+if {![is_super_user]} {
+	skip "Test can only be ran as SlurmUser"
+}
+
+# Start with clean configuration
+cleanup
+
+# Create test QOS
+if {[add_qos $job_qos ""] != 0} {
+	fail "Unable to add qos ($job_qos)"
+}
+if {[add_qos $part_qos ""] != 0} {
+	fail "Unable to add qos ($part_qos)"
+}
+
+# Add account with QOS
+run_command -fail "$sacctmgr -i add account $test_acct qos=$job_qos"
+
+# Get user name
+set user_name [get_my_user_name]
+
+# Add user to account
+run_command -fail "$sacctmgr -i create user name=$user_name account=$test_acct"
+
+# Get the number of nodes in the default partition
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+
+# Create a partition to use for testing
+run_command -fail "$scontrol create partitionname=$test_part qos=$part_qos nodes=[node_list_to_range [get_nodes_by_state]]"
+
+make_bash_script $file_in "$bin_sleep 60"
+
+log_info "TEST 1: Association GrpNodes limit"
+run_command -fail "$sacctmgr -i modify account $test_acct set grpnodes=1"
+run_job_test
+run_command -fail "$sacctmgr -i modify account $test_acct set grpnodes=-1"
+
+log_info "TEST 2: Job QOS GrpNodes limit"
+run_command -fail "$sacctmgr -i modify qos $job_qos set grpnodes=1"
+run_job_test
+run_command -fail "$sacctmgr -i modify qos $job_qos set grpnodes=-1"
+
+log_info "TEST 3: Partition QOS GrpNodes limit"
+run_command -fail "$sacctmgr -i modify qos $part_qos set grpnodes=1"
+run_job_test
+run_command -fail "$sacctmgr -i modify qos $part_qos set grpnodes=-1"

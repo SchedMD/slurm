@@ -1,0 +1,91 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --depend=afterburstbuffer option
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set output_child   "$test_dir/child.output"
+set output_parent  "$test_dir/parent.output"
+set script_child   "$test_dir/child.bash"
+set script_parent  "$test_dir/parent.bash"
+set job_id_parent  0
+
+if {[get_my_uid] == 0} {
+	skip "This test can't be run as user root"
+}
+
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
+	skip "This test can only be run with the burst_buffer/datawarp plugin"
+}
+
+proc cleanup {} {
+	global job_id_parent
+
+	cancel_job $job_id_parent
+}
+
+make_bash_script $script_parent "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
+$sbatch --depend=afterburstbuffer:\$SLURM_JOB_ID -t1 -n1 --output=$output_child $script_child \$SLURM_JOB_ID
+sleep 15
+exit 0"
+
+make_bash_script $script_child "$scontrol show job \$1"
+
+spawn $sbatch -t1 -N1 --output=$output_parent $script_parent
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id_parent $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id_parent == 0} {
+	fail "Job did not launch"
+}
+wait_for_job -fail -timeout 660 $job_id_parent "DONE"
+wait_for_file -fail -timeout 660 $output_child
+
+# Wait for purge of buffer to complete
+sleep 10
+
+set found 0
+spawn $bin_cat $output_child
+expect {
+	-re "JobState=COMPLETED" {
+		set found 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$found == 0} {
+	fail "Dependent job not completed"
+}

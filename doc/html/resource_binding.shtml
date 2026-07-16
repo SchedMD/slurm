@@ -1,0 +1,92 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Resource Binding</h1>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#srun">Srun --cpu-bind option</a></li>
+<li><a href="#node">Node CpuBind Configuration</a></li>
+<li><a href="#partition">Partition CpuBind Configuration</a></li>
+<li><a href="#TaskPluginParam">TaskPluginParam Configuration</a></li>
+</ul>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>Slurm has a rich set of options to control the default
+binding of tasks to resources.
+For example, tasks can be bound to individual threads, cores, sockets, NUMA
+or boards.
+See the slurm.conf and srun man pages for more information about how these
+options work.
+This document focuses on how default binding configuration can be configured.
+</p>
+
+<p>Default binding can be configured on a per-node, per-partition or global
+basis. The highest priority will be that specified using the srun
+<a href="srun.html#OPT_cpu-bind"><b>--cpu-bind</b></a> option.
+The next highest priority binding will be the node-specific binding, if any
+node in the job allocation has some <a href="slurm.conf.html#OPT_CpuBind">
+<b>CpuBind</b></a> configuration parameter and all other nodes in the job
+allocation either have the same or no </b>CpuBind</b> configuration parameter.
+The next highest priority binding will be the partition-specific
+<a href="slurm.conf.html#OPT_CpuBind_1"><b>CpuBind</b></a> configuration
+parameter (if any).
+The lowest priority binding will be that specified by the
+<a href="slurm.conf.html#OPT_TaskPluginParam"><b>TaskPluginParam</b></a>
+configuration parameter.</p>
+
+<p>Summary of the order of enforcement:
+<ol>
+<li>Srun --cpu-bind option</li>
+<li>Node CpuBind configuration parameter (if all nodes match)</li>
+<li>Partition CpuBind configuration parameter</li>
+<li>TaskPluginParam configuration parameter</li>
+</ol>
+</p>
+
+<h2 id="srun">Srun --cpu-bind option<a class="slurm_link" href="#srun"></a></h2>
+
+<p>The srun <a href="srun.html#OPT_cpu-bind">--cpu-bind</a> option will always
+be used to control task binding. If the --cpu-bind option only includes
+"verbose" rather than identifying the entities to be bound to, then the verbose
+option will be used together with the default entity based upon Slurm
+configuration parameters as described below.</p>
+
+<h2 id="node">Node CpuBind Configuration
+<a class="slurm_link" href="#node"></a>
+</h2>
+
+<p>The next possible source of the resource binding information is the node's
+configured <a href="slurm.conf.html#OPT_CpuBind">CpuBind</a> value, but only
+if every node has the same CpuBind value (or no configured CpuBind value).
+The node's CpuBind value is configured in the slurm.conf file.
+Its value may be viewed or modified using the scontrol command.
+To clear a node's CpuBind value use the command:
+<pre>
+scontrol update NodeName=node01 CpuBind=off
+</pre>
+</p>
+
+<h2 id="partition">Partition CpuBind Configuration
+<a class="slurm_link" href="#partition"></a>
+</h2>
+
+<p>The next possible source of the resource binding information is the
+partition's configured <a href="slurm.conf.html#OPT_CpuBind_1">CpuBind</a>
+value. The partition's CpuBind value is configured in the slurm.conf file.
+Its value may be viewed or modified using the scontrol command, similar to how
+a node's CpuBind value is changed:
+<pre>
+scontrol update PartitionName=debug CpuBind=cores
+</pre>
+</p>
+
+<h2 id="TaskPluginParam">TaskPluginParam Configuration
+<a class="slurm_link" href="#TaskPluginParam"></a>
+</h2>
+
+<p>The last possible source of the resource binding information is the
+<a href="slurm.conf.html#OPT_TaskPluginParam">TaskPluginParam</a>
+configuration parameter from the slurm.conf file.</p>
+
+<!--#include virtual="footer.txt"-->

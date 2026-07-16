@@ -1,0 +1,350 @@
+<h2 id="23026">Slurm 23.02.6<a class="slurm_link" href="#23026"></a></h2>
+
+<h3>openapi/v0.0.39</h3>
+
+<h4>Correct path for responses types</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Updated paths</td>
+	<td class="tdchange">
+		.paths."/slurm/v0.0.39/licenses".get.responses.default
+		.paths."/slurm/v0.0.39/job/{job_id}".get.responses.default
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.39</h3>
+
+<h4>Switch integer to have NO_VAL tagging to allow for complex values.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.count
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.active
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.accruing
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.total
+		.components.schemas."v0.0.39_qos".properties.limits.properties.grace_time
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.active_jobs.properties.accruing
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.active_jobs.properties.count
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.wall_clock.properties.per.properties.qos
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.wall_clock.properties.per.properties.job
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.account
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.user
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.jobs.properties.per.properties.account
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.account
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.user
+		.components.schemas."v0.0.39_qos".properties.limits.properties.min.properties.priority_threshold
+	</td>
+</tr>
+</table>
+
+<h2 id="23025">Slurm 23.02.5<a class="slurm_link" href="#23025"></a></h2>
+
+<h3>openapi/v0.0.39</h3>
+
+<h4>Add missing fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_desc_msg".properties.hold
+		.components.schemas."v0.0.39_job_desc_msg".properties.priority
+		.components.schemas."v0.0.39_job_desc_msg".properties.required
+		.components.schemas."v0.0.39_cron_entry".properties.line.properties.start
+		.components.schemas."v0.0.39_partition_info".properties.nodes.properties.allowed_allocation
+		.components.schemas."v0.0.39_partition_info".properties.nodes.properties.configured
+		.components.schemas."v0.0.39_partition_info".properties.accounts.properties.allowed
+		.components.schemas."v0.0.39_partition_info".properties.qos.properties.allowed
+		.components.schemas."v0.0.39_partition_info".properties.qos.properties.deny
+		.components.schemas."v0.0.39_partition_info".properties.tres.properties.billing_weights
+		.components.schemas."v0.0.39_partition_info".properties.cpus.properties.task_binding
+		.components.schemas."v0.0.39_partition_info".properties.default.properties.memory_per_cpu
+		.components.schemas."v0.0.39_partition_info".properties.default.properties.time
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.cpus_per_node
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.cpus_per_socket
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.memory_per_cpu
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.nodes
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.shares
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.time
+		.components.schemas."v0.0.39_partition_info".properties.priority.properties.job_factor
+		.components.schemas."v0.0.39_partition_info".properties.timeouts.properties.resume
+		.components.schemas."v0.0.39_job_info".properties.hold
+	</td>
+</tr>
+</table>
+
+<h4>Add required/memory_per_cpu and required/memory_per_node to v0.0.39_job to
+	differientate between jobs that require memory per node or per CPU.
+	Jobs that required per cpu memory will dump very large integers due to
+	internal bit packing required/memory but dump correct amounts for per
+	node memory.</h4>
+<table class="tchange">
+	<tr class="trchange">
+		<td class="tdfield">Field added</td>
+		<td class="tdchange">
+			.components.schemas."v0.0.39_job".properties.required.properties.mem_per_cpu
+		</td>
+	</tr>
+	<tr class="trchange">
+		<td class="tdfield">Field added</td>
+		<td class="tdchange">
+			.components.schemas."v0.0.39_job".properties.required.properties.mem_per_node
+		</td>
+	</tr>
+</table>
+
+<h3>openapi/dbv0.0.39</h3>
+
+<h4>Add missing fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_stats_rpc".properties.time.properties.average
+		.components.schemas."v0.0.39_stats_user".properties.time.properties.average
+		.components.schemas."v0.0.39_user".properties.default.properties.account
+		.components.schemas."v0.0.39_assoc".properties.max.properties.tres
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.active
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.accruing
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.total
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.count
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.accruing
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.submitted
+		.components.schemas."v0.0.39_qos".properties.limits.properties.grace_time
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max
+		.components.schemas."v0.0.39_qos".properties.limits.properties.jobs
+		.components.schemas."v0.0.39_qos".properties.limits.properties.factor
+		.components.schemas."v0.0.39_qos".properties.limits.properties.min.properties.priority_threshold
+		.components.schemas."v0.0.39_qos".properties.preempt.properties.list
+		.components.schemas."v0.0.39_qos".properties.preempt.properties.mode
+		.components.schemas."v0.0.39_job".properties.hold
+		.components.schemas."v0.0.39_job".properties.comment.properties.administrator
+		.components.schemas."v0.0.39_job".properties.comment.properties.job
+		.components.schemas."v0.0.39_job".properties.array.properties.job_id
+		.components.schemas."v0.0.39_job".properties.array.properties.limits
+		.components.schemas."v0.0.39_job".properties.array.properties.task_id
+		.components.schemas."v0.0.39_job".properties.time.properties.elapsed
+		.components.schemas."v0.0.39_job".properties.time.properties.eligible
+		.components.schemas."v0.0.39_job".properties.time.properties.end
+		.components.schemas."v0.0.39_job".properties.time.properties.start
+		.components.schemas."v0.0.39_job".properties.time.properties.submission
+		.components.schemas."v0.0.39_job".properties.time.properties.suspended
+		.components.schemas."v0.0.39_job".properties.time.properties.system
+		.components.schemas."v0.0.39_job".properties.time.properties.limit
+		.components.schemas."v0.0.39_job".properties.time.properties.total
+		.components.schemas."v0.0.39_job".properties.time.properties.user.properties.seconds
+		.components.schemas."v0.0.39_job".properties.het.properties.job_id
+		.components.schemas."v0.0.39_job".properties.required.properties.CPUs
+		.components.schemas."v0.0.39_job".properties.reservation.properties.id
+		.components.schemas."v0.0.39_job".properties.state.properties.current
+		.components.schemas."v0.0.39_job".properties.tres.properties.allocated
+		.components.schemas."v0.0.39_step".properties.time.properties.elapsed
+		.components.schemas."v0.0.39_step".properties.time.properties.end
+		.components.schemas."v0.0.39_step".properties.time.properties.start
+		.components.schemas."v0.0.39_step".properties.time.properties.suspended
+		.components.schemas."v0.0.39_step".properties.time.properties.system
+		.components.schemas."v0.0.39_step".properties.time.properties.total
+		.components.schemas."v0.0.39_step".properties.time.properties.user.properties.seconds
+		.components.schemas."v0.0.39_step".properties.nodes.properties.count
+		.components.schemas."v0.0.39_step".properties.nodes.properties.range
+		.components.schemas."v0.0.39_step".properties.CPU.properties.requested_frequency
+		.components.schemas."v0.0.39_step".properties.statistics.properties.CPU
+		.components.schemas."v0.0.39_step".properties.step.properties.id
+		.components.schemas."v0.0.39_step".properties.tres.properties.requested
+		.components.schemas."v0.0.39_step".properties.tres.properties.consumed
+		.components.schemas."v0.0.39_cluster_rec".properties.controller.properties.host	</td>
+</tr>
+</table>
+
+<h4>Switch integer to have NO_VAL tagging to allow for complex values.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_acct_gather_energy".properties.current_watts
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_qos".properties.priority
+	</td>
+</tr>
+</table>
+
+<h2 id="23024">Slurm 23.02.4<a class="slurm_link" href="#23024"></a></h2>
+
+<h3>openapi/v0.0.39</h3>
+<h4>Tag job description environment field as required</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field add</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_desc_msg".required
+	</td>
+</tr>
+</table>
+
+<h4>Add status schema to default</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field added</td>
+	<td class="tdchange">
+		.paths."/licenses/".get.responses.default
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field added</td>
+	<td class="tdchange">
+		.paths."/job/{job_id}".get.responses.default
+	</td>
+</tr>
+</table>
+
+<h4>Tag derived_exit_code and exit_code as UINT32_NO_VAL to avoid 4294967295 on still running jobs.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field changed</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_info".properties.derived_exit_code
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field changed</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_info".properties.exit_code
+	</td>
+<tr class="trchange">
+</tr>
+</table>
+
+<h2 id="23023">Slurm 23.02.3<a class="slurm_link" href="#23023"></a></h2>
+
+<h3>openapi/v0.0.39</h3>
+
+<h4>Correct invalid reference in status schema</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field modified</td>
+	<td class="tdchange">
+		.components.schemas.status.properties.errors
+	</td>
+</tr>
+</table>
+
+<h4>Revert removal of Job description "oversubscribe" field</h4>
+<table class="tchange">
+<tr class="trchange">
+       <td class="tdfield">New field</td>
+       <td class="tdchange">
+		       .components.schemas."v0.0.39_job_desc_msg".properties.oversubscribe
+       </td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">New field</td>
+       <td class="tdchange">
+		       .components.schemas."v0.0.39_job_info".properties.oversubscribe
+       </td>
+</tr>
+</table>
+
+<h2 id="23022">Slurm 23.02.2<a class="slurm_link" href="#23022"></a></h2>
+
+<h3>openapi/v0.0.39</h3>
+
+<h4>Revert format change for job updates</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Modify field</td>
+	<td class="tdchange">
+			.paths."/job/{job_id}".post.requestBody.content
+	</td>
+</tr>
+</table>
+
+<h4>Revert removal of Job description "exclusive" field</h4>
+<table class="tchange">
+<tr class="trchange">
+       <td class="tdfield">New field</td>
+       <td class="tdchange">
+                       .components.schemas."v0.0.39_job_desc_msg".properties.exclusive
+       </td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">New field</td>
+       <td class="tdchange">
+                       .components.schemas."v0.0.39_job_info".properties.exclusive
+       </td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.39</h3>
+
+<h4>Revert removal of Job description "exclusive" field</h4>
+<table class="tchange">
+<tr class="trchange">
+       <td class="tdfield">New field</td>
+       <td class="tdchange">
+                       .components.schemas."v0.0.39_job_desc_msg".properties.exclusive
+       </td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">New field</td>
+       <td class="tdchange">
+                       .components.schemas."v0.0.39_job_info".properties.exclusive
+       </td>
+</tr>
+</table>
+
+<h2 id="23020">Slurm 23.02.0<a class="slurm_link" href="#23020"></a></h2>
+
+<h3>openapi/v0.0.39</h3>
+
+<h4>New plugin</h4>
+The v0.0.39 plugin forked from the v0.0.38 plugin.
+
+<h4>New Schema</h4>
+Plugin has been converted to new data_parser/v0.0.39 plugin for handling
+parsing and dumping of all data structures and automatic data structure schema
+generation. There have been significant changes to all schemas and care needs
+to be take to update data sent and expected from requests while porting to new
+plugin. Developers are advised to review the generated OpenAPI output directly
+while updating.
+
+<h4>New methods for node queries</h4>
+DELETE and POST methods are now supported for /slurm/v0.0.39/node/{node_id}
+paths.
+
+<h3>openapi/v0.0.37</h3>
+
+<h4>Deprecation notice</h4>
+The v0.0.37 plugin has now been marked as deprecated.
+
+<h3>openapi/v0.0.36</h3>
+
+<h4>Removal notice</h4>
+The v0.0.36 plugin has now been removed.
+
+<h3>openapi/dbv0.0.39</h3>
+
+<h4>New plugin</h4>
+The dbv0.0.39 plugin forked from the dbv0.0.38 plugin.
+
+<h4>New Schema</h4>
+Plugin has been converted to new data_parser/v0.0.39 plugin for handling
+parsing and dumping of all data structures and automatic data structure schema
+generation. There have been significant changes to all schemas and care needs
+to be take to update data sent and expected from requests while porting to new
+plugin. Developers are advised to review the generated OpenAPI output directly
+while updating.
+
+<h3>openapi/dbv0.0.37</h3>
+
+<h4>Deprecation notice</h4>
+The dbv0.0.37 plugin has now been marked as deprecated.
+
+<h3>openapi/dbv0.0.36</h3>
+
+<h4>Removal notice</h4>
+The dbv0.0.36 plugin has now been removed.

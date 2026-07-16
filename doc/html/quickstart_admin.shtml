@@ -1,0 +1,909 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Quick Start Administrator Guide</h1>
+
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quick_start">Super Quick Start</a></li>
+<li>
+<a href="#build_install">Building and Installing Slurm</a>
+<ul>
+<li><a href="#prereqs">Installing Prerequisites</a></li>
+<li><a href="#rpmbuild">Building RPMs</a></li>
+<li><a href="#debuild">Building Debian Packages</a></li>
+<li><a href="#pkg_install">Installing Packages</a></li>
+<li><a href="#manual_build">Building Manually</a></li>
+</ul>
+</li>
+<li><a href="#nodes">Node Types</a></li>
+<li><a href="#HA">High Availability</a></li>
+<li><a href="#infrastructure">Infrastructure</a></li>
+<li><a href="#Config">Configuration</a></li>
+<li><a href="#security">Security</a></li>
+<li><a href="#starting_daemons">Starting the Daemons</a></li>
+<li><a href="#admin_examples">Administration Examples</a></li>
+<li><a href="#upgrade">Upgrades</a></li>
+<li><a href="#FreeBSD">FreeBSD</a></li>
+</ul>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>See also:</p>
+
+<ul>
+<li><a href="quickstart.html">Quick Start User Guide</a></li>
+<li><a href="platforms.html">Platforms</a></li>
+<li><a href="upgrades.html">Upgrade Guide</a></li>
+</ul>
+
+<h2 id="quick_start">Super Quick Start
+<a class="slurm_link" href="#quick_start"></a>
+</h2>
+<ol>
+<li>Make sure the clocks, users and groups (UIDs and GIDs) are synchronized
+across the cluster.</li>
+<li>Install <a href="https://dun.github.io/munge/">MUNGE</a> for
+authentication. Make sure that all nodes in your cluster have the
+same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>,
+is started before you start the Slurm daemons.</li>
+<li><a href="https://www.schedmd.com/download-slurm/">Download</a> the latest
+version of Slurm.</li>
+<li>Install Slurm using one of the following methods:
+<ul>
+<li>Build <a href="#rpmbuild">RPM</a> or <a href="#debuild">DEB</a> packages
+(recommended for production)</li>
+<li><a href="#manual_build">Build Manually</a> from source
+(for developers or advanced users)</li>
+<li><b>NOTE</b>: Some Linux distributions may have <b>unofficial</b>
+Slurm packages available in software repositories. SchedMD does not maintain
+or recommend these packages.</li>
+</ul>
+</li>
+<li>Build a configuration file using your favorite web browser and the
+<a href="configurator.html">Slurm Configuration Tool</a>.<br>
+<b>NOTE</b>: The <i>SlurmUser</i> must exist prior to starting Slurm
+and must exist on all nodes of the cluster.<br>
+<b>NOTE</b>: The parent directories for Slurm's log files, process ID files,
+state save directories, etc. are not created by Slurm.
+They must be created and made writable by <i>SlurmUser</i> as needed prior to
+starting Slurm daemons.<br>
+<b>NOTE</b>: If any parent directories are created during the installation
+process (for the executable files, libraries, etc.),
+those directories will have access rights equal to read/write/execute for
+everyone minus the umask value (e.g. umask=0022 generates directories with
+permissions of "drwxr-r-x" and mask=0000 generates directories with
+permissions of "drwxrwrwx" which is a security problem).</li>
+<li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
+<b>NOTE</b>: You will need to install this configuration file on all nodes of
+the cluster.</li>
+<li>systemd (optional): enable the appropriate services on each system:
+<ul>
+<li>Controller: <code>systemctl enable slurmctld</code>
+<li>Database: <code>systemctl enable slurmdbd</code>
+<li>Compute Nodes: <code>systemctl enable slurmd</code>
+</ul></li>
+<li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
+</ol>
+
+<p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
+
+<h2 id="build_install">Building and Installing Slurm
+<a class="slurm_link" href="#build_install"></a>
+</h2>
+
+<h3 id="prereqs">Installing Prerequisites
+<a class="slurm_link" href="#prereqs"></a>
+</h3>
+
+<p>Before building Slurm, consider which plugins you will need for your
+installation. Which plugins are built can vary based on the libraries that
+are available when running the configure script. Refer to the below list of
+possible plugins and what is required to build them.</p>
+
+<p>Note that in most cases, the required package is the corresponding
+development library, whose exact names may vary across different distributions.
+The typical naming convention on RHEL-based distros is <b>NAME-devel</b>, while
+the convention on Debian-based distros is <b>libNAME-dev</b>.</p>
+
+<table class="tlist">
+<tbody>
+<tr>
+<td><strong>Component</strong></td>
+<td><strong>Development library required</strong></td>
+</tr>
+<tr>
+<td><code>acct_gather_energy/ipmi</code>
+<br>Gathers <a href="slurm.conf.html#OPT_AcctGatherEnergyType">energy consumption</a>
+	through IPMI</td>
+<td><i>freeipmi</i></td>
+</tr>
+<tr>
+<td><code>acct_gather_interconnect/ofed</code>
+<br>Gathers <a href="slurm.conf.html#OPT_AcctGatherInterconnectType">traffic data</a>
+	for InfiniBand networks</td>
+<td><i>libibmad</i>
+<br><i>libibumad</i></td>
+</tr>
+<tr>
+<td><code>acct_gather_profile/hdf5</code>
+<br>Gathers <a href="slurm.conf.html#OPT_AcctGatherProfileType">detailed job
+	profiling</a> through HDF5</td>
+<td><i>hdf5</i></td>
+</tr>
+<tr>
+<td><code>accounting_storage/mysql</code>
+<br>Required for <a href="accounting.html">accounting</a>; a currently supported
+	version of MySQL or MariaDB should be used</td>
+<td><i>MySQL</i> or <i>MariaDB</i></td>
+</tr>
+<tr>
+<td><code>auth/slurm</code>
+<br>(alternative to the traditional MUNGE
+	<a href="slurm.conf.html#OPT_AuthType">authentication method</a>)</td>
+<td><i>jwt</i></td>
+</tr>
+<tr>
+<td><code>auth/munge</code>
+<br>(default <a href="slurm.conf.html#OPT_AuthType">authentication method</a>)</td>
+<td><i>MUNGE</i></td>
+</tr>
+<tr>
+<td><code>AutoDetect=nvml</code>
+<br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of NVIDIA
+	GPUs with MIGs and NVlinks (<code>AutoDetect=nvidia</code>, added in 24.11,
+   does not have any prerequisites)</td>
+<td><i>libnvidia-ml</i></td>
+</tr>
+<tr>
+<td><code>AutoDetect=oneapi</code>
+<br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of Intel
+GPUs</td>
+<td><i>libvpl</i></td>
+</tr>
+<tr>
+<td><code>AutoDetect=rsmi</code>
+<br>Provides <a href="gres.conf.html#OPT_AutoDetect">autodetection</a> of AMD
+	GPUs</td>
+<td><i>ROCm</i></td>
+</tr>
+<tr>
+<td><b>HTML man pages</b>
+<br>This dependency is a command that must be present, typically provided by a
+package of the same name.</td>
+<td><i>man2html</i></td>
+</tr>
+<tr>
+<td><b>Lua API</b></td>
+<td><i>lua</i></td>
+</tr>
+<tr>
+<td><b>PAM support</b></td>
+<td><i>PAM</i></td>
+</tr>
+<tr>
+<td><b>PMIx support</b> (requires <code>--with-pmix</code> at build time)</td>
+<td><i>pmix</i></td>
+</tr>
+<tr>
+<td><b>Readline support</b> in <code>scontrol</code> and <code>sacctmgr</code>
+	interactive modes</td>
+<td><i>readline</i></td>
+</tr>
+<tr>
+<td><code>slurmrestd</code>(<a href="#restd">restd node</a>)</td>
+<td><i><a href="related_software.html#httpparser">http_parser</a></i> or
+	<i><a href="related_software.html#llhttp">llhttp</a></i>
+<br><i><a href="related_software.html#json">json-c</a></i>
+<br><i><a href="related_software.html#yaml">yaml</a></i> (optional)
+<br><i><a href="related_software.html#jwt">jwt</a></i> (optional)
+<br><i><a href="tls.html#s2n">s2n</a></i> (optional)</td>
+</tr>
+<tr>
+<td><code>sview</code> (<a href="sview.html">man page</a>)</td>
+<td><i>gtk+-2.0</i></td>
+</tr>
+<tr>
+<td><code>switch/hpe_slingshot</code></td>
+<td><i>cray-libcxi</i>
+<br><i>curl</i>
+<br><i>json-c</i></td>
+</tr>
+<tr>
+<td>NUMA support with <code>task/affinity</code></td>
+<td><i>numa</i></td>
+</tr>
+<tr>
+<td><code>task/cgroup</code>
+<br>Two packages packages are only required for cgroup/v2 support</td>
+<td><i>hwloc</i>
+<br><i>bpf</i> (cgroup/v2)
+<br><i>dbus</i> (cgroup/v2)</td>
+</tr>
+</tbody>
+</table>
+<br>
+
+<p>Please see the <a href="related_software.html">Related Software</a> page for
+references to required software to build these plugins.</p>
+
+<p>If required libraries or header files are in non-standard locations, set
+<code>CFLAGS</code> and <code>LDFLAGS</code> environment variables accordingly.
+</p>
+
+<h3 id="rpmbuild">Building RPMs<a class="slurm_link" href="#rpmbuild"></a></h3>
+<p>To build RPMs directly, copy the distributed tarball into a directory
+and execute (substituting the appropriate Slurm version
+number):<br><code>rpmbuild -ta slurm-23.02.7.tar.bz2</code></p>
+The rpm files will be installed under the <code>$(HOME)/rpmbuild</code>
+directory of the user building them.
+
+<p>You can control some aspects of the RPM built with a <i>.rpmmacros</i>
+file in your home directory. <b>Special macro definitions will likely
+only be required if files are installed in unconventional locations.</b>
+A full list of <i>rpmbuild</i> options can be found near the top of the
+slurm.spec file.
+Some macro definitions that may be used in building Slurm include:
+<dl>
+<dt>_enable_debug
+<dd>Specify if debugging logic within Slurm is to be enabled
+<dt>_prefix
+<dd>Pathname of directory to contain the Slurm files
+<dt>_slurm_sysconfdir
+<dd>Pathname of directory containing the slurm.conf configuration file (default
+/etc/slurm)
+<dt>with_munge
+<dd>Specifies the MUNGE (authentication library) installation location
+</dl>
+<p>An example .rpmmacros file:</p>
+<pre>
+# .rpmmacros
+# Override some RPM macros from /usr/lib/rpm/macros
+# Set Slurm-specific macros for unconventional file locations
+#
+%_enable_debug     "--with-debug"
+%_prefix           /opt/slurm
+%_slurm_sysconfdir %{_prefix}/etc/slurm
+%_defaultdocdir    %{_prefix}/doc
+%with_munge        "--with-munge=/opt/munge"
+</pre>
+
+<h3 id="debuild">Building Debian Packages
+<a class="slurm_link" href="#debuild"></a>
+</h3>
+
+<p>Beginning with Slurm 23.11.0, Slurm includes the files required to build
+Debian packages. These packages conflict with the packages shipped with Debian
+based distributions, and are named distinctly to differentiate them. After
+downloading the desired version of Slurm, the following can be done to build
+the packages:</p>
+
+<ul>
+<li>Install basic Debian package build requirements:<br>
+<code>apt-get install build-essential fakeroot devscripts equivs</code>
+</li>
+<li>Unpack the distributed tarball:<br>
+<code>tar -xaf slurm*tar.bz2</code>
+</li>
+<li><code>cd</code> to the directory containing the Slurm source</li>
+<li>Install the Slurm package dependencies:<br>
+<code>mk-build-deps -i debian/control</code>
+</li>
+<li>Build the Slurm packages:<br>
+<code>debuild -b -uc -us</code>
+</li>
+</ul>
+
+<p>The packages will be in the parent directory after debuild completes.</p>
+
+<h3 id="pkg_install">Installing Packages
+<a class="slurm_link" href="#pkg_install"></a>
+</h3>
+
+<p>The following packages are recommended to achieve basic functionality for the
+different <a href="#nodes">node types</a>. Other packages may be added to enable
+optional functionality:</p>
+
+<table class="tlist">
+<tbody>
+<tr>
+<td id="rpms"><strong>RPM name</strong></td>
+<td id="debinstall"><strong>DEB name</strong></td>
+<td><a href="#login">Login</a></td>
+<td><a href="#ctld">Controller</a></td>
+<td><a href="#compute">Compute</a></td>
+<td><a href="#dbd">DBD</a></td>
+</tr>
+<tr>
+<td><code>slurm</code></td>
+<td><code>slurm-smd</code></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+</tr>
+<tr>
+<td><code>slurm-perlapi</code></td>
+<td><code>slurm-smd-client</code></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td><b>X</b></td>
+<td></td>
+</tr>
+<tr>
+<td><code>slurm-slurmctld</code></td>
+<td><code>slurm-smd-slurmctld</code></td>
+<td></td>
+<td><b>X</b></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>slurm-slurmd</code></td>
+<td><code>slurm-smd-slurmd</code></td>
+<td></td>
+<td></td>
+<td><b>X</b></td>
+<td></td>
+</tr>
+<tr>
+<td><code>slurm-slurmdbd</code></td>
+<td><code>slurm-smd-slurmdbd</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td><b>X</b></td>
+</tr>
+</tbody>
+</table>
+<br>
+
+<h4 id="dependencies">Handling Dependencies
+<a class="slurm_link" href="#dependencies"></a>
+</h4>
+
+<p>The packages built as described above will have dependencies on external
+packages and on the general <b>slurm</b> package. However, we have observed
+gaps in the enforcement of these dependencies when using the low-level
+<code>dpkg</code> command. For this reason, we recommend avoiding low-level
+commands like <code>dpkg</code> and <code>rpm</code>, and instead using
+high-level commands like <code>dnf</code> and <code>apt</code> for all
+operations.</p>
+
+<p>Users on Debian-based systems should also know that <code>apt</code> is
+willing to automatically remove Slurm packages due to dependency conflicts after
+the transaction. Always read through the transaction summary before instructing
+it to continue.</p>
+
+<h3 id="manual_build">Building Manually
+<a class="slurm_link" href="#manual_build"></a>
+</h3>
+
+<p>Instructions to build and install Slurm manually are shown below.
+This is significantly more complicated to manage than the RPM and DEB build
+procedures, so this approach is only recommended for developers or
+advanced users who are looking for a more customized install.
+See the README and INSTALL files in the source distribution for more details.
+</p>
+<ol>
+<li>Unpack the distributed tarball:<br>
+<code>tar -xaf slurm*tar.bz2</code>
+<li><code>cd</code> to the directory containing the Slurm source and type
+<code>./configure</code> with appropriate options (see below).</li>
+<li>Type <code>make install</code> to compile and install the programs,
+documentation, libraries, header files, etc.</li>
+<li>Type <code>ldconfig -n &lt;library_location&gt;</code> so that the Slurm
+libraries can be found by applications that intend to use Slurm APIs directly.
+The library location will be a subdirectory of PREFIX (described below) and
+depend upon the system type and configuration, typically lib or lib64.
+For example, if PREFIX is "/usr" and the subdirectory is "lib64" then you would
+find that a file named "/usr/lib64/libslurm.so" was installed and the command
+<code>ldconfig -n /usr/lib64</code> should be executed.</li>
+</ol>
+<p>A full list of <code>configure</code> options will be returned by the
+command <code>configure --help</code>. The most commonly used arguments
+to the <code>configure</code> command include:</p>
+<p style="margin-left:.2in"><code>--enable-debug</code><br>
+Enable additional debugging logic within Slurm.</p>
+<p style="margin-left:.2in"><code>--prefix=<i>PREFIX</i></code><br>
+Install architecture-independent files in PREFIX; default value is /usr/local.</p>
+<p style="margin-left:.2in"><code>--sysconfdir=<i>DIR</i></code><br>
+Specify location of Slurm configuration file. The default value is PREFIX/etc</p>
+
+<h2 id="nodes">Node Types<a class="slurm_link" href="#nodes"></a></h2>
+<p>A cluster consists of many different types of nodes that contribute to
+the overall functionality of the cluster. At least one compute node and
+controller node are required for an operational cluster. Other types of
+nodes can be added to enable optional functionality. It is recommended to have
+single-purpose nodes in a production cluster.</p>
+
+<p>Most Slurm daemons should execute as a non-root service account.
+We recommend you create a Unix user named <i>slurm</i> for use by slurmctld
+and make sure it exists across the cluster. This user should be configured
+as the <b>SlurmUser</b> in the slurm.conf configuration file, and granted
+sufficient permissions to files used by the daemon. Refer to the
+<a href="slurm.conf.html#lbAP">slurm.conf</a> man page for more details.</p>
+
+<p>Below is a brief overview of the different types of nodes Slurm utilizes:</p>
+
+<h3 id="compute">Compute Node<a class="slurm_link" href="#compute"></a></h3>
+<p>Compute nodes (frequently just referred to as &quot;nodes&quot;) perform
+the computational work in the cluster.
+The <a href="slurmd.html">slurmd</a> daemon executes on every compute node.
+It monitors all tasks running on the node, accepts work, launches tasks and
+kills running tasks upon request. Because slurmd
+initiates and manages user jobs, it must execute as the root user.</p>
+
+<h3 id="ctld">Controller Node<a class="slurm_link" href="#ctld"></a></h3>
+<p>The machine running <a href="slurmctld.html">slurmctld</a> is sometimes
+referred to as the &quot;head node&quot; or the &quot;controller&quot;.
+It orchestrates Slurm activities, including queuing of jobs,
+monitoring node states, and allocating resources to jobs. There is an
+optional backup controller that automatically assumes control in the
+event the primary controller fails (see the <a href="#HA">High
+Availability</a> section below).  The primary controller resumes
+control whenever it is restored to service. The controller saves its
+state to disk whenever there is a change in state (see
+&quot;StateSaveLocation&quot; in <a href="#Config">Configuration</a>
+section below).  This state can be recovered by the controller at
+startup time.  State changes are saved so that jobs and other state
+information can be preserved when the controller moves (to or from a
+backup controller) or is restarted.</p>
+
+<h3 id="dbd">DBD Node<a class="slurm_link" href="#dbd"></a></h3>
+<p>If you want to save job accounting records to a database, the
+<a href="slurmdbd.html">slurmdbd</a> (Slurm DataBase Daemon) should be used.
+It is good practice to run the slurmdbd daemon on a different machine than the
+controller. On larger systems, we also recommend that the database used by
+<b>slurmdbd</b> be on a separate machine. When getting started with Slurm, we
+recommend that you defer adding accounting support until after basic Slurm
+functionality is established on your system. Refer to the
+<a href="accounting.html">Accounting</a> page for more information.</p>
+
+<h3 id="login">Login Node<a class="slurm_link" href="#login"></a></h3>
+<p>A login node, or submit host, is a shared system used to access a cluster.
+Users can use a login node to stage data, prepare their jobs for submission,
+submit those jobs once they are ready, check the status of their work, and
+perform other cluster related tasks. Workstations can be configured to be able
+to submit jobs, but having separate login nodes can be useful due to operating
+system compatibility or security implications. If users have root access on
+their local machine they would be able to access the security keys directly
+and could run jobs as root on the cluster.</p>
+
+<p>Login nodes should have access to any Slurm client commands that users are
+expected to use. They should also have the cluster's 'slurm.conf' file and other
+components necessary for the <a href="authentication.html">authentication</a>
+method used in the cluster. They should not be configured to have jobs
+scheduled on them and users should not perform computationally demanding work
+on them while they're logged in. They do not typically need to have any Slurm
+daemons running. If using <i>auth/slurm</i>, <a href="sackd.html">sackd</a>
+should be running to provide authentication. If running in
+<a href="configless_slurm.html">configless mode</a>, and not using
+<i>auth/slurm</i>, a <a href="slurmd.html">slurmd</a> can be configured to
+manage your configuration files.</p>
+
+<h3 id="restd">Restd Node<a class="slurm_link" href="#restd"></a></h3>
+<p>The <a href="slurmrestd.html">slurmrestd</a> daemon can be deployed to
+provide a <a href="rest.html">REST API</a> that can be used to interact with the
+Slurm cluster programmatically. See detailed
+<a href="rest_quickstart.html#prereq">prerequisite</a>,
+<a href="rest_quickstart.html#quick_start">installation</a>, and
+<a href="rest_quickstart.html#systemd">systemd configuration</a> guides.
+
+<h2 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h2>
+
+<p>Multiple SlurmctldHost entries can be configured, with any entry beyond the
+first being treated as a backup host. Any backup hosts configured should be on
+a different node than the node hosting the primary slurmctld. However, all
+hosts should mount a common file system containing the state information (see
+<b>StateSaveLocation</b> in the <a href="#Config">Configuration</a>
+section below).</p>
+
+<p>If more than one host is specified, when the primary fails the second listed
+SlurmctldHost will take over for it. When the primary returns to service, it
+notifies the backup.  The backup then saves the state and returns to backup
+mode. The primary reads the saved state and resumes normal operation. Likewise,
+if both of the first two listed hosts fail the third SlurmctldHost will take
+over until the primary returns to service. Other than a brief period of non-
+responsiveness, the transition back and forth should go undetected.
+You can use <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">
+SlurmctldPrimaryOnProg</a> and
+<a href="slurm.conf.html#OPT_SlurmctldPrimaryOffProg">
+SlurmctldPrimaryOffProg</a> to define the actions taken when machines
+transition between primary and backup roles.</p>
+
+<p>Any time the slurmctld daemon or hardware fails before state information
+reaches disk can result in lost state.
+Slurmctld writes state frequently (every five seconds by default), but with
+large numbers of jobs, the formatting and writing of records can take seconds
+and recent changes might not be written to disk.
+Another example is if the state information is written to file, but that
+information is cached in memory rather than written to disk when the node fails.
+The interval between state saves being written to disk can be configured at
+build time by defining SAVE_MAX_WAIT to a different value than five.</p>
+
+<p>A backup instance of slurmdbd can also be configured by specifying
+<a href="slurm.conf.html#OPT_AccountingStorageBackupHost">
+AccountingStorageBackupHost</a> in slurm.conf, as well as
+<a href="slurmdbd.conf.html#OPT_DbdBackupHost">DbdBackupHost</a> in
+slurmdbd.conf. The backup host should be on a different machine than the one
+hosting the primary instance of slurmdbd. Both instances of slurmdbd should
+have access to the same database. The
+<a href="network.html#failover">network page</a> has a visual representation
+of how this might look.</p>
+
+<h2 id="infrastructure">Infrastructure
+<a class="slurm_link" href="#infrastructure"></a>
+</h2>
+<h3 id="user_group">User and Group Identification
+<a class="slurm_link" href="#user_group"></a>
+</h3>
+<p>There must be a uniform user and group name space (including
+UIDs and GIDs) across the cluster.
+It is not necessary to permit user logins to the control hosts
+(<b>SlurmctldHost</b>), but the
+users and groups must be resolvable on those hosts.</p>
+
+<h3 id="authentication">Authentication of Slurm communications
+<a class="slurm_link" href="#auth"></a>
+</h3>
+<p>All communications between Slurm components are authenticated. The
+authentication infrastructure is provided by a dynamically loaded
+plugin chosen at runtime via the <b>AuthType</b> keyword in the Slurm
+configuration file. Until 23.11.0, the only supported authentication type was
+<a href="https://dun.github.io/munge/">munge</a>, which requires the
+installation of the MUNGE package.
+When using MUNGE, all nodes in the cluster must be configured with the
+same <i>munge.key</i> file. The MUNGE daemon, <i>munged</i>, must also be
+started before Slurm daemons. Note that MUNGE does require clocks to be
+synchronized throughout the cluster, usually done by NTP.</p>
+<p>As of 23.11.0, <b>AuthType</b> can also be set to
+<a href="authentication.html#slurm">slurm</a>, an internal authentication
+plugin. This plugin has similar requirements to MUNGE, requiring a key file
+shared to all Slurm daemons. The auth/slurm plugin requires installation of the
+jwt package.</p>
+<p>MUNGE is currently the default and recommended option.
+The configure script in the top-level directory of this distribution will
+determine which authentication plugins may be built.
+The configuration file specifies which of the available plugins will be
+utilized.</p>
+
+
+<h3 id="mpi">MPI support<a class="slurm_link" href="#mpi"></a></h3>
+<p>Slurm supports many different MPI implementations.
+For more information, see <a href="quickstart.html#mpi">MPI</a>.
+
+<h3 id="scheduler">Scheduler support
+<a class="slurm_link" href="#scheduler"></a>
+</h3>
+<p>Slurm can be configured with rather simple or quite sophisticated
+scheduling algorithms depending upon your needs and willingness to
+manage the configuration (much of which requires a database).
+The first configuration parameter of interest is <b>PriorityType</b>
+with two options available: <i>basic</i> (first-in-first-out) and
+<i>multifactor</i>.
+The <i>multifactor</i> plugin will assign a priority to jobs based upon
+a multitude of configuration parameters (age, size, fair-share allocation,
+etc.) and its details are beyond the scope of this document.
+See the <a href="priority_multifactor.html">Multifactor Job Priority Plugin</a>
+document for details.</p>
+
+<p>The <b>SchedType</b> configuration parameter controls how queued
+jobs are scheduled and several options are available.
+<ul>
+<li><i>builtin</i> will initiate jobs strictly in their priority order,
+typically (first-in-first-out) </li>
+<li><i>backfill</i> will initiate a lower-priority job if doing so does
+not delay the expected initiation time of higher priority jobs; essentially
+using smaller jobs to fill holes in the resource allocation plan. Effective
+backfill scheduling does require users to specify job time limits.</li>
+<li><i>gang</i> time-slices jobs in the same partition/queue and can be
+used to preempt jobs from lower-priority queues in order to execute
+jobs in higher priority queues.</li>
+</ul>
+
+<p>For more information about scheduling options see
+<a href="gang_scheduling.html">Gang Scheduling</a>,
+<a href="preempt.html">Preemption</a>,
+<a href="reservations.html">Resource Reservation Guide</a>,
+<a href="resource_limits.html">Resource Limits</a> and
+<a href="cons_tres_share.html">Sharing Consumable Resources</a>.</p>
+
+<h3 id="resource">Resource selection
+<a class="slurm_link" href="#resource"></a>
+</h3>
+<p>The resource selection mechanism used by Slurm is controlled by the
+<b>SelectType</b> configuration parameter.
+If you want to execute multiple jobs per node, but track and manage allocation
+of the processors, memory and other resources, the <i>cons_tres</i> (consumable
+trackable resources) plugin is recommended.
+For more information, please see
+<a href="cons_tres.html">Consumable Resources in Slurm</a>.</p>
+
+<h3 id="logging">Logging<a class="slurm_link" href="#logging"></a></h3>
+<p>Slurm uses syslog to record events if the <code>SlurmctldLogFile</code> and
+<code>SlurmdLogFile</code> locations are not set.</p>
+
+<h3 id="accounting">Accounting<a class="slurm_link" href="#accounting"></a></h3>
+<p>Slurm supports accounting records being written to a simple text file,
+directly to a database (MySQL or MariaDB), or to a daemon securely
+managing accounting data for multiple clusters. For more information
+see <a href="accounting.html">Accounting</a>. </p>
+
+<h3 id="node_access">Compute node access
+<a class="slurm_link" href="#node_access"></a>
+</h3>
+<p>Slurm does not by itself limit access to allocated compute nodes,
+but it does provide mechanisms to accomplish this.
+There is a Pluggable Authentication Module (PAM) for restricting access
+to compute nodes available for download.
+When installed, the Slurm PAM module will prevent users from logging
+into any node that has not be assigned to that user.
+On job termination, any processes initiated by the user outside of
+Slurm's control may be killed using an <i>Epilog</i> script configured
+in <i>slurm.conf</i>.</p>
+
+<h2 id="Config">Configuration<a class="slurm_link" href="#Config"></a></h2>
+<p>The Slurm configuration file includes a wide variety of parameters.
+This configuration file must be available on each node of the cluster and
+must have consistent contents. A full
+description of the parameters is included in the <i>slurm.conf</i> man page. Rather than
+duplicate that information, a minimal sample configuration file is shown below.
+Your slurm.conf file should define at least the configuration parameters defined
+in this sample and likely additional ones. Any text
+following a &quot;#&quot; is considered a comment. The keywords in the file are
+not case sensitive, although the argument typically is (e.g., &quot;SlurmUser=slurm&quot;
+might be specified as &quot;slurmuser=slurm&quot;). The control machine, like
+all other machine specifications, can include both the host name and the name
+used for communications. In this case, the host's name is &quot;mcri&quot; and
+the name &quot;emcri&quot; is used for communications.
+In this case &quot;emcri&quot; is the private management network interface
+for the host &quot;mcri&quot;. Port numbers to be used for
+communications are specified as well as various timer values.</p>
+
+<p>The <i>SlurmUser</i> must be created as needed prior to starting Slurm
+and must exist on all nodes in your cluster.
+The parent directories for Slurm's log files, process ID files,
+state save directories, etc. are not created by Slurm.
+They must be created and made writable by <i>SlurmUser</i> as needed prior to
+starting Slurm daemons.</p>
+
+<p>The <b>StateSaveLocation</b> is used to store information about the current
+state of the cluster, including information about queued, running and recently
+completed jobs. The directory used should be on a low-latency local disk to
+prevent file system delays from affecting Slurm performance. If using a backup
+host, the StateSaveLocation should reside on a file system shared by the two
+hosts. We do not recommend using NFS to make the directory accessible to both
+hosts, but do recommend a shared mount that is accessible to the two
+controllers and allows low-latency reads and writes to the disk. If a
+controller comes up without access to the state information, queued and
+running jobs will be cancelled.</p>
+
+<p>A description of the nodes and their grouping into partitions is required.
+A simple node range expression may optionally be used to specify
+ranges of nodes to avoid building a configuration file with large
+numbers of entries. The node range expression can contain one
+pair of square brackets with a sequence of comma separated
+numbers and/or ranges of numbers separated by a &quot;-&quot;
+(e.g. &quot;linux[0-64,128]&quot;, or &quot;lx[15,18,32-33]&quot;).
+Up to two numeric ranges can be included in the expression
+(e.g. &quot;rack[0-63]_blade[0-41]&quot;).
+If one or more numeric expressions are included, one of them
+must be at the end of the name (e.g. &quot;unit[0-31]rack&quot; is invalid),
+but arbitrary names can always be used in a comma separated list.</p>
+
+<p>Node names can have up to three name specifications:
+<b>NodeName</b> is the name used by all Slurm tools when referring to the node,
+<b>NodeAddr</b> is the name or IP address Slurm uses to communicate with the node, and
+<b>NodeHostname</b> is the name returned by the command <i>/bin/hostname -s</i>.
+Only <b>NodeName</b> is required (the others default to the same name),
+although supporting all three parameters provides complete control over
+naming and addressing the nodes.  See the <i>slurm.conf</i> man page for
+details on all configuration parameters.</p>
+
+<p>Nodes can be in more than one partition and each partition can have different
+constraints (permitted users, time limits, job size limits, etc.).
+Each partition can thus be considered a separate queue.
+Partition and node specifications use node range expressions to identify
+nodes in a concise fashion. This configuration file defines a 1154-node cluster
+for Slurm, but it might be used for a much larger cluster by just changing a few
+node range expressions. Specify the minimum processor count (CPUs), real memory
+space (RealMemory, mebibytes), and temporary disk space (TmpDisk, mebibytes) that
+a node should have to be considered available for use. Any node lacking these
+minimum configuration values will be considered DOWN and not scheduled.
+Note that a more extensive sample configuration file is provided in
+<b>etc/slurm.conf.example</b>. We also have a web-based
+<a href="configurator.html">configuration tool</a> which can
+be used to build a simple configuration file, which can then be
+manually edited for more complex configurations.</p>
+<pre>
+#
+# Sample /etc/slurm.conf for mcr.llnl.gov
+#
+SlurmctldHost=mcri(12.34.56.78)
+SlurmctldHost=mcrj(12.34.56.79)
+#
+AuthType=auth/munge
+Epilog=/usr/local/slurm/etc/epilog
+JobCompLoc=/var/tmp/jette/slurm.job.log
+JobCompType=jobcomp/filetxt
+PluginDir=/usr/local/slurm/lib/slurm
+Prolog=/usr/local/slurm/etc/prolog
+SchedulerType=sched/backfill
+SelectType=select/linear
+SlurmUser=slurm
+SlurmctldPort=7002
+SlurmctldTimeout=300
+SlurmdPort=7003
+SlurmdSpoolDir=/var/spool/slurmd.spool
+SlurmdTimeout=300
+StateSaveLocation=/var/spool/slurm.state
+TreeWidth=16
+#
+# Node Configurations
+#
+NodeName=DEFAULT CPUs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
+NodeName=mcr[0-1151] NodeAddr=emcr[0-1151]
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT State=UP
+PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
+PartitionName=pbatch Nodes=mcr[192-1151]
+</pre>
+
+<h2 id="security">Security<a class="slurm_link" href="#security"></a></h2>
+<p>Besides authentication of Slurm communications based upon the value
+of the <b>AuthType</b>, digital signatures are used in job step
+credentials.
+This signature is used by <i>slurmctld</i> to construct a job step
+credential, which is sent to <i>srun</i> and then forwarded to
+<i>slurmd</i> to initiate job steps.
+This design offers improved performance by removing much of the
+job step initiation overhead from the <i> slurmctld </i> daemon.
+The digital signature mechanism is specified by the <b>CredType</b>
+configuration parameter and the default mechanism is MUNGE. </p>
+
+<h3 id="PAM">Pluggable Authentication Module (PAM) support
+<a class="slurm_link" href="#PAM"></a>
+</h3>
+<p>A PAM module (Pluggable Authentication Module) is available for Slurm that
+can prevent a user from accessing a node which he has not been allocated,
+if that mode of operation is desired.</p>
+
+<h2 id="starting_daemons">Starting the Daemons
+<a class="slurm_link" href="#starting_daemons"></a>
+</h2>
+<p>For testing purposes you may want to start by just running slurmctld and slurmd
+on one node. By default, they execute in the background. Use the <span class="commandline">-D</span>
+option for each daemon to execute them in the foreground and logging will be done
+to your terminal. The <span class="commandline">-v</span> option will log events
+in more detail with more v's increasing the level of detail (e.g. <span class="commandline">-vvvvvv</span>).
+You can use one window to execute "<i>slurmctld -D -vvvvvv</i>",
+a second window to execute "<i>slurmd -D -vvvvv</i>".
+You may see errors such as "Connection refused" or "Node X not responding"
+while one daemon is operative and the other is being started, but the
+daemons can be started in any order and proper communications will be
+established once both daemons complete initialization.
+You can use a third window to execute commands such as
+"<i>srun -N1 /bin/hostname</i>" to confirm functionality.</p>
+
+<p>Another important option for the daemons is "-c"
+to clear previous state information. Without the "-c"
+option, the daemons will restore any previously saved state information: node
+state, job state, etc. With the "-c" option all
+previously running jobs will be purged and node state will be restored to the
+values specified in the configuration file. This means that a node configured
+down manually using the <span class="commandline">scontrol</span> command will
+be returned to service unless noted as being down in the configuration file.
+In practice, Slurm consistently restarts with preservation.</p>
+
+<h2 id="admin_examples">Administration Examples
+<a class="slurm_link" href="#admin_examples"></a>
+</h2>
+<p><span class="commandline">scontrol</span> can be used to print all system information
+and modify most of it. Only a few examples are shown below. Please see the scontrol
+man page for full details. The commands and options are all case insensitive.</p>
+<p>Print detailed state of all jobs in the system.</p>
+<pre>
+adev0: scontrol
+scontrol: show job
+JobId=475 UserId=bob(6885) Name=sleep JobState=COMPLETED
+   Priority=4294901286 Partition=batch BatchFlag=0
+   AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
+   StartTime=03/19-12:53:41 EndTime=03/19-12:53:59
+   NodeList=adev8 NodeListIndecies=-1
+   NumCPUs=0 MinNodes=0 OverSubscribe=0 Contiguous=0
+   MinCPUs=0 MinMemory=0 Features=(null) MinTmpDisk=0
+   ReqNodeList=(null) ReqNodeListIndecies=-1
+
+JobId=476 UserId=bob(6885) Name=sleep JobState=RUNNING
+   Priority=4294901285 Partition=batch BatchFlag=0
+   AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
+   StartTime=03/19-12:54:01 EndTime=NONE
+   NodeList=adev8 NodeListIndecies=8,8,-1
+   NumCPUs=0 MinNodes=0 OverSubscribe=0 Contiguous=0
+   MinCPUs=0 MinMemory=0 Features=(null) MinTmpDisk=0
+   ReqNodeList=(null) ReqNodeListIndecies=-1
+</pre> <p>Print the detailed state of job 477 and change its priority to
+zero. A priority of zero prevents a job from being initiated (it is held in &quot;pending&quot;
+state).</p>
+<pre>
+adev0: scontrol
+scontrol: show job 477
+JobId=477 UserId=bob(6885) Name=sleep JobState=PENDING
+   Priority=4294901286 Partition=batch BatchFlag=0
+   <i>more data removed....</i>
+scontrol: update JobId=477 Priority=0
+</pre>
+
+<p>Print the state of node adev13 and drain it. To drain a node, specify a new
+state of DRAIN, DRAINED, or DRAINING. Slurm will automatically set it to the appropriate
+value of either DRAINING or DRAINED depending on whether the node is allocated
+or not. Return it to service later.</p>
+<pre>
+adev0: scontrol
+scontrol: show node adev13
+NodeName=adev13 State=ALLOCATED CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null)
+scontrol: update NodeName=adev13 State=DRAIN
+scontrol: show node adev13
+NodeName=adev13 State=DRAINING CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null)
+scontrol: quit
+<i>Later</i>
+adev0: scontrol
+scontrol: show node adev13
+NodeName=adev13 State=DRAINED CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null)
+scontrol: update NodeName=adev13 State=IDLE
+</pre> <p>Reconfigure all Slurm daemons on all nodes. This should
+be done after changing the Slurm configuration file.</p>
+<pre>
+adev0: scontrol reconfig
+</pre> <p>Print the current Slurm configuration. This also reports if the
+primary and secondary controllers (slurmctld daemons) are responding. To just
+see the state of the controllers, use the command <span class="commandline">ping</span>.</p>
+<pre>
+adev0: scontrol show config
+Configuration data as of 2019-03-29T12:20:45
+...
+SlurmctldAddr           = eadevi
+SlurmctldDebug          = info
+SlurmctldHost[0]        = adevi
+SlurmctldHost[1]        = adevj
+SlurmctldLogFile        = /var/log/slurmctld.log
+...
+
+Slurmctld(primary) at adevi is UP
+Slurmctld(backup) at adevj is UP
+</pre> <p>Shutdown all Slurm daemons on all nodes.</p>
+<pre>
+adev0: scontrol shutdown
+</pre>
+
+<h2 id="upgrade">Upgrades<a class="slurm_link" href="#upgrade"></a></h2>
+
+<p>Slurm supports in-place upgrades between certain versions. Important details
+about the steps necessary to perform an upgrade and the potential complications
+to prepare for are contained on this page:
+<a href="upgrades.html">Upgrade Guide</a></p>
+
+<h2 id="FreeBSD">FreeBSD<a class="slurm_link" href="#FreeBSD"></a></h2>
+
+<p>FreeBSD administrators can install the latest stable Slurm as a binary
+package using:</p>
+<pre>
+pkg install slurm-wlm
+</pre>
+
+<p>Or, it can be built and installed from source using:</p>
+<pre>
+cd /usr/ports/sysutils/slurm-wlm && make install
+</pre>
+
+<p>The binary package installs a minimal Slurm configuration suitable for
+typical compute nodes.  Installing from source allows the user to enable
+options such as mysql and gui tools via a configuration menu.</p>
+
+<!--#include virtual="footer.txt"-->

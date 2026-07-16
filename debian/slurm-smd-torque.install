@@ -1,0 +1,12 @@
+usr/bin/pbsnodes
+usr/bin/qalter
+usr/bin/qdel
+usr/bin/qhold
+usr/bin/qrerun
+usr/bin/qrls
+usr/bin/qstat
+usr/bin/qsub
+usr/bin/mpiexec
+usr/bin/generate_pbs_nodefile
+usr/lib/*/slurm/job_submit_pbs.so
+usr/lib/*/slurm/spank_pbs.so

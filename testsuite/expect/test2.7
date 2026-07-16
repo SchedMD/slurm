@@ -1,0 +1,69 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol pidinfo command.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
+set job_id      0
+set scontrol_id 0
+set rem_time    0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$scontrol pidinfo \$\$"
+
+#
+# Spawn a srun batch job that uses stdout/err and confirm their contents
+#
+set job_id [submit_job -fail "--output=$file_out --error=$file_err -t1 $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+
+#
+# Verify job_id in output file
+#
+wait_for_file -fail $file_out
+set output [run_command_output -fail "$bin_cat $file_out"]
+
+subtest {[regexp "JobId=($number)" $output - scontrol_id]} "Verify JobId message is printed"
+subtest {$job_id == $scontrol_id} "Verify scontrol pidinfo error"
+subtest {[regexp "Job remaining time is ($number)" $output - rem_time]} "Verify remaining time message is printed"
+subtest [tolerance 60 $rem_time -5] "Verify Job remaining time is within expected tolerance"
+subtest {![regexp "error" $output - scontrol_id]} "Verify that no error was printed"

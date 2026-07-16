@@ -1,0 +1,64 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Use sreport to get job usage reports with default options and with
+#          different switches. Configuration set up in test22.1.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc22_1_5 { } {
+	global users accounts sreport
+	global sql_in_clus1 sql_rem_clus1 sql_in_clus2 sql_rem_clus2
+	global user1 user2 account1 account2 account3
+	global cluster1 cluster2
+
+	# Mon Dec 31 23:00:00 2007
+	set start_time "Mon Dec 31 23:00:00 2007"
+	set period_start [exec date +%s --date=$start_time]
+
+	# Tue Dec 31 23:59:59 2008
+	set end_time "Tue Jan 31 23:59:59 2008"
+	set period_end [exec date +%s --date=$end_time]
+
+	set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
+	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+
+	log_info "Testing sreport for default (non-AcctAsParent) and FlatView"
+
+	# Test the job report for root account
+	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster1.root.4.*.100.00%" $output] == 1} "Test the job report for root account"
+
+	# Test the job report with flatview, should show first level of accounts under root individually
+	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n flatview"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	#test22-1clus1|test22-1acct1|2|0|0|0|0|2|50.00%|
+	#test22-1clus1|test22-1acct2|1|0|0|0|0|1|25.00%|
+	#test22-1clus1|test22-1acct3|1|0|0|0|0|1|25.00%|
+	subtest {[regexp -all "$cluster1.$account1.2.*.2.50.00%.\\\n$cluster1.$account2.1.*.1.25.00%.\\\n$cluster1.$account3.1.*.1.25.00%" $output] == 1} "Test the job report with flatview"
+
+	# Test the job report for specific account, should show just one account with all its jobs
+	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' account=$account1 start=$start_str end=$end_str -p -n"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster1.$account1.2.*.2.100.00%." $output] == 1} "Test the job report for specific account"
+}

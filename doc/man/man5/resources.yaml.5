@@ -1,0 +1,214 @@
+.TH "resources.yaml" "5" "Slurm Configuration File" "Slurm 25.11" "Slurm Configuration File"
+
+.SH "NAME"
+resources.yaml \-  Slurm configuration file for the Hierarchical Resources (HRES).
+
+.SH "DESCRIPTION"
+
+.LP
+\fBresources.yaml\fR is a YAML\-formatted configuration file that defines
+Hierarchical Resources (HRES).
+The file must be located in the same directory as \fBslurm.conf\fR. Any text
+following a "#" in this file is treated as a comment through the end of that
+line.
+
+Additional details are available in
+the Hierarchical Resource (HRES) Scheduling page:
+<https://slurm.schedmd.com/hres.html>
+
+.LP
+
+.SH "PARAMETERS"
+.LP
+Each Hierarchical Resources definition is a YAML object containing the following
+attributes:
+.LP
+
+.TP
+\fBresource\fR
+The unique name for the resource. This name will be used to identify it by
+slurmctld. This \fBmust be the first\fR attribute in the object.
+.IP
+
+.TP
+\fBmode\fR
+The planning mode for the resource. Must be one of the following:
+.RS
+.TP
+\fBMODE_1\fR
+Sufficient resources are required on \fBonly one\fR layer that overlaps with the
+job's allocated nodes.
+.TP
+\fBMODE_2\fR
+Sufficient resources must be available on \fBall\fR layers that overlap with the
+job's allocated nodes.
+.TP
+\fBMODE_3\fR
+Resources are allocated on a per-node basis. The scheduler calculates total
+consumption from the most granular layer and sums it up into the successively
+higher layers, ensuring the \fBcount\fR is not exceeded at any layer. This mode
+is designed for consumable resources like power and can be mapped to a block
+topology using the \fBtopology\fR parameter.
+.RE
+.IP
+
+.TP
+\fBtopology\fR
+(Optional) Specifies the name of a \fBtopology/block\fR definition to map to
+this resource. This parameter is \fBonly\fR valid for \fBMODE_3\fR resources.
+The HRes layers must have the same layout as the specified block topology. This
+enables the scheduler to simultaneously optimize both the HRes and block
+topology allocations.
+.IP
+
+.TP
+\fBvariables\fR
+(Optional) A list of name/value pairs that map arbitrary text strings to
+administratively-defined resource counts. Users can then use these strings in
+job submissions (e.g., \fI--resources=power:full_node\fR) instead of a numeric
+value. Each entry in the list contains:
+.RS
+.TP
+\fBname\fR
+The string alias for the value (e.g., "full_node").
+.TP
+\fBvalue\fR
+The numeric resource count (e.g., 1000).
+.RE
+.IP
+
+.TP
+\fBlayers\fR
+A list of layers that define the resource hierarchy. Each layer is a YAML object
+containing:
+.RS
+.TP
+\fBnodes\fR
+A list of node names or hostlist expressions that are part of this layer.
+.IP
+.TP
+\fBcount\fR
+The total number of resources available in this specific layer.
+.IP
+.TP
+\fBbase\fR
+(Optional) A list of name/value pairs describing non-job-related (static)
+resource consumption in this layer. This is particularly relevant for
+\fBMODE_3\fR. Each entry contains:
+.RS
+.TP
+\fBname\fR
+The name of the static resource consumer (e.g., "storage", "network1").
+.TP
+\fBvalue\fR
+The numeric resource count this consumer uses.
+.RE
+.IP
+.RE
+.IP
+
+.SH "EXAMPLE"
+.nf
+---
+- resource: flat
+  mode: MODE_2
+  layers:
+    - nodes:			# highest level
+        - "node[01-32]"
+      count: 24
+    - nodes:			# middle levels
+        - "node[01-16]"
+      count: 16
+    - nodes:
+        - "node[17-32]"
+      count: 16
+    - nodes:			# lowest levels
+        - "node[01-08]"
+      count: 12
+    - nodes:
+        - "node[09-16]"
+      count: 12
+    - nodes:
+        - "node[17-24]"
+      count: 12
+    - nodes:
+        - "node[25-32]"
+      count: 12
+- resource: natural
+  mode: MODE_1
+  layers:
+    - nodes:			# highest level
+        - "node[01-32]"
+      count: 50
+    - nodes:			# lowest levels
+        - "node[01-16]"
+      count: 100
+    - nodes:
+        - "node[17-32]"
+      count: 100
+- resource: power
+  mode: MODE_3
+  topology: blok1
+  variables:
+    - name: full_node
+      value: 1000
+    - name: full_gpu_node
+      value: 2000
+  layers:
+    - nodes:
+        - "node[01-32]"
+      count: 130000
+      base:
+        - name: acUnit1
+          value: 10000
+        - name: acUnit2
+          value: 8000
+    - nodes:
+        - "node[01-16]"
+      count: 60000
+      base:
+        - name: network1
+          value: 3000
+    - nodes:
+        - "node[17-32]"
+      count: 80000
+      base:
+        - name: network2
+          value: 2000
+    - nodes:
+        - "node[01-08]"
+      count: 40000
+      base:
+        - name: storage
+          value: 5000
+    - nodes:
+        - "node[09-16]"
+      count: 40000
+    - nodes:
+        - "node[17-24]"
+      count: 40000
+    - nodes:
+        - "node[25-32]"
+      count: 40000
+.fi
+
+.SH "COPYING"
+Copyright (C) 2025 SchedMD LLC.
+
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

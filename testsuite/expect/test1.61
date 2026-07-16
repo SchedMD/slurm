@@ -1,0 +1,99 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          test to verify job step time limit
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id 0
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
+set timeout 60
+
+exec $bin_rm -f $file_in file_out file_err
+make_bash_script $file_in "
+  $bin_date
+  $srun -t1 $scontrol show step \$SLURM_JOB_ID
+  $bin_date
+  $srun -t1 sleep 200
+  $bin_date
+"
+
+spawn $sbatch -t5 --output=$file_out --error=$file_err $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "Did not get sbatch job_id"
+}
+
+#
+# Wait for job completion
+#
+sleep 60
+wait_for_job -fail $job_id DONE
+
+wait_for_file -fail $file_out
+set timed_out 0
+spawn cat $file_out
+expect {
+	-re " TimeLimit=00:01:00" {
+		set timed_out 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 0} {
+	fail "srun time limit not found"
+}
+
+wait_for_file -fail $file_err
+set timed_out 0
+spawn cat $file_err
+expect {
+	-re " STEP $job_id\\.1 ON .* CANCELLED AT.*DUE TO TIME LIMIT " {
+		set timed_out 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 0} {
+	fail "srun time limit not enforced"
+}

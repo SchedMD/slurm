@@ -1,0 +1,562 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test sreport cluster utilization. Also test for
+#          sreport -M option
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+source ./inc22.1.1
+source ./inc22.1.2
+source ./inc22.1.3
+source ./inc22.1.4
+source ./inc22.1.5
+source ./inc22.1.fed
+
+set test_nu     "test22-1"
+set matches     0
+set not_support 0
+set sql_in_clus1     "$test_dir/clus1-in.sql"
+set sql_rem_clus1    "$test_dir/clus1-rem.sql"
+set sql_in_clus2     "$test_dir/clus2-in.sql"
+set sql_rem_clus2    "$test_dir/clus2-rem.sql"
+set sql_out    "$test_name-out.sql"
+set cluster1    [format "%s%s" $test_nu "clus1"]
+set cluster2    [format "%s%s" $test_nu "clus2"]
+set account1    [format "%s%s" $test_nu "acct1"]
+set account2    [format "%s%s" $test_nu "acct2"]
+set account3    [format "%s%s" $test_nu "acct3"]
+set accounts    [format "%s,%s,%s" $account1 $account2 $account3]
+set wckey1      [format "%s%s" $test_nu "wckey"]
+set user1       [format "%s%s" $test_nu "user1"]
+set user2       [format "%s%s" $test_nu "user2"]
+set users       [format "%s,%s" $user1 $user2]
+set node0       [format "%s%d" $cluster1 0]
+set node1       [format "%s%d" $cluster1 1]
+set node_list   [format "%s%s" $cluster1 "\[0-1\]"]
+set node0_cpus  2
+set node1_cpus  2
+set test_job1   "${test_name}_job1"
+set test_job2   "${test_name}_job2"
+set test_job3   "${test_name}_job3"
+set test_job4   "${test_name}_job4"
+set cluster_cpus [expr $node0_cpus + $node1_cpus]
+set access_err  0
+set uid [get_my_uid]
+set gid [get_my_gid]
+set timeout 180
+set fedname     "test22_1"
+
+# Cluster
+array set clus_req {}
+
+# Account 1 Cluster 1
+array set acct_req1 {}
+set acct_req1(cluster) "$cluster1,$cluster2"
+
+# Account 2 Cluster 1
+array set acct_req2 {}
+set acct_req2(cluster) "$cluster1,$cluster2"
+set acct_req2(parent) $account2
+
+# User Cluster 1
+array set user_req {}
+set user_req(cluster) "$cluster1,$cluster2"
+set user_req(account) $accounts
+set user_req(wckey) $wckey1
+
+# Fri Thu Jan 31 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
+set midnight_time "Thu Jan 31 00:00:00 2008"
+set midnight [exec date -d $midnight_time +%s]
+
+# Mon Dec 31 23:00:00 2007
+set start_date "Mon Dec 31 23:00:00 2007"
+set period_start [exec date -d $start_date +%s]
+
+# Thu Jan 31 23:59:59 2008
+set end_date "Thu Jan 31 23:59:59 2008"
+set period_end [exec date -d $end_date +%s]
+
+set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
+set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+
+# job0 - we really want this to look like job1 but run right before hand.
+set job0_start $period_start
+set job0_run 1200
+set job0_end [expr $job0_start + $job0_run]
+# job1
+set job1_start [expr $period_start + 1200]
+set job1_run 2700
+set job1_end [expr $job1_start + $job1_run]
+# This will give us the correct time we ran for
+set job1_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
+set job1_start_str [timestamp -format %Y-%m-%dT%X -seconds $job1_start]
+set job1_end_str [timestamp -format %Y-%m-%dT%X -seconds $job1_end]
+set job1_nodes $node1
+set job1_cpus $node1_cpus
+set job1_alloc [expr ($job1_run + $job0_run) * $job1_cpus]
+set job1_acct $account1
+
+# job2
+# Make job eligible an hour into the allocation
+set job2_elig [expr $period_start+3600]
+# Start the job 65 minutes later so we can check reserved time
+set job2_start [expr $job2_elig+3900]
+# Run for a day
+set job2_run 86400
+set job2_end [expr $job2_start+$job2_run]
+# This will give us the correct time we ran for
+set job2_diff_str "1-00:00:00"
+set job2_start_str [timestamp -format %Y-%m-%dT%X -seconds $job2_start]
+set job2_end_str [timestamp -format %Y-%m-%dT%X -seconds $job2_end]
+set job2_nodes [format "%s\[%s\]" $cluster1 "0-1"]
+set job2_cpus [expr $node0_cpus + $node1_cpus]
+set job2_alloc [expr $job2_run * $job2_cpus]
+set job2_acct $account3
+
+# job3
+# Make job eligible an hour before the end of job2
+set job3_elig [expr $job2_end-3600]
+# Start the job at the end of job2
+set job3_start $job2_end
+# Run for 65 minutes
+set job3_run 3900
+set job3_end [expr $job3_start+$job3_run]
+# This will give us the correct time we ran for
+set job3_diff_str [timestamp -format %X -seconds [expr $midnight+$job3_run]]
+
+set job3_start_str [timestamp -format %Y-%m-%dT%X -seconds $job3_start]
+set job3_end_str [timestamp -format %Y-%m-%dT%X -seconds $job3_end]
+# Run on just node0
+set job3_nodes $node0
+set job3_cpus $node0_cpus
+set job3_alloc [expr $job3_run * $job3_cpus]
+set job3_acct $account2
+
+# job4
+# Make job eligible right at the end of job3
+set job4_elig $job3_elig
+# It never starts, so all it's time is 'planned'
+set job4_start 0
+set job4_run 0
+set job4_end 0
+set job4_diff_str "0"
+# Run on just node0
+set job4_nodes $node0
+set job4_cpus $node0_cpus
+set job4_alloc [expr $job4_run * $job4_cpus]
+set job4_acct $account2
+
+set acct1_alloc $job1_alloc
+set acct3_alloc $job2_alloc
+set acct2_alloc [expr $acct3_alloc + $job3_alloc]
+set total_alloc [expr $job1_alloc + $job2_alloc + $job3_alloc]
+
+set wckey1_alloc [expr $job1_alloc + $job2_alloc + $job3_alloc]
+set user1_wckey1_alloc [expr $job1_alloc + $job3_alloc]
+set user2_wckey1_alloc $job2_alloc
+# Node0 down
+set node0_down_start [expr $period_start+(60*45)]
+set node0_down_end [expr $period_start+(60*75)]
+set node0_start_str [timestamp -format %Y-%m-%dT%X -seconds $node0_down_start]
+set node0_end_str [timestamp -format %Y-%m-%dT%X -seconds $node0_down_end]
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+set wc_key_track true
+if { [get_config_param -dbd "TrackWCKey"] eq "no" } {
+        log_warn "This test can't be totally run without TrackWCKey set in slurmdbd.conf"
+        set wc_key_track false
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global sql_rem_clus1 sql_rem_clus2 users accounts
+	global cluster1 cluster2 fed_name
+
+	archive_load $sql_rem_clus1
+	archive_load $sql_rem_clus2
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster1"
+	remove_cluster "$cluster2"
+}
+
+# Add clusters
+if [add_cluster $cluster1 [array get clus_req]] {
+	fail "Unable to add cluster 1"
+}
+if [add_cluster $cluster2 [array get clus_req]] {
+	fail "Unable to add cluster 2"
+}
+
+# Add accounts
+if [add_acct "$account1,$account2" [array get acct_req1]] {
+	fail "Unable to add accounts ($account1,$account2)"
+}
+
+# Add accounts
+if [add_acct $account3 [array get acct_req2]] {
+	fail "Unable to add account ($account3)"
+}
+
+# Add users
+if [add_user $users [array get user_req]] {
+	fail "Unable to add user ($users)"
+}
+
+# Get the user association ids for the jobs we plan to add
+set user1acct1 0
+set user1acct2 0
+set user1acct3 0
+set user2acct1 0
+set user2acct2 0
+set user2acct3 0
+eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster2 format="User,account,id"
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "$user1.$account1.($number)." {
+		set user1acct1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$account1.($number)." {
+		set user2acct1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user1.$account2.($number)." {
+		set user1acct2 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$account2.($number)." {
+		set user2acct2 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user1.$account3.($number)." {
+		set user1acct3 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$account3.($number)." {
+		set user2acct3 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {!$user1acct1 || !$user1acct2 || !$user1acct3 || !$user2acct1 || !$user2acct2|| !$user2acct3} {
+	fail "Didn't get one of the user associations ($user1acct1,$user1acct2,$user1acct3,$user2acct1,$user2acct2,$user2acct3)"
+}
+
+# Get the wckey ids for the jobs we plan to add
+set user1wckey1 0
+set user2wckey1 0
+eval spawn $sacctmgr -n -p list wckeys users=$users wckeys=$wckey1 cluster=$cluster1 format="user,wckey,id"
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "$user1.$wckey1.($number)." {
+		set user1wckey1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$wckey1.($number)." {
+		set user2wckey1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list wckeys not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {!$user1wckey1 || !$user2wckey1} {
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster1"
+	fail "Didn't get one of the user wckeys ($user1wckey1,$user2wckey1)"
+}
+
+proc test_fed {} {
+	global scontrol re_word_str sacctmgr env bin_rm cluster1 cluster2 fedname test_dir
+
+	set config_dir ""
+	set new_conf $test_dir/slurm.conf.test22.1
+
+	spawn $scontrol show config
+	expect {
+		-re "SLURM_CONF *= (/.*)/($re_word_str).*SLURM_VERSION" {
+			set config_dir $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	delete_federations $fedname
+
+	set cmd1 "$sacctmgr -i add federation $fedname"
+	log_debug "$cmd1"
+	log_debug "[eval exec $cmd1]"
+
+	set cmd2 "$sacctmgr -i mod fed $fedname set clusters=$cluster1,$cluster2"
+	log_debug "$cmd2"
+	log_debug "[eval exec $cmd2]"
+
+	log_debug "This is the config dir: $config_dir; new config: $new_conf "
+
+	set old_conf "$config_dir/slurm.conf"
+
+	log_debug [exec sed "s/ClusterName\\s*=.*/ClusterName=$cluster1/Ig" $old_conf > $new_conf]
+
+	set env(SLURM_CONF) $new_conf
+
+	log_debug "ENV VARIABLE: [exec printenv SLURM_CONF]  "
+
+	# Execute the federation tests in a catch block in order to
+	# run federation-specific cleanup
+	set exception_code [catch {
+		inc22_1_fed
+	} message] ; # Store any error message in $message
+
+	# Cleanup federation
+	delete_federations $fedname
+	set env(SLURM_CONF) $old_conf
+
+	# Convert any errors into failures (after cleaning up)
+    if {$exception_code == 1} { ; # errors only
+        fail "Failure testing federated sreport: $message"
+    }
+}
+
+proc create_sql {cluster sql_in sql_rem} {
+	global bin_rm cluster_cpus period_start period_end node_list
+	global node0 node0_cpus node0_down_start node0_down_end
+	global user1acct1 wckey1 user1wckey1 uid gid debug job1_acct job0_start job0_end
+	global job1_cpus job1_nodes job1_start job1_end user2acct3 user2wckey1
+	global job2_acct job2_elig job2_start job2_end job2_cpus job2_nodes
+	global user1acct2 job3_acct job3_elig job3_start job3_end job3_cpus
+	global job3_nodes sacct start_str end_str account1 job1_start_str
+	global job1_end_str job1_diff_str account3 job2_start_str
+	global job2_end_str job2_diff_str account2 job3_start_str
+	global job3_end_str job3_diff_str sacctmgr node0_start_str
+	global node0_end_str matches users accounts
+	global test_job1 test_job2 test_job3 test_job4
+	global job4_elig job4_start job4_run job4_end job4_diff_str
+	global job4_nodes job4_alloc job4_acct job4_cpus
+
+	exec $bin_rm -f $sql_in
+	set file [open $sql_in "w"]
+
+
+	# DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
+	# THIS COULD SERIOUSLY MESS UP YOUR DATABASE IF YOU ALTER THIS INCORRECTLY
+	# JUST A FRIENDLY REMINDER ;)
+
+	# Put in the cluster for back in the day before accounting was made here for us we are using 'Tue Jan  1 00:00:00 2008' = 1199174400 as the start
+
+	puts $file "insert into cluster_event_table (node_name, cluster, tres, period_start, period_end, reason, cluster_nodes) values"
+	puts $file "('', '$cluster', '1=$cluster_cpus', $period_start, $period_end, 'Cluster processor count', '$node_list' )"
+
+	# Put a node down for 30 minutes starting at 45 minutes after the start to make sure our rollups work so we should get 15 minutes on one hour and 15 on the other
+	puts $file ", ('$node0', '$cluster', '1=$node0_cpus', $node0_down_start, $node0_down_end, 'down','')"
+	#puts $file ", ('$node1', '$cluster', '1=$node1_cpus', $period_start, $period_end, 'down')"
+	puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
+
+	# Now we will put in a job running for an hour and 5 minutes
+	puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
+	puts $file "('65536', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job0_start, $job0_start, $job0_start, $job0_end, '0', '$test_job1', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
+	puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', '$test_job1', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
+	puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', '$test_job2', '3', '0', '$job2_cpus', '$job2_cpus', '1=$job2_cpus', '$job2_nodes', '0', '0', '0')"
+	puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', '$test_job3', '3', '0', '$job3_cpus', '$job3_cpus', '1=$job3_cpus', '$job3_nodes', '0', '0', '0')"
+	puts $file ", ('65540', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job4_acct', $job4_elig, $job4_elig, $job4_start, $job4_end, '0', '$test_job4', '3', '0', '$job4_cpus', '$job4_cpus', '1=$job4_cpus', '$job4_nodes', '0', '0', '0')"
+	puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
+	close $file
+
+	exec $bin_rm -f $sql_rem
+	set file [open $sql_rem "w"]
+
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_event_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_job_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_step_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_day_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_hour_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_usage_month_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_day_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_hour_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_assoc_usage_month_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_day_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_hour_table\";"]
+	puts $file [format "%s%s%s" "truncate table \"" $cluster "_wckey_usage_month_table\";"]
+	close $file
+
+
+	#
+	# Use sacctmgr to load info
+	#
+	if [archive_load $sql_in] {
+		fail "Unable to load archive"
+	}
+
+	#
+	# Use sacct to see if the job loaded
+	#
+	set matches 0
+	eval spawn $sacct -p -M $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str
+	expect {
+		-re "There was a problem" {
+			fail "There was a problem with the sacct command"
+		}
+		-re "$cluster.$account1.$user1acct1.$wckey1.$user1wckey1.$job1_start_str.$job1_end_str.$job1_diff_str." {
+			log_debug "Got 1"
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$account3.$user2acct3.$wckey1.$user2wckey1.$job2_start_str.$job2_end_str.$job2_diff_str." {
+			log_debug "Got 2"
+			incr matches
+			exp_continue
+		}
+		-re "$cluster.$account2.$user1acct2.$wckey1.$user1wckey1.$job3_start_str.$job3_end_str.$job3_diff_str." {
+			log_debug "Got 3"
+			incr matches
+			exp_continue
+		}
+
+		timeout {
+			fail "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 3} {
+		fail "Job wasn't loaded correctly ($matches != 3)"
+	}
+
+	#
+	# Use sacctmgr to see if node event loaded
+	#
+
+	log_debug "$cluster..$start_str.$end_str.$cluster_cpus.$node_list"
+
+	set matches 0
+	eval spawn $sacctmgr -p list events cluster=$cluster format=cluster,noden,start,end,cpu --noheader start=$start_str end=$end_str
+	expect {
+		-re "There was a problem" {
+			fail "There was a problem with the sacctmgr command"
+		}
+		-re "($cluster..$start_str.$end_str.$cluster_cpus.)" {
+			log_debug "Got 1"
+			incr matches
+			exp_continue
+		}
+		-re "($cluster.$node0.$node0_start_str.$node0_end_str.$node0_cpus.)" {
+			log_debug "Got 2"
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		fail "Cluster env wasn't loaded correctly ($matches != 2)"
+	}
+
+	#
+	# Use sacctmgr to roll up that time period
+	#
+	set matches 0
+	eval spawn $sacctmgr -i roll $start_str $end_str
+
+	expect {
+		-re "There was a problem" {
+			fail "There was a problem with the sacctmgr command"
+		}
+		-re "$cluster" {
+			incr matches
+			exp_continue
+		}
+		-re "SUCCESS" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sacctmgr archive load not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		fail "sacctmgr wasn't able to roll data"
+	}
+}
+
+create_sql $cluster1 $sql_in_clus1 $sql_rem_clus1
+create_sql $cluster2 $sql_in_clus2 $sql_rem_clus2
+
+
+#
+# Execute sub-test
+#
+
+# Fed Testing
+test_fed
+
+inc22_1_1
+inc22_1_2
+inc22_1_3
+inc22_1_4
+inc22_1_5

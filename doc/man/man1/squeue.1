@@ -1,0 +1,2173 @@
+.TH squeue "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+squeue \- view information about jobs located in the Slurm scheduling queue.
+
+.SH "SYNOPSIS"
+\fBsqueue\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+\fBsqueue\fR is used to view job and job step information for jobs managed by
+Slurm.
+
+.SH "OPTIONS"
+
+.TP
+\fB\-A\fR, \fB\-\-account\fR=<\fIaccount_list\fR>
+Specify the accounts of the jobs to view. Accepts a comma separated
+list of account names. This has no effect when listing job steps.
+.IP
+
+.TP
+\fB\-a\fR, \fB\-\-all\fR
+Display information about jobs and job steps in all partitions.
+This causes information to be displayed about partitions that are configured as
+hidden, partitions that are unavailable to a user's group, and federated jobs
+that are in a "revoked" state.
+.IP
+
+.TP
+\fB\-r\fR, \fB\-\-array\fR
+Display one job array element per line.
+Without this option, the display will be optimized for use with job arrays
+(pending job array elements will be combined on one line of output with the
+array index values printed using a regular expression).
+.IP
+
+.TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIcluster_name\fR>
+Clusters to issue commands to. Multiple cluster names may be comma separated.
+A value of '\fIall\fR' will query to run on all clusters.
+Note that the \fBslurmdbd\fR must be up for this option to work properly, unless
+running in a federation with either \fBFederationParameters=fed_display\fR
+configured or the \fB\-\-federation\fR option set.
+This option implicitly sets the \fB\-\-local\fR option.
+.IP
+
+.TP
+\fB\-\-expand\-patterns\fR
+Expand any filename patterns from in \f3StdOut\fP, \f3StdErr\fP and \f3StdIn\fP.
+Fields that map to a range of values will use the first value of the range. For
+example "%t" for task id will be replaced by "0".
+.IP
+
+.TP
+\fB\-\-federation\fR
+Show jobs from the federation if a member of one.
+.IP
+
+.TP
+\fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
+Specify the information to be displayed, its size and position
+(right or left justified).
+Also see the \fB\-O\fR, \fB\-\-Format\fR=<\fIoutput_format\fR>
+option described below (which supports less flexibility in formatting, but
+supports access to all fields).
+If the command is executed in a federated cluster environment and information
+about more than one cluster is to be displayed and the \fB\-h, \-\-noheader\fR
+option is used, then the cluster name will be displayed before the default
+output formats shown below.
+
+The default formats with various options are:
+.IP
+.RS
+.TP 15
+\fIdefault\fR
+"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R"
+.IP
+
+.TP
+\fI\-l, \-\-long\fR
+"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R"
+.IP
+
+.TP
+\fI\-s, \-\-steps\fR
+"%.15i %.8j %.9P %.8u %.9M %N"
+.IP
+.RE
+
+The format of each field is "%[[.]size]type[suffix]"
+.IP
+.RS 10
+.TP
+\fIsize\fR
+Minimum field size. If no size is specified, whatever is needed to print the
+information will be used.
+.IP
+
+.TP
+\fI.\fR
+Indicates the output should be right justified and size must be specified.
+By default output is left justified.
+.IP
+
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
+.IP
+.RE
+
+Note that many of these \fItype\fR specifications are valid
+only for jobs while others are valid only for job steps.
+Valid \fItype\fR specifications include:
+.IP
+.RS
+.TP 6
+\fB%all\fR
+Print all fields available for this data type with a vertical bar separating
+each field.
+.IP
+
+.TP
+\fB%a\fR
+Account associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%A\fR
+Number of tasks created by a job step.
+This reports the value of the \fBsrun \-\-ntasks\fR option.
+(Valid for job steps only)
+.IP
+
+.TP
+\fB%A\fR
+Job id.
+This will have a unique value for each element of job arrays.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%B\fR
+Executing (batch) host. For an allocated session, this is the host on which
+the session is executing (i.e. the node from which the \fBsrun\fR or the
+\fBsalloc\fR command was executed). For a batch job, this is the node executing
+the batch script. In the case of a typical Linux cluster, this would be the
+compute node zero of the allocation.
+.IP
+
+.TP
+\fB%c\fR
+Minimum number of CPUs (processors) per node requested by the job.
+This reports the value of the \fBsrun \-\-mincpus\fR option with a
+default value of zero.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%C\fR
+Number of CPUs (processors) requested by the job or allocated to
+it if already running. As a job is completing this number will
+reflect the current number of CPUs allocated.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%d\fR
+Minimum size of temporary disk space (in MiB) requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%D\fR
+Number of nodes allocated to the job or the minimum number of nodes
+required by a pending job. The actual number of nodes allocated to a pending
+job may exceed this number if the job specified a node range count (e.g.
+minimum and maximum node counts) or the job specifies a processor
+count instead of a node count. As a job is completing this number will reflect
+the current number of nodes allocated.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%e\fR
+Time at which the job ended or is expected to end (based upon its time limit).
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%E\fR
+Job dependencies remaining. This job will not begin execution until these
+dependent jobs complete. In the case of a job that can not run due to job
+dependencies never being satisfied, the full original job dependency
+specification will be reported. Once a dependency is satisfied, it is
+removed from the job. A value of NULL implies this job has no
+dependencies.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%f\fR
+Features required by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%F\fR
+Job array's job ID. This is the base job ID.
+For non\-array jobs, this is the job ID.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%g\fR
+Group name of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%G\fR
+Group ID of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%h\fR
+Oversubscribe disposition for the job (\fBOVER_SUBSCRIBE\fR column): "YES" if
+the job requested \fB\-\-oversubscribe\fR; "NO" otherwise; "OK" if the
+partition allows oversubscription (without the job disabling it) when the job
+did not request \fB\-\-oversubscribe\fR.
+This does not encode exclusivity; see the \fBExclusive\fR field below.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%H\fR
+Number of sockets per node requested by the job.
+This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
+When \-\-sockets\-per\-node has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%i\fR
+Job or job step id.
+In the case of job arrays, the job ID format will be of the form
+"<base_job_id>_<index>".
+By default, the job array index field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
+(Valid for jobs and job steps)
+In the case of heterogeneous job allocations, the job ID format will be of the
+form "#+#" where the first number is the "heterogeneous job leader" and the
+second number the zero origin offset for each component of the job.
+.IP
+
+.TP
+\fB%I\fR
+Number of cores per socket requested by the job.
+This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
+When \-\-cores\-per\-socket has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%j\fR
+Job or job step name.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%J\fR
+Number of threads per core requested by the job.
+This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
+When \-\-threads\-per\-core has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%k\fR
+Comment associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%K\fR
+Job array index.
+By default, this field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%l\fR
+Time limit of the job or job step in days\-hours:minutes:seconds.
+The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%L\fR
+Time left for the job to execute in days\-hours:minutes:seconds.
+This value is calculated by subtracting the job's time used from its time
+limit.
+The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%m\fR
+Minimum size of memory (in MiB) requested by the job.
+(Valid for jobs only)
+If memory was request per CPU, or per GPU the value is shown
+with the assumption that at least one CPU, GPU will be allocated
+respectively.
+.IP
+
+.TP
+\fB%M\fR
+Time used by the job or job step in days\-hours:minutes:seconds.
+The days and hours are printed only as needed.
+For job steps this field shows the elapsed time since execution began
+and thus will be inaccurate for job steps which have been suspended.
+Clock skew between nodes in the cluster will cause the time to be inaccurate.
+If the time is obviously wrong (e.g. negative), it displays as "INVALID".
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%n\fR
+List of node names explicitly requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%N\fR
+List of nodes allocated to the job or job step. In the case of a
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%o\fR
+The command to be executed.
+.IP
+
+.TP
+\fB%O\fR
+Are contiguous nodes requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%p\fR
+Priority of the job (converted to a floating point number between 0.0 and 1.0).
+Also see \fB%Q\fR.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%P\fR
+Partition of the job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%q\fR
+Quality of service associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%Q\fR
+Priority of the job (generally a very large unsigned integer).
+Also see \fB%p\fR.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%r\fR
+The reason a job is in its current state.
+See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%R\fR
+For pending jobs: the reason a job has not been started by the scheduler
+is printed within parenthesis.
+For terminated jobs with failure: an explanation as to why the
+job failed is printed within parenthesis.
+For all other job states: the list of allocate nodes.
+See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%s\fR
+SLUID
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%S\fR
+Actual or expected start time of the job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%t\fR
+Job state in compact form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%T\fR
+Job state in extended form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%u\fR
+User name for a job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%U\fR
+User ID for a job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fB%v\fR
+Reservation for the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%V\fR
+The job's submission time.
+.IP
+
+.TP
+\fB%w\fR
+Workload Characterization Key (wckey).
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%W\fR
+Licenses requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%x\fR
+List of node names explicitly excluded by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%X\fR
+Count of cores reserved on each node for system use (core specialization).
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%y\fR
+Nice value (adjustment to a job's scheduling priority).
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%Y\fR
+For pending jobs, a list of the nodes expected to be used when the job is
+started.
+.IP
+
+.TP
+\fB%z\fR
+Number of requested sockets, cores, and threads (S:C:T) per node for the job.
+When (S:C:T) has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fB%Z\fR
+The job's working directory.
+.RE
+.IP
+
+.TP
+\fB\-O\fR, \fB\-\-Format\fR=<\fIoutput_format\fR>
+Specify the information to be displayed.
+Also see the \fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
+option described above (which supports greater flexibility in formatting, but
+does not support access to all fields because we ran out of letters).
+Requests a comma separated list of job information to be displayed.
+
+The format of each field is "type[:[.][size][suffix]]"
+.IP
+.RS 10
+.TP
+\fIsize\fR
+Minimum field size. If no size is specified, 20 characters will be allocated
+to print the information.
+.IP
+
+.TP
+\fI.\fR
+Indicates the output should be right justified and size must be specified.
+By default output is left justified.
+.IP
+
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
+.IP
+.RE
+
+Note that many of these \fItype\fR specifications are valid
+only for jobs while others are valid only for job steps.
+Valid \fItype\fR specifications include:
+.IP
+.RS
+.TP 7
+\fBAccount\fR
+Print the account associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBAccrueTime\fR
+Print the accrue time associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBadmin_comment\fR
+Administrator comment associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBAllocNodes\fR
+Print the nodes allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBAllocSID\fR
+Print the session ID used to submit the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBArrayJobID\fR
+Prints the job ID of the job array.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBArrayTaskID\fR
+Prints the task ID of the job array.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBAssocID\fR
+Prints the ID of the job association.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBBatchFlag\fR
+Prints whether the batch flag has been set.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBBatchHost\fR
+Executing (batch) host. For an allocated session, this is the host on which
+the session is executing (i.e. the node from which the \fBsrun\fR or the
+\fBsalloc\fR command was executed). For a batch job, this is the node executing
+the batch script. In the case of a typical Linux cluster, this would be the
+compute node zero of the allocation.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBBoardsPerNode\fR
+Prints the number of boards per node allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBBurstBuffer\fR
+Burst Buffer specification
+(Valid for jobs only)
+.IP
+
+.TP
+\fBBurstBufferState\fR
+Burst Buffer state
+(Valid for jobs only)
+.IP
+
+.TP
+\fBCluster\fR
+Name of the cluster that is running the job or job step.
+.IP
+
+.TP
+\fBClusterFeature\fR
+Cluster features required by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBCommand\fR
+The command to be executed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBComment\fR
+Comment associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBContiguous\fR
+Are contiguous nodes requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBContainer\fR
+OCI container bundle path.
+.IP
+
+.TP
+\fBContainerID\fR
+OCI container assigned ID.
+.IP
+
+.TP
+\fBContainerType\fR
+Job container type for job.
+.IP
+
+.TP
+\fBCores\fR
+Number of cores per socket requested by the job.
+This reports the value of the \fBsrun \-\-cores\-per\-socket\fR option.
+When \fB\-\-cores\-per\-socket\fR has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBCoreSpec\fR
+Count of cores reserved on each node for system use (core specialization).
+(Valid for jobs only)
+.IP
+
+.TP
+\fBCPUFreq\fR
+Prints the frequency of the allocated CPUs.
+(Valid for job steps only)
+.IP
+
+.TP
+\fBcpus\-per\-task\fR
+Prints the number of CPUs per tasks allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBcpus\-per\-tres\fR
+Print the memory required per trackable resources allocated to the job or job step.
+.IP
+
+.TP
+\fBCronJob\fR
+Print Yes/No depending on whether the job has been generated by scrontab or not.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBDeadline\fR
+Prints the deadline affected to the job
+(Valid for jobs only)
+.IP
+
+.TP
+\fBDelayBoot\fR
+Delay boot time.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBDependency\fR
+Job dependencies remaining. This job will not begin execution until these
+dependent jobs complete. In the case of a job that can not run due to job
+dependencies never being satisfied, the full original job dependency
+specification will be reported. Once a dependency is satisfied, it is
+removed from the job. A value of NULL implies this job has no
+dependencies.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBDerivedEC\fR
+The highest exit code returned by the job's job steps (srun invocations).
+Following the colon is the signal that caused the process to terminate if
+it was terminated by a signal.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBEligibleTime\fR
+Time the job is eligible for running.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBEndTime\fR
+The time of job termination, actual or expected.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBExclusive\fR
+Exclusive disposition for the job (\fBEXCLUSIVE\fR column).
+(Valid for jobs only).
+Possible values:
+.RS
+.TP
+\fBMCS\fR: only jobs with the same MCS label may share a node (job submitted
+with \fB\-\-exclusive=mcs\fR).
+.TP
+\fBNO\fR: no exclusivity.
+.TP
+\fBNODE\fR: whole-node allocation (job submitted with \fB\-\-exclusive\fR, or
+partition \fBExclusive=NODE\fR).
+.TP
+\fBTOPO\fR: only one job per topology segment (job submitted with
+\fB\-\-exclusive=topo\fR, or partition \fBExclusive=TOPO\fR).
+Same tokens as the \fBExclusive\fR field in \fBscontrol show job\fR.
+.TP
+\fBUSER\fR: only one user's jobs may share a node (job submitted with
+\fB\-\-exclusive=user\fR, or partition \fBExclusive=USER\fR).
+.TP
+.RE
+.IP
+
+.TP
+\fBExcNodes\fR
+The nodes requested to be excluded when allocating this job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBexit_code\fR
+The exit code returned by the job, typically as set by the exit() function.
+Following the colon is the signal that caused the process to terminate if it was
+terminated by a signal.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBFeature\fR
+Features required by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBGroupID\fR
+Group ID of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBGroupName\fR
+Group name of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBHetJobID\fR
+Job ID of the heterogeneous job leader.
+.IP
+
+.TP
+\fBHetJobIDSet\fR
+Expression identifying all components job IDs within a heterogeneous job.
+.IP
+
+.TP
+\fBHetJobOffset\fR
+Zero origin offset within a collection of heterogeneous job components.
+.IP
+
+.TP
+\fBJobArrayID\fR
+Job array's job ID. This is the base job ID.
+For non\-array jobs, this is the job ID.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBJobID\fR
+Job ID.
+This will have a unique value for each element of job arrays and each
+component of heterogeneous jobs.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBLastSchedEval\fR
+Prints the last time the job was evaluated for scheduling.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBLicenses\fR
+Licenses requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBLicensesAlloc\fR
+Licenses allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBMaxCPUs\fR
+Prints the max number of CPUs allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBMaxNodes\fR
+Prints the max number of nodes allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBMCSLabel\fR
+Prints the MCS_label of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBmem\-per\-tres\fR
+Print the memory (in MiB) required per trackable resources allocated to the job
+or job step.
+.IP
+
+.TP
+\fBMinCpus\fR
+Minimum number of CPUs (processors) per node requested by the job.
+This reports the value of the \fBsrun \-\-mincpus\fR option with a
+default value of zero.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBMinMemory\fR
+Minimum size of memory (in MiB) requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBMinTime\fR
+Minimum time limit of the job
+(Valid for jobs only)
+.IP
+
+.TP
+\fBMinTmpDisk\fR
+Minimum size of temporary disk space (in MiB) requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBName\fR
+Job or job step name.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBNetwork\fR
+The network that the job is running on.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBNice\fR
+Nice value (adjustment to a job's scheduling priority).
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNodeList\fR
+List of nodes allocated to the job or job step. In the case of a
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNodes\fR
+List of nodes allocated to the job or job step. In the case of a
+\fICOMPLETING\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+(Valid job steps only)
+.IP
+
+.TP
+\fBNTPerBoard\fR
+The number of tasks per board allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNTPerCore\fR
+The number of tasks per core allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNTPerNode\fR
+The number of tasks per node allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNTPerSocket\fR
+The number of tasks per socket allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNumCPUs\fR
+Number of CPUs (processors) requested by the job or allocated to
+it if already running. As a job is completing, this number will
+reflect the current number of CPUs allocated.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBNumNodes\fR
+Number of nodes allocated to the job or the minimum number of nodes
+required by a pending job. The actual number of nodes allocated to a pending
+job may exceed this number if the job specified a node range count (e.g.
+minimum and maximum node counts) or the job specifies a processor
+count instead of a node count. As a job is completing this number will reflect
+the current number of nodes allocated.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBNumTasks\fR
+Number of tasks requested by a job or job step.
+This reports the value of the \fB\-\-ntasks\fR option.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBOrigin\fR
+Cluster name where federated job originated from.
+(Valid for federated jobs only)
+.IP
+
+.TP
+\fBOriginRaw\fR
+Cluster ID where federated job originated from.
+(Valid for federated jobs only)
+.IP
+
+.TP
+\fBOverSubscribe\fR
+Same values as \fB%h\fR / \fBOVER_SUBSCRIBE\fR: "YES", "NO", or "OK".
+See \fB%h\fR above.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBPartition\fR
+Partition of the job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBPendingTime\fR
+The time (in seconds) between start time and submit time of the job.
+If the job has not started yet, then the time (in seconds) between
+now and the submit time of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBPreemptTime\fR
+The preempt time for the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBPrefer\fR
+The preferred features of a pending job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBPriority\fR
+Priority of the job (converted to a floating point number between 0.0 and 1.0).
+Also see \fBprioritylong\fR.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBPriorityLong\fR
+Priority of the job (generally a very large unsigned integer).
+Also see \fBpriority\fR.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBProfile\fR
+Profile of the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBQOS\fR
+Quality of service associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBReason\fR
+The reason a job is in its current state.
+See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBReasonList\fR
+For pending jobs: the reason a job is waiting for execution
+is printed within parenthesis.
+For terminated jobs with failure: an explanation as to why the
+job failed is printed within parenthesis.
+For all other job states: the list of allocate nodes.
+See the \fBJOB REASON CODES\fR section below for more information.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBReboot\fR
+Indicates if the allocated nodes should be rebooted before starting the job.
+(Valid on jobs only)
+.IP
+
+.TP
+\fBReqNodes\fR
+List of node names explicitly requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBReqSwitch\fR
+The max number of requested switches by for the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBRequeue\fR
+Prints whether the job will be requeued on failure.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBReservation\fR
+Reservation for the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBResizeTime\fR
+The amount of time changed for the job to run.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBRestartCnt\fR
+The number of restarts for the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBResvPort\fR
+Reserved ports of the job.
+(Valid for job steps only)
+.IP
+
+.TP
+\fBSchedNodes\fR
+For pending jobs, a list of the nodes expected to be used when the job is
+started.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBSCT\fR
+Number of requested sockets, cores, and threads (S:C:T) per node for the job.
+When (S:C:T) has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBSegmentSize\fR
+Segment size requested by the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBSiblingsActive\fR
+Cluster names of where federated sibling jobs exist.
+(Valid for federated jobs only)
+.IP
+
+.TP
+\fBSiblingsActiveRaw\fR
+Cluster IDs of where federated sibling jobs exist.
+(Valid for federated jobs only)
+.IP
+
+.TP
+\fBSiblingsViable\fR
+Cluster names of where federated sibling jobs are viable to run.
+(Valid for federated jobs only)
+.IP
+
+.TP
+\fBSiblingsViableRaw\fR
+Cluster IDs of where federated sibling jobs viable to run.
+(Valid for federated jobs only)
+.IP
+
+.TP
+\fBSluid\fR
+The Slurm Lexicographically\-sortable Unique Identifier assigned to the job.
+This value remains constant during the lifetime of the job, even after a resize.
+Note that the accounting database tracks a separate SLUID per accounting record
+that changes on resize or requeue.
+.IP
+
+.TP
+\fBSockets\fR
+Number of sockets per node requested by the job.
+This reports the value of the \fBsrun \-\-sockets\-per\-node\fR option.
+When \fB\-\-sockets\-per\-node\fR has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBSPerBoard\fR
+Number of sockets per board allocated to the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBStartTime\fR
+Actual or expected start time of the job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBState\fR
+Job state in extended form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBStateCompact\fR
+Job state in compact form.
+See the \fBJOB STATE CODES\fR section below for a list of possible states.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBSTDERR\fR
+The directory for standard error to output to.
+(Valid for jobs and steps)
+.IP
+
+.TP
+\fBSTDIN\fR
+The directory for standard in.
+(Valid for jobs and steps)
+.IP
+
+.TP
+\fBSTDOUT\fR
+The directory for standard out to output to.
+(Valid for jobs and steps)
+.IP
+
+.TP
+\fBStepID\fR
+Job or job step ID.
+In the case of job arrays, the job ID format will be of the form
+"<base_job_id>_<index>".
+(Valid for job steps only)
+.IP
+
+.TP
+\fBStepName\fR
+Job step name.
+(Valid for job steps only)
+.IP
+
+.TP
+\fBStepState\fR
+The state of the job step.
+(Valid for job steps only)
+.IP
+
+.TP
+\fBSubmitTime\fR
+The time that the job was submitted at.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBsystem_comment\fR
+System comment associated with the job.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBThreads\fR
+Number of threads per core requested by the job.
+This reports the value of the \fBsrun \-\-threads\-per\-core\fR option.
+When \fB\-\-threads\-per\-core\fR has not been set, "*" is displayed.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBTimeLeft\fR
+Time left for the job to execute in days\-hours:minutes:seconds.
+This value is calculated by subtracting the job's time used from its time
+limit.
+The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBTimeLimit\fR
+Timelimit for the job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBTimeUsed\fR
+Time used by the job or job step in days\-hours:minutes:seconds.
+The days and hours are printed only as needed.
+For job steps this field shows the elapsed time since execution began
+and thus will be inaccurate for job steps which have been suspended.
+Clock skew between nodes in the cluster will cause the time to be inaccurate.
+If the time is obviously wrong (e.g. negative), it displays as "INVALID".
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBtres\-alloc\fR
+Print the trackable resources allocated to the job if running.
+If not running, then print the trackable resources requested by the job.
+.IP
+
+.TP
+\fBtres\-bind\fR
+Print the trackable resources task binding requested by the job or job step.
+.IP
+
+.TP
+\fBtres\-freq\fR
+Print the trackable resources frequencies requested by the job or job step.
+.IP
+
+.TP
+\fBtres\-per\-job\fR
+Print the trackable resources requested by the job.
+.IP
+
+.TP
+\fBtres\-per\-node\fR
+Print the trackable resources per node requested by the job or job step.
+.IP
+
+.TP
+\fBtres\-per\-socket\fR
+Print the trackable resources per socket requested by the job or job step.
+.IP
+
+.TP
+\fBtres\-per\-step\fR
+Print the trackable resources requested by the job step.
+.IP
+
+.TP
+\fBtres\-per\-task\fR
+Print the trackable resources per task requested by the job or job step.
+.IP
+
+.TP
+\fBUserID\fR
+User ID for a job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBUserName\fR
+User name for a job or job step.
+(Valid for jobs and job steps)
+.IP
+
+.TP
+\fBWait4Switch\fR
+The amount of time to wait for the desired number of switches.
+(Valid for jobs only)
+.IP
+
+.TP
+\fBWCKey\fR
+Workload Characterization Key (wckey).
+(Valid for jobs only)
+.IP
+
+.TP
+\fBWorkDir\fR
+The job's working directory.
+(Valid for jobs only)
+.RE
+.IP
+
+.TP
+\fB\-\-help\fR
+Print a help message describing all options \fBsqueue\fR.
+.IP
+
+.TP
+\fB\-\-hide\fR
+Do not display information about jobs and job steps in all partitions. By default,
+information about partitions that are configured as hidden or are not available
+to the user's group will not be displayed (i.e. this is the default behavior).
+.IP
+
+.TP
+\fB\-i\fR, \fB\-\-iterate\fR=<\fIseconds\fR>
+Repeatedly gather and report the requested information at the interval
+specified (in seconds).
+By default, prints a time stamp with the header.
+.IP
+
+.TP
+\fB\-j\fR, \fB\-\-jobs\fR[=<\fIjob_id_list\fR>]
+Specify a comma separated list of job IDs to display. Defaults to all jobs.
+The \fB\-\-jobs\fR=<\fIjob_id_list\fR> option may be used in conjunction with
+the \fB\-\-steps\fR option to print step information about specific jobs.
+Note: If a list of job IDs is provided, the jobs are displayed even if
+they are on hidden partitions. Since this option's argument is optional,
+for proper parsing the single letter option must be followed immediately
+with the value and not include a space between them. For example "\-j1008"
+and not "\-j 1008".
+The job ID format is "job_id[_array_id]". A SLUID may also be used in place
+of a numeric job ID.
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single job ID is specified.
+By default, this field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
+.IP
+
+.TP
+\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
+Dump information as JSON using the default data_parser plugin or explicit
+data_parser with parameters. All information is dumped, even if it would
+normally not be. Sorting and formatting arguments passed to other options are
+ignored; however, most filtering arguments are still used.
+.IP
+
+.TP
+\fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense_list\fR>
+Request jobs requesting or using one or more of the named licenses.
+The license list consists of a comma separated list of license names.
+.IP
+
+.TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any). Overrides \-\-federation.
+.IP
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs or job steps,
+subject to any constraints specified.
+.IP
+
+.TP
+\fB\-\-me\fR
+Equivalent to \fB\-\-user=<my username>\fR.
+.IP
+
+.TP
+\fB\-n\fR, \fB\-\-name\fR=<\fIname_list\fR>
+Request jobs or job steps having one of the specified names. The
+list consists of a comma separated list of job names.
+.IP
+
+.TP
+\fB\-\-noconvert\fR
+Don't convert units from their original type (e.g. 2048M won't be converted to
+2G).
+.IP
+
+.TP
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fIhostlist\fR>
+Report only on jobs allocated to the specified node or list of nodes.
+This may either be the \fBNodeName\fR or \fBNodeHostname\fR
+as defined in \fBslurm.conf(5)\fR in the event that they differ.
+A node_name of \fBlocalhost\fR is mapped to the current host name.
+.IP
+
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+.IP
+
+.TP
+\fB\-\-notme\fR
+Opposite of \fB\-\-me\fR; only display jobs that are not from the invoking user.
+.IP
+
+.TP
+\fB\-\-only\-job\-state\fR
+Only query for the job state. Query utilizes RPC that only retains JobID
+and State information, reducing work required by slurmctld to respond.
+.IP
+
+.TP
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpart_list\fR>
+Specify the partitions of the jobs or steps to view. Accepts a comma separated
+list of partition names.
+.IP
+
+.TP
+\fB\-P\fR, \fB\-\-priority\fR
+For pending jobs submitted to multiple partitions, list the job once per
+partition. In addition, if jobs are sorted by priority, consider both the
+partition and job priority. This option can be used to produce a list of
+pending jobs in the same order considered for scheduling by Slurm with
+appropriate additional options (e.g. "\-\-sort=\-p,i \-\-states=PD").
+.IP
+
+.TP
+\fB\-q\fR, \fB\-\-qos\fR=<\fIqos_list\fR>
+Specify the qos(s) of the jobs or steps to view. Accepts a comma
+separated list of qos's.
+.IP
+
+.TP
+\fB\-R\fR, \fB\-\-reservation\fR=<\fIreservation_list\fR>
+Specify the reservations of the jobs to view. Accepts a comma separated
+list of reservation names. Jobs matching any reservation will satisfy the
+filter (logic works like an OR).
+.IP
+
+.TP
+\fB\-\-running\-over\fR=<\fItime\fR>
+Display only jobs that have been running over the amount of specified time.
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
+.IP
+
+.TP
+\fB\-\-running\-under\fR=<\fItime\fR>
+Display only jobs that have been running under the amount of specified time.
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
+.IP
+
+.TP
+\fB\-\-sibling\fR
+Show all sibling jobs on a federated cluster. Implies \-\-federation.
+.IP
+
+.TP
+\fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
+Specification of the order in which records should be reported.
+This uses the same field specification as the <output_format>.
+The long format option "cluster" can also be used to sort jobs or job steps by
+cluster name (e.g. federated jobs).
+Multiple sorts may be performed by listing multiple sort fields
+separated by commas.
+The field specifications may be preceded by "+" or "\-" for
+ascending (default) and descending order respectively.
+For example, a sort value of "P,U" will sort the
+records by partition name then by user id.
+The default value of sort for jobs is "P,t,\-p" (increasing partition
+name then within a given partition by increasing job state and then
+decreasing priority).
+The default value of sort for job steps is "P,i" (increasing partition
+name then within a given partition by increasing step id).
+.IP
+
+.TP
+\fB\-\-start\fR
+Report the expected start time and resources to be allocated for pending jobs
+in order of increasing start time.
+This is equivalent to the following options:
+\fB\-\-format="%.18i %.9P %.8j %.8u %.2t  %.19S %.6D %20Y %R"\fR,
+\fB\-\-sort=S\fR and \fB\-\-states=PENDING\fR.
+Any of these options may be explicitly changed as desired by
+combining the \fB\-\-start\fR option with other option values
+(e.g. to use a different output format).
+The expected start time of pending jobs is only available if the
+Slurm is configured to use the backfill scheduling plugin.
+.IP
+
+.TP
+\fB\-t\fR, \fB\-\-states\fR=<\fIstate_list\fR>
+Specify the states of jobs to view. Accepts a comma separated list of
+state names or "all". If "all" is specified then jobs of all states will be
+reported. If no state is specified then pending, running, and completing
+jobs are reported. See the \fBJOB STATE CODES\fR section below for a list of
+valid states. Both extended and compact forms are valid.
+Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
+equivalent).
+.IP
+
+.TP
+\fB\-s\fR, \fB\-\-steps\fR[=<\fIstep_list\fR>]
+Specify the job steps to view. This flag indicates that a comma separated list
+of job steps to view follows without an equal sign (see examples).
+The job step format is "job_id[_array_id].step_id". Defaults to all job
+steps. Since this option's argument is optional, for proper parsing
+the single letter option must be followed immediately with the value
+and not include a space between them. For example "\-s1008.0" and not
+"\-s 1008.0".
+.IP
+
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBsqueue\fR options.
+.IP
+
+.TP
+\fB\-u\fR, \fB\-\-user\fR=<\fIuser_list\fR>
+Request jobs or job steps from a comma separated list of users.
+The list can consist of user names or user id numbers.
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single user is specified.
+.IP
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Report details of squeues actions.
+.IP
+
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.TP
+\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
+Dump information as YAML using the default data_parser plugin or explicit
+data_parser with parameters. All information is dumped, even if it would
+normally not be. Sorting and formatting arguments passed to other options are
+ignored; however, most filtering arguments are still used.
+.IP
+
+.SH "JOB REASON CODES"
+These codes identify the reason that a job has not been started by the scheduler.
+There may be multiple reasons why a job cannot start yet, in which case only the
+reason that was encountered by the attempted scheduling method will be displayed.
+
+The Reasons listed below are some of the more common ones you might see.
+For a full list of Reason codes refer to this page:
+<https://slurm.schedmd.com/job_reason_codes.html>
+
+.TP 22
+\fBAssocGrp*Limit\fR
+The job's association has reached an aggregate limit on some resource.
+.IP
+
+.TP
+\fBAssociationJobLimit\fR
+The job's association has reached its maximum job count.
+.IP
+
+.TP
+\fBAssocMax*Limit\fR
+The job requests a resource that violates a per-job limit on the requested
+association.
+.IP
+
+.TP
+\fBAssociationResourceLimit\fR
+The job's association has reached some resource limit.
+.IP
+
+.TP
+\fBAssociationTimeLimit\fR
+The job's association has reached its time limit.
+.IP
+
+.TP
+\fBBadConstraints\fR
+The job's constraints can not be satisfied.
+.IP
+
+.TP
+\fBBeginTime\fR
+The job's earliest start time has not yet been reached.
+.IP
+
+.TP
+\fBCleaning\fR
+The job is being requeued and still cleaning up from its previous execution.
+.IP
+
+.TP
+\fBDependency\fR
+This job has a dependency on another job that has not been satisfied.
+.IP
+
+.TP
+\fBDependencyNeverSatisfied\fR
+This job has a dependency on another job that will never be satisfied.
+.IP
+
+.TP
+\fBInactiveLimit\fR
+The job reached the system InactiveLimit.
+.IP
+
+.TP
+\fBInvalidAccount\fR
+The job's account is invalid.
+.IP
+
+.TP
+\fBInvalidQOS\fR
+The job's QOS is invalid.
+.IP
+
+.TP
+\fBJobHeldAdmin\fR
+The job is held by a system administrator.
+.IP
+
+.TP
+\fBJobHeldUser\fR
+The job is held by the user.
+.IP
+
+.TP
+\fBJobLaunchFailure\fR
+The job could not be launched.
+This may be due to a file system problem, invalid program name, etc.
+.IP
+
+.TP
+\fBLicenses\fR
+The job is waiting for a license.
+.IP
+
+.TP
+\fBNodeDown\fR
+A node required by the job is down.
+.IP
+
+.TP
+\fBNonZeroExitCode\fR
+The job terminated with a non\-zero exit code.
+.IP
+
+.TP
+\fBPartitionDown\fR
+The partition required by this job is in a DOWN state.
+.IP
+
+.TP
+\fBPartitionInactive\fR
+The partition required by this job is in an Inactive state and not able to
+start jobs.
+.IP
+
+.TP
+\fBPartitionNodeLimit\fR
+The number of nodes required by this job is outside of its partition's current
+limits.
+Can also indicate that required nodes are DOWN or DRAINED.
+.IP
+
+.TP
+\fBPartitionTimeLimit\fR
+The job's time limit exceeds its partition's current time limit.
+.IP
+
+.TP
+\fBPriority\fR
+One or more higher priority jobs exist for this partition or advanced reservation.
+.IP
+
+.TP
+\fBProlog\fR
+Its Prolog program is still running.
+.IP
+
+.TP
+\fBQOSGrp*Limit\fR
+The job's QOS has reached an aggregate limit on some resource.
+.IP
+
+.TP
+\fBQOSJobLimit\fR
+The job's QOS has reached its maximum job count.
+.IP
+
+.TP
+\fBQOSMax*Limit\fR
+The job requests a resource that violates a per-job limit on the requested
+QOS.
+.IP
+
+.TP
+\fBQOSResourceLimit\fR
+The job's QOS has reached some resource limit.
+.IP
+
+.TP
+\fBQOSTimeLimit\fR
+The job's QOS has reached its time limit.
+.IP
+
+.TP
+\fBQOSUsageThreshold\fR
+Required QOS threshold has been breached.
+.IP
+
+.TP
+\fBReqNodeNotAvail\fR
+Some node specifically required by the job is not currently available.
+The node may currently be in use, reserved for another job, in an advanced
+reservation, DOWN, DRAINED, or not responding.
+Nodes which are DOWN, DRAINED, or not responding will be identified as part
+of the job's "reason" field as "UnavailableNodes". Such nodes will typically
+require the intervention of a system administrator to make available.
+.IP
+
+.TP
+\fBReservation\fR
+The job is waiting its advanced reservation to become available.
+.IP
+
+.TP
+\fBResources\fR
+The job is waiting for resources to become available.
+.IP
+
+.TP
+\fBSystemFailure\fR
+Failure of the Slurm system, a file system, the network, etc.
+.IP
+
+.TP
+\fBTimeLimit\fR
+The job exhausted its time limit.
+.IP
+
+.TP
+\fBWaitingForScheduling\fR
+No reason has been set for this job yet.
+Waiting for the scheduler to determine the appropriate reason.
+.IP
+
+.SH "JOB STATE CODES"
+Jobs typically pass through several states in the course of their
+execution.
+The typical states are PENDING, RUNNING, SUSPENDED, COMPLETING, and COMPLETED.
+The following states are recognized by squeue. A full list of possible states
+is available at <https://slurm.schedmd.com/job_state_codes.html>.
+
+.TP 20
+\fBBF  BOOT_FAIL\fR
+Job terminated due to launch failure, typically due to a hardware failure
+(e.g. unable to boot the node or block and the job can not be requeued).
+.IP
+
+.TP
+\fBCA  CANCELLED\fR
+Job was explicitly cancelled by the user or system administrator.
+The job may or may not have been initiated.
+.IP
+
+.TP
+\fBCD  COMPLETED\fR
+Job has terminated all processes on all nodes with an exit code of zero.
+.IP
+
+.TP
+\fBCF  CONFIGURING\fR
+Job has been allocated resources, but are waiting for them to become ready for use
+(e.g. booting).
+.IP
+
+.TP
+\fBCG  COMPLETING\fR
+Job is in the process of completing. Some processes on some nodes may still be active.
+.IP
+
+.TP
+\fBDL  DEADLINE\fR
+Job terminated on deadline.
+.IP
+
+.TP
+\fBF   FAILED\fR
+Job terminated with non\-zero exit code or other failure condition.
+.IP
+
+.TP
+\fBNF  NODE_FAIL\fR
+Job terminated due to failure of one or more allocated nodes.
+.IP
+
+.TP
+\fBOOM OUT_OF_MEMORY\fR
+Job experienced out of memory error.
+.IP
+
+.TP
+\fBPD  PENDING\fR
+Job is awaiting resource allocation.
+.IP
+
+.TP
+\fBPR  PREEMPTED\fR
+Job terminated due to preemption.
+.IP
+
+.TP
+\fBR   RUNNING\fR
+Job currently has an allocation.
+.IP
+
+.TP
+\fBRD  RESV_DEL_HOLD\fR
+Job is being held after requested reservation was deleted.
+.IP
+
+.TP
+\fBRF  REQUEUE_FED\fR
+Job is being requeued by a federation.
+.IP
+
+.TP
+\fBRH  REQUEUE_HOLD\fR
+Held job is being requeued.
+.IP
+
+.TP
+\fBRQ  REQUEUED\fR
+Completing job is being requeued.
+.IP
+
+.TP
+\fBRS  RESIZING\fR
+Job is about to change size.
+.IP
+
+.TP
+\fBRV  REVOKED\fR
+Sibling was removed from cluster due to other cluster starting the job.
+.IP
+
+.TP
+\fBSI  SIGNALING\fR
+Job is being signaled.
+.IP
+
+.TP
+\fBSE  SPECIAL_EXIT\fR
+The job was requeued in a special state. This state can be set by
+users, typically in EpilogSlurmctld, if the job has terminated with
+a particular exit value.
+.IP
+
+.TP
+\fBSO  STAGE_OUT\fR
+Job is staging out files.
+.IP
+
+.TP
+\fBST  STOPPED\fR
+Job has an allocation, but execution has been stopped with SIGSTOP signal.
+CPUS have been retained by this job.
+.IP
+
+.TP
+\fBS   SUSPENDED\fR
+Job has an allocation, but execution has been suspended and CPUs have been
+released for other jobs.
+.IP
+
+.TP
+\fBTO  TIMEOUT\fR
+Job terminated upon reaching its time limit.
+.IP
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsqueue\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsqueue\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsqueue\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBsqueue\fR to the minimum
+necessary for the information you are trying to gather.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsqueue\fR options may be set via environment variables. These
+environment variables, along with their corresponding options, are listed
+below. (Note: Command line options will always override these settings.)
+
+.TP 20
+\fBSLURM_BITSTR_LEN\fR
+Specifies the string length to be used for holding a job array's task ID
+expression.
+The default value is 64 bytes.
+A value of 0 will print the full expression with any length required.
+Larger values may adversely impact the application performance.
+.IP
+
+.TP
+\fBSLURM_CLUSTERS\fR
+Same as \fB\-\-clusters\fR
+.IP
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for squeue to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.TP
+\fBSLURM_JSON\fR
+Control JSON serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output JSON as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR
+Output JSON in pretty format to make it more readable.
+.IP
+.RE
+
+.TP
+\fBSLURM_TIME_FORMAT\fR
+Specify the format used to report time stamps. A value of \fIstandard\fR, the
+default value, generates output in the form "year\-month\-dateThour:minute:second".
+A value of \fIrelative\fR returns only "hour:minute:second" if the current day.
+For other dates in the current year it prints the "hour:minute" preceded by
+"Tomorr" (tomorrow), "Ystday" (yesterday), the name of the day for the coming
+week (e.g. "Mon", "Tue", etc.), otherwise the date (e.g. "25 Apr").
+For other years it returns a date month and year without a time (e.g.
+"6 Jun 2012"). All of the time stamps use a 24 hour format.
+
+A valid strftime() format can also be specified. For example, a value of
+"%a %T" will report the day of the week and a time stamp (e.g. "Mon 12:34:56").
+.IP
+
+.TP
+\fBSLURM_YAML\fR
+Control YAML serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR Output YAML as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR Output YAML in pretty format to make it more readable.
+.RE
+.IP
+
+.TP
+\fBSQUEUE_ACCOUNT\fR
+\fB\-A <account_list>, \-\-account=<account_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_ALL\fR
+\fB\-a, \-\-all\fR
+.IP
+
+.TP
+\fBSQUEUE_ARRAY\fR
+\fB\-r, \-\-array\fR
+.IP
+
+.TP
+\fBSQUEUE_NAMES\fR
+\fB\-\-name=<name_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_FEDERATION\fR
+\fB\-\-federation\fR
+.IP
+
+.TP
+\fBSQUEUE_FORMAT\fR
+\fB\-o <output_format>, \-\-format=<output_format>\fR
+.IP
+
+.TP
+\fBSQUEUE_FORMAT2\fR
+\fB\-O <output_format>, \-\-Format=<output_format>\fR
+.IP
+
+.TP
+\fBSQUEUE_LICENSES\fR
+\fB\-p\-l <license_list>, \-\-license=<license_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_LOCAL\fR
+\fB\-\-local\fR
+.IP
+
+.TP
+\fBSQUEUE_PARTITION\fR
+\fB\-p <part_list>, \-\-partition=<part_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_PRIORITY\fR
+\fB\-P\fR, \fB\-\-priority\fR
+.IP
+
+.TP
+\fBSQUEUE_QOS\fR
+\fB\-p <qos_list>, \-\-qos=<qos_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_SIBLING\fR
+\fB\-\-sibling\fR
+.IP
+
+.TP
+\fBSQUEUE_SORT\fR
+\fB\-S <sort_list>, \-\-sort=<sort_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_STATES\fR
+\fB\-t <state_list>, \-\-states=<state_list>\fR
+.IP
+
+.TP
+\fBSQUEUE_USERS\fR
+\fB\-u <user_list>, \-\-users=<user_list>\fR
+.IP
+
+.SH "EXAMPLES"
+
+.TP
+Print the jobs scheduled in the debug partition and in the \
+COMPLETED state in the format with six right justified digits for \
+the job id followed by the priority with an arbitrary fields size:
+.IP
+.nf
+$ squeue \-p debug \-t COMPLETED \-o "%.6i %p"
+ JOBID PRIORITY
+ 65543 99993
+ 65544 99992
+ 65545 99991
+.fi
+
+.TP
+Print the job steps in the debug partition sorted by user:
+.IP
+.nf
+$ squeue \-s \-p debug \-S u
+  STEPID        NAME PARTITION     USER      TIME NODELIST
+ 65552.1       test1     debug    alice      0:23 dev[1\-4]
+ 65562.2     big_run     debug      bob      0:18 dev22
+ 65550.1      param1     debug  candice   1:43:21 dev[6\-12]
+.fi
+
+.TP
+Print information only about jobs 12345, 12346 and 12348:
+.IP
+.nf
+$ squeue \-\-jobs 12345,12346,12348
+ JOBID PARTITION NAME USER ST  TIME  NODES NODELIST(REASON)
+ 12345     debug job1 dave  R   0:21     4 dev[9\-12]
+ 12346     debug job2 dave PD   0:00     8 (Resources)
+ 12348     debug job3 ed   PD   0:00     4 (Priority)
+.fi
+
+.TP
+Print information only about job step 65552.1:
+.IP
+.nf
+$ squeue \-\-steps 65552.1
+  STEPID     NAME PARTITION    USER    TIME  NODELIST
+ 65552.1    test2     debug   alice   12:49  dev[1\-4]
+.fi
+
+.SH "COPYING"
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.br
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+.br
+Copyright (C) 2010\-2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBscancel\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1), \fBsrun\fR(1),
+\fBslurm_load_ctl_conf\fR (3), \fBslurm_load_jobs\fR (3),
+\fBslurm_load_node\fR (3),
+\fBslurm_load_partitions\fR (3)

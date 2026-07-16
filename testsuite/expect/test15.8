@@ -1,0 +1,95 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of immediate allocation option (--immediate option).
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set matches     0
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Spawn a srun immediate execution job with hold (priority==0) option,
+# The job can't run immediately with a priority of zero
+#
+set timeout 10
+spawn $salloc --immediate=3 --hold -t1 -v $bin_pwd
+expect {
+	-re "Pending job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		incr matches
+		exp_continue
+	}
+	-re "queued and waiting for resources" {
+		incr matches
+		exp_continue
+	}
+	-re "Unable to allocate resources" {
+		log_debug "This error is expected, no worries"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 3} "Job with --immediate option should not run with hold"
+
+#
+# Spawn a salloc immediate execution job, it should run or fail immediately
+# Note the small value of timeout
+#
+set job_id  0
+set matches 0
+spawn $salloc --immediate -t1 $bin_pwd
+expect {
+	-re "error: Job submit/allocate failed" {
+		log_debug "This error is not unexpected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 1} "Job with --immediate option should run"

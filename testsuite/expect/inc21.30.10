@@ -1,0 +1,64 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test21.30
+#          Tests if the GrpCpuRunMins limit is enforced
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc21_30_10 { wait_reason } {
+	global srun acct bin_sleep grpcpurunmin_num
+
+	log_info "Starting $wait_reason test"
+	set job_id1 0
+	set job_id2 0
+
+	# Raise an error to abort the catch block
+	set exception_code [catch {
+
+		# There may be some GrpCPUmins data left from previous jobs, so use less than the limit
+		set target_time [expr $grpcpurunmin_num / 4]
+		set time_limit [expr $target_time - 3]
+		if {$time_limit < 1} {
+			subskip "Time limit needs to be higher ($grpcpurunmin_num)"
+			return
+		}
+
+		set job_id1 [submit_job -fail "--account=$acct -n4 --time=$time_limit -o /dev/null --wrap '$srun $bin_sleep 1'"]
+		subtest {![wait_for_job $job_id1 "DONE"]} "Job should run $wait_reason"
+		cancel_job $job_id1
+
+		set job_id2 [submit_job -fail "--account=$acct -n4 -t[expr $target_time + 1] -o /dev/null --wrap '$srun $bin_sleep 10'"]
+		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
+		cancel_job $job_id2
+
+	} message] ; # Store the error message in $message
+
+	# Cancel both jobs
+	cancel_job $job_id1
+	cancel_job $job_id2
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing $wait_reason: $message"
+	}
+}

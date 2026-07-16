@@ -1,0 +1,159 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol top command to priority order jobs.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set job_name    $test_name
+
+proc top_enabled { } {
+	global scontrol
+
+	set enabled 0
+	log_user 0
+	spawn $scontrol show config
+	expect {
+		-re "enable_user_top" {
+			set enabled 1
+			exp_continue
+		}
+		timeout {
+			fail "scontrol not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $enabled
+}
+
+proc submit_job { } {
+	global sbatch file_in job_name number
+
+	set job_id 0
+	spawn $sbatch -N1 -t1 --output=/dev/null --job-name=$job_name --begin=now+5 $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	return $job_id
+}
+
+proc load_job_prio { } {
+	global squeue job_id job_name prio number
+
+	set prio(0) 0
+	set prio(1) 0
+	set prio(2) 0
+
+	spawn $squeue --name=$job_name -o "JOB_ID=%A PRIO=%Q"
+	expect {
+		-re "JOB_ID=($number) PRIO=($number)" {
+			if {$job_id(0) == $expect_out(1,string) } {
+				set prio(0) $expect_out(2,string)
+			} elseif {$job_id(1) == $expect_out(1,string) } {
+				set prio(1) $expect_out(2,string)
+			} elseif {$job_id(2) == $expect_out(1,string) } {
+				set prio(2) $expect_out(2,string)
+			}
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+if {![is_super_user] && [top_enabled] == 0} {
+	skip "Scontrol top operation disabled for this user"
+}
+
+proc cleanup { } {
+	global job_id scancel
+
+	cancel_job [list $job_id(0) $job_id(1) $job_id(2)]
+}
+
+#
+# Submit a slurm job to wait in pending state
+#
+log_debug "Submit jobs"
+make_bash_script $file_in "
+  $bin_sleep 600
+"
+set job_id(0) [submit_job]
+set job_id(1) [submit_job]
+set job_id(2) [submit_job]
+if {$job_id(0) == 0 || $job_id(1) == 0 || $job_id(2) == 0} {
+	fail "Failed to submit jobs"
+}
+
+log_debug "Report initial job priorities"
+load_job_prio
+if {$prio(0) < 3 || $prio(1) < 3 || $prio(2) < 3} {
+	skip "Priorities are too low to test. Increase the PriorityWeight values when using the priority/multifactor plugin."
+}
+
+log_debug "Reset and test job priorities"
+spawn $scontrol top $job_id(2),$job_id(1)
+expect {
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+load_job_prio
+if {$prio(2) <= $prio(1) || $prio(1) <= $prio(0)} {
+	fail "Job priorities not reset as expected ($prio(2) <= $prio(1) <= $prio(0))"
+}
+
+log_debug "Reset and test job priorities"
+spawn $scontrol top $job_id(0)
+expect {
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+load_job_prio
+if {$prio(0) <= $prio(1) || $prio(0) <= $prio(2)} {
+	fail "job priorities not reset as expected ($prio(0) <= $prio(1) && $prio(0) <= $prio(2))"
+}

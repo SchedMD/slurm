@@ -1,0 +1,205 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Tests #PBS entry functionality in a batch script.
+############################################################################
+# Copyright (C) 2005-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set delay       1
+set node_cnt    3
+set ppn_cnt     2
+set min_mem     1024
+set job_id      0
+global env
+set env_pbs_ignore "SBATCH_IGNORE_PBS"
+set env($env_pbs_ignore) 0
+
+set available [llength [get_nodes_by_state idle,alloc,comp]]
+if {$available < $node_cnt} {
+	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
+}
+
+proc cleanup {} {
+	global job_id test_id
+
+	cancel_job $job_id
+}
+
+log_user 0
+spawn $scontrol show nodes
+expect {
+	-re " CPUs=($number)" {
+		if {$expect_out(1,string) < $ppn_cnt} {
+			set ppn_cnt $expect_out(1,string)
+		}
+		exp_continue
+	}
+	-re "RealMemory=($number)" {
+		if {$expect_out(1,string) < $min_mem} {
+			set min_mem $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+log_debug "Actual configuration: min_cpus=$ppn_cnt  min_mem=$min_mem"
+append min_mem_mb $min_mem "mb"
+
+proc pbs_ignore_expects {} {
+	set whitespace "\\s+"
+	set number     "\\d+"
+	global job_id node_cnt ppn_cnt min_mem
+	set job_id     0
+	set matches    0
+
+	expect {
+		-re "mem$whitespace: ($number)G" {
+			set mem $expect_out(1,string)
+			if { $mem * 1024 != $min_mem } {
+				fail "Min memory is different ($mem) than requested ($min_mem)"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "mem$whitespace: ($number)" {
+			set mem $expect_out(1,string)
+			if { $mem != $min_mem } {
+				fail "Min memory is different ($mem) than requested ($min_mem)"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "nodes$whitespace: ($number)" {
+			set nodes $expect_out(1,string)
+			if { $nodes != $node_cnt } {
+				fail "Bad node count allocated"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "ntasks$whitespace: ($number)" {
+			set cpu_count $expect_out(1,string)
+			set cpus_per_node [expr $cpu_count / $node_cnt]
+			if { $cpus_per_node != $ppn_cnt } {
+				fail "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		"error: Batch job submission failed" {
+			log_warn "this might be legitimate, depending upon configuration"
+			exp_continue
+		}
+
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id != 0} {
+		cancel_job $job_id
+		set job_id 0
+	}
+	return $matches
+}
+
+#
+# Build input script file
+# NOTE: The initial sleep is so that all of the submissions have time
+#   to occur before contending with a multitude of job step creations.
+#   This is especially important on very slow systems (e.g. AIX).
+#
+# PBS commands in the batch file
+make_bash_script $file_in "
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+spawn $sbatch -vv -o $file_out $file_in
+set matches [pbs_ignore_expects]
+if {$matches != 3} {
+	fail "sbatch didn't read the correct options from batch file ($matches of 3)"
+}
+log_info "#PBS batch command processed correctly"
+
+
+log_info "--ignore-pbs in the batch file"
+make_bash_script $file_in "
+#SBATCH --ignore-pbs
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+spawn $sbatch -vv -o $file_out $file_in
+set matches [pbs_ignore_expects]
+if {$matches != 0} {
+	fail "#SBATCH --ignore-pbs was not processed"
+}
+log_info "#SBATCH --ignore-pbs processed correctly"
+
+
+log_info "--ignore-pbs on the command line"
+make_bash_script $file_in "
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+spawn $sbatch --ignore-pbs -vv -o $file_out $file_in
+set matches [pbs_ignore_expects]
+if {$matches != 0} {
+	fail "Command line arg --ignore-pbs was not processed"
+}
+log_info "command line arg --ignore-pbs processed correctly"
+
+
+log_info "SBATCH_IGNORE_PBS=1 ENV VAR"
+make_bash_script $file_in "
+#PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
+$bin_sleep $delay
+"
+set env($env_pbs_ignore) 1
+spawn $sbatch -vv -o $file_out $file_in
+set matches [pbs_ignore_expects]
+if {$matches != 0} {
+	fail "SBATCH_IGNORE_PBS=1 environment variable was not processed"
+}
+set env($env_pbs_ignore) 0
+log_info "BATCH_IGNORE_PBS=1 environment variable processed correctly"

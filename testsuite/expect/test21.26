@@ -1,0 +1,228 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr +=, -= modify QoS test
+############################################################################
+# Copyright (C) 2009-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set tc1         "${test_name}_cluster"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set qos1        qqostest
+set tu1         "${test_name}-user.1"
+set access_err  0
+
+# Cluster
+array set clus_req {}
+set clus_req(qos) ""
+
+# Accounts
+array set acct_req1 {}
+set acct_req1(cluster) $tc1
+
+array set acct_req2 {}
+set acct_req2(parent) $ta1
+set acct_req2(cluster) $tc1
+
+# User
+array set user_req {}
+set user_req(cluster) $tc1
+set user_req(account) $ta1,$ta2
+set user_req(defaultaccount) $ta1
+
+# Mod Account for ta1 and ta2
+array set mod_acct_desc3 {}
+set mod_acct_desc3(cluster) $tc1
+array set mod_acct_vals3 {}
+array set mod_assoc_vals3 {}
+set mod_assoc_vals3(qos) "+$qos1"
+
+# Mod Account for ta1 and ta2
+array set mod_acct_desc4 {}
+set mod_acct_desc4(cluster) $tc1
+array set mod_acct_vals4 {}
+array set mod_assoc_vals4 {}
+set mod_assoc_vals4(qos) "-$qos1"
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+#
+# Make sure we have permission to do this work
+#
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global qos1 ta1 ta2 tc1 tu1
+
+	remove_cluster $tc1
+	remove_user "" "" "$tu1"
+	remove_acct "" "$ta1,$ta2"
+	remove_qos "$qos1"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+#
+# Add a test cluster for testing
+#
+add_cluster $tc1 ""
+
+# Now set default for cluster to ""
+if [mod_cluster $tc1 [array get clus_req]] {
+	fail "Unable to modify cluster ($tc1)"
+}
+
+# Add qos
+if [add_qos "$qos1" ""] {
+	fail "Unable to add qos ($qos1)"
+}
+
+# Add default account
+if [add_acct $ta1 [array get acct_req1]] {
+	fail "Unable to add account ($ta1)"
+}
+
+# Add second account
+if [add_acct $ta2 [array get acct_req2]] {
+	fail "Unable to add account ($ta2)"
+}
+
+# Add user
+if [add_user $tu1 [array get user_req]] {
+	fail "Unable to add user ($tu1)"
+}
+
+# Verify initial associations
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
+
+# Modify accounts to add test QoS
+if [mod_acct $ta1 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
+	fail "Unable to modify account ($ta1)"
+}
+
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
+
+# Modify test2 account to remove test QoS
+if [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
+	fail "Unable to modify account ($ta2)"
+}
+
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
+
+# Modify test1 account to remove test QoS
+if [mod_acct $ta1 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
+	fail "Unable to modify account ($ta1)"
+}
+
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
+
+# Modify test2 account to add test QoS
+if [mod_acct $ta2 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
+	fail "Unable to modify account ($ta2)"
+}
+
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
+
+# Modify root account to add test QoS
+if [mod_acct "root" [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
+	fail "Unable to modify account (root)"
+}
+
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n$qos1\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n$qos1\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
+
+# Delete $qos1 from $account2
+if [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
+	fail "Unable to modify account ($ta2)"
+}
+
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n$qos1\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n$qos1\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"

@@ -1,0 +1,384 @@
+.TH slurmd "8" "Slurm Daemon" "Slurm 26.11" "Slurm Daemon"
+
+.SH "NAME"
+slurmd \- The compute node daemon for Slurm.
+
+.SH "SYNOPSIS"
+\fBslurmd\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+\fBslurmd\fR is the compute node daemon of Slurm. It monitors all tasks
+running on the compute node , accepts work (tasks), launches tasks, and kills
+running tasks upon request.
+
+.SH "OPTIONS"
+
+.TP
+\fB\--authinfo\fR
+Used with configless to set an alternate AuthInfo parameter to be used to
+establish communication with slurmctld before the configuration file has been
+retrieved. (E.g., to specify an alternate MUNGE socket location.)
+.IP
+
+.TP
+\fB\-b\fR
+Report node rebooted when daemon restarted. Used for testing purposes.
+.IP
+
+.TP
+\fB\-c\fR
+Clear system locks as needed. This may be required if \fBslurmd\fR terminated
+abnormally.
+.IP
+
+.TP
+\fB\-C\fR
+Print the actual hardware configuration (not the configuration from the
+slurm.conf file) and exit.
+The format of output is the same as used in \fBslurm.conf\fR to describe a node's
+configuration plus its uptime. You may use \fB\--parameters\fR to specify
+options such as 'l3cache_as_socket' which may alter the reported node topology.
+.IP
+
+.TP
+\fB\-\-ca\-cert\-file <file>\fR
+Absolute path to CA certificate used for fetching configuration when running
+configless in a TLS enabled cluster.
+.IP
+
+.TP
+\fB\-\-conf <node parameters>\fR
+Used in conjunction with the \fB\-Z\fR option. Used to override or define
+additional parameters of a dynamic node using the same syntax and parameters
+used to define nodes in the slurm.conf. Specifying any of \fBCPUs\fR,
+\fBBoards\fR, \fBSocketsPerBoard\fR, \fBCoresPerSocket\fR or
+\fBThreadsPerCore\fR will override the defaults defined by the \fB\-C\fR
+option. \fBNodeName\fR and \fBPort\fR are not supported.
+This can also be used to specify a cloud node's topology, in which case
+the \fB\-Z\fR flag should not be used (e.g.,
+\-\-conf="topology=topo-switch:s1")
+
+.br
+For example if \fIslurmd \-C\fR reports
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848
+.fi
+
+the following --conf specifications will generate the corresponding node definitions:
+.nf
+\-\-conf "Gres=gpu:2"
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=gpu:2
+.fi
+
+.nf
+\-\-conf "RealMemory=30000"
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=30000
+.fi
+
+.nf
+\-\-conf "CPUs=16"
+NodeName=node1 CPUs=16 RealMemory=331848
+.fi
+
+.nf
+\-\-conf "CPUs=16 RealMemory=30000 Gres=gpu:2"
+NodeName=node1 CPUs=16 RealMemory=30000 Gres=gpu:2"
+.fi
+
+GPU detection occurs automatically when:
+.RS
+.TP
+\[bu] \fB\-\-conf\fR does not specify any GPU GRES
+.IP
+.TP
+\[bu] \fBgres.conf\fR does not contain any explicit GPU GRES records for the node
+.IP
+.TP
+\[bu] \fBgres.conf\fR does not contain \fBAutoDetect=off\fR
+.IP
+.RE
+
+If \fBAutoDetect\fR in \fBgres.conf\fR specifies a particular detection
+mechanism (e.g., \fBNVML\fR, \fBNVIDIA\fR, \fBRSMI\fR, \fBoneAPI\fR, \fBNRT\fR),
+it will use that mechanism to try to detect a GPU. If no \fBAutoDetect\fR is
+specified, the slurmd defaults to the \fBfull\fR GPU detection method.
+
+The following shows GPU autodetection behavior for a node with 2 local A100 GPUs:
+
+no \-\-conf, no AutoDetect in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=gpu:a100:2
+.fi
+
+\-\-conf "Gres=tmpfs:1000", no AutoDetect in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=tmpfs:1000,gpu:a100:2
+.fi
+
+\-\-conf "Gres=tmpfs:1000", AutoDetect=nvml in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=tmpfs:1000,gpu:a100:2
+.fi
+
+\-\-conf "Gres=tmpfs:1000", AutoDetect=off in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=tmpfs:1000
+.fi
+.IP
+
+.TP
+\fB\-\-conf\-server <host|ip address>[:<port>]\fR
+Comma\-separated list of controllers, the first being the primary slurmctld. A
+port can (optionally) be specified for each controller. These hosts are where
+the slurmd will fetch the configuration from when running in "configless" mode.
+\fBNOTE\fR: If specifying an IPv6 address, wrap the <ip address> in [] to
+distinguish the address from the port.  This is required even if no port is
+specified.
+.IP
+
+.TP
+\fB\-d <file>\fR
+Specify the fully qualified pathname to the \fBslurmstepd\fR program to be used
+for shepherding user job steps. This can be useful for testing purposes.
+.IP
+
+.TP
+\fB\-D\fR
+Run \fBslurmd\fR in the foreground with logging copied to stderr.
+.IP
+
+.TP
+\fB\-\-extra <arbitrary string>\fR
+Set "extra" data on node startup. If this is a json string and
+\fBSchedulerParameters=extra_constraints\fR is set in slurm.conf, then jobs may
+use the \-\-extra option to filter based on this "extra" data.
+.IP
+
+.TP
+\fB\-f <file>\fR
+Read configuration from the specified file. See \fBNOTES\fR below.
+.IP
+
+.TP
+\fB\-F[feature]\fR
+Start this node as a Dynamic Future node. It will try to match a node
+definition with a state of \fBFUTURE\fR, optionally using the specified
+feature to match the node definition.
+.IP
+
+.TP
+\fB\-G\fR
+Print Generic RESource (GRES) configuration (based upon slurm.conf GRES merged
+with gres.conf contents for this node) and exit.
+.IP
+
+.TP
+\fB\-h\fR
+Help; print a brief summary of command options.
+.IP
+
+.TP
+\fB\-\-instance\-id <cloud instance id>\fR
+Set cloud instance ID on node startup.
+.IP
+
+.TP
+\fB\-\-instance\-type <cloud instance type>\fR
+Set cloud instance type on node startup.
+.IP
+
+.TP
+\fB\-L <file>\fR
+Write log messages to the specified file.
+.IP
+
+.TP
+\fB\-M\fR
+Lock slurmd pages into system memory using mlockall (2) to disable
+paging of the slurmd process. This may help in cases where nodes are
+marked DOWN during periods of heavy swap activity. If the mlockall (2)
+system call is not available, an error will be printed to the log
+and slurmd will continue as normal.
+
+It is suggested to set \fBLaunchParameters=slurmstepd_memlock\fR in
+\fBslurm.conf\fR(5) when setting \fB\-M\fR.
+.IP
+
+.TP
+\fB\-n <value>\fR
+Set the daemon's nice value to the specified value, typically a negative number.
+Also note the \fBPropagatePrioProcess\fR configuration parameter.
+.IP
+
+.TP
+\fB\-N <nodename>\fR
+Run the daemon with the given nodename. Used to emulate a larger system
+with more than one slurmd daemon per node. Requires that Slurm be built using
+the \-\-enable\-multiple\-slurmd configure option.
+.IP
+
+.TP
+\fB\--parameters <slurmd parameters>\fR
+Allows for temporary node\-specific changes to SlurmdParameters. Can be used
+alongside \fB\-C\fR to specify options such as 'l3cache_as_socket' which may
+alter the reported node topology. These parameters are appended to any
+node\-specific Parameters defined in slurm.conf.
+.IP
+
+.TP
+\fB\-s\fR
+Change working directory of slurmd to SlurmdLogFile path if possible, or to
+SlurmdSpoolDir otherwise. If both of them fail it will fallback to /var/tmp.
+.IP
+
+.TP
+\fB\-\-systemd\fR
+Use when starting the daemon with systemd. This will allow slurmd to notify
+systemd of the new PID when using 'scontrol reconfigure'.
+.IP
+
+.TP
+\fB\-v\fR
+Verbose operation. Multiple \-v's increase verbosity.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.TP
+\fB\-Z\fR
+Start this node as a Dynamic Normal node. If no \fB\-\-conf\fR is specified,
+then the slurmd will register with the same hardware configuration (except GRES)
+as defined by the \fB\-C\fR option.
+.IP
+
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables can be used to override settings
+compiled into slurmd.
+
+.TP 20
+\fBABORT_ON_FATAL\fR
+When a fatal error is detected, use abort() instead of exit() to terminate the
+process. This allows backtraces to be captured without recompiling Slurm.
+.IP
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file. This is overridden by
+explicitly naming a configuration file on the command line.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for slurmd to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.SH "HTTP server"
+
+Unless disabled via \fICommunicationParameters=disable_http\fR in
+\fBslurm.conf\fR, \fBslurmd\fR will accept incoming HTTP/1.1 compliant
+requests to any socket listening as configured by \fBSlurmdPort\fR in
+\fBslurm.conf\fR. Authentication of HTTP requests is not supported. TLS
+wrapping optionally supported without requiring \fBTLSType\fR in
+\fBslurm.conf\fR. The following endpoints are currently supported:
+
+.TP
+\fBGET /\fR
+Get list of endpoints.
+.IP
+
+.TP
+\fBGET /healthz\fR
+Test if \fBslurmd\fR loaded successfully.
+.IP
+
+.TP
+\fBGET /livez\fR
+Test if \fBslurmd\fR loaded successfully.
+.IP
+
+.TP
+\fBGET /readyz\fR[\fB?verbose\fR]
+Test if \fBslurmd\fR is ready to accept incoming RPCs. Adding the
+\fBverbose\fR query parameter will result in a verbose output of each probe in
+the response.
+.IP
+
+.SH "SIGNALS"
+
+.TP
+\fBSIGTERM SIGINT SIGQUIT\fR
+\fBslurmd\fR will shutdown cleanly.
+.IP
+
+.TP
+\fBSIGHUP\fR
+Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.IP
+
+.TP
+\fBSIGUSR2\fR
+Reread the log level from the configs, and then reopen the log file. This
+should be used when setting up \fBlogrotate\fR(8).
+.IP
+
+.TP
+\fBSIGPIPE\fR
+This signal is explicitly ignored.
+.IP
+
+.SH "CORE FILE LOCATION"
+If slurmd is started with the \fB\-D\fR option then the core file will be
+written to the current working directory.
+Otherwise if \fBSlurmdLogFile\fR is a fully qualified path name
+(starting with a slash), the core file will be written to the same
+directory as the log file. Otherwise the core file will be written to
+the \fBSlurmdSpoolDir\fR directory, or "/var/tmp/" as a last resort. If
+none of the above directories can be written, no core file will be
+produced.
+
+.SH "NOTES"
+It may be useful to experiment with different \fBslurmd\fR specific
+configuration parameters using a distinct configuration file
+(e.g. timeouts). However, this special configuration file will not be
+used by the \fBslurmctld\fR daemon or the Slurm programs, unless you
+specifically tell each of them to use it. If you desire changing
+communication ports, the location of the temporary file system, or
+other parameters used by other Slurm components, change the common
+configuration file, \fBslurm.conf\fR.
+
+If you are using configless mode with a login node that runs a lot of client
+commands, you may consider running \fBslurmd\fR on that machine so it can
+manage a cached version of the configuration files. Otherwise, each client
+command will use the DNS record to contact the controller and get the
+configuration information, which could place additional load on the controller.
+
+.SH "COPYING"
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
+Copyright (C) 2010\-2022 SchedMD LLC.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "FILES"
+.LP
+/etc/slurm.conf
+
+.SH "SEE ALSO"
+\fBslurm.conf\fR(5), \fBslurmctld\fR(8)

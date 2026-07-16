@@ -1,0 +1,288 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test some valid combinations of srun --gpu and non-GPU GRES options
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set number_commas  "\[0-9_,\]+"
+
+if {![check_config_select "cons_tres"]} {
+	skip "This test is only compatible with select/cons_tres"
+}
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+if {$nb_nodes > 1} {
+	set nb_nodes 2
+}
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 1} {
+	skip "This test requires 1 or more GPUs on $nb_nodes nodes of the default partition"
+}
+
+set craynetwork_count [get_highest_gres_count 1 "craynetwork"]
+if {$craynetwork_count < 1} {
+	skip "This test requires 1 or more craynetwork GRES on $nb_nodes nodes of the default partition"
+}
+
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cores_per_socket  [get_node_param $node_name "CoresPerSocket"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+set sockets_with_gpus [get_gpu_socket_count $gpu_cnt $sockets_per_node]
+set cores_per_node    [expr $sockets_per_node * $cores_per_socket]
+set one_task_per_core [param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets with GPUs $sockets_with_gpus"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "Cores per socket is $cores_per_socket"
+log_debug "CPUs per socket is $cpus_per_socket"
+log_debug "gres/craynetwork count is $craynetwork_count"
+log_debug "CR_ONE_TASK_PER_CORE is $one_task_per_core"
+
+if {$one_task_per_core} {
+	if {$gpu_cnt > $cores_per_node} {
+		set gpu_cnt $cores_per_node
+	}
+} else {
+	if {$gpu_cnt > $cpus_per_node} {
+		set gpu_cnt $cpus_per_node
+	}
+}
+
+set tot_gpus $gpu_cnt
+if {$nb_nodes > 1} {
+	incr tot_gpus $gpu_cnt
+}
+set gpus_per_node $gpu_cnt
+if {$gpus_per_node > 1 && $sockets_per_node > 1} {
+	set sockets_per_node 2
+	set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
+} else {
+	set gpus_per_socket $gpus_per_node
+}
+set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
+
+#
+# Build input script file
+#
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+if \[ \$SLURM_PROCID -eq 0 \]; then
+sleep 1
+$scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
+fi
+exit 0"
+
+#
+# Test --gpus options using a subset of GPUs actually available on the node
+#
+log_info "TEST: --gpus option"
+set match_craynetwork 0
+set match_gpu 0
+set timeout $max_job_delay
+if {$tot_gpus > 1} {
+	set use_gpus_per_job [expr $tot_gpus - 1]
+} else {
+	set use_gpus_per_job $tot_gpus
+}
+spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J $test_name -l $file_in
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match_gpu [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "craynetwork.CNT:($number)" {
+		if {$expect_out(1,string) == 1} {
+			incr match_craynetwork
+		} else {
+			set match_craynetwork -9999
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
+set expected_gpus $use_gpus_per_job
+subtest {$match_gpu == $expected_gpus} "Verify srun --gpus" "$match_gpu != $expected_gpus"
+
+if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
+	log_info "TEST: --gpus option, part 2"
+	set match_craynetwork 0
+	set match_gpu 0
+	incr use_gpus_per_job -2
+	spawn $srun --gres=craynetwork:1 --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J $test_name -l $file_in
+	expect {
+		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+			incr match_gpu [cuda_count $expect_out(1,string)]
+			exp_continue
+		}
+		-re "craynetwork.CNT:($number)" {
+			if {$expect_out(1,string) == 1} {
+				incr match_craynetwork
+			} else {
+				set match_craynetwork -9999
+			}
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
+	set expected_gpus $use_gpus_per_job
+	subtest {$match_gpu == $expected_gpus} "Verify srun --gpus" "$match_gpu != $expected_gpus"
+}
+
+#
+# Test --gpus-per-node options using a subset of GPUs actually available on the node
+#
+log_info "TEST: --gpus-per-node option"
+set match_craynetwork 0
+set match_gpu 0
+if {$gpus_per_node > 1} {
+	set use_gpus_per_node [expr $gpus_per_node - 1]
+} else {
+	set use_gpus_per_node $gpus_per_node
+}
+spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J $test_name -l $file_in
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match_gpu [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "craynetwork.CNT:($number)" {
+		if {$expect_out(1,string) == 1} {
+			incr match_craynetwork
+		} else {
+			set match_craynetwork -9999
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
+set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
+subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-node" "$match_gpu != $expected_gpus"
+
+#
+# Test --gpus-per-socket options using a subset of GPUs actually available on the node
+#
+log_info "TEST: --gpus-per-socket option"
+set match_craynetwork 0
+set match_gpu 0
+
+# Every node requires at least 1 GPU
+if {$use_gpus_per_job < $nb_nodes} {
+	set nb_nodes $use_gpus_per_job
+}
+
+set node_list [get_nodes_by_request "--gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"]
+if { [llength $node_list] != $nb_nodes } {
+	subskip "This test need to be able to submit jobs with at least --gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"
+} else {
+	set expected_gpus [expr $nb_nodes * $sockets_with_gpus]
+
+	if {$sockets_with_gpus > 1} {
+		set cpus_per_task $cpus_per_socket
+	} else {
+		set cpus_per_task 1
+	}
+	spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodelist=[join $node_list ","] --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J $test_name -l $file_in
+	expect {
+		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+			incr match_gpu [cuda_count $expect_out(1,string)]
+			exp_continue
+		}
+		-re "craynetwork.CNT:($number)" {
+			if {$expect_out(1,string) == 1} {
+				incr match_craynetwork
+			} else {
+				set match_craynetwork -9999
+			}
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
+	subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-socket" "$match_gpu != $expected_gpus"
+}
+
+#
+# Test --gpus-per-task options using a subset of GPUs actually available on the node
+#
+log_info "TEST: --gpus-per-task option"
+set match_craynetwork 0
+set match_gpu 0
+if {$gpu_cnt > 1} {
+	set use_gpus_per_node [expr $gpu_cnt - 1]
+} else {
+	set use_gpus_per_node $gpu_cnt
+}
+spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J $test_name -l $file_in
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match_gpu [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "craynetwork.CNT:($number)" {
+		if {$expect_out(1,string) == 1} {
+			incr match_craynetwork
+		} else {
+			set match_craynetwork -9999
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
+set expected_gpus $use_gpus_per_node
+subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-task" "$match_gpu != $expected_gpus"

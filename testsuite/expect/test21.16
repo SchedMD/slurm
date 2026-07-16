@@ -1,0 +1,178 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr add multiple users
+############################################################################
+# Copyright (C) 2008-2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set dqos1       "${test_name}_qos"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
+set tu3         "${test_name}-user.3"
+set tu4         "${test_name}-user.4"
+set tu5         "${test_name}-user.5"
+set access_err  0
+
+# Cluster
+array set clus_req {}
+
+# Account
+array set acct_req {}
+set acct_req(cluster) $tc1,$tc2,$tc3
+
+# Users
+array set user_req1 {
+	adminlevel      Operator
+	fairshare       2500
+	maxcpumins      1000000
+	maxjobs         50
+	maxnodes        300
+	maxwall         01:00:00
+}
+set user_req1(defaultaccount) $ta2
+set user_req1(cluster) $tc1,$tc2,$tc3
+set user_req1(account) $ta1,$ta2,$ta3
+
+array set user_req2 {
+	adminlevel      Operator
+	fairshare       2500
+	grpcpumin       100
+	grpcpurunmin    200
+	grpcpus         1000
+	grpjobs         300
+	grpmemory       1000
+	grpnodes        10000
+	grpsubmitjobs   3000
+	grpwall         00:45:00
+	maxcpumins      1000000
+	maxjobs         50
+	maxnodes        300
+	maxwall         01:00:00
+}
+set user_req1(defaultaccount) $ta2
+set user_req2(cluster) $tc1
+set user_req2(account) $ta1
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global dqos1 ta1 ta2 ta3 tc1 tc2 tc3 tu1 tu2 tu3 tu4 tu5
+
+	remove_user "" "" "$tu1,$tu2,$tu3,$tu4,$tu5"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+	remove_qos "$dqos1"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
+}
+
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
+}
+
+# Add users
+# account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
+if [add_user "$tu1,$tu2,$tu3" [array get user_req1]] {
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
+}
+
+#
+# Use sacctmgr to list the test user additions
+#
+set matches 0
+spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1,$tu2,$tu3 withassoc
+expect {
+	-re "There was a problem" {
+		fail "There was a problem with the sacctmgr command"
+	}
+	-re "(($tu1|$tu2|$tu3).$ta2.$user_req1(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req2(fairshare).$user_req1(maxcpumins).$user_req1(maxjobs).$user_req1(maxnodes).$user_req1(maxwall).)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr list associations not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 27} {
+	fail "Account addition 27 incorrect ($matches != 27)"
+}
+
+if [remove_user "" "" "$tu1,$tu2,$tu3"] {
+	fail "Unable to remove users"
+}
+
+#
+# From here we test all the limits associated with multiple users
+#
+if [add_qos "$dqos1" ""] {
+	fail "Unable to add qos ($dqos1)"
+}
+
+#
+# Add user with all limits set
+#
+if [add_user "$tu4,$tu5" [array get user_req2]] {
+	fail "Unable to add users ($tu4,$tu5)"
+}
+
+# Check Limits of both users
+if {![check_assoc_limit 3 user $tu4 [array get user_req2]]} {
+	fail "The association limits for user 4 ($tu4) are incorrect"
+}
+if {![check_assoc_limit 3 user $tu5 [array get user_req2]]} {
+	fail "The association limits for user 5 ($tu5) are incorrect"
+}

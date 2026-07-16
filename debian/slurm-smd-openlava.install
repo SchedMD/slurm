@@ -1,0 +1,4 @@
+usr/bin/bjobs
+usr/bin/bkill
+usr/bin/bsub
+usr/bin/lsid

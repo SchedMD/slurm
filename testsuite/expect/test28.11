@@ -1,0 +1,102 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirms that a job array that requested a feature with
+#          the --constraint option is correctly purged from the controller
+#          (see bug 5702).
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_script     "$test_dir/job_script"
+set config_path     [get_conf_path]
+set node_feature    $test_name
+set job_id          0
+
+if {![is_super_user]} {
+	skip "This test must be run as SlurmUser or root"
+}
+
+proc cleanup { } {
+	global job_id config_file
+
+	cancel_job $job_id
+
+	# Restore previous MinJobAge and AvailableFeatures
+	restore_conf $config_file
+	reconfigure
+}
+
+# Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
+set config_file $config_path/slurm.conf
+save_conf $config_file
+
+exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
+exec $bin_echo -e "\nMinJobAge=10" >> $config_file
+reconfigure -fail
+
+# Setup the necessary feature to do the test
+set node [get_nodes_by_request "-N1 -t1"]
+set features [get_node_param $node "AvailableFeatures"]
+if {$features == "(null)"} {
+	set features "$node_feature"
+} else {
+	set features "$features,$node_feature"
+}
+run_command -fail "$scontrol update nodename=$node AvailableFeatures=$features ActiveFeatures=$features"
+
+# Verify that MinJobAge was set
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+if {$min_job_age != 10} {
+	fail "MinJobAge was not set"
+}
+
+# It doesn't matter how long the job sleeps; it will be cancelled anyway.
+make_bash_script $file_script "sleep 5"
+set job_id [submit_job -fail "--constraint=$node_feature --array=1-2 --output=/dev/null $file_script"]
+
+# Wait enough time for the jobs to be in the controller
+set count 0
+set count_exp 2
+log_info "Verifying the jobs correctly requested the feature $node_feature"
+wait_for { $count == $count_exp } {
+	set count 0
+	dict for {jobId job_dict} [get_jobs $job_id] {
+		if {[dict get $job_dict "Features"] eq "$node_feature"} {
+			incr count
+		}
+	}
+}
+subtest -fail { $count == $count_exp } "Jobs have requested feature $node_feature" [format "Expected each of the %s jobs to have features=%s, but got %s" \
+                                                $count_exp $node_feature $count]
+
+# Cancel the jobs and wait for them to purged from the controller
+if [cancel_job $job_id] {
+	fail "Problem cancelling job ($job_id)"
+}
+
+set sleep_time $min_job_age
+incr sleep_time 10
+log_info "Waiting for $sleep_time seconds for the jobs to be purged from the controller"
+sleep $sleep_time
+set output [run_command_output -xfail -fail "$scontrol show job $job_id"]
+subtest {[regexp "Invalid job id specified" $output]} "Verify that the job isn't in the controller anymore"

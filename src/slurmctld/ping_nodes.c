@@ -1,0 +1,601 @@
+/*****************************************************************************\
+ *  ping_nodes.c - ping the slurmd daemons to test if they respond
+ *****************************************************************************
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2011 Lawrence Livermore National Security.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
+ *  CODE-OCEC-09-009. All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "config.h"
+
+#include <pthread.h>
+#include <string.h>
+#include <time.h>
+
+#include "src/common/hostlist.h"
+#include "src/common/read_config.h"
+
+#include "src/interfaces/select.h"
+
+#include "src/slurmctld/agent.h"
+#include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/slurmctld.h"
+
+/* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
+#define MAX_REG_FREQUENCY 20
+
+/* Log an error for ping that takes more than 100 seconds to complete */
+#define PING_TIMEOUT 100
+
+static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool ping_updated = false;
+static int ping_count = 0;
+static time_t ping_start = 0;
+
+/*
+ * is_ping_done - test if the last node ping cycle has completed.
+ *	Use this to avoid starting a new set of ping requests before the
+ *	previous one completes
+ * RET true if ping process is done, false otherwise
+ */
+bool is_ping_done (void)
+{
+	static bool ping_msg_sent = false;
+	bool is_done = true;
+
+	slurm_mutex_lock(&lock_mutex);
+	if (ping_count) {
+		is_done = false;
+		if (!ping_msg_sent &&
+		    (difftime(time(NULL), ping_start) >= PING_TIMEOUT)) {
+			error("A node ping cycle took more than %d seconds. Node RPC requests like ping, register status, health check and/or accounting gather update are triggered less frequently than configured. Either many nodes are non-responsive or one of SlurmdTimeout, HealthCheckInterval, JobAcctGatherFrequency should be increased.",
+			      PING_TIMEOUT);
+			ping_msg_sent = true;
+		}
+	} else {
+		ping_msg_sent = false;
+		/*
+		 * We can only consider the last node ping cycle to be fully
+		 * completed if ping_updated is true, meaning the
+		 * _agent_nodes_update thread finished updating the nodes
+		 * response. Otherwise, we could hit a race and incorrectly set
+		 * responding/healthy nodes to DOWN.
+		 */
+		is_done = ping_updated;
+	}
+	slurm_mutex_unlock(&lock_mutex);
+
+	return is_done;
+}
+
+/*
+ * ping_begin - record that a ping cycle has begin. This can be called more
+ *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
+ *	for selected nodes). Matching ping_end calls must be made for each
+ *	before is_ping_done returns true.
+ */
+void ping_begin (void)
+{
+	slurm_mutex_lock(&lock_mutex);
+	ping_count++;
+	ping_start = time(NULL);
+	slurm_mutex_unlock(&lock_mutex);
+}
+
+/*
+ * ping_nodes_update - A ping cycle can end but the update can still be pending
+ * for the _agent_nodes_update thread. This call will confirm node info was
+ * updated.
+ */
+void ping_nodes_update(void)
+{
+	slurm_mutex_lock(&lock_mutex);
+	ping_updated = true;
+	slurm_mutex_unlock(&lock_mutex);
+}
+
+/*
+ * ping_end - record that a ping cycle has ended. This can be called more
+ *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
+ *	for selected nodes). Matching ping_end calls must be made for each
+ *	before is_ping_done returns true.
+ */
+void ping_end (void)
+{
+	slurm_mutex_lock(&lock_mutex);
+
+	if (ping_count > 0)
+		ping_count--;
+	else
+		error("%s: ping_count < 0", __func__);
+
+	if (ping_count == 0) /* no more running ping cycles */
+		ping_start = 0;
+	ping_updated = false;
+	slurm_mutex_unlock(&lock_mutex);
+}
+
+/*
+ * ping_nodes - check that all nodes and daemons are alive,
+ *	get nodes in UNKNOWN state to register
+ */
+void ping_nodes (void)
+{
+	static bool restart_flag = true;	/* system just restarted */
+	static int reg_offset = 0;	/* mutex via node table write lock on entry */
+	static int max_reg_threads = 0;	/* max node registration threads
+					 * this can include DOWN nodes, so
+					 * limit the number to avoid huge
+					 * communication delays */
+	int i;
+	time_t now = time(NULL), still_live_time, node_dead_time;
+	static time_t last_ping_time = (time_t) 0;
+	static time_t last_ping_timeout = (time_t) 0;
+	hostlist_t *down_hostlist = NULL;
+	char *host_str = NULL;
+	agent_arg_t *ping_agent_args = NULL;
+	agent_arg_t *reg_agent_args = NULL;
+	node_record_t *node_ptr = NULL;
+	time_t old_cpu_load_time = now - slurm_conf.slurmd_timeout;
+	time_t old_free_mem_time = now - slurm_conf.slurmd_timeout;
+	int node_offset = 0;
+
+	ping_agent_args = xmalloc (sizeof (agent_arg_t));
+	ping_agent_args->msg_type = REQUEST_PING;
+	ping_agent_args->retry = 0;
+	ping_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	ping_agent_args->hostlist = hostlist_create(NULL);
+
+	reg_agent_args = xmalloc (sizeof (agent_arg_t));
+	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
+	reg_agent_args->retry = 0;
+	reg_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	reg_agent_args->hostlist = hostlist_create(NULL);
+
+	/*
+	 * If there are a large number of down nodes, the node ping
+	 * can take a long time to complete:
+	 *  ping_time = down_nodes * agent_timeout / agent_parallelism
+	 *  ping_time = down_nodes * 10_seconds / 10
+	 *  ping_time = down_nodes (seconds)
+	 * Because of this, we extend the SlurmdTimeout by the
+	 * time needed to complete a ping of all nodes.
+	 */
+	if ((last_ping_timeout == 0) ||
+	    (last_ping_time == (time_t) 0)) {
+		node_dead_time = (time_t) 0;
+	} else {
+		node_dead_time = last_ping_time - last_ping_timeout;
+	}
+	still_live_time = now - (slurm_conf.slurmd_timeout / 3);
+	last_ping_time  = now;
+	last_ping_timeout = slurm_conf.slurmd_timeout;
+
+	if (max_reg_threads == 0) {
+		max_reg_threads = MAX(slurm_conf.tree_width, 1);
+		max_reg_threads = MIN(max_reg_threads, 50);
+	}
+	reg_offset += max_reg_threads;
+	if ((reg_offset > active_node_record_count) &&
+	    (reg_offset >= (max_reg_threads * MAX_REG_FREQUENCY)))
+		reg_offset = 0;
+
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		node_offset++;
+		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_EXTERNAL(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr) ||
+		    IS_NODE_INVALID_REG(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
+			continue;
+		if ((slurm_conf.slurmd_timeout == 0) && (!restart_flag) &&
+		    (!IS_NODE_UNKNOWN(node_ptr)) &&
+		    (!IS_NODE_NO_RESPOND(node_ptr)))
+			continue;
+
+		if ((node_ptr->last_response != (time_t) 0)     &&
+		    (node_ptr->last_response <= node_dead_time) &&
+		    (!IS_NODE_DOWN(node_ptr))) {
+			if (down_hostlist)
+				(void) hostlist_push_host(down_hostlist,
+					node_ptr->name);
+			else {
+				down_hostlist =
+					hostlist_create(node_ptr->name);
+				if (!down_hostlist) {
+					fatal("Invalid host name: %s",
+					      node_ptr->name);
+				}
+			}
+			set_node_down_ptr(node_ptr, "Not responding");
+			node_ptr->not_responding = false;  /* logged below */
+			continue;
+		}
+
+		/* Request a node registration if its state is UNKNOWN or
+		 * on a periodic basis (about every MAX_REG_FREQUENCY ping,
+		 * this mechanism avoids an additional (per node) timer or
+		 * counter and gets updated configuration information
+		 * once in a while). We limit these requests since they
+		 * can generate a flood of incoming RPCs. */
+		if (IS_NODE_UNKNOWN(node_ptr) || (node_ptr->boot_time == 0) ||
+		    ((node_offset >= reg_offset) &&
+		     (node_offset < (reg_offset + max_reg_threads)))) {
+			if (reg_agent_args->protocol_version >
+			    node_ptr->protocol_version)
+				reg_agent_args->protocol_version =
+					node_ptr->protocol_version;
+			hostlist_push_host(reg_agent_args->hostlist,
+					   node_ptr->name);
+			reg_agent_args->node_count++;
+			if (PACK_FANOUT_ADDRS(node_ptr))
+				reg_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+			continue;
+		}
+
+		if ((!IS_NODE_NO_RESPOND(node_ptr)) &&
+		    (node_ptr->last_response >= still_live_time) &&
+		    (node_ptr->cpu_load_time >= old_cpu_load_time) &&
+		    (node_ptr->free_mem_time >= old_free_mem_time))
+			continue;
+
+		/* Do not keep pinging down nodes since this can induce
+		 * huge delays in hierarchical communication fail-over */
+		if (IS_NODE_NO_RESPOND(node_ptr) && IS_NODE_DOWN(node_ptr))
+			continue;
+
+		if (ping_agent_args->protocol_version >
+		    node_ptr->protocol_version)
+			ping_agent_args->protocol_version =
+				node_ptr->protocol_version;
+		hostlist_push_host(ping_agent_args->hostlist, node_ptr->name);
+		ping_agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			ping_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+	}
+
+	restart_flag = false;
+	if (ping_agent_args->node_count == 0) {
+		hostlist_destroy(ping_agent_args->hostlist);
+		xfree (ping_agent_args);
+	} else {
+		hostlist_uniq(ping_agent_args->hostlist);
+		host_str = hostlist_ranged_string_xmalloc(
+				ping_agent_args->hostlist);
+		debug("Spawning ping agent for %s", host_str);
+		xfree(host_str);
+		ping_begin();
+		set_agent_arg_r_uid(ping_agent_args, SLURM_AUTH_UID_ANY);
+		agent_queue_request(ping_agent_args);
+	}
+
+	if (reg_agent_args->node_count == 0) {
+		hostlist_destroy(reg_agent_args->hostlist);
+		xfree (reg_agent_args);
+	} else {
+		hostlist_uniq(reg_agent_args->hostlist);
+		host_str = hostlist_ranged_string_xmalloc(
+				reg_agent_args->hostlist);
+		debug("Spawning registration agent for %s %d hosts",
+		      host_str, reg_agent_args->node_count);
+		xfree(host_str);
+		ping_begin();
+		set_agent_arg_r_uid(reg_agent_args, SLURM_AUTH_UID_ANY);
+		agent_queue_request(reg_agent_args);
+	}
+
+	if (down_hostlist) {
+		hostlist_uniq(down_hostlist);
+		host_str = hostlist_ranged_string_xmalloc(down_hostlist);
+		error("Nodes %s not responding, setting DOWN", host_str);
+		xfree(host_str);
+		hostlist_destroy(down_hostlist);
+	}
+}
+
+/*
+ * Return true when ctld considers node_ptr out of service for the
+ * health-check health signal: down, draining or drained, failing, or in
+ * maintenance. Mirrors the offline/online check in NHC
+ * IN node_ptr - node to classify
+ * RET true if the node is unhealthy, false otherwise
+ */
+static bool _node_unhealthy_for_hc(node_record_t *node_ptr)
+{
+	/*
+	 * We include maint in this check as common health check programs
+	 * treat a node in maintenance reservation the same as a down node
+	 */
+	return (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
+		IS_NODE_FAIL(node_ptr) || IS_NODE_MAINT(node_ptr));
+}
+
+/*
+ * Queue a health check agent for the hosts in args, or free args if it has no
+ * hosts. Each queued agent gets a matching ping_begin()/ping_end() pair.
+ * IN args - agent args to queue (ownership taken) or free when empty
+ */
+static void _queue_health_check(agent_arg_t *args)
+{
+	char *host_str = NULL;
+
+	if (!args->node_count) {
+		purge_agent_args(args);
+		return;
+	}
+
+	hostlist_uniq(args->hostlist);
+	host_str = hostlist_ranged_string_xmalloc(args->hostlist);
+	debug("Spawning health check agent for %s", host_str);
+	xfree(host_str);
+	ping_begin();
+	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(args);
+}
+
+extern void run_health_check_individual(node_record_t *node_ptr)
+{
+	agent_arg_t *check_agent_args = NULL;
+
+	check_agent_args = xmalloc(sizeof(agent_arg_t));
+	check_agent_args->retry = 0;
+	check_agent_args->protocol_version = node_ptr->protocol_version;
+	check_agent_args->hostlist = hostlist_create(NULL);
+
+	/*
+	 * When slurmd can report node health (by default on 26.11+, or on
+	 * 26.05 with health_check_report), send the verdict-carrying
+	 * RPC; otherwise fall back to the plain RPC.
+	 */
+	if ((node_ptr->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) ||
+	    ((slurm_conf.conf_flags & CONF_FLAG_HC_REPORT_HEALTH) &&
+	     (node_ptr->protocol_version >= SLURM_26_05_PROTOCOL_VERSION))) {
+		/* When 26.05 is no longer supported keep only if section */
+		node_health_check_msg_t *report_msg =
+			xmalloc(sizeof(*report_msg));
+		report_msg->healthy = !_node_unhealthy_for_hc(node_ptr);
+		check_agent_args->msg_type = REQUEST_NODE_HEALTH_CHECK;
+		check_agent_args->msg_args = report_msg;
+	} else {
+		check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	}
+
+	hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
+	check_agent_args->node_count++;
+	if (PACK_FANOUT_ADDRS(node_ptr))
+		check_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+
+	debug("Spawning health check agent for %s", node_ptr->node_hostname);
+	ping_begin();
+	set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(check_agent_args);
+}
+
+/* Spawn health check function for every node that is not DOWN */
+extern void run_health_check(void)
+{
+	agent_arg_t *check_agent_args = NULL;
+	agent_arg_t *healthy_agent_args = NULL;
+	agent_arg_t *unhealthy_agent_args = NULL;
+	node_health_check_msg_t *healthy_msg = NULL, *unhealthy_msg = NULL;
+	bool report = (slurm_conf.conf_flags & CONF_FLAG_HC_REPORT_HEALTH);
+	node_record_t *node_ptr;
+	int node_test_cnt = 0;
+	int node_limit = 0;
+	int node_states = slurm_conf.health_check_node_state &
+		(~HEALTH_CHECK_CYCLE);
+	int run_cyclic = slurm_conf.health_check_node_state &
+		HEALTH_CHECK_CYCLE;
+	static int base_node_loc = 0;
+	static time_t cycle_start_time = (time_t) 0;
+
+	if (run_cyclic) {
+		time_t now = time(NULL);
+		if (cycle_start_time == (time_t) 0)
+			cycle_start_time = now;
+		else if (base_node_loc > 0)
+			;	/* mid-cycle */
+		else if (difftime(now, cycle_start_time) <
+		         slurm_conf.health_check_interval)
+			return;	/* Wait to start next cycle */
+		cycle_start_time = now;
+		/*
+		 * Determine how many nodes we want to test on each call of
+		 * run_health_check() to spread out the work.
+		 */
+		node_limit = (active_node_record_count * 2) /
+		             slurm_conf.health_check_interval;
+		node_limit = MAX(node_limit, 10);
+	}
+
+	check_agent_args = xmalloc (sizeof (agent_arg_t));
+	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	check_agent_args->retry = 0;
+	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	check_agent_args->hostlist = hostlist_create(NULL);
+
+	healthy_msg = xmalloc(sizeof(*healthy_msg));
+	healthy_msg->healthy = true;
+	healthy_agent_args = xmalloc(sizeof(agent_arg_t));
+	healthy_agent_args->msg_type = REQUEST_NODE_HEALTH_CHECK;
+	healthy_agent_args->msg_args = healthy_msg;
+	healthy_agent_args->retry = 0;
+	healthy_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	healthy_agent_args->hostlist = hostlist_create(NULL);
+
+	unhealthy_msg = xmalloc(sizeof(*unhealthy_msg));
+	unhealthy_msg->healthy = false;
+	unhealthy_agent_args = xmalloc(sizeof(agent_arg_t));
+	unhealthy_agent_args->msg_type = REQUEST_NODE_HEALTH_CHECK;
+	unhealthy_agent_args->msg_args = unhealthy_msg;
+	unhealthy_agent_args->retry = 0;
+	unhealthy_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	unhealthy_agent_args->hostlist = hostlist_create(NULL);
+
+	/* Sync plugin internal data with
+	 * node select_nodeinfo. This is important
+	 * after reconfig otherwise select_nodeinfo
+	 * will not return the correct number of
+	 * allocated cpus.
+	 */
+	select_g_select_nodeinfo_set_all();
+
+	for (; (node_ptr = next_node(&base_node_loc)); base_node_loc++) {
+		agent_arg_t *args = check_agent_args;
+		if (run_cyclic &&
+		    (node_test_cnt++ >= node_limit))
+				break;
+		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_EXTERNAL(node_ptr) ||
+		    IS_NODE_INVALID_REG(node_ptr) ||
+		    IS_NODE_NO_RESPOND(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
+			continue;
+		if (node_states != HEALTH_CHECK_NODE_ANY) {
+			uint16_t cpus_total, cpus_used = 0;
+			cpus_total = node_ptr->config_ptr->cpus;
+			if (!IS_NODE_IDLE(node_ptr)) {
+				node_select_stats_t *tmp =
+					node_select_stats_array
+						[node_ptr->index];
+				cpus_used = tmp->alloc_cpus;
+			}
+			/* Here the node state is inferred from
+			 * the cpus allocated on it.
+			 * - cpus_used == 0
+			 *       means node is idle
+			 * - cpus_used < cpus_total
+			 *       means the node is in mixed state
+			 * else cpus_used == cpus_total
+			 *       means the node is allocated
+			 */
+			if (cpus_used == 0) {
+				if (!(node_states & HEALTH_CHECK_NODE_IDLE) &&
+				    (!(node_states & HEALTH_CHECK_NODE_NONDRAINED_IDLE) ||
+				     IS_NODE_DRAIN(node_ptr))) {
+					continue;
+				}
+				if (!IS_NODE_IDLE(node_ptr))
+					continue;
+			} else if (cpus_used < cpus_total) {
+				if (!(node_states & HEALTH_CHECK_NODE_MIXED))
+					continue;
+			} else {
+				if (!(node_states & HEALTH_CHECK_NODE_ALLOC))
+					continue;
+			}
+		}
+		/*
+		 * When slurmd can report node health (by default on 26.11+,
+		 * or on 26.05 with health_check_report), send the
+		 * verdict-carrying RPC; otherwise fall back to the plain RPC.
+		 *
+		 * When 26.05 is no longer supported check_agent_args can be
+		 * removed and the protocol version guard can be removed.
+		 */
+		if ((node_ptr->protocol_version >=
+		     SLURM_26_11_PROTOCOL_VERSION) ||
+		    (report && (node_ptr->protocol_version >=
+				SLURM_26_05_PROTOCOL_VERSION))) {
+			if (_node_unhealthy_for_hc(node_ptr))
+				args = unhealthy_agent_args;
+			else
+				args = healthy_agent_args;
+		}
+		if (args->protocol_version > node_ptr->protocol_version)
+			args->protocol_version = node_ptr->protocol_version;
+		hostlist_push_host(args->hostlist, node_ptr->name);
+		args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			args->msg_flags |= SLURM_PACK_ADDRS;
+	}
+	if (!node_ptr)
+		base_node_loc = 0;
+
+	_queue_health_check(check_agent_args);
+	_queue_health_check(healthy_agent_args);
+	_queue_health_check(unhealthy_agent_args);
+}
+
+/* Update acct_gather data for every node that is not DOWN */
+extern void update_nodes_acct_gather_data(void)
+{
+	node_record_t *node_ptr;
+	int i;
+	char *host_str = NULL;
+	agent_arg_t *agent_args = NULL;
+
+	agent_args = xmalloc (sizeof (agent_arg_t));
+	agent_args->msg_type = REQUEST_ACCT_GATHER_UPDATE;
+	agent_args->retry = 0;
+	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	agent_args->hostlist = hostlist_create(NULL);
+
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_EXTERNAL(node_ptr) ||
+		    IS_NODE_INVALID_REG(node_ptr) ||
+		    IS_NODE_NO_RESPOND(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
+			continue;
+		if (agent_args->protocol_version > node_ptr->protocol_version)
+			agent_args->protocol_version =
+				node_ptr->protocol_version;
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
+		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+	}
+
+	if (agent_args->node_count == 0) {
+		hostlist_destroy(agent_args->hostlist);
+		xfree (agent_args);
+	} else {
+		hostlist_uniq(agent_args->hostlist);
+		host_str = hostlist_ranged_string_xmalloc(agent_args->hostlist);
+		log_flag(ENERGY, "Updating acct_gather data for %s", host_str);
+		xfree(host_str);
+		ping_begin();
+		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
+		agent_queue_request(agent_args);
+	}
+}

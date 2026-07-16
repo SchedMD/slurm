@@ -1,0 +1,272 @@
+/*****************************************************************************\
+ *  serializer_url_encoded.c - Serializer for url-encoded.
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "config.h"
+
+#include "slurm/slurm.h"
+
+#include "src/common/slurm_xlator.h"
+#include "src/common/data.h"
+#include "src/common/http.h"
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
+
+#include "src/interfaces/serializer.h"
+
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "Serializer URL encoded plugin";
+const char plugin_type[] = "serializer/url-encoded";
+const uint32_t  plugin_version = SLURM_VERSION_NUMBER;
+
+/* Required for serializer plugins: */
+const char *mime_types[] = {
+	"application/x-www-form-urlencoded",
+	NULL
+};
+
+extern int serialize_p_data_to_string(char **dest, size_t *length,
+				      const data_t *src,
+				      serializer_flags_t flags)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+static data_t *_on_key(data_t *dst, const char *key)
+{
+	data_t *c = data_key_get(dst, key);
+
+	if (!c)
+		return data_key_set(dst, key);
+
+	if (data_get_type(c) != DATA_TYPE_LIST) {
+		/*
+		 * Multiple values for the same key requires conversion to a
+		 * list of each value. Extract out the prior value and convert
+		 * to a list with the prior value as the first entry.
+		 */
+		data_t *k = data_new();
+		data_move(k, c);
+		data_set_list(c);
+		data_move(data_list_append(c), k);
+		FREE_NULL_DATA(k);
+	}
+
+	return data_list_append(c);
+}
+
+static int _handle_new_key_char(data_t *d, char **key, char **buffer)
+{
+	if (*key == NULL && *buffer == NULL) {
+		/* example: &test=value */
+	} else if (*key == NULL && *buffer != NULL) {
+		/*
+		 * example: test1&test2=value
+		 * only buffer given but not key value. Assume that the buffer
+		 * is instead the key and this is the user providing a flag
+		 * input which will be parsed as being true.
+		 *
+		 * The behavior is not yet standardised by OpenAPI:
+		 *  https://github.com/OAI/OpenAPI-Specification/issues/1782
+		 *
+		 * RFC3986 provides an example of "key=value" but leaves
+		 * the flag values ambiguous.
+		 */
+		data_t *c = _on_key(d, *buffer);
+		data_set_bool(c, true);
+		xfree(*buffer);
+		*buffer = NULL;
+	} else if (*key != NULL && *buffer == NULL) {
+		/* example: &test1=&=value */
+		data_t *c = _on_key(d, *key);
+		data_set_null(c);
+		xfree(*key);
+		*key = NULL;
+	} else if (*key != NULL && *buffer != NULL) {
+		data_t *c = _on_key(d, *key);
+		data_set_string(c, *buffer);
+
+		xfree(*key);
+		xfree(*buffer);
+		*key = NULL;
+		*buffer = NULL;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * chars that can pass without decoding.
+ * rfc3986: unreserved characters.
+ */
+static bool _is_valid_url_char(char buffer)
+{
+	return (buffer >= '0' && buffer <= '9') ||
+	       (buffer >= 'a' && buffer <= 'z') ||
+	       (buffer >= 'A' && buffer <= 'Z') || buffer == '~' ||
+	       buffer == '-' || buffer == '.' || buffer == '_';
+}
+
+extern int serialize_p_init(serializer_flags_t flags)
+{
+	log_flag(DATA, "loaded");
+
+	return SLURM_SUCCESS;
+}
+
+extern void serialize_p_fini(void)
+{
+	log_flag(DATA, "unloaded");
+}
+
+/*
+ * Parses url query into a data struct.
+ * IN dest - ptr to data to overwrite on success
+ * IN src rfc3986&rfc1866 query string
+ * 	application/x-www-form-urlencoded
+ * 	breaks key=value&key2=value2&...
+ * 	into a data_t dictionary
+ * 	dup keys will override existing keys
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_p_string_to_data(data_t **dest, const char *src,
+				      size_t length)
+{
+	int rc = SLURM_SUCCESS;
+	data_t *d = data_set_dict(data_new());
+	char *key = NULL;
+	char *buffer = NULL;
+	const char *src_end = src + length;
+
+	/* extract each word */
+	for (const char *ptr = src;
+	     ptr && !rc && (ptr < src_end) && (*ptr != '\0'); ++ptr) {
+		if (_is_valid_url_char(*ptr)) {
+			xstrcatchar(buffer, *ptr);
+			continue;
+		}
+
+		switch (*ptr) {
+		case '%': /* rfc3986 */
+		{
+			const char c = url_decode_escape_seq(ptr, src_end);
+			if (c != '\0') {
+				/* shift past the hex value */
+				ptr += 2;
+
+				xstrcatchar(buffer, c);
+			} else {
+				debug("%s: invalid URL escape sequence: %.*s",
+				      __func__, (int) (src_end - ptr), ptr);
+				rc = SLURM_ERROR;
+				break;
+			}
+			break;
+		}
+		case '+': /* rfc1866 only */
+			xstrcatchar(buffer, ' ');
+			break;
+		case ';': /* rfc1866 requests ';' treated like '&' */
+		case '&': /* rfc1866 only */
+			rc = _handle_new_key_char(d, &key, &buffer);
+			break;
+		case '=': /* rfc1866 only */
+			if (key == NULL && buffer == NULL) {
+				/* example: =test=value */
+				error("%s: invalid url character = before key name",
+				      __func__);
+				rc = SLURM_ERROR;
+			} else if (key == NULL && buffer != NULL) {
+				key = buffer;
+				buffer = NULL;
+			} else if (key != NULL && buffer == NULL) {
+				/* example: test===value */
+				debug4("%s: ignoring duplicate character = in url",
+				       __func__);
+			} else if (key != NULL && buffer != NULL) {
+				/* example: test=value=testv */
+				error("%s: invalid url character = before new key name",
+				      __func__);
+				rc = SLURM_ERROR;
+			}
+			break;
+		default:
+			debug("%s: unexpected URL character: %c",
+			      __func__, *ptr);
+			rc = SLURM_ERROR;
+		}
+	}
+
+	/* account for last entry */
+	if (!rc)
+		rc = _handle_new_key_char(d, &key, &buffer);
+	if (!rc && buffer)
+		/* account for last entry not having a value */
+		rc = _handle_new_key_char(d, &key, &buffer);
+
+	xassert(rc || !buffer);
+	xassert(rc || !key);
+
+	xfree(buffer);
+	xfree(key);
+
+	if (rc) {
+		FREE_NULL_DATA(d);
+	} else {
+		FREE_NULL_DATA(*dest);
+		*dest = d;
+	}
+
+	return rc;
+}
+
+extern int serialize_p_dump(serialize_dump_state_t **state_ptr,
+			    data_parser_type_t type, void *src,
+			    ssize_t src_bytes, buf_t *dst,
+			    serializer_flags_t flags)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int serialize_p_parse(serialize_parse_state_t **state_ptr,
+			     data_parser_type_t type, void *dst,
+			     ssize_t dst_bytes, const buf_t *src)
+{
+	return ESLURM_NOT_SUPPORTED;
+}

@@ -1,0 +1,936 @@
+/*****************************************************************************\
+ *  tls.c - definitions for TLS work in connection manager
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+
+#include "src/conmgr/tls.h"
+#include "src/conmgr/tls_fingerprint.h"
+#include "src/conmgr/conmgr.h"
+#include "src/conmgr/mgr.h"
+
+#include "src/interfaces/tls.h"
+
+static void _shift_buf_bytes(buf_t *buf, const size_t bytes)
+{
+	void *start = NULL;
+	size_t remain = 0;
+
+	xassert(get_buf_offset(buf) >= bytes);
+
+	if (get_buf_offset(buf) == bytes) {
+		set_buf_offset(buf, 0);
+		return;
+	}
+
+	start = (((void *) get_buf_data(buf)) + bytes);
+	remain = (get_buf_offset(buf) - bytes);
+
+	xassert(remain > 0);
+	xassert(remain < size_buf(buf));
+
+	(void) memcpy(get_buf_data(buf), start, remain);
+
+	set_buf_offset(buf, remain);
+}
+
+extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	void *tls = NULL;
+	buf_t *tls_in = NULL;
+	list_t *tls_out = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	/* Connection must already be soft closed */
+	xassert(con_flag(con, FLAG_READ_EOF));
+	xassert(con_flag(con, FLAG_WRITE_EOF));
+
+	SWAP(tls, con->tls);
+	xassert(tls);
+
+	SWAP(tls_in, con->tls_in);
+	xassert(tls_in);
+
+	SWAP(tls_out, con->tls_out);
+	xassert(tls_out);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	errno = SLURM_SUCCESS;
+	tls_g_destroy_conn(tls, false);
+	if ((rc = errno))
+		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	slurm_mutex_unlock(&mgr.mutex);
+#endif
+
+	FREE_NULL_BUFFER(tls_in);
+	FREE_NULL_LIST(tls_out);
+
+	log_flag(CONMGR, "%s: [%s] TLS destroy finished", __func__, con->name);
+}
+
+static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	log_flag(CONMGR, "%s: [%s] close wait complete", __func__, con->name);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+	close_con(true, con);
+
+	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
+
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+/*
+ * Check and enforce if TLS has requested wait on operations and then close
+ * connection
+ */
+static void _wait_close(conmgr_fd_t *con)
+{
+	timespec_t delay = { 0 };
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+	/* Soft close the connection to stop any more activity */
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
+	con_set_flag(con, FLAG_READ_EOF);
+	con_set_flag(con, FLAG_WRITE_EOF);
+	con_set_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
+	con_unset_flag(con, FLAG_CAN_WRITE);
+	con_unset_flag(con, FLAG_CAN_READ);
+	con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+
+	xassert(con->tls);
+	delay = tls_g_get_delay(con->tls);
+
+	if (delay.tv_sec) {
+		log_flag(CONMGR, "%s: [%s] deferring close",
+			 __func__, con->name);
+
+		add_work_con_delayed_abs_fifo(true, con, _delayed_close, NULL,
+					      delay);
+	} else {
+		log_flag(CONMGR, "%s: [%s] queuing close",
+			 __func__, con->name);
+
+		add_work_con_fifo(true, con, _delayed_close, NULL);
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+static void _shutdown_complete(bool locked, conmgr_fd_t *con)
+{
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+	con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
+
+	/*
+	 * Now that TLS shutdown is done, continue with normal
+	 * connection shutdown.
+	 */
+	con_unset_flag(con, FLAG_IS_TLS_CONNECTED);
+	close_con(true, con);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
+extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	void *tls = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
+		con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+	xassert(con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) ||
+		con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+
+	con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
+
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_WRITE_EOF)) {
+		log_flag(CONMGR, "%s: [%s] cancelling TLS shutdown",
+			 __func__, con->name);
+		_shutdown_complete(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	tls = con->tls;
+
+	/*
+	 * tls_g_shutdown_conn() may attempt to read or write data. In case it
+	 * is attempting to write, FLAG_ON_DATA_TRIED is unset here to ensure
+	 * that tls_shutdown() is called again if tls_g_shutdown_conn() blocks
+	 * on writing.
+	 *
+	 * If tls_g_shutdown_conn() is blocked on reading, FLAG_ON_DATA_TRIED
+	 * will be set.
+	 */
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	log_flag(CONMGR, "%s: [%s] attempting graceful TLS shutdown",
+		 __func__, con->name);
+
+	/*
+	 * Attempt to do TLS shutdown sequence. This may block on either
+	 * reading/writing data.
+	 */
+	rc = tls_g_shutdown_conn(tls);
+
+	if (rc == SLURM_BLOCKED_ON_READ) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(tls == con->tls);
+		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+
+		if (con_flag(con, FLAG_READ_EOF) ||
+		    con_flag(con, FLAG_WRITE_EOF)) {
+			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() completed after connection closed",
+				 __func__, con->name);
+			_shutdown_complete(true, con);
+		} else {
+			/* Wait for more incoming data before trying again */
+			con_set_flag(con, FLAG_ON_DATA_TRIED);
+
+			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() requires more incoming data",
+				 __func__, con->name);
+		}
+
+		slurm_mutex_unlock(&mgr.mutex);
+	} else if (rc == SLURM_BLOCKED_ON_WRITE) {
+		log_flag(NET, "%s: [%s] write required for tls_g_shutdown_conn() blocked, will try again",
+			 __func__, con->name);
+	} else if (rc) {
+		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+		_wait_close(con);
+	} else {
+		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() complete",
+			 __func__, con->name);
+		_shutdown_complete(false, con);
+	}
+}
+
+static int _recv(void *io_context, uint8_t *buf, uint32_t len)
+{
+	conmgr_fd_t *con = io_context;
+	size_t bytes = 0;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+	xassert(con->tls_in);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	if (!(bytes = get_buf_offset(con->tls_in))) {
+		if (con_flag(con, FLAG_READ_EOF)) {
+			log_flag(CONMGR, "%s: [%s] recv() returning EOF",
+				 __func__, con->name);
+			return 0;
+		}
+
+		log_flag(CONMGR, "%s: [%s] recv() returning EWOULDBLOCK",
+			 __func__, con->name);
+		errno = EWOULDBLOCK;
+		return -1;
+	}
+
+	if (bytes > len)
+		bytes = len;
+
+	log_flag_hex_range(NET_RAW, get_buf_data(con->tls_in),
+			   get_buf_offset(con->tls_in), 0, bytes,
+			   "[%s] TLS recv() %u/%u bytes encrypted",
+			   con->name, bytes, len);
+
+	(void) memcpy(buf, get_buf_data(con->tls_in), bytes);
+	_shift_buf_bytes(con->tls_in, bytes);
+
+	return bytes;
+}
+
+extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	buf_t *buf = con->in;
+	void *start = NULL;
+	size_t need = -1, readable = -1;
+	ssize_t read_c = -1;
+	int rc = EINVAL;
+	int try = 0;
+
+again:
+	slurm_mutex_lock(&mgr.mutex);
+
+	if ((need = get_buf_offset(con->tls_in)) <= 0) {
+		log_flag(NET, "%s: [%s] already decrypted all incoming TLS data",
+			 __func__, con->name);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	if (con_flag(con, FLAG_ON_DATA_TRIED) ||
+	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
+		char flags_str[CON_FLAGS_STR_BYTES];
+
+		log_flag(NET, "%s: [%s] skipping with flags=%s",
+			 __func__, con->name,
+			 con_flags_print(con->flags, flags_str,
+					 sizeof(flags_str)));
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (try > 1) {
+		log_flag(NET, "%s: [%s] need >%d bytes of incoming data to decrypted TLS",
+				 __func__, con->name,
+				 get_buf_offset(con->tls_in));
+
+		slurm_mutex_lock(&mgr.mutex);
+		/* lock to tell mgr that we are done for now */
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	if ((rc = try_grow_buf_remaining(buf, need))) {
+		error("%s: [%s] unable to allocate larger input buffer for TLS data: %s",
+		      __func__, con->name, slurm_strerror(rc));
+		_wait_close(con);
+		return;
+	}
+
+	readable = remaining_buf(buf);
+	start = ((void *) get_buf_data(buf)) + get_buf_offset(buf);
+
+	xassert(readable >= need);
+	xassert(con->tls);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	/* TLS will callback to _recv() to read from con->tls_in*/
+	read_c = tls_g_recv(con->tls, start, readable);
+
+	if (read_c < 0) {
+		int recv_errno = errno;
+
+		if ((recv_errno == EAGAIN) || (recv_errno == EWOULDBLOCK)) {
+			log_flag(NET, "%s: [%s] TLS would block on tls_g_recv()",
+				 __func__, con->name);
+			return;
+		}
+
+		log_flag(NET, "%s: [%s] error while decrypting TLS: %s",
+			 __func__, con->name, slurm_strerror(recv_errno));
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, recv_errno);
+		slurm_mutex_unlock(&mgr.mutex);
+
+		_wait_close(con);
+		return;
+	} else if (read_c == 0) {
+		log_flag(NET, "%s: [%s] read EOF with %u bytes previously decrypted",
+			 __func__, con->name, get_buf_offset(buf));
+
+		close_con(false, con);
+		return;
+	} else {
+		size_t offset = 0;
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		log_flag(NET, "%s: [%s] decrypted TLS %zd/%zd bytes with %u bytes previously decrypted",
+			 __func__, con->name, read_c, readable,
+			 get_buf_offset(buf));
+		log_flag_hex_range(NET_RAW, get_buf_data(buf),
+				   (get_buf_offset(buf) + read_c),
+				   get_buf_offset(buf),
+				   (get_buf_offset(buf) + read_c),
+				   "%s: [%s] decrypted", __func__, con->name);
+
+		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
+
+		offset = get_buf_offset(con->tls_in);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		if (offset) {
+			try++;
+			goto again;
+		}
+	}
+}
+
+/*
+ * WARNING: This acquires mgr.mutex and then the con->tls_out rwlock. To avoid
+ * deadlock, callers of any tls_g_*() function that may result in a call to
+ * _send() must not hold the con->out or con->tls_out rwlock across the call.
+ * See tls_handle_encrypt() for the con->out case this rule prevents.
+ */
+static int _send(void *io_context, const uint8_t *src, uint32_t len)
+{
+	conmgr_fd_t *con = io_context;
+	buf_t *buf = NULL;
+	void *dst = NULL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	if (!(dst = try_xmalloc(len)) || !(buf = create_buf(dst, len))) {
+		xfree(dst);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	log_flag_hex(NET_RAW, src, len, "[%s] TLS send encrypted", con->name);
+
+	(void) memcpy(dst, src, len);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	list_append(con->tls_out, buf);
+
+	con->last_write = timespec_now();
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return len;
+}
+
+/* WARNING: caller must not hold mgr->mutex lock */
+static void _negotiate(conmgr_fd_t *con, void *tls)
+{
+	int rc = tls_g_negotiate_conn(tls);
+
+	if (rc == EWOULDBLOCK) {
+		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() requires more incoming data",
+				 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(con_flag(con, FLAG_TLS_SERVER) ||
+			con_flag(con, FLAG_TLS_CLIENT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+		xassert(con_flag(con, FLAG_WORK_ACTIVE));
+		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+		/* Wait for more incoming data before trying again */
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	} else if (rc) {
+		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() failed: %s",
+				 __func__, con->name, slurm_strerror(rc));
+		_wait_close(con);
+		return;
+	} else {
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(con_flag(con, FLAG_TLS_SERVER) ||
+			con_flag(con, FLAG_TLS_CLIENT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+		xassert(con_flag(con, FLAG_WORK_ACTIVE));
+		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+		xassert(con->tls == tls);
+
+		con_set_flag(con, FLAG_IS_TLS_CONNECTED);
+
+		if (con->events->on_connection)
+			queue_on_connection(con);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] TLS connected", __func__, con->name);
+	}
+}
+
+extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	conn_args_t conn_args = {
+		.input_fd = -1,
+		.output_fd = -1,
+		.defer_blinding = true,
+		.callbacks = {
+			.recv = _recv,
+			.send = _send,
+			.io_context = con,
+		},
+		.defer_negotiation = true,
+		.cert = con->tls_cert,
+	};
+	int rc = SLURM_ERROR;
+	void *tls = NULL;
+	buf_t *tls_in = NULL;
+	list_t *tls_out = NULL;
+
+	if (tls_g_init() || !tls_available()) {
+		log_flag(CONMGR, "%s: [%s] TLS disabled: Unable to secure connection. Closing connection.",
+			 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, ESLURM_TLS_REQUIRED);
+		close_con(true, con);
+		close_con_output(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
+		con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+
+	if ((con->input_fd < 0) || (con->output_fd < 0)) {
+		xassert(con_flag(con, FLAG_READ_EOF));
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skip TLS create due to partial connection",
+			 __func__, con->name);
+		return;
+	}
+
+	if ((tls = con->tls)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] attempting TLS negotiation again",
+			 __func__, con->name);
+
+		_negotiate(con, tls);
+		return;
+	}
+
+	xassert(con->input_fd >= 0);
+	xassert(con->output_fd >= 0);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	/* Should not be any outgoing data yet */
+	xassert(list_is_empty(con->out));
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
+	tls_out = list_create((ListDelF) free_buf);
+
+	if (get_buf_offset(con->in)) {
+		/*
+		 * Need to move the TLS handshake to con->tls_in to allow tls
+		 * plugin to read the handshake
+		 */
+		const size_t bytes = get_buf_offset(con->in);
+
+		if ((rc = try_grow_buf_remaining(tls_in, bytes))) {
+			FREE_NULL_BUFFER(tls_in);
+			FREE_NULL_LIST(tls_out);
+
+			log_flag(CONMGR, "%s: [%s] out of memory for TLS handshake: %s",
+				 __func__, con->name, slurm_strerror(rc));
+
+			slurm_mutex_lock(&mgr.mutex);
+			con_set_status_code(con, rc);
+			close_con(true, con);
+			slurm_mutex_unlock(&mgr.mutex);
+			return;
+		}
+
+		log_flag_hex(NET_RAW, get_buf_data(con->in), bytes,
+			     "[%s] transferring for decryption", con->name);
+
+		(void) memcpy(get_buf_data(tls_in), get_buf_data(con->in),
+			      bytes);
+
+		set_buf_offset(con->in, 0);
+		set_buf_offset(tls_in, bytes);
+
+		xassert(!con_flag(con, FLAG_ON_DATA_TRIED));
+	}
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
+		con_flag(con, FLAG_TLS_SERVER));
+
+	if (con_flag(con, FLAG_TLS_CLIENT))
+		conn_args.mode = CONN_CLIENT;
+	else if (con_flag(con, FLAG_TLS_SERVER))
+		conn_args.mode = CONN_SERVER;
+
+	xassert(conn_args.mode != CONN_NULL);
+	xassert(con->input_fd >= 0);
+	xassert(con->output_fd >= 0);
+
+	con->tls_in = tls_in;
+	con->tls_out = tls_out;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (!(tls = tls_g_create_conn(&conn_args))) {
+		rc = errno;
+		log_flag(CONMGR, "%s: [%s] tls_g_create() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(!con->tls);
+
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		con->tls_in = NULL;
+		con->tls_out = NULL;
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		FREE_NULL_BUFFER(tls_in);
+		FREE_NULL_LIST(tls_out);
+	} else {
+		log_flag(CONMGR, "%s: [%s] tls_g_create() success",
+			 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+		xassert(!con->tls);
+		con->tls = tls;
+		xassert(con->tls_in == tls_in);
+		xassert(con->tls_out == tls_out);
+
+		/* Release cert that is no longer needed */
+		xfree(con->tls_cert);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		_negotiate(con, tls);
+	}
+}
+
+extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
+{
+	conn_callbacks_t callbacks = {
+		.recv = _recv,
+		.send = _send,
+		.io_context = con,
+	};
+	int rc;
+
+	xassert(tls_conn);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+
+	con->tls = tls_conn;
+	con->tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
+	con->tls_out = list_create((ListDelF) free_buf);
+
+	/* Can't finger print existing TLS connections */
+	con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+
+	if ((rc = tls_g_set_conn_callbacks(tls_conn, &callbacks))) {
+		log_flag(CONMGR, "%s: [%s] adopting TLS state failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+		con_set_flag(con, FLAG_READ_EOF);
+		con_set_flag(con, FLAG_WRITE_EOF);
+	} else {
+		log_flag(CONMGR, "%s: [%s] adopted TLS state",
+			 __func__, con->name);
+
+		/* TLS state must already be connected */
+		con_set_flag(con, FLAG_IS_TLS_CONNECTED);
+	}
+}
+
+extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+
+	read_input(con, con->tls_in, "input TLS buffer");
+}
+
+extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	const size_t count = list_count(con->tls_out);
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+
+	if (count)
+		write_output(con, count, con->tls_out);
+}
+
+extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	buf_t *out = NULL;
+	int index = 0;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
+		con_flag(con, FLAG_TLS_SERVER));
+
+	/*
+	 * Handle con->out buffers one at a time with list_pop() instead of
+	 * holding the lock across the entire iteration with list_delete_all()
+	 * to avoid this deadlock:
+	 *
+	 * Thread 1
+	 *   tls_handle_encrypt()
+	 *     list_delete_all()                acquires con->out rwlock
+	 *       tls_g_send()
+	 *         _send()                      acquires mgr.mutex
+	 *
+	 * Thread 2
+	 *   _on_data()
+	 *     conmgr_con_xfer_out_buffer()
+	 *       conmgr_queue_write_data()
+	 *         _write_data()                acquires mgr.mutex
+	 *           _append_output()           acquires con->out rwlock
+	 */
+	while ((out = list_pop(con->out))) {
+		void *start =
+			((void *) get_buf_data(out)) + get_buf_offset(out);
+		uint32_t remaining = remaining_buf(out);
+		ssize_t wrote;
+
+		xassert(out->magic == BUF_MAGIC);
+
+		wrote = tls_g_send(con->tls, start, remaining);
+		if (wrote < 0) {
+			error("%s: [%s] tls_g_send() failed: %m",
+			      __func__, con->name);
+			free_buf(out);
+			/* drop outbound data on the floor and close */
+			list_flush(con->out);
+			_wait_close(con);
+			return;
+		}
+
+		if (wrote >= remaining) {
+			log_flag(NET, "%s: [%s] completed encrypt[%d] of %u/%u bytes to outgoing fd %u",
+				 __func__, con->name, index, remaining,
+				 size_buf(out), con->output_fd);
+			log_flag_hex_range(NET_RAW, get_buf_data(out),
+					   size_buf(out), get_buf_offset(out),
+					   (get_buf_offset(out) + wrote),
+					   "%s: [%s] completed encrypt[%d] of %u/%u bytes",
+					   __func__, con->name, index, remaining,
+					   size_buf(out));
+
+			free_buf(out);
+			index++;
+			continue;
+		}
+
+		/*
+		 * Partial write: advance past the bytes that were encrypted and
+		 * requeue the remainder at the head of con->out
+		 */
+		log_flag(CONMGR, "%s: [%s] partial encrypt[%d] of %zd/%u bytes to outgoing fd %u",
+			 __func__, con->name, index, wrote, size_buf(out),
+			 con->output_fd);
+		log_flag_hex_range(NET_RAW, get_buf_data(out), size_buf(out),
+				   get_buf_offset(out),
+				   (get_buf_offset(out) + wrote),
+				   "%s: [%s] partial encrypt[%d] of %zd/%u bytes",
+				   __func__, con->name, index, wrote,
+				   size_buf(out));
+
+		set_buf_offset(out, get_buf_offset(out) + wrote);
+		list_push(con->out, out);
+		break;
+	}
+}
+
+extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int match = EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprinting as TLS already activated",
+				 __func__, con->name);
+		return;
+	}
+
+	/* fingerprinting must be done before reaching CONNECTED status */
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+	/* verify connection is not a listener which can't be fingerprinted */
+	xassert(!con_flag(con, FLAG_IS_LISTEN));
+
+	/* Verify TLS has not already started */
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	xassert(!con_flag(con, FLAG_TLS_CLIENT));
+	xassert(!con_flag(con, FLAG_TLS_SERVER));
+	xassert(con_flag(con, FLAG_TLS_FINGERPRINT));
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	match = tls_is_handshake(get_buf_data(con->in), get_buf_offset(con->in),
+				 con->name);
+
+	if (!match) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Only servers can accept an incoming TLS handshake requests */
+		con_set_flag(con, FLAG_TLS_SERVER);
+
+		/* Deactivate fingerprinting */
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+		/*
+		 * _negotiate() will queue on_connection() callback once TLS
+		 * negotiation is complete since it was deferred for
+		 * fingerprinting
+		 */
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint matched",
+					 __func__, con->name);
+	} else if (match == EWOULDBLOCK) {
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS fingerprint",
+			 __func__, con->name);
+	} else if (match == ENOENT) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Deactivate fingerprinting */
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+		/* connection should never be TLS wrapped at this point */
+		xassert(!con_flag(con, FLAG_TLS_SERVER));
+		xassert(!con_flag(con, FLAG_TLS_CLIENT));
+
+		/*
+		 * Run on_connection() callback now since it was deferred for
+		 * fingerprinting
+		 */
+		if (con->events->on_connection)
+			queue_on_connection(con);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] TLS not detected",
+			 __func__, con->name);
+	} else {
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint failed: %s",
+				 __func__, con->name, slurm_strerror(match));
+
+		/* should never happen */
+		xassert(false);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, match);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+}
+
+extern bool tls_is_client_authenticated(conmgr_fd_t *con)
+{
+	xassert(con->tls);
+
+	return tls_g_is_client_authenticated(con->tls);
+}

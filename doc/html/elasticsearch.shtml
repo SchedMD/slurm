@@ -1,0 +1,141 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Elasticsearch Guide</h1>
+
+<p>Slurm provides multiple Job Completion Plugins.
+These plugins are an orthogonal way to provide historical job
+<a href="accounting.html">accounting</a> data for finished jobs.</p>
+
+<p>In most installations, Slurm is already configured with an
+<a href="slurm.conf.html#OPT_AccountingStorageType">AccountingStorageType</a>
+plugin &mdash; usually <b>slurmdbd</b>. In these situations, the information
+captured by a completion plugin is intentionally redundant.</p>
+
+<p>The <b>jobcomp/elasticsearch</b> plugin can be used together with a web
+layer on top of the Elasticsearch server &mdash; such as
+<a href="https://www.elastic.co/products/kibana">Kibana</a> &mdash; to
+visualize your finished jobs and the state of your cluster. Some of these
+visualization tools also let you easily create different types of dashboards,
+diagrams, tables, histograms and/or apply customized filters when searching.
+</p>
+
+<h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
+<p>The plugin requires additional libraries for compilation:</p>
+<ul>
+	<li><a href="https://curl.se/libcurl">libcurl</a> development files</li>
+	<li><a href="related_software.html#json">JSON-C</a></li>
+</ul>
+
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
+
+<p>The Elasticsearch instance should be running and reachable from the multiple
+<a href="slurm.conf.html#OPT_SlurmctldAddr">SlurmctldHost</a> configured.
+Refer to the <a href="https://www.elastic.co/">Elasticsearch
+Official Documentation</a> for further details on setup and configuration.
+
+<p>There are three <a href="slurm.conf.html">slurm.conf</a> options related to
+this plugin:</p>
+
+<ul>
+<li>
+<a href="slurm.conf.html#OPT_JobCompType"><b>JobCompType</b></a>
+is used to select the job completion plugin type to activate. It should be set
+to <b>jobcomp/elasticsearch</b>.
+<pre>JobCompType=jobcomp/elasticsearch</pre>
+</li>
+<li>
+<a href="slurm.conf.html#OPT_JobCompLoc"><b>JobCompLoc</b></a> should be set to
+the Elasticsearch server URL endpoint (including the port number and the target
+index).
+<pre>JobCompLoc=&lt;host&gt;:&lt;port&gt;/&lt;target&gt;/_doc</pre>
+
+<p><b>NOTE</b>: Since Elasticsearch 8.0 the APIs that accept types are removed,
+thereby moving to a typeless mode. The Slurm elasticsearch plugin in versions
+prior to 20.11 removed any trailing slashes from this option URL and appended
+a hardcoded <b>/slurm/jobcomp</b> suffix representing the <i>/index/type</i>
+respectively.
+Starting from Slurm 20.11 the URL is fully configurable and handed as-is without
+modification to the libcurl library functions. In addition, this also allows
+users to index data from different clusters to the same server but to different
+indices.</p>
+
+<p><b>NOTE</b>: The Elasticsearch official documentation provides detailed
+information around these concepts, the type to typeless deprecation transition
+as well as reindex API references on how to copy data from one index to another
+if needed.
+</p>
+</li>
+<li>
+<a href="slurm.conf.html#OPT_DebugFlags"><b>DebugFlags</b></a> could include
+the <b>Elasticsearch</b> flag for extra debugging purposes.
+<pre>DebugFlags=Elasticsearch</pre>
+It is a good idea to turn this on initially until you have verified that
+finished jobs are properly indexed. Note that you do not need to manually
+create the Elasticsearch <i>index</i>, since the plugin will automatically
+do so when trying to index the first job document.
+</li>
+</ul>
+
+<h2 id="visualization">Visualization
+<a class="slurm_link" href="#visualization"></a>
+</h2>
+
+<p>Once jobs are being indexed, it is a good idea to use a web visualization
+layer to analyze the data.
+<a href="https://www.elastic.co/products/kibana"><b>Kibana</b></a> is a
+recommended open-source data visualization plugin for Elasticsearch.
+Once installed, an Elasticsearch <i>index</i> name or pattern has to be
+configured to instruct Kibana to retrieve the data. Once data is loaded it is
+possible to create tables where each row is a finished job, ordered by
+any column you choose &mdash; the @end_time timestamp is suggested &mdash; and
+any dashboards, graphs, or other analysis of interest.
+
+<h2 id="testing">Testing and Debugging
+<a class="slurm_link" href="#testing"></a>
+</h2>
+
+<p>For debugging purposes, you can use the <b>curl</b> command or any similar
+tool to perform REST requests against Elasticsearch directly. Some of the
+following examples using the <b>curl</b> tool may be useful.</p>
+
+<p>Query information assuming a <b>slurm</b> <i>index</i> name, including the
+document count (which should be one per job indexed):</p>
+<pre>
+$ curl -XGET http://localhost:9200/_cat/indices/slurm?v
+health status index uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   slurm 103CW7GqQICiMQiSQv6M_g   5   1          9            0    142.8kb        142.8kb
+</pre>
+
+<p>Query all indexed jobs in the <b>slurm</b> <i>index</i>:</p>
+<pre>
+$ curl -XGET 'http://localhost:9200/slurm/_search?pretty=true&q=*:*' | less
+</pre>
+
+<p>Delete the <b>slurm</b> <i>index</i> (caution!):</p>
+<pre>
+$ curl -XDELETE http://localhost:9200/slurm
+{"acknowledged":true}
+</pre>
+
+<p>Query information about <b>_cat</b> options. More can be found in the
+official documentation.</p>
+<pre>
+$ curl -XGET http://localhost:9200/_cat
+</pre>
+
+<h2 id="failure_management">Failure management
+<a class="slurm_link" href="#failure_management"></a>
+</h2>
+When the primary slurmctld is shut down, information about all completed but
+not yet indexed jobs held within the Elasticsearch plugin saved to a
+file named <b>elasticsearch_state</b>, which is located in the
+<a href="slurm.conf.html#OPT_StateSaveLocation">StateSaveLocation</a>. This
+permits the plugin to restore the information when the slurmctld is restarted,
+and will be sent to the Elasticsearch database when the connection is
+restored.</p>
+
+<h2 id="ack">Acknowledgments<a class="slurm_link" href="#ack"></a></h2>
+<p>The Elasticsearch plugin was created as part of Alejandro Sanchez's
+<a href="https://upcommons.upc.edu/handle/2117/79252">Master's Thesis</a>.</p>
+
+<!--#include virtual="footer.txt"-->

@@ -1,0 +1,63 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test for seff
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+if {[file executable $seff] == 0} {
+	skip "seff was not found"
+}
+
+set out [run_command_output -fail -xfail "$seff -h"]
+subtest {[regexp "Usage:" $out]} "seff -h should return Usage:"
+
+set job_id [submit_job -fail "-H --wrap=\"sleep 10\" -o /dev/null -e /dev/null"]
+wait_for_command_match "$sacct -n -j $job_id" "PENDING"
+set out [run_command_output -fail "$seff $job_id" ]
+subtest {[regexp "State: PENDING" $out]} "Job should be returned as in PENDING state by seff"
+subtest {[regexp "Cores: 1" $out]} "Job should be reported as 1 core"
+subtest {[regexp "Efficiency not available for jobs in the PENDING state." $out]} "Job should be reported as efficiency not available for PENDING state"
+
+run_command -fail "$scontrol release $job_id"
+wait_for_command_match "$sacct -X -n -j $job_id" "RUNNING"
+
+set out [run_command_output -fail "$seff $job_id"]
+subtest {[regexp "State: RUNNING" $out]} "Job should be reported as RUNNING by seff"
+subtest {[regexp "WARNING: Efficiency statistics can only be obtained after the job has ended as seff tool is based on the accounting database data." $out]} "seff output should contain warning about statistics for RUNNING job"
+
+wait_for_command_match "$sacct -X -n -j $job_id" "COMPLETED"
+set out [run_command_output -fail "$seff $job_id"]
+subtest {[regexp "State: COMPLETED" $out]} "Job should be reported as COMPLETED by seff"
+subtest {[regexp "Cores: \(\\d+\)" $out {} cores] || \
+         [regexp "Cores per node: \(\\d+\)" $out {} cores]} "seff should report the number of cores (per node) based on the configuration"
+
+regexp "Job Wall-clock time: 00:00:\(\\d+\)" $out {} wall_clock_time
+subtest {[tolerance 10 $wall_clock_time +7]} "Wall time should be close to 10s" "${wall_clock_time}s not in tolerance range of 10s"
+set cpu_s [expr $cores * $wall_clock_time]
+set cpu_d [expr int(floor($cpu_s / (24*60))) ]
+set cpu_s [expr $cpu_s - ($cpu_d*24*60) ]
+set cpu_h [expr int(floor($cpu_s / 60)) ]
+set cpu_s [expr $cpu_s - ($cpu_h*60) ]
+set cpu_time_str [format "%02d:%02d:%02d" $cpu_d $cpu_h $cpu_s]
+subtest {[regexp -line "CPU Efficiency: 0.00% of $cpu_time_str core-walltime" $out]} "Job efficiency should be 0.00% of core-walltime" "$cpu_time_str|$out"

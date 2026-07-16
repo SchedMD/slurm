@@ -1,0 +1,334 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm sshare functionality
+#          sshare h, p, P, v and V options.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set timeout	60
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+################################################################
+#
+# Proc: sshare_opt
+#
+# Purpose:  Pass sshare options and test
+#
+# Returns: Number of matches.
+#
+# Input: Switch options not requiring arguments
+#
+################################################################
+
+proc sshare_opt { soption } {
+	global sshare number
+	set debug       1
+	set matches     0
+	set not_support 0
+	log_info "$sshare -$soption "
+
+	if { $soption == "-help"|| $soption == "-usage" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Usage: *sshare *.OPTION" {
+				if {$debug} {log_debug "Match1"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid OPTIONs are" {
+				if {$debug} {log_debug "Match2"}
+				incr matches
+				exp_continue
+			}
+			-re "verbose *display more information" {
+				if {$debug} {log_debug "Match3"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sshare not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
+
+		if {$not_support == 2} {
+			skip "Can not test without priority/multifactor plugin"
+		}
+
+		return $matches
+	}
+
+	if { $soption == "-noheader" || $soption == "n" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Account|User|RawShares|NormShares|RawUsage|NormUsage|EffectvUsage" {
+				if {$debug} {log_debug "Match4"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sshare not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
+
+		if {$not_support == 2} {
+			skip "Can not test without priority/multifactor plugin"
+		}
+
+		return $matches
+	}
+
+	if { $soption == "-parsable" || $soption == "p" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Account\\|User\\|RawShares\\|NormShares\\|" {
+				if {$debug} {log_debug "Match5"}
+				incr matches
+				exp_continue
+			}
+			-re "RawUsage\\|EffectvUsage\\|FairShare\\|" {
+				if {$debug} {log_debug "Match5"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sshare not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support != 0} {
+			skip "Can not test without accounting enabled"
+		}
+
+		return $matches
+	}
+
+	if { $soption == "-parsable2" || $soption == "P" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Account\\|User\\|RawShares\\|NormShares\\|" {
+				if {$debug} {log_debug "Match6"}
+				incr matches
+				exp_continue
+			}
+			-re "RawUsage\\|EffectvUsage\\|FairShare" {
+				if {$debug} {log_debug "Match7"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sshare not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
+
+		if {$not_support == 2} {
+			skip "Can not test without priority/multifactor plugin"
+		}
+
+		return $matches
+	}
+
+	if { $soption == "-verbose" || $soption == "v" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Users requested" {
+				if {$debug} {log_debug "Match8"}
+				incr matches
+				exp_continue
+			}
+			-re "Accounts requested" {
+				if {$debug} {log_debug "Match9"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sshare not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
+
+		if {$not_support == 2} {
+			skip "Can not test without priority/multifactor plugin"
+		}
+
+		return $matches
+	}
+
+
+	if { $soption == "-version" || $soption == "V" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "slurm $number\\.$number\\.$number" {
+				if {$debug} {log_debug "Match11"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sshare not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
+
+		if {$not_support == 2} {
+			skip "Can not test without priority/multifactor plugin"
+		}
+
+		return $matches
+	}
+}
+
+################################################################
+
+set matches [sshare_opt -help ]
+subtest {$matches == 3} "Verify sshare --help option" "$matches != 3"
+
+set matches [sshare_opt -usage ]
+subtest {$matches == 3} "Verify sshare --usage option" "$matches != 3"
+
+set matches [sshare_opt n ]
+subtest {$matches == 0} "Verify sshare -n option" "$matches != 0"
+
+set matches [sshare_opt -noheader ]
+subtest {$matches == 0} "Verify sshare --noheader option" "$matches != 0"
+
+set matches [sshare_opt p ]
+subtest {$matches == 2} "Verify sshare -p option" "$matches != 2"
+
+set matches [sshare_opt -parsable ]
+subtest {$matches == 2} "Verify sshare --parsable option" "$matches != 2"
+
+set matches [sshare_opt P ]
+subtest {$matches == 2} "Verify sshare -P option" "$matches != 2"
+
+set matches [sshare_opt -parsable2 ]
+subtest {$matches == 2} "Verify sshare --parsable2 option" "$matches != 2"
+
+set matches [sshare_opt v ]
+subtest {$matches == 2} "Verify sshare -v option" "$matches != 2"
+
+set matches [sshare_opt -verbose ]
+subtest {$matches == 2} "Verify sshare --verbose option" "$matches != 2"
+
+set matches [sshare_opt V ]
+subtest {$matches == 1} "Verify sshare -V option" "$matches != 1"
+
+set matches [sshare_opt -version ]
+subtest {$matches == 1} "Verify sshare --version option" "$matches != 1"

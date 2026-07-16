@@ -1,0 +1,60 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that aftercorr dependency is enforced.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id1       0
+set job_id2       0
+set output_base   "$test_dir/output_"
+set output        "${output_base}%a"
+set script1       "$test_dir/script1"
+set script2       "$test_dir/script2"
+set tasks         10
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
+}
+
+make_bash_script $script1 "sleep 5"
+make_bash_script $script2 "$scontrol show job ${job_id1}_\$SLURM_ARRAY_TASK_ID"
+
+# Submit a job to depend on
+set job_id1 [submit_job -fail "-t1 --nice=100 --array=1-$tasks%2 -o/dev/null $script1"]
+
+# Submit a job that depends on job above
+set job_id2 [submit_job -fail "-t1 -daftercorr:$job_id1 --array=1-$tasks -o$output $script2"]
+
+log_debug "Waiting for output files.."
+for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
+	set file_out_glob "${output_base}${task_id}"
+
+	wait_for_job -fail ${job_id2}_${task_id} "DONE"
+	wait_for_file -fail $file_out_glob
+
+	set output [run_command_output -fail "$bin_cat $file_out_glob"]
+	subtest {[regexp "COMPLETED" $output]} "Verify task $task_id is COMPLETED"
+}

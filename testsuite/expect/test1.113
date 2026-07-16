@@ -1,0 +1,84 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --use-min-nodes option.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set needed_nodes 2
+set matches 0
+set ncpus ""
+
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+}
+
+log_user 0
+spawn $sinfo -N -h -p [default_partition] -t idle -o "%c"
+expect {
+	-re "($number)" {
+		incr matches
+		if {$ncpus eq ""} {
+			set ncpus $expect_out(1,string)
+		} elseif {$expect_out(1,string) < $ncpus} {
+			set ncpus $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		fail "sinfo not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+if {$matches < $needed_nodes} {
+	skip "$needed_nodes idle nodes required in default partition, only $matches found"
+}
+
+set nodes 0
+set timeout $max_job_delay
+spawn $srun -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES
+expect {
+	-re "srun: job $number queued and waiting for resources" {
+		exp_continue
+	}
+	-re "srun: job $number has been allocated resources" {
+		exp_continue
+	}
+	-re "($number)" {
+		set nodes $expect_out(1,string)
+		if {$nodes != 1} {
+			fail "Expected 1 allocated node"
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}

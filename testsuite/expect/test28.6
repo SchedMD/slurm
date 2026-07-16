@@ -1,0 +1,94 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#		  test that when a job array is submitted to multiple
+#		  partitions that the jobs run on all the assigned partitions
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id       0
+set def_part     ""
+set test_part    "${test_name}_part"
+set script       "$test_dir/script"
+set array_size   2
+set def_part     [default_partition]
+
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
+	skip "MaxArraySize is to small for this test"
+} elseif {![is_super_user]} {
+	skip "This test must be done from a super-user"
+}
+
+proc cleanup {} {
+	global job_id scontrol test_part
+
+	cancel_job $job_id
+	run_command "$scontrol delete partition=$test_part"
+}
+
+proc check_job { job_id } {
+	global scontrol array_size number
+
+	for {set index 0} {$index<$array_size} {incr index} {
+
+		set matches 0
+		spawn $scontrol show job ${job_id}_${index}
+		expect {
+			-re "JobState=RUNNING" {
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "scontrol is not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		if {$matches != 1} {
+			fail "Job (${job_id}_${index}) was not found"
+		}
+	}
+}
+
+#
+# Get the available nodes from the partition
+#
+set node_list [get_nodes_by_request "-N1"]
+if {[llength $node_list] != 1} {
+	fail "Node list was not found"
+}
+
+#
+# Create partition
+#
+run_command -fail "$scontrol create PartitionName=$test_part Nodes=$node_list"
+
+make_bash_script $script "sleep 100"
+
+#
+# Submit array job on default partition
+#
+set job_id [submit_job -fail "-N1 -t1 -o /dev/null -e /dev/null --array=0-[expr $array_size -1] --partition=$def_part,$test_part $script"]
+
+wait_for_job -fail $job_id "RUNNING"

@@ -1,0 +1,28 @@
+[Unit]
+Description=Slurm node daemon
+After=munge.service network-online.target remote-fs.target sssd.service
+Wants=network-online.target
+#ConditionPathExists=@sysconfdir@/slurm.conf
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/slurmd
+EnvironmentFile=-/etc/default/slurmd
+RuntimeDirectory=slurm
+RuntimeDirectoryMode=0755
+ExecStart=@sbindir@/slurmd --systemd $SLURMD_OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+LimitNOFILE=131072
+LimitMEMLOCK=infinity
+LimitSTACK=infinity
+Delegate=yes
+@SYSTEMD_TASKSMAX_OPTION@
+
+# Uncomment the following lines to disable logging through journald.
+# NOTE: It may be preferable to set these through an override file instead.
+#StandardOutput=null
+#StandardError=null
+
+[Install]
+WantedBy=multi-user.target

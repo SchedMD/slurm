@@ -1,0 +1,174 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of resource allocation layout. Specifically make sure that
+#          no excess CPUs are allocate to the job. See bug 6274.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in    "$test_dir/input"
+set file_out   "$test_dir/output"
+set job_name   $test_name
+set job_id     0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+proc test_alloc_size { task_cnt } {
+	global bin_cat bin_rm file_in file_out sbatch job_name number
+	global alloc_unit_num max_tasks job_id
+
+	exec $bin_rm -f $file_out
+	set job_id [submit_job -fail "-t1 -o $file_out -J $job_name -n $task_cnt $file_in"]
+	if {[wait_for_job -timeout 10 $job_id "DONE"] != 0} {
+		log_warn "Job $job_id did not complete"
+		cancel_job $job_id
+		set max_tasks $task_cnt
+		return
+	}
+	wait_for_file -timeout 10 -fail $file_out
+	set num_cpus -1
+	set num_nodes -1
+	set threads_per_core 1
+	set cores_per_socket 1
+	set sockets_per_node 1
+	spawn $bin_cat $file_out
+	expect {
+		-re "NumCPUs=($number)" {
+			set num_cpus $expect_out(1,string)
+			exp_continue
+		}
+		-re "SLURM_NNODES=($number)" {
+			set num_nodes $expect_out(1,string)
+			exp_continue
+		}
+		-re "ThreadsPerCore=($number)" {
+			if {$threads_per_core < $expect_out(1,string)} {
+				set threads_per_core $expect_out(1,string)
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 0
+	spawn $bin_cat $file_out
+	expect {
+		-re "CoresPerSocket=($number)" {
+			if {$cores_per_socket < $expect_out(1,string)} {
+				set cores_per_socket $expect_out(1,string)
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	spawn $bin_cat $file_out
+	expect {
+		-re "Sockets=($number)" {
+			if {$sockets_per_node < $expect_out(1,string)} {
+				set sockets_per_node $expect_out(1,string)
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+#	Determine largest allocation unit
+	if {$alloc_unit_num == 4} {
+		set alloc_unit 1
+	} elseif {$alloc_unit_num == 3} {
+		set alloc_unit $threads_per_core
+	} elseif {$alloc_unit_num == 2} {
+		set alloc_unit [expr $threads_per_core * $cores_per_socket]
+	} elseif {$alloc_unit_num == 1} {
+		set alloc_unit [expr $threads_per_core * $cores_per_socket * $sockets_per_node]
+	} else {
+		fail "Invalid allocation unit: $alloc_unit_num"
+	}
+
+	set max_alloc [expr $task_cnt + (($alloc_unit - 1) * $num_nodes)]
+	if {$num_cpus > $max_alloc} {
+		log_debug "TASKS:$task_cnt"
+		log_debug "CPUS:$num_cpus"
+		log_debug "NODES:$num_nodes"
+		log_debug "MAX_THREADS_PER_CORE:$threads_per_core"
+		log_debug "MAX_CORES_PER_SOCKET:$cores_per_socket"
+		log_debug "MAX_SOCKETS_PER_NODE:$sockets_per_node"
+		log_debug "ALLOCATION_UNIT:$alloc_unit"
+		fail "Job with $task_cnt tasks allocated too many CPUs ($num_cpus > $max_alloc)"
+	}
+}
+
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
+	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+}
+
+set select_type_param [get_select_type_params]
+if {[check_config_select "linear"]} {
+	set alloc_unit_str "NODE"
+	set alloc_unit_num 1
+} elseif { [default_part_exclusive] == 1} {
+	set alloc_unit_str "NODE"
+	set alloc_unit_num 1
+} elseif { [string first "CR_SOCKET" $select_type_param] != -1} {
+	set alloc_unit_str "SOCKET"
+	set alloc_unit_num 2
+} elseif { [string first "CR_CORE" $select_type_param] != -1} {
+	set alloc_unit_str "CORE"
+	set alloc_unit_num 3
+} else {
+	set alloc_unit_str "CPU"
+	set alloc_unit_num 4
+}
+set max_tasks [get_total_cpus]
+log_debug "Resource allocation unit: $alloc_unit_str"
+log_debug "CPUs in default partition: $max_tasks"
+if {$max_tasks > 32} {
+	set max_tasks 20
+}
+
+make_bash_script $file_in "
+$scontrol -dd show job \$SLURM_JOB_ID | grep NumCPUs=
+$scontrol -dd show job \$SLURM_JOB_ID | grep CPU_IDs=
+$bin_echo ''
+env | grep SLURM_NNODES=
+env | grep SLURM_TASKS_PER_NODE=
+env | grep SLURM_JOB_CPUS_PER_NODE=
+$bin_echo ''
+$scontrol show node \$SLURM_JOB_NODELIST | grep -v Features | grep -v Gres | \
+grep -v CPUAlloc | grep -v NodeAddr | grep -v OS | grep -v Partitions | \
+grep -v CfgTRES | grep -v AllocTRES | grep -v BootTime | grep -v Watts
+"
+
+for {set inx 1} {$inx < $max_tasks} {incr inx} {
+	test_alloc_size $inx
+}

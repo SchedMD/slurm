@@ -1,0 +1,85 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --deadline and --begin option and --time_min OK
+############################################################################
+# Copyright (C) 2015 CEA/DAM/DIF
+# Written by Aline Roy <aline.roy@cea.fr>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set job_id      0
+
+#
+# Ensure that default partition has a DefaultTime big enough
+#
+run_command -fail "$scontrol update partitionname=[default_partition] DefaultTime=10"
+
+proc cleanup {} {
+
+	# Restore DefaultTime
+	reconfigure
+}
+
+#
+# Spawn a batch job with a deadline and no time
+#
+set timeout $max_job_delay
+spawn $salloc --begin now+1 --deadline now+600 --time-min 5 $bin_sleep 1
+expect {
+	-re "Requested time limit is invalid" {
+		fail "Requested time limit is invalid"
+	}
+	-re "Incompatible begin and deadline time specification" {
+		fail "Incompatible begin and deadline time specification"
+	}
+	-re "Pending job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "Job not submitted with a deadline and a time-min OK"
+}
+
+wait_for_job -fail $job_id DONE
+
+#
+# test job status in scontrol and sacct
+#
+subtest {[get_job_param $job_id "JobState"] == "COMPLETED"} "Verify job ($job_id) is COMPLETED"
+
+if {[param_contains [get_config_param "AccountingStorageType"] "*/slurmdbd"]} {
+	set output [run_command_output -fail "$sacct -n -P -X -j $job_id -o State"]
+	subtest {![regexp "DEADLINE" $output]} "Verify job ($job_id) is not in State DEADLINE in sacct"
+} else {
+	subskip "Can not subtest without accounting enabled"
+}

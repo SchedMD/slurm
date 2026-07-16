@@ -1,0 +1,224 @@
+/*****************************************************************************\
+ *  info_lics.c - licenses information functions for scontrol.
+ *****************************************************************************
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Copyright (C) SchedMD LLC.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by David Bigagli david@schemed.com
+ *  CODE-OCEC-09-009. All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "src/common/data.h"
+#include "src/common/sercli.h"
+
+#include "src/interfaces/data_parser.h"
+
+#include "scontrol.h"
+
+static void _print_license_info(const char *, license_info_msg_t *);
+static slurm_license_info_t ** _license_sort(license_info_msg_t
+					     *license_list);
+static int _lic_cmp(const void *lic1, const void *lic2);
+
+static int _lic_cmp(const void *lic1, const void *lic2)
+{
+	char *name1 = (*((slurm_license_info_t **)lic1))->name;
+	char *name2 = (*((slurm_license_info_t **)lic2))->name;
+	return xstrcmp(name1, name2);
+}
+
+/* license_sort()
+ *
+ * Sort the list of licenses by their name
+ *
+ */
+static slurm_license_info_t ** _license_sort(license_info_msg_t
+					     *license_list)
+{
+	slurm_license_info_t **lic_list_ptr = xmalloc(
+		sizeof(slurm_license_info_t*) * license_list->num_lic);
+	slurm_license_info_t *lic_ptr;
+	int list_cnt;
+
+	// Set tmp array of pointers to each license
+	for (list_cnt = 0, lic_ptr = license_list->lic_array;
+	     list_cnt < license_list->num_lic; list_cnt++, lic_ptr++) {
+		lic_list_ptr[list_cnt] = lic_ptr;
+	}
+
+	qsort(lic_list_ptr, license_list->num_lic,
+	      sizeof(slurm_license_info_t *), _lic_cmp);
+
+	return lic_list_ptr;
+}
+
+/* scontrol_print_licenses()
+ *
+ * Retrieve and display the license information
+ * from the controller
+ *
+ */
+extern void scontrol_print_licenses(const char *name, int argc, char **argv)
+{
+	int cc;
+	int rc = SLURM_SUCCESS;
+	license_info_msg_t *msg = NULL;
+	uint16_t show_flags;
+	static time_t last_update;
+	data_parser_t *parser = NULL;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
+	}
+
+	show_flags = 0;
+	/* call the controller to get the meat
+	 */
+	cc = slurm_load_licenses(last_update, &msg, show_flags);
+	if (cc != SLURM_SUCCESS) {
+		/* Hosed, crap out.
+		 */
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_license error");
+		goto cleanup;
+	}
+
+	last_update = time(NULL);
+	/*
+	 * Print the info
+	 */
+	if (mime_type) {
+		openapi_resp_license_info_msg_t resp = {
+			.licenses = msg,
+			.last_update = msg->last_update,
+		};
+
+		rc = data_parser_dump_cli_resp(
+			DATA_PARSER_OPENAPI_LICENSES_RESP, &resp, sizeof(resp),
+			parser);
+	} else {
+		_print_license_info(name, msg);
+	}
+
+cleanup:
+	if (rc)
+		exit_code = 1;
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
+	slurm_free_license_info_msg(msg);
+}
+
+static int _match_license_name(const char *query, const char *name, bool fuzzy)
+{
+	if (fuzzy)
+		return slurm_remote_license_fuzzy_match(query, name);
+	return xstrcmp(query, name) == 0;
+}
+
+/* _print_license_info()
+ *
+ * Print the license information.
+ */
+static void _print_license_info(const char *name, license_info_msg_t *msg)
+{
+	int cc, disp_num_lic = 0, fuzzy_num_lic = 0;
+	bool use_fuzzy_match = false;
+	slurm_license_info_t **sorted_lic = NULL;
+	slurm_license_info_t **display_lic = NULL;
+
+	if (!msg->num_lic) {
+		printf("No licenses configured in Slurm.\n");
+		return;
+	}
+
+	display_lic = xcalloc(sizeof(slurm_license_info_t *), msg->num_lic);
+	if (xstrcasestr(slurm_conf.license_params, "RemoteFuzzyMatch"))
+		use_fuzzy_match = true;
+
+	sorted_lic = _license_sort(msg);
+	for (cc = 0; cc < msg->num_lic; cc++) {
+		if (name) {
+			switch (_match_license_name(name, sorted_lic[cc]->name,
+						    use_fuzzy_match)) {
+			case LIC_NO_MATCH:
+				continue;
+			case LIC_FUZZY_MATCH:
+				fuzzy_num_lic++;
+			}
+		}
+		display_lic[disp_num_lic++] = sorted_lic[cc];
+	}
+
+	if (name && fuzzy_num_lic > 1) {
+		/* fuzzy matching should never over-match */
+		error("query \"%s\" matched more than one result, exiting.", name);
+		exit_code = 1;
+		goto cleanup;
+	} else if (name && disp_num_lic == 0) {
+		error("query \"%s\" matched zero licenses.", name);
+		exit_code = 1;
+		goto cleanup;
+	}
+
+	for (cc = 0; cc < disp_num_lic; cc++) {
+		printf("LicenseName=%s%sTotal=%u Used=%u Free=%u Reserved=%u Remote=%s",
+		       (display_lic[cc])->name, one_liner ? " " : "\n    ",
+		       (display_lic[cc])->total, (display_lic[cc])->in_use,
+		       (display_lic[cc])->available,
+		       (display_lic[cc])->reserved,
+		       (display_lic[cc])->remote ? "yes" : "no");
+		if (display_lic[cc]->mode) {
+			printf("%sNodes=%s Mode=%u\n",
+			       one_liner ? " " : "\n    ",
+			       display_lic[cc]->nodes, display_lic[cc]->mode);
+		} else if (display_lic[cc]->remote) {
+			char time_str[256];
+			slurm_make_time_str(&display_lic[cc]->last_update,
+					    time_str, sizeof(time_str));
+			printf("%sLastConsumed=%u LastDeficit=%u LastUpdate=%s\n",
+			       one_liner ? " " : "\n    ",
+			       display_lic[cc]->last_consumed,
+			       display_lic[cc]->last_deficit, time_str);
+		} else {
+			printf("\n");
+		}
+	}
+
+cleanup:
+	xfree(sorted_lic);
+	xfree(display_lic);
+}

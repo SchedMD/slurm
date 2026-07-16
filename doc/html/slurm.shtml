@@ -1,0 +1,118 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Slurm Workload Manager</h1>
+
+<p>Slurm is an open-source workload manager designed for Linux clusters of
+all sizes.
+It provides three key functions.
+First it allocates exclusive and/or non-exclusive access to resources
+(computer nodes) to users for some duration of time so they can perform work.
+Second, it provides a framework for starting, executing, and monitoring work
+(typically a parallel job) on a set of allocated nodes.
+Finally, it arbitrates contention for resources by managing a queue of
+pending work. </p>
+
+<p>Slurm's design is very modular with dozens of optional plugins.
+In its simplest configuration, it can be installed and configured in a
+couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
+Caos NSA and Perceus: All-in-one Cluster Software Stack</a>
+by Jeffrey B. Layton).
+More complex configurations can satisfy the job scheduling needs of
+world-class computer centers and rely upon a
+<a href="http://www.mysql.com/">MySQL</a> database for archiving
+<a href="accounting.html">accounting</a> records, managing
+<a href="resource_limits.html">resource limits</a> by user or account,
+or supporting sophisticated
+<a href="priority_multifactor.html">job prioritization</a> algorithms.</p>
+
+<p>While other workload managers do exist, Slurm is unique in several
+respects:
+<ul>
+<li><b>Scalability</b>: It is designed to operate in a heterogeneous cluster
+with up to tens of millions of processors.</li>
+<li><b>Performance</b>: It can accept 1,000 job submissions per second and
+fully execute 500 simple jobs per second (depending upon hardware and system
+configuration).</li>
+<li><b>Free and Open Source</b>: Its source code is freely available under the
+<a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
+<li><b>Portability</b>: Written in C with a GNU autoconf configuration engine.
+While initially written for Linux, Slurm has been ported to a diverse assortment
+of systems.</li>
+<li><b>Power Management</b>: Job can specify their desired CPU frequency and
+power use by job is recorded. Idle resources can be powered down until needed.</li>
+<li><b>Fault Tolerant</b>: It is highly tolerant of system failures, including
+failure of the node executing its control functions.</li>
+<li><b>Flexibility</b>: A plugin mechanism exists to support various
+interconnects, authentication mechanisms, schedulers, etc. These plugins are
+documented and  simple enough for the motivated end user to understand the
+source and add functionality.</li>
+<li><b>Resizable Jobs</b>: Jobs can grow and shrink on demand. Job submissions
+can specify size and time limit ranges.</li>
+<li><b>Status Jobs</b>: Status running jobs at the level of individual tasks to
+help identify load imbalances and other anomalies.</li>
+</ul></p>
+
+<p>Slurm provides workload management on many of the most powerful computers in
+the world. On the November 2013 <a href="http://www.top500.org">Top500</a> list,
+five of the ten top systems use Slurm including the number one system.
+These five systems alone contain over 5.7 million cores.
+A few of the systems using Slurm are listed below:
+<ul>
+<li><a href="http://www.top500.org/blog/lists/2013/06/press-release/">
+Tianhe-2</a> designed by
+<a href="http://english.nudt.edu.cn">The National University of Defense Technology (NUDT)</a>
+in China has 16,000 nodes, each with two Intel Xeon IvyBridge processors and
+three Xeon Phi processors for a total of 3.1 million cores and a peak
+performance of 33.86 Petaflops.</li>
+
+<li><a href="https://asc.llnl.gov/computing_resources/sequoia/">Sequoia</a>,
+an <a href="http://www.ibm.com">IBM</a> BlueGene/Q system at
+<a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>
+with 1.6 petabytes of memory, 96 racks, 98,304 compute nodes, and 1.6
+million cores, with a peak performance of over 17.17 Petaflops.</li>
+
+<li><a href="http://www.cscs.ch/computers/piz_daint/index.html">Piz Daint</a>
+a <a href="http://www.cray.com">Cray</a> XC30 system at the
+<a href="http://www.cscs.ch">Swiss National Supercomputing Centre</a>
+with 28 racks and 5,272 hybrid compute nodes each with an
+<a href="http://www.intel.com">Intel</a> Xeon E5-2670 CPUs
+plus an <a href="http://www.nvidia.com">NVIDIA</a> Tesla K20X GPUs
+for a total of 115,984 compute cores and
+a peak performance of 6.27 Petaflops.</li>
+
+<li><a href="http://www.tacc.utexas.edu/stampede">Stampede</a> at the
+<a href="http://www.tacc.utexas.edu">Texas Advanced Computing Center/University of Texas</a>
+is a <a href="http://www.dell.com">Dell</a> with over
+80,000 <a href="http://www.intel.com">Intel</a> Xeon cores,
+Intel Phi co-processors, plus
+128 <a href="http://www.nvidia.com">NVIDIA</a> GPUs
+delivering 5.17 Petaflops.</li>
+
+<li><a href="http://www-hpc.cea.fr/en/complexe/tgcc-curie.htm">TGCC Curie</a>,
+owned by <a href="http://www.genci.fr">GENCI</a> and operated in the TGCC by
+<a href="http://www.cea.fr">CEA</a>, Curie is offering 3 different fractions
+of x86-64 computing resources for addressing a wide range of scientific
+challenges and offering an aggregate peak performance of 2 PetaFlops.</li>
+
+<li><a href="http://www.wcm.bull.com/internet/pr/rend.jsp?DocId=567851&lang=en">
+Tera 100</a> at <a href="http://www.cea.fr">CEA</a>
+with 140,000 Intel Xeon 7500 processing cores, 300TB of
+central memory and a theoretical computing power of 1.25 Petaflops.</li>
+
+<li><a href="http://hpc.msu.ru/?q=node/59">Lomonosov</a>, a
+<a href="http://www.t-platforms.com">T-Platforms</a> system at
+<a href="http://hpc.msu.ru">Moscow State University Research Computing Center</a>
+with 52,168 Intel Xeon processing cores and 8,840 NVIDIA GPUs.</li>
+
+<li><a href="http://compeng.uni-frankfurt.de/index.php?id=86">LOEWE-CSC</a>,
+a combined CPU-GPU Linux cluster at
+<a href="http://csc.uni-frankfurt.de">The Center for Scientific Computing (CSC)</a>
+of the Goethe University Frankfurt, Germany,
+with 20,928 AMD Magny-Cours CPU cores (176 Teraflops peak
+performance) plus 778 ATI Radeon 5870 GPUs (2.1 Petaflops peak
+performance single precision and 599 Teraflops double precision) and
+QDR Infiniband interconnect.</li>
+
+</ul>
+
+<!--#include virtual="footer.txt"-->

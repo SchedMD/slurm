@@ -1,0 +1,201 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate --cpu-freq is enforced when using non-numeric values
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_id      "$test_dir/id"
+set file_in      "$test_dir/job_script"
+set file_out     "$test_dir/output"
+set node         ""
+set threads      0
+set job_id       0
+
+array set freq_lvl_1 {
+	high         0
+	highm1       0
+	medium       0
+	low          0
+}
+array set freq_lvl_2 {
+	conservative 0
+	ondemand     0
+	performance  0
+	powersave    0
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+if {[is_running_in_container]} {
+	skip "This test will not work in a container"
+}
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without AccountStorageType=slurmdbd"
+}
+if {[get_config_param "ProctrackType"] eq "proctrack/linuxproc"} {
+	skip "This test cannot run on ProctrackType of linuxproc"
+}
+if {[get_config_param "JobAcctGatherType"] eq "jobacct_gather/none"} {
+	skip "This test cannot run on JobAcctGatherType of none"
+}
+if {[get_config_param "SlurmdUser"] ne "root(0)"} {
+	skip "This test is incompatible with SlurmdUser != root"
+}
+if {![param_contains [get_affinity_types] "affinity"]} {
+	skip "This test requires some form of task affinity"
+}
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
+}
+
+proc sub_job { freq } {
+	global srun sacct node threads job_id number wait_for_job float timeout
+	global re_word_str file_id avail_governors
+
+	set timeout 120
+	array set this_freq $freq
+
+	foreach option [array names this_freq] {
+		log_info "======= TESTING FREQUENCY/GOVERNOR $option ======="
+		set skip false
+		set job_id 0
+		spawn $srun -t1 --cpu-freq=$option -n$threads -w$node $file_id
+		expect {
+			-re "not allowed" {
+				if {[string first $option $avail_governors] == -1} {
+					log_debug "This error is expected, no worries"
+					set skip true
+				} else {
+					fail "This CPU frequency should be valid"
+				}
+				exp_continue
+			}
+			-re "SLURM_JOB_ID=($number)" {
+				set job_id $expect_out(1,string)
+				exp_continue
+			}
+			timeout {
+				fail "srun is not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		if {$skip} {
+			set this_freq($option) -1
+			continue
+		}
+		if {$job_id == 0} {
+			fail "srun did not submit job"
+		}
+
+		wait_for_job -fail $job_id "DONE"
+
+		set avecpufreq [string trim [run_command_output -fail "$sacct -j $job_id -o avecpufreq --noheader"]]
+		if [regexp {(\d+\.?\d*)([A-Z])?} $avecpufreq - base_number scale] {
+			set this_freq($option) $base_number
+			if {$scale eq "M"} {
+				set this_freq($option) [expr $this_freq($option) / 1000.0]
+			}
+		}
+
+		if {$this_freq($option) == 0} {
+			fail "Did not get cpu frequency for $option"
+		}
+	}
+	return [array get this_freq]
+}
+
+make_bash_script $file_id "echo SLURM_JOB_ID=\$SLURM_JOB_ID; $bin_sleep 30"
+make_bash_script $file_in "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors"
+
+# Identify a node that we can use and available governors
+set job_id [submit_job -fail "-N1 -t1 -o/dev/null --exclusive -o $file_out $file_in"]
+
+wait_for_job -fail $job_id "DONE"
+
+wait_for_file -fail $file_out
+set output [run_command_output -fail "$bin_cat $file_out"]
+if {![regexp "ondemand" $output]} {
+	skip "Node configuration prevents direct control over CPU frequency"
+}
+
+set match 0
+spawn $scontrol show job $job_id
+expect {
+	-re "NodeList=($re_word_str)" {
+		set node $expect_out(1,string)
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$match != 1} {
+	fail "Was not able to get a usable node"
+}
+
+lassign [get_node_cpus $node] num_cputot threads
+
+cancel_job $job_id
+
+#
+# Test various CPU governor values
+#
+set avail_governors [get_config_param "CpuFreqGovernors"]
+log_debug "CpuFreqGovernors = $avail_governors"
+
+array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
+
+if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
+    ($freq_lvl_2(performance) == 0)  || ($freq_lvl_2(powersave) == 0)} {
+	fail "CPU frequency values are invalid"
+}
+
+#
+# Test various CPU frequency values
+#
+array set freq_lvl_1 [sub_job [array get freq_lvl_1]]
+
+log_debug "======= Reported frequencies ======="
+foreach name [array names freq_lvl_1] {
+	log_debug "$name is $freq_lvl_1($name) GHz"
+}
+
+if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
+      ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
+      ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
+	fail "CPU frequency values are not valid. Test with smaller JobAcctGatherFrequency configuration or longer running jobs"
+}

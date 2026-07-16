@@ -1,0 +1,237 @@
+.TH sbcast "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+sbcast \- transmit a file to the nodes allocated to a Slurm job.
+
+.SH "SYNOPSIS"
+\fBsbcast\fR [\-CfFjpstvV] SOURCE DEST
+
+.SH "DESCRIPTION"
+\fBsbcast\fR is used to transmit a file to all nodes allocated
+to the currently active Slurm job.
+This command should only be executed from within a Slurm batch
+job or within the shell spawned after a Slurm job's resource
+allocation.
+\fBSOURCE\fR is the name of a file on the current node.
+\fBDEST\fR should be the fully qualified pathname for the
+file copy to be created on each node.
+If a fully qualified pathname is not provided, the file will be created in
+the directory specified in the \fBBcastParameters\fR parameter in the slurm.conf
+file (if available) otherwise it will be created in the current working
+directory from which the sbcast command is invoked.
+\fBDEST\fR should be on a file system local to that node.
+Note that parallel file systems \fImay\fR provide better performance
+than \fBsbcast\fR can provide, although performance will vary
+by file size, degree of parallelism, and network type.
+
+.SH "OPTIONS"
+.TP
+\fB\-C\fR, \fB\-\-compress\fR[=\fIlibrary\fR]
+Compress the file being transmitted.
+The optional argument specifies the data compression library to be used.
+Supported values are "lz4" (default) and "none".
+Some compression libraries may be unavailable on some systems.
+The default compression library (and enabling compression itself) may be
+set in the slurm.conf file using the BcastParameters option.
+.IP
+
+.TP
+\fB\-\-exclude\fR=<\fINONE\fR|\fIpath1\fR,\fI...\fR,\fIpathN\fR>
+Comma\-separated list of absolute directory paths to be excluded when
+autodetecting and broadcasting executable shared object dependencies. If the
+keyword "\fINONE\fR" is configured, no directory paths will be excluded. The
+default value is that of slurm.conf \fBBcastExclude\fR and this option overrides
+it. See also \fB\-\-send\-libs\fR.
+.IP
+
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+If the destination file (and the destination library directory when using
+\fB\-\-send\-libs\fR) already exists, replace it.
+.IP
+
+.TP
+\fB\-j\fR, \fB\-\-jobid\fR=<\fIjobID\fR[+\fIhetjobOffset\fR].[\fIstepID\fR]>
+Specify the job ID to use with optional hetjob offset and/or step ID. A SLUID
+may also be used in place of a numeric job ID. If run inside an allocation this
+is unneeded as the job ID will be read from the environment.
+.IP
+
+.TP
+\fB\-Z\fR, \fB\-\-no-allocation\fR
+Transmit files to a list of nodes regardless of what jobs they may be running.
+This can only be done by SlurmUser/root.
+
+\fB\-\-nodelist\fR must be used with this option.
+.IP
+
+.TP
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode_name_list\fR>
+List of hosts to transmit files to. These nodes must be a subset of the
+targeted job, or the \fB\-\-no-allocation\fR option must be used.
+.IP
+
+.TP
+\fB\-p\fR, \fB\-\-preserve\fR
+Preserves modification times, access times, and modes from the
+original file.
+.IP
+
+.TP
+\fB\-\-send\-libs\fR[=\fIyes\fR|\fIno\fR]
+If set to \fIyes\fR (or no argument), autodetect and broadcast the executable's
+shared object dependencies to allocated compute nodes. The files are placed in
+a directory alongside the executable. This overrides the default behavior
+configured in slurm.conf \fBSbcastParameters send_libs\fR. See also
+\fB\-\-exclude\fR.
+.IP
+
+.TP
+\fB\-s\fR, \fB\-\-size\fR=<\fIsize\fR>
+Specify the block size used for file broadcast.
+The size can have a suffix of \fIk\fR or \fIm\fR for kilobytes
+or megabytes respectively (defaults to bytes).
+This size subject to rounding and range limits to maintain
+good performance.
+The default value is the file size or 8MB, whichever is smaller.
+This value may need to be set on systems with very limited memory.
+.IP
+
+.TP
+\fB\-t\fR, \fB\-\-timeout\fR=<\fIseconds\fR>
+Specify the message timeout in seconds.
+The default value is \fIMessageTimeout\fR as reported by
+"scontrol show config".
+Setting a higher value may be necessitated by relatively slow
+I/O performance on the compute node disks.
+.IP
+
+.TP
+\fB\-F\fR, \fB\-\-treewidth\fR=<\fInumber\fR>
+Specify the treewidth of messages used for file transfer.
+Maximum value is currently 64. A value of "off" disables the fanout.
+.IP
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Provide detailed event logging through program execution.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.SH "PERFORMANCE"
+.PP
+Executing \fBsbcast\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsbcast\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsbcast\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBsbcast\fR to the minimum
+necessary for the information you are trying to gather.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsbcast\fR options may be set via environment variables.
+These environment variables, along with their corresponding options,
+are listed below. (Note: Command line options will always override
+these settings.)
+
+.TP 20
+\fBSBCAST_COMPRESS\fR
+\fB\-C, \-\-compress\fR
+.IP
+
+.TP
+\fBSBCAST_EXCLUDE\fR
+\fB\-\-exclude\fR=<\fINONE\fR|\fIpath1\fR,\fI...\fR,\fIpathN\fR>
+.IP
+
+.TP
+\fBSBCAST_FANOUT\fR
+\fB\-F\fB \fInumber\fR, \fB\-\-fanout\fR=\fInumber\fR
+.IP
+
+.TP
+\fBSBCAST_FORCE\fR
+\fB\-f, \-\-force\fR
+.IP
+
+.TP
+\fBSBCAST_SEND_LIBS\fR
+\fB\-\-send\-libs\fR[=\fIyes|no\fR]
+.IP
+
+.TP
+\fBSBCAST_PRESERVE\fR
+\fB\-p, \-\-preserve\fR
+.IP
+
+.TP
+\fBSBCAST_SIZE\fR
+\fB\-s\fR \fIsize\fR, \fB\-\-size\fR=\fIsize\fR
+.IP
+
+.TP
+\fBSBCAST_TIMEOUT\fR
+\fB\-t\fB \fIseconds\fR, \fB\-\-timeout\fR=\fIseconds\fR
+.IP
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sbcast to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
+
+.SH "AUTHORIZATION"
+
+When using SlurmDBD, users who have an AdminLevel defined (Operator
+or Admin) are given the authority to invoke sbcast on other users jobs.
+
+.SH "EXAMPLES"
+
+Using a batch script, transmit local file \fBmy.prog\fR to
+\fB/tmp/my.proc\fR on the local nodes and then execute it.
+
+.nf
+$ cat my.job
+#!/bin/bash
+sbcast my.prog /tmp/my.prog
+srun /tmp/my.prog
+
+$ sbatch \-\-nodes=8 my.job
+srun: jobid 12345 submitted
+.fi
+
+.SH "COPYING"
+Copyright (C) 2006\-2010 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+.br
+Copyright (C) 2010\-2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsrun\fR(1)

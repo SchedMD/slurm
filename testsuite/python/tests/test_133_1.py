@@ -1,0 +1,46 @@
+############################################################################
+# Copyright (C) SchedMD LLC.
+############################################################################
+import os
+import re
+
+import pytest
+
+import atf
+
+
+@pytest.fixture(scope="function")
+def compiled_program(tmp_path):
+    """Compile test program that uses plugin"""
+    test_program = str(tmp_path / "test.exe")
+    source_file = re.sub(r"\.py$", ".c", __file__)
+    atf.compile_against_libslurm(source_file, test_program, full=True)
+    return test_program
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        1,
+        2,
+        3,
+        4,
+        5,
+        pytest.param(
+            6,
+            marks=pytest.mark.skipif(
+                atf.get_version("sbin/slurmctld") < (26, 5),
+                reason="Ticket 25473: leaf-relay fan-out fix in 26.05+",
+            ),
+        ),
+    ],
+)
+def test_topologyparam_routetree(compiled_program, test_case):
+    """Test the TopologyParam=RouteTree"""
+    # cwd = str(pathlib.Path(__file__).resolve().parent)
+    test_dir = os.path.splitext(__file__)[0] + f"_testcases/testcase{test_case}"
+    error = atf.run_command_error(
+        f"{compiled_program} --configdir={test_dir} --testcases={test_dir}/testcases",
+        fatal=True,
+    )
+    assert re.search(r"Failed cases 0", error) is not None

@@ -1,0 +1,253 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that multiple partitions can be specified
+#          in sinfo environment variables
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_part_1    "${test_name}_partition_1"
+set test_part_2    "${test_name}_partition_2"
+set test_node      ""
+
+if {![is_super_user]} {
+	skip "Can not test more unless SlurmUser or root"
+}
+
+proc delete_part { } {
+	global scontrol test_part_1 test_part_2
+
+	spawn $scontrol delete partition=$test_part_1
+	expect {
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	spawn $scontrol delete partition=$test_part_2
+	expect {
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc cleanup {} {
+	delete_part
+}
+
+# Remove any vestigial Partitions
+delete_part
+
+# get a node for the test partition
+spawn $bin_bash -c "$sinfo -h --state=idle -o%N -N | head -n1"
+expect {
+	-re "($re_word_str)" {
+		set test_node $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# Create test partitions
+spawn $scontrol create partition=$test_part_1 nodes=$test_node
+expect {
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scontrol create partition=$test_part_2 nodes=$test_node
+expect {
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+# Check that partitions were created
+set found 0
+spawn $sinfo -h -p$test_part_1,$test_part_2 -o%P
+expect {
+	-re "$test_part_1" {
+		incr found
+		exp_continue
+	}
+	-re "$test_part_2" {
+		incr found
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 2} {
+	delete_part
+	fail "Test partition was not created ($found != 2)"
+}
+
+#### Using the Environment Variable ####
+set match 0
+set found 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P"
+expect {
+	-re "($re_word_str)" {
+		set str $expect_out(1,string)
+		if {$str eq $test_part_1 || $str eq $test_part_2} {
+			incr match
+		}
+		incr found
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 2 && $found == 2} "Test SINFO_PARTITION" "Partitions do not match (match:$match found:$found != 2)"
+
+#### Test command line option override ####
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -p$test_part_2"
+expect {
+	-re "($re_word_str)" {
+		set str $expect_out(1,string)
+		if {$str eq $test_part_1} {
+			set match -99
+		}
+		if {$str eq $test_part_2} {
+			incr match
+		}
+		incr found
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 1} "Test SINFO_PARTITION with command line option override" "sinfo -p did not override environment variable ($match != 1)"
+
+set match 0
+set found 0
+spawn $bin_bash -c "SINFO_ALL=1 $sinfo -h -o%P -p$test_part_1,$test_part_2"
+expect {
+	-re "($re_word_str)" {
+		set str $expect_out(1,string)
+		if {$str eq $test_part_1 || $str eq $test_part_2} {
+			incr match
+		}
+		incr found
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 2 && $found == 2} "Test SINFO_ALL with -p override" "sinfo -p did not override env variable (match:$match found:$found != 2)"
+
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -a"
+expect {
+	-re "($re_word_str)" {
+		set str $expect_out(1,string)
+		if {$str eq $test_part_1 || $str eq $test_part_2} {
+			incr match
+		}
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 2} "Test SINFO_PARTITION shows all partitions" "sinfo did not show all partitions ($match != 2)"
+
+#### Test conflicts ####
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 SINFO_ALL=1 $sinfo"
+expect {
+	-re "Conflicting options" {
+		log_debug "This error is expected, do not worry"
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 1} "Test conflicting environment variables" "sinfo should have produced an error ($match != 1)"
+
+set match 0
+spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -p$test_part_1 -a"
+expect {
+	-re "Conflicting options" {
+		log_debug "This error is expected, do not worry"
+		set match 1
+		exp_continue
+	}
+	timeout {
+		fail "sinfo is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match == 1} "Test conflicting environment variables and options" "sinfo should have produced an error ($match != 1)"

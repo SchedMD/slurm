@@ -1,0 +1,186 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test --gpu-bind options
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+
+source ./globals
+
+set file_in         "$test_dir/input"
+set number_commas   "\[0-9_,\]+"
+
+if {![check_config_select "cons_tres"]} {
+	skip "This test is only compatible with select/cons_tres"
+}
+if {![param_contains [get_config_param "TaskPlugin"] "*cgroup"] || [get_config_param "ConstrainDevices"] ne "yes"} {
+	skip "This test is only compatible with TaskPlugin=cgroup,... in slurm.conf and ConstrainDevices=yes in cgroup.conf"
+}
+
+set gpu_cnt [get_highest_gres_count 1 "gpu"]
+if {$gpu_cnt < 2} {
+	skip "This test requires 2 or more GPUs on 1 node of the default partition"
+}
+
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set cpus_per_node     [get_node_param $node_name "CPUTot"]
+set sockets_per_node  [get_node_param $node_name "Sockets"]
+set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
+
+log_debug "GPU count is $gpu_cnt"
+log_debug "Sockets per node is $sockets_per_node"
+log_debug "CPUs per socket is $cpus_per_socket"
+log_debug "CPUs per node is $cpus_per_node"
+
+if {$cpus_per_node < 2} {
+	skip "This test requires 2 or more CPUs per node in the default partition"
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+if \[ \$SLURM_PROCID -eq 0 \]; then
+   $scontrol -dd show job \$SLURM_JOB_ID
+fi
+exit 0"
+
+set timeout $max_job_delay
+
+if {$sockets_per_node < 2} {
+	log_warn "Tests ${test_id}.0 and ${test_id}.1 require 2 or more sockets per node in the default partition"
+} else {
+	log_info "TEST ${test_id}.0"
+	spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J $test_name -t1 $file_in
+	expect {
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	#
+	# Test of --gpu-bind=closest
+	#
+	log_info "TEST ${test_id}.1"
+	spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J $test_name -t1 $file_in
+	expect {
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+#
+# Test of --gpu-bind=map_gpu
+# Note that if the task count exceeds the provided map_gpu, the map will be cycled over for additional tasks
+#
+log_info "TEST ${test_id}.2"
+if {$gpu_cnt < 4} {
+	set map_gpu "map_gpu:1,0"
+	set match_goal 2
+	set tasks_per_node 2
+} else {
+	set map_gpu "map_gpu:1,0,3,2"
+	set match_goal 4
+	set tasks_per_node 4
+}
+
+#
+# If $gpu_cnt > $cpus_per_node then assume there is no DefCpusPerGpu configured
+#
+set matches 0
+if {$gpu_cnt > $cpus_per_node} {
+	spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J $test_name -l -t1 $file_in
+} else {
+	spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J $test_name -l -t1 $file_in
+}
+expect {
+	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number)" {
+		if       {$expect_out(1,string) == 0 && $expect_out(3,string) == 0} {
+			incr matches
+		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) == 0} {
+			incr matches
+		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) == 0} {
+			incr matches
+		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) == 0} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == $match_goal} "Verify --gpu-bind=$map_gpu is respected" "$matches != $match_goal"
+
+#
+# Test of --gpu-bind=mask_gpu
+# Note that if the task count exceeds the provided mask_gpu, the mask will be cycled over for additional tasks
+#
+log_info "TEST ${test_id}.3"
+if {$gpu_cnt < 4} {
+	set mask_gpu "mask_gpu:0x3,0x2"
+} else {
+	set mask_gpu "mask_gpu:0x3,0x2,0x5,0xF"
+}
+
+set matches 0
+#
+# If $gpu_cnt > $cpus_per_node then assume there is no DefCpusPerGpu configured
+#
+if {$gpu_cnt > $cpus_per_node} {
+	spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J $test_name -l -t1 $file_in
+} else {
+	spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J $test_name -l -t1 $file_in
+}
+expect {
+	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number_commas)" {
+		if       {$expect_out(1,string) == 0 && $expect_out(3,string) eq "0,1"} {
+			incr matches
+		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) eq "0"} {
+			incr matches
+		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) eq "0,1"} {
+			incr matches
+		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) eq "0,1,2,3"} {
+			incr matches
+		}
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == $match_goal} "Verify --gpu-bind=$mask_gpu is respected" "$matches != $match_goal"

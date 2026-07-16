@@ -1,0 +1,194 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of node feature changes with reconfiguration.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set feature                 $test_name
+set file_in                 "$test_dir/input"
+set node_name               ""
+set orig_avail_node_feat    ""
+set orig_active_node_feat   ""
+
+if {![is_super_user]} {
+	skip "This test can't be run without being a super user of the cluster"
+}
+
+proc set_node_feature {node_name new_avail_feature new_active_feature} {
+	global scontrol
+
+	spawn $scontrol update node=$node_name AvailableFeatures=$new_avail_feature ActiveFeatures=$new_active_feature
+	expect {
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc cleanup {} {
+	global node_name orig_avail_node_feat orig_active_node_feat
+
+	# Explicitly reset features, just to be safe
+	if {$node_name ne ""} {
+		set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
+	}
+}
+
+# Identify a node to use
+set match 0
+make_bash_script $file_in "
+   $scontrol show job \$SLURM_JOB_ID | grep ' NodeList='
+"
+set timeout $max_job_delay
+spawn $srun -t1 --exclusive -N1 $file_in
+expect {
+	-re "NodeList=($re_word_str)" {
+		set node_name $expect_out(1,string)
+		set match 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	fail "Could not run job in exclusive node"
+}
+
+# Save the node's current features
+set match 0
+spawn $scontrol show node $node_name
+expect {
+	-re "AvailableFeatures=($re_word_str)" {
+		if {$expect_out(1,string) ne "(null)"} {
+			set orig_avail_node_feat $expect_out(1,string)
+		}
+		incr match
+		exp_continue
+	}
+	-re "AvailableFeatures=" {
+		set orig_avail_node_feat ""
+		incr match
+		exp_continue
+	}
+	-re "ActiveFeatures=($re_word_str)" {
+		if {$expect_out(1,string) ne "(null)"} {
+			set orig_active_node_feat $expect_out(1,string)
+		}
+		incr match
+		exp_continue
+	}
+	-re "ActiveFeatures=" {
+		set orig_active_node_feat ""
+		incr match
+		exp_continue
+	}
+	timeout {
+		fail "scontrol is not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	fail "Could not determine current features for node ($node_name)"
+}
+
+# Set new feature names to use
+if {[string length $orig_active_node_feat] == 0} {
+	set new_active_node_feat $feature
+} else {
+	set new_active_node_feat $orig_active_node_feat
+	append new_active_node_feat "," $feature
+}
+if {[string length $orig_avail_node_feat] == 0} {
+	set new_avail_node_feat $feature
+} else {
+	set new_avail_node_feat $orig_active_node_feat
+	append new_avail_node_feat "," $feature
+}
+set_node_feature $node_name $new_avail_node_feat $new_active_node_feat
+
+# Now run a job with that constraint and make sure it runs on the same node
+set match 0
+spawn $srun -t1 -C $feature -N1 $file_in
+expect {
+	-re "NodeList=$node_name" {
+		set match 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 0} {
+	fail "Could not run job with constraint"
+}
+
+# Run "scontrol reconfig" to restore proper features on the node
+reconfigure -fail
+
+set node_state [get_node_param $node_name "State"]
+if {[string first "DYNAMIC" $node_state] >= 0} {
+	# Dynamic nodes preserve features on restart.
+	set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
+} else {
+
+	# Now run a job with that constraint and make sure it fails
+	set match 0
+	spawn $srun -t1 -C $feature -N1 $file_in
+	expect {
+		-re "Invalid feature" {
+			log_debug "This error was expected, no worries"
+			set match 1
+			exp_continue
+		}
+		-re "Unable to contact" {
+			fail "Slurm appears to be down"
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match != 1} {
+		fail "Ran job with what should be invalid constraint"
+	}
+}

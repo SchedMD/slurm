@@ -1,0 +1,214 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate that sacct -D shows correct job steps and states
+#          when a job is requeued
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id     0
+set node       [get_nodes_by_request -fail "-t1 --exclusive"]
+
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
+}
+if {![is_super_user]} {
+	skip "Test can only be run as SlurmUser"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+proc mod_state { state reason } {
+	global scontrol node
+
+	set output [run_command_output "$scontrol update nodename=$node state=$state reason=$reason"]
+	set bad_state [regexp "Invalid node state" $output]
+
+	if {$bad_state == 1 && $state eq "resume" && [get_config_param "ReturnToService"] == 2} {
+		log_warn "This error is expected, no worries"
+		set bad_state 0
+	}
+	if {$bad_state == 1} {
+		fail "Problem changing node state"
+	}
+}
+
+proc check_step { num } {
+	global sacct job_id
+
+	set steps -1
+	wait_for {$num == $steps} {
+		set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=now-15minutes --noheader --format=jobid -P"]
+		set steps [regexp -all "batch" $output]
+	}
+	subtest {$num == $steps} "Check number of steps" "$steps != $num"
+}
+
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "Not using accounting_storage/slurmdbd"
+}
+
+# Submit job to be requeued
+log_info "Test 1"
+set job_id [submit_job -fail "-N1 -w$node --exclusive -o/dev/null --requeue --wrap='$bin_sleep 20'"]
+
+wait_for_job -fail $job_id "RUNNING"
+
+# Wait for batch script to start (after message delays, prologs, etc.)
+wait_for_step "${job_id}.batch"
+
+# Set the node that the job is running on to down
+mod_state "down" "$test_name"
+
+# Wait a little bit for node state to change
+set node_state_found 0
+wait_for -fail {$node_state_found} {
+	set nodes [get_nodes]
+	if {[dict get [dict get $nodes $node] "State"] == "DOWN"} {
+		set node_state_found 1
+	}
+}
+
+# Set the node back to resume
+mod_state "resume" "$test_name"
+
+# Check the job state
+log_info "Test 2"
+wait_for_job -fail $job_id "PENDING"
+
+# Wait for the state changes to propagate to the database for sacct
+set fail_count 0
+set canc_count 0
+set pend_count 0
+wait_for {$fail_count == 1 && $canc_count == 1 && $pend_count == 1} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set pend_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|PENDING" $output]
+}
+subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
+subtest {$canc_count == 1} "Test CANCELLED count" "$canc_count != 1"
+subtest {$pend_count == 1} "Test PENDING count" "$pend_count != 1"
+
+wait_for_job -fail $job_id "RUNNING"
+
+# Wait for batch script to start (after message delays, prologs, etc.)
+
+log_info "Test 3"
+set fail_count 0
+set canc_count 0
+set run_count 0
+wait_for {$fail_count == 1 && $canc_count == 1 && $run_count == 2} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set run_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|RUNNING" $output]
+}
+subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
+subtest {$canc_count == 1} "Test CANCELLED count" "$canc_count != 1"
+subtest {$run_count == 2} "Test RUNNING count" "$run_count != 2"
+
+# Requeue the job
+run_command -fail "$scontrol requeue $job_id"
+
+# Wait a bit for the job to be requeued then check its state
+wait_for_job -fail $job_id "PENDING"
+
+# Wait for the state changes to propagate to the database for sacct
+log_info "Test 4"
+set fail_count 0
+set canc_count 0
+set pend_count 0
+set req_count 0
+wait_for {$fail_count == 1 && $canc_count == 2 && $pend_count == 1 && $req_count == 1} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set pend_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|PENDING" $output]
+	set req_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|REQUEUE" $output]
+}
+subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
+subtest {$canc_count == 2} "The first and second batch steps should both show CANCELLED" "$canc_count != 2"
+subtest {$pend_count == 1} "Test PENDING count" "$pend_count != 1"
+subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
+
+wait_for_job -fail $job_id "RUNNING"
+
+# Check for steps after requeue. There should be 3 batch steps - the first 2
+# that are CANCELLED, and now the last one that is running.
+check_step 3
+
+
+log_info "Test 5"
+set fail_count 0
+set canc_count 0
+set req_count 0
+set run_count 0
+wait_for {$fail_count == 1 && $canc_count == 2 && $req_count == 1 && $run_count == 2} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set req_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|REQUEUE" $output]
+	set run_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|RUNNING" $output]
+}
+subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
+subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
+subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"
+subtest {$run_count == 2} "The job and its batch step should be RUNNING" "$run_count != 2"
+
+wait_for_job -fail $job_id "DONE"
+
+# Check steps after job has completed
+check_step 3
+log_info "Test 6"
+set fail_count 0
+set canc_count 0
+set comp_count 0
+set req_count 0
+wait_for {$fail_count == 1 && $canc_count == 2 && $comp_count == 2 && $req_count == 1} {
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+
+	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
+	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
+	set canc_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|CANCELLED" $output]
+	set comp_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|COMPLETED" $output]
+	set req_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|REQUEUE" $output]
+}
+subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
+subtest {$canc_count == 2} "Test CANCELLED count" "$canc_count != 2"
+subtest {$comp_count == 2} "Test COMPLETED count" "$comp_count != 2"
+subtest {$req_count == 1} "Test REQUEUE count" "$req_count != 1"

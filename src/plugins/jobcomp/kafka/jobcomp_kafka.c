@@ -1,0 +1,141 @@
+/*****************************************************************************\
+ *  jobcomp_kafka.c - Kafka Slurm job completion logging plugin.
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include "src/common/slurm_xlator.h"
+#include "src/common/data.h"
+#include "src/common/list.h"
+#include "src/common/xstring.h"
+#include "src/interfaces/jobcomp.h"
+#include "src/interfaces/serializer.h"
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
+#include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
+#include "src/plugins/jobcomp/kafka/jobcomp_kafka_message.h"
+
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "Job completion logging Kafka plugin";
+const char plugin_type[] = "jobcomp/kafka";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+static int _produce_internal(job_record_t *job_ptr, uint32_t event)
+{
+	int rc = SLURM_SUCCESS;
+	char *job_record_serialized = NULL;
+	data_t *job_record_data = NULL;
+	kafka_msg_opaque_t *opaque = NULL;
+
+	if (!(job_record_data =
+			jobcomp_common_job_record_to_data(job_ptr, event))) {
+		error("%s: unable to build data_t. %pJ discarded",
+		      plugin_type, job_ptr);
+		rc = SLURM_ERROR;
+		goto end;
+	}
+
+	if ((rc = serialize_g_data_to_string(&job_record_serialized,
+					     NULL,
+					     job_record_data,
+					     MIME_TYPE_JSON,
+					     SER_FLAGS_COMPACT))) {
+		error("%s: %pJ discarded, unable to serialize to JSON: %s",
+		      plugin_type, job_ptr, slurm_strerror(rc));
+		goto end;
+	}
+
+	opaque = jobcomp_kafka_message_init_opaque(event, job_ptr->job_id);
+	jobcomp_kafka_message_produce(opaque, job_record_serialized);
+
+end:
+	FREE_NULL_DATA(job_record_data);
+	return rc;
+}
+
+extern int init(void)
+{
+	int rc = SLURM_SUCCESS;
+
+	log_flag(JOBCOMP, "loaded");
+
+	serializer_required(MIME_TYPE_JSON);
+
+	jobcomp_common_conf_init();
+	jobcomp_kafka_conf_init();
+	jobcomp_kafka_conf_parse_params();
+	if ((rc = jobcomp_kafka_conf_parse_location()))
+		return rc;
+
+	if ((rc = jobcomp_kafka_message_init()))
+		return rc;
+
+	return rc;
+}
+
+extern void fini(void)
+{
+	jobcomp_kafka_message_fini();
+	jobcomp_kafka_conf_fini();
+	jobcomp_common_conf_fini();
+}
+
+/*
+ * The remainder of this file implements the standard Slurm job completion
+ * logging API.
+ */
+extern int jobcomp_p_set_location(void)
+{
+	static bool first = true;
+
+	/* This op is coupled to init(), avoid parsing again first time. */
+	if (first)
+		first = false;
+	else
+		jobcomp_kafka_conf_parse_params();
+
+	return SLURM_SUCCESS;
+}
+
+extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
+{
+	return _produce_internal(job_ptr, event);
+}
+
+extern list_t *jobcomp_p_get_jobs(void *job_cond)
+{
+	return NULL;
+}
+
+extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
+{
+	return _produce_internal(job_ptr, event);
+}

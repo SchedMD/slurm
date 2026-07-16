@@ -1,0 +1,175 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Validate sbatch hetjob environment variables.
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+set job_id       0
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
+
+if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
+	skip "This test requires SchedulerType = sched/backfill"
+}
+
+# find out if we have enough nodes to test functionality
+set node_count [get_partition_param [default_partition] "TotalNodes"]
+if { $node_count < 3 } {
+	skip "Insufficient nodes in default partition ($node_count < 3)"
+}
+
+proc sbatch {} {
+	global number sbatch file_in bin_sleep file_out job_id
+
+	set matches 0
+	set job_id 0
+	set command "$sbatch -t1 -o $file_out $file_in"
+	set regex "Submitted batch job ($number).+"
+
+	spawn {*}$command
+	expect {
+		-re "Batch job submission failed" {
+			skip "Unable to execute test due to system configuration"
+		}
+		-re "$regex" {
+			incr matches
+			set job_id $expect_out(1,string)
+
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Batch submit failure"
+	}
+}
+
+proc test_env {value} {
+	global bin_cat file_out
+
+	set matches 0
+	log_user 0
+	spawn $bin_cat $file_out
+	expect {
+		-re "$value" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	if {$matches != 1} {
+		fail "Output of env $value incorrect ($matches != 1)"
+	}
+}
+
+proc cleanup { } {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# Start test
+make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
+#SBATCH hetjob
+#SBATCH --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1
+#SBATCH hetjob
+#SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
+
+env"
+
+log_info "\n################################################################\n"
+log_info "Submit hetjob and verify output from scontrol show job"
+log_info "\n################################################################\n"
+
+sbatch
+if {$job_id == 0} {
+	fail "Error submitting job ($job_id)"
+}
+
+#
+# Check for desired output
+#
+wait_for_job -fail $job_id DONE
+wait_for_file -fail $file_out
+
+set matches 0
+
+spawn $bin_cat $file_out
+expect {
+	-re "SLURM_HET_SIZE=3" {
+		#once
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	fail "Output of env SLURM_HET_SIZE=3 incorrect ($matches != 1)"
+}
+
+set matches 0
+log_user 0
+spawn $bin_cat $file_out
+expect {
+	-re "SLURM_JOB_PARTITION_HET_GROUP" {
+		#three
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$matches != 3} {
+	fail "Output of env SLURM_JOB_PARTITION_HET_GROUP incorrect ($matches != 3)"
+}
+
+test_env "SLURM_CPUS_PER_TASK_HET_GROUP_0=4"
+test_env "SLURM_CPUS_PER_TASK_HET_GROUP_1=2"
+test_env "SLURM_CPUS_PER_TASK_HET_GROUP_2=1"
+
+test_env "SLURM_JOB_ID_HET_GROUP_0=$job_id"
+test_env "SLURM_JOB_ID_HET_GROUP_1="
+test_env "SLURM_JOB_ID_HET_GROUP_2="
+
+test_env "SLURM_MEM_PER_CPU_HET_GROUP_0=10"
+test_env "SLURM_MEM_PER_CPU_HET_GROUP_1=2"
+test_env "SLURM_MEM_PER_CPU_HET_GROUP_2=6"
+
+test_env "SLURM_NTASKS_HET_GROUP_0=1"
+test_env "SLURM_NTASKS_HET_GROUP_1=1"
+test_env "SLURM_NTASKS_HET_GROUP_2=1"

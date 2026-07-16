@@ -1,0 +1,118 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test GRES options with craynetwork (no topology)
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set file_in     "$test_dir/input"
+set number_commas  "\[0-9_,\]+"
+
+if {![check_config_select "cons_tres"]} {
+    skip "This test is only compatible with select/cons_tres"
+}
+
+set craynetwork_count [get_highest_gres_count 1 "craynetwork"]
+if {$craynetwork_count < 1} {
+	skip "This test requires 1 or more craynetwork GRES on 1 node of the default partition"
+}
+log_debug "craynetwork count is $craynetwork_count"
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+
+#
+# Build input script file
+#
+make_bash_script $file_in "if \[ \$SLURM_PROCID -eq 0 \]; then
+$scontrol -dd show job \$SLURM_JOB_ID
+fi
+exit 0"
+
+#
+# Test --gres options using a subset of craynetwork GRES available on the node
+#
+log_info "TEST: --gres=craynetwork:# option"
+set match 0
+set timeout $max_job_delay
+if {$craynetwork_count > 1} {
+	set gres_target [expr $craynetwork_count - 1]
+} else {
+	set gres_target $craynetwork_count
+}
+spawn $srun --gres=craynetwork:$gres_target -t1 -J $test_name -l $file_in
+expect {
+	-re "craynetwork.CNT:($number)" {
+		incr match $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $gres_target} {
+	fail "srun --gres failure ($match != $gres_target)"
+}
+
+if {0} {
+# OPTION REMOVED, LIKELY ON A TEMPORARY BASIS
+	#
+	# Test --tres-per-job options using multiple nodes
+	#
+	log_info "TEST: --tres-per-job=craynetwork:# option"
+	set match 0
+	set node_cnt 0
+	set timeout $max_job_delay
+	if {$craynetwork_count > 1 && $nb_nodes > 1} {
+		set gres_target [expr $craynetwork_count * 2 - 1]
+		set node_target 2
+	} else {
+		set gres_target $craynetwork_count
+		set node_target 1
+	}
+	spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J $test_name -l $file_in
+	expect {
+		-re "NumNodes=($number)" {
+			set node_cnt $expect_out(1,string)
+			exp_continue
+		}
+		-re "craynetwork.CNT:($number)" {
+			incr match $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$node_cnt != $node_target} {
+		fail "srun node count failure ($node_cnt != $node_target)"
+	}
+	if {$match != $gres_target} {
+		fail "srun --gres-per-job failure ($match != $gres_target)"
+	}
+}

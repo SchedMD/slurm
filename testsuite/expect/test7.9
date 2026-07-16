@@ -1,0 +1,108 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test that no files are open in spawned tasks (except stdin,
+#          stdout, and stderr) to ensure successful checkpoint/restart.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in          "$test_dir/input"
+set file_out         "$test_dir/output"
+set file_prog        "$test_name.prog"
+set iterations       50
+
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
+}
+
+proc cleanup {} {
+	global file_prog
+
+	file delete $file_prog
+}
+
+#
+# Delete left-over programs and rebuild them.
+# We use our own program to get ulimit values since the output
+# of the ulimit program is inconsistent across systems.
+#
+exec $bin_rm -f $file_prog
+exec $bin_cc -O -o $file_prog ${file_prog}.c
+
+make_bash_script $file_in "
+  $bin_echo 'testing within script'
+  ./$file_prog
+  $bin_echo ' '
+  $bin_echo 'testing $iterations sets of spawned tasks'
+  for ((i=0; i<$iterations; i++)) ; do
+    $srun --mpi=none ./$file_prog
+  done
+  $bin_echo 'fini'
+"
+
+set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+
+#
+# Inspect the job's output file
+#
+wait_for_file -fail $file_out
+set fini    0
+set matches 0
+spawn $bin_cat $file_out
+expect {
+	-re "FAILED" {
+		incr matches
+		exp_continue
+	}
+	-re "fini" {
+		set fini 1
+		exp_continue
+	}
+	timeout {
+		fail "cat not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$fini != 1} {
+	fail "Script never completed"
+}
+if {$matches != 0} {
+	set tot [expr $iterations + 1]
+	set failure_addendum "This should happen infrequently, typically when JobAcctFrequency is set to a small value and is indicative of a non-checkpointable job. For details, see src/plugins/jobacct/linux/jobacct_linux.c. To diagnose, use lsof to examine spawned job"
+	if {$matches <= 1} {
+		log_warn "$matches of $tot tests failed ($failure_addendum)"
+	} else {
+		fail "$matches of $tot tests failed ($failure_addendum)"
+	}
+}

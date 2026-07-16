@@ -1,0 +1,87 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of --licenses option
+############################################################################
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+#
+# Run a job attempting to get some dummy license name
+#
+set match   0
+set timeout $max_job_delay
+spawn $srun --licenses=DUMMY_FOR_TESTING $bin_printenv SLURMD_NODENAME
+expect {
+	-re "Invalid license" {
+		set match 1
+		log_debug "This error was expected, no worries"
+		exp_continue
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$match != 0} "Error expected with bad license name"
+
+#
+# Test if any licenses are configured.
+#
+log_user 0
+set licenses ""
+spawn $scontrol show config
+expect {
+	-re "Licenses *= ($re_word_str)" {
+		set licenses $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+if {$licenses ne ""} {
+	spawn $srun --licenses=$licenses $bin_printenv SLURMD_NODENAME
+	expect {
+		-re "invalid license" {
+			fail "Error getting license"
+		}
+		timeout {
+			fail "srun not responding. This test can fail if the selected license is in use"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+#
+# Run a job attempting to get a legitimate license name
+#

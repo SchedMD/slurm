@@ -1,0 +1,135 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol show hostnames.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+#
+# test single bracket hostnames
+#
+set matches 0
+spawn $scontrol show hostnames rack\[0-3\]
+expect {
+	-re "rack0" {
+		incr matches
+		exp_continue
+	}
+	-re "rack1" {
+		incr matches
+		exp_continue
+	}
+	-re "rack2" {
+		incr matches
+		exp_continue
+	}
+	-re "rack3" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 4} "Test single bracket hostnames" "$matches != 4"
+
+#
+# test double bracket hostnames
+#
+set matches 0
+spawn $scontrol show hostnames rack\[0-1\]_blade\[2,3\]
+expect {
+	-re "rack0_blade2" {
+		incr matches
+		exp_continue
+	}
+	-re "rack0_blade3" {
+		incr matches
+		exp_continue
+	}
+	-re "rack1_blade2" {
+		incr matches
+		exp_continue
+	}
+	-re "rack1_blade3" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 4} "Test double bracket hostnames" "$matches != 4"
+
+#
+# test triple bracket hostnames
+#
+set matches 0
+spawn $scontrol show hostnames row\[0,1\]_rack\[2-3\]_blade\[4,5\]
+expect {
+	-re "row0_rack2_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row0_rack2_blade5" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack2_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack2_blade5" {
+		incr matches
+		exp_continue
+	}
+	-re "row0_rack3_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row0_rack3_blade5" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack3_blade4" {
+		incr matches
+		exp_continue
+	}
+	-re "row1_rack3_blade5" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 8} "Test triple bracket hostnames" "$matches != 8"

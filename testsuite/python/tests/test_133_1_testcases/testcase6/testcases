@@ -1,0 +1,33 @@
+# etc33.1.6 -- disconnected trunks (no common root): spineA, spineB, leafC
+#
+# Full span: spineA and spineB each collapse to one relay per child leaf, and
+# the standalone leaf leafC relays its own nodes.
+node[1-40]
+node[1-8]
+node[9-16]
+node[17-24]
+node[25-32]
+node[33-40]
+
+# Subset, one leaf under spineA plus standalone leafC: spineA has only one
+# spanned child (leafA1), so leafA1 is not collapsed and survives as a
+# top-level leaf relaying its own nodes (the fix). leafA1 has a parent yet is
+# still a leaf survivor; without the fix these nodes hit the per-node fallback.
+node[1-8,33-40]
+node[1-8]
+node[33-40]
+
+# Subset, both leaves under spineA plus standalone leafC: spineA collapses to
+# one relay per child; leafC relays its own nodes.
+node[1-16,33-40]
+node[1-8]
+node[9-16]
+node[33-40]
+
+# Two disconnected trunks only (no bare leaf): spineA and spineB share no
+# root, so each splits independently into one relay per child leaf.
+node[1-32]
+node[1-8]
+node[9-16]
+node[17-24]
+node[25-32]

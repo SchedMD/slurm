@@ -1,0 +1,63 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          to be called from test3.11
+#          Test DAILY reservation conflict
+#
+############################################################################
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+proc inc3_11_10 {} {
+	global user_name
+
+	set res_name "resv3.11.10"
+	set res_name_test "resv3.11.10.0"
+
+	# TEST 10
+	# Test node reservation conflict
+	#
+	log_info "+++++ STARTING TEST 10 +++++"
+	# Make the reservation
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state idle,power_down,powering_down,plnd]] flags=DAILY user=$user_name"]
+	if {$ret_code != 0} {
+		fail "Unable to create a valid reservation"
+	}
+
+	# Test for reservation conflict
+	set ret_code [create_res $res_name_test "StartTime=now Duration=180 NodeCnt=1 user=$user_name"]
+	if {! [
+		subtest {$ret_code != 0} "Present conflicting reservation should not have been created"
+	]} {
+		delete_res $res_name_test
+	}
+
+	# Test for reservation conflict
+	set ret_code [create_res $res_name_test "StartTime=now+6days Duration=180 NodeCnt=1 user=$user_name"]
+	if {! [
+		subtest {$ret_code != 0} "Future conflicting reservation should not have been created"
+	]} {
+		delete_res $res_name_test
+	}
+
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		fail "Unable to delete reservation ($res_name)"
+	}
+}

@@ -1,0 +1,531 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Topology Guide</h1>
+
+<p>Slurm can be configured to support topology-aware resource
+allocation to optimize job performance.
+Without a topology plugin, Slurm's native mode of resource selection
+considers nodes as a one-dimensional array and allocates resources
+on a best-fit basis.</p>
+
+<h2 id="contents">Contents
+<a class="slurm_link" href="#contents"></a>
+</h2>
+
+<ul>
+<li><a href="#hierarchical">Tree Topology (Hierarchical Networks)</a>
+<ul>
+<li><a href="#config_generators">Configuration Generators</a></li>
+</ul></li>
+<li><a href="#block">Block Topology</a>
+<ul>
+<li><a href="#block-limitations">Limitations</a></li>
+</ul></li>
+<li><a href="#ring">Ring Topology</a></li>
+<li><a href="#torus3d">3D Torus Topology</a></li>
+<li><a href="#user_opts">User Options</a></li>
+<li><a href="#env_vars">Environment Variables</a></li>
+<li><a href="#multi_topo">Multiple Topologies</a></li>
+<li><a href="#dynamic_topo">Dynamic Topology</a></li>
+</ul>
+
+<h2 id="hierarchical">Tree Topology (Hierarchical Networks)
+<a class="slurm_link" href="#hierarchical"></a>
+</h2>
+
+<p>Slurm can also be configured to allocate resources to jobs on a
+hierarchical network to minimize network contention.
+The basic algorithm is to identify the lowest level switch in the
+hierarchy that can satisfy a job's request and then allocate resources
+on its underlying leaf switches using a best-fit algorithm.
+Use of this logic requires a configuration setting of
+<i>TopologyPlugin=topology/tree</i>.</p>
+
+<p>Note that slurm uses a best-fit algorithm on the currently
+available resources. This may result in an allocation with
+more than the optimum number of switches. The user can request
+a maximum number of leaf switches for the job as well as a
+maximum time willing to wait for that number using the <code>--switches</code>
+option with the salloc, sbatch and srun commands. The parameters can
+also be changed for pending jobs using the scontrol and squeue commands.</p>
+
+<p>At some point in the future Slurm code may be provided to
+gather network topology information directly.
+Now the network topology information must be included
+in a <i>topology.conf</i> configuration file as shown in the
+examples below.
+The first example describes a three level switch in which
+each switch has two children.
+Note that the <i>SwitchName</i> values are arbitrary and only
+used for bookkeeping purposes, but a name must be specified on
+each line.
+The leaf switch descriptions contain a <i>SwitchName</i> field
+plus a <i>Nodes</i> field to identify the nodes connected to the
+switch.
+Higher-level switch descriptions contain a <i>SwitchName</i> field
+plus a <i>Switches</i> field to identify the child switches.
+Slurm's hostlist expression parser is used, so the node and switch
+names need not be consecutive (e.g. "Nodes=tux[0-3,12,18-20]"
+and "Switches=s[0-2,4-8,12]" will parse fine).
+</p>
+
+<p>An optional LinkSpeed option can be used to indicate the
+relative performance of the link.
+The units used are arbitrary and this information is currently not used.
+It may be used in the future to optimize resource allocations.</p>
+
+<p>The first example shows what a topology would look like for an
+eight node cluster in which all switches have only two children as
+shown in the diagram (not a very realistic configuration, but
+useful for an example).</p>
+
+<pre>
+# topology.conf
+# Switch Configuration
+SwitchName=s0 Nodes=tux[0-1]
+SwitchName=s1 Nodes=tux[2-3]
+SwitchName=s2 Nodes=tux[4-5]
+SwitchName=s3 Nodes=tux[6-7]
+SwitchName=s4 Switches=s[0-1]
+SwitchName=s5 Switches=s[2-3]
+SwitchName=s6 Switches=s[4-5]
+</pre>
+<img src=topo_ex1.gif width=600>
+
+<p>The next example is for a network with two levels and
+each switch has four connections.</p>
+<pre>
+# topology.conf
+# Switch Configuration
+SwitchName=s0 Nodes=tux[0-3]   LinkSpeed=900
+SwitchName=s1 Nodes=tux[4-7]   LinkSpeed=900
+SwitchName=s2 Nodes=tux[8-11]  LinkSpeed=900
+SwitchName=s3 Nodes=tux[12-15] LinkSpeed=1800
+SwitchName=s4 Switches=s[0-3]  LinkSpeed=1800
+SwitchName=s5 Switches=s[0-3]  LinkSpeed=1800
+SwitchName=s6 Switches=s[0-3]  LinkSpeed=1800
+SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
+</pre>
+<img src=topo_ex2.gif width=600>
+
+<p>As a practical matter, listing every switch connection
+definitely results in a slower scheduling algorithm for Slurm
+to optimize job placement.
+The application performance may achieve little benefit from such optimization.
+Listing the leaf switches with their nodes plus one top level switch
+should result in good performance for both applications and Slurm.
+The previous example might be configured as follows:</p>
+<pre>
+# topology.conf
+# Switch Configuration
+SwitchName=s0 Nodes=tux[0-3]
+SwitchName=s1 Nodes=tux[4-7]
+SwitchName=s2 Nodes=tux[8-11]
+SwitchName=s3 Nodes=tux[12-15]
+SwitchName=s4 Switches=s[0-3]
+</pre>
+
+<p>Note that compute nodes on switches that lack a common parent switch can
+be used, but no job will span leaf switches without a common parent
+(unless the TopologyParam=TopoOptional option is used).
+For example, it is legal to remove the line "SwitchName=s4 Switches=s[0-3]"
+from the above topology.conf file.
+In that case, no job will span more than four compute nodes on any single leaf
+switch.
+This configuration can be useful if one wants to schedule multiple physical
+clusters as a single logical cluster under the control of a single slurmctld
+daemon.</p>
+
+<p>If you have nodes that are in separate networks and are associated with
+unique switches in your <b>topology.conf</b> file, it's possible that you
+could get in a situation where a job isn't able to run.  If a job requests
+nodes that are in the different networks, either by requesting the nodes
+directly or by requesting a feature, the job will fail because the requested
+nodes can't communicate with each other.  We recommend placing nodes in
+separate network segments in disjoint partitions.</p>
+
+<p>For systems with a dragonfly network, configure Slurm with
+<i>TopologyPlugin=topology/tree</i> plus <i>TopologyParam=dragonfly</i>.
+If a single job can not be entirely placed within a single network leaf
+switch, the job will be spread across as many leaf switches as possible
+in order to optimize the job's network bandwidth.</p>
+
+<p><b>NOTE</b>: When using the <i>topology/tree</i> plugin, Slurm identifies
+the network switches which provide the best fit for pending jobs. If nodes
+have a <i>Weight</i> defined, this will override the resource selection based
+on network topology.</p>
+
+<h3 id="config_generators">Configuration Generators
+<a class="slurm_link" href="#config_generators"></a></h3>
+
+<p>The following independently maintained tools may be useful in generating the
+<b>topology.conf</b> file for certain switch types:</p>
+
+<ul>
+<li>Infiniband switch - <b>slurmibtopology</b><br>
+<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmibtopology">
+https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmibtopology</a></li>
+<li>Omni-Path (OPA) switch - <b>opa2slurm</b><br>
+<a href="https://gitlab.com/jtfrey/opa2slurm">
+https://gitlab.com/jtfrey/opa2slurm</a></li>
+<li>AWS Elastic Fabric Adapter (EFA) - <b>ec2-topology</b><br>
+<a href="https://github.com/aws-samples/ec2-topology-aware-for-slurm">
+https://github.com/aws-samples/ec2-topology-aware-for-slurm</a></li>
+</ul>
+
+<h2 id="block">Block Topology<a class="slurm_link" href="#block"></a></h2>
+
+<p>Slurm can be configured to allocate resources to jobs within a strictly
+enforced, hierarchical block structure using
+<b>TopologyPlugin=topology/block</b>. The block topology prioritizes the
+placement of jobs to minimize fragmentation across the cluster, as opposed to
+the tree topology, which focuses on fitting jobs on the first available
+resources. Small jobs will still be able to use the available space in a block
+that is partially used.</p>
+
+<p>The block topology approach begins with "base blocks" (bblocks), which are
+fundamental, contiguous groups of nodes defined in
+<a href="topology.conf.html">topology.conf</a>.
+These base blocks can be combined with other adjacent base blocks to form
+"aggregated blocks". In turn, these higher-level blocks can be aggregated
+with other contiguous blocks of the same hierarchical level to construct
+progressively larger blocks. This hierarchical arrangement is designed to
+ensure optimized communication performance for jobs running within these blocks.
+The <b>BlockSizes</b> configuration parameter defines the specific, enforceable
+block sizes at each level of this hierarchy.</p>
+
+<p>The allocation algorithm operates as follows:</p>
+
+<ol>
+<li>Identify the smallest block level, as defined by <b>BlockSizes</b>, that can
+satisfy the job's resource request</li>
+<li>Select a suitable subset of "lower-level blocks" (llblocks) that are
+components of this chosen aggregating block</li>
+<li>Allocate resources from the underlying base blocks that constitute this
+selected subset of llblocks, employing a best-fit algorithm for the
+precise placement of the job.</li>
+</ol>
+
+<h3 id="block-limitations">Limitations
+<a class="slurm_link" href="#block-limitations"></a>
+</h3>
+
+<p>Since the block topology takes a different approach than the traditional tree
+topology, there are limitations that should be taken into consideration.</p>
+
+<ul>
+<li><b>Ranges of nodes</b><br>
+When using <code>-N</code>/<code>--nodes</code> to specify a range of acceptable
+node counts, the scheduler will have to evaluate each value of that range to
+find optimal placement on the available block(s). If using a range is necessary,
+the number of possible values should be kept as small as possible.</li>
+<li><b>Requesting specific nodes</b><br>
+Using <code>-w</code>/<code>--nodelist</code> to request a specific node or
+nodes can conflict with the block placement. Because topology enforcement
+takes precedence, this will prevent the job from receiving an allocation. You
+can use <code>-x</code>/<code>--exclude</code> to prevent a job from
+being scheduled on certain nodes.
+</li>
+<li><b>Contiguous blocks</b><br>
+The scheduler will attempt to place jobs on blocks that are adjacent to each
+other in the block structure. You cannot currently request that a job be
+placed on non-adjacent blocks.</li>
+</ul>
+
+<h2 id="ring">Ring Topology<a class="slurm_link" href="#ring"></a></h2>
+
+<p>Slurm 26.05 introduced ring topologies with <b>TopologyPlugin=topology/ring</b>.
+This plugin models the cluster as one or more ordered rings of nodes. Jobs are
+allocated using contiguous segments of nodes in the ring, which may wrap at the
+end of the ring.</p>
+
+<p>Rings can be defined in <b>topology.conf</b> using <b>RingName</b> and
+<b>Nodes</b>. The order of <b>Nodes</b> establishes the ring position
+(starting at 0). A maximum of 16 nodes can be specified per ring.</p>
+
+<pre>
+# topology.conf
+RingName=ring0 Nodes=node[01-08]
+RingName=ring1 Nodes=node[09-16]
+</pre>
+
+<p>When using <b>topology.yaml</b>, the following lines would define a ring
+topology equivalent to the previous example:</p>
+
+<pre>
+- topology: topo-ring
+  cluster_default: true
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[01-08]
+      - ring: ring1
+        nodes: node[09-16]
+</pre>
+
+<p>For <a href="#dynamic_topo">dynamic or cloud</a> nodes, the <b>Topology</b>
+field uses the ring name and position: <code>Topology=topo-ring:ring0:3</code>.
+The ring position must be 0 when creating a new ring.</p>
+
+<h2 id="torus3d">3D Torus Topology<a class="slurm_link" href="#torus3d"></a></h2>
+
+<p>The <b>topology/torus3d</b> plugin models the cluster as one or more 3D torus
+networks. Jobs are allocated contiguous sub-cubes of nodes within a torus,
+enforcing placement shapes defined by the administrator.</p>
+
+<p>Each torus is defined with X, Y, and Z dimensions. Nodes are mapped into
+the 3D coordinate space either directly (via a flat node list in x-major order)
+or through <b>regions</b> that map subsets of coordinates to specific nodes.
+Regions must fit within the torus dimensions and do not wrap around
+boundaries. Regions are useful when nodes have sparse or non-contiguous
+naming.</p>
+
+<p>Each <b>placement</b> specifies a sub-cube shape (e.g., 2x2x1, 2x2x2).
+Jobs requesting a number of nodes matching a placement size are allocated a
+contiguous sub-cube of that shape, which may wrap around torus boundaries.
+The scheduler selects the best placement based on node weight,
+fragmentation cost, and torus utilization. Jobs requesting a node count that
+does not match any configured placement size will not receive an allocation.</p>
+
+<p>The <b>torus3d</b> plugin supports the <code>--segment</code> option, where
+the value specifies the segment size (number of nodes per placement).
+The total node count must be evenly divisible by the segment size, and
+the segment size must match a configured placement size. Each segment is
+allocated as one placement sub-cube. Segments may span different toruses.</p>
+
+<p>The <b>torus3d</b> topology can only be configured via
+<a href="topology.yaml.html">topology.yaml</a>. Example:</p>
+
+<pre>
+- topology: topo-torus
+  cluster_default: true
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 4
+          y: 4
+          z: 2
+        nodes: node[01-32]
+        placements:
+          - dims:
+              x: 2
+              y: 2
+              z: 1
+          - dims:
+              x: 2
+              y: 2
+              z: 2
+          - dims:
+              x: 4
+              y: 4
+              z: 2
+</pre>
+
+<p>With the above configuration, jobs can be allocated in groups of 4 (2x2x1),
+8 (2x2x2), or 32 (4x4x2) nodes. For example, a 16-node job with
+<code>--segment=8</code> specifies 8 nodes per segment, resulting in
+two 2x2x2 placements (16 / 8 = 2 segments).</p>
+
+<p>Regions allow sparse node naming within a torus.
+Anchor spacing can be used to control placement anchor generation. By
+default anchors are spaced at the placement dimensions. Custom
+<b>anchor_spacing</b> allows overlapping placements on the torus.
+<b>anchor_seed</b> shifts the entire anchor grid by a coordinate offset:</p>
+<pre>
+- topology: topo-torus
+  cluster_default: true
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 4
+          y: 4
+          z: 2
+        regions:
+          - anchor: {x: 0, y: 0, z: 0}
+            dims: {x: 4, y: 2, z: 2}
+            nodes: rack1-node[01-16]
+          - anchor: {x: 0, y: 2, z: 0}
+            dims: {x: 4, y: 2, z: 2}
+            nodes: rack2-node[01-16]
+        placements:
+          - dims: {x: 2, y: 2, z: 2}
+          - dims: {x: 4, y: 2, z: 1}
+            anchor_spacing: {x: 2, y: 2, z: 1}
+          - dims: {x: 4, y: 2, z: 1}
+            anchor_seed: {x: 1, y: 0, z: 0}
+</pre>
+
+<p>For <a href="#dynamic_topo">dynamic or cloud</a> nodes, the <b>Topology</b>
+field uses the torus name and coordinates:
+<code>Topology=topo-torus:pod1:2:3:1</code>.</p>
+
+<p>Hostlist functions <code>torus{pod1}</code> and
+<code>toruswith{node01}</code> can be used to expand to all nodes in
+a torus or to all nodes sharing a torus with a given node.</p>
+
+<h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
+
+<p>When a <b>tree</b> topology is configured, users can also specify the
+maximum number of leaf switches to be used for their job with the maximum time
+the job should wait for this optimized configuration. The syntax for this option
+is <code>--switches=count[@time]</code>.
+The system administrator can limit the maximum time that any job can
+wait for this optimized configuration using the <b>SchedulerParameters</b>
+configuration parameter with the
+<a href="slurm.conf.html#OPT_max_switch_wait=#">max_switch_wait</a> option.</p>
+
+<p>When a <b>block</b>, <b>ring</b>, or <b>torus3d</b> topology is configured, the
+following option is available for job submissions:</p>
+
+<ul>
+<li><code>--segment=&lt;segment_size&gt;</code><br>
+When a block, ring, or torus3d topology is used, this defines the size of the
+segments that will be used to create the job allocation.
+For topology/torus3d, each segment corresponds to one placement sub-cube.
+For topology/block, no requirement would be placed on all segments for a job
+needing to be placed within the same higher-level block.<br>
+<b>NOTE</b>: If the requested node count (<b>--nodes</b>) is larger than the
+requested segment size, it must also be evenly divisible by the segment size.
+If all nodes fit within a single segment, this option has no effect. </li>
+</ul>
+
+<p>The following options only apply to a <b>block</b> topology:</p>
+
+<ul>
+<li><code>--spread-segments</code><br>
+Prevent nodes within the same base block from being allocated to
+separate segments within the same block.</li>
+
+<li><code>--consolidate-segments</code><br>
+Ensure that all segments from the allocation will be consolidated
+into one higher-level aggregated block.</li>
+</ul>
+
+<p>When a <b>block</b>, <b>tree</b>, <b>ring</b>, or <b>torus3d</b> topology is
+configured, hostlist functions may be used in place of or alongside regular
+hostlist expressions in commands or configuration files that interact with the
+slurmctld. Valid topology functions include:</p>
+
+<table class="tlist">
+  <tr>
+    <td><code>block{blockX}</code>
+      <br><code>switch{switchY}</code>
+      <br><code>ring{ringZ}</code>
+      <br><code>torus{torusW}</code></td>
+    <td>Expand to all nodes in the specified topology unit</td>
+  </tr>
+  <tr>
+    <td><code>blockwith{nodeX}</code>
+      <br><code>switchwith{nodeY}</code>
+      <br><code>ringwith{nodeZ}</code>
+      <br><code>toruswith{nodeW}</code></td>
+    <td>Expand to all nodes in the same topology unit as the specified node</td>
+  </tr>
+</table>
+<br>
+
+<p>Hostlist functions can be used in several different contexts, for example:</p>
+
+<pre>
+scontrol update node=block{b1} state=resume
+sbatch --nodelist=switchwith{node0} -N 10 program
+PartitionName=Ring10 Nodes=ring{ring10} ...
+</pre>
+
+See also the hostlist function <b>feature{myfeature}</b>
+<a href="slurm.conf.html#OPT_Features">here</a>.</p>
+
+<h2 id="env_vars">Environment Variables
+<a class="slurm_link" href="#env_vars"></a>
+</h2>
+
+<p>If the topology/tree plugin is used, two environment variables will be set
+to describe that job's network topology. Note that these environment variables
+will contain different data for the tasks launched on each node. Use of these
+environment variables is at the discretion of the user.</p>
+
+<p><b>SLURM_TOPOLOGY_ADDR</b>:
+The value will be set to the names network switches which may be involved in
+the job's communications from the system's top level switch down to the leaf
+switch and ending with node name. A period is used to separate each hardware
+component name.</p>
+
+<p><b>SLURM_TOPOLOGY_ADDR_PATTERN</b>:
+This is set only if the system has the topology/tree plugin configured.
+The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
+Each component will be identified as either "switch" or "node".
+A period is used to separate each hardware component type.</p>
+
+
+<h2 id="multi_topo">Multiple Topologies
+<a class="slurm_link" href="#multi_topo"></a>
+</h2>
+
+<p>Slurm 25.05 introduced the ability to define multiple network topologies using the
+<a href="topology.yaml.html">topology.yaml</a> configuration file.
+
+Each partition can be configured to use a specific topology by specifying the
+<a href="slurm.conf.html#OPT_Topology_1">Topology</a>
+in its partition configuration line.
+The Slurm controller will use the selected topology to optimize resource
+allocation for jobs submitted to that partition.
+If no topology is explicitly specified for a partition,
+Slurm will default to the cluster_default topology.</p>
+
+<h2 id="dynamic_topo">Dynamic Topology
+<a class="slurm_link" href="#dynamic_topo"></a>
+</h2>
+
+<p>Nodes can be dynamically added to and removed from topologies, defined in
+either <i>topology.conf</i> or <i>topology.yaml</i>, by either using
+<b>scontrol</b> to update the node's topology or by using the slurmd's
+<b>--conf</b> option to specify the node's topology for dynamic or cloud
+nodes.</p>
+
+<p>This is done by specifying the <b>Topology</b> option and providing the list
+of topology names and units. Note that the topology defined in the
+<b>topology.conf</b> file will always have the name "default".
+A <b>topology unit</b> is the block name, the name of a leaf switch, the ring
+name and position, or the torus name and 3D coordinates.
+Intermediate switch names (':' delimited) can be provided and will be created
+if needed (e.g. Topology=topo-tree:sw_root:s1:s2).
+For torus3d, the format is <code>topo-name:torus_name:x:y:z</code>
+(e.g. <code>Topology=topo-torus:pod1:2:3:1</code>).</p>
+
+<p>For <b>cloud nodes</b>, the only field that can be set with the
+<b>--conf</b> flag is <b>Topology</b>, and when the node is powered down the
+topology will be restored to what is defined in the configuration files.</p>
+
+<p>Examples using <code>scontrol</code>:</p>
+
+<pre>
+scontrol create NodeName=d[1-100] ... Topology=topo-switch:s1,topo-block:b1"
+</pre>
+
+<pre>
+scontrol update NodeName=d[1-2] Topology=topo-switch:s2,topo-block:b2"
+</pre>
+
+<pre>
+# Remove nodes from all topology
+scontrol update NodeName=d100 Topology=
+</pre>
+
+<p>Examples using <code>slurmd --conf</code>:</p>
+
+<pre>
+slurmd -Z --conf "... Topology=topo-switch:s1,topo-block:b1"
+</pre>
+
+<pre>
+slurmd -Z --conf "... Topology=default:b1"
+</pre>
+
+<pre>
+# Omit -Z for cloud nodes
+slurmd --conf "Topology=topo-cloud:s1"
+</pre>
+
+<!--#include virtual="footer.txt"-->

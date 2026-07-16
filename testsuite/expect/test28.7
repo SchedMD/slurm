@@ -1,0 +1,64 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirms job array dependencies.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set array_size    3
+set top_array_task_id [expr $array_size - 1]
+set job_id        0
+set job_id2       0
+set timeout       $max_job_delay
+
+if {$array_size > [get_config_param "MaxArraySize"]} {
+	skip "MaxArraySize is too small"
+}
+
+proc cleanup {} {
+	global job_id job_id2
+
+	cancel_job [list $job_id $job_id2]
+}
+
+#
+# Submit a job array for first dependency test
+#
+set job_id [submit_job -fail "-N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --wrap 'sleep \$(( ( RANDOM % 10 ) + 1 ))'"]
+
+#
+# Submit a dependent job dependent upon a single job array element of that job array
+#
+set output [run_command_output -fail "$srun -t1 --dependency=afterany:$job_id\_$top_array_task_id $scontrol show job $job_id\_$top_array_task_id"]
+subtest {[regexp -all "JobState=COMPLETED|COMPLETING" $output] == 1} "Verify that dependent job was completed"
+
+#
+# Submit a job array for second dependency test
+#
+set job_id2 [submit_job -fail "-N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --wrap 'sleep \$(( ( RANDOM % 10 ) + 1 ))'"]
+
+#
+# Submit a dependent job dependent upon a full job array
+#
+set output [run_command_output -fail "$srun -t1 --dependency=afterany:$job_id2 $scontrol show job $job_id2"]
+subtest {[regexp -all "JobState=COMPLETED|COMPLETING" $output] == $array_size} "Verify that dependent job array was fully completed"

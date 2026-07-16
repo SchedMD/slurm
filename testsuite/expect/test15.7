@@ -1,0 +1,161 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test of processors, memory, and temporary disk space
+#          constraints options (--mincpus, --mem, and --tmp options).
+#          Also test that priority zero job is not started (--hold
+#          option).
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set cpu_cnt     1
+set job_id      0
+set mem_size    13
+set tmp_size    2
+set matches     0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+proc sbatch_mem_error {arg} {
+	global sbatch test_name number job_id
+
+	set matches 0
+	set job_id 0
+
+	set cmd "$sbatch -J$test_name --wrap=hostname $arg"
+	spawn {*}$cmd
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+		}
+		"sbatch: error: Invalid" {
+			incr matches
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id} {
+		fail "Job shouldn't have submitted (cmd:$cmd)"
+	}
+	if {$matches != 1} {
+		fail "Job should have errored with arg '$arg'"
+	}
+}
+
+#
+# Spawn a salloc job with constraints
+#
+spawn $salloc --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $bin_id
+expect {
+	-re "Pending job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	-re "uid=" {
+		fail "salloc --hold option ineffective"
+	}
+	timeout {
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	fail "salloc submit failure"
+}
+
+#
+# Confirm constraints are registered and wait for job completion
+#
+spawn $scontrol show job $job_id
+expect {
+	-re "Priority=($number)" {
+		set read_prio $expect_out(1,string)
+		if {$read_prio == 0} {
+			incr matches
+			log_debug "Match of Priority"
+		}
+		exp_continue
+	}
+	-re "JobState=PENDING" {
+		incr matches
+		log_debug "Match of JobState"
+		exp_continue
+	}
+	-re "MinCPUsNode=($number)" {
+		set read_cpus $expect_out(1,string)
+		if {$read_cpus == $cpu_cnt} {
+			incr matches
+			log_debug "Match of MinCPUsNode"
+		}
+		exp_continue
+	}
+	-re "MinMemoryNode=($number)" {
+		set read_mem $expect_out(1,string)
+		if {$read_mem == $mem_size} {
+			incr matches
+			log_debug "Match of MinMemory"
+		}
+		exp_continue
+	}
+	-re "MinTmpDiskNode=($number)" {
+		set read_disk $expect_out(1,string)
+		if {$read_disk == $tmp_size} {
+			incr matches
+			log_debug "Match of MinTmpDiskNode"
+		}
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 5} {
+	fail "Did not get constraints ($matches of 5)"
+}
+if {[cancel_job $job_id] != 0} {
+	fail "Unable to cancel job ($job_id)"
+}
+
+sbatch_mem_error "--mem="
+sbatch_mem_error "--mem=1gggggg"
+sbatch_mem_error "--mem=memory"
+sbatch_mem_error "--mem=-1"
+sbatch_mem_error "--mem-per-cpu="
+sbatch_mem_error "--mem-per-cpu=1gggggg"
+sbatch_mem_error "--mem-per-cpu=memory"
+sbatch_mem_error "--mem-per-cpu=-1"

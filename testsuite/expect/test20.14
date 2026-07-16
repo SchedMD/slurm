@@ -1,0 +1,136 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test PBS/qsub -l gpu options
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set node_cnt 1
+set ppn_cnt 1
+set gpu_req_cnt 1
+set time_str "00:02:00"
+set job_id 0
+
+set file_in     "$test_dir/input"
+
+if {[file executable $qsub] == 0} {
+	skip "$qsub not found"
+}
+
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
+if {$nb_nodes > 1} {
+	set nb_nodes 2
+}
+set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 1} {
+	skip "This test requires 1 or more GPUs on $nb_nodes nodes of the default partition"
+}
+
+set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+}
+set ppn_cnt [get_node_param $node_name "CPUTot"]
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+proc test_job {} {
+	global number job_id time_str ppn_cnt gpu_req_cnt scontrol
+	set job_id 0
+	expect {
+		-re "($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {!$job_id} {
+		fail "Failed to submit job"
+	}
+
+
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "TimeLimit=$time_str" {
+			incr matches
+			exp_continue
+		}
+		-re "NumCPUs=$ppn_cnt" {
+			incr matches
+			exp_continue
+		}
+		-re "TresPerNode=.*gpu:$gpu_req_cnt" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 3} {
+		fail "Didn't match ($matches != 3)"
+	}
+
+	cancel_job $job_id
+}
+
+
+set options [list \
+	"-l nodes=$node_cnt:ppn=$ppn_cnt,accelerator=true,walltime=$time_str" \
+	"-l nodes=$node_cnt:ppn=$ppn_cnt,naccelerators=$gpu_req_cnt,walltime=$time_str" \
+	"-l nodes=$node_cnt:ppn=$ppn_cnt:gpus=$gpu_req_cnt,walltime=$time_str" \
+]
+
+# Test sbatch #PBS -l nodes
+foreach option $options {
+	make_bash_script $file_in "
+#PBS $option
+$bin_sleep 120"
+	spawn $sbatch -H -o /dev/null $file_in
+	test_job
+	exec $bin_rm $file_in
+}
+
+
+# Test qsub -l nodes
+make_bash_script $file_in "
+$bin_sleep 120"
+foreach option $options {
+	spawn {*}"$qsub -h $option -o /dev/null $file_in"
+	test_job
+}
+exec $bin_rm $file_in

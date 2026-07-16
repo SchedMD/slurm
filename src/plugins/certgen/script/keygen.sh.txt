@@ -1,0 +1,2 @@
+#!/bin/sh
+openssl ecparam -name prime256v1 -genkey

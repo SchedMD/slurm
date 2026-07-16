@@ -1,0 +1,191 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test sbatch/srun/salloc path resolving
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+set file_in	"bash"
+
+# Increase timeout to account for sbatch --wait backoff
+set timeout 20
+
+proc cleanup {} {
+	global file_in
+
+	file delete $file_in
+}
+
+proc test_sbatch { local } {
+	global sbatch number file_in
+
+	set rc -12345
+	set job_id 0
+
+	if { $local } {
+		set file_in_loc "./$file_in"
+		set exp_rc 0
+	} else {
+		set file_in_loc "$file_in"
+		set exp_rc 1
+	}
+	spawn $sbatch -W -t1 --output=/dev/null --wrap "$file_in_loc -c /bin/false"
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			log_warn "sbatch job was not submitted"
+			return 1
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	if { $job_id == 0 } {
+		log_debug "batch submit failure"
+		return 1
+	}
+
+	if {$rc != 0 } {
+		log_debug "This error is expected, not a problem"
+	}
+
+	if { $rc != $exp_rc } {
+		log_debug "sbatch error submitting job $job_id rc: $rc instead of $exp_rc"
+		return 1
+	}
+
+	return 0
+}
+
+proc test_salloc { local } {
+	global salloc number file_in
+
+	set rc -12345
+	set job_id 0
+
+	if { $local } {
+		set file_in_loc "./$file_in"
+		set exp_rc 0
+	} else {
+		set file_in_loc "$file_in"
+		set exp_rc 1
+	}
+	spawn $salloc -t1 $file_in_loc -c /bin/false
+	expect {
+		-re "salloc: Granted job allocation ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		-re "error" {
+			fail "Job was not submitted"
+		}
+		timeout {
+			fail "salloc not responding"
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	if { $job_id == 0 } {
+		log_debug "salloc submit failure"
+		return 1
+	}
+
+	if {$rc != 0 } {
+		log_debug "This error is expected, not a problem"
+	}
+
+	if { $rc != $exp_rc } {
+		log_debug "salloc error submitting job $job_id rc: $rc instead of $exp_rc"
+		return 1
+	}
+
+	return 0
+}
+
+proc test_srun { local } {
+	global srun number file_in re_word_str
+
+	set rc -12345
+	set job_id 0
+
+	if { $local } {
+		set file_in_loc "./$file_in"
+		set exp_rc 0
+	} else {
+		set file_in_loc "$file_in"
+		set exp_rc 1
+	}
+	spawn $srun -v -t1 $file_in_loc -c /bin/false
+	expect {
+		-re "launching StepId=($number)\\.($re_word_str)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+
+	if { $job_id == 0 } {
+		log_debug "srun submit failure"
+		return 1
+	}
+
+	if {$rc != 0 } {
+		log_debug "This error is expected, not a problem"
+	}
+
+	if { $rc != $exp_rc } {
+		log_debug "srun error submitting job $job_id rc: $rc instead of $exp_rc"
+		return 1
+	}
+
+	return 0
+}
+
+set ::env(PATH) "/bin:/usr/bin"
+
+make_bash_script $file_in $bin_true
+
+# Test tools expecting bash to be used instead of our local 'bash' script
+subtest {[test_sbatch 0] == 0} "Verify that the sbatch executable will be resolved from the search path if it does not contain a /"
+subtest {[test_salloc 0] == 0} "Verify that the salloc executable will be resolved from the search path if it does not contain a /"
+subtest {[test_srun 0] == 0} "Verify that the srun executable will be resolved from the search path if it does not contain a /"
+
+# Test tools expecting our local 'bash' script to override the system bash
+subtest {[test_sbatch 1] == 0} "Verify that the sbatch executable will be resolved relative to the current working directory if it starts with ./"
+subtest {[test_salloc 1] == 0} "Verify that the salloc executable will be resolved relative to the current working directory if it starts with ./"
+subtest {[test_srun 1] == 0} "Verify that the srun executable will be resolved relative to the current working directory if it starts with ./"

@@ -1,0 +1,99 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          validates that srun exit code matches that of a test program
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_out     "$test_dir/testfile"
+set script       "$test_dir/script"
+set file_c       "segv.c"
+set err_num_c    0
+set err_num_srun 0
+
+# Remove any remaining files
+file delete $file_out $script $file_c
+
+exec $bin_echo "
+int main(char **argv, int argc)
+{
+	char *tmp;
+	tmp\[1000000\] = 3;
+}" > $file_c
+
+exec $bin_cc -std=c99 -o $file_out $file_c
+exec $bin_chmod 700 $file_out
+
+# Set core size ulimit to zero
+make_bash_script $script "
+ulimit -c 0
+$file_out
+echo exit_code = $?
+"
+
+# Run script alone
+set error_match 0
+spawn $script
+expect {
+
+	-re "Segmentation fault" {
+		log_debug "This error is expected do not worry"
+		incr error_match
+		exp_continue
+	}
+	-re "exit_code = ($number)" {
+		set err_num_c $expect_out(1,string)
+		incr error_match
+	 }
+	timeout {
+		fail "Program is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$error_match == 2} "Program should return a segmentation fault" "$error_match != 2"
+
+# Run script with srun
+# Note the "Segmentation fault" and "exit_code" messages can come in any order
+# Expect seems to have some trouble exiting if the "exit_code" comes first
+set error_match 0
+set timeout $max_job_delay
+spawn $srun -n1 -t1 $script
+expect {
+	-re "(Segmentation|exit_code = $err_num_c)" {
+		incr error_match
+		if {$error_match != 2} {
+			exp_continue
+		}
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$error_match == 2} "srun should have a segmentation error when running the program" "$error_match != 2"

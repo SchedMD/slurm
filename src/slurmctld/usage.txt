@@ -1,0 +1,13 @@
+Usage: slurmctld [OPTIONS]
+  -c            Do not recover state from last checkpoint.
+  -D            Run daemon in foreground, with logging copied to stdout.
+  -f file       Use specified file for slurmctld configuration.
+  -h            Print this help message.
+  -i            Ignore errors found while reading in state files on startup.
+  -L logfile    Log messages to the specified file.
+  -n value      Run the daemon at the specified nice value.
+  -R            Recover full state from last checkpoint.
+  -s            Change working directory to SlurmctldLogFile/StateSaveLocation.
+  --systemd     Started from a systemd unit file.
+  -v            Verbose mode. Multiple -v's increase verbosity.
+  -V            Print version information and exit.

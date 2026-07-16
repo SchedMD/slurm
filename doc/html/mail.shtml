@@ -1,0 +1,23 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Mailing Lists</h1>
+<p>SchedMD maintains two Slurm mailing lists:</p>
+<ul>
+<li><b>slurm-announce@schedmd.com</b> is designated for communications about
+Slurm releases. Only SchedMD may post to this list. Low traffic.</li>
+<li><b>slurm-users@schedmd.com</b> (formerly slurm-dev@schedmd.com) is for
+discussion by the Slurm community, and is typically used by Slurm system
+administrators for discussion and community-provided support. (Please see the
+<a href="https://www.schedmd.com/support.php">SchedMD support page</a>
+page for commercial support options.)
+Any person subscribed to this mailing list may post to it. High traffic.</li>
+</ul>
+
+<p>You can subscribe to either list, change your subscription options, or
+unsubscribe through the
+<a href="https://lists.schedmd.com/mailman3/postorius/lists/">Mailman interface here</a>.</p>
+
+<p>An archive of the <b>slurm-users</b> list is online:<br>
+<a href="http://groups.google.com/group/slurm-users">http://groups.google.com/group/slurm-users</a></p>
+
+<!--#include virtual="footer.txt"-->

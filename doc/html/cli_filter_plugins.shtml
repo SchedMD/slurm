@@ -1,0 +1,245 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">cli_filter Plugin API</a></h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+<p>This document describes Slurm cli_filter plugins and the API that
+defines them. It is intended as a resource to programmers wishing to write
+their own Slurm cli_filter plugins.</p>
+
+<p> The purpose of the cli_filter plugins is to provide programmatic hooks
+during the execution of the <b>salloc</b>, <b>sbatch</b>, and <b>srun</b>
+command line interface (CLI) programs. Three hooks are defined:
+<ul>
+<li><b>cli_filter_p_setup_defaults</b> &mdash;
+Called before any option processing is done,
+<i>per job component</i>, allowing a plugin to replace default option
+values.</li>
+<li><b>cli_filter_p_pre_submit</b> &mdash;
+Called after option processing <i>per job
+component</i> but before any communication
+is made with the slurm controller. This location
+is ideal for policy enforcement because the plugin can read all the options
+supplied by the user (as well as the environment) - thus invalid job requests
+can be stopped before they ever reach the slurmctld.</li>
+<li><b>cli_filter_p_post_submit</b> &mdash;
+Called after the jobid (and, in the case of
+<b>srun</b>, after the stepid) is generated, and typically before or in
+parallel with job execution.  In combination with data collected in the
+cli_filter_p_pre_submit() hook, this is an ideal location for logging
+activity.</li>
+</p>
+
+<p>
+cli_filter plugins vary from the <a href="job_submit_plugins.html">job_submit
+plugin</a> as it is entirely executed client-side, whereas job_submit is
+processed server-side (within the slurm controller). The benefit of the
+cli_filter is that it has access to all command line options in a simple and
+consistent interface as well as being safer to run disruptive operations
+(e.g., quota checks or other long running operations you might want to use
+for integrating policy decisions), which can be problematic if run from the
+controller. The disadvantage of the cli_filter is that it must not be relied
+upon for security purposes as an enterprising user can circumvent it simply
+by providing an alternate slurm.conf with the CliFilterPlugins option
+disabled. If you plan to use the cli_filter for managing policies, you should
+also configure a job_submit plugin to reinforce those policies.</p>
+
+<p>Slurm cli_filter plugins must conform to the
+Slurm Plugin API with the following specifications:</p>
+
+<p><span class="commandline">const char
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
+<p style="margin-left:.2in">
+A free-formatted ASCII text string that identifies the plugin.
+
+<p><span class="commandline">const char
+plugin_type[]="<i>major/minor</i>"</span><br>
+<p style="margin-left:.2in">
+The major type must be &quot;cli_filter.&quot;
+The minor type can be any suitable name for the type of job submission package.
+We include samples in the Slurm distribution for
+<ul>
+<li><b>none</b> &mdash; An empty plugin with no actions taken, a useful starting
+template for a new plugin.</li>
+</ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loaded by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
+<p>Slurm can be configured to use multiple cli_filter plugins if desired,
+however the lua plugin will only execute one lua script named "cli_filter.lua"
+located in the default script directory (typically the subdirectory "etc" of
+the installation directory).</p>
+
+
+<h2 id="api">API Functions<a class="slurm_link" href="#api"></a></h2>
+<p>All of the following functions are required. Functions which are not
+implemented must be stubbed.</p>
+
+<p class="commandline">int init(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.</p>
+
+<p class="commandline">void fini(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+
+<p class="commandline">int cli_filter_p_setup_defaults(slurm_opt_t *options, bool early)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the salloc, sbatch, or srun command line interface
+(CLI) programs shortly before processing any options from the environment,
+command line, or script (#SBATCH). The hook may be run multiple times per job
+component, once for an early pass (if implemented by the CLI), and again for
+the main pass.
+Note that this call is skipped for any srun command run within an existing job
+allocation to prevent settings from overriding the set of options that have been
+populated for the job based on the job environment.
+The options and early arguments are meant to be passed to <b>slurm_option_set()</b>
+which will set the option if it is in the appropriate pass. Failures to set
+an option may be a symptom of trying to set the option on the wrong pass. Given
+that you should not return SLURM_ERROR simply because of a failure to set an option.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">options</span>
+(input) slurm option data structure; meant to be passed to the slurm_option_* API
+within <i>src/common/slurm_opt.h</i>.<br>
+<span class="commandline">early</span>
+(input) boolean indicating if this is the early pass or not; meant to be passed to
+the slurm_option_* API within <i>src/common/slurm_opt.h</i>.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will terminate execution
+of the CLI.
+
+<p class="commandline">int cli_filter_p_pre_submit(slurm_opt_t *options, int offset)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the CLI after option processing but before any
+communication with the slurmctld is made.  This is after all
+cli_filter_p_setup_defaults()
+hooks are executed (for the current job component), environment variables
+processed, command line options and #SBATCH directives interpreted.
+cli_filter_p_pre_submit() is called before any parts of
+the data structure are rewritten, so it is safe to
+both read and write or unset any options from the plugin that you desire.
+Note that cli_filter_p_post_submit() cannot safely read (or write) the options,
+so you should save any state for logging in cli_filter_p_post_submit() during
+cli_filter_p_pre_submit(). This function is called once per job component.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">options</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">offset</span>
+(input) integer value for the current hetjob offset; should be used as a key when
+storing data for communication between cli_filter_p_pre_submit() and
+cli_filter_p_post_submit().<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will terminate execution
+of the CLI.
+
+<p class="commandline">void cli_filter_p_post_submit(int offset, uint32_t jobid, uint32_t stepid)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the CLI after a jobid (and, if srun, a stepid) has
+been assigned by the controller.  It is no longer safe to read or write to the
+options data structure, so it has been removed from this function.  You should
+save any state you need in cli_filter_p_pre_submit() using het_job_offset as a
+key, since the function is called separately for every job component, and access
+it here.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">offset</span>
+(input) integer value for the current hetjob offset; should be used as a key
+when storing data for communication between cli_filter_p_pre_submit() and
+cli_filter_p_post_submit().<br>
+<span class="commandline">jobid</span>
+(input) job id of the job<br>
+<span class="commandline">stepid</span>
+(input) step id of the job if appropriate, NO_VAL otherwise<br>
+
+<h2 id="lua">LUA Interface<a class="slurm_link" href="#lua"></a></h2>
+<p>Setting <b>CliFilterPlugins=cli_filter/lua</b> in slurm.conf will allow
+you to implement the API functions mentioned using Lua language. Unless
+otherwise specified via
+<a href="slurm.conf.html#OPT_cli_filter_lua_path">
+CliFilterParameters=cli_filter_lua_path</a>,
+the file must be named "cli_filter.lua" and, similar to the job_submit plugin,
+it must be located in the default configuration directory (typically the
+subdirectory "etc" of the installation).
+An example is provided within the source code
+<a href="https://github.com/SchedMD/slurm/blob/master/etc/cli_filter.lua.example">
+here</a>.</p>
+
+<p>If explicitly configuring a path for "cli_filter.lua" the configured
+directory containing the cli_filter.lua script should have 755 permissions,
+the script itself 644 and both be owned by SlurmdUser.</p>
+
+<p><b>NOTE</b>: Although available options are defined in the struct
+<span class="commandline">slurm_opt_t</span> within
+<i>src/common/slurm_opt.h</i>, some options might be renamed. The provided
+example shows a way of displaying the configured options by using
+<span class="commandline">slurm.json_cli_options(options)</span>.</p>
+
+<h2 id="defaults">User Defaults<a class="slurm_link" href="#defaults"></a></h2>
+<p>Setting <b>CliFilterPlugins=cli_filter/user_defaults</b> in slurm.conf will
+allow users to define their own defaults for jobs submitted from the machine(s)
+with the configured file. The plugin looks for the definition file in
+<code>$HOME/.slurm/defaults</code>. It will read each line as a
+<code>component=value</code> pair, where <code>component</code> is any of the
+job submission options available to salloc, sbatch, or srun and
+<code>value</code> is a default value defined by the user. The following
+example would configure each job to have a default name, time limit, amount
+of memory, and error and output files:
+<pre>
+job-name=default_name
+time=10:00
+mem=256
+error = slurm-%j.errfile
+output = slurm-%j.logfile
+</pre></p>
+
+<p>You can also specify different default settings for jobs based on the
+command being used to submit the job and/or the cluster being submitted to.
+The syntax for this would be:<br>
+<code>&lt;command&gt;:&lt;cluster&gt;:&lt;component&gt;</code></p>
+
+<p><code>&lt;command&gt;</code> could be one of:
+<ul>
+<li><b>salloc</b>: Jobs submitted with the salloc command.</li>
+<li><b>sbatch</b>: Jobs submitted with the sbatch command.</li>
+<li><b>srun</b>: Jobs submitted with the srun command.</li>
+<li><b>*</b>: Jobs submitted with any submission command.</li>
+</ul></p>
+
+<p><code>&lt;cluster&gt;</code> could be any defined cluster on your system,
+or <b>*</b> to have it match any cluster.</p>
+
+<p><code>&lt;component&gt;</code> is any of the job submission options
+available to salloc, sbatch, or srun.</p>
+
+<p>The following example would assign different default partitions based on
+the command used to submit the job. It would also assign different partitions
+for jobs submitted with salloc, depending on the cluster being used:
+<pre>
+salloc:cluster1:partition = interactive
+salloc:cluster2:partition = member
+sbatch:*:partition = high
+srun:*:partition = short
+</pre></p>
+
+<!--#include virtual="footer.txt"-->

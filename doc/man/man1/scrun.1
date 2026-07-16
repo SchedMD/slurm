@@ -1,0 +1,1367 @@
+.TH scrun "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
+
+.SH "NAME"
+\fBscrun\fR \- an OCI runtime proxy for Slurm.
+
+.SH "SYNOPSIS"
+
+.TP
+.SH Create Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIcreate\fR [\fICREATE OPTIONS\fR] <\fIcontainer-id\fR>
+.IP
+Prepares a new container with container-id in current working directory.
+.RE
+
+.TP
+.SH Start Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIstart\fR <\fIcontainer-id\fR>
+.IP
+Request to start and run container in job.
+.RE
+
+.TP
+.SH Query State Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIstate\fR <\fIcontainer-id\fR>
+.IP
+Output OCI defined JSON state of container.
+.RE
+
+.TP
+.SH Kill Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIkill\fR <\fIcontainer-id\fR> [\fIsignal\fR]
+.IP
+Send signal (default: SIGTERM) to container.
+.RE
+
+.TP
+.SH Delete Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIdelete\fR [\fIDELETE OPTIONS\fR] <\fIcontainer-id\fR>
+.IP
+Release any resources held by container locally and remotely.
+.RE
+
+Perform OCI runtime operations against \fIcontainer-id\fR per:
+.br
+https://github.com/opencontainers/runtime-spec/blob/main/runtime.md
+
+\fBscrun\fR attempts to mimic the commandline behavior as closely as possible
+to \fBcrun\fR and \fBrunc\fR in order to maintain in place replacement
+compatibility with \fBDOCKER\fR and \fBpodman\fR. All commandline
+arguments for \fBcrun\fR and \fBrunc\fR will be accepted for compatibility
+but may be ignored depending on their applicability.
+
+.SH "DESCRIPTION"
+\fBscrun\fR is an OCI runtime proxy for Slurm. It acts as a common interface to
+\fBDOCKER\fR or \fBpodman\fR to allow container operations to be executed
+under Slurm as jobs. \fBscrun\fR will accept all commands as an OCI compliant
+runtime but will proxy the container and all STDIO to Slurm for scheduling and
+execution. The containers will be executed remotely on Slurm compute nodes
+according to settings in
+\fBoci.conf\fR(5).
+
+\fBscrun\fR requires all containers to be OCI image compliant per:
+.br
+https://github.com/opencontainers/image-spec/blob/main/spec.md
+
+.SH "RETURN VALUE"
+On successful operation, \fBscrun\fR will return 0. For any other condition
+\fBscrun\fR will return any non-zero number to denote a error.
+
+.SH "GLOBAL OPTIONS"
+
+.TP
+\fB\-\-cgroup\-manager\fR
+Ignored.
+.IP
+
+.TP
+\fB\-\-debug\fR
+Activate debug level logging.
+.IP
+
+.TP
+\fB\-f\fR <\fIslurm_conf_path\fR>
+Use specified slurm.conf for configuration.
+.br
+Default: sysconfdir from \fBconfigure\fR during compilation
+.IP
+
+.TP
+\fB\-\-usage\fR
+Show quick help on how to call \fBscrun\fR
+.IP
+
+.TP
+\fB\-\-log\-format\fR=<\fIjson|text\fR>
+Optional select format for logging. May be "json" or "text".
+.br
+Default: text
+.IP
+
+.TP
+\fB\-\-root\fR=<\fIroot_path\fR>
+Path to spool directory to communication sockets and temporary directories and
+files. This should be a tmpfs and should be cleared on reboot.
+.br
+Default: /run/user/\fI{user_id}\fR/scrun/
+.IP
+
+.TP
+\fB\-\-rootless\fR
+Ignored. All \fBscrun\fR commands are always rootless.
+.IP
+
+.TP
+\fB\-\-systemd\-cgroup\fR
+Ignored.
+.IP
+
+.TP
+\fB\-v\fR
+Increase logging verbosity. Multiple -v's increase verbosity.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.SH "CREATE OPTIONS"
+
+.TP
+\fB\-b\fR <\fIbundle_path\fR>, \fB\-\-bundle\fR=<\fIbundle_path\fR>
+Path to the root of the bundle directory.
+.br
+Default: caller's working directory
+.IP
+
+.TP
+\fB\-\-console\-socket\fR=<\fIconsole_socket_path\fR>
+Optional path to an AF_UNIX socket which will receive a file descriptor
+referencing the master end of the console's pseudoterminal.
+.br
+Default: \fIignored\fR
+.IP
+
+.TP
+\fB\-\-no\-pivot\fR
+Ignored.
+.IP
+
+.TP
+\fB\-\-no\-new\-keyring\fR
+Ignored.
+.IP
+
+.TP
+\fB\-\-pid\-file\fR=<\fIpid_file_path\fR>
+Specify the file to lock and populate with process ID.
+.br
+Default: \fIignored\fR
+.IP
+
+.TP
+\fB\-\-preserve\-fds\fR
+Ignored.
+.IP
+
+.SH "DELETE OPTIONS"
+
+.TP
+\fB\-\-force\fR
+Ignored. All delete requests are forced and will kill any running jobs.
+.IP
+
+.SH "INPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSCRUN_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level.
+.IP
+
+.TP
+\fBSCRUN_STDERR_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level for standard error output only.
+.IP
+
+.TP
+\fBSCRUN_SYSLOG_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level for syslogging only.
+.IP
+
+.TP
+\fBSCRUN_FILE_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level for log file only.
+.IP
+
+.SH "JOB INPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSCRUN_ACCOUNT\fR
+See \fBSLURM_ACCOUNT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_ACCTG_FREQ\fR
+See \fBSLURM_ACCTG_FREQ\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_BURST_BUFFER\fR
+See \fBSLURM_BURST_BUFFER\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CLUSTER_CONSTRAINT\fR
+See \fBSLURM_CLUSTER_CONSTRAINT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CLUSTERS\fR
+See \fBSLURM_CLUSTERS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CONSTRAINT\fR
+See \fBSLURM_CONSTRAINT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSLURM_CORE_SPEC\fR
+See \fBSLURM_ACCOUNT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPU_BIND\fR
+See \fBSLURM_CPU_BIND\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPU_FREQ_REQ\fR
+See \fBSLURM_CPU_FREQ_REQ\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPUS_PER_GPU\fR
+See \fBSLURM_CPUS_PER_GPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPUS_PER_TASK\fR
+See \fBSRUN_CPUS_PER_TASK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_DELAY_BOOT\fR
+See \fBSLURM_DELAY_BOOT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_DEPENDENCY\fR
+See \fBSLURM_DEPENDENCY\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_DISTRIBUTION\fR
+See \fBSLURM_DISTRIBUTION\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_EPILOG\fR
+See \fBSLURM_EPILOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_EXACT\fR
+See \fBSLURM_EXACT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_EXCLUSIVE\fR
+See \fBSLURM_EXCLUSIVE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPU_BIND\fR
+See \fBSLURM_GPU_BIND\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPU_FREQ\fR
+See \fBSLURM_GPU_FREQ\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS\fR
+See \fBSLURM_GPUS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS_PER_NODE\fR
+See \fBSLURM_GPUS_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS_PER_SOCKET\fR
+See \fBSLURM_GPUS_PER_SOCKET\fR from \fBsalloc\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS_PER_TASK\fR
+See \fBSLURM_GPUS_PER_TASK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GRES_FLAGS\fR
+See \fBSLURM_GRES_FLAGS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GRES\fR
+See \fBSLURM_GRES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_HINT\fR
+See \fBSLURM_HIST\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_JOB_NAME\fR
+See \fBSLURM_JOB_NAME\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_JOB_NODELIST\fR
+See \fBSLURM_JOB_NODELIST\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_JOB_NUM_NODES\fR
+See \fBSLURM_JOB_NUM_NODES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_LABELIO\fR
+See \fBSLURM_LABELIO\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_BIND\fR
+See \fBSLURM_MEM_BIND\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_PER_CPU\fR
+See \fBSLURM_MEM_PER_CPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_PER_GPU\fR
+See \fBSLURM_MEM_PER_GPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_PER_NODE\fR
+See \fBSLURM_MEM_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MPI_TYPE\fR
+See \fBSLURM_MPI_TYPE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NCORES_PER_SOCKET\fR
+See \fBSLURM_NCORES_PER_SOCKET\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NETWORK\fR
+See \fBSLURM_NETWORK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NSOCKETS_PER_NODE\fR
+See \fBSLURM_NSOCKETS_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS\fR
+See \fBSLURM_NTASKS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_CORE\fR
+See \fBSLURM_NTASKS_PER_CORE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_GPU\fR
+See \fBSLURM_NTASKS_PER_GPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_NODE\fR
+See \fBSLURM_NTASKS_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_TRES\fR
+See \fBSLURM_NTASKS_PER_TRES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_OPEN_MODE\fR
+See \fBSLURM_MODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_OVERCOMMIT\fR
+See \fBSLURM_OVERCOMMIT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_OVERLAP\fR
+See \fBSLURM_OVERLAP\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_PARTITION\fR
+See \fBSLURM_PARTITION\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_POWER\fR
+See \fBSLURM_POWER\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_PROFILE\fR
+See \fBSLURM_PROFILE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_PROLOG\fR
+See \fBSLURM_PROLOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_QOS\fR
+See \fBSLURM_QOS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_REMOTE_CWD\fR
+See \fBSLURM_REMOTE_CWD\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_REQ_SWITCH\fR
+See \fBSLURM_REQ_SWITCH\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_RESERVATION\fR
+See \fBSLURM_RESERVATION\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_SIGNAL\fR
+See \fBSLURM_SIGNAL\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_SLURMD_DEBUG\fR
+See \fBSLURMD_DEBUG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_SPREAD_JOB\fR
+See \fBSLURM_SPREAD_JOB\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TASK_EPILOG\fR
+See \fBSLURM_TASK_EPILOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TASK_PROLOG\fR
+See \fBSLURM_TASK_PROLOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_THREAD_SPEC\fR
+See \fBSLURM_THREAD_SPEC\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_THREADS_PER_CORE\fR
+See \fBSLURM_THREADS_PER_CORE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_THREADS\fR
+See \fBSLURM_THREADS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TIMELIMIT\fR
+See \fBSLURM_TIMELIMIT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TRES_BIND\fR
+Same as \fB\-\-tres\-bind\fR
+.IP
+
+.TP
+\fBSCRUN_TRES_PER_TASK\fR
+See \fBSLURM_TRES_PER_TASK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_UNBUFFEREDIO\fR
+See \fBSLURM_UNBUFFEREDIO\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_USE_MIN_NODES\fR
+See \fBSLURM_USE_MIN_NODES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_WAIT4SWITCH\fR
+See \fBSLURM_WAIT4SWITCH\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_WCKEY\fR
+See \fBSLURM_WCKEY\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_WORKING_DIR\fR
+See \fBSLURM_WORKING_DIR\fR from \fBsrun\fR(1).
+.IP
+
+.SH "OUTPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSCRUN_OCI_VERSION\fR
+Advertised version of OCI compliance of container.
+.IP
+
+.TP
+\fBSCRUN_CONTAINER_ID\fR
+Value based as \fIcontainer_id\fR during create operation.
+.IP
+
+.TP
+\fBSCRUN_PID\fR
+PID of process used to monitor and control container on allocation node.
+.IP
+
+.TP
+\fBSCRUN_BUNDLE\fR
+Path to container bundle directory.
+.IP
+
+.TP
+\fBSCRUN_SUBMISSION_BUNDLE\fR
+Path to container bundle directory before modification by Lua script.
+.IP
+
+.TP
+\fBSCRUN_ANNOTATION_*\fR
+List of annotations from container's config.json.
+.IP
+
+.TP
+\fBSCRUN_PID_FILE\fR
+Path to pid file that is locked and populated with PID of scrun.
+.IP
+
+.TP
+\fBSCRUN_SOCKET\fR
+Path to control socket for scrun.
+.IP
+
+.TP
+\fBSCRUN_SPOOL_DIR\fR
+Path to workspace for all temporary files for current container. Purged by
+deletion operation.
+.IP
+
+.TP
+\fBSCRUN_SUBMISSION_CONFIG_FILE\fR
+Path to container's config.json file at time of submission.
+.IP
+
+.TP
+\fBSCRUN_USER\fR
+Name of user that called create operation.
+.IP
+
+.TP
+\fBSCRUN_USER_ID\fR
+Numeric ID of user that called create operation.
+.IP
+
+.TP
+\fBSCRUN_GROUP\fR
+Name of user's primary group that called create operation.
+.IP
+
+.TP
+\fBSCRUN_GROUP_ID\fR
+Numeric ID of user primary group that called create operation.
+.IP
+
+.TP
+\fBSCRUN_ROOT\fR
+See \fB\-\-root\fR.
+.IP
+
+.TP
+\fBSCRUN_ROOTFS_PATH\fR
+Path to container's root directory.
+.IP
+
+.TP
+\fBSCRUN_SUBMISSION_ROOTFS_PATH\fR
+Path to container's root directory at submission time.
+.IP
+
+.TP
+\fBSCRUN_LOG_FILE\fR
+Path to scrun's log file during create operation.
+.IP
+
+.TP
+\fBSCRUN_LOG_FORMAT\fR
+Log format type during create operation.
+.IP
+
+.SH "JOB OUTPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSLURM_*_HET_GROUP_#\fR
+For a heterogeneous job allocation, the environment variables are set separately
+for each component.
+.IP
+
+.TP
+\fBSLURM_CLUSTER_NAME\fR
+Name of the cluster on which the job is executing.
+.IP
+
+.TP
+\fBSLURM_CONTAINER\fR
+OCI Bundle for job.
+.IP
+
+.TP
+\fBSLURM_CONTAINER_ID\fR
+OCI id for job.
+.IP
+
+.TP
+\fBSLURM_CPUS_PER_GPU\fR
+Number of CPUs requested per allocated GPU.
+.IP
+
+.TP
+\fBSLURM_CPUS_PER_TASK\fR
+Number of CPUs requested per task.
+.IP
+
+.TP
+\fBSLURM_DIST_PLANESIZE\fR
+Plane distribution size. Only set for plane distributions.
+.IP
+
+.TP
+\fBSLURM_DISTRIBUTION\fR
+Distribution type for the allocated jobs.
+.IP
+
+.TP
+\fBSLURM_GPU_BIND\fR
+Requested binding of tasks to GPU.
+.IP
+
+.TP
+\fBSLURM_GPU_FREQ\fR
+Requested GPU frequency.
+.IP
+
+.TP
+\fBSLURM_GPUS\fR
+Number of GPUs requested.
+.IP
+
+.TP
+\fBSLURM_GPUS_PER_NODE\fR
+Requested GPU count per allocated node.
+.IP
+
+.TP
+\fBSLURM_GPUS_PER_SOCKET\fR
+Requested GPU count per allocated socket.
+.IP
+
+.TP
+\fBSLURM_GPUS_PER_TASK\fR
+Requested GPU count per allocated task.
+.IP
+
+.TP
+\fBSLURM_HET_SIZE\fR
+Set to count of components in heterogeneous job.
+.IP
+
+.TP
+\fBSLURM_JOB_ACCOUNT\fR
+Account name associated of the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_CPUS_PER_NODE\fR
+Count of CPUs available to the job on the nodes in the allocation, using the
+format \fICPU_count\fR[(x\fInumber_of_nodes\fR)][,\fICPU_count\fR
+[(x\fInumber_of_nodes\fR)] ...].
+For example: SLURM_JOB_CPUS_PER_NODE='72(x2),36' indicates that on the
+first and second nodes (as listed by SLURM_JOB_NODELIST) the allocation
+has 72 CPUs, while the third node has 36 CPUs.
+\fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to jobs, so
+the value indicates the total count of CPUs on allocated nodes. The
+\fBselect/cons_tres\fR plugin allocates individual
+CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
+.IP
+
+.TP
+\fBSLURM_JOB_END_TIME\fR
+The UNIX timestamp for a job's projected end time.
+.IP
+
+.TP
+\fBSLURM_JOB_GPUS\fR
+The global GPU IDs of the GPUs allocated to this job. The GPU IDs are not
+relative to any device cgroup, even if devices are constrained with task/cgroup.
+Only set in batch and interactive jobs.
+.IP
+
+.TP
+\fBSLURM_JOB_ID\fR
+The ID of the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_NODELIST\fR
+List of nodes allocated to the job.
+.IP
+
+.TP
+\fBSLURM_JOB_NUM_NODES\fR
+Total number of nodes in the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_PARTITION\fR
+Name of the partition in which the job is running.
+.IP
+
+.TP
+\fBSLURM_JOB_QOS\fR
+Quality Of Service (QOS) of the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_RESERVATION\fR
+Advanced reservation containing the job allocation, if any.
+.IP
+
+.TP
+\fBSLURM_JOB_START_TIME\fR
+UNIX timestamp for a job's start time.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND\fR
+Bind tasks to memory.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_LIST\fR
+Set to bit mask used for memory binding.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_PREFER\fR
+Set to "prefer" if the \fBSLURM_MEM_BIND\fR option includes the prefer option.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_TYPE\fR
+Set to the memory binding type specified with the \fBSLURM_MEM_BIND\fR option.
+Possible values are "none", "rank", "map_mem:", "mask_mem:" and "local".
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_VERBOSE\fR
+Set to "verbose" if the \fBSLURM_MEM_BIND\fR option includes the verbose option.
+Set to "quiet" otherwise.
+.IP
+
+.TP
+\fBSLURM_MEM_PER_CPU\fR
+Minimum memory required per usable allocated CPU.
+.IP
+
+.TP
+\fBSLURM_MEM_PER_GPU\fR
+Requested memory per allocated GPU.
+.IP
+
+.TP
+\fBSLURM_MEM_PER_NODE\fR
+Specify the real memory required per node.
+.IP
+
+.TP
+\fBSLURM_NTASKS\fR
+Specify the number of tasks to run.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_CORE\fR
+Request the maximum \fIntasks\fR be invoked on each core.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_GPU\fR
+Request that there are \fIntasks\fR tasks invoked for every GPU.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_NODE\fR
+Request that \fIntasks\fR be invoked on each node.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_SOCKET\fR
+Request the maximum \fIntasks\fR be invoked on each socket.
+.IP
+
+.TP
+\fBSLURM_OVERCOMMIT\fR
+Overcommit resources.
+.IP
+
+.TP
+\fBSLURM_PROFILE\fR
+Enables detailed data collection by the acct_gather_profile plugin.
+.IP
+
+.TP
+\fBSLURM_SHARDS_ON_NODE\fR
+Number of GPU Shards available to the step on this node.
+.IP
+
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBscrun\fR was invoked.
+.IP
+
+.TP
+\fBSLURM_TASKS_PER_NODE\fR
+Number of tasks to be initiated on each node. Values are
+comma separated and in the same order as SLURM_JOB_NODELIST.
+If two or more consecutive nodes are to have the same task
+count, that count is followed by "(x#)" where "#" is the
+repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
+indicates that the first three nodes will each execute two
+tasks and the fourth node will execute one task.
+.IP
+
+.TP
+\fBSLURM_THREADS_PER_CORE\fR
+This is only set if \fB\-\-threads\-per\-core\fR or
+\fBSCRUN_THREADS_PER_CORE\fR were specified. The value will be set to the
+value specified by \fB\-\-threads\-per\-core\fR or
+\fBSCRUN_THREADS_PER_CORE\fR. This is used by subsequent srun calls within the
+job allocation.
+.IP
+
+.TP
+\fBSLURM_TRES_PER_TASK\fR
+Set to the value of \fB\-\-tres\-per\-task\fR. If \fB\-\-cpus\-per\-task\fR or
+\fB\-\-gpus\-per\-task\fR is specified, it is also set in
+\fBSLURM_TRES_PER_TASK\fR as if it were specified in \fB\-\-tres\-per\-task\fR.
+.IP
+
+.SH "SCRUN.LUA"
+.LP
+/etc/slurm/\fBscrun.lua\fR must be present on any node
+where \fBscrun\fR will be invoked. \fBscrun.lua\fR must be a compliant
+\fBlua\fR script.
+
+.SS "Required functions"
+The following functions must be defined.
+
+.TP
+\(bu function \fBslurm_scrun_stage_in\fR(\fBid\fR, \fBbundle\fR, \fBspool_dir\fR, \fBconfig_file\fR, \fBjob_id\fR, \fBuser_id\fR, \fBgroup_id\fR, \fBjob_env\fR)
+Called right after job allocation to stage container into job node(s). Must
+return \fISLURM.success\fR or job will be cancelled. It is required that
+function will prepare the container for execution on job node(s) as required to
+run as configured in \fBoci.conf\fR(1). The function may block as long as
+required until container has been fully prepared (up to the job's max wall
+time).
+.RS 4
+.TP
+\fBid\fR
+Container ID
+.TP
+\fBbundle\fR
+OCI bundle path
+.TP
+\fBspool_dir\fR
+Temporary working directory for container
+.TP
+\fBconfig_file\fR
+Path to config.json for container
+.TP
+\fBjob_id\fR
+\fIjobid\fR of job allocation
+.TP
+\fBuser_id\fR
+Resolved numeric user id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR user.
+.TP
+\fBgroup_id\fR
+Resolved numeric group id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR group.
+.TP
+\fBjob_env\fR
+Table with each entry of Key=Value or Value of each environment variable of the
+job.
+.IP
+.RE
+
+.TP
+\(bu function \fBslurm_scrun_stage_out\fR(\fBid\fR, \fBbundle\fR, \fBorig_bundle\fR, \fBroot_path\fR, \fBorig_root_path\fR, \fBspool_dir\fR, \fBconfig_file\fR, \fBjobid\fR, \fBuser_id\fR, \fBgroup_id\fR)
+Called right after container step completes to stage out files from job nodes.
+Must return \fISLURM.success\fR or job will be cancelled. It is required that
+function will pull back any changes and cleanup the container on job node(s).
+The function may block as long as required until container has been fully
+prepared (up to the job's max wall time).
+
+.RS 4
+.TP
+\fBid\fR
+Container ID
+.TP
+\fBbundle\fR
+OCI bundle path
+.TP
+\fBorig_bundle\fR
+Originally submitted OCI bundle path before modification by
+\fBset_bundle_path\fR().
+.TP
+\fBroot_path\fR
+Path to directory root of container contents.
+.TP
+\fBorig_root_path\fR
+Original path to directory root of container contents before modification by
+\fBset_root_path\fR().
+.TP
+\fBspool_dir\fR
+Temporary working directory for container
+.TP
+\fBconfig_file\fR
+Path to config.json for container
+.TP
+\fBjob_id\fR
+\fIjobid\fR of job allocation
+.TP
+\fBuser_id\fR
+Resolved numeric user id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR user.
+.TP
+\fBgroup_id\fR
+Resolved numeric group id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR group.
+.RE
+
+.SS "Provided functions"
+The following functions are provided for any Lua function to call as needed.
+
+.TP
+\(bu \fBslurm.set_bundle_path\fR(\fIPATH\fR)
+Called to notify \fBscrun\fR to use \fIPATH\fR as new OCI container bundle
+path. Depending on the filesystem layout, cloning the container bundle may be
+required to allow execution on job nodes.
+
+.TP
+\(bu \fBslurm.set_root_path\fR(\fIPATH\fR)
+Called to notify \fBscrun\fR to use \fIPATH\fR as new container root filesystem
+path. Depending on the filesystem layout, cloning the container bundle may be
+required to allow execution on job nodes. Script must also update #/root/path
+in config.json when changing root path.
+
+.TP
+\(bu \fISTATUS\fR,\fIOUTPUT\fR = \fBslurm.remote_command\fR(\fISCRIPT\fR)
+Run \fISCRIPT\fR in new job step on all job nodes. Returns numeric job status
+as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
+
+.TP
+\(bu \fISTATUS\fR,\fIOUTPUT\fR = \fBslurm.allocator_command\fR(\fISCRIPT\fR)
+Run \fISCRIPT\fR as forked child process of \fBscrun\fR. Returns numeric job status
+as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
+
+.TP
+\(bu \fBslurm.log\fR(\fIMSG\fR, \fILEVEL\fR)
+Log \fIMSG\fR at log \fILEVEL\fR. Valid range of values for \fILEVEL\fR is [0,
+4].
+
+.TP
+\(bu \fBslurm.error\fR(\fIMSG\fR)
+Log error \fIMSG\fR.
+
+.TP
+\(bu \fBslurm.log_error\fR(\fIMSG\fR)
+Log error \fIMSG\fR.
+
+.TP
+\(bu \fBslurm.log_info\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level INFO.
+
+.TP
+\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level VERBOSE.
+
+.TP
+\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level VERBOSE.
+
+.TP
+\(bu \fBslurm.log_debug\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG.
+
+.TP
+\(bu \fBslurm.log_debug2\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG2.
+
+.TP
+\(bu \fBslurm.log_debug3\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG3.
+
+.TP
+\(bu \fBslurm.log_debug4\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG4.
+
+.TP
+\(bu \fIMINUTES\fR = \fBslurm.time_str2mins\fR(\fITIME_STRING\fR)
+Parse \fITIME_STRING\fR into number of minutes as \fIMINUTES\fR. Valid formats:
+.RS 8
+.TP
+\(bu days-[hours[:minutes[:seconds]]]
+.TP
+\(bu hours:minutes:seconds
+.TP
+\(bu minutes[:seconds]
+.TP
+\(bu -1
+.TP
+\(bu INFINITE
+.TP
+\(bu UNLIMITED
+.RE
+
+.SS Example \fBscrun.lua\fR scripts
+
+.TP
+Full Container staging example using rsync:
+This full example will stage a container as given by \fBdocker\fR or
+\fBpodman\fR. The container's config.json is modified to remove unwanted
+functions that may cause the container run to under \fBcrun\fR or
+\fBrunc\fR.
+The script uses \fBrsync\fR to move the container to a shared filesystem
+under the \fIscratch_path\fR variable.
+
+\fBNOTE\fR: Support for JSON in liblua must generally be installed before Slurm
+is compiled. scrun.lua's syntax and ability to load JSON support should be
+tested by directly calling the script using \fBlua\fR outside of Slurm.
+
+.nf
+local open = io.open
+local scratch_path = "/run/user"
+
+local function read_file(path)
+	local file = open(path, "rb")
+	if not file then return nil end
+	local content = file:read "*all"
+	file:close()
+	return content
+end
+
+local function write_file(path, contents)
+	local file = open(path, "wb")
+	if not file then return nil end
+	file:write(contents)
+	file:close()
+	return
+end
+
+function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
+	slurm.log_debug(string.format("stage_in(%s, %s, %s, %s, %d, %d, %d)",
+		       id, bundle, spool_dir, config_file, job_id, user_id, group_id))
+
+	local status, output, user, rc
+	local config = slurm.from_json(read_file(config_file))
+	local src_rootfs = config["root"]["path"]
+	rc, user = slurm.allocator_command(string.format("id -un %d", user_id))
+	user = string.gsub(user, "%s+", "")
+	local root = scratch_path.."/"..math.floor(user_id).."/slurm/scrun/"
+	local dst_bundle = root.."/"..id.."/"
+	local dst_config = root.."/"..id.."/config.json"
+	local dst_rootfs = root.."/"..id.."/rootfs/"
+
+	if string.sub(src_rootfs, 1, 1) ~= "/"
+	then
+		-- always use absolute path
+		src_rootfs = string.format("%s/%s", bundle, src_rootfs)
+	end
+
+	status, output = slurm.allocator_command("mkdir -p "..dst_rootfs)
+	if (status ~= 0)
+	then
+		slurm.log_info(string.format("mkdir(%s) failed %u: %s",
+			       dst_rootfs, status, output))
+		return slurm.ERROR
+	end
+
+	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --exclude sys --exclude proc --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", src_rootfs, dst_rootfs))
+	if (status ~= 0)
+	then
+		-- rsync can fail due to permissions which may not matter
+		slurm.log_info(string.format("WARNING: rsync failed: %s", output))
+	end
+
+	slurm.set_bundle_path(dst_bundle)
+	slurm.set_root_path(dst_rootfs)
+
+	config["root"]["path"] = dst_rootfs
+
+	-- Always force user namespace support in container or runc will reject
+	local process_user_id = 0
+	local process_group_id = 0
+
+	if ((config["process"] ~= nil) and (config["process"]["user"] ~= nil))
+	then
+		-- resolve out user in the container
+		if (config["process"]["user"]["uid"] ~= nil)
+		then
+			process_user_id=config["process"]["user"]["uid"]
+		else
+			process_user_id=0
+		end
+
+		-- resolve out group in the container
+		if (config["process"]["user"]["gid"] ~= nil)
+		then
+			process_group_id=config["process"]["user"]["gid"]
+		else
+			process_group_id=0
+		end
+
+		-- purge additionalGids as they are not supported in rootless
+		if (config["process"]["user"]["additionalGids"] ~= nil)
+		then
+			config["process"]["user"]["additionalGids"] = nil
+		end
+	end
+
+	if (config["linux"] ~= nil)
+	then
+		-- force user namespace to always be defined for rootless mode
+		local found = false
+		if (config["linux"]["namespaces"] == nil)
+		then
+			config["linux"]["namespaces"] = {}
+		else
+			for _, namespace in ipairs(config["linux"]["namespaces"]) do
+				if (namespace["type"] == "user")
+				then
+					found=true
+					break
+				end
+			end
+		end
+		if (found == false)
+		then
+			table.insert(config["linux"]["namespaces"], {type= "user"})
+		end
+
+		-- Provide default user map as root if one not provided
+		if (true or config["linux"]["uidMappings"] == nil)
+		then
+			config["linux"]["uidMappings"] =
+				{{containerID=process_user_id, hostID=math.floor(user_id), size=1}}
+		end
+
+		-- Provide default group map as root if one not provided
+		-- mappings fail with build???
+		if (true or config["linux"]["gidMappings"] == nil)
+		then
+			config["linux"]["gidMappings"] =
+				{{containerID=process_group_id, hostID=math.floor(group_id), size=1}}
+		end
+
+		-- disable trying to use a specific cgroup
+		config["linux"]["cgroupsPath"] = nil
+	end
+
+	if (config["mounts"] ~= nil)
+	then
+		-- Find and remove any user/group settings in mounts
+		for _, mount in ipairs(config["mounts"]) do
+			local opts = {}
+
+			if (mount["options"] ~= nil)
+			then
+				for _, opt in ipairs(mount["options"]) do
+					if ((string.sub(opt, 1, 4) ~= "gid=") and (string.sub(opt, 1, 4) ~= "uid="))
+					then
+						table.insert(opts, opt)
+					end
+				end
+			end
+
+			if (opts ~= nil and #opts > 0)
+			then
+				mount["options"] = opts
+			else
+				mount["options"] = nil
+			end
+		end
+
+		-- Remove all bind mounts by copying files into rootfs
+		local mounts = {}
+		for i, mount in ipairs(config["mounts"]) do
+			if ((mount["type"] ~= nil) and (mount["type"] == "bind") and (string.sub(mount["source"], 1, 4) ~= "/sys") and (string.sub(mount["source"], 1, 5) ~= "/proc"))
+			then
+				status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --ignore-errors --stats -a -- %s %s", mount["source"], dst_rootfs..mount["destination"]))
+				if (status ~= 0)
+				then
+					-- rsync can fail due to permissions which may not matter
+					slurm.log_info("rsync failed")
+				end
+			else
+				table.insert(mounts, mount)
+			end
+		end
+		config["mounts"] = mounts
+	end
+
+	-- Force version to one compatible with older runc/crun at risk of new features silently failing
+	config["ociVersion"] = "1.0.0"
+
+	-- Merge in Job environment into container -- this is optional!
+	if (config["process"]["env"] == nil)
+	then
+		config["process"]["env"] = {}
+	end
+	for _, env in ipairs(job_env) do
+		table.insert(config["process"]["env"], env)
+	end
+
+	-- Remove all prestart hooks to squash any networking attempts
+	if ((config["hooks"] ~= nil) and (config["hooks"]["prestart"] ~= nil))
+	then
+		config["hooks"]["prestart"] = nil
+	end
+
+	-- Remove all rlimits
+	if ((config["process"] ~= nil) and (config["process"]["rlimits"] ~= nil))
+	then
+		config["process"]["rlimits"] = nil
+	end
+
+	write_file(dst_config, slurm.to_json(config))
+	slurm.log_info("created: "..dst_config)
+
+	return slurm.SUCCESS
+end
+
+function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id)
+	if (root_path == nil)
+	then
+		root_path = ""
+	end
+
+	slurm.log_debug(string.format("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
+		       id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id))
+
+	if (bundle == orig_bundle)
+	then
+		slurm.log_info(string.format("skipping stage_out as bundle=orig_bundle=%s", bundle))
+		return slurm.SUCCESS
+	end
+
+	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path))
+	if (status ~= 0)
+	then
+		-- rsync can fail due to permissions which may not matter
+		slurm.log_info("rsync failed")
+	else
+		-- cleanup temporary after they have been synced backed to source
+		slurm.allocator_command(string.format("/usr/bin/rm --preserve-root=all --one-file-system -dr -- %s", bundle))
+	end
+
+	return slurm.SUCCESS
+end
+
+slurm.log_info("initialized scrun.lua")
+
+return slurm.SUCCESS
+.fi
+
+
+.SH "SIGNALS"
+.TP
+\fBSIGINT\fR
+Attempt to gracefully cancel any related jobs (if any) and cleanup.
+.IP
+
+.TP
+\fBSIGCHLD\fR
+Wait for all children, cleanup anchor and gracefully shutdown.
+.IP
+
+.SH "COPYING"
+Copyright (C) 2023 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm\fR(1), \fBoci.conf\fR(5), \fBsrun\fR(1), \fBcrun\fR, \fBrunc\fR,
+\fBDOCKER\fR and \fBpodman\fR

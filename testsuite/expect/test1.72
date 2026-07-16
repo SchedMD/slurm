@@ -1,0 +1,76 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validates that the JobAcctGatherFrequency value is enforced
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set freq_val  0
+set timeout   60
+
+if {[get_job_acct_freq] == 0} {
+	skip "This test requires JobAcctGatherFrequency to be set"
+}
+if {![check_config_node_mem]} {
+	skip "This test requires that the nodes have memory"
+}
+
+#
+# set value of freq_val to JobAcctGatherFrequency
+#
+set freq_val [get_job_acct_freq]
+
+set sub_match 0
+spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val - 1] sleep 5
+expect {
+	-re "jobid" {
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$sub_match == 1} "srun should submit job"
+
+set sub_match 0
+spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val + 10] sleep 5
+expect {
+	-re "Invalid accounting frequency" {
+		log_debug "This error is expect do not worry"
+		set sub_match 1
+		exp_continue
+	}
+	timeout {
+		fail "srun is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+subtest {$sub_match == 1} "srun should fail"

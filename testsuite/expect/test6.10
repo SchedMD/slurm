@@ -1,0 +1,146 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test scancel user and partition filters, delete all remaining jobs
+#          (--partition and --user options).
+#
+# Note:    This script generates and then deletes files in the working directory
+#          named test6.10.input
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set default_part  ""
+set file_in       "$test_dir/input"
+set job_id        0
+
+if {[param_contains [get_config_param "JobSubmitPlugins"] "all_partitions"]} {
+	skip "This test is incompatible with JobSubmitPlugins=all_partitions"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+#
+# Execute 'id' to determine my login name
+#
+set my_login [get_my_user_name]
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
+
+#
+# Spawn a sbatch job
+#
+set job_id [submit_job -fail "--output=/dev/null --error=/dev/null --hold -t5 $file_in"]
+
+#
+# Identify this job's partition
+#
+set matches  0
+spawn $scancel --interactive $job_id
+expect {
+	-re "Cancel job_id=$job_id .* partition=($re_word_str) .*\? " {
+		set default_part $expect_out(1,string)
+		send "n\r"
+		exp_continue
+	}
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Kill all jobs by partition and user
+#
+spawn $scancel --interactive --user=$my_login --partition=NO_VAL
+expect {
+	-re "Cancel job_id=$job_id .* partition=NO_VAL .*\? " {
+		send "n\r"
+		exp_continue
+	}
+	-re "Cancel job_id=$job_id .* partition= .*\? " {
+		send "n\r"
+		fail "scancel partition filter failure"
+	}
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scancel --interactive --user=$my_login --partition=$default_part
+expect {
+	-re "Cancel job_id=.* partition=$default_part .*\? " {
+		send "n\r"
+		exp_continue
+	}
+	-re "Cancel job_id=.* partition= .*\? " {
+		send "n\r"
+		fail "scancel partition filter failure"
+	}
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $scancel --verbose --user=$my_login
+expect {
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+set matches 0
+spawn $scancel --verbose --user=$my_login
+expect {
+	-re "Signal 9 to job" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "scancel not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches == 0} "Kill jobs using user filter"

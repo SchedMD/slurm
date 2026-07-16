@@ -1,0 +1,725 @@
+/*****************************************************************************
+ *  read_config.h - definitions for reading the overall slurm configuration
+ *  file
+ *****************************************************************************
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
+ *  Copyright (C) SchedMD LLC.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Morris Jette <jette1@llnl.gov>.
+ *  CODE-OCEC-09-009. All rights reserved.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#ifndef _READ_CONFIG_H
+#define _READ_CONFIG_H
+
+#include "config.h"
+
+#include "src/common/list.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/parse_config.h"
+#include "src/common/run_in_daemon.h"
+
+#include "src/interfaces/data_parser.h"
+
+extern slurm_conf_t slurm_conf;
+extern char *default_slurm_config_file;
+extern char *default_plugin_path;
+
+/*
+ * We can't include node_conf.h to get node_record_t because node_conf.h
+ * includes read_config.h and creates a circular dependency. We create the
+ * typedef so that we don't have to move the struct around.
+ */
+#ifndef node_record_t
+typedef struct node_record node_record_t;
+#endif
+/*
+ * If all is used, nojobs and nosteps aren't
+ * part of it.  They must be requested as well.
+ */
+#define ACCOUNTING_ENFORCE_ALL \
+	(0xffff & ~(ACCOUNTING_ENFORCE_NO_JOBS | ACCOUNTING_ENFORCE_NO_STEPS))
+#define ACCOUNTING_ENFORCE_ASSOCS SLURM_BIT(0)
+#define ACCOUNTING_ENFORCE_LIMITS SLURM_BIT(1)
+#define ACCOUNTING_ENFORCE_WCKEYS SLURM_BIT(2)
+#define ACCOUNTING_ENFORCE_QOS    SLURM_BIT(3)
+#define ACCOUNTING_ENFORCE_SAFE   SLURM_BIT(4)
+#define ACCOUNTING_ENFORCE_NO_JOBS SLURM_BIT(5)
+#define ACCOUNTING_ENFORCE_NO_STEPS SLURM_BIT(6)
+#define ACCOUNTING_ENFORCE_TRES   SLURM_BIT(7)
+
+#define DEFAULT_ACCOUNTING_TRES  "cpu,mem,energy,node,billing,fs/disk,vmem,pages"
+#define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
+#define DEFAULT_ACCOUNTING_ENFORCE  0
+#define DEFAULT_AUTH_TYPE          "auth/munge"
+#define DEFAULT_AUTH_TOKEN_LIFESPAN 1800
+#define DEFAULT_BATCH_START_TIMEOUT 10
+#define DEFAULT_BATCH_STDOUT_PATH "slurm-%j.out"
+#define DEFAULT_BATCH_ARRAY_STDOUT_PATH "slurm-%A_%a.out"
+#define DEFAULT_BCAST_EXCLUDE       "/lib,/usr/lib,/lib64,/usr/lib64"
+#define DEFAULT_COMPLETE_WAIT       0
+#define DEFAULT_CERTGEN_TYPE "certgen/script"
+#define DEFAULT_CRED_TYPE           "cred/munge"
+#define DEFAULT_EPILOG_MSG_TIME     2000
+#define EPILOG_MSG_TIME_MAX 1000000 /* 1 seconds in usec */
+#define DEFAULT_FIRST_JOB_ID        1
+#define DEFAULT_GET_ENV_TIMEOUT     120
+#define DEFAULT_GETNAMEINFO_CACHE_TIMEOUT 60
+#define DEFAULT_GROUP_TIME          600
+#define DEFAULT_GROUP_FORCE         1	/* if set, update group membership
+					 * info even if no updates to
+					 * /etc/group file */
+/* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
+#define DEFAULT_INACTIVE_LIMIT      0
+#define DEFAULT_INTERACTIVE_STEP_OPTS "--interactive --preserve-env --pty $SHELL"
+#define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
+#define DEFAULT_ENFORCE_PART_LIMITS 0
+#define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
+#define DEFAULT_HASH_PLUGIN "hash/k12"
+#define DEFAULT_HEALTH_CHECK_TIMEOUT 60
+#define DEFAULT_HOST_UNREACH_RETRY_COUNT 0
+#define DEFAULT_KEEPALIVE_TIME (NO_VAL)
+#define DEFAULT_KEEPALIVE_INTERVAL (NO_VAL)
+#define DEFAULT_KEEPALIVE_PROBES (NO_VAL)
+#define DEFAULT_KILL_ON_BAD_EXIT    0
+#define DEFAULT_KILL_TREE           0
+#define DEFAULT_KILL_WAIT           30
+#define DEFAULT_MAIL_PROG           "/bin/mail"
+#define DEFAULT_MAIL_PROG_ALT       "/usr/bin/mail"
+#define DEFAULT_MAX_ARRAY_SIZE      1001
+#define DEFAULT_MAX_BATCH_REQUEUE   5
+#define DEFAULT_MAX_DBD_MSGS        10000
+#define DEFAULT_MAX_JOB_COUNT       10000
+#define DEFAULT_MAX_JOB_ID          0x03ff0000
+#define DEFAULT_MAX_STEP_COUNT      40000
+#define DEFAULT_MEM_PER_CPU         0
+#define DEFAULT_MAX_MEM_PER_CPU     0
+#define DEFAULT_MIN_JOB_AGE         300
+#define DEFAULT_MSG_AGGR_WINDOW_MSGS 1
+#define DEFAULT_MSG_AGGR_WINDOW_TIME 100
+#define DEFAULT_MSG_TIMEOUT         10
+#if defined WITH_CGROUP
+#  define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
+#else
+#  define DEFAULT_PROCTRACK_TYPE      "proctrack/pgid"
+#endif
+#define DEFAULT_PREP_PLUGINS        "prep/script"
+#define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
+#define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
+#define DEFAULT_PRIORITY_TYPE       "priority/multifactor"
+#define DEFAULT_RECONF_KEEP_PART_STATE 0
+#define DEFAULT_RETURN_TO_SERVICE RETURN_TO_SERVICE_NONE
+#define DEFAULT_RESUME_RATE         300
+#define DEFAULT_RESUME_TIMEOUT      60
+#define DEFAULT_ROUTE_PLUGIN   	    "route/default"
+#define DEFAULT_SAVE_STATE_LOC      "/var/spool"
+#define DEFAULT_SCHED_LOG_LEVEL     0
+#define DEFAULT_SCHED_TIME_SLICE    30
+#define DEFAULT_SCHEDTYPE           "sched/backfill"
+#define DEFAULT_SELECT_TYPE         "select/cons_tres"
+#define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
+#define DEFAULT_SLURMCTLD_TIMEOUT   120
+#define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
+#define DEFAULT_SLURMD_TIMEOUT      300
+#define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
+#define DEFAULT_STORAGE_HOST        "localhost"
+#define DEFAULT_STORAGE_LOC         "/var/log/slurm_jobacct.log"
+#define DEFAULT_STORAGE_USER        "root"
+#define DEFAULT_STORAGE_PORT        0
+#define DEFAULT_MYSQL_PORT          3306
+#define DEFAULT_SUSPEND_RATE        60
+#define DEFAULT_SUSPEND_TIME        0
+#define DEFAULT_SUSPEND_TIMEOUT     30
+#define DEFAULT_TCP_TIMEOUT         2
+#define DEFAULT_TLS_TYPE "tls/none"
+#define DEFAULT_TMP_FS              "/tmp"
+#define DEFAULT_TOPOLOGY_PLUGIN "topology/flat"
+#define DEFAULT_WAIT_TIME           0
+#define DEFAULT_TREE_WIDTH	    16
+#define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
+#define DEFAULT_URL_PARSER_TYPE "url_parser/libhttp_parser"
+#define DEFAULT_BATCH_SCRIPT_LIMIT (4 * 1024 * 1024) /* 4MB */
+#define MAX_BATCH_SCRIPT_SIZE (512 * 1024 * 1024) /* 512MB */
+#define DEFAULT_MAX_SUBMIT_LINE_SIZE (1024 * 1024) /* 1MB */
+#define MAX_MAX_SUBMIT_LINE_SIZE (2 * 1024 * 1024) /* 2MB */
+
+/* MAX_TASKS_PER_NODE is defined in slurm.h
+ */
+#define DEFAULT_MAX_TASKS_PER_NODE  MAX_TASKS_PER_NODE
+
+#define UNIX_PREFIX "unix:"
+#define UNIX_PREFIX_BYTES strlen("unix:")
+
+typedef struct slurm_conf_node {
+	char *nodenames;
+	char *hostnames;
+	char *addresses;
+	char *bcast_addresses;
+	char *gres;		/* arbitrary list of node's generic resources */
+	char *gres_conf; /* '+' delimited gres_slurmd_conf_t's as
+			  * comma-separated key=value pairs. */
+	char *feature;		/* arbitrary list of node's features */
+	char *port_str;
+	uint32_t cpu_bind;	/* default CPU bind type */
+	uint16_t cpus;		/* count of cpus running on the node */
+	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
+	uint16_t boards; 	/* number of boards per node */
+	uint16_t tot_sockets;   /* number of sockets per node */
+	uint16_t cores;         /* number of cores per CPU */
+	uint16_t core_spec_cnt;	/* number of specialized cores */
+	uint16_t threads;       /* number of threads per core */
+	uint64_t real_memory;	/* MB real memory on the node */
+	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
+	char *parameters; /* node-specific additions to SlurmdParameters */
+	char *reason;
+	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
+				     * to only GPU jobs */
+	char *state;
+	uint32_t suspend_time; /* node idle time before power save mode */
+	uint32_t tmp_disk;	/* MB total storage in TMP_FS file system */
+	char *topology_str; /* topology address string */
+	char *tres_weights_str;	/* per TRES billing weight string */
+	uint32_t weight;	/* arbitrary priority of node for
+				 * scheduling work on */
+} slurm_conf_node_t;
+
+typedef struct slurm_conf_partition {
+	char *allow_alloc_nodes;/* comma delimited list of allowed
+				 * allocating nodes
+				 * NULL indicates all */
+	char *allow_accounts;   /* comma delimited list of accounts,
+				 * NULL indicates all */
+	char *allow_groups;	/* comma delimited list of groups,
+				 * NULL indicates all */
+	char *allow_qos;        /* comma delimited list of qos,
+			         * NULL indicates all */
+	char *alternate;	/* name of alternate partition */
+	char *billing_weights_str;/* per TRES billing weights */
+	uint32_t cpu_bind;	/* default CPU binding type */
+	uint16_t cr_type;	/* Custom CR values for partition (supported
+				 * by select/cons_res plugin only) */
+	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	bool default_flag;	/* Set if default partition */
+	uint32_t default_time;	/* minutes or INFINITE */
+	char *deny_accounts;    /* comma delimited list of denied accounts,
+				 * NULL indicates all */
+	char *deny_qos;		/* comma delimited list of denied qos,
+				 * NULL indicates all */
+	uint8_t disable_root_jobs; /* if set then user root can't run jobs
+				    * if NO_VAL8, use global default */
+	bool exclusive_user; /* true if node allocations by user */
+	bool exclusive_topo; /* true if exclusive topology*/
+	uint32_t grace_time;	/* default grace time for partition */
+	bool     hidden_flag;	/* 1 if hidden by default */
+	list_t *job_defaults_list; /* List of job_defaults_t elements */
+	bool     lln_flag;	/* 1 if nodes are selected in LLN order */
+	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
+	uint32_t max_cpus_per_socket; /* maximum allocated CPUs per socket */
+	uint16_t max_share;	/* number of jobs to gang schedule */
+	uint32_t max_time;	/* minutes or INFINITE */
+	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
+	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t min_nodes;	/* per job */
+	char	*name;		/* name of the partition */
+	char 	*nodes;		/* comma delimited list names of nodes */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
+	bool power_down_on_idle; /* true if nodes POWER_DOWN upon returning to
+				  * IDLE */
+	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
+	uint16_t priority_job_factor;	/* job priority weight factor */
+	uint16_t priority_tier;	/* tier for scheduling and preemption */
+	char    *qos_char;      /* Name of QOS associated with partition */
+	bool     req_resv_flag; /* 1 if partition can only be used in a
+				 * reservation */
+	uint16_t resume_timeout; /* time required in order to perform a node
+				  * resume operation */
+	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
+				   issued by user root */
+	uint16_t state_up;	/* for states see PARTITION_* in slurm.h */
+	uint32_t suspend_time;  /* node idle for this long before power save
+				 * mode */
+	uint16_t suspend_timeout; /* time required in order to perform a node
+				   * suspend operation */
+	char *topology_name;
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
+} slurm_conf_partition_t;
+
+typedef struct slurm_conf_downnodes {
+	char *nodenames;
+	char *reason;
+	char *state;
+} slurm_conf_downnodes_t;
+
+typedef struct {
+	char *feature;
+	char *name;
+	char *nodes;
+} slurm_conf_nodeset_t;
+
+typedef struct {
+	char *name;
+	char *value;
+} config_key_pair_t;
+
+typedef struct {
+	char *name;
+	list_t *key_pairs;
+} config_plugin_params_t;
+
+/* Copy list of job_defaults_t elements */
+extern list_t *job_defaults_copy(list_t *in_list);
+
+/* Destroy list of job_defaults_t elements */
+extern void job_defaults_free(void *x);
+
+/*
+ * Translate string of job_defaults_t elements into a List.
+ * in_str IN - comma separated key=value pairs
+ * out_list OUT - equivalent list of key=value pairs
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int job_defaults_list(char *in_str, list_t **out_list);
+
+/*
+ * Translate list of job_defaults_t elements into a string.
+ * Return value must be released using xfree()
+ */
+extern char *job_defaults_str(list_t *in_list);
+
+/* Pack a job_defaults_t element. Used by slurm_pack_list() */
+extern void job_defaults_pack(void *in, uint16_t protocol_version,
+			      buf_t *buffer);
+
+/* Unpack a job_defaults_t element. Used by slurm_pack_list() */
+extern int job_defaults_unpack(void **out, uint16_t protocol_version,
+			       buf_t *buffer);
+
+/*
+ * set_nodes_alias() for each node in alias_list
+ *
+ * IN alias_list - string with sets of node name, communication address in []
+ * 	and hostname. Each element in the set if colon separated and
+ * 	each set is comma separated.
+ * 	eg.: ec0:[1.2.3.4]:foo,ec1:[1.2.3.5]:bar
+ * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int set_nodes_alias(const char *alias_list);
+
+/* Send conf_hashtbl to the stepd */
+extern int read_conf_send_stepd(int fd);
+
+/* Receive conf_hashtbl from the slurmd */
+extern void read_conf_recv_stepd(int fd);
+
+/*
+ * Allocate memory for a config_key_pair_t pointer and initialize it by
+ * duplicating the key-value arguments. Append the resulting pair to the
+ * argument list if it's not NULL.
+ *
+ * IN: list_t *key_pair_list
+ * IN: char *key
+ * IN: char *fmt - printf style format of "value" args that follow
+ */
+extern void add_key_pair(list_t *key_pair_list, const char *key,
+			 const char *fmt, ...)
+	__attribute__((format(printf, 3, 4)));
+
+/*
+ * Allocate a config_key_pair_t, duplicate the key, and set the value
+ * to "yes" or "no".
+ */
+extern void add_key_pair_bool(list_t *key_pair_list, const char *key,
+			      bool value);
+
+/*
+ * Allocate a config_key_pair_t, duplicate the key, and take ownership of the
+ * value string.
+ */
+extern void add_key_pair_own(list_t *key_pair_list, const char *key,
+			     char *value);
+
+/*
+ * slurm_conf_init_stepd - Since the stepd does not read in the file and
+ * receives it from the slurm we need to call a different function to do this.
+ */
+extern void slurm_conf_init_stepd(void);
+
+/*
+ * slurm_conf_init - load the slurm configuration from the a file.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	If the conf structures have already been initialized by a call to
+ *	slurm_conf_init, any subsequent calls will do nothing until
+ *	slurm_conf_destroy is called.
+ * RET SLURM_SUCCESS if conf file is initialized.  If the slurm conf
+ *       was already initialized, return SLURM_ERROR.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_init(const char *file_name);
+
+/*
+ * slurm_conf_reinit - reload the slurm configuration from a file.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	Unlike slurm_conf_init, slurm_conf_reinit will always reread the
+ *	file and reinitialize the configuration structures.
+ * RET SLURM_SUCCESS if conf file is reinitialized, otherwise SLURM_ERROR.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_reinit(const char *file_name);
+
+/*
+ * slurm_conf_mutex_init - init the slurm_conf mutex
+ */
+extern void slurm_conf_mutex_init(void);
+
+/* slurm_conf_install_fork_handlers
+ * installs what to do with a fork with the conf mutex
+ */
+void slurm_conf_install_fork_handlers(void);
+
+/*
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_destroy(void);
+
+extern slurm_conf_t *slurm_conf_lock(void);
+
+extern void slurm_conf_unlock(void);
+
+
+extern int slurm_conf_check_addr(const char *node_name, bool *dynamic);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_node_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[]);
+
+/*
+ * Get list of power actions from slurm.conf
+ *
+ * Return value is SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int slurm_conf_power_action_list(list_t **power_action_list);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_partition_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_downnodes_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_nodeset_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_nodeset_array(slurm_conf_nodeset_t **ptr_array[]);
+
+/*
+ * slurm_reset_alias - Reset the address and hostname of a specific node name
+ */
+extern void slurm_reset_alias(char *node_name, char *node_addr,
+			      char *node_hostname);
+
+/*
+ * Return NodeAddr (if set) for a given NodeName, or NULL
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char* slurm_conf_get_address(const char *node_name);
+
+/*
+ * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_hostname(const char *node_name);
+
+/*
+ * slurm_conf_get_nodename - Return the NodeName for given NodeHostname
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_nodename(const char *node_hostname);
+
+/*
+ * slurm_conf_get_aliases - Return all the nodes NodeName value
+ * associated to a given NodeHostname (useful in case of multiple-slurmd
+ * to get the list of virtual nodes associated with a real node)
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_aliases(const char *node_hostname);
+
+/*
+ * slurm_conf_get_nodeaddr - Return the NodeAddr for given NodeHostname
+ *
+ * NOTE: Call xfree() to release returned value's memory.
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_nodeaddr(const char *node_hostname);
+
+/*
+ * slurm_conf_get_aliased_nodename - Return the NodeName matching an alias
+ * of the local hostname
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_aliased_nodename(void);
+
+/*
+ * Return BcastAddr (if set) for a given NodeName, or NULL
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_bcast_address(const char *node_name);
+
+/*
+ * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName in
+ *	the parameter "address".  The return code is SLURM_SUCCESS on success,
+ *	and SLURM_ERROR if the address lookup failed.
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
+			       uint16_t flags);
+
+/*
+ * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.
+ *
+ * IN nodeline - NodeName= line string.
+ * OUT out_hashtbl - ptr to the generated hashtable so it can be deleted by
+ *                   caller after using the slurm_conf_node_t*. Currently, not a
+ *                   way to disassociate items from the hashtbl.
+ * RET slurm_conf_t* on success, NULL otherwise.
+ */
+extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
+						    s_p_hashtbl_t **out_hashtbl);
+
+/*
+ * conf - initialize or re-initialize the slurm configuration
+ *	values to defaults (NULL or NO_VAL). Note that the configuration
+ *	file pathname (slurm_conf) is not changed.
+ * IN/OUT conf - pointer to data structure to be initialized
+ */
+extern void init_slurm_conf(slurm_conf_t *conf);
+
+/*
+ * free_slurm_conf - free all storage associated with a slurm_conf_t.
+ * IN/OUT conf - pointer to data structure to be freed
+ * IN purge_node_hash - purge system-wide node hash table if set,
+ *			set to zero if clearing private copy of config data
+ */
+extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash);
+
+/*
+ * gethostname_short - equivalent to gethostname(), but return only the first
+ *      component of the fully qualified name (e.g. "linux123.foo.bar"
+ *      becomes "linux123")
+ * NOTE: NodeName in the config may be different from real hostname.
+ *       Use get_conf_node_name() to get the former.
+ */
+extern int gethostname_short(char *name, size_t len);
+
+/*
+ * Replace first "%h" in path string with NodeHostname.
+ * Replace first "%n" in path string with NodeName.
+ *
+ * NOTE: Caller should be holding slurm_conf_lock() when calling this function.
+ *
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *slurm_conf_expand_slurmd_path(const char *path,
+					   const char *node_name,
+					   const char *host_name);
+
+/*
+ * prolog_flags2str - convert a PrologFlags uint16_t to the equivalent string
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *prolog_flags2str(uint16_t prolog_flags);
+
+/*
+ * prolog_str2flags - Convert a PrologFlags string to the equivalent uint16_t
+ * Returns NO_VAL if invalid
+ */
+extern uint16_t prolog_str2flags(char *prolog_flags);
+
+/*
+ * debug_flags2str - convert a DebugFlags uint64_t to the equivalent string
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *debug_flags2str(uint64_t debug_flags);
+
+/*
+ * debug_str2flags - Convert a DebugFlags string to the equivalent uint64_t
+ * Returns SLURM_ERROR if invalid
+ */
+extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out);
+
+/*
+ * reconfig_flags2str - convert a ReconfigFlags uint16_t to the equivalent string
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *reconfig_flags2str(uint16_t reconfig_flags);
+
+/*
+ * reconfig_str2flags - Convert a ReconfigFlags string to the equivalent uint16_t
+ * Returns NO_VAL if invalid
+ */
+extern uint16_t reconfig_str2flags(char *reconfig_flags);
+
+/*
+ * Parse flags from provided string, will alter slurm_conf.conf_flags.
+ */
+extern void parse_slurmd_params(const char *slurmd_params);
+
+extern void destroy_config_plugin_params(void *object);
+extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
+				      buf_t *buff);
+extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
+				       buf_t *buff);
+extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
+					   buf_t *buff);
+extern int unpack_config_plugin_params_list(list_t **object,
+					    uint16_t protocol_version,
+					    buf_t *buff);
+
+extern void destroy_config_key_pair(void *object);
+extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
+			       buf_t *buffer);
+extern int unpack_key_pair_list(list_t **key_pairs, uint16_t protocol_version,
+				buf_t *buffer);
+extern void pack_config_key_pair(void *in, uint16_t protocol_version,
+				 buf_t *buffer);
+extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
+				  buf_t *buffer);
+
+extern int sort_key_pairs(void *v1, void *v2);
+/*
+ * Return the pathname of the extra .conf file
+ * return value must be xfreed
+ */
+extern char *get_extra_conf_path(const char *conf_name);
+
+/* Translate a job constraint specification into a node feature specification
+ * RET - String MUST be xfreed */
+extern char *xlate_features(char *job_features);
+
+/*
+ * Add nodes and corresponding pre-configured slurm_addr_t's to node conf hash
+ * tables.
+ *
+ * IN node_list  - node_list allocated to job
+ * IN node_addrs - array of slurm_addr_t that corresponds to nodes built from
+ * 	host_list. See build_node_details().
+ * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int add_remote_nodes_to_conf_tbls(char *node_list,
+					 slurm_addr_t *node_addrs);
+
+/*
+ * Add record to conf hash tables from node_record_t.
+ */
+extern void slurm_conf_add_node(node_record_t *node_ptr);
+
+/*
+ * Remove node from node conf hash tables.
+ */
+extern void slurm_conf_remove_node(char *node_name);
+
+/*
+ * Get substring from a csv-style string.
+ *
+ * IN opts - csv-style string to be parsed
+ * IN arg - the search string + delimiter between option and its value
+ * 	(EG: "planet=")
+ *
+ * RET xmalloc()'d string after the delimiter, and before next ","
+ */
+extern char *conf_get_opt_str(const char *opts, const char *arg);
+
+/*
+ * Parse YAML configuration
+ * NOTE: Use CONF_PARSE() macro instead of calling directly
+ * IN type - expected data_parser type of obj
+ * IN conf - name or abs path to configuration file
+ * IN dst - ptr to struct/scalar to populate
+ *	This *must* be a pointer to the object and not just a value of the
+ *	object.
+ * IN dst_bytes - size of object pointed to by dst
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int conf_parse(data_parser_type_t type, const char *conf, void *dst,
+		      ssize_t dst_bytes, const char *caller);
+
+#define CONF_PARSE(type, conf, dst) \
+	conf_parse(DATA_PARSER_##type, conf, &dst, sizeof(dst), __func__)
+
+#endif /* !_READ_CONFIG_H */

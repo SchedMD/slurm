@@ -1,0 +1,145 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Verify the correct setting of a job's ExitCode.
+############################################################################
+# Copyright (C) 2010 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Don Lipari <lipari1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in          "$test_dir/input"
+set file_prog1       "$test_name.prog1"
+set file_prog2       "$test_name.prog2"
+
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
+}
+
+proc cleanup {} {
+	global file_prog1 file_prog2
+
+	file delete $file_prog1 $file_prog2
+}
+
+#
+# Rebuild programs
+#
+exec $bin_cc -O -o $file_prog1 ${file_prog1}.c
+exec $bin_cc -O -o $file_prog2 ${file_prog2}.c
+
+#
+# Submit a script that returns a successful exit code and confirm that
+# the job record's ExitCode reflects this value.  $file_prog1 returns a
+# successful error code (0) and $file_prog2 returns an unsuccessful
+# error code (123).
+#
+# The failed job step should have no influence on the job's ExitCode
+# value.  However the DerivedExitCode value should be set to the
+# highest value of all the job steps, in this case, 123.
+#
+
+make_bash_script $file_in "
+  $bin_echo 'testing successful job return code'
+  $srun ./$file_prog1
+  $srun ./$file_prog2
+  exit 0
+"
+
+set job_id [submit_job -fail "--output=/dev/null -t1 $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+
+#
+# Confirm correct ExitCode setting in job record
+#
+set job_exit_code [get_job_param $job_id "ExitCode"]
+subtest {$job_exit_code eq "0:0"} "Verify ExitCode in job record" "$job_exit_code != 0:0"
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"]} {
+	subskip "stepmgr jobs don't track DerivedExitCode on the controller."
+} else {
+	set derived_exit_code [get_job_param $job_id "DerivedExitCode"]
+	subtest {$derived_exit_code eq "123:0"} "Verify DerivedExitCode in job record" "$derived_exit_code != 123:0"
+}
+
+#
+# Confirm the job record in the db has the same exit codes
+#
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
+	# Wait for the end time to be recorded in the accounting database
+	wait_for_job_acct -fail $job_id end
+
+	set output [run_command_output -fail "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode"]
+	subtest [regexp -line "^$job_id\\|0:0\\|123:0\$" $output] "Verify job record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.batch\\|0:0\\|\$" $output] "Verify batch step record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|0:0\\|\$" $output] "Verify step 0 record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|123:0\\|\$" $output] "Verify step 1 record in the accounting database has the right exit codes"
+}
+
+#
+# Now submit a script that returns a non-zero exit code and confirm
+# that the job record's ExitCode reflects this value.  The two
+# successful job steps ($file_prog1 from above) should have no
+# influence on the job's, unsuccessful ExitCode.
+#
+# Here, the DerivedExitCode value should be set to the highest value
+# of the two successful job steps (i.e., 0).
+#
+make_bash_script $file_in "
+  $bin_echo 'testing unsuccessful job return code'
+  $srun ./$file_prog1
+  $srun ./$file_prog1
+  exit 33
+"
+
+set job_id [submit_job -fail "--output=/dev/null -t1 $file_in"]
+
+#
+# Wait for job to complete
+#
+wait_for_job -fail $job_id "DONE"
+
+#
+# Confirm correct ExitCode setting in job record
+#
+set exit_code [get_job_param $job_id "ExitCode"]
+subtest {$exit_code eq "33:0"} "Verify ExitCode in job record" "$exit_code != 33:0"
+set derived_exit_code [get_job_param $job_id "DerivedExitCode"]
+subtest {$derived_exit_code eq "0:0"} "Verify DerivedExitCode in job record" "$derived_exit_code != 0:0"
+
+#
+# Confirm the job record in the db has the same exit codes
+#
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
+	# Wait for the end time to be recorded in the accounting database
+	wait_for_job_acct -fail $job_id end
+
+	set output [run_command_output -fail "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode"]
+	subtest [regexp -line "^$job_id\\|33:0\\|0:0\$" $output] "Verify job record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.batch\\|33:0\\|\$" $output] "Verify batch step record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|0:0\\|\$" $output] "Verify step 0 record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|0:0\\|\$" $output] "Verify step 1 record in the accounting database has the right exit codes"
+}

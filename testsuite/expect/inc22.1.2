@@ -1,0 +1,116 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Use sreport to get cluster usage for the second hour from
+#          configuration set up in test22.1.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc22_1_2 {} {
+	global node0_down_end node0_cpus node1_cpus cluster1 sreport
+	global cluster1 my_pid accounts users cluster_cpus
+	global job1_end job1_cpus job2_elig job2_cpus account1 user1
+	global sql_rem_clus1 wckey1 wc_key_track cluster2
+
+	# Since there are 2 test clusters we will just use one
+	set cluster $cluster1
+	set sql_rm $sql_rem_clus1
+
+	# Tue Jan 1 00:00:00 2008
+	set start_time "Tue Jan 1 00:00:00 2008"
+	set period_start [exec date +%s --date=$start_time]
+
+	# Tue Jan 1 01:00:00 2008
+	set end_time "Tue Jan 1 01:00:00 2008"
+	set period_end [exec date +%s --date=$end_time]
+
+	set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
+	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+
+	set reported [expr ($period_end - $period_start) * $cluster_cpus]
+	set down [expr ($node0_down_end-$period_start) * $node0_cpus]
+	set alloc_sec [expr ($job1_end-$period_start) * $job1_cpus]
+	set wckey_alloc_sec $alloc_sec
+	set resv [expr ($period_end - $job2_elig) * $job2_cpus]
+	set idle [expr $reported - ($down + $alloc_sec + $resv)]
+	# Do the same logic inside the plugin to figure out the correct
+	# idle time and resv time
+	if {$idle < 0 } {
+		set resv [expr $resv + $idle]
+		set idle 0
+		if {$resv < 0} {
+			set resv 0
+		}
+	}
+	set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]]
+	set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]]
+	set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
+	set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]]
+	set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
+
+	log_info "Testing sreport for second hour"
+	set output [run_command_output -fail "$sreport --local cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster.$idle.$down.$alloc.$resv.$reported." $output] == 1} "Test the cluster utilization report for the second hour"
+
+	# Test the AccountUtilizationByUser report
+	set output [run_command_output -fail "$sreport --local cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster.root..$alloc." $output] == 1} "Test the AccountUtilizationByUser report for the second hour"
+	subtest {[regexp -all "$cluster.$account1..$alloc." $output] == 1} "Test the AccountUtilizationByUser report for the second hour"
+	subtest {[regexp -all "$cluster.$account1.$user1.$alloc." $output] == 1} "Test the AccountUtilizationByUser report for the second hour"
+
+	if {!$wc_key_track} {
+		subskip "Needs TracWCKey for some subtests"
+	} else {
+		# Test the UserUtilizationByWckey report
+		set output [run_command_output -fail "$sreport --local cluster UserUtilizationByWckey cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,wckey,used"]
+		subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+		subtest {[regexp -all "$cluster.$user1.$wckey1.$alloc." $output] == 1} "Test the UserUtilizationByWckey report for the second hour"
+
+		# Test the WckeyUtilizationByUser report
+		set output [run_command_output -fail "$sreport --local cluster WckeyUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,wckey,login,used"]
+		subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+		subtest {[regexp -all "$cluster.$wckey1..$alloc." $output] == 1} "Test the WckeyUtilizationByUser report for the second hour"
+		subtest {[regexp -all "$cluster.$wckey1.$user1.$alloc." $output] == 1} "Test the WckeyUtilizationByUser report for the second hour"
+	}
+
+	# Test the User Top report
+	set output [run_command_output -fail "$sreport --local user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster.$account1.$user1.$alloc." $output] == 1} "Test the User Top report for the second hour"
+
+	# Test the Job Size report
+	set output [run_command_output -fail "$sreport --local job size AcctAsParent grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster.$account1.0.$alloc_sec.0." $output] == 1} "Test the Job Size report for the second hour"
+
+	# Test the Job Size by wckey report
+	set output [run_command_output -fail "$sreport --local job sizesbywckey grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster.$wckey1.0.$wckey_alloc_sec.0." $output] == 1} "Test the Job Size by wckey report for the second hour"
+}

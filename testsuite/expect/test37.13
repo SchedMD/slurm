@@ -1,0 +1,302 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test federated arrays
+#
+# Reqs:    1. Using slurmdbd accounting storage type and is up
+#          2. fed_slurm_base is defined in globals.local - set to directory that
+#          has access to each federation configure (fedc1, fedc2, fedc3).
+#          Eg.
+#          fedr/slurm/ (src)
+#          fedr/fed1/bin
+#          fedr/fed1/sbin
+#          fedr/fed1/etc
+#          fedr/fed1/...
+#          fedr/fed2/...
+#          fedr/fed3/...
+#          3. controllers are up and running.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+source ./globals_accounting
+source ./globals_federation
+
+set fed_name     "feda"
+set user_name    ""
+set srun_job_cnt 0
+set my_sbatch    "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_squeue    "${fed_slurm_base}/$fedc1/bin/squeue"
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc sbatch { options regex } {
+	global number bin_sleep my_sbatch fedc1 fedc2 fedc3
+
+	set matches 0
+	set job_id 0
+	set capture 0
+	set command "$my_sbatch -N1 --exclusive -t1 -a1-15 -o/dev/null "
+	append command $options
+	append command " --wrap \"sleep 20\""
+	if {[string match $regex ""]} {
+		set capture 1
+		set regex "Submitted batch job ($number)"
+	}
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+			if {$capture} {
+				set job_id $expect_out(1,string)
+			}
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Batch submit failure (expected $regex)"
+	}
+
+	return $job_id
+}
+
+proc squeue { regex } {
+	global my_squeue fedc1 fedc2 fedc3
+
+	set matches 0
+	set command "$my_squeue --noheader -a -M$fedc1,$fedc2,$fedc3"
+	spawn {*}$command
+	expect {
+		-re "$regex" {
+			incr matches
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		fail "Unexpected error in squeue (expected $regex)"
+	}
+}
+
+proc cancel_federation_jobs { } {
+	global scancel user_name fedc1 fedc2 fedc3
+
+	spawn $scancel -M$fedc1,$fedc2,$fedc3 --user $user_name
+	expect {
+		eof {
+			wait
+		}
+	}
+	sleep 5
+}
+
+proc cleanup { } {
+	global fed_name bin_bash bin_rm test_name
+
+	cancel_federation_jobs
+	delete_federations $fed_name
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
+}
+
+# Start test
+
+if {![check_federation_setup]} {
+	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
+}
+
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
+}
+
+set user_name [get_my_user_name]
+
+# Remove existing setup
+cleanup
+
+# Add clusters to federation
+if {[setup_federation $fed_name]} {
+	fail "Failed to setup federation"
+}
+
+log_info "################################################################"
+log_info "Setup cluster features"
+log_info "################################################################"
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc1 set features=fa
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fa" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc1$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc2 set features=fb
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fb" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc2$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+set matches 0
+spawn $sacctmgr -i modify cluster $fedc3 set features=fc
+expect {
+	-re "Setting$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+Feature\\s+=\\s+fc" {
+		incr matches
+		exp_continue
+	}
+	-re "Modified cluster...$eol" {
+		incr matches
+		exp_continue
+	}
+	-re "^\\s+$fedc3$eol" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr mod not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	fail "Unexpected error (got $matches)"
+}
+
+log_info "################################################################"
+log_info "Test federated arrays"
+log_info "################################################################"
+
+cancel_federation_jobs
+
+set jid(0) [sbatch "" ""]
+
+set jt "$jid(0)_1"
+
+wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
+
+set r0  "(($fedc1\\s+$jid(0))_(\[1-9\]|10).+$eol)"
+set r1  "(($fedc1\\s+$jid(0))_\\\[11-15\\\].+$eol)"
+
+set regf1 "$r1$r0{10}"
+set regf2 ""
+set regf3 ""
+
+squeue "$regf1$regf2$regf3"
+
+set jid(1) [sbatch "--cluster-constraint=fa" ""]
+
+set r2 "($fedc1\\s+($jid(1))_\\\[1-15\\\].+$eol)"
+
+set regf1 "($r1|$r2){2}$r0{10}"
+set regf2 ""
+set regf3 ""
+
+squeue "$regf1$regf2$regf3"
+
+set jt "$jid(0)_15"
+
+wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
+
+sbatch "--cluster-constraint=fb" "sbatch: error: federated job arrays must run on local cluster${eol}sbatch: error: Batch job submission failed: No eligible clusters for federated job${eol}"
+set jid(2) [sbatch "--cluster-constraint=fb -M$fedc2" ""]
+
+set jt "$jid(2)_1"
+
+wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
+
+set r0  "($fedc1\\s+($jid(0))_1\[1-5\].+$eol)"
+set r1  "($fedc1\\s+($jid(1))_\[1-5\].+$eol)"
+set r2  "($fedc1\\s+($jid(1))_\\\[6-15\\\].+$eol)"
+set r3  "($fedc2\\s+($jid(2))_(\[1-9\]|10).+$eol)"
+set r4  "($fedc2\\s+($jid(2))_\\\[11-15\\\].+$eol)"
+
+set regf1 "$r2.*($r0|$r1){10}"
+set regf2 "$r4$r3{10}"
+set regf3 ""
+
+squeue "$regf1$regf2$regf3"
+
+sbatch "--cluster-constraint=fa -M$fedc2" "sbatch: error: Batch.+"

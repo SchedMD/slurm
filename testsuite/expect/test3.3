@@ -1,0 +1,192 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol update command for nodes.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set authorized     1
+set node_list      ""
+set node_name      ""
+set read_state     ""
+
+#
+# Identify a node and its state
+#
+spawn $sinfo --noheader -o  "NodeName=%N State=%t "
+expect {
+        -re "NodeName=($re_word_str) State=idle " {
+                if {$node_list eq ""} {
+                        set node_list $expect_out(1,string)
+                }
+                exp_continue
+        }
+        -re "NodeName=($re_word_str) State=allocated " {
+                if {$node_list eq ""} {
+                        set node_list $expect_out(1,string)
+                }
+                exp_continue
+        }
+	timeout {
+		fail "sinfo not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$node_list eq ""} {
+	skip "No nodes in usable state for this test"
+}
+
+#
+# Convert node list to a single node name
+#
+log_user 0
+spawn $scontrol show hostnames $node_list
+expect {
+        -re "($re_word_str)" {
+		set node_name $expect_out(1,string)
+        }
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$node_name eq ""} {
+	skip "No nodes in usable state for this test"
+}
+
+#
+# Change that node's state
+#
+spawn $scontrol update NodeName=$node_name State=DRAIN Reason=TESTING
+expect {
+	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
+		set access_err 0
+		set err_msg1 $expect_out(1,string)
+		set err_msg2 $expect_out(2,string)
+		if {$err_msg1 eq "Invalid"} {
+			set access_err 1
+		}
+		if {$err_msg2 eq "user"} {
+			set access_err 1
+		}
+		if {$access_err == 1} {
+			skip "User not authorized"
+		} else {
+			set authorized 0
+		}
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Validate node's new state
+#
+set read_state  0
+set reason_code ""
+spawn $scontrol show node $node_name
+expect {
+	-re "State=($re_word_str).DRAIN" {
+		set read_state 1
+		exp_continue
+	}
+	-re "State=($re_word_str).CLOUD.DRAIN" {
+		set read_state 1
+		exp_continue
+	}
+	-re "Reason=($re_word_str)" {
+		set reason_code $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$authorized == 1} {
+	subtest {$read_state == 1} "Validate that the node's new state has been set"
+
+	set reason_set 0
+	if {$reason_code eq "TESTING"} {
+		set reason_set 1
+	}
+
+	subtest {$reason_set == 1} "Validate that the node's reason has been set"
+}
+
+#
+# Return that node's state to its old value
+#
+spawn $scontrol update NodeName=$node_name State=RESUME
+expect {
+	-re "slurm_update error: Invalid user id" {
+		exp_continue
+	}
+	-re "slurm_update error:" {
+		fail "scontrol update error"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Record that node's state
+#
+set read_state 0
+spawn  $scontrol show node $node_name
+expect {
+	-re "State=($re_word_str).DRAIN" {
+		set read_state 1
+		exp_continue
+	}
+	-re "State=($re_word_str).CLOUD.DRAIN" {
+		set read_state 1
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$read_state == 0} "Validate that the node's old state has been restored"

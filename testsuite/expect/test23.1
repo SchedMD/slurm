@@ -1,0 +1,134 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test sstat h, e, usage and V options.
+############################################################################
+# Copyright (C) 2008 - 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set matches     0
+set not_support 0
+
+################################################################
+#
+# Proc: sstat_job
+#
+# Purpose:  Pass sstat option and test
+#
+# Returns: Number of matches.
+#
+# Input: sstat options not requiring arguments
+#
+################################################################
+
+proc sstat_job { soption } {
+	global number sstat
+	set debug	0
+	set matches     0
+	set not_support 0
+	log_debug "sstat -$soption "
+
+	if { $soption == "h" || $soption == "-help" } {
+
+		spawn $sstat -$soption
+		expect {
+			-re "sstat...OPTION" {
+				if {$debug} {log_debug "Match6"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid..OPTION" {
+				if {$debug} {log_debug "Match7"}
+				incr matches
+				exp_continue
+			}
+			-re "-e, --helpformat" {
+				if {$debug} {log_debug "Match8"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sstat not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		subtest {$matches == 3} "Verify sstat -$soption option"
+	}
+
+	if { $soption == "-usage" } {
+
+		spawn $sstat -$soption
+		expect {
+			-re "Usage: sstat .options. -j .job..stepid." {
+				if {$debug} {log_debug "Match9"}
+				incr matches
+				exp_continue
+			}
+			-re "Use --help for help" {
+				if {$debug} {log_debug "Match10"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sstat not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		subtest {$matches == 2} "Verify sstat -$soption option"
+	}
+
+	if { $soption == "V" || $soption == "-version" } {
+
+		spawn $sstat -$soption
+		expect {
+			-re "slurm ($number)\\.($number)." {
+				if {$debug} {log_debug "Match11"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sstat not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		subtest {$matches == 1} "Verify sstat -$soption option"
+	}
+}
+################################################################
+
+sstat_job h
+sstat_job -help
+sstat_job -usage
+sstat_job V
+sstat_job -version

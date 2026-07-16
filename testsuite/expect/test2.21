@@ -1,0 +1,123 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Validate scontrol requeue of failed or completed job.
+############################################################################
+# Copyright (C) SchedMD LLC.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set complete_script    "$test_dir/complete_script"
+set fail_script        "$test_dir/fail_script"
+set job_id             0
+
+regexp "($number)" [get_config_param "MinJobAge"] {} min_age
+if {$min_age < 10} {
+	skip "MinJobAge too low for this test ($min_age < 10)"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $complete_script "$bin_sleep 20"
+make_bash_script $fail_script "BadCommand"
+
+proc requeue_job { id } {
+	global scontrol
+
+	spawn $scontrol requeue $id
+	expect {
+		timeout {
+			fail "scontrol is not responding"
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+#
+# Run a job that will complete
+#
+spawn $sbatch -N1 -o /dev/null -e /dev/null -t1 --requeue $complete_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if { $job_id == 0 } {
+	fail "sbatch did not submit job"
+}
+
+# Wait for the job to be in the complete state
+wait_for_job -fail $job_id "DONE"
+
+# Requeue the job when it is complete
+requeue_job $job_id
+
+# Check to see if the job state is PENDING after the requeue
+subtest [check_job_state $job_id PENDING|RUNNING] "Job state should be PENDING after the requeue"
+
+cancel_job $job_id
+
+#
+# Run a job that will fail
+#
+set job_id 0
+spawn $sbatch -N1 -o /dev/null -e /dev/null -t 1 --requeue $fail_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if { $job_id == 0 } {
+	fail "sbatch did not submit job"
+}
+
+# Wait for the job to be in the complete state
+wait_for_job -fail $job_id "DONE"
+
+# Requeue the job when it is complete
+requeue_job $job_id
+
+# Check to see if the job state is PENDING after the requeue
+subtest [check_job_state $job_id PENDING|RUNNING] "Job state should be PENDING after the requeue"
+
+cancel_job $job_id
