@@ -317,9 +317,9 @@ static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 	int rc;
 	foreach_rs256_args_t *args = (foreach_rs256_args_t *) arg;
 
-	/* Ignore non-RS256 keys in the JWKS */
-	alg = data_get_string(data_key_get(d, "alg"));
-	if (xstrcasecmp(alg, "RS256"))
+	/* Ignore non-RS256 keys in the JWKS if algorithm is provided */
+	if ((alg = data_get_string(data_key_get(d, "alg"))) &&
+	    xstrcasecmp(alg, "RS256"))
 		return DATA_FOR_EACH_CONT;
 
 	/* Return early if this key doesn't match */
