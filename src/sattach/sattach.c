@@ -54,6 +54,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/threadpool.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -70,7 +71,7 @@
 #include "src/sattach/attach.h"
 #include "src/sattach/opt.h"
 
-#define SATTACH_CONMGR_THREADS CONMGR_THREAD_COUNT_MIN
+#define SATTACH_WORKERPOOL_THREADS CONMGR_THREAD_COUNT_MIN
 
 static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
@@ -214,7 +215,8 @@ int sattach(int argc, char **argv)
 	 * them abruptly. conmgr_run() is non-blocking and processes signals from
 	 * a background thread.
 	 */
-	conmgr_init(0, SATTACH_CONMGR_THREADS, 0);
+	workerpool_init(0, SATTACH_WORKERPOOL_THREADS, NULL);
+	conmgr_init(0);
 	conmgr_add_work_signal(SIGINT, _on_detach_signal, mts);
 	conmgr_add_work_signal(SIGTERM, _on_detach_signal, mts);
 	conmgr_add_work_signal(SIGQUIT, _on_detach_signal, mts);
@@ -250,6 +252,7 @@ int sattach(int argc, char **argv)
 
 	/* Stop conmgr before tearing down the state its signal work references. */
 	conmgr_fini();
+	workerpool_fini();
 
 	_msg_thr_destroy(mts);
 	slurm_job_step_layout_free(layout);

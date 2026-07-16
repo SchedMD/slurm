@@ -88,6 +88,7 @@
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
+#include "src/common/workerpool.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
 
@@ -499,8 +500,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	(void) probe_run(true, NULL, NULL, __func__);
 }
 
-static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
-				      void *arg)
+static void _register_signal_handlers(void)
 {
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
@@ -770,13 +770,14 @@ int main(int argc, char **argv)
 
 	threadpool_init(SLURMCTLD_THREADPOOL_PREALLOCATE,
 			slurm_conf.slurmctld_params);
+	workerpool_init(0, 0, slurm_conf.slurmctld_params);
 
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
-	conmgr_init(0, 0, SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS);
+	conmgr_init(SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
-	conmgr_add_work_fifo(_register_signal_handlers, NULL);
+	_register_signal_handlers();
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
@@ -1286,6 +1287,7 @@ int main(int argc, char **argv)
 
 	http_fini();
 	http_switch_fini();
+	workerpool_fini();
 	/* Multiple threads never exit naturally during shutdown */
 	threadpool_fini();
 	rate_limit_shutdown();

@@ -383,7 +383,7 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_rwlock_wrlock(&lock);
 
-	if (signal_fd >= 0) {
+	if (signal_fd != -1) {
 		slurm_rwlock_unlock(&lock);
 		log_flag(CONMGR, "%s: skipping - already initialized",
 			 __func__);
@@ -421,12 +421,19 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 
 extern void signal_mgr_stop(void)
 {
+	int fd = -1;
+
 	slurm_rwlock_wrlock(&lock);
 
 	if (signal_con)
 		close_con(true, signal_con);
 
+	fd = signal_fd;
+	signal_fd = SIGNAL_FD_FAILED;
+
 	slurm_rwlock_unlock(&lock);
+
+	(void) close(fd);
 }
 
 extern void signal_mgr_fini(void)

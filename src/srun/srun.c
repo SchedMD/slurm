@@ -71,6 +71,7 @@
 #include "src/common/spank.h"
 #include "src/common/threadpool.h"
 #include "src/common/uid.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -177,7 +178,8 @@ int srun(int ac, char **av)
 	xsignal(SIGTTIN, SIG_IGN);
 
 	probe_init();
-	conmgr_init(0, THREAD_COUNT, 0);
+	workerpool_init(0, THREAD_COUNT, NULL);
+	conmgr_init(0);
 
 	forward_init();
 
@@ -249,6 +251,7 @@ int srun(int ac, char **av)
 	conmgr_request_shutdown();
 	forward_fini();
 	conmgr_fini();
+	workerpool_fini();
 
 	if (job)
 		step_ctx_destroy(job->step_ctx);

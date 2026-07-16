@@ -100,6 +100,7 @@
 #include "src/common/threadpool.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsched.h"
 #include "src/common/xstring.h"
@@ -147,7 +148,7 @@ decl_static_data(usage_txt);
 uint32_t slurm_daemon = IS_SLURMD;
 
 #define MAX_THREADS		256
-#define DEF_CONMGR_THREAD_COUNT 6
+#define DEF_WORKPOOL_THREAD_COUNT 6
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
 #define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 512
@@ -465,8 +466,8 @@ main (int argc, char **argv)
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
-	conmgr_init(0, DEF_CONMGR_THREAD_COUNT,
-		    SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
+	workerpool_init(0, DEF_WORKPOOL_THREAD_COUNT, slurm_conf.slurmd_params);
+	conmgr_init(SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
@@ -620,6 +621,7 @@ main (int argc, char **argv)
 		http_fini();
 	http_switch_fini();
 	probe_fini();
+	workerpool_fini();
 	log_fini();
 
 	return SLURM_SUCCESS;

@@ -65,6 +65,7 @@
 #include "src/common/setproctitle.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/workerpool.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -222,12 +223,17 @@ static void _daemonize_logs()
 	update_logging();
 }
 
-static void _tear_down(conmgr_callback_args_t conmgr_args, void *arg)
+static void _tear_down(const bool shutdown, void *arg)
 {
 	bool need_kill = false, need_stop = false;
 	int rc = SLURM_SUCCESS;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	if (state.status >= CONTAINER_ST_STOPPED) {
@@ -283,7 +289,7 @@ static int _send_delete_confirmation(void *x, void *arg)
 }
 
 /* stopping job is async: this is the final say if the job has stopped */
-static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
+static void _check_if_stopped(const bool shutdown, void *arg)
 {
 	int ptm = -1;
 	bool stopped = false;
@@ -292,6 +298,11 @@ static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
 	list_t *delete_requests;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	debug2("%s: status=%s job_completed=%c staged_out=%c",
@@ -374,13 +385,18 @@ static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_request_shutdown();
 }
 
-static void _finish_job(conmgr_callback_args_t conmgr_args, void *arg)
+static void _finish_job(const bool shutdown, void *arg)
 {
 	int rc;
 	slurm_step_id_t step_id;
 	bool existing_allocation;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	xassert(state.status >= CONTAINER_ST_STOPPING);
@@ -419,15 +435,20 @@ done:
 	state.job_completed = true;
 	unlock_state();
 
-	conmgr_add_work_fifo(_check_if_stopped, NULL);
+	workerpool_enqueue_normal(_check_if_stopped, NULL);
 }
 
-static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
+static void _stage_out(const bool shutdown, void *arg)
 {
 	int rc;
 	bool staged_in;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	xassert(state.status >= CONTAINER_ST_STOPPING);
@@ -456,7 +477,7 @@ static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
 	state.staged_out = true;
 	unlock_state();
 
-	conmgr_add_work_fifo(_finish_job, NULL);
+	workerpool_enqueue_normal(_finish_job, NULL);
 }
 
 /* cleanup anchor and shutdown */
@@ -504,7 +525,7 @@ extern void stop_anchor(int status)
 	}
 	unlock_state();
 
-	conmgr_add_work_fifo(_stage_out, NULL);
+	workerpool_enqueue_normal(_stage_out, NULL);
 
 	debug2("%s: end", __func__);
 }
@@ -902,7 +923,7 @@ static int _delete(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	rc = _queue_delete_request(con, req_msg);
 
-	conmgr_add_work_fifo(_tear_down, NULL);
+	workerpool_enqueue_normal(_tear_down, NULL);
 
 	return rc;
 }
@@ -1091,13 +1112,18 @@ rwfail:
 	      __func__, state.pid_file, slurm_strerror(rc));
 }
 
-extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
+extern void on_allocation(const bool shutdown, void *arg)
 {
 	bool queue_try_start = false;
 	int rc;
 	pid_t pid;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	write_lock_state();
 	if (state.step_id.job_id == NO_VAL) {
@@ -1353,7 +1379,7 @@ static void *_on_startup_con(conmgr_callback_args_t conmgr_args, void *arg)
 	unlock_state();
 
 	if (queue) {
-		conmgr_add_work_fifo(on_allocation, NULL);
+		workerpool_enqueue_normal(on_allocation, NULL);
 	}
 
 	return &state;
@@ -1453,8 +1479,9 @@ static int _anchor_child(int pipe_fd[2])
 	state.pid = getpid();
 	_populate_pidfile();
 
-	/* must init conmgr after calling fork() in _daemonize() */
-	conmgr_init(0, THREAD_COUNT, 0);
+	/* must init conmgr/workerpool after calling fork() in _daemonize() */
+	workerpool_init(0, THREAD_COUNT, NULL);
+	conmgr_init(0);
 
 	change_status_force(CONTAINER_ST_CREATING);
 
@@ -1498,7 +1525,7 @@ static int _anchor_child(int pipe_fd[2])
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
-	conmgr_add_work_fifo(get_allocation, NULL);
+	workerpool_enqueue_normal(get_allocation, NULL);
 
 	if ((spank_rc = spank_init_post_opt())) {
 		fatal("%s: plugin stack post-option processing failed: %s",
@@ -1526,6 +1553,7 @@ static int _anchor_child(int pipe_fd[2])
 #endif
 	FREE_NULL_LIST(socket_listen);
 	conmgr_fini();
+	workerpool_fini();
 
 	return rc;
 }

@@ -45,6 +45,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/workerpool.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -500,7 +501,7 @@ extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 			stop_anchor(rc);
 		} else {
 			/* we have a job now. see if creating is done */
-			conmgr_add_work_fifo(on_allocation, NULL);
+			workerpool_enqueue_normal(on_allocation, NULL);
 		}
 	}
 }
@@ -622,13 +623,18 @@ static void _alloc_job(void)
 	slurm_free_resource_allocation_response_msg(alloc);
 }
 
-extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
+extern void get_allocation(const bool shutdown, void *arg)
 {
 	int rc;
 	job_info_msg_t *jobs = NULL;
 	slurm_step_id_t step_id;
 	char *job_id_str = getenv("SLURM_JOB_ID");
 	bool existing_allocation = false;
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	if (job_id_str && job_id_str[0]) {
 		extern char **environ;
@@ -705,7 +711,7 @@ extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 		if ((rc = _stage_in()))
 			stop_anchor(rc);
 		else
-			conmgr_add_work_fifo(on_allocation, NULL);
+			workerpool_enqueue_normal(on_allocation, NULL);
 	} else {
 		conmgr_add_work_delayed_fifo(check_allocation, NULL, 0, 1);
 	}

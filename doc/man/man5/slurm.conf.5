@@ -5407,9 +5407,7 @@ increasing this value. Defaults to 512.
 
 .TP
 \fBconmgr_threads\fR=\fI<thread_count>\fR
-The number of process threads in thread pool used for receiving and
-processing connections on the listening sockets. In most cases, you should
-decrease \fBconmgr_threads\fR to improve scheduling performance.
+Alias for \fBworkerpool_threads\fR.
 .IP
 
 .TP
@@ -5648,6 +5646,14 @@ system. On large systems this can cause considerable delay, this option permits
 the slurmctld to concurrently handle the lookup calls and can reduce system
 startup time considerably. The default value is 1. Maximum permitted value is
 64.
+.IP
+
+.TP
+\fBworkerpool_threads\fR=\fI<thread_count>\fR
+The number of process threads in the worker pool used for internal processing.
+In most cases, you should decrease \fBworkerpool_threads\fR to
+improve scheduling performance. Defaults to twice the number of CPUs available,
+up to a maximum default of 32 threads.
 .RE
 .IP
 
@@ -5887,10 +5893,7 @@ increasing this value. Defaults to 512.
 
 .TP
 \fBconmgr_threads\fR=\fI<thread_count>\fR
-The number of process threads in thread pool used for receiving and
-processing connections on the listening sockets. In most cases you should
-decrease \fBconmgr_threads\fR to improve scheduling performance.
-Default value is 6 threads.
+Alias for \fBworkerpool_threads\fR.
 .IP
 
 .TP
@@ -5970,6 +5973,12 @@ If set, the Slurmd will shut itself down when a reboot request is received.
 If set and a namespace plugin is specified, the spank_user(),
 spank_task_post_fork() and spank_task_exit() calls will be run inside the job's
 namespace.
+.IP
+
+.TP
+\fBworkerpool_threads\fR=\fI<thread_count>\fR
+The number of process threads in the worker pool used for handling internal
+processing. Default value is 6 threads.
 .RE
 .IP
 
@@ -6125,10 +6134,7 @@ increasing this value. Defaults to 124.
 
 .TP
 \fBconmgr_threads\fR=<\fIthread_count\fR>
-The number of process threads in the thread pool used for receiving and
-processing connections on the listening sockets. Defaults to twice the number of
-CPUs available to \fBslurmrestd\fR, up to a maximum default of 32 threads.
-.IP
+Alias for \fBworkerpool_threads\fR.
 .IP
 
 .TP
@@ -6165,6 +6171,13 @@ changes every <\fIseconds\fR>. Defaults to the value of \fBMessageTimeout\fR.
 \fBconmgr_write_timeout\fR=<\fIseconds\fR>
 Wait <\fIseconds\fR> before considering a write to a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBworkerpool_threads\fR=<\fIthread_count\fR>
+The number of process threads in the worker pool used for receiving and
+processing connections on the listening sockets. Defaults to twice the number of
+CPUs available to \fBslurmrestd\fR, up to a maximum default of 32 threads.
 .RE
 .IP
 
@@ -6210,9 +6223,7 @@ increasing this value. Defaults to 150.
 
 .TP
 \fBconmgr_threads\fR=<\fIthread_count\fR>
-The number of process threads in thread pool used for receiving and
-processing connections on the listening sockets.
-Defaults to 4 threads.
+Alias for \fBworkerpool_threads\fR.
 .IP
 
 .TP
@@ -6249,6 +6260,13 @@ When waiting for kernel to flush outgoing buffer, poll kernel for changes every
 \fBconmgr_write_timeout\fR=<\fIseconds\fR>
 Wait <\fIseconds\fR> before considering a write from a file descriptor to be
 timed out. Defaults to the value of \fBMessageTimeout\fR.
+.IP
+
+.TP
+\fBworkerpool_threads\fR=<\fIthread_count\fR>
+The number of process threads in the worker pool used for receiving and
+processing connections on the listening sockets.
+Defaults to 4 threads.
 .RE
 .IP
 

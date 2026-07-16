@@ -65,9 +65,13 @@
 #include "src/common/slurm_time.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/gres.h"
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
@@ -183,7 +187,8 @@ int main(int argc, char **argv)
 	if (cli_filter_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cli_filter plugin");
 
-	conmgr_init(0, THREAD_COUNT, 0);
+	workerpool_init(0, THREAD_COUNT, NULL);
+	conmgr_init(0);
 	conmgr_run(false);
 
 	salloc_sig_init();
@@ -680,6 +685,7 @@ relinquish:
 	}
 
 	conmgr_fini();
+	workerpool_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();

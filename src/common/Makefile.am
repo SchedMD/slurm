@@ -209,8 +209,12 @@ libcommon_la_SOURCES =				\
 	uthash.h				\
 	util-net.c				\
 	util-net.h				\
+	workerpool.c				\
+	workerpool.h				\
 	working_cluster.c			\
 	working_cluster.h			\
+	workq.c					\
+	workq.h					\
 	write_labelled_message.c		\
 	write_labelled_message.h		\
 	x11_util.c				\

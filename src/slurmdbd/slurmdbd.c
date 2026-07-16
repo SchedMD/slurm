@@ -66,6 +66,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/uid.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -258,7 +259,8 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	become_slurm_user();
 
-	conmgr_init(0, 0, 0);
+	workerpool_init(0, 0, NULL);
+	conmgr_init(0);
 
 	_register_signal_handlers();
 
@@ -427,6 +429,7 @@ end_it:
 	rpc_stats = NULL;
 	slurm_mutex_unlock(&rpc_mutex);
 
+	workerpool_fini();
 	log_fini();
 	return SLURM_SUCCESS;
 }

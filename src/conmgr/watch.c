@@ -52,6 +52,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/timers.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
@@ -1450,13 +1451,14 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 /*
  * Inspect all connection states and apply actions required
  */
-
-static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
+static void _inspect_connections(const bool shutdown, void *arg)
 {
 	bool send_signal = false;
 	handle_connection_args_t args = {
 		.magic = MAGIC_HANDLE_CONNECTION,
 	};
+
+	xassert(!shutdown);
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
@@ -1576,15 +1578,15 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 static bool _is_poll_interrupt(void)
 {
 	return (mgr.shutdown_requested ||
-		(mgr.waiting_on_work && (mgr.workers.active == 1)));
+		(mgr.waiting_on_work && mgr.work_count));
 }
 
 /* Poll all connections */
-static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
+static void _poll_connections(const bool shutdown, void *arg)
 {
 	int rc;
 
-	xassert(!conmgr_args.con);
+	xassert(!shutdown);
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.poll_active);
@@ -1631,7 +1633,7 @@ extern void wait_for_watch(void)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
+static void _connection_fd_delete(const bool shutdown, void *arg)
 {
 	conmgr_fd_t *con = arg;
 
@@ -1674,7 +1676,7 @@ static void _handle_complete_conns(void)
 		 * to delete the connection and cleanup and it should
 		 * not queue into the connection work queue itself
 		 */
-		add_work_fifo(true, _connection_fd_delete, con);
+		workerpool_enqueue_idle(_connection_fd_delete, con);
 	}
 }
 
@@ -1695,7 +1697,7 @@ static bool _handle_events(void)
 
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
-		add_work_fifo(true, _inspect_connections, NULL);
+		workerpool_enqueue_normal(_inspect_connections, NULL);
 	}
 
 	/* start poll thread if needed */
@@ -1703,8 +1705,7 @@ static bool _handle_events(void)
 		/* request a listen thread to run */
 		log_flag(CONMGR, "%s: queuing up poll", __func__);
 		mgr.poll_active = true;
-
-		add_work_fifo(true, _poll_connections, NULL);
+		workerpool_enqueue_normal(_poll_connections, NULL);
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
 
@@ -1826,13 +1827,12 @@ static bool _watch_loop(void)
 				 __func__, waiters,
 				 (list_count(mgr.connections) +
 				  list_count(mgr.listen_conns)));
-		} else if (mgr.workers.active) {
-			log_flag(CONMGR, "%s: quiesced state waiting on workers:%d/%d",
-				 __func__, mgr.workers.active,
-				 mgr.workers.total);
+		} else if (mgr.work_count) {
+			log_flag(CONMGR, "%s: quiesced state waiting on work:%d",
+				 __func__, mgr.work_count);
 			mgr.waiting_on_work = true;
 			return true;
-		}  else {
+		} else {
 			log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
 			mgr.quiesce.active = true;
 
@@ -1843,43 +1843,41 @@ static bool _watch_loop(void)
 					   &mgr.mutex);
 
 			log_flag(CONMGR, "%s: END: quiesced state", __func__);
-
-			/*
-			 * All the worker threads may be waiting for a
-			 * worker_sleep event and not an on_start_quiesced
-			 * event. Wake them all up right now if there is any
-			 * pending work queued to avoid workers remaining
-			 * sleeping until add_work() is called enough times to
-			 * wake them all up independent of the size of the
-			 * mgr.work queue.
-			 */
-			if (!list_is_empty(mgr.work))
-				EVENT_BROADCAST(&mgr.worker_sleep);
 		}
 	}
 
 	if (_handle_events())
 		return true;
 
-	/*
-	 * Avoid watch() ending if there are any other active workers or
-	 * any queued work.
-	 */
-
-	if (mgr.workers.active || !list_is_empty(mgr.work) ||
-	    !list_is_empty(mgr.delayed_work)) {
-		/* Need to wait for all work/workers to complete */
-		log_flag(CONMGR, "%s: waiting on workers:%d work:%d delayed_work:%d",
-			 __func__, mgr.workers.active,
-			 list_count(mgr.delayed_work), list_count(mgr.work));
+	/* Avoid watch() ending if there are any queued work */
+	if (mgr.work_count || !list_is_empty(mgr.delayed_work)) {
+		/* Need to wait for all work to complete */
+		log_flag(CONMGR, "%s: waiting on work:%d delayed_work:%d",
+			 __func__, mgr.work_count, list_count(mgr.delayed_work));
 		mgr.waiting_on_work = true;
 		return true;
 	}
 
-	log_flag(CONMGR, "%s: cleaning up", __func__);
+	/* Avoid watch() ending if polling or inspecting */
+	if (mgr.inspecting) {
+		log_flag(CONMGR, "%s: waiting on connection inspections",
+			 __func__);
+		mgr.waiting_on_work = true;
+		return true;
+	}
+	if (mgr.poll_active) {
+		log_flag(CONMGR, "%s: waiting on polling", __func__);
+		mgr.waiting_on_work = true;
+		return true;
+	}
 
-	xassert(!mgr.poll_active);
-	return false;
+	if (mgr.shutdown_requested) {
+		log_flag(CONMGR, "%s: cleaning up", __func__);
+		return false;
+	}
+
+	log_flag(CONMGR, "%s: waiting for shutdown", __func__);
+	return true;
 }
 
 extern void *watch(void *arg)
@@ -1893,7 +1891,17 @@ extern void *watch(void *arg)
 		return NULL;
 	}
 
-	add_work_fifo(true, signal_mgr_start, NULL);
+	add_work(true, NULL,
+		 (conmgr_callback_t) {
+			 .func = signal_mgr_start,
+			 .arg = NULL,
+			 .func_name = "signal_mgr_start",
+		 },
+		 (conmgr_work_control_t) {
+			 .depend_type = CONMGR_WORK_DEP_NONE,
+			 .schedule_type = CONMGR_WORK_SCHED_FIFO,
+		 },
+		 0, __func__);
 
 	while (_watch_loop()) {
 		char timeout_str[CTIME_STR_LEN];
@@ -1911,9 +1919,8 @@ extern void *watch(void *arg)
 			timespec_ctime(mgr.watch_max_sleep, true, timeout_str,
 				       sizeof(timeout_str));
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c timeout:%s",
-				 __func__, mgr.workers.active,
-				 mgr.workers.total, list_count(mgr.work),
+		log_flag(CONMGR, "%s: waiting for new events: work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c timeout:%s",
+				 __func__, mgr.work_count,
 				 list_count(mgr.delayed_work),
 				 list_count(mgr.connections),
 				 list_count(mgr.listen_conns),
@@ -1935,6 +1942,7 @@ extern void *watch(void *arg)
 		 __func__, BOOL_CHARIFY(mgr.shutdown_requested),
 		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
+	xassert(!mgr.work_count);
 	xassert(pthread_equal(mgr.watch_thread, pthread_self()));
 	mgr.watch_thread = 0;
 

@@ -52,6 +52,7 @@
 #include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/threadpool.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsystemd.h"
@@ -548,7 +549,8 @@ extern int main(int argc, char **argv)
 	_establish_config_source();
 	slurm_conf_init(conf_file);
 
-	conmgr_init(0, 0, 0);
+	workerpool_init(0, 0, NULL);
+	conmgr_init(0);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
@@ -594,6 +596,11 @@ extern int main(int argc, char **argv)
 	info("running");
 	conmgr_run(true);
 	probe_fini();
+
+#ifdef MEMORY_LEAK_DEBUG
+	conmgr_fini();
+	workerpool_fini();
+#endif
 
 	xfree(conf_file);
 	xfree(conf_server);

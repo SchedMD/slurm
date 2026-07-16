@@ -266,15 +266,6 @@ struct conmgr_fd_s {
 	slurm_err_t status_code;
 };
 
-typedef struct {
-#define MAGIC_WORKER 0xD2342412
-	int magic; /* MAGIC_WORKER */
-	/* thread id of worker */
-	pthread_t tid;
-	/* unique id for tracking */
-	int id;
-} worker_t;
-
 /*
  * Global instance of conmgr
  */
@@ -329,31 +320,11 @@ typedef struct {
 
 	/* list of work_t */
 	list_t *delayed_work;
-	/* list of work_t* */
-	list_t *work;
 
 	pthread_mutex_t mutex;
 
-	struct {
-		/* Configured value of threads */
-		int conf_threads;
-
-		/* list of worker_t */
-		list_t *workers;
-
-		/* track simple stats for logging */
-		int active;
-		int total;
-
-		/*
-		 * track shutdown of workers after other work is done or there
-		 * may be no workers to do the work
-		 */
-		bool shutdown_requested;
-
-		/* number of threads */
-		int threads;
-	} workers;
+	/* Number of work requests in workerpool */
+	int work_count;
 
 	/* Global quiesce state */
 	struct {
@@ -371,17 +342,15 @@ typedef struct {
 
 	event_signal_t watch_sleep;
 	event_signal_t watch_return;
-	event_signal_t worker_sleep;
-	event_signal_t worker_return;
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
-	(conmgr_t) {\
+	(conmgr_t) \
+	{ \
 		.conf_max_connections = -1,\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.shutdown_requested = true,\
-		.workers.conf_threads = -1,\
 		.quiesce = { \
 			.on_start_quiesced = \
 				EVENT_INITIALIZER("START_QUIESCED"), \
@@ -390,8 +359,6 @@ typedef struct {
 		}, \
 		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
 		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
-		.worker_sleep = EVENT_INITIALIZER("WORKER_SLEEP"), \
-		.worker_return = EVENT_INITIALIZER("WORKER_RETURN"), \
 	}
 
 extern conmgr_t mgr;
@@ -410,16 +377,6 @@ extern conmgr_t mgr;
 extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 		     conmgr_work_control_t control,
 		     conmgr_work_depend_t depend_mask, const char *caller);
-
-#define add_work_fifo(locked, _func, func_arg) \
-	add_work(locked, NULL, (conmgr_callback_t) { \
-			.func = _func, \
-			.arg = func_arg, \
-			.func_name = #_func, \
-		}, (conmgr_work_control_t) { \
-			.depend_type = CONMGR_WORK_DEP_NONE, \
-			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
-		}, 0, __func__)
 
 #define add_work_con_fifo(locked, con, _func, func_arg) \
 	add_work(locked, con, (conmgr_callback_t) { \
@@ -602,33 +559,6 @@ extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args,
 extern conmgr_fd_t *con_find_by_fd(int fd);
 
 /*
- * Wrap work requested to notify mgr when that work is complete
- */
-extern void wrap_work(work_t *work);
-
-/*
- * Notify all worker thread to shutdown.
- * Wait until all work and workers have completed their work (and exited).
- * Note: Caller MUST hold conmgr lock
- */
-extern void workers_shutdown(void);
-
-/*
- * Initialize worker threads
- * IN count - number of workers to add
- * IN default_count - default number of workers to add
- * Note: Caller must hold conmgr lock
- */
-extern void workers_init(int count, int default_count);
-
-/*
- * Release worker threads
- * Will stop all workers (eventually).
- * Note: Caller must hold conmgr lock
- */
-extern void workers_fini(void);
-
-/*
  * Change con->type
  * NOTE: caller must hold mgr.mutex lock
  * IN con - connection to change
@@ -703,11 +633,5 @@ extern probe_status_t probe_connections(probe_log_t *log, void *arg);
  */
 extern size_t printf_work(const work_t *work, char *buffer, size_t len,
 			  bool include_connection);
-
-/*
- * Probe all work
- * NOTE: caller must not hold conmgr global lock
- */
-extern probe_status_t probe_work(probe_log_t *log, void *arg);
 
 #endif /* _CONMGR_MGR_H */

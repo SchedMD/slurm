@@ -70,6 +70,18 @@ if atf.get_version() < (26, 11):
             "serializer JSON compliance test introduced in Slurm 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "common/test_workq.c",
+            "workq is new in Slurm 26.11",
+        )
+    )
+    skip_tests.append(
+        (
+            "common/test_workerpool.c",
+            "workerpool is new in Slurm 26.11",
+        )
+    )
 if atf.get_version() < (26, 5):
     xfail_tests.append(
         (

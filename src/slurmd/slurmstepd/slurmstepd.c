@@ -63,6 +63,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/stepd_proxy.h"
 #include "src/common/threadpool.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -100,7 +101,7 @@
 
 #include "src/stepmgr/stepmgr.h"
 
-#define DEF_CONMGR_THREAD_COUNT 4
+#define DEF_WORKPOOL_THREAD_COUNT 4
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			    slurm_msg_t **_msg);
@@ -695,7 +696,9 @@ extern int main(int argc, char **argv)
 	if (slurm_conf.slurmstepd_params)
 		conmgr_set_params(slurm_conf.slurmstepd_params);
 
-	conmgr_init(0, DEF_CONMGR_THREAD_COUNT, 0);
+	workerpool_init(0, DEF_WORKPOOL_THREAD_COUNT,
+			slurm_conf.slurmstepd_params);
+	conmgr_init(0);
 
 	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
@@ -780,6 +783,7 @@ ending:
 	forward_fini();
 
 	conmgr_fini();
+	workerpool_fini();
 	probe_fini();
 	return rc;
 }

@@ -62,6 +62,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/threadpool.h"
 #include "src/common/track_script.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -1189,7 +1190,8 @@ static void _init_slurmscriptd_conmgr(void)
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
-	conmgr_init(0, 0, 0);
+	workerpool_init(0, 0, NULL);
+	conmgr_init(0);
 
 	/*
 	 * Ignore signals. slurmscriptd should only handle requests directly
@@ -1272,6 +1274,8 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	track_script_fini();
 	slurm_mutex_destroy(&powersave_script_count_mutex);
 	probe_fini();
+	conmgr_fini();
+	workerpool_fini();
 #endif
 
 	/* We never want to return from here, only exit. */

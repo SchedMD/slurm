@@ -67,6 +67,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -705,10 +706,17 @@ int main(int argc, char **argv)
 		fatal("Unable to apply SlurmrestdParameters: %s",
 		      slurm_strerror(rc));
 
-	/* This checks if slurmrestd is running in inetd mode */
-	conmgr_init(thread_count,
-		    (run_mode.listen ? 0 : CONMGR_THREAD_COUNT_MIN),
-		    max_connections);
+	/*
+	 * This checks if slurmrestd is running in inetd mode.
+	 *
+	 * Pass slurmrestd_params so a configured workerpool_threads/conmgr_threads
+	 * is honored when -t is not given; a non-zero -t thread_count still wins.
+	 */
+	workerpool_init(thread_count,
+			(run_mode.listen ? 0 : CONMGR_THREAD_COUNT_MIN),
+			slurm_conf.slurmrestd_params);
+
+	conmgr_init(max_connections);
 
 	/*
 	 * Attempt to load TLS plugin and then attempt to load the certificate
@@ -842,6 +850,7 @@ int main(int argc, char **argv)
 	destroy_operations();
 	destroy_openapi();
 	conmgr_fini();
+	workerpool_fini();
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
