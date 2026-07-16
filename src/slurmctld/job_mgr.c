@@ -13476,10 +13476,19 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_desc->tres_req_cnt[TRES_ARRAY_MEM] = mem_req;
 
 	if (gres_update) {
-		gres_stepmgr_set_job_tres_cnt(
-			gres_list,
-			job_desc->tres_req_cnt[TRES_ARRAY_NODE],
-			job_desc->tres_req_cnt, false);
+		/*
+		 * Recompute the requested GRES TRES counts. When the update
+		 * left no GRES, gres_stepmgr_set_job_tres_cnt() would skip the
+		 * NULL list and leave stale counts behind, so zero the GRES
+		 * counts explicitly instead.
+		 */
+		if (gres_list)
+			gres_stepmgr_set_job_tres_cnt(
+				gres_list,
+				job_desc->tres_req_cnt[TRES_ARRAY_NODE],
+				job_desc->tres_req_cnt, false);
+		else
+			gres_clear_tres_cnt(job_desc->tres_req_cnt, false);
 	}
 
 	/* Check if we are clearing licenses */
@@ -14660,7 +14669,19 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->gres_list_req = gres_list;
 
 		gres_list = NULL;
+	} else if (gres_update) {
+		/*
+		 * The update removed all GRES; drop the now-stale requested
+		 * GRES list so the job no longer requests it.
+		 */
+		FREE_NULL_LIST(job_ptr->gres_list_req);
 	}
+	/*
+	 * TODO: Revisit gres_list_req_accum lifetime. Partition default updates
+	 * and multi-partition evaluation can also make this cache stale.
+	 */
+	if (gres_update)
+		FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 
 	if (job_desc->name) {
 		if (IS_JOB_FINISHED(job_ptr)) {
