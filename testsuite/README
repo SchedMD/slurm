@@ -1144,3 +1144,4 @@ test_165_#   Testing multi-partition allocated partition recovery and ordering
 ==============================================================================
 test_165_1   Test multi-partition job/array keeps partition on restart
 test_165_2   Test completing job keeps partition on recovery
+test_165_3   Test multi-partition job keeps partition across changes
