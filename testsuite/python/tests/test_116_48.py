@@ -3,135 +3,112 @@
 ############################################################################
 import logging
 import re
-import subprocess
 import time
 
 import pytest
 
 import atf
 
-port_range = 9
-srun_port_lower = 60000
-srun_port_upper = srun_port_lower + port_range - 1  # 60008 inclusive
+port_range_size = 9
 
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
-def setup():
+def setup(safe_port_range):
+    lo, hi = safe_port_range
     atf.require_auto_config("wants to edit SrunPortRange and create a node")
-    atf.require_config_parameter(
-        "SrunPortRange", f"{srun_port_lower}-{srun_port_upper}"
-    )
+    atf.require_config_parameter("SrunPortRange", f"{lo}-{hi}")
     atf.require_nodes(145, [("CPUs", 2), ("RealMemory", 2)])
     atf.require_slurm_running()
 
 
-def get_srun_port_usage():
-    """Get detailed info on which SrunPortRange ports are in use"""
-    # Logging for Ticket 19089
-    logging.debug(
-        f"[PORT_MONITOR] Checking SrunPortRange ports {srun_port_lower}-{srun_port_upper}"
+@pytest.fixture(scope="module")
+def safe_port_range():
+    """Returns (lo, hi) for a free port range outside ip_local_port_range.
+
+    Placing the range outside the ephemeral range and ensuring that none is
+    blocked avoids future interferences and ensures current availability.
+    """
+    range_str = atf.run_command_output(
+        "cat /proc/sys/net/ipv4/ip_local_port_range", fatal=True, quiet=True
+    )
+    ephem_lo, ephem_hi = (int(x) for x in range_str.split())
+
+    # Prefer just above the ephemeral range; fall back to just below.
+    candidates = (ephem_hi + 100, ephem_lo - 100 - port_range_size)
+    for lo in candidates:
+        hi = lo + port_range_size - 1
+        if not (1024 <= lo and hi <= 65535 and (hi < ephem_lo or lo > ephem_hi)):
+            continue
+        if is_port_range_available(lo, hi):
+            return lo, hi
+        logging.debug(f"[PORT_PICK] Skipping candidate {lo}-{hi}: already blocked")
+
+    pytest.fail(
+        f"Cannot find a {port_range_size}-port range outside ephemeral ({ephem_lo}-{ephem_hi}) with no active binders"
     )
 
-    # Get all listening ports with process info
-    try:
-        ss_result = subprocess.run(
-            ["ss", "-tlnp"], capture_output=True, text=True, timeout=10
+
+def is_port_range_available(lo, hi):
+    """Return True if every port in [lo, hi] is available/bindable.
+
+    Any TCP socket on a local port in the range whose state is NOT TIME-WAIT
+    will make srun's bind() fail with EADDRINUSE, even though srun sets
+    SO_REUSEADDR.
+    """
+    logging.debug(f"[PORT_MONITOR] Checking ports {lo}-{hi}")
+
+    ss_result = atf.run_command(
+        f'ss -tanH "sport >= :{lo} and sport <= :{hi}"',
+        timeout=10,
+        quiet=True,
+    )
+    if ss_result["exit_code"] != 0:
+        logging.debug(f"[PORT_MONITOR] ss command failed: {ss_result['stderr']}")
+        return False
+
+    # ss -tanH columns: State Recv-Q Send-Q Local-Addr:Port Peer-Addr:Port
+    for line in ss_result["stdout"].splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        state = line.split()[0]
+        if state == "TIME-WAIT":
+            continue
+        logging.debug(f"[PORT_MONITOR] Blocking socket ({state}): {line}")
+        return False
+
+    return True
+
+
+def wait_for_srun_ports_clear(lo, hi, timeout=90):
+    """Wait until all ports in [lo, hi] are released.
+
+    Timeout defaults to 90s so FIN-WAIT-2 sockets from a prior srun can
+    drain (bounded by net.ipv4.tcp_fin_timeout, default 60s).
+    """
+    logging.debug(
+        f"[PORT_WAIT] Waiting for ports {lo}-{hi} to be released (timeout: {timeout}s)"
+    )
+
+    for t in atf.timer(timeout=timeout, fatal=True, quiet=True):
+        if is_port_range_available(lo, hi):
+            logging.debug("[PORT_WAIT] All ports available")
+            break
+
+        logging.debug(
+            f"[PORT_WAIT] Still waiting... some ports not yet available ({t:.1f}s remaining)"
         )
-        if ss_result.returncode != 0:
-            # Logging for Ticket 19089
-            logging.debug(f"[PORT_MONITOR] ss command failed: {ss_result.stderr}")
-            return {}
-
-        ss_output = ss_result.stdout
-        # Logging for Ticket 19089
-        logging.debug(f"[PORT_MONITOR] ss output length: {len(ss_output)} characters")
-
-    except Exception as e:
-        # Logging for Ticket 19089
-        logging.debug(f"[PORT_MONITOR] Error running ss: {e}")
-        return {}
-
-    port_usage = {}
-
-    # Parse ss output to find ports in our range
-    for line in ss_output.split("\n"):
-        if "LISTEN" not in line:
-            continue
-
-        # Extract port from address (format like 0.0.0.0:60001 or :::60002)
-        parts = line.split()
-        if len(parts) < 4:
-            continue
-
-        address = parts[3]
-        if ":" not in address:
-            continue
-
-        try:
-            port = int(address.split(":")[-1])
-            if srun_port_lower <= port <= srun_port_upper:
-                # Extract process info if available
-                process_info = "unknown"
-                if len(parts) >= 6 and "pid=" in parts[5]:
-                    process_info = parts[5]
-
-                port_usage[port] = {
-                    "line": line.strip(),
-                    "process_info": process_info,
-                    "address": address,
-                }
-                # Logging for Ticket 19089
-                logging.debug(f"[PORT_MONITOR] Port {port} in use: {process_info}")
-
-        except ValueError:
-            continue
-
-    # Logging for Ticket 19089
-    logging.debug(
-        f"[PORT_MONITOR] Found {len(port_usage)} ports in use from SrunPortRange"
-    )
-    return port_usage
-
-
-def wait_for_srun_ports_clear(timeout=60):
-    """Wait until all SrunPortRange ports are released"""
-    # Logging for Ticket 19089
-    logging.debug(
-        f"[PORT_WAIT] Waiting for SrunPortRange ports to be released (timeout: {timeout}s)"
-    )
-    start_time = time.time()
-
-    while True:
-        elapsed = time.time() - start_time
-        if elapsed >= timeout:
-            # Logging for Ticket 19089
-            logging.debug(
-                f"[PORT_WAIT] TIMEOUT after {elapsed:.1f}s - some ports may still be in use"
-            )
-            return False
-
-        port_usage = get_srun_port_usage()
-        if not port_usage:
-            # Logging for Ticket 19089
-            logging.debug(f"[PORT_WAIT] All ports released after {elapsed:.1f}s")
-            return True
-
-        if elapsed > 5 and int(elapsed) % 10 == 0:  # Log every 10s after first 5s
-            # Logging for Ticket 19089
-            logging.debug(
-                f"[PORT_WAIT] Still waiting... {len(port_usage)} ports in use (elapsed: {elapsed:.1f}s)"
-            )
-
-        time.sleep(1)
 
 
 @pytest.mark.parametrize("nodes", [1, 10, 48, 49, 96, 100, 144])
-def test_srun_ports_in_range(nodes):
+def test_srun_ports_in_range(nodes, safe_port_range):
     """Test srun uses the right SrunPortRange"""
 
+    lo, hi = safe_port_range
+
     # Wait for ports to be open before running test
-    wait_for_srun_ports_clear(timeout=30)
+    wait_for_srun_ports_clear(lo, hi)
 
     command = """bash -c '
         echo "[DEBUG] Starting port check" >&2
@@ -226,9 +203,7 @@ def test_srun_ports_in_range(nodes):
             continue
         count += 1
         port_int = int(port_string)
-        assert (
-            port_int >= srun_port_lower and port_int <= srun_port_upper
-        ), f"Port {port_int} is not in range {srun_port_lower}-{srun_port_upper}"
+        assert lo <= port_int <= hi, f"Port {port_int} is not in range {lo}-{hi}"
 
     # From the docs:
     # "A single srun opens 4 listening ports plus 2 more for every 48 hosts
@@ -238,25 +213,29 @@ def test_srun_ports_in_range(nodes):
 
 
 @pytest.mark.parametrize("nodes", [145])
-def test_srun_ports_out_of_range(nodes):
+def test_srun_ports_out_of_range(nodes, safe_port_range):
     """Test sruns with too many nodes, so with not enough SrunPortRange"""
 
+    lo, hi = safe_port_range
+
     # Wait for ports to be open before running test
-    wait_for_srun_ports_clear(timeout=30)
+    wait_for_srun_ports_clear(lo, hi)
 
     result = atf.run_job_error(f"-t1 -N{nodes} sleep 1", fatal=True, xfail=True)
 
-    regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
+    regex = rf"all ports in range .{lo}, {hi}. exhausted"
     assert (
         re.search(regex, result) is not None
     ), "srun's stderr should contain the 'all ports in range exhausted' message"
 
 
-def test_out_of_srun_ports():
+def test_out_of_srun_ports(safe_port_range):
     """Test exhausted ports"""
 
+    lo, hi = safe_port_range
+
     # Wait for ports to be open before running test
-    wait_for_srun_ports_clear(timeout=30)
+    wait_for_srun_ports_clear(lo, hi)
 
     job_id1 = atf.submit_job_sbatch('-N1 -o/dev/null --wrap="srun sleep 30"')
     job_id2 = atf.submit_job_sbatch('-N1 -o/dev/null --wrap="srun sleep 30"')
@@ -266,7 +245,7 @@ def test_out_of_srun_ports():
 
     result = atf.run_job_error("-t1 -N1 sleep 1", fatal=True, xfail=True)
 
-    regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
+    regex = rf"all ports in range .{lo}, {hi}. exhausted"
     assert (
         re.search(regex, result) is not None
     ), "srun's stderr should contain the 'all ports in range exhausted' message"
