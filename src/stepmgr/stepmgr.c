@@ -6057,6 +6057,10 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 		job_info_resp_msg->qos = xstrdup(qos->name);
 	}
 	job_info_resp_msg->resv_name      = xstrdup(job_ptr->resv_name);
+
+	if (job_ptr->bit_flags & STEPMGR_ENABLED)
+		job_info_resp_msg->stepmgr_host = xstrdup(job_ptr->batch_host);
+
 	if (job_ptr->details) {
 		if (job_ptr->bit_flags & JOB_MEM_SET) {
 			job_info_resp_msg->pn_min_memory =

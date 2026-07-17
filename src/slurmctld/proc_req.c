@@ -887,6 +887,9 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	if (job_ptr->resv_name)
 		alloc_msg->resv_name = xstrdup(job_ptr->resv_name);
 
+	if (job_ptr->bit_flags & STEPMGR_ENABLED)
+		alloc_msg->stepmgr_host = xstrdup(job_ptr->batch_host);
+
 	set_remote_working_response(alloc_msg, job_ptr,
 				    job_ptr->origin_cluster);
 
