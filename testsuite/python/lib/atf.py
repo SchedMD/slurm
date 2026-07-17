@@ -5756,6 +5756,59 @@ def wait_for_file(file_name, **repeat_until_kwargs):
     )
 
 
+def assert_file_contents(
+    file_name,
+    expected,
+    contains=False,
+    strip=True,
+    message=None,
+    timeout=default_polling_timeout,
+    poll_interval=None,
+    quiet=False,
+):
+    """Waits for a file to exist and its content to match `expected`, or assert False.
+
+    Args:
+        file_name (string): The file name.
+        expected (string): The expected file content.
+        contains (bool): If True, `expected` must be a substring of the
+            file content. If False (default), the content must equal
+            `expected` exactly.
+        strip (bool): If True (default), whitespace is stripped from the
+            file content before comparison.
+        message (string): Optional custom message on timeout. If None, a
+            default message including `file_name`, `expected`, and the
+            last observed content is used.
+        timeout (float): Maximum time in seconds to wait (default:
+            default_polling_timeout). Applies both to the existence gate
+            and to the content wait.
+        poll_interval (float): Seconds between content checks. Defaults
+            to timeout / 10.0.
+        quiet (bool): If True, silences the per-iteration `cat` logs and
+            the timer's progress/timeout logs. The existence-check log
+            (from wait_for_file) is DEBUG-level and unaffected.
+
+    Example:
+        >>> assert_file_contents("tasks-0.out", "task-0")
+        >>> assert_file_contents("job.out", "hello", contains=True)
+    """
+
+    wait_for_file(file_name, timeout=timeout, poll_interval=poll_interval, fatal=True)
+    text = ""
+
+    for _ in timer(timeout=timeout, poll_interval=poll_interval, quiet=quiet):
+        text = run_command_output(f"cat {file_name}", quiet=quiet)
+        if strip:
+            text = text.strip()
+        if (expected in text) if contains else (text == expected):
+            return
+
+    assert False, (
+        message
+        or f"File {file_name} content should {'contain' if contains else 'be'} {expected!r}; got {text!r}"
+    )
+
+
 def dump_accounting_database(dst):
     """Dumps the accounting database to a gzipped SQL file.
 
