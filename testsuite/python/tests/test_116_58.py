@@ -48,19 +48,24 @@ def test_async_kill_on_bad_exit(kill_flag, expect_kill):
     bad_task = num_tasks - 2
 
     tag = "kill" if expect_kill else "nokill"
+    out_file = f"kill_bad_exit_{tag}.out"
     task_script = f"kill_bad_exit_{tag}.sh"
     atf.make_bash_script(
         task_script,
         f"""echo "{started_text}$SLURM_PROCID"
 if [ "$SLURM_PROCID" -eq {bad_task} ]; then
+    # Wait until all tasks prints its "{started_text}N" before exiting bad_task
+    for i in $(seq 0 $(({num_tasks} - 1))); do
+        until grep -q "{started_text}$i" {out_file}; do
+            sleep 0.1
+        done
+    done
     exit 2
 fi
 sleep 15
 echo "{error_text}"
 """,
     )
-
-    out_file = f"kill_bad_exit_{tag}.out"
 
     script = f"kill_bad_exit_submit_{tag}.sh"
     atf.make_bash_script(
