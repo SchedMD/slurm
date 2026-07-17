@@ -1972,6 +1972,10 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 	_setenvf_het("SLURM_JOB_CPUS_PER_NODE", het_job_offset, "%s", tmp);
 	xfree(tmp);
 
+	if (resp->stepmgr_host)
+		_setenvf_het("SLURM_STEPMGR", het_job_offset, "%s",
+			     resp->stepmgr_host);
+
 	if (resp->env_size) {	/* Used to set Burst Buffer environment */
 		for (i = 0; i < resp->env_size; i++) {
 			tmp = xstrdup(resp->environment[i]);
