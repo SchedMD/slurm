@@ -31,6 +31,7 @@ its own if-statement inside the gate, so per-field coverage guards
 against one being broken without breaking the others.
 """
 import re
+import time
 
 import pytest
 
@@ -136,6 +137,37 @@ def _kill_dynamic_slurmd(name):
     )
 
 
+def _restart_dynamic_slurmd(name, port, conf_extra="", slurmd_args=""):
+    """Kill the current slurmd for the node and start a new one.
+
+    When slurmctld is reachable, snapshot slurmd_start_time before the
+    kill and wait past its wall-second so the new slurmd's
+    slurmd_start_time is strictly greater. slurmd_start_time is time_t
+    (1-second precision), so a kill+restart cycle completing in the
+    same wall-second would produce an identical value and confuse
+    _wait_for_slurmd_reregister.
+
+    Returns the previous slurmd_start_time for callers that pass it to
+    _wait_for_slurmd_reregister, or None when slurmctld is unreachable."""
+    old_start = None
+    if atf.is_slurmctld_running(quiet=True):
+        old_start = atf.get_node_parameter(name, "slurmd_start_time")
+
+    _kill_dynamic_slurmd(name)
+
+    if old_start is not None:
+        old_second = old_start["number"] if isinstance(old_start, dict) else old_start
+        while int(time.time()) <= old_second:
+            time.sleep(0.05)
+
+    atf.run_command(
+        _slurmd_cmd(name, port, conf_extra, slurmd_args),
+        user="root",
+        fatal=True,
+    )
+    return old_start
+
+
 def _delete_dynamic_node(name):
     _kill_dynamic_slurmd(name)
     atf.run_command(f"scontrol delete NodeName={name}", user="slurm", fatal=False)
@@ -147,7 +179,11 @@ def _wait_for_slurmd_reregister(name, old_start_time, timeout=30):
     controller. wait_for_node_state(IDLE) alone is unreliable when the
     node was already IDLE before the slurmd kill -- the state may not
     have transitioned, so the assertion can read stale field values
-    before the new registration arrives."""
+    before the new registration arrives.
+
+    Callers get old_start_time as the return value of
+    _restart_dynamic_slurmd(), which snapshots it before the kill and
+    delays the start past its wall-second."""
     ok = atf.repeat_until(
         lambda: atf.get_node_parameter(name, "slurmd_start_time"),
         lambda t: t and t != old_start_time,
@@ -265,13 +301,7 @@ def test_admin_override_survives_slurmd_ping():
         _assert_node_under_switch(name, "sw_plain")
 
         # Re-register with the same --conf (slurmd still says sw_alpha).
-        old_start = atf.get_node_parameter(name, "slurmd_start_time")
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, "Topology=tree_topo:sw_alpha"),
-            user="root",
-            fatal=True,
-        )
+        old_start = _restart_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
         _wait_for_slurmd_reregister(name, old_start)
         _assert_topology(name, "tree_topo:sw_plain")
         _assert_node_under_switch(name, "sw_plain")
@@ -299,13 +329,7 @@ def test_admin_override_survives_slurmd_restart():
         _assert_topology(name, "tree_topo:sw_plain")
         _assert_node_under_switch(name, "sw_plain")
 
-        old_start = atf.get_node_parameter(name, "slurmd_start_time")
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, "Topology=tree_topo:sw_alpha"),
-            user="root",
-            fatal=True,
-        )
+        old_start = _restart_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
         _wait_for_slurmd_reregister(name, old_start)
         _assert_topology(name, "tree_topo:sw_plain")
         _assert_node_under_switch(name, "sw_plain")
@@ -325,12 +349,7 @@ def test_slurmd_new_topology_ignored():
         _assert_topology(name, "tree_topo:sw_alpha")
         _assert_node_under_switch(name, "sw_alpha")
 
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, "Topology=tree_topo:sw_gamma"),
-            user="root",
-            fatal=True,
-        )
+        _restart_dynamic_slurmd(name, port, "Topology=tree_topo:sw_gamma")
         assert atf.wait_for_node_state(name, "IDLE", timeout=30, fatal=True)
         # Slurmd's new Topology= must be ignored: the node stays under
         # the topology assigned on the first registration.
@@ -351,9 +370,8 @@ def test_topology_retained_when_slurmd_drops_topology():
         _assert_topology(name, "tree_topo:sw_alpha")
         _assert_node_under_switch(name, "sw_alpha")
 
-        _kill_dynamic_slurmd(name)
         # Restart slurmd without Topology= -- the prior value must stay.
-        atf.run_command(_slurmd_cmd(name, port), user="root", fatal=True)
+        _restart_dynamic_slurmd(name, port)
         assert atf.wait_for_node_state(name, "IDLE", timeout=30, fatal=True)
         _assert_topology(name, "tree_topo:sw_alpha")
         _assert_node_under_switch(name, "sw_alpha")
@@ -386,12 +404,7 @@ def test_admin_override_survives_slurmctld_restart():
         atf.restart_slurmctld(clean=False)
 
         # Force a slurmd re-registration carrying the same --conf.
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, "Topology=tree_topo:sw_alpha"),
-            user="root",
-            fatal=True,
-        )
+        _restart_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha")
         assert atf.wait_for_node_state(name, "IDLE", timeout=30, fatal=True)
         _assert_topology(name, "tree_topo:sw_plain")
         _assert_node_under_switch(name, "sw_plain")
@@ -426,12 +439,7 @@ def test_reboot_during_slurmctld_downtime_detected():
         # controller-side boot_time = now - up_time will be slurmd's
         # restart time, which is later than the last_response we have
         # in the state file from the pre-shutdown registration.
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, "Topology=tree_topo:sw_alpha") + " -b",
-            user="root",
-            fatal=True,
-        )
+        _restart_dynamic_slurmd(name, port, "Topology=tree_topo:sw_alpha", "-b")
 
         # Bring slurmctld back; state is restored (including boot_time
         # and last_response). Slurmd's pending registration is then
@@ -528,12 +536,8 @@ def test_admin_override_survives_slurmd_restart_field(
         )
         _assert_node_field(name, field, admin)
 
-        old_start = atf.get_node_parameter(name, "slurmd_start_time")
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, slurmd_args=f"{slurmd_flag}={orig}"),
-            user="root",
-            fatal=True,
+        old_start = _restart_dynamic_slurmd(
+            name, port, slurmd_args=f"{slurmd_flag}={orig}"
         )
         _wait_for_slurmd_reregister(name, old_start)
         _assert_node_field(name, field, admin)
@@ -581,12 +585,7 @@ def test_slurmd_reboot_applies_new_topology():
         # The -b sets conf->boot_time = now so the controller-derived
         # boot_time on the next registration is later than the saved
         # last_response, firing the gate.
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, "Topology=tree_topo:sw_gamma") + " -b",
-            user="root",
-            fatal=True,
-        )
+        _restart_dynamic_slurmd(name, port, "Topology=tree_topo:sw_gamma", "-b")
         # The node is marked DOWN by the reboot-detection branch, but
         # topology_str is updated by the field-apply block earlier in
         # the same validate_node_specs() call -- replacing the admin
@@ -653,12 +652,7 @@ def test_slurmd_reboot_applies_new_field(
         )
         _assert_node_field(name, field, admin)
 
-        _kill_dynamic_slurmd(name)
-        atf.run_command(
-            _slurmd_cmd(name, port, slurmd_args=f"{slurmd_flag}={new} -b"),
-            user="root",
-            fatal=True,
-        )
+        _restart_dynamic_slurmd(name, port, slurmd_args=f"{slurmd_flag}={new} -b")
         assert atf.wait_for_node_state(
             name, "DOWN", timeout=30, fatal=True
         ), "Node should be marked DOWN after simulated reboot"
