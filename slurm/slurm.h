@@ -2692,6 +2692,8 @@ typedef struct resource_allocation_response_msg {
 				      *	with or the lowest slurmd version
 				      *	it needs to talk to */
 	slurm_step_id_t step_id;
+	char *stepmgr_host; /* host running the stepmgr for this allocation,
+			     * or NULL if stepmgr is not enabled */
 	char *tres_per_node; /* comma delimited list of TRES=# values */
 	char *tres_per_task; /* comma delimited list of TRES=# values */
 	uid_t uid; /* resolved user id of job */

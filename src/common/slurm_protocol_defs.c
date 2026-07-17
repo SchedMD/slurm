@@ -1345,6 +1345,7 @@ slurm_copy_resource_allocation_response_msg(
 	new->partition = xstrdup(msg->partition);
 	new->qos = xstrdup(msg->qos);
 	new->resv_name = xstrdup(msg->resv_name);
+	new->stepmgr_host = xstrdup(msg->stepmgr_host);
 	new->uid = msg->uid;
 	new->user_name = xstrdup(msg->user_name);
 	new->working_cluster_rec = NULL;
@@ -4321,6 +4322,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->partition);
 		xfree(msg->qos);
 		xfree(msg->resv_name);
+		xfree(msg->stepmgr_host);
 		xfree(msg->tres_per_node);
 		xfree(msg->tres_per_task);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
