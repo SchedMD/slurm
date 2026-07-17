@@ -1160,6 +1160,12 @@ extern int env_array_for_job(char ***dest,
 					    alloc->segment_size);
 	}
 
+	if (alloc->stepmgr_host) {
+		env_array_overwrite_het_fmt(dest, "SLURM_STEPMGR",
+					    het_job_offset, "%s",
+					    alloc->stepmgr_host);
+	}
+
 	return rc;
 }
 
