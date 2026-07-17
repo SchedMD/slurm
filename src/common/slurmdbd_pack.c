@@ -1369,7 +1369,42 @@ static void _pack_slurmdbd_conf(const persist_msg_t *pmsg,
 {
 	const slurmdbd_conf_t *msg = pmsg->data;
 
-	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->archive_dir, buffer);
+		packstr(msg->archive_script, buffer);
+		pack16(msg->commit_delay, buffer);
+		packstr(msg->dbd_addr, buffer);
+		packstr(msg->dbd_backup, buffer);
+		packstr(msg->dbd_host, buffer);
+		pack16(msg->dbd_port, buffer);
+		pack16(msg->debug_level, buffer);
+		packstr(msg->default_qos, buffer);
+		pack32(msg->flags, buffer);
+		packstr(msg->log_file, buffer);
+		pack32(msg->max_purge_limit, buffer);
+		pack32(msg->max_time_range, buffer);
+		packstr(msg->parameters, buffer);
+		pack16(msg->persist_conn_rc_flags, buffer);
+		packstr(msg->pid_file, buffer);
+		pack32(msg->purge_event, buffer);
+		pack32(msg->purge_job, buffer);
+		pack32(msg->purge_resv, buffer);
+		pack32(msg->purge_step, buffer);
+		pack32(msg->purge_suspend, buffer);
+		pack32(msg->purge_txn, buffer);
+		pack32(msg->purge_usage, buffer);
+		pack32(msg->purge_jobscript, buffer);
+		pack32(msg->purge_jobenv, buffer);
+		/* never send storage_loc */
+		packstr("", buffer);
+		/* never send storage_pass_script */
+		packstr("", buffer);
+		/* never send storage_user */
+		packstr("", buffer);
+		pack16(msg->syslog_debug, buffer);
+		pack16(msg->track_wckey, buffer);
+		pack16(msg->track_ctld, buffer);
+	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		packstr(msg->archive_dir, buffer);
 		packstr(msg->archive_script, buffer);
 		pack16(msg->commit_delay, buffer);
@@ -1412,7 +1447,39 @@ static int _unpack_slurmdbd_conf(persist_msg_t *pmsg,
 {
 	slurmdbd_conf_t *build_ptr = xmalloc(sizeof(*build_ptr));
 
-	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&build_ptr->archive_dir, buffer);
+		safe_unpackstr(&build_ptr->archive_script, buffer);
+		safe_unpack16(&build_ptr->commit_delay, buffer);
+		safe_unpackstr(&build_ptr->dbd_addr, buffer);
+		safe_unpackstr(&build_ptr->dbd_backup, buffer);
+		safe_unpackstr(&build_ptr->dbd_host, buffer);
+		safe_unpack16(&build_ptr->dbd_port, buffer);
+		safe_unpack16(&build_ptr->debug_level, buffer);
+		safe_unpackstr(&build_ptr->default_qos, buffer);
+		safe_unpack32(&build_ptr->flags, buffer);
+		safe_unpackstr(&build_ptr->log_file, buffer);
+		safe_unpack32(&build_ptr->max_purge_limit, buffer);
+		safe_unpack32(&build_ptr->max_time_range, buffer);
+		safe_unpackstr(&build_ptr->parameters, buffer);
+		safe_unpack16(&build_ptr->persist_conn_rc_flags, buffer);
+		safe_unpackstr(&build_ptr->pid_file, buffer);
+		safe_unpack32(&build_ptr->purge_event, buffer);
+		safe_unpack32(&build_ptr->purge_job, buffer);
+		safe_unpack32(&build_ptr->purge_resv, buffer);
+		safe_unpack32(&build_ptr->purge_step, buffer);
+		safe_unpack32(&build_ptr->purge_suspend, buffer);
+		safe_unpack32(&build_ptr->purge_txn, buffer);
+		safe_unpack32(&build_ptr->purge_usage, buffer);
+		safe_unpack32(&build_ptr->purge_jobscript, buffer);
+		safe_unpack32(&build_ptr->purge_jobenv, buffer);
+		safe_unpackstr(&build_ptr->storage_loc, buffer);
+		safe_unpackstr(&build_ptr->storage_pass_script, buffer);
+		safe_unpackstr(&build_ptr->storage_user, buffer);
+		safe_unpack16(&build_ptr->syslog_debug, buffer);
+		safe_unpack16(&build_ptr->track_wckey, buffer);
+		safe_unpack16(&build_ptr->track_ctld, buffer);
+	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&build_ptr->archive_dir, buffer);
 		safe_unpackstr(&build_ptr->archive_script, buffer);
 		safe_unpack16(&build_ptr->commit_delay, buffer);
