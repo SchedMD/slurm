@@ -1195,7 +1195,50 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 	resource_allocation_response_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+
+		packstr(msg->batch_host, buffer);
+		packstr_array(msg->environment, msg->env_size, buffer);
+		pack32(msg->error_code, buffer);
+		pack32(msg->gid, buffer);
+		packstr(msg->group_name, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
+		pack32(msg->node_cnt, buffer);
+
+		packstr(msg->node_list, buffer);
+		pack16(msg->ntasks_per_board, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+		pack16(msg->ntasks_per_socket, buffer);
+		pack32(msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups) {
+			pack16_array(msg->cpus_per_node, msg->num_cpu_groups,
+				     buffer);
+			pack32_array(msg->cpu_count_reps, msg->num_cpu_groups,
+				     buffer);
+		}
+		packstr(msg->partition, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->resv_name, buffer);
+		pack16(msg->segment_size, buffer);
+		pack16(msg->start_protocol_ver, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_task, buffer);
+		pack32(msg->uid, buffer);
+		packstr(msg->user_name, buffer);
+
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 smsg->protocol_version,
+						 buffer);
+		} else {
+			pack8(0, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 
 		packstr(msg->batch_host, buffer);
@@ -1293,7 +1336,55 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->batch_host, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
+		safe_unpack32(&msg->error_code, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpackstr(&msg->group_name, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
+
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack32(&msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups > 0) {
+			safe_unpack16_array(&msg->cpus_per_node, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&msg->cpu_count_reps, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			msg->cpus_per_node = NULL;
+			msg->cpu_count_reps = NULL;
+		}
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->resv_name, buffer);
+		safe_unpack16(&msg->segment_size, buffer);
+		safe_unpack16(&msg->start_protocol_ver, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+				(void **) &msg->working_cluster_rec,
+				smsg->protocol_version, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->account, buffer);
 		safe_unpackstr(&msg->batch_host, buffer);
 		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
