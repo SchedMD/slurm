@@ -1377,6 +1377,7 @@ static void _pack_slurmdbd_conf(const persist_msg_t *pmsg,
 		packstr(msg->dbd_backup, buffer);
 		packstr(msg->dbd_host, buffer);
 		pack16(msg->dbd_port, buffer);
+		pack64(msg->debug_flags, buffer);
 		pack16(msg->debug_level, buffer);
 		packstr(msg->default_qos, buffer);
 		pack32(msg->flags, buffer);
@@ -1455,6 +1456,7 @@ static int _unpack_slurmdbd_conf(persist_msg_t *pmsg,
 		safe_unpackstr(&build_ptr->dbd_backup, buffer);
 		safe_unpackstr(&build_ptr->dbd_host, buffer);
 		safe_unpack16(&build_ptr->dbd_port, buffer);
+		safe_unpack64(&build_ptr->debug_flags, buffer);
 		safe_unpack16(&build_ptr->debug_level, buffer);
 		safe_unpackstr(&build_ptr->default_qos, buffer);
 		safe_unpack32(&build_ptr->flags, buffer);

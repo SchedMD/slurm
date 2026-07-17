@@ -124,7 +124,7 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 	add_key_pair(my_list, "DbdPort", "%u", slurmdbd_conf->dbd_port);
 
 	add_key_pair_own(my_list, "DebugFlags",
-			 debug_flags2str(slurm_conf.debug_flags));
+			 debug_flags2str(slurmdbd_conf->debug_flags));
 
 	add_key_pair(my_list, "DebugLevel", "%s",
 		     log_num2string(slurmdbd_conf->debug_level));
