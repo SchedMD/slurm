@@ -3977,8 +3977,47 @@ end_it:
  * acct_policy_job_runnable_post_select - After nodes have been
  *	selected for the job verify the counts don't exceed aggregated limits.
  */
+/*
+ * _sum_preemptee_tres_for_assoc - Sum the tres_alloc_cnt of preemptee
+ *	jobs whose association chain passes through assoc_ptr.
+ */
+static void _sum_preemptee_tres_for_assoc(slurmdb_assoc_rec_t *assoc_ptr,
+					  list_t *preemptee_job_list,
+					  uint64_t *freed_tres)
+{
+	list_itr_t *itr;
+	job_record_t *p;
+
+	memset(freed_tres, 0, sizeof(uint64_t) * slurmctld_tres_cnt);
+	if (!preemptee_job_list || !assoc_ptr)
+		return;
+
+	itr = list_iterator_create(preemptee_job_list);
+	while ((p = list_next(itr))) {
+		slurmdb_assoc_rec_t *a;
+		if (!p->tres_alloc_cnt)
+			continue;
+		for (a = p->assoc_ptr; a; a = a->usage->parent_assoc_ptr) {
+			if (a == assoc_ptr) {
+				for (int i = 0; i < slurmctld_tres_cnt; i++) {
+					if ((i == TRES_ARRAY_ENERGY) ||
+					    (i == TRES_ARRAY_NODE))
+						continue;
+					if (p->tres_alloc_cnt[i] ==
+					    NO_CONSUME_VAL64)
+						continue;
+					freed_tres[i] += p->tres_alloc_cnt[i];
+				}
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+}
+
 extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 						 uint64_t *tres_req_cnt,
+						 list_t *preemptee_job_list,
 						 bool assoc_mgr_locked)
 {
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
@@ -4195,6 +4234,49 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 			tres_req_cnt, use_usage->grp_used_tres,
 			NULL, job_ptr->limit_set.tres, true);
 		tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
+
+		/*
+		 * If the GrpTRES check failed and we have preemption
+		 * candidates, retry with usage reduced by the TRES
+		 * those preemptees would free at this association level.
+		 */
+		if ((tres_usage == TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE) &&
+		    preemptee_job_list) {
+			uint64_t freed[slurmctld_tres_cnt];
+			uint64_t adj_used[slurmctld_tres_cnt];
+
+			_sum_preemptee_tres_for_assoc(assoc_ptr,
+						      preemptee_job_list,
+						      freed);
+			for (i = 0; i < slurmctld_tres_cnt; i++) {
+				if (freed[i] >= use_usage->grp_used_tres[i])
+					adj_used[i] = 0;
+				else
+					adj_used[i] =
+						use_usage->grp_used_tres[i] -
+						freed[i];
+			}
+
+			orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+			_get_unique_job_node_cnt(
+				job_ptr, use_usage->grp_node_bitmap,
+				&tres_req_cnt[TRES_ARRAY_NODE]);
+			tres_usage = _validate_tres_usage_limits_for_assoc(
+				&tres_pos,
+				grp_tres_ctld, qos_rec.grp_tres_ctld,
+				tres_req_cnt, adj_used,
+				NULL, job_ptr->limit_set.tres, true);
+			tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
+
+			if (tres_usage == TRES_USAGE_OKAY) {
+				debug2("%s: %pJ passes assoc %u(%s/%s/%s) GrpTRES with preemption credit",
+				       __func__, job_ptr,
+				       assoc_ptr->id, assoc_ptr->acct,
+				       assoc_ptr->user,
+				       assoc_ptr->partition);
+			}
+		}
+
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible because the curr_usage sent in is NULL*/

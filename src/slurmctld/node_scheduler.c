@@ -2798,7 +2798,8 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		                        slurm_conf.priority_flags, true);
 
 	if (!test_only && (selected_node_cnt != NO_VAL) &&
-	    !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt, true)) {
+	    !acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt,
+						 preemptee_job_list, true)) {
 		assoc_mgr_unlock(&job_read_locks);
 		/* If there was an reason we couldn't schedule before hand we
 		 * want to check if an accounting limit was also breached.  If

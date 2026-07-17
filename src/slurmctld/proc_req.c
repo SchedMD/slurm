@@ -1103,7 +1103,7 @@ static bool _het_job_component_acct_policy_runnable(job_record_t *job_ptr)
 					job_ptr->part_ptr->billing_weights,
 					slurm_conf.priority_flags, true);
 	return acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt,
-						    false);
+						    NULL, false);
 }
 
 /* _slurm_rpc_allocate_het_job: process RPC to allocate a hetjob resources */
