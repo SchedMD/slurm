@@ -1189,6 +1189,33 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/*
+ * Pack the allocation's environment array. Pre-26.11 clients read the stepmgr
+ * node from SLURM_STEPMGR in this array; 26.11+ clients get it from the
+ * stepmgr_host field, so only inject SLURM_STEPMGR here for the older wire
+ * format.
+ */
+static void _pack_alloc_env(const resource_allocation_response_msg_t *msg,
+			    buf_t *buffer)
+{
+	char **env;
+	char *stepmgr_env = NULL;
+
+	if (!msg->stepmgr_host) {
+		packstr_array(msg->environment, msg->env_size, buffer);
+		return;
+	}
+
+	xstrfmtcat(stepmgr_env, "SLURM_STEPMGR=%s", msg->stepmgr_host);
+	env = xcalloc(msg->env_size + 2, sizeof(char *));
+	for (uint32_t i = 0; i < msg->env_size; i++)
+		env[i] = msg->environment[i];
+	env[msg->env_size] = stepmgr_env;
+	packstr_array(env, msg->env_size + 1, buffer);
+	xfree(stepmgr_env);
+	xfree(env);
+}
+
 static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 						   buf_t *buffer)
 {
@@ -1243,7 +1270,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->account, buffer);
 
 		packstr(msg->batch_host, buffer);
-		packstr_array(msg->environment, msg->env_size, buffer);
+		_pack_alloc_env(msg, buffer);
 		pack32(msg->error_code, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);
@@ -1288,7 +1315,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->account, buffer);
 
 		packstr(msg->batch_host, buffer);
-		packstr_array(msg->environment, msg->env_size, buffer);
+		_pack_alloc_env(msg, buffer);
 		pack32(msg->error_code, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);

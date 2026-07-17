@@ -842,21 +842,6 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 					xstrdup(job_ptr->details->env_sup[i]);
 			}
 		}
-		/*
-		 * Only advertise the stepmgr once batch_host is known. For a
-		 * powered-down cloud node batch_host is still NULL here, and
-		 * setting SLURM_STEPMGR to a NULL value stringifies to the
-		 * literal "(null)" - leave it unset so step creation is routed
-		 * through the controller (which reroutes once the node is up).
-		 */
-		if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
-		    job_ptr->batch_host) {
-			env_array_overwrite(&alloc_msg->environment,
-					    "SLURM_STEPMGR",
-					    job_ptr->batch_host);
-			alloc_msg->env_size =
-				PTR_ARRAY_SIZE(alloc_msg->environment) - 1;
-		}
 
 		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
 			char *task_count = get_tasks_per_node(job_ptr);
