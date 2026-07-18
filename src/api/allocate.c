@@ -888,7 +888,7 @@ trystepmgr:
 			 * The node isn't in the conf, see if the
 			 * controller has an address for it.
 			 */
-			slurm_node_alias_addrs_t *alias_addrs;
+			slurm_node_alias_addrs_t *alias_addrs = NULL;
 			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
 							&alias_addrs)) {
 				add_remote_nodes_to_conf_tbls(
@@ -1022,7 +1022,7 @@ static int _het_job_lookup_one(char *stepmgr_nodename, slurm_step_id_t step_id,
 			 * The node isn't in the conf, see if the
 			 * controller has an address for it.
 			 */
-			slurm_node_alias_addrs_t *alias_addrs;
+			slurm_node_alias_addrs_t *alias_addrs = NULL;
 			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
 							&alias_addrs)) {
 				add_remote_nodes_to_conf_tbls(
@@ -1151,7 +1151,7 @@ trystepmgr:
 			 * The node isn't in the conf, see if the
 			 * controller has an address for it.
 			 */
-			slurm_node_alias_addrs_t *alias_addrs;
+			slurm_node_alias_addrs_t *alias_addrs = NULL;
 			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
 							&alias_addrs)) {
 				add_remote_nodes_to_conf_tbls(
