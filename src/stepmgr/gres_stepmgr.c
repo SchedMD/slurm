@@ -1245,7 +1245,7 @@ extern int gres_stepmgr_job_alloc(
 		.node_index = node_index,
 		.node_name = node_name,
 		.node_offset = node_offset,
-		.rc = SLURM_ERROR,
+		.rc = SLURM_SUCCESS,
 	};
 
 	if (job_gres_list == NULL)
@@ -1387,7 +1387,7 @@ extern int gres_stepmgr_job_alloc_whole_node(
 		.node_index = node_index,
 		.node_name = node_name,
 		.node_offset = node_offset,
-		.rc = SLURM_ERROR,
+		.rc = SLURM_SUCCESS,
 	};
 
 	if (job_gres_list == NULL)
