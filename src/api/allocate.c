@@ -915,6 +915,7 @@ trystepmgr:
 		xfree(stepmgr_nodename);
 		stepmgr_nodename = rr_msg->stepmgr;
 		rr_msg->stepmgr = NULL;
+		slurm_free_msg_members(&resp_msg);
 		if (stepmgr_nodename)
 			goto trystepmgr;
 		else
