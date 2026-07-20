@@ -3967,8 +3967,6 @@ static int _step_create(job_record_t *job_ptr,
 		xfree(step_specs->node_list);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
-	log_flag(STEPS, "Picked nodes %s when accumulating from %s",
-		 step_node_list, step_specs->node_list);
 	step_ptr->step_node_bitmap = nodeset;
 
 	step_ptr->container = xstrdup(step_specs->container);
@@ -4288,7 +4286,10 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			xfree(step_node_ranks);
 			return NULL;
 		}
-		debug3("step_layout cpus = %d pos = %d", usable_cpus, pos);
+		log_flag(STEPS, "%s: %pS node %s job_pos %d usable_cpus %d node_rank %u",
+			 __func__, step_ptr, node_ptr->name, pos, usable_cpus,
+			 job_resrcs_ptr->node_ranks ?
+				 job_resrcs_ptr->node_ranks[pos] : NO_VAL);
 
 		cpus_per_node[set_nodes] = usable_cpus;
 		if (job_resrcs_ptr->node_ranks)
@@ -5348,8 +5349,8 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 		xfree(step_specs->node_list);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
-	log_flag(STEPS, "Picked nodes %s when accumulating from %s",
-		 step_node_list, step_specs->node_list);
+	log_flag(STEPS, "%s: %pJ picked ext-launcher nodes %s",
+		 __func__, job_ptr, step_node_list);
 
 	step_ptr = *step_rec = create_step_record(job_ptr, protocol_version);
 
@@ -5704,7 +5705,7 @@ end_it:
 		slurm_step_layout_t *step_layout = NULL;
 
 		log_flag(STEPS, "%s: %pS %s %s",
-			 __func__, step_rec, req_step_msg->node_list,
+			 __func__, step_rec, step_rec->step_layout->node_list,
 			 TIMER_STR());
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
