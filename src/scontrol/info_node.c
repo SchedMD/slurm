@@ -320,6 +320,8 @@ extern void scontrol_print_topo(int argc, char **argv)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
 	char *name = NULL, *unit = NULL, *node_list = NULL;
+	data_parser_t *parser = NULL;
+	int rc = SLURM_SUCCESS;
 
 	for (int i = 0; i < argc; ++i) {
 		char *tag = argv[i];
@@ -355,12 +357,45 @@ extern void scontrol_print_topo(int argc, char **argv)
 			return;
 		}
 	}
-	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, name)) {
-		slurm_perror ("slurm_load_topo error");
-		return;
+
+	if (mime_type) {
+		rc = data_parser_cli_load(&parser, NULL, orig_argc, orig_argv,
+					  mime_type, data_parser);
+		if (rc || !parser)
+			goto cleanup;
 	}
-	slurm_print_topo_info_msg(stdout, topo_info_msg, node_list, unit,
-				  one_liner);
+
+	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, name)) {
+		rc = errno ? errno : SLURM_ERROR;
+		if (!mime_type) {
+			slurm_perror("slurm_load_topo error");
+			goto cleanup;
+		}
+
+		data_parser_cli_on_error(parser, rc,
+					 XSTRINGIFY(slurm_load_topo),
+					 "%s() failed to load topology",
+					 XSTRINGIFY(slurm_load_topo));
+	}
+
+	if (mime_type) {
+		int dump_rc = data_parser_dump_cli_single(
+			DATA_PARSER_OPENAPI_TOPO_INFO_RESP,
+			(topo_info_msg ? topo_info_msg->topo_info : NULL),
+			parser);
+		if (!rc)
+			rc = dump_rc;
+	} else {
+		slurm_print_topo_info_msg(stdout, topo_info_msg, node_list,
+					  unit, one_liner);
+	}
+
+cleanup:
+	if (rc)
+		exit_code = 1;
+
+	if (mime_type)
+		data_parser_cli_free_ctxt(&parser);
 }
 
 extern void scontrol_print_topo_conf(void)
