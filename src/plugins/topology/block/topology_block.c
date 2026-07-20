@@ -47,6 +47,8 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/interfaces/topology.h"
+
 #include "../common/common_topo.h"
 
 #include "eval_nodes_block.h"
@@ -71,19 +73,6 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Required for topology plugins: */
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const bool supports_exclusive_topo = true;
-
-typedef struct topoinfo_bblock {
-	bool aggregated;
-	uint16_t block_index;
-	char *name;
-	char *nodes;
-	uint32_t size;
-} topoinfo_bblock_t;
-
-typedef struct topoinfo_block {
-	uint32_t record_count; /* number of records */
-	topoinfo_bblock_t *topo_array;/* the block topology records */
-} topoinfo_block_t;
 
 static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 {

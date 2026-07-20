@@ -72,28 +72,6 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_3DTORUS;
 const bool supports_exclusive_topo = false;
 
-typedef struct {
-	uint16_t x_size;
-	uint16_t y_size;
-	uint16_t z_size;
-	uint32_t anchor_count;
-} topoinfo_torus3d_placement_t;
-
-typedef struct {
-	char *name;
-	char *nodes;
-	uint16_t x_size;
-	uint16_t y_size;
-	uint16_t z_size;
-	uint32_t placement_count;
-	topoinfo_torus3d_placement_t *placements;
-} topoinfo_torus3d_record_t;
-
-typedef struct {
-	uint32_t record_count;
-	topoinfo_torus3d_record_t *topo_array;
-} topoinfo_torus3d_t;
-
 static void _print_topo_record(topoinfo_torus3d_record_t *rec, char **out)
 {
 	char *env, *line = NULL, *pos = NULL;
