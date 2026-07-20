@@ -125,6 +125,7 @@ static void _signal_waiting(event_signal_t *event, const char *caller)
 	log_flag(THREAD, "%s->%s: [EVENT:%s] sending signal to 1/%d waiters",
 		 caller, __func__, event->name, event->waiting);
 
+	/* coverity[missing_lock] */
 	slurm_cond_signal(&event->cond);
 }
 
