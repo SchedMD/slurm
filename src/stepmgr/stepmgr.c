@@ -3958,15 +3958,10 @@ static int _step_create(job_record_t *job_ptr,
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&
 	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
-	     SLURM_DIST_ARBITRARY)) {
+	     SLURM_DIST_ARBITRARY))
 		step_node_list = xstrdup(step_specs->node_list);
-		xfree(step_specs->node_list);
-		step_specs->node_list = bitmap2node_name(nodeset);
-	} else {
+	else
 		step_node_list = bitmap2node_name_sortable(nodeset, false);
-		xfree(step_specs->node_list);
-		step_specs->node_list = xstrdup(step_node_list);
-	}
 	step_ptr->step_node_bitmap = nodeset;
 
 	step_ptr->container = xstrdup(step_specs->container);
@@ -5340,15 +5335,10 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	/* Here is where the node list is set for the step */
 	if (step_specs->node_list &&
 	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
-	     SLURM_DIST_ARBITRARY)) {
+	     SLURM_DIST_ARBITRARY))
 		step_node_list = xstrdup(step_specs->node_list);
-		xfree(step_specs->node_list);
-		step_specs->node_list = bitmap2node_name(nodeset);
-	} else {
+	else
 		step_node_list = bitmap2node_name_sortable(nodeset, false);
-		xfree(step_specs->node_list);
-		step_specs->node_list = xstrdup(step_node_list);
-	}
 	log_flag(STEPS, "%s: %pJ picked ext-launcher nodes %s",
 		 __func__, job_ptr, step_node_list);
 
