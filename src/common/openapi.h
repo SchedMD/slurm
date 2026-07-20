@@ -568,4 +568,9 @@ typedef struct {
 	uint32_t flags;
 } openapi_jobs_requeue_query_t;
 
+/* Generic single string parameter struct */
+typedef struct {
+	char *string;
+} openapi_string_param_t;
+
 #endif /* SLURM_OPENAPI_H */
