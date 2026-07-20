@@ -26,7 +26,7 @@ def setup():
 def test_job_array_suspend_resume():
     atf.make_bash_script(
         file_script,
-        f"srun python3 {atf.properties['testsuite_scripts_dir']}/wait_for_suspend.py 10",
+        f"srun python3 {atf.properties['testsuite_scripts_dir']}/wait_for_suspend.py",
     )
 
     # Submit job array and wait for the first job to be RUNNING
