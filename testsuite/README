@@ -919,6 +919,7 @@ test_122_#   Testing of job_arrays.
 test_122_1   /features/job_arrays/test_basics.py
 test_122_2   Test job array with gres
 test_122_3   Test suspension of job arrays
+test_122_4   Test srun --jobid attach to a running job array task
 
 test_123_#   Testing of reservations.
 =====================================
