@@ -1,6 +1,7 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+import itertools
 import sys
 import time
 
@@ -10,9 +11,8 @@ BILLION = 1_000_000_000
 def main():
     """Print time every second and report detected process suspensions.
 
-    Prints every second some information for 'start' number of seconds. Takes in
-    an optional integer terminal argument for the value of 'start' -- defaults
-    to 30 if no such argument is given.
+    Takes an optional positive-integer argument for the number of iterations;
+    with no argument (or a non-positive one) it loops forever until killed.
 
     Additionally, this method attempts to determine if it has been suspended
     and, upon determination, prints 'JobSuspended' once the process is resumed.
@@ -22,13 +22,14 @@ def main():
     nanoseconds.
     """
 
-    if len(sys.argv) > 1:
-        start = int(sys.argv[1])
+    if len(sys.argv) > 1 and int(sys.argv[1]) > 0:
+        counter = range(int(sys.argv[1]), 0, -1)
     else:
-        start = 30
+        # Infinite counter
+        counter = itertools.count(1)
 
     last = time.monotonic_ns()
-    for i in range(start, 0, -1):
+    for i in counter:
         print(f"{i:02d} {last}")
         sys.stdout.flush()
         time.sleep(1)
