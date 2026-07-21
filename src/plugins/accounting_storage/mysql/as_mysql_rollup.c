@@ -116,13 +116,19 @@ typedef struct {
 	time_t curr_start;
 	char *err_msg;
 	size_t flush_threshold;
+	char *id_name;
 	mysql_conn_t *mysql_conn;
 	time_t now;
 	char *query;
 	char *query_pos;
 	int rc;
-	int type;
+	char *table;
 } id_usage_walk_arg_t;
+
+typedef struct {
+	id_usage_walk_arg_t *a;
+	local_id_usage_t *id_usage;
+} walk_tres_ctx_t;
 
 static void _destroy_local_tres_usage(void *object)
 {
@@ -857,57 +863,6 @@ static int _id_usage_type_info(int type, char **table, char **id_name)
 	}
 }
 
-static void _create_id_usage_insert(char *cluster_name, int type,
-				    time_t curr_start, time_t now,
-				    local_id_usage_t *id_usage,
-				    char **query, char **query_pos)
-{
-	local_tres_usage_t *loc_tres;
-	list_itr_t *itr;
-	bool first;
-	char *table = NULL, *id_name = NULL;
-
-	xassert(query);
-	xassert(query_pos);
-
-	if (_id_usage_type_info(type, &table, &id_name) != SLURM_SUCCESS)
-		return;
-
-	if (!id_usage->loc_tres || !list_count(id_usage->loc_tres)) {
-		error("%s %d doesn't have any tres", id_name, id_usage->id);
-		return;
-	}
-
-	first = 1;
-	itr = list_iterator_create(id_usage->loc_tres);
-	while ((loc_tres = list_next(itr))) {
-		if (!first) {
-			xstrfmtcatat(*query, query_pos,
-				     ", (%ld, %ld, %u, %u, %ld, %u, %"PRIu64")",
-				     now, now,
-				     id_usage->id, id_usage->id_alt,
-				     curr_start, loc_tres->id,
-				     loc_tres->time_alloc);
-		} else {
-			xstrfmtcatat(*query, query_pos,
-				     "insert into \"%s_%s\" "
-				     "(creation_time, mod_time, id, id_alt, "
-				     "time_start, id_tres, alloc_secs) "
-				     "values (%ld, %ld, %u, %u, "
-				     "%ld, %u, %"PRIu64")",
-				     cluster_name, table, now, now,
-				     id_usage->id, id_usage->id_alt,
-				     curr_start, loc_tres->id,
-				     loc_tres->time_alloc);
-			first = 0;
-		}
-	}
-	list_iterator_destroy(itr);
-	xstrfmtcatat(*query, query_pos,
-		     " on duplicate key update mod_time=%ld, "
-		     "alloc_secs=VALUES(alloc_secs);", now);
-}
-
 static int _add_resv_usage_to_cluster(void *object, void *arg)
 {
 	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
@@ -1386,6 +1341,10 @@ static void _flush_chunk(id_usage_walk_arg_t *a)
 	if ((a->rc != SLURM_SUCCESS) || !a->query)
 		return;
 
+	xstrfmtcatat(a->query, &a->query_pos,
+		     " on duplicate key update mod_time=%ld, "
+		     "alloc_secs=VALUES(alloc_secs)",
+		     a->now);
 	DB_DEBUG(DB_USAGE, a->mysql_conn->conn, "query\n%s", a->query);
 	if (mysql_db_query(a->mysql_conn, a->query) != SLURM_SUCCESS) {
 		error("%s", a->err_msg);
@@ -1395,19 +1354,56 @@ static void _flush_chunk(id_usage_walk_arg_t *a)
 	a->query_pos = NULL;
 }
 
+static int _walk_tres(void *x, void *arg)
+{
+	local_tres_usage_t *loc_tres = x;
+	walk_tres_ctx_t *ctx = arg;
+	id_usage_walk_arg_t *a = ctx->a;
+	local_id_usage_t *id_usage = ctx->id_usage;
+
+	if (a->rc != SLURM_SUCCESS)
+		return -1;
+
+	if (!a->query) {
+		xstrfmtcatat(a->query, &a->query_pos,
+			     "insert into \"%s_%s\" "
+			     "(creation_time, mod_time, id, id_alt, "
+			     "time_start, id_tres, alloc_secs) "
+			     "values ",
+			     a->cluster_name, a->table);
+	} else {
+		xstrfmtcatat(a->query, &a->query_pos, ", ");
+	}
+
+	xstrfmtcatat(a->query, &a->query_pos,
+		     "(%ld, %ld, %u, %u, %ld, %u, %"PRIu64")",
+		     a->now, a->now,
+		     id_usage->id, id_usage->id_alt,
+		     a->curr_start, loc_tres->id,
+		     loc_tres->time_alloc);
+
+	if ((size_t) (a->query_pos - a->query) >= a->flush_threshold)
+		_flush_chunk(a);
+
+	return 0;
+}
+
 static void _id_usage_walk(void *item, void *arg)
 {
+	local_id_usage_t *id_usage = item;
 	id_usage_walk_arg_t *a = arg;
+	walk_tres_ctx_t ctx = { .a = a, .id_usage = id_usage };
 
 	if (a->rc != SLURM_SUCCESS)
 		return;
 
-	_create_id_usage_insert(a->cluster_name, a->type, a->curr_start,
-				a->now, item, &a->query, &a->query_pos);
+	if (!id_usage->loc_tres || !list_count(id_usage->loc_tres)) {
+		error("%s %d doesn't have any tres",
+		      a->id_name, id_usage->id);
+		return;
+	}
 
-	if (a->query &&
-	    ((size_t) (a->query_pos - a->query) >= a->flush_threshold))
-		_flush_chunk(a);
+	(void) list_for_each(id_usage->loc_tres, _walk_tres, &ctx);
 }
 
 static int _flush_id_usage_batch(mysql_conn_t *mysql_conn, xhash_t *hash,
@@ -1417,14 +1413,18 @@ static int _flush_id_usage_batch(mysql_conn_t *mysql_conn, xhash_t *hash,
 	if (!xhash_count(hash))
 		return SLURM_SUCCESS;
 
+	if (_id_usage_type_info(type, &arg->table, &arg->id_name) !=
+	    SLURM_SUCCESS)
+		return SLURM_ERROR;
+
 	arg->mysql_conn = mysql_conn;
-	arg->type = type;
 	arg->err_msg = err_msg;
 	arg->rc = SLURM_SUCCESS;
 
 	xhash_walk(hash, _id_usage_walk, arg);
 
-	_flush_chunk(arg);
+	if (arg->query)
+		_flush_chunk(arg);
 
 	return arg->rc;
 }
