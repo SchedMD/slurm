@@ -836,6 +836,27 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+static int _id_usage_type_info(int type, char **table, char **id_name)
+{
+	switch (type) {
+	case ASSOC_TABLES:
+		*table = assoc_hour_table;
+		*id_name = "id_assoc";
+		return SLURM_SUCCESS;
+	case QOS_TABLES:
+		*table = qos_hour_table;
+		*id_name = "id_qos";
+		return SLURM_SUCCESS;
+	case WCKEY_TABLES:
+		*table = wckey_hour_table;
+		*id_name = "id_wckey";
+		return SLURM_SUCCESS;
+	default:
+		error("%s: unknown type %d", __func__, type);
+		return SLURM_ERROR;
+	}
+}
+
 static void _create_id_usage_insert(char *cluster_name, int type,
 				    time_t curr_start, time_t now,
 				    local_id_usage_t *id_usage,
@@ -849,24 +870,8 @@ static void _create_id_usage_insert(char *cluster_name, int type,
 	xassert(query);
 	xassert(query_pos);
 
-	switch (type) {
-	case ASSOC_TABLES:
-		id_name = "id_assoc";
-		table = assoc_hour_table;
-		break;
-	case QOS_TABLES:
-		id_name = "id_qos";
-		table = qos_hour_table;
-		break;
-	case WCKEY_TABLES:
-		id_name = "id_wckey";
-		table = wckey_hour_table;
-		break;
-	default:
-		error("_create_id_usage_insert: unknown type %d", type);
+	if (_id_usage_type_info(type, &table, &id_name) != SLURM_SUCCESS)
 		return;
-		break;
-	}
 
 	if (!id_usage->loc_tres || !list_count(id_usage->loc_tres)) {
 		error("%s %d doesn't have any tres", id_name, id_usage->id);
