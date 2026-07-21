@@ -1100,6 +1100,7 @@ test_144_17  Test GPU device merge/sort logic and gres.conf parsing/validation e
 test_144_18  Test shard device memory enforcement (ConstrainDeviceMemory)
 test_144_19  Test per-device typed shard counts in gres.conf
 test_144_20  Test a step's GPU frequency setup across its GRES records
+test_144_21  Test job handling when a node's shard/mps GRES topology changes
 
 test_145_#   Testing --constraint.
 ==================================
