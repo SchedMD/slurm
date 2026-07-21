@@ -1182,3 +1182,4 @@ test_167_1   Test SLURM_NODE_IS_HEALTHY reporting to HealthCheckProgram
 test_168_#   Testing of heterogeneous jobs.
 ===========================================
 test_168_1   Validate sbatch heterogeneous job environment variables.
+test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
