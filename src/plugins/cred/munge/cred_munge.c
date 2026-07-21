@@ -56,6 +56,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/cred.h"
+#include "src/interfaces/hash.h"
 #include "src/plugins/cred/common/cred_common.h"
 
 #define RETRY_COUNT		20
@@ -307,6 +308,11 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 	}
 
 	return credential;
+}
+
+extern char *cred_p_get_signature_key(char *signature)
+{
+	return hash_g_compute_hex(signature);
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
