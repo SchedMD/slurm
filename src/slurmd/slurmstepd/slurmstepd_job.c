@@ -167,6 +167,7 @@ static void _srun_info_destructor(void *arg)
 	srun_info_t *srun = arg;
 
 	xfree(srun->key);
+	xfree(srun->key_hash);
 	xfree(srun->tls_cert);
 	xfree(srun);
 }
@@ -728,6 +729,7 @@ static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
 	if (!cred) return srun;
 
 	srun->key = slurm_cred_get_signature(cred);
+	srun->key_hash = slurm_cred_get_signature_key(cred);
 	srun->tls_cert = xstrdup(alloc_tls_cert);
 
 	if (ioaddr != NULL)

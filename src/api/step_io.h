@@ -50,6 +50,7 @@ typedef struct {
 					 * NO_VAL */
 
 	char *io_key;
+	char *io_key_hash;
 
 	/* internal variables */
 	bool io_running;		/* I/O thread running */
@@ -98,7 +99,8 @@ typedef struct {
 
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      int num_nodes, char *io_key,
-				      bool label, uint32_t het_job_offset,
+				      char *io_key_hash, bool label,
+				      uint32_t het_job_offset,
 				      uint32_t het_job_task_offset);
 
 extern void client_io_handler_start(client_io_t *cio);

@@ -199,6 +199,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	bool preserve_env = params->preserve_env;
 	uint32_t mpi_plugin_id;
 	char *io_key = NULL;
+	char *io_key_hash = NULL;
 
 	debug("Entering %s", __func__);
 	memset(&launch, 0, sizeof(launch));
@@ -383,8 +384,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->labelio)
 		launch.flags |= LAUNCH_LABEL_IO;
 
-	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
-
 	if (conn_tls_enabled()) {
 		if (!(launch.alloc_tls_cert = conn_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for step IO");
@@ -395,11 +394,21 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 	/* don't need to setup IO on client if step is handling it locally */
 	if (!(launch.flags & LAUNCH_LOCAL_IO)) {
+		io_key = slurm_cred_get_signature(ctx->step_resp->cred);
+		io_key_hash =
+			slurm_cred_get_signature_key(ctx->step_resp->cred);
+		if (!io_key_hash) {
+			error("%s: failed to derive IO key from credential",
+			      __func__);
+			rc = SLURM_ERROR;
+			goto fail1;
+		}
+
 		ctx->launch_state->io =
 			client_io_handler_create(params->local_fds,
 						 ctx->step_req->num_tasks,
 						 launch.nnodes, io_key,
-						 params->labelio,
+						 io_key_hash, params->labelio,
 						 params->het_job_offset,
 						 params->het_job_task_offset);
 		if (!ctx->launch_state->io) {
@@ -441,6 +450,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 fail1:
 	xfree(io_key);
+	xfree(io_key_hash);
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	xfree(launch.runtime);
@@ -473,6 +483,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	bool preserve_env = params->preserve_env;
 	uint32_t mpi_plugin_id;
 	char *io_key = NULL;
+	char *io_key_hash = NULL;
 
 	debug("Entering %s", __func__);
 
@@ -583,11 +594,17 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		launch.flags	|= LAUNCH_LABEL_IO;
 
 	io_key = slurm_cred_get_signature(ctx->step_resp->cred);
+	io_key_hash = slurm_cred_get_signature_key(ctx->step_resp->cred);
+	if (!io_key_hash) {
+		error("%s: failed to derive IO key from credential", __func__);
+		rc = SLURM_ERROR;
+		goto fail1;
+	}
 
 	ctx->launch_state->io =
 		client_io_handler_create(params->local_fds,
 					 ctx->step_req->num_tasks,
-					 launch.nnodes, io_key,
+					 launch.nnodes, io_key, io_key_hash,
 					 params->labelio,
 					 params->het_job_offset,
 					 params->het_job_task_offset);
@@ -629,6 +646,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 fail1:
 	/* clean up */
 	xfree(io_key);
+	xfree(io_key_hash);
 	xfree(launch.resp_port);
 	xfree(launch.io_port);
 

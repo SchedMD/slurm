@@ -64,6 +64,7 @@
 
 typedef struct {
 	char *key;                 /* srun key for IO verification         */
+	char *key_hash; /* compact key for IO verification */
 	char *tls_cert;            /* srun public certificate if tls in use */
 	slurm_addr_t resp_addr;	   /* response addr for task exit msg      */
 	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.

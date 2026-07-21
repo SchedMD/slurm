@@ -70,6 +70,7 @@
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/hash.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/proctrack.h"
@@ -1357,8 +1358,10 @@ static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr_t));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr_t));
 	safe_read(fd, &key_len, sizeof(uint32_t));
-	srun->key = xmalloc(key_len);
+	srun->key = xmalloc(key_len + 1);
 	safe_read(fd, srun->key, key_len);
+	srun->key[key_len] = '\0';
+	srun->key_hash = hash_g_compute_hex(srun->key);
 	safe_read(fd, &srun->uid, sizeof(uid_t));
 	safe_read(fd, &srun->protocol_version, sizeof(uint16_t));
 
@@ -1420,6 +1423,7 @@ done:
 	}
 	if (srun) {
 		xfree(srun->key);
+		xfree(srun->key_hash);
 		xfree(srun->tls_cert);
 		xfree(srun);
 	}
@@ -1428,6 +1432,7 @@ done:
 rwfail:
 	if (srun) {
 		xfree(srun->key);
+		xfree(srun->key_hash);
 		xfree(srun->tls_cert);
 		xfree(srun);
 	}
