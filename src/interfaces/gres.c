@@ -7309,6 +7309,7 @@ static int _find_invalid_job_gres_on_node(void *x, void *arg)
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	validate_job_gres_cnt_t *validate_job_gres_cnt = arg;
 	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
 	uint32_t plugin_id;
 	int job_gres_cnt, node_gres_cnt = 0;
 
@@ -7330,7 +7331,7 @@ static int _find_invalid_job_gres_on_node(void *x, void *arg)
 					       node_gres_list,
 					       gres_find_id,
 					       &plugin_id))) {
-		gres_node_state_t *gres_ns = gres_state_node->gres_data;
+		gres_ns = gres_state_node->gres_data;
 		node_gres_cnt = (int) gres_ns->gres_cnt_config;
 		if (gres_js->type_id) {
 			bool found_type = false;
@@ -7361,6 +7362,51 @@ static int _find_invalid_job_gres_on_node(void *x, void *arg)
 		      validate_job_gres_cnt-> node_name,
 		      job_gres_cnt, node_gres_cnt);
 		return 1;
+	}
+
+	/*
+	 * Shared GRES bitmaps (e.g. shard and mps) are sized by the backing GPU
+	 * count. That check alone is insufficient when the shared GRES topology
+	 * is removed while GPUs remain: require the shared topology itself
+	 * still exist and cover the job's bits.
+	 */
+	if (gres_id_shared(gres_state_job->config_flags)) {
+		uint64_t old_avail_cnt = 0;
+		bool kill_job = false;
+
+		gres_ns = NULL;
+
+		/* Get the shared gres state */
+		gres_state_node =
+			list_find_first(validate_job_gres_cnt->node_gres_list,
+					gres_find_id,
+					&gres_state_job->plugin_id);
+		if (gres_state_node)
+			gres_ns = gres_state_node->gres_data;
+
+		/*
+		 * If the shared gres state no longer exist or the topology does
+		 * not match what is expected then kill the job.
+		 */
+		if (!gres_ns || (gres_ns->topo_cnt != job_gres_cnt) ||
+		    !gres_ns->topo_gres_cnt_avail) {
+			kill_job = true;
+		} else {
+			/* topo_* vars wait to update until node registration */
+			for (int i = 0; i < gres_ns->topo_cnt; i++)
+				old_avail_cnt +=
+					gres_ns->topo_gres_cnt_avail[i];
+			if (gres_ns->gres_cnt_config < old_avail_cnt)
+				kill_job = true;
+		}
+
+		if (kill_job) {
+			error("%s: Killing job %u: gres/%s topology missing or reduced on node %s",
+			      __func__, validate_job_gres_cnt->job_id,
+			      gres_state_job->gres_name,
+			      validate_job_gres_cnt->node_name);
+			return 1;
+		}
 	}
 
 	return 0;

@@ -1997,7 +1997,9 @@ extern void gres_stepmgr_job_build_details(
 				xstrfmtcat(my_gres_details[j],
 					   "%s%s:%" PRIu64 "(%s)", sep1,
 					   gres_name, alloc_cnt,
-					   shared_gres_details);
+					   (shared_gres_details ?
+						    shared_gres_details :
+						    "(null)"));
 				xfree(shared_gres_details);
 
 			} else if (gres_js->gres_bit_alloc[j]) {
