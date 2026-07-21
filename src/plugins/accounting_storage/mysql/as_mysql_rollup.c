@@ -937,7 +937,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		time_t row_start = slurm_atoul(row[EVENT_REQ_START]);
 		time_t row_end = slurm_atoul(row[EVENT_REQ_END]);
-		uint16_t state = slurm_atoul(row[EVENT_REQ_STATE]);
+		uint32_t state = slurm_atoul(row[EVENT_REQ_STATE]);
 		time_t local_start, local_end;
 		int seconds, resv_seconds;
 
