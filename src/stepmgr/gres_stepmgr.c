@@ -2135,7 +2135,9 @@ static int _foreach_job_build_details(void *x, void *arg)
 				args->nodes, j, gres_state_job, gres_js);
 			xstrfmtcat(args->my_gres_details[j],
 				   "%s%s:%" PRIu64 "(%s)", sep1, gres_name,
-				   alloc_cnt, shared_gres_details);
+				   alloc_cnt,
+				   (shared_gres_details ? shared_gres_details :
+							  "(null)"));
 			xfree(shared_gres_details);
 		} else if (gres_js->gres_bit_alloc[j]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
