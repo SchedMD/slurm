@@ -16,6 +16,11 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+/* Issue 50528: conmgr redesigned */
+#include "src/common/workerpool.h"
+#endif
+
 static slurm_addr_t listen_addr = { 0 };
 
 #if defined(__linux__)
@@ -202,7 +207,13 @@ START_TEST(test_status_code_on_shutdown)
 
 	ck_assert_int_eq(socketpair(AF_UNIX, SOCK_STREAM, 0, sv), 0);
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+	/* Issue 50528: conmgr redesigned */
+	workerpool_init(0, 0, NULL);
+	conmgr_init(0);
+#else
 	conmgr_init(0, 0, 0);
+#endif
 
 	/* Hand one end of the socketpair to conmgr as a peer connection */
 	ck_assert_int_eq(conmgr_process_fd(CON_TYPE_RAW,
@@ -218,6 +229,9 @@ START_TEST(test_status_code_on_shutdown)
 	 */
 	ck_assert_int_eq(conmgr_run(true), SLURM_SUCCESS);
 	conmgr_fini();
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+	workerpool_fini();
+#endif
 
 	ck_assert(on_finish_called);
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
