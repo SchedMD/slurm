@@ -787,12 +787,11 @@ List nodes only having the given state(s). Multiple states
 may be comma separated and the comparison is case insensitive.
 If the states are separated by '+', then the nodes must be in all states.
 The state can be prefixed with '~' which will invert the result of match.
-Possible values include (case insensitive): ALLOC, ALLOCATED, BLOCKED, CLOUD,
-COMP, COMPLETING, DOWN, DRAIN (for node in DRAINING or DRAINED
-states), DRAINED, DRAINING, FAIL, FUTURE, FUTR,
-IDLE, MAINT, MIX, MIXED, NO_RESPOND, PLANNED,
-POWER_DOWN, POWERING_DOWN, POWERED_DOWN, POWERING_UP, REBOOT_ISSUED,
-REBOOT_REQUESTED, RESV, RESERVED, UNK, and UNKNOWN.
+See the \fBNODE STATE CODES\fR section below for the common node states.
+\fB\-\-states\fR also accepts any node state flag name, for example
+\fBCLOUD\fR or \fBNOT_RESPONDING\fR, even when it is not listed there.
+A state of \fBDRAIN\fR matches nodes in either the \fBDRAINING\fR or
+\fBDRAINED\fR state.
 By default nodes in the specified state are reported whether
 they are responding or not.
 The \fB\-\-dead\fR and \fB\-\-responding\fR options may be

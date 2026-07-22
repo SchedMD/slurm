@@ -231,6 +231,9 @@ typedef struct {
 	sinfo_state_op_t op;
 } sinfo_state_t;
 
+/* Sentinel state used by "--states=all" that matches any node state */
+#define SINFO_STATE_ALL INFINITE
+
 extern struct sinfo_parameters params;
 
 extern void parse_command_line( int argc, char* *argv );
