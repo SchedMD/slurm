@@ -551,6 +551,18 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg);
 extern int conmgr_con_queue_write_msg(conmgr_fd_ref_t *ref, slurm_msg_t *msg);
 
 /*
+ * Send a RESPONSE_SLURM_RC reply carrying the given return code to an RPC
+ * connection, then queue a close of the connection.
+ * NOTE: type=CON_TYPE_RPC only
+ * IN ref - reference to connection to reply on
+ * IN rc - return code to send back to the client in the RESPONSE_SLURM_RC reply
+ * IN protocol_version - protocol version to pack the reply with.
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_reply_rc_and_close(conmgr_fd_ref_t *ref, int rc,
+					 uint16_t protocol_version);
+
+/*
  * Request soft close of connection
  * IN con connection manager connection struct
  * RET SLURM_SUCCESS or error
