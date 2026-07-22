@@ -263,7 +263,6 @@ test7.4    Test of TotalView operation with srun, with and without bulk
 test7.5    Test of TotalView termination logic for srun.
 test7.6    Test of TotalView operation with sattach
 test7.7    Test of resource allocation layout.
-test7.8    (removed)
 test7.9    Test that no files are open in spawned tasks (except stdin,
 	   stdout, and stderr) to ensure successful checkpoint/restart.
 test7.10   Test if we can trick Slurm into using the wrong user ID
@@ -418,7 +417,6 @@ test17.27  Test that a job executes with the specified nodes, requires multiple
 	   nodes (--nodes, --nodelist and --exclude options).
 test17.28  Tests #SBATCH entry functionality in a batch script.
 test17.29  Verify that command arguments get forwarded to job script.
-test17.30  Test of comment field specification (--comment option).
 test17.31  Tests #PBS entry functionality in a batch script.
 test17.32  Test of --overcommit option.
 test17.33  Test of --open-mode option.
@@ -597,11 +595,6 @@ test32.9   Validates that sgather -p option preserves file state.
 test32.10  Validates that sgather -r copies files recursively.
 test32.11  Validates that sgather -v prints the output logging of the job.
 test32.12  Validates that sgather -t changes the timeout message.
-
-test33.#   Test of message forwarding.
-======================================
-test33.1   Validates the topology_g_split_hostlist api of the route plugin
-	   correctly splits hostlists.
 
 test34.*   Test of Slurm preemption.
 ====================================
@@ -919,6 +912,7 @@ test_122_#   Testing of job_arrays.
 test_122_1   /features/job_arrays/test_basics.py
 test_122_2   Test job array with gres
 test_122_3   Test suspension of job arrays
+test_122_4   Test srun --jobid attach to a running job array task
 
 test_123_#   Testing of reservations.
 =====================================
