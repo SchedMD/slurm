@@ -185,6 +185,26 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 	return rc;
 }
 
+extern int conmgr_con_reply_rc_and_close(conmgr_fd_ref_t *ref, int rc,
+					 uint16_t protocol_version)
+{
+	int send_rc = EINVAL;
+	slurm_msg_t msg = SLURM_MSG_INITIALIZER;
+
+	if (!ref)
+		return EINVAL;
+
+	/* Fake request message to construct a reply */
+	msg.conmgr_con = conmgr_con_link(ref);
+	msg.protocol_version = protocol_version;
+
+	send_rc = slurm_send_rc_msg(&msg, rc);
+	conmgr_con_queue_close(ref);
+
+	slurm_free_msg_members(&msg);
+	return send_rc;
+}
+
 extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int rc;
