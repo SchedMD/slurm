@@ -99,8 +99,14 @@ typedef struct node_select_stats {
 	char *alloc_tres_fmt_str;	/* allocated TRES */
 } node_select_stats_t;
 
-/* Pairs a node index with its topology rank for rank-based ordering. */
+/*
+ * Node ordering entry keyed by topology rank (see node_rank_order_cmp()).
+ * job_pos is the node's position in a job's resources (bitmap order); it is
+ * only meaningful for callers that build the order from job resources and is
+ * left zero otherwise.
+ */
 typedef struct {
+	int job_pos;
 	uint32_t node_inx;
 	uint32_t node_rank;
 } node_rank_order_t;
