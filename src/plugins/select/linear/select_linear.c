@@ -1253,6 +1253,7 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 	from_job_ptr->nodes = xstrdup("");
 	xfree(from_job_resrcs_ptr->nodes);
 	from_job_resrcs_ptr->nodes = xstrdup("");
+	xfree(from_job_resrcs_ptr->order_map);
 
 	_add_job_to_nodes(cr_ptr, to_job_ptr, "select_p_job_expand", 1);
 

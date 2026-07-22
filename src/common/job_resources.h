@@ -42,6 +42,7 @@
 #include <inttypes.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -122,6 +123,8 @@ struct job_resources {
 	uint32_t  node_req;
 	char	 *nodes;
 	uint32_t  ncpus;
+	/* Nodes in rank order, nhosts entries. Derived, not packed. */
+	node_rank_order_t *order_map;
 	uint32_t *sock_core_rep_count;
 	uint16_t *sockets_per_node;
 	uint16_t *tasks_per_node;

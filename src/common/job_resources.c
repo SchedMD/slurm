@@ -209,6 +209,9 @@ extern int reset_node_bitmap(void *void_job_ptr)
 		      job_ptr, job_resrcs_ptr->nhosts, i);
 		return SLURM_ERROR;
 	}
+
+	/* Bit positions may have shifted, order_map node_inx is stale. */
+	xfree(job_resrcs_ptr->order_map);
 	return SLURM_SUCCESS;
 }
 
@@ -333,6 +336,13 @@ extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr)
 		memcpy(new_layout->node_ranks, job_resrcs_ptr->node_ranks,
 		       (sizeof(*new_layout->node_ranks) * new_layout->nhosts));
 	}
+
+	if (job_resrcs_ptr->order_map) {
+		new_layout->order_map = xcalloc(new_layout->nhosts,
+						sizeof(*new_layout->order_map));
+		memcpy(new_layout->order_map, job_resrcs_ptr->order_map,
+		       (sizeof(*new_layout->order_map) * new_layout->nhosts));
+	}
 	/* Copy sockets_per_node, cores_per_socket and core_sock_rep_count */
 	new_layout->sockets_per_node = xcalloc(new_layout->nhosts,
 					       sizeof(uint16_t));
@@ -379,6 +389,7 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 		FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
 		xfree(job_resrcs_ptr->node_ranks);
 		xfree(job_resrcs_ptr->nodes);
+		xfree(job_resrcs_ptr->order_map);
 		xfree(job_resrcs_ptr->sock_core_rep_count);
 		xfree(job_resrcs_ptr->sockets_per_node);
 		xfree(job_resrcs_ptr->tasks_per_node);
@@ -1088,6 +1099,7 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 	xfree(job->nodes);
 	job->nodes = bitmap2node_name(job->node_bitmap);
 	job->ncpus = build_job_resources_cpu_array(job);
+	xfree(job->order_map);
 
 	return SLURM_SUCCESS;
 }

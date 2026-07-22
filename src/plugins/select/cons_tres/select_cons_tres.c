@@ -601,6 +601,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	from_job_ptr->nodes = xstrdup("");
 	xfree(from_job_resrcs_ptr->nodes);
 	from_job_resrcs_ptr->nodes = xstrdup("");
+	xfree(from_job_resrcs_ptr->order_map);
 
 	(void) job_res_add_job(to_job_ptr, JOB_RES_ACTION_NORMAL);
 
