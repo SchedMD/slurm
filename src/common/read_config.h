@@ -143,6 +143,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_RESUME_RATE         300
 #define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_ROUTE_PLUGIN   	    "route/default"
+#define DEFAULT_RUNTIME_PLUGIN "runtime/oci"
 #define DEFAULT_SAVE_STATE_LOC      "/var/spool"
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30

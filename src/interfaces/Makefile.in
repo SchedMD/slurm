@@ -170,8 +170,8 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	conn.lo cred.lo data_parser.lo gpu.lo gres.lo hash.lo \
 	http_auth.lo http_parser.lo jobacct_gather.lo jobcomp.lo \
 	mcs.lo metrics.lo mpi.lo namespace.lo node_features.lo prep.lo \
-	priority.lo select.lo serializer.lo site_factor.lo switch.lo \
-	tls.lo topology.lo url_parser.lo
+	priority.lo runtime.lo select.lo serializer.lo site_factor.lo \
+	switch.lo tls.lo topology.lo url_parser.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -230,11 +230,11 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/namespace.Plo ./$(DEPDIR)/node_features.Plo \
 	./$(DEPDIR)/preempt.Plo ./$(DEPDIR)/prep.Plo \
 	./$(DEPDIR)/priority.Plo ./$(DEPDIR)/proctrack.Plo \
-	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
-	./$(DEPDIR)/serializer.Plo ./$(DEPDIR)/site_factor.Plo \
-	./$(DEPDIR)/switch.Plo ./$(DEPDIR)/task.Plo \
-	./$(DEPDIR)/tls.Plo ./$(DEPDIR)/topology.Plo \
-	./$(DEPDIR)/url_parser.Plo
+	./$(DEPDIR)/runtime.Plo ./$(DEPDIR)/sched_plugin.Plo \
+	./$(DEPDIR)/select.Plo ./$(DEPDIR)/serializer.Plo \
+	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/switch.Plo \
+	./$(DEPDIR)/task.Plo ./$(DEPDIR)/tls.Plo \
+	./$(DEPDIR)/topology.Plo ./$(DEPDIR)/url_parser.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -611,6 +611,8 @@ libcommon_interfaces_la_SOURCES = \
 	prep.h					\
 	priority.c				\
 	priority.h				\
+	runtime.c				\
+	runtime.h				\
 	select.c				\
 	select.h				\
 	serializer.c				\
@@ -749,6 +751,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/priority.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runtime.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serializer.Plo@am__quote@ # am--include-marker
@@ -916,6 +919,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/priority.Plo
 	-rm -f ./$(DEPDIR)/proctrack.Plo
+	-rm -f ./$(DEPDIR)/runtime.Plo
 	-rm -f ./$(DEPDIR)/sched_plugin.Plo
 	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/serializer.Plo
@@ -1003,6 +1007,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/priority.Plo
 	-rm -f ./$(DEPDIR)/proctrack.Plo
+	-rm -f ./$(DEPDIR)/runtime.Plo
 	-rm -f ./$(DEPDIR)/sched_plugin.Plo
 	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/serializer.Plo

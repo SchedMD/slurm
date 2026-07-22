@@ -687,6 +687,7 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->argv = opt_local->argv;
 	launch_params->buffered_stdio = !srun_opt->unbuffered;
 	launch_params->container = opt_local->container;
+	launch_params->runtime = opt_local->runtime;
 	launch_params->cpu_bind = srun_opt->cpu_bind;
 	launch_params->cpu_bind_type = srun_opt->cpu_bind_type;
 	launch_params->cpu_freq_gov = opt_local->cpu_freq_gov;
@@ -1035,8 +1036,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->container = xstrdup(opt_local->container);
 	xfree(step_req->container_id);
 	step_req->container_id = xstrdup(opt_local->container_id);
-	xfree(step_req->container_type);
-	step_req->container_type = xstrdup(opt_local->container_type);
+	xfree(step_req->runtime);
+	step_req->runtime = xstrdup(opt_local->runtime);
 
 	rc = gres_step_state_validate(step_req->cpus_per_tres,
 				     step_req->tres_per_step,

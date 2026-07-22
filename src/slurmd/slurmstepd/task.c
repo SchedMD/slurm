@@ -80,12 +80,12 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/task.h"
@@ -314,8 +314,7 @@ extern void exec_task(int local_proc_id)
 	int saved_errno, status;
 	uint32_t node_offset = 0, task_offset = 0;
 
-	if (step->container)
-		container_task_init(task);
+	runtime_g_task_init(conf, step, task);
 
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;
@@ -511,16 +510,19 @@ extern void exec_task(int local_proc_id)
 			   step->node_name);
 	}
 
-	if (step->container)
-		container_run(task);
+	saved_errno = runtime_g_run(conf, step, task);
 
-	execve(task->argv[0], task->argv, step->env);
-	saved_errno = errno;
+	if (saved_errno == ESLURM_NOT_SUPPORTED) {
+		/* The runtime did not exec the task, so exec it here. */
+		execve(task->argv[0], task->argv, step->env);
+		saved_errno = errno;
+	}
 
 	/*
-	 * print error message and clean up if execve() returns:
+	 * runtime_g_run() and execve() only return on failure:
+	 * print error message and clean up.
 	 */
-	if ((errno == ENOENT) &&
+	if ((saved_errno == ENOENT) &&
 	    ((fd = open(task->argv[0], O_RDONLY)) >= 0)) {
 		char buf[256], *eol;
 		int sz;

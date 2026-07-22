@@ -1693,7 +1693,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 otherwise,default=0 */
 	char *container;	/* OCI container bundle */
 	char *container_id;	/* OCI container ID */
-	char *container_type;	/* container plugin type */
+	char *runtime; /* runtime plugin type */
 	uint16_t core_spec;	/* specialized core/thread count,
 				 * see CORE_SPEC_THREAD */
 	char *cpu_bind;		/* binding map for map/mask_cpu - This
@@ -1890,7 +1890,7 @@ typedef struct job_info {
 	char *comment;		/* arbitrary comment */
 	char *container;	/* OCI Container bundle path */
 	char *container_id;	/* OCI Container ID */
-	char *container_type;	/* Job container type */
+	char *runtime; /* Job runtime plugin type */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
 	uint16_t cores_per_socket; /* cores per socket required by job  */
@@ -2243,6 +2243,7 @@ typedef struct {
 	uint32_t envc;
 	char **env;
 	char *container; /* OCI Container bundle path */
+	char *runtime; /* runtime plugin type */
 	char *cwd;
 	uint32_t msg_timeout; /* timeout set for sending message */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
@@ -2345,7 +2346,7 @@ typedef struct {
 	char *cluster;		/* cluster that the step is running on. */
 	char *container;	/* OCI container bundle path */
 	char *container_id;	/* OCI container ID */
-	char *container_type;	/* Job container type */
+	char *runtime; /* Job runtime plugin type */
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
@@ -3075,6 +3076,7 @@ typedef struct {
 	char *data_parser_parameters; /* data parser parameters */
 	uint64_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
+	char *def_runtime_plugin; /* default runtime plugin type */
 	char *dependency_params; /* DependencyParameters */
 	uint16_t eio_timeout;     /* timeout for the eio thread */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding

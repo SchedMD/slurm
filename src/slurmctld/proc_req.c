@@ -338,6 +338,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 		xstrdup(conf->data_parser_parameters);
 
 	conf_ptr->def_mem_per_cpu     = conf->def_mem_per_cpu;
+	conf_ptr->def_runtime_plugin  = xstrdup(conf->def_runtime_plugin);
 	conf_ptr->debug_flags         = conf->debug_flags;
 	conf_ptr->dependency_params = xstrdup(conf->dependency_params);
 

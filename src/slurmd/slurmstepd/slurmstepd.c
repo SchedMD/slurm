@@ -83,6 +83,7 @@
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
@@ -93,7 +94,6 @@
 #include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -837,8 +837,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	 */
 	proctrack_g_destroy(step->cont_id);
 
-	if (step->container)
-		cleanup_container();
+	runtime_g_cleanup(conf, step);
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (namespace_g_stepd_delete(step))
@@ -871,6 +870,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 
 	cgroup_conf_destroy();
 	switch_g_fini();
+	runtime_g_fini();
 
 	xfree(cli);
 	xfree(conf->block_map);
@@ -1259,6 +1259,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	slurm_addr_t *cli = NULL;
 	slurm_msg_t *msg = NULL;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	char *runtime = NULL;
 
 	/* receive conf from slurmd */
 	if (!(conf = _read_slurmd_conf_lite(sock)))
@@ -1361,6 +1362,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	switch (step_type) {
 	case LAUNCH_BATCH_JOB:
 		step_id = ((batch_job_launch_msg_t *) msg->data)->step_id;
+		runtime = ((batch_job_launch_msg_t *) msg->data)->runtime;
 		break;
 	case LAUNCH_TASKS:
 	{
@@ -1368,6 +1370,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		task_msg = (launch_tasks_request_msg_t *)msg->data;
 
 		step_id = task_msg->step_id;
+		runtime = task_msg->runtime;
 
 		if (task_msg->job_ptr &&
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
@@ -1427,7 +1430,8 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (namespace_g_init() != SLURM_SUCCESS) ||
-	    (topology_g_init() != SLURM_SUCCESS))
+	    (topology_g_init() != SLURM_SUCCESS) ||
+	    runtime_g_init(runtime, RUNTIME_CTXT_SLURMSTEPD))
 		fatal("Couldn't load all plugins");
 
 	/*
@@ -1507,34 +1511,6 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 		return rc;
 	}
 
-	if (step->container) {
-	        struct priv_state sprivs;
-		int rc;
-
-		if (drop_privileges(step, false, &sprivs, true) < 0) {
-			error("%s: drop_priviledges failed", __func__);
-			return SLURM_ERROR;
-		}
-		rc = setup_container();
-		if (reclaim_privileges(&sprivs) < 0) {
-			error("%s: reclaim_priviledges failed", __func__);
-			return SLURM_ERROR;
-		}
-
-		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
-			debug2("%s: container %s requested but containers are not configured on this node",
-			       __func__, step->container->bundle);
-		} else if (rc) {
-			error("%s: container setup failed: %s",
-			      __func__, slurm_strerror(rc));
-			stepd_step_rec_destroy();
-			return SLURM_ERROR;
-		} else {
-			debug2("%s: container %s successfully setup",
-			       __func__, step->container->bundle);
-		}
-	}
-
 	step->jmgr_pid = getpid();
 	step->jobacct = jobacctinfo_create(NULL);
 
@@ -1572,6 +1548,13 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	}
 
 	set_msg_node_id();
+
+	if ((rc = runtime_g_setup(conf, step, cli, msg))) {
+		error("%s: runtime setup failed: %s",
+		      __func__, slurm_strerror(rc));
+		stepd_step_rec_destroy();
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }

@@ -797,7 +797,7 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 		xfree(j->comment);
 		xfree(j->container);
 		xfree(j->container_id);
-		xfree(j->container_type);
+		xfree(j->runtime);
 		xfree(j->cpu_bind);
 		xfree(j->cpus_per_tres);
 		xfree(j->dependency);

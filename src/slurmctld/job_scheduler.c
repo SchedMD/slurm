@@ -2405,6 +2405,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	if (job_ptr->bit_flags & JOB_NTASKS_SET)
 		launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->container = xstrdup(job_ptr->container);
+	launch_msg_ptr->runtime = xstrdup(job_ptr->runtime);
 	launch_msg_ptr->cpu_freq_min = job_ptr->details->cpu_freq_min;
 	launch_msg_ptr->cpu_freq_max = job_ptr->details->cpu_freq_max;
 	launch_msg_ptr->cpu_freq_gov = job_ptr->details->cpu_freq_gov;

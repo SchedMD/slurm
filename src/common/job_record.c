@@ -108,7 +108,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->alloc_tls_cert);
 	xfree(step_ptr->container);
 	xfree(step_ptr->container_id);
-	xfree(step_ptr->container_type);
+	xfree(step_ptr->runtime);
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
@@ -254,7 +254,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->comment);
 	xfree(job_ptr->container);
 	xfree(job_ptr->container_id);
-	xfree(job_ptr->container_type);
+	xfree(job_ptr->runtime);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
 	xfree(job_ptr->exclusive);
@@ -425,7 +425,7 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		packstr(slurm_conf.cluster_name, buffer);
 		packstr(step_ptr->container, buffer);
 		packstr(step_ptr->container_id, buffer);
-		packstr(step_ptr->container_type, buffer);
+		packstr(step_ptr->runtime, buffer);
 		if (step_ptr->job_ptr->part_ptr)
 			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
 		else
@@ -726,7 +726,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 		pack16(step_ptr->cpus_per_task, buffer);
 		packstr(step_ptr->container, buffer);
 		packstr(step_ptr->container_id, buffer);
-		packstr(step_ptr->container_type, buffer);
+		packstr(step_ptr->runtime, buffer);
 		pack16(step_ptr->resv_port_cnt, buffer);
 		pack16(step_ptr->state, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
@@ -827,7 +827,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 		pack16(step_ptr->cpus_per_task, buffer);
 		packstr(step_ptr->container, buffer);
 		packstr(step_ptr->container_id, buffer);
-		packstr(step_ptr->container_type, buffer);
+		packstr(step_ptr->runtime, buffer);
 		pack16(step_ptr->resv_port_cnt, buffer);
 		pack16(step_ptr->state, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
@@ -1058,7 +1058,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint64_t *memory_allocated = NULL;
 	time_t start_time, pre_sus_time, tot_sus_time;
 	char *host = NULL, *container = NULL, *container_id = NULL;
-	char *container_type = NULL;
+	char *runtime = NULL;
 	char *core_job = NULL, *submit_line = NULL;
 	char *std_in = NULL, *std_err = NULL, *std_out = NULL, *cwd = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
@@ -1084,7 +1084,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpackstr(&container, buffer);
 		safe_unpackstr(&container_id, buffer);
-		safe_unpackstr(&container_type, buffer);
+		safe_unpackstr(&runtime, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
@@ -1176,7 +1176,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpackstr(&container, buffer);
 		safe_unpackstr(&container_id, buffer);
-		safe_unpackstr(&container_type, buffer);
+		safe_unpackstr(&runtime, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
@@ -1358,7 +1358,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 	step_ptr->container = container;
 	step_ptr->container_id = container_id;
-	step_ptr->container_type = container_type;
+	step_ptr->runtime = runtime;
 	step_ptr->cpu_alloc_array_cnt = cpu_alloc_array_cnt;
 	xfree(step_ptr->cpu_alloc_reps);
 	step_ptr->cpu_alloc_reps = cpu_alloc_reps;
@@ -1476,7 +1476,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 unpack_error:
 	xfree(container);
 	xfree(container_id);
-	xfree(container_type);
+	xfree(runtime);
 	xfree(cpu_alloc_reps);
 	xfree(cpu_alloc_values);
 	xfree(host);
@@ -2154,7 +2154,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->container, buffer);
 		packstr(dump_job_ptr->container_id, buffer);
-		packstr(dump_job_ptr->container_type, buffer);
+		packstr(dump_job_ptr->runtime, buffer);
 		packstr(dump_job_ptr->cpus_per_tres, buffer);
 
 		pack_time(dump_job_ptr->deadline, buffer);
@@ -2438,7 +2438,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->comment, buffer);
 		safe_unpackstr(&job_ptr->container, buffer);
 		safe_unpackstr(&job_ptr->container_id, buffer);
-		safe_unpackstr(&job_ptr->container_type, buffer);
+		safe_unpackstr(&job_ptr->runtime, buffer);
 		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
 
 		safe_unpack_time(&job_ptr->deadline, buffer);

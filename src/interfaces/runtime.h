@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  container.h - slurmstepd container handling
+ *  runtime.h - job runtime plugin interface.
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,14 +33,56 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _STEP_CONTAINER_H
-#define _STEP_CONTAINER_H
+#ifndef _INTERFACES_RUNTIME_H
+#define _INTERFACES_RUNTIME_H
 
+#include <stdbool.h>
+#include <stdio.h>
+
+#include "src/common/slurm_opt.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-extern int setup_container(void);
-extern void cleanup_container(void);
-extern void container_task_init(stepd_step_task_info_t *task);
-extern void container_run(stepd_step_task_info_t *task);
+struct option;
 
-#endif /* _STEP_CONTAINER_H */
+/* Forward declaration to avoid pulling slurmd.h into this header. */
+typedef struct slurmd_config slurmd_conf_t;
+
+typedef enum {
+	RUNTIME_CTXT_INVALID = 0,
+	RUNTIME_CTXT_SUBMIT, /* srun/salloc/sbatch/slurmrestd */
+	RUNTIME_CTXT_SLURMD,
+	RUNTIME_CTXT_SLURMSTEPD,
+	RUNTIME_CTXT_INVALID_MAX
+} runtime_context_t;
+
+/*
+ * Initialize the runtime plugin.
+ * IN plugin_name - Plugin name or NULL for default
+ * IN context - Calling context for plugin
+ * RET SLURM_SUCCESS or error
+ */
+extern int runtime_g_init(const char *plugin_name, runtime_context_t context);
+extern void runtime_g_fini(void);
+
+/* Set up the runtime for the step. Runs in slurmstepd. */
+extern int runtime_g_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			   slurm_addr_t *cli, slurm_msg_t *msg);
+
+/* Clean up the runtime for the step. Runs in slurmstepd. */
+extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step);
+
+/* Prepare the runtime for the specified task. Runs in slurmstepd. */
+extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
+				stepd_step_task_info_t *task);
+
+/*
+ * Run the specified task within the runtime. Runs in slurmstepd.
+ * The plugin execs the task and only returns on failure, or returns
+ * ESLURM_NOT_SUPPORTED without exec'ing to have the caller exec the task.
+ * RET ESLURM_NOT_SUPPORTED if the caller must exec the task, otherwise the
+ *	errno from the failed exec
+ */
+extern int runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
+			 stepd_step_task_info_t *task);
+
+#endif

@@ -660,13 +660,13 @@ int _print_job_container_id(job_info_t *job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-extern int print_job_container_type(job_info_t *job, int width, bool right,
-				    char *suffix)
+extern int print_job_runtime(job_info_t *job, int width, bool right,
+			     char *suffix)
 {
 	if (!job) /* Print the Header instead */
-		_print_str("CONTAINERTYPE", width, right, true);
+		_print_str("RUNTIME", width, right, true);
 	else
-		_print_str(job->container_type, width, right, true);
+		_print_str(job->runtime, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);
@@ -2573,13 +2573,13 @@ int _print_step_container_id(job_step_info_t *step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-extern int print_step_container_type(job_step_info_t *step, int width,
-				     bool right, char *suffix)
+extern int print_step_runtime(job_step_info_t *step, int width, bool right,
+			      char *suffix)
 {
 	if (!step) /* Print the Header instead */
-		_print_str("CONTAINERTYPE", width, right, true);
+		_print_str("RUNTIME", width, right, true);
 	else
-		_print_str(step->container_type, width, right, true);
+		_print_str(step->runtime, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);

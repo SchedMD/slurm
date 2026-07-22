@@ -415,11 +415,6 @@ Unique name for OCI container.
 .IP
 
 .TP
-\fB\-\-container-type\fR=<\fIcontainer_type\fR>
-Job container type to use for job.
-.IP
-
-.TP
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 
@@ -2378,6 +2373,12 @@ See \fB\-\-stepmgr\fR.
 .IP
 
 .TP
+\fB\-\-runtime\fR=<\fIname\fR>
+Runtime plugin to use for job. Specify \fBlist\fR to print the available
+runtime plugins and exit.
+.IP
+
+.TP
 \fB\-\-segment\fR=<\fIsegment_size\fR>
 When a block or ring topology is used, this defines the size of the segments
 that will be used to create the job allocation.
@@ -2924,11 +2925,6 @@ Same as \fB\-\-container-id\fR.
 .IP
 
 .TP
-\fBSBATCH_CONTAINER_TYPE\fR
-Same as \fB\-\-container-type\fR.
-.IP
-
-.TP
 \fBSBATCH_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .IP
@@ -3113,6 +3109,11 @@ Same as \fB\-\-requeue\fR
 .TP
 \fBSBATCH_RESERVATION\fR
 Same as \fB\-\-reservation\fR
+.IP
+
+.TP
+\fBSBATCH_RUNTIME\fR
+Same as \fB\-\-runtime\fR.
 .IP
 
 .TP
@@ -3318,12 +3319,6 @@ Only set if \-\-container\fR is specified.
 \fBSLURM_CONTAINER_ID\fR
 OCI id for job.
 Only set if \fB\-\-container-id\fR is specified.
-.IP
-
-.TP
-\fBSLURM_CONTAINER_TYPE\fR
-Job container type for job.
-Only set if \fB\-\-container-type\fR is specified.
 .IP
 
 .TP
@@ -3599,6 +3594,12 @@ Same as \fB\-\-profile\fR
 If the job has been restarted due to system failure or has been
 explicitly requeued, this will be sent to the number of times
 the job has been restarted.
+.IP
+
+.TP
+\fBSLURM_RUNTIME\fR
+Runtime plugin for job.
+Only set if \fB\-\-runtime\fR is specified.
 .IP
 
 .TP
