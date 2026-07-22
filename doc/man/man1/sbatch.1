@@ -1723,39 +1723,8 @@ Specify a minimum number of logical cpus/processors per node.
 \fB\-\-network\fR=<\fItype\fR>
 Specify information pertaining to the switch or network.
 The interpretation of \fItype\fR is system dependent.
-It is used to request using Network Performance Counters.
-Only one value per request is valid.
-All options are case in\-sensitive.
-In this configuration supported values include:
-.IP
-.RS
-.TP 6
-\fBsystem\fR
-Use the system\-wide network performance counters. Only nodes requested
-will be marked in use for the job allocation. If the job does not
-fill up the entire system the rest of the nodes are not
-able to be used by other jobs using NPC, if idle their state will appear as
-PerfCnts. These nodes are still available for other jobs not using NPC.
-.IP
 
-.TP
-\fBblade\fR
-Use the blade network performance counters. Only nodes requested
-will be marked in use for the job allocation. If the job does not
-fill up the entire blade(s) allocated to the job those blade(s) are not
-able to be used by other jobs using NPC, if idle their state will appear as
-PerfCnts. These nodes are still available for other jobs not using NPC.
-.RE
-.IP
-
-In all cases the job allocation request \fBmust specify the
-\-\-exclusive option\fR. Otherwise the request will be denied.
-
-Also with any of these options steps are not allowed to share blades,
-so resources would remain idle inside an allocation if the step
-running on a blade does not take up all the nodes on the blade.
-
-The \fBnetwork\fR option is also available on systems with HPE Slingshot
+The \fBnetwork\fR option is available on systems with HPE Slingshot
 networks. It can be used to request a job VNI (to be used for communication
 between job steps in a job). It also can be used to override the default
 network resources allocated for the job step. Multiple values may be specified
