@@ -173,6 +173,13 @@ extern int build_job_resources(job_resources_t *job_resrcs_ptr);
  * Return total CPU count or -1 on error */
 extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr);
 
+/*
+ * (Re)build order_map from node_bitmap and node_ranks: the job's nodes ordered
+ * by topology rank (ties broken by node index), or in node (bitmap) order when
+ * the job has no node_ranks. Must be called whenever node_bitmap changes.
+ */
+extern void build_job_resources_order_map(job_resources_t *job_resrcs_ptr);
+
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.
