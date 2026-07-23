@@ -119,9 +119,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  uint32_t node_count, int *return_code);
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
-				       int cpu_cnt, uint32_t *usable_cpu_cnt,
-				       node_rank_order_t *order_map,
-				       int order_cnt);
+				       int cpu_cnt, uint32_t *usable_cpu_cnt);
 static void _step_dealloc_lps(step_record_t *step_ptr);
 static int _step_create(job_record_t *job_ptr,
 			job_step_create_request_msg_t *step_specs,
@@ -1170,9 +1168,7 @@ static int _next_rank_start(node_rank_order_t *order_map, int order_cnt,
  */
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
-				       int cpu_cnt, uint32_t *usable_cpu_cnt,
-				       node_rank_order_t *order_map,
-				       int order_cnt)
+				       int cpu_cnt, uint32_t *usable_cpu_cnt)
 {
 	bitstr_t *picked_node_bitmap = NULL;
 	int *usable_cpu_array;
@@ -1180,6 +1176,8 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	int rem_nodes, rem_cpus, save_rem_nodes, save_rem_cpus;
 	int i, pos = 0, check_cnt, node_inx;
 	int start_pos;
+	node_rank_order_t *order_map = job_ptr->job_resrcs->order_map;
+	int order_cnt = job_ptr->job_resrcs->nhosts;
 
 	xassert(node_cnt > 0);
 	xassert(nodes_bitmap);
@@ -1485,8 +1483,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 	uint32_t orig_next_step_node_inx = 0;
-	node_rank_order_t *order_map = NULL;
-	int order_cnt = 0;
 	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = cpus_per_task,
 		.first_step_node = true,
@@ -1836,23 +1832,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		return nodes_avail;
 	}
 
-	order_cnt = bit_set_count(job_resrcs_ptr->node_bitmap);
-	if (order_cnt > 0) {
-		order_map = xcalloc(order_cnt, sizeof(*order_map));
-		for (int node_idx = 0, map_idx = 0;
-		     next_node_bitmap(job_resrcs_ptr->node_bitmap, &node_idx);
-		     node_idx++) {
-			order_map[map_idx].node_inx = node_idx;
-			if (job_resrcs_ptr->node_ranks)
-				order_map[map_idx].node_rank =
-					job_resrcs_ptr->node_ranks[map_idx];
-			map_idx++;
-		}
-		if (job_resrcs_ptr->node_ranks)
-			qsort(order_map, order_cnt, sizeof(*order_map),
-			      node_rank_order_cmp);
-	}
-
 	/*
 	 * An allocating srun will send in the same node_list that was already
 	 * used to construct the job allocation. In that case, we can assume
@@ -2155,8 +2134,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			node_tmp =
 				_pick_step_nodes_cpus(job_ptr, nodes_idle,
 						      nodes_needed, cpus_needed,
-						      usable_cpu_cnt, order_map,
-						      order_cnt);
+						      usable_cpu_cnt);
 			if (node_tmp) {
 				bit_or(nodes_picked, node_tmp);
 				bit_and_not(nodes_idle, node_tmp);
@@ -2179,8 +2157,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			node_tmp =
 				_pick_step_nodes_cpus(job_ptr, nodes_avail,
 						      nodes_needed, cpus_needed,
-						      usable_cpu_cnt, order_map,
-						      order_cnt);
+						      usable_cpu_cnt);
 			if (node_tmp == NULL) {
 				/* Count of nodes already picked for step */
 				int pick_node_cnt = bit_set_count(nodes_avail);
@@ -2282,7 +2259,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
-	xfree(order_map);
 	xfree(usable_cpu_cnt);
 	return nodes_picked;
 
@@ -2290,7 +2266,6 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
-	xfree(order_map);
 	xfree(usable_cpu_cnt);
 
 	job_resrcs_ptr->next_step_node_inx = orig_next_step_node_inx;
