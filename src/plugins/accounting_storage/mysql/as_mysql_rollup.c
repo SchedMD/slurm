@@ -937,7 +937,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	while ((row = mysql_fetch_row(result))) {
 		time_t row_start = slurm_atoul(row[EVENT_REQ_START]);
 		time_t row_end = slurm_atoul(row[EVENT_REQ_END]);
-		uint16_t state = slurm_atoul(row[EVENT_REQ_STATE]);
+		uint32_t state = slurm_atoul(row[EVENT_REQ_STATE]);
 		time_t local_start, local_end;
 		int seconds, resv_seconds;
 
@@ -2125,10 +2125,11 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			run_month ? qos_day_table : qos_hour_table,
 			curr_end, curr_start, now);
 
-		/* We group on deleted here so if there are no entries
-		   we don't get an error, just nothing is returned.
-		   Else we get a bunch of NULL's
-		*/
+		/*
+		 * Group by id_tres only: matches the target PK
+		 * (id_tres, time_start) and returns no rows on an
+		 * empty window rather than a NULL row.
+		 */
 		xstrfmtcat(query,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, id_tres, count, "
@@ -2143,7 +2144,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			   "@OSUM:=SUM(over_secs), "
 			   "@PSUM:=SUM(plan_secs) from \"%s_%s\" where "
 			   "(time_start < %ld and time_start >= %ld) "
-			   "group by deleted, id_tres "
+			   "group by id_tres "
 			   "on duplicate key update "
 			   "mod_time=%ld, count=@CPU, "
 			   "alloc_secs=@ASUM, down_secs=@DSUM, "
