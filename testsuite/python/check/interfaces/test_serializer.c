@@ -244,8 +244,6 @@ START_TEST(test_parse_invalid)
 			"\x06",
 			"\x07",
 			"\x08",
-			"\\u10FFFF",
-			"\\u10FFFFFFFFFFFFFFFFFFFFFFF",
 			"\\u0",
 			"\\uTACOS",
 			"\\u000TACOS",
@@ -297,6 +295,8 @@ START_TEST(test_parse_valid)
 		"[{\"test\":\"test\"}]",
 		"{\"test\":[]}",
 		"{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":{\"test\":\"test\"}}}}}}}}}}}}}}}}}}}}}}}}}}",
+		"\"\\u10FFFF\"",
+		"\"\\u10FFFFFFFFFFFFFFFFFFFFFFF\"",
 	};
 	data_t *c[] = {
 		data_set_string(data_new(), "taco"),
@@ -322,6 +322,8 @@ START_TEST(test_parse_valid)
 		data_set_list(data_new()),
 		data_set_dict(data_new()),
 		data_set_dict(data_new()),
+		data_set_string(data_new(), "\u10FFFF"),
+		data_set_string(data_new(), "\u10FFFFFFFFFFFFFFFFFFFFFFF"),
 	};
 
 	data_set_int(data_list_append(c[2]), 100);
