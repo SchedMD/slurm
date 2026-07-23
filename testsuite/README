@@ -880,6 +880,8 @@ test_116_55  Test srun --async CLI behavior
 test_116_56  Test srun --relative
 test_116_57  Test srun in het job nested in non-het job
 test_116_58  Test srun --async --kill-on-bad-exit kills remaining tasks
+test_116_59  Test the --runtime job submission option and its runtime plugins
+test_116_60  Test the srun/salloc/sbatch --runtime=list option
 
 test_117_#   Testing of sstat options.
 ======================================
