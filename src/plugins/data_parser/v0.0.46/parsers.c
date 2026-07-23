@@ -8875,6 +8875,7 @@ static const parser_t PARSER_ARRAY(SLURMDBD_CONF)[] = {
 	add_parse(STRING, dbd_backup, "DbdBackupHost", "hostname of Slurm DBD backup"),
 	add_parse(STRING, dbd_host, "DbdHost", "hostname of Slurm DBD"),
 	add_parse(UINT16, dbd_port, "DbdPort", "port number for RPCs to DBD"),
+	add_parse(DEBUG_FLAGS, debug_flags, "DebugFlags", "Subsystems which provide more detailed event logging"),
 	add_parse(LOG_LEVEL_UINT16, debug_level, "DebugLevel", "debug level, default=3"),
 	add_parse(STRING, default_qos, "DefaultQOS", "default qos setting when adding clusters"),
 	add_parse(CONF_FLAGS_DBD, flags, "Flags", "various flags, see DBD_CONF_FLAG_*"),
