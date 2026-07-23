@@ -6279,7 +6279,9 @@ extern void slurm_format_tres_string(char **s, char *tres_type)
 }
 
 /*
- * Fuzzy name comparison for remote licenses
+ * Fuzzy name comparison for remote licenses, the "name" MUST refer to a
+ * remote license with the key assumption that no '@' characters exist in
+ * the server name.
  * query IN - query string
  * name IN - license name
  * RET rc - 0 for no match, 1 for exact match, 2 for fuzzy match
@@ -6292,10 +6294,11 @@ extern int slurm_remote_license_fuzzy_match(const char *query, const char *name)
 	if ((query == NULL) || (name == NULL))
 		return LIC_NO_MATCH;
 
-	query_split = xstrchr(query, '@');
-	split = xstrchr(name, '@');
+	query_split = xstrrchr(query, '@');
+	split = xstrrchr(name, '@');
 	if (split)
 		cnt = split - name;
+
 	/*
 	 * fuzzy match cases
 	 * check1:

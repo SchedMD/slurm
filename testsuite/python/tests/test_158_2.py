@@ -16,10 +16,23 @@ def setup():
     global cluster
 
     atf.require_version((26, 5), component="bin/sacctmgr")
-    atf.require_nodes(1)
+    atf.require_nodes(2)
     atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
     atf.require_config_parameter("LicenseParameters", "RemoteFuzzyMatch")
-    atf.require_config_parameter("Licenses", "simple:100")
+    atf.require_config_parameter("Licenses", "simple:100,b@dnam3:1")
+    atf.require_config_file(
+        "resources.yaml",
+        """
+---
+- resource: testhres
+  mode: MODE_1
+  layers:
+  - nodes: "node1"
+    count: 1
+  - nodes: "node2"
+    count: 2
+""",
+    )
 
     atf.require_slurm_running()
 
@@ -226,6 +239,26 @@ def test_show_license_one_result_only():
         == 'scontrol: error: query "matlab" matched more than one result, exiting.'
     )
     assert ret["stdout"] == ""
+
+
+def test_show_license_local():
+    ret = atf.run_command(
+        "scontrol show licenses=simple",
+    )
+    assert ret["exit_code"] == 0
+    assert ret["stdout"].count("LicenseName=simple") == 1
+
+    ret = atf.run_command(
+        "scontrol show licenses=testhres",
+    )
+    assert ret["exit_code"] == 0
+    assert ret["stdout"].count("LicenseName=testhres") == 2
+
+    ret = atf.run_command(
+        "scontrol show licenses=b@dnam3",
+    )
+    assert ret["exit_code"] == 0
+    assert ret["stdout"].count("LicenseName=b@dnam3") == 1
 
 
 def test_show_license_invalid_query(matlab_res):
