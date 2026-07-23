@@ -1076,7 +1076,7 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 	return changed;
 }
 
-static void _destory_local_mod_qos(void *x)
+static void _destroy_local_mod_qos(void *x)
 {
 	local_mod_qos_t *local_mod_qos = x;
 
@@ -2570,7 +2570,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	user_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	mod_acct_list = list_create(slurmdb_destroy_account_rec);
-	mod_qos_list = list_create(_destory_local_mod_qos);
+	mod_qos_list = list_create(_destroy_local_mod_qos);
 	mod_user_list = list_create(slurmdb_destroy_user_rec);
 	mod_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
