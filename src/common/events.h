@@ -121,11 +121,13 @@ extern void event_signal_now(bool broadcast, event_signal_t *event,
 /*
  * Send signal to one waiter even if EVENT_WAIT() called later but drop signal
  * if there is already another reliable signal pending a waiter.
+ * Note: Caller must hold relevant event lock
  */
 #define EVENT_SIGNAL(event) event_signal_now(false, event, __func__)
 /*
  * Send signal to all currently waiting threads or drop signal if there are no
  * currently waiting threads.
+ * Note: Caller must hold relevant event lock
  */
 #define EVENT_BROADCAST(event) event_signal_now(true, event, __func__)
 
