@@ -1013,6 +1013,11 @@ static list_t *_get_qos_ptr_list(char *qos_req, char *resv_name,
 	return qos_ptr_list;
 }
 
+/*
+ * For multi-QOS requests, qos_id == 0 means select the first QOS from the
+ * priority-sorted request list. A nonzero qos_id means the caller already has
+ * a selected QOS to preserve, such as when reloading an existing job.
+ */
 static int _get_qos_info(char *qos_req, uint32_t qos_id, list_t **qos_plist,
 			 slurmdb_qos_rec_t **qos_pptr, char *resv_name,
 			 slurmdb_assoc_rec_t *assoc_ptr, bool privileged,
@@ -1036,10 +1041,21 @@ static int _get_qos_info(char *qos_req, uint32_t qos_id, list_t **qos_plist,
 		*qos_pptr = _determine_and_validate_qos(resv_name, assoc_ptr,
 							privileged, &qos_rec,
 							&rc, locked, log_lvl);
-	} else {
-		*qos_pptr = list_peek(*qos_plist);
+		return rc;
 	}
 
+	if (qos_id) {
+		*qos_pptr =
+			list_find_first_ro(*qos_plist, slurmdb_find_qos_in_list,
+					   &qos_id);
+		if (*qos_pptr)
+			return rc;
+
+		info("%s: qos %u is not part of qos_req '%s', using the highest priority one",
+		     __func__, qos_id, qos_req);
+	}
+
+	*qos_pptr = list_peek(*qos_plist);
 	return rc;
 }
 /*
