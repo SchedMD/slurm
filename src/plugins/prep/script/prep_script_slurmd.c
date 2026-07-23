@@ -36,6 +36,7 @@
 #include "config.h"
 
 #include <glob.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -65,6 +66,8 @@ slurmd_conf_t *conf = NULL;
 
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog);
+static bool _get_job_alloc_mem_per_node(slurm_cred_arg_t *cred_arg,
+					uint64_t *alloc_mem);
 static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id,
 				 bool is_epilog);
 
@@ -220,6 +223,43 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	return rc;
 }
 
+static bool _get_job_alloc_mem_per_node(slurm_cred_arg_t *cred_arg,
+					uint64_t *alloc_mem)
+{
+	int node_id, rep_idx = -1;
+
+	if (!cred_arg->job_hostlist || !cred_arg->job_mem_alloc ||
+	    !cred_arg->job_mem_alloc_rep_count || !cred_arg->job_mem_alloc_size)
+		goto skip;
+
+	if ((node_id = nodelist_find(cred_arg->job_hostlist, conf->node_name)) <
+	    0)
+		goto skip;
+
+	for (uint32_t i = 0; i < cred_arg->job_mem_alloc_size; i++)
+		if (!cred_arg->job_mem_alloc_rep_count[i])
+			goto skip;
+
+	/* Batch credentials only carry the batch node's memory allocation. */
+	if (cred_arg->step_id.step_id == SLURM_BATCH_SCRIPT)
+		rep_idx = 0;
+	else
+		rep_idx = slurm_get_rep_count_inx(
+			cred_arg->job_mem_alloc_rep_count,
+			cred_arg->job_mem_alloc_size, node_id);
+	if ((rep_idx < 0) ||
+	    ((uint32_t) rep_idx >= cred_arg->job_mem_alloc_size))
+		goto skip;
+
+	*alloc_mem = cred_arg->job_mem_alloc[rep_idx];
+	return true;
+
+skip:
+	debug2("%s: unable to get SLURM_JOB_ALLOC_MEM_PER_NODE on node %s",
+	       __func__, conf->node_name);
+	return false;
+}
+
 /* NOTE: call env_array_free() to free returned value */
 static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
@@ -292,10 +332,15 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 
 	if (cred) {
 		slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
+		uint64_t alloc_mem;
 
 		if (cred_arg->job_account)
 			setenvf(&env, "SLURM_JOB_ACCOUNT", "%s",
 				cred_arg->job_account);
+		if (!is_epilog &&
+		    _get_job_alloc_mem_per_node(cred_arg, &alloc_mem))
+			setenvf(&env, "SLURM_JOB_ALLOC_MEM_PER_NODE",
+				"%" PRIu64, alloc_mem);
 		if (cred_arg->job_comment)
 			setenvf(&env, "SLURM_JOB_COMMENT", "%s",
 				cred_arg->job_comment);
