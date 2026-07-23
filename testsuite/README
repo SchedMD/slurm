@@ -970,6 +970,7 @@ test_128_1   /parameters/slurm/PreemptType/partition_prio/test_preemption_by_par
 test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel"
 test_128_3   Test hetjob is exempt from preemption under SUSPEND,GANG
 test_128_4   Test hetjob is preempted under REQUEUE and CANCEL, with and without GANG
+test_128_5   Test hetjob mixed-mode components resolve to highest-order mode
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
