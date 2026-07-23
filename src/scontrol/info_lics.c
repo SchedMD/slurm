@@ -165,8 +165,10 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 	sorted_lic = _license_sort(msg);
 	for (cc = 0; cc < msg->num_lic; cc++) {
 		if (name) {
+			bool remote_fuzzy =
+				(use_fuzzy_match && sorted_lic[cc]->remote);
 			switch (_match_license_name(name, sorted_lic[cc]->name,
-						    use_fuzzy_match)) {
+						    remote_fuzzy)) {
 			case LIC_NO_MATCH:
 				continue;
 			case LIC_FUZZY_MATCH:
