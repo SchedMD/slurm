@@ -54,8 +54,12 @@
 
 /*
  * Create workerpool
- * IN thread_count - User requested thread count
- * IN default_thread_count - Default number of threads for current daemon
+ * IN thread_count - Thread count explicitly requested by the user, such as via
+ *	a CLI argument, or 0 if not requested. Treated as user configuration and
+ *	may be warned about or rejected.
+ * IN default_thread_count - Default number of threads for current daemon or 0
+ *	to automatically detect from the number of available CPUs. Never
+ *	treated as user configuration.
  * IN params - CSV string with parameters for workerpool
  *	See WORKERPOOL_PARAM_* for possible parameters.
  */
