@@ -167,15 +167,26 @@ static int _resolve_thread_count(int count, const int default_count)
 {
 	const int detected_cpus = _detect_cpu_count();
 	const int auto_threads_max = (detected_cpus * CPU_THREAD_MULTIPLIER);
-	const int auto_threads = MIN(THREAD_AUTO_MAX, auto_threads_max);
+	const int auto_threads = MAX(WORKERPOOL_THREAD_COUNT_MIN,
+				     MIN(THREAD_AUTO_MAX, auto_threads_max));
 	const int detected_threads_high = (detected_cpus * CPU_THREAD_HIGH);
 	const int detected_threads_low = (detected_cpus / CPU_THREAD_LOW);
+	/*
+	 * Suggested range must always stay inside of the hard limits enforced
+	 * below to never suggest a thread count that would then be rejected.
+	 * The kernel may report as little as 1 CPU, or none at all, which would
+	 * otherwise suggest a nonsensical range such as [0, 2] or [2, 0].
+	 */
 	const int warn_max_threads =
-		MIN(WORKERPOOL_THREAD_COUNT_MAX, detected_threads_high);
+		MAX(WORKERPOOL_THREAD_COUNT_MIN,
+		    MIN(WORKERPOOL_THREAD_COUNT_MAX, detected_threads_high));
 	const int min_def_threads =
 		MIN(THREAD_AUTO_MAX,
 		    MAX(WORKERPOOL_THREAD_COUNT_MIN, default_count));
-	const int warn_min_threads = MIN(detected_threads_low, min_def_threads);
+	const int warn_min_threads =
+		MIN(warn_max_threads,
+		    MAX(WORKERPOOL_THREAD_COUNT_MIN,
+			MIN(detected_threads_low, min_def_threads)));
 
 	if (!count && (workerpool.config.thread_count > 0)) {
 		count = workerpool.config.thread_count;
