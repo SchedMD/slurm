@@ -31,10 +31,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <check.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <check.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/data.h"
@@ -397,6 +398,96 @@ START_TEST(test_convert_list_dict)
 
 END_TEST
 
+START_TEST(test_data_move)
+{
+	data_t *src, *dst;
+
+	/* NULL destination is allocated by data_move() */
+	src = data_set_int(data_new(), 42);
+	dst = data_move(NULL, src);
+	ck_assert(dst != NULL);
+	ck_assert(data_get_type(dst) == DATA_TYPE_INT_64);
+	ck_assert_int_eq(data_get_int(dst), 42);
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* value transfers to the destination and empties the source */
+	src = data_set_string(data_new(), "tacos");
+	dst = data_new();
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_STRING);
+	ck_assert_str_eq(data_get_string(dst), "tacos");
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* an entire subtree moves in a single call */
+	src = data_set_list(data_new());
+	data_set_string(data_list_append(src), "taco1");
+	data_set_string(data_list_append(src), "taco2");
+	dst = data_new();
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_LIST);
+	ck_assert_int_eq(data_get_list_length(dst), 2);
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/*
+	 * A populated scalar destination is replaced. The string is longer
+	 * than the inline string buffer so that releasing the destination has
+	 * to free a heap allocation, which is the leak being fixed.
+	 */
+	dst = data_set_string(data_new(), "taco truck");
+	src = data_set_bool(data_new(), true);
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_BOOL);
+	ck_assert(data_get_bool(dst));
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* a populated list destination is released and replaced */
+	dst = data_set_list(data_new());
+	data_set_string(data_list_append(dst), "taco1");
+	data_set_string(data_list_append(dst), "taco2");
+	src = data_set_string(data_new(), "tacos");
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_STRING);
+	ck_assert_str_eq(data_get_string(dst), "tacos");
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* a populated dictionary destination is released and replaced */
+	dst = data_set_dict(data_new());
+	data_set_string(data_key_set(dst, "taco"), "tacos");
+	src = data_set_int(data_new(), -1);
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_INT_64);
+	ck_assert_int_eq(data_get_int(dst), -1);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* moving onto an existing key only replaces that entry */
+	dst = data_set_dict(data_new());
+	data_set_string(data_key_set(dst, "taco1"), "tacos");
+	data_set_list(data_key_set(dst, "taco2"));
+	data_set_string(data_list_append(data_key_get(dst, "taco2")), "tacos");
+	src = data_set_string(data_new(), "burrito");
+	ck_assert(data_move(data_key_set(dst, "taco2"), src) != NULL);
+	ck_assert_int_eq(data_get_dict_length(dst), 2);
+	ck_assert(data_get_type(data_key_get(dst, "taco2")) ==
+		  DATA_TYPE_STRING);
+	ck_assert_str_eq(data_get_string(data_key_get(dst, "taco2")),
+			 "burrito");
+	ck_assert_str_eq(data_get_string(data_key_get(dst, "taco1")), "tacos");
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+}
+
+END_TEST
+
 START_TEST(test_detection)
 {
 	data_t *d = data_new();
@@ -415,6 +506,35 @@ START_TEST(test_detection)
 }
 END_TEST
 
+#ifndef NDEBUG
+START_TEST(test_data_move_null_src)
+{
+	data_t *dst = data_set_string(data_new(), "taco");
+
+	/* expect SIGABRT */
+	/* src must never be NULL */
+	data_move(dst, NULL);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
+#ifndef NDEBUG
+START_TEST(test_data_move_self)
+{
+	data_t *d = data_set_string(data_new(), "taco");
+
+	/* expect SIGABRT */
+	/*
+	 * dest must never be src: _release(dest) runs before the contents are
+	 * copied, so a self move would free what it is about to read.
+	 */
+	data_move(d, d);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
 Suite *suite_data(void)
 {
 	Suite *s = suite_create("Data");
@@ -425,10 +545,25 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_dict_iteration);
 	tcase_add_test(tc_core, test_list_iteration);
 	tcase_add_test(tc_core, test_convert_list_dict);
+	tcase_add_test(tc_core, test_data_move);
 
 	suite_add_tcase(s, tc_core);
 	return s;
 }
+
+#ifndef NDEBUG
+static Suite *_suite_data_assert(void)
+{
+	Suite *s = suite_create("Data_assert");
+	TCase *tc_core = tcase_create("Data_assert");
+
+	tcase_add_test_raise_signal(tc_core, test_data_move_null_src, SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_data_move_self, SIGABRT);
+
+	suite_add_tcase(s, tc_core);
+	return s;
+}
+#endif /* !NDEBUG */
 
 int main(void)
 {
@@ -445,6 +580,16 @@ int main(void)
 	log_init("data-test", log_opts, 0, NULL);
 
 	SRunner *sr = srunner_create(suite_data());
+
+#ifdef NDEBUG
+	printf("Can't perform assert tests with NDEBUG set.\n");
+#else
+	/* assert tests can only be run in forking mode */
+	if (srunner_fork_status(sr) == CK_FORK)
+		srunner_add_suite(sr, _suite_data_assert());
+	else
+		printf("Skipping assert tests since not in forking mode.\n");
+#endif
 
 	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
