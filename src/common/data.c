@@ -2419,13 +2419,18 @@ extern data_t *data_move(data_t *dest, data_t *src)
 	if (!src)
 		return NULL;
 
-	if (!dest)
+	if (!dest) {
 		dest = data_new();
+		log_flag(DATA, "%s: move data %pD to new %pD",
+			 __func__, src, dest);
+	} else {
+		_check_magic(dest);
+		log_flag(DATA, "%s: move data %pD to existing %pD",
+			 __func__, src, dest);
+		_release(dest);
+	}
 
 	_check_magic(src);
-	_check_magic(dest);
-
-	log_flag(DATA, "%s: move data %pD to %pD", __func__, src, dest);
 
 	memmove(&dest->data, &src->data, sizeof(src->data));
 	dest->type = src->type;
