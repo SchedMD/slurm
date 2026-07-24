@@ -97,12 +97,17 @@ static struct {
 	},
 };
 
-static void _parse_params(const int default_count, const char *params)
+static void _parse_params(const char *params)
 {
 	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
 
-	if (default_count > 0)
-		workerpool.config.thread_count = default_count;
+	/*
+	 * Only a thread count explicitly set by the user may ever be placed in
+	 * workerpool.config. The per daemon default thread count is
+	 * deliberately kept out to avoid ever blaming the user for a thread
+	 * count they never set and may not be able to change.
+	 */
+	workerpool.config.thread_count = 0;
 
 	if (!params)
 		return;
@@ -284,7 +289,7 @@ extern void workerpool_init(const int thread_count,
 	if (!workerpool.workq)
 		probe_register("workerpool", _probe, NULL);
 
-	_parse_params(default_thread_count, params);
+	_parse_params(params);
 	workerpool.shutdown = false;
 	count = _resolve_thread_count(thread_count, default_thread_count);
 	workerpool.workq = workq_init(workerpool.workq, "workerpool");
