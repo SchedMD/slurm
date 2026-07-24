@@ -1602,6 +1602,15 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		job_ptr->node_cnt_wag = job_ptr->total_nodes;
 
 	/*
+	 * Drop a resize_time left set by a requeue on an unpatched controller,
+	 * which already pushed submit_time past it. A requeue still completing
+	 * has not, so batch_requeue_fini() is still the one to clear that.
+	 */
+	if (job_ptr->resize_time && job_ptr->details &&
+	    (job_ptr->details->submit_time > job_ptr->resize_time))
+		job_ptr->resize_time = 0;
+
+	/*
 	 * This needs to always to initialized to "true".  The select
 	 * plugin will deal with it every time it goes through the
 	 * logic if req_switch or wait4switch are set.
@@ -16949,6 +16958,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 	if (job_ptr->details) {
 		time_t now = time(NULL);
+		time_t last_key = MAX(job_ptr->details->submit_time,
+				      job_ptr->resize_time);
 		/* The time stamp on the new batch launch credential must be
 		 * larger than the time stamp on the revoke request. Also the
 		 * I/O must be all cleared out, the named socket purged and
@@ -16975,10 +16986,9 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		}
 
 		/* Since this could happen on a launch we need to make sure the
-		 * submit isn't the same as the last submit so put now + 1 so
-		 * we get different records in the database */
-		if (now == job_ptr->details->submit_time)
-			now++;
+		 * submit is past both the last submit and the resize record's
+		 * key so we get different records in the database. */
+		now = MAX(now, last_key + 1);
 		job_ptr->details->submit_time = now;
 
 		/* clear the accrue flag */
@@ -17038,6 +17048,9 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
 	job_record_set_sluid(job_ptr, true);
 	_add_job_hash_sluid(job_ptr);
+
+	/* Cleared here so the submit_time above could be pushed past it. */
+	job_ptr->resize_time = 0;
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	/* Submit new sibling jobs for fed jobs */
