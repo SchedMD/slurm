@@ -4032,10 +4032,9 @@ static int _step_create(job_record_t *job_ptr,
 	}
 
 	step_ptr->step_layout =
-		step_layout_create(step_ptr,
-				   step_node_list, node_count,
+		step_layout_create(step_ptr, step_node_list, node_count,
 				   step_specs->num_tasks,
-				   (uint16_t)cpus_per_task,
+				   (uint16_t) cpus_per_task,
 				   step_specs->task_dist,
 				   step_specs->plane_size);
 	xfree(step_node_list);
