@@ -4119,7 +4119,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_node[node_count];
 	uint16_t cpus_per_task_array[node_count];
-	uint32_t *step_node_ranks = NULL;
 	char *step_nodes = NULL;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -4166,9 +4165,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		gres_test_args.ignore_alloc = true;
 	else
 		gres_test_args.ignore_alloc = false;
-
-	if (job_resrcs_ptr->node_ranks)
-		step_node_ranks = xcalloc(node_count, sizeof(*step_node_ranks));
 
 	/*
 	 * Emit the step's nodes (and the parallel per-node arrays below) in
@@ -4267,7 +4263,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			usable_cpus = gres_cpus;
 		if (usable_cpus <= 0) {
 			error("%s: no usable CPUs", __func__);
-			xfree(step_node_ranks);
 			if (step_hl)
 				hostlist_destroy(step_hl);
 			return NULL;
@@ -4278,9 +4273,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				 job_resrcs_ptr->node_ranks[pos] : NO_VAL);
 
 		cpus_per_node[set_nodes] = usable_cpus;
-		if (job_resrcs_ptr->node_ranks)
-			step_node_ranks[set_nodes] =
-				job_resrcs_ptr->node_ranks[pos];
 		if (step_hl)
 			hostlist_push_host(step_hl, node_ptr->name);
 		set_nodes++;
@@ -4339,7 +4331,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	step_layout_req.num_tasks = num_tasks;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = plane_size;
-	step_layout_req.node_ranks = step_node_ranks;
 
 	if ((step_layout = slurm_step_layout_create(&step_layout_req))) {
 		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
@@ -4349,7 +4340,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	}
 
 	xfree(step_nodes);
-	xfree(step_node_ranks);
 	return step_layout;
 }
 
