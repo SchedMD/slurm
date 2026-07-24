@@ -17,6 +17,7 @@ power_interval = 10
 suspend_time = 10
 suspend_timeout = 10
 resume_timeout = 10
+periodic_check_interval = 2
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -42,6 +43,9 @@ def setup():
     # Mark nodes as IDLE, regardless of current state, when suspending nodes with
     # SuspendProgram so that nodes will be eligible to be resumed at a later time
     atf.require_config_parameter_includes("SlurmctldParameters", "idle_on_node_suspend")
+    atf.require_config_parameter_includes(
+        "SlurmctldParameters", f"periodic_check_interval={periodic_check_interval}"
+    )
 
     # Register the cloud node in slurm.conf
     atf.require_config_parameter(
@@ -111,6 +115,40 @@ def kill_slurmctld():
 
 
 # Tests
+def test_periodic_check_interval():
+    """Test periodic_check_interval advances a CONFIGURING job after node registration."""
+    job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun sleep 10'", fatal=True)
+    atf.wait_for_node_state(f"{node_prefix}1", "ALLOCATED", timeout=5, fatal=True)
+    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", fatal=True)
+    assert "CONFIGURING" == atf.get_job_parameter(
+        job_id, "JobState", default="NOT_FOUND", quiet=True
+    ), "Submitted job should be in CONFIGURING state while its ALLOCATED cloud node is POWERING_UP"
+
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
+
+    atf.run_command(
+        f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
+        fatal=True,
+        user="root",
+    )
+
+    atf.wait_for_node_state(
+        f"{node_prefix}1",
+        "POWERING_UP",
+        reverse=True,
+        timeout=resume_timeout + 5,
+        fatal=True,
+    )
+
+    assert atf.wait_for_job_state(
+        job_id,
+        "RUNNING",
+        timeout=periodic_check_interval + 5,
+    )
+
+
 # Test state cycle of cloud nodes: POWERED_DOWN, POWERING_UP, IDLE,
 # POWERING_DOWN, POWERED_DOWN
 def test_cloud_state_cycle():

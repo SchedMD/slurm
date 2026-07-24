@@ -5530,6 +5530,14 @@ without the \fB-i\fR option.
 .IP
 
 .TP
+\fBperiodic_check_interval\fR=\#
+How often slurmctld runs periodic background checks, including job time-limit
+handling, reservation checks, and node timer checks. Lower values can reduce
+the delay before jobs progress after nodes resume and register. Default is 30
+seconds.
+.IP
+
+.TP
 \fBpower_save_interval\fR
 How often the power_save thread looks to resume and suspend nodes. The
 power_save thread will do work sooner if there are node state changes. Default
