@@ -2606,10 +2606,12 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 
 	if (job_ptr->resize_time) {
 		req.eligible_time = job_ptr->resize_time;
-		req.submit_time   = job_ptr->details->submit_time;
+		req.start_time = job_ptr->resize_time;
+		req.submit_time = job_ptr->resize_time;
 	} else {
 		req.eligible_time = job_ptr->details->begin_time;
-		req.submit_time   = job_ptr->details->submit_time;
+		req.start_time = job_ptr->start_time;
+		req.submit_time = job_ptr->details->submit_time;
 	}
 
 	/* If the reason is WAIT_ARRAY_TASK_LIMIT we don't want to
@@ -2620,7 +2622,6 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
 		req.eligible_time = INFINITE;
 
-	req.start_time = job_ptr->start_time;
 	req.gid = job_ptr->group_id;
 	req.job_id = job_ptr->job_id;
 	req.array_job_id = job_ptr->array_job_id;
