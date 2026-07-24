@@ -1026,8 +1026,11 @@ static int _cap_step_mem(void *x, void *arg)
 	if (!step_ptr->memory_allocated)
 		return SLURM_SUCCESS;
 
-	for (int i = 0; next_node_bitmap(resrcs->node_bitmap, &i); i++) {
-		job_node_inx++;
+	/* memory_allocated[] is indexed in the job's topology-rank order */
+	for (int k = 0; k < resrcs->nhosts; k++) {
+		int i = resrcs->order_map[k].node_inx;
+
+		job_node_inx = resrcs->order_map[k].job_pos;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;

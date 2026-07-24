@@ -2710,8 +2710,9 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
 	slurm_step_layout_t *step_layout = step_ptr->step_layout;
-	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
-	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
+	int cpus_alloc, cpus_alloc_mem;
+	int job_node_inx = -1, step_node_inx = -1;
+	node_rank_order_t *order_map;
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
 	uint32_t rem_nodes;
@@ -2727,6 +2728,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
+
+	order_map = job_resrcs_ptr->order_map;
 
 	if (!step_layout) /* batch step */
 		return rc;
@@ -2770,20 +2773,21 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 
 	cpus_alloc_pn = xcalloc(step_layout->node_cnt, sizeof(*cpus_alloc_pn));
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
-	for (int i = 0;
-	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
-	     i++) {
+	for (int k = 0; k < job_resrcs_ptr->nhosts; k++) {
+		int i = order_map[k].node_inx;
 		/*
 		 * gres_cpus_alloc - if cpus_per_gres is requested, this is
 		 * cpus_per_gres * gres_alloc on this node
 		 */
 		int gres_cpus_alloc = 0;
+		int cpu_array_inx;
 		uint16_t cpus_per_task = orig_cpus_per_task;
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus, avail_cpus_per_core, alloc_cpus_per_core;
 		uint16_t task_cnt;
 		bitstr_t *unused_core_bitmap;
-		job_node_inx++;
+		node_ptr = node_record_table_ptr[i];
+		job_node_inx = order_map[k].job_pos;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
@@ -2815,11 +2819,12 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		if (first_step_node)
 			step_ptr->cpu_count = 0;
 
-		if ((++node_cnt) >
-		    job_resrcs_ptr->cpu_array_reps[cpu_array_inx]) {
-			cpu_array_inx++;
-			node_cnt = 0;
-		}
+		cpu_array_inx =
+			slurm_get_rep_count_inx(job_resrcs_ptr->cpu_array_reps,
+						job_resrcs_ptr->cpu_array_cnt,
+						job_node_inx);
+		if (cpu_array_inx < 0)
+			fatal("%s: cpu_array index bad", __func__);
 
 		vpus = node_ptr->tpc;
 
@@ -3194,6 +3199,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int job_node_inx = -1, step_node_inx = -1;
 	uint32_t step_id = step_ptr->step_id.step_id;
 	node_record_t *node_ptr;
+	node_rank_order_t *order_map;
 	uint16_t job_tpc = job_ptr->details->mc_ptr->threads_per_core;
 	uint16_t req_tpc =
 		_get_threads_per_core(step_ptr->threads_per_core, job_ptr);
@@ -3207,6 +3213,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
+
+	order_map = job_resrcs_ptr->order_map;
 
 	/* These special steps do not allocate any resources */
 	if ((step_id == SLURM_EXTERN_CONT) ||
@@ -3227,12 +3235,13 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		      __func__, job_ptr);
 	}
 
-	for (int i = 0;
-	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
-	     i++) {
+	for (int k = 0; k < job_resrcs_ptr->nhosts; k++) {
+		int i = order_map[k].node_inx;
 		int inx;
-		uint16_t vpus = node_ptr->tpc;
-		job_node_inx++;
+		uint16_t vpus;
+		node_ptr = node_record_table_ptr[i];
+		vpus = node_ptr->tpc;
+		job_node_inx = order_map[k].job_pos;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
@@ -4117,10 +4126,11 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	slurm_step_layout_req_t step_layout_req = { 0 };
 	uint64_t gres_cpus;
 	int usable_cpus, usable_mem;
-	int set_nodes = 0/* , set_tasks = 0 */;
-	int pos = -1;
+	int set_nodes = 0 /* , set_tasks = 0 */;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 	node_record_t *node_ptr;
+	node_rank_order_t *order_map;
+	hostlist_t *step_hl = NULL;
 	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = step_ptr->cpus_per_task,
 		.first_step_node = true,
@@ -4160,11 +4170,22 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	if (job_resrcs_ptr->node_ranks)
 		step_node_ranks = xcalloc(node_count, sizeof(*step_node_ranks));
 
-	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
-	     i++) {
+	/*
+	 * Emit the step's nodes (and the parallel per-node arrays below) in
+	 * topology-rank order so that observable step state matches task
+	 * placement. Arbitrary distribution keeps the user-supplied order.
+	 */
+	order_map = job_resrcs_ptr->order_map;
+	if (!arbitrary_nodes)
+		step_hl = hostlist_create(NULL);
+
+	for (int k = 0; k < job_resrcs_ptr->nhosts; k++) {
+		int i = order_map[k].node_inx;
+		int pos = order_map[k].job_pos;
 		uint16_t cpus, cpus_used;
 		int err_code = SLURM_SUCCESS;
 
+		node_ptr = node_record_table_ptr[i];
 		gres_test_args.err_code = &err_code;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
@@ -4173,12 +4194,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			step_ptr->start_protocol_ver =
 				node_ptr->protocol_version;
 
-		/* find out the position in the job */
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i)) {
-			xfree(step_node_ranks);
-			return NULL;
-		}
-		pos = bit_set_count_range(job_resrcs_ptr->node_bitmap, 0, i);
 		if (pos >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
 
@@ -4253,6 +4268,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		if (usable_cpus <= 0) {
 			error("%s: no usable CPUs", __func__);
 			xfree(step_node_ranks);
+			if (step_hl)
+				hostlist_destroy(step_hl);
 			return NULL;
 		}
 		log_flag(STEPS, "%s: %pS node %s job_pos %d usable_cpus %d node_rank %u",
@@ -4264,6 +4281,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		if (job_resrcs_ptr->node_ranks)
 			step_node_ranks[set_nodes] =
 				job_resrcs_ptr->node_ranks[pos];
+		if (step_hl)
+			hostlist_push_host(step_hl, node_ptr->name);
 		set_nodes++;
 		gres_test_args.first_step_node = false;
 		gres_test_args.max_rem_nodes--;
@@ -4303,13 +4322,14 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	/* } */
 
 	/*
-	 * Arbitrary distribution keeps the user-supplied node list; otherwise
-	 * build it here from the step's nodes.
+	 * For non-arbitrary distributions the node list must match the rank
+	 * order of the per-node arrays built above, so use the list gathered
+	 * in that order. Arbitrary keeps the user-supplied order.
 	 */
-	if (!arbitrary_nodes)
-		step_nodes =
-			bitmap2node_name_sortable(step_ptr->step_node_bitmap,
-						  false);
+	if (step_hl) {
+		step_nodes = hostlist_ranged_string_xmalloc(step_hl);
+		hostlist_destroy(step_hl);
+	}
 
 	/* layout the tasks on the nodes */
 	step_layout_req.node_list = step_nodes ? step_nodes : arbitrary_nodes;
@@ -4353,6 +4373,13 @@ static int _kill_step_on_node(void *x, void *arg)
 		return 0;
 	if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 		return 0;
+	/*
+	 * fake_slurm_step_layout_create() returns NULL on a bad request, and
+	 * the extern, interactive and ext-launcher steps go to JOB_RUNNING
+	 * without checking it.
+	 */
+	if (!step_ptr->step_layout)
+		return 0;
 
 	/*
 	 * Don't let the batch step go through partial completion and get marked
@@ -4362,9 +4389,14 @@ static int _kill_step_on_node(void *x, void *arg)
 	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
 		return 0;
 
-	/* Remove step allocation from the job's allocation */
-	step_node_inx = bit_set_count_range(step_ptr->step_node_bitmap, 0,
-					    bit_position);
+	/*
+	 * Remove step allocation from the job's allocation. range_first/last
+	 * index exit_node_bitmap, which follows the step layout node list
+	 * order, so use the failed node's position in that list.
+	 */
+	step_node_inx = nodelist_find(step_ptr->step_layout->node_list,
+				      args->node_ptr->name);
+	xassert(step_node_inx >= 0);
 
 	memset(&req, 0, sizeof(step_complete_msg_t));
 	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
