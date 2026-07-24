@@ -82,7 +82,8 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 /*
  * step_layout_create - creates a step_layout according to the inputs.
  * IN step_ptr - step having tasks laid out
- * IN step_node_list - node list of hosts in step
+ * IN arbitrary_nodes - user-supplied node list for SLURM_DIST_ARBITRARY,
+ *	NULL otherwise
  * IN node_count - count of nodes in step allocation
  * IN num_tasks - number of tasks in step
  * IN cpus_per_task - number of cpus per task
@@ -93,7 +94,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
  *       step is freed.
  */
 extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
-					       char *step_node_list,
+					       char *arbitrary_nodes,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t cpus_per_task,

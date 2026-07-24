@@ -3674,7 +3674,7 @@ static int _step_create(job_record_t *job_ptr,
 	int cpus_per_task, ret_code, i;
 	uint32_t node_count = 0;
 	time_t now = time(NULL);
-	char *step_node_list = NULL;
+	char *arbitrary_nodes = NULL;
 	uint32_t orig_cpu_count;
 	list_t *step_gres_list = NULL;
 	uint32_t task_dist;
@@ -3930,13 +3930,14 @@ static int _step_create(job_record_t *job_ptr,
 		}
 	}
 
-	/* Here is where the node list is set for the step */
+	/*
+	 * For arbitrary distribution the user-supplied node list drives task
+	 * placement; step_layout_create() builds the node list otherwise.
+	 */
 	if (step_specs->node_list &&
 	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
 	     SLURM_DIST_ARBITRARY))
-		step_node_list = xstrdup(step_specs->node_list);
-	else
-		step_node_list = bitmap2node_name_sortable(nodeset, false);
+		arbitrary_nodes = step_specs->node_list;
 	step_ptr->step_node_bitmap = nodeset;
 
 	step_ptr->container = xstrdup(step_specs->container);
@@ -4025,19 +4026,17 @@ static int _step_create(job_record_t *job_ptr,
 			     __func__, step_ptr, step_specs->time_limit,
 			     job_ptr->part_ptr->max_time);
 			delete_step_record(job_ptr, step_ptr);
-			xfree(step_node_list);
 			return ESLURM_INVALID_TIME_LIMIT;
 		}
 		step_ptr->time_limit = step_specs->time_limit;
 	}
 
 	step_ptr->step_layout =
-		step_layout_create(step_ptr, step_node_list, node_count,
+		step_layout_create(step_ptr, arbitrary_nodes, node_count,
 				   step_specs->num_tasks,
 				   (uint16_t) cpus_per_task,
 				   step_specs->task_dist,
 				   step_specs->plane_size);
-	xfree(step_node_list);
 	if (!step_ptr->step_layout) {
 		delete_step_record(job_ptr, step_ptr);
 		if (step_specs->pn_min_memory)
@@ -4101,7 +4100,7 @@ static int _step_create(job_record_t *job_ptr,
 }
 
 extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
-					       char *step_node_list,
+					       char *arbitrary_nodes,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t cpus_per_task,
@@ -4112,6 +4111,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	uint16_t cpus_per_node[node_count];
 	uint16_t cpus_per_task_array[node_count];
 	uint32_t *step_node_ranks = NULL;
+	char *step_nodes = NULL;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req = { 0 };
@@ -4302,8 +4302,17 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	/*	return NULL; */
 	/* } */
 
+	/*
+	 * Arbitrary distribution keeps the user-supplied node list; otherwise
+	 * build it here from the step's nodes.
+	 */
+	if (!arbitrary_nodes)
+		step_nodes =
+			bitmap2node_name_sortable(step_ptr->step_node_bitmap,
+						  false);
+
 	/* layout the tasks on the nodes */
-	step_layout_req.node_list = step_node_list;
+	step_layout_req.node_list = step_nodes ? step_nodes : arbitrary_nodes;
 	step_layout_req.cpus_per_node = cpus_per_node;
 	step_layout_req.cpus_per_task = cpus_per_task_array;
 	step_layout_req.num_hosts = node_count;
@@ -4319,6 +4328,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			step_layout->alias_addrs = build_alias_addrs(job_ptr);
 	}
 
+	xfree(step_nodes);
 	xfree(step_node_ranks);
 	return step_layout;
 }
