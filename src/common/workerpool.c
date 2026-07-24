@@ -81,6 +81,10 @@ static struct {
 	workq_allocator_t *alloc;
 
 	struct {
+		/*
+		 * Thread count explicitly set by the user or 0 if never set.
+		 * Never populated from the per daemon default thread count.
+		 */
 		int thread_count;
 	} config;
 } workerpool = {
