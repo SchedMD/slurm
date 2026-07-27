@@ -5986,15 +5986,11 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	job_record_t *job_ptr)
 {
 	resource_allocation_response_msg_t *job_info_resp_msg;
-	int i, j;
+	int i;
 
 	job_info_resp_msg = xmalloc(sizeof(resource_allocation_response_msg_t));
 
-
-	if (!job_ptr->job_resrcs) {
-		;
-	} else if (bit_equal(job_ptr->node_bitmap,
-			     job_ptr->job_resrcs->node_bitmap)) {
+	if (job_ptr->job_resrcs) {
 		job_info_resp_msg->num_cpu_groups =
 			job_ptr->job_resrcs->cpu_array_cnt;
 		job_info_resp_msg->cpu_count_reps =
@@ -6009,28 +6005,6 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 		memcpy(job_info_resp_msg->cpus_per_node,
 		       job_ptr->job_resrcs->cpu_array_value,
 		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
-	} else {
-		/* Job has changed size, rebuild CPU count info */
-		job_info_resp_msg->num_cpu_groups = job_ptr->node_cnt;
-		job_info_resp_msg->cpu_count_reps = xcalloc(job_ptr->node_cnt,
-							    sizeof(uint32_t));
-		job_info_resp_msg->cpus_per_node = xcalloc(job_ptr->node_cnt,
-							   sizeof(uint32_t));
-		for (i = 0, j = -1; i < job_ptr->job_resrcs->nhosts; i++) {
-			if (job_ptr->job_resrcs->cpus[i] == 0)
-				continue;
-			if ((j == -1) ||
-			    (job_info_resp_msg->cpus_per_node[j] !=
-			     job_ptr->job_resrcs->cpus[i])) {
-				j++;
-				job_info_resp_msg->cpus_per_node[j] =
-					job_ptr->job_resrcs->cpus[i];
-				job_info_resp_msg->cpu_count_reps[j] = 1;
-			} else {
-				job_info_resp_msg->cpu_count_reps[j]++;
-			}
-		}
-		job_info_resp_msg->num_cpu_groups = j + 1;
 	}
 	job_info_resp_msg->account        = xstrdup(job_ptr->account);
 	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
