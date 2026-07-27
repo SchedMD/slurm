@@ -1265,6 +1265,8 @@ typedef enum {
 #define RESET_SPREAD_SEGMENTS SLURM_BIT(48) /* Reset SPREAD_SEGMENTS */
 #define RESET_CONSOLIDATE_SEGMENTS SLURM_BIT(49) /* Reset
 						  * CONSOLIDATE_SEGMENTS */
+#define ALLOW_OVERCOMMIT_TRES_PER_TASK SLURM_BIT(50) /* overcommit with unset or
+						   * cpu-only tres_per_task */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

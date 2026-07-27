@@ -7161,6 +7161,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			detail_ptr->max_cpus = job_desc.max_cpus;
 			detail_ptr->pn_min_cpus = job_desc.pn_min_cpus;
 			SWAP(job_ptr->tres_per_task, job_desc.tres_per_task);
+			job_record_set_flags(job_ptr);
 		}
 
 		xfree(job_desc.tres_per_task);
@@ -8770,6 +8771,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->bit_flags &= ~TASKS_CHANGED;
 	job_ptr->bit_flags &= ~BACKFILL_TEST;
 	job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+	job_ptr->bit_flags &= ~ALLOW_OVERCOMMIT_TRES_PER_TASK;
 
 	job_ptr->resv_port_cnt = job_desc->resv_port_cnt;
 	if (job_desc->resv_port_cnt != NO_VAL16) {
@@ -8914,6 +8916,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		detail_ptr->pn_min_cpus = job_desc->pn_min_cpus;
 	if (job_desc->overcommit != NO_VAL8)
 		detail_ptr->overcommit = job_desc->overcommit;
+	job_record_set_flags(job_ptr);
 	if (job_desc->ntasks_per_node != NO_VAL16) {
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 		if ((detail_ptr->overcommit == 0) &&
@@ -14513,6 +14516,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			xfree(job_ptr->tres_per_task);
 			job_ptr->tres_per_task = job_desc->tres_per_task;
 			job_desc->tres_per_task = NULL;
+			job_record_set_flags(job_ptr);
 		}
 		if (job_desc->mem_per_tres) {
 			xstrfmtcat(tmp, "mem_per_tres:%s ",
@@ -15253,6 +15257,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			sched_info("%s: setting TresPerTask to %s for %pJ",
 				   __func__, job_ptr->tres_per_task, job_ptr);
 		}
+		job_record_set_flags(job_ptr);
 	}
 
 	if (job_desc->mail_type != NO_VAL16) {

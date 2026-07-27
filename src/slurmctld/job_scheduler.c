@@ -3626,6 +3626,7 @@ static void _copy_tres_opts(job_record_t *job_ptr, job_record_t *dep_job_ptr)
 	job_ptr->tres_per_task = xstrdup(dep_job_ptr->tres_per_task);
 	xfree(job_ptr->mem_per_tres);
 	job_ptr->mem_per_tres = xstrdup(dep_job_ptr->mem_per_tres);
+	job_record_set_flags(job_ptr);
 }
 
 static int _find_dependency(void *arg, void *key)

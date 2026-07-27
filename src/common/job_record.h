@@ -855,4 +855,12 @@ extern void job_record_set_sluid(job_record_t *job_ptr, bool requeue);
  */
 extern multi_core_data_t *job_record_create_mc(void);
 
+/*
+ * Set or clear various flags based on other portions of the job.
+ *
+ * ALLOW_OVERCOMMIT_TRES_PER_TASK on job_ptr from overcommit and tres_per_task.
+ *
+ */
+extern void job_record_set_flags(job_record_t *job_ptr);
+
 #endif /* _SLURM_JOB_RECORD_H */

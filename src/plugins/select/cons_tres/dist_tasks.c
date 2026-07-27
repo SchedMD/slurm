@@ -1267,7 +1267,7 @@ static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
 	 * tasks on node 0, 7 tasks on node 1, and 6 tasks on node 2.  It should
 	 * launch 8 tasks on node, 8 tasks on node 1, and 4 tasks on node 2.
 	 */
-	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
+	if (job_ptr->bit_flags & ALLOW_OVERCOMMIT_TRES_PER_TASK)
 		maxtasks = 0;	/* Allocate have one_task_per_node */
 	while (tid < maxtasks) {
 		bool space_remaining = false;
@@ -1404,7 +1404,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		return SLURM_SUCCESS;
 	}
 
-	if (job_ptr->details->overcommit && !job_ptr->tres_per_task)
+	if (job_ptr->bit_flags & ALLOW_OVERCOMMIT_TRES_PER_TASK)
 		one_task_per_node = true;
 	_log_select_maps("cr_dist/start", job_ptr);
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
