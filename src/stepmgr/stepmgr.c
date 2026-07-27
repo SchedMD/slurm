@@ -2780,7 +2780,6 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		 * cpus_per_gres * gres_alloc on this node
 		 */
 		int gres_cpus_alloc = 0;
-		int cpu_array_inx;
 		uint16_t cpus_per_task = orig_cpus_per_task;
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus, avail_cpus_per_core, alloc_cpus_per_core;
@@ -2818,13 +2817,6 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		 */
 		if (first_step_node)
 			step_ptr->cpu_count = 0;
-
-		cpu_array_inx =
-			slurm_get_rep_count_inx(job_resrcs_ptr->cpu_array_reps,
-						job_resrcs_ptr->cpu_array_cnt,
-						job_node_inx);
-		if (cpu_array_inx < 0)
-			fatal("%s: cpu_array index bad", __func__);
 
 		vpus = node_ptr->tpc;
 
@@ -2947,9 +2939,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			 * of memory.
 			 */
 			if (all_job_mem)
-				cpus_alloc_mem =
-					job_resrcs_ptr->
-					cpu_array_value[cpu_array_inx];
+				cpus_alloc_mem = job_resources_get_node_cpu_cnt(
+					job_resrcs_ptr, job_node_inx, i);
 			else if ((req_tpc != NO_VAL16) &&
 				 (req_tpc < vpus)) {
 				cpus_alloc_mem = ROUNDUP(cpus_alloc_mem, vpus);
@@ -2967,9 +2958,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			 * requested specifically for the step.
 			 */
 			if (all_job_mem)
-				cpus_alloc_mem =
-					job_resrcs_ptr->
-					cpu_array_value[cpu_array_inx];
+				cpus_alloc_mem = job_resources_get_node_cpu_cnt(
+					job_resrcs_ptr, job_node_inx, i);
 			else
 				cpus_alloc_mem = cpus_alloc;
 
