@@ -69,6 +69,7 @@ typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	char(*plugin_type);
 	bool(*supports_exclusive_topo);
+	bool(*supports_segment);
 	int (*add_rm_node)(node_record_t *node_ptr, char *addr,
 			   topology_ctx_t *tctx);
 	bool (*allow_one_node)(void *tctx);
@@ -116,6 +117,7 @@ static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
 	"supports_exclusive_topo",
+	"supports_segment",
 	"topology_p_add_rm_node",
 	"topology_p_allow_one_node",
 	"topology_p_build_config",
@@ -596,6 +598,14 @@ extern bool topology_g_whole_topo_enabled(int idx)
 	TOPOINFO_ONLY_CHECK;
 
 	return (*(ops[tctx[idx].idx].supports_exclusive_topo));
+}
+
+extern bool topology_g_supports_segment(int idx)
+{
+	xassert(plugin_inited);
+	xassert((idx >= 0) && (idx < tctx_num));
+
+	return (*(ops[tctx[idx].idx].supports_segment));
 }
 
 extern int topology_g_add_rm_node(node_record_t *node_ptr)

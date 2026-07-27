@@ -318,6 +318,15 @@ extern int topology_g_whole_topo(bitstr_t *node_mask, int idx);
 extern bool topology_g_whole_topo_enabled(int idx);
 
 /*
+ * topology_g_supports_segment - Does the topology context split jobs into
+ *	segments?
+ *
+ * IN idx - topology context index (part_record_t's topology_idx)
+ * RET true if the configured topology plugin honors a job's segment size
+ */
+extern bool topology_g_supports_segment(int idx);
+
+/*
  * topology_g_get_bitmap - Get bitmap of nodes in topo group
  *
  * IN name of topo group

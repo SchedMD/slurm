@@ -73,6 +73,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Required for topology plugins: */
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_BLOCK;
 const bool supports_exclusive_topo = true;
+const bool supports_segment = true;
 
 static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 {

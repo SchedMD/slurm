@@ -80,6 +80,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Required for topology plugins: */
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_TREE;
 const bool supports_exclusive_topo = false;
+const bool supports_segment = false;
 
 extern int init(void)
 {
