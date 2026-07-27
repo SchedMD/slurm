@@ -2720,9 +2720,17 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	foreach_kill_hetjob_step_t *foreach_kill_hetjob_step = arg;
 	job_step_kill_msg_t *job_step_kill_msg =
 		foreach_kill_hetjob_step->job_step_kill_msg;
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(het_job_ptr);
 	int rc;
 
-	job_step_kill_msg->step_id = STEP_ID_FROM_JOB_RECORD(het_job_ptr);
+	/*
+	 * Retarget the request to this component job but keep the requested
+	 * step, otherwise the whole component job would be signaled instead
+	 * of only its step and flags like KILL_NO_SIG_FAIL would be dropped.
+	 */
+	step_id.step_id = job_step_kill_msg->step_id.step_id;
+	step_id.step_het_comp = job_step_kill_msg->step_id.step_het_comp;
+	job_step_kill_msg->step_id = step_id;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
 			    foreach_kill_hetjob_step->uid);
 
