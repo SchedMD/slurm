@@ -6988,9 +6988,8 @@ static int DUMP_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
 	}
 
 	if (!tctx->config) {
-		/* No options: emit "flat: true" shorthand. */
-		bool tmp = true;
-		return DUMP(BOOL, tmp, dst, args);
+		topology_flat_config_t default_flat = { 0 };
+		return DUMP(TOPOLOGY_FLAT_CONFIG, default_flat, dst, args);
 	}
 
 	rc = DUMP(TOPOLOGY_FLAT_CONFIG_PTR, tctx->config, dst, args);
