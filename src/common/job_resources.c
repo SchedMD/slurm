@@ -210,6 +210,49 @@ extern void build_job_resources_order_map(job_resources_t *job_resrcs_ptr)
 	job_resrcs_ptr->order_map = order_map;
 }
 
+extern void build_job_resources_rank_cpu_array(job_resources_t *job_resrcs_ptr,
+					       node_rank_order_t *order_map,
+					       int order_cnt,
+					       uint16_t **cpus_per_node,
+					       uint32_t **cpu_count_reps,
+					       uint32_t *num_cpu_groups)
+{
+	uint32_t last_cpu_cnt = NO_VAL;
+	uint32_t cnt = 0;
+
+	*cpus_per_node = NULL;
+	*cpu_count_reps = NULL;
+	*num_cpu_groups = 0;
+
+	if (!job_resrcs_ptr->nhosts || !job_resrcs_ptr->cpus)
+		return;
+
+	*cpus_per_node = xcalloc(order_cnt, sizeof(uint16_t));
+	*cpu_count_reps = xcalloc(order_cnt, sizeof(uint32_t));
+
+	/*
+	 * RLE the per-node cpu counts in order_map (topology-rank) order. Use
+	 * the thread-adjusted count, matching build_job_resources_cpu_array().
+	 */
+	for (int k = 0; k < order_cnt; k++) {
+		int i = order_map[k].node_inx;
+		int job_pos = order_map[k].job_pos;
+		uint16_t node_cpu_cnt =
+			job_resources_get_node_cpu_cnt(job_resrcs_ptr, job_pos,
+						       i);
+
+		if (node_cpu_cnt != last_cpu_cnt) {
+			last_cpu_cnt = node_cpu_cnt;
+			(*cpus_per_node)[cnt] = last_cpu_cnt;
+			(*cpu_count_reps)[cnt] = 1;
+			cnt++;
+		} else {
+			(*cpu_count_reps)[cnt - 1]++;
+		}
+	}
+	*num_cpu_groups = cnt;
+}
+
 /* Reset the node_bitmap in a job_resources data structure
  * This is needed after a restart/reconfiguration since nodes can
  * be added or removed from the system resulting in changing in

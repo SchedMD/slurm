@@ -180,6 +180,23 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr);
  */
 extern void build_job_resources_order_map(job_resources_t *job_resrcs_ptr);
 
+/*
+ * Build a run-length-encoded cpus-per-node array (as in the allocation
+ * response / batch launch) with nodes in the given order.
+ * IN order_map - the job's nodes in the order they are emitted in, normally
+ *	job_resrcs_ptr->order_map (topology-rank order)
+ * IN order_cnt - number of entries in order_map
+ * OUT cpus_per_node - compressed per-node cpu counts (caller xfrees)
+ * OUT cpu_count_reps - repetition count of each cpus_per_node entry (xfrees)
+ * OUT num_cpu_groups - number of entries in the two arrays
+ */
+extern void build_job_resources_rank_cpu_array(job_resources_t *job_resrcs_ptr,
+					       node_rank_order_t *order_map,
+					       int order_cnt,
+					       uint16_t **cpus_per_node,
+					       uint32_t **cpu_count_reps,
+					       uint32_t *num_cpu_groups);
+
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.
