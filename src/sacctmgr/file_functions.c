@@ -552,12 +552,52 @@ static int _print_out_qos(void *x, void *args)
 	return 0;
 }
 
+static bool _prefix_found(char *token)
+{
+	if (token &&
+	    ((token[0] == '+') ||
+	     (token[0] == '-') ||
+	     (token[0] == '=')))
+		return true;
+
+	return false;
+}
+
+/*
+ * qos_list entries are already numeric id strings (the parser resolved
+ * names via slurmdb_addto_qos_char_list). Return the bare id token,
+ * skipping any +/-/= merge prefix.
+ */
+static char *_advance_prefix(char *token)
+{
+	if (_prefix_found(token))
+		return token + 1;
+
+	return token;
+}
+
+/*
+ * One association QOS delta for additive load. Entries are numeric id
+ * strings; add a '+' prefix so the mysql modify merges instead of
+ * replacing. Existing +/-/= deltas pass through unchanged.
+ */
+static char *_assoc_qos_additive_entry(char *qos_item)
+{
+	if (!qos_item || !qos_item[0])
+		return xstrdup("");
+
+	if (_prefix_found(qos_item))
+		return xstrdup(qos_item);
+
+	return xstrdup_printf("+%s", qos_item);
+}
+
 static int _find_qos_by_name(void *x, void *arg)
 {
 	char *now_qos = x;
 	char *new_qos = arg;
 
-	if (!xstrcmp(new_qos, now_qos))
+	if (!xstrcmp(_advance_prefix(new_qos), _advance_prefix(now_qos)))
 		return 1;
 
 	return 0;
@@ -572,7 +612,7 @@ static int _foreach_assoc_qos_merge_new(void *x, void *arg)
 	assoc_qos_merge_args_t *merge = arg;
 	char *now_qos = NULL;
 
-	if (merge->now_qos_list) {
+	if (merge->now_qos_list && (new_qos[0] != '-') && (new_qos[0] != '=')) {
 		now_qos = list_find_first(merge->now_qos_list,
 					  _find_qos_by_name,
 					  new_qos);
@@ -581,7 +621,8 @@ static int _foreach_assoc_qos_merge_new(void *x, void *arg)
 	if (!now_qos) {
 		if (!merge->mod_assoc->qos_list)
 			merge->mod_assoc->qos_list = list_create(xfree_ptr);
-		list_append(merge->mod_assoc->qos_list, xstrdup(new_qos));
+		list_append(merge->mod_assoc->qos_list,
+			    _assoc_qos_additive_entry(new_qos));
 	}
 
 	return 0;
