@@ -2383,6 +2383,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 {
 	char *fail_why = NULL;
 	batch_job_launch_msg_t *launch_msg_ptr;
+	job_resources_t *resrcs = job_ptr->job_resrcs;
 	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	/* Initialization of data structures */
@@ -2416,7 +2417,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->cpu_freq_min = job_ptr->details->cpu_freq_min;
 	launch_msg_ptr->cpu_freq_max = job_ptr->details->cpu_freq_max;
 	launch_msg_ptr->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
-	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->nodes =
+		job_resources_node_list_by_rank(resrcs, resrcs->node_bitmap);
 	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;
 	launch_msg_ptr->cpus_per_task = job_ptr->details->cpus_per_task;
@@ -2488,17 +2490,12 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	}
 
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
-	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
-	launch_msg_ptr->cpus_per_node  = xmalloc(
-		sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt);
-	memcpy(launch_msg_ptr->cpus_per_node,
-	       job_ptr->job_resrcs->cpu_array_value,
-	       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
-	launch_msg_ptr->cpu_count_reps  = xmalloc(
-		sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt);
-	memcpy(launch_msg_ptr->cpu_count_reps,
-	       job_ptr->job_resrcs->cpu_array_reps,
-	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
+	/* topology-rank order, matching the node list set above */
+	build_job_resources_rank_cpu_array(resrcs, resrcs->order_map,
+					   resrcs->nhosts,
+					   &launch_msg_ptr->cpus_per_node,
+					   &launch_msg_ptr->cpu_count_reps,
+					   &launch_msg_ptr->num_cpu_groups);
 
 	launch_msg_ptr->account = xstrdup(job_ptr->account);
 	if (job_ptr->qos_ptr)
