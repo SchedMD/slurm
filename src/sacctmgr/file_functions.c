@@ -518,6 +518,17 @@ static int _print_out_qos(void *x, void *args)
 	return 0;
 }
 
+static int _find_qos_by_name(void *x, void *arg)
+{
+	char *now_qos = x;
+	char *new_qos = arg;
+
+	if (!xstrcmp(new_qos, now_qos))
+		return 1;
+
+	return 0;
+}
+
 /*
  * Additive load: append file QOS entries not already on the stored assoc.
  */
@@ -528,13 +539,9 @@ static int _foreach_assoc_qos_merge_new(void *x, void *arg)
 	char *now_qos = NULL;
 
 	if (merge->now_qos_list) {
-		list_itr_t *now_qos_itr = list_iterator_create(
-			merge->now_qos_list);
-		while ((now_qos = list_next(now_qos_itr))) {
-			if (!xstrcmp(new_qos, now_qos))
-				break;
-		}
-		list_iterator_destroy(now_qos_itr);
+		now_qos = list_find_first(merge->now_qos_list,
+					  _find_qos_by_name,
+					  new_qos);
 	}
 
 	if (!now_qos) {
