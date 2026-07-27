@@ -84,6 +84,13 @@ typedef struct on_http_request_args_s {
  */
 typedef http_context_t *(*on_http_connection_t)(int fd);
 
+/*
+ * Sentinel passed as the connection arg to conmgr_process_fd() /
+ * conmgr_create_listen_sockets() alongside http_events_get(). The on_connection
+ * callback xassert()s it to confirm conmgr delivers the arg unchanged.
+ */
+#define HTTP_CONNECTION_ARG_MAGIC ((void *) (uintptr_t) 0x636f6e6e)
+
 /* Get http events for conmgr connections */
 const conmgr_events_t *http_events_get(void);
 
@@ -94,6 +101,12 @@ const conmgr_events_t *http_events_get(void);
  * error.
  */
 extern slurm_err_t http_events_get_last_status_code(void);
+
+/* Initialize the HTTP router and bind slurmrestd's directly-served paths */
+extern void http_init(void);
+
+/* Tear down the HTTP router */
+extern void http_fini(void);
 
 typedef struct {
 	conmgr_fd_t *con; /* assigned connection */

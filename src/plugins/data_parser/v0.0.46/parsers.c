@@ -12570,6 +12570,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(STRING, slurmd_spooldir, "SlurmdSpoolDir", "Where slurmd put temporary state info"),
 	add_parse(LOG_LEVEL_UINT16, slurmd_syslog_debug, "SlurmdSyslogDebug", "Slurmd output to local logfile and syslog"),
 	add_parse(UINT16, slurmd_timeout, "SlurmdTimeout", "Seconds slurmctld waits for slurmd before marking node DOWN"),
+	add_parse(CSV_STRING, slurmrestd_http_auth_params, "SlurmrestdHttpAuthParameters", "Options controlling how slurmrestd's HTTP listener authenticates requests"),
 	add_parse(CSV_STRING, slurmrestd_params, "SlurmrestdParameters", "Options controlling slurmrestd behavior"),
 	add_parse(CSV_STRING, slurmstepd_params, "SlurmstepdParameters", "Options controlling slurmstepd behavior"),
 	add_parse(STRING, srun_epilog, "SrunEpilog", "Srun epilog program"),

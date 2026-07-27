@@ -33,10 +33,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/http.h"
 #include "src/common/http_con.h"
+#include "src/common/http_mime.h"
+#include "src/common/http_router.h"
+#include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/probes.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/interfaces/http_auth.h"
 
 #include "src/conmgr/conmgr.h"
 
@@ -92,8 +103,9 @@ static void _connection_finish(http_context_t *ctxt)
 		conmgr_request_shutdown();
 }
 
-static int _on_request(http_con_t *hcon, const char *name,
-		       const http_con_request_t *request, void *arg)
+static int _req_not_found(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
 {
 	http_context_t *ctxt = arg;
 	int rc = EINVAL;
@@ -152,11 +164,13 @@ static void _on_close(const char *name, slurm_err_t status_code, void *arg)
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	static const http_con_server_events_t events = {
-		.on_request = _on_request,
+		.on_request = http_router_on_request,
 		.on_close = _on_close,
 	};
 	conmgr_fd_t *con = conmgr_args.con;
 	http_context_t *ctxt = NULL;
+
+	xassert(arg == HTTP_CONNECTION_ARG_MAGIC);
 
 	ctxt = xmalloc(sizeof(*ctxt) + http_con_bytes());
 	ctxt->magic = MAGIC;
@@ -228,4 +242,150 @@ extern void http_context_free_null_auth(http_context_t *context)
 	xassert(context->magic == MAGIC);
 
 	FREE_NULL_REST_AUTH(context->auth);
+}
+
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
+		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+
+	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+}
+
+static int _reply_error(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, int err)
+{
+	char *body = NULL, *at = NULL;
+	int rc;
+
+	xstrfmtcatat(body, &at, "slurmrestd HTTP server request for '%s %s':\n",
+		     get_http_method_string(request->method),
+		     request->url.path);
+
+	if (err)
+		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
+
+	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
+				    true,
+				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				    MIME_TYPE_TEXT);
+
+	xfree(body);
+	return rc;
+}
+
+static int _auth(http_con_t *hcon, const char *name,
+		 const http_con_request_t *request, void *uid_ptr)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, uid_ptr, hcon,
+					   name, request))) {
+		(void) _reply_error(hcon, name, request, rc);
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	buf_t *body = NULL;
+	int rc = EINVAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if (_auth(hcon, name, request, &uid))
+			return SLURM_SUCCESS;
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+			return _reply_error(hcon, name, request, EPERM);
+
+		body = init_buf(BUF_SIZE);
+	}
+
+	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
+		if (body && (get_buf_offset(body) > 0))
+			status = HTTP_STATUS_CODE_SUCCESS_OK;
+		else
+			status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, true, body,
+				    MIME_TYPE_TEXT);
+	FREE_NULL_BUFFER(body);
+	return rc;
+}
+
+static int _req_livez(http_con_t *hcon, const char *name,
+		      const http_con_request_t *request, void *arg,
+		      void *path_arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_ONLINE)
+		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+
+	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+}
+
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
+{
+	static const char body[] =
+		"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.";
+	buf_t buf = SHADOW_BUF_INITIALIZER(body, strlen(body));
+
+	log_flag(NET, "%s: [%s] %s %s",
+		 __func__, name, get_http_method_string(request->method),
+		 request->url.path);
+
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
+				      NULL, true, &buf, MIME_TYPE_TEXT);
+}
+
+extern void http_init(void)
+{
+	int rc;
+
+	if ((rc = http_auth_g_init(slurm_conf.slurmrestd_http_auth_params, NULL,
+				   NULL)))
+		fatal("http authentication plugins failed to load: %s",
+		      slurm_strerror(rc));
+
+	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
+}
+
+extern void http_fini(void)
+{
+	http_router_fini();
+	http_auth_g_fini();
 }
