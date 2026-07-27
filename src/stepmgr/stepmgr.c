@@ -5990,27 +5990,32 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 
 	job_info_resp_msg = xmalloc(sizeof(resource_allocation_response_msg_t));
 
+	/*
+	 * Emit the node list and per-node cpu counts in topology-rank order so
+	 * SLURM_JOB_NODELIST/SLURM_JOB_CPUS_PER_NODE match task placement.
+	 */
 	if (job_ptr->job_resrcs) {
-		job_info_resp_msg->num_cpu_groups =
-			job_ptr->job_resrcs->cpu_array_cnt;
-		job_info_resp_msg->cpu_count_reps =
-			xcalloc(job_ptr->job_resrcs->cpu_array_cnt,
-				sizeof(uint32_t));
-		memcpy(job_info_resp_msg->cpu_count_reps,
-		       job_ptr->job_resrcs->cpu_array_reps,
-		       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
-		job_info_resp_msg->cpus_per_node  =
-			xcalloc(job_ptr->job_resrcs->cpu_array_cnt,
-				sizeof(uint16_t));
-		memcpy(job_info_resp_msg->cpus_per_node,
-		       job_ptr->job_resrcs->cpu_array_value,
-		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
+		job_resources_t *resrcs = job_ptr->job_resrcs;
+
+		build_job_resources_rank_cpu_array(
+			resrcs, resrcs->order_map, resrcs->nhosts,
+			&job_info_resp_msg->cpus_per_node,
+			&job_info_resp_msg->cpu_count_reps,
+			&job_info_resp_msg->num_cpu_groups);
 	}
 	job_info_resp_msg->account        = xstrdup(job_ptr->account);
 	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
 	job_info_resp_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
-	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);
+	if (job_ptr->job_resrcs) {
+		job_resources_t *resrcs = job_ptr->job_resrcs;
+
+		job_info_resp_msg->node_list =
+			job_resources_node_list_by_rank(resrcs,
+							resrcs->node_bitmap);
+	} else {
+		job_info_resp_msg->node_list = xstrdup(job_ptr->nodes);
+	}
 	if (job_ptr->part_ptr)
 		job_info_resp_msg->partition = xstrdup(job_ptr->part_ptr->name);
 	else
