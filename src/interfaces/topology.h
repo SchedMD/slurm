@@ -193,6 +193,17 @@ typedef struct topology_eval {
 extern int topology_g_init(void);
 
 /*
+ * Load all topology plugins, but do not load a configuration file.
+ *
+ * Only topology_g_topoinfo_*() and topology_g_fini() may be called
+ * afterwards. Every other topology_g_*() call, including topology_g_init(),
+ * will fatal_abort().
+ *
+ * Returns a Slurm errno.
+ */
+extern int topology_g_init_topoinfo(void);
+
+/*
  * Terminate the topology plugin.
  *
  * Returns a Slurm errno.
