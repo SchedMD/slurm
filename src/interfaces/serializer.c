@@ -532,8 +532,7 @@ extern int serialize_g_parse(serialize_parse_state_t **state_ptr,
 
 	xassert(dst);
 	xassert(dst_bytes > 0);
-	xassert(src);
-	xassert(src->magic == BUF_MAGIC);
+	xassert(!src || (src->magic == BUF_MAGIC));
 
 	pmt = _find_serializer(mime_type);
 	if (!pmt)
@@ -561,8 +560,13 @@ extern int serialize_g_dump(serialize_dump_state_t **state_ptr,
 
 	xassert(src);
 	xassert(src_bytes > 0);
-	xassert(dst);
-	xassert(dst->magic == BUF_MAGIC);
+	/*
+	 * A NULL dst is the caller abandoning an incomplete dump, which always
+	 * releases state_ptr. Only the plugin can release the state, so this
+	 * must dispatch instead of rejecting the call, and there is no buffer
+	 * to verify until there is a buffer.
+	 */
+	xassert(!dst || (dst->magic == BUF_MAGIC));
 
 	pmt = _find_serializer(mime_type);
 	if (!pmt)

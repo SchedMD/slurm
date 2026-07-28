@@ -105,8 +105,10 @@ typedef struct serialize_parse_state_s serialize_parse_state_t;
 /*
  * Parse given (potentially partial) string buffer into target struct dst
  * IN/OUT state_ptr - Pointer populated with parsing state
- *	If start_ptr is !NULL, then serializer expects another call to
- *	serialize_g_parse().
+ *	Only populated when src ran out before the parse completed, marking
+ *	where the parse stopped. Supply the rest of src and call again with the
+ *	same state_ptr to resume. Released and set to NULL once the parse
+ *	completes or fails.
  *	Passing a NULL src will always release state_ptr.
  * IN parser - return from data_parser_g_new()
  * IN type - expected data_parser type of obj
@@ -118,7 +120,8 @@ typedef struct serialize_parse_state_s serialize_parse_state_t;
  *	[offset, size) will be string to be read.
  *	src offset will be set with how many bytes have been processed
  * IN mime_type - deserialize data using given mime_type
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS once the parse is complete or stopped waiting on more src
+ *	to be supplied (state_ptr populated), or error
  */
 extern int serialize_g_parse(serialize_parse_state_t **state_ptr,
 			     data_parser_t *parser, data_parser_type_t type,
@@ -129,9 +132,10 @@ typedef struct serialize_dump_state_s serialize_dump_state_t;
 
 /*
  * Dump given target struct src into fixed size buffer
- * IN/OUT state_ptr - Pointer populated with parsing state
- *	If state_ptr is !NULL, then serializer expects another call to
- *	serialize_g_dump().
+ * IN/OUT state_ptr - Pointer populated with dumping state
+ *	Only populated when ENOSPC is returned, marking where the dump stopped.
+ *	Grow dst and call again with the same state_ptr to resume. Released and
+ *	set to NULL on every other return.
  *	Passing a NULL dst will always release state_ptr.
  * IN parser - return from data_parser_g_new()
  * IN type - data_parser type of obj
@@ -143,7 +147,8 @@ typedef struct serialize_dump_state_s serialize_dump_state_t;
  *	Offset to indicate the bytes populated.
  * IN flags - optional flags to specify to serilzier to change presentation of
  *	data
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS once the dump is complete, ENOSPC if dst was too small to
+ *	hold the rest of the dump and it must be resumed, or error
  */
 extern int serialize_g_dump(serialize_dump_state_t **state_ptr,
 			    data_parser_t *parser, data_parser_type_t type,

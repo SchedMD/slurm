@@ -92,9 +92,10 @@ extern int serdes_parse_buf(data_parser_t *parser, data_parser_type_t type,
 /*
  * Dump given target struct src into fixed size buffer
  * NOTE: Use SERDES_DUMP() macro instead of calling directly!
- * IN/OUT state_ptr - Pointer populated with parsing state
- *	If state_ptr is !NULL, then serializer expects another call to
- *	serialize_g_dump().
+ * IN/OUT state_ptr - Pointer populated with dumping state
+ *	Only populated when ENOSPC is returned, marking where the dump stopped.
+ *	Grow dst and call again with the same state_ptr to resume. Released and
+ *	set to NULL on every other return.
  *	Passing a NULL dst will always release state_ptr.
  * IN parser - return from data_parser_g_new()
  * IN type - data_parser type of obj
@@ -106,7 +107,8 @@ extern int serdes_parse_buf(data_parser_t *parser, data_parser_type_t type,
  *	Offset to indicate the bytes populated.
  * IN flags - optional flags to specify to serilzier to change presentation of
  *	data
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS once the dump is complete, ENOSPC if dst was too small to
+ *	hold the rest of the dump and it must be resumed, or error
  */
 extern int serdes_dump(serialize_dump_state_t **state_ptr,
 		       data_parser_t *parser, data_parser_type_t type,
