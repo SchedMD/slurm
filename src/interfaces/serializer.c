@@ -39,6 +39,7 @@
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -275,39 +276,76 @@ extern const char *resolve_mime_type(const char *mime_type,
 	return pmt->mime_type;
 }
 
-static int _register_mime_types(list_t *mime_types_list, size_t plugin_index,
-				const char **mime_type)
+/*
+ * Report a MIME type that went to an earlier plugin.
+ *
+ * Two plugins Slurm ships claiming one type is a packaging decision that an
+ * administrator can not act on, and a serializer initializes in every daemon
+ * and on every step, so only warn when SerializerPlugins named the plugins and
+ * editing that list is a real fix. Every plugin is explicitly named whenever
+ * SerializerPlugins is set, as load_plugins() then builds the plugin list from
+ * that string alone.
+ *
+ * slurmstepd is never sent SerializerPlugins (see slurmstepd_init.c), so it
+ * always takes the quiet path no matter what is configured.
+ */
+static void _log_skipped_mime_type(const char *mime_type, size_t holder,
+				   size_t skipped)
 {
+	if (slurm_conf.serializer_plugins && slurm_conf.serializer_plugins[0])
+		warning_in_daemon(
+			"SerializerPlugins: MIME type \"%s\" is served by serializer plugin %s: skipping plugin %s",
+			mime_type, plugins->types[holder],
+			plugins->types[skipped]);
+	else
+		log_flag(DATA, "MIME type \"%s\" served by serializer plugin %s: skipping plugin %s",
+			 mime_type, plugins->types[holder],
+			 plugins->types[skipped]);
+}
+
+static const char *_register_mime_types(list_t *mime_types_list,
+					size_t plugin_index,
+					const char **mime_type)
+{
+	const char *first = NULL;
+
 	while (*mime_type) {
 		plugin_mime_type_t *pmt;
 
 		/*
-		 * Two plugins claiming the same MIME type makes the active
-		 * serializer for that type depend on plugin load order (see
-		 * _find_serializer() -> list_find_first()). Refuse to start
-		 * rather than silently bind to an arbitrary one.
+		 * Only one plugin may serve a MIME type. Keep the plugin that
+		 * already claimed it and skip this one for that type only: a
+		 * plugin may lose one MIME type and still serve another.
 		 */
 		if ((pmt = list_find_first(mime_types_list,
 					   _find_serializer_full_type,
-					   (void *) *mime_type)))
-			fatal("%s: serializer plugin %s cannot register MIME type \"%s\": already registered by plugin %s",
-			      __func__, plugins->types[plugin_index],
-			      *mime_type, plugins->types[pmt->index]);
+					   (void *) *mime_type))) {
+			_log_skipped_mime_type(*mime_type, pmt->index,
+					       plugin_index);
+		} else {
+			pmt = xmalloc(sizeof(*pmt));
+			pmt->index = plugin_index;
+			pmt->mime_type = *mime_type;
+			pmt->magic = PMT_MAGIC;
 
-		pmt = xmalloc(sizeof(*pmt));
-		pmt->index = plugin_index;
-		pmt->mime_type = *mime_type;
-		pmt->magic = PMT_MAGIC;
+			list_append(mime_types_list, pmt);
 
-		list_append(mime_types_list, pmt);
+			log_flag(DATA, "registered serializer plugin %s for %s",
+				 plugins->types[plugin_index], pmt->mime_type);
 
-		log_flag(DATA, "registered serializer plugin %s for %s",
-			 plugins->types[plugin_index], pmt->mime_type);
+			/*
+			 * First mime_type successfully registered is the
+			 * primary. A plugin that loses mime_types[0] to
+			 * another plugin has its next type promoted.
+			 */
+			if (!first)
+				first = *mime_type;
+		}
 
 		mime_type++;
 	}
 
-	return SLURM_SUCCESS;
+	return first;
 }
 
 extern const char **get_mime_type_array(void)
@@ -324,7 +362,7 @@ extern const char **get_mime_type_array(void)
 
 extern int serializer_g_init(void)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, mi = 0;
 	serializer_flags_t conf_flags = SER_FLAGS_NONE;
 
 	slurm_mutex_lock(&init_mutex);
@@ -353,7 +391,7 @@ extern int serializer_g_init(void)
 
 	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
 		const char *config = NULL;
-		const char **mime_types;
+		const char **mime_types = NULL, *mime_type = NULL;
 		const funcs_t *func_ptr = plugins->functions[i];
 		serializer_flags_t flags = conf_flags;
 
@@ -365,10 +403,9 @@ extern int serializer_g_init(void)
 			fatal_abort("%s: unable to load %s from plugin",
 				    __func__, SERIALIZER_MIME_TYPES_SYM);
 
-		/* First mime_type is always considered primary */
-		mime_array[i] = mime_types[0];
-
-		_register_mime_types(mime_types_list, i, mime_types);
+		if ((mime_type = _register_mime_types(mime_types_list, i,
+						      mime_types)))
+			mime_array[mi++] = mime_type;
 
 		if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN)) {
 			if (running_in_slurmrestd())
