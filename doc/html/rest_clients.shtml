@@ -281,11 +281,6 @@ resultant client code at all.</p>
 <td><strong>Removed in Release</strong></td>
 </tr>
 <tr>
-<td>v0.0.39</td>
-<td>23.02 (<a href="openapi_release_notes.html#23020">release notes</a>)</td>
-<td>24.11</td>
-</tr>
-<tr>
 <td>v0.0.40</td>
 <td>23.11 (<a href="openapi_release_notes.html#23110">release notes</a>)</td>
 <td>25.11</td>
@@ -309,6 +304,11 @@ resultant client code at all.</p>
 <td>v0.0.44</td>
 <td>25.11 (<a href="openapi_release_notes.html#25110">release notes</a>)</td>
 <td>27.11</td>
+</tr>
+<tr>
+<td>v0.0.45</td>
+<td>26.05 (<a href="openapi_release_notes.html#26050">release notes</a>)</td>
+<td>28.05</td>
 </tr>
 </tbody>
 </table>
