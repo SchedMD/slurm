@@ -185,7 +185,7 @@ static int _get_plugin_index(int plugin_id)
 	return -1;
 }
 
-static int _get_plugin_index_by_type(char *type)
+static int _get_plugin_index_by_type(const char *type)
 {
 	for (int i = 0; i < g_context_num; i++)
 		if (!xstrcmp(type, ops[i].plugin_type))
