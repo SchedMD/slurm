@@ -49,13 +49,17 @@ static void sigterm_handler(int sig)
 int main(int argc, char *argv[])
 {
 	int rank;
-	int trap = 0, abort_mode = 0;
+	int trap = 0, abort_mode = 0, abort_status = EXIT_CODE;
 
 	for (int i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "trap"))
+		if (!strcmp(argv[i], "trap")) {
 			trap = 1;
-		else if (!strcmp(argv[i], "abort"))
+		} else if (!strcmp(argv[i], "abort")) {
 			abort_mode = 1;
+		} else if (!strcmp(argv[i], "abort0")) {
+			abort_mode = 1;
+			abort_status = 0;
+		}
 	}
 
 	MPI_Init(&argc, &argv);
@@ -63,9 +67,9 @@ int main(int argc, char *argv[])
 
 	if (rank == 0) {
 		if (abort_mode) {
-			printf("rank0_calling_abort\n");
+			printf("rank0_calling_abort_%d\n", abort_status);
 			fflush(stdout);
-			MPI_Abort(MPI_COMM_WORLD, EXIT_CODE);
+			MPI_Abort(MPI_COMM_WORLD, abort_status);
 		} else {
 			printf("rank0_exiting_%d\n", EXIT_CODE);
 			fflush(stdout);
