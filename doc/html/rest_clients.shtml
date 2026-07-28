@@ -312,7 +312,6 @@ resultant client code at all.</p>
 </tr>
 </tbody>
 </table>
-</p>
 
 <p>The data_parser plugins are explicitly versioned with scheduled release and
 removal dates in the above table. The data_parser plugins are purposefully kept
