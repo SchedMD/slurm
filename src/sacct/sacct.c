@@ -54,6 +54,8 @@ print_field_t fields[] = {
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES},
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS},
 	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE},
+	{10, "Billing", print_fields_time_from_secs, PRINT_BILLING},
+	{10, "BillingRaw", print_fields_uint64, PRINT_BILLING_RAW},
 	{16, "BlockID", print_fields_str, PRINT_BLOCKID},
 	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
 	{14, "Comment", print_fields_str, PRINT_COMMENT},
