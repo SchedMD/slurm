@@ -716,8 +716,8 @@ static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
 {
 	srun_info_t *srun = xmalloc(sizeof(srun_info_t));
 
-	if (!protocol_version || (protocol_version == NO_VAL16))
-		protocol_version = SLURM_PROTOCOL_VERSION;
+	xassert(protocol_version);
+	xassert(protocol_version != NO_VAL16);
 	srun->protocol_version = protocol_version;
 	srun->uid = uid;
 	/*

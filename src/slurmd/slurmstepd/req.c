@@ -1362,9 +1362,7 @@ static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 	safe_read(fd, &srun->uid, sizeof(uid_t));
 	safe_read(fd, &srun->protocol_version, sizeof(uint16_t));
 
-	if (!srun->protocol_version)
-		srun->protocol_version = NO_VAL16;
-
+	xassert(srun->protocol_version);
 	srun->attached = true;
 
 	/*
