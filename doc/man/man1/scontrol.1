@@ -1986,6 +1986,14 @@ The total memory, in MiB, currently free on the node as reported by the OS.
 .IP
 
 .TP
+\fBGresUsed\fR
+The generic resources on the node that are currently allocated to jobs.
+Only displayed with the \fB\-d\fR, \fB\-\-details\fR option.
+For shared GRES (\fBshard\fR or \fBmps\fR) usage syntax, see
+<https://slurm.schedmd.com/gres.html#Shared_GRES_Usage>.
+.IP
+
+.TP
 \fBLastBusyTime\fR
 The last time the node was busy (i.e. last time the node had jobs on it). This
 time is used in PowerSave to determine when to suspend nodes (e.g. now \-
