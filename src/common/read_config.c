@@ -269,6 +269,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefMemPerGPU" , S_P_UINT64},
 	{"DefMemPerNode", S_P_UINT64},
 	{"DefRuntimePlugin", S_P_STRING},
+	{"DefSegmentSize", S_P_UINT16},
 	{"DependencyParameters", S_P_STRING},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EioTimeout", S_P_UINT16},
@@ -1047,6 +1048,8 @@ static char *_job_def_name(uint16_t type)
 		return "DefCpuPerGPU";
 	case JOB_DEF_MEM_PER_GPU:
 		return "DefMemPerGPU";
+	case JOB_DEF_SEGMENT_SIZE:
+		return "DefSegmentSize";
 	}
 	snprintf(name, sizeof(name), "Unknown(%u)", type);
 	return name;
@@ -1058,6 +1061,8 @@ static uint16_t _job_def_type(char *type)
 		return JOB_DEF_CPU_PER_GPU;
 	if (!xstrcasecmp(type, "DefMemPerGPU"))
 		return JOB_DEF_MEM_PER_GPU;
+	if (!xstrcasecmp(type, "DefSegmentSize"))
+		return JOB_DEF_SEGMENT_SIZE;
 	return NO_VAL16;
 }
 
@@ -1099,6 +1104,11 @@ extern int job_defaults_list(char *in_str, list_t **out_list)
 		value = strtoll(sep, &end_ptr, 10);
 		if (!end_ptr || (end_ptr[0] != '\0') ||
 		    (value < 0) || (value == LLONG_MAX)) {
+			rc = EINVAL;
+			break;
+		}
+		/* A job's segment size is a uint16_t, sentinels excluded */
+		if ((type == JOB_DEF_SEGMENT_SIZE) && (value >= NO_VAL16)) {
 			rc = EINVAL;
 			break;
 		}
@@ -1180,6 +1190,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0;
+	uint16_t def_segment_size = 0;
 	job_defaults_t *job_defaults;
 	char *cpu_bind = NULL, *tmp = NULL;
 	uint16_t tmp_16 = 0;
@@ -1195,6 +1206,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"DefMemPerCPU", S_P_UINT64},
 		{"DefMemPerGPU" , S_P_UINT64},
 		{"DefMemPerNode", S_P_UINT64},
+		{"DefSegmentSize", S_P_UINT16},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"DefaultTime", S_P_STRING},
 		{"DenyAccounts", S_P_STRING},
@@ -1358,6 +1370,22 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				p->job_defaults_list = list_create(xfree_ptr);
 			}
 			list_append(p->job_defaults_list, job_defaults);
+		}
+		if (s_p_get_uint16(&def_segment_size, "DefSegmentSize", tbl) ||
+		    s_p_get_uint16(&def_segment_size, "DefSegmentSize", dflt)) {
+			if (def_segment_size >= NO_VAL16) {
+				error("Partition=%s DefSegmentSize=%u is invalid, ignored",
+				      p->name, def_segment_size);
+			} else {
+				job_defaults = xmalloc(sizeof(job_defaults_t));
+				job_defaults->type = JOB_DEF_SEGMENT_SIZE;
+				job_defaults->value = def_segment_size;
+				if (!p->job_defaults_list) {
+					p->job_defaults_list =
+						list_create(xfree_ptr);
+				}
+				list_append(p->job_defaults_list, job_defaults);
+			}
 		}
 
 		if (!s_p_get_uint64(&p->def_mem_per_cpu, "DefMemPerNode",
@@ -3965,6 +3993,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	bool truth;
 	uint16_t uint16_tmp;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0, tot_prio_weight;
+	uint16_t def_segment_size = 0;
 	uint64_t uint64_tmp;
 	uint32_t default_unkillable_timeout;
 	job_defaults_t *job_defaults;
@@ -4200,6 +4229,22 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->job_defaults_list = list_create(xfree_ptr);
 		}
 		list_append(conf->job_defaults_list, job_defaults);
+	}
+
+	if (s_p_get_uint16(&def_segment_size, "DefSegmentSize", hashtbl)) {
+		if (def_segment_size >= NO_VAL16) {
+			error("DefSegmentSize=%u is invalid, ignored",
+			      def_segment_size);
+		} else {
+			job_defaults = xmalloc(sizeof(job_defaults_t));
+			job_defaults->type = JOB_DEF_SEGMENT_SIZE;
+			job_defaults->value = def_segment_size;
+			if (!conf->job_defaults_list) {
+				conf->job_defaults_list =
+					list_create(xfree_ptr);
+			}
+			list_append(conf->job_defaults_list, job_defaults);
+		}
 	}
 
 	if ((temp_str = xstrdup(getenv("SLURM_DEBUG_FLAGS"))) ||

@@ -6243,6 +6243,15 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->segment_size != NO_VAL16)
 		job_desc->segment_size = opt_local->segment_size;
+	if (slurm_option_isset(opt_local, "segment")) {
+		/*
+		 * Segment size explicitly requested: a nonzero value pins it,
+		 * 0 opts out of any DefSegmentSize default. The wire value
+		 * alone cannot distinguish --segment=0 from "not set", as both
+		 * are sent as 0.
+		 */
+		job_desc->bitflags |= JOB_SEGMENT_SIZE_SET;
+	}
 
 	if (opt_local->shared != NO_VAL16)
 		job_desc->shared = opt_local->shared;

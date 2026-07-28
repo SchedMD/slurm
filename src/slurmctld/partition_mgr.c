@@ -1118,6 +1118,19 @@ extern int set_partition_billing_weights(char *billing_weights_str,
 }
 
 /*
+ * Warn about a DefSegmentSize which will never be used because the partition's
+ * topology has no notion of segments.
+ */
+static void _warn_unsupported_def_segment_size(part_record_t *part_ptr)
+{
+	if ((slurm_get_def_segment_size(part_ptr->job_defaults_list) !=
+	     NO_VAL16) &&
+	    !topology_g_supports_segment(part_ptr->topology_idx))
+		warning("DefSegmentSize is set for partition %s, but its topology does not support segments. It will be ignored.",
+			part_ptr->name);
+}
+
+/*
  * update_part - create or update a partition's configuration data
  * IN part_desc - description of partition changes
  * IN create_flag - create a new partition
@@ -1127,6 +1140,7 @@ extern int set_partition_billing_weights(char *billing_weights_str,
  */
 extern int update_part(partition_info_t *part_desc, bool create_flag)
 {
+	bool topology_updated = false;
 	int error_code;
 	part_record_t *part_ptr;
 
@@ -1834,9 +1848,19 @@ extern int update_part(partition_info_t *part_desc, bool create_flag)
 			} else {
 				part_desc->topology_name = NULL;
 				xfree(old_topo_name);
+				/* set_part_topology_idx() already warned above */
+				topology_updated = true;
 			}
 		}
 	}
+
+	/*
+	 * Checked after Topology= so that the warning is based on the topology
+	 * the partition ends up with. Other paths are covered by
+	 * set_part_topology_idx().
+	 */
+	if (part_desc->job_defaults_str && !topology_updated)
+		_warn_unsupported_def_segment_size(part_ptr);
 
 fini:
 	if (error_code == SLURM_SUCCESS) {
@@ -2347,6 +2371,8 @@ extern int set_part_topology_idx(void *x, void *arg)
 	else if (topology_g_get(TOPO_DATA_TCTX_IDX, part_ptr->topology_name,
 				&(part_ptr->topology_idx)))
 		return -1;
+
+	_warn_unsupported_def_segment_size(part_ptr);
 
 	return 0;
 }

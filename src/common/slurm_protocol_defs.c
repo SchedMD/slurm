@@ -7135,3 +7135,22 @@ extern uint64_t slurm_get_def_mem_per_gpu(list_t *job_defaults_list)
 {
 	return _get_default(job_defaults_list, JOB_DEF_MEM_PER_GPU);
 }
+
+/*
+ * Get configured DefSegmentSize information from a list
+ * (either global or per partition list)
+ * Returns NO_VAL16 if configuration parameter not set
+ */
+extern uint16_t slurm_get_def_segment_size(list_t *job_defaults_list)
+{
+	uint64_t def_segment_size =
+		_get_default(job_defaults_list, JOB_DEF_SEGMENT_SIZE);
+
+	if (def_segment_size == NO_VAL64)
+		return NO_VAL16;
+
+	/* Anything a uint16_t cannot hold is rejected when it is read */
+	xassert(def_segment_size < NO_VAL16);
+
+	return def_segment_size;
+}

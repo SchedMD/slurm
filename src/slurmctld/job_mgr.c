@@ -5584,6 +5584,30 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 }
 
 /*
+ * Get the DefSegmentSize that applies to jobs in this partition, falling back
+ * to the cluster wide JobDefaults. Returns 0 when no default applies, which
+ * includes a topology that has no notion of segments.
+ */
+static uint16_t _get_def_segment_size(part_record_t *part_ptr)
+{
+	uint16_t def_segment_size;
+
+	if (!part_ptr || !topology_g_supports_segment(part_ptr->topology_idx))
+		return 0;
+
+	def_segment_size =
+		slurm_get_def_segment_size(part_ptr->job_defaults_list);
+	if (def_segment_size == NO_VAL16)
+		def_segment_size =
+			slurm_get_def_segment_size(slurm_conf
+							   .job_defaults_list);
+	if (def_segment_size == NO_VAL16)
+		return 0;
+
+	return def_segment_size;
+}
+
+/*
  * Returns average pn_min_memory, considering DefMemPer{CPU,Node,GPU} from both
  * the partition and cluster configuration
  * WARNING: assumes memory is evenly distributed across all nodes in job,
@@ -7174,6 +7198,26 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			    job_ptr);
 		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		return WAIT_NO_REASON;	/* To prevent CLANG error */
+	}
+
+	/*
+	 * Apply the partition's DefSegmentSize to a job which did not request a
+	 * segment size of its own. This runs for every partition the job is
+	 * evaluated against, so a job pending in more than one partition -- or
+	 * one that has been moved to another partition -- always uses the current
+	 * partition's default. Only pending jobs are touched: a job keeps the
+	 * segment size it was allocated with.
+	 */
+	if (IS_JOB_PENDING(job_ptr) &&
+	    !(job_ptr->bit_flags & JOB_SEGMENT_SIZE_SET)) {
+		uint16_t def_segment_size = _get_def_segment_size(part_ptr);
+
+		if (detail_ptr->segment_size != def_segment_size) {
+			debug("%s: setting SegmentSize from %u to %u for %pJ from partition %s",
+			      __func__, detail_ptr->segment_size,
+			      def_segment_size, job_ptr, part_ptr->name);
+			detail_ptr->segment_size = def_segment_size;
+		}
 	}
 
 	fail_reason = WAIT_NO_REASON;
@@ -10167,6 +10211,17 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 		job_desc_msg->bitflags |= JOB_MEM_SET;
 	}
 
+	if (job_desc_msg->segment_size) {
+		/* Segment size explicitly set by user */
+		job_desc_msg->bitflags |= JOB_SEGMENT_SIZE_SET;
+	}
+	/*
+	 * A job_submit plugin may set JOB_SEGMENT_SIZE_SET with
+	 * segment_size=0 to opt out of DefSegmentSize; leave the flag set
+	 * in that case. For a plain submission the flag is clear, so
+	 * segment_size=0 means "not set" and the default is applied at
+	 * evaluation.
+	 */
 	job_desc_msg->bitflags &= ~BACKFILL_TEST;
 	job_desc_msg->bitflags &= ~BF_WHOLE_NODE_TEST;
 	job_desc_msg->bitflags &= ~JOB_ACCRUE_OVER;
@@ -14074,13 +14129,26 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				error_code = ESLURM_INVALID_NODE_COUNT;
 			}
 		}
-		if ((error_code == SLURM_SUCCESS) &&
-		    (detail_ptr->segment_size != job_desc->segment_size)) {
-			info("%s: setting SegmentSize from %u to %u for %pJ",
-			     __func__, detail_ptr->segment_size,
-			     job_desc->segment_size, job_ptr);
-			detail_ptr->segment_size = job_desc->segment_size;
-			update_accounting = true;
+		if (error_code == SLURM_SUCCESS) {
+			/*
+			 * An explicit SegmentSize marks the job as user-set, so the
+			 * partition default no longer overrides it. A nonzero value
+			 * pins it; 0 opts out of the default, so the job runs
+			 * unsegmented. Set the flag even when the value is
+			 * unchanged, so explicitly requesting the current value pins
+			 * it against future default changes.
+			 */
+			job_ptr->bit_flags |= JOB_SEGMENT_SIZE_SET;
+
+			if (detail_ptr->segment_size !=
+			    job_desc->segment_size) {
+				info("%s: setting SegmentSize from %u to %u for %pJ",
+				     __func__, detail_ptr->segment_size,
+				     job_desc->segment_size, job_ptr);
+				detail_ptr->segment_size =
+					job_desc->segment_size;
+				update_accounting = true;
+			}
 		}
 	}
 
