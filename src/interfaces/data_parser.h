@@ -601,6 +601,7 @@ typedef enum {
 	DATA_PARSER_OVERSUBSCRIBE_JOBS, /* max_share */
 	DATA_PARSER_OVERSUBSCRIBE_FLAGS, /* max_share */
 	DATA_PARSER_JOB_PLANNED_TIME, /* slurmdb_job_rec_t->start - slurmdb_job_rec_t->eligible */
+	DATA_PARSER_JOB_BILLING_RAW, /* billing from slurmdb_job_rec_t->tres_alloc_str * slurmdb_job_rec_t->elapsed */
 	DATA_PARSER_CR_TYPE, /* uint16_t - CR_* */
 	DATA_PARSER_NODE_CR_TYPE, /* enum node_cr_state - uint32_t - NODE_CR_* */
 	DATA_PARSER_OPENAPI_JOB_STATE_RESP, /* openapi_resp_job_state_t */

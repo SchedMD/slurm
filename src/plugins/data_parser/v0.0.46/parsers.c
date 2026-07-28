@@ -1118,6 +1118,24 @@ static int DUMP_FUNC(JOB_PLANNED_TIME)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, diff, dst, args);
 }
 
+PARSE_DISABLED(JOB_BILLING_RAW)
+
+static int DUMP_FUNC(JOB_BILLING_RAW)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	slurmdb_job_rec_t *job = obj;
+	uint64_t usage = slurmdb_find_tres_count_in_string(job->tres_alloc_str,
+							   TRES_BILLING);
+
+	/* Same computation as the sacct Billing field */
+	if (usage == INFINITE64)
+		usage = 0;
+	else
+		usage *= job->elapsed;
+
+	return DUMP(UINT64, usage, dst, args);
+}
+
 static int _foreach_resolve_tres_id(void *x, void *arg)
 {
 	slurmdb_tres_rec_t *tres = (slurmdb_tres_rec_t *) x;
@@ -8935,6 +8953,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, resv_name, "reservation/name", "Name of reservation to use"),
 	add_parse(STRING, resv_req, "reservation/requested", "Comma-separated list of requested reservation names"),
 	add_cparse(JOB_PLANNED_TIME, "time/planned", "Time required to start job after becoming eligible to run in seconds"),
+	add_cparse(JOB_BILLING_RAW, "billing_raw", "Billable usage accrued by the job in TRES-seconds (allocated billing TRES multiplied by elapsed seconds; same as the sacct BillingRaw field)"),
 	add_parse(STRING, script, "script", "Job batch script contents; only the first component in a HetJob is populated or honored"),
 	add_parse(UINT16, segment_size, "segment_size", "Requested segment size"),
 	add_parse(SLUID, sluid, "original_sluid", "Original SLUID"),
@@ -13621,6 +13640,7 @@ static const parser_t parsers[] = {
 	addpc(STEP_STDOUT_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
 	addpc(STEP_STDERR_EXP, slurmdb_step_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_PLANNED_TIME, UINT64_NO_VAL, slurmdb_job_rec_t, NEED_NONE, NULL),
+	addpcp(JOB_BILLING_RAW, UINT64, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_CYCLE_MEAN_DEPTH, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
 	addpc(STATS_MSG_CYCLE_PER_MIN, stats_info_response_msg_t, NEED_NONE, INT64, NULL),
