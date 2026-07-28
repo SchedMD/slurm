@@ -157,7 +157,7 @@ extern char *cred_p_get_signature_key(char *signature)
 {
 	char *sig = xstrrchr(signature, '.');
 
-	if (sig)
+	if (sig && sig[1])
 		return xstrdup(sig + 1);
 
 	return hash_g_compute_hex(signature);
