@@ -6900,10 +6900,10 @@ static int PARSE_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
 	kill_jobs_resp_msg_t *msg = obj;
 
 	if (data_get_type(src) != DATA_TYPE_LIST)
-		return on_error(PARSING, parser->type, args,
-				ESLURM_DATA_CONV_FAILED, __func__, __func__,
-				"Unexpected type %s when expecting a list",
-				data_type_to_string(data_get_type(src)));
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Unexpected type %s when expecting a list",
+				   data_type_to_string(data_get_type(src)));
 
 	msg->jobs_cnt = data_get_list_length(src);
 
@@ -6998,10 +6998,10 @@ static int PARSE_FUNC(TOPOLOGY_CONF_ARRAY)(const parser_t *const parser,
 		fargs.array = ctx_array->tctx;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
@@ -7113,10 +7113,10 @@ static int PARSE_FUNC(TOPOLOGY_TREE_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = tree_configs->switch_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
@@ -7228,10 +7228,10 @@ static int PARSE_FUNC(TOPOLOGY_BLOCK_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = block_configs->block_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
@@ -7462,10 +7462,10 @@ static int PARSE_FUNC(TORUS3D_PLACEMENT_ARRAY)(const parser_t *const parser,
 		fargs.array = config->placements;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
@@ -7502,10 +7502,10 @@ static int PARSE_FUNC(TORUS3D_REGION_ARRAY)(const parser_t *const parser,
 		fargs.array = config->regions;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
@@ -7589,10 +7589,10 @@ static int PARSE_FUNC(TOPOLOGY_RING_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = ring_configs->ring_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
@@ -7653,10 +7653,10 @@ static int PARSE_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t
 		fargs.array = torus3d_configs->torus3d_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
