@@ -74,4 +74,17 @@ do {						\
 		verbose(fmt, ##__VA_ARGS__);	\
 } while (false)
 
+/*
+ * Log a condition an administrator needs to act on but a client can not.
+ * Daemons warn() as the condition persists for the life of the daemon while
+ * clients only debug2() to avoid repeating it on every invocation.
+ */
+#define warning_in_daemon(fmt, ...) \
+	do { \
+		if (running_in_daemon()) \
+			warning(fmt, ##__VA_ARGS__); \
+		else \
+			debug2(fmt, ##__VA_ARGS__); \
+	} while (false)
+
 #endif
