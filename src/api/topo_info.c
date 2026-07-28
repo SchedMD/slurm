@@ -55,8 +55,8 @@
 #include "src/interfaces/topology.h"
 
 /*
- * slurm_load_topo - issue RPC to get slurm all switch topology configuration
- *	information
+ * slurm_load_topo - Load all topology plugins for limited use and issue a RPC
+ *	to get slurm all switch topology configuration information
  * IN node_info_msg_pptr - place to store a node configuration pointer
  * IN name - topolgy name
  * RET 0 or a slurm error code
@@ -74,7 +74,7 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp, char *name)
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data = &data;
 
-	if ((rc = topology_g_init())) {
+	if ((rc = topology_g_init_topoinfo())) {
 		slurm_seterrno_ret(rc);
 	}
 
@@ -151,8 +151,6 @@ extern void slurm_print_topo_info_msg(FILE *out,
 				      int one_liner)
 {
 	char *out_str = NULL;
-
-	topology_g_init();
 
 	topology_g_topoinfo_print(topo_info_msg_ptr->topo_info, node_list, unit,
 				  &out_str);
