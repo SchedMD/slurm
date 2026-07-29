@@ -477,7 +477,8 @@ extern int serializer_g_init(void)
 	}
 
 	if (!rc && !_find_serializer(MIME_TYPE_JSON))
-		warning("No serializer plugin loaded for %s.", MIME_TYPE_JSON);
+		warning_in_daemon("No serializer plugin loaded for %s.",
+				  MIME_TYPE_JSON);
 
 	slurm_mutex_unlock(&init_mutex);
 
