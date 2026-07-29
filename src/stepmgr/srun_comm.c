@@ -97,8 +97,8 @@ extern void destroy_steps_drained_sub(void *x)
 
 	if (!sub)
 		return;
-	xfree(sub->host);
-	xfree(sub->tls_cert);
+	xfree(sub->req.host);
+	xfree(sub->req.tls_cert);
 	xfree(sub);
 }
 
@@ -143,15 +143,16 @@ static int _dispatch_steps_drained(void *x, void *arg)
 	job_record_t *job_ptr = arg;
 	slurm_addr_t *addr = NULL;
 
-	xassert(sub->host);
-	xassert(sub->host[0]);
-	xassert(sub->port);
+	xassert(sub->req.host);
+	xassert(sub->req.host[0]);
+	xassert(sub->req.port);
 
 	addr = xmalloc(sizeof(*addr));
 	*addr = sub->addr;
 
-	_srun_agent_launch(addr, sub->tls_cert, sub->host, SRUN_STEPS_DRAINED,
-			   NULL, job_ptr->user_id, sub->protocol_version);
+	_srun_agent_launch(addr, sub->req.tls_cert, sub->req.host,
+			   SRUN_STEPS_DRAINED, NULL, job_ptr->user_id,
+			   sub->protocol_version);
 	return 1;
 }
 

@@ -46,16 +46,14 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
- * Info for a steps-drained subscriber created from a
- * REQUEST_STEPS_DRAINED_SUBSCRIBE message; element type for
- * job_record_t.steps_drained_subs.
+ * A steps-drained subscriber; element type for
+ * job_record_t.steps_drained_subs. addr and protocol_version are derived once
+ * from the REQUEST_STEPS_DRAINED_SUBSCRIBE message that req is moved from.
  */
 typedef struct {
 	slurm_addr_t addr;
-	char *host;
-	uint16_t port;
 	uint16_t protocol_version;
-	char *tls_cert;
+	steps_drained_sub_msg_t req;
 } steps_drained_sub_t;
 
 /*

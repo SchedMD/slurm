@@ -666,15 +666,15 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 	}
 
 	sub = xmalloc(sizeof(*sub));
-	sub->host = xstrdup(request->host);
-	sub->port = request->port;
-	sub->tls_cert = xstrdup(request->tls_cert);
+	sub->req = *request;
+	request->host = NULL;
+	request->tls_cert = NULL;
 	sub->protocol_version = msg.protocol_version;
-	slurm_set_addr(&sub->addr, sub->port, sub->host);
+	slurm_set_addr(&sub->addr, sub->req.port, sub->req.host);
 
 	if (sub->addr.ss_family == AF_UNSPEC) {
 		error("REQUEST_STEPS_DRAINED_SUBSCRIBE: cannot resolve %s:%u",
-		      sub->host, sub->port);
+		      sub->req.host, sub->req.port);
 		destroy_steps_drained_sub(sub);
 		rc_msg.return_code = ESLURM_INVALID_NODE_NAME;
 		goto reply;
