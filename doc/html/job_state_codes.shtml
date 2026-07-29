@@ -2,13 +2,14 @@
 
 <h1>Job State Codes</h1>
 
-<p>Each job in the Slurm system has a state assigned to it. How the job state is
-displayed depends on the method used to identify the state.</p>
+<p>Each job and job step in the Slurm system has a state assigned to it. How
+the state is displayed depends on the method used to identify it.</p>
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>In the Slurm code, there are <b>base states</b> and <b>state flags</b>.
-Each job has a base state and may have additional state flags set. When using
+Each job and job step has a base state and may have additional state flags
+set. When using
 the <a href="rest_quickstart.html">REST API</a>, both the base state and current
 flag(s) will be returned.</p>
 
@@ -26,9 +27,11 @@ For more visibility into the job states and flags, set
 <code>DebugFlags=TraceJobs</code> and <code>SlurmctldDebug=verbose</code>
 (or higher) in <a href="slurm.conf.html">slurm.conf</a>.</p>
 
-<h2 id="states">Job states<a class="slurm_link" href="#states"></a></h2>
+<h2 id="states">Job and step states
+<a class="slurm_link" href="#states"></a></h2>
 
-<p>Each job known to the system will have one of the following states:</p>
+<p>Each job and job step known to the system will have one of the following
+states:</p>
 
 <table>
 <tbody>
@@ -60,9 +63,9 @@ For more visibility into the job states and flags, set
 </tbody>
 </table>
 
-<h2 id="flags">Job flags<a class="slurm_link" href="#flags"></a></h2>
+<h2 id="flags">Job and step flags<a class="slurm_link" href="#flags"></a></h2>
 
-<p>Jobs may have additional flags set:</p>
+<p>Jobs and job steps may have additional flags set:</p>
 
 <table>
 <tbody>
@@ -76,7 +79,10 @@ For more visibility into the job states and flags, set
 	<a href="prolog_epilog.html">prolog</a>
 	(<code>PrologSlurmctld</code>, or <code>Prolog</code> with
 	<code>PrologFlags=Alloc</code> unless <code>NoHold</code> is also
-	set)</td></tr>
+	set); on a job step managed by the
+	<a href="slurm.conf.html#OPT_enable_stepmgr">step manager</a>, the step
+	has been allocated resources and is waiting to be handed to
+	<a href="srun.html">srun</a>, which is normally momentary</td></tr>
 <tr><td><code>EXPEDITING</code></td><td>the job is immediately eligible for
 	scheduling with the highest possible priority</td></tr>
 <tr><td><code>LAUNCH_FAILED</code></td><td>failed to launch on the chosen
