@@ -226,6 +226,7 @@ typedef struct {
 } foreach_hetcomp_args_t;
 
 typedef struct {
+	bool found;
 	job_step_kill_msg_t *job_step_kill_msg;
 	int rc;
 	uint32_t uid;
@@ -2723,7 +2724,10 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
 			    foreach_kill_hetjob_step->uid);
 
-	if (rc != SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS)
+		foreach_kill_hetjob_step->found = true;
+	else if ((rc != ESLURM_INVALID_JOB_ID) &&
+		 (foreach_kill_hetjob_step->rc == SLURM_SUCCESS))
 		foreach_kill_hetjob_step->rc = rc;
 
 	return 0;
@@ -2790,6 +2794,15 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_kill_hetjob_step,
 				     &foreach_kill_hetjob_step);
+		/*
+		 * A step does not need to exist in every component. Keep the
+		 * first real error so that it is not masked by the components
+		 * simply not having the step, and report the step as not found
+		 * only when no component had it and nothing else failed.
+		 */
+		if (!foreach_kill_hetjob_step.found &&
+		    (foreach_kill_hetjob_step.rc == SLURM_SUCCESS))
+			foreach_kill_hetjob_step.rc = ESLURM_INVALID_JOB_ID;
 		if (foreach_kill_hetjob_step.rc != SLURM_SUCCESS)
 			error_code = foreach_kill_hetjob_step.rc;
 	} else {
