@@ -12507,7 +12507,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	bool is_coord_oldacc = false, is_coord_newacc = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
-	job_details_t *detail_ptr;
+	job_details_t *detail_ptr = NULL;
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	bitstr_t *orig_job_node_bitmap = NULL;
@@ -13946,19 +13946,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			if (job_desc->bitflags & JOB_NTASKS_SET)
 				job_ptr->bit_flags |= JOB_NTASKS_SET;
 
-			if ((job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
-			    (detail_ptr->max_nodes != detail_ptr->num_tasks)) {
-				info("%s: setting max_nodes from %u to %u for %pJ",
-				     __func__, detail_ptr->max_nodes,
-				     detail_ptr->num_tasks, job_ptr);
-				detail_ptr->max_nodes = detail_ptr->num_tasks;
-				job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
-					acct_policy_limit_set
-						.tres[TRES_ARRAY_NODE];
-				update_accounting = true;
-				FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
-			}
-
 			info("%s: setting num_tasks to %u for %pJ",
 			     __func__, job_desc->num_tasks, job_ptr);
 		}
@@ -15367,6 +15354,28 @@ fini:
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_LIST(new_qos_list);
 	FREE_NULL_LIST(new_resv_list);
+
+	/*
+	 * num_tasks and ntasks_per_node are applied at several points above,
+	 * and an error can return after num_tasks was already applied, so the
+	 * bound is derived here where every path converges.
+	 */
+	if (detail_ptr && IS_JOB_PENDING(job_ptr) &&
+	    (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
+	    detail_ptr->num_tasks && (detail_ptr->num_tasks != NO_VAL)) {
+		uint32_t new_max_nodes = _implicit_max_nodes(detail_ptr);
+
+		if (detail_ptr->max_nodes != new_max_nodes) {
+			info("%s: setting max_nodes from %u to %u for %pJ",
+			     __func__, detail_ptr->max_nodes, new_max_nodes,
+			     job_ptr);
+			detail_ptr->max_nodes = new_max_nodes;
+			job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
+				acct_policy_limit_set.tres[TRES_ARRAY_NODE];
+			update_accounting = true;
+			FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+		}
+	}
 
 	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
