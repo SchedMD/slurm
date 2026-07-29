@@ -12507,6 +12507,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	bool is_coord_oldacc = false, is_coord_newacc = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
+	bool save_implicit_max_nodes = false;
 	job_details_t *detail_ptr = NULL;
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
@@ -13771,6 +13772,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			save_max_nodes = detail_ptr->max_nodes;
+			save_implicit_max_nodes =
+				(job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES);
 			detail_ptr->max_nodes = job_desc->max_nodes;
 			job_ptr->bit_flags &= ~JOB_IMPLICIT_MAX_NODES;
 		}
@@ -13781,6 +13784,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		     detail_ptr->max_nodes, detail_ptr->min_nodes,
 		     job_ptr);
 		error_code = ESLURM_INVALID_NODE_COUNT;
+	}
+	if (error_code != SLURM_SUCCESS) {
+		/* Undo the node counts so a failed update applies nothing */
 		if (save_min_nodes) {
 			detail_ptr->min_nodes = save_min_nodes;
 			save_min_nodes = 0;
@@ -13788,10 +13794,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (save_max_nodes) {
 			detail_ptr->max_nodes = save_max_nodes;
 			save_max_nodes = 0;
+			if (save_implicit_max_nodes)
+				job_ptr->bit_flags |= JOB_IMPLICIT_MAX_NODES;
 		}
-	}
-	if (error_code != SLURM_SUCCESS)
 		goto fini;
+	}
 
 	if (save_min_nodes && (save_min_nodes!= detail_ptr->min_nodes)) {
 		info("%s: setting min_nodes from %u to %u for %pJ", __func__,
