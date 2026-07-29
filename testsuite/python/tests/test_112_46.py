@@ -33,6 +33,87 @@ qos_name = f"test-qos-{random.randrange(0, 99999999999)}"
 qos2_name = f"{qos_name}-2"
 resv_name = f"test-reservation-{random.randrange(0, 99999999999)}"
 req_node_count = 10
+topology_names = [
+    "tree",
+    "block",
+    "flat1",
+    "flat2",
+    "flat_shorthand",
+    "ring",
+    "torus",
+]
+topology_yaml = """
+---
+- topology: tree
+  cluster_default: false
+  tree:
+    switches:
+      - switch: sw_root
+        children: s[1-2]
+      - switch: s1
+        nodes: node[1-2]
+      - switch: s2
+        nodes: node[3-4]
+- topology: block
+  cluster_default: false
+  block:
+    block_sizes:
+      - 2
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-2]
+      - block: b2
+        nodes: node[3-4]
+      - block: b3
+        nodes: node[5-6]
+      - block: b4
+        nodes: node[7-8]
+- topology: flat1
+  cluster_default: false
+  flat:
+    alpha_step_rank: false
+- topology: flat2
+  cluster_default: true
+  flat:
+    alpha_step_rank: true
+# The documented shorthand form, which carries no config object and so
+# exercises the default-config branch of the flat topoinfo dump.
+- topology: flat_shorthand
+  cluster_default: false
+  flat: true
+- topology: ring
+  cluster_default: false
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[1-4]
+      - ring: ring1
+        nodes: node[5-8]
+- topology: torus
+  cluster_default: false
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 2
+          y: 2
+          z: 2
+        nodes: node[1-8]
+        placements:
+          - dims:
+              x: 1
+              y: 1
+              z: 1
+          - dims:
+              x: 1
+              y: 1
+              z: 2
+          - dims:
+              x: 2
+              y: 2
+              z: 2
+"""
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -52,6 +133,7 @@ def setup():
     atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter_includes("AuthAltTypes", "auth/jwt", source="slurmdbd")
+    atf.require_config_file("topology.yaml", topology_yaml)
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
@@ -2605,3 +2687,268 @@ def test_slurmdbd_conf_cli_matches_slurmrestd():
     cli = {k: v for k, v in cli.items() if k not in conf_volatile_fields}
     rest = {k: v for k, v in rest.items() if k not in conf_volatile_fields}
     assert cli == rest, "sacctmgr and slurmrestd slurmdbd_conf payloads differ"
+
+
+def test_default_topology(slurm):
+    """GET /slurm/v0.0.46/default/topology/ returns the cluster's default topology."""
+    from openapi_client.models.v0046_topo_info import V0046TopoInfo
+    from openapi_client.models.v0046_topology_flat_config import V0046TopologyFlatConfig
+
+    expected = V0046TopoInfo(
+        block=[],
+        flat=V0046TopologyFlatConfig(alpha_step_rank=True),
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+    r = slurm.slurm_v0046_get_default_topology()
+    assert len(r.errors) == 0, f"unexpected errors: {r.errors}"
+    assert len(r.warnings) == 0, f"unexpected warnings: {r.warnings}"
+    assert (
+        r.topology == expected
+    ), "GET /slurm/v0.0.46/default/topology did not return the cluster default"
+
+
+def _expected_topo_info(name):
+    """Return the V0046TopoInfo that the named topology should dump."""
+    from openapi_client.models.v0046_topo_info import V0046TopoInfo
+    from openapi_client.models.v0046_topo_info_block_record import (
+        V0046TopoInfoBlockRecord,
+    )
+    from openapi_client.models.v0046_topo_info_ring_record import (
+        V0046TopoInfoRingRecord,
+    )
+    from openapi_client.models.v0046_topo_info_torus3d_placement import (
+        V0046TopoInfoTorus3dPlacement,
+    )
+    from openapi_client.models.v0046_topo_info_torus3d_record import (
+        V0046TopoInfoTorus3dRecord,
+    )
+    from openapi_client.models.v0046_topo_info_tree_record import (
+        V0046TopoInfoTreeRecord,
+    )
+    from openapi_client.models.v0046_topology_flat_config import V0046TopologyFlatConfig
+    from openapi_client.models.v0046_torus3d_dims import V0046Torus3dDims
+
+    tree_expected = V0046TopoInfo(
+        block=[],
+        flat={},
+        ring=[],
+        torus3d=[],
+        tree=[
+            V0046TopoInfoTreeRecord(
+                level=1,
+                link_speed=0,
+                name="sw_root",
+                nodes="node[1-4]",
+                switches="s[1-2]",
+            ),
+            V0046TopoInfoTreeRecord(
+                level=0, link_speed=0, name="s1", nodes="node[1-2]", switches=""
+            ),
+            V0046TopoInfoTreeRecord(
+                level=0, link_speed=0, name="s2", nodes="node[3-4]", switches=""
+            ),
+        ],
+    )
+
+    block_expected = V0046TopoInfo(
+        block=[
+            V0046TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=0,
+                name="b1",
+                nodes="node[1-2]",
+                block_size=2,
+            ),
+            V0046TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=1,
+                name="b2",
+                nodes="node[3-4]",
+                block_size=2,
+            ),
+            V0046TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=2,
+                name="b3",
+                nodes="node[5-6]",
+                block_size=2,
+            ),
+            V0046TopoInfoBlockRecord(
+                aggregated=False,
+                block_index=3,
+                name="b4",
+                nodes="node[7-8]",
+                block_size=2,
+            ),
+            V0046TopoInfoBlockRecord(
+                aggregated=True,
+                block_index=4,
+                name="b[1-2]",
+                nodes="node[1-4]",
+                block_size=4,
+            ),
+            V0046TopoInfoBlockRecord(
+                aggregated=True,
+                block_index=5,
+                name="b[3-4]",
+                nodes="node[5-8]",
+                block_size=4,
+            ),
+        ],
+        flat={},
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+
+    flat1_expected = V0046TopoInfo(
+        block=[],
+        flat=V0046TopologyFlatConfig(alpha_step_rank=False),
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+
+    flat2_expected = V0046TopoInfo(
+        block=[],
+        flat=V0046TopologyFlatConfig(alpha_step_rank=True),
+        ring=[],
+        torus3d=[],
+        tree=[],
+    )
+
+    ring_expected = V0046TopoInfo(
+        block=[],
+        flat={},
+        ring=[
+            V0046TopoInfoRingRecord(
+                name="ring0", nodes="node[1-4]", ring_index=0, size=4
+            ),
+            V0046TopoInfoRingRecord(
+                name="ring1", nodes="node[5-8]", ring_index=1, size=4
+            ),
+        ],
+        torus3d=[],
+        tree=[],
+    )
+
+    torus_expected = V0046TopoInfo(
+        block=[],
+        flat={},
+        ring=[],
+        torus3d=[
+            V0046TopoInfoTorus3dRecord(
+                name="pod1",
+                nodes="node[1-8]",
+                dims=V0046Torus3dDims(x=2, y=2, z=2),
+                placements=[
+                    V0046TopoInfoTorus3dPlacement(
+                        dims=V0046Torus3dDims(x=1, y=1, z=1),
+                        placement_size=1,
+                        anchors=8,
+                    ),
+                    V0046TopoInfoTorus3dPlacement(
+                        dims=V0046Torus3dDims(x=1, y=1, z=2),
+                        placement_size=2,
+                        anchors=4,
+                    ),
+                    V0046TopoInfoTorus3dPlacement(
+                        dims=V0046Torus3dDims(x=2, y=2, z=2),
+                        placement_size=8,
+                        anchors=1,
+                    ),
+                ],
+            )
+        ],
+        tree=[],
+    )
+
+    return {
+        "tree": tree_expected,
+        "block": block_expected,
+        "flat1": flat1_expected,
+        "flat2": flat2_expected,
+        "flat_shorthand": flat1_expected,
+        "ring": ring_expected,
+        "torus": torus_expected,
+    }[name]
+
+
+@pytest.mark.parametrize("name", topology_names)
+def test_topology_by_name(slurm, name):
+    """GET /slurm/v0.0.46/topology/{topology_name} returns that topology."""
+    r = slurm.slurm_v0046_get_topology(topology_name=name)
+    assert len(r.errors) == 0, f"unexpected errors for {name}: {r.errors}"
+    assert len(r.warnings) == 0, f"unexpected warnings for {name}: {r.warnings}"
+    assert r.topology == _expected_topo_info(
+        name
+    ), f"GET /slurm/v0.0.46/topology/{name} returned the wrong payload"
+
+
+def test_topology_unknown_name(slurm):
+    """An unconfigured topology name is rejected rather than returning data."""
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+
+    try:
+        # This should throw an exception
+        slurm.slurm_v0046_get_topology_with_http_info("non_existent_topology")
+        assert (
+            False
+        ), "slurm_v0046_get_topology_with_http_info should have raised an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0046OpenapiTopoInfoResp"
+        )
+        # Validate there is an error and no warnings
+        assert e.status == 404, f"expected HTTP 404, got {e.status}"
+        assert (
+            len(response.errors) == 1
+        ), f"expected exactly one error, got {response.errors}"
+        assert (
+            response.errors[0].error == "Requested topology not found"
+        ), f"unexpected error text: {response.errors[0].error}"
+        assert not response.warnings, f"unexpected warnings: {response.warnings}"
+        assert response.meta, "error response carried no meta"
+
+
+@pytest.mark.parametrize("name", topology_names)
+def test_topology_cli_matches_slurmrestd(name):
+    """scontrol --json=v0.0.46 and /slurm/v0.0.46/topology/{name} agree."""
+    cli = json.loads(
+        atf.run_command_output(
+            f"scontrol show topology {name} --json=v0.0.46", fatal=True
+        )
+    )["topology"]
+    rest = atf.request_slurmrestd(f"slurm/v0.0.46/topology/{name}").json()["topology"]
+    assert cli == rest, f"scontrol and slurmrestd topology payloads differ for {name}"
+
+
+def test_default_topology_cli_matches_slurmrestd():
+    """scontrol --json=v0.0.46 and /slurm/v0.0.46/default/topology agree."""
+    cli = json.loads(
+        atf.run_command_output("scontrol show topology --json=v0.0.46", fatal=True)
+    )["topology"]
+    rest = atf.request_slurmrestd("slurm/v0.0.46/default/topology").json()["topology"]
+    assert cli == rest, "scontrol and slurmrestd default topology payloads differ"
+
+
+@pytest.mark.parametrize(
+    "path", ["slurm/v0.0.46/default/topology", "slurm/v0.0.46/topology/tree"]
+)
+def test_slurmrestd_topology_rejects_non_get(path):
+    """Only GET is registered for the topology endpoints."""
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}/{path}",
+        headers=atf.properties["slurmrestd-headers"],
+        timeout=30,
+    )
+    # A non-GET on a GET-only path is not served: slurmrestd's router returns
+    # 404 (ESLURM_REST_UNKNOWN_URL) today. Accept 405 too so a future change to
+    # the more correct status doesn't break this.
+    assert r.status_code in (
+        404,
+        405,
+    ), f"expected 404/405 for POST /{path}, got {r.status_code}: {r.text[:200]}"
