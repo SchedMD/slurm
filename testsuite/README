@@ -1051,6 +1051,7 @@ test_146_#   Testing partitions.
 ================================
 test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
 test_146_2   Test MaxNodes
+test_146_3   Test MinNodes
 
 test_147_#   Testing SPANK.
 ===========================
