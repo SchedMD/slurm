@@ -2221,10 +2221,12 @@ runtime plugins and exit.
 
 .TP
 \fB\-\-segment\fR=<\fIsegment_size\fR>
-When a block or ring topology is used, this defines the size of the segments
-that will be used to create the job allocation.
+When a block, ring or torus3d topology is used, this defines the size of the
+segments that will be used to create the job allocation.
 No requirement would be placed on all segments for a job needing to
 be placed within the same higher-level block.
+If not specified, the partition's or cluster's \fBDefSegmentSize\fR may
+supply a default; use 0 to opt out of it. See \fBslurm.conf\fR(5).
 
 \fBNOTE\fR: If the requested node count (\fB\-\-nodes\fR) is larger than the
 requested segment size, it must also be evenly divisible by the segment size.
@@ -3040,7 +3042,8 @@ Advanced reservation containing the job allocation, if any.
 .TP
 \fBSLURM_JOB_SEGMENT_SIZE\fR
 The size of the segments that was used to create the job allocation.
-Only set if \-\-segment\fR is specified.
+Only set if a segment size applies to the job, either from
+\fB\-\-segment\fR or from \fBDefSegmentSize\fR.
 .IP
 
 .TP

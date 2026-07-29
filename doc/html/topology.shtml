@@ -24,6 +24,7 @@ on a best-fit basis.</p>
 <li><a href="#ring">Ring Topology</a></li>
 <li><a href="#torus3d">3D Torus Topology</a></li>
 <li><a href="#user_opts">User Options</a></li>
+<li><a href="#segment_defaults">Segment Size Defaults</a></li>
 <li><a href="#env_vars">Environment Variables</a></li>
 <li><a href="#multi_topo">Multiple Topologies</a></li>
 <li><a href="#dynamic_topo">Dynamic Topology</a></li>
@@ -436,6 +437,35 @@ PartitionName=Ring10 Nodes=ring{ring10} ...
 
 See also the hostlist function <b>feature{myfeature}</b>
 <a href="slurm.conf.html#OPT_Features">here</a>.</p>
+
+<h2 id="segment_defaults">Segment Size Defaults<a class="slurm_link"
+href="#segment_defaults"></a></h2>
+
+<p>A partition may supply a segment size for jobs which do not request one,
+using the <b>DefSegmentSize</b> partition option in slurm.conf:</p>
+
+<pre>
+PartitionName=gpu Topology=block1 Nodes=node[001-064] DefSegmentSize=8
+</pre>
+
+<p>It is a job default, so it is reported by <code>scontrol show
+partition</code> as part of <b>JobDefaults</b> and can also be changed
+with <code>scontrol update PartitionName=gpu
+JobDefaults=DefSegmentSize=8</code>. A cluster wide <b>DefSegmentSize</b>
+may be set in slurm.conf for partitions which do not define one; set
+<b>DefSegmentSize=0</b> on a partition to opt it out of a cluster wide
+default.</p>
+
+<p>Changing the default also affects jobs which are already pending. Jobs
+which requested a segment size of their own are never affected, and neither
+are jobs which are already running. The value applied to a job is shown as
+<b>SegmentSize</b> by <code>scontrol show job</code>, and changes take effect
+on <code>scontrol reconfigure</code>. <b>DefSegmentSize</b> is ignored for
+partitions using a topology which does not support segments. <b>NOTE</b>:
+the same restrictions apply as for the <b>--segment</b> option described in
+<a href="#user_opts">User Options</a>. A job whose node count is larger than
+<b>DefSegmentSize</b> but not evenly divisible by it cannot be scheduled in
+the partition and is rejected at submission.</p>
 
 <h2 id="env_vars">Environment Variables
 <a class="slurm_link" href="#env_vars"></a>
