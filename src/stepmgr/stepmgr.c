@@ -99,6 +99,10 @@ typedef struct {
 	list_t *node_gres_list;
 } foreach_gres_filter_t;
 
+static node_rank_order_t *_build_arbitrary_order(job_resources_t
+							 *job_resrcs_ptr,
+						 hostlist_t *dedup_nodes_hl,
+						 int *order_cnt);
 static bool _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs,
 				uint16_t protocol_version);
@@ -2703,6 +2707,30 @@ static void _convert_step_cpus_to_job_cpus(uint16_t cr_type, uint16_t req_tpc,
 	}
 }
 
+extern node_rank_order_t *step_node_order(step_record_t *step_ptr,
+					  int *order_cnt,
+					  node_rank_order_t **alloc_order)
+{
+	job_resources_t *job_resrcs_ptr = step_ptr->job_ptr->job_resrcs;
+	slurm_step_layout_t *step_layout = step_ptr->step_layout;
+	hostlist_t *step_hl;
+
+	*alloc_order = NULL;
+
+	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE) !=
+	    SLURM_DIST_ARBITRARY) {
+		*order_cnt = job_resrcs_ptr->nhosts;
+		return job_resrcs_ptr->order_map;
+	}
+
+	step_hl = hostlist_create(step_layout->node_list);
+	*alloc_order =
+		_build_arbitrary_order(job_resrcs_ptr, step_hl, order_cnt);
+	hostlist_destroy(step_hl);
+
+	return *alloc_order;
+}
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
@@ -2712,7 +2740,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	slurm_step_layout_t *step_layout = step_ptr->step_layout;
 	int cpus_alloc, cpus_alloc_mem;
 	int job_node_inx = -1, step_node_inx = -1;
-	node_rank_order_t *order_map;
+	int order_cnt;
+	node_rank_order_t *order_map, *alloc_order = NULL;
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
 	uint32_t rem_nodes;
@@ -2729,13 +2758,13 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
 
-	order_map = job_resrcs_ptr->order_map;
-
 	if (!step_layout) /* batch step */
 		return rc;
 
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return rc;
+
+	order_map = step_node_order(step_ptr, &order_cnt, &alloc_order);
 
 	xfree(*err_msg);
 
@@ -2773,7 +2802,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 
 	cpus_alloc_pn = xcalloc(step_layout->node_cnt, sizeof(*cpus_alloc_pn));
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
-	for (int k = 0; k < job_resrcs_ptr->nhosts; k++) {
+	for (int k = 0; k < order_cnt; k++) {
 		int i = order_map[k].node_inx;
 		/*
 		 * gres_cpus_alloc - if cpus_per_gres is requested, this is
@@ -3106,6 +3135,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		if (step_node_inx == (step_layout->node_cnt - 1))
 			break;
 	}
+	xfree(alloc_order);
+
 	slurm_array16_to_value_reps(cpus_per_task_array, step_layout->node_cnt,
 				    &step_layout->cpt_compact_array,
 				    &step_layout->cpt_compact_reps,
@@ -3187,9 +3218,10 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int cpus_alloc;
 	int core_alloc;
 	int job_node_inx = -1, step_node_inx = -1;
+	int order_cnt;
 	uint32_t step_id = step_ptr->step_id.step_id;
 	node_record_t *node_ptr;
-	node_rank_order_t *order_map;
+	node_rank_order_t *order_map, *alloc_order = NULL;
 	uint16_t job_tpc = job_ptr->details->mc_ptr->threads_per_core;
 	uint16_t req_tpc =
 		_get_threads_per_core(step_ptr->threads_per_core, job_ptr);
@@ -3204,8 +3236,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
 
-	order_map = job_resrcs_ptr->order_map;
-
 	/* These special steps do not allocate any resources */
 	if ((step_id == SLURM_EXTERN_CONT) ||
 	    (step_id == SLURM_BATCH_SCRIPT) ||
@@ -3218,6 +3248,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return;
 
+	order_map = step_node_order(step_ptr, &order_cnt, &alloc_order);
+
 	if (step_ptr->memory_allocated && _is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
@@ -3225,18 +3257,27 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		      __func__, job_ptr);
 	}
 
-	for (int k = 0; k < job_resrcs_ptr->nhosts; k++) {
+	for (int k = 0; k < order_cnt; k++) {
 		int i = order_map[k].node_inx;
 		int inx;
 		uint16_t vpus;
-		node_ptr = node_record_table_ptr[i];
-		vpus = node_ptr->tpc;
 		job_node_inx = order_map[k].job_pos;
+		/*
+		 * The node left the job (shrink, failure) or the cluster;
+		 * count it to stay aligned with the step layout, but skip
+		 * its job-side accounting — those resources are already gone.
+		 */
+		if (job_node_inx < 0) {
+			step_node_inx++;
+			continue;
+		}
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
+		node_ptr = node_record_table_ptr[i];
+		vpus = node_ptr->tpc;
 
 		/*
 		 * We need to free GRES structures regardless of overlap.
@@ -3339,6 +3380,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
+	xfree(alloc_order);
 
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
@@ -4098,6 +4140,49 @@ static int _step_create(job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Build the node ordering for an arbitrary-distribution step from its
+ * (already deduplicated) node list, so the per-node arrays built in
+ * step_layout_create() stay aligned with that list. job_pos is the node's
+ * position in the job's resources (bitmap order).
+ */
+static node_rank_order_t *_build_arbitrary_order(job_resources_t
+							 *job_resrcs_ptr,
+						 hostlist_t *dedup_nodes_hl,
+						 int *order_cnt)
+{
+	node_rank_order_t *order;
+	hostlist_iterator_t *itr = hostlist_iterator_create(dedup_nodes_hl);
+	char *host;
+	int cnt = 0;
+
+	/*
+	 * The list is validated against the job when the step is created,
+	 * but a node can leave the job afterwards (shrink, node failure),
+	 * so the list can name more nodes than the job now has. Size by the
+	 * list; a node not in the cluster or the job bitmap gets job_pos -1,
+	 * and the consumers skip its job-side accounting while still
+	 * counting it to stay aligned with the step layout.
+	 */
+	order = xcalloc(hostlist_count(dedup_nodes_hl), sizeof(*order));
+	while ((host = hostlist_next(itr))) {
+		order[cnt].node_inx = node_name_get_inx(host);
+		if (order[cnt].node_inx >= 0 &&
+		    bit_test(job_resrcs_ptr->node_bitmap, order[cnt].node_inx))
+			order[cnt].job_pos =
+				bit_set_count_range(job_resrcs_ptr->node_bitmap,
+						    0, order[cnt].node_inx);
+		else
+			order[cnt].job_pos = -1;
+		cnt++;
+		free(host);
+	}
+	hostlist_iterator_destroy(itr);
+
+	*order_cnt = cnt;
+	return order;
+}
+
 extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					       char *arbitrary_nodes,
 					       uint32_t node_count,
@@ -4118,7 +4203,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	int set_nodes = 0 /* , set_tasks = 0 */;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 	node_record_t *node_ptr;
-	node_rank_order_t *order_map;
+	node_rank_order_t *order_map, *arbitrary_order = NULL;
+	int order_cnt;
 	hostlist_t *step_hl = NULL;
 	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = step_ptr->cpus_per_task,
@@ -4157,15 +4243,26 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		gres_test_args.ignore_alloc = false;
 
 	/*
-	 * Emit the step's nodes (and the parallel per-node arrays below) in
-	 * topology-rank order so that observable step state matches task
-	 * placement. Arbitrary distribution keeps the user-supplied order.
+	 * Emit the step's nodes (and the parallel per-node arrays below) so
+	 * that observable step state matches task placement: topology-rank
+	 * order for regular distributions, and the user's first-occurrence
+	 * order for arbitrary. step_nodes holds the resulting node list.
 	 */
-	order_map = job_resrcs_ptr->order_map;
-	if (!arbitrary_nodes)
-		step_hl = hostlist_create(NULL);
+	if (arbitrary_nodes) {
+		hostlist_t *hl = hostlist_deduplicate(arbitrary_nodes);
 
-	for (int k = 0; k < job_resrcs_ptr->nhosts; k++) {
+		arbitrary_order =
+			_build_arbitrary_order(job_resrcs_ptr, hl, &order_cnt);
+		step_nodes = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+		order_map = arbitrary_order;
+	} else {
+		order_map = job_resrcs_ptr->order_map;
+		order_cnt = job_resrcs_ptr->nhosts;
+		step_hl = hostlist_create(NULL);
+	}
+
+	for (int k = 0; k < order_cnt; k++) {
 		int i = order_map[k].node_inx;
 		int pos = order_map[k].job_pos;
 		uint16_t cpus, cpus_used;
@@ -4255,6 +4352,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			error("%s: no usable CPUs", __func__);
 			if (step_hl)
 				hostlist_destroy(step_hl);
+			xfree(step_nodes);
+			xfree(arbitrary_order);
 			return NULL;
 		}
 		log_flag(STEPS, "%s: %pS node %s job_pos %d usable_cpus %d node_rank %u",
@@ -4304,17 +4403,20 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	/* } */
 
 	/*
-	 * For non-arbitrary distributions the node list must match the rank
-	 * order of the per-node arrays built above, so use the list gathered
-	 * in that order. Arbitrary keeps the user-supplied order.
+	 * The node list must match the order of the per-node arrays built
+	 * above. Non-arbitrary uses the rank-ordered list gathered above;
+	 * arbitrary uses step_nodes (already built) and passes the raw user
+	 * list separately so task ids follow it.
 	 */
 	if (step_hl) {
 		step_nodes = hostlist_ranged_string_xmalloc(step_hl);
 		hostlist_destroy(step_hl);
+	} else {
+		step_layout_req.arbitrary_nodes = arbitrary_nodes;
 	}
 
 	/* layout the tasks on the nodes */
-	step_layout_req.node_list = step_nodes ? step_nodes : arbitrary_nodes;
+	step_layout_req.node_list = step_nodes;
 	step_layout_req.cpus_per_node = cpus_per_node;
 	step_layout_req.cpus_per_task = cpus_per_task_array;
 	step_layout_req.num_hosts = node_count;
@@ -4330,6 +4432,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	}
 
 	xfree(step_nodes);
+	xfree(arbitrary_order);
 	return step_layout;
 }
 

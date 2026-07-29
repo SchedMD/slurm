@@ -76,39 +76,31 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 slurm_step_layout_t *slurm_step_layout_create(
 	slurm_step_layout_req_t *step_layout_req)
 {
-	char *arbitrary_nodes = NULL;
+	char *arbitrary_nodes = step_layout_req->arbitrary_nodes;
 	slurm_step_layout_t *step_layout =
 		xmalloc(sizeof(slurm_step_layout_t));
 
 	step_layout->task_dist = step_layout_req->task_dist;
-	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
-	    == SLURM_DIST_ARBITRARY) {
-		hostlist_t *hl = NULL;
-		char *buf = NULL;
-		/* set the node list for the task layout later if user
-		 * supplied could be different that the job allocation */
-		arbitrary_nodes = xstrdup(step_layout_req->node_list);
-		hl = hostlist_create(step_layout_req->node_list);
-		hostlist_uniq(hl);
+	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE) ==
+	    SLURM_DIST_ARBITRARY) {
+		hostlist_t *hl = hostlist_create(step_layout_req->node_list);
+		int host_cnt = hostlist_count(hl);
+
+		hostlist_destroy(hl);
 		/*
-		 * The list must span exactly the nodes the caller counted;
-		 * otherwise node_cnt would not match the layout.
+		 * The caller deduplicates the list; it must span exactly the
+		 * nodes it counted, otherwise node_cnt would not match the
+		 * layout.
 		 */
-		if (hostlist_count(hl) != step_layout_req->num_hosts) {
+		if (host_cnt != step_layout_req->num_hosts) {
 			error("%s: arbitrary node list %s has %d nodes but %u were expected",
-			      __func__, step_layout_req->node_list,
-			      hostlist_count(hl), step_layout_req->num_hosts);
-			hostlist_destroy(hl);
-			xfree(arbitrary_nodes);
+			      __func__, step_layout_req->node_list, host_cnt,
+			      step_layout_req->num_hosts);
 			slurm_step_layout_destroy(step_layout);
 			return NULL;
 		}
-		buf = hostlist_ranged_string_xmalloc(hl);
-		hostlist_destroy(hl);
-		step_layout->node_list = buf;
-	} else {
-		step_layout->node_list = xstrdup(step_layout_req->node_list);
 	}
+	step_layout->node_list = xstrdup(step_layout_req->node_list);
 
 	step_layout->task_cnt  = step_layout_req->num_tasks;
 	step_layout->node_cnt = step_layout_req->num_hosts;
@@ -118,7 +110,6 @@ slurm_step_layout_t *slurm_step_layout_create(
 		slurm_step_layout_destroy(step_layout);
 		step_layout = NULL;
 	}
-	xfree(arbitrary_nodes);
 	return step_layout;
 }
 

@@ -2607,6 +2607,7 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_task = 1;
 	char *task_count = NULL;
+	char *nodes_str = NULL;
 	uint16_t *cpus_per_node = NULL;
 	uint16_t *cpus_per_task_array = NULL;
 	int node_inx = 0;
@@ -2660,7 +2661,17 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 
 	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
 	    SLURM_DIST_ARBITRARY) {
-		step_layout_req.node_list = job_ptr->details->req_nodes;
+		/*
+		 * The node list is the user list deduplicated in
+		 * first-occurrence order; the raw list drives task ids.
+		 */
+		hostlist_t *nodes_hl =
+			hostlist_deduplicate(job_ptr->details->req_nodes);
+
+		nodes_str = hostlist_ranged_string_xmalloc(nodes_hl);
+		hostlist_destroy(nodes_hl);
+		step_layout_req.node_list = nodes_str;
+		step_layout_req.arbitrary_nodes = job_ptr->details->req_nodes;
 	} else {
 		step_layout_req.node_list = job_ptr->nodes;
 	}
@@ -2677,6 +2688,7 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 		slurm_step_layout_destroy(step_layout);
 	}
 
+	xfree(nodes_str);
 	xfree(cpus_per_node);
 	xfree(cpus_per_task_array);
 	return task_count;

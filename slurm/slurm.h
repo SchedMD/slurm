@@ -2133,6 +2133,8 @@ typedef struct suspend_exc_update_msg {
 
 typedef struct {
 	char *node_list; /* nodelist corresponding to task layout */
+	char *arbitrary_nodes; /* raw user node list (task order, with
+				* duplicates) for arbitrary distribution */
 	uint16_t *cpus_per_node; /* flat array: one entry per node */
 	uint32_t num_hosts; /* number of hosts we have */
 	uint32_t num_tasks; /* number of tasks to distribute across these cpus*/
