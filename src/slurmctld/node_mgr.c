@@ -4922,7 +4922,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 	node_record_t *node_ptr = NULL;
 
 	if ((rc = add_node_record(alias, config_ptr, &node_ptr)))
-		goto fini;
+		return rc;
 
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
