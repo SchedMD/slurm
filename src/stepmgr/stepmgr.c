@@ -201,8 +201,7 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	job_step_create_request_msg_t *step_specs =
 		(job_step_create_request_msg_t *) arg;
 
-	if ((step_ptr->state == JOB_PENDING) &&
-	    !(step_ptr->flags & SSF_ASYNC) &&
+	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC) &&
 	    (step_ptr->srun_pid == step_specs->srun_pid) &&
 	    (!xstrcmp(step_ptr->host, step_specs->host))) {
 		/*
@@ -441,7 +440,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
-	if (step_ptr->state == JOB_PENDING)
+	if (IS_STEP_PENDING(step_ptr))
 		return;
 
 	/*
@@ -507,7 +506,7 @@ static int _step_signal(void *object, void *arg)
 	    !find_step_id(step_ptr, &step_signal->step_id))
 		return SLURM_SUCCESS;
 
-	if (step_ptr->state == JOB_PENDING) {
+	if (IS_STEP_PENDING(step_ptr)) {
 		/*
 		 * A terminating signal aborts the queued create (the
 		 * placeholder is reaped in _delete_pending_steps()),
@@ -566,7 +565,7 @@ static int _step_not_cleaning(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	int *remaining = (int *) arg;
 
-	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
+	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC))
 		srun_step_signal(step_ptr, 0);
 	_internal_step_complete(step_ptr, *remaining);
 
@@ -583,7 +582,7 @@ static int _finish_step_comp(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
-	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
+	if (IS_STEP_PENDING(step_ptr) && !(step_ptr->flags & SSF_ASYNC))
 		return 0;
 
 	remaining = list_count(job_ptr->step_list);
@@ -701,7 +700,7 @@ static int _delete_pending_steps(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	step_signal_t *step_signal = arg;
 
-	if ((step_ptr->state == JOB_PENDING) &&
+	if (IS_STEP_PENDING(step_ptr) &&
 	    verify_step_id(&step_ptr->step_id, &step_signal->step_id)) {
 		/*
 		 * Reap a placeholder only on a terminating signal,
@@ -1051,7 +1050,7 @@ static int _wake_steps(void *x, void *arg)
 	step_record_t *pend_step_ptr = x;
 	wake_steps_args_t *args = arg;
 
-	if (pend_step_ptr->state != JOB_PENDING)
+	if (!IS_STEP_PENDING(pend_step_ptr))
 		return 0;
 
 	if ((args->start_count < args->config_start_count) ||
@@ -4593,7 +4592,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	uint32_t step_rc = 0;
 	step_complete_msg_t req;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 	if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 		return 0;
@@ -5018,7 +5017,7 @@ static int _suspend_job_step(void *x, void *arg)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	time_t *now = (time_t *) arg;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	if ((job_ptr->suspend_time) &&
@@ -5046,7 +5045,7 @@ static int _resume_job_step(void *x, void *arg)
 	job_record_t *job_ptr = (job_record_t *) step_ptr->job_ptr;
 	time_t *now = (time_t *) arg;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	if ((job_ptr->suspend_time) &&
@@ -5145,7 +5144,7 @@ extern int check_job_step_time_limit(void *x, void *arg)
 	time_t *now = (time_t *) arg;
 	uint32_t job_run_mins = 0;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	if (step_ptr->time_limit == INFINITE || step_ptr->time_limit == NO_VAL)
@@ -5189,7 +5188,7 @@ static int _update_step(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	update_step_args_t *args = (update_step_args_t *) arg;
 
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 
 	step_ptr->time_limit = args->time_limit;
@@ -5236,7 +5235,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
 		/* A queued step is now addressable but has nothing to start. */
-		if (req->time_limit && (step_ptr->state == JOB_RUNNING)) {
+		if (req->time_limit && IS_STEP_RUNNING(step_ptr)) {
 			step_ptr->time_limit = req->time_limit;
 			args.mod_cnt++;
 

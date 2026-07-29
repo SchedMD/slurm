@@ -4383,9 +4383,9 @@ static int _is_running_step(void *x, void *arg)
 {
 	step_record_t *step_ptr = x;
 
-	if (step_ptr->state & JOB_COMPLETING)
+	if (IS_STEP_COMPLETING(step_ptr))
 		return 0;
-	if (step_ptr->state != JOB_RUNNING)
+	if (!IS_STEP_RUNNING(step_ptr))
 		return 0;
 	if (step_ptr->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)
 		return 0;

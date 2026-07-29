@@ -16471,7 +16471,7 @@ static int _foreach_notify_srun_missing_step(void *x, void *arg)
 
 	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
 	    (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
-	    (step_ptr->state != JOB_RUNNING))
+	    !IS_STEP_RUNNING(step_ptr))
 		return 0;
 	if (!bit_test(step_ptr->step_node_bitmap, node_inx))
 		return 0;

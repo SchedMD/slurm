@@ -425,7 +425,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 	} else if ((rc < 0) || (step_resp == NULL)) {
 		/* errno already holds the cause */
 	} else {
-		if (step_resp->state == JOB_PENDING) {
+		if (IS_STEP_PENDING(step_resp)) {
 			bool newly_pending =
 				(step_req->step_id.step_id == NO_VAL);
 			/*

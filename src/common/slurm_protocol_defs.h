@@ -137,6 +137,17 @@
 #define IS_JOB_IN_DB(_X) \
 	(_X->db_flags & SLURMDB_JOB_FLAG_START_R)
 
+/*
+ * Defined step states.  Step state carries JOB_STATE_FLAGS the same way job
+ * state does, so the base state has to be masked out before comparing.
+ */
+#define IS_STEP_PENDING(_X) ((_X->state & JOB_STATE_BASE) == JOB_PENDING)
+#define IS_STEP_RUNNING(_X) ((_X->state & JOB_STATE_BASE) == JOB_RUNNING)
+
+/* Derived step states */
+#define IS_STEP_COMPLETING(_X) (_X->state & JOB_COMPLETING)
+#define IS_STEP_CONFIGURING(_X) (_X->state & JOB_CONFIGURING)
+
 /* Defined node states */
 #define IS_NODE_UNKNOWN(_X)		\
 	((_X->node_state & NODE_STATE_BASE) == NODE_STATE_UNKNOWN)
