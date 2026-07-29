@@ -517,6 +517,7 @@ extern data_t *data_set_float(data_t *data, double value)
 	if (!data)
 		return NULL;
 
+	_release(data);
 	data->type = TYPE_FLOAT;
 	data->data.float_u = value;
 
