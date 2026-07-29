@@ -688,6 +688,42 @@ def pytest_keyboard_interrupt(excinfo):
         final_cleanup()
 
 
+@pytest.fixture
+def dynamic_slurmds():
+    """Start dynamic-normal slurmds (``slurmd -Z``) and stop them at teardown.
+
+    Yields a callable ``(node_name, extra_conf, wait_usable)`` that starts one
+    dynamic slurmd and returns its node name, for convenient assignment. Every
+    node started through it is stopped and deleted from the controller when the
+    test ends, so the next test starts from a cluster without them. Jobs are
+    cancelled first, so tests need not cancel their own.
+    """
+
+    started = []
+
+    def _start(node_name, extra_conf="", wait_usable=True):
+        # Record the node first, so a start that fails is still cleaned up.
+        if node_name not in started:
+            started.append(node_name)
+        atf.start_dynamic_slurmd(
+            node_name,
+            extra_conf=extra_conf,
+            wait_for_usable=wait_usable,
+        )
+        return node_name
+
+    yield _start
+
+    # A node with a job still on it cannot be deleted, and stopping its
+    # slurmd first would leave the job stuck completing. Not fatal, so the
+    # slurmds are still stopped and the test's own failure is not masked.
+    if started:
+        atf.cancel_all_jobs(quiet=True)
+    for node_name in started:
+        atf.stop_slurmd(node_name)
+        atf.delete_node(node_name)
+
+
 @pytest.fixture(scope="module")
 def taskget(module_setup):
     """
