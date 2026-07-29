@@ -196,11 +196,6 @@ typedef struct {
 } foreach_fill_in_gres_devices_t;
 
 typedef struct {
-	char *node_list;
-	list_t *prep_gres_list;
-} foreach_prep_build_env_t;
-
-typedef struct {
 	int node_inx;
 	char ***prep_env_ptr;
 } foreach_prep_set_env_t;
@@ -8033,7 +8028,6 @@ static void _prep_list_del(void *x)
 		xfree(gres_prep->gres_bit_alloc);
 	}
 	xfree(gres_prep->gres_cnt_node_alloc);
-	xfree(gres_prep->node_list);
 	xfree(gres_prep);
 }
 
@@ -8118,7 +8112,7 @@ extern int gres_prep_unpack_list(list_t **out, buf_t *buffer,
 static int _foreach_prep_build_env(void *x, void *arg)
 {
 	gres_state_t *gres_ptr = x;
-	foreach_prep_build_env_t *foreach_prep_build_env = arg;
+	list_t **prep_gres_list = arg;
 	slurm_gres_context_t *gres_ctx;
 	gres_prep_t *gres_prep;
 
@@ -8135,13 +8129,11 @@ static int _foreach_prep_build_env(void *x, void *arg)
 	if (!gres_prep) /* No info to add for this plugin */
 		return 0;
 
-	if (!foreach_prep_build_env->prep_gres_list)
-		foreach_prep_build_env->prep_gres_list =
-			list_create(_prep_list_del);
+	if (!*prep_gres_list)
+		*prep_gres_list = list_create(_prep_list_del);
 
 	gres_prep->plugin_id = gres_ctx->plugin_id;
-	gres_prep->node_list = xstrdup(foreach_prep_build_env->node_list);
-	list_append(foreach_prep_build_env->prep_gres_list, gres_prep);
+	list_append(*prep_gres_list, gres_prep);
 
 	return 0;
 }
@@ -8151,14 +8143,11 @@ static int _foreach_prep_build_env(void *x, void *arg)
  * variables
  *
  * IN job_gres_list - job's GRES allocation info
- * IN hostlist - list of nodes associated with the job
  * RET information about the job's GRES allocation needed by Prolog or Epilog
  */
-extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list)
+extern list_t *gres_g_prep_build_env(list_t *job_gres_list)
 {
-	foreach_prep_build_env_t foreach_prep_build_env = {
-		.node_list = node_list,
-	};
+	list_t *prep_gres_list = NULL;
 
 	if (!job_gres_list)
 		return NULL;
@@ -8167,10 +8156,10 @@ extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list)
 
 	slurm_mutex_lock(&gres_context_lock);
 	(void) list_for_each(job_gres_list, _foreach_prep_build_env,
-			     &foreach_prep_build_env);
+			     &prep_gres_list);
 	slurm_mutex_unlock(&gres_context_lock);
 
-	return foreach_prep_build_env.prep_gres_list;
+	return prep_gres_list;
 }
 
 static int _foreach_prep_set_env(void *x, void *arg)

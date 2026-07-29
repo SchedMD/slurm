@@ -1417,8 +1417,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = slurm_cred_get(req->cred,
 					       CRED_DATA_JOB_GRES_LIST);
-		gres_prep_env_list = gres_g_prep_build_env(
-			job_gres_list, req->complete_nodelist);
+		gres_prep_env_list = gres_g_prep_build_env(job_gres_list);
 		gres_g_prep_set_env(&job_env.gres_job_env, gres_prep_env_list,
 				    job_node_id);
 		FREE_NULL_LIST(gres_prep_env_list);
@@ -2222,9 +2221,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = slurm_cred_get(req->cred,
 					       CRED_DATA_JOB_GRES_LIST);
-		gres_prep_env_list =
-			gres_g_prep_build_env(job_gres_list,
-					      cred_arg->job_hostlist);
+		gres_prep_env_list = gres_g_prep_build_env(job_gres_list);
 		gres_g_prep_set_env(&job_env.gres_job_env,
 				    gres_prep_env_list, node_id);
 		FREE_NULL_LIST(gres_prep_env_list);

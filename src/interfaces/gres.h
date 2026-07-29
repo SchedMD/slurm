@@ -400,8 +400,7 @@ typedef struct gres_state {
 /* Used to set Prolog and Epilog env var. Currently designed for gres/mps. */
 typedef struct {
 	uint32_t plugin_id;	/* GRES ID number */
-	uint32_t node_cnt;	/* Count of all hosts allocated to job */
-	char *node_list;	/* List of all hosts allocated to job */
+	uint32_t node_cnt; /* Count of all hosts allocated to job */
 	bitstr_t **gres_bit_alloc; /* Per-node bitmap of allocated resources */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
 					 * Used with and without GRES files */
@@ -814,10 +813,9 @@ extern int gres_prep_unpack_list(list_t **gres_list, buf_t *buffer,
  * variables
  *
  * IN job_gres_list - job's GRES allocation info
- * IN hostlist - list of nodes associated with the job
  * RET information about the job's GRES allocation needed by Prolog or Epilog
  */
-extern list_t *gres_g_prep_build_env(list_t *job_gres_list, char *node_list);
+extern list_t *gres_g_prep_build_env(list_t *job_gres_list);
 
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
