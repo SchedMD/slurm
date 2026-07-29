@@ -32,6 +32,7 @@
 \*****************************************************************************/
 
 #include <check.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +61,45 @@
 				      "bool converted: %s -> %s == %s",     \
 				      str ? str : "(null)", (bres ? "true" : "false"), \
 				      (b ? "true" : "false"));              \
+	} while (0)
+
+/* Detected type of str must be a 64 bit integer holding value */
+#define check_convert_int(str, value) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_NONE); \
+		ck_assert_msg(type == DATA_TYPE_INT_64, \
+			      "convert \"%s\" -> %s, expected %s", str, \
+			      data_type_to_string(type), \
+			      data_type_to_string(DATA_TYPE_INT_64)); \
+		ck_assert_msg(data_get_int(d) == (value), \
+			      "convert \"%s\" -> %" PRId64 \
+			      ", expected %" PRId64, \
+			      str, data_get_int(d), (int64_t) (value)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Detected type of str must be exactly expected */
+#define check_convert_type(str, expected) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_NONE); \
+		ck_assert_msg(type == (expected), \
+			      "convert \"%s\" -> %s, expected %s", str, \
+			      data_type_to_string(type), \
+			      data_type_to_string(expected)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Detected type of str must be anything but a 64 bit integer */
+#define check_convert_not_int(str) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_NONE); \
+		ck_assert_msg(type != DATA_TYPE_INT_64, \
+			      "convert \"%s\" -> %s, expected any other type", \
+			      str, data_type_to_string(type)); \
+		FREE_NULL_DATA(d); \
 	} while (0)
 
 static data_for_each_cmd_t
@@ -535,6 +575,58 @@ START_TEST(test_data_move_self)
 END_TEST
 #endif /* !NDEBUG */
 
+START_TEST(test_convert_int)
+{
+	/*
+	 * Negative integers must detect as integers and not fall through to
+	 * the float converter, which silently loses precision beyond 2^53.
+	 */
+	check_convert_int("-1", -1);
+	check_convert_int("-100", -100);
+	check_convert_int("-0", 0);
+	check_convert_int("-1234567890123456789", -1234567890123456789LL);
+	check_convert_int("-9223372036854775807", -9223372036854775807LL);
+
+	/* Positive integers must keep working */
+	check_convert_int("1", 1);
+	check_convert_int("100", 100);
+	check_convert_int("1234567890123456789", 1234567890123456789LL);
+	check_convert_int("0", 0);
+	check_convert_int("9223372036854775807", 9223372036854775807LL);
+
+	/* A sign alone or in any other position is not an integer */
+	check_convert_not_int("-");
+	check_convert_not_int("--1");
+	check_convert_not_int("1-2");
+	check_convert_not_int("1-");
+	check_convert_not_int("-1a");
+	check_convert_not_int("- 1");
+	check_convert_not_int("+");
+	check_convert_not_int("++1");
+	check_convert_not_int("1+2");
+	check_convert_not_int("1+");
+	check_convert_not_int("+1a");
+
+	/* An explicit '+' is accepted, the same as an explicit '-' */
+	check_convert_int("+1", 1);
+	check_convert_int("+100", 100);
+	check_convert_int("+0", 0);
+	check_convert_int("+1234567890123456789", 1234567890123456789LL);
+	check_convert_int("+9223372036854775807", 9223372036854775807LL);
+
+	/* Trailing non-digits are not integers */
+	check_convert_not_int("1a");
+
+	/* Signed non-integers must still reach the float converter */
+	check_convert_type("-1.5", DATA_TYPE_FLOAT);
+	check_convert_type("-0.0", DATA_TYPE_FLOAT);
+	check_convert_type("1.5", DATA_TYPE_FLOAT);
+	check_convert_type("0.0", DATA_TYPE_FLOAT);
+	check_convert_type("+1.5", DATA_TYPE_FLOAT);
+}
+
+END_TEST
+
 Suite *suite_data(void)
 {
 	Suite *s = suite_create("Data");
@@ -546,6 +638,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_list_iteration);
 	tcase_add_test(tc_core, test_convert_list_dict);
 	tcase_add_test(tc_core, test_data_move);
+	tcase_add_test(tc_core, test_convert_int);
 
 	suite_add_tcase(s, tc_core);
 	return s;
