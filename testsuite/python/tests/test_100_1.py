@@ -104,6 +104,27 @@ if atf.get_version() < (26, 5):
             "uid_from_string caching does not exist until Slurm 26.05.0",
         )
     )
+    xfail_tests.append(
+        (
+            "conmgr/test_polling.c",
+            "test_interrupt_before_poll",
+            "Ticket 25227: conmgr pollctl interrupt lost-wakeup fix lands in 26.05",
+        )
+    )
+    xfail_tests.append(
+        (
+            "conmgr/test_polling.c",
+            "test_interrupt_before_poll_poll",
+            "Ticket 25227: conmgr pollctl interrupt lost-wakeup fix lands in 26.05",
+        )
+    )
+    xfail_tests.append(
+        (
+            "conmgr/test_polling.c",
+            "test_stale_revents_poll",
+            "Ticket 25227: conmgr pollctl interrupt lost-wakeup fix lands in 26.05",
+        )
+    )
 if atf.get_version() < (25, 11):
     skip_tests.append(
         (
