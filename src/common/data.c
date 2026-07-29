@@ -1713,7 +1713,13 @@ static int _convert_data_int(data_t *data, bool force)
 		}
 
 		if (!force) {
-			for (const char *p = str; *p; p++) {
+			const char *p = str;
+
+			/* Allow explicitly positive and negative integers */
+			if ((p[0] == '-') || (p[0] == '+'))
+				p++;
+
+			for (; *p; p++) {
 				if ((*p < '0') || (*p > '9')) {
 					log_flag_hex(DATA, str, strlen(str),
 						     "%s: rejecting non-numeric conversion of %pD to integer failed",
