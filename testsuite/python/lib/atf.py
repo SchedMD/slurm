@@ -4050,7 +4050,7 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
         line = original_config_lines[line_index]
 
         words = re.split(r" +", line.strip())
-        if len(words) < 1:
+        if not words[0]:
             continue
         if words[0][0] == "#":
             continue
@@ -6221,7 +6221,7 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
         line = original_config_lines[line_index]
 
         words = re.split(r" +", line.strip())
-        if len(words) < 1:
+        if not words[0]:
             continue
         if words[0][0] == "#":
             continue
