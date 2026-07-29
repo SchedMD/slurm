@@ -4900,6 +4900,11 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		    ESLURM_RESERVATION_BUSY) {
 			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
+			/* Only update timestamps when resv is deleted */
+			last_resv_update = time(NULL);
+			_flush_node_down_cache(node_down_bitmap,
+					       last_resv_update);
+			schedule_resv_save();
 		}
 		break;
 	}
@@ -4912,10 +4917,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 
-	last_resv_update = time(NULL);
-	_flush_node_down_cache(node_down_bitmap, last_resv_update);
 	FREE_NULL_BITMAP(node_down_bitmap);
-	schedule_resv_save();
 	return rc;
 }
 
