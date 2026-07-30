@@ -157,6 +157,19 @@ bitstr_t *exc_node_bitmap = NULL;
 static bool suspend_exc_down;
 static uint32_t suspend_exc_state_flags;
 
+/*
+ * Shared stub used when features can be changed without an actual reboot and
+ * no RebootProgram is configured, so there is no real action to send.
+ * Slurmd sets the features via node_features_g_node_set() and, seeing
+ * need_reboot==false, sends a registration message without invoking any
+ * reboot program. This struct is not owned by action_entry_t (see
+ * _free_action_entry).
+ */
+static power_action_t no_reboot_action = {
+	.name = POWER_ACTION_FEATURE_CHANGE,
+	.on_slurmctld = false,
+};
+
 static void _clear_power_config(void);
 static void _do_power_work(time_t now, bool auto_power_save_enabled);
 static int _do_resume_action(void *entry, void *payload);
@@ -164,6 +177,7 @@ static int _do_power_action(void *entry, void *payload);
 static int _do_power_action_reboot(void *entry, void *payload);
 static int   _init_power_config(void);
 static void *_power_save_thread(void *arg);
+static int _set_no_reboot_power_action(void *x, void *args);
 
 static void _rl_init(rl_config_t *config,
 		     uint32_t refill_count,
@@ -1115,15 +1129,33 @@ static int _do_power_action(void *e, void *payload)
 	return SLURM_SUCCESS;
 }
 
+static int _set_no_reboot_power_action(void *x, void *args)
+{
+	action_entry_t *entry = x;
+	entry->action = &no_reboot_action;
+	return SLURM_SUCCESS;
+}
+
 void power_action_reboot(bitstr_t *bitmap, char *features)
 {
 	list_t *action_list = NULL;
+	bool need_reboot =
+		!features || node_features_g_job_features_need_reboot(features);
 
-	if (!reboot_prog) {
+	if (!reboot_prog && need_reboot) {
 		error("power_save: reboot requested but RebootProgram is not configured");
 		return;
 	}
-	action_list = _build_power_action_list(bitmap, reboot_prog->name, true);
+	if (reboot_prog) {
+		action_list =
+			_build_power_action_list(bitmap, reboot_prog->name,
+						 true);
+	} else {
+		action_list =
+			_build_power_action_list(bitmap, no_reboot_action.name,
+						 true);
+		list_for_each(action_list, _set_no_reboot_power_action, NULL);
+	}
 	list_for_each(action_list, _do_power_action_reboot, xstrdup(features));
 	FREE_NULL_LIST(action_list);
 }
