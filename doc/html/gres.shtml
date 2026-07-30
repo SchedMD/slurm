@@ -175,8 +175,15 @@ nvml library to be installed, but doesn't detect MIGs or NVlinks.</p>
 will usually unload this library immediately after the slurmd is started
 allowing other processes to access the library afterwards. This is not the case
 when <i>AcctGatherEnergyType=acct_gather_energy/gpu</i> is set in the
-slurm.conf. In this configuration the slurmd will keep the GPU library specified
-by the AutoDetect option loaded to track GPU energy usage.</p>
+slurm.conf. In this configuration the slurmd keeps the plugin selected by
+AutoDetect loaded so it can be polled for GPU energy. A plugin that loads
+a GPU management library (such as gpu/rsmi) holds that library open for
+the lifetime of the plugin. Of the plugins AutoDetect can select, only
+<i>gpu/rsmi</i> reads energy, through the ROCm System Management Interface
+library. It is selected by <i>AutoDetect=rsmi</i>, or by
+<a href="gres.conf.html#OPT_full">AutoDetect=full</a> on a node where RSMI
+is the first mechanism to detect a device. With any other plugin, no error
+is reported and the node's energy stays at zero.</p>
 
 <p><i>AutoDetect=nvml</i> and <i>AutoDetect=rsmi</i> also cause the slurmstepd
 to load and hold open the library to perform accounting on GPU usage when the

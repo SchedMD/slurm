@@ -320,8 +320,14 @@ Configurable values at present are:
 .RS
 .TP 20
 \fBacct_gather_energy/gpu\fR
-Energy consumption data is collected from the GPU management library (e.g. rsmi)
-for the corresponding type of GPU. Only available for rsmi at present.
+Energy consumption data is collected by the loaded GPU plugin.
+Only \fBgpu/rsmi\fR reads energy, through the ROCm System Management Interface
+library.
+It is selected by \fBAutoDetect=rsmi\fR in \fBgres.conf\fR(5), or by
+\fBAutoDetect=full\fR on a node where RSMI is the first mechanism to detect
+a device.
+With any other selected plugin, no error is reported and the node's energy
+stays at zero.
 Note: slurmd will keep gpu plugin loaded after configuration when this is set.
 .IP
 
