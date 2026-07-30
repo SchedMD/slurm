@@ -638,9 +638,8 @@ The MPI rank (or relative process ID) of the current process. Available in
 SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_RESTART_COUNT</b>
-Number of times the job has been restarted. This is only set if the job
-has been restarted at least once. Available in SrunProlog, TaskProlog,
-SrunEpilog and TaskEpilog.</li>
+Number of times the job has been restarted. Available in SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_RLIMIT_AS</b>
 Resource limit on the job's address space. Available in SrunProlog,
