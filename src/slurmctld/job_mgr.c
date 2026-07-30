@@ -6013,6 +6013,9 @@ static void _free_selected_step_array(slurm_selected_step_t ***jobs_p,
 {
 	slurm_selected_step_t **jobs = *jobs_p;
 
+	if (!jobs)
+		return;
+
 	for (int i = 0; i < cnt; i++)
 		slurm_destroy_selected_step(jobs[i]);
 	xfree(jobs);
@@ -6081,7 +6084,7 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 			       kill_jobs_resp_msg_t **resp_msg_p)
 {
 	kill_jobs_msg_t *kill_msg = msg->data;
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 	signal_jobs_args_t signal_args = {
 		.kill_msg = kill_msg,
 		.msg = msg,
@@ -6111,7 +6114,7 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 		rc = _parse_jobs_array(kill_msg->jobs_array,
 				       kill_msg->jobs_cnt, &jobs);
 		if (rc != SLURM_SUCCESS)
-			return rc;
+			goto cleanup;
 		signal_args.pending_array_task_list =
 			list_create(_free_array_task_filter);
 	}
@@ -6154,14 +6157,14 @@ extern int job_mgr_signal_jobs(slurm_msg_t *msg,
 
 	_build_kill_jobs_resp_msg(&signal_args, resp_msg_p);
 
-	/* Cleanup */
+cleanup:
 	_free_selected_step_array(&jobs, kill_msg->jobs_cnt);
 	FREE_NULL_LIST(signal_args.array_leader_list);
 	FREE_NULL_LIST(signal_args.pending_array_task_list);
 	FREE_NULL_LIST(signal_args.other_job_list);
 	FREE_NULL_LIST(signal_args.responses);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
