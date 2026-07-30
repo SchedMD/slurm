@@ -255,8 +255,8 @@ extern int block_record_validate(topology_ctx_t *tctx)
 		if (!list_count(block_config->block_sizes)) {
 			bit_nset(ctx->block_levels, 0, 4);
 		} else {
-			if (list_for_each(block_config->block_sizes,
-					  _list_to_bitmap, ctx) < 0) {
+			if (list_find_first(block_config->block_sizes,
+					    _list_to_bitmap, ctx)) {
 				fatal("Invalid BlockSizes value in topology %s",
 				      tctx->name);
 			}
