@@ -360,8 +360,12 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	// sum the energy of all gpus for this job
 	memset(energy, 0, sizeof(acct_gather_energy_t));
 	for (i = 0; i < gpus_len; i++) {
-		// Skip if not using cgroups, or bit is not set
-		if (cgroups_active && !bit_test(saved_usable_gpus, i)) {
+		/*
+		 * No sensor-to-GRES map is available here. Use the sensor
+		 * ordinal as a fallback, treating the bitmap as zero-extended.
+		 */
+		if (cgroups_active && ((i >= bit_size(saved_usable_gpus)) ||
+				       !bit_test(saved_usable_gpus, i))) {
 			log_flag(ENERGY, "Passing over gpu %u", i);
 			continue;
 		}
