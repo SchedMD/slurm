@@ -491,7 +491,7 @@ static void _flush_interrupt(int intr_fd, uint32_t events, const char *caller)
 static int _poll(const char *caller)
 {
 	int nfds = -1, rc = SLURM_SUCCESS, events_count = 0;
-	int fd_count = 0;
+	int fd_count = 0, event_i = 0;
 	struct pollfd *events = NULL;
 
 	slurm_mutex_lock(&pctl.mutex);
@@ -506,6 +506,29 @@ static int _poll(const char *caller)
 	events = pctl.events;
 	events_count = pctl.events_count;
 	fd_count = pctl.fd_count;
+
+	/*
+	 * _interrupt() can not send a wakeup byte while pctl.polling is false,
+	 * so an interrupt requested in the window between the poll being queued
+	 * and pctl.polling being set here is recorded in
+	 * pctl.interrupt.requested instead. Honor it now by skipping the
+	 * blocking poll() so the wakeup (e.g. on shutdown) is not lost.
+	 */
+	if (pctl.interrupt.requested) {
+		log_flag(CONMGR, "%s->%s: [POLL] skipping poll() to honor %d pending interrupt request(s)",
+			 caller, __func__, pctl.interrupt.requested);
+
+		/* Clear all events and interrupts */
+		for (int i = 0; i < events_count; i++) {
+			events[i] = (struct pollfd) {
+				.fd = -1,
+			};
+		}
+		pctl.interrupt.requested = 0;
+
+		slurm_mutex_unlock(&pctl.mutex);
+		return SLURM_SUCCESS;
+	}
 
 	if (!events_count || (fd_count <= 1)) {
 		/*
@@ -522,7 +545,7 @@ static int _poll(const char *caller)
 	log_flag(CONMGR, "%s->%s: [POLL] BEGIN: poll() with %d file descriptors",
 		 caller, __func__, pctl.fd_count);
 
-	for (int i = 0, t = 0; i < pctl.events_count; i++) {
+	for (int i = 0; i < pctl.events_count; i++) {
 		if ((pctl.fds[i].fd < 0))
 			continue;
 
@@ -530,13 +553,19 @@ static int _poll(const char *caller)
 		xassert(pctl.fds[i].type < PCTL_TYPE_INVALID_MAX);
 		xassert(pctl.fds[i].type != PCTL_TYPE_NONE);
 		xassert(pctl.fds[i].type != PCTL_TYPE_UNSUPPORTED);
-		xassert(t < fd_count);
+		xassert(event_i < fd_count);
 
-		pctl.events[t].fd = pctl.fds[i].fd;
-		pctl.events[t].events = _fd_type_to_events(pctl.fds[i].type);
-		pctl.events[t].revents = 0;
-		t++;
+		events[event_i].fd = pctl.fds[i].fd;
+		events[event_i].events = _fd_type_to_events(pctl.fds[i].type);
+		events[event_i].revents = 0;
+		event_i++;
 	}
+
+	/* Clear events for non-populated FD event slots */
+	for (int i = event_i; i < events_count; i++)
+		events[i] = (struct pollfd) {
+			.fd = -1,
+		};
 
 	slurm_mutex_unlock(&pctl.mutex);
 
@@ -661,12 +690,19 @@ static void _interrupt(const char *caller)
 	slurm_mutex_lock(&pctl.mutex);
 	_check_pctl_magic();
 
-	if (!pctl.polling) {
-		log_flag(CONMGR, "%s->%s: [POLL] skipping sending interrupt when not actively poll()ing",
-			 caller, __func__);
-	} else {
-		pctl.interrupt.requested++;
+	pctl.interrupt.requested++;
 
+	if (!pctl.polling) {
+		/*
+		 * There is no poll() to break out of right now, but record the
+		 * request so the next _poll() does not block. This avoids
+		 * losing an interrupt requested in the window between the poll
+		 * being queued (mgr.poll_active) and pctl.polling being set,
+		 * which could otherwise hang (e.g. on shutdown).
+		 */
+		log_flag(CONMGR, "%s->%s: [POLL] recording interrupt requested while not poll()ing requests=%d",
+			 caller, __func__, pctl.interrupt.requested);
+	} else {
 		/* Check for duplicate requests. */
 		if (pctl.interrupt.requested == 1) {
 			fd = pctl.interrupt.send;
