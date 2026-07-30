@@ -81,6 +81,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -7437,6 +7438,7 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 	slurmctld_resv_t * resv_ptr;
 	time_t now = time(NULL);
 	int32_t resv_begin_time;
+	uint32_t new_time_limit = job_ptr->time_limit;
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
@@ -7455,10 +7457,17 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 				      job_ptr->node_bitmap) == 0)))
 			continue;	/* disjoint resources */
 		resv_begin_time = difftime(resv_ptr->start_time, now) / 60;
-		job_ptr->time_limit = MIN(job_ptr->time_limit,resv_begin_time);
+		new_time_limit = MIN(new_time_limit, resv_begin_time);
 	}
 	list_iterator_destroy(iter);
-	job_ptr->time_limit = MAX(job_ptr->time_limit, job_ptr->time_min);
+	new_time_limit = MAX(new_time_limit, job_ptr->time_min);
+	/*
+	 * acct_policy_alter_job() computes the usage to give back from
+	 * job_ptr->time_limit, so it must still hold the limit the usage was
+	 * booked against. Don't lower it above.
+	 */
+	acct_policy_alter_job(job_ptr, new_time_limit);
+	job_ptr->time_limit = new_time_limit;
 	job_end_time_reset(job_ptr);
 }
 
