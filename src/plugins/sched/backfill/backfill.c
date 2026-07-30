@@ -4081,7 +4081,7 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 {
 	int32_t j, resv_delay;
 	uint32_t orig_time_limit = job_ptr->time_limit;
-	uint32_t new_time_limit;
+	uint32_t new_time_limit = job_ptr->time_limit;
 
 	for (j = 0; ; ) {
 		if ((node_space[j].begin_time != now) && // No current conflicts
@@ -4091,13 +4091,18 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 			/* Job overlaps pending job's resource reservation */
 			resv_delay = difftime(node_space[j].begin_time, now);
 			resv_delay /= 60;	/* seconds to minutes */
-			if (resv_delay < job_ptr->time_limit)
-				job_ptr->time_limit = resv_delay;
+			if (resv_delay < new_time_limit)
+				new_time_limit = resv_delay;
 		}
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
-	new_time_limit = MAX(job_ptr->time_min, job_ptr->time_limit);
+	new_time_limit = MAX(job_ptr->time_min, new_time_limit);
+	/*
+	 * acct_policy_alter_job() computes the usage to give back from
+	 * job_ptr->time_limit, so it must still hold the limit the usage was
+	 * booked against. Don't lower it above.
+	 */
 	acct_policy_alter_job(job_ptr, new_time_limit);
 	job_ptr->time_limit = new_time_limit;
 	job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
