@@ -407,6 +407,7 @@ extern void print_fields(type_t type, void *object)
 						    coming in are
 						    NO_VAL64 */
 		uint16_t tmp_uint16 = NO_VAL16;
+		uint16_t exit_status = 0, term_sig = 0;
 		uint32_t tmp_uint32 = NO_VAL, tmp2_uint32 = NO_VAL;
 		uint64_t tmp_uint64 = NO_VAL64, tmp2_uint64 = NO_VAL64;
 
@@ -798,18 +799,12 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_DERIVED_EC:
-			tmp_int = tmp_int2 = 0;
 			switch (type) {
 			case JOB:
-				if (job->derived_ec == NO_VAL)
-					;
-				else if (WIFSIGNALED(job->derived_ec))
-					tmp_int2 = WTERMSIG(job->derived_ec);
-				else if (WIFEXITED(job->derived_ec))
-					tmp_int = WEXITSTATUS(job->derived_ec);
-
-				snprintf(outbuf, sizeof(outbuf), "%d:%d",
-					 tmp_int, tmp_int2);
+				exit_code_decode(job->derived_ec, &exit_status,
+						 &term_sig);
+				snprintf(outbuf, sizeof(outbuf), "%u:%u",
+					 exit_status, term_sig);
 				break;
 			case JOBCOMP:
 				if (job_comp->derived_ec)
@@ -914,14 +909,11 @@ extern void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			tmp_int = tmp_int2 = 0;
 			if (exit_code != NO_VAL) {
-				if (WIFSIGNALED(exit_code))
-					tmp_int2 = WTERMSIG(exit_code);
-				else if (WIFEXITED(exit_code))
-					tmp_int = WEXITSTATUS(exit_code);
-				snprintf(outbuf, sizeof(outbuf), "%d:%d",
-					 tmp_int, tmp_int2);
+				exit_code_decode(exit_code, &exit_status,
+						 &term_sig);
+				snprintf(outbuf, sizeof(outbuf), "%u:%u",
+					 exit_status, term_sig);
 			}
 			field->print_routine(field,
 					     outbuf,
