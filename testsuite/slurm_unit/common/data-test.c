@@ -33,6 +33,7 @@
 
 #include <check.h>
 #include <inttypes.h>
+#include <math.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,6 +89,63 @@
 			      "convert \"%s\" -> %s, expected %s", str, \
 			      data_type_to_string(type), \
 			      data_type_to_string(expected)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of str must be a 64 bit integer holding value */
+#define check_convert_forced_int(str, value) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg(type == DATA_TYPE_INT_64, \
+			      "force convert \"%s\" -> %s, expected %s", str, \
+			      data_type_to_string(type), \
+			      data_type_to_string(DATA_TYPE_INT_64)); \
+		ck_assert_msg(data_get_int(d) == (value), \
+			      "force convert \"%s\" -> %" PRId64 \
+			      ", expected %" PRId64, \
+			      str, data_get_int(d), (int64_t) (value)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of str must refuse to produce a 64 bit integer */
+#define check_convert_forced_not_int(str) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg( \
+			type != DATA_TYPE_INT_64, \
+			"force convert \"%s\" -> %s, expected any other type", \
+			str, data_type_to_string(type)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of float value must be a 64 bit integer expected */
+#define check_convert_float_to_int(value, expected) \
+	do { \
+		data_t *d = data_set_float(data_new(), value); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg(type == DATA_TYPE_INT_64, \
+			      "force convert float %f -> %s, expected %s", \
+			      (double) (value), data_type_to_string(type), \
+			      data_type_to_string(DATA_TYPE_INT_64)); \
+		ck_assert_msg(data_get_int(d) == (expected), \
+			      "force convert float %f -> %" PRId64 \
+			      ", expected %" PRId64, \
+			      (double) (value), data_get_int(d), \
+			      (int64_t) (expected)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of float value must refuse to produce an integer */
+#define check_convert_float_not_int(value) \
+	do { \
+		data_t *d = data_set_float(data_new(), value); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg( \
+			type != DATA_TYPE_INT_64, \
+			"force convert float %f -> %s, expected any other type", \
+			(double) (value), data_type_to_string(type)); \
 		FREE_NULL_DATA(d); \
 	} while (0)
 
@@ -593,6 +651,112 @@ START_TEST(test_convert_int)
 	check_convert_int("1234567890123456789", 1234567890123456789LL);
 	check_convert_int("0", 0);
 	check_convert_int("9223372036854775807", 9223372036854775807LL);
+
+	/* The int64_t limits themselves must convert exactly */
+	check_convert_int("-9223372036854775808", INT64_MIN);
+	check_convert_int("9223372036854775807", INT64_MAX);
+	check_convert_int("+9223372036854775807", INT64_MAX);
+
+	/*
+	 * One past either limit must never be clamped into an integer:
+	 * reporting a successful conversion to a different number is worse
+	 * than not converting at all. Auto detection has no integer left to
+	 * detect, so the value goes on to the float converter rather than
+	 * being rejected outright.
+	 */
+	check_convert_type("-9223372036854775809", DATA_TYPE_FLOAT);
+	check_convert_type("9223372036854775808", DATA_TYPE_FLOAT);
+	check_convert_type("+9223372036854775808", DATA_TYPE_FLOAT);
+
+	/*
+	 * A forced conversion is where the rejection is observable, since
+	 * there is no float converter left to fall through to.
+	 */
+	check_convert_forced_int("42", 42);
+	check_convert_forced_int("  42", 42);
+	check_convert_forced_int("-9223372036854775808", INT64_MIN);
+	check_convert_forced_int("9223372036854775807", INT64_MAX);
+	check_convert_forced_not_int("-9223372036854775809");
+	check_convert_forced_not_int("9223372036854775808");
+	check_convert_forced_not_int("1a");
+
+	/*
+	 * A float outside the integer range must be refused too. lrint() is
+	 * undefined there and returns INT64_MIN, which consumers that store
+	 * into an unsigned field truncate to 0 - PARSE_FUNC(USER_ID) would
+	 * turn "9223372036854775808" into uid 0 rather than rejecting it.
+	 */
+	check_convert_float_not_int(9223372036854775808.0);
+	check_convert_float_not_int(-9223372036854777856.0);
+	check_convert_float_not_int(INFINITY);
+	check_convert_float_not_int(-INFINITY);
+	check_convert_float_not_int(NAN);
+
+	/* In range floats must still convert, rounding to nearest */
+	check_convert_float_to_int(1.5, 2);
+	check_convert_float_to_int(-1.5, -2);
+	check_convert_float_to_int(-9223372036854775808.0, INT64_MIN);
+	check_convert_float_to_int(9223372036854774784.0,
+				   9223372036854774784LL);
+
+	/*
+	 * A hex literal is a bit pattern, not a signed value: the whole
+	 * unsigned 64 bit range is accepted and reinterpreted as int64_t, so
+	 * anything above INT64_MAX reads back negative. The sentinels are
+	 * spelled this way, so these must keep converting to the same numbers
+	 * they always did.
+	 */
+	check_convert_int("0x0", 0);
+	check_convert_int("0x10", 16);
+	check_convert_int("0X10", 16);
+	check_convert_int("0x7FFFFFFFFFFFFFFF", INT64_MAX);
+	check_convert_int("0x8000000000000000", INT64_MIN);
+	check_convert_int("0xfffffffffffffffe", -2);
+	check_convert_int("0xFFFFFFFFFFFFFFFF", -1);
+
+	/*
+	 * Only a literal too wide for 64 bits is refused as an integer.
+	 * sscanf() saturated these to UINT64_MAX and reported a successful
+	 * conversion, so both used to read back as -1. Auto detection then
+	 * hands them to the float converter, whose "%lf" accepts C99 hex
+	 * float notation, so they land on float the same way an out of range
+	 * decimal does rather than staying a string.
+	 */
+	check_convert_type("0x10000000000000000", DATA_TYPE_FLOAT);
+	check_convert_type("0xffffffffffffffffffffffffff", DATA_TYPE_FLOAT);
+
+	/* A malformed literal is refused, as the trailing "%c" used to do */
+	check_convert_type("0x", DATA_TYPE_STRING);
+	check_convert_type("0x10z", DATA_TYPE_STRING);
+	check_convert_type("0x-10", DATA_TYPE_STRING);
+	check_convert_type("0x 10", DATA_TYPE_STRING);
+
+	/*
+	 * Neither a sign nor leading whitespace is part of the "0x" prefix,
+	 * so none of these reach the hex branch at all. The signed ones are
+	 * picked up by the float converter as hex floats; the whitespace one
+	 * is refused outright, unlike the decimal case above that strtoll()
+	 * accepts.
+	 */
+	check_convert_type("-0x10", DATA_TYPE_FLOAT);
+	check_convert_type("+0x10", DATA_TYPE_FLOAT);
+	check_convert_type(" 0x10", DATA_TYPE_STRING);
+	check_convert_forced_not_int("-0x10");
+	check_convert_forced_not_int(" 0x10");
+
+	/*
+	 * Pin hex float notation directly. It is what the too wide literals
+	 * above land on, so if "%lf" ever stopped accepting it those cases
+	 * would start failing for a reason that has nothing to do with them.
+	 */
+	check_convert_type("0x1.8", DATA_TYPE_FLOAT);
+	check_convert_forced_not_int("0x1.8");
+
+	/* The hex branch runs before the digit scan, so force agrees */
+	check_convert_forced_int("0x10", 16);
+	check_convert_forced_int("0xFFFFFFFFFFFFFFFF", -1);
+	check_convert_forced_not_int("0x10000000000000000");
+	check_convert_forced_not_int("0x");
 
 	/* A sign alone or in any other position is not an integer */
 	check_convert_not_int("-");
