@@ -3080,23 +3080,31 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 				*fill_in_gres_devices->gres_devices =
 					list_create(destroy_gres_device);
 
-			if (!(gres_device = _init_gres_device(
-				      fill_in_gres_devices->index, one_name,
-				      gres_slurmd_conf->unique_id))) {
-				free(one_name);
-				continue;
+			/*
+			 * A device that fails to initialize gets no
+			 * gres_device_t but keeps its place in the
+			 * numbering the controller counts: its name
+			 * finishes this iteration like an initialized
+			 * one. A File name is checked for duplicates
+			 * and advances the device index, a MultipleFiles
+			 * record advances it once for all its names.
+			 */
+			if ((gres_device = _init_gres_device(
+				     fill_in_gres_devices->index, one_name,
+				     gres_slurmd_conf->unique_id))) {
+				if (gres_slurmd_conf->cpus_bitmap)
+					gres_device->cpus_bitmap =
+						bit_copy(gres_slurmd_conf
+								 ->cpus_bitmap);
+
+				if (gres_device->dev_num >
+				    fill_in_gres_devices->max_dev_num)
+					fill_in_gres_devices->max_dev_num =
+						gres_device->dev_num;
+
+				list_append(*fill_in_gres_devices->gres_devices,
+					    gres_device);
 			}
-			if (gres_slurmd_conf->cpus_bitmap)
-				gres_device->cpus_bitmap =
-					bit_copy(gres_slurmd_conf->cpus_bitmap);
-
-			if (gres_device->dev_num >
-			    fill_in_gres_devices->max_dev_num)
-				fill_in_gres_devices->max_dev_num =
-					gres_device->dev_num;
-
-			list_append(*fill_in_gres_devices->gres_devices,
-				    gres_device);
 		}
 
 		/*
