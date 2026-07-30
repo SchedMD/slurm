@@ -348,6 +348,25 @@ static const char *_register_mime_types(list_t *mime_types_list,
 	return first;
 }
 
+/*
+ * Is the plugin at plugin_index the one serving mime_type?
+ *
+ * Only one plugin may serve a MIME type and the first to register it wins, so
+ * ownership must be resolved from the registration list and not from the
+ * plugin name: a plugin skipped for a type must not be handed that type's
+ * configuration, which it would never apply to anything.
+ *
+ * Only plugins [0, plugin_index] have registered while serializer_g_init() is
+ * still walking the list, which is enough: a plugin not holding the type by
+ * its own iteration lost it to an earlier one and can never gain it back.
+ */
+static bool _serves_mime_type(size_t plugin_index, const char *mime_type)
+{
+	const plugin_mime_type_t *pmt = _find_serializer(mime_type);
+
+	return (pmt && ((size_t) pmt->index == plugin_index));
+}
+
 extern const char **get_mime_type_array(void)
 {
 #ifndef NDEBUG
@@ -407,14 +426,12 @@ extern int serializer_g_init(void)
 						      mime_types)))
 			mime_array[mi++] = mime_type;
 
-		if (!xstrcmp(plugins->types[i], MIME_TYPE_JSON_PLUGIN)) {
+		if (_serves_mime_type(i, MIME_TYPE_JSON)) {
 			if (running_in_slurmrestd())
 				config = getenv("SLURMRESTD_JSON");
 			if (!config)
 				config = getenv(ENV_CONFIG_JSON);
-		}
-
-		if (!xstrcmp(plugins->types[i], MIME_TYPE_YAML_PLUGIN)) {
+		} else if (_serves_mime_type(i, MIME_TYPE_YAML)) {
 			if (running_in_slurmrestd())
 				config = getenv("SLURMRESTD_YAML");
 			if (!config)
