@@ -99,8 +99,9 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	char *exit_code_str = NULL, *derived_ec_str = NULL, *partition = NULL;
 	buf_t *script = NULL;
 	enum job_states job_state;
-	int i, tmp_int, tmp_int2;
+	int i;
 	time_t elapsed_time = 0;
+	uint16_t exit_status = 0, term_sig = 0;
 	uint32_t time_limit;
 	data_t *record = NULL;
 	bool event_job_finish = (event & JOBCOMP_EVENT_JOB_FINISH);
@@ -158,23 +159,11 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		else
 			elapsed_time = 0;
 
-		tmp_int = tmp_int2 = 0;
-		if (job_ptr->derived_ec == NO_VAL)
-			;
-		else if (WIFSIGNALED(job_ptr->derived_ec))
-			tmp_int2 = WTERMSIG(job_ptr->derived_ec);
-		else if (WIFEXITED(job_ptr->derived_ec))
-			tmp_int = WEXITSTATUS(job_ptr->derived_ec);
-		xstrfmtcat(derived_ec_str, "%d:%d", tmp_int, tmp_int2);
+		exit_code_decode(job_ptr->derived_ec, &exit_status, &term_sig);
+		xstrfmtcat(derived_ec_str, "%u:%u", exit_status, term_sig);
 
-		tmp_int = tmp_int2 = 0;
-		if (job_ptr->exit_code == NO_VAL)
-			;
-		else if (WIFSIGNALED(job_ptr->exit_code))
-			tmp_int2 = WTERMSIG(job_ptr->exit_code);
-		else if (WIFEXITED(job_ptr->exit_code))
-			tmp_int = WEXITSTATUS(job_ptr->exit_code);
-		xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
+		exit_code_decode(job_ptr->exit_code, &exit_status, &term_sig);
+		xstrfmtcat(exit_code_str, "%u:%u", exit_status, term_sig);
 	}
 
 	record = data_set_dict(data_new());
