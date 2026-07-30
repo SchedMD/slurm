@@ -2085,9 +2085,10 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
 			   void *arg)
 {
-	service_msg_args_t *args = NULL;
-	slurm_msg_t *msg = arg;
+	service_msg_args_t *args = arg;
+	slurm_msg_t *msg = args->msg;
 
+	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 	xassert(!msg->conmgr_con);
 	xassert(!msg->conn || (msg->conn == conn));
 	msg->conn = conn;
@@ -2099,10 +2100,6 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
 		FREE_NULL_MSG(msg);
 		return;
 	}
-
-	args = xmalloc(sizeof(*args));
-	args->magic = SERVICE_MSG_ARGS_MAGIC;
-	args->msg = msg;
 
 	_try_service_msg(conmgr_args, args);
 }
@@ -2122,6 +2119,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	slurmd_rpc_t *this_rpc = NULL;
+	service_msg_args_t *args = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
@@ -2161,10 +2159,17 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return rc;
 	}
 
+	args = xmalloc(sizeof(*args));
+	*args = (service_msg_args_t) {
+		.magic = SERVICE_MSG_ARGS_MAGIC,
+		.msg = msg,
+	};
+
 	CONMGR_CON_UNLINK(msg->conmgr_con);
 
 	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
-					      XSTRINGIFY(_on_extract_fd), msg)))
+					      XSTRINGIFY(_on_extract_fd),
+							 args)))
 		error("%s: [%s] Extracting FDs failed: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
 
