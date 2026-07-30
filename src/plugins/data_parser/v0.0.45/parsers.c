@@ -11292,7 +11292,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_PARTITION_PARAM)[] = {
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_nodes_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_NODES_QUERY)[] = {
-	add_parse(TIMESTAMP, update_time, "update_time", "Query jobs updated more recently than this time (UNIX timestamp)"),
+	add_parse(TIMESTAMP, update_time, "update_time", "Query nodes updated more recently than this time (UNIX timestamp)"),
 	add_parse(JOB_SHOW_FLAGS, show_flags, "flags", "Query flags"),
 };
 #undef add_parse
