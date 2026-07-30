@@ -117,6 +117,7 @@
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/launch_state.h"
+#include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
@@ -5376,13 +5377,7 @@ rwfail:
 	slurm_send_rc_msg(msg, rc);
 }
 
-typedef struct {
-	slurm_msg_type_t msg_type;
-	bool from_slurmctld;
-	void (*func)(slurm_msg_t *msg);
-} slurmd_rpc_t;
-
-slurmd_rpc_t slurmd_rpcs[] = {
+static slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_LAUNCH_PROLOG,
 		.from_slurmctld = true,
@@ -5598,6 +5593,18 @@ slurmd_rpc_t slurmd_rpcs[] = {
 	}
 };
 
+extern slurmd_rpc_t *find_rpc(slurm_msg_type_t msg_type)
+{
+	for (slurmd_rpc_t *q = slurmd_rpcs; q->msg_type; q++) {
+		if (q->msg_type == msg_type) {
+			xassert(q->func);
+			return q;
+		}
+	}
+
+	return NULL;
+}
+
 extern void slurmd_req(slurm_msg_t *msg)
 {
 	slurmd_rpc_t *this_rpc = NULL;
@@ -5625,12 +5632,7 @@ extern void slurmd_req(slurm_msg_t *msg)
 
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
 
-	for (this_rpc = slurmd_rpcs; this_rpc->msg_type; this_rpc++) {
-		if (this_rpc->msg_type == msg->msg_type)
-			break;
-	}
-
-	if (!this_rpc->msg_type) {
+	if (!(this_rpc = find_rpc(msg->msg_type))) {
 		error("%s: invalid request for msg_type %u",
 		      __func__, msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
