@@ -1728,6 +1728,8 @@ skip_test0:
 		if (!jp_ptr->row[c - 1].row_bitmap)
 			jp_ptr->row[c - 1].row_bitmap = build_core_array();
 		for (int i = 0; i < (c - 1); i++) {
+			if (!jp_ptr->row[i].row_bitmap)
+				continue;
 			core_array_or(jp_ptr->row[c - 1].row_bitmap,
 				      jp_ptr->row[i].row_bitmap);
 		}
