@@ -5605,10 +5605,8 @@ extern slurmd_rpc_t *find_rpc(slurm_msg_type_t msg_type)
 	return NULL;
 }
 
-extern void slurmd_req(slurm_msg_t *msg)
+extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc)
 {
-	slurmd_rpc_t *this_rpc = NULL;
-
 	if (msg == NULL) {
 		if (startup == 0)
 			startup = time(NULL);
@@ -5617,6 +5615,8 @@ extern void slurmd_req(slurm_msg_t *msg)
 		slurm_mutex_unlock(&waiter_mutex);
 		return;
 	}
+
+	xassert(this_rpc);
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -5631,13 +5631,6 @@ extern void slurmd_req(slurm_msg_t *msg)
 	}
 
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
-
-	if (!(this_rpc = find_rpc(msg->msg_type))) {
-		error("%s: invalid request for msg_type %u",
-		      __func__, msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
-		return;
-	}
 
 	if (this_rpc->from_slurmctld) {
 		/*

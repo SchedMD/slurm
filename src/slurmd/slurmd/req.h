@@ -48,12 +48,14 @@ typedef struct {
 	void (*func)(slurm_msg_t *msg);
 } slurmd_rpc_t;
 
-/* Process request contained in slurm message `msg' from client at
- * msg->orig_addr
- *
- * If msg == NULL, then purge allocated memory.
+/*
+ * Process request contained in slurm message `msg' from client at
+ * msg->orig_addr.
+ * IN  msg - the RPC message, or NULL to purge allocated memory.
+ * IN  this_rpc - dispatch entry returned by find_rpc() for msg->msg_type;
+ *	must be non-NULL when msg is non-NULL. Ignored when msg is NULL.
  */
-void slurmd_req(slurm_msg_t *msg);
+extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc);
 
 /*
  * Find RPC dispatch entry matching msg_type.

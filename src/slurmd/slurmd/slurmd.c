@@ -744,38 +744,30 @@ static void *_service_msg(void *arg)
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	const slurm_addr_t *addr = &msg->address;
-	conmgr_fd_ref_t *conmgr_con = NULL;
+	slurmd_rpc_t *this_rpc = NULL;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
-
-	/*
-	 * Remove conmgr connection from msg to avoid msg logic trying to send
-	 * via conmgr instead via msg->conn.
-	 */
-	SWAP(conmgr_con, msg->conmgr_con);
-
-	log_flag(NET, "%s: [%s] processing new RPC msg_type[0x%x]=%s connection from %pA",
-		 __func__, conmgr_con_get_name(conmgr_con),
-		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type), addr);
-
-	/* Release conmgr connection as it will have been closed */
-	CONMGR_CON_UNLINK(msg->conmgr_con);
-	slurmd_req(msg);
-
-	conn_g_destroy(msg->conn, true);
-	msg->conn = NULL;
-
-	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
-		 __func__, conmgr_con_get_name(conmgr_con),
-		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type));
-
-	/* Release conmgr connection as it will have been closed */
-	CONMGR_CON_UNLINK(conmgr_con);
-
-	slurm_free_msg(msg);
-
 	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 	xfree(args);
+
+	log_flag(NET, "%s: processing new RPC msg_type[0x%x]=%s connection from %pA",
+		 __func__, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type), addr);
+
+	if (!(this_rpc = find_rpc(msg->msg_type))) {
+		error("%s: invalid request for msg_type %u",
+		      __func__, msg->msg_type);
+		slurm_send_rc_msg(msg, EINVAL);
+	} else {
+		slurmd_req(msg, this_rpc);
+
+		log_flag(NET, "%s: finished processing RPC msg_type[0x%x]=%s",
+			 __func__, (uint32_t) msg->msg_type,
+			 rpc_num2string(msg->msg_type));
+	}
+
+	FREE_NULL_CONN(msg->conn);
+	slurm_free_msg(msg);
 
 	_decrement_thd_count();
 	return NULL;
@@ -2026,7 +2018,7 @@ static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 	slurm_mutex_unlock(&listen_mutex);
 
-	slurmd_req(NULL);	/* initialize timer */
+	slurmd_req(NULL, NULL); /* initialize timer */
 
 	return con;
 }
@@ -2096,6 +2088,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
 	service_msg_args_t *args = NULL;
 	slurm_msg_t *msg = arg;
 
+	xassert(!msg->conmgr_con);
 	xassert(!msg->conn || (msg->conn == conn));
 	msg->conn = conn;
 
@@ -2128,6 +2121,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
+	slurmd_rpc_t *this_rpc = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
@@ -2158,12 +2152,21 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		 conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
 		 msg->auth_uid, &msg->address, msg->protocol_version);
 
+	if (!(this_rpc = find_rpc(msg->msg_type))) {
+		error("%s: invalid request for msg_type %u",
+		      __func__, msg->msg_type);
+		rc = slurm_send_rc_msg(msg, EINVAL);
+		slurm_free_msg(msg);
+		conmgr_queue_close_fd(con);
+		return rc;
+	}
+
+	CONMGR_CON_UNLINK(msg->conmgr_con);
+
 	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
-					      XSTRINGIFY(_on_extract_fd),
-							 msg))) {
+					      XSTRINGIFY(_on_extract_fd), msg)))
 		error("%s: [%s] Extracting FDs failed: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
-	}
 
 	return rc;
 }
@@ -2904,7 +2907,7 @@ _slurmd_fini(void)
 	topology_g_destroy_config();
 	topology_g_fini();
 	job_mem_limit_fini();
-	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
+	slurmd_req(NULL, NULL); /* purge memory allocated by slurmd_req() */
 	forward_fini();
 	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {
