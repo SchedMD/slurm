@@ -12092,7 +12092,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_SLURMD_PARAMETERS)[] = {
 	add_flag_bit_desc(CONF_FLAG_NNSOCK, "numa_node_as_socket", "Use the hwloc NUMA Node to determine main hierarchy object to be used as socket."),
 	add_flag_bit_desc(CONF_FLAG_ECORE, "allow_ecores", "If set, and processors on your nodes have E-Cores, allows them to be used for scheduling and task placement."),
 	add_flag_bit_desc(CONF_FLAG_SHR, "shutdown_on_reboot", "If set, the Slurmd will shut itself down when a reboot request is received."),
-	add_flag_bit_desc(CONF_FLAG_CONTAIN_SPANK, "contain_spank", "If set and a job_container plugin is specified, the spank_user(), spank_task_post_fork() and spank_task_exit() calls will be run inside the job container."),
+	add_flag_bit_desc(CONF_FLAG_CONTAIN_SPANK, "contain_spank", "If set and a namespace plugin is specified, the spank_user(), spank_task_post_fork() and spank_task_exit() calls will be run inside the job's namespace."),
 };
 
 /* based on cpu_freq_govlist_to_string() and _cpu_freq_govspec_string() */
@@ -12491,7 +12491,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(STRING, mpi_default, "MpiDefault", "Default type of MPI to be used"),
 	add_parse(CSV_STRING, mpi_params, "MpiParams", "MPI parameters"),
 	add_parse(UINT16, msg_timeout, "MessageTimeout", "Seconds permitted for a round-trip communication to complete"),
-	add_parse(STRING, namespace_plugin, "NamespaceType", "Job container plugin type"),
+	add_parse(STRING, namespace_plugin, "NamespaceType", "Namespace plugin type"),
 	add_skip(next_job_id),
 	add_skip(node_features_conf),
 	add_parse(CSV_STRING, node_features_plugins, "NodeFeaturesPlugins", "List of node_features plugins to use"),
