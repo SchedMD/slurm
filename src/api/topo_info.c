@@ -74,7 +74,9 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp, char *name)
 	req_msg.msg_type = REQUEST_TOPO_INFO;
 	req_msg.data = &data;
 
-	topology_g_init();
+	if ((rc = topology_g_init())) {
+		slurm_seterrno_ret(rc);
+	}
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					   working_cluster_rec) < 0)
