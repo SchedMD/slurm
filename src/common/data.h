@@ -654,8 +654,9 @@ extern data_t *data_copy(data_t *dest, const data_t *src);
  *
  * IN dest destination data to overwrite, or NULL to allocate a new data_t.
  *	Must not be an ancestor of src.
- * IN src source data to move and set as DATA_TYPE_NULL
- * RET ptr to dest or NULL on error
+ * IN src source data to move and set as DATA_TYPE_NULL.
+ *	Must never be NULL and must never be dest.
+ * RET ptr to dest (never NULL)
  */
 extern data_t *data_move(data_t *dest, data_t *src);
 

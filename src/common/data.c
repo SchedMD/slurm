@@ -2416,8 +2416,9 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 
 extern data_t *data_move(data_t *dest, data_t *src)
 {
-	if (!src)
-		return NULL;
+	xassert(src);
+	xassert(dest != src);
+	_check_magic(src);
 
 	if (!dest) {
 		dest = data_new();
@@ -2429,8 +2430,6 @@ extern data_t *data_move(data_t *dest, data_t *src)
 			 __func__, src, dest);
 		_release(dest);
 	}
-
-	_check_magic(src);
 
 	memmove(&dest->data, &src->data, sizeof(src->data));
 	dest->type = src->type;
