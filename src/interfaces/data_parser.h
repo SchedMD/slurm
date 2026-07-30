@@ -279,6 +279,9 @@ typedef enum {
 	DATA_PARSER_TRES_NCT, /* slurmdb_tres_nct_rec_t */
 	DATA_PARSER_TRES_NCT_PTR, /* slurmdb_tres_nct_rec_t* */
 	DATA_PARSER_TRES_ACTION, /* uint32_t (placeholder for update_mode_t) */
+	DATA_PARSER_DRAINED_TRES, /* drained_tres_t */
+	DATA_PARSER_DRAINED_TRES_PTR, /* drained_tres_t* */
+	DATA_PARSER_DRAINED_TRES_LIST, /* list_t of drained_tres_t */
 	DATA_PARSER_USER_ID, /* User from numeric UID */
 	DATA_PARSER_USER_ID_STRING, /* char * - user id string */
 	DATA_PARSER_USER_ID_STRING_LIST, /* list_t of string user id */

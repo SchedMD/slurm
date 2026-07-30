@@ -33,8 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_DRAINED_TRES_H
-#define _HAVE_DRAINED_TRES_H
+#ifndef _DRAINED_TRES_H
+#define _DRAINED_TRES_H
 
 #include <stdbool.h>
 
@@ -281,4 +281,62 @@ extern void drained_tres_counts_pack(list_t *counts, uint16_t protocol_version,
 extern int drained_tres_counts_unpack(list_t **counts,
 				      uint16_t protocol_version, buf_t *buffer);
 
-#endif /* !_HAVE_DRAINED_TRES_H */
+/*
+ * drained_tres_recs_to_str - render the drained-TRES records carried on a
+ *	node_info_t as the DrainedTRES string shown by "scontrol show node".
+ *	Indexed TRES sharing a name and a reason are reported as one entry.
+ * IN recs - list of drained_tres_t, may be NULL
+ * RET the string, or NULL when nothing is drained. Caller must xfree.
+ */
+extern char *drained_tres_recs_to_str(list_t *recs);
+
+/*
+ * Append one drained-TRES record to recs. Every string is copied, so the caller
+ * keeps ownership of what it passes in; NULL fields stay NULL.
+ * IN/OUT recs - list of drained_tres_t to append the record to
+ * IN tres_name - "gres/<name>[:<type>]", "cpu" or "mem"
+ * IN index - index range list of the drained TRES, or NULL
+ * IN uuid - UUID of the drained device, or NULL
+ * IN count - number of drained TRES, or NO_VAL64 when index or uuid
+ *	identify them instead
+ * IN reason - why the TRES were drained, may be NULL
+ */
+extern void drained_tres_rec_add(list_t *recs, const char *tres_name,
+				 const char *index, const char *uuid,
+				 uint64_t count, const char *reason);
+
+/*
+ * list_create() destructor for one drained_tres_t.
+ * IN x - drained_tres_t to free
+ */
+extern void drained_tres_delete(void *x);
+
+/*
+ * Pack one drained_tres_t element. Used by slurm_pack_list().
+ * IN in - drained_tres_t to pack
+ * IN protocol_version - protocol version to pack for
+ * IN buffer - buffer to pack into
+ */
+extern void drained_tres_pack(void *in, uint16_t protocol_version,
+			      buf_t *buffer);
+
+/*
+ * Unpack one drained_tres_t element. Used by slurm_unpack_list().
+ * OUT out - restored drained_tres_t
+ * IN protocol_version - protocol version to unpack
+ * IN buffer - buffer to unpack from
+ * RET SLURM_SUCCESS or an error
+ */
+extern int drained_tres_unpack(void **out, uint16_t protocol_version,
+			       buf_t *buffer);
+
+/*
+ * drained_tres_index_add - set every index named by a "0,2-3" style list,
+ *	growing index to fit. Used to merge the index lists of several
+ *	drained_tres_t records into the one range list that reports them all.
+ * IN/OUT index - bitmap to set the indexes in, allocated when *index is NULL
+ * IN str - index range list, may be NULL
+ */
+extern void drained_tres_index_add(bitstr_t **index, const char *str);
+
+#endif /* !_DRAINED_TRES_H */

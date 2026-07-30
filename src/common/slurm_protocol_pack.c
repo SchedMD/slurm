@@ -48,10 +48,12 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
+#include "src/common/drained_tres.h"
 #include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
+#include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/pack_data.h"
 #include "src/common/part_record.h"
@@ -1912,6 +1914,10 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->tres_fmt_str, buffer);
 		safe_unpackstr(&node->resv_name, buffer);
 		safe_unpackstr(&node->topology_str, buffer);
+		if (slurm_unpack_list(&node->drained_tres, drained_tres_unpack,
+				      drained_tres_delete, buffer,
+				      protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);

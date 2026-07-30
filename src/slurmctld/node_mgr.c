@@ -54,6 +54,7 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/drained_tres.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
@@ -67,6 +68,7 @@
 #include "src/common/power_action.h"
 #include "src/common/read_config.h"
 #include "src/common/sercli.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/state_save.h"
 #include "src/common/timers.h"
@@ -1172,6 +1174,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		       uint16_t protocol_version, uint16_t show_flags)
 {
 	char *gres_chunks = NULL, *gres_used = NULL;
+	list_t *drained = NULL;
 	node_select_stats_t *dump_node_stats;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1249,6 +1252,10 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 			gres_used =
 				gres_get_node_used(dump_node_ptr->gres_list);
 		}
+		/* Only a degraded node has drained TRES to gather */
+		if (IS_NODE_DEGRADED(dump_node_ptr))
+			drained =
+				node_conf_get_drained_tres_recs(dump_node_ptr);
 		packstr(gres_chunks, buffer);
 		packstr(gres_used, buffer);
 		xfree(gres_chunks);
@@ -1269,6 +1276,9 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->tres_fmt_str, buffer);
 		packstr(dump_node_ptr->resv_name, buffer);
 		packstr(dump_node_ptr->topology_str, buffer);
+		(void) slurm_pack_list(drained, drained_tres_pack, buffer,
+				       protocol_version);
+		FREE_NULL_LIST(drained);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);

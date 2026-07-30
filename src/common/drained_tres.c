@@ -33,11 +33,33 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <ctype.h>
+#include <limits.h>
+
 #include "src/common/drained_tres.h"
 
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+/*
+ * Ceiling on an index read out of a record, so that a record arriving from
+ * another node cannot size the bitmap below. No node has anywhere near this
+ * many TRES.
+ */
+#define MAX_DRAINED_TRES_INDEX (1024 * 1024)
+
+/*
+ * State for rendering drained-TRES records into a DrainedTRES string. Indexed
+ * records are held in groups until a record arrives that belongs to no group
+ * (a different TRES, or one reported by count or UUID), because a TRES
+ * drained for an earlier reason can still turn up after one drained later.
+ */
+typedef struct {
+	list_t *groups; /* drain_group_t, in reported order */
+	char *name; /* TRES the held groups belong to */
+	char *str; /* string built so far */
+} drained_tres_fmt_t;
 
 typedef struct {
 	buf_t *buffer;
@@ -608,4 +630,229 @@ extern int drained_tres_counts_unpack(list_t **counts,
 unpack_error:
 	FREE_NULL_LIST(*counts);
 	return SLURM_ERROR;
+}
+
+extern void drained_tres_rec_add(list_t *recs, const char *tres_name,
+				 const char *index, const char *uuid,
+				 uint64_t count, const char *reason)
+{
+	drained_tres_t *rec = xmalloc(sizeof(*rec));
+
+	rec->tres_name = xstrdup(tres_name);
+	rec->index = xstrdup(index);
+	rec->uuid = xstrdup(uuid);
+	rec->count = count;
+	rec->reason = xstrdup(reason);
+
+	list_append(recs, rec);
+}
+
+extern void drained_tres_delete(void *x)
+{
+	drained_tres_t *rec = x;
+
+	if (!rec)
+		return;
+
+	xfree(rec->index);
+	xfree(rec->reason);
+	xfree(rec->tres_name);
+	xfree(rec->uuid);
+	xfree(rec);
+}
+
+extern void drained_tres_pack(void *in, uint16_t protocol_version,
+			      buf_t *buffer)
+{
+	drained_tres_t *object = in;
+
+	packbool(object, buffer);
+	if (!object)
+		return;
+
+	pack64(object->count, buffer);
+	packstr(object->index, buffer);
+	packstr(object->reason, buffer);
+	packstr(object->tres_name, buffer);
+	packstr(object->uuid, buffer);
+}
+
+extern int drained_tres_unpack(void **out, uint16_t protocol_version,
+			       buf_t *buffer)
+{
+	drained_tres_t *object = NULL;
+	bool exists;
+
+	safe_unpackbool(&exists, buffer);
+	if (!exists) {
+		*out = NULL;
+		return SLURM_SUCCESS;
+	}
+
+	object = xmalloc(sizeof(*object));
+	safe_unpack64(&object->count, buffer);
+	safe_unpackstr(&object->index, buffer);
+	safe_unpackstr(&object->reason, buffer);
+	safe_unpackstr(&object->tres_name, buffer);
+	safe_unpackstr(&object->uuid, buffer);
+
+	/* Every record names its TRES; the formatters rely on it. */
+	if (!object->tres_name)
+		goto unpack_error;
+
+	*out = object;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	drained_tres_delete(object);
+	*out = NULL;
+	return SLURM_ERROR;
+}
+
+/*
+ * The name a drained TRES is reported under: the TRES name without its "gres/"
+ * prefix. Indexed entries drop the type as well, because TRES of
+ * different types drained for the same reason are reported as one entry and
+ * the type cannot then be attributed to any single index.
+ */
+static char *_drained_tres_fmt_name(const char *tres_name, bool keep_type)
+{
+	char *name, *sep;
+
+	if (!xstrncmp(tres_name, "gres/", 5))
+		name = xstrdup(tres_name + 5);
+	else
+		name = xstrdup(tres_name);
+
+	if (!keep_type && (sep = xstrchr(name, ':')))
+		*sep = '\0';
+
+	return name;
+}
+
+extern void drained_tres_index_add(bitstr_t **index, const char *str)
+{
+	const char *pos = str;
+
+	while (pos && *pos) {
+		long first, last;
+		char *end;
+
+		if (!isdigit((int) *pos)) {
+			pos++;
+			continue;
+		}
+
+		first = last = strtol(pos, &end, 10);
+		if (*end == '-')
+			last = strtol(end + 1, &end, 10);
+		pos = end;
+
+		if ((first < 0) || (last < first) ||
+		    (last >= MAX_DRAINED_TRES_INDEX))
+			continue;
+
+		if (!*index)
+			*index = bit_alloc(last + 1);
+		else if (last >= bit_size(*index))
+			bit_realloc(*index, last + 1);
+
+		bit_nset(*index, first, last);
+	}
+}
+
+static int _foreach_drained_tres_group(void *x, void *arg)
+{
+	drain_group_t *group = x;
+	drained_tres_fmt_t *fmt = arg;
+	char *tmp;
+
+	/* An index string with no usable range left no bitmap. */
+	if (!group->index_bits)
+		return 0;
+
+	tmp = bit_fmt_full(group->index_bits);
+
+	xstrfmtcat(fmt->str, "%s%s(IDX:%s)(%s)", fmt->str ? "," : "", fmt->name,
+		   tmp, group->reason);
+	xfree(tmp);
+
+	return 0;
+}
+
+/* Emit the held groups, if any, and drop what they were held for. */
+static void _drained_tres_fmt_flush(drained_tres_fmt_t *fmt)
+{
+	if (!fmt->groups)
+		return;
+
+	(void) list_for_each(fmt->groups, _foreach_drained_tres_group, fmt);
+
+	FREE_NULL_LIST(fmt->groups);
+	xfree(fmt->name);
+}
+
+static void _drained_tres_fmt_rec(drained_tres_fmt_t *fmt, drained_tres_t *rec)
+{
+	char *reason = rec->reason ? rec->reason : "no reason";
+	drain_group_t *group;
+	char *name;
+
+	/*
+	 * A count covers every drained TRES of its type at once, so the
+	 * type stays on the name and there is nothing to group.
+	 */
+	if (rec->count != NO_VAL64) {
+		_drained_tres_fmt_flush(fmt);
+		name = _drained_tres_fmt_name(rec->tres_name, true);
+		xstrfmtcat(fmt->str, "%s%s:%" PRIu64 "(%s)",
+			   fmt->str ? "," : "", name, rec->count, reason);
+		xfree(name);
+		return;
+	}
+
+	name = _drained_tres_fmt_name(rec->tres_name, false);
+
+	/*
+	 * No index. An absent device keeps its saved index and is listed
+	 * with the other indexed devices. A record with neither an index
+	 * nor a count is not a drained line.
+	 */
+	if (!rec->index || !rec->index[0]) {
+		xfree(name);
+		return;
+	}
+
+	if (fmt->groups && xstrcmp(fmt->name, name))
+		_drained_tres_fmt_flush(fmt);
+
+	if (!fmt->groups)
+		fmt->name = name;
+	else
+		xfree(name);
+
+	group = drained_tres_group_get(&fmt->groups, reason);
+
+	drained_tres_index_add(&group->index_bits, rec->index);
+}
+
+static int _foreach_drained_tres_fmt_rec(void *x, void *arg)
+{
+	_drained_tres_fmt_rec(arg, x);
+
+	return 0;
+}
+
+extern char *drained_tres_recs_to_str(list_t *recs)
+{
+	drained_tres_fmt_t fmt = { 0 };
+
+	if (!recs)
+		return NULL;
+
+	(void) list_for_each(recs, _foreach_drained_tres_fmt_rec, &fmt);
+
+	_drained_tres_fmt_flush(&fmt);
+
+	return fmt.str;
 }

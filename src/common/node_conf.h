@@ -268,6 +268,18 @@ extern list_t *active_feature_list;	/* list of currently active features_records
 extern list_t *avail_feature_list;	/* list of available features_records */
 
 /*
+ * Build the drained-TRES records for a node -- what its drained TRES are
+ * tracked as. The DrainedTRES string reported to users is rendered from them
+ * by drained_tres_recs_to_str(). A device-tracked GRES reports its index and
+ * its UUID together when the device provides one.
+ *
+ * IN node_ptr - node to describe
+ * RET list of drained_tres_t, NULL if nothing is drained. Free with
+ *     FREE_NULL_LIST().
+ */
+extern list_t *node_conf_get_drained_tres_recs(node_record_t *node_ptr);
+
+/*
  * bitmap2node_name_sortable - given a bitmap, build a list of comma
  *	separated node names. names may include regular expressions
  *	(e.g. "lx[01-10]")

@@ -2210,3 +2210,8 @@ extern int list_find_feature(void *feature_entry, void *key)
 
 	return !xstrcmp(feature_ptr->name, (char *) key);
 }
+
+extern list_t *node_conf_get_drained_tres_recs(node_record_t *node_ptr)
+{
+	return NULL;
+}

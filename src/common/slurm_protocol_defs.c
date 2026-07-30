@@ -4713,6 +4713,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->comment);
 		FREE_NULL_DATA(node->kv);
 		xfree(node->cpu_spec_list);
+		FREE_NULL_LIST(node->drained_tres);
 		acct_gather_energy_destroy(node->energy);
 		xfree(node->extra);
 		xfree(node->features);

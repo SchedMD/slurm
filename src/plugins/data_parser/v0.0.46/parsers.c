@@ -9852,6 +9852,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, cpus, "cpus", "Total CPUs, including cores and threads"),
 	add_parse(UINT16, cpus_efctv, "effective_cpus", "Number of effective CPUs (excluding specialized CPUs)"),
 	add_parse(STRING, cpu_spec_list, "specialized_cpus", "Slurm abstract CPU IDs on this node reserved for exclusive use by slurmd and slurmstepd"),
+	add_parse(DRAINED_TRES_LIST, drained_tres, "drained_tres", "Drained TRES, one record per drained TRES"),
 	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy", "Energy usage data"),
 	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
 	add_parse(DATA_DICT, kv, "kv", "JSON object of arbitrary metadata (empty if not set)"),
@@ -10627,6 +10628,17 @@ static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
 	 */
 	add_flag_bit(RESERVE_TRES_PER_NODE, "TRES_PER_NODE"),
 };
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(drained_tres_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(DRAINED_TRES)[] = {
+	add_parse(UINT64_NO_VAL, count, "count", "Count of drained TRES units, for count-only TRES"),
+	add_parse(STRING, index, "index", "Index range of the drained TRES, if they have indexes"),
+	add_parse(STRING, reason, "reason", "Why the TRES were drained"),
+	add_parse(STRING, tres_name, "tres_name", "TRES that was drained: gres/<name>[:<type>], cpu, or mem"),
+	add_parse(STRING, uuid, "uuid", "UUID of the drained device, if it reports one"),
+};
+#undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(resv_core_spec_t, mtype, false, field, 0, path, desc)
@@ -14091,6 +14103,7 @@ static const parser_t parsers[] = {
 	addpap(ACCT_GATHER_ENERGY, acct_gather_energy_t, NULL, NULL),
 	addpap(RESERVATION_INFO, reserve_info_t, NULL, NULL),
 	addpap(RESERVATION_CORE_SPEC, resv_core_spec_t, NULL, NULL),
+	addpap(DRAINED_TRES, drained_tres_t, NULL, NULL),
 	addpap(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t, NULL, NULL),
 	addpap(JOB_DESC_MSG, job_desc_msg_t, NEW_FUNC(JOB_DESC_MSG), (parser_free_func_t) slurm_free_job_desc_msg),
 	addpap(CRON_ENTRY, cron_entry_t, NULL, NULL),
@@ -14380,6 +14393,7 @@ static const parser_t parsers[] = {
 	addpl(TPU_TYPE_ENTRY_LIST, TPU_TYPE_ENTRY_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS_PTR, NEED_NONE),
+	addpl(DRAINED_TRES_LIST, DRAINED_TRES_PTR, NEED_NONE),
 	addpl(JOB_ARRAY_RESPONSE_MSG_PTR_LIST, JOB_ARRAY_RESPONSE_MSG_PTR, NEED_NONE),
 
 	/* alias parsers */

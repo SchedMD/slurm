@@ -2535,6 +2535,23 @@ typedef struct {
 	slurm_step_id_t step_id;
 } job_step_stat_response_msg_t;
 
+/*
+ * One drained TRES on a node. Everything that reports a drain renders from
+ * these: DrainedTRES, "scontrol show drainedtres", sinfo -R, accounting and
+ * slurmrestd. Populated for every degraded node.
+ *
+ * Device-tracked GRES report both an index and, when the device provides one,
+ * its UUID; a device that is no longer present has only a UUID. Count-only GRES
+ * and memory report a count instead.
+ */
+typedef struct {
+	uint64_t count; /* TRES count, or NO_VAL64 */
+	char *index; /* index range list, or NULL */
+	char *reason; /* why it was drained, may be NULL */
+	char *tres_name; /* "gres/<name>[:<type>]", "cpu" or "mem" */
+	char *uuid; /* device UUID, or NULL */
+} drained_tres_t;
+
 typedef struct node_info {
 	uint16_t alloc_cpus;	/* allocated cpus */
 	uint64_t alloc_memory;	/* allocated memory */
@@ -2556,6 +2573,7 @@ typedef struct node_info {
 	uint16_t cpus_efctv;	/* count of effective cpus on the node.
 				   i.e cpus minus specialized cpus*/
 	char *cpu_spec_list;	/* node's specialized cpus */
+	list_t *drained_tres; /* drained_tres_t, one per drained TRES */
 	acct_gather_energy_t *energy;	 /* energy data */
 	char *extra;		/* arbitrary string */
 	char *features;		/* list of a node's available features */
