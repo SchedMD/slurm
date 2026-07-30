@@ -436,12 +436,28 @@ end_it:
 
 extern void *reconfig(void *arg)
 {
+	char *prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
+	char *prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
+
 	conmgr_quiesce(__func__);
 
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids(NULL);
 	acct_storage_g_reconfig(NULL, 0);
 	_update_logging(false);
+
+	/*
+	 * Serializer plugins are loaded once, on the first serializer_g_init().
+	 * The new values are stored and reported by 'sacctmgr show config', so
+	 * warn rather than let that silently imply they took effect.
+	 */
+	if (xstrcmp(prev_ser_params, slurmdbd_conf->serializer_params))
+		warning("SerializerParameters changed. Restart slurmdbd for the new value to take effect.");
+	if (xstrcmp(prev_ser_plugins, slurmdbd_conf->serializer_plugins))
+		warning("SerializerPlugins changed. Restart slurmdbd for the new value to take effect.");
+
+	xfree(prev_ser_params);
+	xfree(prev_ser_plugins);
 
 	conmgr_unquiesce(__func__);
 
