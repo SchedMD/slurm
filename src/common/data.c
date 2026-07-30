@@ -1822,8 +1822,8 @@ static int _convert_data_float_from_string(data_t *data)
 	goto fail;
 
 converted:
-	log_flag(DATA, "%s: converted %pD to float: %s->%lf",
-		 __func__, data, str, data_get_float(data));
+	log_flag(DATA, "%s: converted %pD to float: %lf",
+		 __func__, data, data_get_float(data));
 	return SLURM_SUCCESS;
 
 fail:
