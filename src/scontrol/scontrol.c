@@ -73,6 +73,7 @@ list_t *clusters = NULL;
 char *cluster_names = NULL;
 int all_flag = 0;	/* display even hidden partitions */
 int detail_flag = 0;	/* display additional details */
+int exact_flag = 0; /* do not group records in show output if =1 */
 int future_flag = 0;	/* display future nodes */
 int exit_code = 0;	/* scontrol's exit code, =1 on any error at any time */
 int exit_flag = 0;	/* program to terminate if =1 */
@@ -141,6 +142,7 @@ int main(int argc, char **argv)
 		{"cluster",  1, 0, 'M'},
 		{"clusters", 1, 0, 'M'},
 		{"details",  0, 0, 'd'},
+		{"exact",    0, 0, 'e'},
 		{"federation",0, 0, OPT_LONG_FEDR},
 		{"future",   0, 0, 'F'},
 		{"help",     0, 0, 'h'},
@@ -191,7 +193,7 @@ int main(int argc, char **argv)
 		if ((optind < argc) &&
 		    !xstrncasecmp(argv[optind], "setdebugflags", 8))
 			break;	/* avoid parsing "-<flagname>" as option */
-		if ((opt_char = getopt_long(argc, argv, "adhM:FoQu:vV",
+		if ((opt_char = getopt_long(argc, argv, "adehM:FoQu:vV",
 					    long_options, &option_index)) == -1)
 			break;
 		switch (opt_char) {
@@ -205,6 +207,9 @@ int main(int argc, char **argv)
 			break;
 		case (int)'d':
 			detail_flag = 1;
+			break;
+		case (int) 'e':
+			exact_flag = 1;
 			break;
 		case (int)'F':
 			future_flag = 1;
@@ -1228,6 +1233,17 @@ static int _process_command (int argc, char **argv)
 					 tag);
 			}
 		}
+	} else if (!xstrncasecmp(tag, "exact", MAX(tag_len, 3))) {
+		/*
+		 * "ex" abbreviates "exit", so "exact" needs three characters
+		 * and is tested first.
+		 */
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf(stderr, "too many arguments for keyword:%s\n",
+				tag);
+		}
+		exact_flag = 1;
 	} else if (!xstrncasecmp(tag, "exit", MAX(tag_len, 2))) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -1839,7 +1855,8 @@ static void _show_it(int argc, char **argv)
 	if (!xstrncasecmp(argv[1], "assoc_mgr", MAX(tag_len, 2)) ||
 	    !xstrncasecmp(argv[1], "bbstat", MAX(tag_len, 2)) ||
 	    !xstrncasecmp(argv[1], "dwstat", MAX(tag_len, 2)) ||
-	    !xstrncasecmp(argv[1], "topology", MAX(tag_len, 4)))
+	    !xstrncasecmp(argv[1], "topology", MAX(tag_len, 4)) ||
+	    !xstrncasecmp(argv[1], "drainedtres", MAX(tag_len, 5)))
 		allow_opt = true;
 
 	if ((argc > 3) && !allow_opt) {
@@ -1880,6 +1897,8 @@ static void _show_it(int argc, char **argv)
 				      argv[0]);
 		} else
 			_print_daemons();
+	} else if (!xstrncasecmp(tag, "drainedtres", MAX(tag_len, 5))) {
+		scontrol_print_drained_tres(argc - 2, argv + 2);
 	} else if (xstrncasecmp(tag, "Federations",  MAX(tag_len, 1)) == 0) {
 		scontrol_print_federation();
 	} else if (xstrncasecmp(tag, "hostnames", MAX(tag_len, 5)) == 0) {

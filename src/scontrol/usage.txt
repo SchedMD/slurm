@@ -2,6 +2,7 @@ scontrol [<OPTION>] [<COMMAND>]
     Valid <OPTION> values are:
      -a, --all      Equivalent to "all" command
      -d, --details  Equivalent to "details" command
+     -e, --exact    Equivalent to "exact" command
      --federation   Report federated job information if a member of a  one
      -F, --future   Report information about nodes in "FUTURE" state.
      -h, --help     Equivalent to "help" command
@@ -42,6 +43,9 @@ scontrol [<OPTION>] [<COMMAND>]
      delete <SPECIFICATIONS>  delete the specified partition or reservation
      errnumstr <ERRNO>        Given a Slurm error number, return a
                               descriptive string.
+     exact                    do not group records in "show" output;
+			      report each on its own line (currently only
+			      "show drainedtres" groups anything).
      exit                     terminate scontrol
      fsdampeningfactor <factor> Set the FairShareDampeningFactor in slurmctld
      getent [<NodeName>]      List entities associated with each step present
@@ -96,8 +100,8 @@ scontrol [<OPTION>] [<COMMAND>]
      token [lifespan=] [username=] fetch an auth token
      takeover                 ask slurm backup controller to take over
      uhold <jobid_list>       place user hold on specified job (see hold)
-     update <SPECIFICATIONS>  update job, step, node, partition, reservation,
-			      or HRES layer
+     update <SPECIFICATIONS>  update job, step, node, TRES, partition,
+			      reservation, or HRES layer
      verbose                  enable detailed logging.
      version                  display tool version number.
      wait_job <job_id>        wait until the nodes allocated to the job
@@ -116,9 +120,9 @@ scontrol [<OPTION>] [<COMMAND>]
      !!                       Repeat the last command entered.
 
   <ENTITY> may be "aliases", "assoc_mgr", "bbstat", "burstBuffer", "config",
-       "daemons", "dwstat", "federation", "hostlist", "hostlistsorted",
-       "hostnames", "job", "licenses", "node", "partition", "reservation",
-       "slurmd", "step", "topoconf", or "topology"
+       "daemons", "drainedtres", "dwstat", "federation", "hostlist",
+       "hostlistsorted", "hostnames", "job", "licenses", "node", "partition",
+       "reservation", "slurmd", "step", "topoconf", or "topology"
 
   <ID> may be a configuration parameter name, job id, node name, partition
        name, reservation name, job step id, license name or hostlist or

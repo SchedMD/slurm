@@ -3968,6 +3968,7 @@ function __scontrol_show() {
 		"burstbuffer"
 		"config"
 		"daemons"
+		"drainedtres"
 		"dwstat"
 		"federations"
 		"frontend"
@@ -3998,6 +3999,26 @@ function __scontrol_show() {
 		comp_cmd="${comp_cmd}_${subcmd//[^[:alnum:]]/}"
 		__slurm_comp_command "${comp_cmd}"
 	fi
+}
+
+# completion handler for: scontrol show drainedtres [key=val]...
+function __scontrol_show_drainedtres() {
+	local parameters=(
+		"nodename="
+		"tresname="
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev,,}" in
+	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	tresname) __slurm_compreply "$(__slurm_drainable_tres)" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol shutdown *

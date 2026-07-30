@@ -50,6 +50,13 @@ Causes the \fIshow\fR command to provide additional details where available.
 .IP
 
 .TP
+\fB\-e\fR, \fB\-\-exact\fR
+Do not group records in the \fIshow\fR command's output. Currently only
+\fBshow drainedtres\fR groups records: it reports the GRES devices of a node
+that share a name and a drain reason on one line, with one \fBIndex\fR list.
+.IP
+
+.TP
 \fB\-\-federation\fR
 Report jobs from federation if a member of one.
 .IP
@@ -624,6 +631,52 @@ Reports which daemons should be running on this node.
 .IP
 
 .TP
+\fBdrainedtres\fR [\fBTresName\fR=<\fItres\fR>] \c
+[\fBNodeName\fR=<\fInodelist\fR>]
+List every drained TRES in the cluster using the same field names as
+\fBscontrol update TresName=\fR. A line that names only present TRES can be
+pasted into an update to resume them, replacing \fBReason\fR with
+\fBAction\fR=\fBResume\fR. Optionally restrict the output to one TRES with
+\fBTresName\fR, or to a set of nodes with \fBNodeName\fR.
+
+The TRES on one node that share a name and a drain reason are reported on a
+single line, as one \fBIndex\fR range list, however far apart their indexes
+are. \fBUuid\fR lists the UUID of every device on that line that still has
+one, and is omitted when any of them has none. An absent device keeps its
+index and is listed there. Its slot is empty, so the line has no \fBUuid\fR
+for it.
+
+For example:
+.nf
+$ scontrol show drainedtres
+NodeName=tux1 TresName=gres/gpu Index=0,2 Uuid=GPU\-aaa,GPU\-bbb Reason=ecc
+NodeName=tux1 TresName=cpu Index=0,2\-3 Reason=flaky_cores
+NodeName=tux2 TresName=mem Count=4096 Reason=bad_dimm
+.fi
+
+Use \fB\-\-exact\fR to report each of those GRES devices on its own line
+instead:
+.nf
+$ scontrol \-\-exact show drainedtres
+NodeName=tux1 TresName=gres/gpu Index=0 Uuid=GPU\-aaa Reason=ecc
+NodeName=tux1 TresName=gres/gpu Index=2 Uuid=GPU\-bbb Reason=ecc
+NodeName=tux1 TresName=cpu Index=0,2\-3 Reason=flaky_cores
+NodeName=tux2 TresName=mem Count=4096 Reason=bad_dimm
+.fi
+
+The \fBcpu\fR lines assume one thread per core. CPUs are drained by whole
+core, so with two threads per core the same drain is listed as
+\fBIndex=0\-3\fR.
+
+With \fB\-\-json\fR or \fB\-\-yaml\fR the nodes that have a drained TRES are
+dumped in the same format as \fBscontrol show node\fR. Each node lists only the
+drained TRES selected by \fBTresName\fR in its \fBdrained_tres\fR field. The
+records are the ones the controller keeps and are not grouped here: each device
+or memory drain is a record of its own, and CPUs drained for the same reason
+share one record. \fB\-\-exact\fR has no effect.
+.IP
+
+.TP
 \fBdwstat\fR
 Displays output from the current burst buffer plugin's status tool
 (slurm_bb_get_status for lua or dwstat for datawarp). Options following
@@ -940,6 +993,13 @@ See the \fB\-\-cpu\-bind\fR and \fB\-\-mem\-bind\fR option descriptions in
 srun man pages for more information.
 The \fBdetails\fP option is currently only supported for the \fIshow job\fP
 command.
+.IP
+
+.TP
+\fBexact\fR
+Do not group records in the \fIshow\fP command's output. Currently only
+\fBshow drainedtres\fP groups records: it reports the GRES devices of a node
+that share a name and a drain reason on one line, with one \fBIndex\fP list.
 .IP
 
 .TP
@@ -2267,6 +2327,42 @@ the CPU IDs used by the operating system.
 .IP
 
 .TP
+\fBDrainedTRES\fR
+The node's TRES that have been marked unavailable with \fBscontrol update
+TresName=...\fR, or automatically because a device is absent, as a
+comma\-separated list. Omitted when nothing on the
+node is drained. Each entry carries the \fBReason\fR that was given for it in
+parentheses, or "no reason" when none was recorded. The entries take these
+forms:
+.IP
+.RS
+.TP
+\fIname\fR\fB(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
+Drained devices of a device\-tracked GRES, by index
+(e.g. "gpu(IDX:0,2\-3)(ecc_errors)"). Devices sharing the same
+reason are grouped into one entry. An absent device keeps its index and is
+listed in this form (e.g. "gpu(IDX:1)(gres/gpu:not_found)"). The UUID that
+left the slot is not printed here. The automatic drain is cleared when a
+device fills the index.
+.IP
+.TP
+\fIname\fR[\fB:\fR\fItype\fR]\fB:\fR\fIcount\fR\fB(\fR\fIreason\fR\fB)\fR
+A drained count of a count\-only GRES (e.g. "bandwidth:lustre:2(bad_results)").
+.IP
+.TP
+\fBcpu(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
+Drained CPUs, as abstract CPU IDs (e.g. "cpu(IDX:0,2\-3)(flaky_cores)").
+.IP
+.TP
+\fBmem:\fR\fIMiB\fR\fB(\fR\fIreason\fR\fB)\fR
+Memory removed from the schedulable pool, in MiB (e.g. "mem:4096(bad_dimm)").
+.RE
+.IP
+Shared GRES (\fBshard\fR, \fBmps\fR) are not listed here; see the \fBNOTE\fR on
+shared GRES under \fBTRES \- SPECIFICATIONS FOR UPDATE COMMAND\fR below.
+.IP
+
+.TP
 \fBFreeMem\fR
 The total memory, in MiB, currently free on the node as reported by the OS.
 .IP
@@ -2455,39 +2551,6 @@ Indicates the node is in an advanced reservation and not generally available.
 .RE
 
 .TP
-\fBDrainedTRES\fR
-The node's TRES that have been marked unavailable with \fBscontrol update
-TresName=...\fR, or automatically because a device is absent, as a
-comma\-separated list. Omitted when nothing on the
-node is drained. Each entry carries the \fBReason\fR that was given for it in
-parentheses, or "no reason" when none was recorded. The entries take these
-forms:
-.IP
-.RS
-.TP
-\fIname\fR\fB(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
-Drained devices of a device\-tracked GRES, by index (e.g.
-"gpu(IDX:0,2\-3)(ecc_errors)"). Devices sharing the same reason are grouped
-into one entry.
-.IP
-.TP
-\fIname\fR[\fB:\fR\fItype\fR]\fB:\fR\fIcount\fR\fB(\fR\fIreason\fR\fB)\fR
-A drained count of a count\-only GRES (e.g. "bandwidth:lustre:2(bad_results)").
-.IP
-.TP
-\fBcpu(IDX:\fR\fIindexes\fR\fB)(\fR\fIreason\fR\fB)\fR
-Drained CPUs, as abstract CPU IDs (e.g. "cpu(IDX:0,2\-3)(flaky_cores)").
-.IP
-.TP
-\fBmem:\fR\fIMiB\fR\fB(\fR\fIreason\fR\fB)\fR
-Memory removed from the schedulable pool, in MiB (e.g. "mem:4096(bad_dimm)").
-.RE
-.IP
-Shared GRES (\fBshard\fR, \fBmps\fR) are not listed here; see the \fBNOTE\fR on
-shared GRES under \fBTRES \- SPECIFICATIONS FOR UPDATE COMMAND\fR below.
-.IP
-
-.TP
 The meaning of the energy information is as follows:
 .IP
 .RS
@@ -2613,14 +2676,6 @@ sits.
 \fBNOTE\fR: \fBUuid\fR resolves through the saved slots. An empty slot is
 not found, so a UUID that has gone absent is not a selector. \fBIndex\fR
 and \fBALL\fR include that index.
-
-\fBNOTE\fR: \fBAction\fR=\fBResume\fR that names an absent device by \fBUuid\fR
-is rejected with "GRES device is absent from node". \fBIndex\fR names a device
-the node last reported, so it does not select an absent device. \fBALL\fR
-leaves an absent device drained.
-
-\fBNOTE\fR: With \fBAction\fR=\fBSetDrain\fR, \fBALL\fR also selects an absent
-device. The absent device stays drained and takes the new \fBReason\fR.
 .IP
 
 .PP

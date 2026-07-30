@@ -78,6 +78,7 @@ extern list_t *clusters;
 extern char *cluster_names;
 extern int all_flag;	/* display even hidden partitions */
 extern int detail_flag;	/* display additional details */
+extern int exact_flag; /* do not group records in show output if =1 */
 extern int future_flag;	/* display future nodes */
 extern int exit_code;	/* scontrol's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
@@ -127,6 +128,7 @@ extern void	scontrol_print_burst_buffer(void);
 extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr,
 					      node_info_msg_t *node_info_msg);
+extern void scontrol_print_drained_tres(int argc, char **argv);
 extern void	scontrol_print_federation(void);
 extern void scontrol_print_job(char *job_id_str, int argc, char **argv);
 extern void	scontrol_print_hosts (char * node_list);
