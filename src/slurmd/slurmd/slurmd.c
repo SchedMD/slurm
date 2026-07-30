@@ -177,6 +177,7 @@ typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
 	slurm_msg_t *msg;
+	slurmd_rpc_t *this_rpc;
 } service_msg_args_t;
 
 /*
@@ -744,9 +745,10 @@ static void *_service_msg(void *arg)
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	const slurm_addr_t *addr = &msg->address;
-	slurmd_rpc_t *this_rpc = NULL;
+	slurmd_rpc_t *this_rpc = args->this_rpc;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
+	xassert(this_rpc);
 	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 	xfree(args);
 
@@ -754,17 +756,11 @@ static void *_service_msg(void *arg)
 		 __func__, (uint32_t) msg->msg_type,
 		 rpc_num2string(msg->msg_type), addr);
 
-	if (!(this_rpc = find_rpc(msg->msg_type))) {
-		error("%s: invalid request for msg_type %u",
-		      __func__, msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
-	} else {
-		slurmd_req(msg, this_rpc);
+	slurmd_req(msg, this_rpc);
 
-		log_flag(NET, "%s: finished processing RPC msg_type[0x%x]=%s",
-			 __func__, (uint32_t) msg->msg_type,
-			 rpc_num2string(msg->msg_type));
-	}
+	log_flag(NET, "%s: finished processing RPC msg_type[0x%x]=%s",
+		 __func__, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type));
 
 	FREE_NULL_CONN(msg->conn);
 	slurm_free_msg(msg);
@@ -2098,6 +2094,8 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
 			 __func__, conmgr_con_get_name(msg->conmgr_con));
 		FREE_NULL_CONN(msg->conn);
 		FREE_NULL_MSG(msg);
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+		xfree(args);
 		return;
 	}
 
@@ -2131,16 +2129,13 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		 */
 		msg->flags |= SLURM_NO_AUTH_CRED;
 		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		slurm_free_msg(msg);
-		conmgr_queue_close_fd(con);
-		return SLURM_SUCCESS;
+		goto cleanup;
 	} else if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_fd_get_name(con),
 		      slurm_strerror(unpack_rc));
-		slurm_free_msg(msg);
-		conmgr_queue_close_fd(con);
-		return unpack_rc;
+		rc = unpack_rc;
+		goto cleanup;
 	}
 
 	if (!msg->auth_ids_set)
@@ -2154,25 +2149,33 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		error("%s: invalid request for msg_type %u",
 		      __func__, msg->msg_type);
 		rc = slurm_send_rc_msg(msg, EINVAL);
-		slurm_free_msg(msg);
-		conmgr_queue_close_fd(con);
-		return rc;
+		goto cleanup;
 	}
 
 	args = xmalloc(sizeof(*args));
 	*args = (service_msg_args_t) {
 		.magic = SERVICE_MSG_ARGS_MAGIC,
 		.msg = msg,
+		.this_rpc = this_rpc,
 	};
 
 	CONMGR_CON_UNLINK(msg->conmgr_con);
 
 	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
 					      XSTRINGIFY(_on_extract_fd),
-							 args)))
+							 args))) {
 		error("%s: [%s] Extracting FDs failed: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+		xfree(args);
+		goto cleanup;
+	}
 
+	return rc;
+
+cleanup:
+	slurm_free_msg(msg);
+	conmgr_queue_close_fd(con);
 	return rc;
 }
 
