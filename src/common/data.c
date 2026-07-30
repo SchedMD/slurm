@@ -33,10 +33,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _ISOC99_SOURCE	/* needed for lrint */
+#define _ISOC99_SOURCE /* needed for llrint */
 
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "src/common/data.h"
 #include "src/common/http.h"
@@ -1686,8 +1688,9 @@ static int _convert_data_int(data_t *data, bool force)
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
 	{
-		int64_t x;
-		char end;
+		int64_t x = -1;
+		char end = '\0';
+		char *end_ptr = NULL;
 		const char *str = data_get_string(data);
 
 		if (!str[0]) {
@@ -1729,22 +1732,40 @@ static int _convert_data_int(data_t *data, bool force)
 			}
 		}
 
-		if (sscanf(str, "%"SCNd64"%c", &x, &end) == 1) {
-			log_flag_hex(DATA, str, strlen(str),
-				     "%s: converted %pD->%"PRId64,
-				     __func__, data, x);
-			data_set_int(data, x);
-			return SLURM_SUCCESS;
-		} else {
+		errno = 0;
+		x = strtoll(str, &end_ptr, 10);
+
+		if (errno || (end_ptr == str) || end_ptr[0]) {
 			log_flag_hex(DATA, str, strlen(str),
 				     "%s: conversion of %pD to integer failed",
 				     __func__, data);
 			return ESLURM_DATA_CONV_FAILED;
 		}
+
+		log_flag_hex(DATA, str, strlen(str),
+			     "%s: converted %pD->%"PRId64,
+			     __func__, data, x);
+		data_set_int(data, x);
+		return SLURM_SUCCESS;
 	}
 	case TYPE_FLOAT:
 		if (force) {
-			data_set_int(data, lrint(data_get_float(data)));
+			const double f = data_get_float(data);
+
+			/*
+			 * llrint() is undefined for a value outside of the
+			 * range of its return type and returns INT64_MIN on
+			 * glibc. Refuse the conversion instead of storing a
+			 * different number than was given.
+			 */
+			if (!isfinite(f) || isless(f, (double) INT64_MIN) ||
+			    isgreater(f, nextafter((double) INT64_MAX, 0.0))) {
+				log_flag(DATA, "%s: conversion of %pD to integer failed",
+					 __func__, data);
+				return ESLURM_DATA_CONV_FAILED;
+			}
+
+			(void) data_set_int(data, llrint(f));
 			return SLURM_SUCCESS;
 		}
 		return ESLURM_DATA_CONV_FAILED;
