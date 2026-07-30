@@ -1820,11 +1820,7 @@ int _print_job_derived_ec(job_info_t * job, int width, bool right_justify,
 	if (!job)
 		_print_str("DERIVED_EC", width, right_justify, true);
 	else if (job->derived_ec != NO_VAL) {
-		if (WIFSIGNALED(job->derived_ec))
-			term_sig = WTERMSIG(job->derived_ec);
-		else if (WIFEXITED(job->derived_ec))
-			exit_status = WEXITSTATUS(job->derived_ec);
-
+		exit_code_decode(job->derived_ec, &exit_status, &term_sig);
 		xstrfmtcat(out, "%u:%u", exit_status, term_sig);
 		_print_str(out, width, right_justify, true);
 		xfree(out);
@@ -1859,11 +1855,7 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 	if (!job)
 		_print_str("EXIT_CODE", width, right_justify, true);
 	else if (job->exit_code != NO_VAL) {
-		if (WIFSIGNALED(job->exit_code))
-			term_sig = WTERMSIG(job->exit_code);
-		else if (WIFEXITED(job->exit_code))
-			exit_status = WEXITSTATUS(job->exit_code);
-
+		exit_code_decode(job->exit_code, &exit_status, &term_sig);
 		xstrfmtcat(out, "%u:%u", exit_status, term_sig);
 		_print_str(out, width, right_justify, true);
 		xfree(out);
