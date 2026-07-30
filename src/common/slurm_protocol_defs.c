@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 
 #include "src/common/cron.h"
 #include "src/common/forward.h"
@@ -77,6 +78,7 @@
  */
 strong_alias(preempt_mode_string, slurm_preempt_mode_string);
 strong_alias(preempt_mode_num, slurm_preempt_mode_num);
+strong_alias(exit_code_decode, slurm_exit_code_decode);
 strong_alias(job_share_string, slurm_job_share_string);
 strong_alias(job_oversubscribe_string, slurm_job_oversubscribe_string);
 strong_alias(job_exclusive_display_string, slurm_job_exclusive_display_string);
@@ -2916,6 +2918,25 @@ extern char *job_exclusive_display_string(uint16_t val)
 	default:
 		return "NO";
 	}
+}
+
+extern void exit_code_decode(uint32_t exit_code, uint16_t *exit_status,
+			     uint16_t *term_sig)
+{
+	uint16_t decoded_status = 0, decoded_sig = 0;
+
+	/* NO_VAL means no exit code was recorded; report 0:0. */
+	if (exit_code != NO_VAL) {
+		if (WIFSIGNALED(exit_code))
+			decoded_sig = WTERMSIG(exit_code);
+		else if (WIFEXITED(exit_code))
+			decoded_status = WEXITSTATUS(exit_code);
+	}
+
+	if (exit_status)
+		*exit_status = decoded_status;
+	if (term_sig)
+		*term_sig = decoded_sig;
 }
 
 extern char *job_state_string(uint32_t inx)

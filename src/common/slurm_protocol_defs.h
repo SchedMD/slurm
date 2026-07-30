@@ -1872,6 +1872,16 @@ extern uint16_t bb_state_num(char *tok);
  * Caller must xfree() the return value */
 extern char *health_check_node_state_str(uint32_t node_state);
 
+/*
+ * Split a wait()-style exit code into its "exit_status:signal" parts. Either
+ * output pointer may be NULL.
+ * IN  exit_code   - wait()-style status, or NO_VAL if none was recorded
+ * OUT exit_status - WEXITSTATUS, or 0 when signaled or NO_VAL
+ * OUT term_sig    - WTERMSIG, or 0 when exited or NO_VAL
+ */
+extern void exit_code_decode(uint32_t exit_code, uint16_t *exit_status,
+			     uint16_t *term_sig);
+
 extern char *job_share_string(uint16_t shared);
 extern char *job_oversubscribe_string(uint16_t val);
 extern char *job_exclusive_display_string(uint16_t val);
