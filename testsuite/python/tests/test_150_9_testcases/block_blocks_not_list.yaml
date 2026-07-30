@@ -1,0 +1,16 @@
+---
+# topology/block
+#
+# "blocks" must be a list of block dicts (or a single block dict). Here it is a
+# topology.conf style scalar.
+#
+# NOTE: "block_sizes" is parsed before "blocks" in
+# PARSER_ARRAY(TOPOLOGY_BLOCK_CONFIG)[], so it must be valid to reach the
+# "blocks" parser.
+- topology: block_blocks_not_list
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+      - 16
+    blocks: "b1=node[1-4],b2=node[5-8]"

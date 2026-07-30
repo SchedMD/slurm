@@ -1,0 +1,22 @@
+---
+# topology/torus3d
+#
+# "block" is ordered before "torus3d" in PARSER_ARRAY(TOPOLOGY_CONF)[] and
+# already claimed topology_ctx_t->plugin, so the non-empty "torus3d" dict is
+# rejected.
+- topology: torus3d_mutually_exclusive
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-4]
+  torus3d:
+    toruses:
+      - name: pod1
+        nodes: node[1-16]
+        dims:
+          x: 4
+          y: 2
+          z: 2

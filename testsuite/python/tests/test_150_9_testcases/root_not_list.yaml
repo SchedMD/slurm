@@ -1,0 +1,7 @@
+---
+# common
+#
+# The document root must be either a list of topology definitions or a single
+# topology dict. Here it is a bare scalar, so PARSE_FUNC(TOPOLOGY_CONF_ARRAY)
+# rejects it before PARSER_ARRAY(TOPOLOGY_CONF)[] is ever reached.
+topology/tree

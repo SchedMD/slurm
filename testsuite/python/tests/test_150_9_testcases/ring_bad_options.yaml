@@ -1,0 +1,13 @@
+# topology/ring - parses cleanly, bad options
+#
+# ring0 lists 17 nodes, but a ring holds at most MAX_RING_SIZE (16) nodes.
+#
+# NOTE: only nodes that resolve via find_node_record() count toward the ring
+# size, so node[1-17] must be defined in slurm.conf for this to trigger.
+---
+- topology: ring_bad_options
+  cluster_default: true
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[1-17]

@@ -1,0 +1,14 @@
+---
+# topology/block
+#
+# "block" must be a dict of block_sizes/blocks. Here the whole block body was
+# written as a YAML list.
+- topology: block_not_dict
+  cluster_default: true
+  block:
+    - block_sizes:
+        - 4
+        - 16
+    - blocks:
+        - block: b1
+          nodes: node[1-4]

@@ -1,0 +1,17 @@
+---
+# topology/flat
+#
+# This is the non-dict "flat: <bool>" shorthand branch: the value parses as a
+# BOOL, it is true, and "block" (the only plugin field ordered before "flat" in
+# PARSER_ARRAY(TOPOLOGY_CONF)[]) already claimed topology_ctx_t->plugin.
+#
+# NOTE: "flat: false" would NOT error - the branch requires the bool to be true.
+- topology: flat_bool_mutually_exclusive
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-4]
+  flat: true

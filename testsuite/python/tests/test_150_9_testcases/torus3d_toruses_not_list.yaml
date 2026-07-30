@@ -1,0 +1,9 @@
+---
+# topology/torus3d
+#
+# "toruses" must be a list of torus dicts (or a single torus dict). Here it is
+# a topology.conf style scalar.
+- topology: torus3d_toruses_not_list
+  cluster_default: true
+  torus3d:
+    toruses: "pod1=node[1-16]"

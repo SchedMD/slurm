@@ -1,0 +1,8 @@
+---
+# topology/ring
+#
+# "ring" must be a dict holding a "rings" list. Here it is a topology.conf
+# style scalar.
+- topology: ring_not_dict
+  cluster_default: true
+  ring: "RingName=r1 Nodes=node[1-8]"

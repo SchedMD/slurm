@@ -1,0 +1,20 @@
+# topology/torus3d - parses cleanly, bad options
+#
+# The torus is declared as 4x4x2 = 32 coordinate cells, but only 8 nodes are
+# listed. Every coordinate must be filled.
+---
+- topology: torus3d_bad_options
+  cluster_default: true
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 4
+          y: 4
+          z: 2
+        nodes: node[1-8]
+        placements:
+          - dims:
+              x: 2
+              y: 2
+              z: 1

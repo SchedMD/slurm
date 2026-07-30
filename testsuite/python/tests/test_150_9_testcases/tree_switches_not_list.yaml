@@ -1,0 +1,9 @@
+---
+# topology/tree
+#
+# "switches" must be a list of switch dicts (or a single switch dict). Here it
+# is a scalar, which is neither.
+- topology: tree_switches_not_list
+  cluster_default: true
+  tree:
+    switches: "s1=node[1-8],s2=node[9-16]"

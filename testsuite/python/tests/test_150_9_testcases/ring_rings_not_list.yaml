@@ -1,0 +1,9 @@
+---
+# topology/ring
+#
+# "rings" must be a list of ring dicts (or a single ring dict). Here it is a
+# topology.conf style scalar.
+- topology: ring_rings_not_list
+  cluster_default: true
+  ring:
+    rings: "r1=node[1-8],r2=node[9-16]"

@@ -1,0 +1,8 @@
+---
+# topology/torus3d
+#
+# "torus3d" must be a dict holding a "toruses" list. Here the torus dimensions
+# were given directly as a shorthand scalar.
+- topology: torus3d_not_dict
+  cluster_default: true
+  torus3d: "4x2x2"
