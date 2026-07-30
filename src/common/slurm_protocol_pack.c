@@ -4216,6 +4216,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 				   protocol_version, buffer);
 
 		pack16(conf->select_type_param, buffer);
+		packstr(conf->serializer_params, buffer);
+		packstr(conf->serializer_plugins, buffer);
 
 		packstr(conf->slurm_conf, buffer);
 		pack32(conf->slurm_user_id, buffer);
@@ -5313,6 +5315,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 			goto unpack_error;
 
 		safe_unpack16(&conf->select_type_param, buffer);
+		safe_unpackstr(&conf->serializer_params, buffer);
+		safe_unpackstr(&conf->serializer_plugins, buffer);
 
 		safe_unpackstr(&conf->slurm_conf, buffer);
 		safe_unpack32(&conf->slurm_user_id, buffer);

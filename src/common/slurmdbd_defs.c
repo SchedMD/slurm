@@ -891,6 +891,8 @@ extern void slurmdbd_free_conf(slurmdbd_conf_t *conf)
 	xfree(conf->log_file);
 	xfree(conf->parameters);
 	xfree(conf->pid_file);
+	xfree(conf->serializer_params);
+	xfree(conf->serializer_plugins);
 	xfree(conf->storage_loc);
 	xfree(conf->storage_pass_script);
 	xfree(conf->storage_user);

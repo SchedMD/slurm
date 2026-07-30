@@ -3241,6 +3241,8 @@ typedef struct {
 				      * listed with slurm_print_key_pairs() */
 	uint16_t select_type_param; /* Parameters
 				     * describing the select_type plugin */
+	char *serializer_params; /* SerializerParameters */
+	char *serializer_plugins; /* SerializerPlugins */
 	char *site_factor_plugin; /* PrioritySiteFactorPlugin */
 	char *site_factor_params; /* PrioritySiteFactorParameters */
 	char *slurm_conf;	/* pathname of slurm config file */

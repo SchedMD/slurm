@@ -110,6 +110,8 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->purge_suspend = 0;
 		slurmdbd_conf->purge_txn = 0;
 		slurmdbd_conf->purge_usage = 0;
+		xfree(slurmdbd_conf->serializer_params);
+		xfree(slurmdbd_conf->serializer_plugins);
 		xfree(slurmdbd_conf->storage_loc);
 		xfree(slurmdbd_conf->storage_pass_script);
 		xfree(slurmdbd_conf->storage_user);
@@ -183,6 +185,8 @@ extern int read_slurmdbd_conf(void)
 		{"PurgeSuspendMonths", S_P_UINT32},
 		{"PurgeTXNMonths", S_P_UINT32},
 		{"PurgeUsageMonths", S_P_UINT32},
+		{"SerializerParameters", S_P_STRING},
+		{"SerializerPlugins", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StepPurge", S_P_UINT32},
 		{"StorageBackupHost", S_P_STRING},
@@ -612,6 +616,17 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->purge_usage
 					|= SLURMDB_PURGE_MONTHS;
 		}
+
+		s_p_get_string(&slurmdbd_conf->serializer_params,
+			       "SerializerParameters", tbl);
+		s_p_get_string(&slurmdbd_conf->serializer_plugins,
+			       "SerializerPlugins", tbl);
+
+		/* The serializer interface reads these out of slurm_conf */
+		slurm_conf.serializer_params =
+			xstrdup(slurmdbd_conf->serializer_params);
+		slurm_conf.serializer_plugins =
+			xstrdup(slurmdbd_conf->serializer_plugins);
 
 		s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser", tbl);
 

@@ -94,8 +94,16 @@ static serializer_flags_t _merge_flags(serializer_flags_t flags)
 
 extern int serialize_p_init(serializer_flags_t flags)
 {
-	if (flags != SER_FLAGS_NONE)
+	/*
+	 * Only replace the default formatting when a formatting flag was
+	 * actually requested. Merging otherwise keeps a non-formatting flag
+	 * (complex), or a flag only meaningful to another serializer (no_tag),
+	 * from silently dropping this plugin's default.
+	 */
+	if (flags & (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY))
 		global_flags = flags;
+	else
+		global_flags = (SERIALIZER_JSON_DEFAULT_FLAGS | flags);
 
 	log_flag(DATA, "loaded");
 
@@ -262,8 +270,7 @@ static json_object *_data_to_json(const data_t *d, serializer_flags_t flags)
 	};
 }
 
-extern int serialize_p_data_to_string(char **dest, size_t *length,
-				      const data_t *src,
+extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
 				      serializer_flags_t flags)
 {
 	struct json_object *jobj = NULL;
@@ -330,16 +337,16 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 }
 
 extern int serialize_p_dump(serialize_dump_state_t **state_ptr,
-			    data_parser_type_t type, void *src,
-			    ssize_t src_bytes, buf_t *dst,
+			    data_parser_t *parser, data_parser_type_t type,
+			    void *src, ssize_t src_bytes, buf_t *dst,
 			    serializer_flags_t flags)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int serialize_p_parse(serialize_parse_state_t **state_ptr,
-			     data_parser_type_t type, void *dst,
-			     ssize_t dst_bytes, const buf_t *src)
+			     data_parser_t *parser, data_parser_type_t type,
+			     void *dst, ssize_t dst_bytes, buf_t *src)
 {
 	return ESLURM_NOT_SUPPORTED;
 }

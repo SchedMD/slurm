@@ -77,8 +77,8 @@ typedef enum {
  * 	data
  * RET SLURM_SUCCESS or error
  */
-extern int serialize_g_data_to_string(char **dest, size_t *length,
-				      const data_t *src, const char *mime_type,
+extern int serialize_g_data_to_string(char **dest, size_t *length, data_t *src,
+				      const char *mime_type,
 				      serializer_flags_t flags);
 
 /*

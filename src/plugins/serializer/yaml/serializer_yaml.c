@@ -188,8 +188,11 @@ static serializer_flags_t _merge_flags(serializer_flags_t flags)
 
 extern int serialize_p_init(serializer_flags_t flags)
 {
-	if (flags != SER_FLAGS_NONE)
+	/* See the matching comment in the json serializer. */
+	if (flags & (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY))
 		global_flags = flags;
+	else
+		global_flags = (SERIALIZER_YAML_DEFAULT_FLAGS | flags);
 
 	log_flag(DATA, "loaded");
 
@@ -664,7 +667,7 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf,
 	if (!yaml_emitter_initialize(emitter))
 		_yaml_emitter_error;
 
-	if (flags == SER_FLAGS_COMPACT) {
+	if (flags & SER_FLAGS_COMPACT) {
 		yaml_emitter_set_indent(emitter, 0);
 		yaml_emitter_set_width(emitter, -1);
 		yaml_emitter_set_break(emitter, YAML_ANY_BREAK);
@@ -707,8 +710,7 @@ yaml_fail:
 
 #undef _yaml_emitter_error
 
-extern int serialize_p_data_to_string(char **dest, size_t *length,
-				      const data_t *src,
+extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
 				      serializer_flags_t flags)
 {
 	yaml_emitter_t emitter;
@@ -774,16 +776,16 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 }
 
 extern int serialize_p_dump(serialize_dump_state_t **state_ptr,
-			    data_parser_type_t type, void *src,
-			    ssize_t src_bytes, buf_t *dst,
+			    data_parser_t *parser, data_parser_type_t type,
+			    void *src, ssize_t src_bytes, buf_t *dst,
 			    serializer_flags_t flags)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int serialize_p_parse(serialize_parse_state_t **state_ptr,
-			     data_parser_type_t type, void *dst,
-			     ssize_t dst_bytes, const buf_t *src)
+			     data_parser_t *parser, data_parser_type_t type,
+			     void *dst, ssize_t dst_bytes, buf_t *src)
 {
 	return ESLURM_NOT_SUPPORTED;
 }

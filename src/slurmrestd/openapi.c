@@ -822,7 +822,8 @@ static int _match_path_from_data(void *x, void *key)
 	xassert(path->magic == MAGIC_PATH);
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		serialize_g_data_to_string(&dst_path, NULL, args->dpath,
+		serialize_g_data_to_string(&dst_path, NULL,
+					   (data_t *) args->dpath,
 					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
 	}
 
