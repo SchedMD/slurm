@@ -8005,13 +8005,25 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 
 	_get_rel_start_end(res2_ptr, now, &start_relative, &end_relative);
 
-	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-	    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
-	     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
-	    (res2_ptr == resv_ptr) ||
-	    !res2_ptr->node_bitmap ||
-	    (start_relative >= job_end_time_use) ||
+	/* Skip ourselves and reservations without nodes to exclude. */
+	if ((res2_ptr == resv_ptr) || !res2_ptr->node_bitmap)
+		return 0;
+
+	/* Jobs in a MAINT reservation can use any other reservation's nodes. */
+	if (resv_ptr->flags & RESERVE_FLAG_MAINT)
+		return 0;
+
+	/* Skip reservations not overlapping the job's time frame. */
+	if ((start_relative >= job_end_time_use) ||
 	    (end_relative <= args->job_start_time))
+		return 0;
+
+	/*
+	 * OVERLAP grants access to resources already in another non-MAINT
+	 * reservation.
+	 */
+	if ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
+	    !(res2_ptr->flags & RESERVE_FLAG_MAINT))
 		return 0;
 
 	if (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
