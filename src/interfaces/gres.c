@@ -10810,6 +10810,7 @@ static int _foreach_gres_init(void *x, void *arg)
 	if (!gres_js->gres_per_job)
 		return 0;
 	gres_js->total_gres = 0;
+	gres_js->gres_per_job_segment = 0;
 	*rc = true;
 
 	return 0;
@@ -10829,6 +10830,54 @@ extern bool gres_sched_init(list_t *job_gres_list)
 	(void) list_for_each(job_gres_list, _foreach_gres_init, &rc);
 
 	return rc;
+}
+
+static int _foreach_gres_reset(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (gres_js->gres_per_job)
+		gres_js->total_gres = 0;
+
+	return 0;
+}
+
+extern void gres_sched_reset(list_t *job_gres_list)
+{
+	if (!job_gres_list)
+		return;
+
+	(void) list_for_each(job_gres_list, _foreach_gres_reset, NULL);
+}
+
+static int _foreach_gres_segment_set(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	int segment_cnt = *(int *) arg;
+
+	if (!gres_js->gres_per_job)
+		return 0;
+	/*
+	 * On rejection (<0) earlier entries keep a non-zero
+	 * gres_per_job_segment, but the caller aborts the evaluation and the
+	 * next gres_sched_init() clears it before it can be used.
+	 */
+	if (gres_js->gres_per_job % segment_cnt)
+		return -1; /* Not evenly divisible */
+	gres_js->gres_per_job_segment = gres_js->gres_per_job / segment_cnt;
+
+	return 0;
+}
+
+extern bool gres_sched_segment_set(list_t *job_gres_list, int segment_cnt)
+{
+	if (!job_gres_list || (segment_cnt <= 1))
+		return true;
+
+	return (list_for_each(job_gres_list, _foreach_gres_segment_set,
+			      &segment_cnt) >= 0);
 }
 
 /*
