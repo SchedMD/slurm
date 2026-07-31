@@ -2696,6 +2696,20 @@ forcing jobs requesting the reservation to use those resources in the time
 frame reserved. Another use case could be to always have a particular number of
 nodes with a specific feature reserved for a specific account so users in this
 account may use this nodes plus possibly other nodes without this feature.
+
+Unless this reservation also has the \fBMAINT\fR flag, resources held by other
+reservations are still off limits. A reservation that reserves whole nodes
+keeps those nodes excluded, unless this reservation also has the \fBOVERLAP\fR
+flag and the nodes belong to both reservations. When the other reservation
+reserves only part of each node, its reserved cores are excluded instead of its
+nodes, so a job may still be allocated the unreserved cores on those nodes.
+\fBOVERLAP\fR never grants access to another reservation that has the
+\fBMAINT\fR flag: if it reserves whole nodes those nodes stay excluded, and if
+it reserves only part of each node its reserved cores do. A
+reservation that holds no nodes of its own (a license or burst buffer
+reservation created with \fBANY_NODES\fR) and that also has the \fBOVERLAP\fR
+flag keeps the full \fBOVERLAP\fR grant: its jobs may use any node that is not
+in a \fBMAINT\fR reservation.
 .IP
 
 .TP
@@ -2747,7 +2761,15 @@ is gone. Flag removal with '\-=' is not supported.
 .TP
 \fBOVERLAP\fR
 This reservation can be allocated resources that are already in another
-reservation. Flag removal with '\-=' is not supported.
+reservation. Resources held by a reservation with the \fBMAINT\fR flag are the
+exception: the whole nodes it reserves, or the cores it reserves on partial
+nodes, stay excluded with or without \fBFLEX\fR. When combined with the
+\fBFLEX\fR flag, jobs requesting this reservation may use another reservation's
+whole nodes only if those nodes belong to both reservations; see \fBFLEX\fR for
+reservations that reserve only part of each node. That last
+restriction does not apply when this reservation holds no nodes of its own
+(see \fBANY_NODES\fR), in which case its jobs may use any node outside a
+\fBMAINT\fR reservation. Flag removal with '\-=' is not supported.
 .IP
 
 .TP
