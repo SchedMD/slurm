@@ -1649,6 +1649,16 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				.id_alt = qos_id,
 			};
 
+			/*
+			 * A row with no time in this window jumps to
+			 * calc_cluster without setting these.  ENERGY isn't
+			 * scaled by elapsed time, so leaving them set charges
+			 * that row's energy to whatever the previous row used.
+			 */
+			a_usage = NULL;
+			q_usage = NULL;
+			w_usage = NULL;
+
 			if (row_start && (row_start < curr_start))
 				row_start = curr_start;
 
