@@ -306,6 +306,11 @@ struct job_record {
 					 * resize.  Cannot be calculated until
 					 * the job is alloocated resources. */
 	uint64_t bit_flags;             /* various job flags */
+	double booked_usage_factor; /* qos_ptr->usage_factor when
+					 * grp_used_tres_run_secs was booked.
+					 * Stored here because the QOS can
+					 * change mid-run and would leak usage.
+					 * Not packed, rebooked on restore. */
 	char *burst_buffer;		/* burst buffer specification */
 	char *burst_buffer_state;	/* burst buffer state */
 	char *clusters;			/* clusters job is submitted to with -M
