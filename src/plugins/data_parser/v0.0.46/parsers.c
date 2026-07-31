@@ -7024,7 +7024,7 @@ static int PARSE_FUNC(TOPOLOGY_TREE)(const parser_t *const parser, void *obj,
 		rc = SLURM_ERROR;
 		parse_error(
 			parser, args, parent_path, rc,
-			"Field tree is mutually excusive with fields block and flat");
+			"Field tree is mutually exclusive with fields block and flat");
 	} else if (src_dict_count) {
 		tctx->plugin = xstrdup("topology/tree");
 		rc = PARSE(TOPOLOGY_TREE_CONFIG_PTR, tctx->config, src,
@@ -7139,7 +7139,7 @@ static int PARSE_FUNC(TOPOLOGY_BLOCK)(const parser_t *const parser, void *obj,
 	if (tctx->plugin && src_dict_count) {
 		rc = parse_error(
 			parser, args, parent_path, SLURM_ERROR,
-			"Field block is mutually excusive with fields tree and flat");
+			"Field block is mutually exclusive with fields tree and flat");
 	} else if (src_dict_count) {
 		tctx->plugin = xstrdup("topology/block");
 		rc = PARSE(TOPOLOGY_BLOCK_CONFIG_PTR, tctx->config, src,
@@ -7319,7 +7319,7 @@ static int PARSE_FUNC(TOPOLOGY_RING)(const parser_t *const parser, void *obj,
 	if (tctx->plugin && src_dict_count) {
 		rc = parse_error(
 			parser, args, parent_path, SLURM_ERROR,
-			"Field ring is mutually excusive with fields block, tree and flat");
+			"Field ring is mutually exclusive with fields block, tree and flat");
 	} else if (src_dict_count) {
 		tctx->plugin = xstrdup("topology/ring");
 		rc = PARSE(TOPOLOGY_RING_CONFIG_PTR, tctx->config, src,
