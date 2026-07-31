@@ -6152,7 +6152,8 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 	if (!job_ptr->node_bitmap_pr ||
 	    (bit_ffs(job_ptr->node_bitmap_pr) == -1))
 	{
-		job_ptr->state_reason = WAIT_NO_REASON;
+		if (job_ptr->state_reason == WAIT_PROLOG)
+			job_ptr->state_reason = WAIT_NO_REASON;
 		agent_trigger(999, false, true);
 	}
 	last_job_update = time(NULL);
