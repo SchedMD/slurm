@@ -6902,6 +6902,7 @@ static int PARSE_FUNC(KILL_JOBS_RESP_MSG)(const parser_t *const parser,
 		(void) data_list_for_each(src,
 					  _foreach_parse_kill_jobs_resp_job,
 					  &fargs);
+		rc = fargs.rc;
 	}
 
 	return rc;
