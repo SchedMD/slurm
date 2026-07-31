@@ -12073,7 +12073,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_SLURMD_PARAMETERS)[] = {
 	add_flag_bit_desc(CONF_FLAG_NNSOCK, "numa_node_as_socket", "Use the hwloc NUMA Node to determine main hierarchy object to be used as socket."),
 	add_flag_bit_desc(CONF_FLAG_ECORE, "allow_ecores", "If set, and processors on your nodes have E-Cores, allows them to be used for scheduling and task placement."),
 	add_flag_bit_desc(CONF_FLAG_SHR, "shutdown_on_reboot", "If set, the Slurmd will shut itself down when a reboot request is received."),
-	add_flag_bit_desc(CONF_FLAG_CONTAIN_SPANK, "contain_spank", "If set and a namespace plugin is specified, the spank_user(), spank_task_post_fork() and spank_task_exit() calls will be run inside the job's namespace."),
+	add_flag_bit_desc(CONF_FLAG_CONTAIN_SPANK, "contain_spank", "If set and a namespace plugin is specified, the spank_user(), spank_task_post_fork(), and spank_task_exit() calls will be run inside the job's namespace."),
 };
 
 /* based on cpu_freq_govlist_to_string() and _cpu_freq_govspec_string() */
