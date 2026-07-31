@@ -1001,7 +1001,7 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
 
 	assoc_mgr_lock(&locks);
 	while ((job_ptr = list_next(itr))) {
-		double usage_factor = 1.0;
+		double usage_factor;
 		log_flag(PRIO, "job: %u", job_ptr->job_id);
 
 		/* If end_time_exp is NO_VAL we have already ran the end for
@@ -1016,10 +1016,11 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
 		if (job_ptr->start_time > last_ran)
 			continue;
 
-		/* apply usage factor */
-		if (job_ptr->qos_ptr &&
-		    (job_ptr->qos_ptr->usage_factor >= 0))
-			usage_factor = job_ptr->qos_ptr->usage_factor;
+		/*
+		 * Apply the usage factor the job was booked at, since this
+		 * removes usage that was added by acct_policy_job_begin().
+		 */
+		usage_factor = job_ptr->booked_usage_factor;
 		usage_factor *= (double)(last_ran - job_ptr->start_time);
 
 		for (i=0; i<slurmctld_tres_cnt; i++) {
@@ -1158,10 +1159,10 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 		real_decay *= qos->usage_factor;
 		run_decay  *= qos->usage_factor;
 		real_nodecay *= qos->usage_factor;
-		run_nodecay  *= qos->usage_factor;
-
-		tres_time_delta *= qos->usage_factor;
+		run_nodecay *= qos->usage_factor;
 	}
+
+	tres_time_delta *= job_ptr->booked_usage_factor;
 	if (job_ptr->tres_alloc_cnt) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (!job_ptr->tres_alloc_cnt[i] ||
