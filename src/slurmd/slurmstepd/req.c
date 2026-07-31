@@ -692,6 +692,10 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 	if (request->mode == STEPS_DRAINED_SUB_STEP) {
 		step_record_t *step_ptr =
 			find_step_record(job_step_ptr, &request->step_id);
+		if (step_ptr && (step_ptr->step_id.step_het_comp != NO_VAL)) {
+			rc_msg.return_code = ESLURM_NOT_SUPPORTED;
+			goto unlock_reply;
+		}
 		if (request->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID) {
 			rc_msg.return_code = ESLURM_NOT_SUPPORTED;
 			goto unlock_reply;
