@@ -7997,6 +7997,8 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 	time_t now = time(NULL);
 	time_t start_relative, end_relative;
 	time_t job_end_time_use;
+	bitstr_t *steal_bitmap = NULL;
+	bool overlap_flex = false;
 
 	if (args->reboot)
 		job_end_time_use = args->job_end_time + res2_ptr->boot_time;
@@ -8023,8 +8025,39 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 	 * reservation.
 	 */
 	if ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
-	    !(res2_ptr->flags & RESERVE_FLAG_MAINT))
-		return 0;
+	    !(res2_ptr->flags & RESERVE_FLAG_MAINT)) {
+		/*
+		 * Without FLEX the job cannot leave this reservation's nodes:
+		 * job_test_resv() initialized args->node_bitmap as a copy of
+		 * resv_ptr->node_bitmap, so any res2 nodes present in it are
+		 * shared ones that OVERLAP grants. A reservation holding no
+		 * nodes (ANY_NODES) instead starts from the whole cluster and
+		 * keeps the full OVERLAP grant, same as just below.
+		 */
+		if (!(resv_ptr->flags & RESERVE_FLAG_FLEX))
+			return 0;
+
+		/*
+		 * A reservation without nodes (e.g. ANY_NODES/license-only)
+		 * keeps the full OVERLAP grant: its jobs may use any nodes,
+		 * even those belonging to other reservations. Such a
+		 * reservation may carry either no bitmap at all or an
+		 * allocated but empty one, so test for both.
+		 */
+		if (!resv_ptr->node_bitmap ||
+		    (bit_ffs(resv_ptr->node_bitmap) == -1))
+			return 0;
+
+		/*
+		 * With FLEX, skip only when all of res2's nodes are part of
+		 * this reservation; otherwise fall through and exclude the
+		 * resources not shared with it.
+		 */
+		if (bit_super_set(res2_ptr->node_bitmap, resv_ptr->node_bitmap))
+			return 0;
+
+		overlap_flex = true;
+	}
 
 	if (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 		/*
@@ -8039,13 +8072,26 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 		return 0;
 	}
 
-	if (bit_overlap_any(*args->node_bitmap, res2_ptr->node_bitmap)) {
+	if (overlap_flex) {
+		/*
+		 * Resources reserved by other reservations remain excluded,
+		 * unless the reservation also has the OVERLAP flag and the
+		 * resources are part of both reservations.
+		 */
+		steal_bitmap = bit_copy(res2_ptr->node_bitmap);
+		bit_and_not(steal_bitmap, resv_ptr->node_bitmap);
+	} else {
+		steal_bitmap = res2_ptr->node_bitmap;
+	}
+	if (bit_overlap_any(*args->node_bitmap, steal_bitmap)) {
 		log_flag(RESERVATION, "%s: reservation %s overlaps %s with %u nodes",
 			 __func__, resv_ptr->name, res2_ptr->name,
-			 bit_overlap(*args->node_bitmap, res2_ptr->node_bitmap));
+			 bit_overlap(*args->node_bitmap, steal_bitmap));
 		*args->resv_overlap = true;
-		bit_and_not(*args->node_bitmap, res2_ptr->node_bitmap);
+		bit_and_not(*args->node_bitmap, steal_bitmap);
 	}
+	if (steal_bitmap != res2_ptr->node_bitmap)
+		FREE_NULL_BITMAP(steal_bitmap);
 	return 0;
 }
 
