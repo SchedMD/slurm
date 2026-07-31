@@ -6820,10 +6820,10 @@ static int PARSE_FUNC(KILL_JOBS_MSG_JOBS_ARRAY)(const parser_t *const parser,
 			rc = fargs.rc;
 		}
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
-			      "Unexpected type %s when expecting a list",
-			      data_type_to_string(data_get_type(src)));
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unexpected type %s when expecting a list",
+				 data_type_to_string(data_get_type(src)));
 	}
 
 	return rc;
