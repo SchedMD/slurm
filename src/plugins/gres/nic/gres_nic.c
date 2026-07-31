@@ -101,6 +101,8 @@ static void _set_env(common_gres_env_t *gres_env)
 			gres_env->env_ptr, "OMPI_MCA_btl_openib_if_include",
 			gres_env->local_list);
 		xfree(gres_env->local_list);
+		/* NICs never carry a UUID, but keep the contract symmetric */
+		xfree(gres_env->local_list_uuid);
 	} else {
 		unsetenvp(*gres_env->env_ptr, "OMPI_MCA_btl_openib_if_include");
 	}

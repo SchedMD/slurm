@@ -57,6 +57,14 @@ typedef struct {
 	bool is_job;
 	bool is_task;
 	char *local_list;
+	/*
+	 * Same devices as local_list, but named by UUID rather than by index.
+	 * Only built when GRES_CONF_UUID is set and every listed device has a
+	 * UUID. NULL otherwise, which means the caller must fall back to
+	 * local_list. Kept separate because only some vendor runtimes accept a
+	 * UUID in their visible-devices variable; see gres_common_gpu_set_env().
+	 */
+	char *local_list_uuid;
 	char *prefix;
 	bitstr_t *usable_gres;
 	bool use_dev_num;

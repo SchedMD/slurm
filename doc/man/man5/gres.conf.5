@@ -243,7 +243,13 @@ Set vendor environment variables using UUIDs instead of numeric
 device indices.
 Affects these environment variables: \fICUDA_VISIBLE_DEVICES\fR and
 \fIROCR_VISIBLE_DEVICES\fR.
-Requires the use of \fBAutoDetect\fR so that UUIDs are available.
+\fIZE_AFFINITY_MASK\fR and \fIGPU_DEVICE_ORDINAL\fR are not affected:
+those runtimes only accept a device index or ordinal, so they always get
+numeric indices.
+Requires that UUIDs are available, either from \fBAutoDetect\fR or from the
+\fBUUID\fR option.
+If any device allocated to a job or step has no UUID, all devices in that
+environment variable use numeric indices; UUIDs and indices are not mixed.
 
 For example, instead of "\fICUDA_VISIBLE_DEVICES=0\fR", it would look like:
 "\fICUDA_VISIBLE_DEVICES=GPU-8932f937-d72c-4106-c12f-20bd9faed9f6\fR"
