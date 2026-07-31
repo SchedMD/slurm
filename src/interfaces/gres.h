@@ -295,6 +295,10 @@ typedef struct gres_job_state {
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
 	uint64_t gres_per_job;
+	uint64_t gres_per_job_segment; /* Per-segment portion of gres_per_job,
+					* used as the scheduling target while
+					* selecting nodes for one segment.
+					* 0 when not segmenting. */
 	uint64_t gres_per_node;
 	uint64_t gres_per_socket;
 	uint64_t gres_per_task;
@@ -1017,6 +1021,21 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id);
  * Return TRUE if any gres_per_job constraints to satisfy
  */
 extern bool gres_sched_init(list_t *job_gres_list);
+
+/*
+ * Clear the accumulated GRES counter before selecting nodes for a new segment
+ * IN job_gres_list - job's GRES requirements
+ */
+extern void gres_sched_reset(list_t *job_gres_list);
+
+/*
+ * Set the per-segment GRES scheduling target (gres_per_job / segment_cnt) for
+ * all job-scoped GRES so node selection can be satisfied one segment at a time.
+ * IN job_gres_list - job's GRES requirements
+ * IN segment_cnt - number of segments the job is split into
+ * RET false if any gres_per_job is not evenly divisible by segment_cnt
+ */
+extern bool gres_sched_segment_set(list_t *job_gres_list, int segment_cnt);
 
 /*
  * Log a step's current gres state
