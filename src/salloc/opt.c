@@ -610,15 +610,16 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if ((opt.ntasks_per_core > 0) &&
-	    (getenv("SLURM_NTASKS_PER_CORE") == NULL)) {
-		setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
-			opt.ntasks_per_core);
+	if (opt.ntasks_per_core > 0) {
 		if ((opt.threads_per_core !=  NO_VAL) &&
 		    (opt.threads_per_core < opt.ntasks_per_core)) {
 			error("--ntasks-per-core (%d) can not be bigger than --threads-per-core (%d)",
 			opt.ntasks_per_core, opt.threads_per_core);
 			verified = false;
+		}
+		if (verified && !getenv("SLURM_NTASKS_PER_CORE")) {
+			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
+				opt.ntasks_per_core);
 		}
 	}
 
