@@ -1093,6 +1093,7 @@ test_150_7   Test topology preserved when a partial node update splits the confi
 test_150_8   Test overcommit with cpus-per-task across a topology cluster
 test_150_9   Test bad topology.yaml handling
 test_150_10  Test --contiguous node selection per topology plugin
+test_150_11  Test "--segment" with job-scoped GPU requests on topology/block
 
 test_151_#   Testing Oversubscribe
 ===========================================
