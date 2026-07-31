@@ -290,6 +290,7 @@ static int _select_placements(topology_eval_t *topo_eval, int rem_nodes,
 			bit_and_not(topo_eval->node_map, best.nodes_bitmap);
 			rem_nodes = details_ptr->segment_size;
 			rem_cpus = details_ptr->min_cpus / segment_cnt;
+			gres_sched_reset(job_ptr->gres_list_req);
 		}
 	} while (rem_segment_cnt > 0);
 
@@ -344,6 +345,13 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 		segment_cnt = rem_nodes / details_ptr->segment_size;
 		rem_nodes = details_ptr->segment_size;
 		rem_cpus /= segment_cnt;
+
+		if (!gres_sched_segment_set(job_ptr->gres_list_req,
+					    segment_cnt)) {
+			info("%pJ gres_per_job is not divisible by segment count (%d)",
+			     job_ptr, segment_cnt);
+			return ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		}
 	}
 
 	for (int i = 0; i < ctx->record_count; i++) {
