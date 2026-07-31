@@ -979,6 +979,7 @@ test_130_#   Testing of PriorityType.
 test_130_1   /parameters/slurm/PriorityType/basic/test_priority.py
 test_130_2   multifactor plugin algo test for fairshare=parent
 test_130_3   /parameters/slurm/PriorityType/multifactor/test_priority.py
+test_130_4   Test TRESRunMins usage when a QOS UsageFactor is modified mid-run
 
 test_131_#   Testing of sshare options.
 ========================================
