@@ -339,6 +339,13 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		rem_nodes = segment_size;
 		if (segment_cnt > 1)
 			req_nodes = req_nodes / segment_cnt;
+		if (!gres_sched_segment_set(job_ptr->gres_list_req,
+					    segment_cnt)) {
+			info("%pJ gres_per_job is not divisible by segment count (%d)",
+			     job_ptr, segment_cnt);
+			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			goto fini;
+		}
 	}
 
 	block_level = _get_block_level(rem_nodes, &llblock_level, ctx);
@@ -1109,6 +1116,7 @@ fini:
 
 			FREE_NULL_LIST(best_gres);
 			FREE_NULL_LIST(node_weight_list);
+			gres_sched_reset(job_ptr->gres_list_req);
 			if (nodes_on_llblock)
 				memset(nodes_on_llblock, 0,
 				       llblock_cnt * sizeof(uint32_t));
