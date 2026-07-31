@@ -684,18 +684,14 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 
 	if (!job_has_running_step(job_step_ptr) &&
 	    !job_step_ptr->pending_async_steps) {
-		slurm_mutex_unlock(&stepmgr_mutex);
-		destroy_steps_drained_sub(sub);
 		rc_msg.return_code = ESLURM_STEPS_DRAINED;
-		goto reply;
+		goto unlock_reply;
 	}
 
 	if (job_step_ptr->steps_drained_subs &&
 	    (list_count(job_step_ptr->steps_drained_subs) >= MAX_SUBSCRIBERS)) {
-		slurm_mutex_unlock(&stepmgr_mutex);
-		destroy_steps_drained_sub(sub);
 		rc_msg.return_code = EAGAIN;
-		goto reply;
+		goto unlock_reply;
 	}
 
 	if (!job_step_ptr->steps_drained_subs)
@@ -703,8 +699,11 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 			list_create(destroy_steps_drained_sub);
 
 	list_append(job_step_ptr->steps_drained_subs, sub);
+	sub = NULL;
 
+unlock_reply:
 	slurm_mutex_unlock(&stepmgr_mutex);
+	destroy_steps_drained_sub(sub);
 
 reply:
 	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
