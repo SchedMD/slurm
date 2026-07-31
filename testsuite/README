@@ -1128,6 +1128,7 @@ test_157_#   Testing of JobSubmitPlugins.
 ============================================
 test_157_1   Test job_desc with JobSubmitPlugins=lua
 test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
+test_157_3   Test clearing whitelisted job_desc string fields via job_submit/lua on modify
 
 test_158_#   Testing of Licenses
 ============================================
