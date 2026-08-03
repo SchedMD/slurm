@@ -411,6 +411,8 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_SHORT;
 			else if (xstrcasestr(temp_str, "thread_id"))
 				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
+			else if (xstrcasestr(temp_str, "omit"))
+				slurm_conf.log_fmt = LOG_FMT_OMIT;
 			xfree(temp_str);
 		}
 

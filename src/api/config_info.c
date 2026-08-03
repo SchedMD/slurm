@@ -559,6 +559,8 @@ static char *_logfmtstr(uint16_t log_fmt)
 		logfmtstr = xstrdup("short");
 	else if (log_fmt == LOG_FMT_THREAD_ID)
 		logfmtstr = xstrdup("thread_id");
+	else if (log_fmt == LOG_FMT_OMIT)
+		logfmtstr = xstrdup("omit");
 
 	return logfmtstr;
 }
