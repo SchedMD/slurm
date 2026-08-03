@@ -134,11 +134,22 @@ def setup_reservations():
 
 @pytest.fixture
 def setup_wckeys():
-    atf.run_command(
+    result = atf.run_command(
         f"sacctmgr -i add user {user_name} set wckey={wckey}",
         user=atf.properties["slurm-user"],
-        fatal=True,
     )
+    if result["exit_code"] != 0:
+        known_xfail = (
+            "Ticket 20771: Setting and clearing default wckeys fixed in 25.05+"
+        )
+        if "Nothing added" in result["stdout"] + result["stderr"] and min(
+            atf.get_version("sbin/slurmdbd"),
+            atf.get_version("sbin/slurmctld"),
+        ) < (25, 5):
+            pytest.xfail(known_xfail)
+        pytest.fail(
+            f"Unable to add wckey to user: {result['stdout']}{result['stderr']}"
+        )
 
     yield
 
@@ -449,12 +460,6 @@ def test_filter_hetjobs(
     match_job_state,
     mismatch_job_state,
 ):
-    if atf.get_version("sbin/slurmdbd") < (25, 5):
-        if fixture == "setup_wckeys":
-            pytest.xfail(
-                "Ticket 20771: Setting/clearing default wckeys at submit time was fixed in 25.05"
-            )
-
     # Custom fixture may be necessary
     if fixture is not None:
         request.getfixturevalue(fixture)
