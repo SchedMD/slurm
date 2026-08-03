@@ -38,10 +38,14 @@ def setup():
     atf.require_config_parameter("MinRAMSpace", 30, source="cgroup")
     atf.require_config_parameter("CgroupPlugin", "autodetect", source="cgroup")
 
-    atf.require_nodes(2, [("CPUs", 2), ("RealMemory", job_memory_mib)])
+    atf.require_nodes(3, [("CPUs", 3), ("RealMemory", job_memory_mib)])
     atf.require_slurm_running()
 
 
+# The first task is a return 0 and we do the OOM on the one with ID 1 as we want
+# to make sure that we check what happens on a regular task, as the first one,
+# as well as the last one, thus the sleep 5 on the else, tends to have special
+# treatment.
 @pytest.fixture(scope="module")
 def step_script(use_memory_program):
     path = Path("step.sh").absolute()
@@ -49,6 +53,9 @@ def step_script(use_memory_program):
         path,
         f"""
 if [ "$SLURM_PROCID" -eq 0 ]; then
+    exit 0
+elif [ "$SLURM_PROCID" -eq 1 ]; then
+    sleep 1
     {use_memory_program} {oom_allocation_mib} 1
 else
     sleep 5
@@ -64,7 +71,7 @@ fi
     "num_nodes",
     [
         pytest.param(1, id="single-node"),
-        pytest.param(2, id="multi-node"),
+        pytest.param(3, id="multi-node"),
     ],
 )
 @pytest.mark.parametrize(
@@ -77,7 +84,7 @@ fi
 def test_oom_kill_step(num_nodes, oom_kill_step, step_script):
     """Test that sbatch's --oom-kill-step flag controls OOM step cleanup."""
 
-    ntasks_per_node = 2 if num_nodes == 1 else 1
+    ntasks_per_node = 3 if num_nodes == 1 else 1
     output_file = f"oom_kill_{num_nodes}_{oom_kill_step}.out"
     batch_script = f"oom_kill_{num_nodes}_{oom_kill_step}.sh"
     atf.make_bash_script(
@@ -85,7 +92,7 @@ def test_oom_kill_step(num_nodes, oom_kill_step, step_script):
         f"""
 #SBATCH --output={output_file}
 #SBATCH --nodes={num_nodes}
-#SBATCH --ntasks=2
+#SBATCH --ntasks=3
 #SBATCH --ntasks-per-node={ntasks_per_node}
 #SBATCH --mem={job_memory_mib}M
 
