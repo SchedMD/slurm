@@ -792,7 +792,16 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 			}
 		}
 	} else {
-		gres_cnt = gres_js->gres_per_node;
+		/*
+		 * Use the per-node count derived above (stored in
+		 * gres_cnt_node_alloc), not gres_per_node: job-level requests
+		 * (--gpus, --gpus-per-*) leave gres_per_node == 0 and carry the
+		 * count in gres_cnt_node_select. Using gres_per_node here would
+		 * allocate 0 of a typed GRES on a node without device topology
+		 * (count-only), leaving a 0-count entry that neither binds on
+		 * registration nor satisfies step requests.
+		 */
+		gres_cnt = gres_js->gres_cnt_node_alloc[node_offset];
 		for (j = 0; j < gres_ns->type_cnt; j++) {
 			int64_t k;
 			if (gres_js->type_name &&
