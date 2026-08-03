@@ -63,7 +63,11 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			       list_t **rollup_stats_list_in);
 
 /*
- * Set last_ran_table to event_time if it happened before the last rollup.
+ * If event_time happened before the last rollup, rewind last_ran_table to it.
+ *
+ * The timestamps are only ever moved backwards, so a timestamp that is
+ * already older than event_time is left alone. Returns true if a reroll is
+ * needed, which does not necessarily mean any timestamp was changed.
  */
 extern bool trigger_reroll(mysql_conn_t *mysql_conn, time_t event_time);
 
