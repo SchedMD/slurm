@@ -60,8 +60,15 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 	debug("Need to reroll usage from %s in cluster %s because of runaway job(s)",
 	      slurm_ctime2(&month_start), mysql_conn->cluster_name);
 
-	query = xstrdup_printf("UPDATE \"%s_%s\" SET hourly_rollup = %ld, "
-			       "daily_rollup = %ld, monthly_rollup = %ld;",
+	/*
+	 * Only move the rollup timestamps backwards. A previous rerollup may
+	 * not have caught up yet, leaving them older than month_start, and
+	 * setting them forward would skip the usage it never rebuilt.
+	 */
+	query = xstrdup_printf("UPDATE \"%s_%s\" SET "
+			       "hourly_rollup = LEAST(hourly_rollup, %ld), "
+			       "daily_rollup = LEAST(daily_rollup, %ld), "
+			       "monthly_rollup = LEAST(monthly_rollup, %ld);",
 			       mysql_conn->cluster_name, last_ran_table,
 			       month_start, month_start, month_start);
 
