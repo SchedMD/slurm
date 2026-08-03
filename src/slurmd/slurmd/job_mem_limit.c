@@ -117,7 +117,8 @@ static void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 
 	memset(&kill_req, 0, sizeof(kill_req));
-	memcpy(&kill_req.step_id, &notify_req, sizeof(kill_req.step_id));
+	memcpy(&kill_req.step_id, &notify_req.step_id,
+	       sizeof(kill_req.step_id));
 	kill_req.signal = SIGKILL;
 	kill_req.flags = KILL_OOM;
 	msg.msg_type = REQUEST_CANCEL_JOB_STEP;
