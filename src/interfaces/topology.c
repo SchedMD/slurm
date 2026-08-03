@@ -435,13 +435,14 @@ extern int topology_g_fini(void)
 	slurm_mutex_lock(&g_context_lock);
 	_free_tctx_array();
 	for (int i = 0; i < g_context_num; i++) {
+		char *type = xstrdup(g_context[i]->type);
 		int rc2 = plugin_context_destroy(g_context[i]);
 		if (rc2) {
 			debug("%s: %s: %s",
-			      __func__, g_context[i]->type,
-			      slurm_strerror(rc2));
+			      __func__, type, slurm_strerror(rc2));
 			rc = SLURM_ERROR;
 		}
+		xfree(type);
 	}
 
 	topoinfo_only = false;
