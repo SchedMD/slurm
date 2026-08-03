@@ -168,10 +168,10 @@ to use the select/linear plugin.</p>
 $ scontrol create reservation StartTime=now Duration=60 \
   NodeCnt=1 CoreCnt=2 User=alan
 
-# Create a reservation for user brenda with two cores on
-# node tux8 and 4 cores on node tux9
+# Create a reservation for user brenda with four cores total
+# across nodes tux8 and tux9
 $ scontrol create reservation StartTime=now Duration=60 \
-  Nodes=tux8,tux9 CoreCnt=2,4 User=brenda
+  Nodes=tux8,tux9 CoreCnt=4 User=brenda
 </pre>
 
 <p>Reservations can not only be created for the use of specific accounts and/or
@@ -184,13 +184,13 @@ account <i>foo</i>.</p>
 <pre>
 $ scontrol create reservation account=foo \
    user=-alan partition=pdebug \
-   starttime=noon duration=60 nodecnt=2k,2k
+   starttime=noon duration=60 nodecnt=10
 Reservation created: alan_9
 
 $ scontrol show res
 ReservationName=alan_9 StartTime=2011-12-05T13:00:00
    EndTime=2011-12-05T14:00:00 Duration=60
-   Nodes=bgp[000x011,210x311] NodeCnt=4096
+   Nodes=sun[000-003,007,010-013,017] NodeCnt=10
    Features=(null) PartitionName=pdebug
    Flags= Licenses=(null) BurstBuffers=(null)
    Users=-alan Accounts=foo
