@@ -387,6 +387,12 @@ def test_specification(openapi_spec):
         patch = jsonpatch.JsonPatch([{"op": "add", "path": path, "value": True}])
         patch.apply(openapi_spec, in_place=True)
 
+    if atf.get_version("sbin/slurmrestd") >= (26, 11):
+        # Ticket 25180: In 26.11 we removed gres_drained
+        path = base_path + "node/properties/gres_drained/deprecated"
+        patch = jsonpatch.JsonPatch([{"op": "add", "path": path, "value": True}])
+        patch.apply(openapi_spec, in_place=True)
+
     if atf.get_version("sbin/slurmrestd") >= (27, 5):
         # This is expected to be deprecated in 27.05+
         patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)

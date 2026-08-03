@@ -2561,7 +2561,6 @@ typedef struct node_info {
 				 * Same as "features" if NULL */
 	char *gres;		/* list of a node's generic resources */
 	char *gres_chunks; /* GRES device chunk configuration */
-	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
 	char *instance_id;	/* cloud instance id */
 	char *instance_type;	/* cloud instance type */

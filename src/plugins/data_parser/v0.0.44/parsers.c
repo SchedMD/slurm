@@ -8133,7 +8133,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(CSV_STRING, features_act, "active_features", "Currently active features"),
 	add_parse(STRING, gpu_spec, "gpu_spec", "CPU cores reserved for jobs that also use a GPU"),
 	add_parse(STRING, gres, "gres", "Generic resources"),
-	add_parse(STRING, gres_drain, "gres_drained", "Drained generic resources"),
+	add_removed(STRING, "gres_drained", "Drained generic resources", SLURM_26_11_PROTOCOL_VERSION),
 	add_parse(STRING, gres_used, "gres_used", "Generic resources currently in use"),
 	add_parse(STRING, instance_id, "instance_id", "Cloud instance ID"),
 	add_parse(STRING, instance_type, "instance_type", "Cloud instance type"),

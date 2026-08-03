@@ -9,6 +9,7 @@ import pwd
 import random
 import time
 
+import jsonpatch
 import pytest
 import requests
 import yaml
@@ -385,6 +386,14 @@ def test_loaded_versions():
 )
 @pytest.mark.parametrize("openapi_spec", ["45"], indirect=True)
 def test_specification(openapi_spec):
+    base_path = "/components/schemas/v0.0.45_"
+
+    if atf.get_version("sbin/slurmrestd") >= (26, 11):
+        # Ticket 25180: In 26.11 we removed gres_drained
+        path = base_path + "node/properties/gres_drained/deprecated"
+        patch = jsonpatch.JsonPatch([{"op": "add", "path": path, "value": True}])
+        patch.apply(openapi_spec, in_place=True)
+
     if atf.get_version("sbin/slurmrestd") >= (27, 11):
         # This is expected to be deprecated in 27.11+
         patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)

@@ -250,12 +250,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line (optional) ******/
-	if (node_ptr->gres_drain) {
-		xstrfmtcat(out, "GresDrain=%s", node_ptr->gres_drain);
-		xstrcat(out, line_end);
-	}
-
-	/****** Line (optional) ******/
 	if (node_ptr->gres_used) {
 		xstrfmtcat(out, "GresUsed=%s", node_ptr->gres_used);
 		xstrcat(out, line_end);
