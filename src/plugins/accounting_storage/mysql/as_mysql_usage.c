@@ -1071,12 +1071,19 @@ extern bool trigger_reroll(mysql_conn_t *mysql_conn, time_t event_time)
 		global_last_rollup = event_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("update \"%s_%s\" set "
-				       "hourly_rollup=%ld, "
-				       "daily_rollup=%ld, monthly_rollup=%ld",
-				       mysql_conn->cluster_name,
-				       last_ran_table, event_time,
-				       event_time, event_time);
+		/*
+		 * Only move the rollup timestamps backwards. They can already
+		 * be older than event_time, since global_last_rollup doesn't
+		 * track rewinds done elsewhere, and setting them forward would
+		 * skip the usage that was never rolled up.
+		 */
+		query = xstrdup_printf(
+			"update \"%s_%s\" set "
+			"hourly_rollup=LEAST(hourly_rollup,%ld), "
+			"daily_rollup=LEAST(daily_rollup,%ld), "
+			"monthly_rollup=LEAST(monthly_rollup,%ld)",
+			mysql_conn->cluster_name, last_ran_table, event_time,
+			event_time, event_time);
 		DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
 		(void) mysql_db_query(mysql_conn, query);
 		xfree(query);
