@@ -120,6 +120,12 @@ extern list_t *as_mysql_total_cluster_list;
 extern pthread_rwlock_t as_mysql_cluster_list_lock;
 
 /*
+ * Return SLURM_ERROR if cluster_name contains characters unsafe to
+ * interpolate into SQL (quotes, backslash, backtick); NULL is accepted.
+ */
+extern int as_mysql_validate_cluster_name(char *cluster_name);
+
+/*
  * Return SLURM_ERROR if any name in cluster_list contains characters unsafe
  * to interpolate into SQL (quotes, backslash, backtick); a NULL or empty
  * list is accepted.
