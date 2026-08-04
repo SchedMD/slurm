@@ -131,6 +131,14 @@ time_t last_job_update = 0;
 bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
 
+/*
+ * Cached het leader stepmgr host, used only by _remote_get_het_step_id().
+ * Seeded from the launch cred at extern step init (best effort); otherwise
+ * populated on first call via the ctld reroute response. Access is
+ * serialized by the caller's stepmgr_mutex.
+ */
+static char *stepmgr_leader_nodename = NULL;
+
 static int _foreach_ret_data_info(void *x, void *arg)
 {
 	int rc;
@@ -462,9 +470,11 @@ static void _resolve_add_addr(char *node_name)
  * _remote_get_het_step_id - RPC to the het leader's REQUEST_HET_STEP_ID.
  *
  * First call goes to slurmctld which replies with RESPONSE_SLURM_REROUTE_MSG
- * carrying the leader's batch_host. The nodename is cached in a function-static
- * slot (serialized by the caller's stepmgr_mutex) and reused on subsequent
- * calls that go directly to the leader stepd via slurmd.
+ * carrying the leader's batch_host. The nodename is cached in
+ * stepmgr_leader_nodename (serialized by the caller's stepmgr_mutex) and
+ * reused on subsequent calls that go directly to the leader stepd via slurmd.
+ * The cache may also be pre-seeded from the launch cred at extern step init
+ * (see _init_stepmgr()).
  *
  * NOTE: stepmgr_mutex is held by the caller across the RPCs below, which
  * stalls other stepmgr RPCs on this stepd by up to MessageTimeout per hop.
@@ -474,7 +484,6 @@ static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 	int rc = SLURM_SUCCESS;
 	het_step_id_msg_t req = { .step_id = SLURM_STEP_ID_INITIALIZER };
 	slurm_msg_t req_msg, resp_msg;
-	static char *stepmgr_nodename = NULL;
 
 	req.step_id.job_id = het_job_id;
 	req.step_id.step_id = NO_VAL;
@@ -486,7 +495,7 @@ static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 
 	slurm_msg_t_init(&resp_msg);
 
-	if (!stepmgr_nodename) {
+	if (!stepmgr_leader_nodename) {
 		if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) <
 		    0) {
 			rc = SLURM_ERROR;
@@ -494,14 +503,14 @@ static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 		}
 		if (resp_msg.msg_type == RESPONSE_SLURM_REROUTE_MSG) {
 			reroute_msg_t *rr_msg = resp_msg.data;
-			stepmgr_nodename = rr_msg->stepmgr;
+			stepmgr_leader_nodename = rr_msg->stepmgr;
 			rr_msg->stepmgr = NULL;
 
-			if (!stepmgr_nodename) {
+			if (!stepmgr_leader_nodename) {
 				rc = SLURM_ERROR;
 				goto done;
 			}
-			_resolve_add_addr(stepmgr_nodename);
+			_resolve_add_addr(stepmgr_leader_nodename);
 		} else if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
 			rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 			if (rc == SLURM_SUCCESS)
@@ -519,11 +528,11 @@ static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
 
 	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
-	if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
+	if (slurm_conf_get_addr(stepmgr_leader_nodename, &req_msg.address,
 				req_msg.flags)) {
 		error("%s: cannot get leader stepmgr %s", __func__,
-		      stepmgr_nodename);
-		xfree(stepmgr_nodename);
+		      stepmgr_leader_nodename);
+		xfree(stepmgr_leader_nodename);
 		rc = SLURM_ERROR;
 		goto done;
 	}
@@ -1409,6 +1418,22 @@ static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
 		memcpy(job_step_ptr->node_addrs, node_addrs,
 		       job_step_ptr->node_cnt * sizeof(slurm_addr_t));
 	}
+
+	/*
+	 * Best-effort pre-seed of stepmgr_leader_nodename so
+	 * _remote_get_het_step_id() can skip the ctld reroute on the first
+	 * call. NULL for leader stepmgrs and when the leader had no
+	 * batch_host at cred create time.
+	 */
+	if (task_msg->cred) {
+		slurm_cred_arg_t *cred_arg =
+			slurm_cred_get_args(task_msg->cred);
+		stepmgr_leader_nodename =
+			xstrdup(cred_arg->job_het_stepmgr_host);
+		slurm_cred_unlock_args(task_msg->cred);
+		if (stepmgr_leader_nodename)
+			_resolve_add_addr(stepmgr_leader_nodename);
+	}
 }
 
 /*
@@ -1706,6 +1731,8 @@ static void _step_cleanup(slurm_msg_t *msg, int rc)
 		if (!step->batch)
 			stepd_step_rec_destroy();
 	}
+
+	xfree(stepmgr_leader_nodename);
 
 	/*
 	 * The message cannot be freed until the jobstep is complete
