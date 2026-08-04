@@ -1350,6 +1350,11 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	}
 
 	fprintf(stdout, "JobId=%u ", job_ptr->step_id.job_id);
+	if (job_ptr->step_id.sluid) {
+		char sluid[SLUID_STR_BYTES];
+		print_sluid(job_ptr->step_id.sluid, sluid, sizeof(sluid));
+		fprintf(stdout, "SLUID=%s ", sluid);
+	}
 
 	slurm_make_time_str(&job_ptr->end_time, time_str, sizeof(time_str));
 	fprintf(stdout, "EndTime=%s ", time_str);
