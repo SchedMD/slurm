@@ -3380,6 +3380,21 @@ extern void launch_prolog(job_record_t *job_ptr)
 	setup_cred_arg(&cred_arg, job_ptr);
 	cred_arg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	cred_arg.step_id.step_id = SLURM_EXTERN_CONT;
+
+	if ((job_ptr->bit_flags & STEPMGR_ENABLED) && job_ptr->het_job_id &&
+	    (job_ptr->job_id != job_ptr->het_job_id)) {
+		/*
+		 * Best-effort pre-seed: give this follower stepd the het
+		 * leader's stepmgr host so it can skip the ctld reroute on
+		 * the first REQUEST_HET_STEP_ID. If the leader has not been
+		 * picked yet, batch_host is NULL and the follower falls back
+		 * to the reroute path.
+		 */
+		job_record_t *het_leader = find_job_record(job_ptr->het_job_id);
+		if (het_leader)
+			cred_arg.job_het_stepmgr_host = het_leader->batch_host;
+	}
+
 	if (job_resrcs_ptr->memory_allocated) {
 		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
 					    job_resrcs_ptr->nhosts,
