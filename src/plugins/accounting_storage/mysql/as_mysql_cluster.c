@@ -312,6 +312,12 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_remove(itr);
 			continue;
 		}
+		if (as_mysql_validate_cluster_name(object->name) !=
+		    SLURM_SUCCESS) {
+			rc = ESLURM_INVALID_CLUSTER_NAME;
+			list_delete_item(itr);
+			continue;
+		}
 		if ((object->flags != NO_VAL) &&
 		    (object->flags & CLUSTER_FLAG_EXT))
 			external_cluster = true;

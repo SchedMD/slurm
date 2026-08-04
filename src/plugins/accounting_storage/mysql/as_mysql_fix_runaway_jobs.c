@@ -137,6 +137,12 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		goto bail;
 	}
 
+	if (as_mysql_validate_cluster_name(first_job->cluster) !=
+	    SLURM_SUCCESS) {
+		rc = ESLURM_INVALID_CLUSTER_NAME;
+		goto bail;
+	}
+
 	/*
 	 * Temporarily use mysql_conn->cluster_name for potentially non local
 	 * cluster name, change back before return
