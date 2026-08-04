@@ -1752,11 +1752,11 @@ void spank_clear_remote_options_env (char **env)
 		if (xstrncmp (p, SPANK_OPTION_ENV_PREFIX, len) == 0) {
 			char *end = strchr (p+len, '=');
 			if (end) {
-				char name[1024];
-				memcpy (name, *ep, end - *ep);
-				name [end - *ep] = '\0';
+				char *name = xstrndup(*ep, end - *ep);
+
 				debug("unsetenv (%s)", name);
 				unsetenvp (env, name);
+				xfree(name);
 				continue;
 			}
 		}
