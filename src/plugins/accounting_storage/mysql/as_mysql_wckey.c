@@ -746,6 +746,13 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		if (as_mysql_validate_cluster_name(object->cluster) !=
+		    SLURM_SUCCESS) {
+			rc = ESLURM_INVALID_CLUSTER_NAME;
+			list_delete_item(itr);
+			continue;
+		}
+
 		if (!added_user_list)
 			added_user_list = list_create(NULL);
 		if (!list_find_first(added_user_list,
