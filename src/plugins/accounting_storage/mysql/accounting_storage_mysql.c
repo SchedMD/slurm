@@ -1150,6 +1150,18 @@ static int _find_unsafe_cluster(void *x, void *key)
 	return (cluster_name && strpbrk(cluster_name, "'\"\\`"));
 }
 
+extern int as_mysql_validate_cluster_name(char *cluster_name)
+{
+	if (_find_unsafe_cluster(cluster_name, NULL)) {
+		error("%s: rejecting unsafe cluster name '%s'",
+		      __func__, cluster_name);
+		errno = ESLURM_INVALID_CLUSTER_NAME;
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int as_mysql_validate_cluster_list(list_t *cluster_list)
 {
 	char *cluster_name;
