@@ -1997,7 +1997,7 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 	char *hostname = NULL;
 	bool pid_match;
 	int found = 0;
-	unsigned char address[sizeof(struct in6_addr)];
+	char address[INET6_ADDRSTRLEN];
 	char *address_str = NULL;
 	int af = AF_UNSPEC;
 	slurm_addr_t addr;
@@ -2028,8 +2028,8 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 		nodename_r = xstrdup(nodename);
 		hostname = xstrdup(nodename);
 
-		slurm_get_ip_str(&addr, (char *)address, INET6_ADDRSTRLEN);
-		tmp_str = xstrdup((char *)address);
+		slurm_get_ip_str(&addr, address, sizeof(address));
+		tmp_str = xstrdup(address);
 		inet_pton(af, tmp_str, &address);
 		xfree(tmp_str);
 	} else if (nodename &&
