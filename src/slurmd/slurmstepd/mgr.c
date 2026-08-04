@@ -3153,9 +3153,9 @@ static void _set_prio_process(void)
 		error("Couldn't find %s in environment", env_name);
 		prio_process = 0;
 	} else {
+		prio_process = atoi(env_val);
 		/* Users shouldn't get this in their environment */
 		unsetenvp(step->env, env_name);
-		prio_process = atoi(env_val);
 	}
 
 	if (slurm_conf.propagate_prio_process == PROP_PRIO_NICER) {
