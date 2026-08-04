@@ -42,6 +42,10 @@ def test_overcommit_gres_per_task():
     )
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 5),
+    reason="Ticket 21764: Issue with cpus_per_task not set from tres_per_task. Fixed in 25.05.",
+)
 def test_overcommit_mixed_tres_per_task():
     """Verify mixed cpu+gres tres-per-task keeps overcommit placement disabled.
 
