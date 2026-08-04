@@ -1320,6 +1320,8 @@ static int _setup_x11_parent(int to_parent[2], pid_t pid, char **tmp)
 	uint32_t len = 0;
 	int status = 0;
 
+	fd_close(&to_parent[1]);
+
 	safe_read(to_parent[0], &len, sizeof(len));
 
 	if (len) {
