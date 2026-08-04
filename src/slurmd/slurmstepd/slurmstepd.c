@@ -1375,6 +1375,43 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
 }
 
 /*
+ * Take the stepmgr role for this launch when this node hosts the job's
+ * stepmgr (i.e. it is the job's batch_host). Extracts the job_record and
+ * per-node data the stepmgr needs from the launch message and cred.
+ * No-op on non-stepmgr nodes.
+ */
+static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
+{
+	slurm_addr_t *node_addrs;
+
+	if (!task_msg->job_ptr ||
+	    xstrcmp(conf->node_name, task_msg->job_ptr->batch_host))
+		return;
+
+	/* only allow one stepd to be stepmgr. */
+	slurm_daemon |= WITH_STEPMGR;
+	switch_g_stepmgr_init();
+	job_step_ptr = task_msg->job_ptr;
+	job_step_ptr->part_ptr = task_msg->part_ptr;
+	job_node_array = task_msg->job_node_array;
+
+	/*
+	 * job_record doesn't pack its node_addrs array, so get it from the
+	 * cred.
+	 */
+	if (task_msg->cred &&
+	    (node_addrs = slurm_cred_get(task_msg->cred,
+					 CRED_DATA_JOB_NODE_ADDRS))) {
+		add_remote_nodes_to_conf_tbls(job_step_ptr->nodes, node_addrs);
+
+		job_step_ptr->node_addrs =
+			xcalloc(job_step_ptr->node_cnt, sizeof(slurm_addr_t));
+		memcpy(job_step_ptr->node_addrs, node_addrs,
+		       job_step_ptr->node_cnt * sizeof(slurm_addr_t));
+	}
+}
+
+/*
  *  This function handles the initialization information from slurmd
  *  sent by _send_slurmstepd_init() in src/slurmd/slurmd/req.c.
  */
@@ -1503,36 +1540,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		step_id = task_msg->step_id;
 		runtime = task_msg->runtime;
 
-		if (task_msg->job_ptr &&
-		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
-			slurm_addr_t *node_addrs;
-
-			/* only allow one stepd to be stepmgr. */
-			slurm_daemon |= WITH_STEPMGR;
-			switch_g_stepmgr_init();
-			job_step_ptr = task_msg->job_ptr;
-			job_step_ptr->part_ptr = task_msg->part_ptr;
-			job_node_array = task_msg->job_node_array;
-
-			/*
-			 * job_record doesn't pack its node_addrs array, so get
-			 * it from the cred.
-			 */
-			if (task_msg->cred &&
-			    (node_addrs = slurm_cred_get(
-				     task_msg->cred,
-				     CRED_DATA_JOB_NODE_ADDRS))) {
-				add_remote_nodes_to_conf_tbls(
-					job_step_ptr->nodes, node_addrs);
-
-				job_step_ptr->node_addrs =
-					xcalloc(job_step_ptr->node_cnt,
-						sizeof(slurm_addr_t));
-				memcpy(job_step_ptr->node_addrs, node_addrs,
-				       job_step_ptr->node_cnt *
-				       sizeof(slurm_addr_t));
-			}
-		}
+		_init_stepmgr(task_msg);
 
 		break;
 	}
