@@ -7334,7 +7334,6 @@ static int _find_invalid_job_gres_on_node(void *x, void *arg)
 		node_gres_cnt = (int) gres_ns->gres_cnt_config;
 		if (gres_js->type_id) {
 			bool found_type = false;
-			gres_node_state_t *gres_ns = gres_state_node->gres_data;
 
 			for (int i = 0; i < gres_ns->type_cnt; i++) {
 				if (gres_ns->type_id[i] == gres_js->type_id) {
