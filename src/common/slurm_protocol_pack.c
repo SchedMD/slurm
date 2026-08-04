@@ -12281,6 +12281,8 @@ static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
 	msg = xmalloc(sizeof(forward_data_msg_t));
 	*msg_ptr = msg;
 	safe_unpackstr(&msg->address, buffer);
+	if (!msg->address)
+		goto unpack_error;
 	safe_unpack32(&msg->len, buffer);
 	safe_unpackmem_xmalloc(&msg->data, &temp32, buffer);
 	if (msg->len != temp32)
