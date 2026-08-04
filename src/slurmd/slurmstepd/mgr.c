@@ -1200,7 +1200,7 @@ static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *ignored)
 			    NULL);
 }
 
-static int _set_xauthority(void)
+static int _set_xauthority(bool *file_created)
 {
 	struct priv_state sprivs = { 0 };
 	int rc = SLURM_SUCCESS;
@@ -1221,6 +1221,8 @@ static int _set_xauthority(void)
 			goto endit;
 		}
 		close(fd);
+		if (file_created)
+			*file_created = true;
 	}
 
 	if (x11_set_xauth(step->x11_xauthority, step->x11_magic_cookie,
@@ -1292,6 +1294,8 @@ static int _run_prolog_epilog(bool is_epilog)
 static void _setup_x11_child(int to_parent[2])
 {
 	uint32_t len = 0;
+	int rc = SLURM_SUCCESS;
+	bool file_created = false;
 
 	if (namespace_g_join(&step->step_id, step->uid, false) !=
 	    SLURM_SUCCESS) {
@@ -1299,14 +1303,23 @@ static void _setup_x11_child(int to_parent[2])
 		_exit(1);
 	}
 
-	if (_set_xauthority() != SLURM_SUCCESS) {
-		safe_write(to_parent[1], &len, sizeof(len));
-		_exit(1);
-	}
+	rc = _set_xauthority(&file_created);
 
-	len = strlen(step->x11_xauthority);
+	/*
+	 * Send the path once the file exists, even when _set_xauthority()
+	 * failed. Only this process sees the name that mkstemp() expanded,
+	 * so without this the parent cannot unlink the file during the X11
+	 * shutdown. Send a zero length when there is no file to remove.
+	 */
+	if (file_created || (rc == SLURM_SUCCESS))
+		len = strlen(step->x11_xauthority);
+
 	safe_write(to_parent[1], &len, sizeof(len));
-	safe_write(to_parent[1], step->x11_xauthority, len);
+	if (len)
+		safe_write(to_parent[1], step->x11_xauthority, len);
+
+	if (rc != SLURM_SUCCESS)
+		_exit(1);
 
 	_exit(0);
 
@@ -1319,6 +1332,7 @@ static int _setup_x11_parent(int to_parent[2], pid_t pid, char **tmp)
 {
 	uint32_t len = 0;
 	int status = 0;
+	pid_t wpid = -1;
 
 	fd_close(&to_parent[1]);
 
@@ -1329,9 +1343,23 @@ static int _setup_x11_parent(int to_parent[2], pid_t pid, char **tmp)
 		safe_read(to_parent[0], *tmp, len);
 	}
 
-	if ((waitpid(pid, &status, 0) != pid) || WEXITSTATUS(status)) {
+	do {
+		errno = 0;
+
+		if ((wpid = waitpid(pid, &status, 0)) > 0)
+			break;
+
+		if (errno != EINTR) {
+			error("%s: waitpid() failed: %m", __func__);
+			return SLURM_ERROR;
+		}
+
+		debug2("%s: waitpid() interrupted", __func__);
+	} while (true);
+
+	/* Do not free *tmp on failure; X11 shutdown removes the file. */
+	if (!WIFEXITED(status) || WEXITSTATUS(status)) {
 		error("%s: Xauthority setup failed", __func__);
-		xfree(*tmp);
 		return SLURM_ERROR;
 	}
 
@@ -1340,8 +1368,13 @@ static int _setup_x11_parent(int to_parent[2], pid_t pid, char **tmp)
 rwfail:
 	error("%s: failed to read from child: %m", __func__);
 	xfree(*tmp);
-	waitpid(pid, &status, 0);
-	debug2("%s: status from child %d", __func__, status);
+	while (((wpid = waitpid(pid, &status, 0)) < 0) && (errno == EINTR))
+		debug2("%s: waitpid() interrupted", __func__);
+
+	if (wpid != pid)
+		error("%s: waitpid() failed: %m", __func__);
+	else
+		debug2("%s: status from child %d", __func__, status);
 
 	return SLURM_ERROR;
 }
@@ -1432,7 +1465,7 @@ static int _spawn_job_container(void)
 			fd_close(&to_parent[0]);
 			fd_close(&to_parent[1]);
 		} else {
-			rc = _set_xauthority();
+			rc = _set_xauthority(NULL);
 		}
 x11_fail:
 		if (rc != SLURM_SUCCESS) {
