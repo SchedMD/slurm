@@ -277,6 +277,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_extra);
 	xfree(arg->job_licenses);
 	xfree(arg->job_hostlist);
+	xfree(arg->job_het_stepmgr_host);
 	xfree(arg->sock_core_rep_count);
 	xfree(arg->sockets_per_node);
 	xfree(arg->job_mem_alloc);
