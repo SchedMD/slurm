@@ -4684,8 +4684,9 @@ extern void re_kill_job(job_record_t *job_ptr)
 	xfree(host_str);
 	last_job_id = job_ptr->job_id;
 	hostlist_destroy(kill_hostlist);
+	/* The Epilog needs the full allocation, not just the resend subset. */
 	agent_args->msg_args =
-		create_kill_job_msg(job_ptr, NULL,
+		create_kill_job_msg(job_ptr, job_ptr->nodes,
 				    agent_args->protocol_version);
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);

@@ -16439,6 +16439,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
+	const char *nodes = NULL;
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
@@ -16447,7 +16448,12 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Killing %pJ on node %s", job_ptr, node_ptr->name);
 
-	kill_req = create_kill_job_msg(job_ptr, node_ptr->name,
+	/* Use the node's name if the job no longer holds it. */
+	if (nodelist_find(job_ptr->nodes, node_ptr->name) >= 0)
+		nodes = job_ptr->nodes;
+	else
+		nodes = node_ptr->name;
+	kill_req = create_kill_job_msg(job_ptr, nodes,
 				       agent_info->protocol_version);
 
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
