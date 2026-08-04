@@ -1342,7 +1342,7 @@ static int _setup_x11_parent(int to_parent[2], pid_t pid, char **tmp)
 	safe_read(to_parent[0], &len, sizeof(len));
 
 	if (len) {
-		*tmp = xcalloc(len, sizeof(char));
+		*tmp = xcalloc(len + 1, sizeof(**tmp));
 		safe_read(to_parent[0], *tmp, len);
 	}
 
