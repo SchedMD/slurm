@@ -15889,7 +15889,8 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 extern void job_mem_resize_complete(job_record_t *job_ptr)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
 	job_pre_resize_acctg(job_ptr);
 	select_g_job_mem_reduce(job_ptr);

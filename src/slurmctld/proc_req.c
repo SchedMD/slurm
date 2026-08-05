@@ -2141,7 +2141,8 @@ static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
 	response_update_job_mem_msg_t *resp_msg = msg->data;
 	slurmctld_lock_t job_write_lock = {
 		.job = WRITE_LOCK,
-		.node = READ_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
 	};
 	job_record_t *job_ptr;
 	int rc = SLURM_SUCCESS;
