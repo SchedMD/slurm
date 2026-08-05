@@ -107,6 +107,8 @@ static list_t *_get_other_user_names_to_mod(mysql_conn_t *mysql_conn,
 					    uint32_t uid,
 					    slurmdb_user_cond_t *user_cond)
 {
+	bool norm_user = !(slurmdbd_conf->persist_conn_rc_flags &
+			   PERSIST_FLAG_P_USER_CASE);
 	list_t *tmp_list = NULL;
 	list_t *ret_list = NULL;
 	list_itr_t *itr = NULL;
@@ -137,7 +139,8 @@ static list_t *_get_other_user_names_to_mod(mysql_conn_t *mysql_conn,
 		while ((object = list_next(itr))) {
 			if (!ret_list)
 				ret_list = list_create(xfree_ptr);
-			slurm_addto_char_list(ret_list, object->user);
+			slurm_addto_char_list_with_case(ret_list, object->user,
+							norm_user);
 		}
 		list_iterator_destroy(itr);
 		FREE_NULL_LIST(tmp_list);
@@ -166,7 +169,8 @@ no_assocs:
 		while ((object = list_next(itr))) {
 			if (!ret_list)
 				ret_list = list_create(xfree_ptr);
-			slurm_addto_char_list(ret_list, object->user);
+			slurm_addto_char_list_with_case(ret_list, object->user,
+							norm_user);
 		}
 		list_iterator_destroy(itr);
 		FREE_NULL_LIST(tmp_list);
@@ -374,10 +378,15 @@ static int _foreach_add_user(void *x, void *arg)
 	object->coord_accts = slurmdb_list_copy_coord(
 		add_user_cond->user_in->coord_accts);
 
+	/*
+	 * On a dup key we need to update name since the new one could contain a
+	 * case change when there has been a transition to/from PreserveCaseUser
+	 * being set.
+	 */
 	query = xstrdup_printf(
-		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
-		user_table, add_user_cond->now, add_user_cond->now,
-		object->name, object->admin_level);
+		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update name=VALUES(name), deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
+		user_table, add_user_cond->now, add_user_cond->now, object->name,
+		object->admin_level);
 
 	DB_DEBUG(DB_ASSOC, add_user_cond->mysql_conn->conn, "query:\n%s",
 		 query);
@@ -920,6 +929,8 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_user_cond_t *user_cond,
 				     slurmdb_user_rec_t *user)
 {
+	bool norm_user = !(slurmdbd_conf->persist_conn_rc_flags &
+			   PERSIST_FLAG_P_USER_CASE);
 	list_itr_t *itr = NULL;
 	list_t *ret_list = NULL;
 	int rc = SLURM_SUCCESS;
@@ -996,7 +1007,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		slurmdb_user_rec_t *user_rec = NULL;
 
 		object = row[0];
-		slurm_addto_char_list(ret_list, object);
+		slurm_addto_char_list_with_case(ret_list, object, norm_user);
 		if (!name_char)
 			xstrfmtcat(name_char, "(name='%s'", object);
 		else
@@ -1192,6 +1203,8 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_user_cond_t *user_cond)
 {
+	bool norm_user = !(slurmdbd_conf->persist_conn_rc_flags &
+			   PERSIST_FLAG_P_USER_CASE);
 	list_itr_t *itr = NULL;
 	list_t *ret_list = NULL;
 	list_t *coord_list = NULL;
@@ -1304,7 +1317,7 @@ extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!ret_list)
 		ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result)))
-		slurm_addto_char_list(ret_list, row[0]);
+		slurm_addto_char_list_with_case(ret_list, row[0], norm_user);
 	mysql_free_result(result);
 
 no_user_table:

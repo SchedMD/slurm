@@ -959,6 +959,7 @@ test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel"
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
 test_129_1   PreserveCaseUser and PreserveCaseAll behavior
+test_129_2   Add/remove/add mixed case user over PCU transitions
 
 test_130_#   Testing of PriorityType.
 =====================================
