@@ -91,6 +91,8 @@ bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 bool     spec_cores_first     = false;
 
+static time_t last_set_all = 0;
+
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "Trackable RESources (TRES) Selection plugin";
 const char plugin_type[] = "select/cons_tres";
@@ -809,7 +811,6 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 /* Requires node READ_LOCK and select_node WRITE_LOCK */
 extern int select_p_select_nodeinfo_set_all(void)
 {
-	static time_t last_set_all = 0;
 	part_res_record_t *p_ptr;
 	node_record_t *node_ptr = NULL;
 	int i, n;
@@ -826,7 +827,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		       (long)last_set_all);
 		return SLURM_NO_CHANGE_IN_DATA;
 	}
-	last_set_all = last_node_update;
+	last_set_all = time(NULL);
 
 	/*
 	 * Build core bitmap array representing all cores allocated to all
@@ -948,6 +949,8 @@ extern int select_p_reconfigure(void)
 	int rc = SLURM_SUCCESS;
 
 	info("%s: reconfigure", plugin_type);
+
+	last_set_all = 0;
 
 	def_cpu_per_gpu = 0;
 	def_mem_per_gpu = 0;
