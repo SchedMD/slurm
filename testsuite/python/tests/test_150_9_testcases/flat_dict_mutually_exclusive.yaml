@@ -1,0 +1,16 @@
+---
+# topology/flat
+#
+# This is the dict branch of PARSE_FUNC(TOPOLOGY_FLAT) - "flat" carries an
+# options dict rather than the bool shorthand - and "block" already claimed
+# topology_ctx_t->plugin.
+- topology: flat_dict_mutually_exclusive
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-4]
+  flat:
+    alpha_step_rank: true

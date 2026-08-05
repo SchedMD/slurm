@@ -1,0 +1,15 @@
+# topology/tree - parses cleanly, bad options
+#
+# sw_root claims children s[1-3], but only s1 and s2 are defined. The
+# dangling child s3 cannot be resolved to a switch record.
+---
+- topology: tree_bad_options
+  cluster_default: true
+  tree:
+    switches:
+      - switch: sw_root
+        children: s[1-3]
+      - switch: s1
+        nodes: node[1-4]
+      - switch: s2
+        nodes: node[5-8]

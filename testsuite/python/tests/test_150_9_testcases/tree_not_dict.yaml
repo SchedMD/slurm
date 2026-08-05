@@ -1,0 +1,8 @@
+---
+# topology/tree
+#
+# "tree" was given a topology.conf style flat string instead of a dict holding
+# a "switches" list.
+- topology: tree_not_dict
+  cluster_default: true
+  tree: "SwitchName=s1 Nodes=node[1-16]"

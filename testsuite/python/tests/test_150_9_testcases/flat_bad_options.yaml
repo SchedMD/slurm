@@ -1,0 +1,8 @@
+# topology/flat - parses cleanly, bad options
+#
+# "flat: false" is accepted by the parser but if there are no other topology
+# types defined then no topology plugin can be loaded.
+---
+- topology: flat_bad_options
+  cluster_default: true
+  flat: false

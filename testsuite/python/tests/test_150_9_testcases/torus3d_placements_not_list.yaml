@@ -1,0 +1,19 @@
+---
+# topology/torus3d
+#
+# "placements" must be a list of placement dicts (or a single placement dict).
+# Here the placement shape was collapsed into a shorthand scalar.
+#
+# NOTE: PARSER_ARRAY(TORUS3D_CONFIG)[] parses name, nodes and dims before
+# placements, so those must be valid to reach the placements parser.
+- topology: torus3d_placements_not_list
+  cluster_default: true
+  torus3d:
+    toruses:
+      - name: pod1
+        nodes: node[1-16]
+        dims:
+          x: 4
+          y: 2
+          z: 2
+        placements: "2x2x1"

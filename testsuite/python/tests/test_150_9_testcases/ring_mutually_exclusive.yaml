@@ -1,0 +1,17 @@
+---
+# topology/ring
+#
+# "block" is ordered before "ring" in PARSER_ARRAY(TOPOLOGY_CONF)[] and already
+# claimed topology_ctx_t->plugin, so the non-empty "ring" dict is rejected.
+- topology: ring_mutually_exclusive
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-4]
+  ring:
+    rings:
+      - ring: r1
+        nodes: node[1-8]

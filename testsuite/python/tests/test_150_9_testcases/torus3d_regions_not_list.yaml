@@ -1,0 +1,20 @@
+---
+# topology/torus3d
+#
+# "regions" must be a list of region dicts (or a single region dict). Here it
+# is a topology.conf style scalar.
+#
+# NOTE: "regions" is the last field of PARSER_ARRAY(TORUS3D_CONFIG)[], so every
+# preceding field must be valid to reach it. "placements" is omitted so that
+# PARSE_FUNC(TORUS3D_PLACEMENT_ARRAY) is skipped, and "nodes" is omitted
+# because it is mutually exclusive with "regions".
+- topology: torus3d_regions_not_list
+  cluster_default: true
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 4
+          y: 2
+          z: 2
+        regions: "r1=node[1-8],r2=node[9-16]"

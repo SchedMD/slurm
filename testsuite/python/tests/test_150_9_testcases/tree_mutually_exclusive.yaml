@@ -1,0 +1,18 @@
+---
+# topology/tree
+#
+# PARSER_ARRAY(TOPOLOGY_CONF)[] evaluates the plugin fields in the fixed order
+# block, flat, ring, torus3d, tree. "block" runs first and claims
+# topology_ctx_t->plugin, so the non-empty "tree" dict is then rejected.
+- topology: tree_mutually_exclusive
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+    blocks:
+      - block: b1
+        nodes: node[1-4]
+  tree:
+    switches:
+      - switch: s1
+        nodes: node[1-16]

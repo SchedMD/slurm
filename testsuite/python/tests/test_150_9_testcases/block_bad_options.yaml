@@ -1,0 +1,19 @@
+# topology/block - parses cleanly, bad options
+#
+# 12 is not a power of two of the 4 node base block size
+---
+- topology: block_bad_options
+  cluster_default: true
+  block:
+    block_sizes:
+      - 4
+      - 12
+    blocks:
+      - block: b1
+        nodes: node[1-4]
+      - block: b2
+        nodes: node[5-8]
+      - block: b3
+        nodes: node[9-12]
+      - block: b4
+        nodes: node[13-16]
