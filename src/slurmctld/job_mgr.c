@@ -15296,6 +15296,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 fini:
 	FREE_NULL_BITMAP(new_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
+	FREE_NULL_LIST(new_qos_list);
 
 	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
