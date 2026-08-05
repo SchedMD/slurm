@@ -37,6 +37,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "src/interfaces/hash.h"
 #include "src/common/macros.h"
@@ -181,4 +182,19 @@ extern int hash_g_compute(char *input, int len, char *custom_str, int cs_len,
 	}
 
 	return (*(ops[index].compute))(input, len, custom_str, cs_len, hash);
+}
+
+extern char *hash_g_compute_hex(const char *str)
+{
+	slurm_hash_t hash = { 0 };
+	int len;
+
+	if (!str)
+		return NULL;
+
+	len = hash_g_compute((char *) str, strlen(str), NULL, 0, &hash);
+	if (len < 0)
+		return NULL;
+
+	return xstring_bytes2hex(hash.hash, len, NULL);
 }

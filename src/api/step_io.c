@@ -853,11 +853,18 @@ static int _read_io_init_msg(int fd, conn_t *conn, client_io_t *cio,
 			     slurm_addr_t *host)
 {
 	io_init_msg_t msg = { 0 };
+	const char *io_key;
 
 	if (io_init_msg_read_from_fd(fd, conn, &msg) != SLURM_SUCCESS)
 		goto fail;
 
-	if (io_init_msg_validate(&msg, cio->io_key) < 0) {
+	/* Remove when 26.05 is no longer supported */
+	if (msg.version >= SLURM_26_11_PROTOCOL_VERSION)
+		io_key = cio->io_key_hash;
+	else
+		io_key = cio->io_key;
+
+	if (io_init_msg_validate(&msg, io_key) < 0) {
 		goto fail;
 	}
 	if (msg.nodeid >= cio->num_nodes) {
@@ -1091,7 +1098,8 @@ _estimate_nports(int nclients, int cli_per_port)
 
 client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      int num_nodes, char *io_key,
-				      bool label, uint32_t het_job_offset,
+				      char *io_key_hash, bool label,
+				      uint32_t het_job_offset,
 				      uint32_t het_job_task_offset)
 {
 	int i;
@@ -1109,6 +1117,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		cio->taskid_width = 0;
 
 	cio->io_key = xstrdup(io_key);
+	cio->io_key_hash = xstrdup(io_key_hash);
 
 	cio->eio = eio_handle_create(slurm_conf.eio_timeout);
 
@@ -1207,6 +1216,7 @@ client_io_handler_destroy(client_io_t *cio)
 	xfree(cio->listensock);
 	eio_handle_destroy(cio->eio);
 	xfree(cio->io_key);
+	xfree(cio->io_key_hash);
 	FREE_NULL_LIST(cio->free_incoming);
 	FREE_NULL_LIST(cio->free_outgoing);
 	xfree(cio);

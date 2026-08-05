@@ -295,6 +295,13 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer,
 extern char *slurm_cred_get_signature(slurm_cred_t *cred);
 
 /*
+ * Get a compact fixed-size key derived from the credential signature.
+ * (used by Slurm IO connections to verify connecting agent)
+ * RET xmalloc'd string, caller must xfree().
+ */
+extern char *slurm_cred_get_signature_key(slurm_cred_t *cred);
+
+/*
  * Retrieve the set of cores that were allocated to the job and step then
  * format them in the List Format (e.g., "0-2,7,12-14"). Also return
  * job and step's memory limit.

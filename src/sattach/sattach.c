@@ -63,6 +63,7 @@
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/conn.h"
+#include "src/interfaces/hash.h"
 
 #include "src/api/step_io.h"
 
@@ -155,6 +156,7 @@ int sattach(int argc, char **argv)
 	uint32_t jobid, stepid;
 	client_io_t *io;
 	char *io_key = NULL;
+	char *io_key_hash = NULL;
 
 	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -201,10 +203,12 @@ int sattach(int argc, char **argv)
 	}
 
 	io_key = _generate_io_key();
+	if (!(io_key_hash = hash_g_compute_hex(io_key)))
+		fatal("%s: failed to compute IO key hash", __func__);
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
 	io = client_io_handler_create(opt.fds, layout->task_cnt,
-				      layout->node_cnt, io_key,
+				      layout->node_cnt, io_key, io_key_hash,
 				      opt.labelio, NO_VAL, NO_VAL);
 	client_io_handler_start(io);
 
@@ -269,6 +273,7 @@ int sattach(int argc, char **argv)
 	client_io_handler_destroy(io);
 	_mpir_cleanup();
 	xfree(io_key);
+	xfree(io_key_hash);
 	log_fini();
 	slurm_fini();
 

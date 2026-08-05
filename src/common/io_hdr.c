@@ -159,7 +159,7 @@ extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
 		return SLURM_ERROR;
 	}
 
-	if (xstrcmp(msg->io_key, sig)) {
+	if (!sig || xstrcmp(msg->io_key, sig)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}

@@ -41,6 +41,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/hash.h"
+
 #include "src/plugins/auth/common/auth_common.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
 #include "src/plugins/cred/common/cred_common.h"
@@ -131,7 +133,6 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 		cred->buf_version = protocol_version;
 	}
 
-	/* FIXME: use a hash instead of the entire token? */
 	cred->signature = token;
 
 	FREE_NULL_CRED(auth_cred);
@@ -150,6 +151,16 @@ unpack_error:
 	if (jwt)
 		jwt_free(jwt);
 	return NULL;
+}
+
+extern char *cred_p_get_signature_key(char *signature)
+{
+	char *sig = xstrrchr(signature, '.');
+
+	if (sig && sig[1])
+		return xstrdup(sig + 1);
+
+	return hash_g_compute_hex(signature);
 }
 
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)

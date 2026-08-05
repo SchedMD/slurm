@@ -81,6 +81,7 @@ typedef struct {
 					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer, bool verify,
 					 uint16_t protocol_version);
+	char *(*cred_get_signature_key)(char *signature);
 } slurm_cred_ops_t;
 
 /*
@@ -94,6 +95,7 @@ static const char *syms[] = {
 	"cred_p_extract_net_cred",
 	"sbcast_p_create",
 	"sbcast_p_unpack",
+	"cred_p_get_signature_key",
 };
 
 static slurm_cred_ops_t ops;
@@ -414,6 +416,20 @@ extern char *slurm_cred_get_signature(slurm_cred_t *cred)
 	slurm_rwlock_unlock(&cred->mutex);
 
 	return sig;
+}
+
+extern char *slurm_cred_get_signature_key(slurm_cred_t *cred)
+{
+	char *key = NULL;
+
+	xassert(cred);
+
+	slurm_rwlock_rdlock(&cred->mutex);
+	if (cred->signature)
+		key = (*(ops.cred_get_signature_key))(cred->signature);
+	slurm_rwlock_unlock(&cred->mutex);
+
+	return key;
 }
 
 extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,

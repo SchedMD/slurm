@@ -1781,7 +1781,11 @@ static int _send_io_init_msg(int sock, conn_t *conn, srun_info_t *srun,
 {
 	io_init_msg_t msg;
 
-	msg.io_key = xstrdup(srun->key);
+	/* Remove when 26.05 is no longer supported */
+	if (srun->protocol_version >= SLURM_26_11_PROTOCOL_VERSION)
+		msg.io_key = xstrdup(srun->key_hash);
+	else
+		msg.io_key = xstrdup(srun->key);
 	msg.nodeid = step->nodeid;
 	msg.version = srun->protocol_version;
 

@@ -50,4 +50,11 @@ extern int hash_g_fini(void);
 extern int hash_g_compute(char *input, int len, char *custom_str, int cs_len,
 			  slurm_hash_t *hash);
 
+/*
+ * Compute the default hash of a NULL-terminated string and return it as an
+ * xmalloc'd lowercase hex string.
+ * RET NULL on NULL input or hash failure; caller must xfree().
+ */
+extern char *hash_g_compute_hex(const char *str);
+
 #endif
