@@ -1,6 +1,8 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 ############################################################################
+"""Test sacct's SLUID reporting across job resizes and requeues."""
+
 import json
 import logging
 import re
@@ -8,6 +10,11 @@ import re
 import pytest
 
 import atf
+
+# Progress messages the resize job script writes to its output file.
+MSG_READY = "Ready to get signaled"
+MSG_RESIZED = "Resize done"
+MSG_FAILED = "Resize scaffolding failed"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -26,6 +33,76 @@ def get_and_assert_sluid(job_id):
     sluid = atf.get_job_parameter(job_id, "SLUID")
     assert sluid is not None, f"Job {job_id} has no SLUID"
     return sluid
+
+
+def wait_for_script_progress(file_out, message):
+    """Wait for a progress message from the resize job script.
+
+    Fails as soon as the script reports a failure, rather than waiting out
+    the timeout on a message that is never coming.
+    """
+
+    output = ""
+    for t in atf.timer():
+        output = atf.run_command_output(f"cat {file_out}", quiet=True)
+        if MSG_FAILED in output:
+            pytest.fail(f"The job script failed before reaching '{message}': {output}")
+        if message in output:
+            return
+    pytest.fail(f"The job script never reported '{message}', got: {output}")
+
+
+def _abort_on_failure(command):
+    """Wrap a script command so its own failure is what gets reported.
+
+    Without this a failed resize still falls through to the progress message
+    below it, and the test only fails much later on an assertion that says
+    nothing about which command broke.
+    """
+
+    if not command:
+        return ""
+    return f'{command} || {{ echo "{MSG_FAILED}: {command}"; exit 1; }}'
+
+
+def submit_and_resize_job(name):
+    """Submit a 2 node job, resize it to 1 node and leave it running.
+
+    Returns the job id, the SLUID the job had before the resize, and the
+    output file the script writes its progress messages to.
+    """
+
+    file_out = f"{name}_output"
+    script = f"{name}.sh"
+    do_resize = _abort_on_failure("scontrol update JobId=$SLURM_JOBID NumNodes=1")
+    do_source_resize = _abort_on_failure(". slurm_job_${SLURM_JOBID}_resize.sh")
+    atf.make_bash_script(
+        script,
+        # set -e is not usable here, as the USR1 trap interrupts the sleep
+        # loop with a non-zero status.
+        f"""trap 'received=1' USR1
+received=0
+echo "{MSG_READY}"
+while [ $received -eq 0 ]; do
+    sleep 1
+done
+{do_resize}
+{do_source_resize}
+rm -f slurm_job_${{SLURM_JOBID}}_resize.sh slurm_job_${{SLURM_JOBID}}_resize.csh
+echo "{MSG_RESIZED}"
+sleep infinity""",
+    )
+
+    job_id = atf.submit_job_sbatch(
+        f"-N2 -t 5 -J {name} --output={file_out} {script}", fatal=True
+    )
+    wait_for_script_progress(file_out, MSG_READY)
+
+    original_sluid = get_and_assert_sluid(job_id)
+    atf.run_command(f"scancel --signal=USR1 --batch {job_id}", fatal=True)
+    wait_for_script_progress(file_out, MSG_RESIZED)
+
+    return job_id, original_sluid, file_out
 
 
 def test_sacct_sluid():
@@ -71,43 +148,7 @@ def test_sacct_filter_by_sluid():
 def test_sacct_sluid_after_resize():
     """Verify that after a job resize, SLUID changes but OriginalSLUID is preserved."""
 
-    file_out = atf.module_tmp_path / "resize_output"
-    script = atf.module_tmp_path / "resize.sh"
-    msg_ready = "Ready to get signaled"
-    msg_resized = "Resize done"
-    atf.make_bash_script(
-        script,
-        f"""trap 'received=1' USR1
-received=0
-echo "{msg_ready}"
-while [ $received -eq 0 ]; do
-    sleep 1
-done
-scontrol update JobId=$SLURM_JOBID NumNodes=1
-. slurm_job_${{SLURM_JOBID}}_resize.sh
-echo "{msg_resized}"
-srun -N1 -n1 sleep infinity
-rm -f slurm_job_${{SLURM_JOBID}}_resize.sh
-rm -f slurm_job_${{SLURM_JOBID}}_resize.csh""",
-    )
-
-    job_id = atf.submit_job_sbatch(f"-N2 --output={file_out} {script}", fatal=True)
-
-    atf.wait_for_file(file_out, fatal=True)
-    for t in atf.timer():
-        if msg_ready in atf.run_command_output(f"cat {file_out}"):
-            break
-    else:
-        pytest.fatal(f"Job {job_id} didn't get '{msg_ready}'")
-
-    original_sluid = get_and_assert_sluid(job_id)
-    atf.run_command(f"scancel --signal=USR1 --batch {job_id}", fatal=True)
-
-    for t in atf.timer():
-        if msg_resized in atf.run_command_output(f"cat {file_out}"):
-            break
-    else:
-        pytest.fatal(f"Job {job_id} didn't complete the resize'")
+    job_id, original_sluid, _ = submit_and_resize_job("resize")
 
     atf.cancel_jobs([job_id], fatal=True)
 
