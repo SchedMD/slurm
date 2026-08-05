@@ -236,7 +236,6 @@ test5.11   Validate that job node estimation is accurate.
 test6.#    Testing of scancel options.
 ======================================
 test6.3    Validate scancel interactive mode (--interactive option).
-test6.4    Validate scancel job name filter (--name option).
 test6.5    Validate scancel verbose option (--verbose option).
 test6.6    Confirm that scancel reports a proper version number (-V option).
 test6.7    Validate scancel signal option (--signal and --verbose options).
@@ -761,6 +760,7 @@ test_107_2   /commands/scancel/test_--usage.py
 test_107_3   Test scancel --ctld and filtering options
 test_107_4   Test scancel signals jobs by mixes of Job IDs and SLUIDs
 test_107_5   Test scancel of a hetjob step keeps the component jobs running
+test_107_6   Test scancel job name filtering options
 
 test_108_#   Testing of scontrol options.
 =========================================
