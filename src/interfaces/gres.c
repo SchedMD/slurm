@@ -288,7 +288,7 @@ typedef struct {
 typedef struct {
 	uint32_t config_flags;
 	int config_type_cnt;
-	uint32_t cpu_set_cnt;
+	bool has_topo_info;
 	uint64_t gres_cnt;
 	uint32_t plugin_id;
 	uint32_t rec_cnt;
@@ -3765,7 +3765,7 @@ static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
 	slurmd_conf_tot->rec_cnt++;
 
 	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
-		slurmd_conf_tot->cpu_set_cnt++;
+		slurmd_conf_tot->has_topo_info = true;
 
 	return 0;
 }
@@ -3789,7 +3789,7 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 	xassert(slurmd_conf_tot);
 
 	slurmd_conf_tot->config_flags = 0;
-	slurmd_conf_tot->cpu_set_cnt = 0;
+	slurmd_conf_tot->has_topo_info = false;
 	slurmd_conf_tot->config_type_cnt = 0;
 	slurmd_conf_tot->topo_cnt = 0;
 	slurmd_conf_tot->gres_cnt = 0;
@@ -4183,7 +4183,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
 
 	/* If the gres is sharing we need to have topo configured. */
-	if (slurmd_conf_tot.cpu_set_cnt ||
+	if (slurmd_conf_tot.has_topo_info ||
 	    (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres))
 		slurmd_conf_tot.topo_cnt = slurmd_conf_tot.rec_cnt;
 
