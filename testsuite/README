@@ -735,7 +735,6 @@ test_104_2   Test sattach gets job output, by JobID and by SLUID.
 test_105_#   Testing of sbatch options.
 =======================================
 test_105_1   /commands/sbatch/test_gpu_options.py
-test_105_2   /commands/sbatch/test_hetjob.py
 test_105_3   /commands/sbatch/test_invalid_mps_options.py
 test_105_4   /commands/sbatch/test_--usage.py
 test_105_5   Test sbatch --output and --error options work, including use of spaces, %j, and %u
@@ -1184,3 +1183,4 @@ test_168_#   Testing of heterogeneous jobs.
 test_168_1   Validate sbatch heterogeneous job environment variables.
 test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
 test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
+test_168_4   Validate scontrol show job fields for heterogeneous job components.
