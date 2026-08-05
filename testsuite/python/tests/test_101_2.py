@@ -30,6 +30,19 @@ def setup():
 
     atf.require_accounting()
     atf.require_nodes(2, [("CPUs", 2)])
+
+    # slurm.conf.5: requeue_delay defaults to the credential lifetime, which
+    # would leave every requeued job pending for two minutes.
+    atf.require_config_parameter_includes(
+        "SchedulerParameters", ("requeue_delay", 0), source="slurm"
+    )
+    atf.require_config_parameter_includes(
+        "SchedulerParameters", ("bf_interval", 1), source="slurm"
+    )
+    atf.require_config_parameter_includes(
+        "SchedulerParameters", ("sched_interval", 1), source="slurm"
+    )
+
     atf.require_slurm_running()
 
 
@@ -171,8 +184,12 @@ def _abort_on_failure(command):
     )
 
 
-def submit_and_resize_job(name):
+def submit_and_resize_job(name, sbatch_args="", pre_resize="", post_resize=""):
     """Submit a 2 node job, resize it to 1 node and leave it running.
+
+    Runs `pre_resize` before the resize and `post_resize` after it, so each
+    ends up in a different accounting record. `pre_resize` has to complete on
+    its own, as the resize only starts once it returns.
 
     Returns the job id, the SLUID the job had before the resize, and the
     output file the script writes its progress messages to.
@@ -180,14 +197,17 @@ def submit_and_resize_job(name):
 
     file_out = f"{name}_output"
     script = f"{name}.sh"
+    do_pre_resize = _abort_on_failure(pre_resize)
     do_resize = _abort_on_failure("scontrol update JobId=$SLURM_JOBID NumNodes=1")
     do_source_resize = _abort_on_failure(". slurm_job_${SLURM_JOBID}_resize.sh")
+    do_post_resize = _abort_on_failure(post_resize)
     atf.make_bash_script(
         script,
         # set -e is not usable here, as the USR1 trap interrupts the sleep
         # loop with a non-zero status.
         f"""trap 'received=1' USR1
 received=0
+{do_pre_resize}
 echo "{MSG_READY}"
 while [ $received -eq 0 ]; do
     sleep 1
@@ -195,12 +215,13 @@ done
 {do_resize}
 {do_source_resize}
 rm -f slurm_job_${{SLURM_JOBID}}_resize.sh slurm_job_${{SLURM_JOBID}}_resize.csh
+{do_post_resize}
 echo "{MSG_RESIZED}"
 sleep infinity""",
     )
 
     job_id = atf.submit_job_sbatch(
-        f"-N2 -t 5 -J {name} --output={file_out} {script}", fatal=True
+        f"-N2 -t 5 -J {name} {sbatch_args} --output={file_out} {script}", fatal=True
     )
     wait_for_script_progress(file_out, MSG_READY)
 
@@ -423,3 +444,233 @@ def test_sacct_json_sluid():
         assert (
             False
         ), f"Expected sluid={sluid} and original_sluid={sluid} in sacct JSON, got {job_sluid} and {original_sluid}"
+
+
+@pytest.fixture(scope="module")
+def resized_requeued_job():
+    """Run a 2 node job through a resize and then a requeue.
+
+    Returns the job id, the SLUID it started with, the SLUID the requeue gave
+    it, and its three accounting records, oldest first.
+    """
+
+    job_id, original_sluid, file_out = submit_and_resize_job(
+        "resize_requeue",
+        sbatch_args="--requeue",
+        pre_resize="srun -N2 -n2 true",
+        post_resize="srun -N1 -n1 true",
+    )
+
+    # Clear the sentinel so the requeued run's progress can't be matched
+    # against the output this run already wrote.
+    atf.run_command(f"rm -f {file_out}", fatal=True)
+    atf.run_command(
+        f"scontrol requeue {job_id}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    # The resize only split off a new accounting record, so the SLUID the
+    # command tools report is still the original one the requeue replaces.
+    requeue_sluid = wait_for_new_sluid(job_id, original_sluid)
+
+    # A requeue replays the script from the top, so only pre_resize runs again
+    # in the requeued run. Wait for it to get back to the signal, otherwise the
+    # cancel races its srun step being created.
+    wait_for_script_progress(file_out, MSG_READY)
+    atf.cancel_jobs([job_id], fatal=True)
+
+    wait_for_dbd_agent_drained(job_id)
+
+    fields = [
+        "SLUID",
+        "OriginalSLUID",
+        "NNodes",
+        "Submit",
+        "Start",
+        "Restarts",
+        "State",
+    ]
+    # Not fatal here, so a requeue that overwrote a record fails the test that
+    # asserts the count rather than erroring in setup, where the xfail below
+    # would report it as an expected failure.
+    records = wait_for_sacct_records(job_id, fields, 3, fatal=False)
+
+    return job_id, original_sluid, requeue_sluid, records
+
+
+@pytest.mark.slow
+def test_sacct_sluid_after_resize_then_requeue(resized_requeued_job):
+    """Verify requeuing a resized job keeps every accounting record distinct."""
+
+    job_id, original_sluid, requeue_sluid, records = resized_requeued_job
+
+    # The record the requeue used to overwrite has to still be there. This is
+    # what the fix delivers, so it is asserted before anything reads a record.
+    assert (
+        len(records) == 3
+    ), f"The requeue should leave the resize record in place, got {records}"
+    pre_resize_record, resize_record, requeue_record = records
+
+    # sacct.1: the per-record SLUID changes on both a resize and a requeue, so
+    # all three records have to carry a distinct one.
+    assert (
+        pre_resize_record["SLUID"] == original_sluid
+    ), f"The first record should keep the original SLUID {original_sluid}, got {pre_resize_record}"
+    assert (
+        requeue_record["SLUID"] == requeue_sluid
+    ), f"The last record should take the requeue SLUID {requeue_sluid}, got {requeue_record}"
+    assert resize_record["SLUID"] not in (original_sluid, requeue_sluid), (
+        f"The resize record should have a SLUID of its own, got "
+        f"{resize_record['SLUID']}"
+    )
+
+    # sacct.1: OriginalSLUID survives a resize and is reset by a requeue.
+    assert (
+        pre_resize_record["OriginalSLUID"]
+        == resize_record["OriginalSLUID"]
+        == original_sluid
+    ), (
+        f"The resize should leave OriginalSLUID={original_sluid} on both the "
+        f"pre-resize and resize records, got {pre_resize_record} and "
+        f"{resize_record}"
+    )
+    assert (
+        requeue_record["OriginalSLUID"] == requeue_sluid
+    ), f"The requeue should reset OriginalSLUID to the new SLUID, got {requeue_record}"
+
+    # The requeued run gets the job's original -N2 again; scontrol.1 does not
+    # say whether a NumNodes reduction carries over into a requeue.
+    node_counts = [int(record["NNodes"]) for record in records]
+    assert node_counts == [2, 1, 2], (
+        f"Expected 2, 1 and 2 nodes for the pre-resize, resize and requeue "
+        f"records, got {node_counts}"
+    )
+
+    # sacct.1: Restarts counts how many times the job was requeued or
+    # restarted. Asserted on every record, as a job_start landing on the wrong
+    # one shows up here as a count advancing on a record before the requeue.
+    restarts = [int(record["Restarts"]) for record in records]
+    assert restarts == [0, 0, 1], (
+        f"Expected the requeue to count only on its own record, got "
+        f"{restarts} for the pre-resize, resize and requeue records"
+    )
+
+    # sacct.1: RS RESIZING and RQ REQUEUED say what each record was left by.
+    states = [record["State"].split()[0] for record in records]
+    assert states == ["RESIZING", "REQUEUED", "CANCELLED"], (
+        f"Expected the pre-resize, resize and requeue records to end "
+        f"RESIZING, REQUEUED and CANCELLED, got {states}"
+    )
+
+    # faq.html#job_size: a resize generates a new record showing the job
+    # resubmitted and restarted at the new size.
+    assert parse_sacct_time(resize_record["Submit"]) > parse_sacct_time(
+        pre_resize_record["Submit"]
+    ), (
+        f"The resize record should be submitted after the pre-resize one, got "
+        f"{pre_resize_record['Submit']} and {resize_record['Submit']}"
+    )
+    assert parse_sacct_time(resize_record["Start"]) == parse_sacct_time(
+        resize_record["Submit"]
+    ), f"The resize record should start at its submit time, got {resize_record}"
+
+    # sacct.1: "If a job is requeued, the submit time is reset."
+    assert parse_sacct_time(requeue_record["Submit"]) > parse_sacct_time(
+        resize_record["Submit"]
+    ), (
+        f"The requeue should reset the submit time past the resize "
+        f"{resize_record['Submit']}, got {requeue_record['Submit']}"
+    )
+
+    # sacct.1: without -D the most recent record is shown along with any
+    # record a resize left in RESIZING. So the pre-resize record is still
+    # listed while the resize record, left REQUEUED, is not.
+    output = atf.run_command_output(
+        f"sacct -j {job_id} -X -P --noheader -o SLUID", fatal=True
+    )
+    assert output.split() == [pre_resize_record["SLUID"], requeue_sluid], (
+        f"Without -D sacct should list the pre-resize and requeue records "
+        f"only, got: {output}"
+    )
+
+    # sacct.1: -j accepts a SLUID in place of a job id. The record the requeue
+    # used to destroy has to stay individually addressable.
+    resize_fields = ["SLUID", "OriginalSLUID", "NNodes"]
+    output = atf.run_command_output(
+        f"sacct -j {resize_record['SLUID']} -D -X -P --noheader "
+        f"-o {','.join(resize_fields)}",
+        fatal=True,
+    )
+    assert parse_sacct_records(output, resize_fields) == [
+        {
+            "SLUID": resize_record["SLUID"],
+            "OriginalSLUID": original_sluid,
+            "NNodes": "1",
+        }
+    ], f"Expected only the resize record when filtering on its SLUID, got: {output}"
+
+    # Every step has to name one of the three records. The requeue used to
+    # overwrite the resize record, which left steps naming a SLUID no record
+    # carried. Which record a step lands under is a separate, still open bug
+    # (see test_sacct_steps_after_resize_then_requeue), so this asserts only
+    # that no step is left pointing at nothing.
+    step_fields = ["JobID", "SLUID"]
+    output = atf.run_command_output(
+        f"sacct -j {job_id} -D -P --noheader -o {','.join(step_fields)}",
+        fatal=True,
+    )
+    record_sluids = {record["SLUID"] for record in records}
+    orphans = [
+        record
+        for record in parse_sacct_records(output, step_fields)
+        if "." in record["JobID"] and record["SLUID"] not in record_sluids
+    ]
+    assert not orphans, (
+        f"Every step should belong to one of {sorted(record_sluids)}, got "
+        f"orphaned steps {orphans} in: {output}"
+    )
+
+
+@pytest.mark.slow
+@pytest.mark.xfail(
+    reason="Issue 51109: a step started after a resize is filed under the "
+    "pre-resize record",
+)
+def test_sacct_steps_after_resize_then_requeue(resized_requeued_job):
+    """Verify each run's srun step stays under its own accounting record."""
+
+    job_id, original_sluid, requeue_sluid, records = resized_requeued_job
+    pre_resize_record, resize_record, requeue_record = records
+
+    # squeue.1: the database tracks a separate SLUID per accounting record, so
+    # every run's steps have to stay under its own record rather than being
+    # absorbed into the ones the earlier runs left behind. The resize record's
+    # step is the one the requeue used to orphan.
+    step_fields = ["JobID", "SLUID", "NNodes"]
+    expected_steps = {
+        (pre_resize_record["SLUID"], 2),
+        (resize_record["SLUID"], 1),
+        (requeue_sluid, 2),
+    }
+    output = ""
+    steps = set()
+    # xfail: the timeout below is the expected outcome while the bug is open.
+    for t in atf.timer(xfail=True):
+        output = atf.run_command_output(
+            f"sacct -j {job_id} -D -P --noheader -o {','.join(step_fields)}",
+            fatal=True,
+        )
+        # Only the srun steps are per-record; batch and extern span the resize.
+        steps = {
+            (record["SLUID"], int(record["NNodes"]))
+            for record in parse_sacct_records(output, step_fields)
+            if record["JobID"].partition(".")[2].isdigit()
+        }
+        # Compared exactly so a step landing under the wrong record fails.
+        if steps == expected_steps:
+            break
+    else:
+        pytest.fail(
+            f"Expected one srun step under each record, {sorted(expected_steps)}, "
+            f"got {sorted(steps)} in: {output}"
+        )
