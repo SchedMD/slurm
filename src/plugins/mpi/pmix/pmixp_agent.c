@@ -66,6 +66,7 @@ static pthread_cond_t abort_mutex_cond = PTHREAD_COND_INITIALIZER;
 static eio_handle_t *_io_handle = NULL;
 static eio_handle_t *_abort_handle = NULL;
 
+static int _abort_agent_port = -1;
 static int _abort_agent_start_count = 0;
 
 static pthread_t _agent_tid = 0;
@@ -376,6 +377,7 @@ static void _abort_agent_cleanup(void)
 		eio_handle_destroy(_abort_handle);
 		_abort_handle = NULL;
 	}
+	_abort_agent_port = -1;
 }
 
 int pmixp_abort_agent_start(char ***env)
@@ -415,8 +417,7 @@ int pmixp_abort_agent_start(char ***env)
 		goto done;
 	}
 	PMIXP_DEBUG("Abort agent port: %d", slurm_get_port(&abort_server));
-	setenvf(env, PMIXP_SLURM_ABORT_AGENT_PORT, "%d",
-		slurm_get_port(&abort_server));
+	_abort_agent_port = slurm_get_port(&abort_server);
 
 	_abort_handle = eio_handle_create(0);
 	obj = eio_obj_create(abort_server_socket, &abort_ops, (void *)(-1));
@@ -430,6 +431,15 @@ done:
 	/* If start failed, 1st thread will clean here */
 	if ((_abort_agent_start_count == 1) && (rc != SLURM_SUCCESS))
 		_abort_agent_cleanup();
+
+	/*
+	 * Each hetjob component step launch reaches here with its own env
+	 * array, so the port has to be exported to every one of them, not
+	 * only to the first launch, which is the one starting the agent.
+	 */
+	if (_abort_agent_port != -1)
+		setenvf(env, PMIXP_SLURM_ABORT_AGENT_PORT, "%d",
+			_abort_agent_port);
 	slurm_mutex_unlock(&abort_mutex);
 	return rc;
 }
