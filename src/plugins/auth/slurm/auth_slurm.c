@@ -41,6 +41,7 @@
 
 #include "src/common/identity.h"
 #include "src/common/log.h"
+#include "src/common/openssl_helper.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
@@ -101,6 +102,12 @@ extern int init(void)
 		return SLURM_SUCCESS;
 
 	init_run = true;
+
+	/*
+	 * libjwt uses libcrypto, so disable OpenSSL's atexit() cleanup first to
+	 * avoid a teardown race at shutdown.
+	 */
+	openssl_helper_disable_atexit(plugin_type);
 
 	serializer_required(MIME_TYPE_JSON);
 

@@ -61,10 +61,11 @@ strong_alias(openssl_helper_disable_atexit,
 #define SLURM_OPENSSL_INIT_NO_ATEXIT 0x00080000UL
 
 /*
- * Multiple plugins call this from their own init(), potentially concurrently.
- * They typically all resolve to the same underlying libcrypto, so track the
- * last OPENSSL_init_crypto() address already handled and skip repeat calls for
- * that same libcrypto instance.
+ * Multiple plugins call this from their own init(), potentially concurrently,
+ * and may each resolve to a different libcrypto. Skipping a repeat of the last
+ * handled OPENSSL_init_crypto() avoids redundant work in the common case where
+ * they all resolve to the same one. This is only an optimization since repeated
+ * calls for the same libcrypto are harmless.
  */
 static pthread_mutex_t disable_atexit_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int (*disabled_init_crypto)(uint64_t opts, const void *settings) = NULL;
