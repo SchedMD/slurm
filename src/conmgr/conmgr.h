@@ -563,6 +563,16 @@ extern int conmgr_con_reply_rc_and_close(conmgr_fd_ref_t *ref, int rc,
 					 uint16_t protocol_version);
 
 /*
+ * Peek the protocol version of the RPC currently pending (unparsed) in the
+ * connection's input buffer. Does not consume the pending RPC.
+ * NOTE: type=CON_TYPE_RPC only
+ * IN ref - reference to connection with a pending RPC
+ * RET the pending request's protocol version, or SLURM_MIN_PROTOCOL_VERSION if
+ *	it cannot be read or is not a version this binary supports
+ */
+extern uint16_t conmgr_con_peek_rpc_protocol_version(conmgr_fd_ref_t *ref);
+
+/*
  * Request soft close of connection
  * IN con connection manager connection struct
  * RET SLURM_SUCCESS or error
