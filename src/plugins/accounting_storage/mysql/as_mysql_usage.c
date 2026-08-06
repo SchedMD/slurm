@@ -347,37 +347,62 @@ static void *_cluster_rollup_usage(void *arg)
 			goto end_it;
 	}
 
+	/*
+	 * Advance each rollup timestamp only if it is at or above the value
+	 * this roll started from (last_hour, last_day, last_month). While this
+	 * roll was running, a runaway job fix or trigger_reroll() may have moved
+	 * the timestamp backwards and deleted usage that must be rebuilt from
+	 * that point. Overwriting it here would skip that range forever, so the
+	 * IF() leaves a lower value alone and the next roll resumes from it.
+	 *
+	 * ">=" rather than "=" because on "sacctmgr rollup <start>" the start
+	 * value comes from the command line and may be below the stored
+	 * timestamp; the timestamp must still advance in that case.
+	 */
 	if ((hour_end - hour_start) > 0) {
 		/* If we have a sent_end do not update the last_run_table */
 		if (!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set hourly_rollup=%ld",
-				local_rollup->cluster_name,
-				last_ran_table, hour_end);
+				"update \"%s_%s\" set "
+				"hourly_rollup=IF(hourly_rollup>=%ld,%ld,"
+				"hourly_rollup)",
+				local_rollup->cluster_name, last_ran_table,
+				last_hour, hour_end);
 	} else
 		debug2("No need to roll cluster %s this hour %ld <= %ld",
 		       local_rollup->cluster_name, hour_end, hour_start);
 
 	if ((day_end - day_start) > 0) {
 		if (query && !local_rollup->sent_end)
-			xstrfmtcat(query, ", daily_rollup=%ld", day_end);
+			xstrfmtcat(query,
+				   ", daily_rollup=IF(daily_rollup>=%ld,%ld,"
+				   "daily_rollup)",
+				   last_day, day_end);
 		else if (!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set daily_rollup=%ld",
-				local_rollup->cluster_name,
-				last_ran_table, day_end);
+				"update \"%s_%s\" set "
+				"daily_rollup=IF(daily_rollup>=%ld,%ld,"
+				"daily_rollup)",
+				local_rollup->cluster_name, last_ran_table,
+				last_day, day_end);
 	} else
 		debug2("No need to roll cluster %s this day %ld <= %ld",
 		       local_rollup->cluster_name, day_end, day_start);
 
 	if ((month_end - month_start) > 0) {
 		if (query && !local_rollup->sent_end)
-			xstrfmtcat(query, ", monthly_rollup=%ld", month_end);
+			xstrfmtcat(
+				query,
+				", monthly_rollup=IF(monthly_rollup>=%ld,%ld,"
+				"monthly_rollup)",
+				last_month, month_end);
 		else if (!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set monthly_rollup=%ld",
-				local_rollup->cluster_name,
-				last_ran_table, month_end);
+				"update \"%s_%s\" set "
+				"monthly_rollup=IF(monthly_rollup>=%ld,%ld,"
+				"monthly_rollup)",
+				local_rollup->cluster_name, last_ran_table,
+				last_month, month_end);
 	} else
 		debug2("No need to roll cluster %s this month %ld <= %ld",
 		       local_rollup->cluster_name, month_end, month_start);
