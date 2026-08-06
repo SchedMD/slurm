@@ -73,6 +73,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/daemonize.h"
+#include "src/common/events.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/forward.h"
@@ -147,7 +148,7 @@ decl_static_data(usage_txt);
 
 uint32_t slurm_daemon = IS_SLURMD;
 
-#define MAX_THREADS		256
+#define MAX_THREADS 256
 #define DEF_WORKPOOL_THREAD_COUNT 6
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
@@ -177,6 +178,7 @@ typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
 	slurm_msg_t *msg;
+	slurmd_rpc_t *this_rpc;
 } service_msg_args_t;
 
 /*
@@ -185,6 +187,15 @@ typedef struct {
 static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
+
+/*
+ * count of detached threads servicing new_thread RPCs. Not gated by
+ * MAX_THREADS (concurrency is intentionally unbounded); tracked only so
+ * shutdown/reconfigure can wait for in-flight script handlers to finish.
+ */
+static int active_script_threads = 0;
+static pthread_mutex_t script_mutex = PTHREAD_MUTEX_INITIALIZER;
+static event_signal_t script_event = EVENT_INITIALIZER("SCRIPT_THREADS");
 
 /*
  * Global data for resource specialization
@@ -228,7 +239,7 @@ static int       _core_spec_init(void);
 static void _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
-static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static int _increment_thd_count(bool block);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
@@ -253,7 +264,6 @@ static void      _usage(void);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 static void _wait_on_old_slurmd(bool kill_it);
-static void *_service_msg(void *arg);
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
@@ -706,17 +716,39 @@ static int _increment_thd_count(bool block)
 	return rc;
 }
 
+/*
+ * Detached new_thread script handlers are not gated by MAX_THREADS; these
+ * only track in-flight handlers so _wait_for_all_threads() can drain them.
+ */
+static void _increment_script_thd_count(void)
+{
+	slurm_mutex_lock(&script_mutex);
+	active_script_threads++;
+	slurm_mutex_unlock(&script_mutex);
+}
+
+static void _decrement_script_thd_count(void)
+{
+	slurm_mutex_lock(&script_mutex);
+	if (active_script_threads > 0)
+		active_script_threads--;
+	EVENT_BROADCAST(&script_event);
+	slurm_mutex_unlock(&script_mutex);
+}
+
 /* secs IN - wait up to this number of seconds for all threads to complete */
 static void
 _wait_for_all_threads(int secs)
 {
 	struct timespec ts;
 	int rc;
+	bool timed_out = false;
 
 	ts.tv_sec  = time(NULL);
 	ts.tv_nsec = 0;
 	ts.tv_sec += secs;
 
+	/* Drain conmgr-worker RPC threads. */
 	slurm_mutex_lock(&active_mutex);
 	while (active_threads > 0) {
 		verbose("waiting on %d active threads", active_threads);
@@ -728,56 +760,156 @@ _wait_for_all_threads(int secs)
 			if (rc == ETIMEDOUT) {
 				error("Timeout waiting for completion of %d threads",
 				      active_threads);
-				slurm_cond_signal(&active_cond);
-				slurm_mutex_unlock(&active_mutex);
-				return;
+				timed_out = true;
+				break;
 			}
 		}
 	}
 	slurm_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
-	verbose("all threads complete");
+
+	/*
+	 * Drain detached new_thread script handlers under the same deadline so
+	 * shutdown/reconfigure never tears down (or exec's) out from under a
+	 * running script. A timeout on active_threads above falls through to
+	 * here rather than returning early. EVENT_WAIT_TIMED() does not surface
+	 * ETIMEDOUT, so re-check the deadline explicitly to avoid spinning once
+	 * it passes.
+	 */
+	slurm_mutex_lock(&script_mutex);
+	while (active_script_threads > 0) {
+		verbose("waiting on %d active script threads",
+			active_script_threads);
+		if (secs == NO_VAL16) { /* Wait forever */
+			EVENT_WAIT(&script_event, &script_mutex);
+		} else {
+			EVENT_WAIT_TIMED(&script_event, ts, &script_mutex);
+			if (timespec_is_after(timespec_now(), ts)) {
+				error("Timeout waiting for completion of %d script threads",
+				      active_script_threads);
+				timed_out = true;
+				break;
+			}
+		}
+	}
+	slurm_mutex_unlock(&script_mutex);
+
+	if (!timed_out)
+		verbose("all threads complete");
 }
 
-static void *_service_msg(void *arg)
+static void _service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	const slurm_addr_t *addr = &msg->address;
-	conmgr_fd_ref_t *conmgr_con = NULL;
+	slurmd_rpc_t *this_rpc = args->this_rpc;
+	int rc = EINVAL;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
-	/*
-	 * Remove conmgr connection from msg to avoid msg logic trying to send
-	 * via conmgr instead via msg->conn.
-	 */
-	SWAP(conmgr_con, msg->conmgr_con);
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		log_flag(NET, "%s: [%pA] RPC servicing cancelled",
+			 __func__, &msg->address);
+		FREE_NULL_CONN(msg->conn);
+		FREE_NULL_MSG(msg);
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+		xfree(args);
+		return;
+	}
 
-	log_flag(NET, "%s: [%s] processing new RPC msg_type[0x%x]=%s connection from %pA",
-		 __func__, conmgr_con_get_name(conmgr_con),
-		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type), addr);
+	if ((rc = _increment_thd_count(false))) {
+		xassert(rc == EWOULDBLOCK);
 
-	/* Release conmgr connection as it will have been closed */
-	CONMGR_CON_UNLINK(msg->conmgr_con);
-	slurmd_req(msg);
+		/*
+		 * Servicing the connection will be deferred which means the
+		 * thread count should no longer consider processing this
+		 * connection until the delay is complete and this function is
+		 * called again.
+		 */
+		_decrement_thd_count();
 
-	conn_g_destroy(msg->conn, true);
-	msg->conn = NULL;
+		/*
+		 * Backoff attempts to avoid needless lock contention while
+		 * avoiding having a new thread created
+		 */
+		args->delay = timespec_add(args->delay, MAX_THREAD_DELAY_INC);
+		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
+			args->delay = MAX_THREAD_DELAY_MAX;
 
-	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
-		 __func__, conmgr_con_get_name(conmgr_con),
-		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type));
+		warning("%s: [%pA] deferring servicing connection for %s",
+			__func__, &args->msg->address,
+			TIMESPEC_STR(args->delay, false));
 
-	/* Release conmgr connection as it will have been closed */
-	CONMGR_CON_UNLINK(conmgr_con);
+		if (conmgr_args.ref)
+			conmgr_add_work_con_delayed_fifo(conmgr_args.con,
+							 _service_msg, args,
+							 args->delay.tv_sec,
+							 args->delay.tv_nsec);
+		else
+			conmgr_add_work_delayed_fifo(_service_msg, args,
+						     args->delay.tv_sec,
+						     args->delay.tv_nsec);
 
-	slurm_free_msg(msg);
+		return;
+	}
+
+	xassert(this_rpc);
+	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+	xfree(args);
+
+	log_flag(NET, "%s: processing new RPC msg_type[0x%x]=%s connection from %pA",
+		 __func__, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type), addr);
+
+	slurmd_req(msg, this_rpc);
+
+	log_flag(NET, "%s: finished processing RPC msg_type[0x%x]=%s",
+		 __func__, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type));
+
+	FREE_NULL_CONN(msg->conn);
+	FREE_NULL_MSG(msg);
+
+	_decrement_thd_count();
+}
+
+/*
+ * Detached-thread entry for new_thread RPCs. Runs the handler to completion
+ * off the conmgr worker pool, without taking a MAX_THREADS slot. The fd was
+ * already extracted (msg->conn owns it, msg->conmgr_con is NULL), so the
+ * handler replies via msg->conn. Owns args/msg/conn and frees them here.
+ * The active_script_threads count was incremented by the caller before this
+ * thread was created.
+ */
+static void *_service_msg_thread(void *arg)
+{
+	service_msg_args_t *args = arg;
+	slurm_msg_t *msg = args->msg;
+	const slurm_addr_t *addr = &msg->address;
+	slurmd_rpc_t *this_rpc = args->this_rpc;
+
+	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
+	xassert(this_rpc && this_rpc->new_thread);
+	xassert(!msg->conmgr_con && msg->conn);
 
 	args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 	xfree(args);
 
-	_decrement_thd_count();
+	log_flag(NET, "%s: [%pA] processing new RPC msg_type[0x%x]=%s in detached thread",
+		 __func__, addr, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type));
+
+	slurmd_req(msg, this_rpc);
+
+	log_flag(NET, "%s: finished processing RPC msg_type[0x%x]=%s",
+		 __func__, (uint32_t) msg->msg_type,
+		 rpc_num2string(msg->msg_type));
+
+	FREE_NULL_CONN(msg->conn);
+	FREE_NULL_MSG(msg);
+
+	_decrement_script_thd_count();
 	return NULL;
 }
 
@@ -2026,7 +2158,7 @@ static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 	slurm_mutex_unlock(&listen_mutex);
 
-	slurmd_req(NULL);	/* initialize timer */
+	slurmd_req(NULL, NULL); /* initialize timer */
 
 	return con;
 }
@@ -2047,71 +2179,42 @@ static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	conf->lfd = -1;
 }
 
-/* Try to process connection if thread max has not been hit */
-static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
+static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
+			void *arg)
 {
 	service_msg_args_t *args = arg;
-	int rc = SLURM_ERROR;
+	slurm_msg_t *msg = args->msg;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
-
-	if (!(rc = _increment_thd_count(false))) {
-		log_flag(NET, "%s: [%s] detaching new thread for RPC connection",
-			 __func__, conmgr_fd_get_name(conmgr_args.con));
-
-		slurm_thread_create_detached(NULL, _service_msg, args);
-	} else {
-		xassert(rc == EWOULDBLOCK);
-
-		/*
-		 * Servicing the connection will be deferred which means the
-		 * thread count should no longer consider processing this
-		 * connection until the delay is complete and this function is
-		 * called again.
-		 */
-		_decrement_thd_count();
-
-		/*
-		 * Backoff attempts to avoid needless lock contention while
-		 * avoiding having a new thread created
-		 */
-		args->delay = timespec_add(args->delay, MAX_THREAD_DELAY_INC);
-		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
-			args->delay = MAX_THREAD_DELAY_MAX;
-
-		warning("%s: [%pA] deferring servicing connection for %s",
-			__func__, &args->msg->address,
-			TIMESPEC_STR(args->delay, false));
-
-		conmgr_add_work_con_delayed_fifo(conmgr_args.con,
-						 _try_service_msg, args,
-						 args->delay.tv_sec,
-						 args->delay.tv_nsec);
-	}
-}
-
-static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
-			   void *arg)
-{
-	service_msg_args_t *args = NULL;
-	slurm_msg_t *msg = arg;
-
+	xassert(!msg->conmgr_con);
 	xassert(!msg->conn || (msg->conn == conn));
 	msg->conn = conn;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		log_flag(NET, "%s: [%s] connection work cancelled",
-			 __func__, conmgr_con_get_name(msg->conmgr_con));
+		log_flag(NET, "%s: [%pA] connection work cancelled",
+			 __func__, &msg->address);
 		FREE_NULL_CONN(msg->conn);
 		FREE_NULL_MSG(msg);
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+		xfree(args);
 		return;
 	}
 
-	args = xmalloc(sizeof(*args));
-	args->magic = SERVICE_MSG_ARGS_MAGIC;
-	args->msg = msg;
+	if (args->this_rpc->new_thread) {
+		/*
+		 * Ownership of args (and thus msg + the extracted msg->conn)
+		 * passes to the detached thread. Increment here, on the conmgr
+		 * worker, before spawning: conmgr_quiesce()/conmgr_run() only
+		 * return once no worker is active, so the count is guaranteed
+		 * visible to _wait_for_all_threads() before shutdown/reconfig
+		 * can proceed. The thread is not gated by MAX_THREADS.
+		 */
+		_increment_script_thd_count();
+		slurm_thread_create_detached(NULL, _service_msg_thread, args);
+		return;
+	}
 
-	_try_service_msg(conmgr_args, args);
+	_service_msg(conmgr_args, args);
 }
 
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
@@ -2128,6 +2231,8 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
+	slurmd_rpc_t *this_rpc = NULL;
+	service_msg_args_t *args = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
@@ -2139,16 +2244,13 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		 */
 		msg->flags |= SLURM_NO_AUTH_CRED;
 		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		slurm_free_msg(msg);
-		conmgr_queue_close_fd(con);
-		return SLURM_SUCCESS;
+		goto cleanup;
 	} else if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_fd_get_name(con),
 		      slurm_strerror(unpack_rc));
-		slurm_free_msg(msg);
-		conmgr_queue_close_fd(con);
-		return unpack_rc;
+		rc = unpack_rc;
+		goto cleanup;
 	}
 
 	if (!msg->auth_ids_set)
@@ -2158,13 +2260,36 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		 conmgr_fd_get_name(con), rpc_num2string(msg->msg_type),
 		 msg->auth_uid, &msg->address, msg->protocol_version);
 
-	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract_fd,
-					      XSTRINGIFY(_on_extract_fd),
-							 msg))) {
-		error("%s: [%s] Extracting FDs failed: %s",
-		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+	if (!(this_rpc = find_rpc(msg->msg_type))) {
+		error("%s: invalid request for msg_type %u",
+		      __func__, msg->msg_type);
+		rc = slurm_send_rc_msg(msg, EINVAL);
+		goto cleanup;
 	}
 
+	args = xmalloc(sizeof(*args));
+	*args = (service_msg_args_t) {
+		.magic = SERVICE_MSG_ARGS_MAGIC,
+		.msg = msg,
+		.this_rpc = this_rpc,
+	};
+
+	CONMGR_CON_UNLINK(msg->conmgr_con);
+
+	if ((rc = conmgr_queue_extract_con_fd(con, _on_extract,
+					      XSTRINGIFY(_on_extract), args))) {
+		error("%s: [%s] Extracting FDs failed: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
+		xfree(args);
+		goto cleanup;
+	}
+
+	return rc;
+
+cleanup:
+	slurm_free_msg(msg);
+	conmgr_queue_close_fd(con);
 	return rc;
 }
 
@@ -2904,7 +3029,7 @@ _slurmd_fini(void)
 	topology_g_destroy_config();
 	topology_g_fini();
 	job_mem_limit_fini();
-	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
+	slurmd_req(NULL, NULL); /* purge memory allocated by slurmd_req() */
 	forward_fini();
 	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {

@@ -117,6 +117,7 @@
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/launch_state.h"
+#include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
@@ -5376,26 +5377,23 @@ rwfail:
 	slurm_send_rc_msg(msg, rc);
 }
 
-typedef struct {
-	uint16_t msg_type;
-	bool from_slurmctld;
-	void (*func)(slurm_msg_t *msg);
-} slurmd_rpc_t;
-
-slurmd_rpc_t slurmd_rpcs[] = {
+static slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_LAUNCH_PROLOG,
 		.from_slurmctld = true,
 		.func = _rpc_prolog,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_BATCH_JOB_LAUNCH,
 		.from_slurmctld = true,
 		.func = _rpc_batch_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_LAUNCH_TASKS,
 		.func = _rpc_launch_tasks,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SIGNAL_TASKS,
@@ -5410,6 +5408,7 @@ slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_UPDATE_JOB_MEM,
 		.from_slurmctld = true,
 		.func = _rpc_update_job_mem,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_TERMINATE_TASKS,
@@ -5419,11 +5418,13 @@ slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_KILL_PREEMPTED,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_KILL_TIMELIMIT,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_REATTACH_TASKS,
@@ -5433,55 +5434,66 @@ slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_SUSPEND_INT,
 		.from_slurmctld = true,
 		.func = _rpc_suspend_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ABORT_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_abort_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_TERMINATE_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_terminate_job,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SHUTDOWN,
 		.from_slurmctld = true,
 		.func = _rpc_shutdown,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RECONFIGURE,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
 		.func = _rpc_set_slurmd_debug_flags,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
 		.func = _rpc_set_slurmd_debug,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_REBOOT_NODES,
 		.from_slurmctld = true,
 		.func = _rpc_reboot,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_RUN_POWER_ACTION,
 		.from_slurmctld = true,
 		.func = _rpc_run_power_action,
+		.new_thread = true,
 	},
 	{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
 		.from_slurmctld = true,
 		.func = _rpc_ping,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_PING,
@@ -5492,20 +5504,24 @@ slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_health_check,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_NODE_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_node_health_check,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_UPDATE,
 		.from_slurmctld = true,
 		.func = _rpc_acct_gather_update,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
 		.func = _rpc_acct_gather_energy,
+		.new_thread = true,
 	},
 	{
 		.msg_type = REQUEST_JOB_ID,
@@ -5598,10 +5614,20 @@ slurmd_rpc_t slurmd_rpcs[] = {
 	}
 };
 
-extern void slurmd_req(slurm_msg_t *msg)
+extern slurmd_rpc_t *find_rpc(slurm_msg_type_t msg_type)
 {
-	slurmd_rpc_t *this_rpc = NULL;
+	for (slurmd_rpc_t *q = slurmd_rpcs; q->msg_type; q++) {
+		if (q->msg_type == msg_type) {
+			xassert(q->func);
+			return q;
+		}
+	}
 
+	return NULL;
+}
+
+extern void slurmd_req(slurm_msg_t *msg, slurmd_rpc_t *this_rpc)
+{
 	if (msg == NULL) {
 		if (startup == 0)
 			startup = time(NULL);
@@ -5610,6 +5636,8 @@ extern void slurmd_req(slurm_msg_t *msg)
 		slurm_mutex_unlock(&waiter_mutex);
 		return;
 	}
+
+	xassert(this_rpc);
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -5624,18 +5652,6 @@ extern void slurmd_req(slurm_msg_t *msg)
 	}
 
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
-
-	for (this_rpc = slurmd_rpcs; this_rpc->msg_type; this_rpc++) {
-		if (this_rpc->msg_type == msg->msg_type)
-			break;
-	}
-
-	if (!this_rpc->msg_type) {
-		error("%s: invalid request for msg_type %u",
-		      __func__, msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
-		return;
-	}
 
 	if (this_rpc->from_slurmctld) {
 		/*
