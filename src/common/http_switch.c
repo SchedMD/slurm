@@ -82,7 +82,7 @@ static int _reply_tls_required(conmgr_fd_ref_t *con)
 {
 	int rc = EINVAL;
 
-	error("%s: [%s] rejecting non-TLS RPC connection",
+	debug("%s: [%s] rejecting non-TLS RPC connection",
 	      __func__, conmgr_con_get_name(con));
 
 	/*
