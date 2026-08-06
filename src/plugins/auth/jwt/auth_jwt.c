@@ -372,7 +372,7 @@ static void _handle_identity(jwt_t *jwt, auth_token_t *cred)
 
 	if (cred->id) {
 		if (cred->username &&
-		    !xstrcmp(cred->username, cred->id->pw_name)) {
+		    xstrcmp(cred->username, cred->id->pw_name)) {
 			error("%s: cannot override identity for %s with requested user %s",
 			      __func__, cred->id->pw_name, cred->username);
 			FREE_NULL_IDENTITY(cred->id);
