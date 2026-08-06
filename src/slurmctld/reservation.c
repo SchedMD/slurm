@@ -8849,10 +8849,8 @@ static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap)
 	flags = NODE_STATE_RES;
 	if (reset_all)
 		flags |= NODE_STATE_MAINT;
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
+	for (i = 0; (node_ptr = next_node(&i)); i++)
 		node_ptr->node_state &= (~flags);
-		xfree(node_ptr->resv_name);
-	}
 
 	if (!reset_all) {
 		/*
@@ -8912,6 +8910,11 @@ static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap)
 		}
 	}
 	list_iterator_destroy(iter);
+
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if (!IS_NODE_RES(node_ptr))
+			xfree(node_ptr->resv_name);
+	}
 
 	return res_start_cnt;
 }
@@ -9110,9 +9113,12 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 				    IS_NODE_FAIL(node_ptr))) {
 			bit_set(node_down_bitmap, i);
 		}
-		xfree(node_ptr->resv_name);
-		if (IS_NODE_RES(node_ptr))
+		if (!IS_NODE_RES(node_ptr)) {
+			xfree(node_ptr->resv_name);
+		} else if (xstrcmp(node_ptr->resv_name, resv_ptr->name)) {
+			xfree(node_ptr->resv_name);
 			node_ptr->resv_name = xstrdup(resv_ptr->name);
+		}
 	}
 	FREE_NULL_BITMAP(maint_node_bitmap);
 }
