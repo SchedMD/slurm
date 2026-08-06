@@ -93,7 +93,7 @@ extern identity_t *auth_common_extract_identity_from_data(data_t *jwt_data)
 
 	if (!data_get_int_converted(data_key_get(jwt_data, "uid"), &uid_val)) {
 		if ((uid_val < 0) || (uid_val > UINT32_MAX)) {
-			debug("%s: JWT has invalid uid value: %ld",
+			debug("%s: JWT has invalid uid value: %" PRId64,
 			      __func__, uid_val);
 			return NULL;
 		}
@@ -105,7 +105,7 @@ extern identity_t *auth_common_extract_identity_from_data(data_t *jwt_data)
 
 	if (!data_get_int_converted(data_key_get(jwt_data, "gid"), &gid_val)) {
 		if ((gid_val < 0) || (gid_val > UINT32_MAX)) {
-			debug("%s: JWT has invalid gid value: %ld",
+			debug("%s: JWT has invalid gid value: %" PRId64,
 			      __func__, gid_val);
 			return NULL;
 		}
@@ -202,7 +202,7 @@ static data_for_each_cmd_t _for_each_group(const char *key, const data_t *data,
 	}
 
 	if (gid_val < 0 || gid_val > UINT32_MAX) {
-		error("%s: invalid gid value: %ld", __func__, gid_val);
+		error("%s: invalid gid value: %" PRId64, __func__, gid_val);
 		return DATA_FOR_EACH_FAIL;
 	}
 
@@ -224,7 +224,7 @@ static data_for_each_cmd_t _for_each_gid(const data_t *data, void *arg)
 	}
 
 	if (gid_val < 0 || gid_val > UINT32_MAX) {
-		error("%s: invalid gid value: %ld", __func__, gid_val);
+		error("%s: invalid gid value: %" PRId64, __func__, gid_val);
 		return DATA_FOR_EACH_FAIL;
 	}
 
