@@ -312,6 +312,14 @@ older SQL server versions. If you are using
 <b>AccountingStoreFlags=job_env,job_script</b>, this must be greater than
 <b>max_script_size</b>.
 </li>
+<li><b>innodb_snapshot_isolation</b>:
+Set this to OFF. MariaDB 10.6.18, 10.11.8, 11.0.6, 11.1.5, 11.2.4, and 11.4.2
+add this variable, and MariaDB 11.6.2 and later versions set it to ON by
+default. MySQL does not have this variable. If it is ON, a locking read or a
+write to a row fails with the ER_CHECKREAD error when a different transaction
+changes that row. MariaDB then rolls back the whole transaction. The slurmdbd
+cannot recover from this failure and stops.
+</li>
 </ul>
 
 <p>
@@ -334,6 +342,9 @@ $cat my.cnf
 <i>innodb_log_file_size=1024M</i>
 <i>innodb_lock_wait_timeout=900</i>
 <i>max_allowed_packet=16M</i>
+...
+[mariadbd]
+<i>innodb_snapshot_isolation=OFF</i>
 ...
 </pre>
 
