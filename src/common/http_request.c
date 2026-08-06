@@ -123,7 +123,7 @@ static int _on_request(http_con_t *hcon, const char *name,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 		char *uid_str = uid_to_string_or_null(uid);
 
-		log_flag(NET, "%s: [%s] Accepted HTTP request: method=%s path=%s uid[%d]:%s read_mime:%s write_mime:%s",
+		log_flag(NET, "%s: [%s] Accepted HTTP request: method=%s path=%s uid[%u]:%s read_mime:%s write_mime:%s",
 			 __func__, name,
 			 get_http_method_string(request->method),
 			 request->url.path, uid, uid_str, event.read_mime,

@@ -5403,7 +5403,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 
 		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
 			char *host = auth_g_get_host(msg);
-			debug3("%s: [%s] set RPC user_id to %d",
+			debug3("%s: [%s] set RPC user_id to %u",
 			       __func__, host, msg->auth_uid);
 			xfree(host);
 		}

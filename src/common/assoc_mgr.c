@@ -3422,14 +3422,12 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				wckey->name = user.default_wckey;
 			else {
 				if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
-					error("User %s(%d) doesn't have a "
-					      "default wckey", user.name,
-					      user.uid);
+					error("User %s(%u) doesn't have a default wckey",
+					      user.name, user.uid);
 					return SLURM_ERROR;
 				} else {
-					debug3("User %s(%d) doesn't have a "
-					       "default wckey", user.name,
-					       user.uid);
+					debug3("User %s(%u) doesn't have a default wckey",
+					       user.name, user.uid);
 					return SLURM_SUCCESS;
 				}
 			}

@@ -779,10 +779,10 @@ char *gid_to_string_or_null(gid_t gid)
 			continue;
 		} else if ((rc == 0) || (rc == ENOENT) || (rc == ESRCH) ||
 			   (rc == EBADF) || (rc == EPERM)) {
-			debug2("%s: getgrgid_r(%d): no record found",
+			debug2("%s: getgrgid_r(%u): no record found",
 			       __func__, gid);
 		} else {
-			error("%s: getgrgid_r(%d): %s",
+			error("%s: getgrgid_r(%u): %s",
 			      __func__, gid, slurm_strerror(rc));
 		}
 		result = NULL;
@@ -834,7 +834,7 @@ extern int drop_supplementary_groups(uid_t uid, gid_t gid)
 			continue;
 
 		need_drop = true;
-		debug("%s: Supplementary group %d needs to be dropped",
+		debug("%s: Supplementary group %u needs to be dropped",
 		      __func__, gids[i]);
 	}
 
@@ -852,7 +852,7 @@ extern int drop_supplementary_groups(uid_t uid, gid_t gid)
 
 #ifdef __linux__
 	if (rc == EPERM) {
-		warning("Process lacks CAP_SETGID to drop supplementary groups. Supplementary groups should be removed from user (uid=%d,gid=%d) prior to starting process.",
+		warning("Process lacks CAP_SETGID to drop supplementary groups. Supplementary groups should be removed from user (uid=%u,gid=%u) prior to starting process.",
 			uid, gid);
 		return SLURM_SUCCESS;
 	}
@@ -873,7 +873,7 @@ extern int set_supplementary_groups(uid_t uid, gid_t *gids, int ngids)
 
 #ifdef __linux__
 	if (rc == EPERM) {
-		warning("Process lacks CAP_SETGID to set supplementary groups. Supplementary groups should be configured for user (uid=%d) prior to starting process.",
+		warning("Process lacks CAP_SETGID to set supplementary groups. Supplementary groups should be configured for user (uid=%u) prior to starting process.",
 			uid);
 		return SLURM_SUCCESS;
 	}

@@ -8654,8 +8654,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 				   ACCOUNTING_ENFORCE_WCKEYS))
 				job_desc->wckey = xstrdup("*");
 			else {
-				error("Job didn't specify wckey and user "
-				      "%d has no default.", job_desc->user_id);
+				error("Job didn't specify wckey and user %u has no default.",
+				      job_desc->user_id);
 				return ESLURM_INVALID_WCKEY;
 			}
 		} else if (job_desc->wckey) {
