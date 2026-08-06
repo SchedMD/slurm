@@ -250,9 +250,18 @@ static void *_cluster_rollup_usage(void *arg)
 /* 	info("hour end %s", slurm_ctime2(&hour_end)); */
 /* 	info("diff is %d", hour_end-hour_start); */
 
-	slurm_mutex_lock(&rollup_lock);
-	global_last_rollup = hour_end;
-	slurm_mutex_unlock(&rollup_lock);
+	/*
+	 * A bounded manual rollup (sacctmgr rollup <start> <end>) only rebuilds
+	 * that window and does not update last_ran_table, so it must not touch
+	 * global_last_rollup either. That value gates trigger_reroll(): if it
+	 * dropped below the DB watermark, records arriving in between would be
+	 * treated as not yet rolled and never trigger a rewind.
+	 */
+	if (!local_rollup->sent_end) {
+		slurm_mutex_lock(&rollup_lock);
+		global_last_rollup = hour_end;
+		slurm_mutex_unlock(&rollup_lock);
+	}
 
 	/* set up the day period */
 	if (!localtime_r(&last_day, &start_tm)) {
