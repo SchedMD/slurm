@@ -129,29 +129,37 @@ static serializer_flags_t _parse_flag(const char *flag)
 	return SER_FLAGS_NONE;
 }
 
-static int _parse_config(const char *config, serializer_flags_t *flags)
+/*
+ * Parse comma-separated serializer flags into *flags.
+ *
+ * An unknown flag is dropped and warned about rather than rejected: a flag
+ * only changes how output is rendered, while rejecting takes down every
+ * daemon and client initializing a serializer, none of them near the
+ * configuration at fault.
+ *
+ * src names where the flags came from, as the same flags arrive from both
+ * slurm.conf and the environment.
+ */
+static void _parse_config(const char *config, serializer_flags_t *flags,
+			  const char *src)
 {
-	int rc = SLURM_SUCCESS;
 	char *token = NULL, *save_ptr = NULL;
 	char *toklist = xstrdup(config);
 
 	token = strtok_r(toklist, ",", &save_ptr);
 	while (token) {
-		serializer_flags_t flag = SER_FLAGS_NONE;
+		serializer_flags_t flag = _parse_flag(token);
 
-		if ((flag = _parse_flag(token)) == SER_FLAGS_NONE) {
-			debug("%s: Unknown flag \"%s\" in \"%s\"",
-			      __func__, token, config);
-			rc = EINVAL;
-		}
-
-		*flags |= flag;
+		if (flag == SER_FLAGS_NONE)
+			warning_in_daemon(
+				"Ignoring unknown %s flag \"%s\" in \"%s\"",
+				src, token, config);
+		else
+			*flags |= flag;
 
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(toklist);
-
-	return rc;
 }
 
 /* Parse SerializerParameters comma-separated flags, SER_FLAGS_NONE if unset */
@@ -160,8 +168,8 @@ static serializer_flags_t _conf_flags(void)
 	serializer_flags_t flags = SER_FLAGS_NONE;
 	const char *params = slurm_conf.serializer_params;
 
-	if (params && params[0] && _parse_config(params, &flags))
-		fatal("Unable to parse SerializerParameters \"%s\"", params);
+	if (params && params[0])
+		_parse_config(params, &flags, "SerializerParameters");
 
 	return flags;
 }
@@ -409,7 +417,7 @@ extern int serializer_g_init(void)
 	conf_flags = _conf_flags();
 
 	for (size_t i = 0; plugins && (i < plugins->count) && !rc; i++) {
-		const char *config = NULL;
+		const char *config = NULL, *config_src = NULL;
 		const char **mime_types = NULL, *mime_type = NULL;
 		const funcs_t *func_ptr = plugins->functions[i];
 		serializer_flags_t flags = conf_flags;
@@ -427,23 +435,29 @@ extern int serializer_g_init(void)
 			mime_array[mi++] = mime_type;
 
 		if (_serves_mime_type(i, MIME_TYPE_JSON)) {
-			if (running_in_slurmrestd())
-				config = getenv("SLURMRESTD_JSON");
-			if (!config)
-				config = getenv(ENV_CONFIG_JSON);
+			if (running_in_slurmrestd()) {
+				config_src = "SLURMRESTD_JSON";
+				config = getenv(config_src);
+			}
+			if (!config) {
+				config_src = ENV_CONFIG_JSON;
+				config = getenv(config_src);
+			}
 		} else if (_serves_mime_type(i, MIME_TYPE_YAML)) {
-			if (running_in_slurmrestd())
-				config = getenv("SLURMRESTD_YAML");
-			if (!config)
-				config = getenv(ENV_CONFIG_YAML);
+			if (running_in_slurmrestd()) {
+				config_src = "SLURMRESTD_YAML";
+				config = getenv(config_src);
+			}
+			if (!config) {
+				config_src = ENV_CONFIG_YAML;
+				config = getenv(config_src);
+			}
 		}
 
 		/* Env vars override SerializerParameters flags for this plugin */
 		if (config && config[0]) {
 			flags = SER_FLAGS_NONE;
-			if ((rc = _parse_config(config, &flags)))
-				fatal("Unable to parse serializer \"%s\" flags: %s",
-				      config, slurm_strerror(rc));
+			_parse_config(config, &flags, config_src);
 		}
 
 		rc = (*func_ptr->init)(flags);
