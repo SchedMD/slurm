@@ -691,7 +691,7 @@ int gid_from_string(const char *name, gid_t *gidp)
 	errno = 0;
 	l = strtol(name, &p, 10);
 	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX))) ||
-	    (name == p) || (*p != '\0') || (l < 0) || (l > INT_MAX)) {
+	    (name == p) || (*p != '\0') || (l < 0) || (l > UINT32_MAX)) {
 		xfree(buf_malloc);
 		return -1;
 	}
