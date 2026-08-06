@@ -2769,6 +2769,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	const char redo_log_var[] = "innodb_redo_log_capacity";
 	const char allowed_packet_var[] = "max_allowed_packet";
 	const uint64_t allowed_packet = 16777216;
+	const char snapshot_var[] = "innodb_snapshot_isolation";
 	const char *logfile_var_actual = NULL;
 
 	uint64_t value;
@@ -2818,6 +2819,31 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", allowed_packet_var);
 	}
+
+	/*
+	 * MariaDB 10.6.18, 10.11.8, 11.0.6, 11.1.5, 11.2.4, and 11.4.2 add
+	 * innodb_snapshot_isolation. MariaDB 11.6.2 and later versions set it
+	 * to ON by default. If it is ON, a locking read or a write to a row
+	 * fails with ER_CHECKREAD when a different transaction changes that
+	 * row. MariaDB then rolls back the whole transaction. Slurm cannot
+	 * recover from this error.
+	 *
+	 * MySQL and older MariaDB versions do not have this variable. If the
+	 * query fails, assume that the variable is OFF. Report this variable
+	 * separately, because it is fatal at run time.
+	 */
+	if (!xstrcasestr(db_info, "mariadb")) {
+		value = 0;
+	} else if (mysql_db_get_var_u64(mysql_conn, snapshot_var, &value)) {
+		value = 0;
+		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
+			error("The prior error message regarding an undefined '%s' variable is innocuous.  MariaDB without this variable will operate normally.",
+			      snapshot_var);
+	}
+	debug2("%s: %"PRIu64, snapshot_var, value);
+	if (value)
+		error("%s is enabled, which is not supported by Slurm and will cause slurmdbd to fatal when a write conflicts with a concurrent transaction.  Set %s=OFF.",
+		      snapshot_var, snapshot_var);
 
 	if (!recommended_values) {
 		error("%s", error_msg);
