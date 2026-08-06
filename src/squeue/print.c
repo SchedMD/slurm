@@ -421,6 +421,13 @@ int _print_int(int number, int width, bool right, bool cut_output)
 	return _print_str(buf, width, right, cut_output);
 }
 
+int _print_uint(unsigned int number, int width, bool right, bool cut_output)
+{
+	char buf[32];
+
+	snprintf(buf, 32, "%u", number);
+	return _print_str(buf, width, right, cut_output);
+}
 
 int _print_secs(long time, int width, bool right, bool cut_output)
 {
@@ -846,7 +853,7 @@ int _print_job_user_id(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("UID", width, right, true);
 	else
-		_print_int(job->user_id, width, right, true);
+		_print_uint(job->user_id, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -870,7 +877,7 @@ int _print_job_group_id(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("GROUP", width, right, true);
 	else
-		_print_int(job->group_id, width, right, true);
+		_print_uint(job->group_id, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -2706,7 +2713,7 @@ int _print_step_user_id(job_step_info_t * step, int width, bool right,
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("UID", width, right, true);
 	else
-		_print_int(step->user_id, width, right, true);
+		_print_uint(step->user_id, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
