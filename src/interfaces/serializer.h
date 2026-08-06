@@ -55,8 +55,13 @@ typedef enum {
  *
  * WARNING: There is no guarantee that plugins for these types
  * will be loaded at any given time.
+ *
+ * Each must be the primary type of the plugin providing it: the primary is
+ * what get_mime_type_array() advertises and what serializer_g_init() matches
+ * to hand a plugin its configuration. Compatibility aliases stay registered
+ * for inbound requests but must not be named here.
  */
-#define MIME_TYPE_YAML "application/x-yaml"
+#define MIME_TYPE_YAML "application/yaml" /* RFC9512 */
 #define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
 #define ENV_CONFIG_YAML "SLURM_YAML"
 #define MIME_TYPE_JSON "application/json"
