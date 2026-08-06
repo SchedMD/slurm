@@ -2182,8 +2182,17 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 					   src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
-		uid = data_get_int(src);
+	{
+		int64_t tmp_val = data_get_int(src);
+		if ((tmp_val < 0) || (tmp_val > UINT32_MAX))
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_USER_ID_INVALID,
+				"Invalid user ID (overflow): %" PRId64,
+				tmp_val);
+		uid = tmp_val;
 		break;
+	}
 	case DATA_TYPE_STRING:
 	{
 		int rc;
@@ -2220,11 +2229,6 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_MAX:
 		fatal_abort("invalid type");
 	}
-
-	if (uid >= INT_MAX)
-		return parse_error(parser, args, parent_path,
-				   ESLURM_USER_ID_INVALID,
-				   "Invalid user ID: %d", uid);
 
 	*uid_ptr = uid;
 
@@ -2273,8 +2277,17 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 					   src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
-		gid = data_get_int(src);
+	{
+		int64_t tmp_val = data_get_int(src);
+		if ((tmp_val < 0) || (tmp_val > UINT32_MAX))
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_GROUP_ID_INVALID,
+				"Invalid group ID (overflow): %" PRId64,
+				tmp_val);
+		gid = tmp_val;
 		break;
+	}
 	case DATA_TYPE_STRING:
 	{
 		int rc;
@@ -2311,11 +2324,6 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_MAX:
 		fatal_abort("invalid type");
 	}
-
-	if (gid >= INT_MAX)
-		return parse_error(parser, args, parent_path,
-				   ESLURM_GROUP_ID_INVALID,
-				   "Invalid group ID: %d", gid);
 
 	*gid_ptr = gid;
 
