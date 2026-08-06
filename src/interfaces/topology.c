@@ -56,6 +56,8 @@
 strong_alias(topology_g_build_config, slurm_topology_g_build_config);
 strong_alias(topology_g_destroy_config, slurm_topology_g_detroy_config);
 
+#define TOPOLOGY_MAJOR_TYPE "topology"
+
 typedef struct slurm_topo_ops {
 	uint32_t (*plugin_id);
 	char(*plugin_type);
@@ -185,22 +187,20 @@ static int _get_plugin_index(int plugin_id)
 
 static int _get_plugin_index_by_type(char *type)
 {
-	char *plugin_type = "topo";
-
 	for (int i = 0; i < g_context_num; i++)
-		if (!xstrcmp(plugin_type, ops[i].plugin_type))
+		if (!xstrcmp(type, ops[i].plugin_type))
 			return i;
 
 	xrecalloc(ops, g_context_num + 1, sizeof(slurm_topo_ops_t));
 	xrecalloc(g_context, g_context_num + 1, sizeof(plugin_context_t *));
 
 	g_context[g_context_num] =
-		plugin_context_create(plugin_type, type,
+		plugin_context_create(TOPOLOGY_MAJOR_TYPE, type,
 				      (void **) &ops[g_context_num], syms,
 				      sizeof(syms));
 	if (!g_context[g_context_num]) {
 		error("%s: cannot create %s context for %s",
-		      __func__, plugin_type, type);
+		      __func__, TOPOLOGY_MAJOR_TYPE, type);
 		return -1;
 	}
 
@@ -366,7 +366,7 @@ extern int topology_g_build_config(void)
 		int rc2 = (*(ops[tctx[i].idx].build_config))(&(tctx[i]));
 		if (rc2) {
 			debug("%s: %s: %s",
-			      __func__, g_context[i]->type,
+			      __func__, g_context[tctx[i].idx]->type,
 			      slurm_strerror(rc2));
 			rc = SLURM_ERROR;
 		}
@@ -391,7 +391,7 @@ extern int topology_g_destroy_config(void)
 		int rc2 = (*(ops[tctx[i].idx].destroy_config))(&(tctx[i]));
 		if (rc2) {
 			debug("%s: %s: %s",
-			      __func__, g_context[i]->type,
+			      __func__, g_context[tctx[i].idx]->type,
 			      slurm_strerror(rc2));
 			rc = SLURM_ERROR;
 		}
@@ -729,9 +729,8 @@ extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 	if (plugin_inx < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[tctx[plugin_inx].idx].topoinfo_print))(topoinfo->data,
-							     nodes_list, unit,
-							     out);
+	return (*(ops[plugin_inx].topoinfo_print))(topoinfo->data, nodes_list,
+						   unit, out);
 }
 
 extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
@@ -763,9 +762,8 @@ extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 		goto unpack_error;
 	}
 
-	if ((*(ops[tctx[plugin_inx].idx].topoinfo_unpack))(&topoinfo_ptr->data,
-							   buffer,
-							   protocol_version) !=
+	if ((*(ops[plugin_inx].topoinfo_unpack))(&topoinfo_ptr->data, buffer,
+						 protocol_version) !=
 	    SLURM_SUCCESS)
 		goto unpack_error;
 

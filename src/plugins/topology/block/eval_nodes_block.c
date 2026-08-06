@@ -440,7 +440,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	}
 
 	if (hres_select &&
-	    (hres_select->topology_idx == topo_eval->tctx->idx)) {
+	    (hres_select->topology_idx == job_ptr->part_ptr->topology_idx)) {
 		hres_match_topo = true;
 		bblock_hres_inx =
 			xcalloc(ctx->block_count, sizeof(*bblock_hres_inx));
