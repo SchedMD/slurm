@@ -205,6 +205,42 @@ extern int conmgr_con_reply_rc_and_close(conmgr_fd_ref_t *ref, int rc,
 	return send_rc;
 }
 
+extern uint16_t conmgr_con_peek_rpc_protocol_version(conmgr_fd_ref_t *ref)
+{
+	conmgr_fd_t *con = NULL;
+	uint16_t version = NO_VAL16;
+	buf_t *shadow = NULL;
+
+	if (!ref)
+		return SLURM_MIN_PROTOCOL_VERSION;
+
+	con = ref->con;
+
+	/*
+	 * Wire format: [ msglen (uint32) ][ header, whose first field is the
+	 * protocol version (uint16) ]. Peek that version without consuming the
+	 * pending RPC so a reply can be packed at a version the peer can parse.
+	 */
+	if (!con->in ||
+	    (size_buf(con->in) < (sizeof(uint32_t) + sizeof(uint16_t))))
+		return SLURM_MIN_PROTOCOL_VERSION;
+
+	shadow = create_shadow_buf(get_buf_data(con->in), size_buf(con->in));
+	set_buf_offset(shadow, sizeof(uint32_t));
+	if (unpack16(&version, shadow))
+		version = NO_VAL16;
+	FREE_NULL_BUFFER(shadow);
+
+	/* Only trust a version this binary actually supports. */
+	if ((version != SLURM_PROTOCOL_VERSION) &&
+	    (version != SLURM_ONE_BACK_PROTOCOL_VERSION) &&
+	    (version != SLURM_TWO_BACK_PROTOCOL_VERSION) &&
+	    (version != SLURM_MIN_PROTOCOL_VERSION))
+		return SLURM_MIN_PROTOCOL_VERSION;
+
+	return version;
+}
+
 extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int rc;
