@@ -389,6 +389,13 @@ typedef struct {
 	int64_t number;
 } INT64_NO_VAL_t;
 
+typedef struct {
+	bool set;
+	bool infinite;
+	bool parent;
+	uint32_t number;
+} SHARES_t;
+
 typedef enum {
 	JOB_RES_CORE_INVALID = 0,
 	JOB_RES_CORE_UNALLOC = NO_VAL64,
@@ -2977,6 +2984,84 @@ static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 	}
 
 	return DUMP(UINT32_NO_VAL_STRUCT, istruct, dst, args);
+}
+
+static int PARSE_FUNC(SHARES)(const parser_t *const parser, void *obj,
+			      data_t *src, args_t *args, data_t *parent_path)
+{
+	uint32_t *dst = obj;
+
+	switch (data_get_type(src)) {
+	case DATA_TYPE_DICT:
+	{
+		int rc;
+		SHARES_t istruct = { 0 };
+
+		if ((rc = PARSE(SHARES_STRUCT, istruct, src, parent_path,
+				args)))
+			return rc;
+
+		if (istruct.parent)
+			*dst = SLURMDB_FS_USE_PARENT;
+		else if (istruct.infinite)
+			*dst = INFINITE;
+		else if (!istruct.set)
+			*dst = NO_VAL;
+		else
+			*dst = istruct.number;
+
+		return rc;
+	}
+	case DATA_TYPE_STRING:
+		/* accept "parent" as sacctmgr does */
+		if (!xstrcasecmp(data_get_string(src), "parent")) {
+			*dst = SLURMDB_FS_USE_PARENT;
+			return SLURM_SUCCESS;
+		}
+		/* fall through */
+	default:
+		/*
+		 * Defer every other form (bare integer, null) to
+		 * UINT32_NO_VAL so clients written against the previous
+		 * integer-only schema keep working. Note this does not
+		 * accept the string "Infinity": UINT32_NO_VAL's string case
+		 * only accepts integers.
+		 */
+		return PARSE_FUNC(UINT32_NO_VAL)(parser, dst, src, args,
+						 parent_path);
+	}
+}
+
+static int DUMP_FUNC(SHARES)(const parser_t *const parser, void *obj,
+			     data_t *dst, args_t *args)
+{
+	uint32_t *src = obj;
+	SHARES_t istruct = { 0 };
+
+	if (is_complex_mode(args)) {
+		if (*src == SLURMDB_FS_USE_PARENT)
+			data_set_string(dst, "parent");
+		else if (*src == INFINITE)
+			data_set_string(dst, "Infinity");
+		else if (*src == NO_VAL)
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+		return SLURM_SUCCESS;
+	}
+
+	if (*src == SLURMDB_FS_USE_PARENT) {
+		istruct.parent = true;
+	} else if (*src == INFINITE) {
+		istruct.infinite = true;
+	} else if (*src == NO_VAL) {
+		/* nothing to do */
+	} else {
+		istruct.set = true;
+		istruct.number = *src;
+	}
+
+	return DUMP(SHARES_STRUCT, istruct, dst, args);
 }
 
 PARSE_DISABLED(STEP_NODES)
@@ -11188,6 +11273,16 @@ static const parser_t PARSER_ARRAY(UINT32_NO_VAL_STRUCT)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(SHARES_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SHARES_STRUCT)[] = {
+	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
+	add_parse(BOOL, infinite, "infinite", "True to reset fairshare to the default of 1 share, equivalent to sacctmgr's FairShare=-1; \"set\" and \"number\" will be ignored"),
+	add_parse(BOOL, parent, "parent", "True if fairshare is inherited from the parent association; \"set\", \"infinite\" and \"number\" will be ignored"),
+	add_parse(UINT32, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(UINT16_NO_VAL_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(UINT16_NO_VAL_STRUCT)[] = {
 	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
@@ -13047,6 +13142,7 @@ static const parser_t parsers[] = {
 	addps(STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addpsp(UINT32_NO_VAL, UINT32_NO_VAL_STRUCT, uint32_t, NEED_NONE, "32 bit integer number with flags"),
+	addpsp(SHARES, SHARES_STRUCT, uint32_t, NEED_NONE, "32 bit shares number with flags"),
 	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL, NULL, NULL),
 	addpsp(UINT64_NO_VAL, UINT64_NO_VAL_STRUCT, uint64_t, NEED_NONE, "64 bit integer number with flags"),
 	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
@@ -13338,6 +13434,7 @@ static const parser_t parsers[] = {
 	addpap(FLOAT64_NO_VAL_STRUCT, FLOAT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT32_NO_VAL_STRUCT, UINT32_NO_VAL_t, NULL, NULL),
+	addpap(SHARES_STRUCT, SHARES_t, NULL, NULL),
 	addpap(UINT16_NO_VAL_STRUCT, UINT16_NO_VAL_t, NULL, NULL),
 	addpap(INT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 	addpap(JOB_RES_NODE, JOB_RES_NODE_t, NULL, NULL),
