@@ -14648,8 +14648,9 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 					job_desc->pn_min_memory;
 		} else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (job_desc->pn_min_memory ==
-			   detail_ptr->pn_min_memory) {
+		} else if ((job_desc->pn_min_memory ==
+			    detail_ptr->pn_min_memory) &&
+			   (job_ptr->bit_flags & JOB_MEM_SET)) {
 			sched_debug("%s: new memory limit identical to old limit for %pJ",
 				    __func__, job_ptr);
 		} else {
