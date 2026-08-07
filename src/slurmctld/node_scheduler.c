@@ -298,6 +298,7 @@ extern void set_job_node_addrs(job_record_t *job_ptr,
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
+	char *pos = NULL;
 
 	xfree(job_ptr->alias_list);
 
@@ -308,14 +309,11 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
-		    (!cloud_dns && IS_NODE_CLOUD(node_ptr))) {
-			if (job_ptr->alias_list)
-				xstrcat(job_ptr->alias_list, ",");
-
-			xstrfmtcat(job_ptr->alias_list, "%s:[%s]:%s",
-				   node_ptr->name, node_ptr->comm_name,
-				   node_ptr->node_hostname);
-		}
+		    (!cloud_dns && IS_NODE_CLOUD(node_ptr)))
+			xstrfmtcatat(job_ptr->alias_list, &pos, "%s%s:[%s]:%s",
+				     job_ptr->alias_list ? "," : "",
+				     node_ptr->name, node_ptr->comm_name,
+				     node_ptr->node_hostname);
 	}
 
 	set_job_node_addrs(job_ptr, job_ptr->origin_cluster);
