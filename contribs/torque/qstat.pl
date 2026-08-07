@@ -417,17 +417,17 @@ sub get_exec_host
 	my ($job) = @_;
 
 	my $execHost = "--";
-	if ($job->{'nodes'} && $job->{'job_resrcs'}) {
+	if ($job->{'nodes'} && $job->{'node_resrcs'}) {
 		my @allocNodes = ();
-		my $hl = Slurm::Hostlist::create($job->{'nodes'});
-		my $inx = 0;
-		my $cpu_cnt = 0;
-		while((my $host = Slurm::Hostlist::shift($hl))) {
-			push(@allocNodes, "$host/" .
-			     Slurm->job_cpus_allocated_on_node_id(
-				     $job->{'job_resrcs'}, $inx++));
+		foreach my $nr (@{$job->{'node_resrcs'}}) {
+			next unless defined $nr->{'cpus'};
+			my $cpu_cnt = $nr->{'cpus'};
+			my $hl = Slurm::Hostlist::create($nr->{'nodes'});
+			while ((my $host = Slurm::Hostlist::shift($hl))) {
+				push(@allocNodes, "$host/$cpu_cnt");
+			}
 		}
-		$execHost = join '+', @allocNodes;
+		$execHost = join '+', @allocNodes if @allocNodes;
 	}
 	return $execHost;
 }
