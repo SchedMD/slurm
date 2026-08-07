@@ -1650,8 +1650,12 @@ skip_test0:
 	 * Remove cores that are exempt from preemption. Only applicable when
 	 * using PreemptMode=suspend,gang and PreemptExemptTime.
 	 */
-	if (gang_exempt_cores && !test_only)
-		core_array_and_not(free_cores, gang_exempt_cores);
+	if (!test_only) {
+		bitstr_t **exempt_cores = gang_exempt_get_cores();
+
+		if (exempt_cores)
+			core_array_and_not(free_cores, exempt_cores);
+	}
 
 	if (preempt_by_part) {
 		/*
@@ -4018,16 +4022,6 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			bit_set_count(node_bitmap));
 		node_data_dump();
 	}
-
-	/*
-	 * If using PreemptMode=suspend,gang and PreemptExemptTime is set, build
-	 * core array of all cores that are exempt from suspend preemption
-	 * because the jobs using them have not been running for long enough
-	 * yet. (haven't run for PreemptExemptTime seconds yet)
-	 */
-	if (gang_mode && (slurm_conf.preempt_exempt_time != INFINITE) &&
-	    slurm_conf.preempt_exempt_time && (mode != SELECT_MODE_TEST_ONLY))
-		gang_exempt_rebuild();
 
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = _will_run_test(job_ptr, node_bitmap, min_nodes,

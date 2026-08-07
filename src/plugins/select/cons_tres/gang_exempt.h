@@ -37,15 +37,37 @@
 #define _CONS_TRES_GANG_EXEMPT_H
 
 /*
- * Cores no job may be oversubscribed onto under gang scheduling. Consumed in
- * job_test().
+ * Return the cores no job may be oversubscribed onto under gang scheduling,
+ * bringing them up to date first. Reading them through here is what keeps them
+ * current, so the array itself is private to the module.
+ * RET the exempt cores, or NULL if nothing is exempt
  */
-extern bitstr_t **gang_exempt_cores;
+extern bitstr_t **gang_exempt_get_cores(void);
 
 /*
- * Rebuild gang_exempt_cores from the running jobs still within their
- * PreemptExemptTime.
+ * Offer job_ptr's cores as exempt from sharing. Needs no locks: whether the
+ * job really is exempt is settled by the next read of the exempt cores, which
+ * happens before anything can be placed on them.
+ * IN job_ptr - the job that now holds an allocation
  */
-extern void gang_exempt_rebuild(void);
+extern void gang_exempt_add_job(job_record_t *job_ptr);
+
+/*
+ * Stop offering job_ptr. A no-op for a job that was never offered.
+ * IN job_ptr - the job that no longer holds an allocation
+ */
+extern void gang_exempt_remove_job(job_record_t *job_ptr);
+
+/* Mark the exempt cores stale, so the next read of them re-derives them. */
+extern void gang_exempt_mark_stale(void);
+
+/*
+ * Discard the exempt cores after the node count may have changed, rather than
+ * clearing an array sized to the old count.
+ */
+extern void gang_exempt_node_init(void);
+
+/* Release everything the exempt set holds. */
+extern void gang_exempt_fini(void);
 
 #endif /* !_CONS_TRES_GANG_EXEMPT_H */
