@@ -171,6 +171,9 @@ static uint16_t _job_preempt_mode_internal(job_record_t *job_ptr)
 	if ((job_ptr->warn_flags & KILL_JOB_RESV) &&
 	    (data != PREEMPT_MODE_REQUEUE))
 		data = PREEMPT_MODE_CANCEL;
+	/* HetJobs are explicitly excluded from SUSPEND. */
+	if (job_ptr->het_job_id && (data == PREEMPT_MODE_SUSPEND))
+		data = PREEMPT_MODE_OFF;
 
 	return data;
 }
@@ -360,17 +363,20 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
  * Resolve the PreemptMode template that applies to a heterogeneous job.
  *
  * The first component found with a preempt mode in the hierarchy (ordered
- * highest to lowest: SUSPEND->REQUEUE->CANCEL) sets the mode for all
- * components. CANCEL is not in the list below since it is handled as the
- * default.
+ * highest to lowest: REQUEUE->CANCEL) sets the mode for all components.
+ * Hetjobs are exempt from SUSPEND, so a component resolving to SUSPEND maps to
+ * OFF; if no component resolves to REQUEUE or CANCEL the whole hetjob resolves
+ * to OFF.
  * IN job_ptr - hetjob leader (has het_job_list) not yet resolved
  * RET PreemptMode to apply to every component of the hetjob
  */
 static uint16_t _het_job_preempt_mode(job_record_t *job_ptr)
 {
 	uint16_t data = PREEMPT_MODE_OFF;
-	static const uint16_t preempt_modes[] = { PREEMPT_MODE_SUSPEND,
-						  PREEMPT_MODE_REQUEUE };
+	static const uint16_t preempt_modes[] = {
+		PREEMPT_MODE_REQUEUE,
+		PREEMPT_MODE_CANCEL,
+	};
 	static const int preempt_modes_cnt =
 		sizeof(preempt_modes) / sizeof(preempt_modes[0]);
 
@@ -381,7 +387,13 @@ static uint16_t _het_job_preempt_mode(job_record_t *job_ptr)
 					     _find_job_by_preempt_mode, &data)))
 			break;
 	}
-	/* if not found look up the mode (CANCEL expected) */
+	/*
+	 * Not found means every component resolved to OFF, either directly or
+	 * because a hetjob's SUSPEND maps to OFF. Leave job_preempt_comp NULL
+	 * so the next call scans again: a component's partition or QOS may be
+	 * given a preemptable mode while the job runs, and nothing clears a
+	 * cached template.
+	 */
 	if (!job_ptr->job_preempt_comp)
 		data = _job_preempt_mode_internal(job_ptr);
 
