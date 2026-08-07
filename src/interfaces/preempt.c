@@ -153,6 +153,14 @@ static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 
 	preemptee_mode = slurm_job_preempt_mode(preemptee_ptr);
 
+	/*
+	 * A hetjob is excluded from gang scheduling, so as a preemptor it
+	 * cannot preempt anyone in SUSPEND mode.
+	 */
+	if (preemptor_ptr->het_job_id &&
+	    (preemptee_mode == PREEMPT_MODE_SUSPEND))
+		return true;
+
 	/* A resolved mode of OFF means this job may not be preempted. */
 	if (preemptee_mode == PREEMPT_MODE_OFF)
 		return true;

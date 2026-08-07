@@ -1617,12 +1617,15 @@ skip_test0:
 	_free_avail_res_array(avail_res_array);
 	avail_res_array = NULL;
 
-	if ((gang_mode == 0) && (job_node_req != NODE_CR_AVAILABLE)) {
+	if (((gang_mode == 0) || job_ptr->het_job_id) &&
+	    (job_node_req != NODE_CR_AVAILABLE)) {
 		/*
-		 * This job CANNOT share CPUs regardless of priority,
-		 * so we fail here. Note that job preemption removes
-		 * jobs from simulated resource allocation map before
-		 * this point.
+		 * This job CANNOT share CPUs, so we fail here. Either
+		 * gang scheduling is disabled and the job may not share
+		 * regardless of priority, or the job is a hetjob, which
+		 * gang scheduling excludes and therefore cannot time
+		 * slice. Note that job preemption removes jobs from
+		 * simulated resource allocation map before this point.
 		 */
 		log_flag(SELECT_TYPE, "test 1 fail - no idle resources available");
 		goto alloc_job;
@@ -1659,7 +1662,14 @@ skip_test0:
 			core_array_and_not(free_cores, exempt_cores);
 	}
 
-	if (preempt_by_part) {
+	/*
+	 * A hetjob under gang is handled here even without preempt_by_part:
+	 * gang is valid with any PreemptType, but preempt_by_part is only set
+	 * for PreemptType=preempt/partition_prio. Without this the loop below
+	 * is skipped entirely under preempt/none and preempt/qos, and nothing
+	 * keeps the hetjob off the cores of jobs it can not time slice with.
+	 */
+	if (preempt_by_part || (job_ptr->het_job_id && gang_mode)) {
 		/*
 		 * Remove from avail_cores resources allocated to jobs which
 		 * this job can not preempt
@@ -1667,10 +1677,17 @@ skip_test0:
 		log_flag(SELECT_TYPE, "looking for higher-priority or PREEMPT_MODE_OFF part's to remove from avail_cores");
 
 		for (p_ptr = cr_part_ptr; p_ptr; p_ptr = p_ptr->next) {
+			/*
+			 * A hetjob is excluded from gang scheduling, so under
+			 * gang it must be treated as a non-sharing preemptor.
+			 * It shares with nobody, including its own partition's
+			 * oversubscription rows.
+			 */
 			if ((p_ptr->part_ptr->priority_tier <=
 			     jp_ptr->part_ptr->priority_tier) &&
 			    (p_ptr->part_ptr->preempt_mode !=
-			     PREEMPT_MODE_OFF)) {
+			     PREEMPT_MODE_OFF) &&
+			    !(job_ptr->het_job_id && gang_mode)) {
 				log_flag(SELECT_TYPE, "continuing on part: %s",
 				         p_ptr->part_ptr->name);
 				continue;
@@ -1681,9 +1698,17 @@ skip_test0:
 			 * may be that it won't be able to start because of
 			 * preemption, but it may be able to start on different
 			 * row.
+			 *
+			 * A hetjob under gang is the exception. Gang cannot
+			 * time slice it, so placing it in a shared row would
+			 * leave it contending for the CPUs instead of
+			 * alternating, which is what the row was configured
+			 * for. Without gang the partition oversubscribes as
+			 * configured and this does not apply.
 			 */
 			if ((p_ptr->part_ptr == jp_ptr->part_ptr) &&
-			    (p_ptr->num_rows > 1))
+			    (p_ptr->num_rows > 1) &&
+			    !(job_ptr->het_job_id && gang_mode))
 				continue;
 			if (!p_ptr->row)
 				continue;
