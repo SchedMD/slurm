@@ -120,19 +120,44 @@ static int _is_job_preempt_exempt_internal(void *x, void *key)
 static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 				  job_record_t *preemptor_ptr)
 {
+	uint16_t preemptee_mode = PREEMPT_MODE_OFF;
+
 	xassert(preemptee_ptr);
 	xassert(preemptor_ptr);
 
-	if (!preemptee_ptr->het_job_list)
-		return _is_job_preempt_exempt_internal(
-			preemptee_ptr, preemptor_ptr);
 	/*
+	 * Only a running or suspended job can be preempted. A hetjob leader is
+	 * itself a component of het_job_list, so a leader that is not running
+	 * makes the whole hetjob exempt below anyway.
+	 */
+	if (!IS_JOB_RUNNING(preemptee_ptr) && !IS_JOB_SUSPENDED(preemptee_ptr))
+		return true;
+
+	/*
+	 * Apply the plugin's filter before resolving the mode. It is the cheap
+	 * and highly selective half, while resolving the mode can walk
+	 * het_job_list, and this is asked once per job in job_list per
+	 * preemptor.
+	 *
 	 * All components of a job must be preemptable otherwise it is
 	 * preempt exempt
 	 */
-        return list_find_first(preemptee_ptr->het_job_list,
-			       _is_job_preempt_exempt_internal,
-			       preemptor_ptr) ? true : false;
+	if (!preemptee_ptr->het_job_list) {
+		if (_is_job_preempt_exempt_internal(preemptee_ptr,
+						    preemptor_ptr))
+			return true;
+	} else if (list_find_first(preemptee_ptr->het_job_list,
+				   _is_job_preempt_exempt_internal,
+				   preemptor_ptr))
+		return true;
+
+	preemptee_mode = slurm_job_preempt_mode(preemptee_ptr);
+
+	/* A resolved mode of OFF means this job may not be preempted. */
+	if (preemptee_mode == PREEMPT_MODE_OFF)
+		return true;
+
+	return false;
 }
 
 /*
