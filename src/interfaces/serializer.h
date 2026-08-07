@@ -48,6 +48,8 @@ typedef enum {
 	SER_FLAGS_PRETTY = SLURM_BIT(1),
 	SER_FLAGS_COMPLEX = SLURM_BIT(2), /* Dump Infinity and NaN */
 	SER_FLAGS_NO_TAG = SLURM_BIT(3), /* don't dump YAML tags */
+	/* Flags selecting an output layout. At most one may ever be set. */
+	SER_FLAGS_LAYOUT_MASK = (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY),
 } serializer_flags_t;
 
 /*

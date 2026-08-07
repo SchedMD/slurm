@@ -132,10 +132,13 @@ static serializer_flags_t _parse_flag(const char *flag)
 /*
  * Parse comma-separated serializer flags into *flags.
  *
- * An unknown flag is dropped and warned about rather than rejected: a flag
- * only changes how output is rendered, while rejecting takes down every
- * daemon and client initializing a serializer, none of them near the
- * configuration at fault.
+ * Parsing always yields a layout a plugin can render: an unknown flag is
+ * dropped, and as compact and pretty select the same layout, the last named
+ * wins. serializer/json xassert()s when handed both.
+ *
+ * Warn rather than reject: a flag only changes how output is rendered, while
+ * rejecting takes down every daemon and client initializing a serializer,
+ * none of them near the configuration at fault.
  *
  * src names where the flags came from, as the same flags arrive from both
  * slurm.conf and the environment.
@@ -150,12 +153,22 @@ static void _parse_config(const char *config, serializer_flags_t *flags,
 	while (token) {
 		serializer_flags_t flag = _parse_flag(token);
 
-		if (flag == SER_FLAGS_NONE)
+		if (flag == SER_FLAGS_NONE) {
 			warning_in_daemon(
 				"Ignoring unknown %s flag \"%s\" in \"%s\"",
 				src, token, config);
-		else
+		} else {
+			/* A layout flag, and a different one is already set */
+			if ((flag & SER_FLAGS_LAYOUT_MASK) &&
+			    (*flags & SER_FLAGS_LAYOUT_MASK & ~flag)) {
+				warning_in_daemon(
+					"%s flag \"%s\" overrides the layout already selected in \"%s\"",
+					src, token, config);
+				*flags &= ~SER_FLAGS_LAYOUT_MASK;
+			}
+
 			*flags |= flag;
+		}
 
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
