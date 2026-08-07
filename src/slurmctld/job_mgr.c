@@ -13562,6 +13562,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		xfree(job_ptr->details->resv_req);
 		job_ptr->details->resv_req = xstrdup(job_desc->reservation);
 		job_ptr->resv_list = new_resv_list;
+		new_resv_list = NULL;
 		job_ptr->resv_id = new_resv_ptr->resv_id;
 		job_ptr->resv_ptr = new_resv_ptr;
 
@@ -15296,6 +15297,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 fini:
 	FREE_NULL_BITMAP(new_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
+	FREE_NULL_LIST(new_qos_list);
+	FREE_NULL_LIST(new_resv_list);
 
 	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
