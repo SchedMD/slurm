@@ -7765,6 +7765,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 	list_itr_t *iter;
 	int i, rc = SLURM_SUCCESS, rc2;
 
+	*resv_maint = false;
 	*resv_overlap = false;	/* initialize to false */
 	job_start_time = *when;
 	job_end_time   = *when + _get_job_duration(job_ptr, reboot);
@@ -7980,6 +7981,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 					 bit_overlap(*node_bitmap,
 						     steal_bitmap));
 				*resv_overlap = true;
+				if (res2_ptr->flags & RESERVE_FLAG_MAINT)
+					*resv_maint = true;
 				bit_and_not(*node_bitmap, steal_bitmap);
 			}
 			if (steal_bitmap != res2_ptr->node_bitmap)
