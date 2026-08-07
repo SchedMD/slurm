@@ -251,7 +251,7 @@ srun: Job step creation temporarily disabled, retrying
 srun: Job step creation still disabled, retrying
 srun: Job step creation still disabled, retrying
 srun: Job step creation still disabled, retrying
-srun: Job step created
+srun: StepId=4.0 started
 </PRE>
 <P>
 This occurs because <I>srun</I> is attempting to launch a jobstep in an

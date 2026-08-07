@@ -693,6 +693,13 @@ displayed. If a jobid.stepid is specified, details for just that step will be
 displayed.
 If a container-id=<\fIid\fR> is specified, then the first matching step with
 the given container-id will be displayed.
+
+A step that is queued waiting for resources is displayed in state PENDING,
+under the StepId assigned to it when it was submitted. Its \fBNodeList\fR is
+the job's allocation and its \fBCPUs\fR field shows the number of tasks
+requested; neither reflects resources allocated to the step, since none are
+allocated until it launches. Its \fBName\fR and \fBStartTime\fR are not set
+until it launches.
 .IP
 
 .TP
