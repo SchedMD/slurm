@@ -8089,6 +8089,8 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 			 __func__, resv_ptr->name, res2_ptr->name,
 			 bit_overlap(*args->node_bitmap, steal_bitmap));
 		*args->resv_overlap = true;
+		if (res2_ptr->flags & RESERVE_FLAG_MAINT)
+			*args->resv_maint = true;
 		bit_and_not(*args->node_bitmap, steal_bitmap);
 	}
 	if (steal_bitmap != res2_ptr->node_bitmap)
@@ -8230,6 +8232,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 	};
 
 	*resv_overlap = false;	/* initialize to false */
+	*resv_maint = false;
 	job_start_time = *when;
 	job_end_time   = *when + _get_job_duration(job_ptr, reboot);
 	*node_bitmap = (bitstr_t *) NULL;
