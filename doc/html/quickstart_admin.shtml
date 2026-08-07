@@ -133,8 +133,8 @@ the convention on Debian-based distros is <b>libNAME-dev</b>.</p>
 </tr>
 <tr>
 <td><code>accounting_storage/mysql</code>
-<br>Required for <a href="accounting.html">accounting</a>; a currently supported
-	version of MySQL or MariaDB should be used</td>
+<br>Required for <a href="accounting.html">accounting</a>; needs MySQL 8.0.21
+	or later, or MariaDB 10.2.7 or later</td>
 <td><i>MySQL</i> or <i>MariaDB</i></td>
 </tr>
 <tr>
