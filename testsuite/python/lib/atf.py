@@ -5059,18 +5059,24 @@ def wait_for_node_state(
     return False
 
 
-def wait_for_step(job_id, step_id, **repeat_until_kwargs):
-    """Wait for the specified step of a job to be running.
+def wait_for_step(job_id, step_id, state="RUNNING", **repeat_until_kwargs):
+    """Wait for the specified step of a job to reach a state.
 
-    Continuously polls the step state until it becomes running or until a
-    timeout occurs.
+    Continuously polls the step state until it matches or until a timeout
+    occurs.
 
     Args:
         job_id (integer): The id of the job.
         step_id (integer): The id of the step within the job.
+        state (string): The step state to wait for, or None to wait only for
+            the step to exist. Defaults to RUNNING. Existence alone is not
+            enough: a step queued waiting for resources is already listed by
+            `scontrol show step`, under the StepId it was assigned at
+            submission, while it is still PENDING.
 
     Returns:
-        A boolean value indicating whether the specified step is running or not.
+        A boolean value indicating whether the specified step reached the
+        state or not.
 
     Example:
         >>> wait_for_step(1234, 0, timeout=60, poll_interval=5, fatal=True)
@@ -5080,9 +5086,14 @@ def wait_for_step(job_id, step_id, **repeat_until_kwargs):
     """
 
     step_str = f"{job_id}.{step_id}"
+    # A het step is rendered "<job>.<step>+<comp>" on some releases, so end the
+    # id at a separator rather than requiring whitespace.
+    pattern = rf"StepId={re.escape(step_str)}(?=[\s+]|$)"
+    if state is not None:
+        pattern += rf".*\bState={state}\b"
     return repeat_until(
         lambda: run_command_output(f"scontrol -o show step {step_str}"),
-        lambda out: re.search(rf"StepId={step_str}", out) is not None,
+        lambda out: re.search(pattern, out) is not None,
         **repeat_until_kwargs,
     )
 
