@@ -12867,6 +12867,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	list_t *new_qos_list = NULL;
 	uint32_t user_site_factor;
 	uint32_t new_qos_id = 0;
+	uint64_t mem_for_tres;
 	uint64_t mem_req;
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -12989,6 +12990,9 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 	error_code = _test_job_desc_fields(job_desc);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
+
+	/* This assignment must happen after job_submit_g_modify() */
+	mem_for_tres = job_desc->pn_min_memory;
 
 	/* Do not update MCS label unless explicitly provided */
 	if (job_desc->mcs_label) {
@@ -13615,10 +13619,8 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			     __func__, num_cpus, num_tasks);
 			job_desc->min_cpus = num_tasks;
 
-			job_desc->pn_min_memory =
-				job_desc->pn_min_memory != NO_VAL64 ?
-				job_desc->pn_min_memory :
-				detail_ptr->pn_min_memory;
+			if (mem_for_tres == NO_VAL64)
+				mem_for_tres = detail_ptr->pn_min_memory;
 		}
 
 		assoc_mgr_lock(&locks);
@@ -13649,20 +13651,17 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			job_desc->num_tasks;
 	}
 
-	mem_req =
-		job_get_tres_mem(NULL,
-				 job_desc->pn_min_memory,
-				 job_desc->tres_req_cnt[TRES_ARRAY_CPU] ?
-				 job_desc->tres_req_cnt[TRES_ARRAY_CPU] :
-				 job_ptr->tres_req_cnt[TRES_ARRAY_CPU],
-				 job_desc->min_nodes != NO_VAL ?
-				 job_desc->min_nodes :
-				 detail_ptr ? detail_ptr->min_nodes : 1,
-				 use_part_ptr,
-				 gres_list ? gres_list : job_ptr->gres_list_req,
-				 (job_desc->pn_min_memory != NO_VAL64),
-				 job_desc->sockets_per_node,
-				 job_desc->num_tasks);
+	mem_req = job_get_tres_mem(
+		NULL, mem_for_tres,
+		(job_desc->tres_req_cnt[TRES_ARRAY_CPU] ?
+			 job_desc->tres_req_cnt[TRES_ARRAY_CPU] :
+			 job_ptr->tres_req_cnt[TRES_ARRAY_CPU]),
+		(job_desc->min_nodes != NO_VAL ?
+			 job_desc->min_nodes :
+			 (detail_ptr ? detail_ptr->min_nodes : 1)),
+		use_part_ptr, (gres_list ? gres_list : job_ptr->gres_list_req),
+		(mem_for_tres != NO_VAL64), job_desc->sockets_per_node,
+		job_desc->num_tasks);
 	if (mem_req)
 		job_desc->tres_req_cnt[TRES_ARRAY_MEM] = mem_req;
 
