@@ -792,6 +792,7 @@ test_108_14  Test node event records across node updates, long reasons,
              and same-second state changes
 test_108_15  Test scontrol completing output, including the SLUID on requeue
 test_108_16  Test scontrol array task id validation
+test_108_17  Test updating a job's memory with partition memory defaults
 
 test_109_#   Testing of sdiag options.
 ======================================
