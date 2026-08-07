@@ -43,7 +43,7 @@
 /*
  * Cores that may not be shared: no job may be oversubscribed onto them under
  * gang scheduling. Holds the cores of jobs still within their
- * PreemptExemptTime.
+ * PreemptExemptTime and of running hetjobs, which gang cannot schedule.
  */
 static bitstr_t **gang_exempt_cores = NULL;
 
@@ -73,6 +73,10 @@ static bool _is_exempt(job_record_t *job_ptr)
 
 	if (!job_resrcs || !job_resrcs->core_bitmap || !job_resrcs->node_bitmap)
 		return false;
+
+	/* Gang cannot schedule a hetjob, so it is exempt for its whole run. */
+	if (job_ptr->het_job_id)
+		return true;
 
 	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_SUSPEND)
 		return false;

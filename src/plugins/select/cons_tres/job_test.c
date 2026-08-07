@@ -1647,8 +1647,10 @@ skip_test0:
 		core_array_and_not(free_cores, resv_exc_ptr->exc_cores);
 
 	/*
-	 * Remove cores that are exempt from preemption. Only applicable when
-	 * using PreemptMode=suspend,gang and PreemptExemptTime.
+	 * Remove cores that may not be shared: those held by a SUSPEND mode
+	 * job still within its PreemptExemptTime, and those held by a running
+	 * hetjob, which gang cannot time slice. Only populated under gang
+	 * scheduling.
 	 */
 	if (!test_only) {
 		bitstr_t **exempt_cores = gang_exempt_get_cores();
