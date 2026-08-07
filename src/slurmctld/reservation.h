@@ -184,10 +184,9 @@ extern int job_test_lic_resv(job_record_t *job_ptr, licenses_id_t id,
  *	ESLURM_NODES_BUSY job has no reservation, but required nodes are
  *			  reserved
  */
-extern int job_test_resv(job_record_t *job_ptr, time_t *when,
-			 bool move_time, bitstr_t **node_bitmap,
-			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
-			 bool reboot);
+extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
+			 bitstr_t **node_bitmap, resv_exc_t *resv_exc_ptr,
+			 bool *resv_maint, bool *resv_overlap, bool reboot);
 
 /*
  * Note that a job is starting or finishing execution. If that job is associated

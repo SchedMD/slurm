@@ -7754,10 +7754,9 @@ static void _addto_resv_exc(bitstr_t *core_bitmap, resv_exc_t *resv_exc_ptr)
 	}
 }
 
-extern int job_test_resv(job_record_t *job_ptr, time_t *when,
-			 bool move_time, bitstr_t **node_bitmap,
-			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
-			 bool reboot)
+extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
+			 bitstr_t **node_bitmap, resv_exc_t *resv_exc_ptr,
+			 bool *resv_maint, bool *resv_overlap, bool reboot)
 {
 	slurmctld_resv_t *resv_ptr = NULL, *res2_ptr;
 	time_t job_start_time, job_end_time, job_end_time_use, lic_resv_time;
