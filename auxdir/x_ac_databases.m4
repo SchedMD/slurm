@@ -37,19 +37,81 @@ AC_DEFUN([X_AC_DATABASES],
 			AC_MSG_ERROR([*** mysql_config not found. Evidently no MySQL development libs installed on system.])
 		fi
 	else
-		# check for mysql-5.0.0+
-		mysql_config_major_version=`$HAVEMYSQLCONFIG --version | \
-			sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[a-zA-Z0-9]]*\)/\1/'`
-    		mysql_config_minor_version=`$HAVEMYSQLCONFIG --version | \
-			sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[a-zA-Z0-9]]*\)/\2/'`
-    		mysql_config_micro_version=`$HAVEMYSQLCONFIG --version | \
-			sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[a-zA-Z0-9]]*\)/\3/'`
+		# check for MySQL >= 8.0.21 or MariaDB >= 10.2.7
+		mysql_version_string=`$HAVEMYSQLCONFIG --version`
+		mysql_config_major_version=`echo "$mysql_version_string" | \
+			sed -n 's/^\([[0-9]][[0-9]]*\)\..*/\1/p'`
+		mysql_config_minor_version=`echo "$mysql_version_string" | \
+			sed -n 's/^[[0-9]][[0-9]]*\.\([[0-9]][[0-9]]*\).*/\1/p'`
+		mysql_config_micro_version=`echo "$mysql_version_string" | \
+			sed -n 's/^[[0-9]][[0-9]]*\.[[0-9]][[0-9]]*\.\([[0-9]][[0-9]]*\).*/\1/p'`
 
-		if test $mysql_config_major_version -lt 5; then
+		#
+		# MariaDB moved to Connector/C, and thus -lmariadb, in 10.2.
+		# MariaDB 10.0 and 10.1 still report -lmysqlclient, so also
+		# treat a major version of exactly 10 as MariaDB. MySQL went
+		# from 9.x straight to calendar versions (26.7 and later), so it
+		# has never used and will not use a major version of 10.
+		#
+		ac_db_type="MySQL"
+		ac_db_min_version="8.0.21"
+		ac_db_min_numeric=80021
+		ac_db_type_known="no"
+		case `$HAVEMYSQLCONFIG --libs` in
+		*-lmariadb*)
+			ac_db_type="MariaDB"
+			ac_db_type_known="yes"
+			;;
+		esac
+		if test "x$mysql_config_major_version" = x10; then
+			ac_db_type="MariaDB"
+			ac_db_type_known="yes"
+		fi
+		#
+		# MariaDB only overlaps with MySQL major version 5. After that
+		# they no longer overlap. MariaDB went from 5 to 10.
+		#
+		if test "$mysql_config_major_version" -gt 5; then
+			ac_db_type_known="yes"
+		fi
+		if test "$ac_db_type" = MariaDB; then
+			ac_db_min_version="10.2.7"
+			ac_db_min_numeric=100207
+		fi
+
+		#
+		# A MariaDB below 10.0 reports -lmysqlclient and a bare version
+		# with no vendor suffix, so it cannot be told apart from a MySQL
+		# of the same version. Name both in that case rather than guess.
+		#
+		ac_db_label="$ac_db_type"
+		ac_db_need="$ac_db_type-$ac_db_min_version"
+		if test "$ac_db_type_known" = no; then
+			ac_db_label="MySQL/MariaDB"
+			ac_db_need="MySQL-8.0.21 or MariaDB-10.2.7"
+		fi
+
+		#
+		# Report an unparsable version rather than silently treating it
+		# as 0, which disabled MySQL support with a nonsense message.
+		#
+		ac_db_version_error=""
+		if test -z "$mysql_config_major_version" ||
+		   test -z "$mysql_config_minor_version" ||
+		   test -z "$mysql_config_micro_version"; then
+			ac_db_version_error="*** no version could be parsed out of the \"$mysql_version_string\" reported by $HAVEMYSQLCONFIG --version, we need >= $ac_db_need installed for the mysql interface."
+		else
+			mysql_numeric_version=`expr $mysql_config_major_version \* 10000 + $mysql_config_minor_version \* 100 + $mysql_config_micro_version`
+			if test $mysql_numeric_version -lt $ac_db_min_numeric; then
+				ac_db_version_error="*** $ac_db_label-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= $ac_db_need installed for the mysql interface."
+			fi
+		fi
+
+		if test -n "$ac_db_version_error"; then
 			if test -z "$with_mysql_config"; then
-				AC_MSG_WARN([*** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface.])
+				AC_MSG_WARN([$ac_db_version_error])
 			else
-				AC_MSG_ERROR([*** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface.])
+				AC_MSG_ERROR([$ac_db_version_error])
 			fi
 			ac_have_mysql="no"
 		else
@@ -77,7 +139,7 @@ AC_DEFUN([X_AC_DATABASES],
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
 			if test "$ac_have_mysql" = yes; then
-				AC_MSG_RESULT([MySQL $mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version test program built properly.])
+				AC_MSG_RESULT([$ac_db_type $mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version test program built properly.])
 				AC_SUBST(MYSQL_LIBS)
 				AC_SUBST(MYSQL_CFLAGS)
 				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
