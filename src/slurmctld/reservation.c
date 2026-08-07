@@ -210,6 +210,7 @@ typedef struct {
 	int *rc;
 	bool reboot;
 	resv_exc_t *resv_exc_ptr;
+	bool *resv_maint;
 	bool *resv_overlap;
 	time_t *when;
 } foreach_job_test_resv_t;
@@ -8207,10 +8208,9 @@ static int _foreach_job_test_no_resv(void *x, void *arg)
 	return 0;
 }
 
-extern int job_test_resv(job_record_t *job_ptr, time_t *when,
-			 bool move_time, bitstr_t **node_bitmap,
-			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
-			 bool reboot)
+extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
+			 bitstr_t **node_bitmap, resv_exc_t *resv_exc_ptr,
+			 bool *resv_maint, bool *resv_overlap, bool reboot)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
 	time_t job_start_time, job_end_time, lic_resv_time;
@@ -8224,6 +8224,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		.rc = &rc,
 		.reboot = reboot,
 		.resv_exc_ptr = resv_exc_ptr,
+		.resv_maint = resv_maint,
 		.resv_overlap = resv_overlap,
 		.when = when,
 	};
