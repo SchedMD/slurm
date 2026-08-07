@@ -1,9 +1,7 @@
 /*****************************************************************************\
- *  select_cons_tres.h - Resource selection plugin supporting Trackable
- *  RESources (TRES) policies.
+ *  gang_exempt.h - Track cores exempt from GANG oversubscription
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
- *  Derived in large part from select/cons_res plugin
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -35,50 +33,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_TRES_H
-#define _CONS_TRES_H
+#ifndef _CONS_TRES_GANG_EXEMPT_H
+#define _CONS_TRES_GANG_EXEMPT_H
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
+/*
+ * Cores no job may be oversubscribed onto under gang scheduling. Consumed in
+ * job_test().
+ */
+extern bitstr_t **gang_exempt_cores;
 
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
+/*
+ * Rebuild gang_exempt_cores from the running jobs still within their
+ * PreemptExemptTime.
+ */
+extern void gang_exempt_rebuild(void);
 
-#include "src/common/bitstring.h"
-#include "src/interfaces/gres.h"
-#include "src/common/core_array.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/pack.h"
-#include "src/interfaces/select.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_resource_info.h"
-#include "src/interfaces/topology.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
-#include "src/interfaces/preempt.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/slurmd/slurmd.h"
-
-#include "cons_helpers.h"
-#include "node_data.h"
-#include "part_data.h"
-#include "job_resources.h"
-#include "job_test.h"
-
-#include "gang_exempt.h"
-
-/* Global variables */
-extern bool     backfill_busy_nodes;
-extern int      bf_window_scale;
-extern bool     gang_mode;
-extern bool     have_dragonfly;
-extern bool     pack_serial_at_end;
-extern bool     preempt_by_part;
-extern bool     preempt_by_qos;
-extern bool     spec_cores_first;
-extern bool     topo_optional;
-
-#endif /* !_CONS_TRES_H */
+#endif /* !_CONS_TRES_GANG_EXEMPT_H */
