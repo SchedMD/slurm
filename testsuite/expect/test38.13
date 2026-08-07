@@ -27,24 +27,52 @@ source ./globals
 
 set matches	0
 set het_job_id	0
+set no_array_job_id	0
+set err_msg	""
 
 proc cleanup {} {
-	global het_job_id
+	global het_job_id no_array_job_id
 
 	cancel_job $het_job_id
+	cancel_job $no_array_job_id
 }
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
 
-spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"
+#
+# Submit the same hetjob without --array as a control. Otherwise,
+# "Batch job submission failed" could signal an unrelated rejection reason.
+#
+spawn $sbatch -t1 -N1 -o /dev/null : -t1 -N1 -o /dev/null --wrap "date"
+expect {
+	-re "Submitted batch job ($number)" {
+		set no_array_job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "error: (.*)\r\n" {
+		set err_msg $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		fail "sbatch not responding"
+	}
+	eof {
+		wait
+	}
+}
+if {$no_array_job_id == 0} {
+	fail "Heterogeneous job without a job array should be accepted: $err_msg"
+}
+
+spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -t1 -N1 -o /dev/null --wrap "date"
 expect {
 	-re "Submitted batch job ($number)" {
 		set het_job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Invalid job array" {
+	-re "Batch job submission failed" {
 		incr matches
 		exp_continue
 	}
