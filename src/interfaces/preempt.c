@@ -332,54 +332,53 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
 }
 
 /*
+ * Resolve the PreemptMode template that applies to a heterogeneous job.
+ *
+ * The first component found with a preempt mode in the hierarchy (ordered
+ * highest to lowest: SUSPEND->REQUEUE->CANCEL) sets the mode for all
+ * components. CANCEL is not in the list below since it is handled as the
+ * default.
+ * IN job_ptr - hetjob leader (has het_job_list) not yet resolved
+ * RET PreemptMode to apply to every component of the hetjob
+ */
+static uint16_t _het_job_preempt_mode(job_record_t *job_ptr)
+{
+	uint16_t data = PREEMPT_MODE_OFF;
+	static const uint16_t preempt_modes[] = { PREEMPT_MODE_SUSPEND,
+						  PREEMPT_MODE_REQUEUE };
+	static const int preempt_modes_cnt =
+		sizeof(preempt_modes) / sizeof(preempt_modes[0]);
+
+	for (int i = 0; i < preempt_modes_cnt; i++) {
+		data = preempt_modes[i];
+		if ((job_ptr->job_preempt_comp =
+			     list_find_first(job_ptr->het_job_list,
+					     _find_job_by_preempt_mode, &data)))
+			break;
+	}
+	/* if not found look up the mode (CANCEL expected) */
+	if (!job_ptr->job_preempt_comp)
+		data = _job_preempt_mode_internal(job_ptr);
+
+	return data;
+}
+
+/*
  * Return the PreemptMode which should apply to stop this job
  */
 extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 {
-	uint16_t data;
-
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return PREEMPT_MODE_OFF;
 
-	if (job_ptr->het_job_list && !job_ptr->job_preempt_comp) {
-		/*
-		 * Find the component job to use as the template for
-		 * setting the preempt mode for all other components.
-		 * The first component job found having a preempt mode
-		 * in the hierarchy (ordered highest to lowest:
-		 * SUSPEND->REQUEUE->CANCEL) will be used as
-		 * the template.
-		 *
-		 * NOTE: CANCEL is not on the list below since it is handled
-		 * as the default.
-		 */
-		static const uint16_t preempt_modes[] = {
-			PREEMPT_MODE_SUSPEND,
-			PREEMPT_MODE_REQUEUE
-		};
-		static const int preempt_modes_cnt = sizeof(preempt_modes) /
-			sizeof(preempt_modes[0]);
+	if (job_ptr->het_job_list && !job_ptr->job_preempt_comp)
+		return _het_job_preempt_mode(job_ptr);
 
-		for (int pm_index = 0; pm_index < preempt_modes_cnt;
-		     pm_index++) {
-			data = preempt_modes[pm_index];
-			if ((job_ptr->job_preempt_comp = list_find_first(
-				     job_ptr->het_job_list,
-				     _find_job_by_preempt_mode,
-				     &data)))
-				break;
-		}
-		/* if not found look up the mode (CANCEL expected) */
-		if (!job_ptr->job_preempt_comp)
-			data = _job_preempt_mode_internal(job_ptr);
-	} else
-		data = _job_preempt_mode_internal(job_ptr->job_preempt_comp ?
+	return _job_preempt_mode_internal(job_ptr->job_preempt_comp ?
 						  job_ptr->job_preempt_comp :
 						  job_ptr);
-
-	return data;
 }
 
 /*
