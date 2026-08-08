@@ -28,6 +28,11 @@ def test_help(opt):
     assert re.search(r"-s, --state:", output) is not None
     assert re.search(r"-S, --starttime:", output) is not None
     assert re.search(r"valid start/end time formats are...", output) is not None
+    # TODO: Ticket 25236 - remove once 26.11 is the oldest supported version
+    if atf.get_version("bin/sacct") >= (26, 11):
+        assert (
+            "-J, --job-name" in output
+        ), "sacct --help should advertise -J, --job-name (ticket 25236)"
 
 
 @pytest.mark.parametrize("opt", ["--helpformat", "-e"])
