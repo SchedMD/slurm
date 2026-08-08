@@ -3477,7 +3477,22 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		goto unpack_error;
 	}
 	for (i = 0; i < rec_cnt; i++) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+
+			conf = xmalloc(sizeof(gres_slurmd_conf_t));
+			safe_unpack64(&conf->count, buffer);
+			safe_unpack32(&conf->cpu_cnt, buffer);
+			safe_unpack32(&conf->config_flags, buffer);
+			safe_unpack32(&conf->plugin_id, buffer);
+			safe_unpackstr(&conf->cpus, buffer);
+			safe_unpackstr(&conf->links, buffer);
+			safe_unpackstr(&conf->name, buffer);
+			safe_unpackstr(&conf->type_name, buffer);
+			safe_unpackstr(&conf->unique_id, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
