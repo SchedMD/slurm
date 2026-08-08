@@ -888,6 +888,7 @@ test_116_60  Test the srun/salloc/sbatch --runtime=list option
 test_116_61  Verify a pending synchronous step is assigned a real step ID at submission
 test_116_62  Verify a synchronous step pending on exhausted reserved ports gets a real step ID at submission
 test_116_63  Test MPI/PMIx abort propagation across hetjob components
+test_116_64  Test srun forced termination of a hetjob
 
 test_117_#   Testing of sstat options.
 ======================================
