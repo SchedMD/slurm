@@ -19,7 +19,7 @@ def setup():
 def test_help(opt):
     """Verify sacct --help displays the help page"""
 
-    output = atf.run_command_output("sacct --help", fatal=True)
+    output = atf.run_command_output(f"sacct {opt}", fatal=True)
 
     assert re.search(r"sacct \[<OPTION>\]", output) is not None
     assert re.search(r"Valid <OPTION> values are:", output) is not None
@@ -34,7 +34,7 @@ def test_help(opt):
 def test_helpformat(opt):
     """Verify sacct --helpformat displays the expected fields"""
 
-    output = atf.run_command_output("sacct --helpformat", fatal=True)
+    output = atf.run_command_output(f"sacct {opt}", fatal=True)
 
     assert re.search(r"Account", output) is not None
     assert re.search(r"ExitCode", output) is not None
