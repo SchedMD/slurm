@@ -969,8 +969,9 @@ test_128_#   Testing of PreemptType.
 test_128_1   /parameters/slurm/PreemptType/partition_prio/test_preemption_by_partition.py
 test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel"
 test_128_3   Test hetjob is exempt from preemption under SUSPEND,GANG
-test_128_4   Test hetjob is preempted under REQUEUE and CANCEL, with and without GANG
-test_128_5   Test hetjob mixed-mode components resolve to highest-order mode
+test_128_4   Test hetjob REQUEUE/CANCEL preemption, as victim and as preemptor
+test_128_5   Test hetjob mixed-mode components resolve REQUEUE then CANCEL, and per-component GraceTime
+test_128_6   Test hetjob preemption under preempt/qos: SUSPEND exemption, mode resolution, component eligibility
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
