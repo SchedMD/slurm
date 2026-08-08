@@ -3689,7 +3689,7 @@ skip_start:
 					slurm_conf.priority_flags, true);
 
 			if (!acct_policy_job_runnable_post_select(job_ptr,
-							  tres_req_cnt, true)) {
+							  tres_req_cnt, NULL, true)) {
 				assoc_mgr_unlock(&locks);
 				log_flag(BACKFILL, "adding reservation for %pJ blocked by acct_policy_job_runnable_post_select",
 					 job_ptr);
@@ -4548,7 +4548,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 
 		if (acct_policy_job_runnable_pre_select(job_ptr, true) &&
 		    acct_policy_job_runnable_post_select(job_ptr,
-							 tres_req_cnt, true)) {
+							 tres_req_cnt, NULL, true)) {
 			assoc_mgr_unlock(&locks);
 			tres_alloc_save[begun_jobs++] = job_ptr->tres_alloc_cnt;
 			job_ptr->tres_alloc_cnt = xmalloc(slurmctld_tres_size);

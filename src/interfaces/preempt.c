@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 
@@ -189,6 +190,49 @@ static int _add_preemptable_job(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Preemptor whose candidate list is currently being sorted. It is set
+ * immediately before list_sort() in slurm_find_preemptable_jobs() and cleared
+ * right after, all while the scheduler holds the job/assoc write locks. Because
+ * the main and backfill schedulers are serialized by those locks, this behaves
+ * as thread-local state for the (single) in-flight scheduling cycle.
+ */
+static job_record_t *affinity_preemptor = NULL;
+
+/*
+ * _assoc_preempt_distance - association distance from the preemptor to a
+ *	candidate: the number of hops from the preemptor's association up to
+ *	the lowest common ancestor it shares with the candidate. 0 means the
+ *	same account, 1 a sibling account, 2 a cousin, etc.; INT_MAX when
+ *	either side has no association.
+ *
+ * A smaller distance means preempting the candidate is more likely to also
+ * relieve the preemptor's own hierarchical GrpTRES limits (not just a shared
+ * ancestor's), so closer candidates are preferred when preempt priorities are
+ * otherwise equal. Without this, equal-priority victims in sibling accounts are
+ * ordered arbitrarily, which can leave the preemptor blocked at its own
+ * (leaf/intermediate) association limit even though preempting one of its own
+ * lower-priority jobs would have unblocked it.
+ */
+static int _assoc_preempt_distance(job_record_t *preemptor, job_record_t *cand)
+{
+	slurmdb_assoc_rec_t *pa, *ca;
+	int dist = 0;
+
+	if (!preemptor || !cand || !preemptor->assoc_ptr || !cand->assoc_ptr)
+		return INT_MAX;
+
+	for (pa = preemptor->assoc_ptr; pa;
+	     pa = pa->usage->parent_assoc_ptr, dist++) {
+		for (ca = cand->assoc_ptr; ca; ca = ca->usage->parent_assoc_ptr) {
+			if (ca == pa)
+				return dist;
+		}
+	}
+
+	return INT_MAX;
+}
+
 static int _sort_by_prio(void *x, void *y)
 {
 	int rc;
@@ -205,6 +249,22 @@ static int _sort_by_prio(void *x, void *y)
 		rc = -1;
 	else
 		rc = 0;
+
+	/*
+	 * Break ties (equal preempt priority) by association affinity so the
+	 * preemptor's own account is preempted before sibling accounts. This
+	 * only orders candidates the priority scheme considers equivalent, so
+	 * it never overrides preempt-priority ordering.
+	 */
+	if (rc == 0 && affinity_preemptor) {
+		int d1 = _assoc_preempt_distance(affinity_preemptor, j1);
+		int d2 = _assoc_preempt_distance(affinity_preemptor, j2);
+
+		if (d1 < d2)
+			rc = -1;
+		else if (d1 > d2)
+			rc = 1;
+	}
 
 	return rc;
 }
@@ -321,8 +381,16 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
 
 	if (candidates.preemptee_job_list && youngest_order)
 		list_sort(candidates.preemptee_job_list, _sort_by_youngest);
-	else if (candidates.preemptee_job_list)
+	else if (candidates.preemptee_job_list) {
+		/*
+		 * Expose the preemptor to _sort_by_prio() so it can break
+		 * equal-priority ties by association affinity. Safe under the
+		 * scheduler write locks held here (see affinity_preemptor).
+		 */
+		affinity_preemptor = job_ptr;
 		list_sort(candidates.preemptee_job_list, _sort_by_prio);
+		affinity_preemptor = NULL;
+	}
 
 	return candidates.preemptee_job_list;
 }
