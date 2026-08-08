@@ -587,6 +587,13 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	/* Should not be any outgoing data yet */
 	xassert(list_is_empty(con->out));
 
+	if (con_flag(con, FLAG_TLS_CLIENT))
+		conn_args.mode = CONN_CLIENT;
+	else if (con_flag(con, FLAG_TLS_SERVER))
+		conn_args.mode = CONN_SERVER;
+
+	xassert(conn_args.mode != CONN_NULL);
+
 	slurm_mutex_unlock(&mgr.mutex);
 
 	tls_in = create_buf(xmalloc(BUFFER_START_SIZE), BUFFER_START_SIZE);
@@ -632,13 +639,6 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!con->tls_out);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
-
-	if (con_flag(con, FLAG_TLS_CLIENT))
-		conn_args.mode = CONN_CLIENT;
-	else if (con_flag(con, FLAG_TLS_SERVER))
-		conn_args.mode = CONN_SERVER;
-
-	xassert(conn_args.mode != CONN_NULL);
 	xassert(con->input_fd >= 0);
 	xassert(con->output_fd >= 0);
 
