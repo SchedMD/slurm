@@ -99,22 +99,22 @@ strong_alias(destroy_gres_device, slurm_destroy_gres_device);
 strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
 static s_p_options_t _gres_options[] = {
-	{"AutoDetect", S_P_STRING},
-	{"Count", S_P_STRING},	/* Number of Gres available */
-	{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
+	{ "AutoDetect", S_P_STRING },
+	{ "Count", S_P_STRING }, /* Number of Gres available */
+	{ "CPUs", S_P_STRING }, /* CPUs to bind to Gres resource
 				 * (deprecated, use Cores) */
-	{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
-	{"DmemRegion", S_P_STRING}, /* dmem cgroup region of Gres device */
-	{"File",  S_P_STRING},	/* Path to Gres device */
-	{"Files", S_P_STRING},	/* Path to Gres device */
-	{"Flags", S_P_STRING},	/* GRES Flags */
-	{"Link",  S_P_STRING},	/* Communication link IDs */
-	{"Links", S_P_STRING},	/* Communication link IDs */
-	{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
-	{"Name",  S_P_STRING},	/* Gres name */
-	{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
+	{ "Cores", S_P_STRING }, /* Cores to bind to Gres resource */
+	{ "DmemRegion", S_P_STRING }, /* dmem cgroup region of Gres device */
+	{ "File", S_P_STRING }, /* Path to Gres device */
+	{ "Files", S_P_STRING }, /* Path to Gres device */
+	{ "Flags", S_P_STRING }, /* GRES Flags */
+	{ "Link", S_P_STRING }, /* Communication link IDs */
+	{ "Links", S_P_STRING }, /* Communication link IDs */
+	{ "MultipleFiles", S_P_STRING }, /* list of GRES device files */
+	{ "Name", S_P_STRING }, /* Gres name */
+	{ "Type", S_P_STRING }, /* Gres type (e.g. model name) */
 	{ "UUID", S_P_STRING }, /* Device UUID/unique identifier */
-	{NULL}
+	{ NULL }
 };
 
 /* Gres symbols provided by the plugin */
