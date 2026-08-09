@@ -2223,21 +2223,6 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert((con->polling_output_fd == PCTL_TYPE_NONE) ||
 		(con->polling_output_fd == PCTL_TYPE_UNSUPPORTED));
 
-	/* can't extract safely when work running or not connected */
-	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
-		  con_flag(con, FLAG_TLS_CLIENT)) ||
-		  con_flag(con, FLAG_IS_TLS_CONNECTED));
-	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
-	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
-
-	/* assert input/outputs are empty */
-	xassert(!con->tls_out || list_is_empty(con->out));
-	xassert(!con->tls_in || !get_buf_offset(con->tls_in));
-	xassert(list_is_empty(con->out));
-	xassert(!get_buf_offset(con->in));
-
 	log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
 		 __func__, con->name, con->input_fd, con->output_fd,
 		 (uintptr_t) con->tls, con->on_extract.func_name,
@@ -2255,13 +2240,33 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		goto failed;
 
-	/* Catch file descriptors being closed for any reason before now */
+	/*
+	 * Fail when both directions are closed or at EOF as there is nothing
+	 * left to hand over. Extraction must still work when only one
+	 * direction is done: the peer may have sent a complete RPC and then
+	 * called shutdown(SHUT_WR) while waiting for the reply, listeners never
+	 * have an output_fd, and connections may be added without an input_fd.
+	 */
 	if (((con->input_fd < 0) || con_flag(con, FLAG_READ_EOF)) &&
 	    ((con->output_fd < 0) || con_flag(con, FLAG_WRITE_EOF))) {
-		log_flag(CONMGR, "%s: [%s] invalid input_fd and output_fd",
+		log_flag(CONMGR, "%s: [%s] extract on closed connection",
 			 __func__, con->name);
 		goto failed;
 	}
+	/* can't extract safely when work running or not connected */
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
+		  con_flag(con, FLAG_TLS_CLIENT)) ||
+		  con_flag(con, FLAG_IS_TLS_CONNECTED));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
+
+	/* assert input/outputs are empty */
+	xassert(!con->tls_out || list_is_empty(con->out));
+	xassert(!con->tls_in || !get_buf_offset(con->tls_in));
+	xassert(list_is_empty(con->out));
+	xassert(!get_buf_offset(con->in));
 
 	/* clear all polling states */
 	con_set_flag(con, FLAG_READ_EOF);
