@@ -1018,6 +1018,7 @@ test_141_#   Testing PowerSave/Cloud operations.
 test_141_1   Test state cycle, timeouts, scontrol commands, PowerDownOnIdle, and Node Features reboot
 test_141_2   Testing Global,Per-Partition,Per-Node Cloud Options
 test_141_3   Test node reboot and power down/up actions via slurmctld and slurmd
+test_141_4   Test srun to a powered down cloud node with enable_stepmgr
 
 test_143_#   Testing --switches.
 ================================
