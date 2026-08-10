@@ -30,6 +30,7 @@ SUBDIRS = \
 	prep			\
 	priority		\
 	proctrack		\
+	relay_io		\
 	runtime			\
 	sched			\
 	select			\

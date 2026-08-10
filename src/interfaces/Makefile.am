@@ -77,6 +77,8 @@ libcommon_interfaces_la_SOURCES =    \
 	prep.h					\
 	priority.c				\
 	priority.h				\
+	relay_io.c				\
+	relay_io.h				\
 	runtime.c				\
 	runtime.h				\
 	select.c				\
