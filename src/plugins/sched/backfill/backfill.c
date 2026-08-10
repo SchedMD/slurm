@@ -368,7 +368,7 @@ static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 	slurm_make_time_str(&later_start, end_buf, sizeof(end_buf));
 
 	node_list = bitmap2node_name(avail_bitmap);
-	log_flag(BACKFILL, "Test %pJ at %s to %s (later_start: %s) on %s",
+	log_flag(BACKFILL_MAP, "Test %pJ at %s to %s (later_start: %s) on %s",
 		 job_ptr, begin_buf, end_buf, later_buf, node_list);
 	xfree(node_list);
 }
@@ -379,7 +379,7 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 	int i = 0;
 	char begin_buf[256], end_buf[256], *node_list, *licenses;
 
-	log_flag(BACKFILL, "=========================================");
+	log_flag(BACKFILL_MAP, "=========================================");
 	while (1) {
 		slurm_make_time_str(&node_space_ptr[i].begin_time,
 				    begin_buf, sizeof(begin_buf));
@@ -387,7 +387,7 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 				    end_buf, sizeof(end_buf));
 		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
 		licenses = bf_licenses_to_string(node_space_ptr[i].licenses);
-		log_flag(BACKFILL, "Begin:%s End:%s Nodes:%s Licenses:%s Fragmentation:%u",
+		log_flag(BACKFILL_MAP, "Begin:%s End:%s Nodes:%s Licenses:%s Fragmentation:%u",
 			 begin_buf, end_buf, node_list, licenses,
 			 node_space_ptr[i].fragmentation);
 		xfree(node_list);
@@ -395,7 +395,7 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 		if ((i = node_space_ptr[i].next) == 0)
 			break;
 	}
-	log_flag(BACKFILL, "=========================================");
+	log_flag(BACKFILL_MAP, "=========================================");
 }
 
 static void _set_job_time_limit(job_record_t *job_ptr, uint32_t new_limit)
