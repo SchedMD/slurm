@@ -107,6 +107,10 @@ static void _task_layout_display_masks(launch_tasks_request_msg_t *req,
 {
 	int i;
 	char *str = NULL;
+
+	if (get_log_level() < LOG_LEVEL_DEBUG3)
+		return;
+
 	for(i = 0; i < maxtasks; i++) {
 		str = (char *)bit_fmt_hexmask(masks[i]);
 		debug3("_task_layout_display_masks jobid [%u:%d] %s",
@@ -751,7 +755,6 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 	uint16_t p, t, new_p, num_cores, sockets, cores;
 	int job_node_id;
 	int start;
-	char *str;
 	int spec_thread_cnt = 0;
 	slurm_cred_arg_t *arg = slurm_cred_get_args(cred);
 
@@ -785,10 +788,12 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 			bit_set(req_map, (p % num_cores));
 	}
 
-	str = (char *)bit_fmt_hexmask(req_map);
-	debug3("%ps core mask from slurmctld: %s",
-	       &arg->step_id, str);
-	xfree(str);
+	if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+		char *str = (char *) bit_fmt_hexmask(req_map);
+		debug3("%ps core mask from slurmctld: %s",
+		       &arg->step_id, str);
+		xfree(str);
+	}
 
 	for (p = 0; p < num_cores; p++) {
 		if (bit_test(req_map, p) == 0)
@@ -838,10 +843,12 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 		}
 	}
 
-	str = (char *)bit_fmt_hexmask(hw_map);
-	debug3("%ps CPU final mask for local node: %s",
-	       &arg->step_id, str);
-	xfree(str);
+	if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+		char *str = (char *) bit_fmt_hexmask(hw_map);
+		debug3("%ps CPU final mask for local node: %s",
+		       &arg->step_id, str);
+		xfree(str);
+	}
 
 	FREE_NULL_BITMAP(req_map);
 	slurm_cred_unlock_args(cred);
