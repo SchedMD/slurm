@@ -709,19 +709,30 @@ ignored; however, most filtering arguments are still used.
 
 .TP
 \fB\-R\fR, \fB\-\-list\-reasons\fR
-List reasons nodes are in the down, drained, fail or failing state.
+List reasons nodes are in the down, drained, degraded, fail, or failing state.
 When nodes are in these states Slurm supports the inclusion
 of a "reason" string by an administrator.
 This option will display the first 20 characters of the reason
 field and list of nodes with that reason for all nodes that are,
-by default, down, drained, draining or failing.
+by default, down, drained, draining, degraded, or failing.
 This option may be used with other node filtering options
 (e.g. \fB\-r\fR, \fB\-d\fR, \fB\-t\fR, \fB\-n\fR),
 however, combinations of these options that result in a
-list of nodes that are not down or drained or failing will
+list of nodes that are not down or drained or degraded or failing will
 not produce any output.
 When used with \fB\-l\fR the output additionally includes
 the current node state.
+
+\fBNOTE\fR: A drain of an individual TRES records its reason against that TRES
+rather than against the node, so a node that is only \fBDEGRADED\fR has no
+reason of its own. Such a node is instead reported under the list of what is
+drained on it, in the same form as the \fBDrainedTRES\fR field of
+\fBscontrol show node\fR (e.g. "gpu(IDX:0,2\-3)(ecc_errors)"). No
+user or timestamp is recorded for these, so those fields are reported as
+"Unknown".
+The list is cut to the width of the reason column, 20 characters by default.
+To see all of it, use \fBscontrol show drainedtres\fR or a wider column
+(e.g. \fBsinfo \-R \-o "%100E %N"\fR).
 .IP
 
 .TP

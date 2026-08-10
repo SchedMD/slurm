@@ -22,7 +22,8 @@ Usage: sinfo [OPTIONS]
   -O, --Format=format        long format specification
   -p, --partition=PARTITION  report on specific partition
   -r, --responding           report only responding nodes (opposite of --dead)
-  -R, --list-reasons         list reason nodes are down or drained
+  -R, --list-reasons         list reason nodes are down, drained,
+                             degraded, fail, or failing
   -s, --summarize            report state summary only
   -S, --sort=fields          comma separated list of fields to sort on
   -t, --states=node_state    specify the what states of nodes to view

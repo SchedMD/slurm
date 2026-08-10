@@ -42,7 +42,9 @@
 
 #include "slurm/slurmdb.h"
 
+#include "src/common/drained_tres.h"
 #include "src/common/macros.h"
+#include "src/common/node_conf.h"
 #include "src/common/sercli.h"
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
@@ -780,6 +782,31 @@ void *_build_part_info(void *args)
 }
 
 /*
+ * Draining a TRES records the reason against that TRES rather than against the
+ * node, so a node that is only degraded has no reason of its own for -R to
+ * report. Stand in the rendered list of what is drained, which is what the
+ * admin is asking about. Nodes that are degraded and drained keep the node's
+ * own reason, which explains the drain the admin most needs to see.
+ *
+ * The reason is replaced on the node_info_t itself so that the rest of sinfo
+ * groups and prints it like any other; slurm_free_node_info_msg() frees it.
+ */
+static void _set_degraded_reason(node_info_t *node_ptr)
+{
+	char *drained;
+
+	if (!IS_NODE_DEGRADED(node_ptr) || !node_ptr->drained_tres)
+		return;
+	if (node_ptr->reason && node_ptr->reason[0])
+		return;
+	if (!(drained = drained_tres_recs_to_str(node_ptr->drained_tres)))
+		return;
+
+	xfree(node_ptr->reason);
+	node_ptr->reason = drained;
+}
+
+/*
  * _build_sinfo_data - make a sinfo_data entry for each unique node
  *	configuration and add it to the sinfo_list for later printing.
  * sinfo_list IN/OUT - list of unique sinfo_data records to report
@@ -801,6 +828,11 @@ static int _build_sinfo_data(list_t *sinfo_list,
 
 	sinfo_hash = xhash_init(_sinfo_hash_idfunc, NULL);
 	part_has_nodes = xcalloc(partition_msg->record_count, sizeof(bool));
+
+	if (params.list_reasons) {
+		for (j = 0; j < node_msg->record_count; j++)
+			_set_degraded_reason(&(node_msg->node_array[j]));
+	}
 
 	if (params.filtering) {
 		for (j = 0; j < node_msg->record_count; j++) {
