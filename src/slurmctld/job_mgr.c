@@ -8683,11 +8683,13 @@ static int _unroll_min_max_node(job_record_t *job_ptr)
  */
 static uint32_t _implicit_max_nodes(job_details_t *detail_ptr)
 {
-	if (detail_ptr->ntasks_per_node)
-		return ROUNDUP(detail_ptr->num_tasks,
-			       detail_ptr->ntasks_per_node);
+	uint32_t max_nodes = detail_ptr->num_tasks;
 
-	return detail_ptr->num_tasks;
+	if (detail_ptr->ntasks_per_node)
+		max_nodes = ROUNDUP(detail_ptr->num_tasks,
+				    detail_ptr->ntasks_per_node);
+
+	return MAX(max_nodes, detail_ptr->min_nodes);
 }
 
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
