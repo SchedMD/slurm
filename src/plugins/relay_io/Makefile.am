@@ -1,3 +1,3 @@
 # Makefile for relay_io plugins
 
-SUBDIRS =
+SUBDIRS = uds_json
