@@ -339,6 +339,9 @@ static void _dump_job_sched(job_record_t *job_ptr, time_t end_time,
 {
 	char begin_buf[256], end_buf[256], *node_list;
 
+	if (get_log_level() < LOG_LEVEL_VERBOSE)
+		return;
+
 	slurm_make_time_str(&job_ptr->start_time, begin_buf, sizeof(begin_buf));
 	slurm_make_time_str(&end_time, end_buf, sizeof(end_buf));
 	node_list = bitmap2node_name(avail_bitmap);
@@ -355,6 +358,9 @@ static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 	char end_buf[256];
 	char later_buf[256];
 
+	if (get_log_level() < LOG_LEVEL_VERBOSE)
+		return;
+
 	if (start_time == 0)
 		strcpy(begin_buf, "NOW");
 	else
@@ -368,7 +374,7 @@ static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 	slurm_make_time_str(&later_start, end_buf, sizeof(end_buf));
 
 	node_list = bitmap2node_name(avail_bitmap);
-	log_flag(BACKFILL, "Test %pJ at %s to %s (later_start: %s) on %s",
+	log_flag(BACKFILL_MAP, "Test %pJ at %s to %s (later_start: %s) on %s",
 		 job_ptr, begin_buf, end_buf, later_buf, node_list);
 	xfree(node_list);
 }
@@ -379,7 +385,10 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 	int i = 0;
 	char begin_buf[256], end_buf[256], *node_list, *licenses;
 
-	log_flag(BACKFILL, "=========================================");
+	if (get_log_level() < LOG_LEVEL_VERBOSE)
+		return;
+
+	log_flag(BACKFILL_MAP, "=========================================");
 	while (1) {
 		slurm_make_time_str(&node_space_ptr[i].begin_time,
 				    begin_buf, sizeof(begin_buf));
@@ -387,7 +396,7 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 				    end_buf, sizeof(end_buf));
 		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
 		licenses = bf_licenses_to_string(node_space_ptr[i].licenses);
-		log_flag(BACKFILL, "Begin:%s End:%s Nodes:%s Licenses:%s Fragmentation:%u",
+		log_flag(BACKFILL_MAP, "Begin:%s End:%s Nodes:%s Licenses:%s Fragmentation:%u",
 			 begin_buf, end_buf, node_list, licenses,
 			 node_space_ptr[i].fragmentation);
 		xfree(node_list);
@@ -395,7 +404,7 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 		if ((i = node_space_ptr[i].next) == 0)
 			break;
 	}
-	log_flag(BACKFILL, "=========================================");
+	log_flag(BACKFILL_MAP, "=========================================");
 }
 
 static void _set_job_time_limit(job_record_t *job_ptr, uint32_t new_limit)
@@ -3915,15 +3924,16 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 			 slurmctld_diag_stats.backfilled_jobs);
 	} else if ((job_ptr->job_id != fail_jobid) &&
 		   (rc != ESLURM_ACCOUNTING_POLICY)) {
-		char *node_list;
 		bit_not(resv_bitmap);
-		node_list = bitmap2node_name(resv_bitmap);
 		/* This happens when a job has sharing disabled and
 		 * a selected node is still completing some job,
 		 * which should be a temporary situation. */
-		verbose("Failed to start %pJ with %s avail: %s",
-			job_ptr, node_list, slurm_strerror(rc));
-		xfree(node_list);
+		if (get_log_level() >= LOG_LEVEL_VERBOSE) {
+			char *node_list = bitmap2node_name(resv_bitmap);
+			verbose("Failed to start %pJ with %s avail: %s",
+				job_ptr, node_list, slurm_strerror(rc));
+			xfree(node_list);
+		}
 		fail_jobid = job_ptr->job_id;
 	} else {
 		debug3("Failed to start %pJ: %s",

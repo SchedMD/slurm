@@ -293,10 +293,12 @@ void ping_nodes (void)
 		xfree (ping_agent_args);
 	} else {
 		hostlist_uniq(ping_agent_args->hostlist);
-		host_str = hostlist_ranged_string_xmalloc(
+		if (get_log_level() >= LOG_LEVEL_DEBUG) {
+			host_str = hostlist_ranged_string_xmalloc(
 				ping_agent_args->hostlist);
-		debug("Spawning ping agent for %s", host_str);
-		xfree(host_str);
+			debug("Spawning ping agent for %s", host_str);
+			xfree(host_str);
+		}
 		ping_begin();
 		set_agent_arg_r_uid(ping_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(ping_agent_args);
@@ -307,11 +309,13 @@ void ping_nodes (void)
 		xfree (reg_agent_args);
 	} else {
 		hostlist_uniq(reg_agent_args->hostlist);
-		host_str = hostlist_ranged_string_xmalloc(
+		if (get_log_level() >= LOG_LEVEL_DEBUG) {
+			host_str = hostlist_ranged_string_xmalloc(
 				reg_agent_args->hostlist);
-		debug("Spawning registration agent for %s %d hosts",
-		      host_str, reg_agent_args->node_count);
-		xfree(host_str);
+			debug("Spawning registration agent for %s %d hosts",
+			      host_str, reg_agent_args->node_count);
+			xfree(host_str);
+		}
 		ping_begin();
 		set_agent_arg_r_uid(reg_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(reg_agent_args);
@@ -350,17 +354,17 @@ static bool _node_unhealthy_for_hc(node_record_t *node_ptr)
  */
 static void _queue_health_check(agent_arg_t *args)
 {
-	char *host_str = NULL;
-
 	if (!args->node_count) {
 		purge_agent_args(args);
 		return;
 	}
 
 	hostlist_uniq(args->hostlist);
-	host_str = hostlist_ranged_string_xmalloc(args->hostlist);
-	debug("Spawning health check agent for %s", host_str);
-	xfree(host_str);
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		char *host_str = hostlist_ranged_string_xmalloc(args->hostlist);
+		debug("Spawning health check agent for %s", host_str);
+		xfree(host_str);
+	}
 	ping_begin();
 	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(args);
@@ -558,7 +562,6 @@ extern void update_nodes_acct_gather_data(void)
 {
 	node_record_t *node_ptr;
 	int i;
-	char *host_str = NULL;
 	agent_arg_t *agent_args = NULL;
 
 	agent_args = xmalloc (sizeof (agent_arg_t));
@@ -591,9 +594,14 @@ extern void update_nodes_acct_gather_data(void)
 		xfree (agent_args);
 	} else {
 		hostlist_uniq(agent_args->hostlist);
-		host_str = hostlist_ranged_string_xmalloc(agent_args->hostlist);
-		log_flag(ENERGY, "Updating acct_gather data for %s", host_str);
-		xfree(host_str);
+		if ((slurm_conf.debug_flags & DEBUG_FLAG_ENERGY) &&
+		    (get_log_level() >= LOG_LEVEL_VERBOSE)) {
+			char *host_str = hostlist_ranged_string_xmalloc(
+				agent_args->hostlist);
+			log_flag(ENERGY, "Updating acct_gather data for %s",
+				 host_str);
+			xfree(host_str);
+		}
 		ping_begin();
 		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_args);

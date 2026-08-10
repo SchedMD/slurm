@@ -497,7 +497,8 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
 {
 	char *tmp1, *tmp2, *tmp3, *tmp4 = NULL;
 
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) ||
+	    (get_log_level() < LOG_LEVEL_VERBOSE))
 		return;
 
 	if (job_feat_ptr->op_code == FEATURE_OP_OR)
