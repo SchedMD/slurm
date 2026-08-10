@@ -945,6 +945,12 @@ extern int slurm_get_node_alias_addrs(char *node_list,
 	slurm_msg_t req_msg, resp_msg;
 	slurm_node_alias_addrs_t data = {.node_list = node_list};
 
+	/*
+	 * Callers free this unconditionally, without looking at the return
+	 * code, so always define it.
+	 */
+	*alias_addrs = NULL;
+
 	xassert(node_list);
 	if (!node_list)
 		return SLURM_SUCCESS;
