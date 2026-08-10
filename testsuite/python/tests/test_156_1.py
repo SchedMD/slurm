@@ -18,10 +18,11 @@ def setup():
     and atf.get_config_parameter("SelectType", live=False) != "select/linear",
     reason="Ticket 20799: Concurrent steps are not started and identified correctly",
 )
-def test_no_missing_step(tmp_path):
+def test_no_missing_step():
     """
     This test confirms steps 0 and 1 are run concurrently, and that step 2 is
-    run as soon as there are available resources, and with the correct step id.
+    queued while they hold the resources and then runs as soon as they free up,
+    keeping the same step id it was assigned at submission.
     """
     atf.make_bash_script(
         "my_script.sh",
@@ -37,16 +38,45 @@ wait $(jobs -p)
     )
     job_id = atf.submit_job_sbatch("-N2 -n16 my_script.sh", fatal=True)
 
-    assert atf.repeat_until(
-        lambda: atf.get_steps(job_id),
-        lambda steps: f"{job_id}.0" in steps
-        and f"{job_id}.1" in steps
-        and f"{job_id}.2" not in steps,
-    ), "First two steps should run in parallel before the third one"
+    # Issue 50938: as of 26.11 a queued step is assigned its real StepId at
+    # submission, so the third step is visible as <jobid>.2 in PENDING while it
+    # waits. Before 26.11 it had no id until it launched.
+    id_at_submit = atf.get_version("bin/srun") >= (26, 11)
 
-    assert atf.repeat_until(
-        lambda: atf.get_steps(job_id),
-        lambda steps: f"{job_id}.0" in steps
-        and f"{job_id}.1" not in steps
-        and f"{job_id}.2" in steps,
-    ), "The third step should run as soon as the second ends, so in parallel with the first one"
+    def _state(steps, step_id):
+        return steps.get(f"{job_id}.{step_id}", {}).get("State")
+
+    # The first two steps run in parallel while the third is queued.
+    steps = {}
+    for _ in atf.timer():
+        steps = atf.get_steps(job_id)
+        if (
+            _state(steps, 0) == "RUNNING"
+            and _state(steps, 1) == "RUNNING"
+            and (
+                _state(steps, 2) == "PENDING"
+                if id_at_submit
+                else f"{job_id}.2" not in steps
+            )
+        ):
+            break
+    else:
+        assert False, (
+            f"First two steps should run in parallel before the third one, "
+            f"got {steps}"
+        )
+
+    # The third step runs as soon as the second ends, so in parallel with the
+    # first one.
+    for _ in atf.timer():
+        steps = atf.get_steps(job_id)
+        if (
+            _state(steps, 0) == "RUNNING"
+            and f"{job_id}.1" not in steps
+            and _state(steps, 2) == "RUNNING"
+        ):
+            break
+    else:
+        assert (
+            False
+        ), f"The third step should run as soon as the second ends, got {steps}"
