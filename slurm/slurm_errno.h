@@ -302,6 +302,8 @@ typedef enum {
 
 	ESLURM_INVALID_MAX_PIDS,
 	ESLURM_INVALID_LAYOUT,
+	/* End of reserved slurmctld error range. Not a real error code. */
+	ESLURM_CTLD_ERROR_END = 2999,
 
 	/* SPANK errors */
 	ESPANK_ERROR = 					3000,
@@ -534,6 +536,9 @@ typedef enum {
 	/* TLS errors */
 	ESLURM_TLS_REQUIRED = 13000,
 } slurm_err_t;
+
+#define IS_CTLD_ERROR(ec) \
+	((ec) >= ESLURM_INVALID_PARTITION_NAME && (ec) < ESLURM_CTLD_ERROR_END)
 
 #define IS_TOPO_ERROR(ec) \
 	((ec) > ESLURM_TOPO_ERROR_START && (ec) < ESLURM_TOPO_ERROR_END)
