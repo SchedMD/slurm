@@ -1267,10 +1267,18 @@ static int _foreach_license_set_base(void *x, void *key)
 	if (_set_base(license))
 		return -1;
 
-	if ((license->mode == HRES_MODE_3) &&
-	    (license->hres_rec.parent)) {
-		license->hres_rec.parent->hres_rec.base_usage +=
-			license->hres_rec.base_usage;
+	if ((license->mode == HRES_MODE_3) && (license->hres_rec.parent)) {
+		licenses_t *parent = license->hres_rec.parent;
+
+		if ((NO_VAL - license->hres_rec.base_usage) <=
+		    parent->hres_rec.base_usage) {
+			error("%s: HRES=%s layer=%s base_usage overflows at parent layer=%s",
+			      __func__, license->name,
+			      license->hres_rec.layer_name,
+			      parent->hres_rec.layer_name);
+			return -1;
+		}
+		parent->hres_rec.base_usage += license->hres_rec.base_usage;
 	}
 
 	return 0;
