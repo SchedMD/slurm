@@ -7945,6 +7945,13 @@ set an empty string (Gres="") to configure no Gres on a subsequent entry.
 By default a node has no generic resources and its maximum count is
 that of an unsigned 64bit integer.
 Also see \fBFeatures\fR for Boolean flags to filter nodes using job constraints.
+
+\fBNOTE\fR: Before changing a GRES's configured count, drain the node of all
+running jobs using that GRES if it has the \fBFile\fR or \fBMultipleFiles\fR
+parameters set either manually or with \fBAutoDetect\fR in \fBgres.conf\fR(5).
+Similarly, drain the node before reducing the configured count of a shared GRES
+(gres/mps, gres/shard). Failure to do so will result in any running job using
+those GRES being aborted and, if eligible, requeued.
 .IP
 
 .TP
