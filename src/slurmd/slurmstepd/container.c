@@ -35,6 +35,7 @@
 
 #include "config.h"
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -1220,6 +1221,8 @@ extern void container_run(stepd_step_task_info_t *task)
 extern void cleanup_container(void)
 {
 	step_container_t *c = step->container;
+	char *parent = NULL, *stepdir = NULL;
+	int basefd = -1, stepfd = -1;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
@@ -1240,46 +1243,79 @@ extern void cleanup_container(void)
 	if (!c->spool_dir)
 		c->spool_dir = _generate_spooldir(NULL);
 
+	/*
+	 * The job user owns the step spool directory and can replace any
+	 * component below it with a symlink, so never resolve these paths as
+	 * root. Descend with O_NOFOLLOW and remove relative to the directory
+	 * handles instead.
+	 */
+	parent = xdirname(c->spool_dir);
+	stepdir = xbasename(c->spool_dir);
+
+	if ((basefd = open(parent, O_DIRECTORY)) < 0) {
+		if (errno != ENOENT)
+			error("open(%s): %m", parent);
+		goto cleanup_fds;
+	}
+
+	if ((stepfd = openat(basefd, stepdir,
+			     (O_DIRECTORY | O_NOFOLLOW))) < 0) {
+		if (errno != ENOENT)
+			error("openat(%s/%s): %m", parent, stepdir);
+		goto cleanup_fds;
+	}
+
 	if (step->node_tasks > 0) {
 		/* clear every config.json and task dir */
 		for (int i = 0; i < step->node_tasks; i++) {
+			int taskfd = -1;
+			char *taskdir = NULL;
+
 			xfree(c->task_spool_dir);
 			c->task_spool_dir = _generate_spooldir(step->task[i]);
 
 			_generate_patterns(step->task[i]);
 
-			if (!oci_conf->ignore_config_json) {
-				char *jconfig = NULL;
+			taskdir = xbasename(c->task_spool_dir);
 
-				xstrfmtcat(jconfig, "%s/config.json",
-					   c->task_spool_dir);
-
-				if ((unlink(jconfig) < 0) && (errno != ENOENT))
-					error("unlink(%s): %m", jconfig);
-				xfree(jconfig);
+			if ((taskfd = openat(stepfd, taskdir,
+					     (O_DIRECTORY | O_NOFOLLOW))) < 0) {
+				if (errno != ENOENT)
+					error("openat(%s): %m",
+					      c->task_spool_dir);
+				continue;
 			}
 
-			if (oci_conf->create_env_file) {
-				char *envfile = NULL;
+			if (!oci_conf->ignore_config_json &&
+			    unlinkat(taskfd, "config.json", 0) &&
+			    (errno != ENOENT))
+				error("unlinkat(%s/config.json): %m",
+				      c->task_spool_dir);
 
-				xstrfmtcat(envfile, "%s/%s", c->task_spool_dir,
-					   SLURM_CONTAINER_ENV_FILE);
+			if (oci_conf->create_env_file &&
+			    unlinkat(taskfd, SLURM_CONTAINER_ENV_FILE, 0) &&
+			    (errno != ENOENT))
+				error("unlinkat(%s/%s): %m",
+				      c->task_spool_dir,
+				      SLURM_CONTAINER_ENV_FILE);
 
-				if (unlink(envfile) && (errno != ENOENT))
-					error("unlink(%s): %m", envfile);
+			fd_close(&taskfd);
 
-				xfree(envfile);
-			}
-
-			if (rmdir(c->task_spool_dir) && (errno != ENOENT))
-				error("rmdir(%s): %m", c->task_spool_dir);
+			if (unlinkat(stepfd, taskdir, AT_REMOVEDIR) &&
+			    (errno != ENOENT))
+				error("unlinkat(%s): %m", c->task_spool_dir);
 		}
 
 		xfree(c->task_spool_dir);
 	}
 
-	if (rmdir(c->spool_dir) && (errno != ENOENT))
-		error("rmdir(%s): %m", c->spool_dir);
+	if (unlinkat(basefd, stepdir, AT_REMOVEDIR) && (errno != ENOENT))
+		error("unlinkat(%s): %m", c->spool_dir);
+
+cleanup_fds:
+	fd_close(&stepfd);
+	fd_close(&basefd);
+	xfree(parent);
 
 done:
 	FREE_NULL_OCI_CONF(oci_conf);
