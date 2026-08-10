@@ -705,6 +705,12 @@ extern int slurm_het_job_will_run(list_t *job_req_list)
 
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
+		if (req->array_inx) {
+			errno = ESLURM_INVALID_HET_JOB_AND_ARRAY;
+			rc = SLURM_ERROR;
+			break;
+		}
+
 		will_run_resp = NULL;
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
