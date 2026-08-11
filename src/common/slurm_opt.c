@@ -3490,6 +3490,40 @@ static slurm_cli_opt_t slurm_opt_relative = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_relay_io(slurm_opt_t *opt, const char *arg)
+{
+	if (!xstrcasecmp(arg, "yes")) {
+		opt->relay_io = 1;
+	} else if (!xstrcasecmp(arg, "no")) {
+		opt->relay_io = 0;
+	} else {
+		error("Invalid --relay-io specification");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_relay_io(slurm_opt_t *opt)
+{
+	if (opt->relay_io == 1)
+		return xstrdup("yes");
+	else if (opt->relay_io == 0)
+		return xstrdup("no");
+
+	return xstrdup("unset");
+}
+
+COMMON_OPTION_RESET(relay_io, NO_VAL16);
+static slurm_cli_opt_t slurm_opt_relay_io = {
+	.name = "relay-io",
+	.has_arg = required_argument,
+	.val = LONG_OPT_RELAY_IO,
+	.set_func = arg_set_relay_io,
+	.get_func = arg_get_relay_io,
+	.reset_func = arg_reset_relay_io,
+};
+
 static int arg_set_requeue(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->sbatch_opt)
@@ -4638,6 +4672,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_quit_on_interrupt,
 	&slurm_opt_reboot,
 	&slurm_opt_relative,
+	&slurm_opt_relay_io,
 	&slurm_opt_requeue,
 	&slurm_opt_resources,
 	&slurm_opt_reservation,

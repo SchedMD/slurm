@@ -239,6 +239,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_POWER", LONG_OPT_POWER },
   { "SALLOC_PROFILE", LONG_OPT_PROFILE },
   { "SALLOC_QOS", 'q' },
+  { "SALLOC_RELAY_IO", LONG_OPT_RELAY_IO },
   { "SALLOC_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
   { "SALLOC_SEGMENT_SIZE", LONG_OPT_SEGMENT_SIZE },
@@ -866,6 +867,7 @@ static void _help(void)
 "  -q, --qos=qos               quality of service\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot compute nodes before starting job\n"
+"      --relay-io=yes|no       also relay job output to an aggregate location\n"
 "  -s, --oversubscribe         oversubscribe resources with other jobs\n"
 "      --signal=[R:]num[@time] send signal when time limit within time seconds\n"
 "      --spread-job            spread job across as many nodes as possible\n"

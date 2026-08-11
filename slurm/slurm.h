@@ -1840,6 +1840,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t profile;	/* Level of acct_gather_profile {all | none} */
 	char *qos;		/* Quality of Service */
 	uint16_t reboot;	/* force node reboot before startup */
+	uint16_t relay_io; /* 1 relay job output to an aggregate location,
+			    * 0 do not relay,
+			    * NO_VAL16 use RelayIODefaultEnabled */
 	char *resp_host;	/* NOTE: Set by slurmctld */
 	uint16_t restart_cnt;	/* count of job restarts */
 	char *req_nodes;	/* comma separated list of required nodes
