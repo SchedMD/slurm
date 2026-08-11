@@ -40,6 +40,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/data.h"
 #include "src/common/http.h"
 #include "src/common/list.h"
@@ -1689,7 +1691,6 @@ static int _convert_data_int(data_t *data, bool force)
 	case TYPE_STRING_PTR:
 	{
 		int64_t x = -1;
-		char end = '\0';
 		char *end_ptr = NULL;
 		const char *str = data_get_string(data);
 
@@ -1701,18 +1702,31 @@ static int _convert_data_int(data_t *data, bool force)
 		}
 
 		if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
-			if (sscanf(str, "%"SCNx64"%c", &x, &end) == 1) {
+			uint64_t u = INFINITE64;
+
+			errno = 0;
+			u = strtoull(str, &end_ptr, 16);
+
+			if (errno) {
 				log_flag_hex(DATA, str, strlen(str),
-					     "%s: converted hex number %pD->%"PRId64,
-					 __func__, data, x);
-				data_set_int(data, x);
-				return SLURM_SUCCESS;
+					     "%s: conversion of hex string %pD to integer failed: %m",
+					     __func__, data);
+				return errno;
 			}
 
+			if ((end_ptr == str) || end_ptr[0]) {
+				log_flag_hex(DATA, str, strlen(str),
+					     "%s: conversion of hex string %pD to integer did not parse entire string",
+					     __func__, data);
+				return ESLURM_DATA_CONV_FAILED;
+			}
+
+			x = (int64_t) u;
 			log_flag_hex(DATA, str, strlen(str),
-				     "%s: conversion of hex string %pD to integer failed",
-				     __func__, data);
-			return ESLURM_DATA_CONV_FAILED;
+				     "%s: converted hex number %pD->%"PRId64,
+				     __func__, data, x);
+			data_set_int(data, x);
+			return SLURM_SUCCESS;
 		}
 
 		if (!force) {
