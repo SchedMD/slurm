@@ -1547,7 +1547,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	}
 
 	get_part_list(job_ptr->partition, &job_ptr->part_ptr_list,
-		      &job_ptr->part_ptr, &err_part, NULL);
+		      &job_ptr->part_ptr, &err_part);
 	if (err_part) {
 		verbose("Invalid partition (%s) for JobId=%u",
 			err_part, job_ptr->job_id);
@@ -1555,6 +1555,18 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		/* not fatal error, partition could have been
 		 * removed, _sync_jobs_to_conf() will clean-up
 		 * this job */
+	}
+
+	/*
+	 * A non-pending job must keep the partition it was allocated in.
+	 * get_part_list() set part_ptr to one of the job's partitions, which
+	 * need not be the allocated one, so recover it from alloc_partition.
+	 * _sync_jobs_to_conf() cleans up the job if that partition is gone.
+	 */
+	if (!IS_JOB_PENDING(job_ptr)) {
+		part_record_t *part_ptr = find_alloc_part_record(job_ptr, NULL);
+		if (part_ptr)
+			job_ptr->part_ptr = part_ptr;
 	}
 
 #if 0
@@ -2800,9 +2812,18 @@ static int _foreach_kill_job_by_part_name(void *x, void *arg)
 			      __func__);
 		} else if (rebuild_name_list) {
 			if (list_count(job_ptr->part_ptr_list) > 0) {
+				/*
+				 * rebuild_job_part_list() repoints part_ptr to
+				 * the list head for a pending job, else keeps the
+				 * allocated one. The deleted partition is always a
+				 * secondary one (partition_in_use() blocks
+				 * deleting the allocated one), so a running or
+				 * suspended job is not killed. A completing job
+				 * whose allocated partition was the one deleted
+				 * falls through to the NULL part_ptr assignment
+				 * below.
+				 */
 				rebuild_job_part_list(job_ptr);
-				job_ptr->part_ptr =
-					list_peek(job_ptr->part_ptr_list);
 			} else {
 				FREE_NULL_LIST(job_ptr->part_ptr_list);
 			}
@@ -3509,6 +3530,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->admin_comment = xstrdup(job_ptr->admin_comment);
 	job_ptr_pend->alias_list = NULL;
 	job_ptr_pend->alloc_node = xstrdup(job_ptr->alloc_node);
+	/* The split-off record is pending, so it has no allocated partition. */
+	job_ptr_pend->alloc_partition = NULL;
 	job_ptr_pend->node_addrs = NULL;
 
 	job_ptr_pend->array_recs = job_ptr->array_recs;
@@ -6627,7 +6650,7 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 	if (job_desc->partition) {
 		char *err_part = NULL;
 		get_part_list(job_desc->partition, &part_ptr_list, &part_ptr,
-			      &err_part, NULL);
+			      &err_part);
 		if (err_part) {
 			info("%s: invalid partition specified: %s",
 			     __func__, job_desc->partition);
@@ -7600,6 +7623,14 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 	job_ptr->qos_list = qos_ptr_list;
 	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
+
+	/*
+	 * Build a multi-partition job's partition string from the
+	 * PriorityTier-sorted part_ptr_list so it is reported in tier order,
+	 * not submission order.
+	 */
+	if (job_ptr->part_ptr_list)
+		rebuild_job_part_list(job_ptr);
 
 	part_ptr_list = NULL;
 	qos_ptr_list = NULL;
@@ -16768,6 +16799,8 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	job_ptr->node_cnt = 0;
 	job_ptr->total_nodes = 0;
 	xfree(job_ptr->alias_list);
+	/* The job is now pending again, so it has no allocated partition. */
+	xfree(job_ptr->alloc_partition);
 	xfree(job_ptr->batch_host);
 	free_job_resources(&job_ptr->job_resrcs);
 	FREE_NULL_LIST(job_ptr->license_list);
@@ -19904,8 +19937,16 @@ extern uint16_t job_mgr_determine_cpus_per_core(
 static int _sort_part_lists(void *x, void *none)
 {
 	job_record_t *job_ptr = x;
-	if (job_ptr && job_ptr->part_ptr_list)
-		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+
+	if (!job_ptr || !job_ptr->part_ptr_list)
+		return SLURM_SUCCESS;
+
+	list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
+	/*
+	 * Rebuild the partition string in the new PriorityTier order and
+	 * repoint a pending job's part_ptr to the new list head.
+	 */
+	rebuild_job_part_list(job_ptr);
 	return SLURM_SUCCESS;
 }
 

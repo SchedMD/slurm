@@ -648,6 +648,48 @@ part_record_t *find_part_record(char *name)
 }
 
 /*
+ * find_alloc_part_record - find a non-pending job's allocated partition from
+ *	its state saved alloc_partition, falling back to the first token of
+ *	the partition string when alloc_partition is NULL.
+ * IN job_ptr - the job to look up
+ * OUT part_name - if not NULL, set to a copy of the partition name only when
+ *	the return is NULL, letting the caller name the removed partition
+ * RET the allocated partition, or NULL if it no longer exists
+ */
+extern part_record_t *find_alloc_part_record(job_record_t *job_ptr,
+					     char **part_name)
+{
+	char *name, *tmp_name = NULL, *last = NULL;
+	part_record_t *part_ptr;
+
+	xassert(job_ptr);
+
+	/*
+	 * When alloc_partition is NULL, fall back to the first token of the
+	 * partition string: pre-26.11 state (the prepended allocated partition)
+	 * or a completing job whose alloc_partition was cleared by a runtime
+	 * change (rebuild_job_part_list() re-sets it only for running or
+	 * suspended jobs).
+	 *
+	 * The lookup returns NULL when that partition no longer exists; the job
+	 * then reports a surviving partition instead. This is display only --
+	 * accounting already recorded the partition it ran in.
+	 */
+	name = job_ptr->alloc_partition;
+	if (!name && job_ptr->partition) {
+		tmp_name = xstrdup(job_ptr->partition);
+		name = strtok_r(tmp_name, ",", &last);
+	}
+
+	part_ptr = name ? find_part_record(name) : NULL;
+	if (part_name && !part_ptr)
+		*part_name = xstrdup(name);
+	xfree(tmp_name);
+
+	return part_ptr;
+}
+
+/*
  * Create a copy of a job's part_list *partition list
  * IN part_list_src - a job's part_list
  * RET copy of part_list_src, must be freed by caller
@@ -674,29 +716,24 @@ extern list_t *part_list_copy(list_t *part_list_src)
 /*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
- * OUT part_ptr_list - sorted list of pointers to the partitions or NULL
- * OUT prim_part_ptr - pointer to the primary partition
+ * OUT part_ptr_list - list of pointers to the partitions sorted by
+ *		       PriorityTier, or NULL
+ * OUT prim_part_ptr - pointer to the highest PriorityTier partition
  * OUT err_part - All the invalid partition names.
- * OUT first_valid - bool ptr indicating if the first partition in name is valid
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
 extern void get_part_list(char *name, list_t **part_ptr_list,
-			  part_record_t **prim_part_ptr, char **err_part,
-			  bool *first_valid)
+			  part_record_t **prim_part_ptr, char **err_part)
 {
 	part_record_t *part_ptr;
 	char *token, *last = NULL, *tmp_name;
-	bool first_iteration = true;
 
 	*part_ptr_list = NULL;
 	*prim_part_ptr = NULL;
 
 	if (err_part)
 		xfree(*err_part);
-
-	if (first_valid)
-		*first_valid = true;
 
 	if (name == NULL)
 		return;
@@ -711,30 +748,21 @@ extern void get_part_list(char *name, list_t **part_ptr_list,
 			if (!list_find_first(*part_ptr_list, &_match_part_ptr,
 					     part_ptr))
 				list_append(*part_ptr_list, part_ptr);
-		} else {
-			if (err_part)
-				xstrfmtcat(*err_part, "%s%s",
-					   *err_part ? "," : "",
-					   token);
-			if (first_iteration && first_valid)
-				*first_valid = false;
+		} else if (err_part) {
+			xstrfmtcat(*err_part, "%s%s", *err_part ? "," : "",
+				   token);
 		}
 		token = strtok_r(NULL, ",", &last);
-		first_iteration = false;
 	}
 
 	if (*part_ptr_list) {
 		/*
-		 * Return the first part_ptr in the list before sorting. On
-		 * state load, the first partition in the list is the running
-		 * partition -- for multi-partition jobs. Other times it doesn't
-		 * matter what the returned part_ptr is because it will be
-		 * modified when scheduling the different job_queue_rec_t's.
-		 *
-		 * The part_ptr_list always needs to be sorted by priority_tier.
+		 * Always sort part_ptr_list by PriorityTier (highest at the
+		 * head). A non-pending job's allocated partition is recovered
+		 * from alloc_partition, so the list order need not preserve it.
 		 */
-		*prim_part_ptr = list_peek(*part_ptr_list);
 		list_sort(*part_ptr_list, priority_sort_part_tier);
+		*prim_part_ptr = list_peek(*part_ptr_list);
 		if (list_count(*part_ptr_list) == 1)
 			FREE_NULL_LIST(*part_ptr_list);
 	}

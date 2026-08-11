@@ -756,6 +756,18 @@ extern job_record_t *find_job(const slurm_step_id_t *step_id);
 extern part_record_t *find_part_record(char *name);
 
 /*
+ * find_alloc_part_record - find a non-pending job's allocated partition from
+ *	its state saved alloc_partition, falling back to the first token of
+ *	the partition string when alloc_partition is NULL.
+ * IN job_ptr - the job to look up
+ * OUT part_name - if not NULL, set to a copy of the partition name only when
+ *	the return is NULL, letting the caller name the removed partition
+ * RET the allocated partition, or NULL if it no longer exists
+ */
+extern part_record_t *find_alloc_part_record(job_record_t *job_ptr,
+					     char **part_name);
+
+/*
  * get_job_env - return the environment variables and their count for a
  *	given job
  * IN job_ptr - pointer to job for which data is required
@@ -789,15 +801,15 @@ extern uint32_t get_next_job_id(bool test_only);
 /*
  * get_part_list - find record for named partition(s)
  * IN name - partition name(s) in a comma separated list
- * OUT part_ptr_list - sorted list of pointers to the partitions or NULL
- * OUT prim_part_ptr - pointer to the primary partition
- * OUT err_part - The first invalid partition name.
+ * OUT part_ptr_list - list of pointers to the partitions sorted by
+ *		       PriorityTier, or NULL
+ * OUT prim_part_ptr - pointer to the highest PriorityTier partition
+ * OUT err_part - All the invalid partition names.
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
  */
 extern void get_part_list(char *name, list_t **part_ptr_list,
-			  part_record_t **prim_part_ptr, char **err_part,
-			  bool *first_valid);
+			  part_record_t **prim_part_ptr, char **err_part);
 
 /*
  * init_depend_policy()
@@ -1952,9 +1964,9 @@ extern int set_partition_billing_weights(char *billing_weights_str,
 extern int update_part(partition_info_t *part_desc, bool create_flag);
 
 /*
- * Sort all jobs' part_ptr_list to be in descending order according to
- * partition priority tier. This Should be called anytime a partition's priority
- * tier is modified.
+ * Sort every job's part_ptr_list by PriorityTier (descending) and rebuild its
+ * partition string to match, repointing a pending job's part_ptr to the new
+ * highest-tier partition. Call whenever a partition's PriorityTier changes.
  */
 extern void sort_all_jobs_partition_lists();
 

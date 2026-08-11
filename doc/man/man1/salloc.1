@@ -1927,8 +1927,10 @@ partition as designated by the system administrator. If the job can use more
 than one partition, specify their names in a comma separate list and the one
 offering earliest initiation will be used with no regard given to the partition
 name ordering (although higher priority partitions will be considered first).
-When the job is initiated, the name of the partition used will be placed first
-in the job record partition string.
+When the job is pending, its Partition field (as shown by \fBsqueue\fR and
+\fBscontrol\fR) lists the partitions sorted by \fBPriorityTier\fR (highest
+first), not in submission order. Once the job is running, the field shows only
+the partition to which the job was allocated.
 .IP
 
 .TP

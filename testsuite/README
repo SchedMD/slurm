@@ -1139,3 +1139,10 @@ test_163_1   Test completed accounting preserves short memory peaks
 test_164_#   Testing batch job launch recovery.
 =================================================
 test_164_1   Test a batch job survives a slurmctld reconfigure during its prolog
+
+test_165_#   Testing multi-partition allocated partition recovery and ordering
+==============================================================================
+test_165_1   Test multi-partition job/array keeps partition on restart
+test_165_2   Test completing job keeps partition on recovery
+test_165_3   Test multi-partition job keeps partition across changes
+test_165_4   Test partition PriorityTier ordering of a pending job

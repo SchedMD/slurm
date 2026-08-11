@@ -1319,7 +1319,7 @@ void _sync_jobs_to_conf(void)
 	bool part_missing = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
-	bool rebuild_part;
+	bool rebuild_part, clear_part_ptr;
 
 	xassert(job_list);
 
@@ -1332,6 +1332,7 @@ void _sync_jobs_to_conf(void)
 		job_fail = false;
 		part_missing = false;
 		rebuild_part = false;
+		clear_part_ptr = false;
 
 		/*
 		 * This resets the req/exc node bitmaps, so even if the job is
@@ -1363,35 +1364,42 @@ void _sync_jobs_to_conf(void)
 			part_missing = true;
 		} else {
 			char *err_part = NULL;
-			bool first_part_valid;
 
 			get_part_list(job_ptr->partition, &part_ptr_list,
-				      &part_ptr, &err_part, &first_part_valid);
+				      &part_ptr, &err_part);
 
-			if ((part_ptr == NULL) && !IS_JOB_RUNNING(job_ptr) &&
-			    !IS_JOB_SUSPENDED(job_ptr)) {
+			if (!IS_JOB_PENDING(job_ptr)) {
+				/*
+				 * get_part_list() set part_ptr to a partition
+				 * that need not be the allocated one. Recover
+				 * a non-pending job's allocated partition from
+				 * alloc_partition. If it was removed, kill a
+				 * running or suspended job; leave a completing
+				 * job to finish with a NULL part_ptr (it then
+				 * reports its surviving partitions).
+				 */
+				part_record_t *running_part_ptr;
+				char *defunct = NULL;
+
+				running_part_ptr =
+					find_alloc_part_record(job_ptr,
+							       &defunct);
+				if (running_part_ptr) {
+					part_ptr = running_part_ptr;
+				} else if (IS_JOB_RUNNING(job_ptr) ||
+					   IS_JOB_SUSPENDED(job_ptr)) {
+					error("Killing %pJ on defunct partition %s",
+					      job_ptr, defunct);
+					part_missing = true;
+				} else {
+					clear_part_ptr = true;
+				}
+				xfree(defunct);
+			} else if (!part_ptr) {
 				/* No valid partitions were found */
 				error("Invalid partition (%s) for %pJ",
 				      err_part, job_ptr);
 				part_missing = true;
-			} else if ((IS_JOB_RUNNING(job_ptr) ||
-				    IS_JOB_SUSPENDED(job_ptr)) &&
-				   (!first_part_valid || (part_ptr == NULL))) {
-				char sep = ',';
-				char *sep_pos = xstrchr(err_part, sep);
-				if (sep_pos)
-					*sep_pos = '\0';
-				/*
-				 * We removed the primary partition for a
-				 * running or suspended job. We need to
-				 * terminate the job.
-				 */
-				error("Killing %pJ on defunct partition %s",
-				      job_ptr, err_part);
-				part_missing = true;
-
-				if (sep_pos)
-					*sep_pos = sep;
 			}
 
 			if (err_part)
@@ -1410,11 +1418,22 @@ void _sync_jobs_to_conf(void)
 				part_ptr_list = NULL; /* clear for next job */
 			}
 			/*
-			 * Rebuild the partition string if it contains an
-			 * invalid partition.
+			 * Rebuild the partition string if it names an invalid
+			 * partition, in PriorityTier order. Skip a completing
+			 * job left with a NULL part_ptr (rebuild would
+			 * dereference it); rebuild before clearing part_ptr
+			 * below.
 			 */
-			if (rebuild_part)
+			if (rebuild_part && part_ptr)
 				rebuild_job_part_list(job_ptr);
+			/*
+			 * A completing job whose allocated partition was
+			 * removed keeps its surviving partitions but is no
+			 * longer pinned to one (as on a runtime delete). Clear
+			 * part_ptr now that the string is rebuilt.
+			 */
+			if (clear_part_ptr)
+				job_ptr->part_ptr = NULL;
 		} else {
 			job_ptr->details->requeue = false;
 			job_state_unset_flag(job_ptr, JOB_REQUEUE);
