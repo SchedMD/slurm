@@ -2432,6 +2432,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack64(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		job_ptr->bit_flags &= ~BF_CURRENT_JOB_NOT_UPDATED;
 		safe_unpackstr(&job_ptr->burst_buffer, buffer);
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackdouble(&job_ptr->billable_tres, buffer);
@@ -2528,6 +2529,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack64(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		job_ptr->bit_flags &= ~BF_CURRENT_JOB_NOT_UPDATED;
 		safe_unpackstr(&job_ptr->burst_buffer, buffer);
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackdouble(&job_ptr->billable_tres, buffer);
@@ -2621,6 +2623,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack64(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		job_ptr->bit_flags &= ~BF_CURRENT_JOB_NOT_UPDATED;
 		safe_unpackstr(&job_ptr->burst_buffer, buffer);
 		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
 		safe_unpackdouble(&job_ptr->billable_tres, buffer);
