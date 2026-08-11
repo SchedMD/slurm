@@ -261,7 +261,21 @@ extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 		safe_read(fd, &len, sizeof(uint32_t));
 	}
 	len = ntohl(len);
-	buf = init_buf(len);
+
+	/*
+	 * A pre-26.11 peer sends the full credential signature as the io_key,
+	 * so the message grows with the node count. When 26.05 is no longer
+	 * supported the io_key is a fixed hash, so tighten this to
+	 * SLURM_IO_MAX_MSG_LEN.
+	 */
+	if (!len || (len > MAX_MSG_SIZE)) {
+		error_in_daemon("%s: rejecting io init message length %u",
+				__func__, len);
+		return SLURM_ERROR;
+	}
+
+	if (!(buf = try_init_buf(len)))
+		return SLURM_ERROR;
 
 	if (conn_tls_enabled()) {
 		conn_g_recv(conn, buf->head, len);
