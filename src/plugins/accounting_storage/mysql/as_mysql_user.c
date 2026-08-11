@@ -443,6 +443,28 @@ static int _foreach_add_user(void *x, void *arg)
 	return 0;
 }
 
+/* Return true if name is not already an existing, non-deleted user. */
+static bool _admin_level_applies(mysql_conn_t *mysql_conn, char *name)
+{
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	bool applies;
+
+	query = xstrdup_printf(
+		"select name from %s where deleted=0 and name='%s';",
+		user_table, name);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return false;
+
+	applies = !mysql_num_rows(result);
+	mysql_free_result(result);
+
+	return applies;
+}
+
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			      list_t *user_list)
 {
@@ -453,7 +475,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *txn_query_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *extra = NULL, *tmp_extra = NULL;
+	char *extra = NULL, *audit_extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
 	list_t *assoc_list;
 	list_t *wckey_list;
@@ -517,17 +539,30 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
-			xstrfmtcat(extra, ", admin_level=%u",
-				   object->admin_level);
-		} else
-			xstrfmtcat(extra, ", admin_level=%u",
-				   SLURMDB_ADMIN_NONE);
+			xstrfmtcat(extra,
+				   ", admin_level=IF(deleted=1, "
+				   "VALUES(admin_level), admin_level)");
+			/*
+			 * The admin_level is only applied to a new or deleted
+			 * user, so only record it as changed in those cases.
+			 */
+			if (_admin_level_applies(mysql_conn, object->name))
+				xstrfmtcat(audit_extra, ", admin_level=%u",
+					   object->admin_level);
+		} else {
+			xstrcat(cols, ", admin_level");
+			xstrfmtcat(vals, ", %u", SLURMDB_ADMIN_NONE);
+			xstrfmtcat(extra,
+				   ", admin_level=IF(deleted=1, "
+				   "VALUES(admin_level), admin_level)");
+		}
 
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
-			"on duplicate key update name=VALUES(name), deleted=0, mod_time=%ld %s;",
+			"on duplicate key update name=VALUES(name)%s, "
+			"deleted=0, mod_time=%ld;",
 			user_table, cols, vals,
-			(long)now, extra);
+			extra, (long) now);
 		xfree(cols);
 		xfree(vals);
 
@@ -536,6 +571,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add user %s", object->name);
 			xfree(extra);
+			xfree(audit_extra);
 			continue;
 		}
 
@@ -543,6 +579,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!affect_rows) {
 			debug("nothing changed");
 			xfree(extra);
+			xfree(audit_extra);
 			continue;
 		}
 
@@ -562,21 +599,30 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = _get_user_coords(mysql_conn, object);
 		}
 
-		if (rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS) {
+			xfree(extra);
+			xfree(audit_extra);
 			continue;
+		}
 
 		if (addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
 				      object) == SLURM_SUCCESS)
 			list_remove(itr);
 
-		/* we always have a ', ' as the first 2 chars */
-		tmp_extra = slurm_add_slash_to_quotes(extra+2);
+		/*
+		 * audit_extra is only set when the caller explicitly requested
+		 * an admin_level; otherwise the txn info is left empty rather
+		 * than recording the SQL fragment from extra. We always have
+		 * a ', ' as the first 2 chars.
+		 */
+		if (audit_extra)
+			tmp_extra = slurm_add_slash_to_quotes(audit_extra + 2);
 
 		if (txn_query)
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     ", (%ld, %u, '%s', '%s', '%s')",
 				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra);
+				     user_name, tmp_extra ? tmp_extra : "");
 		else
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     "insert into %s "
@@ -584,9 +630,10 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     "values (%ld, %u, '%s', '%s', '%s')",
 				     txn_table,
 				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra);
+				     user_name, tmp_extra ? tmp_extra : "");
 		xfree(tmp_extra);
 		xfree(extra);
+		xfree(audit_extra);
 		if (object->assoc_list)
 			list_transfer(assoc_list, object->assoc_list);
 
