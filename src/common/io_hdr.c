@@ -245,6 +245,7 @@ extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 {
 	buf_t *buf = NULL;
 	uint32_t len;
+	ssize_t n;
 	int rc;
 
 	xassert(msg);
@@ -255,10 +256,11 @@ extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
-	if (conn_tls_enabled()) {
-		conn_g_recv(conn, &len, sizeof(uint32_t));
-	} else {
-		safe_read(fd, &len, sizeof(uint32_t));
+	n = _full_read(fd, conn, &len, sizeof(uint32_t));
+	if (n != sizeof(uint32_t)) {
+		if (n >= 0)
+			errno = EIO;
+		goto rwfail;
 	}
 	len = ntohl(len);
 
@@ -277,10 +279,11 @@ extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 	if (!(buf = try_init_buf(len)))
 		return SLURM_ERROR;
 
-	if (conn_tls_enabled()) {
-		conn_g_recv(conn, buf->head, len);
-	} else {
-		safe_read(fd, buf->head, len);
+	n = _full_read(fd, conn, buf->head, len);
+	if (n != len) {
+		if (n >= 0)
+			errno = EIO;
+		goto rwfail;
 	}
 
 	if ((rc = io_init_msg_unpack(msg, buf)))
