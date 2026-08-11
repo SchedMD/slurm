@@ -289,6 +289,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	packstr(slurm_conf.propagate_rlimits_except, buffer);
 	/* reboot_program */
 	/* reconfig_flags */
+	packstr(slurm_conf.relay_io_params, buffer);
+	packstr(slurm_conf.relay_io_plugin, buffer);
 	/* requeue_exit */
 	/* requeue_exit_hold */
 	/* resume_fail_program */
@@ -535,6 +537,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	safe_unpackstr(&slurm_conf.propagate_rlimits_except, buffer);
 	/* reboot_program */
 	/* reconfig_flags */
+	safe_unpackstr(&slurm_conf.relay_io_params, buffer);
+	safe_unpackstr(&slurm_conf.relay_io_plugin, buffer);
 	/* requeue_exit */
 	/* requeue_exit_hold */
 	/* resume_fail_program */

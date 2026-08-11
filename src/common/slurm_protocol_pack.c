@@ -5228,6 +5228,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 
 		packstr(conf->reboot_program, buffer);
 		pack16(conf->reconfig_flags, buffer);
+		packstr(conf->relay_io_params, buffer);
+		packstr(conf->relay_io_plugin, buffer);
 		packstr(conf->requeue_exit, buffer);
 		packstr(conf->requeue_exit_hold, buffer);
 		packstr(conf->resume_fail_program, buffer);
@@ -6323,6 +6325,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 
 		safe_unpackstr(&conf->reboot_program, buffer);
 		safe_unpack16(&conf->reconfig_flags, buffer);
+		safe_unpackstr(&conf->relay_io_params, buffer);
+		safe_unpackstr(&conf->relay_io_plugin, buffer);
 
 		safe_unpackstr(&conf->requeue_exit, buffer);
 		safe_unpackstr(&conf->requeue_exit_hold, buffer);

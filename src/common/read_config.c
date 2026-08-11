@@ -388,6 +388,9 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"RebootProgram", S_P_STRING},
 	{"ReconfigFlags", S_P_STRING},
+	{"RelayIODefaultEnabled", S_P_BOOLEAN},
+	{"RelayIOParameters", S_P_STRING},
+	{"RelayIOPlugin", S_P_STRING},
 	{"RequeueExit", S_P_STRING},
 	{"RequeueExitHold", S_P_STRING},
 	{"ResumeFailProgram", S_P_STRING},
@@ -3009,6 +3012,8 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->propagate_rlimits);
 	xfree(conf->propagate_rlimits_except);
 	xfree(conf->reboot_program);
+	xfree(conf->relay_io_params);
+	xfree(conf->relay_io_plugin);
 	xfree(conf->requeue_exit);
 	xfree(conf->requeue_exit_hold);
 	xfree(conf->resume_fail_program);
@@ -3194,6 +3199,8 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	xfree(conf->propagate_rlimits_except);
 	xfree(conf->reboot_program);
 	conf->reconfig_flags = 0;
+	xfree(conf->relay_io_params);
+	xfree(conf->relay_io_plugin);
 	xfree(conf->requeue_exit);
 	xfree(conf->requeue_exit_hold);
 	conf->resume_timeout = 0;
@@ -5309,6 +5316,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xfree(temp_str);
 	} else  /* Default: no ReconfigFlags */
 		conf->reconfig_flags = 0;
+
+	if (s_p_get_boolean(&truth, "RelayIODefaultEnabled", hashtbl) && truth)
+		conf->conf_flags |= CONF_FLAG_RELAY_IO;
+
+	(void) s_p_get_string(&conf->relay_io_params, "RelayIOParameters",
+			      hashtbl);
+	(void) s_p_get_string(&conf->relay_io_plugin, "RelayIOPlugin", hashtbl);
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;

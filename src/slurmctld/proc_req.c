@@ -486,6 +486,8 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 
 	conf_ptr->reboot_program      = xstrdup(conf->reboot_program);
 	conf_ptr->reconfig_flags      = conf->reconfig_flags;
+	conf_ptr->relay_io_params = xstrdup(conf->relay_io_params);
+	conf_ptr->relay_io_plugin = xstrdup(conf->relay_io_plugin);
 	conf_ptr->requeue_exit        = xstrdup(conf->requeue_exit);
 	conf_ptr->requeue_exit_hold   = xstrdup(conf->requeue_exit_hold);
 	conf_ptr->resume_fail_program = xstrdup(conf->resume_fail_program);

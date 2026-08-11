@@ -3119,6 +3119,7 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_NO_STDIO	SLURM_BIT(16) /* AccountingStoreFlags=no_stdio */
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
+#define CONF_FLAG_RELAY_IO SLURM_BIT(19) /* RelayIODefaultEnabled */
 
 /* How an internal buf_t is enlarged, from CommunicationParameters */
 typedef enum {
@@ -3355,6 +3356,8 @@ typedef struct {
 	char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	char *reboot_program;	/* program to reboot the node */
 	uint16_t reconfig_flags;/* see RECONFIG_* */
+	char *relay_io_params; /* relay_io parameters */
+	char *relay_io_plugin; /* relay_io plugin */
 	char *requeue_exit;      /* requeue exit values */
 	char *requeue_exit_hold; /* requeue exit hold values */
 	char *resume_fail_program; /* program to handle failed resume tries */
