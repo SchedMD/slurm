@@ -742,6 +742,16 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
+	if ((user->admin_level >= SLURMDB_ADMIN_SUPER_USER) &&
+	    !is_user_min_admin_level(mysql_conn, uid,
+				     SLURMDB_ADMIN_SUPER_USER)) {
+		ret_str =
+			xstrdup("Only Administrators can add an Administrator");
+		error("%s", ret_str);
+		errno = ESLURM_ACCESS_DENIED;
+		return ret_str;
+	}
+
 	if (user->admin_level == SLURMDB_ADMIN_NOTSET)
 		user->admin_level = SLURMDB_ADMIN_NONE;
 	else
