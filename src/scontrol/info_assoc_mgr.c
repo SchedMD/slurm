@@ -44,6 +44,35 @@ static uint32_t tres_cnt = 0;
 static char **tres_names = NULL;
 static uint32_t req_flags = 0;
 
+/*
+ * Per-TRES decay half-lives, in seconds.
+ *
+ * Unlike a limit there is no "unlimited" to hide: the interesting value is 0,
+ * meaning that TRES never decays. NO_VAL64 is a TRES with no half-life of its
+ * own, which follows PriorityDecayHalfLife, so those are left out and a TRES
+ * set to the same value as PriorityDecayHalfLife still shows.
+ */
+static void _print_tres_decay_hl(uint64_t *hl_ctld)
+{
+	bool comma = 0;
+
+	xassert(tres_cnt);
+	xassert(tres_names);
+
+	printf("TresDecayHalfLife=");
+	if (!hl_ctld)
+		return;
+
+	for (int i = 0; i < tres_cnt; i++) {
+		if (hl_ctld[i] == NO_VAL64)
+			continue;
+
+		printf("%s%s=%"PRIu64, comma ? "," : "", tres_names[i],
+		       hl_ctld[i]);
+		comma = 1;
+	}
+}
+
 static void _print_tres_line(const char *name, uint64_t *limits, uint64_t *used,
 			     uint64_t divider)
 {
@@ -344,6 +373,11 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
+			_print_tres_decay_hl(assoc_rec->tres_decay_hl_ctld);
+
+			/* NEW LINE */
+			printf("%s", new_line_char);
+
 			if (assoc_rec->max_jobs != INFINITE)
 				printf("MaxJobs=%u(%u) ",
 				       assoc_rec->max_jobs,
@@ -497,6 +531,11 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 					 qos_rec->grp_tres_run_mins_ctld,
 					 qos_rec->usage->
 					 grp_used_tres_run_secs, 60);
+
+			/* NEW LINE */
+			printf("%s", new_line_char);
+
+			_print_tres_decay_hl(qos_rec->tres_decay_hl_ctld);
 
 			/* NEW LINE */
 			printf("%s", new_line_char);
