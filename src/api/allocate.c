@@ -62,6 +62,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1548,6 +1549,7 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 	struct pollfd fds[2];
 	int rc;
 	int timeout_ms;
+	timespec_t deadline = { 0 };
 
 	if (listen == NULL) {
 		error("Listening port not found");
@@ -1560,15 +1562,20 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 	fds[1].fd = interrupt_fd;
 	fds[1].events = POLLIN;
 
-	if (sleep_time != 0)
+	if (sleep_time != 0) {
 		timeout_ms = sleep_time * 1000;
-	else
+		deadline = timespec_add(timespec_now(),
+					(timespec_t) { .tv_sec = sleep_time });
+		debug("Waiting up to %d seconds for resource allocation",
+		      sleep_time);
+	} else {
 		timeout_ms = -1;
+		debug("Waiting for resource allocation with no timeout");
+	}
 
 	while ((rc = poll(fds, 2, timeout_ms)) < 0) {
 		switch (errno) {
 		case EAGAIN:
-		case EINTR:
 			return -1;
 		case EBADF:
 		case ENOMEM:
@@ -1576,8 +1583,30 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 		case EFAULT:
 			error("poll: %m");
 			return -1;
+		case EINTR:
+			/*
+			 * Callers read a -1 return as "abort requested", but
+			 * EINTR from a signal can be continued, unless there
+			 * is no interrupt_fd to signal abort through, in which
+			 * case EINTR is the only escape hatch.
+			 */
+			if (interrupt_fd < 0)
+				return -1;
+			debug3("poll interrupted, polling again...");
+			break;
 		default:
 			error("poll: %m. Continuing...");
+		}
+
+		if (timeout_ms > 0) {
+			timespec_t now = timespec_now();
+
+			if (!timespec_is_after(deadline, now)) {
+				errno = ETIMEDOUT;
+				return 0;
+			}
+			timeout_ms =
+				timespec_to_msec(timespec_rem(deadline, now));
 		}
 	}
 
