@@ -86,6 +86,13 @@
 #include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
+/*
+ * Upper bound on the string lengths accepted on the step socket. Every sender
+ * derives these from strlen() of a name or a short message, so this is far
+ * more than any legitimate request needs.
+ */
+#define MAX_STEPD_REQ_STR_LEN (64 * 1024)
+
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *step,
 			   uid_t uid, pid_t remote_pid);
@@ -1768,6 +1775,10 @@ static int _handle_getpw(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 	safe_read(fd, &mode, sizeof(int));
 	safe_read(fd, &uid, sizeof(uid_t));
 	safe_read(fd, &len, sizeof(int));
+	if ((len < 0) || (len > MAX_STEPD_REQ_STR_LEN)) {
+		error("%s: rejecting invalid name length %d", __func__, len);
+		goto rwfail;
+	}
 	if (len) {
 		name = xmalloc(len + 1); /* add room for NUL */
 		safe_read(fd, name, len);
@@ -1867,6 +1878,10 @@ static int _handle_getgr(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 	safe_read(fd, &mode, sizeof(int));
 	safe_read(fd, &gid, sizeof(gid_t));
 	safe_read(fd, &len, sizeof(int));
+	if ((len < 0) || (len > MAX_STEPD_REQ_STR_LEN)) {
+		error("%s: rejecting invalid name length %d", __func__, len);
+		goto rwfail;
+	}
 	if (len) {
 		name = xmalloc(len + 1); /* add room for NUL */
 		safe_read(fd, name, len);
@@ -1931,6 +1946,11 @@ static int _handle_gethost(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 
 	safe_read(fd, &mode, sizeof(int));
 	safe_read(fd, &len, sizeof(int));
+	if ((len < 0) || (len > MAX_STEPD_REQ_STR_LEN)) {
+		error("%s: rejecting invalid nodename length %d",
+		      __func__, len);
+		goto rwfail;
+	}
 	if (len) {
 		nodename = xmalloc(len + 1); /* add room for NULL */
 		safe_read(fd, nodename, len);
