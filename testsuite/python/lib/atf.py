@@ -1156,10 +1156,13 @@ def gcore(component, pid=None, sbin=True):
 
     logging.debug(f"Getting gcores and sending SIGPROF to PIDs: {pids}")
     for pid in pids:
-        run_command(f"kill -SIGPROF {pid}", user="root")
         run_command(
             f"sudo gcore -o {properties['slurm-logs-dir']}/{component}.core {pid}"
         )
+
+        # Sending SIGPROF should be the last thing, because if it's not handled
+        # properly it defaults to behave like SIGTERM.
+        run_command(f"kill -SIGPROF {pid}", user="root")
 
 
 def start_slurmd(slurmd_name, quiet=False):
