@@ -990,6 +990,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool is_super_user = false;
 
 	if (!user_cond || !user) {
 		error("we need something to change");
@@ -1040,7 +1041,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf(
-		"select distinct name from %s where deleted=0 %s;",
+		"select distinct name, admin_level from %s where deleted=0 %s;",
 		user_table, extra);
 	xfree(extra);
 	if (!(result = mysql_db_query_ret(
@@ -1050,12 +1051,31 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (user->name)
+		is_super_user = is_user_min_admin_level(
+			mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER);
+
 	if (!ret_list)
 		ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_user_rec_t *user_rec = NULL;
 
 		object = row[0];
+		/*
+		 * A rename carries the admin_level over to the new name, so
+		 * it has to be checked before _change_user_name() below.
+		 */
+		if (user->name && !is_super_user &&
+		    (slurm_atoul(row[1]) >= SLURMDB_ADMIN_SUPER_USER)) {
+			error("Only Administrators can rename an Administrator");
+			mysql_free_result(result);
+			xfree(name_char);
+			xfree(query);
+			xfree(vals);
+			FREE_NULL_LIST(ret_list);
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
+		}
 		slurm_addto_char_list(ret_list, object);
 		if (!name_char)
 			xstrfmtcat(name_char, "(name='%s'", object);
