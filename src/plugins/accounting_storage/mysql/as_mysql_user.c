@@ -43,6 +43,7 @@
 typedef struct {
 	list_t *acct_list; /* for coords, a list of just char * instead of
 			    * slurmdb_coord_rec_t */
+	bool admin_set;
 	char *coord_query;
 	char *coord_query_pos;
 	mysql_conn_t *mysql_conn;
@@ -342,7 +343,7 @@ static int _foreach_add_user(void *x, void *arg)
 	char *name = x;
 	add_user_cond_t *add_user_cond = arg;
 	slurmdb_user_rec_t *object, check_object;
-	char *extra, *tmp_extra;
+	char *extra = NULL, *tmp_extra = NULL;
 	int rc;
 	char *query;
 
@@ -375,9 +376,9 @@ static int _foreach_add_user(void *x, void *arg)
 		add_user_cond->user_in->coord_accts);
 
 	query = xstrdup_printf(
-		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
-		user_table, add_user_cond->now, add_user_cond->now,
-		object->name, object->admin_level);
+		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update name=VALUES(name), admin_level=IF(deleted=1, VALUES(admin_level), admin_level), deleted=0, mod_time=VALUES(mod_time);",
+		user_table, add_user_cond->now, add_user_cond->now, object->name,
+		object->admin_level);
 
 	DB_DEBUG(DB_ASSOC, add_user_cond->mysql_conn->conn, "query:\n%s",
 		 query);
@@ -410,8 +411,10 @@ static int _foreach_add_user(void *x, void *arg)
 		return -1;
 	}
 
-	extra = xstrdup_printf("admin_level=%u", object->admin_level);
-	tmp_extra = slurm_add_slash_to_quotes(extra);
+	if (add_user_cond->admin_set) {
+		extra = xstrdup_printf("admin_level=%u", object->admin_level);
+		tmp_extra = slurm_add_slash_to_quotes(extra);
+	}
 
 	if (!add_user_cond->txn_query)
 		xstrfmtcatat(add_user_cond->txn_query,
@@ -427,7 +430,7 @@ static int _foreach_add_user(void *x, void *arg)
 		     &add_user_cond->txn_query_pos,
 		     "(%ld, %u, '%s', '%s', '%s')",
 		     add_user_cond->now, DBD_ADD_USERS, name,
-		     add_user_cond->user_name, tmp_extra);
+		     add_user_cond->user_name, tmp_extra ? tmp_extra : "");
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -739,6 +742,7 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	memset(&add_user_cond, 0, sizeof(add_user_cond));
+	add_user_cond.admin_set = admin_set;
 	add_user_cond.user_in = user;
 	add_user_cond.mysql_conn = mysql_conn;
 	add_user_cond.now = time(NULL);
