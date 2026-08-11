@@ -1262,6 +1262,56 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 	return has_access;
 }
 
+static int _foreach_quoted_name(void *x, void *arg)
+{
+	char *name = x;
+	create_string_t *create_string = arg;
+
+	if (!name[0])
+		return 0;
+
+	xstrfmtcatat(create_string->query, &create_string->query_pos,
+		     "%s'%s'",
+		     create_string->query ? ", " : "", name);
+	return 0;
+}
+
+/*
+ * Return ESLURM_ACCESS_DENIED if any name in name_list is an Administrator.
+ */
+static int _check_for_admins(mysql_conn_t *mysql_conn, list_t *name_list)
+{
+	create_string_t create_string = { 0 };
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	int rc = SLURM_SUCCESS;
+
+	(void) list_for_each_ro(name_list, _foreach_quoted_name,
+				&create_string);
+
+	if (!create_string.query)
+		return SLURM_SUCCESS;
+
+	query = xstrdup_printf(
+		"select name from %s "
+		"where deleted=0 and admin_level>=%u and name in (%s);",
+		user_table, SLURMDB_ADMIN_SUPER_USER, create_string.query);
+	xfree(create_string.query);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return ESLURM_ACCESS_DENIED;
+
+	if (mysql_num_rows(result)) {
+		error("Only Administrators can remove an Administrator");
+		rc = ESLURM_ACCESS_DENIED;
+	}
+	mysql_free_result(result);
+
+	return rc;
+}
+
 extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_user_cond_t *user_cond)
 {
@@ -1390,6 +1440,22 @@ no_user_table:
 		return ret_list;
 	}
 	xfree(query);
+
+	/*
+	 * ret_list is also filled in from the default account and wckey
+	 * conditions, which never look at the user_table, so the admin_level
+	 * has to be checked here on the full list.
+	 */
+	if (!is_user_min_admin_level(mysql_conn, uid,
+				     SLURMDB_ADMIN_SUPER_USER)) {
+		rc = _check_for_admins(mysql_conn, ret_list);
+
+		if (rc != SLURM_SUCCESS) {
+			FREE_NULL_LIST(ret_list);
+			errno = rc;
+			return NULL;
+		}
+	}
 
 	memset(&user_coord_cond, 0, sizeof(slurmdb_user_cond_t));
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
