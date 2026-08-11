@@ -656,7 +656,7 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
 		gres_js->gres_cnt_node_select[node_inx]++;
 		gres_still_needed--;
 		if (links_cnt && sorted_gres) {
-			i = 0; /* Start over on for updated sorted_gres */
+			i = -1; /* Restart at 0 after the loop increment */
 			_update_and_sort_by_links(sorted_gres, links_cnt, g,
 						  gres_cnt, gres_ns);
 		}
