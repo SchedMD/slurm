@@ -1257,10 +1257,68 @@ static void _container_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
 		_create_start(task);
 }
 
+/*
+ * Return the portion of path below base, or NULL if path is not below base.
+ * Caller must xfree() the result.
+ */
+static char *_relative_subpath(const char *base, const char *path)
+{
+	size_t len = strlen(base);
+
+	if (xstrncmp(path, base, len))
+		return NULL;
+
+	path += len;
+	while (path[0] == '/')
+		path++;
+
+	if (!path[0])
+		return NULL;
+
+	return xstrdup(path);
+}
+
+/*
+ * Open the directory holding stop, descending rel from basefd one component
+ * at a time with O_NOFOLLOW so no component can be swapped for a symlink.
+ * IN basefd - directory to descend from
+ * IN rel - path relative to basefd
+ * IN stop - pointer into rel to the component to stop before
+ * RET fd of the parent directory, or -1 with errno set
+ */
+static int _open_subdir(int basefd, char *rel, const char *stop)
+{
+	int fd;
+
+	if ((fd = dup(basefd)) < 0)
+		return -1;
+
+	for (char *tok = rel; tok < stop;) {
+		int next;
+		char *sep = xstrchr(tok, '/');
+
+		if (!sep)
+			break;
+
+		*sep = '\0';
+		next = openat(fd, tok, (O_DIRECTORY | O_NOFOLLOW));
+		*sep = '/';
+		fd_close(&fd);
+
+		if (next < 0)
+			return -1;
+
+		fd = next;
+		tok = sep + 1;
+	}
+
+	return fd;
+}
+
 static void _cleanup_container(slurmd_conf_t *conf, stepd_step_rec_t *step)
 {
 	step_container_t *c = step->container;
-	char *parent = NULL, *stepdir = NULL;
+	char *parent = NULL, *stepdir = NULL, *stepname = NULL;
 	int basefd = -1, stepfd = -1;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
@@ -1288,8 +1346,17 @@ static void _cleanup_container(slurmd_conf_t *conf, stepd_step_rec_t *step)
 	 * root. Descend with O_NOFOLLOW and remove relative to the directory
 	 * handles instead.
 	 */
-	parent = xdirname(c->spool_dir);
-	stepdir = xbasename(c->spool_dir);
+	/*
+	 * ContainerPath may hold a taskid pattern, in which case the step
+	 * spool dir is the pattern trimmed at that component and so ends in a
+	 * '/'. Drop any trailing separators before splitting it.
+	 */
+	stepdir = xstrdup(c->spool_dir);
+	for (int i = strlen(stepdir) - 1; (i > 0) && (stepdir[i] == '/'); i--)
+		stepdir[i] = '\0';
+
+	parent = xdirname(stepdir);
+	stepname = xbasename(stepdir);
 
 	if ((basefd = open(parent, O_DIRECTORY)) < 0) {
 		if (errno != ENOENT)
@@ -1297,18 +1364,18 @@ static void _cleanup_container(slurmd_conf_t *conf, stepd_step_rec_t *step)
 		goto cleanup_fds;
 	}
 
-	if ((stepfd = openat(basefd, stepdir,
+	if ((stepfd = openat(basefd, stepname,
 			     (O_DIRECTORY | O_NOFOLLOW))) < 0) {
 		if (errno != ENOENT)
-			error("openat(%s/%s): %m", parent, stepdir);
+			error("openat(%s/%s): %m", parent, stepname);
 		goto cleanup_fds;
 	}
 
 	if (step->node_tasks > 0) {
 		/* clear every config.json and task dir */
 		for (int i = 0; i < step->node_tasks; i++) {
-			int taskfd = -1;
-			char *taskdir = NULL;
+			int taskfd = -1, taskparentfd = -1;
+			char *rel = NULL, *taskdir = NULL;
 
 			xfree(c->task_spool_dir);
 			c->task_spool_dir =
@@ -1316,13 +1383,36 @@ static void _cleanup_container(slurmd_conf_t *conf, stepd_step_rec_t *step)
 
 			_generate_patterns(conf, step, step->task[i]);
 
-			taskdir = xbasename(c->task_spool_dir);
+			/*
+			 * The task dir is not always a direct child of the
+			 * step dir: a taskid pattern in ContainerPath leaves
+			 * intervening components. Walk them one at a time.
+			 */
+			rel = _relative_subpath(stepdir, c->task_spool_dir);
+			if (!rel) {
+				error("%s: %s is not below %s",
+				      __func__, c->task_spool_dir, stepdir);
+				continue;
+			}
 
-			if ((taskfd = openat(stepfd, taskdir,
+			taskdir = xbasename(rel);
+			taskparentfd = _open_subdir(stepfd, rel, taskdir);
+
+			if (taskparentfd < 0) {
+				if (errno != ENOENT)
+					error("openat(%s): %m",
+					      c->task_spool_dir);
+				xfree(rel);
+				continue;
+			}
+
+			if ((taskfd = openat(taskparentfd, taskdir,
 					     (O_DIRECTORY | O_NOFOLLOW))) < 0) {
 				if (errno != ENOENT)
 					error("openat(%s): %m",
 					      c->task_spool_dir);
+				fd_close(&taskparentfd);
+				xfree(rel);
 				continue;
 			}
 
@@ -1341,21 +1431,25 @@ static void _cleanup_container(slurmd_conf_t *conf, stepd_step_rec_t *step)
 
 			fd_close(&taskfd);
 
-			if (unlinkat(stepfd, taskdir, AT_REMOVEDIR) &&
+			if (unlinkat(taskparentfd, taskdir, AT_REMOVEDIR) &&
 			    (errno != ENOENT))
 				error("unlinkat(%s): %m", c->task_spool_dir);
+
+			fd_close(&taskparentfd);
+			xfree(rel);
 		}
 
 		xfree(c->task_spool_dir);
 	}
 
-	if (unlinkat(basefd, stepdir, AT_REMOVEDIR) && (errno != ENOENT))
+	if (unlinkat(basefd, stepname, AT_REMOVEDIR) && (errno != ENOENT))
 		error("unlinkat(%s): %m", c->spool_dir);
 
 cleanup_fds:
 	fd_close(&stepfd);
 	fd_close(&basefd);
 	xfree(parent);
+	xfree(stepdir);
 
 done:
 	FREE_NULL_OCI_CONF(oci_conf);
