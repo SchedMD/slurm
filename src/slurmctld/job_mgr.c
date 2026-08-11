@@ -13555,6 +13555,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				info("%s: exceeded association/QOS limit for user %u: %s",
 				     __func__, job_desc->user_id,
 				     job_state_reason_string(acct_reason));
+				job_desc->time_limit = orig_time_limit;
 				error_code = ESLURM_ACCOUNTING_POLICY;
 				goto fini;
 			}
