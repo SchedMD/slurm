@@ -1062,6 +1062,11 @@ static int _handle_signal_container(int fd, uid_t uid, pid_t remote_pid)
 	safe_read(fd, &sig, sizeof(int));
 	safe_read(fd, &flag, sizeof(int));
 	safe_read(fd, &details_len, sizeof(int));
+	if ((details_len < 0) || (details_len > MAX_STEPD_REQ_STR_LEN)) {
+		error("%s: rejecting invalid details length %d",
+		      __func__, details_len);
+		goto rwfail;
+	}
 	if (details_len)
 		details = xmalloc(details_len + 1);
 	safe_read(fd, details, details_len);
@@ -1255,6 +1260,10 @@ static int _handle_notify_job(int fd, uid_t uid, pid_t remote_pid)
 	debug3("_handle_notify_job for %ps", &step->step_id);
 
 	safe_read(fd, &len, sizeof(int));
+	if ((len < 0) || (len > MAX_STEPD_REQ_STR_LEN)) {
+		error("%s: rejecting invalid message length %d", __func__, len);
+		goto rwfail;
+	}
 	if (len) {
 		message = xmalloc(len + 1);
 		safe_read(fd, message, len);
