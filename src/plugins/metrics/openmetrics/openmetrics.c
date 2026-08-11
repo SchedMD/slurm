@@ -460,7 +460,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT64, stats->gpus_alloc, jobs_gpus_alloc, "Total number of GPUs allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->hold, jobs_hold, "Number of jobs in Hold state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->job_cnt, jobs, "Total number of jobs", GAUGE);
-	ADD_METRIC(set, UINT64, stats->memory_alloc, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE);
+	ADD_METRIC(set, UINT64, stats->memory_alloc, jobs_memory_alloc, "Total memory allocated by jobs in MiB", GAUGE);
 	ADD_METRIC(set, UINT32, stats->node_failed, jobs_node_failed, "Number of jobs in Node Failed state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->nodes_alloc, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->oom, jobs_outofmemory, "Number of jobs in Out of Memory state", GAUGE);
