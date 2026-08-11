@@ -18007,17 +18007,23 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 		/*
 		 * We want this job to have the requeued/preempted state in the
 		 * accounting logs. Set a new submit time so the restarted
-		 * job looks like a new job.
+		 * job looks like a new job. Do not rebuild node_bitmap_cg for
+		 * a job that is already completing. A bit_copy(node_bitmap)
+		 * would resurrect nodes whose epilog has already finished
+		 * (and which make_node_idle() has therefore already released)
+		 * without updating node_cnt to match.
 		 */
 		if (preempt) {
 			job_state_set(job_ptr, JOB_PREEMPTED);
-			build_cg_bitmap(job_ptr);
+			if (!is_completing)
+				build_cg_bitmap(job_ptr);
 			if (!is_completed && !is_completing)
 				job_completion_logger(job_ptr, true);
 			job_state_set(job_ptr, JOB_REQUEUE);
 		} else {
 			job_state_set(job_ptr, JOB_REQUEUE);
-			build_cg_bitmap(job_ptr);
+			if (!is_completing)
+				build_cg_bitmap(job_ptr);
 			if (!is_completed && !is_completing)
 				job_completion_logger(job_ptr, true);
 		}
