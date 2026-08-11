@@ -47,6 +47,13 @@ struct option;
 /* Forward declaration to avoid pulling slurmd.h into this header. */
 typedef struct slurmd_config slurmd_conf_t;
 
+/*
+ * Index into the arrays of loaded runtime plugins. Index 0 is a permanently
+ * empty placeholder, so a zero-initialized index means no runtime resolved.
+ */
+#define RUNTIME_IDX_INVALID 0
+#define RUNTIME_IDX_DEFAULT 1
+
 typedef enum {
 	RUNTIME_CTXT_INVALID = 0,
 	RUNTIME_CTXT_SUBMIT, /* srun/salloc/sbatch/slurmrestd */
@@ -63,6 +70,16 @@ typedef enum {
  */
 extern int runtime_g_init(const char *plugin_name, runtime_context_t context);
 extern void runtime_g_fini(void);
+
+/*
+ * The accessors below read the plugin arrays without holding the interface's
+ * lock, while loading a plugin grows them with xrecalloc() under it, which may
+ * move them and free the block a reader is walking. Every plugin a caller
+ * intends to use must therefore be loaded before the first call to any of
+ * them. slurmstepd meets this by loading its one plugin in _init_from_slurmd()
+ * before any thread exists; a caller that wants to load plugins concurrently
+ * with these calls needs the arrays to stop moving first.
+ */
 
 /* Set up the runtime for the step. Runs in slurmstepd. */
 extern int runtime_g_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
