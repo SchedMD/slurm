@@ -5738,7 +5738,7 @@ startup time considerably. The default value is 1. Maximum permitted value is
 The number of process threads in the worker pool used for internal processing.
 In most cases, you should decrease \fBworkerpool_threads\fR to
 improve scheduling performance. Defaults to twice the number of CPUs available,
-up to a maximum default of 32 threads.
+with a minimum of 2 threads and up to a maximum default of 32 threads.
 .RE
 .IP
 
@@ -6262,7 +6262,8 @@ timed out. Defaults to the value of \fBMessageTimeout\fR.
 \fBworkerpool_threads\fR=<\fIthread_count\fR>
 The number of process threads in the worker pool used for receiving and
 processing connections on the listening sockets. Defaults to twice the number of
-CPUs available to \fBslurmrestd\fR, up to a maximum default of 32 threads.
+CPUs available to \fBslurmrestd\fR, with a minimum of 2 threads and up to a
+maximum default of 32 threads. In inetd mode, the default is always 2 threads.
 .RE
 .IP
 
