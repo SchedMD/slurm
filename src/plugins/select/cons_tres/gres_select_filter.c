@@ -587,9 +587,17 @@ static int _set_shared_task_bits(int node_inx,
 	return rc;
 }
 
+/* Sort by descending link count, so the best connected device comes first */
 static int _compare_gres_by_links(const void *x, const void *y)
 {
-	return sorting_links_cnt[*(int *) x] - sorting_links_cnt[*(int *) y];
+	int x_links = sorting_links_cnt[*(int *) x];
+	int y_links = sorting_links_cnt[*(int *) y];
+
+	if (x_links > y_links)
+		return -1;
+	if (x_links < y_links)
+		return 1;
+	return 0;
 }
 
 static void _update_and_sort_by_links(int *sorted_gres, int *links_cnt,
