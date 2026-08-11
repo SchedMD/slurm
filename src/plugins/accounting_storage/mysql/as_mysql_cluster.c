@@ -1850,11 +1850,14 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		 * anyway. This way we only get one for the last time we let it
 		 * run.
 		 */
-		query = xstrdup_printf(
-			"update \"%s_%s\" set reason='%s' where "
-			"time_start=%ld and node_name='%s';",
-			mysql_conn->cluster_name, event_table,
-			my_reason, event_time, node_ptr->name);
+		query = xstrdup_printf("update \"%s_%s\" set reason='%s', "
+				       "state=%u, tres='%s', reason_uid=%u "
+				       "where time_start=%ld and "
+				       "node_name='%s';",
+				       mysql_conn->cluster_name, event_table,
+				       my_reason, node_ptr->node_state,
+				       node_ptr->tres_str, reason_uid,
+				       event_time, node_ptr->name);
 		DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
@@ -1881,16 +1884,24 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	 * "killed" before updating the state file, the slurmctld can send the
 	 * same time_start for the node and cause a "Duplicate entry" error.
 	 * This can particularly happen when doing clean starts.
+	 *
+	 * The primary key is (node_name, time_start), so two events for one
+	 * node in the same second collide the same way. Reassign state, tres,
+	 * reason and reason_uid so the collided-with row describes the new
+	 * event. Leave extra, instance_id and instance_type: this insert does
+	 * not carry them, and slurmd will not send them again until reboot.
 	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
 		   "(node_name, state, tres, time_start, "
 		   "reason, reason_uid) "
 		   "values ('%s', %u, '%s', %ld, '%s', %u) "
-		   "on duplicate key update time_end=0;",
-		   mysql_conn->cluster_name, event_table,
-		   node_ptr->name, node_ptr->node_state,
-		   node_ptr->tres_str, event_time, my_reason, reason_uid);
+		   "on duplicate key update time_end=0, "
+		   "state=VALUES(state), tres=VALUES(tres), "
+		   "reason=VALUES(reason), reason_uid=VALUES(reason_uid);",
+		   mysql_conn->cluster_name, event_table, node_ptr->name,
+		   node_ptr->node_state, node_ptr->tres_str, event_time,
+		   my_reason, reason_uid);
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
