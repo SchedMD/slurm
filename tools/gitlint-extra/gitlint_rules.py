@@ -22,15 +22,12 @@ class ExtendedEnum(Enum):
 
 
 class TrailerType(ExtendedEnum):
-    CASE = "Case"
     CHANGELOG = "Changelog"
     CHERRY_PICK = "Cherry-picked"
     CID = "CID"
     CO_AUTHOR = "Co-authored-by"
-    ISSUE = "Issue"
     LINK = "Link"
     SIGNED_OFF = "Signed-off-by"
-    TICKET = "Ticket"
 
     @classmethod
     def from_str(cls, label: str) -> Any:
