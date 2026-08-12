@@ -1474,6 +1474,7 @@ static void arg_reset_external(slurm_opt_t *opt)
 {
 	opt->job_flags &= ~EXTERNAL_JOB;
 }
+
 static slurm_cli_opt_t slurm_opt_external = {
 	.name = "external",
 	.has_arg = no_argument,
@@ -1481,6 +1482,7 @@ static slurm_cli_opt_t slurm_opt_external = {
 	.set_func_sbatch = arg_set_external,
 	.get_func = arg_get_external,
 	.reset_func = arg_reset_external,
+	.reset_each_pass = true,
 };
 
 COMMON_SRUN_BOOL_OPTION(external_launcher);

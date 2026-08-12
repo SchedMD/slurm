@@ -9449,6 +9449,8 @@ void job_time_limit(void)
 			job_config_fini(job_ptr);
 			if (job_ptr->batch_flag)
 				launch_job(job_ptr);
+			else if (job_ptr->het_job_id)
+				launch_het_job_leader(job_ptr);
 		}
 
 		/*

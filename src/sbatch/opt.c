@@ -97,6 +97,7 @@ slurm_opt_t opt = {
 sbatch_env_t het_job_env;
 int   error_exit = 1;
 bool  is_het_job = false;
+bool het_leader_external = false;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -290,7 +291,7 @@ static void _opt_env(void)
  */
 extern char *process_options_first_pass(int argc, char **argv)
 {
-	int i, local_argc = 0;
+	int i, local_argc = 0, leader_argc = 0;
 	char **local_argv, *script_file = NULL;
 	int opt_char, option_index = 0;
 	char *opt_string = NULL;
@@ -309,17 +310,32 @@ extern char *process_options_first_pass(int argc, char **argv)
 
 	_opt_early_env();
 
+	/*
+	 * if a cli_filter plugin sets --external prior to this it applies
+	 * to all components, which includes the leader
+	 */
+	het_leader_external = (opt.job_flags & EXTERNAL_JOB);
+
 	/* Remove hetjob separator and capture all options of interest from
 	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
 	local_argv = xcalloc(argc, sizeof(char *));
 	for (i = 0; i < argc; i++) {
-		if (xstrcmp(argv[i], ":"))
+		if (xstrcmp(argv[i], ":")) {
 			local_argv[local_argc++] = argv[i];
+		} else if (!is_het_job) {
+			is_het_job = true;
+			leader_argc = local_argc;
+		}
 	}
+	if (!is_het_job)
+		leader_argc = local_argc;
 
 	optind = 0;
 	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
 				       optz, &option_index)) != -1) {
+		/* optind has moved past the option, so the leader ends on it */
+		if ((opt_char == LONG_OPT_EXTERNAL) && (optind <= leader_argc))
+			het_leader_external = true;
 		slurm_process_option_or_exit(&opt, opt_char, optarg, true,
 					     true);
 	}
@@ -330,13 +346,25 @@ extern char *process_options_first_pass(int argc, char **argv)
 		error("Script arguments not permitted with --wrap option");
 		exit(error_exit);
 	}
-	if ((local_argc > optind) && (opt.job_flags & EXTERNAL_JOB)) {
-		error("Script arguments not permitted with --external option");
-		exit(error_exit);
-	}
-	if (sbopt.wrap && (opt.job_flags & EXTERNAL_JOB)) {
-		error("--wrap option not permitted with --external option");
-		exit(error_exit);
+
+	if (is_het_job) {
+		if ((local_argc > optind) && het_leader_external) {
+			error("Script arguments not permitted with --external option on the first component");
+			exit(error_exit);
+		}
+		if (sbopt.wrap && het_leader_external) {
+			error("--wrap option not permitted with --external option on the first component");
+			exit(error_exit);
+		}
+	} else {
+		if ((local_argc > optind) && (opt.job_flags & EXTERNAL_JOB)) {
+			error("Script arguments not permitted with --external option");
+			exit(error_exit);
+		}
+		if (sbopt.wrap && (opt.job_flags & EXTERNAL_JOB)) {
+			error("--wrap option not permitted with --external option");
+			exit(error_exit);
+		}
 	}
 	if (local_argc > optind) {
 		int i;
