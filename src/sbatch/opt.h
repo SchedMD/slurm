@@ -80,6 +80,8 @@ extern sbatch_opt_t sbopt;
 extern sbatch_env_t het_job_env;
 extern int   error_exit;
 extern bool  is_het_job;
+/* True when the hetjob leader component was given --external */
+extern bool het_leader_external;
 
 /*
  * process_options_first_pass()

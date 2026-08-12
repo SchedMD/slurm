@@ -412,10 +412,14 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 	}
 
 	{
-		/* Always verify first Het Component has a batch script */
+		/*
+		 * Verify the first Het Component has a batch script, unless it
+		 * is an external job (external jobs must not have a script).
+		 */
 		job_desc_msg_t *jdesc = list_peek(jobs);
 
-		if (!jdesc->script || !jdesc->script[0]) {
+		if ((!jdesc->script || !jdesc->script[0]) &&
+		    !(jdesc->bitflags & EXTERNAL_JOB)) {
 			resp_error(ctxt, ESLURM_JOB_SCRIPT_MISSING, __func__,
 				   "Refusing HetJob submission without batch script or empty batch script for first component");
 			goto cleanup;

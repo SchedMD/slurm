@@ -2973,6 +2973,24 @@ extern void launch_job(job_record_t *job_ptr)
 	}
 }
 
+extern void launch_het_job_leader(job_record_t *job_ptr)
+{
+	job_record_t *het_job_leader = NULL;
+
+	xassert(job_ptr->het_job_id);
+
+	if (!(het_job_leader = find_job_record(job_ptr->het_job_id))) {
+		error("Hetjob leader %pJ not found", job_ptr);
+		return;
+	}
+
+	/* if the leader is also script-less, this is unnecessary */
+	if (!het_job_leader->batch_flag || IS_JOB_CONFIGURING(het_job_leader))
+		return;
+
+	launch_job(het_job_leader);
+}
+
 static int _relaunch_unsent_batch(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -5093,10 +5111,11 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 		info("%s: Configuration for %pJ is complete",
 		     __func__, job_ptr);
 		job_config_fini(job_ptr);
-		if (job_ptr->batch_flag &&
-		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+		if (!job_ptr->batch_flag) {
+			if (job_ptr->het_job_id)
+				launch_het_job_leader(job_ptr);
+		} else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			launch_job(job_ptr);
-		}
 	}
 }
 
