@@ -4032,6 +4032,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
 	char *het_job_id_set = NULL;
+	bool het_leader_external = false;
 
 	START_TIMER;
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
@@ -4115,6 +4116,24 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		}
 
 		if (error_code != SLURM_SUCCESS) {
+			reject_job = true;
+			break;
+		}
+
+		/* If the leader is external all components must be external. */
+		if (!het_job_offset) {
+			het_leader_external =
+				(job_desc_msg->bitflags & EXTERNAL_JOB);
+		} else if (het_leader_external &&
+			   !(job_desc_msg->bitflags & EXTERNAL_JOB)) {
+			xstrfmtcat(
+				job_submit_user_msg,
+				"%s%d: non-external component cannot follow an external hetjob leader",
+				job_submit_user_msg ? "\n" : "",
+				het_job_offset);
+			error("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%u, non-external component with an external hetjob leader",
+			      msg->auth_uid);
+			error_code = ESLURM_INVALID_EXTERNAL_JOB;
 			reject_job = true;
 			break;
 		}
