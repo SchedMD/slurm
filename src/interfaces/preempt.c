@@ -92,6 +92,10 @@ static int _is_job_preempt_exempt_internal(void *x, void *key)
 	job_record_t *preemptee_ptr = (job_record_t *)x;
 	job_record_t *preemptor_ptr = (job_record_t *)key;
 
+	/* Only a running or suspended job can be preempted. */
+	if (!IS_JOB_RUNNING(preemptee_ptr) && !IS_JOB_SUSPENDED(preemptee_ptr))
+		return 1;
+
 	if (job_borrow_from_resv_check(preemptee_ptr, preemptor_ptr)) {
 		/*
 		 * This job is on borrowed time from the reservation!
