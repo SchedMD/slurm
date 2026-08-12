@@ -12675,6 +12675,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	/* If in backfill yield and this is the current job, show it updated */
+	job_ptr->bit_flags &= ~BF_CURRENT_JOB_NOT_UPDATED;
+
 	if (job_desc->array_inx && job_ptr->array_recs) {
 		int throttle;
 		throttle = strtoll(job_desc->array_inx, (char **) NULL, 10);

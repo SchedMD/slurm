@@ -1273,6 +1273,11 @@ typedef enum {
 					  * while resources are available */
 #define JOB_IMPLICIT_MAX_NODES SLURM_BIT(47) /* max_nodes was implicitly set
 					      * from num_tasks */
+#define BF_CURRENT_JOB_NOT_UPDATED SLURM_BIT(51) /* Set if backfill is
+						  * evaluating this job but is
+						  * yielding locks to track if
+						  * the job has been updated in
+						  * the yield */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
