@@ -48,6 +48,8 @@ typedef enum {
 	SER_FLAGS_PRETTY = SLURM_BIT(1),
 	SER_FLAGS_COMPLEX = SLURM_BIT(2), /* Dump Infinity and NaN */
 	SER_FLAGS_NO_TAG = SLURM_BIT(3), /* don't dump YAML tags */
+	/* Flags selecting an output layout. At most one may ever be set. */
+	SER_FLAGS_LAYOUT_MASK = (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY),
 } serializer_flags_t;
 
 /*
@@ -55,8 +57,13 @@ typedef enum {
  *
  * WARNING: There is no guarantee that plugins for these types
  * will be loaded at any given time.
+ *
+ * Each must be the primary type of the plugin providing it: the primary is
+ * what get_mime_type_array() advertises and what serializer_g_init() matches
+ * to hand a plugin its configuration. Compatibility aliases stay registered
+ * for inbound requests but must not be named here.
  */
-#define MIME_TYPE_YAML "application/x-yaml"
+#define MIME_TYPE_YAML "application/yaml" /* RFC9512 */
 #define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
 #define ENV_CONFIG_YAML "SLURM_YAML"
 #define MIME_TYPE_JSON "application/json"
