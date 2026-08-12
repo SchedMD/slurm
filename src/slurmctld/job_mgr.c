@@ -16563,6 +16563,7 @@ static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
+	const char *nodes = NULL;
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
@@ -16576,14 +16577,20 @@ static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 	else
 		debug("Aborting %pI on node %s", step_id, node_name);
 
+	/* Use the node's name if the job is unknown or no longer holds it. */
+	if (job_ptr && (nodelist_find(job_ptr->nodes, node_name) >= 0))
+		nodes = job_ptr->nodes;
+	else
+		nodes = node_name;
+
 	if (job_ptr) {  /* NULL if unknown */
-		kill_req = create_kill_job_msg(job_ptr, node_name,
+		kill_req = create_kill_job_msg(job_ptr, nodes,
 					       agent_info->protocol_version);
 	} else {
 		kill_req = xmalloc(sizeof(*kill_req));
 		kill_req->step_id = *step_id;
 		kill_req->time = time(NULL);
-		kill_req->nodes = xstrdup(node_name);
+		kill_req->nodes = xstrdup(nodes);
 		/* kill_req->start_time = 0;  Default value */
 	}
 
@@ -16614,8 +16621,15 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 	uint16_t protocol_version;
+	bool send_allocation = false;
 
+	xassert(job_ptr);
 	xassert(node_bitmap);
+
+	/* Use the full allocation only if the job holds every target node. */
+	send_allocation = (job_ptr->nodes && job_ptr->node_bitmap &&
+			   bit_super_set(node_bitmap, job_ptr->node_bitmap));
+
 	/* Send a separate message for nodes at different protocol_versions */
 	full_node_bitmap = bit_copy(node_bitmap);
 	while ((node_ptr = next_node_bitmap(full_node_bitmap, &zero))) {
@@ -16632,13 +16646,16 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		}
 		kill_node_str =
 			bitmap2node_name_sortable(tmp_node_bitmap, false);
-		kill_req = create_kill_job_msg(job_ptr, kill_node_str,
-					       protocol_version);
+		kill_req =
+			create_kill_job_msg(job_ptr,
+					    send_allocation ? job_ptr->nodes :
+							      kill_node_str,
+					    protocol_version);
 		agent_info = xmalloc(sizeof(agent_arg_t));
 		agent_info->node_count	= bit_set_count(tmp_node_bitmap);
 		agent_info->retry	= 1;
-		agent_info->hostlist	= hostlist_create(kill_req->nodes);
-		debug("Aborting %pJ on nodes %s", job_ptr, kill_req->nodes);
+		agent_info->hostlist = hostlist_create(kill_node_str);
+		debug("Aborting %pJ on nodes %s", job_ptr, kill_node_str);
 		agent_info->msg_type	= REQUEST_ABORT_JOB;
 		agent_info->msg_args	= kill_req;
 		agent_info->protocol_version = protocol_version;
