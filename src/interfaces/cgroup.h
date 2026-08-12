@@ -356,26 +356,21 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
                                     uint32_t task_id);
 
 /*
- * Function to detect OOM conditions.
+ * Function to prepare for OOM detection in the job.
  *
- * In v2 it will just read memory.oom_control.
- *
- * In v1, use memory.oom_control and cgroup.event_control, see:
- * https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
- *
- * In v1, Start a monitoring thread which will read the event files with a
- * polling mechanism and wait for a stop signal. When the stop signal is
- * received this thread will communicate the detected OOMs. This is not a 100%
- * reliable method since events can be triggered with more than just OOMs, e.g.
- * rmdirs.
+ * Ensures that v1 is prepared to read OOM conditions and for v2 sets
+ * memory.oom.group if needed.
  *
  * IN job - Step record.
- * RET SLURM_SUCCESS if monitoring thread is started, SLURM_ERROR otherwise.
+ * RET SLURM_SUCCESS if initialization was correct, SLURM_ERROR otherwise.
  */
 extern int cgroup_g_step_start_oom_mgr(stepd_step_rec_t *step);
 
 /*
- * Signal the monitoring thread with a stop message and get the results.
+ * Get the OOM information from cgroup.
+ *
+ * Read memory.oom_control in v1 and memory.events in v2 in order to detect
+ * whether there has been OOM events in the cgroup.
  *
  * IN job - Step record.
  * RET cgroup_oom_t - Struct containing the oom information for this step.

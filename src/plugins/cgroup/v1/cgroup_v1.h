@@ -36,10 +36,6 @@
 #ifndef _CGROUP_V1_H
 #define _CGROUP_V1_H
 
-#define _GNU_SOURCE		/* For POLLRDHUP, O_CLOEXEC on older glibc */
-#include <poll.h>
-#include <sys/eventfd.h>
-
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
