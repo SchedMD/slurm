@@ -445,6 +445,7 @@ extern int topology_g_fini(void)
 		xfree(type);
 	}
 
+	plugin_inited = PLUGIN_NOT_INITED;
 	topoinfo_only = false;
 	xfree(ops);
 	xfree(g_context);
