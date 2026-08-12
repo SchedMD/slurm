@@ -182,6 +182,19 @@ extern int job_start_data(job_record_t *job_ptr,
 extern void launch_job(job_record_t *job_ptr);
 
 /*
+ * launch_het_job_leader - attempt the batch launch of job_ptr's hetjob leader
+ *
+ * Helper function to call launch_job() for all scriptless components (external)
+ * of a hetjob.  Can be called for each component but only the last will
+ * actually do anything, but since we don't know the ordering of readiness, it
+ * needs be attempted as each component finishes setting up.
+ *
+ * IN job_ptr - a hetjob component that has no batch script of its own.  The
+ *              caller establishes that it is part of a hetjob.
+ */
+extern void launch_het_job_leader(job_record_t *job_ptr);
+
+/*
  * relaunch_unsent_batch_jobs - after state recovery, re-issue launch_job()
  *	for every batch job whose batch launch was never sent
  */
