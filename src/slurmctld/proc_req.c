@@ -4161,7 +4161,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	START_TIMER;	/* Restart after we have locks */
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		if (!script)
+		if (!het_job_offset)
 			script = xstrdup(job_desc_msg->script);
 		if (het_job_offset && job_desc_msg->script) {
 			info("%s: Hetjob %u offset %u has script, being ignored",
@@ -4177,7 +4177,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
 		}
-		if (!job_desc_msg->burst_buffer) {
+		if (!(job_desc_msg->bitflags & EXTERNAL_JOB) &&
+		    !job_desc_msg->burst_buffer) {
 			xfree(job_desc_msg->script);
 			if (!(job_desc_msg->script = bb_g_build_het_job_script(
 				      script, het_job_offset))) {
