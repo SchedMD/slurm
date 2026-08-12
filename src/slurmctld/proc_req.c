@@ -4219,7 +4219,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 				jobid_hostset = hostset_create(tmp_str);
 			job_ptr->het_job_id = step_id.job_id;
 			job_ptr->het_job_offset = het_job_offset++;
-			job_ptr->batch_flag      = 1;
+			if (!(job_ptr->bit_flags & EXTERNAL_JOB))
+				job_ptr->batch_flag = 1;
 			on_job_state_change(job_ptr, job_ptr->job_state);
 			_het_job_val_add(job_ptr);
 			list_append(submit_job_list, job_ptr);
