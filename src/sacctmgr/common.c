@@ -1198,7 +1198,7 @@ extern slurmdb_assoc_rec_t *sacctmgr_find_account_base_assoc(
 
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 	assoc_cond.acct_list = list_create(NULL);
-	list_append(assoc_cond.cluster_list, temp);
+	list_append(assoc_cond.acct_list, temp);
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster);
 	assoc_cond.user_list = list_create(NULL);
@@ -2291,4 +2291,27 @@ extern void sacctmgr_initialize_g_tres_list(void)
 		tres_cond.with_deleted = 1;
 		g_tres_list = slurmdb_tres_get(db_conn, &tres_cond);
 	}
+}
+
+/*
+ * Parse a TRES limit value for load/modify into *dest.
+ * Empty value is omitted (leave unset). Returns 1 on success, 0 when
+ * omitted, and -1 on parse failure.
+ */
+extern int sacctmgr_set_tres_rec_field(char **dest, char *value,
+				       uint32_t tres_flags)
+{
+	char *tmp_char;
+
+	if (!value || !value[0])
+		return 0;
+
+	sacctmgr_initialize_g_tres_list();
+
+	if (!(tmp_char = slurmdb_format_tres_str(value, g_tres_list, 1)))
+		return -1;
+
+	slurmdb_combine_tres_strings(dest, tmp_char, tres_flags);
+	xfree(tmp_char);
+	return 1;
 }

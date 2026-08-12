@@ -791,7 +791,8 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if (!object->id) {
 			error("Couldn't add wckey %s", object->name);
-			added=0;
+			rc = SLURM_ERROR;
+			added = 0;
 			xfree(cols);
 			xfree(extra);
 			xfree(vals);
@@ -846,7 +847,9 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(user_name);
 
 	if (!added) {
-		reset_mysql_conn(mysql_conn);
+		/* Idempotent duplicate rows must not roll back this txn. */
+		if (rc != SLURM_SUCCESS)
+			reset_mysql_conn(mysql_conn);
 		goto end_it;
 	}
 

@@ -330,40 +330,28 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			     "GrpSubmitJobs") == SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "GrpTRES", MAX(command_len, 7))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->grp_tres, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->grp_tres, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "GrpTRESMins", MAX(command_len, 8))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->grp_tres_mins, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->grp_tres_mins, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "GrpTRESRunMins", MAX(command_len, 8))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->grp_tres_run_mins, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->grp_tres_run_mins, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "GrpWall", MAX(command_len, 4))) {
 		mins = time_str2mins(value);
@@ -443,58 +431,42 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				 MAX(command_len, 9)) ||
 		   !xstrncasecmp(type, "MaxTRESPerJob",
 				 MAX(command_len, 11))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->max_tres_pj, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->max_tres_pj, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESPerNode",
 				 MAX(command_len, 11)) ||
 		   !xstrncasecmp(type, "MaxTRESPN",
 				 MAX(command_len, 9))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->max_tres_pn, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->max_tres_pn, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESMinsPerJob",
 				MAX(command_len, 8)) ||
 		   !xstrncasecmp(type, "MaxTRESMinsPJ",
 				 MAX(command_len, 13))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->max_tres_mins_pj, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->max_tres_mins_pj, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESRunMins", MAX(command_len, 8))) {
-		sacctmgr_initialize_g_tres_list();
+		int tres_set = sacctmgr_set_tres_rec_field(
+			&assoc->max_tres_run_mins, value, tres_flags);
 
-		if ((tmp_char = slurmdb_format_tres_str(
-			     value, g_tres_list, 1))) {
-			slurmdb_combine_tres_strings(
-				&assoc->max_tres_run_mins, tmp_char,
-				tres_flags);
+		if (tres_set > 0)
 			set = 1;
-			xfree(tmp_char);
-		} else
+		else if (tres_set < 0)
 			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxWallDurationPerJob",
 				MAX(command_len, 4))) {
@@ -516,6 +488,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		    SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "QosLevel", MAX(command_len, 1))) {
+		int qos_count = 0;
+
 		*allow_option = true;
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(xfree_ptr);
@@ -524,10 +498,16 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 			g_qos_list = slurmdb_qos_get(
 				db_conn, NULL);
 
-		if (slurmdb_addto_qos_char_list(assoc->qos_list,
-						g_qos_list, value,
-						option) > 0)
+		qos_count = slurmdb_addto_qos_char_list(assoc->qos_list,
+							g_qos_list, value,
+							option);
+		if (qos_count > 0) {
 			set = 1;
+		} else if (value && value[0]) {
+			fprintf(stderr, "You gave a bad qos '%s'.  Use 'list qos' to get complete list.\n", value);
+			exit_code = 1;
+			set = 1;
+		}
 	}
 
 	return set;

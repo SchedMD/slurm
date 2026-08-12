@@ -64,6 +64,11 @@ typedef struct {
 	slurmdb_qos_rec_t *qos_rec_old;
 } local_mod_qos_t;
 
+typedef struct {
+	slurmdb_assoc_rec_t *mod_assoc;
+	list_t *now_qos_list;
+} assoc_qos_merge_args_t;
+
 typedef enum {
 	MOD_CLUSTER,
 	MOD_ACCT,
@@ -445,6 +450,40 @@ static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
 	return qos_rec;
 }
 
+static int _foreach_apply_user_default_assoc(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	list_t *user_list = arg;
+	slurmdb_user_rec_t *user;
+
+	if (!assoc->user)
+		return 0;
+	user = sacctmgr_find_user_from_list(user_list, assoc->user);
+	if (!user || !user->default_acct || !user->default_acct[0])
+		return 0;
+	if (!xstrcmp(assoc->acct, user->default_acct))
+		assoc->is_def = 1;
+	else
+		assoc->is_def = 0;
+
+	return 0;
+}
+
+/*
+ * sacctmgr load stores DefaultAccount on the in-memory user row; list user
+ * reads default account from the association with is_def=1. Mark the matching
+ * user association before slurmdb_associations_add().
+ */
+static void _apply_user_default_assocs(list_t *user_list,
+				       list_t *user_assoc_list)
+{
+	if (!user_list || !user_assoc_list)
+		return;
+
+	(void) list_for_each(user_assoc_list, _foreach_apply_user_default_assoc,
+			     user_list);
+}
+
 static int _print_out_assoc(list_t *assoc_list, bool user, bool add)
 {
 	list_t *format_list = NULL;
@@ -513,6 +552,81 @@ static int _print_out_qos(void *x, void *args)
 	return 0;
 }
 
+static bool _prefix_found(char *token)
+{
+	if (token &&
+	    ((token[0] == '+') ||
+	     (token[0] == '-') ||
+	     (token[0] == '=')))
+		return true;
+
+	return false;
+}
+
+/*
+ * qos_list entries are already numeric id strings (the parser resolved
+ * names via slurmdb_addto_qos_char_list). Return the bare id token,
+ * skipping any +/-/= merge prefix.
+ */
+static char *_advance_prefix(char *token)
+{
+	if (_prefix_found(token))
+		return token + 1;
+
+	return token;
+}
+
+/*
+ * One association QOS delta for additive load. Entries are numeric id
+ * strings; add a '+' prefix so the mysql modify merges instead of
+ * replacing. Existing +/-/= deltas pass through unchanged.
+ */
+static char *_assoc_qos_additive_entry(char *qos_item)
+{
+	if (!qos_item || !qos_item[0])
+		return xstrdup("");
+
+	if (_prefix_found(qos_item))
+		return xstrdup(qos_item);
+
+	return xstrdup_printf("+%s", qos_item);
+}
+
+static int _find_qos_by_name(void *x, void *arg)
+{
+	char *now_qos = x;
+	char *new_qos = arg;
+
+	if (!xstrcmp(_advance_prefix(new_qos), _advance_prefix(now_qos)))
+		return 1;
+
+	return 0;
+}
+
+/*
+ * Additive load: append file QOS entries not already on the stored assoc.
+ */
+static int _foreach_assoc_qos_merge_new(void *x, void *arg)
+{
+	char *new_qos = x;
+	assoc_qos_merge_args_t *merge = arg;
+	char *now_qos = NULL;
+
+	if (merge->now_qos_list && (new_qos[0] != '-') && (new_qos[0] != '=')) {
+		now_qos = list_find_first(merge->now_qos_list,
+					  _find_qos_by_name,
+					  new_qos);
+	}
+
+	if (!now_qos) {
+		if (!merge->mod_assoc->qos_list)
+			merge->mod_assoc->qos_list = list_create(xfree_ptr);
+		list_append(merge->mod_assoc->qos_list,
+			    _assoc_qos_additive_entry(new_qos));
+	}
+
+	return 0;
+}
 
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		      slurmdb_assoc_rec_t *assoc,
@@ -822,26 +936,15 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {
-		list_itr_t *now_qos_itr =
-			list_iterator_create(assoc->qos_list);
-		list_itr_t *new_qos_itr =
-			list_iterator_create(file_opts->assoc_rec.qos_list);
-		char *now_qos = NULL, *new_qos = NULL;
+		char *new_qos = NULL;
+		assoc_qos_merge_args_t merge = {
+			.mod_assoc = &mod_assoc,
+			.now_qos_list = assoc->qos_list,
+		};
 
-		if (!mod_assoc.qos_list)
-			mod_assoc.qos_list = list_create(xfree_ptr);
-		while ((new_qos = list_next(new_qos_itr))) {
-			while ((now_qos = list_next(now_qos_itr))) {
-				if (!xstrcmp(new_qos, now_qos))
-					break;
-			}
-			list_iterator_reset(now_qos_itr);
-			if (!now_qos)
-				list_append(mod_assoc.qos_list,
-					    xstrdup(new_qos));
-		}
-		list_iterator_destroy(new_qos_itr);
-		list_iterator_destroy(now_qos_itr);
+		(void) list_for_each_ro(file_opts->assoc_rec.qos_list,
+					_foreach_assoc_qos_merge_new,
+					&merge);
 		if (mod_assoc.qos_list && list_count(mod_assoc.qos_list))
 			new_qos = get_qos_complete_str(g_qos_list,
 						       mod_assoc.qos_list);
@@ -1076,16 +1179,18 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 	return changed;
 }
 
-static void _destory_local_mod_qos(void *x)
+static void _destroy_local_mod_qos(void *x)
 {
 	local_mod_qos_t *local_mod_qos = x;
 
 	if (!local_mod_qos)
 		return;
 
+	xfree(local_mod_qos->change_info);
 	slurmdb_destroy_qos_rec(local_mod_qos->qos_rec_new);
 	/* Don't free old */
 	// slurmdb_destroy_qos_rec(local_mod_qos->qos_rec_old);
+	xfree(local_mod_qos);
 }
 
 static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
@@ -1517,6 +1622,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, user->name);
+	if (cluster) {
+		assoc_cond.cluster_list = list_create(NULL);
+		list_append(assoc_cond.cluster_list, cluster);
+	}
 	user_cond.assoc_cond = &assoc_cond;
 
 	if (file_opts->def_acct)
@@ -1746,6 +1855,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	}
 
 	FREE_NULL_LIST(assoc_cond.user_list);
+	FREE_NULL_LIST(assoc_cond.cluster_list);
 
 	return set;
 }
@@ -2568,7 +2678,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	user_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	mod_acct_list = list_create(slurmdb_destroy_account_rec);
-	mod_qos_list = list_create(_destory_local_mod_qos);
+	mod_qos_list = list_create(_destroy_local_mod_qos);
 	mod_user_list = list_create(slurmdb_destroy_user_rec);
 	mod_assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
@@ -3391,6 +3501,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	}
 
 	if (rc == SLURM_SUCCESS && list_count(user_assoc_list)) {
+		_apply_user_default_assocs(user_list, user_assoc_list);
 		printf("User Associations\n");
 		rc = _print_out_assoc(user_assoc_list, 1, 1);
 		set = 1;

@@ -1255,7 +1255,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 		if (assoc->parent_acct && row[MASSOC_PACCT][0]) {
 			account = assoc->parent_acct;
-			moved_parent = 1;
+			if (xstrcasecmp(row[MASSOC_PACCT], assoc->parent_acct))
+				moved_parent = 1;
 
 			if (!checked_parent_is_not_child) {
 				slurmdb_assoc_rec_t par_assoc = {
@@ -1418,9 +1419,24 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					continue;
 				} else if (!xstrcasecmp(row[MASSOC_PACCT],
 							assoc->parent_acct)) {
-					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-						 "Trying to move association to the same parent? Nothing to do.");
-					continue;
+					/*
+					 * Only skip when there is no other
+					 * column update. Callers (e.g.
+					 * sacctmgr declarative load) set
+					 * parent_acct to the current parent;
+					 * matching the row is normal, not a
+					 * redundant reparent. qos_list is not
+					 * carried in sent_vals
+					 * (QOS_LEVEL_MODIFY is applied below),
+					 * so check it too.
+					 */
+					if ((!sent_vals || !sent_vals[0]) &&
+					    !(assoc->qos_list &&
+					      list_count(assoc->qos_list))) {
+						DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+							 "Trying to move association to the same parent? Nothing to do.");
+						continue;
+					}
 				}
 			}
 			if (row[MASSOC_PACCT][0]) {

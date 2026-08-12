@@ -1065,6 +1065,7 @@ no_user_table:
 	if (rc == SLURM_ERROR) {
 		error("Couldn't modify users");
 		FREE_NULL_LIST(ret_list);
+		goto end_it;
 	}
 
 	if (user->default_acct && user->default_acct[0]) {
