@@ -318,7 +318,7 @@ cleanup:
  */
 extern void scontrol_print_topo(int argc, char **argv)
 {
-	static topo_info_response_msg_t *topo_info_msg = NULL;
+	topo_info_response_msg_t *topo_info_msg = NULL;
 	char *name = NULL, *unit = NULL, *node_list = NULL;
 	data_parser_t *parser = NULL;
 	int rc = SLURM_SUCCESS;
@@ -365,7 +365,7 @@ extern void scontrol_print_topo(int argc, char **argv)
 			goto cleanup;
 	}
 
-	if ((topo_info_msg == NULL) && slurm_load_topo(&topo_info_msg, name)) {
+	if (slurm_load_topo(&topo_info_msg, name)) {
 		rc = errno ? errno : SLURM_ERROR;
 		if (!mime_type) {
 			slurm_perror("slurm_load_topo error");
@@ -393,6 +393,8 @@ extern void scontrol_print_topo(int argc, char **argv)
 cleanup:
 	if (rc)
 		exit_code = 1;
+
+	slurm_free_topo_info_msg(topo_info_msg);
 
 	if (mime_type)
 		data_parser_cli_free_ctxt(&parser);
