@@ -3098,6 +3098,13 @@ extern void *acct_storage_p_get_connection(
 
 	debug2("request new connection %d", rollback);
 
+	/*
+	 * The cluster name comes off the wire and is used unquoted to build
+	 * table names, so it has to be checked before anything uses it.
+	 */
+	if (as_mysql_validate_cluster_name(cluster_name) != SLURM_SUCCESS)
+		return NULL;
+
 	if (!(mysql_conn = create_mysql_conn(
 		      conn_num, rollback, cluster_name))) {
 		fatal("couldn't get a mysql_conn");
