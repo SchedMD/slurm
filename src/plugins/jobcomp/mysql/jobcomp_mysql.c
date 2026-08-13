@@ -90,7 +90,7 @@ storage_field_t jobcomp_table_fields[] = {
 	{ NULL, NULL}
 };
 
-static int _mysql_jobcomp_check_tables()
+static int _mysql_jobcomp_check_tables(void)
 {
 	if (mysql_db_create_table(jobcomp_mysql_conn, jobcomp_table,
 				  jobcomp_table_fields,

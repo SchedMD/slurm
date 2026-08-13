@@ -66,7 +66,7 @@
 /* getopt_long options, integers but not characters */
 
 /* FUNCTIONS */
-static void _fill_in_selected_step_from_controller();
+static void _fill_in_selected_step_from_controller(void);
 static void _fill_in_selected_step_from_env(void);
 static void _fill_in_selected_steps_from_env(char *het_size_str);
 static void     _help( void );
@@ -114,7 +114,7 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 	return true;
 }
 
-static void _fill_in_selected_step_from_controller()
+static void _fill_in_selected_step_from_controller(void)
 {
 	job_info_msg_t *job_info_msg = NULL;
 	slurm_job_info_t *job = NULL;

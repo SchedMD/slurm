@@ -144,7 +144,7 @@ _get_pos_int(const char *arg, const char *what)
 /*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void _opt_default()
+static void _opt_default(void)
 {
 	static slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 	uid_t uid = getuid();
@@ -408,7 +408,7 @@ static bool _opt_verify(void)
 
 #define tf_(b) (b == true) ? "true" : "false"
 
-static void _opt_list()
+static void _opt_list(void)
 {
 	char tmp[SLUID_STR_BYTES];
 

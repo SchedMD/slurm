@@ -42,7 +42,8 @@
 #define QOS_LIST_SIZE 3
 char *qos_names[QOS_LIST_SIZE] = {"normal", "subpar", "great"};
 
-list_t *setup_qos_list(){
+list_t *setup_qos_list(void)
+{
 	slurmdb_qos_rec_t *qos = NULL;
 
 	/* slurmdb_destroy_qos_rec not needed all pointers are local strings */

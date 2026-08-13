@@ -19956,7 +19956,7 @@ static int _sort_part_lists(void *x, void *none)
 	return SLURM_SUCCESS;
 }
 
-extern void sort_all_jobs_partition_lists()
+extern void sort_all_jobs_partition_lists(void)
 {
 	list_for_each(job_list, _sort_part_lists, NULL);
 }

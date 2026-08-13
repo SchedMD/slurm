@@ -227,7 +227,7 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 		*track_script_signalled = script_resp->track_script_signalled;
 }
 
-static void _wait_for_powersave_scripts()
+static void _wait_for_powersave_scripts(void)
 {
 	int cnt = 0;
 	struct timespec ts = {0, 0};

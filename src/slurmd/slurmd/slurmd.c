@@ -913,7 +913,7 @@ static void *_service_msg_thread(void *arg)
 	return NULL;
 }
 
-static int _load_gres()
+static int _load_gres(void)
 {
 	int rc;
 	uint32_t cpu_cnt;
@@ -2742,7 +2742,7 @@ static void _dynamic_init(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
-static void _log_setup()
+static void _log_setup(void)
 {
 	slurm_conf_t *cf = NULL;
 

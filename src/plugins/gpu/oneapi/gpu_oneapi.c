@@ -131,7 +131,7 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 /*
  * Initialize the oneapi library.
  */
-static ze_result_t _oneapi_init()
+static ze_result_t _oneapi_init(void)
 {
 	static pid_t init_pid = 0;
 	pid_t my_pid = conf->pid ? conf->pid : getpid();

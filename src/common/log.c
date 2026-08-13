@@ -164,9 +164,9 @@ extern char * program_invocation_name;
 /*
  * pthread_atfork handlers:
  */
-static void _atfork_prep()   { slurm_mutex_lock(&log_lock);   }
-static void _atfork_parent() { slurm_mutex_unlock(&log_lock); }
-static void _atfork_child()  { slurm_mutex_unlock(&log_lock); }
+static void _atfork_prep(void) { slurm_mutex_lock(&log_lock); }
+static void _atfork_parent(void) { slurm_mutex_unlock(&log_lock); }
+static void _atfork_child(void) { slurm_mutex_unlock(&log_lock); }
 static bool at_forked = false;
 #define atfork_install_handlers()					\
 	while (!at_forked) {						\
@@ -1498,8 +1498,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 	xfree(buf);
 }
 
-bool
-log_has_data()
+extern bool log_has_data(void)
 {
 	bool rc = false;
 	slurm_mutex_lock(&log_lock);
@@ -1521,8 +1520,7 @@ _log_flush(log_t *log)
 		cbuf_read_to_fd(log->fbuf, fileno(log->logfp), -1);
 }
 
-void
-log_flush()
+extern void log_flush(void)
 {
 	slurm_mutex_lock(&log_lock);
 	_log_flush(log);

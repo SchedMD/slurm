@@ -589,7 +589,7 @@ static gboolean _delete(GtkWidget *widget,
 	return false;
 }
 
-static char *_get_ui_description()
+static char *_get_ui_description(void)
 {
 	/* Our menu*/
 	char *ui_description = NULL;

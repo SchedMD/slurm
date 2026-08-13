@@ -146,8 +146,8 @@ static bool cg_conf_exist = true;
 static char scope_path[PATH_MAX] = "";
 
 /* local functions */
-static void _cgroup_conf_fini();
-static void _clear_slurm_cgroup_conf();
+static void _cgroup_conf_fini(void);
+static void _clear_slurm_cgroup_conf(void);
 static void _pack_cgroup_conf(buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf(void);
@@ -162,7 +162,7 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 	return 0;
 }
 
-static void _cgroup_conf_fini()
+static void _cgroup_conf_fini(void)
 {
 	slurm_rwlock_wrlock(&cg_conf_lock);
 
@@ -1143,7 +1143,7 @@ extern int cgroup_g_is_task_empty(uint32_t taskid)
 	return (*(ops.is_task_empty))(taskid);
 }
 
-extern int cgroup_g_bpf_fsopen()
+extern int cgroup_g_bpf_fsopen(void)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -1173,7 +1173,7 @@ extern int cgroup_g_bpf_create_token(int fd)
 	return (*(ops.bpf_create_token))(fd);
 }
 
-extern int cgroup_g_bpf_get_token()
+extern int cgroup_g_bpf_get_token(void)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 	if (plugin_inited == PLUGIN_NOOP)

@@ -103,7 +103,7 @@ typedef struct {
 	void (*update_cluster_tres) (void);
 	void (*update_license_notify) (slurmdb_res_rec_t *rec);
 	void (*update_qos_notify) (slurmdb_qos_rec_t *rec);
-	void (*update_resvs) ();
+	void (*update_resvs)(void);
 } assoc_init_args_t;
 
 extern list_t *assoc_mgr_tres_list;

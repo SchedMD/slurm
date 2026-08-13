@@ -48,7 +48,7 @@
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
-void _init_params();
+void _init_params(void);
 
 void _help_fields_msg(void)
 {
@@ -136,7 +136,7 @@ void _do_help(void)
 	}
 }
 
-void _init_params()
+void _init_params(void)
 {
 	memset(&params, 0, sizeof(sstat_parameters_t));
 	params.convert_flags = CONVERT_NUM_UNIT_EXACT;

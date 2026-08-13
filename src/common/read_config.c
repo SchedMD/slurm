@@ -3800,7 +3800,7 @@ static int _sort_plugins_by_name(void *x, void *y)
 	return xstrcmp(s2, s1);
 }
 
-static int _validate_conf_nodeset_vs_nodenames()
+static int _validate_conf_nodeset_vs_nodenames(void)
 {
 	slurm_conf_node_t **ptr_nname;
 	slurm_conf_nodeset_t **ptr_nset;

@@ -1968,7 +1968,7 @@ extern int update_part(partition_info_t *part_desc, bool create_flag);
  * partition string to match, repointing a pending job's part_ptr to the new
  * highest-tier partition. Call whenever a partition's PriorityTier changes.
  */
-extern void sort_all_jobs_partition_lists();
+extern void sort_all_jobs_partition_lists(void);
 
 /*
  * Common code to handle a job when a cred can't be created.

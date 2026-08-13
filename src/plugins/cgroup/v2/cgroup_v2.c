@@ -395,7 +395,7 @@ static char *_get_proc_cg_path(char *pid_str)
  * /sys/fs/cgroup[/docker.slice/docker-<some UUID>.scope]
  *
  */
-static char *_get_init_cg_path()
+static char *_get_init_cg_path(void)
 {
 	char *cg_path, *ret = NULL;
 
@@ -416,7 +416,7 @@ static char *_get_init_cg_path()
  * to what will be our root cgroup.
  * E.g. /sys/fs/cgroup/system.slice/node1_slurmstepd.scope/ for slurmstepd.
  */
-static void _set_int_cg_ns()
+static void _set_int_cg_ns(void)
 {
 	int_cg_ns.init_cg_path = _get_init_cg_path();
 
@@ -598,7 +598,7 @@ cleanup:
  * slice we want to live, will make systemd to automatically activate the
  * controllers in the tree, so this operation here would be redundant.
  */
-static int _enable_system_controllers()
+static int _enable_system_controllers(void)
 {
 	char *slice_path = NULL;
 	bitstr_t *system_ctrls = bit_alloc(CG_CTL_CNT);
@@ -643,7 +643,7 @@ end:
  * Read the cgroup.controllers file of the root to detect which are the
  * available controllers in this system.
  */
-static int _setup_controllers()
+static int _setup_controllers(void)
 {
 	/* Field not used in v2 */
 	int_cg_ns.subsystems = NULL;
@@ -700,7 +700,7 @@ static void _free_task_cg_info(void *x)
 	}
 }
 
-static void _all_tasks_destroy()
+static void _all_tasks_destroy(void)
 {
 	/* Empty the lists of accounted tasks, do a best effort in rmdir */
 	(void) list_delete_all(task_list, _rmdir_task, NULL);
@@ -1162,7 +1162,7 @@ rwfail:
  *
  * This directory will be used to place future slurmstepds.
  */
-static int _init_slurmd_system_scope()
+static int _init_slurmd_system_scope(void)
 {
 	struct stat sb;
 
@@ -3129,7 +3129,7 @@ extern void cgroup_p_bpf_set_token(int fd)
 	token_fd = fd;
 }
 
-extern int cgroup_p_bpf_get_token()
+extern int cgroup_p_bpf_get_token(void)
 {
 	return token_fd;
 }

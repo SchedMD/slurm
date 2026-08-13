@@ -2340,11 +2340,11 @@ typedef struct {
 } slurm_allocation_callbacks_t;
 
 typedef struct {
-	void (*acct_full)();
-	void (*dbd_fail)();
-	void (*dbd_resumed)();
-	void (*db_fail)();
-	void (*db_resumed)();
+	void (*acct_full)(void);
+	void (*dbd_fail)(void);
+	void (*dbd_resumed)(void);
+	void (*db_fail)(void);
+	void (*db_resumed)(void);
 } slurm_trigger_callbacks_t;
 
 typedef struct {

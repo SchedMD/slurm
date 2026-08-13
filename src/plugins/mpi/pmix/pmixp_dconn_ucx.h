@@ -41,7 +41,7 @@
 
 int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 			    char **ep_data, size_t *ep_len);
-void pmixp_dconn_ucx_stop();
-void pmixp_dconn_ucx_finalize();
+void pmixp_dconn_ucx_stop(void);
+void pmixp_dconn_ucx_finalize(void);
 
 #endif

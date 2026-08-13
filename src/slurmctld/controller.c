@@ -2540,7 +2540,7 @@ static void _update_cluster_tres(void)
 	unlock_slurmctld(job_write_lock);
 }
 
-static void _update_parts_and_resvs()
+static void _update_parts_and_resvs(void)
 {
 	update_assocs_in_resvs();
 	part_list_update_assoc_lists();

@@ -215,7 +215,7 @@ extern job_record_t *find_job_record(uint32_t job_id)
 	return job_step_ptr;
 }
 
-static uint64_t _job_mem_query_usage()
+static uint64_t _job_mem_query_usage(void)
 {
 	slurm_msg_t req_msg;
 	list_t *ret_list = NULL;
@@ -261,7 +261,7 @@ static uint64_t _job_mem_query_usage()
 	return mem_usage;
 }
 
-static uint64_t _job_mem_local_usage()
+static uint64_t _job_mem_local_usage(void)
 {
 	jobacctinfo_t *jobacct = jobacctinfo_create(NULL);
 	uint64_t mem_usage = 0;
@@ -622,7 +622,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	(void) probe_run(true, NULL, NULL, __func__);
 }
 
-static void _main_thread_init()
+static void _main_thread_init(void)
 {
 	sigset_t mask;
 

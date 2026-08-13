@@ -65,7 +65,7 @@ extern void cluster_rec_free(void);
  * Note: Operates on common variables only
  */
 extern int read_slurm_conf(int recover);
-extern void restore_job_accounting();
+extern void restore_job_accounting(void);
 
 /*
  * restore_job_licenses - Rebuild the job's license_list based on its

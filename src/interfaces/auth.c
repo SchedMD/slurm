@@ -129,7 +129,8 @@ static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static bool at_forked = false;
 static bool externally_locked = false;
-static void _atfork_child()
+
+static void _atfork_child(void)
 {
 	slurm_rwlock_init(&context_lock);
 

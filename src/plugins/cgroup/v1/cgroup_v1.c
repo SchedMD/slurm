@@ -531,7 +531,7 @@ extern void cgroup_p_bpf_set_token(int fd)
 {
 }
 
-extern int cgroup_p_bpf_get_token()
+extern int cgroup_p_bpf_get_token(void)
 {
 	return SLURM_SUCCESS;
 }

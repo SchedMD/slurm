@@ -255,7 +255,7 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 	return job_ptr;
 }
 
-void load_test()
+void load_test(void)
 {
 	char buffer[256];
 	FILE *f = fopen(params.testcases, "r");

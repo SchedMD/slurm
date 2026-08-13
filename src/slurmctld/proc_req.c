@@ -2925,7 +2925,7 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 	return rc;
 }
 
-static void _slurm_post_rpc_node_registration()
+static void _slurm_post_rpc_node_registration(void)
 {
 	if (do_post_rpc_node_registration)
 		clusteracct_storage_g_cluster_tres(acct_db_conn, NULL, NULL, 0,

@@ -37,11 +37,11 @@
 #include "pmixp_conn.h"
 
 /* temporal engines local API */
-static void _tmp_engines_init();
-static void _tmp_engines_fini();
-static inline pmixp_io_engine_t *_tmp_engines_get_slurm();
+static void _tmp_engines_init(void);
+static void _tmp_engines_fini(void);
+static inline pmixp_io_engine_t *_tmp_engines_get_slurm(void);
 static inline void _tmp_engines_return_slurm(pmixp_io_engine_t *eng);
-static inline pmixp_io_engine_t *_tmp_engines_get_direct();
+static inline pmixp_io_engine_t *_tmp_engines_get_direct(void);
 static inline void _tmp_engines_return_direct(pmixp_io_engine_t *eng);
 
 static void _msg_handler_destruct(void *obj);
@@ -221,13 +221,13 @@ void pmixp_conn_return(pmixp_conn_t *conn)
 static void _temp_engine_destruct(void *obj);
 static list_t *_slurm_engines, *_direct_engines;
 
-static void _tmp_engines_init()
+static void _tmp_engines_init(void)
 {
 	_slurm_engines  = list_create(_temp_engine_destruct);
 	_direct_engines = list_create(_temp_engine_destruct);
 }
 
-static void _tmp_engines_fini()
+static void _tmp_engines_fini(void)
 {
 	FREE_NULL_LIST(_slurm_engines);
 	FREE_NULL_LIST(_direct_engines);
@@ -240,7 +240,7 @@ static void _temp_engine_destruct(void *obj)
 	xfree(eng);
 }
 
-static inline pmixp_io_engine_t *_tmp_engines_get_slurm()
+static inline pmixp_io_engine_t *_tmp_engines_get_slurm(void)
 {
 	pmixp_io_engine_t *eng = list_pop(_slurm_engines);
 	if (NULL == eng){
@@ -256,7 +256,7 @@ static inline void _tmp_engines_return_slurm(pmixp_io_engine_t *eng)
 	list_push(_slurm_engines, eng);
 }
 
-static inline pmixp_io_engine_t *_tmp_engines_get_direct()
+static inline pmixp_io_engine_t *_tmp_engines_get_direct(void)
 {
 	pmixp_io_engine_t *eng = list_pop(_direct_engines);
 	if (NULL == eng){

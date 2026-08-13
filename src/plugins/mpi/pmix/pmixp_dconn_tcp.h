@@ -43,6 +43,6 @@
 
 int pmixp_dconn_tcp_prepare(pmixp_dconn_handlers_t *handlers,
 			    char **ep_data, size_t *ep_len);
-void pmixp_dconn_tcp_finalize();
+void pmixp_dconn_tcp_finalize(void);
 
 #endif

@@ -78,7 +78,7 @@ int pmixp_dconn_tcp_prepare(pmixp_dconn_handlers_t *handlers,
 	return _server_fd;
 }
 
-void pmixp_dconn_tcp_finalize()
+void pmixp_dconn_tcp_finalize(void)
 {
 	close(_server_fd);
 }

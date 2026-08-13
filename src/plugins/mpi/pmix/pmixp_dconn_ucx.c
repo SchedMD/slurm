@@ -148,7 +148,7 @@ static int _ucx_send(void *_priv, void *msg);
 static void _ucx_regio(eio_handle_t *h);
 static void *_ucx_lib_handler = NULL;
 
-static int _load_ucx_lib()
+static int _load_ucx_lib(void)
 {
 	/* At the time of writing this UCX doesn't support
 	 * fork() and it's memory hooks are causing memory
@@ -189,7 +189,7 @@ static int _load_ucx_lib()
 	return SLURM_SUCCESS;
 }
 
-static void _unload_ucx_lib()
+static void _unload_ucx_lib(void)
 {
 	xassert(_ucx_lib_handler);
 	if (_ucx_lib_handler) {
@@ -336,7 +336,7 @@ static void _release_recv_requests(pmixp_rlist_t *l)
 	}
 }
 
-void pmixp_dconn_ucx_stop()
+void pmixp_dconn_ucx_stop(void)
 {
 	slurm_mutex_lock(&_ucx_worker_lock);
 	_release_send_requests(&_snd_pending);
@@ -347,7 +347,7 @@ void pmixp_dconn_ucx_stop()
 	slurm_mutex_unlock(&_ucx_worker_lock);
 }
 
-void pmixp_dconn_ucx_finalize()
+void pmixp_dconn_ucx_finalize(void)
 {
 	pmixp_list_elem_t *elem;
 	size_t count, i;
@@ -376,7 +376,7 @@ void pmixp_dconn_ucx_finalize()
 	slurm_mutex_destroy(&_ucx_worker_lock);
 }
 
-static int _activate_progress()
+static int _activate_progress(void)
 {
 	char buf = 'c';
 	int rc = write(_service_pipe[1], &buf, sizeof(buf));
@@ -401,7 +401,7 @@ void _ucx_process_msg(char *buffer, size_t len)
 	_direct_hdr.new_msg(_host_hdr, buf);
 }
 
-static bool _ucx_progress()
+static bool _ucx_progress(void)
 {
 	pmixp_ucx_req_t *req = NULL;
 	ucp_tag_message_h msg_tag;

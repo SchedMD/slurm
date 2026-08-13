@@ -1106,7 +1106,7 @@ fail:
 	return rc;
 }
 
-static bool _need_join_container()
+static bool _need_join_container(void)
 {
 	/*
 	 * To avoid potential problems with namespace plugins and

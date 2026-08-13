@@ -1175,7 +1175,7 @@ static bool _nvml_is_device_mig(nvmlDevice_t *device)
  * starting with MIG-<UUID>."
  * https://docs.nvidia.com/datacenter/tesla/mig-user-guide/#:~:text=CUDA_VISIBLE_DEVICES%20has%20been,instance%20ID%3E
  */
-static bool _nvml_use_mig_uuid()
+static bool _nvml_use_mig_uuid(void)
 {
 	static bool nvml_use_mig_uuid;
 	static bool set = false;
