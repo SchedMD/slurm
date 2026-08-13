@@ -25,7 +25,7 @@ START_TEST(pack_null_resp)
 
 END_TEST
 
-void setup()
+void setup(void)
 {
 	pack_req.prio_factors = &pack_f_req;
 	pack_req.cluster_name = xstrdup("blah");
@@ -65,7 +65,7 @@ void setup()
 	pack_f_req.nice = 50;
 }
 
-void teardown()
+void teardown(void)
 {
 }
 

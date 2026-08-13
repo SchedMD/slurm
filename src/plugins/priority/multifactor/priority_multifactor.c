@@ -1637,7 +1637,7 @@ static void _set_norm_shares(list_t *children_list)
 * completing and the slurmctld was reset. If they aren't setup before
 * continuing we could get more time added than should be on a restart.
 */
-static void _init_decay_vars()
+static void _init_decay_vars(void)
 {
 	double decay_hl = (double) slurm_conf.priority_decay_hl;
 	/*

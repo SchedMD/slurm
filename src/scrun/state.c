@@ -224,7 +224,7 @@ static int _get_job_step_state(slurm_job_info_t *job)
 }
 
 /* based partially on slurm_load_jobs() */
-static int _get_job_state()
+static int _get_job_state(void)
 {
 	/*
 	 * For any reason the anchor failed to respond with a state.

@@ -1865,12 +1865,12 @@ static int _pmixp_cperf_liter = 100;
 
 static volatile int _pmixp_cperf_count = 0;
 
-static int _pmixp_server_cperf_count()
+static int _pmixp_server_cperf_count(void)
 {
 	return _pmixp_cperf_count;
 }
 
-static void _pmixp_server_cperf_inc()
+static void _pmixp_server_cperf_inc(void)
 {
 	_pmixp_cperf_count++;
 }

@@ -101,7 +101,7 @@ static void _rsmi_get_driver(char *driver, unsigned int len);
 /*
  * Initialize the rsmi library.
  */
-static void _rsmi_init()
+static void _rsmi_init(void)
 {
 	static pid_t init_pid = 0;
 	pid_t my_pid = conf->pid ? conf->pid : getpid();

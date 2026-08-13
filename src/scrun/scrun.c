@@ -624,7 +624,7 @@ static int _try_tmp_path(const char *path)
 	return rc;
 }
 
-static void _set_root()
+static void _set_root(void)
 {
 	const char *epath;
 	char *path;

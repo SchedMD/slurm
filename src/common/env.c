@@ -2099,7 +2099,7 @@ static bool _ns_path_disabled(const char *ns_path)
  * calls are disabled. This is performed by checking the contents of
  * "/proc/sys/max_[mnt|pid]_namespaces" and ensuring they are not 0.
  */
-static bool _ns_disabled()
+static bool _ns_disabled(void)
 {
 	static int disabled = -1;
 	char *pid_ns_path = "/proc/sys/user/max_pid_namespaces";

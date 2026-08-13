@@ -759,7 +759,8 @@ extern int32_t islurm_get_rem_time__(uint32_t *jobid)
 		rc = 0;
 	return rc;
 }
-extern int32_t islurm_get_rem_time2__()
+
+extern int32_t islurm_get_rem_time2__(void)
 {
 	uint32_t jobid;
 	char *slurm_job_id = getenv("SLURM_JOB_ID");

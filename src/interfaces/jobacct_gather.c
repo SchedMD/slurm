@@ -88,7 +88,7 @@ strong_alias(jobacctinfo_destroy, slurm_jobacctinfo_destroy);
 
 typedef struct slurm_jobacct_gather_ops {
 	void (*poll_data) (list_t *task_list, uint64_t cont_id, bool profile);
-	int (*endpoll)    ();
+	int (*endpoll)(void);
 	int (*add_task)   (pid_t pid, jobacct_id_t *jobacct_id);
 	void (*stat_job)(jobacctinfo_t *jobacct);
 } slurm_jobacct_gather_ops_t;

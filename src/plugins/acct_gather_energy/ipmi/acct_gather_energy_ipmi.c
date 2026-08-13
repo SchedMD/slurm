@@ -533,7 +533,7 @@ static int _read_ipmi_dcmi_values(ipmi_ctx_t *ipmi_dcmi_ctx_p)
 	return SLURM_SUCCESS;
 }
 
-static int _ipmi_check_unit_watts()
+static int _ipmi_check_unit_watts(void)
 {
 	int sensor_units = ipmi_monitoring_sensor_read_sensor_units(ipmi_ctx);
 

@@ -147,7 +147,7 @@ START_TEST(test_find)
 END_TEST
 
 /* returns the number of item deleted from the hash table */
-static int test_delete_helper()
+static int test_delete_helper(void)
 {
 	xhash_t* ht = g_ht;
 	int ret = 0;

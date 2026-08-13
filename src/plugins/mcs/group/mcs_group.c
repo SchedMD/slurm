@@ -57,7 +57,7 @@ static char *mcs_params_specific = NULL;
 
 static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			    gid_t *groups, int max_groups, int *ngroups);
-static int _check_and_load_params();
+static int _check_and_load_params(void);
 static int _find_mcs_label(gid_t *groups, int ngroups, char **result);
 static int _check_mcs_label(job_record_t *job_ptr, char *label);
 

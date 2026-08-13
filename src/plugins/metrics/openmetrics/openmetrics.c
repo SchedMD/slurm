@@ -156,7 +156,7 @@ static void _make_xhash_id(void *item, const void **key, uint32_t *key_len)
 	*key_len = strlen(m->id);
 }
 
-static openmetrics_set_t *_init_ometrics_set()
+static openmetrics_set_t *_init_ometrics_set(void)
 {
 	openmetrics_set_t *ometrics_set = xmalloc(sizeof(*ometrics_set));
 	ometrics_set->full_hash = xhash_init(_make_xhash_id, _free_xhash_full);

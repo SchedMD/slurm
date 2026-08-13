@@ -674,8 +674,7 @@ _mpir_init(int num_tasks)
 	}
 }
 
-static void
-_mpir_cleanup()
+static void _mpir_cleanup(void)
 {
 	int i;
 
@@ -686,8 +685,7 @@ _mpir_cleanup()
 	xfree(MPIR_proctable);
 }
 
-static void
-_mpir_dump_proctable()
+static void _mpir_dump_proctable(void)
 {
 	MPIR_PROCDESC *tv;
 	int i;

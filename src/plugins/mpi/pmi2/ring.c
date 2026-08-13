@@ -163,7 +163,7 @@ static hostlist_t *pmix_stepd_hostlist = NULL;
 
 /* return rank of our parent in stepd tree,
  * returns -1 if we're the root */
-static int pmix_stepd_rank_parent()
+static int pmix_stepd_rank_parent(void)
 {
 	int rank = -1;
 	if (pmix_stepd_rank > 0) {
@@ -310,7 +310,7 @@ int pmix_ring_init(const pmi2_job_info_t* job, char*** env)
 }
 
 /* free resources allocated to track PMIX_Ring state */
-int pmix_ring_finalize()
+int pmix_ring_finalize(void)
 {
 	int rc = SLURM_SUCCESS;
 

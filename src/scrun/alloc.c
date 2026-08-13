@@ -216,7 +216,7 @@ static void _script_env(void)
 #undef _set_env
 #undef _set_env_args
 
-static int _stage_in()
+static int _stage_in(void)
 {
 	int rc;
 

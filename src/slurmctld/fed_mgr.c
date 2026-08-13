@@ -169,7 +169,7 @@ typedef struct {
 
 /* Local Prototypes */
 static int _is_fed_job(job_record_t *job_ptr, uint32_t *origin_id);
-static uint64_t _get_all_sibling_bits();
+static uint64_t _get_all_sibling_bits(void);
 static int _validate_cluster_features(char *spec_features,
 				      uint64_t *cluster_bitmap);
 static int _validate_cluster_names(char *clusters, uint64_t *cluster_bitmap);
@@ -674,7 +674,7 @@ static void *_job_watch_thread(void *arg)
 	return NULL;
 }
 
-static void _spawn_job_watch_thread()
+static void _spawn_job_watch_thread(void)
 {
 	slurm_mutex_lock(&job_watch_mutex);
 	if (!job_watch_thread_running) {
@@ -690,7 +690,7 @@ static void _spawn_job_watch_thread()
 	slurm_mutex_unlock(&job_watch_mutex);
 }
 
-static void _remove_job_watch_thread()
+static void _remove_job_watch_thread(void)
 {
 	slurm_mutex_lock(&job_watch_mutex);
 	if (job_watch_thread_running) {
@@ -2740,7 +2740,7 @@ static void _spawn_threads(void)
 	slurm_mutex_unlock(&origin_dep_update_mutex);
 }
 
-static void _add_missing_fed_job_info()
+static void _add_missing_fed_job_info(void)
 {
 	job_record_t *job_ptr;
 	list_itr_t *job_itr;
@@ -3902,7 +3902,7 @@ static int _prepare_submit_siblings(job_record_t *job_ptr, uint64_t dest_sibs)
 	return rc;
 }
 
-static uint64_t _get_all_sibling_bits()
+static uint64_t _get_all_sibling_bits(void)
 {
 	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster;
@@ -4544,7 +4544,7 @@ next_lock:
 	return SLURM_ERROR;
 }
 
-static int _slurmdbd_conn_active()
+static int _slurmdbd_conn_active(void)
 {
 	int active = 0;
 

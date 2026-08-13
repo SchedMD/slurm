@@ -5,7 +5,7 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/log.h"
 
-int bad_func()
+int bad_func(void)
 {
 	slurm_seterrno_ret(EINVAL);
 }

@@ -48,7 +48,7 @@
 typedef struct {
 	uint16_t msg_type;
 	void (*func)(slurm_msg_t *msg);
-	void (*post_func)();
+	void (*post_func)(void);
 	slurmctld_lock_t locks;
 
 	/* Queue structural elements */

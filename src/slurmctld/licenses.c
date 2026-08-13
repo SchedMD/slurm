@@ -1161,7 +1161,7 @@ static int _sort_hres(void *void1, void *void2)
 	return 0;
 }
 
-extern int hres_init()
+extern int hres_init(void)
 {
 	licenses_t *root = NULL;
 	foreach_hres_set_mode3_t arg = {

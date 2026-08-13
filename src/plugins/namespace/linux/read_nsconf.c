@@ -271,7 +271,7 @@ static int _force_devshm_tmpfs(void *x, void *arg)
 	return 0;
 }
 
-static void _set_slurm_ns_conf_defaults()
+static void _set_slurm_ns_conf_defaults(void)
 {
 	list_t *seen = list_create(NULL);
 

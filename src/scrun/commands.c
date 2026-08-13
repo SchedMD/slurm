@@ -62,7 +62,7 @@ static data_for_each_cmd_t _foreach_load_annotation(const char *key,
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _load_config()
+static void _load_config(void)
 {
 	int rc;
 	data_t *term, *ver, *rp, *annot, *config = NULL;
@@ -148,7 +148,7 @@ static data_for_each_cmd_t _foreach_env(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _load_config_environ()
+static void _load_config_environ(void)
 {
 	int i = 0;
 

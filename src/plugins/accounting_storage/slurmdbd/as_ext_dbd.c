@@ -160,7 +160,7 @@ static int _for_each_check_ext_conn(void *x, void *arg)
 	return delete;
 }
 
-static void _check_ext_conns()
+static void _check_ext_conns(void)
 {
 	slurm_mutex_lock(&ext_conns_mutex);
 	if (!ext_conns_list) {

@@ -76,7 +76,7 @@
 
 #define THREAD_COUNT 3
 
-static void _open_pty();
+static void _open_pty(void);
 static int _kill_job(conmgr_fd_t *con, int signal);
 static void _notify_started(void);
 static void _try_start(void);
@@ -183,7 +183,7 @@ static int _send_pty(conmgr_fd_t *con, slurm_msg_t *req_msg)
 	return rc;
 }
 
-static void _daemonize_logs()
+static void _daemonize_logs(void)
 {
 	/*
 	 * Default to syslog since scrun anchor should only ever be run in
@@ -928,7 +928,7 @@ static int _delete(conmgr_fd_t *con, slurm_msg_t *req_msg)
 	return rc;
 }
 
-static void _set_proctitle()
+static void _set_proctitle(void)
 {
 	char *thread_name = NULL;
 
@@ -1016,7 +1016,7 @@ rwfail:
 	fatal("Unable to send PID to parent: %m");
 }
 
-static void _cleanup_pidfile()
+static void _cleanup_pidfile(void)
 {
 	xassert(!state.needs_lock);
 
@@ -1037,7 +1037,7 @@ static void _cleanup_pidfile()
  * to be compatible with docker pidfile parsing. Defers actually writing the
  * pidfile too.
  */
-static void _open_pidfile()
+static void _open_pidfile(void)
 {
 	int rc = SLURM_SUCCESS;
 	xassert(!state.needs_lock);
@@ -1086,7 +1086,7 @@ cleanup:
 	      __func__, state.pid_file, slurm_strerror(rc));
 }
 
-static void _populate_pidfile()
+static void _populate_pidfile(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *pid_str = NULL;
