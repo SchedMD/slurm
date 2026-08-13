@@ -191,7 +191,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	working_cluster.lo workq.lo write_labelled_message.lo \
 	x11_util.lo xahash.lo xassert.lo xbase64.lo xhash.lo \
 	xmalloc.lo xrandom.lo xregex.lo xsched.lo xsignal.lo \
-	xstring.lo xsystemd.lo
+	xstring.lo xsystemd.lo xutf.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -279,7 +279,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/xhash.Plo ./$(DEPDIR)/xmalloc.Plo \
 	./$(DEPDIR)/xrandom.Plo ./$(DEPDIR)/xregex.Plo \
 	./$(DEPDIR)/xsched.Plo ./$(DEPDIR)/xsignal.Plo \
-	./$(DEPDIR)/xstring.Plo ./$(DEPDIR)/xsystemd.Plo
+	./$(DEPDIR)/xstring.Plo ./$(DEPDIR)/xsystemd.Plo \
+	./$(DEPDIR)/xutf.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -821,7 +822,9 @@ libcommon_la_SOURCES = \
 	xstring.c				\
 	xstring.h				\
 	xsystemd.c				\
-	xsystemd.h
+	xsystemd.h				\
+	xutf.c					\
+	xutf.h
 
 libcommon_la_LIBADD = $(libselinux_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
@@ -1000,6 +1003,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsystemd.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xutf.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1240,6 +1244,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
 	-rm -f ./$(DEPDIR)/xsystemd.Plo
+	-rm -f ./$(DEPDIR)/xutf.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1400,6 +1405,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
 	-rm -f ./$(DEPDIR)/xsystemd.Plo
+	-rm -f ./$(DEPDIR)/xutf.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
