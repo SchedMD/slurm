@@ -561,7 +561,6 @@ def test_array_task_drain():
     assert result["stderr"] == "", f"unexpected stderr: {result['stderr']!r}"
 
 
-
 def test_quiet_and_verbose_mutually_exclusive():
     """swait(1) documents -Q and -v as mutually exclusive on both entries."""
 
