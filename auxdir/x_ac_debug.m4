@@ -52,6 +52,11 @@ AC_DEFUN([X_AC_DEBUG], [
     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Werror"
     # automatically turn on --enable-debug if being a developer
     x_ac_debug=yes
+
+    # Force -Wstrict-prototypes compiler flag if available
+    AX_CHECK_COMPILE_FLAG([-Wstrict-prototypes],
+			  [CFLAGS="$CFLAGS -Wstrict-prototypes"])
+
   else
     AC_DEFINE([NDEBUG], [1],
       [Define to 1 if you are building a production release.]
