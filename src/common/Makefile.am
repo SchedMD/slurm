@@ -240,7 +240,9 @@ libcommon_la_SOURCES =				\
 	xstring.c				\
 	xstring.h				\
 	xsystemd.c				\
-	xsystemd.h
+	xsystemd.h				\
+	xutf.c					\
+	xutf.h
 
 libcommon_la_LIBADD   = $(libselinux_LIBS)
 
