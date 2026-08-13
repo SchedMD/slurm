@@ -4378,7 +4378,7 @@
     <div class="field-items">
       <div class="param">update_time (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query jobs updated more recently than this time (UNIX timestamp) default: null </div><div class="param">flags (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query nodes updated more recently than this time (UNIX timestamp) default: null </div><div class="param">flags (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div>
     </div>  <!-- field-items -->
@@ -4679,7 +4679,7 @@
     <div class="field-items">
       <div class="param">update_time (optional)</div>
 
-      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query jobs updated more recently than this time (UNIX timestamp) default: null </div><div class="param">flags (optional)</div>
+      <div class="param-desc"><span class="param-type">Query Parameter</span> — Query nodes updated more recently than this time (UNIX timestamp) default: null </div><div class="param">flags (optional)</div>
 
       <div class="param-desc"><span class="param-type">Query Parameter</span> — Query flags default: null </div>
     </div>  <!-- field-items -->
