@@ -42,11 +42,7 @@
 #include "src/common/xrandom.h"
 #include "src/common/xstring.h"
 
-#ifdef __linux__
-#define CLOCK_TYPE CLOCK_TAI
-#else
 #define CLOCK_TYPE CLOCK_REALTIME
-#endif
 
 static const char cb32map[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
