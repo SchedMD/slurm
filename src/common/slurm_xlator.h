@@ -431,6 +431,16 @@
 #define xstrcasestr		slurm_xstrcasestr
 #define xbase64_from_base64url	slurm_xbase64_from_base64url
 
+/* xutf.[ch] functions */
+#define utf_encoding_scheme_to_string slurm_utf_encoding_scheme_to_string
+#define utf8_strlen slurm_utf8_strlen
+#define utf8_ndup slurm_utf8_ndup
+#define utf8_dup slurm_utf8_dup
+#define utf_read_encoding_schema slurm_utf_read_encoding_schema
+#define utf8_get_loggable slurm_utf8_get_loggable
+#define utf16_to_coding slurm_utf16_to_coding
+#define utf16_from_coding slurm_utf16_from_coding
+
 /* slurm_protocol_api.[ch] functions */
 #define convert_num_unit2       slurm_convert_num_unit2
 #define convert_num_unit        slurm_convert_num_unit
