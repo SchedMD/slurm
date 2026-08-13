@@ -4974,9 +4974,11 @@ def get_job_id_from_array_task(array_job_id, array_task_id, fatal=False, quiet=T
 
     jobs_dict = get_jobs(quiet=quiet)
     for job_id, job_values in jobs_dict.items():
+        # Non-array jobs left in the system by sibling tests carry neither
+        # key, so use .get() rather than raising on them.
         if (
-            job_values["ArrayJobId"] == array_job_id
-            and job_values["ArrayTaskId"] == array_task_id
+            job_values.get("ArrayJobId") == array_job_id
+            and job_values.get("ArrayTaskId") == array_task_id
         ):
             return job_id
 
