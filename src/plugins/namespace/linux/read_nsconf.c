@@ -202,6 +202,8 @@ static void _set_clonensflags(void)
 	/* CLONE_NEWNS is mandatory; the user list only adds optional flags. */
 	slurm_ns_conf.clonensflags = CLONE_NEWNS;
 
+	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWIPC"))
+		slurm_ns_conf.clonensflags |= CLONE_NEWIPC;
 	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWPID"))
 		slurm_ns_conf.clonensflags |= CLONE_NEWPID;
 	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWUSER"))

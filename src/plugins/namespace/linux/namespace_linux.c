@@ -66,6 +66,8 @@
 
 #include "read_nsconf.h"
 
+#define MQUEUE_PATH "/dev/mqueue"
+
 static int _create_ns(stepd_step_rec_t *step);
 static int _delete_ns(uint32_t job_id);
 
@@ -86,7 +88,8 @@ static pid_t ns_pid = -1;
 
 /* NS_L_NS must be last */
 enum ns_l_types {
-	NS_L_PID = 0,
+	NS_L_IPC = 0,
+	NS_L_PID,
 	NS_L_USER,
 	NS_L_NS,
 	NS_L_END
@@ -110,6 +113,14 @@ static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 
 	if (ns_base) {
 		xstrfmtcat(*ns_base, "%s/.ns", *job_mount);
+		if (ns_conf->clonensflags & CLONE_NEWIPC) {
+			ns_l_enabled[NS_L_IPC].enabled = true;
+			ns_l_enabled[NS_L_IPC].flag = CLONE_NEWIPC;
+			xfree(ns_l_enabled[NS_L_IPC].path);
+			xstrfmtcat(ns_l_enabled[NS_L_IPC].path, "%s/ipc",
+				   *ns_base);
+			ns_l_enabled[NS_L_IPC].proc_name = "ipc";
+		}
 		if (ns_conf->clonensflags & CLONE_NEWNS) {
 			ns_l_enabled[NS_L_NS].enabled = true;
 			ns_l_enabled[NS_L_NS].flag = CLONE_NEWNS;
@@ -552,6 +563,26 @@ static int _mount_private_proc(void)
 	return SLURM_SUCCESS;
 }
 
+static int _mount_private_mqueue(void)
+{
+	if (!ns_l_enabled[NS_L_IPC].enabled)
+		return SLURM_SUCCESS;
+
+	if (!mount("mqueue", MQUEUE_PATH, "mqueue",
+		   MS_NOSUID | MS_NODEV | MS_NOEXEC, NULL))
+		return SLURM_SUCCESS;
+
+	if (errno == ENOENT) {
+		log_flag(NAMESPACE, "%s: %s does not exist, not mounting it",
+			 __func__, MQUEUE_PATH);
+		return SLURM_SUCCESS;
+	}
+
+	error("%s: %s mount failed: %m", __func__, MQUEUE_PATH);
+
+	return SLURM_ERROR;
+}
+
 static int _foreach_build_str(void *x, void *arg)
 {
 	gres_state_t *gres_state = x;
@@ -677,6 +708,11 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 	}
 
 	if (_mount_private_proc() == SLURM_ERROR) {
+		rc = -1;
+		goto child_exit;
+	}
+
+	if (_mount_private_mqueue() == SLURM_ERROR) {
 		rc = -1;
 		goto child_exit;
 	}
