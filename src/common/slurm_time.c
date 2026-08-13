@@ -351,6 +351,18 @@ extern double timespec_to_secs(const timespec_t x)
 	return (s + (ns / NSEC_IN_SEC));
 }
 
+extern uint64_t timespec_to_msec(timespec_t x)
+{
+	if (timespec_is_infinite(x))
+		return INFINITE64;
+	else if (timespec_is_zero(x))
+		return 0;
+
+	x = timespec_normalize(x);
+
+	return ((x.tv_sec * MSEC_IN_SEC) + (x.tv_nsec / NSEC_IN_MSEC));
+}
+
 extern int timeval_tot_wait(struct timeval *start_time)
 {
 	struct timeval end_time;
