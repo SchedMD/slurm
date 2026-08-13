@@ -1285,7 +1285,8 @@ int main(int argc, char **argv)
 }
 #endif
 
-	http_fini();
+	if (http_switch_http_enabled())
+		http_fini();
 	http_switch_fini();
 	workerpool_fini();
 	/* Multiple threads never exit naturally during shutdown */
