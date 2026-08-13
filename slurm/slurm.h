@@ -3018,15 +3018,19 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
 
-#define LOG_FMT_ISO8601_MS      0
-#define LOG_FMT_ISO8601         1
-#define LOG_FMT_RFC5424_MS      2
-#define LOG_FMT_RFC5424         3
-#define LOG_FMT_CLOCK           4
-#define LOG_FMT_SHORT           5
-#define LOG_FMT_THREAD_ID       6
-#define LOG_FMT_RFC3339         7
-#define LOG_FMT_OMIT 8
+/* Timestamp format for LogTimeFormat. */
+typedef enum {
+	LOG_FMT_ISO8601_MS = 0,
+	LOG_FMT_ISO8601 = 1,
+	LOG_FMT_RFC5424_MS = 2,
+	LOG_FMT_RFC5424 = 3,
+	LOG_FMT_CLOCK = 4,
+	LOG_FMT_SHORT = 5,
+	LOG_FMT_THREAD_ID = 6,
+	LOG_FMT_RFC3339 = 7,
+	LOG_FMT_OMIT = 8,
+} log_fmt_t;
+
 /* Default timestamp format */
 #define LOG_FMT_DEFAULT LOG_FMT_ISO8601_MS
 
