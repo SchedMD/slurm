@@ -201,6 +201,13 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 extern double timespec_to_secs(const timespec_t x);
 
 /*
+ * Convert timestamp to milliseconds
+ * IN x - timestamp
+ * RET milliseconds, or INFINITE64 if x is TIMESPEC_INFINITE
+ */
+extern uint64_t timespec_to_msec(timespec_t x);
+
+/*
  * Time diff to deadline passing against timespec_now()
  * IN deadline - absolute time of deadline
  * RET

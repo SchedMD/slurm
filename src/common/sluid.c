@@ -38,15 +38,10 @@
 
 #include "src/common/macros.h"
 #include "src/common/sluid.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xrandom.h"
 #include "src/common/xstring.h"
-
-#ifdef __linux__
-#define CLOCK_TYPE CLOCK_TAI
-#else
-#define CLOCK_TYPE CLOCK_REALTIME
-#endif
 
 static const char cb32map[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -66,14 +61,8 @@ extern void sluid_init(uint16_t cluster, time_t minimum)
 
 extern sluid_t generate_sluid(void)
 {
-	struct timespec ts;
 	sluid_t sluid;
-	uint64_t now_ms;
-
-	if (clock_gettime(CLOCK_TYPE, &ts) < 0)
-		fatal("clock_gettime(): %m");
-
-	now_ms = ts.tv_sec * 1000 + (ts.tv_nsec / 1000000);
+	uint64_t now_ms = timespec_to_msec(timespec_now());
 
 	slurm_mutex_lock(&sluid_mutex);
 	if (!cluster_bits)
