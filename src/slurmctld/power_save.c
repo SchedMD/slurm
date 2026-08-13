@@ -66,6 +66,7 @@
 #include "src/common/macros.h"
 #include "src/common/power_action.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -156,7 +157,6 @@ static int _do_power_action(void *entry, void *payload);
 static int _do_power_action_reboot(void *entry, void *payload);
 static int   _init_power_config(void);
 static void *_power_save_thread(void *arg);
-static uint64_t _timespec_to_msec(struct timespec *tv);
 
 static void _rl_init(rl_config_t *config,
 		     uint32_t refill_count,
@@ -1725,12 +1725,6 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 	}
 }
 
-static uint64_t _timespec_to_msec(struct timespec *tv)
-{
-	xassert(tv);
-	return (tv->tv_sec * 1000) + (tv->tv_nsec / 1000000);
-}
-
 /* Initializes and starts the rate limit operation */
 static void _rl_init(rl_config_t *config,
 		     uint32_t refill_count,
@@ -1742,7 +1736,7 @@ static void _rl_init(rl_config_t *config,
 	struct timespec now = { 0 };
 	xassert(!clock_gettime(CLOCK_MONOTONIC, &now));
 	config->inited = true;
-	config->last_update = _timespec_to_msec(&now);
+	config->last_update = timespec_to_msec(now);
 	config->max_tokens = max_tokens;
 	config->refill_count = refill_count;
 	config->refill_period_msec = refill_period_msec;
@@ -1759,7 +1753,7 @@ static uint32_t _rl_get_tokens(rl_config_t *config)
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	uint64_t now_msec = _timespec_to_msec(&now);
+	uint64_t now_msec = timespec_to_msec(now);
 	uint64_t now_periods = now_msec / config->refill_period_msec;
 	uint64_t delta = now_periods - config->last_update;
 	config->last_update = now_periods;
