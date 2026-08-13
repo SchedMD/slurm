@@ -1734,7 +1734,9 @@ static void _rl_init(rl_config_t *config,
 {
 	xassert(config);
 	struct timespec now = { 0 };
-	xassert(!clock_gettime(CLOCK_MONOTONIC, &now));
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
 	config->inited = true;
 	config->last_update = timespec_to_msec(now);
 	config->max_tokens = max_tokens;
