@@ -1176,6 +1176,7 @@ test_162_4   Verify pending synchronous step id-at-submit holds under stepmgr
 test_162_5   Test swait per-step wait targets and their reported results
 test_162_6   Test swait reporting for steps ending in a terminal-failure state
 test_162_7   Test swait --follow and the whole-set drain
+test_162_8   Test swait --json/--yaml output and data_parser selection
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
