@@ -50,6 +50,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_time.h"
 #include "src/common/timers.h"
 #include "src/common/workerpool.h"
@@ -717,7 +718,8 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_unset_flag(con, FLAG_CAN_READ);
 
 		if (mgr_is_accept_deferred()) {
-			warning("%s: [%s] Deferring incoming connection due to %d/%d connections",
+			warning_in_daemon(
+				"%s: [%s] Deferring incoming connection due to %d/%d connections",
 				__func__, con->name,
 				list_count(mgr.connections),
 				mgr.max_connections);
@@ -734,7 +736,8 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 
 		/* must wait until poll allows read from this socket */
 		if (mgr_is_accept_deferred()) {
-			warning("%s: [%s] Deferring polling for new connections due to %d/%d connections",
+			warning_in_daemon(
+				"%s: [%s] Deferring polling for new connections due to %d/%d connections",
 				__func__, con->name,
 				list_count(mgr.connections),
 				mgr.max_connections);
@@ -1351,9 +1354,10 @@ static bool _attempt_accept(conmgr_fd_t *con)
 			 __func__, con->name);
 		return false;
 	} else if (mgr_is_accept_deferred()) {
-		warning("%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
-			 __func__, con->name, list_count(mgr.connections),
-			 mgr.max_connections);
+		warning_in_daemon(
+			"%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
+			__func__, con->name, list_count(mgr.connections),
+			mgr.max_connections);
 		slurm_mutex_unlock(&mgr.mutex);
 		return false;
 	} else
