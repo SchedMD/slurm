@@ -1383,13 +1383,16 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 					"being configured, please wait",
 					step_req->step_id.job_id);
 			} else {
-				if (rc == ESLURM_STEP_TIMED_OUT)
+				if (rc != ESLURM_STEP_TIMED_OUT)
+					verbose("Step completed in JobId=%u, retrying",
+						step_req->step_id.job_id);
+				else if (retry_cause == ESLURM_STEP_QUEUED)
+					/* Queued with a real id and pending, not "disabled"; trace at -v. */
+					verbose("%ps still pending", &step_req->step_id);
+				else
 					info("Job %u step creation temporarily disabled, retrying (%s)",
 					     step_req->step_id.job_id,
 					     slurm_strerror(retry_cause));
-				else
-					verbose("Step completed in JobId=%u, retrying",
-						step_req->step_id.job_id);
 			}
 		} else {
 			if (rc == ESLURM_PROLOG_RUNNING)
@@ -1397,13 +1400,16 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 					step_req->step_id.job_id,
 					slurm_strerror(rc));
 			else {
-				if (rc == ESLURM_STEP_TIMED_OUT)
+				if (rc != ESLURM_STEP_TIMED_OUT)
+					verbose("Step completed in JobId=%u, retrying",
+						step_req->step_id.job_id);
+				else if (retry_cause == ESLURM_STEP_QUEUED)
+					/* Queued with a real id and pending, not "disabled"; trace at -v. */
+					verbose("%ps still pending", &step_req->step_id);
+				else
 					info("Job %u step creation still disabled, retrying (%s)",
 					     step_req->step_id.job_id,
 					     slurm_strerror(retry_cause));
-				else
-					verbose("Step completed in JobId=%u, retrying",
-						step_req->step_id.job_id);
 			}
 		}
 
@@ -1446,7 +1452,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 				printf("Submitted step %s\n", tmp_char);
 		}
 	} else if (i > 0) {
-		info("Step created for %ps", &step_req->step_id);
+		info("%ps started", &step_req->step_id);
 	}
 
 	/* stepmgr handles launching async steps */
