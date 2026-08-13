@@ -132,6 +132,12 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 			ast[0] = '\0';
 		}
 
+		if (!tok[0]) {
+			error("Failed to validate number: %s, no digits found",
+			      list);
+			goto fail;
+		}
+
 		for (i = 0; tok[i]; i++) {
 			if (!isfunc(tok[i])) {
 				error("Failed to validate number: %s, the offending character is %c",
