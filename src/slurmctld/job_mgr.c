@@ -13555,6 +13555,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				info("%s: exceeded association/QOS limit for user %u: %s",
 				     __func__, job_desc->user_id,
 				     job_state_reason_string(acct_reason));
+				job_desc->time_limit = orig_time_limit;
 				error_code = ESLURM_ACCOUNTING_POLICY;
 				goto fini;
 			}
@@ -13595,18 +13596,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			}
 
 			assoc_mgr_lock(&assoc_mgr_read_lock);
-			if ((error_code = _valid_job_part(
-				     job_desc, uid,
-				     new_req_bitmap_given ?
-				     new_req_bitmap :
-				     job_ptr->details->req_node_bitmap,
-				     use_part_ptr,
-				     new_part_ptr ?
-				     part_ptr_list : job_ptr->part_ptr_list,
-				     use_assoc_ptr, use_qos_ptr, NULL))) {
-				assoc_mgr_unlock(&assoc_mgr_read_lock);
-				goto fini;
-			}
+			error_code = _valid_job_part(
+				job_desc, uid,
+				new_req_bitmap_given ?
+					new_req_bitmap :
+					job_ptr->details->req_node_bitmap,
+				use_part_ptr,
+				new_part_ptr ? part_ptr_list :
+					       job_ptr->part_ptr_list,
+				use_assoc_ptr, use_qos_ptr, NULL);
 			assoc_mgr_unlock(&assoc_mgr_read_lock);
 
 			if (min_reset)
@@ -13619,6 +13617,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				job_desc->reservation = resv_orig;
 
 			job_desc->time_limit = orig_time_limit;
+
+			if (error_code)
+				goto fini;
 		}
 
 		/*
