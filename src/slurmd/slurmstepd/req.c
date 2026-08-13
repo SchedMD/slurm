@@ -2087,6 +2087,7 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 
 rwfail:
 	xfree(hostname);
+	xfree(nodename);
 	xfree(nodename_r);
 	return SLURM_ERROR;
 }
