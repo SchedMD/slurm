@@ -81,9 +81,13 @@ extern void runtime_g_fini(void);
  * with these calls needs the arrays to stop moving first.
  */
 
-/* Set up the runtime for the step. Runs in slurmstepd. */
-extern int runtime_g_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			   slurm_addr_t *cli, slurm_msg_t *msg);
+/*
+ * Set up the runtime for the step. Runs in slurmstepd.
+ * IN idx - index of the loaded plugin to set up
+ */
+extern int runtime_g_setup(const int idx, slurmd_conf_t *conf,
+			   stepd_step_rec_t *step, slurm_addr_t *cli,
+			   slurm_msg_t *msg);
 
 /* Clean up the runtime for the step. Runs in slurmstepd. */
 extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step);

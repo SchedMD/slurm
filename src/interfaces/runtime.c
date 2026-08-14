@@ -223,11 +223,15 @@ extern void runtime_g_fini(void)
 	slurm_mutex_unlock(&init_lock);
 }
 
-extern int runtime_g_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			   slurm_addr_t *cli, slurm_msg_t *msg)
+extern int runtime_g_setup(const int idx, slurmd_conf_t *conf,
+			   stepd_step_rec_t *step, slurm_addr_t *cli,
+			   slurm_msg_t *msg)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
-	return ops[RUNTIME_IDX_DEFAULT].setup(conf, step, cli, msg);
+	xassert(idx > RUNTIME_IDX_INVALID);
+	xassert(idx < g_context_cnt);
+
+	return ops[idx].setup(conf, step, cli, msg);
 }
 
 extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step)

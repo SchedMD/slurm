@@ -1549,7 +1549,7 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 
 	set_msg_node_id();
 
-	if ((rc = runtime_g_setup(conf, step, cli, msg))) {
+	if ((rc = runtime_g_setup(RUNTIME_IDX_DEFAULT, conf, step, cli, msg))) {
 		error("%s: runtime setup failed: %s",
 		      __func__, slurm_strerror(rc));
 		stepd_step_rec_destroy();
