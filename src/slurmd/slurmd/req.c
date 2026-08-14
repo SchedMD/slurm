@@ -4764,6 +4764,7 @@ static void
 _rpc_abort_job(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req    = msg->data;
+	bool completed = true;
 
 	/*
 	 * "revoke" all future credentials for this jobid
@@ -4788,10 +4789,22 @@ _rpc_abort_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(&req->step_id, 0,
-					 (slurm_conf.prolog_flags &
-					  PROLOG_FLAG_RUN_IN_JOB),
-					 true);
+		completed = pause_for_job_completion(&req->step_id, 0,
+						     (slurm_conf.prolog_flags &
+						      PROLOG_FLAG_RUN_IN_JOB),
+						     true);
+	}
+
+	/*
+	 * If the step is still completing (slurmstepd is retrying an
+	 * unreachable slurmctld) and slurmd is shutting down, stop here so
+	 * slurmd can exit. Do not run the epilog; slurmctld re-drives the
+	 * abort once it is back and the slurmstepd delivers its completion.
+	 */
+	if (!completed && conmgr_is_shutdown()) {
+		debug("Not running epilog for %pI: slurmd shutting down",
+		      &req->step_id);
+		return;
 	}
 
 	/*
