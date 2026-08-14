@@ -93,6 +93,7 @@ target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_3)
 TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
+@HAVE_CHECK_TRUE@	 buf-test \
 @HAVE_CHECK_TRUE@	 data-test \
 @HAVE_CHECK_TRUE@	 dns-test \
 @HAVE_CHECK_TRUE@	 http-test \
@@ -169,24 +170,30 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) data-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	dns-test$(EXEEXT) http-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	sluid-test$(EXEEXT) xbase64-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) buf-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	data-test$(EXEEXT) dns-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	http-test$(EXEEXT) sluid-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	xbase64-test$(EXEEXT) xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) pack-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xahash-test$(EXEEXT)
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__EXEEXT_2 = lua-test$(EXEEXT)
 am__EXEEXT_3 = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
-data_test_SOURCES = data-test.c
-data_test_OBJECTS = data_test-data-test.$(OBJEXT)
+buf_test_SOURCES = buf-test.c
+buf_test_OBJECTS = buf_test-buf-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@HAVE_CHECK_TRUE@data_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+@HAVE_CHECK_TRUE@buf_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+buf_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(buf_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+data_test_SOURCES = data-test.c
+data_test_OBJECTS = data_test-data-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@data_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 data_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(data_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -282,7 +289,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
+am__depfiles_remade = ./$(DEPDIR)/buf_test-buf-test.Po \
+	./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/dns_test-dns-test.Po \
 	./$(DEPDIR)/http_test-http-test.Po ./$(DEPDIR)/log-test.Po \
 	./$(DEPDIR)/lua_test-lua-test.Po \
@@ -313,9 +321,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = data-test.c dns-test.c http-test.c log-test.c lua-test.c \
-	pack-test.c parse_time-test.c reverse_tree-test.c sluid-test.c \
-	xahash-test.c xbase64-test.c xhash-test.c xstring-test.c
+SOURCES = buf-test.c data-test.c dns-test.c http-test.c log-test.c \
+	lua-test.c pack-test.c parse_time-test.c reverse_tree-test.c \
+	sluid-test.c xahash-test.c xbase64-test.c xhash-test.c \
+	xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -842,6 +851,8 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@xhash_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xahash_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xahash_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@buf_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@buf_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@data_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@data_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@dns_test_CFLAGS = $(MYCFLAGS)
@@ -906,6 +917,10 @@ clean-checkPROGRAMS:
 	$(am__rm_f) $(check_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(check_PROGRAMS:$(EXEEXT)=)
 
+buf-test$(EXEEXT): $(buf_test_OBJECTS) $(buf_test_DEPENDENCIES) $(EXTRA_buf_test_DEPENDENCIES) 
+	@rm -f buf-test$(EXEEXT)
+	$(AM_V_CCLD)$(buf_test_LINK) $(buf_test_OBJECTS) $(buf_test_LDADD) $(LIBS)
+
 data-test$(EXEEXT): $(data_test_OBJECTS) $(data_test_DEPENDENCIES) $(EXTRA_data_test_DEPENDENCIES) 
 	@rm -f data-test$(EXEEXT)
 	$(AM_V_CCLD)$(data_test_LINK) $(data_test_OBJECTS) $(data_test_LDADD) $(LIBS)
@@ -964,6 +979,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/buf_test-buf-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns_test-dns-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_test-http-test.Po@am__quote@ # am--include-marker
@@ -1004,6 +1020,20 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+buf_test-buf-test.o: buf-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(buf_test_CFLAGS) $(CFLAGS) -MT buf_test-buf-test.o -MD -MP -MF $(DEPDIR)/buf_test-buf-test.Tpo -c -o buf_test-buf-test.o `test -f 'buf-test.c' || echo '$(srcdir)/'`buf-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/buf_test-buf-test.Tpo $(DEPDIR)/buf_test-buf-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='buf-test.c' object='buf_test-buf-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(buf_test_CFLAGS) $(CFLAGS) -c -o buf_test-buf-test.o `test -f 'buf-test.c' || echo '$(srcdir)/'`buf-test.c
+
+buf_test-buf-test.obj: buf-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(buf_test_CFLAGS) $(CFLAGS) -MT buf_test-buf-test.obj -MD -MP -MF $(DEPDIR)/buf_test-buf-test.Tpo -c -o buf_test-buf-test.obj `if test -f 'buf-test.c'; then $(CYGPATH_W) 'buf-test.c'; else $(CYGPATH_W) '$(srcdir)/buf-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/buf_test-buf-test.Tpo $(DEPDIR)/buf_test-buf-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='buf-test.c' object='buf_test-buf-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(buf_test_CFLAGS) $(CFLAGS) -c -o buf_test-buf-test.obj `if test -f 'buf-test.c'; then $(CYGPATH_W) 'buf-test.c'; else $(CYGPATH_W) '$(srcdir)/buf-test.c'; fi`
 
 data_test-data-test.o: data-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -MT data_test-data-test.o -MD -MP -MF $(DEPDIR)/data_test-data-test.Tpo -c -o data_test-data-test.o `test -f 'data-test.c' || echo '$(srcdir)/'`data-test.c
@@ -1458,6 +1488,13 @@ xhash-test.log: xhash-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+buf-test.log: buf-test$(EXEEXT)
+	@p='buf-test$(EXEEXT)'; \
+	b='buf-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 data-test.log: data-test$(EXEEXT)
 	@p='data-test$(EXEEXT)'; \
 	b='data-test'; \
@@ -1595,6 +1632,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-recursive
+	-rm -f ./$(DEPDIR)/buf_test-buf-test.Po
 	-rm -f ./$(DEPDIR)/data_test-data-test.Po
 	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
@@ -1653,6 +1691,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
+	-rm -f ./$(DEPDIR)/buf_test-buf-test.Po
 	-rm -f ./$(DEPDIR)/data_test-data-test.Po
 	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
