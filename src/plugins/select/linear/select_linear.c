@@ -171,6 +171,8 @@ static uint16_t cr_type;
 static struct cr_record *cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static time_t last_set_all = 0;
+
 /* Add job id to record of jobs running on this node */
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id)
 {
@@ -2475,7 +2477,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 {
 	node_record_t *node_ptr = NULL;
 	int n;
-	static time_t last_set_all = 0;
 
 	/* only set this once when the last_node_update is newer than
 	 * the last time we set things up. */
@@ -2485,7 +2486,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		       (long)last_set_all);
 		return SLURM_NO_CHANGE_IN_DATA;
 	}
-	last_set_all = last_node_update;
+	last_set_all = time(NULL);
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
 		node_select_stats_t *node_stats = node_select_stats_array[n];
@@ -2526,6 +2527,8 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 
 extern int select_p_reconfigure(void)
 {
+	last_set_all = 0;
+
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
