@@ -74,9 +74,9 @@ static const char *syms[] = {
  * Index 0 is a permanently empty placeholder, so a zero-initialized index
  * means "no runtime resolved" without any caller having to say so.
  *
- * The single-context caller (slurmstepd) loads exactly one plugin and always
- * reaches it at RUNTIME_IDX_DEFAULT, with plugin_inited saying whether it has
- * been loaded yet.
+ * The single-context caller (slurmstepd) loads exactly one plugin and keeps the
+ * index it was loaded at, with plugin_inited saying whether anything has been
+ * loaded yet.
  */
 static opts_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
@@ -134,7 +134,7 @@ static int _load_runtime(const char *plugin_name, runtime_context_t context,
 	if (g_context_cnt)
 		idx = g_context_cnt;
 	else
-		idx = RUNTIME_IDX_DEFAULT;
+		idx = (RUNTIME_IDX_INVALID + 1);
 
 	xrecalloc(ops, (idx + 1), sizeof(*ops));
 	xrecalloc(g_context, (idx + 1), sizeof(*g_context));

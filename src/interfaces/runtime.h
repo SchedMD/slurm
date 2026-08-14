@@ -52,7 +52,6 @@ typedef struct slurmd_config slurmd_conf_t;
  * empty placeholder, so a zero-initialized index means no runtime resolved.
  */
 #define RUNTIME_IDX_INVALID 0
-#define RUNTIME_IDX_DEFAULT 1
 
 typedef enum {
 	RUNTIME_CTXT_INVALID = 0,
