@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/stepd_api.h"
 #include "src/common/threadpool.h"
 #include "src/common/xstring.h"
@@ -223,6 +224,7 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 	int pause = 1;
 	bool rc = false;
 	int count = 0;
+	const timespec_t start = timespec_now();
 
 	while ((sec < max_time) || (max_time == 0)) {
 		rc = _is_job_running(step_id, ignore_extern);
@@ -239,14 +241,16 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 		 * off conmgr_is_shutdown() alone there).
 		 */
 		if (skip_on_shutdown && conmgr_is_shutdown()) {
-			debug("Stopped waiting for %pI: slurmd shutting down",
-			      step_id);
+			debug("Waited %s for %pI; slurmd shutting down",
+			      TIMESPEC_ELAPSED_STR(start), step_id);
 			break;
 		}
 		if ((max_time == 0) && (sec > 1)) {
 			terminate_all_steps(step_id, true, !ignore_extern);
 		}
 		if (sec > 10) {
+			debug("Still waiting for %pI to complete: %s",
+			      step_id, TIMESPEC_ELAPSED_STR(start));
 			/* Reduce logging frequency about unkillable tasks */
 			if (max_time)
 				pause = MIN((max_time - sec), 10);
