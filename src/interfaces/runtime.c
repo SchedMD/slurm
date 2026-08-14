@@ -234,10 +234,14 @@ extern int runtime_g_setup(const int idx, slurmd_conf_t *conf,
 	return ops[idx].setup(conf, step, cli, msg);
 }
 
-extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step)
+extern void runtime_g_cleanup(const int idx, slurmd_conf_t *conf,
+			      stepd_step_rec_t *step)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
-	ops[RUNTIME_IDX_DEFAULT].cleanup(conf, step);
+	xassert(idx > RUNTIME_IDX_INVALID);
+	xassert(idx < g_context_cnt);
+
+	ops[idx].cleanup(conf, step);
 }
 
 extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,

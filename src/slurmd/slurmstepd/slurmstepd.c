@@ -837,7 +837,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	 */
 	proctrack_g_destroy(step->cont_id);
 
-	runtime_g_cleanup(conf, step);
+	runtime_g_cleanup(RUNTIME_IDX_DEFAULT, conf, step);
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (namespace_g_stepd_delete(step))
