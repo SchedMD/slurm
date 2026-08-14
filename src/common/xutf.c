@@ -711,16 +711,11 @@ extern int slurm_read_utf8_character(const utf8_t *src, const utf8_t *end,
 		return EINVAL;
 	}
 
-	if ((*src >= 0) && (*src <= 0x7F)) {
+	if ((*src & 0x80) == 0x00) {
 		/* ASCII: 0xxxxxxx */
 
 		bytes = 1;
 		utf = *src;
-	} else if ((*src & 0x80) == 0x00) {
-		/* 0xxxxxxx */
-
-		bytes = 1;
-		utf = *src & 0x7f;
 	} else if ((*src & 0xe0) == 0xc0) {
 		/* 110xxxxx	10xxxxxx */
 
