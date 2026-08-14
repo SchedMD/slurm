@@ -540,3 +540,20 @@ extern bool conmgr_is_quiesced(void)
 
 	return quiesced;
 }
+
+extern bool conmgr_is_shutdown(void)
+{
+	bool shutdown_requested;
+
+	slurm_mutex_lock(&mgr.mutex);
+	/*
+	 * mgr.shutdown_requested defaults to true (CONMGR_DEFAULT) and is only
+	 * cleared by conmgr_init(), so gate on mgr.initialized to report a real
+	 * request rather than the pre-init default (conmgr_request_shutdown()
+	 * likewise only takes effect once initialized).
+	 */
+	shutdown_requested = (mgr.initialized && mgr.shutdown_requested);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return shutdown_requested;
+}

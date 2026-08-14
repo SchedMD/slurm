@@ -1123,6 +1123,9 @@ extern void conmgr_unquiesce(const char *caller);
 /* True if conmgr is globally quiesced (or trying to quiesce) */
 extern bool conmgr_is_quiesced(void);
 
+/* True if a conmgr shutdown has been requested */
+extern bool conmgr_is_shutdown(void);
+
 /*
  * Link new reference to conmgr connection
  * Will ensure that connection will remain valid until released.
