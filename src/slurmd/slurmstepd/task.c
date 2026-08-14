@@ -510,7 +510,7 @@ extern void exec_task(int local_proc_id)
 			   step->node_name);
 	}
 
-	saved_errno = runtime_g_run(conf, step, task);
+	saved_errno = runtime_g_run(RUNTIME_IDX_DEFAULT, conf, step, task);
 
 	if (saved_errno == ESLURM_NOT_SUPPORTED) {
 		/* The runtime did not exec the task, so exec it here. */

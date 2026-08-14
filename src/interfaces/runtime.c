@@ -251,14 +251,16 @@ extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
 	ops[RUNTIME_IDX_DEFAULT].task_init(conf, step, task);
 }
 
-extern int runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			 stepd_step_task_info_t *task)
+extern int runtime_g_run(const int idx, slurmd_conf_t *conf,
+			 stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
 	int rc;
 
 	xassert(plugin_inited == PLUGIN_INITED);
+	xassert(idx > RUNTIME_IDX_INVALID);
+	xassert(idx < g_context_cnt);
 
-	rc = ops[RUNTIME_IDX_DEFAULT].run(conf, step, task);
+	rc = ops[idx].run(conf, step, task);
 
 	/* The plugin execs the task or returns ESLURM_NOT_SUPPORTED. */
 	xassert(rc != SLURM_SUCCESS);
