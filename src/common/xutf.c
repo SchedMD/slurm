@@ -41,6 +41,12 @@
 
 #include "src/common/xutf.h"
 
+/* The code point and byte checks below rely on the signedness and width here */
+_Static_assert((utf_code_t) -1 > 0, "utf_code_t must be unsigned");
+_Static_assert(sizeof(utf_code_t) == 4, "utf_code_t must be 32 bits");
+_Static_assert((utf8_t) -1 > 0, "utf8_t must be unsigned");
+_Static_assert(sizeof(utf8_t) == 1, "utf8_t must be 8 bits");
+
 /*
  * Alias the non-prefixed exported functions to slurm_-prefixed names so the
  * serializer plugin links against them via slurm_xlator.h. The macro-backed
