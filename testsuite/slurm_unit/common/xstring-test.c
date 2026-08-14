@@ -97,12 +97,64 @@ START_TEST(test_xstrtrim)
 }
 END_TEST
 
+START_TEST(test_try_xstrndup)
+{
+	char *str = NULL, *xstr = NULL;
+
+	ck_assert(try_xstrndup(NULL, 10) == NULL);
+
+	/* n larger than the string must copy the entire string */
+	str = try_xstrndup("abcdef", 10);
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "abcdef");
+	/* the result is always NUL terminated */
+	ck_assert_int_eq(xsize(str), 7);
+	xfree(str);
+
+	/* n smaller than the string must truncate the copy */
+	str = try_xstrndup("abcdef", 3);
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "abc");
+	ck_assert_int_eq(xsize(str), 4);
+	xfree(str);
+
+	/* copying must stop at the first NUL */
+	str = try_xstrndup("abc\0def", 7);
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "abc");
+	ck_assert_int_eq(xsize(str), 4);
+	xfree(str);
+
+	/* an empty string must not return NULL */
+	str = try_xstrndup("", 10);
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "");
+	xfree(str);
+
+	/* an n of zero must not return NULL */
+	str = try_xstrndup("abcdef", 0);
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "");
+	xfree(str);
+
+	/* results must match xstrndup() */
+	str = try_xstrndup("abcdef", 3);
+	xstr = xstrndup("abcdef", 3);
+	ck_assert_str_eq(str, xstr);
+	ck_assert_int_eq(xsize(str), xsize(xstr));
+	xfree(str);
+	xfree(xstr);
+}
+
+END_TEST
+
 Suite *xstring_suite(void)
 {
 	Suite *s = suite_create("xstring");
 	TCase *tc_core = tcase_create("Core");
 	tcase_add_loop_test(tc_core, test_xstrtrim, 0 , sizeof(xstrtrim_data) /
 			    sizeof(xstrtrim_data_t) );
+	tcase_add_test(tc_core, test_try_xstrndup);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
