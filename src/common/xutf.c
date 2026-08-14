@@ -270,9 +270,6 @@ extern bool slurm_is_utf8_newline(utf_code_t utf)
 		0x2029, /* PS (paragraph separator) */
 	};
 
-	if (utf < 0)
-		return false;
-
 	/*
 	 * Unicode 15.0.0: 5.8 Newline Guidelines gives these as
 	 * newlines:
