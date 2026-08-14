@@ -314,7 +314,7 @@ extern void exec_task(int local_proc_id)
 	int saved_errno, status;
 	uint32_t node_offset = 0, task_offset = 0;
 
-	runtime_g_task_init(conf, step, task);
+	runtime_g_task_init(RUNTIME_IDX_DEFAULT, conf, step, task);
 
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;

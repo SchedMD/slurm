@@ -96,8 +96,12 @@ extern int runtime_g_setup(const int idx, slurmd_conf_t *conf,
 extern void runtime_g_cleanup(const int idx, slurmd_conf_t *conf,
 			      stepd_step_rec_t *step);
 
-/* Prepare the runtime for the specified task. Runs in slurmstepd. */
-extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
+/*
+ * Prepare the runtime for the specified task. Runs in slurmstepd.
+ * IN idx - index of the loaded plugin to prepare
+ */
+extern void runtime_g_task_init(const int idx, slurmd_conf_t *conf,
+				stepd_step_rec_t *step,
 				stepd_step_task_info_t *task);
 
 /*

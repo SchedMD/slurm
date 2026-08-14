@@ -244,11 +244,15 @@ extern void runtime_g_cleanup(const int idx, slurmd_conf_t *conf,
 	ops[idx].cleanup(conf, step);
 }
 
-extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
+extern void runtime_g_task_init(const int idx, slurmd_conf_t *conf,
+				stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
-	ops[RUNTIME_IDX_DEFAULT].task_init(conf, step, task);
+	xassert(idx > RUNTIME_IDX_INVALID);
+	xassert(idx < g_context_cnt);
+
+	ops[idx].task_init(conf, step, task);
 }
 
 extern int runtime_g_run(const int idx, slurmd_conf_t *conf,
