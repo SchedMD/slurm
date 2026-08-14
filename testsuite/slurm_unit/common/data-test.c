@@ -31,10 +31,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <check.h>
+#include <inttypes.h>
+#include <math.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <check.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/data.h"
@@ -59,6 +62,102 @@
 				      "bool converted: %s -> %s == %s",     \
 				      str ? str : "(null)", (bres ? "true" : "false"), \
 				      (b ? "true" : "false"));              \
+	} while (0)
+
+/* Detected type of str must be a 64 bit integer holding value */
+#define check_convert_int(str, value) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_NONE); \
+		ck_assert_msg(type == DATA_TYPE_INT_64, \
+			      "convert \"%s\" -> %s, expected %s", str, \
+			      data_type_to_string(type), \
+			      data_type_to_string(DATA_TYPE_INT_64)); \
+		ck_assert_msg(data_get_int(d) == (value), \
+			      "convert \"%s\" -> %" PRId64 \
+			      ", expected %" PRId64, \
+			      str, data_get_int(d), (int64_t) (value)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Detected type of str must be exactly expected */
+#define check_convert_type(str, expected) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_NONE); \
+		ck_assert_msg(type == (expected), \
+			      "convert \"%s\" -> %s, expected %s", str, \
+			      data_type_to_string(type), \
+			      data_type_to_string(expected)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of str must be a 64 bit integer holding value */
+#define check_convert_forced_int(str, value) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg(type == DATA_TYPE_INT_64, \
+			      "force convert \"%s\" -> %s, expected %s", str, \
+			      data_type_to_string(type), \
+			      data_type_to_string(DATA_TYPE_INT_64)); \
+		ck_assert_msg(data_get_int(d) == (value), \
+			      "force convert \"%s\" -> %" PRId64 \
+			      ", expected %" PRId64, \
+			      str, data_get_int(d), (int64_t) (value)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of str must refuse to produce a 64 bit integer */
+#define check_convert_forced_not_int(str) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg( \
+			type != DATA_TYPE_INT_64, \
+			"force convert \"%s\" -> %s, expected any other type", \
+			str, data_type_to_string(type)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of float value must be a 64 bit integer expected */
+#define check_convert_float_to_int(value, expected) \
+	do { \
+		data_t *d = data_set_float(data_new(), value); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg(type == DATA_TYPE_INT_64, \
+			      "force convert float %f -> %s, expected %s", \
+			      (double) (value), data_type_to_string(type), \
+			      data_type_to_string(DATA_TYPE_INT_64)); \
+		ck_assert_msg(data_get_int(d) == (expected), \
+			      "force convert float %f -> %" PRId64 \
+			      ", expected %" PRId64, \
+			      (double) (value), data_get_int(d), \
+			      (int64_t) (expected)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Forced conversion of float value must refuse to produce an integer */
+#define check_convert_float_not_int(value) \
+	do { \
+		data_t *d = data_set_float(data_new(), value); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_INT_64); \
+		ck_assert_msg( \
+			type != DATA_TYPE_INT_64, \
+			"force convert float %f -> %s, expected any other type", \
+			(double) (value), data_type_to_string(type)); \
+		FREE_NULL_DATA(d); \
+	} while (0)
+
+/* Detected type of str must be anything but a 64 bit integer */
+#define check_convert_not_int(str) \
+	do { \
+		data_t *d = data_set_string(data_new(), str); \
+		data_type_t type = data_convert_type(d, DATA_TYPE_NONE); \
+		ck_assert_msg(type != DATA_TYPE_INT_64, \
+			      "convert \"%s\" -> %s, expected any other type", \
+			      str, data_type_to_string(type)); \
+		FREE_NULL_DATA(d); \
 	} while (0)
 
 static data_for_each_cmd_t
@@ -397,6 +496,96 @@ START_TEST(test_convert_list_dict)
 
 END_TEST
 
+START_TEST(test_data_move)
+{
+	data_t *src, *dst;
+
+	/* NULL destination is allocated by data_move() */
+	src = data_set_int(data_new(), 42);
+	dst = data_move(NULL, src);
+	ck_assert(dst != NULL);
+	ck_assert(data_get_type(dst) == DATA_TYPE_INT_64);
+	ck_assert_int_eq(data_get_int(dst), 42);
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* value transfers to the destination and empties the source */
+	src = data_set_string(data_new(), "tacos");
+	dst = data_new();
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_STRING);
+	ck_assert_str_eq(data_get_string(dst), "tacos");
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* an entire subtree moves in a single call */
+	src = data_set_list(data_new());
+	data_set_string(data_list_append(src), "taco1");
+	data_set_string(data_list_append(src), "taco2");
+	dst = data_new();
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_LIST);
+	ck_assert_int_eq(data_get_list_length(dst), 2);
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/*
+	 * A populated scalar destination is replaced. The string is longer
+	 * than the inline string buffer so that releasing the destination has
+	 * to free a heap allocation, which is the leak being fixed.
+	 */
+	dst = data_set_string(data_new(), "taco truck");
+	src = data_set_bool(data_new(), true);
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_BOOL);
+	ck_assert(data_get_bool(dst));
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* a populated list destination is released and replaced */
+	dst = data_set_list(data_new());
+	data_set_string(data_list_append(dst), "taco1");
+	data_set_string(data_list_append(dst), "taco2");
+	src = data_set_string(data_new(), "tacos");
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_STRING);
+	ck_assert_str_eq(data_get_string(dst), "tacos");
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* a populated dictionary destination is released and replaced */
+	dst = data_set_dict(data_new());
+	data_set_string(data_key_set(dst, "taco"), "tacos");
+	src = data_set_int(data_new(), -1);
+	ck_assert(data_move(dst, src) == dst);
+	ck_assert(data_get_type(dst) == DATA_TYPE_INT_64);
+	ck_assert_int_eq(data_get_int(dst), -1);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+
+	/* moving onto an existing key only replaces that entry */
+	dst = data_set_dict(data_new());
+	data_set_string(data_key_set(dst, "taco1"), "tacos");
+	data_set_list(data_key_set(dst, "taco2"));
+	data_set_string(data_list_append(data_key_get(dst, "taco2")), "tacos");
+	src = data_set_string(data_new(), "burrito");
+	ck_assert(data_move(data_key_set(dst, "taco2"), src) != NULL);
+	ck_assert_int_eq(data_get_dict_length(dst), 2);
+	ck_assert(data_get_type(data_key_get(dst, "taco2")) ==
+		  DATA_TYPE_STRING);
+	ck_assert_str_eq(data_get_string(data_key_get(dst, "taco2")),
+			 "burrito");
+	ck_assert_str_eq(data_get_string(data_key_get(dst, "taco1")), "tacos");
+	ck_assert(data_get_type(src) == DATA_TYPE_NULL);
+	FREE_NULL_DATA(dst);
+	FREE_NULL_DATA(src);
+}
+
+END_TEST
+
 START_TEST(test_detection)
 {
 	data_t *d = data_new();
@@ -415,6 +604,193 @@ START_TEST(test_detection)
 }
 END_TEST
 
+#ifndef NDEBUG
+START_TEST(test_data_move_null_src)
+{
+	data_t *dst = data_set_string(data_new(), "taco");
+
+	/* expect SIGABRT */
+	/* src must never be NULL */
+	data_move(dst, NULL);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
+#ifndef NDEBUG
+START_TEST(test_data_move_self)
+{
+	data_t *d = data_set_string(data_new(), "taco");
+
+	/* expect SIGABRT */
+	/*
+	 * dest must never be src: _release(dest) runs before the contents are
+	 * copied, so a self move would free what it is about to read.
+	 */
+	data_move(d, d);
+}
+
+END_TEST
+#endif /* !NDEBUG */
+
+START_TEST(test_convert_int)
+{
+	/*
+	 * Negative integers must detect as integers and not fall through to
+	 * the float converter, which silently loses precision beyond 2^53.
+	 */
+	check_convert_int("-1", -1);
+	check_convert_int("-100", -100);
+	check_convert_int("-0", 0);
+	check_convert_int("-1234567890123456789", -1234567890123456789LL);
+	check_convert_int("-9223372036854775807", -9223372036854775807LL);
+
+	/* Positive integers must keep working */
+	check_convert_int("1", 1);
+	check_convert_int("100", 100);
+	check_convert_int("1234567890123456789", 1234567890123456789LL);
+	check_convert_int("0", 0);
+	check_convert_int("9223372036854775807", 9223372036854775807LL);
+
+	/* The int64_t limits themselves must convert exactly */
+	check_convert_int("-9223372036854775808", INT64_MIN);
+	check_convert_int("9223372036854775807", INT64_MAX);
+	check_convert_int("+9223372036854775807", INT64_MAX);
+
+	/*
+	 * One past either limit must never be clamped into an integer:
+	 * reporting a successful conversion to a different number is worse
+	 * than not converting at all. Auto detection has no integer left to
+	 * detect, so the value goes on to the float converter rather than
+	 * being rejected outright.
+	 */
+	check_convert_type("-9223372036854775809", DATA_TYPE_FLOAT);
+	check_convert_type("9223372036854775808", DATA_TYPE_FLOAT);
+	check_convert_type("+9223372036854775808", DATA_TYPE_FLOAT);
+
+	/*
+	 * A forced conversion is where the rejection is observable, since
+	 * there is no float converter left to fall through to.
+	 */
+	check_convert_forced_int("42", 42);
+	check_convert_forced_int("  42", 42);
+	check_convert_forced_int("-9223372036854775808", INT64_MIN);
+	check_convert_forced_int("9223372036854775807", INT64_MAX);
+	check_convert_forced_not_int("-9223372036854775809");
+	check_convert_forced_not_int("9223372036854775808");
+	check_convert_forced_not_int("1a");
+
+	/*
+	 * A float outside the integer range must be refused too. lrint() is
+	 * undefined there and returns INT64_MIN, which consumers that store
+	 * into an unsigned field truncate to 0 - PARSE_FUNC(USER_ID) would
+	 * turn "9223372036854775808" into uid 0 rather than rejecting it.
+	 */
+	check_convert_float_not_int(9223372036854775808.0);
+	check_convert_float_not_int(-9223372036854777856.0);
+	check_convert_float_not_int(INFINITY);
+	check_convert_float_not_int(-INFINITY);
+	check_convert_float_not_int(NAN);
+
+	/* In range floats must still convert, rounding to nearest */
+	check_convert_float_to_int(1.5, 2);
+	check_convert_float_to_int(-1.5, -2);
+	check_convert_float_to_int(-9223372036854775808.0, INT64_MIN);
+	check_convert_float_to_int(9223372036854774784.0,
+				   9223372036854774784LL);
+
+	/*
+	 * A hex literal is a bit pattern, not a signed value: the whole
+	 * unsigned 64 bit range is accepted and reinterpreted as int64_t, so
+	 * anything above INT64_MAX reads back negative. The sentinels are
+	 * spelled this way, so these must keep converting to the same numbers
+	 * they always did.
+	 */
+	check_convert_int("0x0", 0);
+	check_convert_int("0x10", 16);
+	check_convert_int("0X10", 16);
+	check_convert_int("0x7FFFFFFFFFFFFFFF", INT64_MAX);
+	check_convert_int("0x8000000000000000", INT64_MIN);
+	check_convert_int("0xfffffffffffffffe", -2);
+	check_convert_int("0xFFFFFFFFFFFFFFFF", -1);
+
+	/*
+	 * Only a literal too wide for 64 bits is refused as an integer.
+	 * sscanf() saturated these to UINT64_MAX and reported a successful
+	 * conversion, so both used to read back as -1. Auto detection then
+	 * hands them to the float converter, whose "%lf" accepts C99 hex
+	 * float notation, so they land on float the same way an out of range
+	 * decimal does rather than staying a string.
+	 */
+	check_convert_type("0x10000000000000000", DATA_TYPE_FLOAT);
+	check_convert_type("0xffffffffffffffffffffffffff", DATA_TYPE_FLOAT);
+
+	/* A malformed literal is refused, as the trailing "%c" used to do */
+	check_convert_type("0x", DATA_TYPE_STRING);
+	check_convert_type("0x10z", DATA_TYPE_STRING);
+	check_convert_type("0x-10", DATA_TYPE_STRING);
+	check_convert_type("0x 10", DATA_TYPE_STRING);
+
+	/*
+	 * Neither a sign nor leading whitespace is part of the "0x" prefix,
+	 * so none of these reach the hex branch at all. The signed ones are
+	 * picked up by the float converter as hex floats; the whitespace one
+	 * is refused outright, unlike the decimal case above that strtoll()
+	 * accepts.
+	 */
+	check_convert_type("-0x10", DATA_TYPE_FLOAT);
+	check_convert_type("+0x10", DATA_TYPE_FLOAT);
+	check_convert_type(" 0x10", DATA_TYPE_STRING);
+	check_convert_forced_not_int("-0x10");
+	check_convert_forced_not_int(" 0x10");
+
+	/*
+	 * Pin hex float notation directly. It is what the too wide literals
+	 * above land on, so if "%lf" ever stopped accepting it those cases
+	 * would start failing for a reason that has nothing to do with them.
+	 */
+	check_convert_type("0x1.8", DATA_TYPE_FLOAT);
+	check_convert_forced_not_int("0x1.8");
+
+	/* The hex branch runs before the digit scan, so force agrees */
+	check_convert_forced_int("0x10", 16);
+	check_convert_forced_int("0xFFFFFFFFFFFFFFFF", -1);
+	check_convert_forced_not_int("0x10000000000000000");
+	check_convert_forced_not_int("0x");
+
+	/* A sign alone or in any other position is not an integer */
+	check_convert_not_int("-");
+	check_convert_not_int("--1");
+	check_convert_not_int("1-2");
+	check_convert_not_int("1-");
+	check_convert_not_int("-1a");
+	check_convert_not_int("- 1");
+	check_convert_not_int("+");
+	check_convert_not_int("++1");
+	check_convert_not_int("1+2");
+	check_convert_not_int("1+");
+	check_convert_not_int("+1a");
+
+	/* An explicit '+' is accepted, the same as an explicit '-' */
+	check_convert_int("+1", 1);
+	check_convert_int("+100", 100);
+	check_convert_int("+0", 0);
+	check_convert_int("+1234567890123456789", 1234567890123456789LL);
+	check_convert_int("+9223372036854775807", 9223372036854775807LL);
+
+	/* Trailing non-digits are not integers */
+	check_convert_not_int("1a");
+
+	/* Signed non-integers must still reach the float converter */
+	check_convert_type("-1.5", DATA_TYPE_FLOAT);
+	check_convert_type("-0.0", DATA_TYPE_FLOAT);
+	check_convert_type("1.5", DATA_TYPE_FLOAT);
+	check_convert_type("0.0", DATA_TYPE_FLOAT);
+	check_convert_type("+1.5", DATA_TYPE_FLOAT);
+}
+
+END_TEST
+
 Suite *suite_data(void)
 {
 	Suite *s = suite_create("Data");
@@ -425,10 +801,26 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_dict_iteration);
 	tcase_add_test(tc_core, test_list_iteration);
 	tcase_add_test(tc_core, test_convert_list_dict);
+	tcase_add_test(tc_core, test_data_move);
+	tcase_add_test(tc_core, test_convert_int);
 
 	suite_add_tcase(s, tc_core);
 	return s;
 }
+
+#ifndef NDEBUG
+static Suite *_suite_data_assert(void)
+{
+	Suite *s = suite_create("Data_assert");
+	TCase *tc_core = tcase_create("Data_assert");
+
+	tcase_add_test_raise_signal(tc_core, test_data_move_null_src, SIGABRT);
+	tcase_add_test_raise_signal(tc_core, test_data_move_self, SIGABRT);
+
+	suite_add_tcase(s, tc_core);
+	return s;
+}
+#endif /* !NDEBUG */
 
 int main(void)
 {
@@ -445,6 +837,16 @@ int main(void)
 	log_init("data-test", log_opts, 0, NULL);
 
 	SRunner *sr = srunner_create(suite_data());
+
+#ifdef NDEBUG
+	printf("Can't perform assert tests with NDEBUG set.\n");
+#else
+	/* assert tests can only be run in forking mode */
+	if (srunner_fork_status(sr) == CK_FORK)
+		srunner_add_suite(sr, _suite_data_assert());
+	else
+		printf("Skipping assert tests since not in forking mode.\n");
+#endif
 
 	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
