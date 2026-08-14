@@ -307,17 +307,17 @@ extern int slurm_read_utf8_character(const utf8_t *src, const utf8_t *end,
  * IN end - ptr to end of string
  * IN/OUT utf_ptr - ptr to populate with utf code or UTF_REPLACEMENT_CODE or \0
  * IN/OUT bytes_ptr - ptr to populate with number of bytes of character read
- * IN check_valid - check if resultant utf code is a valid code, otherwise limit
+ * IN validate - check if resultant utf code is a valid code, otherwise limit
  *	sanity checking to unparsable codes
  * RET SLURM_SUCCESS or error
  */
-#define utf8_read_character(src, end, utf_ptr, bytes_ptr, check_valid) \
+#define utf8_read_character(src, end, utf_ptr, bytes_ptr, validate) \
 	(((src) && ((src) < (end)) && ((src)[0] > 0) && \
 	  ((src)[0] <= UTF_ASCII_MAX_CODE)) ? \
 		 ((*(utf_ptr) = (src)[0]), (*(bytes_ptr) = 1), \
 		  SLURM_SUCCESS) : \
 		 slurm_read_utf8_character((src), (end), (utf_ptr), \
-					   (bytes_ptr), (check_valid)))
+					   (bytes_ptr), (validate)))
 
 /*
  * Set dst with multibyte UTF-8 character
