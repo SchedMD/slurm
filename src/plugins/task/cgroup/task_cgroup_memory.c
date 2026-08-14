@@ -54,7 +54,7 @@ static uint64_t max_swap;       /* Upper bound for swap */
 static uint64_t totalram;       /* Total RealMemory of node from slurm.conf */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value */
 
-static bool oom_mgr_started = false;
+static bool oom_inited = false;
 
 static uint64_t percent_in_bytes(uint64_t mb, float percent)
 {
@@ -242,8 +242,8 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *step)
 	if (_memcg_initialize(step, step->step_mem, true) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (cgroup_g_step_start_oom_mgr(step) == SLURM_SUCCESS)
-		oom_mgr_started = true;
+	if (cgroup_g_step_init_oom(step) == SLURM_SUCCESS)
+		oom_inited = true;
 
 	/* Attach the slurmstepd to the step memory cgroup. */
 	pid = getpid();
@@ -255,10 +255,10 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 	cgroup_oom_t *results;
 	int rc = SLURM_SUCCESS;
 
-	if (!oom_mgr_started)
+	if (!oom_inited)
 		return SLURM_SUCCESS;
 
-	results = cgroup_g_step_stop_oom_mgr(step);
+	results = cgroup_g_step_get_oom(step);
 
 	if (results == NULL)
 		return SLURM_ERROR;

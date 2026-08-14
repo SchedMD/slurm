@@ -2681,7 +2681,7 @@ fail:
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
+extern int cgroup_p_step_init_oom(stepd_step_rec_t *step)
 {
 	/* Only set the memory.oom.group if needed. */
 	if (step->oom_kill_step) {
@@ -2698,7 +2698,7 @@ extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
+extern cgroup_oom_t *cgroup_p_step_get_oom(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *oom_step_results = NULL;
 	uint64_t job_kills = 0, step_kills = 0;

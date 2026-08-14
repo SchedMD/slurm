@@ -71,8 +71,8 @@ typedef struct {
         int	(*constrain_apply)	(cgroup_ctl_type_t sub,
                                          cgroup_level_t level,
                                          uint32_t task_id);
-	int	(*step_start_oom_mgr)	(stepd_step_rec_t *step);
-	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *step);
+	int (*step_init_oom)(stepd_step_rec_t *step);
+	cgroup_oom_t *(*step_get_oom)(stepd_step_rec_t *step);
 	int	(*task_addto)		(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *step, pid_t pid,
 					 uint32_t task_id);
@@ -111,8 +111,8 @@ static const char *syms[] = {
 	"cgroup_p_constrain_get",
 	"cgroup_p_constrain_set",
 	"cgroup_p_constrain_apply",
-	"cgroup_p_step_start_oom_mgr",
-	"cgroup_p_step_stop_oom_mgr",
+	"cgroup_p_step_init_oom",
+	"cgroup_p_step_get_oom",
 	"cgroup_p_task_addto",
 	"cgroup_p_task_get_acct_data",
 	"cgroup_p_job_get_acct_data",
@@ -1030,17 +1030,17 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
 	return (*(ops.constrain_apply))(sub, level, task_id);
 }
 
-extern int cgroup_g_step_start_oom_mgr(stepd_step_rec_t *step)
+extern int cgroup_g_step_init_oom(stepd_step_rec_t *step)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.step_start_oom_mgr))(step);
+	return (*(ops.step_init_oom))(step);
 }
 
-extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
+extern cgroup_oom_t *cgroup_g_step_get_oom(stepd_step_rec_t *step)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
@@ -1049,7 +1049,7 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
 		return empty_oom;
 	}
 
-	return (*(ops.step_stop_oom_mgr))(step);
+	return (*(ops.step_get_oom))(step);
 }
 
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,

@@ -1170,7 +1170,7 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
     return SLURM_SUCCESS;
 }
 
-extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
+extern int cgroup_p_step_init_oom(stepd_step_rec_t *step)
 {
 	char *event_file = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1236,7 +1236,7 @@ static int _get_oom_kill_from_file(xcgroup_t *cg)
 	return SLURM_SUCCESS;
 }
 
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
+extern cgroup_oom_t *cgroup_p_step_get_oom(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results = NULL;
 	cgroup_ctl_type_t ctl = CG_MEMORY;

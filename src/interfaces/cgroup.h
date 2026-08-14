@@ -364,7 +364,7 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
  * IN job - Step record.
  * RET SLURM_SUCCESS if initialization was correct, SLURM_ERROR otherwise.
  */
-extern int cgroup_g_step_start_oom_mgr(stepd_step_rec_t *step);
+extern int cgroup_g_step_init_oom(stepd_step_rec_t *step);
 
 /*
  * Get the OOM information from cgroup.
@@ -375,7 +375,7 @@ extern int cgroup_g_step_start_oom_mgr(stepd_step_rec_t *step);
  * IN job - Step record.
  * RET cgroup_oom_t - Struct containing the oom information for this step.
  */
-extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step);
+extern cgroup_oom_t *cgroup_g_step_get_oom(stepd_step_rec_t *step);
 
 /*
  * Add a task_X directories to the specified controllers of this step and
