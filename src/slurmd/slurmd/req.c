@@ -4788,7 +4788,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 		 */
 		pause_for_job_completion(&req->step_id, 0,
 					 (slurm_conf.prolog_flags &
-					  PROLOG_FLAG_RUN_IN_JOB));
+					  PROLOG_FLAG_RUN_IN_JOB),
+					 true);
 	}
 
 	/*
@@ -4998,7 +4999,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	delay = MAX(slurm_conf.kill_wait, 5);
 	if (!pause_for_job_completion(&req->step_id, delay,
 				      (slurm_conf.prolog_flags &
-				       PROLOG_FLAG_RUN_IN_JOB)) &&
+				       PROLOG_FLAG_RUN_IN_JOB),
+				      true) &&
 	    terminate_all_steps(&req->step_id, true,
 				!(slurm_conf.prolog_flags &
 				  PROLOG_FLAG_RUN_IN_JOB))) {
@@ -5007,7 +5009,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		 */
 		pause_for_job_completion(&req->step_id, 0,
 					 (slurm_conf.prolog_flags &
-					  PROLOG_FLAG_RUN_IN_JOB));
+					  PROLOG_FLAG_RUN_IN_JOB),
+					 true);
 	}
 
 	/*

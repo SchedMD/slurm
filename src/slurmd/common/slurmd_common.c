@@ -38,6 +38,8 @@
 #include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/prep.h"
 
 #include "src/slurmd/common/slurmd_common.h"
@@ -215,7 +217,7 @@ static bool _is_job_running(slurm_step_id_t *step_id, bool ignore_extern)
  *  Returns true if all job processes are gone
  */
 extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
-				     bool ignore_extern)
+				     bool ignore_extern, bool skip_on_shutdown)
 {
 	int sec = 0;
 	int pause = 1;
@@ -226,6 +228,21 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 		rc = _is_job_running(step_id, ignore_extern);
 		if (!rc)
 			break;
+		/*
+		 * If slurmd is shutting down, stop waiting for the step so
+		 * the terminate/abort handler can return and slurmd can
+		 * exit. The step's slurmstepd survives slurmd and delivers
+		 * its completion once slurmctld is back.
+		 * Only slurmd's handlers set skip_on_shutdown; slurmstepd's
+		 * callers pass false (it also links conmgr and requests a
+		 * conmgr shutdown on its own signals, so this must not key
+		 * off conmgr_is_shutdown() alone there).
+		 */
+		if (skip_on_shutdown && conmgr_is_shutdown()) {
+			debug("Stopped waiting for %pI: slurmd shutting down",
+			      step_id);
+			break;
+		}
 		if ((max_time == 0) && (sec > 1)) {
 			terminate_all_steps(step_id, true, !ignore_extern);
 		}
