@@ -1506,6 +1506,15 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg, int runtime_idx)
 		break;
 	}
 
+	/*
+	 * The runtime does not change for the life of the step, so record it as
+	 * soon as the step record exists. The batch setup paths can fail with
+	 * the record still allocated, and stepd_cleanup() runs on it - it must
+	 * find the plugin that was loaded, not RUNTIME_IDX_INVALID.
+	 */
+	if (step)
+		step->runtime_idx = runtime_idx;
+
 	if (rc) {
 		error("%s: %s", __func__, slurm_strerror(rc));
 		return rc;
@@ -1548,8 +1557,6 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg, int runtime_idx)
 	}
 
 	set_msg_node_id();
-
-	step->runtime_idx = runtime_idx;
 
 	if ((rc = runtime_g_setup(step->runtime_idx, conf, step, cli, msg))) {
 		error("%s: runtime setup failed: %s",
