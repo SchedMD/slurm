@@ -3027,6 +3027,8 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_THREAD_ID       6
 #define LOG_FMT_RFC3339         7
 #define LOG_FMT_OMIT 8
+/* Default timestamp format */
+#define LOG_FMT_DEFAULT LOG_FMT_ISO8601_MS
 
 /*
  * If adding to slurm_conf_t contents that need to be used in the slurmstepd

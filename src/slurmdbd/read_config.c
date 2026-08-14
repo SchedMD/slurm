@@ -400,7 +400,7 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		/* Default log time format */
-		slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
+		slurm_conf.log_fmt = LOG_FMT_DEFAULT;
 		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
 			if (xstrcasestr(temp_str, "iso8601_ms"))
 				slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
