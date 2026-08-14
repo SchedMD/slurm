@@ -207,9 +207,6 @@ extern bool slurm_is_utf8_control(utf_code_t utf)
 		0x3164, /* hangul filler */
 	};
 
-	if (utf < 0)
-		return false;
-
 #ifndef NDEBUG
 	/*
 	 * Wrapping macro will have already check ASCII so just verify it didn't
@@ -224,7 +221,7 @@ extern bool slurm_is_utf8_control(utf_code_t utf)
 	 *	ISO/IEC 2022 framework. The ranges of these code points are
 	 *	U+0000..U+001F, U+007F, and U+0080..U+009F
 	 */
-	xassert(!((utf >= 0) && (utf <= 0x8)));
+	xassert(utf > 0x8);
 	/*
 	 * We are just going to pretend these are not control codes:
 	 *	TAB (horizontal tab)
