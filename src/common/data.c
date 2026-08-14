@@ -2216,27 +2216,28 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_get_int(b));
 		return rc;
 	case TYPE_FLOAT:
-		if (!(rc = (data_get_float(a) == data_get_float(b))) ||
-		    !(rc = fuzzy_equal(data_get_float(a), data_get_float(b)))) {
-			if (isnan(data_get_float(a)) ==
-			    isnan(data_get_float(a)))
-				rc = true;
-			else if (signbit(data_get_float(a)) !=
-				 signbit(data_get_float(b)))
-				rc = false;
-			else if (isinf(data_get_float(a)) !=
-				 isinf(data_get_float(b)))
-				rc = false;
-			else
-				rc = false;
-		}
+	{
+		const double x = data_get_float(a), y = data_get_float(b);
+
+		/*
+		 * NaN never compares equal to itself, so it has to be matched
+		 * explicitly. Infinities only match when they share a sign.
+		 * Everything else matches exactly or within tolerance.
+		 */
+		if (isnan(x) || isnan(y))
+			rc = (isnan(x) && isnan(y));
+		else if (isinf(x) || isinf(y))
+			rc = (isinf(x) && isinf(y) &&
+			      (signbit(x) == signbit(y)));
+		else
+			rc = ((x == y) || fuzzy_equal(x, y));
 
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%e %s %s(0x%"PRIXPTR")=%e",
-			 _type_to_string(a->type), (uintptr_t) a,
-			 data_get_float(a), (rc ? "=" : "!="),
-			 _type_to_string(b->type), (uintptr_t) b,
-			 data_get_float(b));
+			 _type_to_string(a->type), (uintptr_t) a, x,
+			 (rc ? "=" : "!="),
+			 _type_to_string(b->type), (uintptr_t) b, y);
 		return rc;
+	}
 	case TYPE_DICT:
 		rc = _data_match_dict(a, b, mask);
 		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
