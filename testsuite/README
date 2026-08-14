@@ -978,7 +978,8 @@ test_128_4   Test hetjob REQUEUE/CANCEL preemption, as victim and as preemptor
 test_128_5   Test hetjob mixed-mode components resolve REQUEUE then CANCEL, and per-component GraceTime
 test_128_6   Test hetjob preemption under preempt/qos: SUSPEND exemption, mode resolution, component eligibility
 test_128_7   Test hetjob is excluded from oversubscription while GANG is enabled
-test_128_8   Test GraceTime+PreemptMode=REQUEUE does not requeue a successful restarted job
+test_128_8   Test GraceTime+PreemptMode=REQUEUE under preempt/partition_prio does not requeue a successful restarted job
+test_128_9   Test GraceTime+PreemptMode=REQUEUE under preempt/qos does not requeue a successful restarted job
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
