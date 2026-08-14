@@ -185,9 +185,15 @@ typedef struct {
 } foreach_pack_resv_t;
 
 typedef struct {
-	bitstr_t *maint_node_bitmap;
+	bool changed;
+	bitstr_t *maint_bitmap;
+	time_t now;
+	bitstr_t *res_bitmap;
+	int res_start_cnt;
+	char **resv_names;
+	bool run_scripts;
 	slurmctld_resv_t *skip_resv_ptr;
-} foreach_or_maint_bitmaps_t;
+} foreach_resv_want_t;
 
 typedef struct {
 	resv_desc_msg_t *resv_desc_ptr;
@@ -281,10 +287,8 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
-static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
-			     uint32_t flags, bool reset_all,
-			     bitstr_t *node_down_bitmap);
-static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap);
+static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap,
+				slurmctld_resv_t *skip_resv_ptr);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -3649,14 +3653,8 @@ static int _delete_resv_internal(slurmctld_resv_t *resv_ptr,
 	if (_is_resv_used(resv_ptr))
 		return ESLURM_RESERVATION_BUSY;
 
-	if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) {
-		time_t now = time(NULL);
-		resv_ptr->ctld_flags &= (~RESV_CTLD_NODE_FLAGS_SET);
-		_set_nodes_flags(resv_ptr, now,
-				 (NODE_STATE_RES | NODE_STATE_MAINT), false,
-				 node_down_bitmap);
-		last_node_update = now;
-	}
+	if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
+		(void) _set_node_maint_mode(false, node_down_bitmap, resv_ptr);
 
 	return _post_resv_delete(resv_ptr);
 }
@@ -5016,7 +5014,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					 resv_ptr);
 
 	_del_resv_rec(resv_backup);
-	(void) _set_node_maint_mode(true, node_down_bitmap);
+	(void) _set_node_maint_mode(true, node_down_bitmap, NULL);
 
 	_flush_node_down_cache(node_down_bitmap, now);
 	FREE_NULL_BITMAP(node_down_bitmap);
@@ -8825,98 +8823,162 @@ extern int send_resvs_to_accounting(int db_rc)
 	return SLURM_SUCCESS;
 }
 
+/* Record the nodes an active reservation wants, and claim their names. */
+static void _resv_want_nodes(slurmctld_resv_t *resv_ptr,
+			     foreach_resv_want_t *args)
+{
+	node_record_t *node_ptr;
+
+	if (!resv_ptr->node_bitmap) {
+		if (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
+			error("%s: reservation %s lacks a bitmap",
+			      __func__, resv_ptr->name);
+		}
+		return;
+	}
+	if (!bit_set_count(resv_ptr->node_bitmap)) {
+		if (!(resv_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
+			error("%s: reservation %s includes no nodes",
+			      __func__, resv_ptr->name);
+		}
+		return;
+	}
+
+	bit_or(args->res_bitmap, resv_ptr->node_bitmap);
+	if (resv_ptr->flags & RESERVE_FLAG_MAINT)
+		bit_or(args->maint_bitmap, resv_ptr->node_bitmap);
+
+	/*
+	 * Record which reservation wants this node's name; do not write
+	 * node_ptr->resv_name here. A node covered by more than one active
+	 * reservation would otherwise be rewritten once per covering
+	 * reservation on every call, and never settle on a fixed value, so
+	 * args->changed would always end up true. Applying the final,
+	 * converged name happens once per node after every reservation has
+	 * been visited.
+	 */
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap, &i)); i++)
+		args->resv_names[node_ptr->index] = resv_ptr->name;
+}
+
+/* Runs under a resv_list read lock. Do not use resv_list here. */
+static int _foreach_resv_want(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	foreach_resv_want_t *args = arg;
+
+	if (resv_ptr == args->skip_resv_ptr) {
+		resv_ptr->ctld_flags &= (~RESV_CTLD_NODE_FLAGS_SET);
+		return 0;
+	}
+
+	if ((args->now >= resv_ptr->start_time) &&
+	    (args->now < resv_ptr->end_time)) {
+		resv_ptr->ctld_flags |= RESV_CTLD_NODE_FLAGS_SET;
+		_resv_want_nodes(resv_ptr, args);
+	} else {
+		resv_ptr->ctld_flags &= (~RESV_CTLD_NODE_FLAGS_SET);
+	}
+
+	if (!args->run_scripts)
+		return 0;
+
+	if ((resv_ptr->start_time <= args->now) &&
+	    !(resv_ptr->ctld_flags & RESV_CTLD_PROLOG)) {
+		args->res_start_cnt++;
+		resv_ptr->ctld_flags |= RESV_CTLD_PROLOG;
+		_run_script(slurm_conf.resv_prolog, resv_ptr, false);
+	}
+	if ((resv_ptr->end_time <= args->now) &&
+	    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG)) {
+		resv_ptr->ctld_flags |= RESV_CTLD_EPILOG;
+		_run_script(slurm_conf.resv_epilog, resv_ptr, true);
+	}
+
+	return 0;
+}
+
 /*
  * Set or clear NODE_STATE_MAINT for node_state as needed
  * IN reset_all - if true, then re-initialize all node information for all
  *	reservations, but do not run any prologs or epilogs or count started
  *	reservations
+ * IN skip_resv_ptr - if set, treat this reservation as inactive and run no
+ *	prologs or epilogs, regardless of reset_all. Used when deleting a
+ *	reservation that is still in resv_list.
  * RET count of newly started reservations
  */
-static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap)
+static int _set_node_maint_mode(bool reset_all, bitstr_t *node_down_bitmap,
+				slurmctld_resv_t *skip_resv_ptr)
 {
-	int i, res_start_cnt = 0;
 	node_record_t *node_ptr;
-	uint32_t flags;
-	list_itr_t *iter;
-	slurmctld_resv_t *resv_ptr;
-	time_t now = time(NULL);
+	foreach_resv_want_t args = {
+		.run_scripts = (!reset_all && !skip_resv_ptr),
+		.skip_resv_ptr = skip_resv_ptr,
+	};
 
 	xassert(node_down_bitmap);
 
 	if (!resv_list)
-		return res_start_cnt;
+		return 0;
 
-	flags = NODE_STATE_RES;
-	if (reset_all)
-		flags |= NODE_STATE_MAINT;
-	for (i = 0; (node_ptr = next_node(&i)); i++)
-		node_ptr->node_state &= (~flags);
+	args.now = time(NULL);
+	args.res_bitmap = bit_alloc(node_record_count);
+	args.maint_bitmap = bit_alloc(node_record_count);
+	args.resv_names = xcalloc(node_record_count, sizeof(char *));
 
-	if (!reset_all) {
-		/*
-		 * NODE_STATE_RES already cleared above, clear
-		 * RESERVE_FLAG_MAINT for expired reservations. This needs to
-		 * be an iterator since the loop body calls _set_nodes_flags()
-		 * which iterates resv_list itself.
-		 */
-		iter = list_iterator_create(resv_list);
-		while ((resv_ptr = list_next(iter))) {
-			if ((resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) &&
-			    (resv_ptr->flags & RESERVE_FLAG_MAINT) &&
-			    ((now <  resv_ptr->start_time) ||
-			     (now >= resv_ptr->end_time  ))) {
-				flags = NODE_STATE_MAINT;
-				resv_ptr->ctld_flags &=
-					(~RESV_CTLD_NODE_FLAGS_SET);
-				_set_nodes_flags(resv_ptr, now, flags,
-						 reset_all, node_down_bitmap);
-				last_node_update = now;
+	list_for_each_ro(resv_list, _foreach_resv_want, &args);
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
+		uint32_t old_state = node_ptr->node_state;
+		bool reserved = bit_test(args.res_bitmap, node_ptr->index);
+		bool notify;
+
+		if (reserved)
+			node_ptr->node_state |= NODE_STATE_RES;
+		else
+			node_ptr->node_state &= (~NODE_STATE_RES);
+
+		if (bit_test(args.maint_bitmap, node_ptr->index))
+			node_ptr->node_state |= NODE_STATE_MAINT;
+		else
+			node_ptr->node_state &= (~NODE_STATE_MAINT);
+
+		if (old_state != node_ptr->node_state)
+			args.changed = true;
+
+		/* Mark down if maint changed. reset_all uses membership. */
+		notify = reset_all ? reserved :
+				     (((old_state ^ node_ptr->node_state) &
+				       NODE_STATE_MAINT) != 0);
+		if (notify &&
+		    (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
+		     IS_NODE_FAIL(node_ptr)))
+			bit_set(node_down_bitmap, node_ptr->index);
+
+		if (!reserved) {
+			if (node_ptr->resv_name) {
+				xfree(node_ptr->resv_name);
+				args.changed = true;
 			}
-		}
-		list_iterator_destroy(iter);
-	}
-
-	/*
-	 * Set NODE_STATE_RES and possibly NODE_STATE_MAINT for nodes in all
-	 * currently active reservations. This needs to be an iterator since
-	 * the loop body calls _set_nodes_flags() which iterates resv_list
-	 * itself.
-	 */
-	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = list_next(iter))) {
-		if ((now >= resv_ptr->start_time) &&
-		    (now <  resv_ptr->end_time  )) {
-			flags = NODE_STATE_RES;
-			if (resv_ptr->flags & RESERVE_FLAG_MAINT)
-				flags |= NODE_STATE_MAINT;
-			resv_ptr->ctld_flags |= RESV_CTLD_NODE_FLAGS_SET;
-			_set_nodes_flags(resv_ptr, now, flags, reset_all,
-					 node_down_bitmap);
-			last_node_update = now;
-		}
-
-		if (reset_all)	/* Defer reservation prolog/epilog */
-			continue;
-		if ((resv_ptr->start_time <= now) &&
-		    !(resv_ptr->ctld_flags & RESV_CTLD_PROLOG)) {
-			res_start_cnt++;
-			resv_ptr->ctld_flags |= RESV_CTLD_PROLOG;
-			_run_script(slurm_conf.resv_prolog, resv_ptr, false);
-		}
-		if ((resv_ptr->end_time <= now) &&
-		    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG)) {
-			resv_ptr->ctld_flags |= RESV_CTLD_EPILOG;
-			_run_script(slurm_conf.resv_epilog, resv_ptr, true);
-		}
-	}
-	list_iterator_destroy(iter);
-
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!IS_NODE_RES(node_ptr))
+		} else if (xstrcmp(node_ptr->resv_name,
+				   args.resv_names[node_ptr->index])) {
 			xfree(node_ptr->resv_name);
+			node_ptr->resv_name =
+				xstrdup(args.resv_names[node_ptr->index]);
+			args.changed = true;
+		}
 	}
 
-	return res_start_cnt;
+	FREE_NULL_BITMAP(args.res_bitmap);
+	FREE_NULL_BITMAP(args.maint_bitmap);
+	xfree(args.resv_names);
+
+	if (args.changed)
+		last_node_update = args.now;
+
+	return args.res_start_cnt;
 }
 
 /*
@@ -8929,7 +8991,7 @@ extern int set_node_maint_mode(void)
 	int result = 0;
 	bitstr_t *node_down_bitmap = bit_alloc(node_record_count);
 
-	result = _set_node_maint_mode(false, node_down_bitmap);
+	result = _set_node_maint_mode(false, node_down_bitmap, NULL);
 	_flush_node_down_cache(node_down_bitmap, now);
 
 	FREE_NULL_BITMAP(node_down_bitmap);
@@ -9045,82 +9107,6 @@ extern bool job_uses_max_start_delay_resv(job_record_t *job_ptr)
 	    job_ptr->resv_ptr->node_bitmap)
 		return true;
 	return false;
-}
-
-static int _foreach_or_maint_bitmaps(void *x, void *arg)
-{
-	slurmctld_resv_t *resv2_ptr = x;
-	foreach_or_maint_bitmaps_t *args = arg;
-
-	if ((resv2_ptr != args->skip_resv_ptr) &&
-	    (resv2_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) &&
-	    (resv2_ptr->flags & RESERVE_FLAG_MAINT) &&
-	    resv2_ptr->node_bitmap)
-		bit_or(args->maint_node_bitmap, resv2_ptr->node_bitmap);
-
-	return 0;
-}
-
-static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
-			     uint32_t flags, bool reset_all,
-			     bitstr_t *node_down_bitmap)
-{
-	node_record_t *node_ptr;
-	uint32_t old_state;
-	bitstr_t *maint_node_bitmap = NULL;
-
-	xassert(node_down_bitmap);
-
-	if (!resv_ptr->node_bitmap) {
-		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
-			error("%s: reservation %s lacks a bitmap",
-			      __func__, resv_ptr->name);
-		}
-		return;
-	}
-
-	if (!bit_set_count(resv_ptr->node_bitmap)) {
-		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
-			error("%s: reservation %s includes no nodes",
-			      __func__, resv_ptr->name);
-		}
-		return;
-	}
-
-	if (!(resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) && !reset_all &&
-	    (resv_ptr->flags & RESERVE_FLAG_MAINT)) {
-		foreach_or_maint_bitmaps_t bitmaps_args = {
-			.maint_node_bitmap = bit_alloc(node_record_count),
-			.skip_resv_ptr = resv_ptr,
-		};
-		maint_node_bitmap = bitmaps_args.maint_node_bitmap;
-		list_for_each_ro(resv_list, _foreach_or_maint_bitmaps,
-				 &bitmaps_args);
-	}
-
-	for (int i = 0;
-	     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap, &i)); i++) {
-		old_state = node_ptr->node_state;
-		if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
-			node_ptr->node_state |= flags;
-		else if (!maint_node_bitmap || !bit_test(maint_node_bitmap, i))
-			node_ptr->node_state &= (~flags);
-		/* mark that this node is now down if maint mode flag changed */
-		bool state_change = ((old_state ^ node_ptr->node_state) &
-				     NODE_STATE_MAINT) || reset_all;
-		if (state_change && (IS_NODE_DOWN(node_ptr) ||
-				    IS_NODE_DRAIN(node_ptr) ||
-				    IS_NODE_FAIL(node_ptr))) {
-			bit_set(node_down_bitmap, i);
-		}
-		if (!IS_NODE_RES(node_ptr)) {
-			xfree(node_ptr->resv_name);
-		} else if (xstrcmp(node_ptr->resv_name, resv_ptr->name)) {
-			xfree(node_ptr->resv_name);
-			node_ptr->resv_name = xstrdup(resv_ptr->name);
-		}
-	}
-	FREE_NULL_BITMAP(maint_node_bitmap);
 }
 
 extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req)
