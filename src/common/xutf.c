@@ -630,7 +630,7 @@ extern int slurm_write_utf8_character(const utf_code_t utf, utf8_t *dst,
 			    slurm_strerror(rc));
 		return slurm_write_utf8_character(UTF_REPLACEMENT_CODE, dst,
 						  bytes_ptr, log);
-	} else if ((utf >= 0) && (utf <= 0x7F)) {
+	} else if (utf <= 0x7F) {
 		/* UTF8 below 128 is same as ASCII */
 		dst[0] = utf & 0x7F;
 		*bytes_ptr = 1;
