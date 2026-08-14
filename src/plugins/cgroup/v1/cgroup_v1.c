@@ -63,7 +63,6 @@ const char *g_cg_name[CG_CTL_CNT] = {
 };
 
 static bool oom_kill_active = false;
-static uint64_t oom_kill_count = 0;
 
 /* Task tracking artifacts */
 list_t *g_task_list[CG_CTL_CNT];
@@ -80,7 +79,7 @@ typedef struct {
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f);
 
 static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked);
-static int _get_oom_kill_from_file(xcgroup_t *cg);
+static int _get_oom_kill_from_file(xcgroup_t *cg, uint64_t *oom_kill_count);
 
 static int _cgroup_init(cgroup_ctl_type_t sub)
 {
@@ -263,12 +262,10 @@ end:
 static int _acct_task(void *x, void *arg)
 {
 	task_cg_info_t *t = (task_cg_info_t *) x;
-	cgroup_ctl_type_t *ctl = (cgroup_ctl_type_t *) arg;
+	uint64_t *oom_kill_count = (uint64_t *) arg;
 
 	/* Before deleting the task we account for its oom_kill if needed. */
-	if (oom_kill_active &&
-	    (ctl && (*ctl == CG_MEMORY)))
-		_get_oom_kill_from_file(&t->task_cg);
+	_get_oom_kill_from_file(&t->task_cg, oom_kill_count);
 
 	return SLURM_SUCCESS;
 }
@@ -1210,7 +1207,7 @@ static uint64_t _failcnt(xcgroup_t *cg, char *param)
 	return value;
 }
 
-static int _get_oom_kill_from_file(xcgroup_t *cg)
+static int _get_oom_kill_from_file(xcgroup_t *cg, uint64_t *oom_kill_count)
 {
 	char *oom_control = NULL, *ptr;
 	size_t sz;
@@ -1230,7 +1227,7 @@ static int _get_oom_kill_from_file(xcgroup_t *cg)
 		xfree(oom_control);
 		log_flag(CGROUP, "Detected %"PRIu64" out-of-memory events in %s",
 			 local_oom_kill_cnt, cg->path);
-		oom_kill_count += local_oom_kill_cnt;
+		*oom_kill_count += local_oom_kill_cnt;
 	}
 
 	return SLURM_SUCCESS;
@@ -1239,7 +1236,7 @@ static int _get_oom_kill_from_file(xcgroup_t *cg)
 extern cgroup_oom_t *cgroup_p_step_get_oom(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results = NULL;
-	cgroup_ctl_type_t ctl = CG_MEMORY;
+	uint64_t oom_kill_count = 0;
 
 	if (!oom_kill_active)
 		return results;
@@ -1263,18 +1260,13 @@ extern cgroup_oom_t *cgroup_p_step_get_oom(stepd_step_rec_t *step)
 	results->job_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					    "memory.failcnt");
 
-	/*
-	 * Read oom_kill from the cgroup interface and accumulate the kills of
-	 * the step into the global counter which already contains the tasks'
-	 * kills.
-	 */
-	list_for_each(g_task_list[ctl], _acct_task, &ctl);
-	if (_get_oom_kill_from_file(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
-	    SLURM_SUCCESS) {
-		log_flag(CGROUP,
-			 "OOM events were not monitored for %ps",
-			 &step->step_id);
-	}
+	/* Read oom_kill from the tasks in g_task_list, they will accumulate */
+	list_for_each(g_task_list[CG_MEMORY], _acct_task, &oom_kill_count);
+
+	/* Finally add the oom_kill values from the step itself */
+	_get_oom_kill_from_file(&int_cg[CG_MEMORY][CG_LEVEL_STEP],
+				&oom_kill_count);
+
 	results->oom_kill_cnt = oom_kill_count;
 	common_cgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
 
