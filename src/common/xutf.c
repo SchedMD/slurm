@@ -343,9 +343,6 @@ extern bool slurm_is_utf8_space(utf_code_t utf)
 	 *	U+3000 ideographic space
 	 */
 
-	if (utf < 0)
-		return false;
-
 #ifndef NDEBUG
 	/*
 	 * Wrapping macro will have already check ASCII so just verify it didn't
