@@ -173,26 +173,17 @@ done:
 	return rc;
 }
 
-extern int runtime_g_init(const char *plugin_name, runtime_context_t context)
+extern int runtime_g_init(const char *plugin_name, runtime_context_t context,
+			  int *idx_ptr)
 {
-	int rc = EINVAL;
-	int idx = RUNTIME_IDX_INVALID;
-
-	if (plugin_inited != PLUGIN_NOT_INITED)
-		return SLURM_SUCCESS;
-
 	/*
-	 * _load_runtime() sets plugin_inited itself, under init_lock, so a
-	 * concurrent reader never observes it flip true before g_context_cnt
-	 * and ops[] are fully published.
+	 * _load_runtime() hands back the index of an already loaded plugin
+	 * rather than loading it twice, so repeating a name is harmless. It
+	 * also sets plugin_inited itself, under init_lock, so a concurrent
+	 * reader never observes it flip true before g_context_cnt/ops are
+	 * fully published.
 	 */
-	if ((rc = _load_runtime(plugin_name, context, &idx)))
-		return rc;
-
-	/* The first plugin loaded always lands on the default index. */
-	xassert(idx == RUNTIME_IDX_DEFAULT);
-
-	return SLURM_SUCCESS;
+	return _load_runtime(plugin_name, context, idx_ptr);
 }
 
 extern void runtime_g_fini(void)
