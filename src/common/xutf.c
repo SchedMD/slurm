@@ -405,7 +405,7 @@ extern int slurm_is_utf_valid(utf_code_t utf)
 		return ESLURM_UTF_NULL_CODE;
 	}
 
-	if ((utf < 0) || (utf > 0x10FFFF))
+	if (utf > 0x10FFFF)
 		/* outside of UTF codespace */
 		return ESLURM_UTF_INVALID_CODE;
 
