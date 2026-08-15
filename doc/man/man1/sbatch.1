@@ -1145,8 +1145,11 @@ The field \fItype\fR can be "memory".
 If \fItype\fR is not specified, the GPU frequency is implied.
 The \fIvalue\fR field can either be "low", "medium", "high", "highm1" or
 a numeric value in megahertz (MHz).
-If the specified numeric value is not possible, a value as close as
-possible will be used. See below for definition of the values.
+If the specified numeric value lies between two available frequencies, it is
+rounded up to the higher of the two.
+A value outside the available range is limited to the closest end of that
+range, either the highest or the lowest frequency.
+See below for definition of the values.
 The \fIverbose\fR option causes current GPU frequency information to be logged.
 Examples of use include "\-\-gpu\-freq=medium,memory=high" and
 "\-\-gpu\-freq=450".
