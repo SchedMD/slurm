@@ -5,10 +5,11 @@
 
 The hdf5 profile modules that import this library run a profiled job and
 assert against the same per-node profile files and the same sh5util CSV
-extraction, so the profile directories, the profile listing, the node
-profile poll, the merge, the schema check, and the extraction reader are
-collected here. Each module still pins its own cluster configuration, whose
-tracked TRES are what its own subject turns on, and judges its own columns.
+extraction, so the profile directories, the profiled job, the profile
+listing, the node profile poll, the merge, the schema check, the extraction
+reader, and the GPU column assert are collected here. Each module still pins
+its own cluster configuration, whose tracked TRES are what its own subject
+turns on, and judges its own columns.
 """
 
 import csv
@@ -37,6 +38,46 @@ def profile_user_dir(hdf5_dir):
     user, so a module lists the profiles of the user its jobs run as.
     """
     return hdf5_dir / atf.properties["test-user"]
+
+
+def run_profile_job(user_profile_dir, job_name):
+    """Run a profiled single-task step, yield its job id, then clean up.
+
+    Samples the task profile every 2 seconds over a 10 second step, so the
+    profile holds several samples for a caller to judge. Drives a
+    module-scoped fixture through yield from, and removes the job's node
+    profile files afterwards so the run leaves none behind.
+    """
+    job_id = atf.submit_job_srun(
+        f"--job-name={job_name} --mpi=none "
+        "--acctg-freq=task=2 --profile=task -t1 -N1 -n1 sleep 10",
+        fatal=True,
+    )
+
+    yield job_id
+
+    atf.run_command(
+        f"rm -f {user_profile_dir}/{job_id}_*.h5",
+        fatal=True,
+        quiet=True,
+    )
+
+
+def assert_gpu_columns_zero(rows):
+    """Require every profile sample to record both GPU columns as exactly 0.
+
+    The dataset defines GPUMemMB and GPUUtilization unconditionally, so every
+    sample carries both, and every sample, the first included, must map the
+    no-sample sentinel to 0. Two samples are still required so a series,
+    rather than a lone row, proves the mapping holds across polls.
+    """
+    assert len(rows) >= 2, f"Expected at least 2 samples, saw: {len(rows)} ({rows})"
+
+    for row in rows:
+        assert int(row["GPUMemMB"]) == 0, f"Nonzero GPUMemMB sample: {row}"
+        assert (
+            float(row["GPUUtilization"]) == 0.0
+        ), f"Nonzero GPUUtilization sample: {row}"
 
 
 def get_node_profiles(user_profile_dir, job_id):

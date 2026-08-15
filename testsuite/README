@@ -1210,6 +1210,7 @@ test_149_#   Testing AcctGatherProfileType.
 test_149_1   Test acct_gather_profile/influxdb
 test_149_2   Test acct_gather_profile/influxdb grouped fields and extra tags
 test_149_3   Test acct_gather_profile/hdf5 task profile consistency
+test_149_4   Test GPU profile columns stay zero without GPU usage samples
 
 test_150_#   Testing topology plugins.
 ================================
