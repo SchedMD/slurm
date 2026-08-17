@@ -498,13 +498,13 @@ int setup_env(env_t *env, bool preserve_env)
 		 * for the user and don't merit an error in the log if they
 		 * can't be set, so avoid calling setenvf().
 		 */
-		if (strlen(str_bind) >= MAX_ENV_STRLEN)
+		if (_env_check_len("SLURM_CPU_BIND", str_bind))
 			debug("Not setting SLURM_CPU_BIND: value too long");
 		else if (setenvf(&env->env, "SLURM_CPU_BIND", "%s", str_bind)) {
 			error("Unable to set SLURM_CPU_BIND");
 			rc = SLURM_ERROR;
 		}
-		if (strlen(str_bind_list) >= MAX_ENV_STRLEN)
+		if (_env_check_len("SLURM_CPU_BIND_LIST", str_bind_list))
 			debug("Not setting SLURM_CPU_BIND_LIST: value too long");
 		else if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", "%s",
 				 str_bind_list)) {
