@@ -49,9 +49,42 @@
 #define DEFAULT_FLUSH_TIMEOUT 500
 #define DEFAULT_POLL_INTERVAL 2
 
+typedef struct {
+	uint32_t event; /* jobcomp_event_t the topic maps to */
+	size_t offset; /* offset of the topic field in kafka_conf_t */
+	char *param; /* JobCompParams option name */
+	char *suffix; /* default topic name suffix, NULL for none */
+} kafka_topic_spec_t;
+
+static const kafka_topic_spec_t topic_specs[] = {
+	{
+		.event = JOBCOMP_EVENT_JOB_FINISH,
+		.offset = offsetof(kafka_conf_t, topic),
+		.param = "topic",
+	},
+	{
+		.event = JOBCOMP_EVENT_JOB_START,
+		.offset = offsetof(kafka_conf_t, topic_job_start),
+		.param = "topic_job_start",
+		.suffix = "job-start",
+	},
+};
+
 kafka_conf_t *kafka_conf = NULL;
 pthread_rwlock_t kafka_conf_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 list_t *rd_kafka_conf_list = NULL;
+
+/*
+ * Return a pointer to the kafka_conf topic field described by a topic spec.
+ * IN spec - entry from topic_specs[]
+ * RET pointer to the topic string field inside kafka_conf
+ *
+ * NOTE: Caller must acquire locks for kafka_conf_rwlock.
+ */
+static char **_topic_field(const kafka_topic_spec_t *spec)
+{
+	return (char **) (((char *) kafka_conf) + spec->offset);
+}
 
 static void _destroy_kafka_conf(void)
 {
@@ -61,8 +94,8 @@ static void _destroy_kafka_conf(void)
 		return;
 	}
 
-	xfree(kafka_conf->topic);
-	xfree(kafka_conf->topic_job_start);
+	for (int i = 0; i < ARRAY_SIZE(topic_specs); i++)
+		xfree(*_topic_field(&topic_specs[i]));
 	xfree(kafka_conf);
 	kafka_conf = NULL;
 	slurm_rwlock_unlock(&kafka_conf_rwlock);
@@ -141,10 +174,54 @@ static int _parse_uint32(uint32_t *result, char *key, const char *nptr)
 
 static void _validate_kafka_conf(void)
 {
-	if (kafka_conf->topic && kafka_conf->topic_job_start &&
-	    !xstrcmp(kafka_conf->topic, kafka_conf->topic_job_start))
-		warning("%s: JobCompParams 'topic' and 'topic_job_start' configured with same value '%s'. Use at your own risk.",
-			plugin_type, kafka_conf->topic);
+	for (int i = 0; i < ARRAY_SIZE(topic_specs); i++) {
+		char *topic_i = *_topic_field(&topic_specs[i]);
+
+		for (int j = (i + 1); j < ARRAY_SIZE(topic_specs); j++) {
+			char *topic_j = *_topic_field(&topic_specs[j]);
+
+			if (!topic_i || !topic_j || xstrcmp(topic_i, topic_j))
+				continue;
+
+			warning("%s: JobCompParams '%s' and '%s' configured with same value '%s'. Use at your own risk.",
+				plugin_type, topic_specs[i].param,
+				topic_specs[j].param, topic_i);
+		}
+	}
+}
+
+/*
+ * Parse the per-event topic names from JobCompParams.
+ * Topics not configured get their default name derived from ClusterName.
+ *
+ * NOTE: Caller must acquire write locks for kafka_conf_rwlock.
+ */
+static void _parse_topics(void)
+{
+	char *begin = NULL, *end = NULL, *key = NULL, *start = NULL;
+
+	for (int i = 0; i < ARRAY_SIZE(topic_specs); i++) {
+		const kafka_topic_spec_t *spec = &topic_specs[i];
+		char **topic = _topic_field(spec);
+
+		xfree(*topic);
+		key = xstrdup_printf("%s=", spec->param);
+		if (!(begin = xstrstr(slurm_conf.job_comp_params, key))) {
+			if (spec->suffix)
+				*topic = xstrdup_printf("%s-%s",
+							slurm_conf.cluster_name,
+							spec->suffix);
+			else
+				*topic = xstrdup(slurm_conf.cluster_name);
+		} else {
+			start = begin + strlen(key);
+			if ((end = xstrstr(start, ",")))
+				*topic = xstrndup(start, (end - start));
+			else
+				*topic = xstrdup(start);
+		}
+		xfree(key);
+	}
 }
 
 /*
@@ -157,25 +234,15 @@ static void _validate_kafka_conf(void)
  */
 extern char *jobcomp_kafka_conf_get_event_topic(uint32_t event)
 {
-	char *topic = NULL;
-
 	if (!(event & kafka_conf->events))
-		return topic;
+		return NULL;
 
-	switch (event) {
-	case JOBCOMP_EVENT_JOB_FINISH:
-		topic = kafka_conf->topic;
-		break;
-
-	case JOBCOMP_EVENT_JOB_START:
-		topic = kafka_conf->topic_job_start;
-		break;
-
-	default:
-		break;
+	for (int i = 0; i < ARRAY_SIZE(topic_specs); i++) {
+		if (topic_specs[i].event == event)
+			return *_topic_field(&topic_specs[i]);
 	}
 
-	return topic;
+	return NULL;
 }
 
 extern void jobcomp_kafka_conf_init(void)
@@ -220,11 +287,9 @@ extern int jobcomp_kafka_conf_parse_location(void)
 
 extern void jobcomp_kafka_conf_parse_params(void)
 {
-	char *begin = NULL, *end = NULL, *start = NULL;
+	char *begin = NULL, *start = NULL;
 	static char *flush_timeout_key = "flush_timeout=";
 	static char *poll_interval_key = "poll_interval=";
-	static char *topic_key = "topic=";
-	static char *topic_job_start_key = "topic_job_start=";
 
 	xassert(kafka_conf);
 
@@ -249,30 +314,7 @@ extern void jobcomp_kafka_conf_parse_params(void)
 			kafka_conf->poll_interval = DEFAULT_POLL_INTERVAL;
 	}
 
-	xfree(kafka_conf->topic);
-	if (!(begin = xstrstr(slurm_conf.job_comp_params, topic_key))) {
-		kafka_conf->topic = xstrdup(slurm_conf.cluster_name);
-	} else {
-		start = begin + strlen(topic_key);
-		if ((end = xstrstr(start, ",")))
-			kafka_conf->topic = xstrndup(start, (end - start));
-		else
-			kafka_conf->topic = xstrdup(start);
-	}
-
-	xfree(kafka_conf->topic_job_start);
-	if (!(begin = xstrstr(slurm_conf.job_comp_params,
-			      topic_job_start_key))) {
-		kafka_conf->topic_job_start =
-			xstrdup_printf("%s-job-start", slurm_conf.cluster_name);
-	} else {
-		start = begin + strlen(topic_job_start_key);
-		if ((end = xstrstr(start, ",")))
-			kafka_conf->topic_job_start =
-				xstrndup(start, (end - start));
-		else
-			kafka_conf->topic_job_start = xstrdup(start);
-	}
+	_parse_topics();
 
 	_validate_kafka_conf();
 
