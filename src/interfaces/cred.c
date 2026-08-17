@@ -273,6 +273,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_alias_list);
 	xfree(arg->job_comment);
 	xfree(arg->job_constraints);
+	xfree(arg->job_extra);
 	xfree(arg->job_licenses);
 	xfree(arg->job_hostlist);
 	xfree(arg->sock_core_rep_count);
@@ -283,6 +284,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_partition);
 	xfree(arg->job_qos);
 	xfree(arg->job_reservation);
+	xfree(arg->job_selinux_context);
 	xfree(arg->job_std_err);
 	xfree(arg->job_std_in);
 	xfree(arg->job_std_out);
