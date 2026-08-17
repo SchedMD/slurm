@@ -1401,13 +1401,12 @@ Use memory local to the processor in use
 
 .TP
 .B map_mem:<list>
-Bind by setting memory masks on tasks (or ranks) as specified where <list> is
+Bind by mapping NUMA IDs to tasks (or ranks) as specified where <list> is
 <numa_id_for_task_0>,<numa_id_for_task_1>,...
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first ID specified in the list, etc.).
-NUMA IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they interpreted as hexadecimal values.
+NUMA IDs are interpreted as decimal values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
@@ -2323,7 +2322,7 @@ all gres in that NUMA environment).
 
 .TP
 \fBmap:<list>\fR
-Bind by setting gres masks on tasks (or ranks) as specified where <list> is
+Bind by mapping gres IDs to tasks (or ranks) as specified where <list> is
 <gres_id_for_task_0>,<gres_id_for_task_1>,... gres IDs are interpreted as decimal
 values. If the number of tasks (or ranks) exceeds the number of elements in this
 list, elements in the list will be reused as needed starting from the beginning
