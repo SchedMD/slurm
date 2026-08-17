@@ -183,6 +183,22 @@ envcount (char **env)
 }
 
 /*
+ * Return true if setenvf() would reject "name=value" as being too long.
+ * "value" may be NULL if "name" is already a joined "name=value" string.
+ * The byte added with the value accounts for the '=', and the last one for
+ * the terminating NUL.
+ */
+static bool _env_check_len(const char *name, const char *value)
+{
+	size_t len = strlen(name);
+
+	if (value)
+		len += strlen(value) + 1;
+
+	return ((len + 1) >= MAX_ENV_STRLEN);
+}
+
+/*
  * setenvfs() - set an environment variable; args are printf style.
  *
  * setenv() copies the name and value into glibc-managed storage, so
@@ -227,7 +243,7 @@ setenvfs(const char *fmt, ...)
 extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 {
 	char *value;
-	int size, rc;
+	int rc;
 
 	if (!name || name[0] == '\0')
 		return EINVAL;
@@ -235,8 +251,7 @@ extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 	value = xmalloc(ENV_BUFSIZE);
 	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
 
-	size = strlen(name) + strlen(value) + 2;
-	if (size >= MAX_ENV_STRLEN) {
+	if (_env_check_len(name, value)) {
 		error("environment variable %s is too long", name);
 		xfree(value);
 		return ENOMEM;
