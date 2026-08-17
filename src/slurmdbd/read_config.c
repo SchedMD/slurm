@@ -409,6 +409,8 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_ISO8601;
 			else if (xstrcasestr(temp_str, "rfc5424_ms"))
 				slurm_conf.log_fmt = LOG_FMT_RFC5424_MS;
+			else if (xstrcasestr(temp_str, "rfc5424_us"))
+				slurm_conf.log_fmt = LOG_FMT_RFC5424_US;
 			else if (xstrcasestr(temp_str, "rfc5424"))
 				slurm_conf.log_fmt = LOG_FMT_RFC5424;
 			else if (xstrcasestr(temp_str, "rfc3339"))

@@ -3029,6 +3029,7 @@ typedef enum {
 	LOG_FMT_THREAD_ID = 6,
 	LOG_FMT_RFC3339 = 7,
 	LOG_FMT_OMIT = 8,
+	LOG_FMT_RFC5424_US = 9,
 } log_fmt_t;
 
 /* Options accompanying the LogTimeFormat timestamp format. */

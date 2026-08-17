@@ -4393,6 +4393,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_ISO8601;
 		else if (xstrcasestr(temp_str, "rfc5424_ms"))
 			conf->log_fmt = LOG_FMT_RFC5424_MS;
+		else if (xstrcasestr(temp_str, "rfc5424_us"))
+			conf->log_fmt = LOG_FMT_RFC5424_US;
 		else if (xstrcasestr(temp_str, "rfc5424"))
 			conf->log_fmt = LOG_FMT_RFC5424;
 		else if (xstrcasestr(temp_str, "rfc3339"))

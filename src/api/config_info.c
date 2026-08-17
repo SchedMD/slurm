@@ -67,6 +67,7 @@ static const struct {
 	T(LOG_FMT_ISO8601_MS, "iso8601_ms"),
 	T(LOG_FMT_ISO8601, "iso8601"),
 	T(LOG_FMT_RFC5424_MS, "rfc5424_ms"),
+	T(LOG_FMT_RFC5424_US, "rfc5424_us"),
 	T(LOG_FMT_RFC5424, "rfc5424"),
 	T(LOG_FMT_RFC3339, "rfc3339"),
 	T(LOG_FMT_CLOCK, "clock"),

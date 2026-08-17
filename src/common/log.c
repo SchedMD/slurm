@@ -233,6 +233,7 @@ size_t log_timestamp(char *s, size_t max)
 		return _make_timestamp(s, max, "%Y-%m-%dT%T");
 	switch (log->fmt) {
 	case LOG_FMT_RFC5424_MS:
+	case LOG_FMT_RFC5424_US:
 	case LOG_FMT_RFC5424:
 	{
 		size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
@@ -753,6 +754,11 @@ static size_t _set_timestamp(char *buf, size_t size)
 		break;
 	case LOG_FMT_RFC5424:
 		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_RFC5424_US:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.ffffff(+/-)hh:mm" */
+		prec = RFC5424_USEC;
 		tz = true;
 		break;
 	case LOG_FMT_RFC3339:
