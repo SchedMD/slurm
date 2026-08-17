@@ -38,6 +38,7 @@
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/id_util.h"
+#include "src/common/job_state_reason.h"
 #include "src/common/parse_time.h"
 #include "src/common/sluid.h"
 #include "src/interfaces/jobcomp.h"
@@ -217,6 +218,12 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		exit_code_str = NULL;
 	}
 	data_set_string(data_key_set(record, "state"), state_string);
+	if (job_ptr->state_reason != WAIT_NO_REASON)
+		data_set_string(data_key_set(record, "state_reason"),
+				job_state_reason_string(job_ptr->state_reason));
+	if (job_ptr->state_desc)
+		data_set_string(data_key_set(record, "state_desc"),
+				job_ptr->state_desc);
 	if (event_job_finish) {
 		data_set_string(data_key_set(record, "failed_node"),
 				job_ptr->failed_node);
