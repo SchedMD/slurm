@@ -106,6 +106,7 @@ extern sbcast_cred_t *sbcast_p_create(sbcast_cred_arg_t *cred_arg,
 }
 
 extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
+				      bool replay_okay,
 				      uint16_t protocol_version)
 {
 	uint32_t siglen;
