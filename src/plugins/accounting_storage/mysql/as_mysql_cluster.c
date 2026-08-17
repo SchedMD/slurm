@@ -1950,8 +1950,16 @@ extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
 		   values ? ", " : "",
 		   node_ptr->instance_type ? node_ptr->instance_type : "");
 
+	/*
+	 * An open interval counts as the node already having events. Without
+	 * that term a node drained but never powered down counts as never
+	 * seen, and the pair synthesized below closes the interval it is
+	 * still drained for.
+	 */
 	query = xstrdup_printf("select time_start from \"%s_%s\" "
-			       "where node_name='%s' AND (state & %"PRIu64") limit 1;",
+			       "where node_name='%s' AND ((state & %" PRIu64
+			       ") "
+			       "OR time_end=0) limit 1;",
 			       mysql_conn->cluster_name, event_table,
 			       node_ptr->name, NODE_STATE_POWERED_DOWN);
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "check event table status for node '%s':\n%s",
