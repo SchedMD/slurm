@@ -710,6 +710,19 @@ static void _set_thread_id(char *buf, size_t size, size_t used)
 		 (void *) pthread_self());
 }
 
+/*
+ * RET true if the "%M" specifier has anything to render, which is the only
+ *	thing the log line prefix holds
+ */
+static bool _have_timefmt(void)
+{
+	if (log->fmt != LOG_FMT_OMIT)
+		return true;
+
+	/* omit drops the timestamp, not everything printed beside it */
+	return (log->flags & LOG_FLAG_THREAD_ID);
+}
+
 /* Fractional second precision, which RFC 5424 allows no more of than usec */
 typedef enum {
 	RFC5424_NONE = 0,
@@ -1451,8 +1464,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
-		xlogfmtcat(&msgbuf,
-			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+		xlogfmtcat(&msgbuf, (_have_timefmt() ? "[%M] %s%s" : "%s%s"),
 			   sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s%s\n", msgbuf, buf);
@@ -1525,7 +1537,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
 		} else if (running_in_daemon()) {
-			if (log->fmt == LOG_FMT_OMIT) {
+			if (!_have_timefmt()) {
 				_log_printf(log, log->buf, stderr, "%s%s%s",
 					    pfx, buf, eol);
 			} else {
@@ -1575,8 +1587,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		fflush(log->logfp);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
-		xlogfmtcat(&msgbuf,
-			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+		xlogfmtcat(&msgbuf, (_have_timefmt() ? "[%M] %s%s" : "%s%s"),
 			   log->prefix, pfx);
 		_log_printf(log, log->fbuf, log->logfp, "%s%s\n", msgbuf, buf);
 		fflush(log->logfp);
