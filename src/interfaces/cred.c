@@ -80,6 +80,7 @@ typedef struct {
 	sbcast_cred_t *(*sbcast_create)	(sbcast_cred_arg_t *cred,
 					 uint16_t protocol_version);
 	sbcast_cred_t *(*sbcast_unpack)	(buf_t *buffer, bool verify,
+					 bool replay_okay,
 					 uint16_t protocol_version);
 } slurm_cred_ops_t;
 
@@ -724,12 +725,20 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 					 uint16_t protocol_version)
 {
 	file_bcast_msg_t *bmsg = msg;
-	bool verify = false;
+	bool verify = false, replay_okay = false;
 
-	if (bmsg && (bmsg->block_no == 1))
+	if (bmsg && (bmsg->block_no == 1)) {
 		verify = true;
+		/*
+		 * One credential covers the executable and every shared
+		 * object sent after it, so munged only sees it a second
+		 * time on the shared object transfers.
+		 */
+		replay_okay = (bmsg->flags & FILE_BCAST_SO);
+	}
 
-	return (*(ops.sbcast_unpack))(buffer, verify, protocol_version);
+	return (*(ops.sbcast_unpack))(buffer, verify, replay_okay,
+				      protocol_version);
 }
 
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred)

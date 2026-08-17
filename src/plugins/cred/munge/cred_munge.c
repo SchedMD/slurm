@@ -404,6 +404,7 @@ extern sbcast_cred_t *sbcast_p_create(sbcast_cred_arg_t *cred_arg,
 }
 
 extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
+				      bool replay_okay,
 				      uint16_t protocol_version)
 {
 	sbcast_cred_t *cred;
@@ -422,7 +423,7 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
 		}
 
 		if (_verify_signature(get_buf_data(buf) + cred_start,
-				      siglen, cred->signature, true)) {
+				      siglen, cred->signature, replay_okay)) {
 			delete_sbcast_cred(cred);
 			return NULL;
 		}
