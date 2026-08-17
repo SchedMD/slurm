@@ -3026,6 +3026,7 @@ typedef enum {
 	LOG_FMT_RFC5424 = 3,
 	LOG_FMT_CLOCK = 4,
 	LOG_FMT_SHORT = 5,
+	/* Deprecated as a format, see LOG_FLAG_THREAD_ID */
 	LOG_FMT_THREAD_ID = 6,
 	LOG_FMT_RFC3339 = 7,
 	LOG_FMT_OMIT = 8,
@@ -3035,6 +3036,7 @@ typedef enum {
 /* Options accompanying the LogTimeFormat timestamp format. */
 typedef enum {
 	LOG_FLAGS_NONE = 0,
+	LOG_FLAG_THREAD_ID = SLURM_BIT(0),
 } log_flags_t;
 
 /* Default timestamp format */
