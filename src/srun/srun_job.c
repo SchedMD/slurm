@@ -1835,8 +1835,9 @@ static void _run_srun_epilog (srun_job_t *job)
 	int rc;
 
 	if (sropt.epilog && xstrcasecmp(sropt.epilog, "none") != 0) {
-		if (setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "epilog_srun") < 0)
-			error("unable to set SLURM_SCRIPT_CONTEXT in environment");
+		if ((rc = setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "epilog_srun")))
+			error("unable to set SLURM_SCRIPT_CONTEXT in environment: %s",
+			      slurm_strerror(rc));
 		rc = _run_srun_script(job, sropt.epilog);
 		if (rc) {
 			error("srun epilog failed status=%d", rc);
