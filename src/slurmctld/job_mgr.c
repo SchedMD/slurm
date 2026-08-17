@@ -12432,7 +12432,7 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 		 * licenses aren't valid compared to configured licenses the
 		 * job just won't be scheduled.
 		 */
-		restore_job_licenses(job_ptr, false);
+		restore_job_licenses(job_ptr, false, JOBCOMP_EVENT_INVALID);
 	}
 	fed_mgr_job_requeue(job_ptr); /* submit sibling jobs */
 	sched_info("%s: release hold on %pJ by uid %u",
@@ -17272,7 +17272,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	 * above). validate=true checks configured licenses and holds if the
 	 * request is invalid; busy licenses pend later with WAIT_LICENSES.
 	 */
-	restore_job_licenses(job_ptr, true);
+	restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_INVALID);
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;

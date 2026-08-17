@@ -2445,7 +2445,8 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	set_initial_job_alias_list(job_ptr);
 }
 
-extern void restore_job_licenses(job_record_t *job_ptr, bool validate)
+extern void restore_job_licenses(job_record_t *job_ptr, bool validate,
+				 uint32_t event)
 {
 	list_t *license_list = NULL, *license_list_alloc = NULL;
 	bool valid = true, alloc_valid = true;
@@ -2481,11 +2482,8 @@ extern void restore_job_licenses(job_record_t *job_ptr, bool validate)
 			job_ptr->licenses);
 
 		info("%pJ %s", job_ptr, msg);
-		job_ptr->priority = 0;
-		job_ptr->state_reason = WAIT_HELD;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc = msg;
-		msg = NULL;
+		job_mgr_hold_set(job_ptr, WAIT_HELD, msg, event);
+		xfree(msg);
 	}
 
 	/*
@@ -2568,7 +2566,7 @@ extern void restore_job_accounting(void)
 						save_accrue_time;
 			}
 		}
-		restore_job_licenses(job_ptr, true);
+		restore_job_licenses(job_ptr, true, JOBCOMP_EVENT_INVALID);
 	}
 	list_iterator_destroy(job_iterator);
 }
