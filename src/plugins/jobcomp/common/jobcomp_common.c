@@ -118,6 +118,7 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		time_limit = job_ptr->time_limit;
 
 	if (!event_job_finish) {
+		state_string = job_state_string(job_ptr->job_state);
 		parse_time_make_str_utc(&job_ptr->start_time, start_str,
 					sizeof(start_str));
 	} else if (job_ptr->job_state & JOB_RESIZING) {
