@@ -2047,6 +2047,7 @@ static int _set_rlimit_env(void)
 	unsigned long        cur;
 	char                 name[64], *format;
 	slurm_rlimits_info_t *rli;
+	int env_rc = EINVAL;
 
 	/* Modify limits with any command-line options */
 	if (sropt.propagate
@@ -2076,8 +2077,9 @@ static int _set_rlimit_env(void)
 		else
 			format = "%lu";
 
-		if (setenvf (NULL, name, format, cur) < 0) {
-			error ("unable to set %s in environment", name);
+		if ((env_rc = setenvf(NULL, name, format, cur))) {
+			error("unable to set %s in environment: %s", name,
+			      slurm_strerror(env_rc));
 			rc = SLURM_ERROR;
 			continue;
 		}
