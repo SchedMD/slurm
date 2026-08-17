@@ -105,6 +105,12 @@ static int _handle_job(void *x, void *y)
 	/* always enable requeue to allow scontrol requeue to work */
 	job->requeue = 1;
 
+	/*
+	 * het_job_offset is not packed, so it arrives as 0. Mark the job as no
+	 * heterogeneous job component, as every other submission path does.
+	 */
+	job->het_job_offset = NO_VAL;
+
 	/* give job_submit a chance to play with it first */
 	args->return_code = validate_job_create_req(&msg, job, &err_msg);
 

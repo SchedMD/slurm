@@ -4341,6 +4341,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	if (error_code) {
 		if (job_ptr && (immediate || will_run)) {
 			/* this should never really happen here */
+			job_mgr_record_job_queue(job_ptr);
 			job_state_set(job_ptr, JOB_FAILED);
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4394,6 +4395,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 
 	if (immediate &&
 	    (too_fragmented || (!top_prio) || (!independent) || defer_this)) {
+		/* Rejected after entering the queue, as accounting records */
+		job_mgr_record_job_queue(job_ptr);
 		job_state_set(job_ptr, JOB_FAILED);
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4490,6 +4493,16 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		job_ptr->details->feature_list_use = NULL;
 	}
 
+	/*
+	 * An allocation can start right away in _select_nodes_parts(), which
+	 * sends the job start record, so record the job in the queue before
+	 * that. Batch jobs are never started here, and a job array needs
+	 * _create_job_array() first, so they are recorded below.
+	 */
+	if (!no_alloc && !job_desc->array_inx &&
+	    (job_desc->het_job_offset == NO_VAL))
+		job_mgr_record_job_queue(job_ptr);
+
 	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
 
 	if (error_code) {
@@ -4512,6 +4525,16 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	 * QOS/Assoc limits
 	 */
 	_create_job_array(job_ptr, job_desc);
+
+	/*
+	 * The job is in the queue and, for a job array, its array identity is
+	 * set: record it once for the whole task set. A heterogeneous job
+	 * component is recorded by the caller once its het_job_id is set.
+	 * A submission rejected below still gets this record, followed by
+	 * its finish record, as accounting does.
+	 */
+	if (job_desc->het_job_offset == NO_VAL)
+		job_mgr_record_job_queue(job_ptr);
 
 	slurmctld_diag_stats.jobs_submitted +=
 		(job_ptr->array_recs && job_ptr->array_recs->task_cnt) ?
@@ -4553,6 +4576,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		 * openapi/slurmctld.
 		 */
 		if (immediate) {
+			/* Only a hetjob component is still unrecorded here */
+			job_mgr_record_job_queue(job_ptr);
 			job_state_set(job_ptr, JOB_FAILED);
 			job_ptr->exit_code  = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4578,6 +4603,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 	}
 
 	if (error_code) {	/* fundamental flaw in job request */
+		/* Only a hetjob component is still unrecorded here */
+		job_mgr_record_job_queue(job_ptr);
 		job_state_set(job_ptr, JOB_FAILED);
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -7786,6 +7813,12 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
+	/*
+	 * A hold applied before job_allocate() records the job queue event,
+	 * such as for a reservation that has ended, shows in that record
+	 * instead of in a hold record of its own.
+	 */
+	job_ptr->jobcomp_queue_pending = true;
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
@@ -12352,7 +12385,12 @@ extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = desc;
 
-	if (!was_held && (event != JOBCOMP_EVENT_INVALID))
+	/*
+	 * A hold applied to a job that already finished, as a burst buffer
+	 * stage-out failure does, would follow its job finish event.
+	 */
+	if (!was_held && !job_ptr->jobcomp_queue_pending &&
+	    !IS_JOB_FINISHED(job_ptr) && (event != JOBCOMP_EVENT_INVALID))
 		jobcomp_g_record_job_event(job_ptr, event);
 }
 
@@ -17499,6 +17537,15 @@ static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 }
 
 /* log the completion of the specified job */
+extern void job_mgr_record_job_queue(job_record_t *job_ptr)
+{
+	if (!job_ptr->jobcomp_queue_pending)
+		return;
+
+	job_ptr->jobcomp_queue_pending = false;
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_QUEUE);
+}
+
 extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 {
 	int base_state;
@@ -17612,6 +17659,11 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
 		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 
+	/*
+	 * A job that ends before its job queue event was recorded still gets
+	 * that record ahead of the finish record.
+	 */
+	job_mgr_record_job_queue(job_ptr);
 	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_FINISH);
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
