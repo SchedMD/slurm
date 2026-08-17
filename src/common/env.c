@@ -2599,23 +2599,23 @@ extern char **env_array_exclude(const char **env, const regex_t *regex)
 
 extern void set_prio_process_env(void)
 {
-        int retval;
+	int retval;
 
-        errno = 0; /* needed to detect a real failure since prio can be -1 */
+	errno = 0; /* needed to detect a real failure since prio can be -1 */
 
-        if ((retval = getpriority(PRIO_PROCESS, 0)) == -1)  {
-                if (errno) {
-                        error("getpriority(PRIO_PROCESS): %m");
-                        return;
-                }
-        }
+	if ((retval = getpriority(PRIO_PROCESS, 0)) == -1) {
+		if (errno) {
+			error("getpriority(PRIO_PROCESS): %m");
+			return;
+		}
+	}
 
-        if (setenvf(NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
-                error("unable to set SLURM_PRIO_PROCESS in environment");
-                return;
-        }
+	if (setenvf(NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
+		error("unable to set SLURM_PRIO_PROCESS in environment");
+		return;
+	}
 
-        debug("propagating SLURM_PRIO_PROCESS=%d", retval);
+	debug("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
 extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name)
