@@ -32,6 +32,7 @@
 \*****************************************************************************/
 
 #include <check.h>
+#include <float.h>
 #include <inttypes.h>
 #include <math.h>
 #include <signal.h>
@@ -42,6 +43,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
@@ -158,6 +160,36 @@
 			      "convert \"%s\" -> %s, expected any other type", \
 			      str, data_type_to_string(type)); \
 		FREE_NULL_DATA(d); \
+	} while (0)
+
+/*
+ * Comparing floats x and y must give expected. The answer must not depend on
+ * the order of the arguments, and mask only applies to dictionaries and lists
+ * so it must not change a float comparison either.
+ */
+#define check_float_match(x, y, expected) \
+	do { \
+		data_t *da = data_set_float(data_new(), (x)); \
+		data_t *db = data_set_float(data_new(), (y)); \
+		bool ab = data_check_match(da, db, false); \
+		bool ba = data_check_match(db, da, false); \
+		bool masked = data_check_match(da, db, true); \
+		ck_assert_msg(ab == (expected), \
+			      "match %e, %e -> %s, expected %s", (double) (x), \
+			      (double) (y), (ab ? "true" : "false"), \
+			      ((expected) ? "true" : "false")); \
+		ck_assert_msg(ba == ab, \
+			      "match %e, %e -> %s, but reversed -> %s", \
+			      (double) (x), (double) (y), \
+			      (ab ? "true" : "false"), \
+			      (ba ? "true" : "false")); \
+		ck_assert_msg(masked == ab, \
+			      "match %e, %e -> %s, but masked -> %s", \
+			      (double) (x), (double) (y), \
+			      (ab ? "true" : "false"), \
+			      (masked ? "true" : "false")); \
+		FREE_NULL_DATA(da); \
+		FREE_NULL_DATA(db); \
 	} while (0)
 
 static data_for_each_cmd_t
@@ -791,6 +823,71 @@ START_TEST(test_convert_int)
 
 END_TEST
 
+START_TEST(test_check_match_float)
+{
+	/* Identical values must match */
+	check_float_match(0.0, 0.0, true);
+	check_float_match(1.5, 1.5, true);
+	check_float_match(-1.5, -1.5, true);
+	check_float_match(DBL_MAX, DBL_MAX, true);
+	check_float_match(-DBL_MAX, -DBL_MAX, true);
+
+	/* Zero has two representations that must compare as one value */
+	check_float_match(0.0, -0.0, true);
+
+	/* Different values must not match. */
+	check_float_match(0.0, 1.0, false);
+	check_float_match(1.0, 2.0, false);
+	check_float_match(-1.0, 1.0, false);
+	check_float_match(1.5, -1.5, false);
+	check_float_match(DBL_MAX, -DBL_MAX, false);
+	check_float_match(1e300, 2e300, false);
+
+	/*
+	 * Values within FUZZY_EPSILON match, since a float that went through
+	 * a text round trip is not expected to come back bit identical. The
+	 * tolerance is absolute and exclusive of the epsilon itself.
+	 */
+	check_float_match(1.0, 1.0 + (FUZZY_EPSILON / 2), true);
+	check_float_match(1.0, 1.0 - (FUZZY_EPSILON / 2), true);
+	check_float_match(0.0, (FUZZY_EPSILON / 2), true);
+	check_float_match(0.0, FUZZY_EPSILON, false);
+	check_float_match(0.0, -FUZZY_EPSILON, false);
+	check_float_match(1.0, 1.0 + (FUZZY_EPSILON * 10), false);
+
+	/*
+	 * The tolerance is not transitive: eps/2 matches both 0.0 and eps,
+	 * even though 0.0 and eps do not match each other (asserted above).
+	 */
+	check_float_match((FUZZY_EPSILON / 2), FUZZY_EPSILON, true);
+
+	/*
+	 * Being absolute, the tolerance also makes every value smaller than
+	 * it indistinguishable from zero.
+	 */
+	check_float_match(0.0, DBL_MIN, true);
+
+	/* NaN matches only NaN, whatever sign it carries */
+	check_float_match(NAN, NAN, true);
+	check_float_match(NAN, -NAN, true);
+	check_float_match(NAN, 0.0, false);
+	check_float_match(NAN, 1.0, false);
+	check_float_match(NAN, DBL_MAX, false);
+	check_float_match(NAN, INFINITY, false);
+	check_float_match(NAN, -INFINITY, false);
+
+	/* An infinity matches only an infinity of the same sign */
+	check_float_match(INFINITY, INFINITY, true);
+	check_float_match(-INFINITY, -INFINITY, true);
+	check_float_match(INFINITY, -INFINITY, false);
+	check_float_match(INFINITY, 0.0, false);
+	check_float_match(-INFINITY, 0.0, false);
+	check_float_match(INFINITY, DBL_MAX, false);
+	check_float_match(-INFINITY, -DBL_MAX, false);
+}
+
+END_TEST
+
 Suite *suite_data(void)
 {
 	Suite *s = suite_create("Data");
@@ -803,6 +900,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_convert_list_dict);
 	tcase_add_test(tc_core, test_data_move);
 	tcase_add_test(tc_core, test_convert_int);
+	tcase_add_test(tc_core, test_check_match_float);
 
 	suite_add_tcase(s, tc_core);
 	return s;
