@@ -48,14 +48,10 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/interfaces/accounting_storage.h"
 
-/* JobCompParams enabled events. */
-#define JOBCOMP_CONF_JOB_FINISH SLURM_BIT(0) /* enable_job_finish */
-#define JOBCOMP_CONF_JOB_START SLURM_BIT(1) /* enable_job_start */
-
 typedef enum {
 	JOBCOMP_EVENT_INVALID = 0,
-	JOBCOMP_EVENT_JOB_FINISH,
-	JOBCOMP_EVENT_JOB_START,
+	JOBCOMP_EVENT_JOB_FINISH = SLURM_BIT(0),
+	JOBCOMP_EVENT_JOB_START = SLURM_BIT(1),
 } jobcomp_event_t;
 
 typedef struct {

@@ -43,7 +43,7 @@
 #include "src/interfaces/jobcomp.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_CONF_JOB_FINISH
+#define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_EVENT_JOB_FINISH
 
 static bool send_script = false;
 static bool send_comment = false;
@@ -419,7 +419,7 @@ extern uint32_t jobcomp_common_parse_enabled_events(void)
 	enabled_events |= JOBCOMP_CONF_DEFAULT_EVENTS;
 
 	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_start"))
-		enabled_events |= JOBCOMP_CONF_JOB_START;
+		enabled_events |= JOBCOMP_EVENT_JOB_START;
 
 	return enabled_events;
 }
