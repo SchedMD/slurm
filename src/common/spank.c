@@ -2296,7 +2296,7 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 	if (getenvp(step->env, var) && !overwrite)
 		return (ESPANK_ENV_EXISTS);
 
-	if (setenvf(&step->env, var, "%s", val) < 0)
+	if (setenvf(&step->env, var, "%s", val))
 		return (ESPANK_ERROR);
 
 	return (ESPANK_SUCCESS);
