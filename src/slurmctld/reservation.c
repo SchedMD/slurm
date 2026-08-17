@@ -5625,6 +5625,7 @@ static int _validate_job_resv(job_record_t *job_ptr)
 		job_ptr->priority = 0;
 		job_ptr->state_reason = WAIT_RESV_INVALID;
 		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
+		xfree(job_ptr->state_desc);
 		xstrfmtcat(job_ptr->state_desc,
 			   "Reservation %s is invalid",
 			   job_ptr->resv_name);
