@@ -102,6 +102,7 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	int i;
 	time_t elapsed_time = 0;
 	uint16_t exit_status = 0, term_sig = 0;
+	time_t event_time = time(NULL);
 	uint32_t time_limit;
 	data_t *record = NULL;
 	bool event_job_finish = (event & JOBCOMP_EVENT_JOB_FINISH);
@@ -170,6 +171,13 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	}
 
 	record = data_set_dict(data_new());
+
+	data_set_string(data_key_set(record, "event"),
+			jobcomp_common_get_event_name(event));
+
+	parse_time_make_str_utc(&event_time, time_str, sizeof(time_str));
+	if (_valid_date_format(time_str))
+		data_set_string(data_key_set(record, "@event_time"), time_str);
 
 	data_set_int(data_key_set(record, "jobid"), job_ptr->job_id);
 
