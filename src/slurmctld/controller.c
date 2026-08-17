@@ -3709,7 +3709,7 @@ void update_logging(void)
 		slurm_conf.slurmctld_logfile = xstrdup(debug_logfile);
 	}
 
-	log_set_timefmt(slurm_conf.log_fmt);
+	log_set_timefmt(slurm_conf.log_fmt, slurm_conf.log_flags);
 
 	update_log_levels(slurm_conf.slurmctld_debug,
 			  slurm_conf.slurmctld_syslog_debug);

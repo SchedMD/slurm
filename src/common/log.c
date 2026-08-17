@@ -137,6 +137,7 @@ typedef struct {
 	log_facility_t facility;
 	log_options_t opt;
 	bool initialized;
+	log_flags_t flags; /* Options accompanying the timestamp format */
 	log_fmt_t fmt; /* Timestamp format */
 }	log_t;
 
@@ -667,18 +668,18 @@ void log_oom(const char *file, int line, const char *func)
 	}
 }
 
-
-/* Set the timestamp format flag */
-void log_set_timefmt(unsigned fmtflag)
+/* Set the timestamp format flag and the options accompanying it */
+void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
 {
-	if (log) {
-		slurm_mutex_lock(&log_lock);
-		log->fmt = fmtflag;
-		slurm_mutex_unlock(&log_lock);
-	} else {
-		fprintf(stderr, "%s:%d: %s Slurm log not initialized\n",
-			__FILE__, __LINE__, __func__);
-	}
+	xassert(log);
+
+	if (!log)
+		return;
+
+	slurm_mutex_lock(&log_lock);
+	log->fmt = fmt;
+	log->flags = flags;
+	slurm_mutex_unlock(&log_lock);
 }
 
 /*

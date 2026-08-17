@@ -3153,7 +3153,7 @@ extern void update_slurmd_logging(log_level_t log_lvl)
 		o->syslog_level = LOG_LEVEL_FATAL;
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
-	log_set_timefmt(cf->log_fmt);
+	log_set_timefmt(cf->log_fmt, cf->log_flags);
 
 	/*
 	 * If logging to syslog and running in

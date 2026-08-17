@@ -104,7 +104,7 @@ extern void update_logging(void)
 
 	if (json) {
 		/* docker requires RFC3339 timestamps */
-		log_set_timefmt(LOG_FMT_RFC3339);
+		log_set_timefmt(LOG_FMT_RFC3339, LOG_FLAGS_NONE);
 	}
 }
 

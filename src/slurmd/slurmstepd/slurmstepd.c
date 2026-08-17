@@ -1134,7 +1134,7 @@ static slurmd_conf_t *_read_slurmd_conf_lite(int fd)
 	 * up in the log.
 	 */
 	log_alter(confl->log_opts, SYSLOG_FACILITY_DAEMON, confl->logfile);
-	log_set_timefmt(slurm_conf.log_fmt);
+	log_set_timefmt(slurm_conf.log_fmt, slurm_conf.log_flags);
 	debug2("debug level read from slurmd is '%s'.",
 		log_num2string(confl->debug_level));
 
