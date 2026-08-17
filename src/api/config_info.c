@@ -76,6 +76,14 @@ static const struct {
 	T(LOG_FMT_OMIT, "omit"),
 };
 
+/* LogTimeFormat options, which may accompany any timestamp format */
+static const struct {
+	log_flags_t flag;
+	const char *str;
+} log_opts[] = {
+	T(LOG_FLAG_THREAD_ID, "thread_id"),
+};
+
 #undef T
 
 /* Local functions */
@@ -555,13 +563,24 @@ static char *_accountingstoreflags(uint32_t conf_flags)
 	return str;
 }
 
-static char *_logfmtstr(const log_fmt_t log_fmt)
+static char *_logfmtstr(const log_fmt_t log_fmt, const log_flags_t log_flags)
 {
-	for (int i = 0; i < ARRAY_SIZE(log_fmts); i++)
-		if (log_fmt == log_fmts[i].fmt)
-			return xstrdup(log_fmts[i].str);
+	char *str = NULL;
 
-	return NULL;
+	for (int i = 0; i < ARRAY_SIZE(log_fmts); i++) {
+		if (log_fmt == log_fmts[i].fmt) {
+			str = xstrdup(log_fmts[i].str);
+			break;
+		}
+	}
+
+	for (int i = 0; i < ARRAY_SIZE(log_opts); i++) {
+		if (log_flags & log_opts[i].flag)
+			xstrfmtcat(str, "%s%s", (str ? "," : ""),
+				   log_opts[i].str);
+	}
+
+	return str;
 }
 
 static void _sprint_task_plugin_params(char *str,
@@ -846,7 +865,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "Licenses", "%s", conf->licenses);
 
-	add_key_pair_own(ret_list, "LogTimeFormat", _logfmtstr(conf->log_fmt));
+	add_key_pair_own(ret_list, "LogTimeFormat",
+			 _logfmtstr(conf->log_fmt, conf->log_flags));
 
 	add_key_pair(ret_list, "MailDomain", "%s", conf->mail_domain);
 
