@@ -317,6 +317,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
 	opt_dup->qos = xstrdup(opt.qos);
 	opt_dup->reservation = xstrdup(opt.reservation);
+	opt.runtime = NULL; /* Moved by memcpy */
 	opt.spank_job_env = NULL;	/* Moved by memcpy */
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
