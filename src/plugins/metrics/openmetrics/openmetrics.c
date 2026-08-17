@@ -55,6 +55,7 @@ const char plugin_type[] = "metrics/openmetrics";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define PLUGIN_ID 0xcafebeef
+#define MIB_IN_BYTES (1024 * 1024)
 
 typedef struct openmetrics_set {
 	xhash_t *full_hash; /* metrics table exact {name,[key,val]*} lookup */
@@ -387,6 +388,7 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		if (!stats->node_stats_table[i])
 			continue;
 		node_stats_t *n = stats->node_stats_table[i];
+		uint64_t mem_alloc_bytes = n->mem_alloc * MIB_IN_BYTES;
 		// clang-format off
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_total, node_cpus, "Total number of cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_alloc, node_cpus_alloc, "Allocated cpus in the node", GAUGE, "node", n->name);
@@ -394,7 +396,7 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_idle, node_cpus_idle, "Idle cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->gpus_total, node_gpus, "Total number of GPUs in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->gpus_alloc, node_gpus_alloc, "Number of GPUs currently allocated by jobs on the node", GAUGE, "node", n->name);
-		ADD_METRIC_KEYVAL(set, UINT64, n->mem_alloc, node_memory_alloc_bytes, "Bytes allocated to jobs in the node", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, mem_alloc_bytes, node_memory_alloc_bytes, "Bytes allocated to jobs in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_avail, node_memory_effective_bytes, "Memory allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_free, node_memory_free_bytes, "Free memory in bytes of the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_total, node_memory_bytes, "Total memory in bytes of the node", GAUGE, "node", n->name);
