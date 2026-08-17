@@ -1315,6 +1315,8 @@ test_172_#   Testing of JobComp plugins.
 ========================================
 test_172_1   Test the exit code jobcomp/filetxt records for a completed job
 test_172_2   Test jobcomp/kafka start and end records on separate topics
+test_172_3   Test job state transition events with a finish-only jobcomp
+             plugin
 
 test_173_#   Testing of DBD Agent
 ========================================
