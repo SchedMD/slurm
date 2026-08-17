@@ -58,6 +58,20 @@ and hopefully remove them from the xfail list.
 
 # TODO: Remove xfail_tests.append() once their issue is fixed.
 if atf.get_version() < (26, 11):
+    xfail_tests.append(
+        (
+            "common/test_env.c",
+            "test_setenvfs_success",
+            "Issue #51135: setenvfs() uses putenv() before 26.11; the interposed setenv() is never triggered",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_env.c",
+            "test_setenvfs_setenv_failure",
+            "Issue #51135: setenvfs() uses putenv() before 26.11; fail_setenv has no effect so it always returns 0",
+        )
+    )
     skip_tests.append(
         (
             "common/test_http_router.c",
