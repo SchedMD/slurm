@@ -1850,8 +1850,9 @@ static void _run_srun_prolog (srun_job_t *job)
 	int rc;
 
 	if (sropt.prolog && xstrcasecmp(sropt.prolog, "none") != 0) {
-		if (setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "prolog_srun") < 0)
-			error("unable to set SLURM_SCRIPT_CONTEXT in environment");
+		if ((rc = setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "prolog_srun")))
+			error("unable to set SLURM_SCRIPT_CONTEXT in environment: %s",
+			      slurm_strerror(rc));
 		rc = _run_srun_script(job, sropt.prolog);
 		if (rc) {
 			error("srun prolog failed rc = %d. Aborting step.", rc);
