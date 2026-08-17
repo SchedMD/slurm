@@ -619,7 +619,16 @@ extern int jobcomp_p_set_location(void)
 	return SLURM_SUCCESS;
 }
 
-extern int jobcomp_p_record_job_end(job_record_t *record, uint32_t event)
+/*
+ * Return the events this plugin can record.
+ * RET bitmask of jobcomp_event_t values
+ */
+extern uint32_t jobcomp_p_get_events(void)
+{
+	return JOBCOMP_EVENT_JOB_FINISH;
+}
+
+extern int jobcomp_p_record_job_event(job_record_t *record, uint32_t event)
 {
 	struct jobcomp_info * job;
 
@@ -665,9 +674,4 @@ extern list_t *jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	info("This function is not implemented.");
 	return NULL;
-}
-
-extern int jobcomp_p_record_job_start(job_record_t *job_ptr, uint32_t event)
-{
-	return SLURM_SUCCESS;
 }

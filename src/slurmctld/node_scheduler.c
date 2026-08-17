@@ -2309,7 +2309,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	 * registered in the db then the start message.
 	 */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	jobcomp_g_record_job_start(job_ptr);
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_START);
 	prolog_slurmctld(job_ptr);
 
 	job_ptr->end_time = now;
@@ -3158,7 +3158,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	 */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
-	jobcomp_g_record_job_start(job_ptr);
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_START);
 	(void) switch_g_job_start(job_ptr, false);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
