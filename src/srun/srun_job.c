@@ -2098,12 +2098,15 @@ static int _set_rlimit_env(void)
 /* Set some environment variables with current state */
 static int _set_umask_env(void)
 {
+	int rc = EINVAL;
+
 	if (!getenv("SRUN_DEBUG")) {	/* do not change current value */
 		/* NOTE: Default debug level is 3 (info) */
 		int log_level = LOG_LEVEL_INFO + opt.verbose - opt.quiet;
 
-		if (setenvf(NULL, "SRUN_DEBUG", "%d", log_level) < 0)
-			error ("unable to set SRUN_DEBUG in environment");
+		if ((rc = setenvf(NULL, "SRUN_DEBUG", "%d", log_level)))
+			error("unable to set SRUN_DEBUG in environment: %s",
+			      slurm_strerror(rc));
 	}
 
 	if (!getenv("SLURM_UMASK")) {	/* do not change current value */
@@ -2115,8 +2118,9 @@ static int _set_umask_env(void)
 
 		sprintf(mask_char, "0%d%d%d",
 			((mask>>6)&07), ((mask>>3)&07), mask&07);
-		if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
-			error ("unable to set SLURM_UMASK in environment");
+		if ((rc = setenvf(NULL, "SLURM_UMASK", "%s", mask_char))) {
+			error("unable to set SLURM_UMASK in environment: %s",
+			      slurm_strerror(rc));
 			return SLURM_ERROR;
 		}
 		debug ("propagating UMASK=%s", mask_char);
