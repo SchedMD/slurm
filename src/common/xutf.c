@@ -41,6 +41,12 @@
 
 #include "src/common/xutf.h"
 
+/* The code point and byte checks below rely on the signedness and width here */
+_Static_assert((utf_code_t) -1 > 0, "utf_code_t must be unsigned");
+_Static_assert(sizeof(utf_code_t) == 4, "utf_code_t must be 32 bits");
+_Static_assert((utf8_t) -1 > 0, "utf8_t must be unsigned");
+_Static_assert(sizeof(utf8_t) == 1, "utf8_t must be 8 bits");
+
 /*
  * Alias the non-prefixed exported functions to slurm_-prefixed names so the
  * serializer plugin links against them via slurm_xlator.h. The macro-backed
@@ -201,9 +207,6 @@ extern bool slurm_is_utf8_control(utf_code_t utf)
 		0x3164, /* hangul filler */
 	};
 
-	if (utf < 0)
-		return false;
-
 #ifndef NDEBUG
 	/*
 	 * Wrapping macro will have already check ASCII so just verify it didn't
@@ -218,7 +221,7 @@ extern bool slurm_is_utf8_control(utf_code_t utf)
 	 *	ISO/IEC 2022 framework. The ranges of these code points are
 	 *	U+0000..U+001F, U+007F, and U+0080..U+009F
 	 */
-	xassert(!((utf >= 0) && (utf <= 0x8)));
+	xassert(utf > 0x8);
 	/*
 	 * We are just going to pretend these are not control codes:
 	 *	TAB (horizontal tab)
@@ -266,9 +269,6 @@ extern bool slurm_is_utf8_newline(utf_code_t utf)
 		0x2028, /* LS (line separator) */
 		0x2029, /* PS (paragraph separator) */
 	};
-
-	if (utf < 0)
-		return false;
 
 	/*
 	 * Unicode 15.0.0: 5.8 Newline Guidelines gives these as
@@ -343,9 +343,6 @@ extern bool slurm_is_utf8_space(utf_code_t utf)
 	 *	U+3000 ideographic space
 	 */
 
-	if (utf < 0)
-		return false;
-
 #ifndef NDEBUG
 	/*
 	 * Wrapping macro will have already check ASCII so just verify it didn't
@@ -408,7 +405,7 @@ extern int slurm_is_utf_valid(utf_code_t utf)
 		return ESLURM_UTF_NULL_CODE;
 	}
 
-	if ((utf < 0) || (utf > 0x10FFFF))
+	if (utf > 0x10FFFF)
 		/* outside of UTF codespace */
 		return ESLURM_UTF_INVALID_CODE;
 
@@ -633,7 +630,7 @@ extern int slurm_write_utf8_character(const utf_code_t utf, utf8_t *dst,
 			    slurm_strerror(rc));
 		return slurm_write_utf8_character(UTF_REPLACEMENT_CODE, dst,
 						  bytes_ptr, log);
-	} else if ((utf >= 0) && (utf <= 0x7F)) {
+	} else if (utf <= 0x7F) {
 		/* UTF8 below 128 is same as ASCII */
 		dst[0] = utf & 0x7F;
 		*bytes_ptr = 1;
@@ -714,16 +711,11 @@ extern int slurm_read_utf8_character(const utf8_t *src, const utf8_t *end,
 		return EINVAL;
 	}
 
-	if ((*src >= 0) && (*src <= 0x7F)) {
+	if ((*src & 0x80) == 0x00) {
 		/* ASCII: 0xxxxxxx */
 
 		bytes = 1;
 		utf = *src;
-	} else if ((*src & 0x80) == 0x00) {
-		/* 0xxxxxxx */
-
-		bytes = 1;
-		utf = *src & 0x7f;
 	} else if ((*src & 0xe0) == 0xc0) {
 		/* 110xxxxx	10xxxxxx */
 
