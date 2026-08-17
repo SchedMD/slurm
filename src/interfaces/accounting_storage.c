@@ -48,6 +48,7 @@
 #include "src/common/persist_conn.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
@@ -1100,13 +1101,27 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 	if (slurm_conf.accounting_storage_enforce & ACCOUNTING_ENFORCE_NO_JOBS)
 		return SLURM_SUCCESS;
 
+	/*
+	 * Pending + Completing is equivalent to Requeue. Consequently,
+	 * db_index and submit_time still refer to the run that just
+	 * ended, so a start record sent now would overwrite the
+	 * finished record.
+	 *
+	 * slurmdbd gets here on a DBD_JOB_START and must honor whatever
+	 * state an (older, unpatched) slurmctld peer explicitly sent,
+	 * so only skip when running in slurmctld.
+	 */
+	if (running_in_slurmctld() && IS_JOB_PENDING(job_ptr) &&
+	    IS_JOB_COMPLETING(job_ptr))
+		return SLURM_SUCCESS;
+
 	/* A pending job's start_time is it's expected initiation time
 	 * (changed in slurm v2.1). Rather than changing a bunch of code
 	 * in the accounting_storage plugins and SlurmDBD, just clear
 	 * start_time before accounting and restore it later.
-	 * If an update for a job that is being requeued[hold] happens,
-	 * we don't want to modify the start_time of the old record.
-	 * Pending + Completing is equivalent to Requeue.
+	 * Don't do this for a requeued job (Pending + Completing). In
+	 * that case, the start time belongs to the previous run.
+	 * Reachable in slurmdbd, where the guard above does not apply.
 	 */
 	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_COMPLETING(job_ptr)) {
 		int rc;
