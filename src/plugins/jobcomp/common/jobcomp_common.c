@@ -86,6 +86,14 @@ extern char *jobcomp_common_get_event_name(uint32_t event)
 		return "job finish";
 	case JOBCOMP_EVENT_JOB_START:
 		return "job start";
+	case JOBCOMP_EVENT_JOB_HOLD:
+		return "job hold";
+	case JOBCOMP_EVENT_JOB_QUEUE:
+		return "job queue";
+	case JOBCOMP_EVENT_JOB_RELEASE:
+		return "job release";
+	case JOBCOMP_EVENT_JOB_REQUEUE:
+		return "job requeue";
 	case JOBCOMP_EVENT_INVALID:
 	default:
 		return "invalid";
