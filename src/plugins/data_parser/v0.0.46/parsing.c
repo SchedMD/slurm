@@ -764,27 +764,38 @@ cleanup:
  * Try to guess if the user actually set the value or if the value was dumped
  * with the other oversubsribed values which means it doesn't need to be logged
  */
-static int _is_duplicate_linked_parser_value(args_t *args,
-					     const parser_t *const array,
-					     const parser_t *const parser,
-					     data_t *src_obj, data_t *src,
-					     data_t *parent_path)
+static bool _is_duplicate_linked_parser_value(args_t *args,
+					      const parser_t *const array,
+					      const parser_t *const parser,
+					      data_t *src_obj, data_t *src,
+					      data_t *parent_path)
 {
-	if (parser->field_name_overloads == 1)
+	bool compared = false;
+
+	/* field_name_overloads counts the other fields, not this one */
+	if (!parser->field_name_overloads)
 		return false;
 
 	for (int i = 0; i < array->field_count; i++) {
-		if ((array->fields[i].field_name_overloads != 1) &&
-		    !xstrcmp(array->fields[i].field_name, parser->field_name) &&
-		    !data_check_match(src,
-				      data_key_get(src_obj,
-						   array->fields[i].key),
-				      false)) {
+		const parser_t *const field = &array->fields[i];
+
+		/* only compare against the other fields sharing the name */
+		if ((field == parser) || !field->key ||
+		    xstrcasecmp(field->field_name, parser->field_name))
+			continue;
+
+		/* a dump holds the same value under every one of them */
+		if (!data_check_match(src,
+				      data_resolve_dict_path(src_obj,
+							     field->key),
+				      false))
 			return false;
-		}
+
+		compared = true;
 	}
 
-	return true;
+	/* nothing to compare against: the value must have been set */
+	return compared;
 }
 
 /* parser linked parser inside of parser array */
