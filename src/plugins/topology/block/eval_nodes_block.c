@@ -223,6 +223,28 @@ static void _jobinfo_add_segment(
 	return;
 }
 
+/*
+ * Returns the upper bound of segments that can be built from base blocks that
+ * each have fewer than segment_size available nodes.
+ *
+ * The largest base block in the sum holds max_node_cnt nodes, so
+ * a segment needs at least ROUNDUP(segment_size, max_node_cnt) of them.
+ */
+static int _partial_bblock_segments(uint32_t node_sum, int bblock_cnt,
+				    uint32_t max_node_cnt,
+				    uint16_t segment_size)
+{
+	int segments_by_node, segments_by_bblock;
+
+	if (!node_sum)
+		return 0;
+
+	segments_by_node = node_sum / segment_size;
+	segments_by_bblock = bblock_cnt / ROUNDUP(segment_size, max_node_cnt);
+
+	return MIN(segments_by_node, segments_by_bblock);
+}
+
 int _get_block_level(int rem_nodes, int *llblock_level, block_context_t *ctx)
 {
 	int bblock_per_block = ROUNDUP(rem_nodes, ctx->bblock_node_cnt);
@@ -297,6 +319,12 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	int asblock_inx = -1;
 	uint32_t *nodes_on_asblock = NULL; /* total nodes on asblock */
 	int block_per_asblock = 0;
+	int avail_segments = 0;
+	bool spread_check = false;
+	int partial_seg_block_cnt = 0;
+	uint32_t partial_seg_block_node_sum = 0;
+	uint32_t max_partial_node_cnt = 0;
+	int prev_block_inx = -1;
 
 	hres_select_t *hres_select = topo_eval->job_ptr->hres_select;
 	bool hres_match_topo = false;
@@ -359,6 +387,9 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		bblock_per_block = (1 << block_level);
 		block_cnt = ROUNDUP(ctx->block_count, bblock_per_block);
 	}
+
+	spread_check =
+		((job_ptr->bit_flags & SPREAD_SEGMENTS) && (segment_cnt > 1));
 
 	xassert(llblock_level >= 0);
 
@@ -602,9 +633,58 @@ next_segment:
 
 		nodes_on_block[block_inx_tmp] += nodes_on_bblock_tmp;
 
+		if (spread_check && !alloc_node_map && nodes_on_bblock_tmp) {
+			if (prev_block_inx != block_inx_tmp) {
+				/* Upper bound of segments made from partials */
+				avail_segments += _partial_bblock_segments(
+					partial_seg_block_node_sum,
+					partial_seg_block_cnt,
+					max_partial_node_cnt, segment_size);
+
+				prev_block_inx = block_inx_tmp;
+				partial_seg_block_node_sum = 0;
+				partial_seg_block_cnt = 0;
+				max_partial_node_cnt = 0;
+			}
+
+			/* segment fits in one base block */
+			if (nodes_on_bblock_tmp >= segment_size) {
+				avail_segments++;
+			} else {
+				/* add to partial block node sum */
+				partial_seg_block_node_sum +=
+					nodes_on_bblock_tmp;
+				partial_seg_block_cnt++;
+				if (max_partial_node_cnt < nodes_on_bblock_tmp)
+					max_partial_node_cnt =
+						nodes_on_bblock_tmp;
+			}
+		}
+
 		if (nodes_on_llblock) {
 			int llblock_inx = i / bblock_per_llblock;
 			nodes_on_llblock[llblock_inx] += nodes_on_bblock_tmp;
+		}
+	}
+
+	/*
+	 * First segment: every segment needs segment_size nodes and consumes
+	 * whole bblocks, so give up if that can't be satisfied.
+	 */
+	if (spread_check && !alloc_node_map) {
+		/* include the last block's partial sum */
+		avail_segments +=
+			_partial_bblock_segments(partial_seg_block_node_sum,
+						 partial_seg_block_cnt,
+						 max_partial_node_cnt,
+						 segment_size);
+
+		if (avail_segments < segment_cnt) {
+			log_flag(SELECT_TYPE, "%pJ base blocks fit %d of %d requested segments (spread check)",
+				 job_ptr, avail_segments, segment_cnt);
+			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
+			topo_eval->eval_action = EVAL_ACTION_BREAK;
+			goto fini;
 		}
 	}
 
@@ -616,6 +696,7 @@ next_segment:
 		}
 	}
 
+	avail_segments = 0;
 	block_inx = -1;
 	for (i = 0; i < block_cnt; i++) {
 		uint32_t block_cpus = 0;
@@ -666,6 +747,18 @@ next_segment:
 					     req_nodes) ||
 		    (rem_cpus > block_cpus))
 			continue;
+
+		/* Estimate upper bound of avail_segments */
+		if (!alloc_node_map && (segment_cnt > 1)) {
+			int max_block_segments = (bnc / segment_size);
+
+			if (spread_check)
+				avail_segments += MIN(max_block_segments,
+						      bblock_per_block);
+			else
+				avail_segments += max_block_segments;
+		}
+
 		/*
 		 * Select the block:
 		 * 	1) with lowest weight nodes
@@ -698,6 +791,22 @@ next_segment:
 			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
 		else
 			rc = ESLURM_TOPO_NO_FIT;
+		topo_eval->eval_action = EVAL_ACTION_BREAK;
+		goto fini;
+	}
+
+	/*
+	 * First segment: Give up if upper bound of available segments can't
+	 * satisfy required segment_cnt. This check is for all segment jobs.
+	 * This is a looser check for spread segments due to not being able to
+	 * differentiate individual base blocks in the aggregate block. However,
+	 * this will help catch if blocks were rejected due to low cpu counts.
+	 */
+	if ((segment_cnt > 1) && !alloc_node_map &&
+	    (avail_segments < segment_cnt)) {
+		log_flag(SELECT_TYPE, "%pJ blocks fit %d of %d requested segments (block estimate)",
+			 job_ptr, avail_segments, segment_cnt);
+		rc = ESLURM_TOPO_SEGMENT_NO_FIT;
 		topo_eval->eval_action = EVAL_ACTION_BREAK;
 		goto fini;
 	}
