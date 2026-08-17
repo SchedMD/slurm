@@ -150,6 +150,8 @@ extern char *slurmdb_cluster_flags_2_str(slurmdb_cluster_flags_t flags_in)
 extern void
 slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 {
+	int rc = EINVAL;
+
 	xassert(msg);
 	xassert(msg->working_cluster_rec);
 	xassert(msg->node_list);
@@ -164,7 +166,8 @@ slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 		       working_cluster_rec->control_port,
 		       working_cluster_rec->control_host);
 
-	if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
-		    working_cluster_rec->name) < 0)
-		error("unable to set SLURM_CLUSTER_NAME in environment");
+	if ((rc = setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
+			  working_cluster_rec->name)))
+		error("unable to set SLURM_CLUSTER_NAME in environment: %s",
+		      slurm_strerror(rc));
 }
