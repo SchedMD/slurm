@@ -2623,26 +2623,29 @@ extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name)
 {
 	char *cluster_name;
 	char host[256], work_dir[PATH_MAX];
+	int rc = EINVAL;
 
 	if (working_cluster_rec && working_cluster_rec->name)
 		cluster_name = working_cluster_rec->name;
 	else
 		cluster_name = slurm_conf.cluster_name;
 
-	if (set_cluster_name) {
-		if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s", cluster_name) < 0)
-			error("unable to set SLURM_CLUSTER_NAME in environment");
-	}
+	if (set_cluster_name &&
+	    (rc = setenvf(NULL, "SLURM_CLUSTER_NAME", "%s", cluster_name)))
+		error("unable to set SLURM_CLUSTER_NAME in environment: %s",
+		      slurm_strerror(rc));
 
 	if ((getcwd(work_dir, PATH_MAX)) == NULL)
 		error("getcwd failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0)
-		error("unable to set SLURM_SUBMIT_DIR in environment");
+	else if ((rc = setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir)))
+		error("unable to set SLURM_SUBMIT_DIR in environment: %s",
+		      slurm_strerror(rc));
 
 	if ((gethostname(host, sizeof(host))))
 		error("gethostname failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
-		error("unable to set SLURM_SUBMIT_HOST in environment");
+	else if ((rc = setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host)))
+		error("unable to set SLURM_SUBMIT_HOST in environment: %s",
+		      slurm_strerror(rc));
 
 	if (wd_ptr && work_dir[0])
 		*wd_ptr = xstrdup(work_dir);
