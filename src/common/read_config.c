@@ -4403,10 +4403,18 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_CLOCK;
 		else if (xstrcasestr(temp_str, "short"))
 			conf->log_fmt = LOG_FMT_SHORT;
-		else if (xstrcasestr(temp_str, "thread_id"))
-			conf->log_fmt = LOG_FMT_THREAD_ID;
 		else if (xstrcasestr(temp_str, "omit"))
 			conf->log_fmt = LOG_FMT_OMIT;
+		else if (xstrcasestr(temp_str, "thread_id"))
+			conf->log_fmt = LOG_FMT_THREAD_ID;
+
+		/*
+		 * thread_id names the option whenever a timestamp format took
+		 * the value instead, so that it may accompany that format.
+		 */
+		if ((conf->log_fmt != LOG_FMT_THREAD_ID) &&
+		    xstrcasestr(temp_str, "thread_id"))
+			conf->log_flags |= LOG_FLAG_THREAD_ID;
 		xfree(temp_str);
 	}
 
