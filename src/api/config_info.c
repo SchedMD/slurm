@@ -58,6 +58,25 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/select.h"
 
+#define T(fmt, str) { fmt, str }
+
+static const struct {
+	log_fmt_t fmt;
+	const char *str;
+} log_fmts[] = {
+	T(LOG_FMT_ISO8601_MS, "iso8601_ms"),
+	T(LOG_FMT_ISO8601, "iso8601"),
+	T(LOG_FMT_RFC5424_MS, "rfc5424_ms"),
+	T(LOG_FMT_RFC5424, "rfc5424"),
+	T(LOG_FMT_RFC3339, "rfc3339"),
+	T(LOG_FMT_CLOCK, "clock"),
+	T(LOG_FMT_SHORT, "short"),
+	T(LOG_FMT_THREAD_ID, "thread_id"),
+	T(LOG_FMT_OMIT, "omit"),
+};
+
+#undef T
+
 /* Local functions */
 static void _write_group_header(FILE* out, char * header);
 static void _write_key_pairs(FILE* out, void *key_pairs);
@@ -535,30 +554,13 @@ static char *_accountingstoreflags(uint32_t conf_flags)
 	return str;
 }
 
-static char *_logfmtstr(uint16_t log_fmt)
+static char *_logfmtstr(const log_fmt_t log_fmt)
 {
-	char *logfmtstr = NULL;
+	for (int i = 0; i < ARRAY_SIZE(log_fmts); i++)
+		if (log_fmt == log_fmts[i].fmt)
+			return xstrdup(log_fmts[i].str);
 
-	if (log_fmt == LOG_FMT_ISO8601_MS)
-		logfmtstr = xstrdup("iso8601_ms");
-	else if (log_fmt == LOG_FMT_ISO8601)
-		logfmtstr = xstrdup("iso8601");
-	else if (log_fmt == LOG_FMT_RFC5424_MS)
-		logfmtstr = xstrdup("rfc5424_ms");
-	else if (log_fmt == LOG_FMT_RFC5424)
-		logfmtstr = xstrdup("rfc5424");
-	else if (log_fmt == LOG_FMT_RFC3339)
-		logfmtstr = xstrdup("rfc3339");
-	else if (log_fmt == LOG_FMT_CLOCK)
-		logfmtstr = xstrdup("clock");
-	else if (log_fmt == LOG_FMT_SHORT)
-		logfmtstr = xstrdup("short");
-	else if (log_fmt == LOG_FMT_THREAD_ID)
-		logfmtstr = xstrdup("thread_id");
-	else if (log_fmt == LOG_FMT_OMIT)
-		logfmtstr = xstrdup("omit");
-
-	return logfmtstr;
+	return NULL;
 }
 
 static void _sprint_task_plugin_params(char *str,
