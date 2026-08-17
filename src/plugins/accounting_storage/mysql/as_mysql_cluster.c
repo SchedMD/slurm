@@ -1931,6 +1931,7 @@ extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
 	char *values = NULL;
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
+	time_t now = time(NULL);
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1973,9 +1974,9 @@ extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
 	}
 	if (!mysql_fetch_row(result)) {
 		/* create new event if no events for the node yet. */
-		as_mysql_node_down(mysql_conn, node_ptr, time(NULL),
-				   "node-update", slurm_conf.slurm_user_id);
-		as_mysql_node_up(mysql_conn, node_ptr, time(NULL));
+		as_mysql_node_down(mysql_conn, node_ptr, now, "node-update",
+				   slurm_conf.slurm_user_id);
+		as_mysql_node_up(mysql_conn, node_ptr, now);
 	}
 	mysql_free_result(result);
 
