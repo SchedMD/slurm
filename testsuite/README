@@ -799,6 +799,7 @@ test_111_4   Test --state and --nodes filtering
 test_111_5   /commands/sinfo/test_--state.py
 test_111_6   Verify --states name parsing, --helpstate round-trip, and
              invalid-state rejection
+test_111_7   Test node row grouping
 
 test_112_#   Testing of slurmrestd options.
 ===========================================
