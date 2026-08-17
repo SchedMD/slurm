@@ -2599,7 +2599,7 @@ extern char **env_array_exclude(const char **env, const regex_t *regex)
 
 extern void set_prio_process_env(void)
 {
-	int retval;
+	int retval, rc = EINVAL;
 
 	errno = 0; /* needed to detect a real failure since prio can be -1 */
 
@@ -2610,8 +2610,9 @@ extern void set_prio_process_env(void)
 		}
 	}
 
-	if (setenvf(NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
-		error("unable to set SLURM_PRIO_PROCESS in environment");
+	if ((rc = setenvf(NULL, "SLURM_PRIO_PROCESS", "%d", retval))) {
+		error("unable to set SLURM_PRIO_PROCESS in environment: %s",
+		      slurm_strerror(rc));
 		return;
 	}
 
