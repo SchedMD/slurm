@@ -399,6 +399,10 @@ static bool _match_env(const data_t *data, void *needle)
 
 	match = !xstrcmp(name, needle_name);
 
+	if (match)
+		debug3("%s: collapsing duplicate %s in /process/env",
+		       __func__, name);
+
 	xfree(name);
 
 	return match;
