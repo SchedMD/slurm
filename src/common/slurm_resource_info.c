@@ -119,8 +119,7 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 				if (!isdigit(ast[i])) {
 					error("Failed to validate number: %s, the offending character is %c",
 					      ast, ast[i]);
-					*error_code = SLURM_ERROR;
-					return 0;
+					goto fail;
 				}
 
 			count = strtol(ast + 1, &end_ptr, 10);
@@ -128,9 +127,7 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 			    (count == LONG_MIN) || (count == LONG_MAX)) {
 				error("Invalid %s multiplier: %s",
 				      type, ast + 1);
-				xfree(result);
-				*error_code = SLURM_ERROR;
-				break;
+				goto fail;
 			}
 			ast[0] = '\0';
 		}
@@ -139,8 +136,7 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 			if (!isfunc(tok[i])) {
 				error("Failed to validate number: %s, the offending character is %c",
 				      tok, tok[i]);
-				*error_code = SLURM_ERROR;
-				return 0;
+				goto fail;
 			}
 		}
 
@@ -158,6 +154,13 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 	}
 
 	return result;
+
+fail:
+	*error_code = SLURM_ERROR;
+	xfree(result);
+	xfree(tmp);
+
+	return NULL;
 }
 
 static bool _have_task_affinity(void)
