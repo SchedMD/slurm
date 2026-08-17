@@ -993,6 +993,21 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id);
  */
 extern int job_hold_by_qos_id(uint32_t qos_id);
 
+/*
+ * job_mgr_hold_set - hold a job by zeroing its priority and updating the reason
+ *	it is held, recording a jobcomp event when the job becomes held.
+ * IN/OUT job_ptr - job record to hold
+ * IN state_reason - reason from enum job_state_reason, NO_VAL to keep the
+ *	current reason
+ * IN state_desc - state reason description, copied, so it may be the job's
+ *	current one; NULL to clear it
+ * IN event - jobcomp event to record, JOBCOMP_EVENT_INVALID for none. The
+ *	event is only recorded when the job was not already held, so holds
+ *	applied on top of an existing hold do not generate events.
+ */
+extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
+			     char *state_desc, uint32_t event);
+
 /* log the completion of the specified job */
 extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
 

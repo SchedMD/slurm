@@ -12341,6 +12341,22 @@ static void _merge_job_licenses(job_record_t *shrink_job_ptr,
 	license_job_merge(expand_job_ptr);
 }
 
+extern void job_mgr_hold_set(job_record_t *job_ptr, uint32_t state_reason,
+			     char *state_desc, uint32_t event)
+{
+	bool was_held = !job_ptr->priority;
+	char *desc = xstrdup(state_desc);
+
+	job_ptr->priority = 0;
+	if (state_reason != NO_VAL)
+		job_ptr->state_reason = state_reason;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = desc;
+
+	if (!was_held && (event != JOBCOMP_EVENT_INVALID))
+		jobcomp_g_record_job_event(job_ptr, event);
+}
+
 static int _hold_job_rec(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -12355,9 +12371,7 @@ static int _hold_job_rec(void *x, void *arg)
 		return 0;
 
 	job_ptr->direct_set_prio = 1;
-	job_ptr->priority = 0;
-	job_ptr->state_reason = state_reason;
-	xfree(job_ptr->state_desc);
+	job_mgr_hold_set(job_ptr, state_reason, NULL, JOBCOMP_EVENT_INVALID);
 
 	if (job_ptr->details && (job_ptr->details->begin_time < now))
 		job_ptr->details->begin_time = 0;
