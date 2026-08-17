@@ -1922,13 +1922,15 @@ static int _run_srun_script (srun_job_t *job, char *script)
 static void _setenvf_key(const char *key, const char *fmt, va_list ap)
 {
 	va_list ap_copy;
+	int rc;
 
 	if (getenv(key))
 		return;
 
 	va_copy(ap_copy, ap);
-	if (vsetenvf(NULL, key, fmt, ap_copy) < 0)
-		error("unable to set %s in environment", key);
+	if ((rc = vsetenvf(NULL, key, fmt, ap_copy)))
+		error("unable to set %s in environment: %s", key,
+		      slurm_strerror(rc));
 	va_end(ap_copy);
 }
 
