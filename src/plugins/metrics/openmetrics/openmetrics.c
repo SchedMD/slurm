@@ -503,7 +503,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_hold, partition_jobs_hold, "Number of jobs in Hold state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_max_job_nodes, partition_jobs_max_job_nodes, "Max of the max_nodes required of all pending jobs in that partition", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_max_job_nodes_nohold, partition_jobs_max_job_nodes_nohold, "Max of the max_nodes required of all pending jobs in that partition excluding Held jobs", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->jobs_memory_alloc, partition_jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->jobs_memory_alloc, partition_jobs_memory_alloc, "Total memory allocated by jobs in MiB", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_min_job_nodes, partition_jobs_min_job_nodes, "Max of the min_nodes required of all pending jobs in that partition", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_min_job_nodes_nohold, partition_jobs_min_job_nodes_nohold, "Max of the min_nodes required of all pending jobs in that partition excluding Held jobs", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_node_failed, partition_jobs_node_failed, "Number of jobs in Node Failed state", GAUGE, "partition", ps->name);
