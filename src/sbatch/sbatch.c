@@ -537,6 +537,7 @@ static int _set_umask_env(void)
 {
 	char mask_char[5];
 	mode_t mask;
+	int rc = EINVAL;
 
 	if (getenv("SLURM_UMASK"))	/* use this value */
 		return SLURM_SUCCESS;
@@ -550,8 +551,9 @@ static int _set_umask_env(void)
 
 	sprintf(mask_char, "0%d%d%d",
 		((mask>>6)&07), ((mask>>3)&07), mask&07);
-	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
-		error ("unable to set SLURM_UMASK in environment");
+	if ((rc = setenvf(NULL, "SLURM_UMASK", "%s", mask_char))) {
+		error("unable to set SLURM_UMASK in environment: %s",
+		      slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
 	debug ("propagating UMASK=%s", mask_char);
