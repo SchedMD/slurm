@@ -3031,8 +3031,15 @@ typedef enum {
 	LOG_FMT_OMIT = 8,
 } log_fmt_t;
 
+/* Options accompanying the LogTimeFormat timestamp format. */
+typedef enum {
+	LOG_FLAGS_NONE = 0,
+} log_flags_t;
+
 /* Default timestamp format */
 #define LOG_FMT_DEFAULT LOG_FMT_ISO8601_MS
+/* Default LogTimeFormat options */
+#define LOG_FLAGS_DEFAULT LOG_FLAGS_NONE
 
 /*
  * If adding to slurm_conf_t contents that need to be used in the slurmstepd
