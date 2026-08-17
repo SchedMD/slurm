@@ -17384,6 +17384,12 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	job_ptr->resize_time = 0;
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
+	/*
+	 * Record the event last so it carries the job's new SLUID, submit
+	 * time, and eventual hold applied while requeuing the job.
+	 */
+	jobcomp_g_record_job_event(job_ptr, JOBCOMP_EVENT_JOB_REQUEUE);
+
 	/* Submit new sibling jobs for fed jobs */
 	if (fed_mgr_is_origin_job(job_ptr)) {
 		if (fed_mgr_job_requeue(job_ptr)) {
