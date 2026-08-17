@@ -63,6 +63,30 @@ static const kafka_topic_spec_t topic_specs[] = {
 		.param = "topic",
 	},
 	{
+		.event = JOBCOMP_EVENT_JOB_HOLD,
+		.offset = offsetof(kafka_conf_t, topic_job_hold),
+		.param = "topic_job_hold",
+		.suffix = "job-hold",
+	},
+	{
+		.event = JOBCOMP_EVENT_JOB_QUEUE,
+		.offset = offsetof(kafka_conf_t, topic_job_queue),
+		.param = "topic_job_queue",
+		.suffix = "job-queue",
+	},
+	{
+		.event = JOBCOMP_EVENT_JOB_RELEASE,
+		.offset = offsetof(kafka_conf_t, topic_job_release),
+		.param = "topic_job_release",
+		.suffix = "job-release",
+	},
+	{
+		.event = JOBCOMP_EVENT_JOB_REQUEUE,
+		.offset = offsetof(kafka_conf_t, topic_job_requeue),
+		.param = "topic_job_requeue",
+		.suffix = "job-requeue",
+	},
+	{
 		.event = JOBCOMP_EVENT_JOB_START,
 		.offset = offsetof(kafka_conf_t, topic_job_start),
 		.param = "topic_job_start",

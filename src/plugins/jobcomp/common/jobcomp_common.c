@@ -453,6 +453,14 @@ extern uint32_t jobcomp_common_parse_enabled_events(void)
 
 	enabled_events |= JOBCOMP_CONF_DEFAULT_EVENTS;
 
+	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_hold"))
+		enabled_events |= JOBCOMP_EVENT_JOB_HOLD;
+	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_queue"))
+		enabled_events |= JOBCOMP_EVENT_JOB_QUEUE;
+	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_release"))
+		enabled_events |= JOBCOMP_EVENT_JOB_RELEASE;
+	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_requeue"))
+		enabled_events |= JOBCOMP_EVENT_JOB_REQUEUE;
 	if (xstrcasestr(slurm_conf.job_comp_params, "enable_job_start"))
 		enabled_events |= JOBCOMP_EVENT_JOB_START;
 

@@ -54,6 +54,17 @@ static int _produce_internal(job_record_t *job_ptr, uint32_t event)
 	char *job_record_serialized = NULL;
 	data_t *job_record_data = NULL;
 	kafka_msg_opaque_t *opaque = NULL;
+	bool enabled = false;
+
+	/*
+	 * The controller only knows which events the plugin can record;
+	 * which ones the site enabled is decided here, before any work.
+	 */
+	slurm_rwlock_rdlock(&kafka_conf_rwlock);
+	enabled = (event & kafka_conf->events);
+	slurm_rwlock_unlock(&kafka_conf_rwlock);
+	if (!enabled)
+		return SLURM_SUCCESS;
 
 	if (!(job_record_data =
 			jobcomp_common_job_record_to_data(job_ptr, event))) {
@@ -131,7 +142,9 @@ extern int jobcomp_p_set_location(void)
  */
 extern uint32_t jobcomp_p_get_events(void)
 {
-	return (JOBCOMP_EVENT_JOB_FINISH | JOBCOMP_EVENT_JOB_START);
+	return (JOBCOMP_EVENT_JOB_FINISH | JOBCOMP_EVENT_JOB_START |
+		JOBCOMP_EVENT_JOB_HOLD | JOBCOMP_EVENT_JOB_QUEUE |
+		JOBCOMP_EVENT_JOB_RELEASE | JOBCOMP_EVENT_JOB_REQUEUE);
 }
 
 extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
