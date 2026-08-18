@@ -50,6 +50,7 @@
 #include "task_cgroup_cpuset.h"
 #include "task_cgroup_memory.h"
 #include "task_cgroup_devices.h"
+#include "task_cgroup_dmem.h"
 
 const char plugin_name[]        = "Tasks containment cgroup plugin";
 const char plugin_type[]        = "task/cgroup";
@@ -58,6 +59,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
+static bool use_dmem = false;
 
 extern int init(void)
 {
@@ -92,6 +94,17 @@ extern int init(void)
 		use_memory = true;
 	if (slurm_cgroup_conf.constrain_devices)
 		use_devices = true;
+	if (slurm_cgroup_conf.constrain_device_memory) {
+		/*
+		 * A missing dmem controller is a normal state (kernel older
+		 * than 6.14 or no dmem-aware device driver): shards then
+		 * stay unenforced, as already reported by the slurmd.
+		 */
+		if (cgroup_g_has_feature(CG_DMEM_MAX))
+			use_dmem = true;
+		else
+			log_flag(CGROUP, "ConstrainDeviceMemory=yes but the dmem cgroup controller is not available, device memory will not be enforced");
+	}
 
 	if (use_cpuset) {
 		if ((rc = task_cgroup_cpuset_init())) {
@@ -119,6 +132,15 @@ extern int init(void)
 		} else
 			debug("device enforcement enabled");
 	}
+
+	if (use_dmem) {
+		if ((rc = task_cgroup_dmem_init())) {
+			error("failure enabling device memory enforcement: %s",
+			      slurm_strerror(rc));
+			return rc;
+		} else
+			debug("device memory enforcement enabled");
+	}
 end:
 	debug("%s loaded", plugin_name);
 	return rc;
@@ -135,6 +157,9 @@ extern int fini(void)
 		rc = SLURM_ERROR;
 
 	if (use_devices && (task_cgroup_devices_fini() != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
+	if (use_dmem && (task_cgroup_dmem_fini() != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	debug("%s unloaded", plugin_name);
@@ -169,6 +194,9 @@ extern int task_p_pre_setuid(stepd_step_rec_t *step)
 		rc = SLURM_ERROR;
 
 	if (use_devices && (task_cgroup_devices_create(step) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
+	if (use_dmem && (task_cgroup_dmem_create(step) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	return rc;
