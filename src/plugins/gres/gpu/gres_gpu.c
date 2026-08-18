@@ -590,6 +590,12 @@ static int _merge_system_gres_conf(list_t *gres_list_conf,
 				gres_slurmd_conf_sys->unique_id =
 					xstrdup(gres_slurmd_conf->unique_id);
 
+			if (gres_slurmd_conf->dmem_region) {
+				xfree(gres_slurmd_conf_sys->dmem_region);
+				gres_slurmd_conf_sys->dmem_region =
+					xstrdup(gres_slurmd_conf->dmem_region);
+			}
+
 			list_remove(itr2);
 			list_append(gres_list_gpu, gres_slurmd_conf_sys);
 			continue;

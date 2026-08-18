@@ -195,6 +195,12 @@ typedef struct gres_slurmd_conf {
 	/* machine/local/physical CPU mapping */
 	bitstr_t *cpus_bitmap;
 
+	/*
+	 * Optional dmem cgroup region bound to this device.
+	 * Only used within slurmd, never packed.
+	 */
+	char *dmem_region;
+
 	/* Device file associated with this configuration record */
 	char *file;
 

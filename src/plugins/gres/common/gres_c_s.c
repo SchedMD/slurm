@@ -360,6 +360,8 @@ static list_t *_build_sharing_list(list_t *gres_list, char *sharing_name)
 				sharing_record->cpus_bitmap =
 					bit_copy(gres_slurmd_conf->cpus_bitmap);
 			}
+			sharing_record->dmem_region =
+				xstrdup(gres_slurmd_conf->dmem_region);
 			sharing_record->file = xstrdup(f_name);
 			sharing_record->links =
 				xstrdup(gres_slurmd_conf->links);

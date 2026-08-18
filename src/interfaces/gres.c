@@ -104,6 +104,7 @@ static s_p_options_t _gres_options[] = {
 	{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
 				 * (deprecated, use Cores) */
 	{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
+	{"DmemRegion", S_P_STRING}, /* dmem cgroup region of Gres device */
 	{"File",  S_P_STRING},	/* Path to Gres device */
 	{"Files", S_P_STRING},	/* Path to Gres device */
 	{"Flags", S_P_STRING},	/* GRES Flags */
@@ -1764,6 +1765,12 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("MultipleFiles does not contain multiple files. Use File instead");
 		p->config_flags |= GRES_CONF_HAS_FILE;
 		p->config_flags |= GRES_CONF_HAS_MULT;
+	}
+
+	if (s_p_get_string(&p->dmem_region, "DmemRegion", tbl) &&
+	    ((p->count != 1) || (p->config_flags & GRES_CONF_HAS_MULT))) {
+		fatal("Invalid GRES record for %s, DmemRegion is bound to a single device File",
+		      p->name);
 	}
 
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
@@ -11322,6 +11329,7 @@ extern void destroy_gres_slurmd_conf(void *x)
 	xassert(p);
 	xfree(p->cpus);
 	FREE_NULL_BITMAP(p->cpus_bitmap);
+	xfree(p->dmem_region);
 	xfree(p->file);		/* Only used by slurmd */
 	xfree(p->links);
 	xfree(p->name);
@@ -11488,6 +11496,8 @@ extern void add_gres_to_list(list_t *gres_list,
 	if (gres_slurmd_conf_in->type_name)
 		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_TYPE;
 	gres_slurmd_conf->cpus = xstrdup(gres_slurmd_conf_in->cpus);
+	gres_slurmd_conf->dmem_region =
+		xstrdup(gres_slurmd_conf_in->dmem_region);
 	gres_slurmd_conf->type_name = xstrdup(gres_slurmd_conf_in->type_name);
 	gres_slurmd_conf->name = xstrdup(gres_slurmd_conf_in->name);
 	gres_slurmd_conf->file = xstrdup(gres_slurmd_conf_in->file);
