@@ -9145,6 +9145,7 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 		(void) list_for_each(gres_devices, _foreach_alloc_gres_device,
 				     &foreach_alloc_gres_device);
 
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
 	}
