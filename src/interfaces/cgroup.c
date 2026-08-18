@@ -207,6 +207,7 @@ static void _init_slurm_cgroup_conf(void)
 #endif
 	slurm_cgroup_conf.cgroup_slice = NULL;
 	slurm_cgroup_conf.constrain_cores = false;
+	slurm_cgroup_conf.constrain_device_memory = false;
 	slurm_cgroup_conf.constrain_devices = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
 	slurm_cgroup_conf.constrain_swap_space = false;
@@ -253,6 +254,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packfloat(slurm_cgroup_conf.max_swap_percent, buffer);
 	pack64(slurm_cgroup_conf.memory_swappiness, buffer);
 
+	packbool(slurm_cgroup_conf.constrain_device_memory, buffer);
 	packbool(slurm_cgroup_conf.constrain_devices, buffer);
 	packstr(slurm_cgroup_conf.cgroup_plugin, buffer);
 
@@ -299,6 +301,7 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackfloat(&slurm_cgroup_conf.max_swap_percent, buffer);
 	safe_unpack64(&slurm_cgroup_conf.memory_swappiness, buffer);
 
+	safe_unpackbool(&slurm_cgroup_conf.constrain_device_memory, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.constrain_devices, buffer);
 	safe_unpackstr(&slurm_cgroup_conf.cgroup_plugin, buffer);
 
@@ -341,6 +344,7 @@ static void _read_slurm_cgroup_conf(void)
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
 		{"MemoryLimitThreshold", S_P_FLOAT},
 		{"ConstrainDevices", S_P_BOOLEAN},
+		{"ConstrainDeviceMemory", S_P_BOOLEAN},
 		{"AllowedDevicesFile", S_P_STRING},
 		{"MemorySwappiness", S_P_UINT64},
 		{"CgroupPlugin", S_P_STRING},
@@ -430,6 +434,10 @@ static void _read_slurm_cgroup_conf(void)
 		/* Devices constraint related conf items */
 		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_devices,
 				       "ConstrainDevices", tbl);
+
+		(void) s_p_get_boolean(
+			&slurm_cgroup_conf.constrain_device_memory,
+			"ConstrainDeviceMemory", tbl);
 
 		if (s_p_get_string(&tmp_str, "AllowedDevicesFile", tbl)) {
 			xfree(tmp_str);
@@ -647,6 +655,8 @@ extern list_t *cgroup_get_conf_list(void)
 		     cg_conf->max_swap_percent);
 	add_key_pair_bool(cgroup_conf_l, "ConstrainDevices",
 			  cg_conf->constrain_devices);
+	add_key_pair_bool(cgroup_conf_l, "ConstrainDeviceMemory",
+			  cg_conf->constrain_device_memory);
 	add_key_pair(cgroup_conf_l, "CgroupPlugin", "%s",
 		     cg_conf->cgroup_plugin);
 	add_key_pair_bool(cgroup_conf_l, "IgnoreSystemd",

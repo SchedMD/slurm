@@ -183,6 +183,7 @@ typedef struct {
 	bool cgroup_job_id_paths;
 	char *cgroup_slice;
 	bool constrain_cores;
+	bool constrain_device_memory;
 	bool constrain_devices;
 	bool constrain_ram_space;
 	bool constrain_swap_space;

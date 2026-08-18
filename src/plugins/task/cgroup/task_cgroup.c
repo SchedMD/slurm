@@ -75,6 +75,12 @@ extern int init(void)
 		return SLURM_ERROR;
 	}
 
+	if (slurm_cgroup_conf.constrain_device_memory &&
+	    !slurm_cgroup_conf.constrain_devices) {
+		error("ConstrainDeviceMemory=yes requires ConstrainDevices=yes in cgroup.conf.");
+		return SLURM_ERROR;
+	}
+
 	if (!running_in_slurmstepd())
 		goto end;
 
