@@ -436,13 +436,67 @@ static void _dmem_check_dup_regions(void)
 
 /*
  * Divide the dmem region capacity across the device configured shards.
+ *
+ * For logging:
+ * - "region=" is printed only if a region exists for the device.
+ * - "dmem=" is printed only if a region exists: "enforced" or "disabled"
+ *   when usable (per ConstrainDeviceMemory=yes), or "off" when excluded
+ *   with DmemRegion=off.
+ * - A device excluded with DmemRegion=off shows "dmem=off" when it has a
+ *   region, and neither field otherwise, without any warning.
+ * - A device with no usable region shows neither field, plus one warning
+ *   only under ConstrainDeviceMemory=yes naming the cause.
  */
 static int _dmem_set_dev_slices(void *x, void *arg)
 {
-	gres_dmem_dev_t *dmem = ((gres_device_t *) x)->dmem;
+	gres_device_t *dev = x;
+	gres_dmem_dev_t *dmem = dev->dmem;
 
-	if ((dmem->state == GRES_DMEM_USABLE) && dmem->shards)
+	/*
+	 * A device of no shards has no slice to enforce, so it is reported the
+	 * way the other unenforceable devices are: without a dmem= field, so
+	 * that field never claims a limit that no cgroup ever holds.
+	 */
+	if ((dmem->state == GRES_DMEM_USABLE) && !dmem->shards) {
+		info("shard: %s shards=0 region=%s capacity=%"PRIu64"MiB",
+		     dev->path, dmem->region,
+		     (dmem->capacity / (1024 * 1024)));
+		if (slurm_cgroup_conf.constrain_device_memory)
+			warning("shard: %s has no shards, its device memory will not be enforced.",
+				dev->path);
+		return 0;
+	}
+
+	if (dmem->state == GRES_DMEM_USABLE) {
 		dmem->slice = (dmem->capacity / dmem->shards);
+		info("shard: %s shards=%"PRIu64" region=%s capacity=%"PRIu64"MiB slice=%"PRIu64"MiB dmem=%s",
+		     dev->path, dmem->shards, dmem->region,
+		     (dmem->capacity / (1024 * 1024)),
+		     (dmem->slice / (1024 * 1024)),
+		     slurm_cgroup_conf.constrain_device_memory ? "enforced" :
+								 "disabled");
+		return 0;
+	}
+
+	if ((dmem->state == GRES_DMEM_EXCLUDED) && dmem->region) {
+		info("shard: %s shards=%"PRIu64" region=%s dmem=off",
+		     dev->path, dmem->shards, dmem->region);
+		return 0;
+	}
+
+	info("shard: %s shards=%"PRIu64, dev->path, dmem->shards);
+
+	if (!slurm_cgroup_conf.constrain_device_memory ||
+	    (dmem->state == GRES_DMEM_EXCLUDED))
+		return 0;
+
+	if (dmem->state == GRES_DMEM_AMBIGUOUS) {
+		warning("shard: %s matches several dmem regions, its device memory will not be enforced. Set DmemRegion= on its gres.conf gpu record to pick one.", dev->path);
+	} else if (dmem->state == GRES_DMEM_SHARED) {
+		warning("shard: %s shares dmem region %s with another device (e.g. MIG instances of one GPU), its device memory will not be enforced.", dev->path, dmem->region);
+	} else {
+		warning("shard: %s has no dmem region, its device memory will not be enforced (driver without dmem cgroup support, or kernel older than 6.14).", dev->path);
+	}
 
 	return 0;
 }
