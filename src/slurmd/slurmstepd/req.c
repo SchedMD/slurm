@@ -2300,6 +2300,10 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 	 * slurmd and slurmstepd
 	 */
 	safe_read(fd, &len, sizeof(int));
+	if ((len < 0) || (len > MAX_MSG_SIZE)) {
+		error("%s: rejecting invalid jobacct length %d", __func__, len);
+		goto rwfail;
+	}
 	buf = xmalloc(len);
 	safe_read(fd, buf, len);
 	buffer = create_buf(buf, len);
@@ -2567,6 +2571,10 @@ static int _handle_reconfig(int fd, uid_t uid, pid_t remote_pid)
 	 * len = 0 indicates we're just going for a log rotate.
 	 */
 	safe_read(fd, &len, sizeof(int));
+	if ((len < 0) || (len > MAX_MSG_SIZE)) {
+		error("%s: rejecting invalid config length %d", __func__, len);
+		goto rwfail;
+	}
 	if (len) {
 		buffer = init_buf(len);
 		safe_read(fd, buffer->head, len);
