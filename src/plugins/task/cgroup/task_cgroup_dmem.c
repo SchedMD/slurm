@@ -62,6 +62,27 @@ typedef struct {
 
 static bool is_first_task = true;
 
+/*
+ * Drain this node. A dmem region that existed at slurmd startup rejected a
+ * limit write, which means the device or its driver went away or changed
+ * under a running slurmd (e.g. a driver reload renaming the region). Jobs
+ * must stop landing on this node until an administrator fixes the device
+ * state and restarts the slurmd to re-discover the regions.
+ * IN reason - drain reason shown by sinfo
+ */
+static void _drain_node(char *reason)
+{
+	update_node_msg_t update_node_msg;
+
+	slurm_init_update_node_msg(&update_node_msg);
+	update_node_msg.node_names = conf->node_name;
+	update_node_msg.node_state = NODE_STATE_DRAIN;
+	update_node_msg.reason = reason;
+
+	if (slurm_update_node(&update_node_msg) != SLURM_SUCCESS)
+		error("Unable to drain node %s: %m", conf->node_name);
+}
+
 static int _handle_dmem_limit(void *x, void *arg)
 {
 	gres_device_t *dev = x;
@@ -88,9 +109,19 @@ static int _handle_dmem_limit(void *x, void *arg)
 
 	if (cgroup_g_constrain_set(CG_DMEM, handle_args->level, &limits) !=
 	    SLURM_SUCCESS) {
+		char *reason = NULL;
+
 		error("Unable to set device memory limit of %"PRIu64" bytes on dmem region %s (%s)",
 		      limits.limit_in_bytes, dmem->region, dev->path);
+
+		reason = xstrdup_printf(
+			"Cannot set device memory limit on dmem region %s (%s)",
+			dmem->region, dev->path);
+		_drain_node(reason);
+		xfree(reason);
+
 		handle_args->rc = SLURM_ERROR;
+		return -1;
 	}
 
 	return 0;
