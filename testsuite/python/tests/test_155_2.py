@@ -1,14 +1,13 @@
 ############################################################################
 # Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 ############################################################################
-import csv
 import logging
 import re
-from pathlib import Path
 
 import pytest
 
 import atf
+import hdf5_profile
 
 id_cols = ["Step", "Node", "Series"]
 summarized_cols = [
@@ -37,7 +36,7 @@ listed_cols = summarized_cols + ["ElapsedTime"]
 
 @pytest.fixture(scope="module")
 def hdf5_dir():
-    return Path("h5").absolute()
+    return hdf5_profile.profile_hdf5_dir()
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -65,7 +64,7 @@ def setup(hdf5_dir):
 
 @pytest.fixture(scope="module")
 def user_profile_dir(hdf5_dir):
-    return hdf5_dir / atf.properties["test-user"]
+    return hdf5_profile.profile_user_dir(hdf5_dir)
 
 
 @pytest.fixture(scope="module")
@@ -93,14 +92,6 @@ def job_id(user_profile_dir):
     )
 
 
-def get_node_profiles(user_profile_dir, job_id):
-    output = atf.run_command_output(
-        f"ls -1 {user_profile_dir}/{job_id}_*.h5",
-        quiet=True,
-    )
-    return sorted(Path(profile) for profile in output.splitlines())
-
-
 def profile_test(args):
     return (
         atf.run_command_exit(
@@ -111,30 +102,14 @@ def profile_test(args):
     )
 
 
-def wait_for_node_profiles(user_profile_dir, job_id, count=2):
-    profiles = None
-    for t in atf.timer():
-        profiles = get_node_profiles(user_profile_dir, job_id)
-        if len(profiles) == count:
-            break
-    else:
-        pytest.fail(f"Unable to get {count} profiles: {profiles}")
-
-    return profiles
-
-
 @pytest.fixture(scope="module")
 def node_profiles(user_profile_dir, job_id):
-    return wait_for_node_profiles(user_profile_dir, job_id)
+    return hdf5_profile.wait_for_node_profiles(user_profile_dir, job_id, 2)
 
 
 @pytest.fixture(scope="module")
 def hdf5_file(job_id, node_profiles):
-    hdf5_file = Path("test.h5").absolute()
-
-    atf.run_command(f"sh5util --savefiles -j {job_id} -o {hdf5_file}", fatal=True)
-
-    return hdf5_file
+    return hdf5_profile.merge_job_profiles(job_id)
 
 
 @pytest.fixture(scope="module")
@@ -157,13 +132,10 @@ def batch_job_id(user_profile_dir):
 
 @pytest.fixture(scope="module")
 def batch_hdf5_file(user_profile_dir, batch_job_id):
-    hdf5_file = Path("batch.h5").absolute()
-
     # One file for the batch step and one for step 0 on the single node
-    wait_for_node_profiles(user_profile_dir, batch_job_id, count=2)
-    atf.run_command(f"sh5util --savefiles -j {batch_job_id} -o {hdf5_file}", fatal=True)
+    hdf5_profile.wait_for_node_profiles(user_profile_dir, batch_job_id, 2)
 
-    return hdf5_file
+    return hdf5_profile.merge_job_profiles(batch_job_id, "batch.h5")
 
 
 def h5dump_paths(hdf5_file):
@@ -180,34 +152,9 @@ def h5dump_paths(hdf5_file):
     return paths
 
 
-def assert_schema(field_names, expected_cols):
-    missing_cols = set(expected_cols) - set(field_names)
-    assert not missing_cols, f"Missing expected column(s): {missing_cols}"
-
-
-def read_sh5util_csv(job_id, hdf5_file, opts, expected_cols):
-    output_file = "output"
-    cmd = f"sh5util -i {hdf5_file} -o {output_file} -j {job_id} -s Tasks {opts}"
-    atf.run_command(cmd, fatal=True)
-
-    with open(output_file, newline="") as csv_file:
-        reader = csv.DictReader(csv_file)
-        cols = reader.fieldnames
-        logging.debug(f"CSV cols: {cols}")
-        assert cols, f"Output file ({output_file}) is empty"
-        assert_schema(cols, expected_cols)
-
-        rows = list(reader)
-
-    logging.debug(f"CSV contents: {rows}")
-    assert rows, f"No data in output file ({output_file})"
-
-    return rows
-
-
 @pytest.fixture(scope="module")
 def time_series_rows(job_id, hdf5_file):
-    return read_sh5util_csv(
+    return hdf5_profile.read_sh5util_csv(
         job_id, hdf5_file, "-E --level=Node:TimeSeries", id_cols + listed_cols
     )
 
@@ -221,17 +168,21 @@ def totals_rows(job_id, hdf5_file):
         for metric in metrics:
             cols.append(f"{metric}_{col}")
 
-    return read_sh5util_csv(job_id, hdf5_file, "-E --level=Node:Totals", cols)
+    return hdf5_profile.read_sh5util_csv(
+        job_id, hdf5_file, "-E --level=Node:Totals", cols
+    )
 
 
 def test_profile_dir(hdf5_dir, user_profile_dir, job_id):
     """Profiles land in the user's subdirectory"""
 
-    profiles = wait_for_node_profiles(user_profile_dir, job_id)
+    profiles = hdf5_profile.wait_for_node_profiles(user_profile_dir, job_id, 2)
 
     assert profile_test(f"-d {user_profile_dir}")
     assert len(profiles) == 2, "Expected two profiles for a two node job"
-    assert profiles == get_node_profiles(user_profile_dir, job_id)
+    assert profiles == hdf5_profile.get_node_profiles(
+        user_profile_dir, job_id
+    ), "The waited-for profiles should be the ones listed in the user directory"
 
 
 def test_merge(hdf5_file, node_profiles):
@@ -292,7 +243,7 @@ def test_listed_fields(job_id, hdf5_file):
         f"sh5util -i {hdf5_file} -j {job_id} --series=Tasks -L",
         fatal=True,
     )
-    assert_schema(output.strip().splitlines(), listed_cols)
+    hdf5_profile.assert_schema(output.strip().splitlines(), listed_cols)
 
 
 def assert_count(values, count, description):
@@ -385,7 +336,9 @@ def test_item_extract(job_id, hdf5_file, time_series_rows):
     ]
 
     for col in summarized_cols:
-        item_rows = read_sh5util_csv(job_id, hdf5_file, f"-I --data={col}", item_cols)
+        item_rows = hdf5_profile.read_sh5util_csv(
+            job_id, hdf5_file, f"-I --data={col}", item_cols
+        )
         for row in item_rows:
             num_nodes = row["NumNodes"]
             assert (
