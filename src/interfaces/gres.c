@@ -124,14 +124,17 @@ typedef struct slurm_gres_ops {
 	void		(*job_set_env)		( char ***job_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
+						  uint64_t *gres_per_bit,
 						  gres_internal_flags_t flags);
 	void		(*step_set_env)		( char ***step_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
+						  uint64_t *gres_per_bit,
 						  gres_internal_flags_t flags);
 	void		(*task_set_env)		( char ***task_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
+						  uint64_t *gres_per_bit,
 						  bitstr_t *usable_gres,
 						  gres_internal_flags_t flags);
 	void		(*send_stepd)		( buf_t *buffer );
@@ -395,10 +398,10 @@ static bool use_local_index = false;
 static bool dev_index_mode_set = false;
 
 /* Local functions */
-static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
-				       int node_inx,
+static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js, int node_inx,
 				       bitstr_t **gres_bit_alloc,
-				       uint64_t *gres_cnt);
+				       uint64_t *gres_cnt,
+				       uint64_t **gres_per_bit);
 static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 					bitstr_t **gres_bit_alloc,
 					uint64_t *gres_cnt,
@@ -8671,10 +8674,10 @@ extern char *gres_sock_str(list_t *sock_gres_list, int sock_inx)
 	return foreach_sock_str.gres_str;
 }
 
-static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
-				       int node_inx,
+static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js, int node_inx,
 				       bitstr_t **gres_bit_alloc,
-				       uint64_t *gres_cnt)
+				       uint64_t *gres_cnt,
+				       uint64_t **gres_per_bit)
 {
 	if (gres_js->node_cnt <= node_inx) {
 		error("gres_job_state_t node count less than node_inx. This should never happen");
@@ -8693,6 +8696,18 @@ static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
 	}
 	if (gres_cnt && gres_js->gres_cnt_node_alloc)
 		*gres_cnt += gres_js->gres_cnt_node_alloc[node_inx];
+	if (gres_per_bit && gres_js->gres_per_bit_alloc &&
+	    gres_js->gres_per_bit_alloc[node_inx] && gres_js->gres_bit_alloc &&
+	    gres_js->gres_bit_alloc[node_inx]) {
+		int bit_cnt = bit_size(gres_js->gres_bit_alloc[node_inx]);
+
+		if (!*gres_per_bit)
+			*gres_per_bit = xcalloc(bit_cnt, sizeof(uint64_t));
+		for (int i = 0; i < bit_cnt; i++) {
+			(*gres_per_bit)[i] +=
+				gres_js->gres_per_bit_alloc[node_inx][i];
+		}
+	}
 }
 
 static int _accumulate_gres_device(void *x, void *arg)
@@ -8708,7 +8723,8 @@ static int _accumulate_gres_device(void *x, void *arg)
 			gres_ptr->gres_data,
 			foreach_gres_accumulate_device->node_inx,
 			foreach_gres_accumulate_device->gres_bit_alloc,
-			&foreach_gres_accumulate_device->gres_cnt);
+			&foreach_gres_accumulate_device->gres_cnt,
+			foreach_gres_accumulate_device->gres_per_bit);
 	} else {
 		_accumulate_step_gres_alloc(
 			gres_ptr,
@@ -8732,8 +8748,10 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 	int i;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
 	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
 		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
 		.is_job = true,
 		.node_inx = node_inx,
 	};
@@ -8769,17 +8787,17 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 			 * use all the job's gres.
 			 */
 			(*(gres_ctx->ops.step_set_env))(
-				&step->env,
-				gres_bit_alloc,
+				&step->env, gres_bit_alloc,
 				foreach_gres_accumulate_device.gres_cnt,
-				flags);
+				gres_per_bit, flags);
 		} else
-			(*(gres_ctx->ops.job_set_env))(
-				&step->env,
-				gres_bit_alloc,
-				foreach_gres_accumulate_device.gres_cnt,
-				flags);
+			(*(gres_ctx->ops
+				   .job_set_env))(&step->env, gres_bit_alloc,
+						  foreach_gres_accumulate_device
+							  .gres_cnt,
+						  gres_per_bit, flags);
 		foreach_gres_accumulate_device.gres_cnt = 0;
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -10671,9 +10689,11 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 {
 	int i;
 	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
 		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
 		.is_job = false,
 	};
 
@@ -10685,8 +10705,9 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 			continue;	/* No plugin to call */
 		if (!step->step_gres_list) {
 			/* Clear GRES environment variables */
-			(*(gres_ctx->ops.step_set_env))(
-				&step->env, NULL, 0, GRES_INTERNAL_FLAG_NONE);
+			(*(gres_ctx->ops
+				   .step_set_env))(&step->env, NULL, 0, NULL,
+						   GRES_INTERNAL_FLAG_NONE);
 			continue;
 		}
 		foreach_gres_accumulate_device.plugin_id = gres_ctx->plugin_id;
@@ -10704,12 +10725,12 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.step_set_env))(
-			&step->env,
-			gres_bit_alloc,
-			foreach_gres_accumulate_device.gres_cnt,
-			flags);
+		(*(gres_ctx->ops.step_set_env))(&step->env, gres_bit_alloc,
+						foreach_gres_accumulate_device
+							.gres_cnt,
+						gres_per_bit, flags);
 		foreach_gres_accumulate_device.gres_cnt = 0;
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -10743,9 +10764,10 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 			continue;	/* No plugin to call */
 		if (!step->step_gres_list) {
 			/* Clear GRES environment variables */
-			(*(gres_ctx->ops.task_set_env))(
-				&step->envtp->env, NULL, 0, NULL,
-				GRES_INTERNAL_FLAG_NONE);
+			(*(gres_ctx->ops
+				   .task_set_env))(&step->envtp->env, NULL, 0,
+						   NULL, NULL,
+						   GRES_INTERNAL_FLAG_NONE);
 			continue;
 		}
 		foreach_gres_accumulate_device.plugin_id = gres_ctx->plugin_id;
@@ -10769,11 +10791,12 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.task_set_env))(
-			&step->envtp->env,
-			gres_bit_alloc,
-			foreach_gres_accumulate_device.gres_cnt,
-			usable_gres, flags);
+		(*(gres_ctx->ops.task_set_env))(&step->envtp->env,
+						gres_bit_alloc,
+						foreach_gres_accumulate_device
+							.gres_cnt,
+						gres_per_bit, usable_gres,
+						flags);
 	next:
 		foreach_gres_accumulate_device.gres_cnt = 0;
 		xfree(gres_per_bit);

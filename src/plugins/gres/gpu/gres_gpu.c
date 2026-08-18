@@ -754,9 +754,8 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
  */
-extern void gres_p_job_set_env(char ***job_env_ptr,
-			       bitstr_t *gres_bit_alloc,
-			       uint64_t gres_cnt,
+extern void gres_p_job_set_env(char ***job_env_ptr, bitstr_t *gres_bit_alloc,
+			       uint64_t gres_cnt, uint64_t *gres_per_bit,
 			       gres_internal_flags_t flags)
 {
 	common_gres_env_t gres_env = {
@@ -766,6 +765,7 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 		.gres_cnt = gres_cnt,
 		.gres_conf_flags = node_flags,
 		.gres_devices = gres_devices,
+		.gres_per_bit = gres_per_bit,
 		.is_job = true,
 	};
 
@@ -776,9 +776,8 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void gres_p_step_set_env(char ***step_env_ptr,
-				bitstr_t *gres_bit_alloc,
-				uint64_t gres_cnt,
+extern void gres_p_step_set_env(char ***step_env_ptr, bitstr_t *gres_bit_alloc,
+				uint64_t gres_cnt, uint64_t *gres_per_bit,
 				gres_internal_flags_t flags)
 {
 	common_gres_env_t gres_env = {
@@ -788,6 +787,7 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 		.gres_cnt = gres_cnt,
 		.gres_conf_flags = node_flags,
 		.gres_devices = gres_devices,
+		.gres_per_bit = gres_per_bit,
 	};
 
 	gres_common_gpu_set_env(&gres_env);
@@ -797,9 +797,8 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
  * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
-extern void gres_p_task_set_env(char ***task_env_ptr,
-				bitstr_t *gres_bit_alloc,
-				uint64_t gres_cnt,
+extern void gres_p_task_set_env(char ***task_env_ptr, bitstr_t *gres_bit_alloc,
+				uint64_t gres_cnt, uint64_t *gres_per_bit,
 				bitstr_t *usable_gres,
 				gres_internal_flags_t flags)
 {
@@ -810,6 +809,7 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 		.gres_cnt = gres_cnt,
 		.gres_conf_flags = node_flags,
 		.gres_devices = gres_devices,
+		.gres_per_bit = gres_per_bit,
 		.is_task = true,
 		.usable_gres = usable_gres,
 	};
