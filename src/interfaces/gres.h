@@ -616,6 +616,20 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
  */
 extern list_t *gres_g_get_dmem_devices(void);
 
+/*
+ * Accumulate the per-device (per gres bitmap index) allocated counts of a
+ * gres on this node. Only valid in the slurmstepd, where the job and step
+ * gres states hold a single-node view.
+ * IN gres_list - job or step gres list held by the slurmstepd
+ * IN is_job - true if gres_list is a job gres list
+ * IN plugin_id - gres plugin to accumulate
+ * OUT bit_cnt - number of entries in the returned array
+ * RET xcalloc'd array of counts indexed by gres bitmap index (caller must
+ *	xfree()), or NULL if the gres has no per-device counts allocated
+ */
+extern uint64_t *gres_get_per_bit_alloc(list_t *gres_list, bool is_job,
+					uint32_t plugin_id, int *bit_cnt);
+
 /* Pack GRES devices information into a buffer */
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices);
 

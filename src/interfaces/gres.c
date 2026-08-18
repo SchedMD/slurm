@@ -9181,6 +9181,30 @@ extern list_t *gres_g_get_dmem_devices(void)
 	return dmem_devs;
 }
 
+extern uint64_t *gres_get_per_bit_alloc(list_t *gres_list, bool is_job,
+					uint32_t plugin_id, int *bit_cnt)
+{
+	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
+	foreach_gres_accumulate_device_t arg = {
+		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
+		.is_job = is_job,
+		.plugin_id = plugin_id,
+	};
+
+	*bit_cnt = 0;
+	if (!gres_list)
+		return NULL;
+
+	(void) list_for_each(gres_list, _accumulate_gres_device, &arg);
+	if (gres_bit_alloc)
+		*bit_cnt = bit_size(gres_bit_alloc);
+	FREE_NULL_BITMAP(gres_bit_alloc);
+
+	return gres_per_bit;
+}
+
 static void _step_state_delete(void *gres_data)
 {
 	int i;
