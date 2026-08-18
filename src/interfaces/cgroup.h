@@ -100,6 +100,7 @@ typedef enum {
 	CG_MEMORY,
 	CG_DEVICES,
 	CG_CPUACCT,
+	CG_DMEM,
 	/* Below are extra controllers not explicitly tracked by Slurm. */
 	CG_IO,
 	CG_HUGETLB,

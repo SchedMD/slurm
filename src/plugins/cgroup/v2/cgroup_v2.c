@@ -90,6 +90,7 @@ static char *ctl_names[] = {
 	[CG_MEMORY] = "memory",
 	[CG_CPUACCT] = "cpu",
 	[CG_DEVICES] = "devices",
+	[CG_DMEM] = "dmem",
 	/* Below are extra controllers not explicitly tracked by Slurm. */
 	[CG_IO] = "io",
 	[CG_HUGETLB] = "hugetlb",
@@ -546,7 +547,11 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 	xfree(buf);
 
 	for (int i = 0; i < CG_CTL_CNT; i++) {
-		if ((i == CG_DEVICES) || (i == CG_TRACK))
+		/*
+		 * dmem only exists on kernels >= 6.14, freezer is core of v2
+		 * and device replaced by BPF.
+		 */
+		if ((i == CG_DEVICES) || (i == CG_DMEM) || (i == CG_TRACK))
 			continue;
 		if (invoc_id && !bit_test(ctl_bitmap, i) &&
 		    xstrcmp(ctl_names[i], ""))
