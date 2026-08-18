@@ -792,7 +792,8 @@ static size_t _vprintf(char **str, const char *fmt, va_list ap, bool try)
 			return 0;
 		}
 	}
-	/* NOTREACHED */
+
+	fatal_abort("should never happen");
 }
 
 /*
