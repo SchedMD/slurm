@@ -1745,7 +1745,7 @@ void spank_clear_remote_options_env (char **env)
 	char **ep;
 	int len = strlen (SPANK_OPTION_ENV_PREFIX);
 
-	for (ep = env; *ep; ep++) {
+	for (ep = env; *ep;) {
 		char *p = *ep;
 		if (xstrncmp (*ep, "SPANK_", 6) == 0)
 			p = *ep+6;
@@ -1757,8 +1757,10 @@ void spank_clear_remote_options_env (char **env)
 				name [end - *ep] = '\0';
 				debug("unsetenv (%s)", name);
 				unsetenvp (env, name);
+				continue;
 			}
 		}
+		ep++;
 	}
 	return;
 }
