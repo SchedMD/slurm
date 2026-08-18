@@ -417,6 +417,7 @@
 #define xstrdup slurm_xstrdup
 #define try_xstrndup slurm_try_xstrndup
 #define xstrdup_printf slurm_xstrdup_printf
+#define try_xstrdup_printf slurm_try_xstrdup_printf
 #define _xstrdup_vprintf slurm_xstrdup_vprintf
 #define xstrndup slurm_xstrndup
 #define xbasename slurm_xbasename

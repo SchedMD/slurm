@@ -63,6 +63,9 @@
 
 #define XFGETS_CHUNKSIZE 64
 
+static size_t _vprintf(char **str, const char *fmt, va_list ap, bool try)
+	__attribute__((format(printf, 2, 0)));
+
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
@@ -78,6 +81,7 @@ strong_alias(_xstrfmtcatat, slurm_xstrfmtcatat);
 strong_alias(_xmemcat, slurm_xmemcat);
 strong_alias(xstrdup, slurm_xstrdup);
 strong_alias(xstrdup_printf, slurm_xstrdup_printf);
+strong_alias(try_xstrdup_printf, slurm_try_xstrdup_printf);
 strong_alias(_xstrdup_vprintf, slurm_xstrdup_vprintf);
 strong_alias(xstrndup, slurm_xstrndup);
 strong_alias(try_xstrndup, slurm_try_xstrndup);
@@ -442,6 +446,23 @@ char *xstrdup_printf(const char *fmt, ...)
 }
 
 /*
+ * Give me a copy of the string as if it were printf.
+ * IN fmt - format of string and args if any
+ * RET copy of formatted string or NULL on allocation failure
+ */
+char *try_xstrdup_printf(const char *fmt, ...)
+{
+	char *result = NULL;
+	va_list ap;
+
+	va_start(ap, fmt);
+	_vprintf(&result, fmt, ap, true);
+	va_end(ap);
+
+	return result;
+}
+
+/*
  * Duplicate at most "n" characters of a string.
  *   str (IN)		string to duplicate
  *   n (IN)
@@ -726,19 +747,26 @@ char *xstrcasestr(const char *haystack, const char *needle)
 }
 
 /*
- * Give me a copy of the string as if it were printf.
- * This is stdarg-compatible routine, so vararg-compatible
- * functions can do va_start() and invoke this function.
- *
- *   fmt (IN)		format of string and args if any
- *   RETURN		copy of formatted string
+ * Print formatted string into newly allocated string
+ * OUT str - formatted string or NULL on allocation failure
+ * IN fmt - format of string and args if any
+ * IN ap - args for fmt
+ * IN try - return NULL on allocation failure instead of aborting
+ * RET number of bytes in *str (excluding terminating NUL)
  */
-size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
+static size_t _vprintf(char **str, const char *fmt, va_list ap, bool try)
 {
 	/* Start out with a size of 100 bytes. */
 	int n, size = 100;
 	va_list our_ap;
-	char *p = xmalloc(size);
+	char *p = NULL;
+
+	if (!try) {
+		p = xmalloc(size);
+	} else if (!(p = try_xmalloc(size))) {
+		*str = NULL;
+		return 0;
+	}
 
 	while (1) {
 		/* Try to print in the allocated space. */
@@ -755,9 +783,31 @@ size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
 			size = n + 1;           /* precisely what is needed */
 		else                      /* glibc 2.0 */
 			size *= 2;              /* twice the old size */
-		p = xrealloc(p, size);
+
+		if (!try) {
+			p = xrealloc(p, size);
+		} else if (!try_xrealloc(p, size)) {
+			xfree(p);
+			*str = NULL;
+			return 0;
+		}
 	}
 	/* NOTREACHED */
+}
+
+/*
+ * Give me a copy of the string as if it were printf.
+ * This is stdarg-compatible routine, so vararg-compatible
+ * functions can do va_start() and invoke this function.
+ *
+ * OUT str - copy of formatted string
+ * IN fmt - format of string and args if any
+ * IN ap - args for fmt
+ * RET number of bytes in *str (excluding terminating NUL)
+ */
+size_t _xstrdup_vprintf(char **str, const char *fmt, va_list ap)
+{
+	return _vprintf(str, fmt, ap, false);
 }
 
 extern void xstrtrim(char *string)
