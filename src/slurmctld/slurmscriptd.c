@@ -530,6 +530,7 @@ static void _send_bb_script_msg(int write_fd, void *cb_arg)
 		.job_id = script_msg->job_id,
 		.slurmctld_debug = slurm_conf.slurmctld_debug,
 		.slurmctld_logfile = slurm_conf.slurmctld_logfile,
+		.log_flags = slurm_conf.log_flags,
 		.log_fmt = slurm_conf.log_fmt,
 		.plugindir = slurm_conf.plugindir,
 		.slurm_user_name = slurm_conf.slurm_user_name,
@@ -1430,6 +1431,7 @@ static void _init_bb_script_config(char **function, uint32_t *job_id,
 	slurm_conf.cluster_name = bb_msg->cluster_name;
 	slurm_conf.slurmctld_debug = bb_msg->slurmctld_debug;
 	slurm_conf.slurmctld_logfile = bb_msg->slurmctld_logfile;
+	slurm_conf.log_flags = bb_msg->log_flags;
 	slurm_conf.log_fmt = bb_msg->log_fmt;
 	slurm_conf.plugindir = bb_msg->plugindir;
 	slurm_conf.slurm_user_name = bb_msg->slurm_user_name;
