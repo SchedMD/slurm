@@ -1427,8 +1427,8 @@ static int _spawn_job_container(void)
 				error("fork: %m");
 				rc = SLURM_ERROR;
 			}
-			close(to_parent[0]);
-			close(to_parent[1]);
+			fd_close(&to_parent[0]);
+			fd_close(&to_parent[1]);
 		} else {
 			rc = _set_xauthority();
 		}
