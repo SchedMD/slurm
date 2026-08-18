@@ -2394,6 +2394,27 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 					  limits->device.minor,
 					  limits->allow_device);
 		break;
+	case CG_DMEM:
+		if (limits->dmem_region &&
+		    (limits->limit_in_bytes != NO_VAL64)) {
+			char *value = xstrdup_printf("%s %" PRIu64,
+						     limits->dmem_region,
+						     limits->limit_in_bytes);
+
+			/*
+			 * Set dmem.min to the same value as the hard limit
+			 * dmem.max, this makes the bytes not evictable by
+			 * another cgroup.
+			 */
+			if (common_cgroup_set_param(&int_cg[level], "dmem.max",
+						    value) != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+			if (common_cgroup_set_param(&int_cg[level], "dmem.min",
+						    value) != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+			xfree(value);
+		}
+		break;
 	default:
 		error("cgroup controller %u not supported", ctl);
 		rc = SLURM_ERROR;
