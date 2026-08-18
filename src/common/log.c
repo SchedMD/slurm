@@ -137,7 +137,7 @@ typedef struct {
 	log_facility_t facility;
 	log_options_t opt;
 	bool initialized;
-	uint16_t fmt;            /* Flag for specifying timestamp format */
+	log_fmt_t fmt; /* Timestamp format */
 }	log_t;
 
 /* static variables */
