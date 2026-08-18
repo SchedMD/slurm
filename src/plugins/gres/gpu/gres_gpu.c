@@ -847,6 +847,11 @@ extern list_t *gres_p_get_devices(void)
 	return gres_devices;
 }
 
+extern list_t *gres_p_get_dmem_devices(void)
+{
+	return NULL;
+}
+
 /*
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.

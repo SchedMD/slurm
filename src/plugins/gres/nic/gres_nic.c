@@ -227,6 +227,11 @@ extern list_t *gres_p_get_devices(void)
 	return gres_devices;
 }
 
+extern list_t *gres_p_get_dmem_devices(void)
+{
+	return NULL;
+}
+
 extern void gres_p_step_hardware_init(bitstr_t *usable_gres, char *settings)
 {
 	return;

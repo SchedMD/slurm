@@ -80,13 +80,33 @@ typedef struct {
 	gres_device_type_t type;
 } gres_device_id_t;
 
+typedef enum {
+	GRES_DMEM_NONE = 0, /* no dmem region matched this device */
+	GRES_DMEM_AMBIGUOUS, /* several dmem regions matched this device */
+	GRES_DMEM_SHARED, /* several devices matched the same region */
+	GRES_DMEM_EXCLUDED, /* DmemRegion=off in gres.conf */
+	GRES_DMEM_USABLE, /* region matched, slice computed */
+} gres_dmem_state_t;
+
+/* dmem cgroup (device memory) state of one sharing device */
+typedef struct {
+	uint64_t capacity; /* dmem region capacity in bytes */
+	bool from_conf; /* region explicitly set with DmemRegion= */
+	char *region; /* dmem region name, NULL if none matched */
+	uint64_t shards; /* shards configured on this device */
+	uint64_t slice; /* device memory bytes per shard */
+	gres_dmem_state_t state;
+} gres_dmem_dev_t;
+
 typedef struct {
 	int index; /* GRES bitmap index */
 	int alloc;
 	gres_device_id_t dev_desc;
 	int dev_num; /* Number at the end of the device filename */
+	gres_dmem_dev_t *dmem; /* device memory state, set by gres/shard */
 	uint32_t flags; /* See GRES_DEV_* */
 	char *path;
+	char *pci_addr; /* canonical PCI address, NULL if unresolved */
 	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
 
@@ -587,6 +607,14 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 				  uint16_t accel_bind_type, char *tres_bind_str,
 				  int local_proc_id, stepd_step_rec_t *step);
+
+/*
+ * Get the list of sharing devices, each carrying its dmem cgroup state in
+ * the dmem member. Only gres/shard provides this list.
+ * RET list of gres_device_t owned by the plugin (do NOT free), or NULL
+ *	if no loaded plugin provides dmem state
+ */
+extern list_t *gres_g_get_dmem_devices(void);
 
 /* Pack GRES devices information into a buffer */
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices);

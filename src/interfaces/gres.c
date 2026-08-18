@@ -137,6 +137,7 @@ typedef struct slurm_gres_ops {
 	void		(*send_stepd)		( buf_t *buffer );
 	void		(*recv_stepd)		( buf_t *buffer );
 	list_t *(*get_devices)(void);
+	list_t *(*get_dmem_devices)(void);
 	void            (*step_hardware_init)	( bitstr_t *, char * );
 	void            (*step_hardware_fini)	( void );
 	gres_prep_t *(*prep_build_env)(gres_job_state_t *gres_js);
@@ -658,6 +659,7 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 		"gres_p_send_stepd",
 		"gres_p_recv_stepd",
 		"gres_p_get_devices",
+		"gres_p_get_dmem_devices",
 		"gres_p_step_hardware_init",
 		"gres_p_step_hardware_fini",
 		"gres_p_prep_build_env",
@@ -9161,6 +9163,24 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 	return device_list;
 }
 
+extern list_t *gres_g_get_dmem_devices(void)
+{
+	list_t *dmem_devs = NULL;
+
+	xassert(gres_context_cnt >= 0);
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (int i = 0; i < gres_context_cnt; i++) {
+		if (!gres_context[i].ops.get_dmem_devices)
+			continue;
+		if ((dmem_devs = (*(gres_context[i].ops.get_dmem_devices))()))
+			break;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return dmem_devs;
+}
+
 static void _step_state_delete(void *gres_data)
 {
 	int i;
@@ -11316,7 +11336,12 @@ extern void destroy_gres_device(void *gres_device_ptr)
 
 	if (!gres_device)
 		return;
+	if (gres_device->dmem) {
+		xfree(gres_device->dmem->region);
+		xfree(gres_device->dmem);
+	}
 	xfree(gres_device->path);
+	xfree(gres_device->pci_addr);
 	xfree(gres_device->unique_id);
 	xfree(gres_device);
 }
