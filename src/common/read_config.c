@@ -4380,6 +4380,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
 	/* Default log format */
+	conf->log_flags = LOG_FLAGS_DEFAULT;
 	conf->log_fmt = LOG_FMT_DEFAULT;
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
 		/*

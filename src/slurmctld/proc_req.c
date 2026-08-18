@@ -408,6 +408,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->launch_params       = xstrdup(conf->launch_params);
 	conf_ptr->license_params = xstrdup(conf->license_params);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
+	conf_ptr->log_flags = conf->log_flags;
 	conf_ptr->log_fmt             = conf->log_fmt;
 
 	conf_ptr->mail_domain         = xstrdup(conf->mail_domain);
