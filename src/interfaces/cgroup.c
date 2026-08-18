@@ -596,6 +596,7 @@ extern void cgroup_free_limits(cgroup_limits_t *limits)
 
 	xfree(limits->allow_cores);
 	xfree(limits->allow_mems);
+	xfree(limits->dmem_region);
 	xfree(limits);
 }
 

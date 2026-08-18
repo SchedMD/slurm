@@ -149,6 +149,8 @@ typedef struct {
 	/* task devices */
 	bool allow_device;
 	gres_device_id_t device;
+	/* device memory (dmem) */
+	char *dmem_region;
 	/* jobacct memory */
 	uint64_t limit_in_bytes;
 	uint64_t soft_limit_in_bytes;
