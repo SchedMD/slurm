@@ -32,6 +32,7 @@ source ./globals
 set file_prog   "$test_name.prog"
 set job_id      0
 set matches     0
+set timeout     $max_job_delay
 
 proc cleanup {} {
 	global job_id file_prog
@@ -52,7 +53,6 @@ exec $bin_chmod 700 $file_prog
 #
 # Spawn initial program via srun
 #
-set timeout $max_job_delay
 spawn $salloc -N $node_cnt -t2 $srun -n $task_cnt --overcommit ./$file_prog
 set init_id $spawn_id
 expect {
@@ -112,7 +112,6 @@ if {$matches == 0} {
 # Attach to initial program, just get one tasks output
 #
 set matches     0
-set timeout     10
 set attach_pid [spawn $sattach -l --output-filter=[expr $task_cnt - 1] $job_id.0]
 set attach_id $spawn_id
 expect {
@@ -141,7 +140,6 @@ if {$matches == 0} {
 # Attach to initial program
 #
 set matches     0
-set timeout     10
 spawn $sattach -vv -l $job_id.0
 set attach_id $spawn_id
 expect {
