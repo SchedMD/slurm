@@ -52,6 +52,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/bitstring.h"
 #include "src/common/env.h"
+#include "src/interfaces/cgroup.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/common/hostlist.h"
@@ -74,6 +75,463 @@ typedef struct shard_dev_info {
 	uint64_t count;
 	int id;
 } shard_dev_info_t;
+
+#define DMEM_REGION_OFF "off"
+
+/* Defines used to parse a PCI string */
+#define BDF_DOMAIN_DIGITS_MIN 4
+#define BDF_DOMAIN_DIGITS_MAX 8
+#define BDF_BUS_DIGITS 2
+#define BDF_DEV_DIGITS 2
+#define BDF_FUNC_DIGITS 1
+#define BDF_HEX_CHARS "0123456789abcdefABCDEF"
+
+typedef struct {
+	uint16_t bus;
+	uint16_t device;
+	uint16_t domain;
+	uint16_t function;
+} pci_bdf_t;
+
+typedef struct {
+	char *file; /* device file to look for */
+	char *sharing_name; /* name of the sharing gres ("gpu") */
+} find_conf_gpu_t;
+
+typedef struct {
+	list_t *gres_conf_list; /* gres.conf records */
+	list_t *region_list; /* regions parsed from dmem.capacity */
+} dmem_discover_t;
+
+typedef struct {
+	cgroup_limits_t *found; /* last matching region */
+	int matches;
+	pci_bdf_t *pci;
+} match_region_t;
+
+/*
+ * Parse a PCI address string of the form domain:bus:device[.function].
+ * e.g. sysfs "0000:01:00.0" or "00000000:01:00.2".
+ * IN str - string to parse
+ * OUT bdf - parsed address, untouched on error
+ * RET true if str is a PCI address
+ */
+static bool _pci_bdf_parse(const char *str, pci_bdf_t *bdf)
+{
+	const char *pos = str;
+	uint16_t bus = 0, device = 0, domain = 0, function = 0;
+	size_t span = 0;
+
+	/* Parse the domain */
+	span = strspn(pos, BDF_HEX_CHARS);
+	if ((span < BDF_DOMAIN_DIGITS_MIN) || (span > BDF_DOMAIN_DIGITS_MAX) ||
+	    (pos[span] != ':'))
+		return false;
+	domain = strtoul(pos, NULL, 16);
+	pos += (span + 1);
+
+	/* Parse the bus address */
+	span = strspn(pos, BDF_HEX_CHARS);
+	if ((span != BDF_BUS_DIGITS) || (pos[BDF_BUS_DIGITS] != ':'))
+		return false;
+	bus = strtoul(pos, NULL, 16);
+	pos += (span + 1);
+
+	/* Parse the device */
+	span = strspn(pos, BDF_HEX_CHARS);
+	if (span != BDF_DEV_DIGITS)
+		return false;
+	device = strtoul(pos, NULL, 16);
+	pos += span;
+
+	/* Parse the function, only if a '.' has been found */
+	if (*pos == '.') {
+		pos++;
+		if (strspn(pos, BDF_HEX_CHARS) != BDF_FUNC_DIGITS)
+			return false;
+		function = strtoul(pos, NULL, 16);
+		pos++;
+	}
+
+	/* String continues and should not, bail */
+	if (*pos)
+		return false;
+
+	*bdf = (pci_bdf_t) {
+		.bus = bus,
+		.device = device,
+		.domain = domain,
+		.function = function,
+	};
+
+	return true;
+}
+
+/*
+ * Test whether any '/'-separated component of path is a PCI address for
+ * the same device function as bdf (e.g. "nvidia/0000:01:00/vidmem" or
+ * "drm/0000:79:00.0/vram").
+ * IN path - string to scan
+ * IN bdf - address to look for
+ * RET true if some component parses to an address equal to bdf
+ */
+static bool _pci_bdf_match_path(const char *path, const pci_bdf_t *bdf)
+{
+	const char *start = path;
+
+	if (!path || !bdf)
+		return false;
+
+	while (start) {
+		const char *end = xstrchr(start, '/');
+		size_t len = end ? (size_t) (end - start) : strlen(start);
+		char token[32] = { 0 };
+		pci_bdf_t parsed = { 0 };
+
+		if (len && (len < sizeof(token))) {
+			memcpy(token, start, len);
+			if (_pci_bdf_parse(token, &parsed) &&
+			    (parsed.bus == bdf->bus) &&
+			    (parsed.device == bdf->device) &&
+			    (parsed.domain == bdf->domain) &&
+			    (parsed.function == bdf->function))
+				return true;
+		}
+		start = end ? (end + 1) : NULL;
+	}
+
+	return false;
+}
+
+/*
+ * Extract the first '/'-separated component of path that parses as a PCI
+ * address (e.g. "0000:01:00" out of "nvidia/0000:01:00/vidmem").
+ * IN path - string to scan
+ * OUT bdf - parsed address, untouched when none is found
+ * RET true if some component parses to a PCI address
+ */
+static bool _pci_bdf_from_path(const char *path, pci_bdf_t *bdf)
+{
+	const char *start = path;
+
+	if (!path || !bdf)
+		return false;
+
+	while (start) {
+		const char *end = xstrchr(start, '/');
+		size_t len = end ? (size_t) (end - start) : strlen(start);
+		char token[32] = { 0 };
+
+		if (len && (len < sizeof(token))) {
+			memcpy(token, start, len);
+			if (_pci_bdf_parse(token, bdf))
+				return true;
+		}
+		start = end ? (end + 1) : NULL;
+	}
+
+	return false;
+}
+
+/*
+ * Resolve the PCI address of a device file through sysfs
+ * (/sys/dev/{char,block}/<major>:<minor>/device points into the PCI
+ * device directory).
+ * IN gres_device - device to resolve
+ * OUT bdf - parsed PCI address
+ * RET true if the device maps to a PCI device
+ */
+static bool _pci_bdf_from_sysfs(gres_device_t *gres_device, pci_bdf_t *bdf)
+{
+	char *link = NULL, *resolved = NULL, *base = NULL;
+	bool found = false;
+
+	if (gres_device->dev_desc.type == DEV_TYPE_NONE)
+		return false;
+
+	/*
+	 * A driver should register_chrdev() and then create a device with
+	 * device_create(), this will leave a device in /sys/dev.
+	 */
+	link = xstrdup_printf("/sys/dev/%s/%u:%u/device",
+			      (gres_device->dev_desc.type == DEV_TYPE_BLOCK) ?
+				      "block" :
+				      "char",
+			      gres_device->dev_desc.major,
+			      gres_device->dev_desc.minor);
+	resolved = realpath(link, NULL);
+	if (resolved && (base = xstrrchr(resolved, '/')))
+		found = _pci_bdf_parse((base + 1), bdf);
+
+	free(resolved);
+	xfree(link);
+
+	return found;
+}
+
+static int _find_conf_gpu(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	find_conf_gpu_t *find = arg;
+
+	if (!xstrcmp(gres_slurmd_conf->name, find->sharing_name) &&
+	    !xstrcmp(gres_slurmd_conf->file, find->file))
+		return 1;
+	return 0;
+}
+
+/*
+ * Find the PCI address of a shard sharing device and store its canonical
+ * form in gres_device->pci_addr, left NULL when it cannot be resolved.
+ * IN/OUT gres_device - device being discovered
+ * IN gres_slurmd_conf - matching sharing (gpu) conf record, or NULL
+ */
+static void _find_dev_pci(gres_device_t *gres_device,
+			  gres_slurmd_conf_t *gres_slurmd_conf)
+{
+	pci_bdf_t pci = { 0 };
+	bool pci_valid = false;
+
+	/* An explicit DmemRegion= carries the address and is trusted first */
+	if (gres_slurmd_conf && gres_slurmd_conf->dmem_region)
+		pci_valid =
+			_pci_bdf_from_path(gres_slurmd_conf->dmem_region, &pci);
+	/* Then the PCI address that AutoDetect stored */
+	if (!pci_valid && gres_slurmd_conf && gres_slurmd_conf->pci_addr)
+		pci_valid = _pci_bdf_parse(gres_slurmd_conf->pci_addr, &pci);
+	if (!pci_valid)
+		pci_valid = _pci_bdf_from_sysfs(gres_device, &pci);
+	if (pci_valid)
+		gres_device->pci_addr =
+			xstrdup_printf("%04x:%02x:%02x.%x", pci.domain, pci.bus,
+				       pci.device, pci.function);
+}
+
+static int _find_shared_id(void *x, void *arg)
+{
+	shared_dev_info_t *shared = x;
+	int *dev_num = arg;
+
+	return (shared->id == *dev_num);
+}
+
+static int _find_region_name(void *x, void *arg)
+{
+	cgroup_limits_t *region = x;
+	char *name = arg;
+
+	return !xstrcmp(region->dmem_region, name);
+}
+
+/*
+ * Bind a dmem region to a device: record its name and capacity and make
+ * the device usable.
+ */
+static void _bind_region(gres_dmem_dev_t *dmem, cgroup_limits_t *region)
+{
+	dmem->capacity = region->limit_in_bytes;
+	dmem->region = xstrdup(region->dmem_region);
+	dmem->state = GRES_DMEM_USABLE;
+}
+
+static int _foreach_match_region(void *x, void *arg)
+{
+	cgroup_limits_t *region = x;
+	match_region_t *match = arg;
+
+	if (_pci_bdf_match_path(region->dmem_region, match->pci)) {
+		match->matches++;
+		match->found = region;
+	}
+
+	return 0;
+}
+
+/*
+ * Find the dmem region belonging to a device by matching the device's PCI
+ * address against every region name.
+ * IN region_list - regions parsed from dmem.capacity
+ * IN/OUT gres_device - device to match; on a unique match its region,
+ *	capacity and state are set, several matches set
+ *	GRES_DMEM_AMBIGUOUS. A device without a resolved PCI address is
+ *	left untouched.
+ */
+static void _match_region_by_pci(list_t *region_list,
+				 gres_device_t *gres_device)
+{
+	pci_bdf_t pci = { 0 };
+	match_region_t match = { .pci = &pci };
+
+	if (!gres_device->pci_addr || !region_list)
+		return;
+	if (!_pci_bdf_parse(gres_device->pci_addr, &pci))
+		return;
+
+	(void) list_for_each(region_list, _foreach_match_region, &match);
+
+	if (match.matches == 1) {
+		_bind_region(gres_device->dmem, match.found);
+	} else if (match.matches > 1) {
+		/*
+		 * Enforcing several regions of one device (e.g. multi-tile
+		 * GPUs) is a possible future enhancement.
+		 */
+		gres_device->dmem->state = GRES_DMEM_AMBIGUOUS;
+	}
+}
+
+/*
+ * Check for regions that appear twice and classify them.
+ *
+ * A device with DmemRegion=off or with no DmemRegion, is ignored.
+ *
+ * - Two automatically matched devices point to the same PCI address
+ *   (e.g. /dev/nvidia0 + /dev/dri/renderD129), both are marked
+ *   GRES_DMEM_SHARED.
+ * - One device is explicitly configured with DmemRegion= and another
+ *   one automatically matched the same region. The explicit one takes
+ *   precedence, the other is marked GRES_DMEM_SHARED.
+ * - Two devices explicitly configured with the same DmemRegion= are a
+ *   fatal configuration error.
+ */
+/*
+ * Classify one device against every other device of the node.
+ * IN x - device to compare against
+ * IN arg - device being classified
+ */
+static int _foreach_dup_region(void *x, void *arg)
+{
+	gres_device_t *dev2 = x;
+	gres_device_t *dev = arg;
+
+	if ((dev2 == dev) ||
+	    (dev2->dmem->state == GRES_DMEM_EXCLUDED) ||
+	    !dev2->dmem->region)
+		return 0;
+	if (xstrcmp(dev->dmem->region, dev2->dmem->region))
+		return 0;
+	if (dev->dmem->from_conf && dev2->dmem->from_conf)
+		fatal("gres.conf: dmem region %s bound with DmemRegion= to both %s and %s",
+		      dev->dmem->region, dev->path, dev2->path);
+	if (!dev->dmem->from_conf)
+		dev->dmem->state = GRES_DMEM_SHARED;
+
+	return 0;
+}
+
+static int _foreach_check_dup_regions(void *x, void *arg)
+{
+	gres_device_t *dev = x;
+
+	if (dev->dmem->state == GRES_DMEM_USABLE)
+		(void) list_for_each(gres_devices, _foreach_dup_region, dev);
+
+	return 0;
+}
+
+static void _dmem_check_dup_regions(void)
+{
+	(void) list_for_each(gres_devices, _foreach_check_dup_regions, NULL);
+}
+
+/*
+ * Divide the dmem region capacity across the device configured shards.
+ */
+static int _dmem_set_dev_slices(void *x, void *arg)
+{
+	gres_dmem_dev_t *dmem = ((gres_device_t *) x)->dmem;
+
+	if ((dmem->state == GRES_DMEM_USABLE) && dmem->shards)
+		dmem->slice = (dmem->capacity / dmem->shards);
+
+	return 0;
+}
+
+static int _foreach_dmem_discover(void *x, void *arg)
+{
+	gres_device_t *gres_device = x;
+	dmem_discover_t *discover = arg;
+	gres_dmem_dev_t *dmem = xmalloc(sizeof(*dmem));
+	find_conf_gpu_t find = {
+		.file = gres_device->path,
+		.sharing_name = "gpu",
+	};
+	gres_slurmd_conf_t *gres_slurmd_conf = NULL;
+	shared_dev_info_t *shared = NULL;
+
+	if (gres_device->dmem) {
+		xfree(gres_device->dmem->region);
+		xfree(gres_device->dmem);
+	}
+	xfree(gres_device->pci_addr);
+	gres_device->dmem = dmem;
+
+	if (discover->gres_conf_list)
+		gres_slurmd_conf = list_find_first(discover->gres_conf_list,
+						   _find_conf_gpu, &find);
+
+	_find_dev_pci(gres_device, gres_slurmd_conf);
+
+	if (shared_info &&
+	    (shared = list_find_first(shared_info, _find_shared_id,
+				      &gres_device->dev_num)))
+		dmem->shards = shared->count;
+
+	if (gres_slurmd_conf && gres_slurmd_conf->dmem_region &&
+	    !xstrcasecmp(gres_slurmd_conf->dmem_region, DMEM_REGION_OFF)) {
+		/*
+		 * Deliberate exclusion. Still detect the region so
+		 * the startup log can show what is being excluded.
+		 */
+		_match_region_by_pci(discover->region_list, gres_device);
+		dmem->state = GRES_DMEM_EXCLUDED;
+	} else if (gres_slurmd_conf && gres_slurmd_conf->dmem_region) {
+		cgroup_limits_t *region = NULL;
+
+		if (!discover->region_list ||
+		    !(region = list_find_first(discover->region_list,
+					       _find_region_name,
+					       gres_slurmd_conf->dmem_region))) {
+			fatal("gres.conf: DmemRegion=%s for %s does not exist.",
+			      gres_slurmd_conf->dmem_region,
+			      gres_device->path);
+		}
+		_bind_region(dmem, region);
+		dmem->from_conf = true;
+	} else {
+		_match_region_by_pci(discover->region_list, gres_device);
+	}
+
+	return 0;
+}
+
+/*
+ * Discover the dmem cgroup state of every shard sharing device and compute
+ * its per-shard device memory slice.
+ *
+ * IN gres_conf_list - merged gres.conf records, consulted for the PCI
+ *	address that AutoDetect stored and for DmemRegion= overrides on
+ *	the sharing (gpu) records
+ */
+static void _dmem_discover(list_t *gres_conf_list)
+{
+	dmem_discover_t discover = { .gres_conf_list = gres_conf_list };
+
+	if (!gres_devices)
+		return;
+
+	if (!(discover.region_list = cgroup_g_get_dmem_regions()) ||
+	    !list_count(discover.region_list))
+		log_flag(GRES, "shard: no dmem regions available");
+
+	(void) list_for_each(gres_devices, _foreach_dmem_discover, &discover);
+
+	_dmem_check_dup_regions();
+
+	(void) list_for_each(gres_devices, _dmem_set_dev_slices, NULL);
+
+	FREE_NULL_LIST(discover.region_list);
+}
 
 extern int init(void)
 {
@@ -112,6 +570,10 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
 	(void) list_for_each(gres_conf_list,
 			     gres_common_set_env_types_on_node_flags,
 			     &node_flags);
+
+	/* We don't do any discover in slurmctld */
+	if (config->in_slurmd)
+		_dmem_discover(gres_conf_list);
 
 	return rc;
 }
@@ -242,7 +704,7 @@ extern list_t *gres_p_get_devices(void)
  */
 extern list_t *gres_p_get_dmem_devices(void)
 {
-	return NULL;
+	return gres_devices;
 }
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gres, char *settings)
