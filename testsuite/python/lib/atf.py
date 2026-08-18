@@ -510,6 +510,19 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
         failures.append(reason)
         return
 
+    reason = "Issue 50974: Known issue about slurmd stuck waiting for a completing job during shutdown. Seems fixed in 26.05+"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "pause_for_job_completion" in bt
+        and "_rpc_terminate_job" in bt
+    ):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Issue 51060: slurmctld - SIGABRT: _kill_job_step(): Assertion (job_ptr->job_id == job_step_kill_msg->step_id.job_id) failed"
     component = "sbin/slurmctld"
     if (
