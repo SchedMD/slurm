@@ -1321,6 +1321,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats = xmalloc(sizeof(*stats));
 	stats->usec = NO_VAL64;
 	stats->ssec = NO_VAL64;
+	stats->total_dmem = NO_VAL64; /* No dmem controller in cgroup v1 */
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
 	stats->total_vmem = NO_VAL64;

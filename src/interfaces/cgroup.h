@@ -172,6 +172,7 @@ typedef struct {
 	uint64_t memory_peak;
 	uint64_t usec;
 	uint64_t ssec;
+	uint64_t total_dmem; /* device memory summed over all dmem regions */
 	uint64_t total_rss;
 	uint64_t total_pgmajfault;
 	uint64_t total_vmem;

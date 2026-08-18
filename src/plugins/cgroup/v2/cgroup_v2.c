@@ -2829,12 +2829,13 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 {
 	uint64_t active_file, inactive_file;
 	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
-	char *memory_peak = NULL;
+	char *dmem_current = NULL, *memory_peak = NULL;
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	bool no_file_cache = false;
 	static bool interfaces_checked = false, memory_peak_interface = false;
+	static bool dmem_interface = false;
 
 	xassert(cg);
 
@@ -2852,6 +2853,14 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 		 * old kernels might not provide it.
 		 */
 		memory_peak_interface = cgroup_p_has_feature(CG_MEMCG_PEAK);
+
+		/*
+		 * dmem only exists on kernels >= 6.14 with dmem regions.
+		 * Use it only when we want to constrain dmem.
+		 */
+		if (slurm_cgroup_conf.constrain_device_memory)
+			dmem_interface = cgroup_p_has_feature(CG_DMEM_MAX);
+
 		interfaces_checked = true;
 	}
 
@@ -2878,6 +2887,14 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 		}
 	}
 
+	if (dmem_interface) {
+		if (common_cgroup_get_param(cg, "dmem.current", &dmem_current,
+					    &tmp_sz) != SLURM_SUCCESS) {
+			log_flag(CGROUP, "Cannot read %s dmem.current file",
+				 label);
+		}
+	}
+
 	/*
 	 * Initialize values. A NO_VAL64 will indicate the caller that something
 	 * happened here. Values that aren't set here are returned as 0.
@@ -2885,9 +2902,30 @@ static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 	stats = xmalloc(sizeof(*stats));
 	stats->usec = NO_VAL64;
 	stats->ssec = NO_VAL64;
+	stats->total_dmem = NO_VAL64;
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
 	stats->memory_peak = INFINITE64; /* As required in common_jag.c */
+
+	if (dmem_current) {
+		uint64_t total = 0;
+		int region_cnt = 0;
+		char *save_ptr = NULL;
+
+		/* One "<region_name> <bytes>" line per registered region */
+		for (char *tok = strtok_r(dmem_current, "\n", &save_ptr); tok;
+		     tok = strtok_r(NULL, "\n", &save_ptr)) {
+			char *sep = xstrrchr(tok, ' ');
+
+			if (!sep)
+				continue;
+			total += strtoull((sep + 1), NULL, 10);
+			region_cnt++;
+		}
+		if (region_cnt)
+			stats->total_dmem = total;
+		xfree(dmem_current);
+	}
 
 	if (cpu_stat) {
 		ptr = xstrstr(cpu_stat, "user_usec");
