@@ -540,10 +540,10 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_idle, partition_nodes_idle, "Nodes in Idle state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_invalid_reg, partition_nodes_invalid_reg, "Number of nodes with Invalid Registration flag", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_maint, partition_nodes_maint, "Nodes in maintenance state", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_alloc, partition_nodes_mem_alloc, "Amount of allocated memory of all nodes", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_avail, partition_nodes_mem_avail, "Amount of available memory of all nodes", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_free, partition_nodes_mem_free, "Amount of free memory in all nodes", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_total, partition_nodes_mem_tot, "Total amount of memory of all nodes", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_alloc, partition_nodes_mem_alloc, "Amount of allocated memory of all nodes in MiB", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_avail, partition_nodes_mem_avail, "Amount of available memory of all nodes in MiB", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_free, partition_nodes_mem_free, "Amount of free memory in all nodes in MiB", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_total, partition_nodes_mem_tot, "Total amount of memory of all nodes in MiB", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_mixed, partition_nodes_mixed, "Nodes in Mixed state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_no_resp, partition_nodes_no_resp, "Nodes in Not Responding state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_planned, partition_nodes_planned, "Nodes in Planned state", GAUGE, "partition", ps->name);
