@@ -1178,9 +1178,12 @@ static void _x11_signal_handler(const bool shutdown, void *arg)
 	} else if (cpid < 0) {
 		error("%s: fork: %m", __func__);
 	} else {
-		int status;
+		int status = 0;
 
-		pid = waitpid(cpid, &status, 0);
+		while (((pid = waitpid(cpid, &status, 0)) < 0) &&
+		       (errno == EINTR))
+			debug2("%s: waitpid() interrupted", __func__);
+
 		if (pid < 0)
 			error("%s: waitpid failed: %m",
 			      __func__);
