@@ -176,6 +176,21 @@ in "lstopo \-l" command output.
 .IP
 
 .TP
+\fBDmemRegion\fR
+Name of the dmem cgroup region providing the device memory of this
+GRES device, overriding automatic detection. Only valid on a record with a
+single \fBFile\fR device, e.g.
+\fIDmemRegion=nvidia/0000:01:00/vidmem\fR. The regions available on the node
+are listed in \fI/sys/fs/cgroup/dmem.capacity\fR. If the named region does
+not exist on the node, or more than one device is explicitly bound to the same
+region, slurmd fails to start. An explicit binding also takes ownership of
+the region over any device matched to it automatically, which is then not
+enforced. A value of \fIoff\fR excludes this individual device from device
+memory enforcement (its shards are scheduled but not constrained). See
+\fBConstrainDeviceMemory\fR in \fBcgroup.conf\fR(5).
+.IP
+
+.TP
 \fBFile\fR
 Fully qualified pathname of the device files associated with a resource.
 The name can include a numeric range suffix to be interpreted by Slurm

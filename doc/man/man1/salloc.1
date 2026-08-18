@@ -3051,6 +3051,14 @@ Only set if \fB\-\-runtime\fR is specified.
 .IP
 
 .TP
+\fBSLURM_SHARD_MEM_PER_GPU\fR
+Comma\-separated list of \fIpci_addr\fR=\fIsize\fRM pairs with the device
+memory granted to the job's shards on each device. Only set for devices with
+device memory enforcement active (see \fBConstrainDeviceMemory\fR in
+\fBcgroup.conf\fR(5)).
+.IP
+
+.TP
 \fBSLURM_SHARDS_ON_NODE\fR
 Number of GPU Shards available to the step on this node.
 .IP
