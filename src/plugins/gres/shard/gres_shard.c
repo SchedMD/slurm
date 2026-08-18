@@ -110,6 +110,12 @@ typedef struct {
 	pci_bdf_t *pci;
 } match_region_t;
 
+typedef struct {
+	char *env_pos;
+	char *env_val;
+	common_gres_env_t *gres_env;
+} shard_mem_env_t;
+
 /*
  * Parse a PCI address string of the form domain:bus:device[.function].
  * e.g. sysfs "0000:01:00.0" or "00000000:01:00.2".
@@ -689,6 +695,59 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
 	return rc;
 }
 
+/*
+ * Set SLURM_SHARD_MEM_PER_GPU: one <pci_addr>=<MiB>M pair per allocated
+ * device with enforced device memory. Applications can use it, for example with
+ * cudaDeviceGetByPCIBusId(). The value is the allocated shard count times
+ * the per-shard slice, floored to MiB.
+ */
+static int _foreach_shard_mem_env(void *x, void *arg)
+{
+	gres_device_t *dev = x;
+	shard_mem_env_t *mem_env = arg;
+	common_gres_env_t *gres_env = mem_env->gres_env;
+	uint64_t mib = 0;
+
+	if (!dev->dmem || (dev->dmem->state != GRES_DMEM_USABLE) ||
+	    !dev->pci_addr)
+		return 0;
+	if ((dev->index < 0) || (dev->index >= bit_size(gres_env->bit_alloc)))
+		return 0;
+	if (!bit_test(gres_env->bit_alloc, dev->index))
+		return 0;
+	if (gres_env->is_task && gres_env->usable_gres &&
+	    !bit_test(gres_env->usable_gres, dev->index))
+		return 0;
+	if (!gres_env->gres_per_bit[dev->index])
+		return 0;
+
+	mib = ((gres_env->gres_per_bit[dev->index] * dev->dmem->slice) /
+	       (1024 * 1024));
+	xstrfmtcatat(mem_env->env_val, &mem_env->env_pos, "%s%s=%" PRIu64 "M",
+		     (mem_env->env_val ? "," : ""), dev->pci_addr, mib);
+
+	return 0;
+}
+
+static void _set_shard_mem_env(common_gres_env_t *gres_env)
+{
+	shard_mem_env_t mem_env = { .gres_env = gres_env };
+
+	if (gres_devices && slurm_cgroup_conf.constrain_device_memory &&
+	    gres_env->gres_per_bit && gres_env->bit_alloc)
+		(void) list_for_each(gres_devices, _foreach_shard_mem_env,
+				     &mem_env);
+
+	if (mem_env.env_val) {
+		env_array_overwrite(gres_env->env_ptr,
+				    "SLURM_SHARD_MEM_PER_GPU",
+				    mem_env.env_val);
+		xfree(mem_env.env_val);
+	} else if (!(gres_env->flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
+		unsetenvp(*(gres_env->env_ptr), "SLURM_SHARD_MEM_PER_GPU");
+	}
+}
+
 static void _set_shard_env(common_gres_env_t *gres_env)
 {
 	if (gres_env->gres_cnt) {
@@ -723,6 +782,7 @@ extern void gres_p_job_set_env(char ***job_env_ptr, bitstr_t *gres_bit_alloc,
 
 	gres_common_gpu_set_env(&gres_env);
 	_set_shard_env(&gres_env);
+	_set_shard_mem_env(&gres_env);
 }
 
 /*
@@ -745,6 +805,7 @@ extern void gres_p_step_set_env(char ***step_env_ptr, bitstr_t *gres_bit_alloc,
 
 	gres_common_gpu_set_env(&gres_env);
 	_set_shard_env(&gres_env);
+	_set_shard_mem_env(&gres_env);
 }
 
 /*
@@ -770,6 +831,7 @@ extern void gres_p_task_set_env(char ***task_env_ptr, bitstr_t *gres_bit_alloc,
 
 	gres_common_gpu_set_env(&gres_env);
 	_set_shard_env(&gres_env);
+	_set_shard_mem_env(&gres_env);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
