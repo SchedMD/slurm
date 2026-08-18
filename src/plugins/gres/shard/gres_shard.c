@@ -38,6 +38,7 @@
 #define _GNU_SOURCE
 
 #include <ctype.h>
+#include <glob.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -234,16 +235,65 @@ static bool _pci_bdf_from_path(const char *path, pci_bdf_t *bdf)
 }
 
 /*
- * Resolve the PCI address of a device file through sysfs
- * (/sys/dev/{char,block}/<major>:<minor>/device points into the PCI
- * device directory).
+ * The proprietary NVIDIA driver does not register its native device nodes
+ * in /sys/dev, but exposes the PCI address and the device minor of every GPU in
+ * /proc/driver/nvidia/gpus/<pci_addr>/information.
+ *
+ * IN gres_device - device to resolve
+ * OUT bdf - parsed PCI address
+ * RET true if a GPU with the device minor was found
+ */
+static bool _pci_bdf_from_nvidia_procfs(gres_device_t *gres_device,
+					pci_bdf_t *bdf)
+{
+	glob_t globbuf = { 0 };
+	bool found = false;
+
+	if (glob("/proc/driver/nvidia/gpus/*/information", 0, NULL, &globbuf))
+		return false;
+
+	for (size_t i = 0; ((i < globbuf.gl_pathc) && !found); i++) {
+		char line[256];
+		FILE *fp = fopen(globbuf.gl_pathv[i], "r");
+
+		if (!fp)
+			continue;
+		while (fgets(line, sizeof(line), fp)) {
+			long minor = -1;
+			/*
+			 * Just use the minor to identify the NV gpu. According
+			 * to NVML docs	the minor is the number in
+			 * /dev/nvidia[0-9] (see nvmlDeviceGetMinorNumber()).
+			 */
+			if (xstrncmp(line, "Device Minor:", 13))
+				continue;
+			minor = strtol((line + 13), NULL, 10);
+			if (minor == (long) gres_device->dev_desc.minor) {
+				char *dir = xdirname(globbuf.gl_pathv[i]);
+
+				/* Parse the <pci_addr> path component */
+				found = _pci_bdf_parse(xbasename(dir), bdf);
+				xfree(dir);
+			}
+			break;
+		}
+		fclose(fp);
+	}
+	globfree(&globbuf);
+
+	return found;
+}
+
+/*
+ * Resolve the PCI address of a device file through sysfs.
+ *
  * IN gres_device - device to resolve
  * OUT bdf - parsed PCI address
  * RET true if the device maps to a PCI device
  */
 static bool _pci_bdf_from_sysfs(gres_device_t *gres_device, pci_bdf_t *bdf)
 {
-	char *link = NULL, *resolved = NULL, *base = NULL;
+	char *link = NULL, *resolved = NULL;
 	bool found = false;
 
 	if (gres_device->dev_desc.type == DEV_TYPE_NONE)
@@ -260,8 +310,8 @@ static bool _pci_bdf_from_sysfs(gres_device_t *gres_device, pci_bdf_t *bdf)
 			      gres_device->dev_desc.major,
 			      gres_device->dev_desc.minor);
 	resolved = realpath(link, NULL);
-	if (resolved && (base = xstrrchr(resolved, '/')))
-		found = _pci_bdf_parse((base + 1), bdf);
+	if (resolved)
+		found = _pci_bdf_parse(xbasename(resolved), bdf);
 
 	free(resolved);
 	xfree(link);
@@ -301,6 +351,13 @@ static void _find_dev_pci(gres_device_t *gres_device,
 		pci_valid = _pci_bdf_parse(gres_slurmd_conf->pci_addr, &pci);
 	if (!pci_valid)
 		pci_valid = _pci_bdf_from_sysfs(gres_device, &pci);
+
+	/*
+	 * The nvidia driver seems to not call device_create(),
+	 * so try to resolve it separately.
+	 */
+	if (!pci_valid)
+		pci_valid = _pci_bdf_from_nvidia_procfs(gres_device, &pci);
 	if (pci_valid)
 		gres_device->pci_addr =
 			xstrdup_printf("%04x:%02x:%02x.%x", pci.domain, pci.bus,
