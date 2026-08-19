@@ -766,6 +766,7 @@ test_107_3   Test scancel --ctld and filtering options
 test_107_4   Test scancel signals jobs by mixes of Job IDs and SLUIDs
 test_107_5   Test scancel of a hetjob step keeps the component jobs running
 test_107_6   Test scancel job name filtering options
+test_107_7   Test scancel array task id validation
 
 test_108_#   Testing of scontrol options.
 =========================================
