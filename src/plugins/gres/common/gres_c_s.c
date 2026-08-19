@@ -99,6 +99,120 @@ static int _find_matching_file_gres(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Find a shared record (mps or shard) whose Type is a substring of the given
+ * device type, mirroring how GPU types match the detected device names.
+ */
+static int _find_shared_by_sharing_type(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	char *sharing_type = arg;
+
+	if (gres_slurmd_conf->type_name &&
+	    xstrcasestr(sharing_type, gres_slurmd_conf->type_name))
+		return 1;
+	return 0;
+}
+
+static int _find_same_type_gres(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf1 = x;
+	gres_slurmd_conf_t *gres_slurmd_conf2 = arg;
+
+	if (!xstrcasecmp(gres_slurmd_conf1->type_name,
+			 gres_slurmd_conf2->type_name))
+		return 1;
+	return 0;
+}
+
+/*
+ * Sort shared records (mps or shard) by Type length, longest first,
+ * so the most specific configuration wins when several Types match one device.
+ */
+static int _sort_shared_by_type_len(void *x, void *y)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf1 = *(gres_slurmd_conf_t **) x;
+	gres_slurmd_conf_t *gres_slurmd_conf2 = *(gres_slurmd_conf_t **) y;
+	size_t len1 = gres_slurmd_conf1->type_name ?
+			      strlen(gres_slurmd_conf1->type_name) :
+			      0;
+	size_t len2 = gres_slurmd_conf2->type_name ?
+			      strlen(gres_slurmd_conf2->type_name) :
+			      0;
+
+	if (len1 < len2)
+		return 1;
+	if (len1 > len2)
+		return -1;
+	return 0;
+}
+
+/* Find a sharing (gpu) device whose type contains the shared record's Type */
+static int _find_sharing_by_shared_type(void *x, void *arg)
+{
+	gres_slurmd_conf_t *sharing_record = x;
+	gres_slurmd_conf_t *shared_record = arg;
+
+	if (sharing_record->type_name &&
+	    xstrcasestr(sharing_record->type_name, shared_record->type_name))
+		return 1;
+	return 0;
+}
+
+static int _foreach_warn_unmatched_type(void *x, void *arg)
+{
+	gres_slurmd_conf_t *shared_record = x;
+	list_t *sharing_conf_list = arg;
+
+	if (!list_find_first(sharing_conf_list, _find_sharing_by_shared_type,
+			     shared_record))
+		error("Discarding gres/'shared' configuration (Type=%s) without matching gres/'sharing' device type",
+		      shared_record->type_name);
+	return 0;
+}
+
+/*
+ * Give every sharing (gpu) device the per-device Count from the configuration
+ * matching its Type. Unlike _distribute_count(), the Count is not divided, it
+ * applies directly to each matching device, so one configuration line covers
+ * any number of devices of that model. Sharing devices with no matching
+ * configuration get no shared record.
+ *
+ * "Name=shard Type=a100 Count=32" or "Name=mps Type=a100 Count=32" in gres.conf
+ * will give 32 to every a100 device.
+ */
+static void _distribute_count_per_type(list_t *gres_conf_list,
+				       list_t *sharing_conf_list,
+				       list_t *shared_conf_list,
+				       char *shared_name)
+{
+	gres_slurmd_conf_t *sharing_record, *shared_record, *typed_record;
+
+	/* Longest Type first so the most specific configuration wins */
+	list_sort(shared_conf_list, _sort_shared_by_type_len);
+
+	(void) list_for_each(shared_conf_list, _foreach_warn_unmatched_type,
+			     sharing_conf_list);
+
+	while ((sharing_record = list_pop(sharing_conf_list))) {
+		typed_record = list_find_first(shared_conf_list,
+					       _find_shared_by_sharing_type,
+					       sharing_record->type_name);
+		/*
+		 * A node mixing sharded and unsharded gpu models must not
+		 * report any zero-count gres.
+		 */
+		if (typed_record) {
+			shared_record =
+				_create_shared_rec(sharing_record, shared_name,
+						   typed_record);
+			shared_record->count = typed_record->count;
+			list_append(gres_conf_list, shared_record);
+		}
+		list_append(gres_conf_list, sharing_record);
+	}
+}
+
 static int _delete_leftovers(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -120,14 +234,32 @@ static int _merge_lists(list_t *gres_conf_list, list_t *sharing_conf_list,
 	}
 
 	/*
-	 * If gres/shared has Count, but no File specification, then evenly
-	 * distribute gres/shared Count over all gres/sharing file records
+	 * If a shared gres (mps or shard) has a Count, but no File
+	 * specification, then give each sharing device (gpu) of a matching
+	 * Type, a per-device Count. For entries without a Type, evenly
+	 * distribute Count over all gres sharing file records (gpus).
+	 *
+	 * _build_shared_list() guarantees records without File either all have
+	 * a Type or there is a single untyped one.
+	 *
+	 * Generated typed records hold a node total and distribute like
+	 * untyped ones.
 	 */
-	if (list_count(shared_conf_list) == 1) {
+	if (list_count(shared_conf_list)) {
 		shared_record = list_peek(shared_conf_list);
 		if (!shared_record->file) {
-			_distribute_count(gres_conf_list, sharing_conf_list,
-					  shared_record->count, shared_record);
+			if (shared_record->type_name &&
+			    !(shared_record->config_flags &
+			      GRES_CONF_GENERATED))
+				_distribute_count_per_type(gres_conf_list,
+							   sharing_conf_list,
+							   shared_conf_list,
+							   shared_name);
+			else
+				_distribute_count(gres_conf_list,
+						  sharing_conf_list,
+						  shared_record->count,
+						  shared_record);
 			list_flush(shared_conf_list);
 			return SLURM_SUCCESS;
 		}
@@ -403,6 +535,7 @@ static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 	char *f_name;
 	uint64_t count_per_file;
 	int shared_no_file_recs = 0, shared_file_recs = 0;
+	int shared_typed_recs = 0;
 
 	if (gres_list == NULL)
 		return NULL;
@@ -413,13 +546,37 @@ static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 		if (xstrcmp(gres_slurmd_conf->name, shared_name))
 			continue;
 		if (!gres_slurmd_conf->file) {
-			if (shared_no_file_recs)
-				fatal("%s: bad configuration, multiple configurations without \"File\"",
-				      __func__);
 			if (shared_file_recs)
 				fatal("%s: multiple configurations with and without \"File\"",
 				      __func__);
-			shared_no_file_recs++;
+			if (gres_slurmd_conf->type_name &&
+			    !(gres_slurmd_conf->config_flags &
+			      GRES_CONF_GENERATED)) {
+				/*
+				 * Typed configurations without File give
+				 * their Count to every sharing device of a
+				 * matching Type. Generated records hold a
+				 * node total and are excluded.
+				 */
+				if (shared_no_file_recs)
+					fatal("%s: bad configuration, mixing configurations with and without \"Type\" and no \"File\"",
+					      __func__);
+				if (list_find_first(shared_list,
+						    _find_same_type_gres,
+						    gres_slurmd_conf))
+					fatal("%s: bad configuration, duplicate \"Type=%s\" configurations without \"File\"",
+					      __func__,
+					      gres_slurmd_conf->type_name);
+				shared_typed_recs++;
+			} else {
+				if (shared_no_file_recs)
+					fatal("%s: bad configuration, multiple configurations without \"File\"",
+					      __func__);
+				if (shared_typed_recs)
+					fatal("%s: bad configuration, mixing configurations with and without \"Type\" and no \"File\"",
+					      __func__);
+				shared_no_file_recs++;
+			}
 			shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			shared_record->config_flags =
 				gres_slurmd_conf->config_flags;
@@ -441,7 +598,7 @@ static list_t *_build_shared_list(list_t *gres_list, char *shared_name)
 			list_append(shared_list, shared_record);
 		} else {
 			shared_file_recs++;
-			if (shared_no_file_recs)
+			if (shared_no_file_recs || shared_typed_recs)
 				fatal("gres/shared: multiple configurations with and without \"File\"");
 			hl = hostlist_create(gres_slurmd_conf->file);
 			count_per_file =

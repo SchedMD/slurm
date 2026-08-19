@@ -2275,8 +2275,15 @@ static int _match_type(void *x, void *key)
 	 * stylings.
 	 */
 	if (!conf_cnt->type_name) {
-		xfree(gres_slurmd_conf->type_name);
-		gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+		/*
+		 * Don't remove the type of a shared gres without File.
+		 * Support entries like "Name=shard Type=rtx_5060_ti Count=16".
+		 */
+		if (!gres_id_shared(gres_slurmd_conf->config_flags) ||
+		    gres_slurmd_conf->file) {
+			xfree(gres_slurmd_conf->type_name);
+			gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+		}
 	} else if (xstrcasecmp(gres_slurmd_conf->type_name,
 			       conf_cnt->type_name))
 		return 0;
@@ -2353,8 +2360,10 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
 static void _merge_gres2(merge_gres_t *merge_gres,
 			 uint64_t count, char *type_name)
 {
+	bool per_dev_shared = false;
 	gres_slurmd_conf_t *match;
 	gres_slurmd_conf_t gres_slurmd_conf = {
+		.config_flags = GRES_CONF_GENERATED,
 		.cpu_cnt = merge_gres->cpu_cnt,
 		.name = merge_gres->gres_ctx->gres_name,
 		.type_name = type_name,
@@ -2381,6 +2390,22 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 		debug3("%s: From gres.conf, using %s:%s:%"PRIu64":%s", __func__,
 		       match->name, match->type_name, match->count,
 		       match->file);
+
+		/*
+		 * A shared record (mps or shard) without File and with Type,
+		 * applies Count to each device, not to each node. This
+		 * allows support for defining shards/mps for a specific model
+		 * of gpu. Never truncate it.
+		 */
+		if (!match->file && match->type_name &&
+		    gres_id_shared(match->config_flags)) {
+			if (type_name) {
+				count = 0;
+				break;
+			}
+			per_dev_shared = true;
+			continue;
+		}
 
 		/*
 		 * See if we need to merge with any more gres.conf records.
@@ -2416,7 +2441,8 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 			break;
 	}
 
-	if (count == 0)
+	/* Per-device records absorb the total: no untyped leftover. */
+	if (per_dev_shared || !count)
 		return;
 
 	/*
@@ -11440,7 +11466,7 @@ extern void destroy_gres_slurmd_conf(void *x)
  */
 extern char *gres_flags2str(uint32_t config_flags)
 {
-	static char flag_str[128];
+	static char flag_str[256];
 	char *sep = "";
 
 	flag_str[0] = '\0';
@@ -11525,6 +11551,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_MIG) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "MIG");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_GENERATED) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "GENERATED");
 		sep = ",";
 	}
 
