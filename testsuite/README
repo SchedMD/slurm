@@ -956,6 +956,7 @@ test_122_2   Test job array with gres
 test_122_3   Test suspension of job arrays
 test_122_4   Test srun --jobid attach to a running job array task
 test_122_5   Test scancel job array id handling
+test_122_6   Test sbatch --array specification validation
 
 test_123_#   Testing of reservations.
 =====================================
