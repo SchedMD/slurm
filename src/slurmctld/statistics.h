@@ -94,7 +94,7 @@ typedef struct partition_statistics {
 	uint32_t jobs_completed;
 	uint32_t jobs_completing;
 	uint32_t jobs_configuring;
-	uint16_t jobs_cpus_alloc;
+	uint64_t jobs_cpus_alloc;
 	uint64_t jobs_gpus_alloc;
 	uint32_t jobs_deadline;
 	uint32_t jobs_expediting;
@@ -102,13 +102,13 @@ typedef struct partition_statistics {
 	uint32_t jobs_fed_requeued;
 	uint32_t jobs_finished;
 	uint32_t jobs_hold;
-	uint16_t jobs_max_job_nodes; /* max of max num of nodes requested among
+	uint32_t jobs_max_job_nodes; /* max of max num of nodes requested among
 				      * all pending jobs in the partition. */
-	uint16_t jobs_max_job_nodes_nohold; /* excludes held jobs */
+	uint32_t jobs_max_job_nodes_nohold; /* excludes held jobs */
 	uint64_t jobs_memory_alloc;
-	uint16_t jobs_min_job_nodes; /* max of min num of nodes requested among
+	uint32_t jobs_min_job_nodes; /* max of min num of nodes requested among
 				      * all pending jobs in the partition. */
-	uint16_t jobs_min_job_nodes_nohold; /* excludes held jobs */
+	uint32_t jobs_min_job_nodes_nohold; /* excludes held jobs */
 	uint32_t jobs_node_failed;
 	uint32_t jobs_oom;
 	uint32_t jobs_pending;
@@ -125,44 +125,44 @@ typedef struct partition_statistics {
 	uint32_t jobs_timeout;
 	uint32_t jobs_wait_part_node_limit;
 	char *name; /* name of the partition */
-	uint16_t nodes_alloc;
-	uint16_t nodes_blocked;
-	uint16_t nodes_cg;
-	uint16_t nodes_cloud;
-	uint16_t nodes_cpus_alloc;
-	uint16_t nodes_cpus_efctv;
-	uint16_t nodes_cpus_idle;
-	uint16_t nodes_down;
-	uint16_t nodes_drain;
-	uint16_t nodes_drained;
-	uint16_t nodes_draining;
-	uint16_t nodes_dyn_future;
-	uint16_t nodes_dyn_normal;
-	uint16_t nodes_external;
-	uint16_t nodes_fail;
-	uint16_t nodes_future;
-	uint16_t nodes_idle;
-	uint16_t nodes_invalid_reg;
-	uint16_t nodes_maint;
+	uint32_t nodes_alloc;
+	uint32_t nodes_blocked;
+	uint32_t nodes_cg;
+	uint32_t nodes_cloud;
+	uint64_t nodes_cpus_alloc;
+	uint64_t nodes_cpus_efctv;
+	uint64_t nodes_cpus_idle;
+	uint32_t nodes_down;
+	uint32_t nodes_drain;
+	uint32_t nodes_drained;
+	uint32_t nodes_draining;
+	uint32_t nodes_dyn_future;
+	uint32_t nodes_dyn_normal;
+	uint32_t nodes_external;
+	uint32_t nodes_fail;
+	uint32_t nodes_future;
+	uint32_t nodes_idle;
+	uint32_t nodes_invalid_reg;
+	uint32_t nodes_maint;
 	uint64_t nodes_mem_alloc;
 	uint64_t nodes_mem_avail;
 	uint64_t nodes_mem_free;
 	uint64_t nodes_mem_total;
-	uint16_t nodes_mixed;
-	uint16_t nodes_no_resp;
-	uint16_t nodes_planned;
-	uint16_t nodes_power_down;
-	uint16_t nodes_power_up;
-	uint16_t nodes_powered_down;
-	uint16_t nodes_powering_down;
-	uint16_t nodes_powering_up;
-	uint16_t nodes_reboot_issued;
-	uint16_t nodes_reboot_requested;
-	uint16_t nodes_resv;
-	uint16_t nodes_unknown;
+	uint32_t nodes_mixed;
+	uint32_t nodes_no_resp;
+	uint32_t nodes_planned;
+	uint32_t nodes_power_down;
+	uint32_t nodes_power_up;
+	uint32_t nodes_powered_down;
+	uint32_t nodes_powering_down;
+	uint32_t nodes_powering_up;
+	uint32_t nodes_reboot_issued;
+	uint32_t nodes_reboot_requested;
+	uint32_t nodes_resv;
+	uint32_t nodes_unknown;
 	uint32_t total_cpus; /* number of CPUs associated with the partition. */
 	uint64_t total_gpus; /* number of GPUs associated with the partition. */
-	uint16_t total_nodes; /* number of total nodes in the partition */
+	uint32_t total_nodes; /* number of total nodes in the partition */
 } partition_stats_t;
 
 typedef struct partitions_statistics {
