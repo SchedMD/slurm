@@ -596,7 +596,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->gpus_alloc, pfx, jobs_gpus_alloc, "Total number of GPUs allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->hold, pfx, jobs_hold, "Number of jobs in Hold state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->job_cnt, pfx, jobs, "Total number of jobs", GAUGE, key, ua->name);
-	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->memory_alloc, pfx, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->memory_alloc, pfx, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->node_failed, pfx, jobs_node_failed, "Number of jobs in Node Failed state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT16, js->nodes_alloc, pfx, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->oom, pfx, jobs_outofmemory, "Number of jobs in Out of Memory state", GAUGE, key, ua->name);
@@ -678,7 +678,7 @@ extern metric_set_t *metrics_p_parse_sched_metrics(scheduling_stats_t *s)
 	ADD_METRIC(set, UINT32, s->diag_stats->schedule_cycle_depth, schedule_cycle_depth, "Processed jobs depth total", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->schedule_cycle_last, schedule_cycle_last, "Last scheduling cycle time", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->schedule_cycle_max, schedule_cycle_max, "Max scheduling cycle time", GAUGE);
-	ADD_METRIC(set, UINT32, s->diag_stats->schedule_cycle_sum, schedule_cycle_tot, "Sum of scheduling cycle times", GAUGE);
+	ADD_METRIC(set, UINT64, s->diag_stats->schedule_cycle_sum, schedule_cycle_tot, "Sum of scheduling cycle times", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->schedule_queue_len, schedule_queue_len, "Jobs pending queue length", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->schedule_exit[SCHEDULE_EXIT_END], sched_exit_end , "End of job queue", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->schedule_exit[SCHEDULE_EXIT_MAX_DEPTH], sched_exit_max_depth, "Hit default_queue_depth", GAUGE);
