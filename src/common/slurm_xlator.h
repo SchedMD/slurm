@@ -411,7 +411,6 @@
 #define _xstrcatchar slurm_xstrcatchar
 #define _xstrftimecat slurm_xstrftimecat
 #define _xiso8601timecat slurm_xiso8601timecat
-#define _xrfc5424timecat slurm_xrfc5424timecat
 #define _xstrfmtcat slurm_xstrfmtcat
 #define _xstrfmtcatat slurm_xstrfmtcatat
 #define _xmemcat slurm_xmemcat

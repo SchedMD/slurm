@@ -49,7 +49,6 @@
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
 #define xiso8601timecat(__p, __msec)            _xiso8601timecat(&(__p), __msec)
-#define xrfc5424timecat(__p, __msec)            _xrfc5424timecat(&(__p), __msec)
 #define xrfc3339timecat(__p) _xrfc3339timecat(&(__p))
 #define xstrfmtcat(__p, __fmt, args...)	_xstrfmtcat(&(__p), __fmt, ## args)
 #define xstrfmtcatat(__p, __q, __fmt, args...) \
@@ -108,11 +107,6 @@ void _xstrftimecat(char **str, const char *fmt);
 ** Concatenate a ISO 8601 timestamp onto str.
 */
 void _xiso8601timecat(char **str, bool);
-
-/*
-** Concatenate a RFC 5424 timestamp onto str.
-*/
-void _xrfc5424timecat(char **str, bool);
 
 /*
  * Concatenate a RFC 3339 timestamp onto str.
