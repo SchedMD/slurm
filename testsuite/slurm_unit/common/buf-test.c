@@ -603,6 +603,42 @@ START_TEST(test_try_grow_buf_infinite)
 
 END_TEST
 
+START_TEST(test_try_grow_buf_exponential)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+	/* buffer with no memory to avoid allocating MAX_BUF_SIZE bytes */
+	buf_t full_buf = {
+		.magic = BUF_MAGIC,
+		.size = MAX_BUF_SIZE,
+	};
+
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 0);
+
+	/* INFINITE doubles the capacity */
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (2 * BUF_SIZE));
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (4 * BUF_SIZE));
+
+	/* a named size is still honored in full, whatever the policy */
+	ck_assert_int_eq(try_grow_buf(buf, (16 * BUF_SIZE)), SLURM_SUCCESS);
+	ck_assert_int_ge(size_buf(buf), (20 * BUF_SIZE));
+
+	/*
+	 * At the limit there is no headroom left to hand out, so INFINITE has
+	 * to fail rather than return success without growing
+	 */
+	ck_assert_int_eq(try_grow_buf(&full_buf, INFINITE),
+			 ESLURM_DATA_TOO_LARGE);
+	ck_assert_int_eq(size_buf(&full_buf), MAX_BUF_SIZE);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	free_buf(buf);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_geometric)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -650,6 +686,20 @@ START_TEST(test_try_grow_buf_linear)
 
 END_TEST
 
+START_TEST(test_try_grow_buf_min_size)
+{
+	buf_t *buf = init_buf(16);
+
+	/* doubling 16 bytes lands under the floor, so the floor applies */
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 0);
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (16 + MIN_BUF_SIZE));
+
+	free_buf(buf);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_remaining_infinite)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -683,6 +733,7 @@ START_TEST(test_try_grow_buf_remaining_policy)
 	};
 	static const buf_alloc_type_t types[] = {
 		BUF_ALLOC_DEFAULT,
+		BUF_ALLOC_EXPONENTIAL,
 		BUF_ALLOC_GEOMETRIC,
 		BUF_ALLOC_LINEAR,
 	};
@@ -692,7 +743,7 @@ START_TEST(test_try_grow_buf_remaining_policy)
 	 * this returns, so the promised free space must never depend on how
 	 * the cluster happens to be configured
 	 */
-	for (int t = 0; t < 3; t++) {
+	for (int t = 0; t < 4; t++) {
 		for (int i = 0; i < 5; i++) {
 			buf_t *buf = init_buf(BUF_SIZE);
 			uint32_t need = requests[i];
@@ -734,8 +785,10 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_try_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
 	tcase_add_test(tc_core, test_try_grow_buf_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_exponential);
 	tcase_add_test(tc_core, test_try_grow_buf_geometric);
 	tcase_add_test(tc_core, test_try_grow_buf_linear);
+	tcase_add_test(tc_core, test_try_grow_buf_min_size);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining_policy);
 	tcase_add_test(tc_core, test_buf_append_bytes);
