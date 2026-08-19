@@ -449,7 +449,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT32, stats->completed, jobs_completed, "Number of jobs in Completed state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->completing, jobs_completing, "Number of jobs in Completing state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->configuring, jobs_configuring, "Number of jobs in Configuring state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->cpus_alloc, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE);
+	ADD_METRIC(set, UINT64, stats->cpus_alloc, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->deadline, jobs_deadline, "Number of jobs in Deadline state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->expediting, jobs_expediting, "Number of jobs in Expediting state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->failed, jobs_failed, "Number of jobs in Failed state", GAUGE);
@@ -460,7 +460,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT32, stats->job_cnt, jobs, "Total number of jobs", GAUGE);
 	ADD_METRIC(set, UINT64, stats->memory_alloc, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->node_failed, jobs_node_failed, "Number of jobs in Node Failed state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->nodes_alloc, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE);
+	ADD_METRIC(set, UINT32, stats->nodes_alloc, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->oom, jobs_outofmemory, "Number of jobs in Out of Memory state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->pending, jobs_pending, "Number of jobs in Pending state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->powerup_node, jobs_powerup_node, "Number of jobs in PowerUp Node state", GAUGE);
@@ -587,7 +587,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->completed, pfx, jobs_completed, "Number of jobs in Completed state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->completing, pfx, jobs_completing, "Number of jobs in Completing state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->configuring, pfx, jobs_configuring, "Number of jobs in Configuring state", GAUGE, key, ua->name);
-	ADD_METRIC_KEYVAL_PFX(set, UINT16, js->cpus_alloc, pfx, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->cpus_alloc, pfx, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->deadline, pfx, jobs_deadline, "Number of jobs in Deadline state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->expediting, pfx, jobs_expediting, "Number of jobs in Expediting state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->failed, pfx, jobs_failed, "Number of jobs in Failed state", GAUGE, key, ua->name);
@@ -598,7 +598,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->job_cnt, pfx, jobs, "Total number of jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->memory_alloc, pfx, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->node_failed, pfx, jobs_node_failed, "Number of jobs in Node Failed state", GAUGE, key, ua->name);
-	ADD_METRIC_KEYVAL_PFX(set, UINT16, js->nodes_alloc, pfx, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->nodes_alloc, pfx, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->oom, pfx, jobs_outofmemory, "Number of jobs in Out of Memory state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->pending, pfx, jobs_pending, "Number of jobs in Pending state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->powerup_node, pfx, jobs_powerup_node, "Number of jobs in PowerUp Node state", GAUGE, key, ua->name);

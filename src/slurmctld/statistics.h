@@ -209,7 +209,7 @@ typedef struct jobs_statistics {
 	uint32_t completed;
 	uint32_t completing;
 	uint32_t configuring;
-	uint16_t cpus_alloc;
+	uint64_t cpus_alloc;
 	uint32_t deadline;
 	uint32_t expediting;
 	uint32_t failed;
@@ -221,7 +221,7 @@ typedef struct jobs_statistics {
 	list_t *jobs;
 	uint64_t memory_alloc;
 	bitstr_t *node_bitmap;
-	uint16_t nodes_alloc;
+	uint32_t nodes_alloc;
 	uint32_t node_failed;
 	uint32_t oom;
 	uint32_t pending;
