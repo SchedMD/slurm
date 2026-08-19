@@ -217,6 +217,10 @@ static uint64_t _grow_byte_count(const buf_t *buffer, uint32_t size)
 	uint64_t bytes;
 
 	switch (slurm_conf.buffer_alloc_type) {
+	case BUF_ALLOC_GEOMETRIC:
+		/* multiply by e: growing by the difference gives e times */
+		bytes = (uint64_t) (buffer->size * (M_E - 1.0));
+		break;
 	case BUF_ALLOC_LINEAR:
 		bytes = slurm_conf.buffer_alloc_bytes;
 		break;

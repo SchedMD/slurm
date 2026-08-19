@@ -3708,6 +3708,13 @@ static void _validate_buffer_alloc(slurm_conf_t *conf)
 			error("CommunicationParameters option buffer_alloc_linear=%ld is invalid, ignored",
 			      tmp_val);
 	}
+
+	if (xstrcasestr(conf->comm_params, "buffer_alloc_geometric")) {
+		if (conf->buffer_alloc_type != BUF_ALLOC_DEFAULT)
+			error("CommunicationParameters buffer_alloc_* options are mutually exclusive, using buffer_alloc_geometric");
+		conf->buffer_alloc_type = BUF_ALLOC_GEOMETRIC;
+		conf->buffer_alloc_bytes = 0;
+	}
 }
 
 static int _validate_bcast_exclude(slurm_conf_t *conf)

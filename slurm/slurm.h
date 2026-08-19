@@ -3024,6 +3024,7 @@ typedef struct reservation_name_msg {
 typedef enum {
 	BUF_ALLOC_DEFAULT = 0, /* built in increment */
 	BUF_ALLOC_LINEAR, /* add a fixed number of bytes */
+	BUF_ALLOC_GEOMETRIC, /* multiply the current size by e */
 } buf_alloc_type_t;
 
 /* Timestamp format for LogTimeFormat. */
