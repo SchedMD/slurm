@@ -4500,7 +4500,7 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 	hostlist_destroy(hl);
 
 	xfree(job_ptr->nodes);
-	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
+	job_ptr->nodes = bitmap2node_name_sortable(job_ptr->node_bitmap, false);
 
 	rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
 	FREE_NULL_BITMAP(orig_job_node_bitmap);

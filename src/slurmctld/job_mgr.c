@@ -3239,7 +3239,7 @@ extern void excise_node_from_job(job_record_t *job_ptr,
 {
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
-	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
+	job_ptr->nodes = bitmap2node_name_sortable(job_ptr->node_bitmap, false);
 
 	job_ptr->total_nodes = job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
 

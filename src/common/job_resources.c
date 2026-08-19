@@ -1195,7 +1195,7 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 	}
 
 	xfree(job->nodes);
-	job->nodes = bitmap2node_name(job->node_bitmap);
+	job->nodes = bitmap2node_name_sortable(job->node_bitmap, false);
 	job->ncpus = build_job_resources_cpu_array(job);
 	build_job_resources_order_map(job);
 
