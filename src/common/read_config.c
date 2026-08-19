@@ -194,6 +194,7 @@ static void _internal_conf_remove_node(char *node_name);
 static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl);
 static int _validate_bcast_exclude(slurm_conf_t *conf);
+static void _validate_buffer_alloc(slurm_conf_t *conf);
 static uint16_t *_parse_srun_ports(const char *);
 static void _parse_slurmctld_params(const char *slurmctld_params);
 
@@ -2931,6 +2932,8 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	xfree(conf->bb_type);
 	xfree(conf->bcast_exclude);
 	xfree(conf->bcast_parameters);
+	conf->buffer_alloc_bytes = 0;
+	conf->buffer_alloc_type = BUF_ALLOC_DEFAULT;
 	xfree(conf->certgen_params);
 	xfree(conf->certgen_type);
 	xfree(conf->certmgr_params);
@@ -3669,6 +3672,44 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 	return rc;
 }
 
+/*
+ * Set how much an internal buf_t grows by from CommunicationParameters.
+ *
+ * A bad or unusable value is logged and replaced rather than rejected: this
+ * only tunes allocation behavior and is not worth refusing the whole
+ * configuration over.
+ */
+static void _validate_buffer_alloc(slurm_conf_t *conf)
+{
+	char *temp_str = NULL;
+
+	conf->buffer_alloc_type = BUF_ALLOC_DEFAULT;
+	conf->buffer_alloc_bytes = 0;
+
+	temp_str = xstrcasestr(conf->comm_params, "buffer_alloc_linear=");
+	if (temp_str) {
+		long tmp_val = strtol(temp_str + 20, NULL, 10);
+
+		if ((tmp_val > 0) && (tmp_val <= INT_MAX)) {
+			conf->buffer_alloc_type = BUF_ALLOC_LINEAR;
+			conf->buffer_alloc_bytes = tmp_val;
+
+			/*
+			 * An increment under MIN_BUF_SIZE would mean an
+			 * xrealloc() per handful of bytes
+			 */
+			if (conf->buffer_alloc_bytes < MIN_BUF_SIZE) {
+				error_in_daemon(
+					"CommunicationParameters option buffer_alloc_linear=%u is too small, using %d instead",
+					conf->buffer_alloc_bytes, MIN_BUF_SIZE);
+				conf->buffer_alloc_bytes = MIN_BUF_SIZE;
+			}
+		} else
+			error("CommunicationParameters option buffer_alloc_linear=%ld is invalid, ignored",
+			      tmp_val);
+	}
+}
+
 static int _validate_bcast_exclude(slurm_conf_t *conf)
 {
 	int rc = SLURM_SUCCESS;
@@ -4022,6 +4063,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			error("CommunicationParameters option host_unreach_retry_count=%ld is invalid, ignored",
 			      tmp_val);
 	}
+
+	_validate_buffer_alloc(conf);
 
 	(void) s_p_get_string(&conf->cli_filter_params, "CliFilterParameters",
 			      hashtbl);

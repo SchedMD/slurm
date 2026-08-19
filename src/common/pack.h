@@ -57,6 +57,7 @@
 
 #define BUF_MAGIC 0x42554545
 #define BUF_SIZE (16 * 1024)
+#define MIN_BUF_SIZE (512) /* smallest sane growth increment */
 #define MAX_BUF_SIZE ((uint32_t) 0xffff0000)	/* avoid going over 32-bits */
 #define REASONABLE_BUF_SIZE ((uint32_t) 0xbfff4000) /* three-quarters of max */
 #define FLOAT_MULT 1000000
