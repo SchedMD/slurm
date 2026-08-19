@@ -189,14 +189,14 @@ typedef struct scheduling_statistics {
 
 typedef struct job_statistics {
 	char *account;
-	uint16_t cpus_alloc;
+	uint32_t cpus_alloc;
 	uint64_t gpus_alloc;
 	uint32_t job_array_cnt; /* If job array and PD, number of array tasks */
 	uint32_t job_id;
 	uint32_t job_state;
-	uint16_t max_nodes;
+	uint32_t max_nodes;
 	uint64_t memory_alloc;
-	uint16_t min_nodes;
+	uint32_t min_nodes;
 	bitstr_t *node_bitmap;
 	char *partition;
 	uint32_t state_reason;
