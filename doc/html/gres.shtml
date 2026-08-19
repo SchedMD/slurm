@@ -503,13 +503,27 @@ For example, some GPUs on a node may be more powerful than others and thus be
 associated with a higher gres/mps count.
 Another use case would be to prevent some GPUs from being used for MPS (i.e.
 they would have an MPS count of zero).</li>
+<li>MPS configuration includes the <I>Name</I>, <I>Type</I> and <I>Count</I>
+parameters (no <I>File</I>): The <I>Count</I> is given to <b>every</b> GPU
+whose type matches the <I>Type</I> parameter (a case-insensitive substring of
+the GPU type; the most specific configuration wins). Unlike cases 1 and 2,
+the <I>Count</I> is per device, not a node total, so one line covers any
+number of GPUs of that model and one line per GPU type may be used to give
+different models different gres/mps counts. GPUs whose type matches no line
+get an MPS count of zero.
+With this form the <I>slurm.conf</I> "Gres=" specification should declare the
+gres/mps counts per type as node totals using the full GPU type names.
+An untyped total is accepted when it equals the sum of all the per-device
+counts.</li>
 </ol>
 
-<p>Note that <I>Type</I> and <I>Cores</I> parameters for gres/mps are ignored.
+<p>Note that the <I>Cores</I> parameter for gres/mps is ignored, and the
+<I>Type</I> parameter is ignored when <I>File</I> is also specified.
 That information is copied from the gres/gpu configuration.</p>
 
 <p>Note the <I>Count</I> parameter is translated to a percentage, so the value
-would typically be a multiple of 100.</p>
+would typically be a multiple of 100, or exactly 100 per device with the
+per-type form of case 4.</p>
 
 <p>Note that if NVIDIA's NVML library is installed, the GPU configuration
 (i.e. <I>Type</I>, <I>File</I>, <I>Cores</I> and <I>Links</I> data) will be
@@ -719,9 +733,24 @@ For example, some GPUs on a node may be more powerful than others and thus be
 associated with a higher gres/shard count.
 Another use case would be to prevent some GPUs from being used for sharding (i.e.
 they would have a shard count of zero).</li>
+<li>Shard configuration includes the <I>Name</I>, <I>Type</I> and <I>Count</I>
+parameters (no <I>File</I>): The <I>Count</I> is given to <b>every</b> GPU
+whose type matches the <I>Type</I> parameter (a case-insensitive substring of
+the GPU type, like GPU type matching; the most specific configuration wins).
+Unlike cases 1 and 2, the <I>Count</I> is per device, not a node total, so
+one line covers any number of GPUs of that model. One line per GPU type may
+be used to give different models different shard counts, e.g.
+"Name=shard Type=a100 Count=32" and "Name=shard Type=l40s Count=16".
+GPUs whose type matches no line get a shard count of zero.
+With this form the <I>slurm.conf</I> "Gres=" specification should declare the
+shards per type as node totals using the full GPU type names, e.g.
+"Gres=gpu:a100:2,gpu:l40s:2,shard:a100:64,shard:l40s:32".
+An untyped total (e.g. "shard:96") is accepted when it equals the sum of all
+the per-device counts.</li>
 </ol>
 
-<p>Note that <I>Type</I> and <I>Cores</I> parameters for gres/shard are ignored.
+<p>Note that the <I>Cores</I> parameter for gres/shard is ignored, and the
+<I>Type</I> parameter is ignored when <I>File</I> is also specified.
 That information is copied from the gres/gpu configuration.</p>
 
 <p>Note that if NVIDIA's NVML library is installed, the GPU configuration

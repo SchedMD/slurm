@@ -442,6 +442,17 @@ Otherwise a restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required.
 \fBNOTE\fR: If using autodetect functionality and defining the Type in your
 gres.conf file, the Type specified should match or be a substring of the value
 that is detected, using an underscore in lieu of any spaces.
+
+\fBNOTE\fR: On a shared GRES configuration line (\fIshard\fR or \fImps\fR)
+without a \fBFile\fR parameter, \fBType\fR selects the GPUs the \fBCount\fR
+applies to: every GPU whose type matches receives the (per-device)
+\fBCount\fR, allowing different shard counts per GPU model with one line per
+type. The slurm.conf "Gres=" specification should then declare the shared
+GRES per type as node totals using the full GPU type names (e.g.
+"shard:a100:64" for two A100 GPUs with Count=32); an untyped total is
+accepted when it equals the sum of the per-device counts. Without \fBType\fR,
+the \fBCount\fR is a node total spread evenly across the GPUs. With \fBFile\fR,
+\fBType\fR is ignored and copied from the gres/gpu configuration.
 .IP
 
 .TP
