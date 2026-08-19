@@ -4624,6 +4624,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 
 	if (job_ptr->node_bitmap_cg) {
 		for (int i = 0;
+		     job_ptr->node_bitmap_cg &&
 		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i));
 		     i++) {
 			if (IS_NODE_DOWN(node_ptr)) {
@@ -4654,7 +4655,13 @@ extern void re_kill_job(job_record_t *job_ptr)
 		}
 	}
 
-	if (agent_args->node_count == 0) {
+	/*
+	 * cleanup_completing() above may have requeued the job. That frees
+	 * node_bitmap_cg and resets the job record, so create_kill_job_msg()
+	 * below would build a credential from cleared fields. Drop whatever
+	 * the loop gathered rather than send a message built from stale state.
+	 */
+	if (!job_ptr->node_bitmap_cg || (agent_args->node_count == 0)) {
 		FREE_NULL_HOSTLIST(agent_args->hostlist);
 		xfree(agent_args);
 		hostlist_destroy(kill_hostlist);
