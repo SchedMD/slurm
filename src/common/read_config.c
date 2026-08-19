@@ -3715,6 +3715,13 @@ static void _validate_buffer_alloc(slurm_conf_t *conf)
 		conf->buffer_alloc_type = BUF_ALLOC_GEOMETRIC;
 		conf->buffer_alloc_bytes = 0;
 	}
+
+	if (xstrcasestr(conf->comm_params, "buffer_alloc_exponential")) {
+		if (conf->buffer_alloc_type != BUF_ALLOC_DEFAULT)
+			error("CommunicationParameters buffer_alloc_* options are mutually exclusive, using buffer_alloc_exponential");
+		conf->buffer_alloc_type = BUF_ALLOC_EXPONENTIAL;
+		conf->buffer_alloc_bytes = 0;
+	}
 }
 
 static int _validate_bcast_exclude(slurm_conf_t *conf)
