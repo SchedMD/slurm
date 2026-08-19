@@ -407,7 +407,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	node_cnt = bit_set_count(bitmap);
 	job_ptr->job_resrcs = job_resrcs_ptr = _create_job_resources(node_cnt);
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
-	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
+	job_resrcs_ptr->nodes = bitmap2node_name_sortable(bitmap, false);
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
 	job_resrcs_ptr->threads_per_core =
 		job_ptr->details->mc_ptr->threads_per_core;
@@ -1138,8 +1138,9 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 				    to_job_resrcs_ptr->ncpus;
 	new_job_resrcs_ptr->node_req = to_job_resrcs_ptr->node_req;
 	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
-	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
-						     node_bitmap);
+	new_job_resrcs_ptr->nodes =
+		bitmap2node_name_sortable(new_job_resrcs_ptr->node_bitmap,
+					  false);
 	new_job_resrcs_ptr->threads_per_core =
 		to_job_resrcs_ptr->threads_per_core;
 	new_job_resrcs_ptr->cr_type = to_job_resrcs_ptr->cr_type;
