@@ -55,8 +55,8 @@ static void _init_event_cond(slurmdb_event_cond_t *pack)
 	list_append(pack->reason_list, "reason2");
 
 	pack->reason_uid_list = list_create(xfree_ptr);
-	list_append(pack->reason_uid_list, "uid1");
-	list_append(pack->reason_uid_list, "uid2");
+	list_append(pack->reason_uid_list, "1001");
+	list_append(pack->reason_uid_list, "1002");
 
 	pack->state_list = list_create(xfree_ptr);
 	list_append(pack->state_list, "state1");

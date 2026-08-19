@@ -71,7 +71,7 @@ START_TEST(pack_1702_assoc_rec)
 	slurmdb_accounting_rec_t *art  = xmalloc(sizeof(slurmdb_accounting_rec_t));
 
 	art->id   = 66;
-	char *qos = xstrdup("Eusebius");
+	char *qos = xstrdup("5");
 
 	pack_arwu->accounting_list	   = list_create(slurmdb_destroy_accounting_rec);
 	pack_arwu->acct           	   = xstrdup("Socrates");
