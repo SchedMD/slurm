@@ -6834,7 +6834,8 @@ static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
 	free_job_resources(&job_ptr->job_resrcs);
 
 	job_ptr->job_resrcs = create_job_resources();
-	job_ptr->job_resrcs->nodes = bitmap2node_name(node_bitmap);
+	job_ptr->job_resrcs->nodes =
+		bitmap2node_name_sortable(node_bitmap, false);
 	job_ptr->job_resrcs->node_bitmap = bit_copy(node_bitmap);
 	job_ptr->job_resrcs->nhosts = bit_set_count(node_bitmap);
 	rc = build_job_resources(job_ptr->job_resrcs);
