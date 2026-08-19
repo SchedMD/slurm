@@ -383,7 +383,7 @@ static void _metrics_create_kv(metric_set_t *set, data_parser_type_t type,
 
 extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 {
-	uint16_t total_node_cnt = 0;
+	uint32_t total_node_cnt = 0;
 	metric_set_t *set = _metrics_new_set();
 
 	for (int i = 0; i < stats->node_stats_count; i++) {
@@ -406,34 +406,34 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 	}
 
 	// clang-format off
-	ADD_METRIC(set, UINT16, total_node_cnt, nodes, "Total number of nodes", GAUGE);
-	ADD_METRIC(set, UINT16, stats->alloc, nodes_alloc, "Number of nodes in Allocated state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->blocked, nodes_blocked, "Number of nodes in Blocked state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->cg, nodes_completing, "Number of nodes with Completing flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->cloud, nodes_cloud, "Number of Cloud nodes", GAUGE);
-	ADD_METRIC(set, UINT16, stats->down, nodes_down, "Number of nodes in Down state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->drain, nodes_drain, "Number of nodes with Drain flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->drained, nodes_drained, "Number of drained nodes", GAUGE);
-	ADD_METRIC(set, UINT16, stats->draining, nodes_draining, "Number of nodes in draining condition (Drain state with active jobs)", GAUGE);
-	ADD_METRIC(set, UINT16, stats->dyn_future, nodes_dyn_future, "Number of future dynamic nodes", GAUGE);
-	ADD_METRIC(set, UINT16, stats->dyn_normal, nodes_dyn_normal, "Number of dynamic nodes", GAUGE);
-	ADD_METRIC(set, UINT16, stats->external, nodes_external, "Number of external nodes", GAUGE);
-	ADD_METRIC(set, UINT16, stats->fail, nodes_fail, "Number of nodes with Fail flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->future, nodes_future, "Number of nodes in Future state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->idle, nodes_idle, "Number of nodes in Idle state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->invalid_reg, nodes_invalid_reg, "Number of nodes with Invalid Registration flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->maint, nodes_maint, "Number of nodes with Maintenance flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->mixed, nodes_mixed, "Number of nodes in Mixed state", GAUGE);
-	ADD_METRIC(set, UINT16, stats->no_resp, nodes_noresp, "Number of nodes with Not Responding flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->planned, nodes_planned, "Number of nodes with Planned flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->power_down, nodes_power_down, "Number of nodes marked to be powered down", GAUGE);
-	ADD_METRIC(set, UINT16, stats->power_up, nodes_power_up, "Number of nodes marked to be powered up", GAUGE);
-	ADD_METRIC(set, UINT16, stats->powered_down, nodes_powered_down, "Number of nodes powered down", GAUGE);
-	ADD_METRIC(set, UINT16, stats->powering_down, nodes_powering_up, "Number of nodes powering up", GAUGE);
-	ADD_METRIC(set, UINT16, stats->reboot_issued, nodes_reboot_issued, "Number of nodes with Reboot Issued flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->reboot_requested, nodes_reboot_req, "Number of nodes with Reboot Requested flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->resv, nodes_resv, "Number of nodes with Reserved flag", GAUGE);
-	ADD_METRIC(set, UINT16, stats->unknown, nodes_unknown, "Number of nodes in Unknown state", GAUGE);
+	ADD_METRIC(set, UINT32, total_node_cnt, nodes, "Total number of nodes", GAUGE);
+	ADD_METRIC(set, UINT32, stats->alloc, nodes_alloc, "Number of nodes in Allocated state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->blocked, nodes_blocked, "Number of nodes in Blocked state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->cg, nodes_completing, "Number of nodes with Completing flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->cloud, nodes_cloud, "Number of Cloud nodes", GAUGE);
+	ADD_METRIC(set, UINT32, stats->down, nodes_down, "Number of nodes in Down state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->drain, nodes_drain, "Number of nodes with Drain flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->drained, nodes_drained, "Number of drained nodes", GAUGE);
+	ADD_METRIC(set, UINT32, stats->draining, nodes_draining, "Number of nodes in draining condition (Drain state with active jobs)", GAUGE);
+	ADD_METRIC(set, UINT32, stats->dyn_future, nodes_dyn_future, "Number of future dynamic nodes", GAUGE);
+	ADD_METRIC(set, UINT32, stats->dyn_normal, nodes_dyn_normal, "Number of dynamic nodes", GAUGE);
+	ADD_METRIC(set, UINT32, stats->external, nodes_external, "Number of external nodes", GAUGE);
+	ADD_METRIC(set, UINT32, stats->fail, nodes_fail, "Number of nodes with Fail flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->future, nodes_future, "Number of nodes in Future state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->idle, nodes_idle, "Number of nodes in Idle state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->invalid_reg, nodes_invalid_reg, "Number of nodes with Invalid Registration flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->maint, nodes_maint, "Number of nodes with Maintenance flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->mixed, nodes_mixed, "Number of nodes in Mixed state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->no_resp, nodes_noresp, "Number of nodes with Not Responding flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->planned, nodes_planned, "Number of nodes with Planned flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->power_down, nodes_power_down, "Number of nodes marked to be powered down", GAUGE);
+	ADD_METRIC(set, UINT32, stats->power_up, nodes_power_up, "Number of nodes marked to be powered up", GAUGE);
+	ADD_METRIC(set, UINT32, stats->powered_down, nodes_powered_down, "Number of nodes powered down", GAUGE);
+	ADD_METRIC(set, UINT32, stats->powering_down, nodes_powering_up, "Number of nodes powering up", GAUGE);
+	ADD_METRIC(set, UINT32, stats->reboot_issued, nodes_reboot_issued, "Number of nodes with Reboot Issued flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->reboot_requested, nodes_reboot_req, "Number of nodes with Reboot Requested flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->resv, nodes_resv, "Number of nodes with Reserved flag", GAUGE);
+	ADD_METRIC(set, UINT32, stats->unknown, nodes_unknown, "Number of nodes in Unknown state", GAUGE);
 	// clang-format on
 
 	return set;
