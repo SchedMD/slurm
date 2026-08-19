@@ -619,6 +619,9 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	int min_rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
+	int start_rem_nodes; /* rem_nodes before any set was accumulated */
+	bool any_sufficient = false; /* some set was large enough for the job */
+	bool contiguous_futile = false; /* no retry can satisfy contiguity */
 	bool new_best;
 	uint64_t best_weight = 0;
 	int64_t rem_max_cpus;
@@ -876,6 +879,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	 * accumulate nodes from these sets of consecutive nodes until
 	 * sufficient resources have been accumulated
 	 */
+	start_rem_nodes = rem_nodes;
 	while (consec_index && (topo_eval->max_nodes > 0)) {
 		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
 		best_fit_req = -1;	/* first required node, -1 if none */
@@ -895,6 +899,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				sufficient = gres_sched_sufficient(
 					job_ptr->gres_list_req, consec_gres[i]);
 			}
+			if (sufficient)
+				any_sufficient = true;
 
 			/*
 			 * if first possibility OR
@@ -956,8 +962,25 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 		if (best_fit_nodes == 0)
 			break;
 
-		if (details_ptr->contiguous && !best_fit_sufficient)
+		if (details_ptr->contiguous && !best_fit_sufficient) {
+			/*
+			 * The best fit is not large enough. If no set was large
+			 * enough, and nothing has been accumulated yet so
+			 * rem_nodes still represents the full request, then a
+			 * retry will not help -- it can only remove candidate
+			 * nodes, which splits or shortens the sets, so every
+			 * set it sees will be a subset of one rejected here.
+			 *
+			 * The any_sufficient test catches the case where the
+			 * best fit is insufficient (can happen due to node
+			 * weights) but another set exists that is sufficient
+			 * (removing nodes from the lower weight set lets the
+			 * job fit on a later pass).
+			 */
+			if ((rem_nodes == start_rem_nodes) && !any_sufficient)
+				contiguous_futile = true;
 			break;	/* no hole large enough */
+		}
 		if (best_fit_req != -1) {
 			/*
 			 * This collection of nodes includes required ones
@@ -1140,6 +1163,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 	    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id) &&
 	    eval_nodes_enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
+	else if (contiguous_futile)
+		topo_eval->eval_action = EVAL_ACTION_BREAK;
 	else
 		topo_eval->eval_action = EVAL_ACTION_RETRY_DEFAULT;
 
