@@ -191,7 +191,7 @@ extern int serdes_dump_buf(data_parser_t *parser, data_parser_type_t type,
 		 * Expand buffer as dump is incomplete or release state on
 		 * failure
 		 */
-		if ((rc = try_grow_buf(dst, BUF_SIZE)))
+		if ((rc = try_grow_buf(dst, INFINITE)))
 			(void) serdes_dump(&state, parser, type, src, src_bytes,
 					   NULL, mime_type, flags);
 	};
