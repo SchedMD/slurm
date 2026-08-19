@@ -49,6 +49,73 @@
 #define KB_ADJ 1024
 #define MB_ADJ 1048576
 
+/*
+ * The numeric id lists below are spliced into SQL, some unquoted, so a
+ * non-numeric entry could inject. Validate every entry as it comes off the
+ * wire. _find_non_qos_id() tolerates the leading +/-/= that the add,
+ * subtract and set syntax carries on qos lists.
+ */
+static int _find_non_numeric(void *x, void *key)
+{
+	char *id = x;
+
+	if (!id || !id[0])
+		return 0;
+
+	return id[strspn(id, "0123456789")];
+}
+
+static int _find_non_qos_id(void *x, void *key)
+{
+	char *id = x;
+
+	if (!id || !id[0])
+		return 0;
+
+	if ((id[0] == '+') || (id[0] == '-') || (id[0] == '='))
+		id++;
+
+	return (!id[0] || id[strspn(id, "0123456789")]);
+}
+
+static int _unpack_id_list(list_t **id_list, buf_t *buffer,
+			   uint16_t protocol_version)
+{
+	char *id;
+
+	if (slurm_unpack_list(id_list, safe_unpackstr_func, xfree_ptr, buffer,
+			      protocol_version) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (*id_list &&
+	    (id = list_find_first(*id_list, _find_non_numeric, NULL))) {
+		error("%s: rejecting non-numeric id '%s'", __func__, id);
+		FREE_NULL_LIST(*id_list);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _unpack_qos_id_list(list_t **id_list, buf_t *buffer,
+			       uint16_t protocol_version)
+{
+	char *id;
+
+	if (slurm_unpack_list(id_list, safe_unpackstr_func, xfree_ptr, buffer,
+			      protocol_version) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (*id_list &&
+	    (id = list_find_first(*id_list, _find_non_qos_id, NULL))) {
+		error("%s: rejecting invalid qos id '%s'", __func__, id);
+		FREE_NULL_LIST(*id_list);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				uint16_t protocol_version, buf_t *buffer)
 {
@@ -1332,11 +1399,8 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr(&object_ptr->partition, buffer);
 		safe_unpack32(&object_ptr->priority, buffer);
 
-		if (slurm_unpack_list(&object_ptr->qos_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_qos_id_list(&object_ptr->qos_list, buffer,
+					protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack32(&object_ptr->uid, buffer);
@@ -1388,11 +1452,8 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr(&object_ptr->partition, buffer);
 		safe_unpack32(&object_ptr->priority, buffer);
 
-		if (slurm_unpack_list(&object_ptr->qos_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_qos_id_list(&object_ptr->qos_list, buffer,
+					protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack32(&object_ptr->uid, buffer);
@@ -1953,11 +2014,8 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 
 		unpack_bit_str_hex(&object_ptr->preempt_bitstr, buffer);
 
-		if (slurm_unpack_list(&object_ptr->preempt_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_qos_id_list(&object_ptr->preempt_list, buffer,
+					protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
@@ -2003,11 +2061,8 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 
 		unpack_bit_str_hex(&object_ptr->preempt_bitstr, buffer);
 
-		if (slurm_unpack_list(&object_ptr->preempt_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_qos_id_list(&object_ptr->preempt_list, buffer,
+					protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
@@ -2740,11 +2795,8 @@ extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->name_list,
@@ -3518,11 +3570,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->def_qos_id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->def_qos_id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack32(&object_ptr->flags, buffer);
@@ -3537,11 +3586,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->partition_list,
@@ -3558,11 +3604,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->qos_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_qos_id_list(&object_ptr->qos_list, buffer,
+					protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack_time(&object_ptr->usage_end, buffer);
@@ -3590,11 +3633,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->def_qos_id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->def_qos_id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->format_list,
@@ -3607,11 +3647,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack16(&tmp16, buffer);
@@ -3632,11 +3669,8 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->qos_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_qos_id_list(&object_ptr->qos_list, buffer,
+					protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack_time(&object_ptr->usage_end, buffer);
@@ -3766,11 +3800,8 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->reason_uid_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->reason_uid_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->state_list,
@@ -4021,11 +4052,8 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->associd_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->associd_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->cluster_list,
@@ -4059,11 +4087,8 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->groupid_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->groupid_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->jobname_list,
@@ -4083,11 +4108,8 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->qos_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->qos_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->reason_list,
@@ -4104,11 +4126,8 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 		    SLURM_SUCCESS)
 			goto unpack_error;
 
-		if (slurm_unpack_list(&object_ptr->resvid_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->resvid_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		/* Leave not slurm_unpack_list as we check for the 0 job id */
@@ -4151,12 +4170,8 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpackstr(&object_ptr->used_nodes, buffer);
 
-
-		if (slurm_unpack_list(&object_ptr->userid_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->userid_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->wckey_list,
@@ -5019,11 +5034,8 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->name_list,
@@ -5054,11 +5066,8 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->name_list,
@@ -5159,11 +5168,8 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->name_list,
@@ -5458,11 +5464,8 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->manager_list,
@@ -5624,11 +5627,8 @@ extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->info_list,
@@ -5749,11 +5749,8 @@ extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
 		    !list_count(object_ptr->format_list))
 			FREE_NULL_LIST(object_ptr->format_list);
 
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		if (_unpack_id_list(&object_ptr->id_list, buffer,
+				    protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		if (slurm_unpack_list(&object_ptr->name_list,
