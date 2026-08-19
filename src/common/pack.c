@@ -255,10 +255,10 @@ static uint64_t _grow_byte_count(const buf_t *buffer, uint32_t size)
 	return bytes;
 }
 
-/* Grow a buffer by the specified amount */
+/* Grow a buffer by the specified amount, or by INFINITE to auto size it */
 void grow_buf(buf_t *buffer, uint32_t size)
 {
-	uint64_t new_size = (uint64_t) size + buffer->size;
+	uint64_t new_size = 0;
 
 	xassert(buffer->magic == BUF_MAGIC);
 
@@ -266,6 +266,20 @@ void grow_buf(buf_t *buffer, uint32_t size)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");
 	if (buffer->shadow)
 		fatal_abort("attempt to grow shadow buffer not supported");
+
+	if (size == INFINITE) {
+		if (buffer->size >= MAX_BUF_SIZE)
+			fatal_abort("%s: Buffer size limit exceeded (%u >= %u)",
+				    __func__, buffer->size, MAX_BUF_SIZE);
+
+		new_size = buffer->size + _grow_byte_count(buffer, size);
+		if (new_size > MAX_BUF_SIZE)
+			new_size = MAX_BUF_SIZE;
+	} else {
+		/* Named sizes grow by exactly the amount requested */
+		new_size = (uint64_t) size + buffer->size;
+	}
+
 	if (new_size > MAX_BUF_SIZE)
 		fatal_abort("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
 			    __func__, new_size, MAX_BUF_SIZE);
