@@ -132,9 +132,6 @@ static int _indirect_dump(serialize_dump_state_t **state_ptr,
 	d = data_new();
 
 	if (!(rc = data_parser_g_dump(parser, type, src, src_bytes, d))) {
-		if (data_parser_g_is_complex(parser))
-			flags |= SER_FLAGS_COMPLEX;
-
 		if (!(rc = serialize_g_data_to_string(&buf, &length, d,
 						      mime_type, flags)))
 			assign_buf(dst, &buf, length);
@@ -152,8 +149,13 @@ extern int serdes_dump(serialize_dump_state_t **state_ptr,
 		       void *src, ssize_t src_bytes, buf_t *dst,
 		       const char *mime_type, serializer_flags_t flags)
 {
-	int rc = serialize_g_dump(state_ptr, parser, type, src, src_bytes, dst,
-				  mime_type, flags);
+	int rc = EINVAL;
+
+	if (data_parser_g_is_complex(parser))
+		flags |= SER_FLAGS_COMPLEX;
+
+	rc = serialize_g_dump(state_ptr, parser, type, src, src_bytes, dst,
+			      mime_type, flags);
 
 	/*
 	 * _indirect_dump() writes dst unconditionally, so it can not serve an
