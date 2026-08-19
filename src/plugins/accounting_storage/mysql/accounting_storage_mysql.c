@@ -45,7 +45,6 @@
 
 #include "accounting_storage_mysql.h"
 #include "as_mysql_acct.h"
-#include "as_mysql_tres.h"
 #include "as_mysql_archive.h"
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
@@ -59,6 +58,7 @@
 #include "as_mysql_resource.h"
 #include "as_mysql_resv.h"
 #include "as_mysql_rollup.h"
+#include "as_mysql_tres.h"
 #include "as_mysql_txn.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_user.h"
