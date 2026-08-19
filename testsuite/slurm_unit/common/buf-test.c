@@ -603,6 +603,35 @@ START_TEST(test_try_grow_buf_infinite)
 
 END_TEST
 
+START_TEST(test_try_grow_buf_geometric)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	_set_alloc(BUF_ALLOC_GEOMETRIC, 0);
+
+	/*
+	 * INFINITE multiplies the capacity by e. Allow a byte of slack rather
+	 * than restating the implementation's rounding.
+	 */
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_msg((size_buf(buf) >= ((BUF_SIZE * M_E) - 1)) &&
+			      (size_buf(buf) <= ((BUF_SIZE * M_E) + 1)),
+		      "expected about %f, got %u", (BUF_SIZE * M_E),
+		      size_buf(buf));
+
+	/* and again, compounding from the new size */
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_msg((size_buf(buf) >= ((BUF_SIZE * M_E * M_E) - 4)) &&
+			      (size_buf(buf) <= ((BUF_SIZE * M_E * M_E) + 4)),
+		      "expected about %f, got %u", (BUF_SIZE * M_E * M_E),
+		      size_buf(buf));
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	free_buf(buf);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_linear)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -654,6 +683,7 @@ START_TEST(test_try_grow_buf_remaining_policy)
 	};
 	static const buf_alloc_type_t types[] = {
 		BUF_ALLOC_DEFAULT,
+		BUF_ALLOC_GEOMETRIC,
 		BUF_ALLOC_LINEAR,
 	};
 
@@ -662,7 +692,7 @@ START_TEST(test_try_grow_buf_remaining_policy)
 	 * this returns, so the promised free space must never depend on how
 	 * the cluster happens to be configured
 	 */
-	for (int t = 0; t < 2; t++) {
+	for (int t = 0; t < 3; t++) {
 		for (int i = 0; i < 5; i++) {
 			buf_t *buf = init_buf(BUF_SIZE);
 			uint32_t need = requests[i];
@@ -704,6 +734,7 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_try_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
 	tcase_add_test(tc_core, test_try_grow_buf_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_geometric);
 	tcase_add_test(tc_core, test_try_grow_buf_linear);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining_policy);
