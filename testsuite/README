@@ -1131,6 +1131,7 @@ test_150_8   Test overcommit with cpus-per-task across a topology cluster
 test_150_9   Test bad topology.yaml handling
 test_150_10  Test --contiguous node selection per topology plugin
 test_150_11  Test "--segment" with job-scoped GPU requests on topology/block
+test_150_12  Test early bail for --segment with --spread-segments
 test_150_15  Test slurmd message forwarding with a tree width below the node count
 
 test_151_#   Testing Oversubscribe
