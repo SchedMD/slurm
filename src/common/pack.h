@@ -131,7 +131,8 @@ extern int try_grow_buf(buf_t *buffer, uint32_t size);
  * Ensure buffer has enough remaining bytes
  * Note: Buffer's head pointer may be resized or replaced.
  * IN my_buf - pointer to buffer
- * IN size - number of bytes to grow buffer by
+ * IN size - number of bytes that must be free in the buffer, or INFINITE to
+ *	unconditionally grow by the amount set by CommunicationParameters
  * RET SLURM_SUCCESS or error
  */
 extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);

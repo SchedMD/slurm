@@ -307,7 +307,11 @@ extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size)
 {
 	xassert(buffer->magic == BUF_MAGIC);
 
-	if (remaining_buf(buffer) < size)
+	/*
+	 * INFINITE gives no threshold to test against: the caller wants more
+	 * room without knowing how much, so always grow.
+	 */
+	if ((size == INFINITE) || (remaining_buf(buffer) < size))
 		return try_grow_buf(buffer, size);
 
 	return SLURM_SUCCESS;
