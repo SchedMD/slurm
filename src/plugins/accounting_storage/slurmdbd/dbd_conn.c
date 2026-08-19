@@ -43,11 +43,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "slurmdbd_agent.h"
 #include "src/common/fd.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/interfaces/conn.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "slurmdbd_agent.h"
 
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 
