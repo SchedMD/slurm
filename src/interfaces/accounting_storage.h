@@ -41,9 +41,10 @@
 #define _INTERFACES_ACCOUNTING_STORAGE_H
 
 #include "src/common/list.h"
-#include "src/slurmctld/slurmctld.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/slurmdb_pack.h"
+
+#include "src/slurmctld/slurmctld.h"
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
