@@ -8198,6 +8198,9 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	}
 
 	if (job_ptr->resv_name) {
+		list_itr_t *iter;
+		slurmctld_resv_t *res2_ptr;
+
 		if (!job_ptr->resv_ptr) {
 			rc2 = validate_job_resv(job_ptr);
 			if (rc2 != SLURM_SUCCESS)
@@ -8281,8 +8284,17 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		 */
 		args.job_end_time = job_end_time;
 		args.job_start_time = job_start_time;
-		list_for_each_ro(resv_list, _foreach_job_test_resv_overlap,
-				 &args);
+
+		/*
+		 * This needs to be an iterator since
+		 * _foreach_job_test_resv_overlap() may eventually call
+		 * _advance_resv_time() which may call _generate_resv_id() which
+		 * will deadlock the resv_list lock.
+		 */
+		iter = list_iterator_create(resv_list);
+		while ((res2_ptr = list_next(iter)))
+			_foreach_job_test_resv_overlap(res2_ptr, &args);
+		list_iterator_destroy(iter);
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
@@ -8324,10 +8336,24 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	 * run and get it's required nodes (if any)
 	 */
 	for (i = 0; ; i++) {
+		slurmctld_resv_t *resv;
+		list_itr_t *iter;
 		args.job_end_time = job_end_time;
 		args.job_start_time = job_start_time;
 		lic_resv_time = (time_t) 0;
-		list_for_each_ro(resv_list, _foreach_job_test_no_resv, &args);
+
+		/*
+		 * This needs to be an iterator since
+		 * _foreach_job_test_no_resv() may eventually call
+		 * _advance_resv_time() which may eventually call
+		 * _generate_resv_id() which will deadlock the resv_list lock.
+		 */
+		iter = list_iterator_create(resv_list);
+		while ((resv = list_next(iter))) {
+			if (_foreach_job_test_no_resv(resv, &args) < 0)
+				break;
+		}
+		list_iterator_destroy(iter);
 
 		if (resv_exc_ptr) {
 			free_core_array(&resv_exc_ptr->exc_cores);
