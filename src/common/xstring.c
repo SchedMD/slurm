@@ -67,34 +67,35 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
  */
-strong_alias(_xstrcat,		slurm_xstrcat);
-strong_alias(_xstrncat,		slurm_xstrncat);
-strong_alias(_xstrncatat,	slurm_xstrncatat);
-strong_alias(_xstrcatchar,	slurm_xstrcatchar);
-strong_alias(_xstrftimecat,	slurm_xstrftimecat);
-strong_alias(_xiso8601timecat,	slurm_xiso8601timecat);
-strong_alias(_xrfc5424timecat,	slurm_xrfc5424timecat);
-strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
-strong_alias(_xstrfmtcatat,	slurm_xstrfmtcatat);
-strong_alias(_xmemcat,		slurm_xmemcat);
-strong_alias(xstrdup,		slurm_xstrdup);
-strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
-strong_alias(_xstrdup_vprintf,	slurm_xstrdup_vprintf);
-strong_alias(xstrndup,		slurm_xstrndup);
-strong_alias(xbasename,		slurm_xbasename);
-strong_alias(xdirname,		slurm_xdirname);
-strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
-strong_alias(xshort_hostname,   slurm_xshort_hostname);
+strong_alias(_xstrcat, slurm_xstrcat);
+strong_alias(_xstrncat, slurm_xstrncat);
+strong_alias(_xstrncatat, slurm_xstrncatat);
+strong_alias(_xstrcatchar, slurm_xstrcatchar);
+strong_alias(_xstrftimecat, slurm_xstrftimecat);
+strong_alias(_xiso8601timecat, slurm_xiso8601timecat);
+strong_alias(_xrfc5424timecat, slurm_xrfc5424timecat);
+strong_alias(_xstrfmtcat, slurm_xstrfmtcat);
+strong_alias(_xstrfmtcatat, slurm_xstrfmtcatat);
+strong_alias(_xmemcat, slurm_xmemcat);
+strong_alias(xstrdup, slurm_xstrdup);
+strong_alias(xstrdup_printf, slurm_xstrdup_printf);
+strong_alias(_xstrdup_vprintf, slurm_xstrdup_vprintf);
+strong_alias(xstrndup, slurm_xstrndup);
+strong_alias(try_xstrndup, slurm_try_xstrndup);
+strong_alias(xbasename, slurm_xbasename);
+strong_alias(xdirname, slurm_xdirname);
+strong_alias(_xstrsubstitute, slurm_xstrsubstitute);
+strong_alias(xshort_hostname, slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
-strong_alias(xstrtolower,       slurm_xstrtolower);
-strong_alias(xstrchr,           slurm_xstrchr);
-strong_alias(xstrrchr,          slurm_xstrrchr);
-strong_alias(xstrcmp,           slurm_xstrcmp);
-strong_alias(xstrncmp,          slurm_xstrncmp);
-strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
-strong_alias(xstrncasecmp,      slurm_xstrncasecmp);
-strong_alias(xstrstr,           slurm_xstrstr);
-strong_alias(xstrcasestr,       slurm_xstrcasestr);
+strong_alias(xstrtolower, slurm_xstrtolower);
+strong_alias(xstrchr, slurm_xstrchr);
+strong_alias(xstrrchr, slurm_xstrrchr);
+strong_alias(xstrcmp, slurm_xstrcmp);
+strong_alias(xstrncmp, slurm_xstrncmp);
+strong_alias(xstrcasecmp, slurm_xstrcasecmp);
+strong_alias(xstrncasecmp, slurm_xstrncasecmp);
+strong_alias(xstrstr, slurm_xstrstr);
+strong_alias(xstrcasestr, slurm_xstrcasestr);
 strong_alias(xstrtoken, slurm_xstrtoken);
 strong_alias(xbase64_from_base64url, slurm_xbase64_from_base64url);
 
@@ -522,6 +523,26 @@ char * xstrndup(const char *str, size_t n)
 
 	siz = strnlen(str, n);
 	result = xmalloc(siz + 1);
+
+	(void) memcpy(result, str, siz);
+	result[siz] = '\0';
+
+	return result;
+}
+
+extern char *try_xstrndup(const char *str, const size_t n)
+{
+	size_t siz = 0;
+	char *result = NULL;
+
+	if (!str)
+		return NULL;
+
+	siz = strnlen(str, n);
+	result = try_xmalloc(siz + 1);
+
+	if (!result)
+		return NULL;
 
 	(void) memcpy(result, str, siz);
 	result[siz] = '\0';

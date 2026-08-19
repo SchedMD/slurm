@@ -20,6 +20,7 @@ if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE
 TESTS += xhash-test \
+	 buf-test \
 	 data-test \
 	 dns-test \
 	 http-test \
@@ -35,6 +36,8 @@ xhash_test_CFLAGS = $(MYCFLAGS)
 xhash_test_LDADD  = $(LDADD) @CHECK_LIBS@
 xahash_test_CFLAGS = $(MYCFLAGS)
 xahash_test_LDADD  = $(LDADD) @CHECK_LIBS@
+buf_test_CFLAGS   = $(MYCFLAGS)
+buf_test_LDADD    = $(LDADD) @CHECK_LIBS@
 data_test_CFLAGS  = $(MYCFLAGS)
 data_test_LDADD   = $(LDADD) @CHECK_LIBS@
 dns_test_CFLAGS  = $(MYCFLAGS)

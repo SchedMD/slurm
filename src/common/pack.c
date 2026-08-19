@@ -253,6 +253,59 @@ extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size)
 	return SLURM_SUCCESS;
 }
 
+extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes)
+{
+	int rc = EINVAL;
+
+	xassert(buf);
+	xassert(buf->magic == BUF_MAGIC);
+
+	if (!bytes)
+		return SLURM_SUCCESS;
+
+	/*
+	 * try_grow_buf_remaining() only rejects these when it has to grow, but
+	 * the memcpy() below writes through to borrowed memory whether or not
+	 * the buffer needs to grow first
+	 */
+	if (buf->mmaped || buf->shadow)
+		return EINVAL;
+
+	/*
+	 * try_grow_buf_remaining() takes a uint32_t which would silently
+	 * truncate bytes while the memcpy() below would still copy all of them
+	 */
+	if (bytes > MAX_BUF_SIZE)
+		return ESLURM_DATA_TOO_LARGE;
+
+	if ((rc = try_grow_buf_remaining(buf, bytes)))
+		return rc;
+
+	(void) memcpy((get_buf_data(buf) + get_buf_offset(buf)), ptr, bytes);
+	set_buf_offset(buf, (get_buf_offset(buf) + bytes));
+
+	return SLURM_SUCCESS;
+}
+
+extern int buf_append_str(buf_t *buf, const char *str)
+{
+	int rc;
+	size_t bytes;
+
+	if (!str)
+		return SLURM_SUCCESS;
+
+	bytes = strlen(str);
+
+	if (!bytes)
+		return SLURM_SUCCESS;
+
+	if ((rc = buf_append_bytes(buf, str, bytes)))
+		return rc;
+
+	return SLURM_SUCCESS;
+}
+
 /* init_buf - create an empty buffer of the given size */
 buf_t *init_buf(uint32_t size)
 {

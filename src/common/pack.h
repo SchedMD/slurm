@@ -74,11 +74,11 @@ typedef struct {
 	bool shadow;
 } buf_t;
 
-#define get_buf_data(__buf)		(__buf->head)
-#define get_buf_offset(__buf)		(__buf->processed)
-#define set_buf_offset(__buf,__val)	(__buf->processed = __val)
-#define remaining_buf(__buf)		(__buf->size - __buf->processed)
-#define size_buf(__buf)			(__buf->size)
+#define get_buf_data(__buf) ((__buf)->head)
+#define get_buf_offset(__buf) ((__buf)->processed)
+#define set_buf_offset(__buf, __val) ((__buf)->processed = (__val))
+#define remaining_buf(__buf) ((__buf)->size - (__buf)->processed)
+#define size_buf(__buf) ((__buf)->size)
 
 /* Initialize shadow buffer to point at data with size of bytes */
 #define SHADOW_BUF_INITIALIZER(data, bytes) \
@@ -132,6 +132,28 @@ extern int try_grow_buf(buf_t *buffer, uint32_t size);
  * RET SLURM_SUCCESS or error
  */
 extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);
+
+/*
+ * Append a binary-safe chunk of memory to a buf_t, growing it as needed.
+ * The appended data is not NUL-terminated.
+ * IN buf - buffer to append to
+ * IN ptr - pointer to the bytes to append; may be NULL only if bytes is 0
+ * IN bytes - number of bytes to append
+ * RET SLURM_SUCCESS or error (EINVAL / ESLURM_DATA_TOO_LARGE / ENOMEM)
+ */
+extern int buf_append_bytes(buf_t *buf, const void *ptr, size_t bytes);
+
+/*
+ * Append a NUL-terminated string to a buf_t but will not append NUL-terminator
+ * to the buffer.
+ *
+ * IN buf - buffer to append to
+ * IN str - NUL-terminated string to append; NULL is treated as an empty
+ *	string (a no-op success)
+ * RET SLURM_SUCCESS or error (EINVAL / ESLURM_DATA_TOO_LARGE / ENOMEM)
+ */
+extern int buf_append_str(buf_t *buf, const char *str);
+
 /*
  * Extract Buffer head pointer
  * NOTE: Use xfer_buf_data() macro instead

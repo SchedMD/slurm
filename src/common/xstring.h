@@ -155,6 +155,9 @@ size_t _xstrdup_vprintf(char **str, const char *_fmt, va_list _ap);
 */
 char *xstrndup(const char *str, size_t n);
 
+/* xstrndup which uses xmalloc routines but may return NULL on ENOMEM */
+extern char *try_xstrndup(const char *str, const size_t n);
+
 /*
 ** strtol which only reads 'n' number of chars in the str to get the number
 */
