@@ -700,6 +700,25 @@ START_TEST(test_try_grow_buf_min_size)
 
 END_TEST
 
+START_TEST(test_grow_buf_infinite)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	/* grow_buf() takes the amount from the configuration too */
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 0);
+	grow_buf(buf, INFINITE);
+	ck_assert_int_eq(size_buf(buf), (2 * BUF_SIZE));
+
+	/* a named size still grows by exactly that much */
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	grow_buf(buf, 16);
+	ck_assert_int_eq(size_buf(buf), ((2 * BUF_SIZE) + 16));
+
+	free_buf(buf);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_remaining_infinite)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -789,6 +808,7 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_try_grow_buf_geometric);
 	tcase_add_test(tc_core, test_try_grow_buf_linear);
 	tcase_add_test(tc_core, test_try_grow_buf_min_size);
+	tcase_add_test(tc_core, test_grow_buf_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining_policy);
 	tcase_add_test(tc_core, test_buf_append_bytes);
