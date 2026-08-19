@@ -36,6 +36,7 @@
 #include <check.h>
 #include <errno.h>
 #include <limits.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -560,10 +561,137 @@ START_TEST(test_xfer_buf_data)
 
 END_TEST
 
+/*
+ * CommunicationParameters selects how much a buffer grows by. Each test
+ * restores the default so the rest of the suite is unaffected.
+ */
+static void _set_alloc(buf_alloc_type_t type, uint32_t bytes)
+{
+	slurm_conf.buffer_alloc_type = type;
+	slurm_conf.buffer_alloc_bytes = bytes;
+}
+
+/*
+ * A failed ck_assert() leaves the test body immediately, so the policy has to
+ * be restored from a fixture or it would leak into every later test when the
+ * suite runs without forking.
+ */
+static void _reset_alloc(void)
+{
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+START_TEST(test_try_grow_buf_infinite)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	/*
+	 * INFINITE lets the configuration pick the amount. Unconfigured, that
+	 * is the same BUF_SIZE increment used for a smaller named size.
+	 */
+	ck_assert_int_eq(slurm_conf.buffer_alloc_type, BUF_ALLOC_DEFAULT);
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (2 * BUF_SIZE));
+	ck_assert_int_eq(get_buf_offset(buf), 0);
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (3 * BUF_SIZE));
+
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_linear)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	_set_alloc(BUF_ALLOC_LINEAR, 4096);
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (BUF_SIZE + 4096));
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (BUF_SIZE + (2 * 4096)));
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_remaining_infinite)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+	uint32_t before;
+
+	/*
+	 * INFINITE gives no threshold to compare against, so it must grow even
+	 * with the whole buffer still free
+	 */
+	ck_assert_int_eq(remaining_buf(buf), BUF_SIZE);
+
+	before = size_buf(buf);
+	ck_assert_int_eq(try_grow_buf_remaining(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_gt(size_buf(buf), before);
+	ck_assert_int_eq(get_buf_offset(buf), 0);
+
+	/* a named size that already fits must still not grow */
+	before = size_buf(buf);
+	ck_assert_int_eq(try_grow_buf_remaining(buf, 1), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), before);
+
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_remaining_policy)
+{
+	static const uint32_t requests[] = {
+		1, 100, BUF_SIZE, (BUF_SIZE + 1), (1024 * 1024),
+	};
+	static const buf_alloc_type_t types[] = {
+		BUF_ALLOC_DEFAULT,
+		BUF_ALLOC_LINEAR,
+	};
+
+	/*
+	 * Callers write the number of bytes they asked for immediately after
+	 * this returns, so the promised free space must never depend on how
+	 * the cluster happens to be configured
+	 */
+	for (int t = 0; t < 2; t++) {
+		for (int i = 0; i < 5; i++) {
+			buf_t *buf = init_buf(BUF_SIZE);
+			uint32_t need = requests[i];
+
+			_set_alloc(types[t], 4096);
+
+			/* leave only a few bytes free */
+			set_buf_offset(buf, (BUF_SIZE - 16));
+
+			ck_assert_int_eq(try_grow_buf_remaining(buf, need),
+					 SLURM_SUCCESS);
+			ck_assert_msg((remaining_buf(buf) >= need),
+				      "type %d: asked %u free bytes, got %u",
+				      types[t], need, remaining_buf(buf));
+
+			_set_alloc(BUF_ALLOC_DEFAULT, 0);
+			free_buf(buf);
+		}
+	}
+}
+
+END_TEST
+
 static Suite *suite_buf(void)
 {
 	Suite *s = suite_create("buf");
 	TCase *tc_core = tcase_create("buf");
+
+	tcase_add_checked_fixture(tc_core, _reset_alloc, _reset_alloc);
 
 	tcase_add_test(tc_core, test_init_buf);
 	tcase_add_test(tc_core, test_try_init_buf);
@@ -575,6 +703,10 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
+	tcase_add_test(tc_core, test_try_grow_buf_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_linear);
+	tcase_add_test(tc_core, test_try_grow_buf_remaining_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_remaining_policy);
 	tcase_add_test(tc_core, test_buf_append_bytes);
 	tcase_add_test(tc_core, test_buf_append_bytes_grow);
 	tcase_add_test(tc_core, test_buf_append_bytes_too_large);
