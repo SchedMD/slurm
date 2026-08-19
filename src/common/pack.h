@@ -121,7 +121,9 @@ extern void grow_buf(buf_t *my_buf, uint32_t size);
  * Try to grow buffer by given number of bytes.
  * Buffer's head pointer may be resized or replaced.
  * IN my_buf - pointer to buffer
- * IN size - number of bytes to grow buffer by
+ * IN size - number of bytes to grow buffer by, or INFINITE to let
+ *	CommunicationParameters pick the amount. A named size is always
+ *	honored; the configuration only adds headroom on top of it.
  * RET SLURM_SUCCESS or error
  */
 extern int try_grow_buf(buf_t *buffer, uint32_t size);

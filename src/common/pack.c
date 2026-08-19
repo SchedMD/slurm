@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
@@ -195,6 +196,57 @@ void free_buf(buf_t *my_buf)
 	xfree(my_buf);
 }
 
+/*
+ * Resolve how many bytes to grow a buffer by.
+ *
+ * IN buffer - buffer about to be grown
+ * IN size - caller's minimum requirement, or INFINITE to let the configured
+ *	policy pick the amount on its own
+ * RET bytes to add to buffer->size
+ *
+ * The policy only ever supplies headroom. A caller naming a concrete size is
+ * always given at least that many bytes, so the growth contract never depends
+ * on how the cluster happens to be configured.
+ *
+ * slurm_conf is zeroed until slurm.conf is read, and BUF_ALLOC_DEFAULT is 0,
+ * so a process that never loaded a configuration grows by BUF_SIZE just as it
+ * always has.
+ */
+static uint64_t _grow_byte_count(const buf_t *buffer, uint32_t size)
+{
+	uint64_t bytes;
+
+	switch (slurm_conf.buffer_alloc_type) {
+	case BUF_ALLOC_LINEAR:
+		bytes = slurm_conf.buffer_alloc_bytes;
+		break;
+	case BUF_ALLOC_DEFAULT:
+	default:
+		bytes = BUF_SIZE;
+		break;
+	}
+
+	/*
+	 * Scaling a small buffer, or a strategy added later, can land under
+	 * MIN_BUF_SIZE. Grow by at least that much so a buffer being filled a
+	 * few bytes at a time does not take an xrealloc() per append.
+	 */
+	if (bytes < MIN_BUF_SIZE)
+		bytes = MIN_BUF_SIZE;
+
+	/*
+	 * Force increase to always be at least the configured increment to
+	 * reduce number of successive xrealloc()s that get called while
+	 * packing larger RPCs
+	 */
+	if ((size != INFINITE) && (size >= bytes))
+		bytes += size;
+
+	xassert(bytes >= MIN_BUF_SIZE);
+
+	return bytes;
+}
+
 /* Grow a buffer by the specified amount */
 void grow_buf(buf_t *buffer, uint32_t size)
 {
@@ -216,23 +268,31 @@ void grow_buf(buf_t *buffer, uint32_t size)
 
 extern int try_grow_buf(buf_t *buffer, uint32_t size)
 {
-	uint64_t new_size = buffer->size + BUF_SIZE;
+	uint64_t new_size = 0;
 
 	xassert(buffer->magic == BUF_MAGIC);
 
-	/*
-	 * Force increase to always be at least BUF_SIZE to reduce number of
-	 * successive xrealloc()s that get called while packing larger RPCs
-	 */
-	if (size >= BUF_SIZE)
-		new_size += size;
-
 	if (buffer->mmaped || buffer->shadow)
 		return EINVAL;
+
+	new_size = buffer->size + _grow_byte_count(buffer, size);
+
 	if (new_size > MAX_BUF_SIZE) {
-		error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
-		      __func__, new_size, MAX_BUF_SIZE);
-		return ESLURM_DATA_TOO_LARGE;
+		/*
+		 * Only the headroom ran past the limit. Clamp to it rather
+		 * than fail while the caller can still be given what it asked
+		 * for.
+		 */
+		uint64_t needed = (uint64_t) buffer->size +
+				  ((size == INFINITE) ? 1 : size);
+
+		if (needed > MAX_BUF_SIZE) {
+			error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
+			      __func__, needed, MAX_BUF_SIZE);
+			return ESLURM_DATA_TOO_LARGE;
+		}
+
+		new_size = MAX_BUF_SIZE;
 	}
 
 	if (!try_xrealloc(buffer->head, new_size))
