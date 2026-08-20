@@ -68,6 +68,7 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 
 /*
