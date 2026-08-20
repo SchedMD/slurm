@@ -76,10 +76,16 @@ The default is 1000 ms.
 
 .TP
 \fBIgnoreSystemd\fR=\fI<yes|no>\fR
-Only for cgroup/v2 and for development and testing. It will avoid any call to
-dbus and contact with systemd, and instead will prepare all the cgroup hierarchy
-manually. This option is dangerous in systems with systemd since the cgroup
-can be modified by systemd and cause issues to jobs.
+Only for cgroup/v2.
+When set to yes, Slurm will not contact systemd through dbus and will instead
+create the cgroup hierarchy manually. The default depends on the init system
+of each node: "no" where systemd is the init system, and "yes" where it is
+not. Setting it to "no" on a node without systemd is not supported and slurmd
+will fail to start.
+
+Setting this option to "yes" on a node where systemd is the init system is
+only intended for development and testing, since systemd may then modify or
+remove cgroups that Slurm created for its jobs.
 .IP
 
 .TP
