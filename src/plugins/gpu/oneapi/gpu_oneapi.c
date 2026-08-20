@@ -1172,6 +1172,10 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 
 		gres_slurmd_conf.type_name = device_props.name;
 		gres_slurmd_conf.file = device_file;
+		gres_slurmd_conf.pci_addr =
+			xstrdup_printf("%04x:%02x:%02x.%x", pci.address.domain,
+				       pci.address.bus, pci.address.device,
+				       pci.address.function);
 
 		/* Add the GPU to list */
 		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
@@ -1180,6 +1184,7 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		xfree(cpu_aff_mac_range);
 		xfree(gres_slurmd_conf.cpus);
 		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.pci_addr);
 		xfree(gres_slurmd_conf.unique_id);
 	}
 
