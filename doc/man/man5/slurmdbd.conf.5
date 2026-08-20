@@ -977,7 +977,9 @@ If not set (default), then usage records are never purged.
 
 .TP
 \fBSerializerParameters\fR
-Comma-separated list of flags applied to all serializer plugins.
+Comma-separated list of flags passed to the serializer plugins.
+Not every flag applies to every plugin; each flag below names the plugins that
+honor it.
 
 \fBNOTE\fR: These flags are applied once, when \fBslurmdbd\fR starts.
 Changes to this option are not picked up by \fBsacctmgr reconfigure\fR;
@@ -997,9 +999,15 @@ This is the default.
 
 .TP
 \fBcomplex\fR
-Include the special floating-point values "Infinity" and "NaN" directly.
-By default these are replaced with placeholder numbers to ensure broad
-compatibility with various parsers.
+Include the special floating\-point values Infinity and NaN directly.
+By default \fBserializer/json\fR replaces them with placeholder numbers and
+\fBserializer/xjson\fR replaces them with \fBnull\fR, which keeps the output
+parsable by any JSON parser.
+.IP
+\fBNOTE\fR: Output produced with this flag is not strict JSON.
+The bare tokens \fBInfinity\fR, \fB\-Infinity\fR and \fBNaN\fR are emitted,
+and \fBserializer/xjson\fR may also emit \fB\-NaN\fR, all of which RFC 8259
+parsers reject.
 .IP
 
 .TP
@@ -1025,8 +1033,79 @@ Acceptable values at present are:
 \fBjson\fR
 Serialize to and from JSON.
 
-\fBNOTE\fR: This serializer is currently required for default Slurm deployments;
-omitting it from the list of plugins may cause daemons to fail at startup.
+\fBNOTE\fR: Default Slurm deployments require a serializer that provides the
+\fBapplication/json\fR MIME type.
+Either \fBjson\fR or \fBxjson\fR satisfies this requirement; omitting both
+may cause daemons to fail at startup.
+.IP
+
+.TP
+\fBxjson\fR
+Serialize to and from JSON. Unlike \fBjson\fR, this plugin is always built and
+requires no external JSON library.
+.IP
+The two plugins do not produce byte\-identical output. Notably
+\fBserializer/xjson\fR dumps floating\-point numbers in exponential notation
+and handles Infinity and NaN differently; see \fBSerializerParameters\fR.
+.IP
+Those differences preserve the value. One does not: \fBserializer/xjson\fR
+replaces code points outside the subset Slurm accepts with the Unicode
+replacement character (U+FFFD) unless \fBjson6\fR is set, discarding the
+original bytes, while \fBserializer/json\fR emits them unchanged. This
+applies to every string field, including job names, \fBComment\fR and node
+\fBExtra\fR.
+.IP
+The two plugins also differ on input. \fBserializer/xjson\fR rejects documents
+containing code points Slurm does not accept: U+0000, surrogates,
+noncharacters, private use, and U+FFF0 through U+FFF8. Most of these are valid
+Unicode that RFC 8259 permits and \fBserializer/json\fR parses, so a document
+that was accepted before may be rejected after changing plugins. The
+restriction applies to \fB\e\fRu\fIXXXX\fR escapes as well as to literal
+bytes, and one rejected code point fails the whole document.
+.IP
+\fB\e\fRx\fINN\fR escapes are exempt from that restriction. Each one
+contributes its byte to the string with no UTF\-8 or code point check, which is
+what lets \fBjson6\fR output be read back by \fBserializer/xjson\fR
+with the original bytes intact. A
+document may therefore use them to place a byte sequence in a string that
+\fBserializer/xjson\fR would never emit, including a sequence that is not well
+formed UTF\-8. Dumping that string again replaces the offending bytes with the
+Unicode replacement character (U+FFFD) unless \fBjson6\fR is set, but every
+other consumer of the parsed data sees the bytes as given.
+.IP
+In the other direction \fBserializer/xjson\fR is more permissive than RFC
+8259: it also accepts comments, single quoted and unquoted strings,
+\fB\e\fRx\fINN\fR escapes and backslash\-newline line continuations. This is
+unconditional and is not controlled by \fBjson6\fR, so it applies to every JSON
+document \fBslurmdbd\fR parses, which is every token and credential
+\fBauth/slurm\fR or \fBauth/jwt\fR presents to it.
+
+\fBNOTE\fR: Only one plugin may serve a given MIME type. Both \fBjson\fR and
+\fBxjson\fR provide \fBapplication/json\fR, and the plugin named first in
+\fBSerializerPlugins\fR serves it. When \fBSerializerPlugins\fR is not set,
+all plugins found on the system are loaded and which of the two serves
+\fBapplication/json\fR is not defined.
+.IP
+\fBNOTE\fR: \fBSerializerPlugins\fR replaces the default set of plugins rather
+than adding to it, so every plugin \fBslurmdbd\fR needs must be named. This
+setting applies only to \fBslurmdbd\fR itself; the value in \fBslurm.conf\fR
+governs every other daemon and command, including \fBsacctmgr\fR.
+.IP
+\fBslurmdbd\fR needs a plugin providing \fBapplication/json\fR, because
+\fBauth/slurm\fR and \fBauth/jwt\fR both require one. It needs neither
+\fByaml\fR nor \fBurl\-encoded\fR: no \fBslurmdbd\fR configuration file is
+read as YAML, and \fBurl\-encoded\fR is used only by \fBslurmrestd\fR. So
+selecting \fBxjson\fR here needs only:
+.IP
+.nf
+SerializerPlugins=xjson
+.fi
+.IP
+\fBNOTE\fR: Naming a plugin that was not built is fatal, not ignored.
+\fByaml\fR is only built when Slurm is configured with libyaml, and \fBjson\fR
+is only built when it is configured with json\-c, so omit either one from the
+list on a build without its library. \fBxjson\fR and \fBurl\-encoded\fR are
+always built.
 .IP
 
 .TP
