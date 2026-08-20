@@ -47,6 +47,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include <fcntl.h>
 #include <grp.h>
 #include <limits.h>
 #include <poll.h>
@@ -1440,8 +1441,8 @@ static int _spawn_job_container(void)
 			pid_t pid;
 			int to_parent[2] = {-1, -1};
 
-			if (pipe(to_parent) < 0) {
-				error("%s: pipe failed: %m", __func__);
+			if (pipe2(to_parent, O_CLOEXEC)) {
+				error("%s: pipe2() failed: %m", __func__);
 				rc = SLURM_ERROR;
 				goto x11_fail;
 			}
