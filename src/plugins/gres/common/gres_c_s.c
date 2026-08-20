@@ -366,6 +366,8 @@ static list_t *_build_sharing_list(list_t *gres_list, char *sharing_name)
 			sharing_record->links =
 				xstrdup(gres_slurmd_conf->links);
 			sharing_record->name = xstrdup(gres_slurmd_conf->name);
+			sharing_record->pci_addr =
+				xstrdup(gres_slurmd_conf->pci_addr);
 			sharing_record->plugin_id = gres_slurmd_conf->plugin_id;
 			sharing_record->type_name =
 				xstrdup(gres_slurmd_conf->type_name);

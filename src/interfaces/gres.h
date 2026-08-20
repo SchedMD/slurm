@@ -210,6 +210,12 @@ typedef struct gres_slurmd_conf {
 	/* Name of this gres */
 	char *name;
 
+	/*
+	 * PCI address of the device as reported by AutoDetect.
+	 * Only used within slurmd, never packed.
+	 */
+	char *pci_addr;
+
 	/* Type of this GRES (e.g. model name) */
 	char *type_name;
 

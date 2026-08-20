@@ -11333,6 +11333,7 @@ extern void destroy_gres_slurmd_conf(void *x)
 	xfree(p->file);		/* Only used by slurmd */
 	xfree(p->links);
 	xfree(p->name);
+	xfree(p->pci_addr);
 	xfree(p->type_name);
 	xfree(p->unique_id);
 	xfree(p);
@@ -11498,6 +11499,7 @@ extern void add_gres_to_list(list_t *gres_list,
 	gres_slurmd_conf->cpus = xstrdup(gres_slurmd_conf_in->cpus);
 	gres_slurmd_conf->dmem_region =
 		xstrdup(gres_slurmd_conf_in->dmem_region);
+	gres_slurmd_conf->pci_addr = xstrdup(gres_slurmd_conf_in->pci_addr);
 	gres_slurmd_conf->type_name = xstrdup(gres_slurmd_conf_in->type_name);
 	gres_slurmd_conf->name = xstrdup(gres_slurmd_conf_in->name);
 	gres_slurmd_conf->file = xstrdup(gres_slurmd_conf_in->file);
