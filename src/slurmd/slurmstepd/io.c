@@ -332,9 +332,6 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 			return SLURM_SUCCESS;
 		}
 		debug5("client->header.length = %u", client->header.length);
-		if (client->header.length > SLURM_IO_MAX_MSG_LEN)
-			error("Message length of %u exceeds maximum of %u",
-			      client->header.length, SLURM_IO_MAX_MSG_LEN);
 		client->in_remaining = client->header.length;
 		client->in_msg->length = client->header.length;
 	}
