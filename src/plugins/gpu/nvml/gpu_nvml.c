@@ -1433,6 +1433,9 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 						device_count);
 		xstrfmtcat(device_file, "/dev/nvidia%u", minor_number);
 
+		if (pci_info.busId[0])
+			gres_slurmd_conf.pci_addr = pci_info.busId;
+
 		debug2("GPU index %u:", i);
 		debug2("    Name: %s", device_name);
 		debug2("    UUID: %s", uuid);
