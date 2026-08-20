@@ -80,6 +80,13 @@ int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
 	safe_unpack32(&hdr->length, buffer);
+
+	if (hdr->length > SLURM_IO_MAX_MSG_LEN) {
+		error("%s: message length of %u exceeds maximum of %u",
+		      __func__, hdr->length, SLURM_IO_MAX_MSG_LEN);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 
     unpack_error:
