@@ -1,3 +1,3 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = backfill common
+SUBDIRS = backfill common topology
