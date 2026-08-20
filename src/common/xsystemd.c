@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <unistd.h>
 
@@ -48,6 +49,20 @@
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+/* Similar to sd_booted() returns whether systemd is PID 1 */
+extern bool xsystemd_booted(void)
+{
+	static int booted = -1;
+	struct stat sb;
+
+	if (booted < 0) {
+		booted = (!stat("/run/systemd/system", &sb) &&
+			  S_ISDIR(sb.st_mode));
+	}
+
+	return booted;
+}
 
 void _xsystemd_notify_barrier(int fd)
 {

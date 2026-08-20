@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/xsystemd.h"
+
 #include "src/interfaces/cgroup.h"
 
 /* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
@@ -184,6 +186,12 @@ static void _clear_slurm_cgroup_conf(void)
 	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf));
 }
 
+/* Checks whether IgnoreSystemd=yes is required. */
+static bool _need_ignore_systemd(void)
+{
+	return running_in_slurmd_stepd() && !xsystemd_booted();
+}
+
 static void _init_slurm_cgroup_conf(void)
 {
 	_clear_slurm_cgroup_conf();
@@ -205,7 +213,7 @@ static void _init_slurm_cgroup_conf(void)
 	slurm_cgroup_conf.cgroup_job_id_paths = false;
 	slurm_cgroup_conf.enable_controllers = false;
 	slurm_cgroup_conf.enable_extra_controllers = NULL;
-	slurm_cgroup_conf.ignore_systemd = false;
+	slurm_cgroup_conf.ignore_systemd = _need_ignore_systemd();
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
 	slurm_cgroup_conf.max_ram_percent = 100;
 	slurm_cgroup_conf.max_swap_percent = 100;
@@ -345,6 +353,7 @@ static void _read_slurm_cgroup_conf(void)
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
+	bool tmp_bool = false;
 	struct stat buf;
 	size_t sz;
 
@@ -433,8 +442,19 @@ static void _read_slurm_cgroup_conf(void)
 			tmp_str = NULL;
 		}
 
-		(void) s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
-				       "IgnoreSystemd", tbl);
+		if (s_p_get_boolean(&tmp_bool, "IgnoreSystemd", tbl)) {
+			/*
+			 * No systemd in this system, it defaulted IgnoreSystemd
+			 * to yes, but IgnoreSystemd=no in cgroup.conf
+			 */
+			if (!tmp_bool && slurm_cgroup_conf.ignore_systemd)
+				fatal("IgnoreSystemd=no not supported on a system without systemd");
+			/* IgnoreSystemd is explicitly set */
+			slurm_cgroup_conf.ignore_systemd = tmp_bool;
+		} else if (slurm_cgroup_conf.ignore_systemd) {
+			/* IgnoreSystemd unset and default auto-set to yes */
+			info("Forcing IgnoreSystemd=yes as this system does not have systemd");
+		}
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf
 						.ignore_systemd_on_failure,
