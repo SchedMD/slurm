@@ -5370,6 +5370,21 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		goto fini;
 	}
 
+	/*
+	 * Allow INFINITE through: it is a valid "never suspend"
+	 * default for a new node even without power save configured.
+	 * update_node() rejects INFINITE too, but that is intentional.
+	 */
+	if ((conf_node->suspend_time != NO_VAL) &&
+	    (conf_node->suspend_time != INFINITE) && !power_save_avail) {
+		*err_msg = xstrdup_printf(
+			"Cannot create node %s with SuspendTime=%u, automatic power save mode is disabled",
+			conf_node->nodenames, conf_node->suspend_time);
+		error("%s", *err_msg);
+		rc = ESLURM_DISABLED;
+		goto fini;
+	}
+
 	config_ptr = config_record_from_conf_node(conf_node,
 						  slurmctld_tres_cnt);
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
