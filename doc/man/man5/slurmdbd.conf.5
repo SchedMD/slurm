@@ -745,11 +745,14 @@ the slurmdbd.
 once, when \fBslurmdbd\fR starts. Changes to them are not picked up by
 \fBsacctmgr reconfigure\fR; they require a restart of \fBslurmdbd\fR.
 
-\fBNOTE\fR: \fBslurmdbd\fR only uses the connection manager for signal
-handling. It does not use the connection manager for \fBDbdPort\fR
-connections; each one is handled on its own thread. The \fBconmgr_*\fR options
-therefore do not change how \fBDbdPort\fR traffic is accepted or when it times
-out.
+\fBNOTE\fR: \fBslurmdbd\fR uses the connection manager for signal handling
+and \fBDbdPort\fR connections. Before a connection's first \fBRPC\fR is
+received, and for \fBTLS\fR negotiation waits, the read timeout is
+\fBMessageTimeout\fR. Established persistent \fBRPC\fR connections have no
+read timeout, including while waiting for an incomplete payload, and use a
+5-second write progress timeout.
+The \fBconmgr_read_timeout\fR, \fBconmgr_write_timeout\fR, and
+\fBconmgr_connect_timeout\fR options do not override these listener timeouts.
 .IP
 .RS
 .TP
