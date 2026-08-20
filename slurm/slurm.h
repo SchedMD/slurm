@@ -1106,7 +1106,7 @@ typedef enum {
 	/*
 	 * Disable topology node rank sort
 	 */
-	SELECT_NO_DIST_TOPO_BLOCK = SLURM_BIT(11),
+	SELECT_NO_DIST_TOPO = SLURM_BIT(11),
 	/*
 	 * By default, distribute cores using a block approach inside the
 	 * nodes

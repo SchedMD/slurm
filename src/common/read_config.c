@@ -3738,9 +3738,11 @@ static int _parse_select_type_param(
 		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= SELECT_ONE_TASK_PER_CORE;
-		} else if (!xstrcasecmp(str_parameters,
+		} else if (!xstrcasecmp(str_parameters, "CR_NO_DIST_TOPO") ||
+			   !xstrcasecmp(str_parameters,
 					"CR_NO_DIST_TOPO_BLOCK")) {
-			*param |= SELECT_NO_DIST_TOPO_BLOCK;
+			/* CR_NO_DIST_TOPO_BLOCK is the pre-26.11 name. */
+			*param |= SELECT_NO_DIST_TOPO;
 		} else if (!xstrcasecmp(str_parameters,
 					"CR_CORE_DEFAULT_DIST_BLOCK")) {
 			*param |= SELECT_CORE_DEFAULT_DIST_BLOCK;

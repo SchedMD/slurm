@@ -2091,7 +2091,7 @@ alloc_job:
 	job_res->whole_node       = job_ptr->details->whole_node;
 
 	if ((job_res->nhosts > 1) &&
-	    !(slurm_conf.select_type_param & SELECT_NO_DIST_TOPO_BLOCK)) {
+	    !(slurm_conf.select_type_param & SELECT_NO_DIST_TOPO)) {
 		uint32_t cnt = 0;
 		error_code =
 			topology_g_get_rank(job_res->node_bitmap,
