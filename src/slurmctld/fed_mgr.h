@@ -39,6 +39,8 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 
+typedef struct persist_conn_s persist_conn_t;
+
 extern slurmdb_federation_rec_t *fed_mgr_fed_rec;
 extern slurmdb_cluster_rec_t    *fed_mgr_cluster_rec;
 
