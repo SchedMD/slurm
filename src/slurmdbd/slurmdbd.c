@@ -229,6 +229,7 @@ int main(int argc, char **argv)
 	assoc_init_args_t assoc_init_arg;
 
 	_init_config();
+	closeall_init();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	if (read_slurmdbd_conf())
 		exit(1);
