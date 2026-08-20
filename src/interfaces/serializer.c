@@ -114,10 +114,9 @@ static const struct {
 	char *string;
 	serializer_flags_t flag;
 } flags[] = {
-	{ "compact", SER_FLAGS_COMPACT },
-	{ "pretty", SER_FLAGS_PRETTY },
-	{ "complex", SER_FLAGS_COMPLEX },
-	{ "no_tag", SER_FLAGS_NO_TAG },
+	{ "compact", SER_FLAGS_COMPACT }, { "pretty", SER_FLAGS_PRETTY },
+	{ "complex", SER_FLAGS_COMPLEX }, { "no_tag", SER_FLAGS_NO_TAG },
+	{ "json6", SER_FLAGS_JSON6 },
 };
 
 static serializer_flags_t _parse_flag(const char *flag)
