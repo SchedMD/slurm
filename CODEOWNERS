@@ -1,9 +1,9 @@
-[Docs] @SchedMD/dev/doc-reviewers
+[Docs] @nvidia/schedmd/groups/slurm-doc-reviewers
 !/doc/**/Makefile.*
 !/doc/html/openapi_release_notes/
 /doc/
 
-[Testsuite] @SchedMD/dev/qa-reviewers
+[Testsuite] @nvidia/schedmd/groups/slurm-qa-reviewers
 !/testsuite/**/Makefile.*
 !/testsuite/README
 !/testsuite/python/tests/
