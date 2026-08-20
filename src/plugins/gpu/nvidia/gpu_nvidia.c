@@ -195,6 +195,9 @@ static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
 		_set_cpu_affinity(node_conf, de->d_name,
 				  &gres_slurmd_conf.cpus);
 
+		/* The per-GPU procfs directory name is the PCI address */
+		gres_slurmd_conf.pci_addr = de->d_name;
+
 		if (!gres_list_system)
 			gres_list_system = list_create(
 				destroy_gres_slurmd_conf);
