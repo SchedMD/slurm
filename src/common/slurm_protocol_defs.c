@@ -1148,6 +1148,14 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 		else if (errno)
 			return SLURM_ERROR;
 
+		/*
+		 * Only range check when the caller gave a limit, as the
+		 * bracketed form above does.
+		 */
+		if (max_array_size && (max_array_size != NO_VAL) &&
+		    (array >= max_array_size))
+			return ESLURM_INVALID_JOB_ARRAY_ID_TOO_LARGE;
+
 		id->array_task_id = array;
 		end_ptr = array_end_ptr;
 	}
