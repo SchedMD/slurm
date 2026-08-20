@@ -1,11 +1,17 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/plugins/sched/backfill
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/plugins/sched/backfill \
+	      -I$(top_srcdir)/testsuite/slurm_unit/sched_common
 LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
 
 check_PROGRAMS = \
 	$(TESTS)
 
+
+SCHED_HARNESS_SOURCES = \
+	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.c	\
+	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.h	\
+	$(top_srcdir)/testsuite/slurm_unit/sched_common/dummy_functions.c
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
@@ -18,7 +24,7 @@ endif
 TESTS = backfill-test
 
 backfill_test_SOURCES = backfill_test.c	\
-			dummy_functions.c \
+			$(SCHED_HARNESS_SOURCES) \
 			$(top_srcdir)/src/plugins/sched/backfill/backfill.c	\
 			$(top_srcdir)/src/plugins/sched/backfill/backfill.h	\
 			$(top_srcdir)/src/plugins/sched/backfill/oracle.c	\
