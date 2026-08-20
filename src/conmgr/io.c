@@ -303,6 +303,9 @@ extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			log_flag(NET, "%s: [%s] retry write: %m",
 				 __func__, con->name);
+			slurm_mutex_lock(&mgr.mutex);
+			con_unset_flag(con, FLAG_CAN_WRITE);
+			slurm_mutex_unlock(&mgr.mutex);
 		} else {
 			int write_errno = errno;
 
