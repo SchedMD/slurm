@@ -1011,6 +1011,51 @@ parsers reject.
 .IP
 
 .TP
+\fBjson6\fR
+Dump using the JSON6 grammar where RFC 8259 has no equivalent, rather than
+substituting.
+Currently this affects byte sequences that Slurm will not emit as JSON text:
+bytes that are not well formed UTF\-8, and valid UTF\-8 encodings of code
+points Slurm rejects by policy (U+0000, surrogates, noncharacters, private
+use, and U+FFF0 through U+FFF8).
+These are emitted as \fB\e\fRx\fINN\fR escapes, where \fINN\fR is the
+hexadecimal value of one source byte.
+By default each such byte sequence is replaced with the Unicode replacement
+character (U+FFFD), which loses the original bytes.
+.IP
+\fBNOTE\fR: This escape is a deliberate exception to JSON6 and is not
+compliant with it. JSON6 and JSON5 both define \fB\e\fRx\fINN\fR as the code
+point U+00\fINN\fR, which a reader then encodes as UTF\-8.
+\fBserializer/xjson\fR instead writes and reads the single byte
+\fINN\fR, with no UTF\-8 or code point check. The two agree only for
+\fINN\fR below 0x80, and \fBserializer/xjson\fR only ever emits the
+escape for bytes 0x80 through 0xff, so every escape it emits is decoded to
+different and longer text by a conforming JSON6 or JSON5 reader, with no
+error reported. The exception is intentional: writing the byte rather than
+the code point is what makes the output binary safe, so that any byte
+sequence survives a round trip. Only \fBserializer/xjson\fR recovers
+the original bytes.
+.IP
+Only the first class is genuinely unrepresentable.
+The rest are valid Unicode that RFC 8259 permits and that
+\fBserializer/json\fR emits unchanged; Slurm drops them by policy, not
+because JSON cannot carry them.
+.IP
+Only \fBserializer/xjson\fR honors this flag, and it affects serialization
+only.
+It does not change what the parser accepts: \fBserializer/xjson\fR always
+accepts the relaxed grammar on input, whether or not this flag is set.
+See \fBxjson\fR under \fBSerializerPlugins\fR.
+.IP
+\fBNOTE\fR: Output produced with this flag is not strict JSON and is rejected
+by parsers that only accept RFC 8259, including those in Python and Go.
+.IP
+\fBNOTE\fR: JSON6 support is incomplete. Only a subset of the JSON6 grammar is
+implemented, and which constructs are covered may change between releases. Do
+not rely on this flag for anything beyond the byte escaping described above.
+.IP
+
+.TP
 \fBno_tag\fR
 Do not emit YAML tags.  These tags ensure accurate preservation of data types;
 when set, some types may be inferred incorrectly.
