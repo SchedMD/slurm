@@ -122,6 +122,9 @@ extern int build_job_resources(job_resources_t *job_resrcs)
 		job_resrcs->core_bitmap = bit_alloc(core_cnt);
 		job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
 	}
+
+	build_job_resources_order_map(job_resrcs);
+
 	return SLURM_SUCCESS;
 }
 
@@ -221,6 +224,8 @@ extern int reset_node_bitmap(void *void_job_ptr)
 		return SLURM_SUCCESS;
 
 	FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
+	/* Bit positions may have shifted, order_map node_inx is stale. */
+	xfree(job_resrcs_ptr->order_map);
 
 	if (job_resrcs_ptr->nodes &&
 	    (node_name2bitmap(job_resrcs_ptr->nodes, false,
@@ -239,8 +244,7 @@ extern int reset_node_bitmap(void *void_job_ptr)
 		return SLURM_ERROR;
 	}
 
-	/* Bit positions may have shifted, order_map node_inx is stale. */
-	xfree(job_resrcs_ptr->order_map);
+	build_job_resources_order_map(job_resrcs_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -1128,7 +1132,7 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 	xfree(job->nodes);
 	job->nodes = bitmap2node_name(job->node_bitmap);
 	job->ncpus = build_job_resources_cpu_array(job);
-	xfree(job->order_map);
+	build_job_resources_order_map(job);
 
 	return SLURM_SUCCESS;
 }
