@@ -1,0 +1,41 @@
+AUTOMAKE_OPTIONS = foreign subdir-objects
+
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/plugins/sched/backfill \
+	      -I$(top_srcdir)/testsuite/slurm_unit/sched_common
+LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
+
+check_PROGRAMS = \
+	$(TESTS)
+
+EXTRA_DIST = slurm.conf
+
+SCHED_HARNESS_SOURCES = \
+	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.c	\
+	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.h	\
+	$(top_srcdir)/testsuite/slurm_unit/sched_common/dummy_functions.c
+
+if HAVE_CHECK
+MYCFLAGS  = @CHECK_CFLAGS@ -Wall
+MYCFLAGS += -D_ISO99_SOURCE
+
+if CLANG
+MYCFLAGS += -Xclang -pic-level -Xclang 0
+endif
+
+TESTS = topology-test
+
+topology_test_SOURCES = topology_test.c	\
+			$(SCHED_HARNESS_SOURCES) \
+			$(top_srcdir)/src/plugins/sched/backfill/backfill.c	\
+			$(top_srcdir)/src/plugins/sched/backfill/backfill.h	\
+			$(top_srcdir)/src/plugins/sched/backfill/oracle.c	\
+			$(top_srcdir)/src/plugins/sched/backfill/oracle.h	\
+			$(top_srcdir)/src/slurmctld/job_scheduler.c		\
+			$(top_srcdir)/src/slurmctld/licenses.c			\
+			$(top_srcdir)/src/slurmctld/node_scheduler.c
+
+topology_test_CFLAGS = $(MYCFLAGS)
+topology_test_LDADD  = $(LDADD) @CHECK_LIBS@
+topology_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
+
+endif
