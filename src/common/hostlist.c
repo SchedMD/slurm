@@ -374,8 +374,9 @@ static char * _next_tok(char *sep, char **str)
 			(*str)++;
 
 		/* push str past pairs of brackets */
-bracket: 	open_bracket = strchr(parse, '[');
-		if ((open_bracket == NULL) || (open_bracket > *str))
+bracket:
+		open_bracket = memchr(parse, '[', *str - parse);
+		if (open_bracket == NULL)
 			break;
 		close_bracket = strchr(parse, ']');
 		if ((close_bracket == NULL) || (close_bracket < open_bracket))
