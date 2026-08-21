@@ -122,6 +122,20 @@ extern buf_t *slurmdbd_make_rc_msg_flags(slurmdbd_conn_t *sc, uint32_t rc,
 	return pack_slurmdbd_msg(&resp, sc->version);
 }
 
+/*
+ * Build a PERSIST_RC reply buffer with no reply flags.
+ * IN sc       - slurmdbd connection providing the negotiated version
+ * IN rc       - return code to report
+ * IN comment  - optional human-readable comment
+ * IN ret_info - message type the rc is in response to
+ * RET packed PERSIST_RC buffer
+ */
+extern buf_t *slurmdbd_make_rc_msg(slurmdbd_conn_t *sc, uint32_t rc,
+				   char *comment, uint16_t ret_info)
+{
+	return slurmdbd_make_rc_msg_flags(sc, rc, comment, 0, ret_info);
+}
+
 static char *_internal_rc_to_str(uint32_t rc, slurmdbd_conn_t *dbd_conn,
 				 bool new_line)
 {
