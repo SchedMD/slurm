@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "slurm/slurm_errno.h"
+
 #include "src/common/data.h"
 #include "src/common/http.h"
 #include "src/common/plugrack.h"
