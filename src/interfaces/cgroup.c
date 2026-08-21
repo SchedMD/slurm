@@ -81,6 +81,7 @@ typedef struct {
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 	cgroup_acct_t *(*job_get_acct_data)(void);
 	long int (*get_acct_units)	(void);
+	list_t *(*get_dmem_regions)(void);
 	bool (*has_feature) (cgroup_ctl_feature_t f);
 	char *(*get_scope_path)(void);
 	int (*bpf_fsopen)(void);
@@ -119,6 +120,7 @@ static const char *syms[] = {
 	"cgroup_p_task_get_acct_data",
 	"cgroup_p_job_get_acct_data",
 	"cgroup_p_get_acct_units",
+	"cgroup_p_get_dmem_regions",
 	"cgroup_p_has_feature",
 	"cgroup_p_get_scope_path",
 	"cgroup_p_bpf_fsopen",
@@ -1126,6 +1128,16 @@ extern long int cgroup_g_get_acct_units(void)
 		return (long int)USEC_IN_SEC;
 
 	return (*(ops.get_acct_units))();
+}
+
+extern list_t *cgroup_g_get_dmem_regions(void)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return NULL;
+
+	return (*(ops.get_dmem_regions))();
 }
 
 extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f)

@@ -2975,6 +2975,38 @@ extern long int cgroup_p_get_acct_units(void)
 	return (long int)USEC_IN_SEC;
 }
 
+extern list_t *cgroup_p_get_dmem_regions(void)
+{
+	list_t *region_list = NULL;
+	xcgroup_t root_cg = { .path = slurm_cgroup_conf.cgroup_mountpoint };
+	char *content = NULL, *save_ptr = NULL;
+	size_t csize = 0;
+
+	if (common_cgroup_get_param(&root_cg, "dmem.capacity", &content,
+				    &csize) != SLURM_SUCCESS)
+		return NULL;
+
+	region_list = list_create((ListDelF) cgroup_free_limits);
+
+	/* One "<region_name> <bytes>" line per registered region */
+	for (char *line = strtok_r(content, "\n", &save_ptr); line;
+	     line = strtok_r(NULL, "\n", &save_ptr)) {
+		cgroup_limits_t *limits = NULL;
+		char *sep = xstrrchr(line, ' ');
+		if (!sep)
+			continue;
+		*sep = '\0';
+		limits = xmalloc(sizeof(*limits));
+		cgroup_init_limits(limits);
+		limits->limit_in_bytes = strtoull((sep + 1), NULL, 10);
+		limits->dmem_region = xstrdup(line);
+		list_append(region_list, limits);
+	}
+	xfree(content);
+
+	return region_list;
+}
+
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 {
 	char file_path[PATH_MAX];

@@ -420,6 +420,16 @@ extern cgroup_acct_t *cgroup_g_job_get_acct_data(void);
 extern long int cgroup_g_get_acct_units(void);
 
 /*
+ * Get the device memory regions that the dmem cgroup controller exposes
+ * in dmem.capacity, with their total capacity in bytes.
+ *
+ * RET list of cgroup_limits_t, one entry per region with dmem_region set to the
+ *	region name and limit_in_bytes to its capacity. NULL when the controller
+ *	is not available. Caller must free the list.
+ */
+extern list_t *cgroup_g_get_dmem_regions(void);
+
+/*
  * Check if Cgroup has this feature available.
  * Usually this will depend on the kernel config settings or the boot flags,
  * and since checks can be done by slurmd before init, we are checking it

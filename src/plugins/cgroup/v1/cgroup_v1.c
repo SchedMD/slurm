@@ -1386,6 +1386,11 @@ extern long int cgroup_p_get_acct_units(void)
 	return jobacct_gather_get_clk_tck();
 }
 
+extern list_t *cgroup_p_get_dmem_regions(void)
+{
+	return NULL;
+}
+
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 {
 	struct stat st;
