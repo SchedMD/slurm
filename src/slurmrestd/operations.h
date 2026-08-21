@@ -54,18 +54,6 @@ extern int init_operations(data_parser_t **parsers);
 extern void destroy_operations(void);
 
 /*
- * Bind callback handler for a given URL pattern.
- * Same rules as bind_operation_handler() but handles populating response and
- * tracking warnings and errors.
- *
- * IN op_path - operation path to bind
- * IN meta - meta info about plugin that owns callback or NULL
- * RET SLURM_SUCCESS or error
- */
-extern int bind_operation_path(const openapi_path_binding_t *op_path,
-			       const openapi_resp_meta_t *meta);
-
-/*
  * Parses incoming requests and calls handlers.
  * expected to be called as on_http_request_t() by http.c.
  * RET SLURM_SUCCESS or error

@@ -37,6 +37,7 @@
 
 #include "src/common/data.h"
 #include "src/common/http.h"
+#include "src/common/http_router.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
@@ -45,7 +46,6 @@
 
 #include "src/interfaces/serializer.h"
 #include "src/slurmrestd/openapi.h"
-#include "src/slurmrestd/operations.h"
 
 #define OPENAPI_MAJOR_TYPE "openapi"
 #define MAX_URL_PATH_DEPTH 1024
@@ -98,7 +98,6 @@ typedef struct {
 	const openapi_path_binding_t *bound;
 	data_parser_t *parser;
 	entry_method_t *methods;
-	int tag;
 } path_t;
 
 typedef struct {
@@ -164,9 +163,19 @@ typedef struct {
 } url_parse_operation_id_args_t;
 
 static list_t *paths = NULL;
-static int path_tag_counter = 0;
 static plugins_t *plugins = NULL;
 static data_parser_t **parsers = NULL; /* symlink to parser array */
+
+#define MAGIC_BIND_METHOD_PATH 0x10aa0bf0
+
+typedef struct {
+	int magic; /* MAGIC_BIND_METHOD_PATH */
+	entry_t *entry;
+	const openapi_resp_meta_t *meta;
+	const openapi_path_binding_method_t *op_method;
+	const openapi_path_binding_t *op_path;
+	data_parser_t *parser;
+} bind_method_path_t;
 
 static const struct {
 	char *openapi_version;
@@ -355,8 +364,7 @@ static int _resolve_parser_index(data_parser_t *parser)
 	fatal_abort("Unable to find parser. This should never happen!");
 }
 
-static void _free_entry_list(entry_t *entry, int tag,
-			     entry_method_t *method)
+static void _free_entry_list(entry_t *entry, entry_method_t *method)
 {
 	entry_t *itr = entry;
 
@@ -364,10 +372,10 @@ static void _free_entry_list(entry_t *entry, int tag,
 		return;
 
 	while (itr->type) {
-		debug5("%s: remove path tag:%d method:%s entry:%s",
-		       __func__, tag, (method ?
-				       get_http_method_string(method->method) :
-				       "N/A"), itr->entry);
+		debug5("%s: remove path method:%s entry:%s",
+		       __func__, (method ?
+				  get_http_method_string(method->method) :
+				  "N/A"), itr->entry);
 		xfree(itr->entry);
 		itr++;
 	}
@@ -384,14 +392,13 @@ static void _list_delete_path_t(void *x)
 
 	path_t *path = x;
 	xassert(path->magic == MAGIC_PATH);
-	xassert(path->tag != -1);
 	em = path->methods;
 
 	while (em->entries) {
-		debug5("%s: remove path tag:%d method:%s", __func__, path->tag,
-		       get_http_method_string(em->method));
+		debug5("%s: remove path method:%s",
+		       __func__, get_http_method_string(em->method));
 
-		_free_entry_list(em->entries, path->tag, em);
+		_free_entry_list(em->entries, em);
 		em->entries = NULL;
 		em++;
 	}
@@ -461,46 +468,6 @@ static entry_t *_parse_openapi_path(const char *str_path, int *count_ptr)
 		*count_ptr = args.count;
 
 	return entries;
-}
-
-static int _print_path_tag_methods(void *x, void *arg)
-{
-	path_t *path = (path_t *) x;
-	int *tag = (int *) arg;
-
-	xassert(path->magic == MAGIC_PATH);
-
-	if (path->tag != *tag)
-		return 0;
-
-	if (!path->methods->entries)
-		debug4("%s: no methods found in path tag %d",
-		       __func__, path->tag);
-
-	for (entry_method_t *em = path->methods; em->entries; em++) {
-		char *path_str = _entry_to_string(em->entries);
-
-		debug4("%s: path tag %d entry: %s %s",
-		       __func__, path->tag, get_http_method_string(em->method),
-		       path_str);
-
-		xfree(path_str);
-	}
-
-	/*
-	 * We found the (unique) tag, so return -1 to exit early. The item's
-	 * index returned by list_for_each_ro() will be negative.
-	 */
-	return -1;
-}
-
-extern void print_path_tag_methods(int tag)
-{
-	if (get_log_level() < LOG_LEVEL_DEBUG4)
-		return;
-
-	if (list_for_each_ro(paths, _print_path_tag_methods, &tag) >= 0)
-		error("%s: Tag %d not found in paths", __func__, tag);
 }
 
 static void _clone_entries(entry_t **dst_ptr, entry_t *src, int count)
@@ -589,13 +556,13 @@ static bool _data_parser_supports_method(data_parser_t *parser,
 	return true;
 }
 
-extern int register_path_binding(const char *in_path,
-				 const openapi_path_binding_t *op_path,
-				 const openapi_resp_meta_t *meta,
-				 data_parser_t *parser, int *tag_ptr)
+static path_t *_register_path(const char *in_path,
+			      const openapi_path_binding_t *op_path,
+			      const openapi_resp_meta_t *meta,
+			      data_parser_t *parser)
 {
 	entry_t *entries = NULL;
-	int tag = -1, methods_count = 0, entries_count = 0;
+	int methods_count = 0, entries_count = 0;
 	path_t *p = NULL;
 	const char *path = (in_path ? in_path : op_path->path);
 
@@ -620,16 +587,13 @@ extern int register_path_binding(const char *in_path,
 	if (!methods_count) {
 		debug5("%s: skip binding %s with %s",
 		       __func__, path, data_parser_get_plugin(parser));
-		_free_entry_list(entries, -1, NULL);
-		return ESLURM_NOT_SUPPORTED;
+		_free_entry_list(entries, NULL);
+		return NULL;
 	}
-
-	tag = path_tag_counter++;
 
 	p = xmalloc(sizeof(*p));
 	p->magic = MAGIC_PATH;
 	p->methods = xcalloc((methods_count + 1), sizeof(*p->methods));
-	p->tag = tag;
 	p->bound = op_path;
 	p->parser = parser;
 	p->path = xstrdup(path);
@@ -672,9 +636,9 @@ extern int register_path_binding(const char *in_path,
 				t->has_params = true;
 			}
 
-			debug5("%s: add binded path %s entry: method=%s tag=%d entry=%s parameter=%s entry_type=%s",
+			debug5("%s: add binded path %s entry: method=%s entry=%s parameter=%s entry_type=%s",
 			       __func__, path,
-			       get_http_method_string(m->method), tag, e->entry,
+			       get_http_method_string(m->method), e->entry,
 			       openapi_type_to_string(e->parameter),
 			       _get_entry_type_string(e->type));
 		}
@@ -684,8 +648,7 @@ extern int register_path_binding(const char *in_path,
 	}
 
 	list_append(paths, p);
-	*tag_ptr = tag;
-	return SLURM_SUCCESS;
+	return p;
 }
 
 /*
@@ -841,11 +804,11 @@ static int _match_path_from_data(void *x, void *key)
 		}
 
 		if (args->method != method->method) {
-			debug5("%s: method skip for %s(%d, %s != %s) to %s(0x%"PRIXPTR")",
-			       __func__, src_path, args->path->tag,
+			debug5("%s: method skip for %s(%s != %s) to %s(%p)",
+			       __func__, src_path,
 			       get_http_method_string(args->method),
 			       get_http_method_string(method->method),
-			       dst_path, (uintptr_t) args->dpath);
+			       dst_path, args->dpath);
 			continue;
 		}
 
@@ -874,20 +837,14 @@ static int _match_path_from_data(void *x, void *key)
 		 * anything to compare in request.
 		 */
 		if (!args->entry->type) {
-			args->tag = path->tag;
 			matched = true;
 			break;
 		}
 	}
 
-	debug5("%s: match %s for %s(%d, %s) to %s(0x%"PRIXPTR")",
-	       __func__,
-	       matched ? "successful" : "failed",
-	       src_path,
-	       args->path->tag,
-	       get_http_method_string(args->method),
-	       dst_path,
-	       (uintptr_t) args->dpath);
+	debug5("%s: match %s for %s(%s) to %s(%p)",
+	       __func__, (matched ? "successful" : "failed"), src_path,
+	       get_http_method_string(args->method), dst_path, args->dpath);
 
 	xfree(src_path);
 	xfree(dst_path);
@@ -912,19 +869,123 @@ extern int find_path_tag(const data_t *dpath, data_t *params,
 	return args.tag;
 }
 
-static int _bind_paths(const openapi_path_binding_t *paths,
-		       const openapi_resp_meta_t *meta)
+static int _on_request(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
 {
-	int rc = SLURM_SUCCESS;
+	bind_method_path_t *bmp = path_arg;
 
-	for (int i = 0; paths[i].path; i++) {
-		const openapi_path_binding_t *op_path = &paths[i];
+	xassert(bmp->magic == MAGIC_BIND_METHOD_PATH);
 
-		if ((rc = bind_operation_path(op_path, meta)))
-			break;
+	return ESLURM_NOT_SUPPORTED;
+}
+
+static void _on_fini(http_router_on_request_event_t on_request, void *path_arg)
+{
+	bind_method_path_t *bmp = path_arg;
+
+	xassert(bmp->magic == MAGIC_BIND_METHOD_PATH);
+	xassert(on_request == _on_request);
+
+	bmp->magic = ~MAGIC_BIND_METHOD_PATH;
+	xfree(bmp);
+}
+
+static void _bind_path(const char *url_path,
+		       const openapi_path_binding_t *op_path,
+		       const openapi_path_binding_method_t *op_method,
+		       const openapi_resp_meta_t *meta, data_parser_t *parser,
+		       entry_t *entry)
+{
+	bind_method_path_t *bmp = xmalloc(sizeof(*bmp));
+	*bmp = (bind_method_path_t) {
+		.magic = MAGIC_BIND_METHOD_PATH,
+		.entry = entry,
+		.meta = meta,
+		.op_method = op_method,
+		.op_path = op_path,
+		.parser = parser,
+	};
+
+	xassert(bmp->parser);
+	xassert(bmp->op_path);
+	xassert(bmp->op_method);
+
+	http_router_bind(op_method->method, url_path, _on_request, _on_fini,
+			 bmp);
+}
+
+static void _bind_op_path_parser(const openapi_path_binding_t *op_path,
+				 const openapi_resp_meta_t *meta,
+				 data_parser_t *parser)
+{
+	path_t *path = NULL;
+	char *url_path = NULL;
+	const char *url = NULL;
+
+	if (op_path->flags & OPENAPI_BIND_DATA_PARSER) {
+		url_path = xstrdup(op_path->path);
+
+		xassert(xstrstr(url_path, OPENAPI_DATA_PARSER_PARAM));
+
+		xstrsubstitute(url_path, OPENAPI_DATA_PARSER_PARAM,
+			       data_parser_get_plugin_version(parser));
+
+		url = url_path;
+	} else {
+		url = op_path->path;
 	}
 
-	return rc;
+	if ((path = _register_path(url, op_path, meta, parser))) {
+		for (int i = 0; path->methods[i].bound; i++) {
+			_bind_path(url, op_path, path->methods[i].bound, meta,
+				   parser,
+				   (path->methods[i].has_params ?
+					    path->methods[i].entries :
+					    NULL));
+		}
+	}
+
+	xfree(url_path);
+}
+
+static void _bind_op_path(const openapi_path_binding_t *op_path,
+			  const openapi_resp_meta_t *meta,
+			  data_parser_t *default_parser)
+{
+	if (op_path->flags & OPENAPI_BIND_DATA_PARSER)
+		for (int i = 0; parsers[i]; i++)
+			_bind_op_path_parser(op_path, meta, parsers[i]);
+	else
+		_bind_op_path_parser(op_path, meta, default_parser);
+}
+
+static void _bind_paths(const openapi_path_binding_t *paths,
+			const openapi_resp_meta_t *meta)
+{
+	data_parser_t *default_parser = NULL;
+
+	if (!parsers || !parsers[0])
+		fatal("No data_parsers plugins loaded. Refusing to load.");
+
+	for (int i = 0; parsers[i]; i++) {
+		if (!xstrcmp(data_parser_get_plugin(parsers[i]),
+			     SLURM_DATA_PARSER_VERSION)) {
+			default_parser = parsers[i];
+			break;
+		}
+	}
+
+	/*
+	 * The current version is not always loaded, such as with
+	 * slurmrestd -d v0.0.43, so fall back to the first parser given.
+	 */
+	if (!default_parser)
+		default_parser = parsers[0];
+
+	for (const openapi_path_binding_t *op_path = &paths[0]; op_path->path;
+	     op_path++)
+		_bind_op_path(op_path, meta, default_parser);
 }
 
 extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
@@ -946,9 +1007,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	/* must have JSON plugin to parse the openapi.json */
 	serializer_required(MIME_TYPE_JSON);
 
-	if ((rc = _bind_paths(openapi_paths, NULL)))
-		fatal("Unable to bind openapi specification paths: %s",
-		      slurm_strerror(rc));
+	_bind_paths(openapi_paths, NULL);
 
 	rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
 			  syms, ARRAY_SIZE(syms));
@@ -977,9 +1036,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 			fatal("Failure loading plugin path bindings: %s",
 			      slurm_strerror(rc));
 
-		if ((rc = _bind_paths(paths, meta)))
-			fatal("Unable to bind openapi specification paths: %s",
-			      slurm_strerror(rc));
+		_bind_paths(paths, meta);
 	}
 
 	/* Call init() after all plugins are fully loaded */

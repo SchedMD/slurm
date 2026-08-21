@@ -50,26 +50,6 @@
 #include "src/interfaces/data_parser.h"
 
 /*
- * Register a given unique tag against a path binding.
- *
- * IN in_path - string path to assign to given tag or
- * 	NULL (to use path in op_path)
- * IN op_path - Operation binding for path
- * IN meta - Meta information from plugin (or NULL)
- * IN parser - Relevant data_parser (or NULL)
- * IN/OUT tag_ptr - Sets tag on success
- * RET SLURM_SUCCESS or
- *	ESLURM_NOT_SUPPORTED: if data_parser doesn't support all types in method
- *	or any other Slurm error
- *
- * Can safely be called multiple times for same path.
- */
-extern int register_path_binding(const char *in_path,
-				 const openapi_path_binding_t *op_path,
-				 const openapi_resp_meta_t *meta,
-				 data_parser_t *parser, int *tag_ptr);
-
-/*
  * Find tag assigned to given path
  * IN path - split up path to match
  * IN/OUT params - on match, will populate any OAS parameters in path.
@@ -82,11 +62,6 @@ extern int register_path_binding(const char *in_path,
  */
 extern int find_path_tag(const data_t *path, data_t *params,
 			 http_request_method_t method);
-
-/*
- * Print registered methods for the requested tag at log level DEBUG4.
- */
-extern void print_path_tag_methods(int tag);
 
 /*
  * Init the OpenAPI data structs.
