@@ -1534,7 +1534,12 @@ static void _require_node_reg(node_record_t *node_ptr)
 {
 	if (IS_NODE_EXTERNAL(node_ptr))
 		return;
-	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+	/*
+	 * A powered down node is not expected to respond and is skipped by
+	 * ping_nodes(), so a NO_RESPOND flag set here would never be cleared.
+	 */
+	if (!IS_NODE_POWERED_DOWN(node_ptr) && !IS_NODE_POWERING_DOWN(node_ptr))
+		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	/*
 	 * Only refresh an existing grace period; don't start one for a node
 	 * that has never responded (last_response == 0). Otherwise an UNKNOWN
