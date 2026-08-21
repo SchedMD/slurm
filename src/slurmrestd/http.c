@@ -107,38 +107,16 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 			  const http_con_request_t *request, void *arg,
 			  void *path_arg)
 {
-	http_context_t *ctxt = arg;
-	int rc = EINVAL;
-	on_http_request_args_t args = {
-		.method = request->method,
-		.headers = request->headers,
-		.path = request->url.path,
-		.query = request->url.query,
-		.context = ctxt,
-		.con = NULL,
-		.name = name,
-		.http_major = request->http_version.major,
-		.http_minor = request->http_version.minor,
-		.content_type = request->content_type,
-		.accept = request->accept,
-		.body = (request->content ? get_buf_data(request->content) :
-					    NULL),
-		.body_length =
-			(request->content ? get_buf_offset(request->content) :
-					    0),
-		.body_encoding = request->content_type,
-	};
+	static const char body[] =
+		"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.";
+	buf_t buf = SHADOW_BUF_INITIALIZER(body, strlen(body));
 
-	xassert(ctxt->magic == MAGIC);
+	info("%s: [%s] %s %s",
+	     __func__, name, get_http_method_string(request->method),
+	     request->url.path);
 
-	CONMGR_CON_LINK(ctxt->con, args.con);
-
-	rc = operations_router(&args, hcon, name, request, ctxt);
-
-	CONMGR_CON_UNLINK(args.con);
-	FREE_NULL_REST_AUTH(ctxt->auth);
-
-	return rc;
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
+				      NULL, true, &buf, MIME_TYPE_TEXT);
 }
 
 /*
