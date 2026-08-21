@@ -323,6 +323,7 @@ typedef struct {
 	uint32_t part_changed;
 	uint32_t resv_changed;
 	uint32_t config_changed;
+	uint32_t node_unavail;
 } bf_exit_fields_t;
 
 static const struct {
@@ -339,7 +340,8 @@ static const struct {
 	{ BF_EXIT_NODE_CHANGED, offsetof(bf_exit_fields_t, node_changed) },
 	{ BF_EXIT_PART_CHANGED, offsetof(bf_exit_fields_t, part_changed) },
 	{ BF_EXIT_RESV_CHANGED, offsetof(bf_exit_fields_t, resv_changed) },
-	{ BF_EXIT_CONFIG_CHANGED, offsetof(bf_exit_fields_t, config_changed) }
+	{ BF_EXIT_CONFIG_CHANGED, offsetof(bf_exit_fields_t, config_changed) },
+	{ BF_EXIT_NODE_UNAVAIL, offsetof(bf_exit_fields_t, node_unavail) }
 };
 
 typedef struct {
@@ -9617,6 +9619,7 @@ static const parser_t PARSER_ARRAY(BF_EXIT_FIELDS)[] = {
 	add_parse(UINT32, part_changed, "part_changed", "Partition state changed"),
 	add_parse(UINT32, resv_changed, "resv_changed", "Reservation state changed"),
 	add_parse(UINT32, config_changed, "config_changed", "Configuration changed"),
+	add_parse(UINT32, node_unavail, "node_unavail", "Node became unavailable"),
 };
 #undef add_parse
 

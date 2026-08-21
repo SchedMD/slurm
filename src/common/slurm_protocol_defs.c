@@ -6710,6 +6710,8 @@ char *bf_exit2string(uint16_t opcode)
 		return "Reservation state changed";
 	case BF_EXIT_CONFIG_CHANGED:
 		return "Configuration changed";
+	case BF_EXIT_NODE_UNAVAIL:
+		return "Node became unavailable";
 	default:
 		return "unknown";
 	}

@@ -251,6 +251,7 @@ static int bf_job_part_count_reserve = 0;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static int bf_node_space_size = 0;
+static bool bf_node_unavail_exit = false;
 static bool bf_running_job_reserve = false;
 static bool bf_licenses = false;
 static uint32_t bf_min_prio_reserve = 0;
@@ -277,6 +278,8 @@ static int yield_sleep   = YIELD_SLEEP;
 static list_t *het_job_list = NULL;
 static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
 static bitstr_t *planned_bitmap = NULL;
+/* planned_bitmap without whole topology expansions */
+static bitstr_t *planned_resv_bitmap = NULL;
 static bool soft_time_limit = false;
 
 /*********************** local functions *********************/
@@ -1063,6 +1066,11 @@ static void _load_config(void)
 		info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
 	}
 
+	if (xstrcasestr(sched_params, "bf_node_unavail_exit"))
+		bf_node_unavail_exit = true;
+	else
+		bf_node_unavail_exit = false;
+
 	if (xstrcasestr(sched_params, "bf_one_resv_per_job"))
 		bf_one_resv_per_job = true;
 	else
@@ -1177,7 +1185,9 @@ static void _init_planned_bitmap(void)
 	node_record_t *node_ptr = NULL;
 
 	xassert(!planned_bitmap);
+	xassert(!planned_resv_bitmap);
 	planned_bitmap = bit_alloc(node_record_count);
+	planned_resv_bitmap = bit_alloc(node_record_count);
 
 	/* Sync planned_bitmap with NODE_STATE_PLANNED nodes from state save */
 	lock_slurmctld(read_node_lock);
@@ -1195,6 +1205,7 @@ extern void __attempt_backfill(void)
 	_attempt_backfill();
 	FREE_NULL_LIST(het_job_list);
 	FREE_NULL_BITMAP(planned_bitmap);
+	FREE_NULL_BITMAP(planned_resv_bitmap);
 }
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
@@ -1281,6 +1292,7 @@ extern void *backfill_agent(void *args)
 	FREE_NULL_LIST(het_job_list);
 	xhash_free(user_usage_map); /* May have been init'ed if used */
 	FREE_NULL_BITMAP(planned_bitmap);
+	FREE_NULL_BITMAP(planned_resv_bitmap);
 
 	return NULL;
 }
@@ -1298,6 +1310,42 @@ static int _clear_job_estimates(void *x, void *arg)
 		xfree(job_ptr->sched_nodes);
 	}
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Return true if any node that a job has planned to use is no longer available.
+ *
+ * Resuming nodes count as available, matching how node_space[0].avail_bitmap
+ * was built, so that a node finishing its resume is not mistaken for one going
+ * away.
+ */
+static bool _planned_node_became_unavail(void)
+{
+	bool rc;
+	bitstr_t *tmp_bitmap;
+
+	if (!planned_resv_bitmap)
+		return false;
+
+	tmp_bitmap = bit_copy(avail_node_bitmap);
+	bit_or(tmp_bitmap, rs_node_bitmap);
+	rc = !bit_super_set(planned_resv_bitmap, tmp_bitmap);
+
+	/* Only build the node list when it will actually be logged */
+	if (rc && (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)) {
+		char *node_list;
+
+		bit_not(tmp_bitmap);
+		bit_and(tmp_bitmap, planned_resv_bitmap);
+		node_list = bitmap2node_name(tmp_bitmap);
+		log_flag(BACKFILL, "node(s) %s became unavailable during this backfill cycle",
+			 node_list);
+		xfree(node_list);
+	}
+
+	FREE_NULL_BITMAP(tmp_bitmap);
+
+	return rc;
 }
 
 /*
@@ -1363,7 +1411,14 @@ static bool _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated,
 		load_config = true;
 	slurm_mutex_unlock(&config_lock);
 
-	if (!backfill_continue && (last_job_update != job_update))
+	/*
+	 * Checked before the generic node update so that the exit is attributed
+	 * to the lost node rather than to BF_EXIT_NODE_CHANGED, which a drain
+	 * also triggers when bf_continue is not set.
+	 */
+	if (bf_node_unavail_exit && _planned_node_became_unavail())
+		*bf_exit_code = BF_EXIT_NODE_UNAVAIL;
+	else if (!backfill_continue && (last_job_update != job_update))
 		*bf_exit_code = BF_EXIT_JOB_CHANGED;
 	else if (!backfill_continue && (last_node_update != node_update))
 		*bf_exit_code = BF_EXIT_NODE_CHANGED;
@@ -2368,6 +2423,8 @@ static void _attempt_backfill(void)
 	gettimeofday(&start_tv, NULL);
 
 	_handle_planned(nodes_planned);
+	if (planned_resv_bitmap)
+		bit_clear_all(planned_resv_bitmap);
 
 	job_queue = build_job_queue(true, true);
 	job_test_count = list_count(job_queue);
@@ -4201,6 +4258,7 @@ static void _add_reservation(time_t start_time, time_t end_reserve,
 			 * afterwards.
 			 */
 			bit_or(planned_bitmap, res_bitmap);
+			bit_or(planned_resv_bitmap, res_bitmap_orig);
 		}
 	}
 

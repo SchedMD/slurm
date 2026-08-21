@@ -357,9 +357,9 @@ The backfill scheduler tested the number of jobs set by
 The system state changed while the backfill scheduler had its locks released,
 so the cycle was abandoned. This count is for every state change exit. It is
 the sum of the \fBJob state changed\fR, \fBNode state changed\fR,
-\fBPartition state changed\fR, \fBReservation state changed\fR and
-\fBConfiguration changed\fR counters, plus the cycles ended because the
-backfill scheduler was stopped.
+\fBPartition state changed\fR, \fBReservation state changed\fR,
+\fBConfiguration changed\fR and \fBNode became unavailable\fR counters, plus
+the cycles ended because the backfill scheduler was stopped.
 .IP
 
 .TP
@@ -400,6 +400,15 @@ A reservation was updated while locks were released.
 .TP
 \fBConfiguration changed\fR
 The configuration was updated while locks were released.
+.IP
+
+.TP
+\fBNode became unavailable\fR
+A node that a job was planned to use became unavailable while locks were
+released. Counted only when
+\fBSchedulerParameters=bf_node_unavail_exit\fR is set. When this reason
+applies it takes precedence over \fBNode state changed\fR, so an update that
+makes a planned node unavailable is counted here instead.
 .IP
 
 .RE
