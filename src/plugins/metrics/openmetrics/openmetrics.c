@@ -694,6 +694,12 @@ extern metric_set_t *metrics_p_parse_sched_metrics(scheduling_stats_t *s)
 	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_STATE_CHANGED], bf_exit_state_changed, "System state changed", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_TABLE_LIMIT], bf_exit_table_limit, "Hit table size limit (bf_node_space_size)", GAUGE);
 	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_TIMEOUT], bf_exit_timeout, "Timeout (bf_max_time)", GAUGE);
+	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_JOB_CHANGED], bf_exit_job_changed, "Job state changed", GAUGE);
+	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_NODE_CHANGED], bf_exit_node_changed, "Node state changed", GAUGE);
+	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_PART_CHANGED], bf_exit_part_changed, "Partition state changed", GAUGE);
+	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_RESV_CHANGED], bf_exit_resv_changed, "Reservation state changed", GAUGE);
+	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_CONFIG_CHANGED], bf_exit_config_changed, "Configuration changed", GAUGE);
+	ADD_METRIC(set, UINT32, s->diag_stats->bf_exit[BF_EXIT_NODE_UNAVAIL], bf_exit_node_unavail, "Node became unavailable", GAUGE);
 	ADD_METRIC(set, UINT32, s->sched_mean_cycle, sched_mean_cycle, "Mean scheduling cycle time", GAUGE);
 	ADD_METRIC(set, UINT32, s->sched_mean_depth_cycle, sched_mean_depth_cycle, "Mean depth of scheduling cycles", GAUGE);
 	ADD_METRIC(set, UINT32, s->server_thread_count, server_thread_cnt, "Active slurmctld threads count", GAUGE);
