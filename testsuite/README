@@ -1134,6 +1134,7 @@ test_162_#   Testing of swait and stepmgr/async-step integration.
 test_162_1   Test swait against a stepmgr-enabled cluster
 test_162_2   Test swait's steps-drained push path
 test_162_3   Test scontrol visibility and reconfigure-survival of async steps
+test_162_4   Verify pending synchronous step id-at-submit holds under stepmgr
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
