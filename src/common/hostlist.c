@@ -735,7 +735,11 @@ static int hostrange_prefix_cmp(hostrange_t *h1, hostrange_t *h2)
 	if (h2 == NULL)
 		return -1;
 
-	retval = strnatcmp(h1->prefix, h2->prefix);
+	if (!xstrcmp(h1->prefix, h2->prefix))
+		retval = 0;
+	else /* natural order puts rack2 before rack10 */
+		retval = strnatcmp(h1->prefix, h2->prefix);
+
 	return retval == 0 ? h2->singlehost - h1->singlehost : retval;
 }
 
