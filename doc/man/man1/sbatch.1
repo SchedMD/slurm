@@ -1603,9 +1603,8 @@ Bind by setting memory masks on tasks (or ranks) as specified where <list> is
 The mapping is specified for a node and identical mapping is applied to the
 tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first mask specified in the list, etc.).
-NUMA masks are \fBalways\fR interpreted as hexadecimal values.
-Note that masks must be preceded with a '0x' if they don't begin
-with [0\-9] so they are seen as numerical values.
+NUMA masks are \fBalways\fR interpreted as hexadecimal values but can be
+preceded with an optional '0x'.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
