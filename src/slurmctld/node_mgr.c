@@ -712,6 +712,18 @@ extern int load_all_node_state ( bool state_only )
 		if (node_ptr) {
 			node_cnt++;
 
+			/*
+			 * Scrub a NO_RESPOND flag recovered on a powered down
+			 * node. Such a node is never pinged, so the flag would
+			 * stick forever and keep the node out of
+			 * avail_node_bitmap. This also recovers nodes that were
+			 * stuck by a prior version of _require_node_reg().
+			 */
+			if (IS_NODE_POWERED_DOWN(node_ptr) ||
+			    IS_NODE_POWERING_DOWN(node_ptr))
+				node_ptr->node_state &=
+					(~NODE_STATE_NO_RESPOND);
+
 			node_ptr->next_state = node_state_rec->next_state;
 
 			if (IS_NODE_DOWN(node_ptr)) {
