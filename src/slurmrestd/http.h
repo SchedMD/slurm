@@ -40,9 +40,12 @@
 #include <stdint.h>
 
 #include "src/common/http.h"
+#include "src/common/http_con.h"
 #include "src/common/list.h"
 
 #include "src/conmgr/conmgr.h"
+
+#include "src/slurmrestd/openapi.h"
 
 /* Opaque structs */
 typedef struct http_context_s http_context_t;
@@ -65,7 +68,7 @@ typedef struct on_http_request_args_s {
 	const char *path; /* requested URL path (may be NULL) */
 	const char *query; /* requested URL query (may be NULL) */
 	http_context_t *context; /* calling context (do not xfree) */
-	conmgr_fd_ref_t *con; /* reference to connection */
+	http_con_t *hcon; /* HTTP connection */
 	const char *name; /* connection name */
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
@@ -109,7 +112,7 @@ extern void http_init(void);
 extern void http_fini(void);
 
 typedef struct {
-	conmgr_fd_t *con; /* assigned connection */
+	http_con_t *hcon; /* HTTP connection */
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
 	http_status_code_t status_code; /* HTTP status code to send */

@@ -45,7 +45,10 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/serializer.h"
+
+#include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
+#include "src/slurmrestd/operations.h"
 
 #define OPENAPI_MAJOR_TYPE "openapi"
 #define MAX_URL_PATH_DEPTH 1024
@@ -78,11 +81,19 @@ typedef enum {
  * parameters but we will only honor having a single parameter
  * as an dir entry for now
  */
-typedef struct {
+typedef struct openapi_entry_s {
 	char *entry;
 	entry_type_t type;
 	openapi_type_t parameter;
 } entry_t;
+
+#define RESOLVE_PARAMS_ARGS_MAGIC 0x0b1a2e3f
+
+typedef struct {
+	int magic; /* RESOLVE_PARAMS_ARGS_MAGIC */
+	const entry_t *entry;
+	data_t *params;
+} resolve_params_args_t;
 
 typedef struct {
 	const openapi_path_binding_method_t *bound;
@@ -92,7 +103,8 @@ typedef struct {
 } entry_method_t;
 
 #define MAGIC_PATH 0x0a0b09fd
-typedef struct {
+
+typedef struct openapi_path_s {
 	int magic; /* MAGIC_PATH */
 	char *path; /* path as string */
 	const openapi_path_binding_t *bound;
@@ -645,10 +657,12 @@ static int _on_request(http_con_t *hcon, const char *name,
 		       void *path_arg)
 {
 	bind_method_path_t *bmp = path_arg;
+	http_context_t *ctxt = arg;
 
 	xassert(bmp->magic == MAGIC_BIND_METHOD_PATH);
 
-	return ESLURM_NOT_SUPPORTED;
+	return on_request(hcon, name, ctxt, request, bmp->op_path,
+			  bmp->op_method, bmp->meta, bmp->parser, bmp->entry);
 }
 
 static void _on_fini(http_router_on_request_event_t on_request, void *path_arg)
@@ -1558,4 +1572,99 @@ extern bool is_spec_generation_only(bool set)
 		is_spec_only = true;
 
 	return is_spec_only;
+}
+
+/*
+ * Populate one OAS parameter from the matching request URL entry
+ * IN entry - entry from the request URL path
+ * IN template - always false: request URLs never carry {templates}
+ * IN arg - resolve_params_args_t
+ * RET SLURM_SUCCESS or ESLURM_URL_INVALID_PATH
+ *
+ * The HTTP router already matched this path to pick the binding, so there is
+ * nothing here to match. Literal entries are walked past and only a parameter
+ * entry creates a data_t, which is why the request URL is never converted as a
+ * whole.
+ */
+static int _on_path_entry(const char *entry, bool template, void *arg)
+{
+	resolve_params_args_t *args = arg;
+	const entry_t *e = args->entry;
+	data_t *param = NULL;
+	data_type_t type = DATA_TYPE_NONE;
+
+	xassert(args->magic == RESOLVE_PARAMS_ARGS_MAGIC);
+	xassert(!template);
+
+	if (!e->type) {
+		debug5("%s: request has more entries than %s was registered with",
+		       __func__, entry);
+		return ESLURM_URL_INVALID_PATH;
+	}
+
+	args->entry++;
+
+	if (e->type == OPENAPI_PATH_ENTRY_MATCH_STRING) {
+		/* router matched every literal to get here */
+		xassert(!xstrcmp(entry, e->entry));
+		return SLURM_SUCCESS;
+	}
+
+	xassert(e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER);
+
+	param = data_key_set(args->params, e->entry);
+	data_set_string(param, entry);
+
+	switch (e->parameter) {
+	case OPENAPI_TYPE_NUMBER:
+		type = DATA_TYPE_FLOAT;
+		break;
+	case OPENAPI_TYPE_INTEGER:
+		type = DATA_TYPE_INT_64;
+		break;
+	default:
+		debug("%s: unknown parameter type %s",
+		      __func__, openapi_type_to_string(e->parameter));
+		/* fall through */
+	case OPENAPI_TYPE_STRING:
+		type = DATA_TYPE_STRING;
+		break;
+	}
+
+	if (data_convert_type(param, type) != type) {
+		debug5("%s: parameter %s[%s] rejected value %s",
+		       __func__, e->entry,
+		       openapi_type_to_string(e->parameter), entry);
+		return ESLURM_URL_INVALID_PATH;
+	}
+
+	debug5("%s: parameter %s[%s] = %s",
+	       __func__, e->entry, openapi_type_to_string(e->parameter), entry);
+
+	return SLURM_SUCCESS;
+}
+
+extern int resolve_params(const openapi_entry_t *entry, const char *url_path,
+			  data_t *params)
+{
+	int rc = EINVAL;
+	resolve_params_args_t args = {
+		.magic = RESOLVE_PARAMS_ARGS_MAGIC,
+		.entry = entry,
+		.params = params,
+	};
+
+	xassert(entry);
+	xassert(data_get_type(params) == DATA_TYPE_DICT);
+
+	if ((rc = url_path_walk(url_path, false, _on_path_entry, &args)))
+		return rc;
+
+	if (args.entry->type) {
+		debug5("%s: %s is shorter than the registered path",
+		       __func__, url_path);
+		return ESLURM_URL_INVALID_PATH;
+	}
+
+	return SLURM_SUCCESS;
 }

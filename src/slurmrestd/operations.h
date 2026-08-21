@@ -58,10 +58,12 @@ extern void destroy_operations(void);
  * expected to be called as on_http_request_t() by http.c.
  * RET SLURM_SUCCESS or error
  */
-extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
-			     const char *name,
-			     const http_con_request_t *request,
-			     http_context_t *ctxt);
+extern int on_request(http_con_t *hcon, const char *name, http_context_t *ctxt,
+		      const http_con_request_t *request,
+		      const openapi_path_binding_t *op_path,
+		      const openapi_path_binding_method_t *op_method,
+		      const openapi_resp_meta_t *meta, data_parser_t *parser,
+		      const openapi_entry_t *openapi_entry);
 
 /*
  * Retrieve db_conn for slurmdbd calls.

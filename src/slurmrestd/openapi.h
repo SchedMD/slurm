@@ -130,4 +130,10 @@ extern int generate_spec(data_t *dst, const char **mime_types);
  */
 extern bool is_spec_generation_only(bool set);
 
+typedef struct openapi_entry_s openapi_entry_t;
+
+/* Resolve out the path as parameters */
+extern int resolve_params(const openapi_entry_t *entry, const char *url_path,
+			  data_t *params);
+
 #endif /* SLURMRESTD_OPENAPI_H */

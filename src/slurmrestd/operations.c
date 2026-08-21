@@ -120,25 +120,13 @@ extern void destroy_operations(void)
 	slurm_rwlock_unlock(&paths_lock);
 }
 
-static int _match_path_key(void *x, void *ptr)
-{
-	path_t *path = (path_t *)x;
-	int tag = *(int *) ptr;
-
-	_check_path_magic(path);
-
-	if (path->tag == tag)
-		return 1;
-	else
-		return 0;
-}
-
 static int _operations_router_reject(on_http_request_args_t *args,
 				     const char *err, slurm_err_t error_code,
 				     const char *body_encoding)
 {
 	send_http_response_args_t send_args = {
 		.headers = list_create(NULL),
+		.hcon = args->hcon,
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
 		.body_encoding =
@@ -150,7 +138,6 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.value = "Close",
 	};
 
-	send_args.con = conmgr_fd_get_ref(args->con);
 	send_args.status_code = http_status_from_error(error_code);
 
 	if (!err)
@@ -165,38 +152,10 @@ static int _operations_router_reject(on_http_request_args_t *args,
 
 	(void) send_http_response(args->context, &send_args);
 
-	/* close connection on error */
-	conmgr_queue_close_fd(send_args.con);
-
 	FREE_NULL_LIST(send_args.headers);
 
+	xassert(error_code);
 	return error_code;
-}
-
-static int _resolve_path(on_http_request_args_t *args, int *path_tag,
-			 data_t *params)
-{
-	data_t *path = parse_url_path(args->path, true, false);
-	if (!path)
-		return _operations_router_reject(args, NULL,
-						 ESLURM_URL_INVALID_PATH, NULL);
-
-	/* attempt to identify path leaf types */
-	(void) data_convert_tree(path, DATA_TYPE_NONE);
-
-	*path_tag = find_path_tag(path, params, args->method);
-
-	FREE_NULL_DATA(path);
-
-	if (*path_tag == -1)
-		return _operations_router_reject(args, NULL,
-						 ESLURM_URL_INVALID_PATH, NULL);
-	else if (*path_tag == -2)
-		return _operations_router_reject(args, NULL,
-						 ESLURM_REST_UNKNOWN_URL_METHOD,
-						 NULL);
-	else
-		return SLURM_SUCCESS;
 }
 
 static int _get_query(on_http_request_args_t *args, data_t **query,
@@ -228,8 +187,8 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
 			 data_t *query, const openapi_path_binding_t *op_path,
-			 int callback_tag, const char *write_mime,
-			 data_parser_t *parser, const openapi_resp_meta_t *meta)
+			 const char *write_mime, data_parser_t *parser,
+			 const openapi_resp_meta_t *meta)
 {
 	int rc;
 	data_t *resp = data_new();
@@ -239,9 +198,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	void *db_conn = NULL;
 
 	xassert(op_path);
-	debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
-	       __func__, args->name, (uintptr_t) op_path->callback,
-	       callback_tag, args->path);
+	debug3("%s: [%s] BEGIN: calling ctxt handler: %p for path: %s",
+	       __func__, args->name, op_path->callback, args->path);
 
 	auth = http_context_set_auth(args->context, NULL);
 
@@ -250,8 +208,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		db_conn = openapi_get_db_conn(auth);
 
 	rc = wrap_openapi_ctxt_callback(args->name, args->method, params, query,
-					callback_tag, resp, db_conn, parser,
-					op_path, meta);
+					0, resp, db_conn, parser, op_path,
+					meta);
 
 	/*
 	 * Clear auth context after callback is complete. Client has to provide
@@ -283,9 +241,9 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		send_http_response_args_t send_args = {
 			.http_major = args->http_major,
 			.http_minor = args->http_minor,
+			.hcon = args->hcon,
 			.status_code = HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED,
 		};
-		send_args.con = conmgr_fd_get_ref(args->con);
 		e = send_args.status_code;
 		rc = send_http_response(args->context, &send_args);
 	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
@@ -294,12 +252,11 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		send_http_response_args_t send_args = {
 			.http_major = args->http_major,
 			.http_minor = args->http_minor,
+			.hcon = args->hcon,
 			.status_code = HTTP_STATUS_CODE_SUCCESS_OK,
 			.body = NULL,
 			.body_length = 0,
 		};
-
-		send_args.con = conmgr_fd_get_ref(args->con);
 
 		if (rc == ESLURM_REST_EMPTY_RESULT) {
 			send_args.status_code =
@@ -314,11 +271,11 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		e = send_args.status_code;
 	}
 
-	debug3("%s: [%s] END: calling handler: (0x%"PRIXPTR") callback_tag %d for path: %s rc[%d]=%s status[%d]=%s",
-	       __func__, args->name, (uintptr_t) op_path->callback,
-	       callback_tag, args->path, rc, slurm_strerror(rc),
-	       ((e == HTTP_STATUS_CODE_INVALID) ? http_status_from_error(rc) :
-		e), get_http_status_code_string(e));
+	debug3("%s: [%s] END: calling handler: %p for path: %s rc[%d]=%s status[%d]=%s",
+	       __func__, args->name, op_path->callback, args->path, rc,
+	       slurm_strerror(rc), ((e == HTTP_STATUS_CODE_INVALID) ?
+				    http_status_from_error(rc) : e),
+	       get_http_status_code_string(e));
 
 	xfree(body);
 	FREE_NULL_DATA(resp);
@@ -326,19 +283,38 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	return rc;
 }
 
-extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
-			     const char *name,
-			     const http_con_request_t *request,
-			     http_context_t *ctxt)
+extern int on_request(http_con_t *hcon, const char *name, http_context_t *ctxt,
+		      const http_con_request_t *request,
+		      const openapi_path_binding_t *op_path,
+		      const openapi_path_binding_method_t *op_method,
+		      const openapi_resp_meta_t *meta, data_parser_t *parser,
+		      const openapi_entry_t *openapi_entry)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *query = NULL;
 	data_t *params = NULL;
-	int path_tag;
-	path_t *path = NULL;
-	int callback_tag;
 	const char *read_mime = NULL, *write_mime = NULL;
-	data_parser_t *parser = NULL;
+	const char *body =
+		(request->content ? get_buf_data(request->content) : NULL);
+	const size_t body_length =
+		(request->content ? get_buf_offset(request->content) : 0);
+	on_http_request_args_t hargs = {
+		.context = ctxt,
+		.method = request->method,
+		.headers = request->headers,
+		.path = request->url.path,
+		.hcon = hcon,
+		.name = name,
+		.http_minor = request->http_version.minor,
+		.http_major = request->http_version.major,
+		.content_type = request->content_type,
+		.accept = request->accept,
+		.body = body,
+		.body_length = body_length,
+		.body_encoding = NULL,
+		.query = request->url.query,
+	};
+	on_http_request_args_t *args = &hargs;
 
 	info("%s: [%s] %s %s",
 	     __func__, name, get_http_method_string(args->method), args->path);
@@ -346,33 +322,19 @@ extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
 	if ((rc = rest_authenticate_http_request(args))) {
 		error("%s: [%s] authentication failed: %s",
 		      __func__, name, slurm_strerror(rc));
-		_operations_router_reject(args, NULL, rc, NULL);
-		return rc;
+		rc = _operations_router_reject(args, NULL, rc, NULL);
+		goto cleanup;
 	}
 
 	params = data_set_dict(data_new());
-	if ((rc = _resolve_path(args, &path_tag, params)))
+	if (openapi_entry &&
+	    (rc = resolve_params(openapi_entry, request->url.path, params)))
 		goto cleanup;
 
-	/*
-	 * Hold read lock while the callback is executing to avoid
-	 * unbind of a function that is actively running
-	 */
-	slurm_rwlock_rdlock(&paths_lock);
-
-	if (!(path = list_find_first(paths, _match_path_key, &path_tag)))
-		fatal_abort("%s: found tag but missing path handler", __func__);
-	_check_path_magic(path);
-
-	/* clone over the callback info to release lock */
-	callback_tag = path->callback_tag;
-	parser = path->parser;
-	slurm_rwlock_unlock(&paths_lock);
-
-	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag=%d path=%s parser=%s",
-	       __func__, name, (uintptr_t) path->op_path->callback,
-	       callback_tag, args->path,
-	       (parser ? data_parser_get_plugin(parser) : ""));
+	xassert(parser);
+	debug5("%s: [%s] found callback handler: (%p) path=%s parser=%s",
+	       __func__, name, op_path->callback, args->path,
+	       data_parser_get_plugin(parser));
 
 	if ((rc = http_resolve_mime_types(name, request, &read_mime,
 					  &write_mime)))
@@ -381,8 +343,8 @@ extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
 	if ((rc = _get_query(args, &query, read_mime)))
 		goto cleanup;
 
-	rc = _call_handler(args, params, query, path->op_path, callback_tag,
-			   write_mime, parser, path->meta);
+	rc = _call_handler(args, params, query, op_path, write_mime, parser,
+			   meta);
 
 cleanup:
 	FREE_NULL_DATA(query);
