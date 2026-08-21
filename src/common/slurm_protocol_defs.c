@@ -5593,9 +5593,16 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_suspend_exc_update_msg(data);
 		break;
 	case REQUEST_DBD_RELAY:
-		slurmdbd_free_msg(data);
+	{
+		persist_msg_t *pmsg = data;
+		slurmdbd_msg_t dbd_msg = {
+			.data = pmsg->data,
+			.msg_type = pmsg->msg_type,
+		};
+		slurmdbd_free_msg(&dbd_msg);
 		xfree(data);
 		break;
+	}
 	case RESPONSE_CONTROL_STATUS:
 		slurm_free_control_status_msg(data);
 		break;

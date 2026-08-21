@@ -1742,9 +1742,13 @@ extern int acct_storage_p_get_config(void *db_conn,
 		slurmdbd_free_list_msg(resp.data);
 		rc = ESLURM_NOT_SUPPORTED;
 	} else if (resp.msg_type != DBD_GOT_CONFIG) {
+		slurmdbd_msg_t dbd_msg = {
+			.data = resp.data,
+			.msg_type = resp.msg_type,
+		};
 		error("response type not DBD_GOT_CONFIG: %u",
 		      resp.msg_type);
-		slurmdbd_free_msg(&resp);
+		slurmdbd_free_msg(&dbd_msg);
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	} else {
 		*slurmdbd_conf_ptr = resp.data;

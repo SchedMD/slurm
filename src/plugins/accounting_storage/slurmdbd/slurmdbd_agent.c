@@ -447,7 +447,6 @@ static void _load_dbd_state(void)
 				 * things up to date.
 				 */
 				slurmdbd_msg_t msg = { 0 };
-				persist_msg_t free_msg;
 				int rc;
 				set_buf_offset(buffer, 0);
 				rc = unpack_slurmdbd_msg(
@@ -458,16 +457,7 @@ static void _load_dbd_state(void)
 						&msg, SLURM_PROTOCOL_VERSION);
 				else
 					buffer = NULL;
-				/*
-				 * slurmdbd_free_msg() takes a persist_msg_t;
-				 * wrap the unpacked slurmdbd_msg_t to free its
-				 * payload.
-				 */
-				free_msg = (persist_msg_t) {
-					.data = msg.data,
-					.msg_type = msg.msg_type,
-				};
-				slurmdbd_free_msg(&free_msg);
+				slurmdbd_free_msg(&msg);
 			}
 			if (!buffer) {
 				error("no buffer given");

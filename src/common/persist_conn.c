@@ -215,9 +215,13 @@ static void _sig_handler(int signal)
 static void _persist_free_msg_members(persist_conn_t *persist_conn,
 				      persist_msg_t *persist_msg)
 {
-	if (persist_conn->flags & PERSIST_FLAG_DBD)
-		slurmdbd_free_msg(persist_msg);
-	else
+	if (persist_conn->flags & PERSIST_FLAG_DBD) {
+		slurmdbd_msg_t dbd_msg = {
+			.data = persist_msg->data,
+			.msg_type = persist_msg->msg_type,
+		};
+		slurmdbd_free_msg(&dbd_msg);
+	} else
 		slurm_free_msg_data(persist_msg->msg_type, persist_msg->data);
 }
 

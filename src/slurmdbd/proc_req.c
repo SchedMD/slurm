@@ -2891,7 +2891,7 @@ static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 				.msg_type = sub_msg.msg_type,
 			};
 			rc = proc_req(slurmdbd_conn, &sub_dbd, &ret_buf);
-			slurmdbd_free_msg(&sub_msg);
+			slurmdbd_free_msg(&sub_dbd);
 		}
 
 		if (ret_buf)
