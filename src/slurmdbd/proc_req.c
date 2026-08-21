@@ -94,6 +94,34 @@ extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn)
 	xfree(dbd_conn->tres_str);
 }
 
+/*
+ * Build a PERSIST_RC reply buffer (with optional reply flags).
+ * Bypasses slurm_persist_make_rc_msg() to avoid the persist_conn_t
+ * round-trip.
+ * IN sc       - slurmdbd connection providing the negotiated version
+ * IN rc       - return code to report
+ * IN comment  - optional human-readable comment
+ * IN flags    - PERSIST_RC reply flags
+ * IN ret_info - message type the rc is in response to
+ * RET packed PERSIST_RC buffer
+ */
+extern buf_t *slurmdbd_make_rc_msg_flags(slurmdbd_conn_t *sc, uint32_t rc,
+					 char *comment, uint16_t flags,
+					 uint16_t ret_info)
+{
+	persist_rc_msg_t rc_msg = {
+		.comment = comment,
+		.flags = flags,
+		.rc = rc,
+		.ret_info = ret_info,
+	};
+	slurmdbd_msg_t resp = {
+		.msg_type = PERSIST_RC,
+		.data = &rc_msg,
+	};
+	return pack_slurmdbd_msg(&resp, sc->version);
+}
+
 static char *_internal_rc_to_str(uint32_t rc, slurmdbd_conn_t *dbd_conn,
 				 bool new_line)
 {

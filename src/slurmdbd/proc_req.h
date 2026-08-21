@@ -109,6 +109,21 @@ extern void slurmdbd_conn_init(slurmdbd_conn_t *dbd_conn);
  */
 extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn);
 
+/*
+ * Build a PERSIST_RC reply buffer (with optional reply flags).
+ * Bypasses slurm_persist_make_rc_msg() to avoid the persist_conn_t
+ * round-trip.
+ * IN sc       - slurmdbd connection providing the negotiated version
+ * IN rc       - return code to report
+ * IN comment  - optional human-readable comment
+ * IN flags    - PERSIST_RC reply flags
+ * IN ret_info - message type the rc is in response to
+ * RET packed PERSIST_RC buffer
+ */
+extern buf_t *slurmdbd_make_rc_msg_flags(slurmdbd_conn_t *sc, uint32_t rc,
+					 char *comment, uint16_t flags,
+					 uint16_t ret_info);
+
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
  *       calling and db_conn and rpc_version will be filled in with the init.
