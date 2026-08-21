@@ -80,12 +80,65 @@ START_TEST(test_url_scheme)
 
 END_TEST
 
+static const char *_status_string(http_status_code_t code)
+{
+	const char *str = get_http_status_code_string(code);
+	return str ? str : "INVALID";
+}
+
+/*
+ * Verify http_status_from_error() maps err to expected.
+ *
+ * This macro reports a failure against the calling line and can name the error
+ * and status codes involved.
+ */
+#define _test_status(err, expected) \
+	do { \
+		http_status_code_t _got = http_status_from_error(err); \
+		ck_assert_msg((_got == (expected)), \
+			      "%s (%s) mapped to %d %s, expected %d %s", #err, \
+			      slurm_strerror(err), (int) _got, \
+			      _status_string(_got), (int) (expected), \
+			      _status_string(expected)); \
+	} while (0)
+
+START_TEST(test_status_from_error)
+{
+	/*
+	 * An error allocated from the slurmctld or accounting block means the
+	 * request was well formed but could not be satisfied, so it maps to
+	 * 422.
+	 */
+	_test_status(ESLURM_INVALID_PARTITION_NAME,
+		     HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT);
+	_test_status(ESLURM_INVALID_POWER_ACTION,
+		     HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT);
+	_test_status(ESLURM_INVALID_EXTERNAL_JOB,
+		     HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT);
+	_test_status(ESLURM_MAX_ARRAY_TASKS,
+		     HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT);
+	_test_status(ESLURM_JOBS_RUNNING_ON_ASSOC,
+		     HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT);
+	_test_status(ESLURM_INVALID_SHARED_POOL_ALLOWED,
+		     HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT);
+
+	/* An explicit mapping wins over the block it was allocated from. */
+	_test_status(SLURM_SUCCESS, HTTP_STATUS_CODE_SUCCESS_OK);
+	_test_status(ESLURM_INVALID_JOB_ID, HTTP_STATUS_CODE_ERROR_NOT_FOUND);
+	_test_status(ESLURM_DB_CONNECTION, HTTP_STATUS_CODE_SRVERR_BAD_GATEWAY);
+	_test_status(SLURMCTLD_COMMUNICATIONS_BACKOFF,
+		     HTTP_STATUS_CODE_SRVERR_BAD_GATEWAY);
+}
+
+END_TEST
+
 Suite *suite_http(void)
 {
 	Suite *s = suite_create("HTTP");
 	TCase *tc_core = tcase_create("HTTP");
 
 	tcase_add_test(tc_core, test_url_scheme);
+	tcase_add_test(tc_core, test_status_from_error);
 
 	suite_add_tcase(s, tc_core);
 	return s;
