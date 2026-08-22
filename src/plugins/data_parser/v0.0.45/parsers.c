@@ -3224,7 +3224,12 @@ static void _set_bf_exit_field(stats_info_response_msg_t *stats,
 		}
 	}
 
-	fatal_abort("unknown field %d", (int) field);
+	/*
+	 * A newer controller may report backfill exit reasons that postdate this
+	 * (frozen) data_parser version. Skip what this schema cannot model
+	 * rather than failing the whole dump.
+	 */
+	debug("%s: skipping unmodeled bf_exit field %d", __func__, (int) field);
 }
 
 static int DUMP_FUNC(STATS_MSG_BF_EXIT)(const parser_t *const parser, void *obj,
@@ -3234,11 +3239,10 @@ static int DUMP_FUNC(STATS_MSG_BF_EXIT)(const parser_t *const parser, void *obj,
 	bf_exit_fields_t fields = {0};
 
 	/*
-	 * The size of the response bf_exit array (bf_exit_cnt) should always
-	 * be in sync with the number of fields in the bf_exit_map struct.
+	 * The controller packs the reasons known to this protocol version,
+	 * so bf_exit_cnt may exceed what this schema models. Any reason
+	 * without a bf_exit_map entry is skipped by _set_bf_exit_field().
 	 */
-	xassert(stats->bf_exit_cnt == ARRAY_SIZE(bf_exit_map));
-
 	for (int i = 0; i < stats->bf_exit_cnt; i++)
 		_set_bf_exit_field(stats, &fields, i, stats->bf_exit[i]);
 

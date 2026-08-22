@@ -197,7 +197,8 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 
 		pack32(slurmctld_diag_stats.bf_active, buffer);
 		pack32(slurmctld_diag_stats.backfilled_het_jobs, buffer);
-		pack32_array(slurmctld_diag_stats.bf_exit, BF_EXIT_COUNT,
+		/* New equivalent to pre-26.11 BF_EXIT_COUNT value */
+		pack32_array(slurmctld_diag_stats.bf_exit, BF_EXIT_TIMEOUT + 1,
 			     buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(1, buffer); /* please remove on next version */
@@ -259,7 +260,8 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 
 		pack32(slurmctld_diag_stats.bf_active, buffer);
 		pack32(slurmctld_diag_stats.backfilled_het_jobs, buffer);
-		pack32_array(slurmctld_diag_stats.bf_exit, BF_EXIT_COUNT,
+		/* New equivalent to pre-26.11 BF_EXIT_COUNT value */
+		pack32_array(slurmctld_diag_stats.bf_exit, BF_EXIT_TIMEOUT + 1,
 			     buffer);
 	}
 

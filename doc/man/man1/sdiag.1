@@ -98,12 +98,17 @@ Number of jobs running at the given time of the time stamp above.
 .IP
 
 .LP
-The next block of information is related to main scheduling algorithm based
+The next blocks of information are related to main scheduling algorithm based
 on jobs priorities. A scheduling cycle implies to get the job_write_lock lock,
 then trying to get resources for jobs pending, starting from the most priority
 one and going in descending order. Once a job can not get the resources the
 loop keeps going but just for jobs requesting other partitions. Jobs with
 dependencies or affected  by accounts limits are not processed.
+
+.TP
+\fBMain schedule statistics (microseconds)\fR
+This block reports main scheduler statistics.
+.RS
 
 .TP
 \fBLast cycle\fR
@@ -142,8 +147,57 @@ Counter of scheduling executions per minute.
 Length of jobs pending queue.
 .IP
 
+.RE
+.IP
+
+.TP
+\fBMain scheduler exit\fR
+This block reports how many times the main scheduler ended a cycle for a given
+reason. The counts are cumulative since last reset.
+.RS
+
+.TP
+\fBEnd of job queue\fR
+The scheduler tested every job in its queue.
+.IP
+
+.TP
+\fBHit default_queue_depth\fR
+The scheduler tested the number of jobs set by
+\fBSchedulerParameters=default_queue_depth\fR. Only occurs on scheduling runs
+that use the default queue depth; full queue runs are not limited by this
+parameter.
+.IP
+
+.TP
+\fBHit sched_max_job_start\fR
+The scheduler started the number of jobs set by
+\fBSchedulerParameters=sched_max_job_start\fR.
+.IP
+
+.TP
+\fBBlocked on licenses\fR
+The scheduler reached a job that was blocked on licenses, so it exited to let
+the backfill scheduler handle it. Only occurs when
+\fBSchedulerParameters=bf_licenses\fR is set.
+.IP
+
+.TP
+\fBHit max_rpc_cnt\fR
+The scheduler stopped because the number of active slurmctld threads reached
+\fBSchedulerParameters=max_rpc_cnt\fR.
+.IP
+
+.TP
+\fBTimeout (max_sched_time)\fR
+The scheduler ran for the time set by \fBSchedulerParameters=max_sched_time\fR.
+.IP
+
+.RE
+.IP
+
 .LP
-The next block of information is related to backfilling scheduling algorithm.
+The next blocks of information are related to backfilling scheduling algorithm.
 A backfilling scheduling cycle implies to get locks for jobs, nodes and
 partitions objects then trying to get resources for jobs pending. Jobs are
 processed based on priorities. If a job can not get resources the algorithm
@@ -154,6 +208,11 @@ the future start time if not current resources available. The backfilling
 algorithm takes more time for each new job to process since more priority jobs
 can not be affected. The algorithm itself takes measures for avoiding a long
 execution cycle and for taking all the locks for too long.
+
+.TP
+\fBBackfilling stats\fR
+This block reports backfill scheduler statistics.
+.RS
 
 .TP
 \fBTotal backfilled jobs (since last slurm start)\fR
@@ -265,6 +324,85 @@ Mean count of different time slots tested by the backfill scheduler.
 Larger counts increase the time required for the backfill operation.
 The table size is influenced by many scheduling parameters, including:
 bf_min_age_reserve, bf_min_prio_reserve, bf_resolution, and bf_window.
+.IP
+
+.RE
+.IP
+
+.TP
+\fBBackfill exit\fR
+This block reports how many times the backfill scheduler ended a cycle for a
+given reason. The counts are cumulative since last reset.
+.RS
+
+.TP
+\fBEnd of job queue\fR
+The backfill scheduler tested every job in its queue.
+.IP
+
+.TP
+\fBHit bf_max_job_start\fR
+The backfill scheduler started the number of jobs set by
+\fBSchedulerParameters=bf_max_job_start\fR.
+.IP
+
+.TP
+\fBHit bf_max_job_test\fR
+The backfill scheduler tested the number of jobs set by
+\fBSchedulerParameters=bf_max_job_test\fR.
+.IP
+
+.TP
+\fBSystem state changed\fR
+The system state changed while the backfill scheduler had its locks released,
+so the cycle was abandoned. This count is for every state change exit. It is
+the sum of the \fBJob state changed\fR, \fBNode state changed\fR,
+\fBPartition state changed\fR, \fBReservation state changed\fR and
+\fBConfiguration changed\fR counters, plus the cycles ended because the
+backfill scheduler was stopped.
+.IP
+
+.TP
+\fBHit table size limit (bf_node_space_size)\fR
+The backfill scheduler filled the table sized by
+\fBSchedulerParameters=bf_node_space_size\fR.
+.IP
+
+.TP
+\fBTimeout (bf_max_time)\fR
+The backfill scheduler ran for the time set by
+\fBSchedulerParameters=bf_max_time\fR, or the current backfill window has
+already passed, or the controller is shutting down.
+.IP
+
+.TP
+\fBJob state changed\fR
+A job was updated while locks were released. Counted only when
+\fBSchedulerParameters=bf_continue\fR is not set.
+.IP
+
+.TP
+\fBNode state changed\fR
+A node was updated while locks were released. Counted only when
+\fBSchedulerParameters=bf_continue\fR is not set.
+.IP
+
+.TP
+\fBPartition state changed\fR
+A partition was updated while locks were released.
+.IP
+
+.TP
+\fBReservation state changed\fR
+A reservation was updated while locks were released.
+.IP
+
+.TP
+\fBConfiguration changed\fR
+The configuration was updated while locks were released.
+.IP
+
+.RE
 .IP
 
 .TP

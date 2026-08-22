@@ -176,6 +176,16 @@ typedef enum {
 	BF_EXIT_STATE_CHANGED,
 	BF_EXIT_TABLE_LIMIT,
 	BF_EXIT_TIMEOUT,
+	/*
+	 * These values are packed to clients as array indexes, so new reasons
+	 * must be appended here. Reordering them mislabels the counters printed
+	 * by an older sdiag.
+	 */
+	BF_EXIT_JOB_CHANGED,
+	BF_EXIT_NODE_CHANGED,
+	BF_EXIT_PART_CHANGED,
+	BF_EXIT_RESV_CHANGED,
+	BF_EXIT_CONFIG_CHANGED,
 	BF_EXIT_COUNT
 } bf_exit_t;
 

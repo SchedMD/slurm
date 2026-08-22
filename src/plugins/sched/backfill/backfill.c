@@ -329,7 +329,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, resv_exc_t *resv_exc_ptr,
 		       will_run_data_t *will_run);
-static int _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated);
+static bool _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated,
+			 bf_exit_t *bf_exit_code);
 static void _bf_map_key_id(void *item, const void **key, uint32_t *key_len);
 static void _bf_map_free(void *item);
 
@@ -1300,15 +1301,19 @@ static int _clear_job_estimates(void *x, void *arg)
 }
 
 /*
- * Return non-zero to break the backfill loop if change in job, node,
- * reservation or partition state or the backfill scheduler needs to be stopped.
+ * Return true to break the backfill loop if change in job, node, reservation or
+ * partition state or the backfill scheduler needs to be stopped.
  * IN usec - Number of usec to sleep while yielding
  * IN job_ptr - If job_updated is set, set BF_CURRENT_JOB_NOT_UPDATED in
  *		bit_flags while locks are yielded, then unset it
  * OUT job_updated - If not NULL, set to true if the job's values were updated
  *		     during the yield, else false.
+ * OUT bf_exit_code - Set to the reason the loop should break. Only meaningful
+ *		      when this function returns true. Set to
+ *		      BF_EXIT_STATE_CHANGED when no more specific reason applies.
  */
-static int _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated)
+static bool _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated,
+			 bf_exit_t *bf_exit_code)
 {
 	slurmctld_lock_t all_locks = {
 		.conf = READ_LOCK,
@@ -1358,15 +1363,23 @@ static int _yield_locks(int64_t usec, job_record_t *job_ptr, bool *job_updated)
 		load_config = true;
 	slurm_mutex_unlock(&config_lock);
 
-	if (((!backfill_continue) && ((last_job_update != job_update) ||
-	     (last_node_update != node_update))) ||
-	    (last_part_update != part_update) ||
-	    (slurm_conf.last_update != config_update) ||
-	    (last_resv_update != resv_update) ||
-	    stop_backfill || load_config)
-		return 1;
+	if (!backfill_continue && (last_job_update != job_update))
+		*bf_exit_code = BF_EXIT_JOB_CHANGED;
+	else if (!backfill_continue && (last_node_update != node_update))
+		*bf_exit_code = BF_EXIT_NODE_CHANGED;
+	else if (last_part_update != part_update)
+		*bf_exit_code = BF_EXIT_PART_CHANGED;
+	else if ((slurm_conf.last_update != config_update) || load_config)
+		*bf_exit_code = BF_EXIT_CONFIG_CHANGED;
+	else if (last_resv_update != resv_update)
+		*bf_exit_code = BF_EXIT_RESV_CHANGED;
+	else if (stop_backfill)
+		/* Not attributable to any object, only count the aggregate. */
+		*bf_exit_code = BF_EXIT_STATE_CHANGED;
 	else
-		return 0;
+		return false;
+
+	return true;
 }
 
 /* Test if this job still has access to the specified partition. The job's
@@ -2325,6 +2338,7 @@ static void _attempt_backfill(void)
 	bool tmp_preempt_in_progress = false;
 	bitstr_t *tmp_bitmap = NULL;
 	bool state_changed_break = false, nodes_planned = false;
+	bf_exit_t bf_exit_code = BF_EXIT_STATE_CHANGED;
 	bitstr_t *next_bitmap = NULL, *current_bitmap = NULL;
 	resv_exc_t resv_exc = { 0 };
 	will_run_data_t will_run_data = { 0 };
@@ -2552,12 +2566,16 @@ static void _attempt_backfill(void)
 			/* Sync planned nodes before yielding locks */
 			nodes_planned = true;
 			_handle_planned(nodes_planned);
-			if (_yield_locks(yield_sleep, NULL, NULL)) {
-				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
+			if (_yield_locks(yield_sleep, NULL, NULL,
+					 &bf_exit_code)) {
+				log_flag(BACKFILL, "%s, breaking out after testing %u(%d) jobs",
+					 bf_exit2string(bf_exit_code),
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				state_changed_break = true;
 				_set_bf_exit(BF_EXIT_STATE_CHANGED);
+				if (bf_exit_code != BF_EXIT_STATE_CHANGED)
+					_set_bf_exit(bf_exit_code);
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -2925,12 +2943,16 @@ TRY_LATER:
 			/* Sync planned nodes before yielding locks */
 			nodes_planned = true;
 			_handle_planned(nodes_planned);
-			if (_yield_locks(yield_sleep, job_ptr, &job_updated)) {
-				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
+			if (_yield_locks(yield_sleep, job_ptr, &job_updated,
+					 &bf_exit_code)) {
+				log_flag(BACKFILL, "%s, breaking out after testing %u(%d) jobs",
+					 bf_exit2string(bf_exit_code),
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				state_changed_break = true;
 				_set_bf_exit(BF_EXIT_STATE_CHANGED);
+				if (bf_exit_code != BF_EXIT_STATE_CHANGED)
+					_set_bf_exit(bf_exit_code);
 				break;
 			}
 
