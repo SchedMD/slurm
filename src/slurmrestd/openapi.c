@@ -86,6 +86,7 @@ typedef struct {
 typedef struct {
 	const openapi_path_binding_method_t *bound;
 	entry_t *entries;
+	bool has_params;
 	http_request_method_t method;
 } entry_method_t;
 
@@ -662,11 +663,13 @@ extern int register_path_binding(const char *in_path,
 		}
 
 		for (; e->type; e++) {
-			if (e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER)
+			if (e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER) {
 				e->parameter =
 					data_parser_g_resolve_openapi_type(
 						parser, m->parameters,
 						e->entry);
+				t->has_params = true;
+			}
 
 			debug5("%s: add binded path %s entry: method=%s tag=%d entry=%s parameter=%s entry_type=%s",
 			       __func__, path,
