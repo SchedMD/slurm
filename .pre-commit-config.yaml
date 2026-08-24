@@ -85,3 +85,9 @@ repos:
         )
       args:
         - --severity=warning
+    - id: check-gitignore
+      name: check for tracked files matched by .gitignore
+      entry: tools/check-gitignore
+      language: script
+      always_run: true
+      pass_filenames: false
