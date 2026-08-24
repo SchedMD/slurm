@@ -5179,14 +5179,6 @@ static int _rebuild_bitmaps(void *x, void *arg)
 	if (step_ptr->state < JOB_RUNNING)
 		return 0;
 
-	/*
-	 * The rest of this function rebuilds the core_bitmap_job from
-	 * job_resrcs which is a slurmctld-only structure. In stepmgr
-	 * job_resrcs is not populated so we stop here.
-	 */
-	if (!job_ptr->job_resrcs)
-		return 0;
-
 	gres_stepmgr_step_state_rebase(step_ptr->gres_list_alloc,
 				    orig_job_node_bitmap,
 				    job_ptr->job_resrcs->node_bitmap);
