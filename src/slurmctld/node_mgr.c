@@ -5513,6 +5513,23 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			FREE_NULL_LIST(hres_info);
 			return SLURM_ERROR;
 		}
+
+		/*
+		 * Unlike create_nodes(), do not reject the registration: the
+		 * identical nodeline in slurm.conf is accepted unconditionally
+		 * (no power_save_avail check anywhere in read_config.c), and a
+		 * hard failure here surfaces to the caller as a bare ENOENT --
+		 * the registering slurmd just silently never joins. The value
+		 * is already inert whenever power save isn't configured (see
+		 * power_save_set_timeouts()), so warn and let it through.
+		 */
+		if ((conf_node->suspend_time != NO_VAL) &&
+		    (conf_node->suspend_time != INFINITE) &&
+		    !power_save_avail) {
+			warning("Dynamic node %s registered with SuspendTime=%u, but automatic power save mode is disabled",
+				conf_node->nodenames, conf_node->suspend_time);
+		}
+
 		config_ptr = config_record_from_conf_node(conf_node,
 							  slurmctld_tres_cnt);
 		if (conf_node->state)
