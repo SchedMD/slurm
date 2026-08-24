@@ -11018,6 +11018,16 @@ static void _gres_device_pack(
 	packstr(gres_device->path, buffer);
 	packstr(gres_device->unique_id, buffer);
 	pack32(gres_device->flags, buffer);
+	packstr(gres_device->pci_addr, buffer);
+	packbool((gres_device->dmem != NULL), buffer);
+	if (gres_device->dmem) {
+		pack64(gres_device->dmem->capacity, buffer);
+		packbool(gres_device->dmem->from_conf, buffer);
+		packstr(gres_device->dmem->region, buffer);
+		pack64(gres_device->dmem->shards, buffer);
+		pack64(gres_device->dmem->slice, buffer);
+		pack32((uint32_t) gres_device->dmem->state, buffer);
+	}
 }
 
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices)
@@ -11030,6 +11040,7 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 			       buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
+	bool has_dmem = false;
 	gres_device_t *gres_device = xmalloc(sizeof(gres_device_t));
 
 	safe_unpack32(&uint32_tmp, buffer);
@@ -11045,6 +11056,18 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 	safe_unpackstr(&gres_device->path, buffer);
 	safe_unpackstr(&gres_device->unique_id, buffer);
 	safe_unpack32(&gres_device->flags, buffer);
+	safe_unpackstr(&gres_device->pci_addr, buffer);
+	safe_unpackbool(&has_dmem, buffer);
+	if (has_dmem) {
+		gres_device->dmem = xmalloc(sizeof(*gres_device->dmem));
+		safe_unpack64(&gres_device->dmem->capacity, buffer);
+		safe_unpackbool(&gres_device->dmem->from_conf, buffer);
+		safe_unpackstr(&gres_device->dmem->region, buffer);
+		safe_unpack64(&gres_device->dmem->shards, buffer);
+		safe_unpack64(&gres_device->dmem->slice, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		gres_device->dmem->state = (gres_dmem_state_t) uint32_tmp;
+	}
 	/* info("adding %d %s %s", gres_device->dev_num, */
 	/*      gres_device->major, gres_device->path); */
 
