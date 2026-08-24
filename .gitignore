@@ -84,3 +84,5 @@ autom4te.cache
 /testsuite/python/pytest.ini
 TAGS
 tags
+AGENTS.md
+CLAUDE.md
