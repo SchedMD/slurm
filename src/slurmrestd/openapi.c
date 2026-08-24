@@ -788,6 +788,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		response_status_codes = default_response_status_codes;
 
 	paths = list_create(_list_delete_path_t);
+	parsers = parsers_ptr;
 
 	/* must have JSON plugin to parse the openapi.json */
 	serializer_required(MIME_TYPE_JSON);
@@ -809,8 +810,6 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 
 	if (!plugins->count)
 		fatal("No OpenAPI plugins loaded.");
-
-	parsers = parsers_ptr;
 
 	for (size_t i = 0; i < plugins->count; i++) {
 		const funcs_t *funcs = plugins->functions[i];
