@@ -5179,6 +5179,11 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 			error("Failed to roll back every node created from '%s'",
 			      conf_node->nodenames);
 
+		/* Nothing created means nothing ever referenced config_ptr. */
+		if (!bit_set_count(created_bitmap))
+			list_delete_ptr(config_list, config_ptr);
+		config_ptr = NULL;
+
 		FREE_NULL_BITMAP(created_bitmap);
 
 		goto fini;
