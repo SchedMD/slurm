@@ -2230,5 +2230,5 @@ extern int list_find_feature(void *feature_entry, void *key)
 
 extern list_t *node_conf_get_drained_tres_recs(node_record_t *node_ptr)
 {
-	return NULL;
+	return gres_get_node_drained_tres_recs(node_ptr->gres_list);
 }

@@ -435,6 +435,7 @@ static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 					bitstr_t **gres_bit_alloc,
 					uint64_t *gres_cnt,
 					uint64_t **gres_per_bit);
+static void _add_drained_gres_recs(gres_state_t *gres_state_node, list_t *recs);
 static void _add_gres_context(char *gres_name);
 static gres_node_state_t *_build_gres_node_state(void);
 static void	_build_node_gres_str(list_t **gres_list, char **gres_str,
@@ -4038,6 +4039,26 @@ static int _find_gres_type(gres_node_state_t *gres_ns, uint32_t type_id)
 	return type_index;
 }
 
+/*
+ * The type_id of the device at this index, from the topology that maps a range
+ * of device indexes to a type. RET 0 when the GRES is untyped, or when no
+ * topology covers the index.
+ */
+static uint32_t _gres_device_topo_type_id(gres_node_state_t *gres_ns, int index)
+{
+	if (!gres_ns->topo_cnt || !gres_ns->topo_gres_bitmap ||
+	    !gres_ns->topo_type_id)
+		return 0;
+	for (int t = 0; t < gres_ns->topo_cnt; t++) {
+		bitstr_t *topo_bits = gres_ns->topo_gres_bitmap[t];
+
+		if (topo_bits && (index < bit_size(topo_bits)) &&
+		    bit_test(topo_bits, index))
+			return gres_ns->topo_type_id[t];
+	}
+	return 0;
+}
+
 static int _find_gres_type_name(gres_node_state_t *gres_ns, char *type_name)
 {
 	for (int i = 0; i < gres_ns->type_cnt; i++) {
@@ -4707,6 +4728,20 @@ static void _gres_type_drain_reason_set(gres_node_state_t *gres_ns, int type,
 		return;
 	xfree(pool->reason);
 	pool->reason = xstrdup(reason);
+}
+
+/* Reason a count-only GRES type was drained, never NULL. */
+static char *_gres_type_drain_reason(gres_node_state_t *gres_ns, int type)
+{
+	drain_count_t *pool = _gres_cnt_pool(gres_ns, type);
+	char *reason = NULL;
+
+	if (pool)
+		reason = pool->reason;
+	if (!reason && (type >= 0))
+		reason = gres_ns->untyped_drain.reason;
+
+	return reason ? reason : "no reason";
 }
 
 static void _gres_drain_set_bit(gres_node_state_t *gres_ns, int bit,
@@ -8255,6 +8290,40 @@ static int _update_device_gres_drain(gres_state_t *gres_state_node,
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_drain_signature(void *x, void *arg)
+{
+	drained_tres_t *rec = x;
+	char **sig = arg;
+
+	xstrfmtcat(*sig, "%s|%s|%s|%" PRIu64 "|%s\n", rec->tres_name,
+		   rec->index ? rec->index : "", rec->uuid ? rec->uuid : "",
+		   rec->count, rec->reason ? rec->reason : "");
+
+	return 0;
+}
+
+/*
+ * Render everything a drain request can change about one GRES: which devices
+ * are drained, by index, how many of each type, and why. Taken before and
+ * after applying a request so that one asking for the state the GRES is
+ * already in is not reported as a change - reconciling a node is not free,
+ * and an unchanged node must not get an accounting event.
+ *
+ * Built from the same records everything else reports drains from, so a
+ * change anyone can observe is a change here.
+ */
+static char *_gres_drain_signature(gres_state_t *gres_state_node)
+{
+	list_t *recs = list_create(drained_tres_delete);
+	char *sig = NULL;
+
+	_add_drained_gres_recs(gres_state_node, recs);
+	(void) list_for_each(recs, _foreach_drain_signature, &sig);
+	FREE_NULL_LIST(recs);
+
+	return sig;
+}
+
 /*
  * Apply one resolved drain request to a single GRES (the name has already been
  * matched to gres_state_node). Selector legality depends on how the GRES is
@@ -8267,10 +8336,13 @@ static int _update_one_gres_drain(gres_state_t *gres_state_node,
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
 	bool want_all = (req->sel == GRES_DRAIN_SEL_ALL);
 	bool by_count = (req->sel == GRES_DRAIN_SEL_COUNT);
+	char *before, *after;
 	int rc;
 
 	if (!gres_ns)
 		return ESLURM_INVALID_GRES;
+
+	before = _gres_drain_signature(gres_state_node);
 
 	if (gres_ns->gres_bit_alloc || gres_ns->topo_cnt) {
 		rc = _update_device_gres_drain(gres_state_node, req);
@@ -8283,11 +8355,18 @@ static int _update_one_gres_drain(gres_state_t *gres_state_node,
 						   req->action);
 	}
 
-	if (rc)
+	if (rc) {
+		xfree(before);
 		return rc;
+	}
 
 	xfree(gres_ns->gres_used);
-	*did_change = true;
+
+	after = _gres_drain_signature(gres_state_node);
+	if (xstrcmp(before, after))
+		*did_change = true;
+	xfree(before);
+	xfree(after);
 
 	return SLURM_SUCCESS;
 }
@@ -8325,6 +8404,143 @@ extern int gres_node_update_drain(list_t *gres_list, gres_drain_req_t *req,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
+}
+
+/* Reason a device was drained, never NULL. */
+static char *_gres_drain_bit_reason(gres_node_state_t *gres_ns, int bit)
+{
+	char *reason = drained_tres_group_reason(gres_ns->drain_groups, bit);
+
+	return reason ? reason : "no reason";
+}
+
+/*
+ * The configured name of this type_id.
+ *
+ * RET type name, or NULL when the GRES is untyped or the type is no longer
+ *     configured. Such a device cannot be resolved to a name, so it is left
+ *     untyped and keyed by the GRES name alone.
+ */
+static char *_gres_type_name(gres_node_state_t *gres_ns, uint32_t type_id)
+{
+	int type_index = _find_gres_type(gres_ns, type_id);
+
+	return (type_index >= 0) ? gres_ns->type_name[type_index] : NULL;
+}
+
+/* "gres/<name>", or "gres/<name>:<type>" when typed. Caller must xfree. */
+static char *_drained_tres_name(char *gres_name, char *type_name)
+{
+	return xstrdup_printf("gres/%s%s%s", gres_name, type_name ? ":" : "",
+			      type_name ? type_name : "");
+}
+
+/*
+ * Append the drained-TRES records for this GRES: one per drained device for a
+ * device-tracked GRES, otherwise one per drained count.
+ *
+ * Every caller that needs to see what a GRES has drained goes through here, so
+ * the definition of a drained unit lives in one place. Unlike the display
+ * string, which groups devices sharing a reason and can therefore carry only an
+ * index, these are per device, so each record names exactly one drained device.
+ */
+static void _add_drained_gres_recs(gres_state_t *gres_state_node, list_t *recs)
+{
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	char *gres_name = gres_state_node->gres_name;
+	char *tres_name;
+
+	if (gres_id_shared(gres_state_node->config_flags))
+		return;
+
+	if (!gres_ns || !gres_ns->gres_cnt_drain)
+		return;
+
+	if (gres_ns->gres_bit_drain) {
+		for (int i = 0;
+		     (i = bit_ffs_from_bit(gres_ns->gres_bit_drain, i)) >= 0;
+		     i++) {
+			char idx[32];
+
+			snprintf(idx, sizeof(idx), "%d", i);
+			tres_name = _drained_tres_name(
+				gres_name,
+				_gres_type_name(
+					gres_ns,
+					_gres_device_topo_type_id(gres_ns, i)));
+
+			drained_tres_rec_add(recs, tres_name, idx,
+					     (i < gres_ns->dev_uuid_cnt) ?
+						     gres_ns->dev_uuid[i] :
+						     NULL,
+					     NO_VAL64,
+					     _gres_drain_bit_reason(gres_ns,
+								    i));
+
+			xfree(tres_name);
+		}
+
+		return;
+	}
+
+	/*
+	 * A typed count-only GRES is drained per type, so report each type
+	 * against its own name. Reporting the aggregate under the untyped name
+	 * instead loses which type was drained, and names a TRES that
+	 * "scontrol update" would apply to all of them.
+	 */
+	if (gres_ns->type_cnt) {
+		for (int i = 0; i < gres_ns->type_cnt; i++) {
+			uint64_t count = _gres_cnt_pool_count(gres_ns, i);
+
+			if (!count)
+				continue;
+
+			tres_name = _drained_tres_name(gres_name,
+						       gres_ns->type_name[i]);
+
+			drained_tres_rec_add(recs, tres_name, NULL, NULL, count,
+					     _gres_type_drain_reason(gres_ns,
+								     i));
+
+			xfree(tres_name);
+		}
+
+		return;
+	}
+
+	tres_name = _drained_tres_name(gres_name, NULL);
+	drained_tres_rec_add(recs, tres_name, NULL, NULL,
+			     gres_ns->gres_cnt_drain,
+			     gres_ns->untyped_drain.reason);
+	xfree(tres_name);
+}
+
+static int _foreach_add_drained_gres_recs(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	list_t *recs = arg;
+
+	_add_drained_gres_recs(gres_state_node, recs);
+
+	return 0;
+}
+
+extern list_t *gres_get_node_drained_tres_recs(list_t *gres_list)
+{
+	list_t *recs;
+
+	if (!gres_list)
+		return NULL;
+
+	recs = list_create(drained_tres_delete);
+
+	(void) list_for_each(gres_list, _foreach_add_drained_gres_recs, recs);
+
+	if (!list_count(recs))
+		FREE_NULL_LIST(recs);
+
+	return recs;
 }
 
 static int _foreach_get_node_used(void *x, void *arg)
