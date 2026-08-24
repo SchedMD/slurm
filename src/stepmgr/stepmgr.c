@@ -5475,13 +5475,19 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 		return rc;
 	}
 
-	/* Here is where the node list is set for the step */
+	/*
+	 * Here is where the node list is set for the step. An external
+	 * launcher maps its ranks onto this list, so emit it in topology-rank
+	 * order like any other step.
+	 */
 	if (step_specs->node_list &&
 	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
 	     SLURM_DIST_ARBITRARY))
 		step_node_list = xstrdup(step_specs->node_list);
 	else
-		step_node_list = bitmap2node_name_sortable(nodeset, false);
+		step_node_list =
+			job_resources_node_list_by_rank(job_ptr->job_resrcs,
+							nodeset);
 	log_flag(STEPS, "%s: %pJ picked ext-launcher nodes %s",
 		 __func__, job_ptr, step_node_list);
 
