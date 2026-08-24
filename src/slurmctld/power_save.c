@@ -95,11 +95,10 @@ static pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
 bool power_save_enabled = false;
 /*
- * True when valid SuspendProgram and ResumeProgram are configured. Unlike
- * power_save_enabled, this does not account for the global SuspendTime being
- * INFINITE: a finite per-node SuspendTime can still enable automatic power
- * save for individual nodes, so a finite per-node SuspendTime is only
- * rejected when the programs themselves are missing.
+ * Power save configured apart from SuspendTime. See power_save.h.
+ * Written once per config load under power_mutex (from _init_power_config(),
+ * called only during read_slurm_conf() before RPCs are served); read
+ * lock-free elsewhere since it is effectively immutable between reconfigs.
  */
 bool power_save_avail = false;
 bool power_save_started = false;
@@ -1408,6 +1407,8 @@ static int _init_power_config(void)
 	char *tmp_ptr;
 	bool suspend_time_set = false;
 	bool auto_power_save_disabled = false;
+	bool other_reason_disabled = false;
+	bool no_finite_suspend_time = false;
 
 	last_log = 0;
 	suspend_rate = slurm_conf.suspend_rate;
@@ -1460,9 +1461,6 @@ static int _init_power_config(void)
 			log_flag(POWER, "No PowerAction entries");
 	}
 
-	if (!suspend_prog || !resume_prog)
-		auto_power_save_disabled = true;
-
 	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
 	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
@@ -1491,36 +1489,38 @@ static int _init_power_config(void)
 	if (((resume_rate || suspend_rate)) &&
 	    ((power_save_interval > 60) || (power_save_min_interval > 60))) {
 		error("power save module can not work effectively with interval > 60 seconds");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if ((suspend_rate > MAX_NODE_RATE) || (resume_rate > MAX_NODE_RATE)) {
 		error("power: selected suspend/resume rate exceeds maximum: %d/%d max: %d",
 		      suspend_rate, resume_rate, MAX_NODE_RATE);
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 
 	if ((slurm_conf.suspend_time == INFINITE) && !suspend_time_set) {
 		/* not an error */
 		debug("power: SuspendTime < 0");
-		auto_power_save_disabled = true;
+		no_finite_suspend_time = true;
 	}
 	if (suspend_rate < 0) {
 		error("auto power save module disabled, SuspendRate < 0");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if (resume_rate < 0) {
 		error("auto power save module disabled, ResumeRate < 0");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if (!suspend_prog) {
 		debug("power: No valid SuspendProgram");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
 	if (!resume_prog) {
 		debug("power: No valid ResumeProgram");
-		auto_power_save_disabled = true;
+		other_reason_disabled = true;
 	}
-	power_save_avail = (suspend_prog && resume_prog);
+	power_save_avail = !other_reason_disabled;
+	auto_power_save_disabled =
+		other_reason_disabled || no_finite_suspend_time;
 
 	if (auto_power_save_disabled) {
 		info("power: automatic power save mode disabled");
