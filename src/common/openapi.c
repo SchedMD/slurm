@@ -137,6 +137,16 @@ extern openapi_type_format_t openapi_string_to_type_format(const char *str)
 	return OPENAPI_FORMAT_INVALID;
 }
 
+extern data_type_t openapi_type_to_data_type(openapi_type_t type)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++) {
+		if (openapi_types[i].type == type)
+			return openapi_types[i].data_type;
+	}
+
+	return DATA_TYPE_NONE;
+}
+
 extern data_type_t openapi_type_format_to_data_type(
 	openapi_type_format_t format)
 {
