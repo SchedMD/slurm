@@ -64,6 +64,8 @@ typedef struct http_con_s {
 	conmgr_fd_ref_t *con;
 	/* True to xfree() this pointer */
 	bool free_on_close;
+	/* True once a rejection response has been sent */
+	bool rejected;
 	const http_con_server_events_t *events;
 	void *arg; /* arbitrary pointer from caller */
 	http_parser_state_t *parser; /* http parser plugin state */
@@ -630,6 +632,19 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 	const buf_t body = SHADOW_BUF_INITIALIZER(error, error_len);
 
 	xassert(hcon->magic == MAGIC);
+
+	if (hcon->rejected) {
+		/*
+		 * Callbacks reject and return the error, which the parser
+		 * hands back to _on_data(). Only respond once.
+		 */
+		log_flag(NET, "%s: [%s] Ignoring duplicate rejection: %s",
+			 __func__, conmgr_con_get_name(hcon->con),
+			 slurm_strerror(error_number));
+		return error_number;
+	}
+
+	hcon->rejected = true;
 
 	if (!_valid_http_version(request->http_version.major,
 				 request->http_version.minor)) {
