@@ -3632,7 +3632,13 @@ def require_config_parameter(
             if v is None:
                 # None means expected unset, but parameter was set
                 continue
-            obs = type(v)(observed_value)
+            try:
+                obs = type(v)(observed_value)
+            except ValueError:
+                # The observed value cannot be converted to the expected
+                # type (e.g. "infinite" for an int parameter), so it cannot
+                # satisfy this requirement; try the next acceptable value.
+                continue
             if operator == "==" and obs == v:
                 condition_satisfied = True
                 break
