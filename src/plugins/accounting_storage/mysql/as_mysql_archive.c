@@ -5552,13 +5552,90 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	return 1; /* found one record */
 }
 
-/* Archive and purge a table.
+/* Column order of an ANALYZE TABLE result set. */
+enum {
+	ANALYZE_REQ_TABLE,
+	ANALYZE_REQ_OP,
+	ANALYZE_REQ_MSG_TYPE,
+	ANALYZE_REQ_MSG_TEXT,
+};
+
+/*
+ * Run ANALYZE TABLE on the named table to refresh InnoDB cardinality stats
+ * after a purge. cluster_name may be NULL for global tables (e.g. txn_table).
+ *
+ * Errors returned to the client are only logged under DB_ARCHIVE, but some
+ * conditions, a lock wait timeout among them, make mysql_db_query() call
+ * fatal(). ANALYZE TABLE takes a metadata lock, so this can end slurmdbd.
+ * Set DisableArchiveAnalyze to avoid it.
+ *
+ * ANALYZE TABLE reports a failed table in the Msg_type column of its result
+ * set instead of through mysql_errno(), so the rows have to be read to see
+ * one. That is only worth doing when DB_ARCHIVE is set to log it.
+ */
+static void _analyze_table_after_purge(mysql_conn_t *mysql_conn,
+				       const char *cluster_name,
+				       const char *table_name)
+{
+	char *query;
+	MYSQL_RES *result;
+	MYSQL_ROW row;
+
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ARCHIVE_ANALYZE)
+		return;
+
+	if (cluster_name)
+		query = xstrdup_printf("analyze table \"%s_%s\"", cluster_name,
+				       table_name);
+	else
+		query = xstrdup_printf("analyze table \"%s\"", table_name);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result) {
+		log_flag(DB_ARCHIVE, "analyze table after purge of %s failed",
+			 table_name);
+		return;
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DB_ARCHIVE) {
+		while ((row = mysql_fetch_row(result))) {
+			if (xstrcasecmp(row[ANALYZE_REQ_MSG_TYPE], "error"))
+				continue;
+			log_flag(DB_ARCHIVE, "analyze table after purge of %s failed: %s",
+				 table_name, row[ANALYZE_REQ_MSG_TEXT]);
+		}
+	}
+
+	mysql_free_result(result);
+}
+
+/*
+ * Archive (if configured) and purge rows from one accounting table.
+ *
+ * purge_type (IN)     PURGE_EVENT, PURGE_JOB, PURGE_TXN, PURGE_USAGE, etc.
+ * usage_info (IN)     packed usage type for PURGE_USAGE / PURGE_CLUSTER_USAGE,
+ *                     0 otherwise
+ * mysql_conn (IN)     db connection
+ * cluster_name (IN)   cluster name; used as the "cluster_table" prefix for
+ *                     every purge_type except PURGE_TXN (a global table)
+ * arch_cond (IN)      archive conditions (purge cutoffs, archive
+ *                     directory/script)
+ * out_purged (IN/OUT) NULL: issue ANALYZE TABLE on the per-cluster table when
+ *                     at least one row was committed (and
+ *                     DisableArchiveAnalyze is not set).
+ *                     Non-NULL: OR-accumulate the local did_purge flag into
+ *                     *out_purged and skip the inline ANALYZE - the caller
+ *                     is responsible for issuing one ANALYZE across all
+ *                     clusters. Used for global tables (txn_table).
  *
  * Returns SLURM_ERROR on error and SLURM_SUCCESS on success.
  */
 static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				mysql_conn_t *mysql_conn, char *cluster_name,
-				slurmdb_archive_cond_t *arch_cond)
+				slurmdb_archive_cond_t *arch_cond,
+				bool *out_purged)
 {
 	int      rc          = SLURM_SUCCESS;
 	uint32_t purge_attr  = 0;
@@ -5567,6 +5644,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 	time_t curr_end = 0, record_start = 0;
 	char    *purge_query = NULL, *sql_table = NULL,
 		*col_name = NULL;
+	bool did_purge = false;
 
 	switch (purge_type) {
 	case PURGE_EVENT:
@@ -5854,8 +5932,25 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			      cluster_name);
 			goto end_it;
 		}
+		did_purge = true;
 	}
 end_it:
+	if (out_purged) {
+		if (!rc)
+			*out_purged |= did_purge;
+	} else if (!rc && did_purge) {
+		_analyze_table_after_purge(mysql_conn, cluster_name, sql_table);
+		if (purge_type == PURGE_JOB) {
+			if (arch_cond->purge_jobenv == NO_VAL)
+				_analyze_table_after_purge(mysql_conn,
+							   cluster_name,
+							   job_env_table);
+			if (arch_cond->purge_jobscript == NO_VAL)
+				_analyze_table_after_purge(mysql_conn,
+							   cluster_name,
+							   job_script_table);
+		}
+	}
 	xfree(purge_query);
 
 	return rc;
@@ -5863,7 +5958,8 @@ end_it:
 
 static int _execute_archive(mysql_conn_t *mysql_conn,
 			    char *cluster_name,
-			    slurmdb_archive_cond_t *arch_cond)
+			    slurmdb_archive_cond_t *arch_cond,
+			    bool *txn_purged)
 {
 	int rc = SLURM_SUCCESS;
 	time_t last_submit = time(NULL);
@@ -5877,50 +5973,51 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 
 	if (arch_cond->purge_event != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_EVENT, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond, NULL)))
 			return rc;
 	}
 
 	if (arch_cond->purge_suspend != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_SUSPEND, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond, NULL)))
 			return rc;
 	}
 
 	if (arch_cond->purge_step != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_STEP, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond, NULL)))
 			return rc;
 	}
 
 	if (arch_cond->purge_job != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_JOB, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond, NULL)))
 			return rc;
 	}
 
 	if (arch_cond->purge_resv != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_RESV, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond, NULL)))
 			return rc;
 	}
 
 	if (arch_cond->purge_txn != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_TXN, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond,
+					       txn_purged)))
 			return rc;
 	}
 
 	if (arch_cond->purge_jobenv != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_JOB_ENV_NJ, 0, mysql_conn,
-					       cluster_name, arch_cond)))
+					       cluster_name, arch_cond, NULL)))
 			return rc;
 	}
 
 	if (arch_cond->purge_jobscript != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_JOB_SCRIPT_NJ, 0,
 					       mysql_conn, cluster_name,
-					       arch_cond)))
+					       arch_cond, NULL)))
 			return rc;
 	}
 
@@ -5931,25 +6028,29 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 			if ((rc = _archive_purge_table(
 				     PURGE_USAGE,
 				     usage_info + DBD_GOT_ASSOC_USAGE,
-				     mysql_conn, cluster_name, arch_cond)))
+				     mysql_conn, cluster_name, arch_cond,
+				     NULL)))
 				return rc;
 
 			if ((rc = _archive_purge_table(
 				     PURGE_USAGE,
 				     usage_info + DBD_GOT_WCKEY_USAGE,
-				     mysql_conn, cluster_name, arch_cond)))
+				     mysql_conn, cluster_name, arch_cond,
+				     NULL)))
 				return rc;
 
 			if ((rc = _archive_purge_table(
 				     PURGE_USAGE,
 				     usage_info + DBD_GOT_QOS_USAGE,
-				     mysql_conn, cluster_name, arch_cond)))
+				     mysql_conn, cluster_name, arch_cond,
+				     NULL)))
 				return rc;
 
 			if ((rc = _archive_purge_table(
 				     PURGE_CLUSTER_USAGE,
 				     usage_info + DBD_GOT_CLUSTER_USAGE,
-				     mysql_conn, cluster_name, arch_cond)))
+				     mysql_conn, cluster_name, arch_cond,
+				     NULL)))
 				return rc;
 		}
 	}
@@ -5964,6 +6065,7 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	char *cluster_name = NULL;
 	list_t *use_cluster_list;
 	bool new_cluster_list = false;
+	bool txn_purged = false;
 	list_itr_t *itr = NULL;
 
 	if (!arch_cond) {
@@ -5999,8 +6101,8 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		if ((rc = _execute_archive(mysql_conn, cluster_name, arch_cond))
-		    != SLURM_SUCCESS)
+		if ((rc = _execute_archive(mysql_conn, cluster_name, arch_cond,
+					   &txn_purged)) != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -6010,7 +6112,17 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 
 	if ((rc == SLURM_SUCCESS) && (arch_cond->purge_txn != NO_VAL))
 		rc = _archive_purge_table(PURGE_TXN, 0, mysql_conn, "",
-					  arch_cond);
+					  arch_cond, &txn_purged);
+
+	/*
+	 * Analyze the shared txn table once per call that actually purged txn
+	 * rows.  Per-cluster rollup threads each purge their own cluster's txn
+	 * rows and may run concurrently; concurrent ANALYZE TABLE statements on
+	 * the same table serialize without data loss, so N clusters each
+	 * issuing one analyze is acceptable and keeps stats fresh.
+	 */
+	if ((rc == SLURM_SUCCESS) && txn_purged)
+		_analyze_table_after_purge(mysql_conn, NULL, txn_table);
 
 	return rc;
 }
