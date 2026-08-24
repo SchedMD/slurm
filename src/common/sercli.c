@@ -102,6 +102,25 @@ static bool _on_error(void *arg, data_parser_type_t type, int error_code,
 	return false;
 }
 
+extern void data_parser_cli_on_error(data_parser_t *parser, int error_code,
+				     const char *source, const char *why, ...)
+{
+	data_parser_dump_cli_ctxt_t *ctxt;
+	va_list ap;
+	char *str;
+
+	va_start(ap, why);
+	str = vxstrfmt(why, ap);
+	va_end(ap);
+
+	ctxt = data_parser_get_error_arg(parser);
+	/* data_parser_type is ignored by _on_error */
+	(void) _on_error(ctxt, DATA_PARSER_TYPE_INVALID, error_code, source,
+			 str);
+
+	xfree(str);
+}
+
 static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 		     const char *why, ...)
 {
@@ -140,6 +159,24 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 
 	if (ctxt)
 		list_append(ctxt->warnings, w);
+}
+
+extern void data_parser_cli_on_warn(data_parser_t *parser, const char *source,
+				    const char *why, ...)
+{
+	data_parser_dump_cli_ctxt_t *ctxt;
+	va_list ap;
+	char *str;
+
+	va_start(ap, why);
+	str = vxstrfmt(why, ap);
+	va_end(ap);
+
+	ctxt = data_parser_get_warn_arg(parser);
+	/* data_parser_type is ignored by _on_warn */
+	_on_warn(ctxt, DATA_PARSER_TYPE_INVALID, source, str);
+
+	xfree(str);
 }
 
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
