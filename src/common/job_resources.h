@@ -197,6 +197,14 @@ extern void build_job_resources_rank_cpu_array(job_resources_t *job_resrcs_ptr,
 					       uint32_t **cpu_count_reps,
 					       uint32_t *num_cpu_groups);
 
+/*
+ * Return the names of the nodes set in node_bitmap, ordered by the job's
+ * order_map (topology rank). node_bitmap must be a subset of the job's nodes.
+ * Caller must xfree() the result.
+ */
+extern char *job_resources_node_list_by_rank(job_resources_t *job_resrcs_ptr,
+					     bitstr_t *node_bitmap);
+
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.

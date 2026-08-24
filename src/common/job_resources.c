@@ -253,6 +253,28 @@ extern void build_job_resources_rank_cpu_array(job_resources_t *job_resrcs_ptr,
 	*num_cpu_groups = cnt;
 }
 
+extern char *job_resources_node_list_by_rank(job_resources_t *job_resrcs_ptr,
+					     bitstr_t *node_bitmap)
+{
+	hostlist_t *hl = hostlist_create(NULL);
+	char *node_list;
+
+	/* order_map is only built for a job that holds nodes. */
+	xassert(!job_resrcs_ptr->nhosts || job_resrcs_ptr->order_map);
+
+	for (uint32_t k = 0; k < job_resrcs_ptr->nhosts; k++) {
+		int i = job_resrcs_ptr->order_map[k].node_inx;
+
+		if (bit_test(node_bitmap, i))
+			hostlist_push_host(hl, node_record_table_ptr[i]->name);
+	}
+
+	node_list = hostlist_ranged_string_xmalloc(hl);
+	hostlist_destroy(hl);
+
+	return node_list;
+}
+
 /* Reset the node_bitmap in a job_resources data structure
  * This is needed after a restart/reconfiguration since nodes can
  * be added or removed from the system resulting in changing in
