@@ -22,6 +22,14 @@ kill_job_on_node() used to send only the one node it was addressing. It answers
 a node that registers a job the controller still holds as completing, which a
 node whose slurmd was down across the termination does when it comes back.
 
+abort_job_on_nodes() used to send only the protocol version subset it was
+addressing. Shrinking a running job aborts it on the nodes it gives up, which is
+that path, and the Epilog there must still see the pre-shrink allocation.
+
+prolog_epilog.html documents one exception: a node the job does not hold is
+listed on its own. A node registering a job the controller has no record of is
+that case, and the last test here pins it.
+
 The nodes carry a GPU so that the GRES half of the contract, which is what the
 Changelog leads with, is checked and not just the node list it derives from.
 """
@@ -622,3 +630,123 @@ def test_registered_completing_job_sets_epilog_nodelist(
     _assert_epilog_env(batch_host, recorded, expected, job_gpus[batch_host])
 
     atf.run_command(f"scancel {job_id}", fatal=True)
+
+
+@requires_node_sharing
+@pytest.mark.parametrize("shrink_with", ["NumNodes", "NodeList"])
+def test_aborted_job_sets_epilog_nodelist(
+    job_nodes, recording_epilog, filler_job, shrink_with
+):
+    """An Epilog run from an aborted job must see the full allocation.
+
+    scontrol.1 documents shrinking a running job by NumNodes or by NodeList;
+    both spellings go down the REQUEST_ABORT_JOB path, so both are covered.
+    """
+
+    record_dir = recording_epilog
+    expected = sorted(job_nodes)
+
+    job_id = atf.submit_job_sbatch(
+        f"-N{NODE_COUNT} -w {atf.node_list_to_range(job_nodes)} "
+        f"--gres=gpu:1 --mem=1 -J test_127_2a -t 5 -o /dev/null"
+        ' --wrap "sleep infinity"',
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+    job_gpus = _gpu_by_node(job_id)
+
+    # Shrinking a running job keeps its batch host and aborts it on the nodes
+    # it gives up, which is the REQUEST_ABORT_JOB path.
+    batch_host = atf.get_job_parameter(job_id, "BatchHost", quiet=True)
+    dropped = [node for node in job_nodes if node != batch_host]
+    assert len(dropped) == 1, (
+        f"Expected one node besides the batch host {batch_host} in "
+        f"{job_nodes}, got {dropped}"
+    )
+    dropped_node = dropped[0]
+
+    if shrink_with == "NumNodes":
+        shrink_spec = "NumNodes=1"
+    else:
+        shrink_spec = f"NodeList={batch_host}"
+    atf.run_command(
+        f"scontrol update JobId={job_id} {shrink_spec}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    recorded = []
+    # Longer than atf's default: the shrink has to reach the node, run its
+    # Epilog and flush the record.
+    for _ in atf.timer(timeout=60, poll_interval=1):
+        recorded = _recorded_env(record_dir, dropped_node, job_id)
+        if recorded:
+            break
+    else:
+        pytest.fail(f"Node {dropped_node} never ran its Epilog for the aborted job")
+
+    _assert_epilog_env(dropped_node, recorded, expected, job_gpus[dropped_node])
+
+    atf.run_command(f"scancel {job_id}", fatal=True)
+
+
+def test_orphan_job_abort_sets_epilog_nodelist(job_nodes, recording_epilog):
+    """An Epilog on a node the job does not hold must see only that node."""
+
+    record_dir = recording_epilog
+    log_offset = _log_size()
+
+    job_id = atf.submit_job_sbatch(
+        f"-N{NODE_COUNT} -w {atf.node_list_to_range(job_nodes)} "
+        f"--gres=gpu:1 --mem=1 -J test_127_2b -t 5 -o /dev/null"
+        ' --wrap "sleep infinity"',
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    # Only a node that reports the job is told to abort it, and a node reports
+    # what it has a stepd for. A batch job with no step of its own is therefore
+    # aborted on its batch host alone, so the other nodes never run an Epilog
+    # for it and have nothing to record. Read the host before the restart drops
+    # the record, so the assertions below iterate the job's own allocation
+    # rather than whatever the log happened to name.
+    batch_host = atf.get_job_parameter(job_id, "BatchHost", quiet=True)
+
+    # A clean restart drops the job record while the job is still running, so
+    # each node registers a job the controller has never heard of and is told
+    # to abort it. That is the only path where the controller holds no
+    # allocation to name, and prolog_epilog.html promises the node's own name
+    # there rather than an empty or another job's node list.
+    atf.restart_slurmctld(clean=True)
+
+    # The registered controller has to have taken the orphan path. Without
+    # this a job that ended some other way would leave an Epilog record that
+    # reads the same way for the wrong reason.
+    for _ in atf.timer(timeout=REGISTRATION_TIMEOUT, poll_interval=5, fatal=True):
+        if re.search(rf"Orphan JobId={job_id}\b", _log_text(log_offset), re.MULTILINE):
+            break
+
+    orphan_nodes = [batch_host]
+
+    for node in orphan_nodes:
+        recorded = []
+        for _ in atf.timer(timeout=REGISTRATION_TIMEOUT, poll_interval=1):
+            recorded = _recorded_env(record_dir, node, job_id)
+            if recorded:
+                break
+        else:
+            pytest.fail(f"Node {node} never ran its Epilog for the orphaned job")
+
+        for env in recorded:
+            assert env[NODELIST_VAR] == node, (
+                f"Epilog on {node} saw {NODELIST_VAR}={env[NODELIST_VAR]!r}, "
+                f"expected only its own name for a job the controller holds "
+                f"no allocation for"
+            )
+            # prolog_epilog.html promises the same value under both names on
+            # this path too, not only where the list is the allocation.
+            assert env[ALIAS_NODELIST_VAR] == env[NODELIST_VAR], (
+                f"Epilog on {node} saw {ALIAS_NODELIST_VAR}="
+                f"{env[ALIAS_NODELIST_VAR]!r} but {NODELIST_VAR}="
+                f"{env[NODELIST_VAR]!r}; both name what the job holds here"
+            )
