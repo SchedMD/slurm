@@ -1600,6 +1600,14 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 		goto end;
 	}
 
+	/* Validate before anything is applied, so a reject changes nothing. */
+	if ((update_node_msg->suspend_time != NO_VAL) && !power_save_avail) {
+		error("%s: rejecting SuspendTime update for nodes %s, automatic power save mode is disabled",
+		      __func__, update_node_msg->node_names);
+		error_code = ESLURM_DISABLED;
+		goto end;
+	}
+
 	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
 	    (update_node_msg->instance_id && update_node_msg->instance_id[0]) ||
 	    (update_node_msg->instance_type &&
@@ -2421,15 +2429,10 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 	}
 	if ((error_code == SLURM_SUCCESS) &&
 	    (update_node_msg->suspend_time != NO_VAL)) {
-		if (!power_save_avail) {
-			error("%s: rejecting SuspendTime update for nodes %s, automatic power save mode is disabled",
-			      __func__, update_node_msg->node_names);
-			error_code = ESLURM_DISABLED;
-		} else {
-			error_code = _update_node_suspend_time(
-				update_node_msg->node_names,
-				update_node_msg->suspend_time);
-		}
+		error_code =
+			_update_node_suspend_time(update_node_msg->node_names,
+						  update_node_msg
+							  ->suspend_time);
 	}
 
 	/*
