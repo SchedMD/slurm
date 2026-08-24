@@ -782,10 +782,11 @@ test_108_10  Submit and modify jobs using a mix of Job IDs and SLUIDs
 test_108_11  Test scontrol update NodeName=ALL with AvailableFeatures
 test_108_12  Test nodes join feature-based NodeSet partitions on update
 test_108_13  Test the ExitCode=<exit>:<signal> rendering shared by scontrol,
-	     squeue and sacct
+             squeue and sacct
 test_108_14  Test node event records across node updates, long reasons,
              and same-second state changes
 test_108_15  Test scontrol completing output, including the SLUID on requeue
+test_108_16  Test scontrol array task id validation
 
 test_109_#   Testing of sdiag options.
 ======================================
