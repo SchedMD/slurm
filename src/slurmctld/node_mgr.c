@@ -2433,6 +2433,16 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 			_update_node_suspend_time(update_node_msg->node_names,
 						  update_node_msg
 							  ->suspend_time);
+		/*
+		 * A finite per-node SuspendTime can be the first thing to
+		 * enable automatic power save; refresh the node-level timeouts
+		 * and the enabled flag so the power-save thread acts on it
+		 * without a reconfigure.
+		 */
+		if (error_code == SLURM_SUCCESS) {
+			power_save_set_timeouts(NULL);
+			power_save_exc_setup();
+		}
 	}
 
 	/*

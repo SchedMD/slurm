@@ -1696,6 +1696,7 @@ static void *_power_save_thread(void *arg)
 extern void power_save_set_timeouts(bool *suspend_time_set)
 {
 	node_record_t *node_ptr;
+	bool any_finite_suspend_time = false;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -1717,9 +1718,10 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 			((node_ptr->suspend_time == NO_VAL) ?
 				slurm_conf.suspend_time :
 				node_ptr->suspend_time);
-		if (suspend_time_set &&
-		    (node_ptr->suspend_time != INFINITE) &&
+		if ((node_ptr->suspend_time != INFINITE) &&
 		    (node_ptr->suspend_time != NO_VAL))
+			any_finite_suspend_time = true;
+		if (suspend_time_set && any_finite_suspend_time)
 			*suspend_time_set = true;
 		node_ptr->suspend_timeout =
 			((node_ptr->suspend_timeout == NO_VAL16) ?
@@ -1732,6 +1734,27 @@ extern void power_save_set_timeouts(bool *suspend_time_set)
 		debug5("Power save settings for '%s': SuspendTime=%u,SuspendTimeout=%u,ResumeTimeout=%u",
 		       node_ptr->name, node_ptr->suspend_time,
 		       node_ptr->suspend_timeout, node_ptr->resume_timeout);
+	}
+
+	/*
+	 * Enable only for external callers: they pass a NULL suspend_time_set,
+	 * while _init_power_config() passes non-NULL and already holds
+	 * power_mutex, so locking it here would self-deadlock.
+	 *
+	 * Deliberately one-way (false -> true only): _do_power_work() runs on
+	 * every scan regardless of power_save_enabled, but gates the actual
+	 * wake-up on it (has_job_to_resume, this file). Flipping it back to
+	 * false the moment no node has a finite SuspendTime would suppress
+	 * that wake-up for a node a job is already waiting on, leaving the
+	 * job stuck CONFIGURING with its node never resumed.
+	 */
+	if (!suspend_time_set && power_save_avail && any_finite_suspend_time) {
+		slurm_mutex_lock(&power_mutex);
+		if (!power_save_enabled) {
+			power_save_enabled = true;
+			info("power: automatic power save mode enabled by node/partition change");
+		}
+		slurm_mutex_unlock(&power_mutex);
 	}
 }
 
