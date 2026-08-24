@@ -775,6 +775,8 @@ test_108_11  Test scontrol update NodeName=ALL with AvailableFeatures
 test_108_12  Test nodes join feature-based NodeSet partitions on update
 test_108_13  Test the ExitCode=<exit>:<signal> rendering shared by scontrol,
 	     squeue and sacct
+test_108_14  Test node event records across node updates, long reasons,
+             and same-second state changes
 
 test_109_#   Testing of sdiag options.
 ======================================
