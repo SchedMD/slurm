@@ -1454,6 +1454,23 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr);
 }
 
+extern bool node_conf_set_degraded_flag(node_record_t *node_ptr)
+{
+	bool degraded = gres_node_state_list_has_drain_gres(node_ptr->gres_list);
+
+	if (degraded)
+		node_ptr->node_state |= NODE_STATE_DEGRADED;
+	else
+		node_ptr->node_state &= (~NODE_STATE_DEGRADED);
+
+	return degraded;
+}
+
+extern bool node_conf_resume_all_drained_tres(node_record_t *node_ptr)
+{
+	return gres_node_state_list_resume_drain(node_ptr->gres_list);
+}
+
 /*
  * rehash_node - build a hash table of the node_record entries.
  * NOTE: using xhash implementation

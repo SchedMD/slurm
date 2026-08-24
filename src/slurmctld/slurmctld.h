@@ -2038,6 +2038,13 @@ extern void update_logging(void);
  */
 extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg);
 
+/*
+ * node_mgr_update_tres_drain - drain or resume individual TRES on nodes
+ * IN update_tres_msg - the resolved TRES update request
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg);
+
 /* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);
 

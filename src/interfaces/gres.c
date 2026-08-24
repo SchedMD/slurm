@@ -404,6 +404,11 @@ typedef struct {
 	list_t *seen;
 } find_dup_unique_id_args_t;
 
+typedef struct {
+	int index;
+	char *name;
+} gres_type_order_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -443,6 +448,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 				   uint64_t gres_bits);
 static uint64_t _get_job_gres_list_cnt(list_t *gres_list, char *gres_name,
 				       char *gres_type);
+static int _find_node_state_by_name(void *x, void *arg);
 static void _gres_drain_cnt_clamp(gres_node_state_t *gres_ns);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int job_node_index);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
@@ -4569,7 +4575,6 @@ static drain_count_t *_gres_cnt_pool(gres_node_state_t *gres_ns, int type)
 				       gres_ns->type_name[type]);
 }
 
-__attribute__((unused))
 static void _gres_cnt_pool_set(gres_node_state_t *gres_ns, int type,
 			       uint64_t count, const char *reason,
 			       bool replace_reason)
@@ -4587,7 +4592,6 @@ static void _gres_cnt_pool_set(gres_node_state_t *gres_ns, int type,
 				    replace_reason);
 }
 
-__attribute__((unused))
 static uint64_t _gres_cnt_pool_count(gres_node_state_t *gres_ns, int type)
 {
 	drain_count_t *pool = _gres_cnt_pool(gres_ns, type);
@@ -4689,7 +4693,6 @@ static void _gres_drain_clear(gres_node_state_t *gres_ns)
  * Record the reason a count-only pool was drained. The pool already holds the
  * count; this does not create one. type < 0 is the untyped pool.
  */
-__attribute__((unused))
 static void _gres_type_drain_reason_set(gres_node_state_t *gres_ns, int type,
 					char *reason)
 {
@@ -4706,13 +4709,8 @@ static void _gres_type_drain_reason_set(gres_node_state_t *gres_ns, int type,
 	pool->reason = xstrdup(reason);
 }
 
-/*
- * Drain a device bit, recording it in the group the caller already holds. A
- * NULL group drains the bit with no reason.
- */
-__attribute__((unused))
-static void _gres_drain_set_bit_in(gres_node_state_t *gres_ns, int bit,
-				   drain_group_t *group)
+static void _gres_drain_set_bit(gres_node_state_t *gres_ns, int bit,
+				char *reason)
 {
 	xassert(gres_ns->gres_bit_drain);
 	xassert(bit < bit_size(gres_ns->gres_bit_drain));
@@ -4720,11 +4718,10 @@ static void _gres_drain_set_bit_in(gres_node_state_t *gres_ns, int bit,
 	if (!bit_test(gres_ns->gres_bit_drain, bit))
 		gres_ns->gres_cnt_drain++;
 	bit_set(gres_ns->gres_bit_drain, bit);
-	drained_tres_group_set_in(&gres_ns->drain_groups, group, bit,
-				  _gres_drain_bits(gres_ns));
+	drained_tres_group_set(&gres_ns->drain_groups, bit,
+			       _gres_drain_bits(gres_ns), reason);
 }
 
-__attribute__((unused))
 static void _gres_drain_clear_bit(gres_node_state_t *gres_ns, int bit)
 {
 	xassert(gres_ns->gres_bit_drain);
@@ -4736,7 +4733,6 @@ static void _gres_drain_clear_bit(gres_node_state_t *gres_ns, int bit)
 	drained_tres_group_clear(&gres_ns->drain_groups, bit);
 }
 
-__attribute__((unused))
 static void _gres_bit_drain_resize(gres_node_state_t *gres_ns,
 				   uint64_t gres_bits)
 {
@@ -4795,7 +4791,6 @@ static int _count_group_ids(void *x, void *arg)
 }
 
 /* How many device UUIDs drain_groups holds. */
-__attribute__((unused))
 static uint32_t _gres_drain_uuid_cnt(gres_node_state_t *gres_ns)
 {
 	uint32_t cnt = 0;
@@ -4804,6 +4799,38 @@ static uint32_t _gres_drain_uuid_cnt(gres_node_state_t *gres_ns)
 		(void) list_for_each(gres_ns->drain_groups, _count_group_ids,
 				     &cnt);
 	return cnt;
+}
+
+/*
+ * Resolve a device UUID to its current bitmap index using the dev_uuid
+ * map. Sets *rc and returns -1 on failure: ESLURM_INVALID_GRES for an empty or
+ * ambiguous (same UUID on >1 device) token, ESLURM_GRES_UUID_NOT_FOUND if no
+ * device currently has that UUID.
+ */
+static int _gres_uuid_to_index(gres_node_state_t *gres_ns, const char *uuid,
+			       int *rc)
+{
+	int found = -1;
+
+	if (!uuid || !uuid[0]) {
+		*rc = ESLURM_INVALID_GRES;
+		return -1;
+	}
+
+	for (int i = 0; i < gres_ns->dev_uuid_cnt; i++) {
+		if (gres_ns->dev_uuid[i] &&
+		    !xstrcmp(gres_ns->dev_uuid[i], uuid)) {
+			if (found >= 0) {
+				*rc = ESLURM_INVALID_GRES;
+				return -1;
+			}
+			found = i;
+		}
+	}
+
+	if (found < 0)
+		*rc = ESLURM_GRES_UUID_NOT_FOUND;
+	return found;
 }
 
 static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
@@ -7160,11 +7187,13 @@ static int _foreach_node_state_dup(void *x, void *arg)
 }
 
 /*
- * Duplicate a node gres status (used for will-run logic)
+ * Shared body of gres_node_state_list_dup()/gres_node_state_dup_one().
  * IN gres_list - node gres state information
- * RET a copy of gres_list or NULL on failure
+ * IN name - duplicate only the entry with this GRES name, or NULL for all
+ * RET the duplicate list, or NULL if gres_list is NULL, no plugins are
+ *     loaded, or (when name is given) no entry matches it
  */
-extern list_t *gres_node_state_list_dup(list_t *gres_list)
+static list_t *_gres_node_state_dup_common(list_t *gres_list, char *name)
 {
 	list_t *new_list = NULL;
 
@@ -7174,15 +7203,43 @@ extern list_t *gres_node_state_list_dup(list_t *gres_list)
 	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
-	if ((gres_context_cnt > 0)) {
-		new_list = list_create(_gres_node_list_delete);
-		(void) list_for_each(gres_list,
-				     _foreach_node_state_dup,
-				     new_list);
+	if (gres_context_cnt > 0) {
+		if (name) {
+			gres_state_t *gres_state_node =
+				list_find_first(gres_list,
+						_find_node_state_by_name, name);
+
+			if (gres_state_node) {
+				new_list = list_create(_gres_node_list_delete);
+				(void) _foreach_node_state_dup(gres_state_node,
+							       new_list);
+			}
+		} else {
+			new_list = list_create(_gres_node_list_delete);
+			(void) list_for_each(gres_list, _foreach_node_state_dup,
+					     new_list);
+		}
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return new_list;
+}
+
+/*
+ * Duplicate a node gres status (used for will-run logic)
+ * IN gres_list - node gres state information
+ * RET a copy of gres_list or NULL on failure
+ */
+extern list_t *gres_node_state_list_dup(list_t *gres_list)
+{
+	return _gres_node_state_dup_common(gres_list, NULL);
+}
+
+extern list_t *gres_node_state_dup_one(list_t *gres_list, char *name)
+{
+	xassert(name && name[0]);
+
+	return _gres_node_state_dup_common(gres_list, name);
 }
 
 static int _node_state_dealloc(void *x, void *arg)
@@ -7551,6 +7608,580 @@ extern bool gres_node_state_list_has_alloc_gres(list_t *gres_list)
 
 	return list_find_first(gres_list,
 			       _find_node_state_with_alloc_gres, NULL);
+}
+
+static int _find_node_state_with_drain_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = (gres_state_t *) x;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+
+	if (gres_ns && gres_ns->gres_cnt_drain)
+		return 1;
+	return 0;
+}
+
+extern bool gres_node_state_list_has_drain_gres(list_t *gres_list)
+{
+	if (!gres_list)
+		return false;
+
+	return list_find_first(gres_list, _find_node_state_with_drain_gres,
+			       NULL);
+}
+
+static int _foreach_resume_drain(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = x;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	bool *did_change = arg;
+
+	if (!gres_ns)
+		return 0;
+
+	if (!gres_ns->gres_cnt_drain && !_gres_drain_uuid_cnt(gres_ns) &&
+	    !gres_ns->drain_groups && !gres_ns->type_drain &&
+	    !gres_ns->untyped_drain.count)
+		return 0;
+
+	_gres_drain_clear(gres_ns);
+	*did_change = true;
+
+	return 0;
+}
+
+extern bool gres_node_state_list_resume_drain(list_t *gres_list)
+{
+	bool did_change = false;
+
+	if (!gres_list)
+		return false;
+
+	(void) list_for_each(gres_list, _foreach_resume_drain, &did_change);
+
+	return did_change;
+}
+
+static int _find_node_state_by_name(void *x, void *arg)
+{
+	gres_state_t *gres_state_node = (gres_state_t *) x;
+	char *name = arg;
+
+	if (!xstrcasecmp(gres_state_node->gres_name, name))
+		return 1;
+	return 0;
+}
+
+static bool _drain_overlaps_alloc(gres_node_state_t *gres_ns, int index)
+{
+	if (!gres_ns->gres_bit_alloc)
+		return false;
+
+	if ((index >= 0) && (index < bit_size(gres_ns->gres_bit_alloc)))
+		return bit_test(gres_ns->gres_bit_alloc, index);
+
+	return false;
+}
+
+static int _gres_type_order_cmp(const void *x, const void *y)
+{
+	const gres_type_order_t *a = x;
+	const gres_type_order_t *b = y;
+
+	return xstrcasecmp(a->name, b->name);
+}
+
+static gres_type_order_t *_gres_type_order(gres_node_state_t *gres_ns)
+{
+	gres_type_order_t *order;
+
+	if (!gres_ns->type_cnt)
+		return NULL;
+	order = xcalloc(gres_ns->type_cnt, sizeof(*order));
+	for (int i = 0; i < gres_ns->type_cnt; i++) {
+		order[i].index = i;
+		order[i].name = gres_ns->type_name[i];
+	}
+	qsort(order, gres_ns->type_cnt, sizeof(*order), _gres_type_order_cmp);
+	return order;
+}
+
+static uint64_t _gres_cnt_drain_add_type(gres_node_state_t *gres_ns, int type,
+					 uint64_t count)
+{
+	uint64_t drained = _gres_cnt_pool_count(gres_ns, type);
+	uint64_t cap = (type >= 0) ? gres_ns->type_cnt_avail[type] :
+				     gres_ns->gres_cnt_config;
+	uint64_t remaining = cap - MIN(cap, drained);
+
+	count = MIN(count, remaining);
+	if (!count)
+		return 0;
+
+	/* The caller records the reason once this pool exists. */
+	_gres_cnt_pool_set(gres_ns, type, drained + count, NULL, false);
+	gres_ns->gres_cnt_drain += count;
+	return count;
+}
+
+static uint64_t _gres_cnt_drain_resume_type(gres_node_state_t *gres_ns,
+					    int type, uint64_t count)
+{
+	uint64_t drained = _gres_cnt_pool_count(gres_ns, type);
+	uint64_t resumed = MIN(count, drained);
+
+	/* A partial resume keeps the pool's reason. Zero deletes it. */
+	_gres_cnt_pool_set(gres_ns, type, drained - resumed, NULL, false);
+	gres_ns->gres_cnt_drain -= resumed;
+	return resumed;
+}
+
+static int _count_only_drain_apply(gres_node_state_t *gres_ns, char *type,
+				   uint64_t count, bool want_all, char *reason,
+				   bool drain)
+{
+	gres_type_order_t *order = NULL;
+	uint64_t remaining = want_all ? INFINITE64 : count;
+	int type_index = -1;
+
+	_gres_drain_cnt_clamp(gres_ns);
+	if (type) {
+		type_index = _find_gres_type_name(gres_ns, type);
+		if (type_index < 0)
+			return ESLURM_INVALID_GRES_TYPE;
+	}
+
+	if (drain && gres_ns->gres_cnt_alloc)
+		warning("Draining count-only GRES while jobs are using it. Existing allocations are unaffected; no new allocations will use it.");
+
+	if (type) {
+		if (drain)
+			(void) _gres_cnt_drain_add_type(gres_ns, type_index,
+							remaining);
+		else
+			(void) _gres_cnt_drain_resume_type(gres_ns, type_index,
+							   remaining);
+	} else if (!gres_ns->type_cnt) {
+		if (drain)
+			(void) _gres_cnt_drain_add_type(gres_ns, -1, remaining);
+		else
+			(void) _gres_cnt_drain_resume_type(gres_ns, -1,
+							   remaining);
+	} else {
+		order = _gres_type_order(gres_ns);
+		for (int i = 0; (i < gres_ns->type_cnt) && remaining; i++) {
+			uint64_t changed;
+
+			if (drain)
+				changed =
+					_gres_cnt_drain_add_type(gres_ns,
+								 order[i].index,
+								 remaining);
+			else
+				changed = _gres_cnt_drain_resume_type(
+					gres_ns, order[i].index, remaining);
+			/*
+			 * An untyped request spreads over several types, so
+			 * record the reason against each type it actually
+			 * reached rather than leaving them on a stale one.
+			 */
+			if (drain && changed)
+				_gres_type_drain_reason_set(gres_ns,
+							    order[i].index,
+							    reason);
+			if (!want_all)
+				remaining -= MIN(remaining, changed);
+		}
+		xfree(order);
+	}
+
+	if (drain && (type || !gres_ns->type_cnt))
+		_gres_type_drain_reason_set(gres_ns, type_index, reason);
+	_gres_drain_cnt_clamp(gres_ns);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Build a bitmap of the device indexes that belong to GRES type "type". If
+ * "type" is NULL or empty, all configured devices are selected. Returns NULL
+ * and sets *rc to ESLURM_INVALID_GRES_TYPE if the type is not present on the
+ * node.
+ */
+static bitstr_t *_gres_type_device_mask(gres_node_state_t *gres_ns, char *type,
+					int dev_bits, int *rc)
+{
+	bitstr_t *mask = bit_alloc(dev_bits);
+	uint32_t type_id;
+	bool found = false;
+
+	if (!type || !type[0]) {
+		bit_set_all(mask);
+		return mask;
+	}
+
+	type_id = gres_build_id(type);
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		int topo_bits;
+
+		if (gres_ns->topo_type_id[i] != type_id)
+			continue;
+		found = true;
+		if (!gres_ns->topo_gres_bitmap[i])
+			continue;
+		topo_bits = bit_size(gres_ns->topo_gres_bitmap[i]);
+		for (int b = 0; (b < topo_bits) && (b < dev_bits); b++)
+			if (bit_test(gres_ns->topo_gres_bitmap[i], b))
+				bit_set(mask, b);
+	}
+
+	if (!found) {
+		FREE_NULL_BITMAP(mask);
+		*rc = ESLURM_INVALID_GRES_TYPE;
+		return NULL;
+	}
+
+	return mask;
+}
+
+/*
+ * Apply one count-only GRES drain request in the caller's action.
+ *
+ * UPDATE_SET is expressed as a full resume followed by a drain of the requested
+ * amount. That keeps the arithmetic identical to the add and remove paths and,
+ * for an untyped request against a multi-type GRES, gives a well defined answer
+ * to "make the total exactly N", which otherwise has no single distribution
+ * across types.
+ */
+static int _update_count_only_gres_drain(gres_node_state_t *gres_ns, char *type,
+					 uint64_t count, bool want_all,
+					 char *reason, update_mode_t action)
+{
+	int rc;
+
+	switch (action) {
+	case UPDATE_ADD:
+		return _count_only_drain_apply(gres_ns, type, count, want_all,
+					       reason, true);
+	case UPDATE_REMOVE:
+		return _count_only_drain_apply(gres_ns, type, count, want_all,
+					       reason, false);
+	case UPDATE_SET:
+		rc = _count_only_drain_apply(gres_ns, type, 0, true, NULL,
+					     false);
+		if (rc)
+			return rc;
+		if (!want_all && !count)
+			return SLURM_SUCCESS;
+		return _count_only_drain_apply(gres_ns, type, count, want_all,
+					       reason, true);
+	}
+
+	return ESLURM_INVALID_TRES;
+}
+
+/*
+ * Apply a resolved target bitmap to a device-tracked GRES.
+ * The selector is already resolved to indexes. A slot that holds a UUID
+ * records the drain or resume against that UUID as well as the index.
+ * An empty slot has no UUID, so only the index changes.
+ */
+static void _apply_gres_drain_bits(gres_node_state_t *gres_ns, char *gres_name,
+				   bitstr_t *target, char *reason, bool drain)
+{
+	if (!target || !bit_set_count(target))
+		return;
+
+	if (drain) {
+		for (int i = 0; i < bit_size(target); i++) {
+			if (bit_test(target, i) &&
+			    _drain_overlaps_alloc(gres_ns, i)) {
+				warning("Draining currently allocated GRES %s on node. Existing allocations are unaffected; no new allocations will use it.",
+					gres_name);
+				break;
+			}
+		}
+	}
+
+	for (int i = 0; i < bit_size(target); i++) {
+		char *uuid;
+
+		if (!bit_test(target, i))
+			continue;
+		uuid = (i < gres_ns->dev_uuid_cnt) ?
+			       gres_ns->dev_uuid[i] :
+			       NULL;
+		if (drain) {
+			if (uuid)
+				drained_tres_group_id_set(
+					&gres_ns->drain_groups, uuid, reason);
+			_gres_drain_set_bit(gres_ns, i, reason);
+		} else {
+			if (uuid)
+				drained_tres_group_id_clear(
+					&gres_ns->drain_groups, uuid);
+			_gres_drain_clear_bit(gres_ns, i);
+		}
+	}
+}
+
+/*
+ * Width of the device index space a drain request may select from.
+ *
+ * A UUID map includes every saved slot, empty ones included, so Index
+ * and ALL can name an absent device. A GRES with no map uses the larger
+ * of the configured count and the devices currently available.
+ *
+ * Never narrower than the existing drain bitmap: narrowing it drops the
+ * reasons of the bits it cuts, which is registration's job and not a
+ * selector's.
+ */
+static uint64_t _gres_drain_sel_bits(gres_node_state_t *gres_ns)
+{
+	uint64_t bits;
+
+	if (gres_ns->dev_uuid_cnt) {
+		bits = gres_ns->dev_uuid_cnt;
+	} else {
+		bits = MAX(gres_ns->gres_cnt_config, gres_ns->gres_cnt_avail);
+		if (gres_ns->topo_cnt)
+			bits = MAX(bits, gres_ns->topo_cnt);
+	}
+
+	if (gres_ns->gres_bit_drain)
+		bits = MAX(bits, bit_size(gres_ns->gres_bit_drain));
+
+	return bits;
+}
+
+/*
+ * Resolve req's selector into a bitmap of device indexes, plus the mask of
+ * devices belonging to req's type that the selection must fall within.
+ *
+ * Mutates no drain state, so a caller can validate a request before applying
+ * any part of it. Both bitmaps are returned to the caller to free, sized to
+ * _gres_drain_sel_bits(); a caller that goes on to apply the request has to
+ * widen gres_bit_drain to match first.
+ */
+static int _gres_resolve_target(gres_node_state_t *gres_ns,
+				gres_drain_req_t *req, bitstr_t **target_out,
+				bitstr_t **mask_out)
+{
+	bitstr_t *target = NULL, *type_mask = NULL;
+	uint64_t bits = _gres_drain_sel_bits(gres_ns);
+	int rc = SLURM_SUCCESS;
+
+	/* No device index space to select from: nothing can be named. */
+	if (!bits)
+		return ESLURM_INVALID_GRES;
+
+	type_mask = _gres_type_device_mask(gres_ns, req->type, bits, &rc);
+	if (!type_mask)
+		return rc;
+
+	target = bit_alloc(bits);
+
+	switch (req->sel) {
+	case GRES_DRAIN_SEL_ALL:
+		bit_or(target, type_mask);
+		break;
+	case GRES_DRAIN_SEL_INDEX:
+		if (bit_unfmt(target, req->sel_str))
+			rc = ESLURM_INVALID_GRES;
+		else if (!bit_super_set(target, type_mask))
+			rc = ESLURM_INVALID_GRES_TYPE;
+		break;
+	case GRES_DRAIN_SEL_UUID:
+	{
+		char *dup = xstrdup(req->sel_str), *save = NULL, *tok;
+
+		for (tok = strtok_r(dup, ",", &save); tok;
+		     tok = strtok_r(NULL, ",", &save)) {
+			int idx = _gres_uuid_to_index(gres_ns, tok, &rc);
+
+			if (idx < 0)
+				break;
+			if (idx >= bit_size(target)) {
+				rc = ESLURM_INVALID_GRES;
+				break;
+			}
+			bit_set(target, idx);
+		}
+		xfree(dup);
+		if (!rc && !bit_super_set(target, type_mask))
+			rc = ESLURM_INVALID_GRES_TYPE;
+		break;
+	}
+	case GRES_DRAIN_SEL_COUNT:
+		/* A bare count cannot name devices. */
+		rc = ESLURM_INVALID_GRES;
+		break;
+	default:
+		rc = ESLURM_INVALID_GRES;
+		break;
+	}
+
+	/*
+	 * A request may name devices by UUID and by index at once, since
+	 * "scontrol show drainedtres" reports both for a device and a reported
+	 * line is meant to be usable as-is. The UUID picks the device; the index
+	 * has to be that device's index. Disagreement means the UUID is not at
+	 * that index, so the request is refused rather than quietly acting on
+	 * whichever selector happened to win.
+	 */
+	if (!rc && req->verify_index) {
+		bitstr_t *check = bit_alloc(bit_size(target));
+
+		if (bit_unfmt(check, req->verify_index))
+			rc = ESLURM_INVALID_GRES;
+		else if (!bit_equal(check, target))
+			rc = ESLURM_GRES_SELECTOR_MISMATCH;
+		FREE_NULL_BITMAP(check);
+	}
+
+	if (rc) {
+		FREE_NULL_BITMAP(target);
+		FREE_NULL_BITMAP(type_mask);
+		return rc;
+	}
+
+	*target_out = target;
+	*mask_out = type_mask;
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Apply one resolved drain request to a device-tracked GRES.
+ *
+ * UPDATE_SET makes the drained set of this GRES (restricted to req's type, when
+ * one is given) exactly the resolved target: devices in the target that are not
+ * drained are drained, and drained devices of the type that are not in the
+ * target are resumed. Devices of another type are left alone, so a replace is
+ * scoped to what the request named rather than to the whole node.
+ */
+static int _update_device_gres_drain(gres_state_t *gres_state_node,
+				     gres_drain_req_t *req)
+{
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	bitstr_t *target = NULL, *type_mask = NULL;
+	bitstr_t *to_drain = NULL, *to_resume = NULL;
+	int rc;
+
+	rc = _gres_resolve_target(gres_ns, req, &target, &type_mask);
+	if (rc)
+		return rc;
+
+	/*
+	 * Only now that the request is known good: the bits below are set and
+	 * cleared through helpers that require a drain bitmap wide enough to
+	 * address every device the resolved target names.
+	 */
+	_gres_bit_drain_resize(gres_ns, bit_size(target));
+
+	switch (req->action) {
+	case UPDATE_ADD:
+		_apply_gres_drain_bits(gres_ns, gres_state_node->gres_name,
+				       target, req->reason, true);
+		break;
+	case UPDATE_REMOVE:
+		_apply_gres_drain_bits(gres_ns, gres_state_node->gres_name,
+				       target, NULL, false);
+		break;
+	case UPDATE_SET:
+		to_drain = bit_copy(target);
+		if (gres_ns->gres_bit_drain)
+			bit_and_not(to_drain, gres_ns->gres_bit_drain);
+
+		to_resume = gres_ns->gres_bit_drain ?
+				    bit_copy(gres_ns->gres_bit_drain) :
+				    bit_alloc(bit_size(target));
+		bit_and(to_resume, type_mask);
+		bit_and_not(to_resume, target);
+
+		_apply_gres_drain_bits(gres_ns, gres_state_node->gres_name,
+				       to_resume, NULL, false);
+		_apply_gres_drain_bits(gres_ns, gres_state_node->gres_name,
+				       to_drain, req->reason, true);
+		break;
+	}
+
+	FREE_NULL_BITMAP(to_drain);
+	FREE_NULL_BITMAP(to_resume);
+	FREE_NULL_BITMAP(target);
+	FREE_NULL_BITMAP(type_mask);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Apply one resolved drain request to a single GRES (the name has already been
+ * matched to gres_state_node). Selector legality depends on how the GRES is
+ * tracked: device-tracked GRES take GRES_DRAIN_SEL_INDEX, _UUID or _ALL, while
+ * count-only GRES take GRES_DRAIN_SEL_COUNT or _ALL.
+ */
+static int _update_one_gres_drain(gres_state_t *gres_state_node,
+				  gres_drain_req_t *req, bool *did_change)
+{
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	bool want_all = (req->sel == GRES_DRAIN_SEL_ALL);
+	bool by_count = (req->sel == GRES_DRAIN_SEL_COUNT);
+	int rc;
+
+	if (!gres_ns)
+		return ESLURM_INVALID_GRES;
+
+	if (gres_ns->gres_bit_alloc || gres_ns->topo_cnt) {
+		rc = _update_device_gres_drain(gres_state_node, req);
+	} else if (!by_count && !want_all) {
+		rc = ESLURM_INVALID_GRES;
+	} else {
+		rc = _update_count_only_gres_drain(gres_ns, req->type,
+						   by_count ? req->count : 0,
+						   want_all, req->reason,
+						   req->action);
+	}
+
+	if (rc)
+		return rc;
+
+	xfree(gres_ns->gres_used);
+	*did_change = true;
+
+	return SLURM_SUCCESS;
+}
+
+extern int gres_node_update_drain(list_t *gres_list, gres_drain_req_t *req,
+				  bool *did_change)
+{
+	gres_state_t *gres_state_node;
+	int rc;
+
+	if (!gres_list || !req || !req->name)
+		return ESLURM_INVALID_GRES;
+	if ((req->action != UPDATE_REMOVE) && (!req->reason || !req->reason[0]))
+		return ESLURM_INVALID_NODE_STATE_TRANSITION;
+
+	/*
+	 * UPDATE_ADD drains the named TRES, UPDATE_REMOVE resumes them, and
+	 * UPDATE_SET makes the drained set exactly those, scoped to req->type
+	 * when one is given, so a replace never disturbs a type the request did
+	 * not mention. Shared GRES (e.g. shard, mps) cannot be drained
+	 * directly; drain the sharing device (e.g. gpu) instead.
+	 */
+	slurm_mutex_lock(&gres_context_lock);
+	gres_state_node =
+		list_find_first(gres_list, _find_node_state_by_name, req->name);
+	if (!gres_state_node) {
+		slurm_mutex_unlock(&gres_context_lock);
+		return ESLURM_INVALID_GRES;
+	}
+	if (gres_id_shared(gres_state_node->config_flags)) {
+		slurm_mutex_unlock(&gres_context_lock);
+		return ESLURM_GRES_SHARED_DRAIN;
+	}
+	rc = _update_one_gres_drain(gres_state_node, req, did_change);
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return rc;
 }
 
 static int _foreach_get_node_used(void *x, void *arg)

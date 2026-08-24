@@ -4610,6 +4610,47 @@ static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 	trigger_reconfig();
 }
 
+/*
+ * _slurm_rpc_update_tres - RPC to drain or resume individual TRES
+ */
+static void _slurm_rpc_update_tres(slurm_msg_t *msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	update_tres_msg_t *update_tres_msg_ptr = msg->data;
+	slurmctld_lock_t node_write_lock = {
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
+
+	START_TIMER;
+	lock_slurmctld(node_write_lock);
+	error_code = node_mgr_update_tres_drain(update_tres_msg_ptr);
+	unlock_slurmctld(node_write_lock);
+	END_TIMER2(__func__);
+
+	if (error_code) {
+		info("%s for %s on %s: %s", __func__,
+		     update_tres_msg_ptr->name,
+		     update_tres_msg_ptr->node_names,
+		     slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+		/* A failed update changed nothing, so nothing is triggered. */
+		return;
+	} else {
+		debug2("%s complete for %s on %s %s", __func__,
+		       update_tres_msg_ptr->name,
+		       update_tres_msg_ptr->node_names, TIMER_STR());
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+
+	/* Below functions provide their own locks */
+	schedule_node_save();
+	queue_job_scheduler();
+	trigger_reconfig();
+}
+
 /* _slurm_rpc_update_partition - process RPC to update the configuration
  *	of a partition (e.g. UP/DOWN) */
 static void _slurm_rpc_update_partition(slurm_msg_t *msg)
@@ -7091,6 +7132,10 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.msg_type = REQUEST_DELETE_NODE,
 		.auth_level = AUTH_LEVEL_ADMIN,
 		.func = _slurm_rpc_delete_node,
+	},{
+		.msg_type = REQUEST_UPDATE_TRES,
+		.auth_level = AUTH_LEVEL_ADMIN,
+		.func = _slurm_rpc_update_tres,
 	},{
 		.msg_type = REQUEST_CREATE_PARTITION,
 		.auth_level = AUTH_LEVEL_ADMIN,

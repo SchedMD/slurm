@@ -602,6 +602,26 @@ typedef struct gres_mc_data {
 	uint8_t whole_node;         /* allocate entire node */
 } gres_mc_data_t;
 
+/* Which TRES of a GRES a drain request names. */
+typedef enum {
+	GRES_DRAIN_SEL_ALL, /* every TRES, subject to type */
+	GRES_DRAIN_SEL_COUNT, /* count TRES units, for count-only GRES */
+	GRES_DRAIN_SEL_INDEX, /* sel_str is a range list, e.g. "0,2-3" */
+	GRES_DRAIN_SEL_UUID, /* sel_str is a comma separated UUID list */
+} gres_drain_sel_t;
+
+/* One resolved administrative drain/resume request for a single GRES. */
+typedef struct {
+	update_mode_t action; /* drain, resume, or replace the drained set */
+	uint64_t count; /* TRES count, when sel is _COUNT */
+	char *name; /* GRES name without "gres/", e.g. "gpu" */
+	char *reason; /* why, required unless action is UPDATE_REMOVE */
+	gres_drain_sel_t sel; /* which TRES name refers to */
+	char *sel_str; /* index or UUID list, per sel */
+	char *type; /* GRES type, or NULL for any */
+	char *verify_index; /* index list the selection must equal, or NULL */
+} gres_drain_req_t;
+
 /*
  * Initialize the GRES plugins.
  *
@@ -879,6 +899,16 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
  */
 extern list_t *gres_node_state_list_dup(list_t *gres_list);
 
+/*
+ * Duplicate a single named GRES type's node state (used for TresDrain
+ * dry-run validation, where a request only ever touches one TRES, so
+ * duplicating every other configured GRES type would be wasted work).
+ * IN gres_list - node gres state information
+ * IN name - the GRES name to duplicate (e.g. "gpu")
+ * RET a one-element list containing the duplicate, or NULL if not found
+ */
+extern list_t *gres_node_state_dup_one(list_t *gres_list, char *name);
+
 /* Copy gres_job_state_t record for ALL nodes */
 extern void *gres_job_state_dup(gres_job_state_t *gres_js);
 
@@ -906,6 +936,40 @@ extern bool gres_node_state_list_has_alloc_gres(list_t *gres_list);
  * RET string, must be xfreed. NULL if no GRES uses chunks.
  */
 extern char *gres_get_node_chunks(list_t *gres_list);
+
+/*
+ * Resume every drained device and count on a node's GRES, whatever selector or
+ * origin drained them. Shared GRES hold no drain state of their own and are
+ * left alone.
+ * IN gres_list - node GRES state list
+ * RET true if anything was drained before the call
+ */
+extern bool gres_node_state_list_resume_drain(list_t *gres_list);
+
+/*
+ * Return true if any node_state_t has drained GRES.
+ * IN gres_list - node GRES state list
+ * RET true when any GRES on the node is drained
+ */
+extern bool gres_node_state_list_has_drain_gres(list_t *gres_list);
+
+/*
+ * Apply one resolved drain/resume request to a node's GRES state.
+ *
+ * UPDATE_ADD drains the named TRES, UPDATE_REMOVE resumes them, and
+ * UPDATE_SET makes the drained set exactly those -- scoped to req->type
+ * when one is given, so a replace never disturbs a type the request did not
+ * mention.
+ *
+ * Shared GRES (e.g. shard, mps) cannot be drained directly; drain the sharing
+ * device (e.g. gpu) instead.
+ * IN gres_list - node GRES state list
+ * IN req - resolved drain or resume request
+ * OUT did_change - set when the drained set changes, may be NULL
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int gres_node_update_drain(list_t *gres_list, gres_drain_req_t *req,
+				  bool *did_change);
 
 /*
  * Build a string indicating a node's used GRES

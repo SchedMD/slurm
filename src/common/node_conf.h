@@ -268,6 +268,25 @@ extern list_t *active_feature_list;	/* list of currently active features_records
 extern list_t *avail_feature_list;	/* list of available features_records */
 
 /*
+ * node_conf_set_degraded_flag - set or clear NODE_STATE_DEGRADED to match
+ *	whether the node currently has any administratively drained TRES.
+ * IN node_ptr - node whose flag is updated
+ * RET the new value of the flag
+ */
+extern bool node_conf_set_degraded_flag(node_record_t *node_ptr);
+
+/*
+ * node_conf_resume_all_drained_tres - resume every drained TRES on the node,
+ *	whatever drained it.
+ *
+ * Leaves NODE_STATE_DEGRADED and the accounting event alone; the caller
+ * reconciles both once, after the whole set is clear.
+ * IN node_ptr - node whose drained TRES are cleared
+ * RET true if anything was drained before the call
+ */
+extern bool node_conf_resume_all_drained_tres(node_record_t *node_ptr);
+
+/*
  * Build the drained-TRES records for a node -- what its drained TRES are
  * tracked as. The DrainedTRES string reported to users is rendered from them
  * by drained_tres_recs_to_str(). A device-tracked GRES reports its index and

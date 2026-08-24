@@ -835,6 +835,17 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->last_busy = node_state_rec->last_busy;
 		}
 
+		/*
+		 * Recompute the degraded flag from the drain data adopted
+		 * above rather than restoring it from the state file, so the
+		 * two cannot disagree: slurm.conf may have clamped what was
+		 * adopted, and a state file written by a controller that was
+		 * killed mid-update may not agree with itself.
+		 */
+		if (node_ptr) {
+			(void) node_conf_set_degraded_flag(node_ptr);
+		}
+
 		purge_node_rec(node_state_rec);
 	}
 
@@ -1746,6 +1757,114 @@ static int _update_node_kv(node_record_t *node_ptr,
 
 	xfree(err_msg);
 	return rc;
+}
+
+/*
+ * Split "gres/<name>[:<type>]" into its name and type. Returns NULL if the
+ * string does not name a GRES; otherwise the caller xfrees the returned name
+ * and *type_out.
+ */
+static char *_split_gres_tres_name(char *tres_name, char **type_out)
+{
+	char *name, *colon;
+
+	if (xstrncasecmp(tres_name, "gres/", 5))
+		return NULL;
+
+	name = xstrdup(tres_name + 5);
+	if (!name[0]) {
+		xfree(name);
+		return NULL;
+	}
+
+	if ((colon = xstrchr(name, ':'))) {
+		*colon = '\0';
+		*type_out = colon[1] ? xstrdup(colon + 1) : NULL;
+	} else {
+		*type_out = NULL;
+	}
+
+	return name;
+}
+
+/*
+ * Apply the update message's administrative TRES drain to one node.
+ *
+ * A request names exactly one TRES, so the whole request is resolved before
+ * anything is mutated: an invalid selector fails with the node untouched
+ * rather than leaving it half drained.
+ *
+ * IN dry_run - resolve the request against the node but change nothing, so a
+ *		multi-node update can reject a selector that is invalid on any
+ *		one of its nodes before it has changed any of them.
+ */
+static int _update_node_tres_drain(node_record_t *node_ptr,
+				   update_tres_msg_t *msg, bool *did_change,
+				   bool dry_run)
+{
+	char *reason = (msg->action == UPDATE_REMOVE) ? NULL : msg->reason;
+	int rc;
+
+	/* node_mgr_update_tres_drain() rejects both of these before the node loop. */
+	xassert(msg->name && msg->name[0]);
+	xassert((msg->action == UPDATE_REMOVE) || (reason && reason[0]));
+
+	if (!xstrncasecmp(msg->name, "gres/", 5)) {
+		gres_drain_req_t req = {
+			.action = msg->action,
+			.reason = reason,
+			.count = msg->count,
+		};
+
+		if (!(req.name = _split_gres_tres_name(msg->name, &req.type)))
+			return ESLURM_INVALID_TRES;
+
+		if (msg->select_all) {
+			req.sel = GRES_DRAIN_SEL_ALL;
+		} else if (msg->uuid) {
+			/*
+			 * A UUID names the device outright, so it is what the
+			 * request selects on. An index given alongside is
+			 * carried as a check that it still points at the same
+			 * device rather than as a second way to select.
+			 */
+			req.sel = GRES_DRAIN_SEL_UUID;
+			req.sel_str = msg->uuid;
+			req.verify_index = msg->index;
+		} else if (msg->index) {
+			req.sel = GRES_DRAIN_SEL_INDEX;
+			req.sel_str = msg->index;
+		} else if (msg->count != NO_VAL64) {
+			req.sel = GRES_DRAIN_SEL_COUNT;
+		} else {
+			xfree(req.name);
+			xfree(req.type);
+			return ESLURM_INVALID_GRES;
+		}
+
+		if (dry_run) {
+			/*
+			 * did_change is computed by mutating and diffing a
+			 * signature, so resolve against a copy of just this
+			 * TRES's state rather than touch the live node record.
+			 */
+			list_t *copy =
+				gres_node_state_dup_one(node_ptr->gres_list,
+							req.name);
+
+			rc = gres_node_update_drain(copy, &req, did_change);
+			FREE_NULL_LIST(copy);
+		} else {
+			rc = gres_node_update_drain(node_ptr->gres_list, &req,
+						    did_change);
+		}
+		xfree(req.name);
+		xfree(req.type);
+
+		return rc;
+	}
+
+	return ESLURM_INVALID_TRES;
 }
 
 extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
@@ -2708,6 +2827,200 @@ end:
 	xfree(instance_id_broadcast);
 	xfree(instance_type_broadcast);
 	FREE_NULL_DATA(kv_set_doc);
+
+	return error_code;
+}
+
+/*
+ * Resolve msg on every node in node_bitmap. A dry run only records failures;
+ * otherwise also apply each change.
+ */
+static int _update_nodes_tres_drain(bitstr_t *node_bitmap,
+				    update_tres_msg_t *msg, bool dry_run,
+				    bitstr_t **failed_nodes,
+				    bitstr_t **changed_nodes, bool *any_change)
+{
+	node_record_t *node_ptr;
+	int error_code = SLURM_SUCCESS;
+
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
+		bool did_change = false;
+		int err_code = _update_node_tres_drain(node_ptr, msg,
+						       &did_change, dry_run);
+
+		if (err_code) {
+			if (!error_code)
+				error_code = err_code;
+			if (!*failed_nodes)
+				*failed_nodes = bit_alloc(node_record_count);
+			bit_set(*failed_nodes, node_ptr->index);
+		}
+
+		if (dry_run || !did_change)
+			continue;
+
+		(void) node_conf_set_degraded_flag(node_ptr);
+		*any_change = true;
+		if (!*changed_nodes)
+			*changed_nodes = bit_alloc(node_record_count);
+		bit_set(*changed_nodes, node_ptr->index);
+	}
+
+	return error_code;
+}
+
+extern int node_mgr_update_tres_drain(update_tres_msg_t *update_tres_msg)
+{
+	int error_code = SLURM_SUCCESS;
+	hostlist_t *host_list = NULL;
+	bitstr_t *node_bitmap = NULL;
+	bitstr_t *failed_nodes = NULL, *changed_nodes = NULL;
+	time_t now = time(NULL);
+	bool any_change = false;
+	bool has_index, has_uuid, has_count;
+	int sel_cnt;
+
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+
+	if (!update_tres_msg->name || !update_tres_msg->name[0])
+		return ESLURM_INVALID_TRES;
+	if ((update_tres_msg->action != UPDATE_ADD) &&
+	    (update_tres_msg->action != UPDATE_REMOVE) &&
+	    (update_tres_msg->action != UPDATE_SET))
+		return ESLURM_INVALID_NODE_STATE_TRANSITION;
+
+	/*
+	 * A resume has nothing to record a reason against, so it must not carry
+	 * one; a drain must.
+	 */
+	if (update_tres_msg->action == UPDATE_REMOVE) {
+		if (update_tres_msg->reason && update_tres_msg->reason[0])
+			return ESLURM_INVALID_NODE_STATE_TRANSITION;
+	} else if (!update_tres_msg->reason || !update_tres_msg->reason[0]) {
+		return ESLURM_INVALID_NODE_STATE_TRANSITION;
+	}
+
+	/*
+	 * The selectors are mutually exclusive, with one exception: a uuid and
+	 * an index may be given together to name one device two ways (the
+	 * uuid selects it and the index is checked against where it currently
+	 * sits), so a "scontrol show drainedtres" line can be handed back
+	 * as-is.
+	 *
+	 * scontrol checks this too, but every other client (slurmrestd, or
+	 * anything built on the API) fills the message in directly. Without
+	 * this an over-specified request would be applied using whichever
+	 * selector _update_node_tres_drain() happens to consider first, so
+	 * "everything, and also a count of 2" would silently drain everything.
+	 */
+	has_index = (update_tres_msg->index && update_tres_msg->index[0]);
+	has_uuid = (update_tres_msg->uuid && update_tres_msg->uuid[0]);
+	has_count = (update_tres_msg->count != NO_VAL64);
+
+	/*
+	 * An empty string selects nothing. Drop it so that no resolver reads
+	 * it as a selector alongside the one that was counted.
+	 */
+	if (!has_index)
+		xfree(update_tres_msg->index);
+	if (!has_uuid)
+		xfree(update_tres_msg->uuid);
+
+	/* bit_unfmt() reads "foo" as index 0 */
+	if (has_index && (strspn(update_tres_msg->index, "0123456789,-:") !=
+			  strlen(update_tres_msg->index)))
+		return ESLURM_INVALID_TRES;
+
+	sel_cnt = (update_tres_msg->select_all ? 1 : 0) + has_index + has_uuid +
+		  has_count;
+	if (!sel_cnt) {
+		/*
+		 * A request must name what it acts on. An empty selector is
+		 * most likely an unset shell variable, and reading it as the
+		 * empty set would turn a SetDrain into a resume of everything.
+		 */
+		return ESLURM_INVALID_TRES;
+	} else if ((sel_cnt != 1) &&
+		   !((sel_cnt == 2) && has_index && has_uuid)) {
+		return ESLURM_INVALID_TRES;
+	}
+
+	if (!update_tres_msg->node_names) {
+		info("Update TRES: invalid node name");
+		return ESLURM_INVALID_NODE_NAME;
+	}
+
+	if (!(host_list = nodespec_to_hostlist(update_tres_msg->node_names,
+					       true, NULL)))
+		return ESLURM_INVALID_NODE_NAME;
+
+	if (!hostlist_count(host_list)) {
+		info("Update TRES: expansion of node specification '%s' resulted in zero nodes",
+		     update_tres_msg->node_names);
+		FREE_NULL_HOSTLIST(host_list);
+		return ESLURM_INVALID_NODE_NAME;
+	}
+
+	/*
+	 * Resolve every node before changing any of them. A hostlist naming a
+	 * node that does not exist is a typo, and draining the rest of the
+	 * list while returning a failure leaves the admin unable to tell what
+	 * was applied.
+	 */
+	if (hostlist2bitmap(host_list, false, &node_bitmap)) {
+		info("Update TRES: invalid node name in %s; no TRES were changed",
+		     update_tres_msg->node_names);
+		FREE_NULL_HOSTLIST(host_list);
+		FREE_NULL_BITMAP(node_bitmap);
+		return ESLURM_INVALID_NODE_NAME;
+	}
+	FREE_NULL_HOSTLIST(host_list);
+
+	/*
+	 * Selector legality can vary by node (different CPU counts, GRES types,
+	 * or UUID maps). Validate the complete target set before applying to any
+	 * node so the RPC is atomic from the administrator's perspective.
+	 */
+	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
+					      true, &failed_nodes,
+					      &changed_nodes, &any_change);
+	if (failed_nodes) {
+		char *failed_str = bitmap2node_name(failed_nodes);
+
+		info("Update TRES: %s could not be updated on %s; no TRES were changed",
+		     update_tres_msg->name, failed_str);
+		xfree(failed_str);
+		FREE_NULL_BITMAP(failed_nodes);
+		FREE_NULL_BITMAP(node_bitmap);
+		return error_code;
+	}
+
+	error_code = _update_nodes_tres_drain(node_bitmap, update_tres_msg,
+					      false, &failed_nodes,
+					      &changed_nodes, &any_change);
+	FREE_NULL_BITMAP(node_bitmap);
+
+	/*
+	 * Validation and apply run under the same node write lock, so this
+	 * should only catch an internal mismatch between the two paths.
+	 */
+	if (failed_nodes) {
+		char *failed_str = bitmap2node_name(failed_nodes);
+		char *changed_str =
+			changed_nodes ? bitmap2node_name(changed_nodes) : NULL;
+
+		error("%s: %s could not be updated on %s; applied to %s",
+		      __func__, update_tres_msg->name, failed_str,
+		      changed_str ? changed_str : "no nodes");
+		xfree(failed_str);
+		xfree(changed_str);
+	}
+	FREE_NULL_BITMAP(failed_nodes);
+	FREE_NULL_BITMAP(changed_nodes);
+
+	if (any_change)
+		last_node_update = now;
 
 	return error_code;
 }
@@ -3935,6 +4248,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		error_code = EINVAL;
 		/* reason_down set in function above */
 	}
+	(void) node_conf_set_degraded_flag(node_ptr);
 	gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (node_ptr->res_cores_per_gpu) {
