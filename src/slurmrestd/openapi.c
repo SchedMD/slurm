@@ -1615,18 +1615,19 @@ static int _on_path_entry(const char *entry, bool template, void *arg)
 	param = data_key_set(args->params, e->entry);
 	data_set_string(param, entry);
 
-	switch (e->parameter) {
-	case OPENAPI_TYPE_NUMBER:
-		type = DATA_TYPE_FLOAT;
-		break;
-	case OPENAPI_TYPE_INTEGER:
-		type = DATA_TYPE_INT_64;
-		break;
-	case OPENAPI_TYPE_STRING:
+	type = openapi_type_to_data_type(e->parameter);
+
+	/*
+	 * A URL path segment is always a scalar string. Force every type that
+	 * can not be converted from one to a string, including types that
+	 * never resolved, instead of rejecting the request.
+	 */
+	if ((type == DATA_TYPE_NONE) || (type == DATA_TYPE_DICT) ||
+	    (type == DATA_TYPE_LIST)) {
+		debug5("%s: parameter %s[%s] forced to string",
+		       __func__, e->entry,
+		       openapi_type_to_string(e->parameter));
 		type = DATA_TYPE_STRING;
-		break;
-	default:
-		fatal_abort("should never happen");
 	}
 
 	if (data_convert_type(param, type) != type) {
