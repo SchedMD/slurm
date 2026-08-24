@@ -557,7 +557,7 @@ static bool _data_parser_supports_method(data_parser_t *parser,
 	return true;
 }
 
-static path_t *_register_path(const char *in_path,
+static path_t *_register_path(const char *path,
 			      const openapi_path_binding_t *op_path,
 			      const openapi_resp_meta_t *meta,
 			      data_parser_t *parser)
@@ -565,13 +565,11 @@ static path_t *_register_path(const char *in_path,
 	entry_t *entries = NULL;
 	int methods_count = 0, entries_count = 0;
 	path_t *p = NULL;
-	const char *path = (in_path ? in_path : op_path->path);
 
 	debug4("%s: attempting to bind %s with %s",
 	       __func__, (parser ? data_parser_get_plugin_version(parser) :
 			  "data_parser/none"), path);
 
-	xassert(!!in_path == !!(op_path->flags & OPENAPI_BIND_DATA_PARSER));
 	_check_openapi_path_binding(op_path);
 
 	if (!(entries = _parse_openapi_path(path, &entries_count)))
