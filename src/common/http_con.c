@@ -382,7 +382,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 						 (length + 1))))
 			return _send_reject(hcon, rc);
 
-		xassert(remaining_buf(request->content) >= nlength);
+		xassert(remaining_buf(request->content) >= (length + 1));
 		memmove((get_buf_data(request->content) +
 			 get_buf_offset(request->content)),
 			at, length);
@@ -393,7 +393,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 		/* final byte must in body must always be NULL terminated */
 		{
 			char *term = (get_buf_data(request->content) +
-				      get_buf_offset(request->content) + 1);
+				      get_buf_offset(request->content));
 			*term = '\0';
 		}
 	}
