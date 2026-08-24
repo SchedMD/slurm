@@ -202,7 +202,7 @@ extern void *http_context_set_auth(http_context_t *context, void *auth)
 	void *old = NULL;
 
 	if (!context)
-		return auth;
+		fatal_abort("should never happen");
 
 	xassert(context->magic == MAGIC);
 
