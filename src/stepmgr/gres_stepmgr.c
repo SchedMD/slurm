@@ -369,14 +369,17 @@ static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 	for (int i = 0; i < gres_bits && *gres_cnt > 0; i++) {
 		if (bit_test(gres_ns->gres_bit_alloc, i))
 			continue;
+		if (gres_ns->gres_bit_drain &&
+		    bit_test(gres_ns->gres_bit_drain, i))
+			continue;
 		if (core_bitmap &&
 		    !_cores_on_gres(core_bitmap, alloc_core_bitmap, gres_ns, i,
 				    gres_js))
 			continue;
-		bit_set(gres_ns->gres_bit_alloc, i);
-		bit_set(gres_js->gres_bit_alloc[node_offset], i);
 		if (shared_gres) { /* Allocate whole sharing gres */
-			int n = gres_ns->topo_gres_cnt_avail[i];
+			int n = gres_node_topo_cnt_avail(gres_ns, i, false);
+			if (!n)
+				continue;
 			gres_js->gres_per_bit_alloc[node_offset][i] = n;
 			gres_ns->gres_cnt_alloc += n;
 			(*gres_cnt) -= n;
@@ -384,6 +387,8 @@ static void _allocate_gres_bits(gres_node_state_t *gres_ns,
 			gres_ns->gres_cnt_alloc++;
 			(*gres_cnt)--;
 		}
+		bit_set(gres_ns->gres_bit_alloc, i);
+		bit_set(gres_js->gres_bit_alloc[node_offset], i);
 	}
 	FREE_NULL_BITMAP(alloc_core_bitmap);
 }
@@ -408,6 +413,7 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 	char *log_type;
 	bool shared_gres = false;
 	bool use_busy_dev = gres_use_busy_dev(gres_state_node, 0);
+	uint64_t alloc_limit;
 	uint64_t pre_alloc_gres_cnt;
 	uint64_t *pre_alloc_type_cnt = NULL;
 
@@ -497,16 +503,19 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 	/*
 	 * Check that sufficient resources exist on this node
 	 */
-	gres_js->gres_cnt_node_alloc[node_offset] = gres_cnt;
+	alloc_limit = gres_ns->gres_cnt_avail;
+	if (new_alloc)
+		alloc_limit -= MIN(alloc_limit,
+				   gres_node_cnt_drain_unalloc(gres_ns));
 	i = gres_ns->gres_cnt_alloc + gres_cnt;
-	if (i > gres_ns->gres_cnt_avail) {
+	if (i > alloc_limit) {
 		error("gres/%s: job %u node %s overallocated resources by %"
 		      PRIu64", (%"PRIu64" > %"PRIu64")",
 		      gres_name, job_id, node_name,
-		      i - gres_ns->gres_cnt_avail,
-		      i, gres_ns->gres_cnt_avail);
+		      i - alloc_limit, i, alloc_limit);
 		return SLURM_ERROR;
 	}
+	gres_js->gres_cnt_node_alloc[node_offset] = gres_cnt;
 
 	/*
 	 * Grab these here since gres_ns->[gres|type]_cnt_alloc can change
@@ -814,8 +823,19 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 			    (gres_js->type_id !=
 			     gres_ns->type_id[j]))
 				continue;
+			/*
+			 * type_cnt_avail[] is raw (drain not baked in), so
+			 * subtract drained TRES for this type as well. Only
+			 * for a new allocation: on state restore or reconfig
+			 * the job may already hold the drained units.
+			 */
 			k = gres_ns->type_cnt_avail[j] -
-				gres_ns->type_cnt_alloc[j];
+			    gres_ns->type_cnt_alloc[j];
+			if (new_alloc)
+				k -= gres_node_type_drain_cnt(
+					gres_ns, gres_ns->type_id[j], true);
+			if (k < 0)
+				k = 0;
 			k = MIN(gres_cnt, k);
 			gres_ns->type_cnt_alloc[j] += k;
 			gres_cnt -= k;
@@ -949,6 +969,54 @@ cleanup:
 	return rc;
 }
 
+/*
+ * How many GRES of one type a whole-node allocation gets: the devices of that
+ * type the node can still give out.
+ *
+ * Count the type's devices in the topology, capped at type_cnt_avail.
+ * Count-only GRES and config_overrides have no per-device topology, so they
+ * use the configured type count.
+ */
+static uint64_t _whole_node_type_cnt(gres_node_state_t *gres_ns, int type_inx)
+{
+	uint32_t type_id = gres_ns->type_id[type_inx];
+	uint64_t cnt = 0;
+	bool shared;
+
+	/*
+	 * Shard and MPS have no drain bitmap. A drained parent GPU is
+	 * reported by gres_node_topo_cnt_avail().
+	 */
+	shared = gres_ns->alt_gres &&
+		 gres_id_sharing(gres_ns->alt_gres->plugin_id);
+
+	if (gres_ns->topo_cnt) {
+		for (int i = 0; i < gres_ns->topo_cnt; i++) {
+			if (gres_ns->topo_type_id[i] != type_id)
+				continue;
+			if (shared)
+				cnt += gres_node_topo_cnt_avail(gres_ns, i,
+								false);
+			else
+				cnt += gres_ns->topo_gres_cnt_avail[i];
+		}
+		cnt = MIN(cnt, gres_ns->type_cnt_avail[type_inx]);
+	} else {
+		cnt = gres_ns->type_cnt_avail[type_inx];
+	}
+
+	/*
+	 * Per-device drains are already out of a shared count. A count-only
+	 * or device GRES still subtracts its own drained devices, allocated
+	 * or not.
+	 */
+	if (shared)
+		return cnt;
+
+	return cnt -
+	       MIN(cnt, gres_node_type_drain_cnt(gres_ns, type_id, false));
+}
+
 static int _job_alloc_whole_node_internal(
 	gres_key_t *job_search_key, gres_state_t *gres_state_node,
 	list_t *job_gres_list, list_t **job_gres_list_alloc, int node_cnt,
@@ -981,11 +1049,14 @@ static int _job_alloc_whole_node_internal(
 	 * correctly here to avoid heterogeneous node
 	 * issues.
 	 */
-	if (type_index != -1)
+	if (type_index != -1) {
 		gres_js->gres_per_node =
-			gres_ns->type_cnt_avail[type_index];
-	else
+			_whole_node_type_cnt(gres_ns, type_index);
+	} else {
 		gres_js->gres_per_node = gres_ns->gres_cnt_avail;
+		gres_js->gres_per_node -=
+			MIN(gres_js->gres_per_node, gres_ns->gres_cnt_drain);
+	}
 
 	return _job_alloc(gres_state_job, *job_gres_list_alloc, gres_state_node,
 			  node_cnt, node_index, node_offset,
@@ -1023,12 +1094,13 @@ static void _job_select_whole_node_internal(
 	 */
 	if (gres_ns->no_consume) {
 		gres_js->total_gres = NO_CONSUME_VAL64;
-	} else if (type_inx != -1)
+	} else if (type_inx != -1) {
+		gres_js->total_gres += _whole_node_type_cnt(gres_ns, type_inx);
+	} else {
 		gres_js->total_gres +=
-			gres_ns->type_cnt_avail[type_inx];
-	else
-		gres_js->total_gres += gres_ns->gres_cnt_avail;
-
+			(gres_ns->gres_cnt_avail -
+			 MIN(gres_ns->gres_cnt_avail, gres_ns->gres_cnt_drain));
+	}
 }
 
 static void _handle_explicit_alloc(void *x, void *arg)

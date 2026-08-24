@@ -318,12 +318,12 @@ typedef struct gres_node_state {
 	bool node_feature;
 
 	/*
-	 * Total resources available for allocation to jobs.
-	 * gres_cnt_found or gres_cnt_config, depending upon config_overrides.
-	 * Drain is NOT baked in here, nor in the type_cnt_avail[] /
-	 * topo_gres_cnt_avail[] arrays. To get a count with the drained TRES
-	 * removed, subtract gres_cnt_drain from the total, or the matching
-	 * per-type or per-topo drained count.
+	 * Total resources available for allocation to jobs, gres_cnt_found or
+	 * gres_cnt_config depending upon config_overrides. Drains are not
+	 * subtracted here or in type_cnt_avail[] and topo_gres_cnt_avail[].
+	 * A count that also subtracts gres_cnt_alloc must subtract only
+	 * gres_node_cnt_drain_unalloc(), or a drained, allocated device
+	 * counts twice.
 	 */
 	uint64_t gres_cnt_avail;
 
@@ -947,11 +947,44 @@ extern char *gres_get_node_chunks(list_t *gres_list);
 extern bool gres_node_state_list_resume_drain(list_t *gres_list);
 
 /*
+ * Return topology availability after subtracting drained devices. Handles both
+ * regular and shared GRES; for shared GRES the drained sharing devices are read
+ * from alt_gres and treated as all-or-nothing.
+ * IN gres_ns - node GRES state
+ * IN topo_inx - topology record to read
+ * IN use_total_gres - return the topology count without subtracting drains
+ * RET available count after the drain is subtracted
+ */
+extern uint64_t gres_node_topo_cnt_avail(gres_node_state_t *gres_ns,
+					 int topo_inx, bool use_total_gres);
+
+/*
  * Return true if any node_state_t has drained GRES.
  * IN gres_list - node GRES state list
  * RET true when any GRES on the node is drained
  */
 extern bool gres_node_state_list_has_drain_gres(list_t *gres_list);
+
+/*
+ * Drained count of one GRES type, which callers take out of type_cnt_avail[].
+ * IN gres_ns - node GRES state
+ * IN type_id - GRES type id to count
+ * IN exclude_alloc - when true, a device that is both drained and allocated
+ *	is not counted. Scheduling free counts want that. Limits and the count
+ *	a job is allowed to receive still pass false.
+ * RET drained count of that type
+ */
+extern uint64_t gres_node_type_drain_cnt(gres_node_state_t *gres_ns,
+					 uint32_t type_id, bool exclude_alloc);
+
+/*
+ * Drained devices no job currently holds. A device in both gres_bit_drain and
+ * gres_bit_alloc is omitted so a free-count that also subtracts
+ * gres_cnt_alloc does not remove it twice.
+ * IN gres_ns - node GRES state
+ * RET drained count no job currently holds
+ */
+extern uint64_t gres_node_cnt_drain_unalloc(gres_node_state_t *gres_ns);
 
 /*
  * Apply one resolved drain/resume request to a node's GRES state.

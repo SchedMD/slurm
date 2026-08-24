@@ -5906,7 +5906,7 @@ extern void gres_node_feature(char *node_name,
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
 	uint32_t plugin_id;
-	uint64_t gres_scaled = 0;
+	uint64_t gres_scaled = 0, drain_unalloc;
 	int gres_name_len;
 
 	xassert(gres_name);
@@ -5949,9 +5949,11 @@ extern void gres_node_feature(char *node_name,
 			list_append(*gres_list, gres_state_node);
 		}
 		gres_ns = gres_state_node->gres_data;
-		if (gres_size >= gres_ns->gres_cnt_alloc) {
+		drain_unalloc = gres_node_cnt_drain_unalloc(gres_ns);
+		if (gres_size >= (gres_ns->gres_cnt_alloc + drain_unalloc)) {
 			gres_ns->gres_cnt_avail = gres_size -
-				gres_ns->gres_cnt_alloc;
+						  gres_ns->gres_cnt_alloc -
+						  drain_unalloc;
 		} else {
 			error("%s: Changed size count of GRES %s from %"PRIu64
 			      " to %"PRIu64", resource over allocated",
@@ -7610,6 +7612,110 @@ extern bool gres_node_state_list_has_alloc_gres(list_t *gres_list)
 			       _find_node_state_with_alloc_gres, NULL);
 }
 
+/*
+ * Count the devices set in both drain and mask, leaving out those set in
+ * alloc when alloc is given. The bitmaps can differ in width: a topology
+ * bitmap follows what slurmd last reported, drain and alloc the configured
+ * count. Only the drained span is walked and no bitmap is copied, since this
+ * runs per topology record while scheduling.
+ */
+static uint64_t _drained_in_mask(bitstr_t *drain, bitstr_t *alloc,
+				 bitstr_t *mask)
+{
+	uint64_t cnt = 0;
+	int first, last;
+
+	if (!drain || !mask || ((first = bit_ffs(drain)) < 0))
+		return 0;
+
+	last = MIN(bit_fls(drain), bit_size(mask) - 1);
+	for (int i = first; i <= last; i++) {
+		if (!bit_test(drain, i) || !bit_test(mask, i))
+			continue;
+		if (alloc && (i < bit_size(alloc)) && bit_test(alloc, i))
+			continue;
+		cnt++;
+	}
+
+	return cnt;
+}
+
+static bool _shared_topo_bit_drained(gres_node_state_t *gres_ns, int topo_inx)
+{
+	gres_node_state_t *alt_gres_ns;
+	bitstr_t *gres_bit_drain;
+
+	xassert(gres_ns);
+	xassert(topo_inx < gres_ns->topo_cnt);
+
+	if (!gres_ns->alt_gres || !gres_ns->alt_gres->gres_data)
+		return false;
+
+	if (!gres_ns->topo_gres_bitmap || !gres_ns->topo_gres_bitmap[topo_inx])
+		return false;
+
+	alt_gres_ns = gres_ns->alt_gres->gres_data;
+	gres_bit_drain = alt_gres_ns->gres_bit_drain;
+	if (!gres_bit_drain)
+		return false;
+
+	return _drained_in_mask(gres_bit_drain, NULL,
+				gres_ns->topo_gres_bitmap[topo_inx]);
+}
+
+extern uint64_t gres_node_cnt_drain_unalloc(gres_node_state_t *gres_ns)
+{
+	uint64_t overlap;
+
+	if (!gres_ns || !gres_ns->gres_cnt_drain)
+		return 0;
+
+	/* Only a device that is both drained and allocated is removed. */
+	overlap = 0;
+	if (gres_ns->gres_bit_drain && gres_ns->gres_bit_alloc)
+		overlap = bit_overlap(gres_ns->gres_bit_drain,
+				      gres_ns->gres_bit_alloc);
+	if (overlap >= gres_ns->gres_cnt_drain)
+		return 0;
+
+	return gres_ns->gres_cnt_drain - overlap;
+}
+
+extern uint64_t gres_node_topo_cnt_avail(gres_node_state_t *gres_ns,
+					 int topo_inx, bool use_total_gres)
+{
+	uint64_t cnt;
+
+	xassert(gres_ns);
+	xassert(topo_inx < gres_ns->topo_cnt);
+
+	cnt = gres_ns->topo_gres_cnt_avail[topo_inx];
+	if (use_total_gres || !gres_ns->topo_gres_bitmap ||
+	    !gres_ns->topo_gres_bitmap[topo_inx])
+		return cnt;
+
+	/* Shared gres must check if sharing device is drained */
+	if (gres_ns->alt_gres &&
+	    gres_id_sharing(gres_ns->alt_gres->plugin_id)) {
+		if (_shared_topo_bit_drained(gres_ns, topo_inx))
+			return 0;
+		return cnt;
+	}
+
+	/* The bitmap is kept after its last drain is resumed */
+	if (!gres_ns->gres_bit_drain || !gres_ns->gres_cnt_drain)
+		return cnt;
+
+	/*
+	 * Allocated drained devices are already in topo_gres_cnt_alloc.
+	 * Leave those bits out of the overlap so they are not subtracted twice.
+	 */
+	cnt -= MIN(cnt, _drained_in_mask(gres_ns->gres_bit_drain,
+					 gres_ns->gres_bit_alloc,
+					 gres_ns->topo_gres_bitmap[topo_inx]));
+	return cnt;
+}
+
 static int _find_node_state_with_drain_gres(void *x, void *arg)
 {
 	gres_state_t *gres_state_node = (gres_state_t *) x;
@@ -7659,6 +7765,43 @@ extern bool gres_node_state_list_resume_drain(list_t *gres_list)
 	(void) list_for_each(gres_list, _foreach_resume_drain, &did_change);
 
 	return did_change;
+}
+
+extern uint64_t gres_node_type_drain_cnt(gres_node_state_t *gres_ns,
+					 uint32_t type_id, bool exclude_alloc)
+{
+	/*
+	 * An allocated drained device is already counted in the allocation,
+	 * so leave it out when asked to.
+	 */
+	bitstr_t *alloc = exclude_alloc ? gres_ns->gres_bit_alloc : NULL;
+	uint64_t count = 0;
+
+	if (!gres_ns->gres_bit_drain) {
+		for (int type = 0; type < gres_ns->type_cnt; type++) {
+			if (gres_ns->type_id[type] != type_id)
+				continue;
+			count = _gres_cnt_pool_count(gres_ns, type);
+			break;
+		}
+		return count;
+	}
+
+	if (!gres_ns->gres_bit_drain || !gres_ns->topo_cnt)
+		return 0;
+
+	for (int type = 0; type < gres_ns->topo_cnt; type++) {
+		bitstr_t *topo_bits;
+
+		if (gres_ns->topo_type_id[type] != type_id)
+			continue;
+		if (!(topo_bits = gres_ns->topo_gres_bitmap[type]))
+			continue;
+		count += _drained_in_mask(gres_ns->gres_bit_drain, alloc,
+					  topo_bits);
+	}
+
+	return count;
 }
 
 static int _find_node_state_by_name(void *x, void *arg)
@@ -10468,8 +10611,11 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 	if (min_gres_node && gres_ns->topo_cnt) {
 		/* Need to determine which specific cores can be used */
 		gres_avail = gres_ns->gres_cnt_avail;
-		if (!use_total_gres)
-			gres_avail -= gres_ns->gres_cnt_alloc;
+		if (!use_total_gres) {
+			gres_avail -= MIN(gres_avail,
+					  gres_node_cnt_drain_unalloc(gres_ns));
+			gres_avail -= MIN(gres_avail, gres_ns->gres_cnt_alloc);
+		}
 		if (min_gres_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient GRES avail */
 
@@ -10492,14 +10638,22 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 		cores_avail = xcalloc(gres_ns->topo_cnt,
 				      sizeof(uint32_t));
 		for (i = 0; i < gres_ns->topo_cnt; i++) {
-			if (gres_ns->topo_gres_cnt_avail[i] == 0)
+			/*
+			 * Use the drain-aware accessor: topo_gres_cnt_avail[] is
+			 * raw (drained devices are not baked in), so read it
+			 * through gres_node_topo_cnt_avail() to exclude drained
+			 * devices from this feasibility count.
+			 */
+			uint64_t topo_avail =
+				gres_node_topo_cnt_avail(gres_ns, i,
+							 use_total_gres);
+			if (!topo_avail)
 				continue;
 			if (use_busy_dev &&
 			    (gres_ns->topo_gres_cnt_alloc[i] == 0))
 				continue;
 			if (!use_total_gres &&
-			    (gres_ns->topo_gres_cnt_alloc[i] >=
-			     gres_ns->topo_gres_cnt_avail[i]))
+			    (gres_ns->topo_gres_cnt_alloc[i] >= topo_avail))
 				continue;
 			if (gres_js->type_name &&
 			    (!gres_ns->topo_type_name[i] ||
@@ -10549,7 +10703,8 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 				break;
 			}
 			cores_avail[top_inx] = 0;	/* Flag as used */
-			gres_tmp = gres_ns->topo_gres_cnt_avail[top_inx];
+			gres_tmp = gres_node_topo_cnt_avail(gres_ns, top_inx,
+							    use_total_gres);
 			if (!use_total_gres &&
 			    (gres_tmp >=
 			     gres_ns->topo_gres_cnt_alloc[top_inx])) {
@@ -10631,19 +10786,32 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 		if (i >= gres_ns->type_cnt)
 			return (uint32_t) 0;	/* no such type */
 		gres_avail = gres_ns->type_cnt_avail[i];
-		if (!use_total_gres)
-			gres_avail -= gres_ns->type_cnt_alloc[i];
+		if (!use_total_gres) {
+			gres_avail -=
+				MIN(gres_avail,
+				    gres_node_type_drain_cnt(
+					    gres_ns, gres_ns->type_id[i],
+					    true));
+			gres_avail -=
+				MIN(gres_avail, gres_ns->type_cnt_alloc[i]);
+		}
 		gres_tmp = gres_ns->gres_cnt_avail;
-		if (!use_total_gres)
-			gres_tmp -= gres_ns->gres_cnt_alloc;
+		if (!use_total_gres) {
+			gres_tmp -= MIN(gres_tmp,
+					gres_node_cnt_drain_unalloc(gres_ns));
+			gres_tmp -= MIN(gres_tmp, gres_ns->gres_cnt_alloc);
+		}
 		gres_avail = MIN(gres_avail, gres_tmp);
 		if (min_gres_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;
 	} else {
 		gres_avail = gres_ns->gres_cnt_avail;
-		if (!use_total_gres)
-			gres_avail -= gres_ns->gres_cnt_alloc;
+		if (!use_total_gres) {
+			gres_avail -= MIN(gres_avail,
+					  gres_node_cnt_drain_unalloc(gres_ns));
+			gres_avail -= MIN(gres_avail, gres_ns->gres_cnt_alloc);
+		}
 		if (min_gres_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;

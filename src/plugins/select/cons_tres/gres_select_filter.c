@@ -1654,7 +1654,9 @@ static uint64_t _get_job_cnt(sock_gres_t *sock_gres,
 	uint64_t avail_gres, max_gres;
 	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
 
-	avail_gres = gres_ns->gres_cnt_avail - gres_ns->gres_cnt_alloc;
+	avail_gres = gres_ns->gres_cnt_avail;
+	avail_gres -= MIN(avail_gres, gres_node_cnt_drain_unalloc(gres_ns));
+	avail_gres -= MIN(avail_gres, gres_ns->gres_cnt_alloc);
 	/* Ensure at least one GRES per node on remaining nodes */
 	max_gres = gres_js->gres_per_job - gres_js->total_gres -
 		(rem_node_cnt - 1);
