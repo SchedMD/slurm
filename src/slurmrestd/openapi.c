@@ -1622,13 +1622,11 @@ static int _on_path_entry(const char *entry, bool template, void *arg)
 	case OPENAPI_TYPE_INTEGER:
 		type = DATA_TYPE_INT_64;
 		break;
-	default:
-		debug("%s: unknown parameter type %s",
-		      __func__, openapi_type_to_string(e->parameter));
-		/* fall through */
 	case OPENAPI_TYPE_STRING:
 		type = DATA_TYPE_STRING;
 		break;
+	default:
+		fatal_abort("should never happen");
 	}
 
 	if (data_convert_type(param, type) != type) {
