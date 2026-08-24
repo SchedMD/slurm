@@ -137,14 +137,25 @@ The \fIindexes\fR specification identifies what array index values should
 be used. Multiple values may be specified using a comma separated list and/or
 a range of values with a "\-" separator. For example, "\-\-array=0\-15" or
 "\-\-array=0,6,16\-32".
-A step function can also be specified with a suffix containing a colon and
-number. For example, "\-\-array=0\-15:4" is equivalent to "\-\-array=0,4,8,12".
+A step size can also be specified on a range with a suffix containing a
+colon and number.
+For example, "\-\-array=0\-15:4" is equivalent to "\-\-array=0,4,8,12".
 A maximum number of simultaneously running tasks from the job array may be
 specified using a "%" separator.
 For example "\-\-array=0\-15%4" will limit the number of simultaneously
 running tasks from this job array to 4.
-The minimum index value is 0.
-the maximum value is one less than the configuration parameter MaxArraySize.
+Index values must be zero or greater and less than the \fBMaxArraySize\fR
+parameter in \fBslurm.conf\fR(5).
+A range's end must not be less than its start, and a step size must be
+greater than zero and less than \fBMaxArraySize\fR.
+An \fIindexes\fR specification is rejected when it is empty, contains an
+index or range that does not follow the form and limits described above, or
+specifies more tasks than permitted by \fBmax_array_tasks\fR in
+\fBSchedulerParameters\fR.
+
+\fBNOTE\fR: Job arrays of heterogeneous jobs are not supported.
+A heterogeneous job submitted with \fB\-\-array\fR is rejected.
+
 \fBNOTE\fR: Currently, federated job arrays only run on the local cluster.
 .IP
 
