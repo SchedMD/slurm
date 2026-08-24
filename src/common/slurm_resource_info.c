@@ -73,8 +73,9 @@ static int _isvalue(char *arg) {
 	while (isxdigit((int)*arg)) { /* hex values not preceded by 0x */
 		arg++;
 	}
-	if (*arg == ',' || *arg == '\0') { /* end of field or string */
-	    	return 1;
+	/* end of field, repetition count, or end of string */
+	if (*arg == ',' || *arg == '*' || *arg == '\0') {
+		return 1;
 	}
 
 	return 0;	/* not a value */
