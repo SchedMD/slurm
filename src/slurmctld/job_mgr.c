@@ -9260,6 +9260,10 @@ static void _job_time_limit_incr(job_record_t *job_ptr, uint32_t boot_job_id)
 {
 	time_t delta_t, now = time(NULL);
 
+	/* Do not reset the end_time if already being preempted */
+	if (job_ptr->preempt_time)
+		return;
+
 	delta_t = difftime(now, job_ptr->start_time);
 	if ((job_ptr->job_id != boot_job_id) && !IS_JOB_CONFIGURING(job_ptr))
 		job_ptr->tot_sus_time = delta_t;
