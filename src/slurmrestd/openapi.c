@@ -791,8 +791,6 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	/* must have JSON plugin to parse the openapi.json */
 	serializer_required(MIME_TYPE_JSON);
 
-	_bind_paths(openapi_paths, NULL);
-
 	rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
 			  syms, ARRAY_SIZE(syms));
 
@@ -808,6 +806,8 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 
 	if (!plugins->count)
 		fatal("No OpenAPI plugins loaded.");
+
+	_bind_paths(openapi_paths, NULL);
 
 	for (size_t i = 0; i < plugins->count; i++) {
 		const funcs_t *funcs = plugins->functions[i];
