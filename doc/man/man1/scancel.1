@@ -12,9 +12,15 @@ An arbitrary number of jobs or job steps may be signaled using job
 specification filters or a space separated list of specific job and/or
 job step IDs.
 If the job ID of a job array is specified with an array ID value then only that
-job array element will be cancelled.
+job array element will be signaled.
+The array ID value may also be a comma-separated list of indexes and index
+ranges enclosed in square brackets.
+Every listed element that has not finished will be signaled.
+Elements that do not exist or have already finished are skipped, and with
+\fB\-v\fR an error is reported for them.
+The closing bracket must end the job ID, so a step ID cannot follow it.
 If the job ID of a job array is specified without an array ID value then all
-job array elements will be cancelled.
+job array elements will be signaled.
 While a heterogeneous job is in a PENDING state, only the entire job can be
 cancelled rather than its individual components.
 A request to cancel an individual component of a heterogeneous job while in
@@ -451,6 +457,13 @@ Cancel only array ID 4 of job array 1237
 .IP
 .nf
 $ scancel 1237_4
+.fi
+
+.TP
+Cancel array IDs 1 through 3 and 7 of job array 1237:
+.IP
+.nf
+$ scancel "1237_[1\-3,7]"
 .fi
 
 .SH "COPYING"
