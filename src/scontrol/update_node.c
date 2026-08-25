@@ -227,6 +227,15 @@ scontrol_update_node (int argc, char **argv)
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_STATE_FUTURE;
 				update_cnt++;
+			} else if (!xstrncasecmp(val, "RESUME_KEEP_TRES",
+						 MAX(val_len, 8))) {
+				/*
+				 * Tested before RESUME, and on more than the
+				 * prefix the two share, so neither name can
+				 * match the other's branch.
+				 */
+				node_msg.node_state = NODE_RESUME_KEEP_TRES;
+				update_cnt++;
 			} else if (xstrncasecmp(val, "RESUME",
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_RESUME;
@@ -272,8 +281,7 @@ scontrol_update_node (int argc, char **argv)
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
 					fprintf (stderr,
-						 "NoResp DRAIN FAIL FUTURE RESUME "
-						 "POWER_DOWN POWER_UP UNDRAIN");
+						 "NoResp DRAIN FAIL FUTURE RESUME RESUME_KEEP_TRES POWER_DOWN POWER_UP UNDRAIN");
 					fprintf (stderr, "\n");
 					fprintf (stderr,
 						 "Not all states are valid "

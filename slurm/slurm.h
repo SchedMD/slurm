@@ -1086,6 +1086,8 @@ enum node_states {
 #define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 #define NODE_STATE_BLOCKED SLURM_BIT(27) /* node blocked by exclusive topo */
 #define NODE_STATE_DEGRADED SLURM_BIT(28) /* node has degraded hardware */
+#define NODE_RESUME_KEEP_TRES SLURM_BIT(29) /* Like NODE_RESUME, but leave
+					     * the node's drained TRES alone */
 
 #define NODE_CERT_TOKEN_SET SLURM_BIT(0)
 

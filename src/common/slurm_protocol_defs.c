@@ -3791,6 +3791,7 @@ extern char *node_state_string(uint32_t inx)
 	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
+	bool resume_keep_flag = (inx & NODE_RESUME_KEEP_TRES);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
@@ -4053,6 +4054,8 @@ extern char *node_state_string(uint32_t inx)
 			return "FUTURE?";
 		return "FUTURE";
 	}
+	if (resume_keep_flag)
+		return "RESUME_KEEP_TRES";
 	if (resume_flag)
 		return "RESUME";
 	if (base == NODE_STATE_UNKNOWN) {
@@ -4077,6 +4080,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
+	bool resume_keep_flag = (inx & NODE_RESUME_KEEP_TRES);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
@@ -4338,6 +4342,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "FUTR?";
 		return "FUTR";
 	}
+	if (resume_keep_flag)
+		return "RESMK";
 	if (resume_flag)
 		return "RESM";
 	if (inx == NODE_STATE_UNKNOWN) {

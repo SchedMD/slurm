@@ -2212,6 +2212,16 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg)
 			base_state &= NODE_STATE_BASE;
 		}
 
+		/*
+		 * RESUME_KEEP_TRES is RESUME without the drained TRES coming
+		 * back with the node. Fold it into RESUME now that the
+		 * transition has been validated, and any rejection reported,
+		 * under the name the admin asked for, so that the two share
+		 * one body below.
+		 */
+		if (state_val == NODE_RESUME_KEEP_TRES)
+			state_val = NODE_RESUME;
+
 		if (state_val != NO_VAL) {
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
@@ -3430,11 +3440,22 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_DRAIN):
 			return true;
 
+		case NODE_RESUME_KEEP_TRES:
 		case NODE_RESUME:
 			if (node_flags & NODE_STATE_POWERING_DOWN)
 				return true;
 			if (node_flags & NODE_STATE_INVALID_REG)
 				return false;
+			/*
+			 * A node that is only DEGRADED is otherwise usable;
+			 * what is wrong with it is the TRES drained on it, and
+			 * RESUME returns those. RESUME_KEEP_TRES by definition
+			 * does not, so accepting it here would report a state
+			 * change that never happened.
+			 */
+			if ((new == NODE_RESUME) &&
+			    (node_flags & NODE_STATE_DEGRADED))
+				return true;
 			if ((base_state == NODE_STATE_DOWN)   ||
 			    (base_state == NODE_STATE_FUTURE) ||
 			    (node_flags & NODE_STATE_DRAIN)   ||

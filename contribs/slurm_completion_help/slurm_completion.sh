@@ -4296,6 +4296,7 @@ function __scontrol_update_nodename() {
 		"power_down_force"
 		"power_up"
 		"resume"
+		"resume_keep_tres"
 		"undrain"
 	)
 
