@@ -3343,6 +3343,7 @@ function __scontrol_create_nodename() {
 		"sockets="
 		"socketsperboard="
 		"state="
+		"suspendtime="
 		"threadspercore="
 		"tmpdisk="
 		"topology="
@@ -3363,6 +3364,7 @@ function __scontrol_create_nodename() {
 	gres) __slurm_compreply "$(__slurm_gres)" ;;
 	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "" "true" ;;
 	state) __slurm_compreply "${states[*]}" ;;
+	suspendtime) __slurm_compreply "INFINITE NONE" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -4168,6 +4170,7 @@ function __scontrol_update_nodename() {
 		"reason="
 		"resumeafter="
 		"state="
+		"suspendtime="
 		"topology="
 		"weight="
 	)
@@ -4198,6 +4201,7 @@ function __scontrol_update_nodename() {
 	gres) __slurm_compreply "$(__slurm_gres)" ;;
 	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	state?(s)) __slurm_compreply "${states[*]}" ;;
+	suspendtime) __slurm_compreply "INFINITE NONE" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
