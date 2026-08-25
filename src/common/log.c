@@ -713,6 +713,12 @@ static void _set_idbuf(char *idbuf, size_t size)
 		 thread_name, (void *) pthread_self());
 }
 
+/* Fractional second precision for the timestamp formats */
+typedef enum {
+	RFC5424_NONE = 0,
+	RFC5424_MSEC = 3,
+} rfc5424_prec_t;
+
 /*
  * Write the timestamp named by the LogTimeFormat timestamp format into buf
  * IN/OUT buf - buffer to write the timestamp into
@@ -725,7 +731,7 @@ static void _set_idbuf(char *idbuf, size_t size)
 static size_t _set_timestamp(char *buf, size_t size)
 {
 	const char *date_fmt = "%Y-%m-%dT%T";
-	bool msec = false;
+	rfc5424_prec_t prec = RFC5424_NONE;
 	bool tz = false;
 	struct timeval tv = { 0 };
 	struct tm tm = { 0 };
@@ -734,14 +740,14 @@ static size_t _set_timestamp(char *buf, size_t size)
 	switch (log->fmt) {
 	case LOG_FMT_ISO8601_MS:
 		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff" */
-		msec = true;
+		prec = RFC5424_MSEC;
 		break;
 	case LOG_FMT_ISO8601:
 		/* "%M" => "yyyy-mm-ddThh:mm:ss" */
 		break;
 	case LOG_FMT_RFC5424_MS:
 		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-		msec = true;
+		prec = RFC5424_MSEC;
 		tz = true;
 		break;
 	case LOG_FMT_RFC5424:
@@ -788,9 +794,14 @@ static size_t _set_timestamp(char *buf, size_t size)
 		return 0;
 	}
 
-	if (msec)
+	switch (prec) {
+	case RFC5424_NONE:
+		break;
+	case RFC5424_MSEC:
 		used += snprintf((buf + used), (size - used), ".%3.3d",
 				 (int) (tv.tv_usec / 1000));
+		break;
+	}
 
 	/*
 	 * snprintf() returns the length it wanted to write, so a truncated
