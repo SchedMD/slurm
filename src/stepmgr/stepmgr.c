@@ -5498,12 +5498,17 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	 */
 	if (step_specs->node_list &&
 	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
-	     SLURM_DIST_ARBITRARY))
-		step_node_list = xstrdup(step_specs->node_list);
-	else
+	     SLURM_DIST_ARBITRARY)) {
+		hostlist_t *hl = hostlist_deduplicate(step_specs->node_list);
+
+		/* One task per node, so the user's order is enough. */
+		step_node_list = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+	} else {
 		step_node_list =
 			job_resources_node_list_by_rank(job_ptr->job_resrcs,
 							nodeset);
+	}
 	log_flag(STEPS, "%s: %pJ picked ext-launcher nodes %s",
 		 __func__, job_ptr, step_node_list);
 
