@@ -202,6 +202,16 @@ extern node_rank_order_t *job_node_order(job_record_t *job_ptr, int *order_cnt,
 					 node_rank_order_t **alloc_order,
 					 char **node_list);
 
+/*
+ * Build the job's node list and the per-node cpu counts read alongside it
+ * (SLURM_JOB_NODELIST/SLURM_JOB_CPUS_PER_NODE) in job_node_order() order.
+ * OUT node_list, cpus_per_node, cpu_count_reps, num_cpu_groups - caller xfrees
+ */
+extern void job_emit_node_arrays(job_record_t *job_ptr, char **node_list,
+				 uint16_t **cpus_per_node,
+				 uint32_t **cpu_count_reps,
+				 uint32_t *num_cpu_groups);
+
 extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock));

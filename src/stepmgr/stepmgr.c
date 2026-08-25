@@ -2760,6 +2760,22 @@ extern node_rank_order_t *job_node_order(job_record_t *job_ptr, int *order_cnt,
 	return *alloc_order;
 }
 
+extern void job_emit_node_arrays(job_record_t *job_ptr, char **node_list,
+				 uint16_t **cpus_per_node,
+				 uint32_t **cpu_count_reps,
+				 uint32_t *num_cpu_groups)
+{
+	node_rank_order_t *order_map, *alloc_order = NULL;
+	int order_cnt;
+
+	order_map =
+		job_node_order(job_ptr, &order_cnt, &alloc_order, node_list);
+	build_job_resources_rank_cpu_array(job_ptr->job_resrcs, order_map,
+					   order_cnt, cpus_per_node,
+					   cpu_count_reps, num_cpu_groups);
+	xfree(alloc_order);
+}
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
