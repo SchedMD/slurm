@@ -713,10 +713,11 @@ static void _set_idbuf(char *idbuf, size_t size)
 		 thread_name, (void *) pthread_self());
 }
 
-/* Fractional second precision for the timestamp formats */
+/* Fractional second precision, which RFC 5424 allows no more of than usec */
 typedef enum {
 	RFC5424_NONE = 0,
 	RFC5424_MSEC = 3,
+	RFC5424_USEC = 6,
 } rfc5424_prec_t;
 
 /*
@@ -800,6 +801,10 @@ static size_t _set_timestamp(char *buf, size_t size)
 	case RFC5424_MSEC:
 		used += snprintf((buf + used), (size - used), ".%3.3d",
 				 (int) (tv.tv_usec / 1000));
+		break;
+	case RFC5424_USEC:
+		used += snprintf((buf + used), (size - used), ".%6.6d",
+				 (int) tv.tv_usec);
 		break;
 	}
 
