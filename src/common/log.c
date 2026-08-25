@@ -778,8 +778,11 @@ static size_t _set_timestamp(char *buf, size_t size)
 	if (!localtime_r(&tv.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
-	if (!(used = strftime(buf, size, date_fmt, &tm)))
+	if (!(used = strftime(buf, size, date_fmt, &tm))) {
 		fprintf(stderr, "strftime() returned 0\n");
+		buf[0] = '\0';
+		return 0;
+	}
 
 	if (msec)
 		used += snprintf((buf + used), (size - used), ".%3.3d",
