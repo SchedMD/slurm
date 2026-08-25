@@ -296,6 +296,14 @@ void hostlist_sort(hostlist_t *hl);
  */
 void hostlist_uniq(hostlist_t *hl);
 
+/* hostlist_deduplicate():
+ *
+ * Given a node list string, return a hostlist with duplicate entries removed,
+ * keeping the first occurrence (order preserved, not sorted).
+ * Caller must hostlist_destroy() the result.
+ */
+hostlist_t *hostlist_deduplicate(const char *hosts);
+
 /* Return the base used for encoding numeric hostlist suffixes */
 #define hostlist_get_base(_dimensions) ((_dimensions) > 1 ? 36 : 10)
 

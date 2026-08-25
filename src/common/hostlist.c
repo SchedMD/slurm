@@ -2399,6 +2399,29 @@ void hostlist_uniq(hostlist_t *hl)
 	UNLOCK_HOSTLIST(hl);
 }
 
+hostlist_t *hostlist_deduplicate(const char *hosts)
+{
+	hostlist_t *hl, *uniq_hl;
+	hostlist_iterator_t *itr;
+	char *host;
+
+	hl = hostlist_create(hosts);
+	uniq_hl = hostlist_create(NULL);
+	if (!hl)
+		return uniq_hl;
+
+	itr = hostlist_iterator_create(hl);
+	while ((host = hostlist_next(itr))) {
+		if (hostlist_find(uniq_hl, host) == -1)
+			hostlist_push_host(uniq_hl, host);
+		free(host);
+	}
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hl);
+
+	return uniq_hl;
+}
+
 char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims)
 {
 	int buf_size = 8192;
