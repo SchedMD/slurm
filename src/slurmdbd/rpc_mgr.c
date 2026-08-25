@@ -99,6 +99,7 @@ extern void *rpc_mgr(void *no_data)
 		fd_set_nonblocking(newsockfd);
 
 		dbd_conn = xmalloc(sizeof(slurmdbd_conn_t));
+		slurmdbd_conn_init(dbd_conn);
 		dbd_conn->pcon = xmalloc(sizeof(persist_conn_t));
 		dbd_conn->pcon->flags = PERSIST_FLAG_DBD;
 		dbd_conn->pcon->callback_proc = proc_req;
@@ -222,6 +223,6 @@ static void _connection_fini_callback(void *arg)
 	/* handled directly in the internal persist_conn code */
 	//slurm_persist_conn_members_destroy(&dbd_conn->pcon);
 	slurm_mutex_destroy(&dbd_conn->pcon_send_lock);
-	xfree(dbd_conn->tres_str);
+	slurmdbd_conn_members_destroy(dbd_conn);
 	xfree(dbd_conn);
 }
