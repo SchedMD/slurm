@@ -80,6 +80,21 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 			       dbd_job_start_msg_t *job_start_msg,
 			       dbd_id_rc_msg_t *id_rc_msg);
 
+extern void slurmdbd_conn_init(slurmdbd_conn_t *dbd_conn)
+{
+	*dbd_conn = (slurmdbd_conn_t) SLURMDBD_CONN_INITIALIZER;
+}
+
+extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn)
+{
+	if (!dbd_conn)
+		return;
+
+	xfree(dbd_conn->cluster_name);
+	xfree(dbd_conn->rem_host);
+	xfree(dbd_conn->tres_str);
+}
+
 static char *_internal_rc_to_str(uint32_t rc, slurmdbd_conn_t *dbd_conn,
 				 bool new_line)
 {

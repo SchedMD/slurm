@@ -74,6 +74,40 @@ typedef struct {
 	char *tres_str;
 } slurmdbd_conn_t;
 
+/*
+ * Safe defaults for a slurmdbd_conn_t.
+ *
+ * The connection starts out fail-closed: the peer has no identity until
+ * REQUEST_PERSIST_INIT authenticates it, and a zeroed auth_uid would read
+ * as root. fd is -1 so an unset descriptor cannot be mistaken for stdin.
+ *
+ * The caller still fills in fd, rem_host and the pcon members.
+ */
+#define SLURMDBD_CONN_INITIALIZER \
+	((slurmdbd_conn_t) { \
+		.fd = -1, \
+		.auth_uid = SLURM_AUTH_NOBODY, \
+		.auth_gid = SLURM_AUTH_NOBODY, \
+		.flags = PERSIST_FLAG_DBD, \
+		.version = SLURM_MIN_PROTOCOL_VERSION, \
+	})
+
+/*
+ * Initialize a slurmdbd_conn_t to SLURMDBD_CONN_INITIALIZER.
+ * IN/OUT dbd_conn - connection to initialize
+ */
+extern void slurmdbd_conn_init(slurmdbd_conn_t *dbd_conn);
+
+/*
+ * Free the members a slurmdbd_conn_t owns, not the struct itself.
+ *
+ * Does not touch pcon or pcon_send, which the persist_conn code owns.
+ * auth_cred is borrowed from pcon and so is not destroyed here.
+ *
+ * IN/OUT dbd_conn - connection whose members are freed
+ */
+extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn);
+
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
  *       calling and db_conn and rpc_version will be filled in with the init.
