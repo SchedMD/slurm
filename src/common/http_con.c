@@ -646,11 +646,12 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 
 	hcon->rejected = true;
 
-	if (!_valid_http_version(request->http_version.major,
-				 request->http_version.minor)) {
+	if ((!request->http_version.major && !request->http_version.minor) ||
+	    _valid_http_version(request->http_version.major,
+				request->http_version.minor)) {
 		/*
-		 * Default to HTTP/1.1 when version is invalid or failed to
-		 * parse for rejecting a request:
+		 * Default to HTTP/1.1 when version is missing, invalid or
+		 * failed to parse for rejecting a request:
 		 */
 		request->http_version.major = 1;
 		request->http_version.minor = 1;
