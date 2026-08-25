@@ -88,6 +88,9 @@
 #  define LINEBUFSIZE 256
 #endif
 
+/* Field width the thread name is padded to in the "%M" prefix */
+#define THREAD_NAME_WIDTH 12
+
 #define LOG_MACRO(level, sched, fmt) {				\
 	if ((level <= highest_log_level) ||			\
 	    (sched && (level <= highest_sched_log_level))) {	\
@@ -690,7 +693,7 @@ void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
 static void _set_thread_id(char *buf, size_t size, size_t used)
 {
 	char thread_name[PRCTL_BUF_BYTES] = { 0 };
-	int max_len = 12; /* handles current longest thread name */
+	int max_len = THREAD_NAME_WIDTH;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_GET_NAME, thread_name, NULL, NULL, NULL) < 0) {
