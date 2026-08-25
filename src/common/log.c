@@ -755,10 +755,14 @@ static size_t _set_timestamp(char *buf, size_t size)
 	case LOG_FMT_CLOCK:
 		/* "%M" => "usec" */
 #if defined(__FreeBSD__)
-		return snprintf(buf, size, "%d", clock());
+		used = snprintf(buf, size, "%d", clock());
 #else
-		return snprintf(buf, size, "%ld", clock());
+		used = snprintf(buf, size, "%ld", clock());
 #endif
+		if (used >= size)
+			used = (size - 1);
+
+		return used;
 	case LOG_FMT_SHORT:
 		/* "%M" => "Mon DD hh:mm:ss" */
 		date_fmt = "%b %d %T";
@@ -788,6 +792,13 @@ static size_t _set_timestamp(char *buf, size_t size)
 		used += snprintf((buf + used), (size - used), ".%3.3d",
 				 (int) (tv.tv_usec / 1000));
 
+	/*
+	 * snprintf() returns the length it wanted to write, so a truncated
+	 * fraction would leave used past the end of buf.
+	 */
+	if (used >= size)
+		used = (size - 1);
+
 	if (tz) {
 		char z[12] = "";
 
@@ -803,6 +814,9 @@ static size_t _set_timestamp(char *buf, size_t size)
 		z[3] = ':';
 
 		used += snprintf((buf + used), (size - used), "%s", z);
+
+		if (used >= size)
+			used = (size - 1);
 	}
 
 	return used;
