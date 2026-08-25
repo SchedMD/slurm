@@ -569,6 +569,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		if (!sock_gres_list) {	/* GRES requirement fail */
 			log_flag(SELECT_TYPE, "Test fail on node %s: gres_sock_list_create",
 				 node_ptr->name);
+			FREE_NULL_BITMAP(create_args.req_sock_map);
 			return NULL;
 		}
 	}
@@ -578,6 +579,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		if (hres_leaf_idx == NO_VAL16) {
 			log_flag(SELECT_TYPE, "Test fail on node %s: hres_select_find_leaf",
 				 node_ptr->name);
+			FREE_NULL_BITMAP(create_args.req_sock_map);
+			FREE_NULL_LIST(sock_gres_list);
 			return NULL;
 		}
 	}
