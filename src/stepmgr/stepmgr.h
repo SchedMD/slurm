@@ -189,6 +189,19 @@ extern node_rank_order_t *step_node_order(step_record_t *step_ptr,
 					  int *order_cnt,
 					  node_rank_order_t **alloc_order);
 
+/*
+ * Return the order the job's nodes are emitted in, along with the matching
+ * node list: the user's list deduplicated in first-occurrence order for
+ * --distribution=arbitrary, where that list drives the task layout, and
+ * order_map (topology rank) order otherwise.
+ * OUT order_cnt - number of entries in the returned order
+ * OUT alloc_order - set when the order was allocated (caller xfrees)
+ * OUT node_list - the job's nodes in the returned order (caller xfrees)
+ */
+extern node_rank_order_t *job_node_order(job_record_t *job_ptr, int *order_cnt,
+					 node_rank_order_t **alloc_order,
+					 char **node_list);
+
 extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 				void (*lock_func)(bool lock),
 				void (*fail_lock_func)(bool lock));

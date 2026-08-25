@@ -2731,6 +2731,35 @@ extern node_rank_order_t *step_node_order(step_record_t *step_ptr,
 	return *alloc_order;
 }
 
+extern node_rank_order_t *job_node_order(job_record_t *job_ptr, int *order_cnt,
+					 node_rank_order_t **alloc_order,
+					 char **node_list)
+{
+	job_resources_t *resrcs = job_ptr->job_resrcs;
+	hostlist_t *nodes_hl;
+
+	xassert(resrcs);
+
+	*alloc_order = NULL;
+
+	if (!job_ptr->details || !job_ptr->details->req_nodes ||
+	    ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) !=
+	     SLURM_DIST_ARBITRARY)) {
+		*order_cnt = resrcs->nhosts;
+		*node_list =
+			job_resources_node_list_by_rank(resrcs,
+							resrcs->node_bitmap);
+		return resrcs->order_map;
+	}
+
+	nodes_hl = hostlist_deduplicate(job_ptr->details->req_nodes);
+	*alloc_order = _build_arbitrary_order(resrcs, nodes_hl, order_cnt);
+	*node_list = hostlist_ranged_string_xmalloc(nodes_hl);
+	hostlist_destroy(nodes_hl);
+
+	return *alloc_order;
+}
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
