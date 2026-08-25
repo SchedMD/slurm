@@ -727,9 +727,9 @@ static size_t _set_timestamp(char *buf, size_t size)
 	const char *date_fmt = "%Y-%m-%dT%T";
 	bool msec = false;
 	bool tz = false;
-	struct timeval tv;
-	struct tm tm;
-	size_t used;
+	struct timeval tv = { 0 };
+	struct tm tm = { 0 };
+	size_t used = 0;
 
 	switch (log->fmt) {
 	case LOG_FMT_ISO8601_MS:
