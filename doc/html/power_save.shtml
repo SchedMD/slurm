@@ -67,6 +67,45 @@ effect after modifying the <i>slurm.conf</i> configuration file and executing
 <i>slurmctld</i>.
 </p>
 
+<p>Some runtime changes are the exception and take effect immediately:</p>
+<ul>
+  <li>A per-node <b>SuspendTime</b> set with <code>scontrol create node</code>,
+  <code>scontrol update node</code>, or the equivalent REST API request.</li>
+  <li>A dynamic node registered with <code>slurmd -Z</code>.</li>
+  <li>A change to a partition's node list.</li>
+</ul>
+
+<p>When the rest of the power save configuration is valid, as described below,
+a finite <b>SuspendTime</b> from one of these changes enables automatic Power
+Saving operations for those nodes without a <code>scontrol reconfigure</code>,
+even when the global <b>SuspendTime</b> is <i>INFINITE</i>.
+Nodes stop suspending as soon as their <b>SuspendTime</b> is back to
+<i>INFINITE</i>, but automatic power save itself stays enabled until the next
+<code>scontrol reconfigure</code> or <i>slurmctld</i> restart.
+</p>
+
+<p>A per-node <b>SuspendTime</b> needs the rest of the power save
+configuration to be valid: <b>SuspendProgram</b>, <b>ResumeProgram</b>,
+<b>SuspendRate</b>, <b>ResumeRate</b>,
+<b>SlurmctldParameters</b>=<b>power_save_interval</b>, and
+<b>SlurmctldParameters</b>=<b>power_save_min_interval</b>.
+When it is not, <i>slurmctld</i> handles the request as follows:</p>
+<ul>
+  <li>A node update with <code>scontrol update node</code> or the REST API is
+  rejected for any value, including <i>INFINITE</i>.</li>
+  <li>A node creation with <code>scontrol create node</code> or the REST API is
+  rejected for a finite value.</li>
+  <li>A dynamic node registered with <code>slurmd -Z</code> is accepted.
+  <i>slurmctld</i> logs a warning, and the node's <b>SuspendTime</b> has no
+  effect until power save is configured and <i>slurmctld</i> is reconfigured or
+  restarted.</li>
+</ul>
+
+<p>The <a href="scontrol.html">scontrol</a> man page lists the exact
+requirements and how long a per-node <b>SuspendTime</b> lasts across a
+reconfigure or restart.
+</p>
+
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p>The following configuration parameters of interest include:</p>
@@ -534,7 +573,9 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     <b>SuspendTime</b> settings for the specified nodes. If not set on the
     node, the partition and then global values are used. Setting
     <b>SuspendTime</b> to <i>INFINITE</i> will disable suspending of these
-    nodes.</p>
+    nodes. This value may be updated with
+    <code>scontrol update NodeName=&lt;nodename&gt;
+    SuspendTime=&lt;seconds|INFINITE|NONE|-1&gt;</code>.</p>
   </dd>
 
   <dt id="Weight"><b>Weight</b><a class="slurm_link" href="#Weight"></a>

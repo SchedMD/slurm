@@ -8120,6 +8120,14 @@ and then global values are used.
 Setting \fBSuspendTime\fR to INFINITE will disable suspending of these nodes.
 Setting \fBSuspendTime\fR to anything but INFINITE (or \-1) will enable power
 save mode.
+This value may be updated at runtime with
+\fBscontrol update\fR \fBNodeName\fR=<\fInodename\fR>
+\fBSuspendTime\fR=<\fIseconds\fR|\fBINFINITE\fR|\fBNONE\fR|\fB\-1\fR>.
+That update is rejected unless the rest of the automatic power save
+configuration is usable.
+For a node defined here, the updated value does not survive
+\fBscontrol reconfigure\fR or a plain restart of \fBslurmctld\fR.
+See \fBscontrol\fR(1) for details.
 .IP
 
 .TP
