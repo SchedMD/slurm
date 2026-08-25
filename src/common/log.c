@@ -714,6 +714,98 @@ static void _set_idbuf(char *idbuf, size_t size)
 }
 
 /*
+ * Write the timestamp named by the LogTimeFormat timestamp format into buf
+ * IN/OUT buf - buffer to write the timestamp into
+ * IN size - bytes available in buf
+ * RET bytes written
+ *
+ * Note: every format is the same strftime() call with an optional fractional
+ * second and an optional timezone offset, so they share one renderer.
+ */
+static size_t _set_timestamp(char *buf, size_t size)
+{
+	const char *date_fmt = "%Y-%m-%dT%T";
+	bool msec = false;
+	bool tz = false;
+	struct timeval tv;
+	struct tm tm;
+	size_t used;
+
+	switch (log->fmt) {
+	case LOG_FMT_ISO8601_MS:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff" */
+		msec = true;
+		break;
+	case LOG_FMT_ISO8601:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss" */
+		break;
+	case LOG_FMT_RFC5424_MS:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+		msec = true;
+		tz = true;
+		break;
+	case LOG_FMT_RFC5424:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_RFC3339:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_CLOCK:
+		/* "%M" => "usec" */
+#if defined(__FreeBSD__)
+		return snprintf(buf, size, "%d", clock());
+#else
+		return snprintf(buf, size, "%ld", clock());
+#endif
+	case LOG_FMT_SHORT:
+		/* "%M" => "Mon DD hh:mm:ss" */
+		date_fmt = "%b %d %T";
+		break;
+	case LOG_FMT_THREAD_ID:
+		_set_idbuf(buf, size);
+		return strlen(buf);
+	case LOG_FMT_OMIT:
+		/* Nothing to substitute for the omit format */
+		buf[0] = '\0';
+		return 0;
+	}
+
+	if (gettimeofday(&tv, NULL) == -1)
+		fprintf(stderr, "gettimeofday() failed\n");
+
+	if (!localtime_r(&tv.tv_sec, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (!(used = strftime(buf, size, date_fmt, &tm)))
+		fprintf(stderr, "strftime() returned 0\n");
+
+	if (msec)
+		used += snprintf((buf + used), (size - used), ".%3.3d",
+				 (int) (tv.tv_usec / 1000));
+
+	if (tz) {
+		char z[12] = "";
+
+		/*
+		 * strftime() writes the offset as (+/-)hhmm where RFC 5424
+		 * writes it as (+/-)hh:mm, so shift the minutes one step back
+		 * and insert the colon.
+		 */
+		if (!strftime(z, sizeof(z), "%z", &tm))
+			fprintf(stderr, "strftime() returned 0\n");
+		z[5] = z[4];
+		z[4] = z[3];
+		z[3] = ':';
+
+		used += snprintf((buf + used), (size - used), "%s", z);
+	}
+
+	return used;
+}
+
+/*
  * _addr2fmt() - print an IP address from slurm_addr_t
  */
 static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
@@ -1115,60 +1207,10 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					xiso8601timecat(substitute, true);
 					break;
 				}
-				switch (log->fmt) {
-				case LOG_FMT_ISO8601_MS:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-					xiso8601timecat(substitute, true);
-					break;
-				case LOG_FMT_ISO8601:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-					xiso8601timecat(substitute, false);
-					break;
-				case LOG_FMT_RFC5424_MS:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-					xrfc5424timecat(substitute, true);
-					break;
-				case LOG_FMT_RFC5424:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-					xrfc5424timecat(substitute, false);
-					break;
-				case LOG_FMT_RFC3339:
-					/* "%M" => "yyyy-mm-ddThh:mm:ssZ" */
-					xrfc3339timecat(substitute);
-					break;
-				case LOG_FMT_CLOCK:
-					/* "%M" => "usec" */
-#if defined(__FreeBSD__)
-					snprintf(substitute_on_stack,
-						 sizeof(substitute_on_stack),
-						 "%d", clock());
-#else
-					snprintf(substitute_on_stack,
-						 sizeof(substitute_on_stack),
-						 "%ld", clock());
-#endif
-					substitute = substitute_on_stack;
-					should_xfree = 0;
-					break;
-				case LOG_FMT_SHORT:
-					/* "%M" => "Mon DD hh:mm:ss" */
-					xstrftimecat(substitute, "%b %d %T");
-					break;
-				case LOG_FMT_THREAD_ID:
-					_set_idbuf(substitute_on_stack,
-						   sizeof(substitute_on_stack));
-					substitute = substitute_on_stack;
-					should_xfree = 0;
-					break;
-				case LOG_FMT_OMIT:
-					/*
-					 * Nothing to substitute: the timestamp
-					 * is dropped at the log_msg() call
-					 * sites, so "%M" is never emitted in
-					 * this mode.
-					 */
-					break;
-				}
+				_set_timestamp(substitute_on_stack,
+					       sizeof(substitute_on_stack));
+				substitute = substitute_on_stack;
+				should_xfree = 0;
 				break;
 			}
 			fmt++;
