@@ -690,7 +690,7 @@ void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
  */
 static void _set_thread_id(char *buf, size_t size, size_t used)
 {
-	char thread_name[NAMELEN];
+	char thread_name[NAMELEN] = { 0 };
 	int max_len = 12; /* handles current longest thread name */
 
 #if HAVE_SYS_PRCTL_H
