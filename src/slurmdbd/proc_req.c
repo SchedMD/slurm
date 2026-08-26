@@ -309,6 +309,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_conn->db_conn =
 		acct_storage_g_get_connection(slurmdbd_conn->fd, NULL, true,
 					      slurmdbd_conn->cluster_name);
+	slurmdbd_conn->version = init_msg->version;
 	slurmdbd_conn->pcon->version = init_msg->version;
 	if (errno)
 		rc = errno;
