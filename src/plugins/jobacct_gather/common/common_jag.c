@@ -1047,9 +1047,9 @@ static void _get_offspring_data(list_t *prec_list, jag_prec_t *ancestor,
 			destroy_jag_prec(prec_tmp);
 		root = false;
 	}
-	FREE_NULL_LIST(tmp_list);
 
-	return;
+	FREE_NULL_LIST(tmp_list);
+	xassert(!root);
 }
 
 extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
