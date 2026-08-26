@@ -581,6 +581,57 @@ static void _reset_alloc(void)
 	_set_alloc(BUF_ALLOC_DEFAULT, 0);
 }
 
+START_TEST(test_init_buf_conf)
+{
+	buf_t *buf;
+
+	/*
+	 * 0 and INFINITE both say the caller has no size of its own, so the
+	 * two must always resolve alike. Unconfigured that is BUF_SIZE.
+	 */
+	ck_assert_int_eq(slurm_conf.buffer_alloc_bytes, 0);
+
+	buf = init_buf(0);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	/* every strategy starts a buffer at the size it was given */
+	_set_alloc(BUF_ALLOC_LINEAR, 4096);
+
+	buf = init_buf(0);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_GEOMETRIC, (2 * BUF_SIZE));
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, (2 * BUF_SIZE));
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, MIN_BUF_SIZE);
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, MIN_BUF_SIZE);
+	free_buf(buf);
+
+	/* a named size is never taken from the configuration */
+	buf = init_buf(128);
+	_check_empty_buf(buf, 128);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_infinite)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -803,6 +854,7 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
+	tcase_add_test(tc_core, test_init_buf_conf);
 	tcase_add_test(tc_core, test_try_grow_buf_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_exponential);
 	tcase_add_test(tc_core, test_try_grow_buf_geometric);
