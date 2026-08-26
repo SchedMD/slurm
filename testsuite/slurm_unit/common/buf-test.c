@@ -667,6 +667,46 @@ START_TEST(test_try_init_buf_conf)
 
 END_TEST
 
+START_TEST(test_init_buf_conf_floor)
+{
+	buf_t *buf;
+
+	/*
+	 * A start under MIN_BUF_SIZE would mean an xrealloc() per handful of
+	 * bytes, so it is raised rather than used as given. slurm.conf raises
+	 * it too, but a buffer must not depend on having been asked nicely.
+	 */
+	_set_alloc(BUF_ALLOC_LINEAR, (MIN_BUF_SIZE - 1));
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, MIN_BUF_SIZE);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_GEOMETRIC, 1);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, MIN_BUF_SIZE);
+	free_buf(buf);
+
+	/*
+	 * The matching ceiling is deliberately not exercised. It is unreachable
+	 * from slurm.conf, which caps the size at INT_MAX, so it exists only to
+	 * keep a configured size from reaching init_buf()'s fatal_abort() -
+	 * try_init_buf() shares _init_byte_count() but returns NULL instead.
+	 *
+	 * Reaching it means asking for close to 4GiB. That costs nothing under
+	 * glibc, where try_xmalloc()'s calloc() is satisfied by a fresh
+	 * mmap() zeroed lazily by the kernel, but valgrind and ASan replace
+	 * calloc() and write the whole range for real, and the reservation can
+	 * fail outright under strict overcommit or a container memory cap. So
+	 * the test would be host dependent rather than expensive everywhere.
+	 */
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_infinite)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -891,6 +931,7 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
 	tcase_add_test(tc_core, test_init_buf_conf);
 	tcase_add_test(tc_core, test_try_init_buf_conf);
+	tcase_add_test(tc_core, test_init_buf_conf_floor);
 	tcase_add_test(tc_core, test_try_grow_buf_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_exponential);
 	tcase_add_test(tc_core, test_try_grow_buf_geometric);
