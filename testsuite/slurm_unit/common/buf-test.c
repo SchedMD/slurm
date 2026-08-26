@@ -632,6 +632,41 @@ START_TEST(test_init_buf_conf)
 
 END_TEST
 
+START_TEST(test_try_init_buf_conf)
+{
+	buf_t *buf;
+
+	/* try_init_buf() must resolve a size exactly as init_buf() does */
+	ck_assert_int_eq(slurm_conf.buffer_alloc_bytes, 0);
+
+	buf = try_init_buf(0);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 4096);
+
+	buf = try_init_buf(0);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	/* a named size is never taken from the configuration */
+	buf = try_init_buf(128);
+	_check_empty_buf(buf, 128);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_infinite)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -855,6 +890,7 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_try_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
 	tcase_add_test(tc_core, test_init_buf_conf);
+	tcase_add_test(tc_core, test_try_init_buf_conf);
 	tcase_add_test(tc_core, test_try_grow_buf_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_exponential);
 	tcase_add_test(tc_core, test_try_grow_buf_geometric);
