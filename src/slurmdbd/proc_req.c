@@ -196,7 +196,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 	list_itr_t *itr;
 	slurmdbd_conn_t *slurmdbd_conn;
 
-	if (!dbd_conn->pcon->rem_port) {
+	if (!dbd_conn->rem_port) {
 		error("%s: trying to register a cluster (%s) with no remote port",
 		      __func__, dbd_conn->pcon->cluster_name);
 		return;
@@ -223,8 +223,9 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 		    (new_fd != existing_fd)) {
 			error("A new registration for cluster %s CONN:%d just came in, but I am already talking to that cluster (CONN:%d), closing other connection.",
 			      dbd_conn->pcon->cluster_name, new_fd, existing_fd);
-			slurmdbd_conn->pcon->rem_port = 0;
 			slurmdbd_conn->rem_port = 0;
+			/* Mirror to pcon: persist_conn.c logs from it. */
+			slurmdbd_conn->pcon->rem_port = 0;
 			list_delete_item(itr);
 		}
 	}
@@ -237,8 +238,8 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 			xstrdup(dbd_conn->pcon->cluster_name);
 		dbd_conn->pcon_send->persist_type = PERSIST_TYPE_ACCT_UPDATE;
 		dbd_conn->pcon_send->my_port = slurmdbd_conf->dbd_port;
-		dbd_conn->pcon_send->rem_host = xstrdup(dbd_conn->pcon->rem_host);
-		dbd_conn->pcon_send->rem_port = dbd_conn->pcon->rem_port;
+		dbd_conn->pcon_send->rem_host = xstrdup(dbd_conn->rem_host);
+		dbd_conn->pcon_send->rem_port = dbd_conn->rem_port;
 		dbd_conn->pcon_send->version = dbd_conn->pcon->version;
 		dbd_conn->pcon_send->shutdown = &shutdown_time;
 		/* we want timeout to be zero */
@@ -296,7 +297,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug("REQUEST_PERSIST_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s CONN:%d",
 	      init_msg->cluster_name, init_msg->version,
-	      slurmdbd_conn->pcon->auth_uid, slurmdbd_conn->pcon->rem_host, slurmdbd_conn->fd);
+	      slurmdbd_conn->pcon->auth_uid, slurmdbd_conn->rem_host, slurmdbd_conn->fd);
 
 	slurmdbd_conn->pcon->cluster_name = xstrdup(init_msg->cluster_name);
 
@@ -842,13 +843,14 @@ end_it:
 		slurmdbd_conn->tres_str = cluster_tres_msg->tres_str;
 		cluster_tres_msg->tres_str = NULL;
 	}
-	if (!slurmdbd_conn->pcon->rem_port) {
+	if (!slurmdbd_conn->rem_port) {
 		debug3("DBD_CLUSTER_TRES: cluster not registered");
-		slurmdbd_conn->pcon->rem_port =
+		slurmdbd_conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
-				slurmdbd_conn->pcon->rem_host);
-		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
+				slurmdbd_conn->rem_host);
+		/* Mirror to pcon: persist_conn.c logs from it. */
+		slurmdbd_conn->pcon->rem_port = slurmdbd_conn->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -1554,7 +1556,7 @@ static int _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	debug2("DBD_FINI: CLOSE:%u COMMIT:%u",
 	       fini_msg->close_conn, fini_msg->commit);
 
-	if (slurmdbd_conn->pcon->rem_port && slurmdbd_conf->commit_delay) {
+	if (slurmdbd_conn->rem_port && slurmdbd_conf->commit_delay) {
 		slurm_mutex_lock(&registered_lock);
 		locked = true;
 	}
@@ -1630,13 +1632,14 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 
-	if (!slurmdbd_conn->pcon->rem_port) {
+	if (!slurmdbd_conn->rem_port) {
 		debug3("DBD_JOB_COMPLETE: cluster not registered");
-		slurmdbd_conn->pcon->rem_port =
+		slurmdbd_conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
-				slurmdbd_conn->pcon->rem_host);
-		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
+				slurmdbd_conn->rem_host);
+		/* Mirror to pcon: persist_conn.c logs from it. */
+		slurmdbd_conn->pcon->rem_port = slurmdbd_conn->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -2309,13 +2312,14 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	xfree(details.env_sup);
 
-	if (!slurmdbd_conn->pcon->rem_port) {
+	if (!slurmdbd_conn->rem_port) {
 		debug3("DBD_JOB_START: cluster not registered");
-		slurmdbd_conn->pcon->rem_port =
+		slurmdbd_conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
-				slurmdbd_conn->pcon->rem_host);
-		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
+				slurmdbd_conn->rem_host);
+		/* Mirror to pcon: persist_conn.c logs from it. */
+		slurmdbd_conn->pcon->rem_port = slurmdbd_conn->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -2381,14 +2385,14 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	debug2("slurmctld at ip:%s, port:%d",
-	       slurmdbd_conn->pcon->rem_host, register_ctld_msg->port);
+	       slurmdbd_conn->rem_host, register_ctld_msg->port);
 
 	slurmdb_init_cluster_cond(&cluster_q, 0);
 	slurmdb_init_cluster_rec(&cluster, 0);
 
 	cluster_q.cluster_list = list_create(NULL);
 	list_append(cluster_q.cluster_list, slurmdbd_conn->pcon->cluster_name);
-	cluster.control_host = slurmdbd_conn->pcon->rem_host;
+	cluster.control_host = slurmdbd_conn->rem_host;
 	cluster.control_port = register_ctld_msg->port;
 	cluster.dimensions = register_ctld_msg->dimensions;
 	cluster.flags = register_ctld_msg->flags;
@@ -2457,8 +2461,9 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 end_it:
 
 	if (rc == SLURM_SUCCESS) {
-		slurmdbd_conn->pcon->rem_port = register_ctld_msg->port;
 		slurmdbd_conn->rem_port = register_ctld_msg->port;
+		/* Mirror to pcon: persist_conn.c logs from it. */
+		slurmdbd_conn->pcon->rem_port = slurmdbd_conn->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -2944,13 +2949,14 @@ static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 
-	if (!slurmdbd_conn->pcon->rem_port) {
+	if (!slurmdbd_conn->rem_port) {
 		debug3("DBD_STEP_COMPLETE: cluster not registered");
-		slurmdbd_conn->pcon->rem_port =
+		slurmdbd_conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
-				slurmdbd_conn->pcon->rem_host);
-		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
+				slurmdbd_conn->rem_host);
+		/* Mirror to pcon: persist_conn.c logs from it. */
+		slurmdbd_conn->pcon->rem_port = slurmdbd_conn->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -3037,13 +3043,14 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	/* just in case this gets set we need to clear it */
 	xfree(job.wckey);
 
-	if (!slurmdbd_conn->pcon->rem_port) {
+	if (!slurmdbd_conn->rem_port) {
 		debug3("DBD_STEP_START: cluster not registered");
-		slurmdbd_conn->pcon->rem_port =
+		slurmdbd_conn->rem_port =
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
-				slurmdbd_conn->pcon->rem_host);
-		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
+				slurmdbd_conn->rem_host);
+		/* Mirror to pcon: persist_conn.c logs from it. */
+		slurmdbd_conn->pcon->rem_port = slurmdbd_conn->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -3171,11 +3178,11 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		if (slurmdbd_conn->pcon->cluster_name) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, slurmdbd_conn->pcon->cluster_name,
-			     slurmdbd_conn->pcon->rem_host,
+			     slurmdbd_conn->rem_host,
 			     slurmdbd_conn->pcon->auth_uid);
 		} else {
 			info("%s: received opcode %s from %s uid %u",
-			     __func__, p, slurmdbd_conn->pcon->rem_host,
+			     __func__, p, slurmdbd_conn->rem_host,
 			     slurmdbd_conn->pcon->auth_uid);
 		}
 	}
@@ -3428,7 +3435,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 	if (rc == ESLURM_ACCESS_DENIED)
 		error("CONN:%d Security violation, %s",
 		      slurmdbd_conn->fd, slurmdbd_msg_type_2_str(msg->msg_type, 1));
-	else if (slurmdbd_conn->pcon->rem_port &&
+	else if (slurmdbd_conn->rem_port &&
 		 (!slurmdbd_conf->commit_delay ||
 		  (msg->msg_type == DBD_REGISTER_CTLD))) {
 		/* If we are dealing with the slurmctld do the

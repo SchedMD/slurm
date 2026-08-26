@@ -114,6 +114,7 @@ extern void *rpc_mgr(void *no_data)
 		slurm_get_ip_str(&cli_addr, dbd_conn->pcon->rem_host,
 				 INET6_ADDRSTRLEN);
 
+		/* pcon keeps its own rem_host: persist_conn.c logs from it. */
 		dbd_conn->rem_host = xstrdup(dbd_conn->pcon->rem_host);
 
 		slurm_persist_conn_recv_thread_init(dbd_conn->pcon, newsockfd,
@@ -185,13 +186,13 @@ static void _connection_fini_callback(void *arg)
 	dbd_conn->pcon_send = NULL;
 	slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 
-	if (dbd_conn->pcon->rem_port) {
+	if (dbd_conn->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
 			cluster_rec.name = dbd_conn->pcon->cluster_name;
-			cluster_rec.control_host = dbd_conn->pcon->rem_host;
-			cluster_rec.control_port = dbd_conn->pcon->rem_port;
+			cluster_rec.control_host = dbd_conn->rem_host;
+			cluster_rec.control_port = dbd_conn->rem_port;
 			cluster_rec.rpc_version = dbd_conn->pcon->version;
 			cluster_rec.tres_str = dbd_conn->tres_str;
 			if (dbd_conn->flags & PERSIST_FLAG_EXT_DBD)
