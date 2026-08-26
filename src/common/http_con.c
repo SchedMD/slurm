@@ -580,7 +580,13 @@ extern int http_con_send_response(http_con_t *hcon,
 			return args.rc;
 	}
 
-	if (close_header && (rc = _send_http_connection_close(hcon)))
+	/*
+	 * RFC7230-6.6: a server closing the connection should say so in the
+	 * final response. The client asking to close is reason enough, so
+	 * honor it here where the headers are still being written.
+	 */
+	if ((close_header || request->connection_close) &&
+	    (rc = _send_http_connection_close(hcon)))
 		return rc;
 
 	if (body && (get_buf_offset(body) > 0)) {
@@ -689,11 +695,13 @@ static int _on_content_complete(void *arg)
 	rc = hcon->events->on_request(hcon, conmgr_con_get_name(hcon->con),
 				      &hcon->request, hcon->arg);
 
-	if (request->connection_close) {
-		/* Notify client that this connection will be closed now */
-		_send_http_connection_close(hcon);
+	/*
+	 * The response has already been written, so the client was told the
+	 * connection is closing by http_con_send_response(). Writing a header
+	 * here would land after the body.
+	 */
+	if (request->connection_close)
 		conmgr_con_queue_close(hcon->con);
-	}
 
 	_request_reset(hcon);
 
