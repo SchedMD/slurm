@@ -5698,6 +5698,70 @@ def wait_for_step_count_snippet(count, op="-ge", timeout=60):
     )
 
 
+def wait_for_step_snippet(step_id, timeout=30):
+    """Return Bash lines that wait for a step of the script's job to register.
+
+    Polls `scontrol show step` from inside a batch script until the step is
+    listed, under the StepId it was assigned at submission (a step queued
+    waiting for resources is already listed, while still PENDING). Aborts
+    the script on timeout: the step's registration is a precondition for
+    whatever the script does to it next.
+
+    Args:
+        step_id (integer): The id of the step within $SLURM_JOB_ID.
+        timeout (integer): Seconds to wait before aborting the script.
+
+    Returns:
+        Bash lines embedding the wait, terminated by a newline.
+
+    Example:
+        >>> make_bash_script("s.sh", "srun true &\\n" + wait_for_step_snippet(0))
+        None
+    """
+
+    pattern = f"StepId=$SLURM_JOB_ID[.]{step_id}([[:space:]+]|$)"
+    return (
+        f"for _ in $(seq 1 {int(timeout * 2)}); do "
+        f'scontrol -o show step "$SLURM_JOB_ID" 2>/dev/null | '
+        f'grep -qE "{pattern}" && break; sleep 0.5; done\n'
+        f'scontrol -o show step "$SLURM_JOB_ID" 2>/dev/null | '
+        f'grep -qE "{pattern}" || '
+        f"{{ echo STEP_{step_id}_NOT_REGISTERED; exit 1; }}\n"
+    )
+
+
+def hog_allocation_snippet(ready_file, srun_args="--exclusive -n2", timeout=30):
+    """Return Bash lines that hog a node's CPUs and block until they are held.
+
+    Launches a background srun that touches ready_file once its tasks hold
+    the node's CPUs, then blocks until that file exists, so a following
+    srun sees a genuinely busy allocation. Aborts the script on timeout:
+    the busy allocation is a precondition, so a script that ran anyway
+    would report the missing contention as a product failure.
+
+    Args:
+        ready_file (string): Path the hog touches once it holds the CPUs.
+        srun_args (string): Resource arguments for the hog srun. Defaults
+            to "--exclusive -n2" (both CPUs of a 2-CPU node).
+        timeout (integer): Seconds to wait for the hog before aborting.
+
+    Returns:
+        Bash lines embedding the hog and the readiness gate, terminated by a
+        newline.
+
+    Example:
+        >>> make_bash_script("s.sh", hog_allocation_snippet("ready") + "wait\\n")
+        None
+    """
+
+    return (
+        f"srun {srun_args} sh -c 'touch \"{ready_file}\"; exec sleep infinity' &\n"
+        f"for _ in $(seq 1 {int(timeout * 2)}); do "
+        f"[ -f '{ready_file}' ] && break; sleep 0.5; done\n"
+        f"[ -f '{ready_file}' ] || {{ echo HOG_NOT_READY; exit 1; }}\n"
+    )
+
+
 def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     """Wait for specified job step to appear in accounting database (`sacct`).
 

@@ -9,6 +9,12 @@ be cancelled by it. test_116_61.py covers that against the controller's own
 step manager; under SlurmctldParameters=enable_stepmgr the step create is
 served by the batch host's slurmstepd instead, so the same promises are
 pinned here against that path.
+
+StepId ordering itself (ids tracking submission order, with no gaps) is a
+property of the shared _set_step_id()/_build_pending_step() assignment and is
+pinned once, by test_116_61. Its scenario needs two nodes; this module needs
+only one, so it is not duplicated here. test_162_11 covers the stepmgr's FIFO
+*launch* ordering, which is the part that is genuinely stepmgr specific.
 """
 
 from pathlib import Path
@@ -37,20 +43,6 @@ def setup():
     atf.require_slurm_running()
 
 
-def _hog_ready_snippet(ready):
-    """Bash lines that hog both CPUs and block until the task actually holds
-    them, so a following srun sees a genuinely busy allocation.
-
-    Aborts the script if the hog never took them: the busy allocation is a
-    precondition, so a test that ran anyway would report the missing
-    contention as a product failure."""
-    return (
-        f"srun --exclusive -n2 sh -c 'touch \"{ready}\"; exec sleep infinity' &\n"
-        f"for _ in $(seq 1 60); do [ -f '{ready}' ] && break; sleep 0.5; done\n"
-        f"[ -f '{ready}' ] || {{ echo HOG_NOT_READY; exit 1; }}\n"
-    )
-
-
 def test_pending_sync_step_shows_real_id_and_reuses_it_under_stepmgr():
     """A synchronous step queued behind a CPU-hogging step shows a real StepId
     while PENDING and launches with that same id once the hog is freed."""
@@ -59,7 +51,7 @@ def test_pending_sync_step_shows_real_id_and_reuses_it_under_stepmgr():
     script = Path("stepmgr_hog_and_pending.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep infinity &\n"
         + "wait\n",
     )
@@ -90,6 +82,44 @@ def test_pending_sync_step_shows_real_id_and_reuses_it_under_stepmgr():
     atf.wait_for_step(job_id, 1, fatal=True)
 
 
+def test_queued_step_reports_queued_and_started_under_stepmgr():
+    """srun prints both the queued and the started notice on this path.
+
+    Under stepmgr the step manager creates the woken step and pushes it, so
+    srun gets its step back inside its first create attempt instead of
+    re-sending. The launch notice must therefore not be keyed off the retry
+    count, or a stepmgr user sees "queued" followed by silence while the
+    controller path prints the pair (srun.1).
+    """
+
+    ready = Path("stepmgr_notice_ready")
+    pend_err = Path("stepmgr_notice_pend.err")
+    out = Path("stepmgr_notice.out")
+    script = Path("stepmgr_notice.sh")
+    atf.make_bash_script(
+        script,
+        atf.hog_allocation_snippet(ready)
+        + f"srun --exclusive -n2 true 2>'{pend_err}' &\n"
+        + "pend=$!\n"
+        + atf.wait_for_step_snippet(1)
+        + "scancel $SLURM_JOB_ID.0\n"
+        + "wait $pend\n"
+        + "echo PEND_RC=$?\n",
+    )
+    job_id = atf.submit_job(
+        "sbatch",
+        f"-N1 -n2 -t5 --output={out} --error={out}",
+        str(script),
+        wrap_job=False,
+        fatal=True,
+    )
+    assert job_id != 0, "sbatch should submit the job"
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    atf.assert_file_contents(pend_err, f"StepId={job_id}.1 queued", contains=True)
+    atf.assert_file_contents(pend_err, f"StepId={job_id}.1 started", contains=True)
+
+
 def test_scancel_pending_sync_step_by_id_under_stepmgr():
     """scancel <jobid>.<stepid> reaps a queued synchronous step before it
     launches and its waiting srun aborts non-zero, leaving the hog running."""
@@ -103,7 +133,7 @@ def test_scancel_pending_sync_step_by_id_under_stepmgr():
     # hog-survival check below cannot race the script exiting.
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep infinity\n"
         + 'echo "PENDING_SRUN_RC=$?"\n'
         + "wait\n",

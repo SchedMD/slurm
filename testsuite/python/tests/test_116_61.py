@@ -94,36 +94,6 @@ def _step_num(step_id):
     return int(step_id.rsplit(".", 1)[1])
 
 
-def _hog_ready_snippet(ready, srun_args="--exclusive -n2"):
-    """Bash lines that launch a CPU-hogging background srun and block until it
-    actually holds the resources (signalled by touching ready), so a
-    following srun sees a genuinely busy allocation instead of racing srun's
-    own startup latency.
-
-    Aborts the script if the hog never took the CPUs: the busy allocation is
-    a precondition, so a test that ran anyway would report the missing
-    contention as a product failure."""
-    return (
-        f"srun {srun_args} sh -c 'touch \"{ready}\"; exec sleep infinity' &\n"
-        f"for _ in $(seq 1 60); do [ -f '{ready}' ] && break; sleep 0.5; done\n"
-        f"[ -f '{ready}' ] || {{ echo HOG_NOT_READY; exit 1; }}\n"
-    )
-
-
-def _step_registered_snippet(step_suffix):
-    """Bash lines that block until step $SLURM_JOB_ID.<step_suffix> is visible
-    to scontrol, so a following srun's submission order isn't racing the
-    previous srun's own startup latency (config load, auth, controller RTT).
-
-    Aborts the script if the step never registered, for the same reason as
-    _hog_ready_snippet()."""
-    show = f"scontrol -o show step $SLURM_JOB_ID.{step_suffix} >/dev/null 2>&1"
-    return (
-        f"for _ in $(seq 1 60); do {show} && break; sleep 0.5; done\n"
-        f"{show} || {{ echo STEP_{step_suffix}_NOT_REGISTERED; exit 1; }}\n"
-    )
-
-
 def _submit_hog_and_pending():
     """Allocate a 2-CPU node, hog both CPUs with step .0, and queue step .1
     which must wait for the step resources. Returns the job id. Neither step
@@ -132,7 +102,7 @@ def _submit_hog_and_pending():
     ready = Path("hog_ready")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep infinity &\n"
         + "wait\n",
     )
@@ -161,7 +131,7 @@ def _submit_wide_hog_and_pending():
     step_env = Path("wide_step_env")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready, srun_args="--exclusive -N2 -n4")
+        atf.hog_allocation_snippet(ready, srun_args="--exclusive -N2 -n4")
         + "srun --exclusive -N1 -n1 -c2 sh -c "
         + f'\'echo "STEP_ENV=$SLURM_JOB_ID.$SLURM_STEP_ID" > "{step_env}"; '
         + "exec sleep infinity' &\n"
@@ -273,7 +243,7 @@ def test_pending_sync_step_logs_id_to_stderr():
     script = Path("log_id.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep 5\n"
         + "echo STDOUT_ALIVE\n",
     )
@@ -413,7 +383,7 @@ def test_cancelled_pending_step_makes_srun_exit_nonzero():
     # script ends and the job terminates the backgrounded hog.
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + "srun --exclusive -n2 sleep infinity\n"
         + 'echo "PENDING_SRUN_RC=$?"\n',
     )
@@ -523,9 +493,9 @@ def test_step_ids_track_submission_order_without_gaps():
         script,
         "nodes=($(scontrol show hostnames $SLURM_JOB_NODELIST))\n"
         "srun -N1 -w ${nodes[0]} sleep infinity &\n"
-        + _step_registered_snippet(0)
+        + atf.wait_for_step_snippet(0)
         + "srun -N1 -w ${nodes[0]} sleep infinity &\n"
-        + _step_registered_snippet(1)
+        + atf.wait_for_step_snippet(1)
         + "srun -N1 -w ${nodes[1]} sleep infinity &\n"
         + "wait\n",
     )
@@ -584,7 +554,7 @@ def test_pending_sync_step_survives_timeout_retry_and_reuses_id():
     script = Path("timeout_retry.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         # -v so the queued step's srun surfaces its "still pending" notice,
         # which it logs only when its pending-step wait times out.
         + "srun -v --exclusive -n2 sleep 5 &\n" + "wait\n",
@@ -657,7 +627,9 @@ def test_still_pending_notice_requires_verbose():
     script = Path("quiet_retry.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready) + "srun --exclusive -n2 sleep 5 &\n" + "wait\n",
+        atf.hog_allocation_snippet(ready)
+        + "srun --exclusive -n2 sleep 5 &\n"
+        + "wait\n",
     )
     job_id = atf.submit_job(
         "sbatch",
@@ -904,7 +876,7 @@ def test_sigint_to_queued_srun_reports_cancellation():
     script = Path("sigint_pending.sh")
     atf.make_bash_script(
         script,
-        _hog_ready_snippet(ready)
+        atf.hog_allocation_snippet(ready)
         + f"""srun --exclusive -n2 sleep infinity 2>'{perr}' &
 pend=$!
 for k in $(seq 1 120); do
