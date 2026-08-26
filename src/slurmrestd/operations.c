@@ -155,6 +155,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 	FREE_NULL_LIST(send_args.headers);
 
 	xassert(error_code);
+	args->rejected = true;
 	return error_code;
 }
 
@@ -352,6 +353,13 @@ cleanup:
 
 	/* always clear the auth context */
 	http_context_free_null_auth(args->context);
+
+	/*
+	 * The client has already been answered. Returning the error would make
+	 * http_con treat the request as unparsed and send a second response.
+	 */
+	if (args->rejected)
+		rc = SLURM_SUCCESS;
 
 	return rc;
 }

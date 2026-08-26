@@ -77,6 +77,7 @@ typedef struct on_http_request_args_s {
 	const char *body; /* body sent by client or NULL (do not xfree) */
 	const size_t body_length; /* bytes in body to send or 0 */
 	const char *body_encoding; /* body encoding type or NULL */
+	bool rejected; /* an error response has already been sent */
 } on_http_request_args_t;
 
 /*
