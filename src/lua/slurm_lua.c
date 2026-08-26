@@ -1247,6 +1247,7 @@ extern int slurm_lua_init(void)
 {
 	slurm_lua_fini();
 
+	char *tried_libs = NULL, *pos = NULL;
 	char *const lua_libs[] = {
 #if LUA_VERSION_NUM == 505
 		"liblua-5.5.so",
@@ -1285,13 +1286,19 @@ extern int slurm_lua_init(void)
 	 *   by any lua scripts.
 	 */
 	while (lua_libs[i] &&
-	       !(lua_handle = dlopen(lua_libs[i], RTLD_NOW | RTLD_GLOBAL)))
+	       !(lua_handle = dlopen(lua_libs[i], RTLD_NOW | RTLD_GLOBAL))) {
+		xstrfmtcatat(tried_libs, &pos, "%s%s (%s)", (pos ? ", " : ""),
+			     lua_libs[i], dlerror());
 		i++;
+	}
 
 	if (!lua_handle) {
-		error("Failed to open liblua.so: %s", dlerror());
+		error("Failed to open liblua (compiled against " LUA_VERSION
+		      "), tried: %s", tried_libs);
+		xfree(tried_libs);
 		return SLURM_ERROR;
 	}
+	xfree(tried_libs);
 
 	/* Load any serializer plugins for JSON/YAML conversions */
 	serializer_g_init();
