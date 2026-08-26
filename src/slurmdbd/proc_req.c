@@ -1497,8 +1497,9 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 static int _find_rpc_obj_in_list(void *x, void *key)
 {
 	slurmdb_rpc_obj_t *obj = (slurmdb_rpc_obj_t *)x;
+	uint32_t *id = key;
 
-	if (obj->id == *(int *)key)
+	if (obj->id == *id)
 		return 1;
 	return 0;
 }
@@ -3178,6 +3179,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 	slurmdb_rpc_obj_t *rpc_obj;
+	uint32_t msg_type = msg->msg_type;
 
 	DEF_TIMERS;
 	START_TIMER;
@@ -3473,11 +3475,10 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		return rc;
 	}
 
-	if (!(rpc_obj =
-		      list_find_first(rpc_stats->rpc_list,
-				      _find_rpc_obj_in_list, &msg->msg_type))) {
+	if (!(rpc_obj = list_find_first(rpc_stats->rpc_list,
+					_find_rpc_obj_in_list, &msg_type))) {
 		rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
-		rpc_obj->id = msg->msg_type;
+		rpc_obj->id = msg_type;
 		list_append(rpc_stats->rpc_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
