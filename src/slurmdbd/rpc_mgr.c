@@ -63,6 +63,35 @@
 /* Local functions */
 static void _connection_fini_callback(void *arg);
 
+/*
+ * Bridge from the persist_conn callback ABI to proc_req(). Removed when
+ * slurmdbd stops using the persist_conn callback machinery.
+ */
+static int _proc_req_bridge(void *arg, persist_msg_t *pmsg, buf_t **out_buffer)
+{
+	slurmdbd_conn_t *dbd_conn = arg;
+
+	/*
+	 * slurm_persist_msg_unpack() caches the authenticated identity on
+	 * the persist_conn_t when REQUEST_PERSIST_INIT is processed, which
+	 * happens before this callback runs. Republish it on the
+	 * slurmdbd_conn_t, which is what proc_req() and every authorization
+	 * check read.
+	 *
+	 * auth_cred stays owned by the persist_conn_t. Do not free this copy,
+	 * and do not read it outside the dispatch it was published for.
+	 * slurm_persist_msg_unpack() destroys the old cred on every
+	 * REQUEST_PERSIST_INIT, including one it goes on to reject, which
+	 * leaves this copy dangling until the next message republishes it.
+	 */
+	dbd_conn->auth_cred = dbd_conn->pcon->auth_cred;
+	dbd_conn->auth_uid = dbd_conn->pcon->auth_uid;
+	dbd_conn->auth_gid = dbd_conn->pcon->auth_gid;
+	dbd_conn->auth_ids_set = dbd_conn->pcon->auth_ids_set;
+
+	return proc_req(arg, pmsg, out_buffer);
+}
+
 /* Local variables */
 static pthread_t       master_thread_id = 0;
 
@@ -104,7 +133,7 @@ extern void *rpc_mgr(void *no_data)
 
 		dbd_conn->pcon = xmalloc(sizeof(persist_conn_t));
 		dbd_conn->pcon->flags = PERSIST_FLAG_DBD;
-		dbd_conn->pcon->callback_proc = proc_req;
+		dbd_conn->pcon->callback_proc = _proc_req_bridge;
 		dbd_conn->pcon->callback_fini = _connection_fini_callback;
 		dbd_conn->pcon->shutdown = &shutdown_time;
 		dbd_conn->pcon->version = SLURM_MIN_PROTOCOL_VERSION;
