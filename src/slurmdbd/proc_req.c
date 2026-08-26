@@ -240,7 +240,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 		dbd_conn->pcon_send->my_port = slurmdbd_conf->dbd_port;
 		dbd_conn->pcon_send->rem_host = xstrdup(dbd_conn->rem_host);
 		dbd_conn->pcon_send->rem_port = dbd_conn->rem_port;
-		dbd_conn->pcon_send->version = dbd_conn->pcon->version;
+		dbd_conn->pcon_send->version = dbd_conn->version;
 		dbd_conn->pcon_send->shutdown = &shutdown_time;
 		/* we want timeout to be zero */
 		dbd_conn->pcon_send->timeout = 0;
@@ -310,6 +310,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 		acct_storage_g_get_connection(slurmdbd_conn->fd, NULL, true,
 					      slurmdbd_conn->cluster_name);
 	slurmdbd_conn->version = init_msg->version;
+	/* Mirror to pcon: persist_conn.c packs/unpacks with it. */
 	slurmdbd_conn->pcon->version = init_msg->version;
 	if (errno)
 		rc = errno;
@@ -827,12 +828,11 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	       slurmdbd_conn->fd, slurmdbd_conn->cluster_name,
 	       cluster_tres_msg->tres_str);
 
-	rc = clusteracct_storage_g_cluster_tres(
-		slurmdbd_conn->db_conn,
-		cluster_tres_msg->cluster_nodes,
-		cluster_tres_msg->tres_str,
-		cluster_tres_msg->event_time,
-		slurmdbd_conn->pcon->version);
+	rc = clusteracct_storage_g_cluster_tres(slurmdbd_conn->db_conn,
+						cluster_tres_msg->cluster_nodes,
+						cluster_tres_msg->tres_str,
+						cluster_tres_msg->event_time,
+						slurmdbd_conn->version);
 	if (rc == ESLURM_ACCESS_DENIED) {
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 		rc = SLURM_ERROR;
@@ -876,9 +876,8 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_ACCOUNTS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-				       DBD_GOT_ACCOUNTS,
-				       *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
+				       DBD_GOT_ACCOUNTS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
@@ -908,7 +907,7 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_TRES, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_TRES, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -939,7 +938,7 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_ASSOCS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_ASSOCS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -970,9 +969,8 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_CLUSTERS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-				       DBD_GOT_CLUSTERS,
-				       *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
+				       DBD_GOT_CLUSTERS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
@@ -1002,9 +1000,8 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_FEDERATIONS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-				       DBD_GOT_FEDERATIONS,
-				       *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
+				       DBD_GOT_FEDERATIONS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
@@ -1027,7 +1024,7 @@ static int _get_config_keypair(slurmdbd_conn_t *slurmdbd_conn,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 			       DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
@@ -1039,7 +1036,7 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 {
 	int rc = EINVAL;
 
-	if (slurmdbd_conn->pcon->version < SLURM_26_05_PROTOCOL_VERSION) {
+	if (slurmdbd_conn->version < SLURM_26_05_PROTOCOL_VERSION) {
 		rc = _get_config_keypair(slurmdbd_conn, msg, out_buffer);
 	} else {
 		persist_msg_t resp = {
@@ -1050,8 +1047,7 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 		xassert(!*out_buffer);
 		if ((*out_buffer =
-			     pack_slurmdbd_msg(&resp,
-					       slurmdbd_conn->pcon->version)))
+			     pack_slurmdbd_msg(&resp, slurmdbd_conn->version)))
 			rc = SLURM_SUCCESS;
 	}
 
@@ -1074,9 +1070,8 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_EVENTS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-				       DBD_GOT_EVENTS,
-				       *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
+				       DBD_GOT_EVENTS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
@@ -1106,9 +1101,8 @@ static int _get_instances(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_INSTANCES, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-				       DBD_GOT_INSTANCES,
-				       *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
+				       DBD_GOT_INSTANCES, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
@@ -1174,7 +1168,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_JOBS, *out_buffer);
 		if (list_msg.return_code == ESLURM_RESULT_TOO_LARGE) {
 			free_buf(*out_buffer);
@@ -1213,7 +1207,7 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_PROBS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_PROBS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -1247,7 +1241,7 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_QOS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_QOS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -1278,9 +1272,8 @@ static int _get_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_RES, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-				       DBD_GOT_RES,
-				       *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
+				       DBD_GOT_RES, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
@@ -1309,7 +1302,7 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_TXN, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_TXN, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -1377,8 +1370,8 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	get_msg->rec = NULL;
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) ret_type, *out_buffer);
-	slurmdbd_pack_usage_msg(&got_msg, slurmdbd_conn->pcon->version,
-				ret_type, *out_buffer);
+	slurmdbd_pack_usage_msg(&got_msg, slurmdbd_conn->version, ret_type,
+				*out_buffer);
 
 	return SLURM_SUCCESS;
 }
@@ -1392,10 +1385,9 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	slurmdb_user_cond_t * user_cond = NULL;
 
 	user_cond = get_msg->cond;
-	if ((!user_cond->with_assocs && !user_cond->with_wckeys)
-	    && ((slurmdbd_conn->pcon->version < 8) ||
-		(user_cond->assoc_cond->flags &
-		 ASSOC_COND_FLAG_ONLY_DEFS))) {
+	if ((!user_cond->with_assocs && !user_cond->with_wckeys) &&
+	    ((slurmdbd_conn->version < 8) ||
+	     (user_cond->assoc_cond->flags & ASSOC_COND_FLAG_ONLY_DEFS))) {
 		list_t *cluster_list = user_cond->assoc_cond->cluster_list;
 		/* load up with just this cluster to query against
 		 * since before 2.2 we had only 1 default account so
@@ -1416,7 +1408,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_USERS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_USERS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -1460,7 +1452,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_WCKEYS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_WCKEYS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -1491,7 +1483,7 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 			list_msg.my_list = list_create(NULL);
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_RESVS, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_RESVS, *out_buffer);
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
@@ -1610,7 +1602,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	job.nodes = job_comp_msg->nodes;
 	job.start_time = job_comp_msg->start_time;
 	details.submit_time = job_comp_msg->submit_time;
-	job.start_protocol_ver = slurmdbd_conn->pcon->version;
+	job.start_protocol_ver = slurmdbd_conn->version;
 	job.system_comment = job_comp_msg->system_comment;
 	job.tres_alloc_str = job_comp_msg->tres_alloc_str;
 
@@ -1671,8 +1663,8 @@ static int _job_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_ID_RC, *out_buffer);
-	slurmdbd_pack_id_rc_msg(&id_rc_msg,
-				slurmdbd_conn->pcon->version, *out_buffer);
+	slurmdbd_pack_id_rc_msg(&id_rc_msg, slurmdbd_conn->version,
+				*out_buffer);
 	return SLURM_SUCCESS;
 }
 
@@ -1755,7 +1747,7 @@ static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	job.job_id = job_suspend_msg->job_id;
 	job.job_state = job_suspend_msg->job_state;
 	details.submit_time = job_suspend_msg->submit_time;
-	job.start_protocol_ver = slurmdbd_conn->pcon->version;
+	job.start_protocol_ver = slurmdbd_conn->version;
 	job.suspend_time = job_suspend_msg->suspend_time;
 
 	job.details = &details;
@@ -1794,8 +1786,8 @@ static int _modify_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -1835,8 +1827,8 @@ static int _modify_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -1863,8 +1855,8 @@ static int _modify_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -1891,8 +1883,8 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -1926,7 +1918,7 @@ static int _modify_job(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	} else {
 		*out_buffer = init_buf(1024);
 		pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 				       DBD_GOT_LIST, *out_buffer);
 	}
 
@@ -1956,8 +1948,8 @@ static int _modify_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -1984,8 +1976,8 @@ static int _modify_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 	return rc;
 }
@@ -2071,8 +2063,8 @@ is_same_user:
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2098,8 +2090,8 @@ static int _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2259,7 +2251,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
 	details.script_hash = job_start_msg->script_hash;
-	job.start_protocol_ver = slurmdbd_conn->pcon->version;
+	job.start_protocol_ver = slurmdbd_conn->version;
 	job.start_time = job_start_msg->start_time;
 	details.segment_size = job_start_msg->segment_size;
 	job.exclusive = job_exclusive_display_string(job_start_msg->exclusive);
@@ -2395,7 +2387,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	cluster.control_port = register_ctld_msg->port;
 	cluster.dimensions = register_ctld_msg->dimensions;
 	cluster.flags = register_ctld_msg->flags;
-	cluster.rpc_version = slurmdbd_conn->pcon->version;
+	cluster.rpc_version = slurmdbd_conn->version;
 
 	if ((cluster.flags != NO_VAL) && (cluster.flags & CLUSTER_FLAG_EXT))
 		slurmdbd_conn->flags |= PERSIST_FLAG_EXT_DBD;
@@ -2493,8 +2485,8 @@ static int _remove_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2527,8 +2519,8 @@ static int _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2560,8 +2552,8 @@ static int _remove_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2589,8 +2581,8 @@ static int _remove_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2618,8 +2610,8 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2646,8 +2638,8 @@ static int _remove_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2673,8 +2665,8 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	list_msg.return_code = errno;
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2701,8 +2693,8 @@ static int _remove_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2729,8 +2721,8 @@ static int _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version, DBD_GOT_LIST,
+			       *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
@@ -2830,7 +2822,7 @@ static int _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_MULT_JOB_START, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 			       DBD_GOT_MULT_JOB_START, *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
@@ -2888,7 +2880,7 @@ static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_MULT_MSG, *out_buffer);
-	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
+	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->version,
 			       DBD_GOT_MULT_MSG, *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 
@@ -2928,7 +2920,7 @@ static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	step.jobacct = step_comp_msg->jobacct;
 	job.job_id = step_comp_msg->step_id.job_id;
 	step.requid = step_comp_msg->req_uid;
-	job.start_protocol_ver = slurmdbd_conn->pcon->version;
+	job.start_protocol_ver = slurmdbd_conn->version;
 	job.start_time = step_comp_msg->start_time;
 	job.tres_alloc_str = step_comp_msg->job_tres_alloc_str;
 	step.state = step_comp_msg->state;
@@ -3002,7 +2994,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
 	step.network = step_start_msg->node_inx;
-	job.start_protocol_ver = slurmdbd_conn->pcon->version;
+	job.start_protocol_ver = slurmdbd_conn->version;
 	/*
 	 * Set job.start_time to be the same as step.start_time. If the
 	 * job_db_inx hasn't be created yet we need the start time or we will
@@ -3092,8 +3084,7 @@ static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 		return rc;
 	}
-	slurmdb_pack_stats_msg(rpc_stats, slurmdbd_conn->pcon->version,
-			       *out_buffer);
+	slurmdb_pack_stats_msg(rpc_stats, slurmdbd_conn->version, *out_buffer);
 	slurm_mutex_unlock(&rpc_mutex);
 
 	return rc;
@@ -3192,7 +3183,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
 			 slurmdbd_msg_type_2_str(msg->msg_type, 1),
 			 slurmdbd_conn->pcon->auth_uid,
-			 &cli_addr, slurmdbd_conn->pcon->version);
+			 &cli_addr, slurmdbd_conn->version);
 	}
 
 	switch (msg->msg_type) {

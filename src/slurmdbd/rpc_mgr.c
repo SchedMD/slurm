@@ -193,7 +193,7 @@ static void _connection_fini_callback(void *arg)
 			cluster_rec.name = dbd_conn->cluster_name;
 			cluster_rec.control_host = dbd_conn->rem_host;
 			cluster_rec.control_port = dbd_conn->rem_port;
-			cluster_rec.rpc_version = dbd_conn->pcon->version;
+			cluster_rec.rpc_version = dbd_conn->version;
 			cluster_rec.tres_str = dbd_conn->tres_str;
 			if (dbd_conn->flags & PERSIST_FLAG_EXT_DBD)
 				cluster_rec.flags = CLUSTER_FLAG_EXT;
