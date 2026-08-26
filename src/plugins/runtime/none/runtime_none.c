@@ -51,7 +51,7 @@ const char plugin_name[] = "no-op runtime plugin";
 const char plugin_type[] = "runtime/none";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-extern int runtime_p_init(runtime_context_t context)
+extern int runtime_p_init(const int idx, runtime_context_t context)
 {
 	return SLURM_SUCCESS;
 }

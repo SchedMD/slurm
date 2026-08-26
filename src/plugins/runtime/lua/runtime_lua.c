@@ -160,7 +160,7 @@ cleanup:
 	return rc;
 }
 
-extern int runtime_p_init(runtime_context_t context)
+extern int runtime_p_init(const int idx, runtime_context_t context)
 {
 	int rc = SLURM_SUCCESS;
 	lua_State *L = NULL;

@@ -1455,7 +1455,7 @@ done:
 	FREE_NULL_OCI_CONF(oci_conf);
 }
 
-extern int runtime_p_init(runtime_context_t context)
+extern int runtime_p_init(const int idx, runtime_context_t context)
 {
 	return SLURM_SUCCESS;
 }

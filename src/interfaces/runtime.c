@@ -47,7 +47,7 @@
 #define PLUGIN_TYPE "runtime"
 
 typedef struct {
-	int (*init)(runtime_context_t context);
+	int (*init)(const int idx, runtime_context_t context);
 	int (*fini)(void);
 	int (*setup)(slurmd_conf_t *conf, stepd_step_rec_t *step,
 		     slurm_addr_t *cli, slurm_msg_t *msg);
@@ -149,7 +149,7 @@ static int _load_runtime(const char *plugin_name, runtime_context_t context,
 		goto done;
 	}
 
-	if ((rc = ops[idx].init(context))) {
+	if ((rc = ops[idx].init(idx, context))) {
 		plugin_context_destroy(g_context[idx]);
 		g_context[idx] = NULL;
 		goto done;
