@@ -29721,7 +29721,8 @@ printf "%s\n" "no" >&6; }
 printf "%s\n" "$as_me: lua support is disabled" >&6;}
 	else
 		x_ac_lua_pkg_name="lua"
-		# First check for lua named package, then check for 5.4, 5.3, 5.2 and 5.1.
+		# First check for lua named package, then check for 5.5, 5.4, 5.3,
+		# 5.2 and 5.1.
 		# Modern RHEL uses "lua' for the primary version.
 		if test -n "$PKG_CONFIG" && \
     { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua\""; } >&5
@@ -29730,6 +29731,22 @@ printf "%s\n" "$as_me: lua support is disabled" >&6;}
   printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
   x_ac_lua_pkg_name="lua >= 5.1"
+else
+  if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.5\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua5.5") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua5.5
+else
+  if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua-5.5\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "lua-5.5") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  x_ac_lua_pkg_name=lua-5.5
 else
   if test -n "$PKG_CONFIG" && \
     { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"lua5.4\""; } >&5
@@ -29796,6 +29813,8 @@ else
   x_ac_lua_pkg_name=lua-5.1
 else
   x_ac_lua_pkg_name="lua >= 5.1"
+fi
+fi
 fi
 fi
 fi
