@@ -2345,10 +2345,13 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 		if ((job_ptr->details) && (job_ptr->details->share_res == 0))
 			node_ptr->no_share_job_cnt++;
 
-		if (IS_NODE_DOWN(node_ptr)              &&
-		    IS_JOB_RUNNING(job_ptr)             &&
-		    (job_ptr->kill_on_node_fail == 0)   &&
-		    (job_ptr->node_cnt > 1)) {
+		/* An arbitrary job's task layout requires all of its nodes. */
+		if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr) &&
+		    (job_ptr->kill_on_node_fail == 0) &&
+		    (job_ptr->node_cnt > 1) &&
+		    (!job_ptr->details ||
+		     ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) !=
+		      SLURM_DIST_ARBITRARY))) {
 			/* This should only happen if a job was running
 			 * on a node that was newly configured DOWN */
 			int save_accounting_enforce;

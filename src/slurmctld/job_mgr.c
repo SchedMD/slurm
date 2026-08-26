@@ -3080,9 +3080,15 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 		}
 	} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
 		foreach_kill_job_by->kill_job_cnt++;
-		if ((job_ptr->details) &&
-		    (job_ptr->kill_on_node_fail == 0) &&
+		/*
+		 * An arbitrary job's task layout is defined by its node list,
+		 * which cannot be rebuilt for a smaller node set, so it cannot
+		 * survive losing a node.
+		 */
+		if ((job_ptr->details) && (job_ptr->kill_on_node_fail == 0) &&
 		    (job_ptr->node_cnt > 1) &&
+		    ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) !=
+		     SLURM_DIST_ARBITRARY) &&
 		    !IS_JOB_CONFIGURING(job_ptr)) {
 			bitstr_t *orig_job_node_bitmap;
 
@@ -3107,8 +3113,7 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 				&job_ptr->gres_used);
 			job_post_resize_acctg(job_ptr);
 		} else if (job_ptr->batch_flag &&
-			   ((job_ptr->details &&
-			     job_ptr->details->requeue) ||
+			   ((job_ptr->details && job_ptr->details->requeue) ||
 			    (foreach_kill_job_by->requeue_on_resume_failure &&
 			     (IS_NODE_POWERED_DOWN(node_ptr) ||
 			      IS_NODE_POWERING_UP(node_ptr)) &&

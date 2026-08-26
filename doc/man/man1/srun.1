@@ -2388,6 +2388,12 @@ Specify an optional argument of "off" disable the effect of the
 \fBSLURM_NO_KILL\fR environment variable.
 
 The default action is to terminate the job upon node failure.
+
+\fBNOTE\fR: This option has no effect on the \fBjob allocation\fR when
+\fB\-\-distribution\fR=\fIarbitrary\fR is used. The task layout of such a
+job comes from its requested node list and cannot be rebuilt for a smaller set
+of nodes, so Slurm terminates the job when one of its nodes fails. The option
+still applies to job steps.
 .IP
 
 .TP

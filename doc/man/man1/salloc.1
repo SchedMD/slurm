@@ -1720,6 +1720,11 @@ Specify an optional argument of "off" to disable the effect of the
 
 By default Slurm terminates the entire job allocation if any node fails in its
 range of allocated nodes.
+
+\fBNOTE\fR: This option is ignored for a job that uses
+\fB\-\-distribution\fR=\fIarbitrary\fR. The task layout of such a job comes
+from its requested node list and cannot be rebuilt for a smaller set of nodes,
+so Slurm terminates the job when one of its nodes fails.
 .IP
 
 .TP
