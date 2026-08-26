@@ -1629,7 +1629,7 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	/*
 	 * Pack message into buffer
 	 */
-	buffers->body = init_buf(BUF_SIZE);
+	buffers->body = init_buf(INFINITE);
 	if ((rc = pack_msg(msg, buffers->body))) {
 		error("%s: packing %s failed: %s", __func__,
 		      rpc_num2string(msg->msg_type), slurm_strerror(rc));
@@ -1710,7 +1710,7 @@ skip_auth1:
 	/*
 	 * Pack auth credential
 	 */
-	buffers->auth = init_buf(BUF_SIZE);
+	buffers->auth = init_buf(INFINITE);
 
 	rc = auth_g_pack(auth_cred, buffers->auth, header.version);
 	if (rc) {
@@ -1730,7 +1730,7 @@ skip_auth2:
 	 * Pack and send message
 	 */
 	update_header(&header, get_buf_offset(buffers->body));
-	buffers->header = init_buf(BUF_SIZE);
+	buffers->header = init_buf(INFINITE);
 	pack_header(&header, buffers->header);
 	log_flag_hex(NET_RAW, get_buf_data(buffers->header),
 		     get_buf_offset(buffers->header),
