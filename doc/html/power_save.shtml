@@ -312,43 +312,6 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     default value is 60 seconds.</p>
   </dd>
 
-  <dt id="SchedulerParameters"><b>SchedulerParameters</b><a class="slurm_link"
-  href="#SchedulerParameters"></a>
-  </dt>
-
-  <dd>
-    <p>The interpretation of this parameter varies by SchedulerType. Multiple
-    options may be comma separated. Options of interest include:</p>
-
-    <dl>
-      <dt id="salloc_wait_nodes"><b>salloc_wait_nodes</b><a class="slurm_link"
-      href="#salloc_wait_nodes"></a>
-      </dt>
-
-      <dd>
-        <p>If defined, the salloc command will wait until all allocated nodes
-        are ready for use (i.e. booted) before the command returns. By
-        default, salloc will return as soon as the resource allocation has
-        been made. The salloc command can use the
-        <code>--wait-all-nodes</code> option to override this configuration
-        parameter.</p>
-      </dd>
-
-      <dt id="sbatch_wait_nodes"><b>sbatch_wait_nodes</b><a class="slurm_link"
-      href="#sbatch_wait_nodes"></a>
-      </dt>
-
-      <dd>
-        <p>If defined, the sbatch script will wait until all allocated nodes
-        are ready for use (i.e. booted) before the initiation. By default,
-        the sbatch script will be initiated as soon as the first node in the
-        job allocation is ready. The sbatch command can use the
-        <code>--wait-all-nodes</code> option to override this configuration
-        parameter.</p>
-      </dd>
-    </dl>
-  </dd>
-
   <dt id="SlurmctldParameters"><b>SlurmctldParameters</b><a class="slurm_link"
   href="#SlurmctldParameters"></a>
   </dt>
@@ -901,23 +864,12 @@ the following actions:</p>
 "#allocations"></a></h2>
 
 <p>A resource allocation request will be granted as soon as resources are
-selected for use, possibly before the nodes are all available for use. The
-launching of job steps will be delayed until the required nodes have been
-restored to service (it prints a warning about waiting for nodes to become
-available and periodically retries until they are available).</p>
-
-<p>In the case of an <i>sbatch</i> command, the batch program will start when
-node zero of the allocation is ready for use and pre-processing can be
-performed as needed before using <i>srun</i> to launch job steps. The
-<i>sbatch</i> <code>--wait-all-nodes=&lt;value&gt;</code> option can be used
-to override this behavior on a per-job basis and a system-wide default can be
-set with the <i>SchedulerParameters=sbatch_wait_nodes</i> option.</p>
-
-<p>In the case of the <i>salloc</i> command, once the allocation is made a
-new shell will be created on the login node. The <i>salloc</i>
-<code>--wait-all-nodes=&lt;value&gt;</code> option can be used to override
-this behavior on a per-job basis and a system-wide default can be set with
-the <i>SchedulerParameters=salloc_wait_nodes</i> option.</p>
+selected for use, possibly before the nodes are all available for use. A job
+whose nodes had to power up or reboot does not start until all of them have
+registered, and the launching of job steps will be delayed until the required
+nodes have been restored to service (it prints a warning about waiting for
+nodes to become available and periodically retries until they are
+available).</p>
 
 <h2 id="nodefeatures">Node Features<a class="slurm_link" href=
 "#nodefeatures"></a></h2>
