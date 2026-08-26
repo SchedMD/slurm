@@ -114,6 +114,8 @@ extern void *rpc_mgr(void *no_data)
 		slurm_get_ip_str(&cli_addr, dbd_conn->pcon->rem_host,
 				 INET6_ADDRSTRLEN);
 
+		dbd_conn->rem_host = xstrdup(dbd_conn->pcon->rem_host);
+
 		slurm_persist_conn_recv_thread_init(dbd_conn->pcon, newsockfd,
 						    -1, dbd_conn);
 	}

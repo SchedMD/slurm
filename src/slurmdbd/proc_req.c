@@ -224,6 +224,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 			error("A new registration for cluster %s CONN:%d just came in, but I am already talking to that cluster (CONN:%d), closing other connection.",
 			      dbd_conn->pcon->cluster_name, new_fd, existing_fd);
 			slurmdbd_conn->pcon->rem_port = 0;
+			slurmdbd_conn->rem_port = 0;
 			list_delete_item(itr);
 		}
 	}
@@ -847,6 +848,7 @@ end_it:
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
 				slurmdbd_conn->pcon->rem_host);
+		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -1634,6 +1636,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
 				slurmdbd_conn->pcon->rem_host);
+		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -2312,6 +2315,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
 				slurmdbd_conn->pcon->rem_host);
+		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -2454,6 +2458,7 @@ end_it:
 
 	if (rc == SLURM_SUCCESS) {
 		slurmdbd_conn->pcon->rem_port = register_ctld_msg->port;
+		slurmdbd_conn->rem_port = register_ctld_msg->port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -2945,6 +2950,7 @@ static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
 				slurmdbd_conn->pcon->rem_host);
+		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
@@ -3037,6 +3043,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			clusteracct_storage_g_register_disconn_ctld(
 				slurmdbd_conn->db_conn,
 				slurmdbd_conn->pcon->rem_host);
+		slurmdbd_conn->rem_port = slurmdbd_conn->pcon->rem_port;
 
 		_add_registered_cluster(slurmdbd_conn);
 	}
