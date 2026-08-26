@@ -125,19 +125,13 @@ static int _operations_router_reject(on_http_request_args_t *args,
 				     const char *body_encoding)
 {
 	send_http_response_args_t send_args = {
-		.headers = list_create(NULL),
+		.close_header = true,
 		.hcon = args->hcon,
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
 		.body_encoding =
 			(body_encoding ? body_encoding : MIME_TYPE_TEXT),
 	};
-	http_header_t close = {
-		.magic = HTTP_HEADER_MAGIC,
-		.name = "Connection",
-		.value = "Close",
-	};
-
 	send_args.status_code = http_status_from_error(error_code);
 
 	if (!err)
@@ -147,12 +141,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 
 	send_args.body_length = strlen(send_args.body);
 
-	/* Always warn that connection will be closed after the body is sent */
-	list_append(send_args.headers, &close);
-
 	(void) send_http_response(args->context, &send_args);
-
-	FREE_NULL_LIST(send_args.headers);
 
 	xassert(error_code);
 	args->rejected = true;

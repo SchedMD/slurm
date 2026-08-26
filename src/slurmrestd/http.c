@@ -80,7 +80,8 @@ extern int send_http_response(http_context_t *context,
 	xassert(context->magic == MAGIC);
 
 	return http_con_send_response(_ctxt_get_hcon(context),
-				      args->status_code, args->headers, false,
+				      args->status_code, args->headers,
+				      args->close_header,
 				      (args->body ? &buffer : NULL),
 				      args->body_encoding);
 }

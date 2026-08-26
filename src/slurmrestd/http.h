@@ -119,6 +119,7 @@ typedef struct {
 	http_status_code_t status_code; /* HTTP status code to send */
 	/* list of http_header_entry_t to send (can be empty) */
 	list_t *headers; /* list_t of http_header_t* from client */
+	bool close_header; /* send "Connection: Close" and close after */
 	const char *body; /* body to send or NULL */
 	size_t body_length; /* bytes in body to send or 0 */
 	const char *body_encoding; /* body encoding type or NULL */
