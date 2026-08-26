@@ -528,10 +528,21 @@ extern int load_all_node_state ( bool state_only )
 						NODE_STATE_FAIL;
 				if ((node_state & NODE_STATE_POWERED_DOWN) ||
 				    (node_state & NODE_STATE_POWERING_DOWN)) {
-					node_ptr->node_state |=
+					uint32_t power_flag =
 						node_state &
 						(NODE_STATE_POWERED_DOWN |
 						 NODE_STATE_POWERING_DOWN);
+					if (IS_NODE_UNKNOWN(node_ptr)) {
+						orig_flags =
+							node_ptr->node_state &
+							NODE_STATE_FLAGS;
+						node_ptr->node_state =
+							NODE_STATE_IDLE |
+							orig_flags | power_flag;
+					} else {
+						node_ptr->node_state |=
+							power_flag;
+					}
 					/* Recover hardware state for powered
 					 * down nodes */
 					node_ptr->cpus = node_state_rec->cpus;
