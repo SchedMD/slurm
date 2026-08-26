@@ -100,6 +100,8 @@ extern void *rpc_mgr(void *no_data)
 
 		dbd_conn = xmalloc(sizeof(slurmdbd_conn_t));
 		slurmdbd_conn_init(dbd_conn);
+		dbd_conn->fd = newsockfd;
+
 		dbd_conn->pcon = xmalloc(sizeof(persist_conn_t));
 		dbd_conn->pcon->flags = PERSIST_FLAG_DBD;
 		dbd_conn->pcon->callback_proc = proc_req;
