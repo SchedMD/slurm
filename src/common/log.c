@@ -75,7 +75,6 @@
 #include "src/common/macros.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -684,19 +683,16 @@ void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
 }
 
 /*
- * Write the current time and milliseconds, the process id and the current
- * thread name and id into buf
- * IN/OUT buf - buffer to write into
+ * Write the process id and the current thread name and id into buf
+ * IN/OUT buf - buffer holding whatever "%M" has rendered so far
  * IN size - bytes available in buf
+ * IN used - bytes already written to buf, which a separator follows
  */
-static void _set_thread_id(char *buf, size_t size)
+static void _set_thread_id(char *buf, size_t size, size_t used)
 {
-	struct timeval now;
-	char time[25];
 	char thread_name[NAMELEN];
 	int max_len = 12; /* handles current longest thread name */
 
-	gettimeofday(&now, NULL);
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_GET_NAME, thread_name, NULL, NULL, NULL) < 0) {
 		fprintf(stderr, "failed to get thread name: %m\n");
@@ -708,11 +704,10 @@ static void _set_thread_id(char *buf, size_t size)
 	max_len = 0;
 	thread_name[0] = '\0';
 #endif
-	slurm_ctime2_r(&now.tv_sec, time);
 
-	snprintf(buf, size, "%.15s.%-6d %5d %-*s %p",
-		 time + 4, (int) now.tv_usec, (int) getpid(), max_len,
-		 thread_name, (void *) pthread_self());
+	snprintf((buf + used), (size - used), "%s%5d %-*s %p",
+		 (used ? " " : ""), (int) getpid(), max_len, thread_name,
+		 (void *) pthread_self());
 }
 
 /* Fractional second precision, which RFC 5424 allows no more of than usec */
@@ -734,6 +729,7 @@ typedef enum {
 static size_t _set_timestamp(char *buf, size_t size)
 {
 	const char *date_fmt = "%Y-%m-%dT%T";
+	const char *usec_fmt = ".%6.6d";
 	rfc5424_prec_t prec = RFC5424_NONE;
 	bool tz = false;
 	struct timeval tv = { 0 };
@@ -782,8 +778,18 @@ static size_t _set_timestamp(char *buf, size_t size)
 		date_fmt = "%b %d %T";
 		break;
 	case LOG_FMT_THREAD_ID:
-		_set_thread_id(buf, size);
-		return strlen(buf);
+		/*
+		 * "%M" => "Mon DD hh:mm:ss.f     "
+		 *
+		 * The fraction is left justified rather than zero padded. That
+		 * is not a well formed fractional second, but it is what this
+		 * deprecated format has always printed, so keep it rather than
+		 * change what an existing configuration writes.
+		 */
+		date_fmt = "%b %d %T";
+		usec_fmt = ".%-6d";
+		prec = RFC5424_USEC;
+		break;
 	case LOG_FMT_OMIT:
 		/* Nothing to substitute for the omit format */
 		buf[0] = '\0';
@@ -810,7 +816,7 @@ static size_t _set_timestamp(char *buf, size_t size)
 				 (int) (tv.tv_usec / 1000));
 		break;
 	case RFC5424_USEC:
-		used += snprintf((buf + used), (size - used), ".%6.6d",
+		used += snprintf((buf + used), (size - used), usec_fmt,
 				 (int) tv.tv_usec);
 		break;
 	}
@@ -840,6 +846,11 @@ static size_t _set_timestamp(char *buf, size_t size)
 
 		if (used >= size)
 			used = (size - 1);
+	}
+
+	if (log->fmt == LOG_FMT_THREAD_ID) {
+		_set_thread_id(buf, size, used);
+		used = strlen(buf);
 	}
 
 	return used;
