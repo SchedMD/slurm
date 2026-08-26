@@ -1872,11 +1872,10 @@ static int _convert_data_float(data_t *data)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 		return _convert_data_float_from_string(data);
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 		if (data_get_int(data) == INFINITE64)
 			data_set_float(data, HUGE_VAL);
 		else if (data_get_int(data) == NO_VAL64)
@@ -1884,7 +1883,7 @@ static int _convert_data_float(data_t *data)
 		else /* attempt normal fp conversion */
 			data_set_float(data, data_get_int(data));
 		return SLURM_SUCCESS;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
