@@ -684,11 +684,12 @@ void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
 }
 
 /*
- * _set_idbuf()
- * Write in the input buffer the current time and milliseconds
- * the process id and the current thread id.
+ * Write the current time and milliseconds, the process id and the current
+ * thread name and id into buf
+ * IN/OUT buf - buffer to write into
+ * IN size - bytes available in buf
  */
-static void _set_idbuf(char *idbuf, size_t size)
+static void _set_thread_id(char *buf, size_t size)
 {
 	struct timeval now;
 	char time[25];
@@ -709,7 +710,7 @@ static void _set_idbuf(char *idbuf, size_t size)
 #endif
 	slurm_ctime2_r(&now.tv_sec, time);
 
-	snprintf(idbuf, size, "%.15s.%-6d %5d %-*s %p",
+	snprintf(buf, size, "%.15s.%-6d %5d %-*s %p",
 		 time + 4, (int) now.tv_usec, (int) getpid(), max_len,
 		 thread_name, (void *) pthread_self());
 }
@@ -781,7 +782,7 @@ static size_t _set_timestamp(char *buf, size_t size)
 		date_fmt = "%b %d %T";
 		break;
 	case LOG_FMT_THREAD_ID:
-		_set_idbuf(buf, size);
+		_set_thread_id(buf, size);
 		return strlen(buf);
 	case LOG_FMT_OMIT:
 		/* Nothing to substitute for the omit format */
