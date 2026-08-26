@@ -385,8 +385,11 @@ static int _stepd_recv_from_slurmd(int fd, slurm_msg_t *resp)
 
 	/* read response from slurmd */
 	safe_read(fd, &len, sizeof(uint32_t));
-	if (!(len = ntohl(len)))
+	len = ntohl(len);
+	if (!len || (len > MAX_BUF_SIZE)) {
+		error("%s: invalid response length %u", __func__, len);
 		goto rwfail;
+	}
 	buffer = init_buf(len);
 	safe_read(fd, buffer->head, len);
 
