@@ -1003,6 +1003,7 @@ static void _get_offspring_data(list_t *prec_list, jag_prec_t *ancestor,
 	jag_prec_t *prec = NULL;
 	jag_prec_t *prec_tmp = NULL;
 	list_t *tmp_list = NULL;
+	bool root = true;
 
 	/* reset all precs to be not visited */
 	(void)list_for_each(prec_list, (ListForF)_reset_visited, NULL);
@@ -1035,6 +1036,14 @@ static void _get_offspring_data(list_t *prec_list, jag_prec_t *ancestor,
 			}
 			list_append(tmp_list, prec);
 		}
+		/*
+		 * The root prec stays owned by prec_list; every other
+		 * completed prec was removed from it above and is ours to
+		 * free.
+		 */
+		if (!root && prec_tmp->completed)
+			destroy_jag_prec(prec_tmp);
+		root = false;
 	}
 	FREE_NULL_LIST(tmp_list);
 
