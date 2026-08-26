@@ -192,7 +192,7 @@ static void _connection_fini_callback(void *arg)
 			cluster_rec.control_port = dbd_conn->pcon->rem_port;
 			cluster_rec.rpc_version = dbd_conn->pcon->version;
 			cluster_rec.tres_str = dbd_conn->tres_str;
-			if (dbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD)
+			if (dbd_conn->flags & PERSIST_FLAG_EXT_DBD)
 				cluster_rec.flags = CLUSTER_FLAG_EXT;
 			debug("cluster %s has disconnected",
 			      dbd_conn->pcon->cluster_name);

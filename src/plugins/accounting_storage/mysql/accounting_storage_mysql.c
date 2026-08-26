@@ -2910,8 +2910,8 @@ static int _send_ctld_update(void *x, void *arg)
 	slurmdbd_conn_t *dbd_conn = x;
 	list_t *update_list = arg;
 
-	if ((dbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD) ||
-	    (dbd_conn->pcon->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
+	if ((dbd_conn->flags & PERSIST_FLAG_EXT_DBD) ||
+	    (dbd_conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
 		return 0;
 
 	slurm_mutex_lock(&dbd_conn->pcon_send_lock);

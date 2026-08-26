@@ -2390,10 +2390,8 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	cluster.flags = register_ctld_msg->flags;
 	cluster.rpc_version = slurmdbd_conn->pcon->version;
 
-	if ((cluster.flags != NO_VAL) && (cluster.flags & CLUSTER_FLAG_EXT)) {
-		slurmdbd_conn->pcon->flags |= PERSIST_FLAG_EXT_DBD;
+	if ((cluster.flags != NO_VAL) && (cluster.flags & CLUSTER_FLAG_EXT))
 		slurmdbd_conn->flags |= PERSIST_FLAG_EXT_DBD;
-	}
 
 	cluster_list = acct_storage_g_get_clusters(
 		slurmdbd_conn->db_conn, slurmdbd_conn->pcon->auth_uid,
@@ -2419,8 +2417,9 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			comment = "Failed to add/register cluster.";
 		slurmdb_destroy_assoc_rec(cluster.root_assoc);
 		FREE_NULL_LIST(add_list);
-	} else if ((slurmdbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD) &&
-		   !(((slurmdb_cluster_rec_t *)list_peek(cluster_list))->flags &
+	} else if ((slurmdbd_conn->flags & PERSIST_FLAG_EXT_DBD) &&
+		   !(((slurmdb_cluster_rec_t *) list_peek(cluster_list))
+			     ->flags &
 		     CLUSTER_FLAG_EXT)) {
 		comment = "Can't register to non-external cluster";
 		rc = ESLURM_ACCESS_DENIED;
@@ -3350,7 +3349,6 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		 * We don't want/need to send updates to this cluster that just
 		 * registered since it's rpc manager might not be up yet.
 		 */
-		slurmdbd_conn->pcon->flags |= PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 		slurmdbd_conn->flags |= PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 		break;
 	case DBD_REMOVE_ACCOUNTS:
@@ -3438,7 +3436,6 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 	 * only. Can't clear in p_commit() because if CommitDelay is set, we may
 	 * not send needed updates later.
 	 */
-	slurmdbd_conn->pcon->flags &= ~PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 	slurmdbd_conn->flags &= ~PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 
 	END_TIMER;
