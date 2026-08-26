@@ -1565,9 +1565,8 @@ static int _convert_data_null(data_t *data)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 	{
 		const char *str = data_get_string(data);
 
@@ -1582,7 +1581,7 @@ static int _convert_data_null(data_t *data)
 
 		goto fail;
 	}
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
