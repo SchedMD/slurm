@@ -3678,7 +3678,59 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 }
 
 /*
- * Set how much an internal buf_t grows by from CommunicationParameters.
+ * Pull one buffer_alloc_* option out of CommunicationParameters.
+ *
+ * IN params - CommunicationParameters value
+ * IN key - option name, with no trailing '='
+ * OUT bytes - size the option selected, if it was present and usable
+ * RET true if the option was present with a usable size
+ *
+ * The size is optional. Written bare the option takes the built in BUF_SIZE;
+ * written with "=<bytes>" it names the size a buffer starts at, and for
+ * buffer_alloc_linear the size it grows by as well.
+ */
+static bool _get_buffer_alloc_bytes(const char *params, const char *key,
+				    uint32_t *bytes)
+{
+	char *ptr = NULL;
+	long tmp_val;
+
+	if (!(ptr = xstrcasestr(params, key)))
+		return false;
+
+	ptr += strlen(key);
+
+	if (*ptr != '=') {
+		*bytes = BUF_SIZE;
+		return true;
+	}
+
+	tmp_val = strtol(ptr + 1, NULL, 10);
+
+	if ((tmp_val <= 0) || (tmp_val > INT_MAX)) {
+		error("CommunicationParameters option %s=%ld is invalid, ignored",
+		      key, tmp_val);
+		return false;
+	}
+
+	/*
+	 * A size under MIN_BUF_SIZE would mean an xrealloc() per handful of
+	 * bytes
+	 */
+	if (tmp_val < MIN_BUF_SIZE) {
+		error_in_daemon(
+			"CommunicationParameters option %s=%ld is too small, using %d instead",
+			key, tmp_val, MIN_BUF_SIZE);
+		tmp_val = MIN_BUF_SIZE;
+	}
+
+	*bytes = tmp_val;
+	return true;
+}
+
+/*
+ * Set how an internal buf_t is sized and enlarged from
+ * CommunicationParameters.
  *
  * A bad or unusable value is logged and replaced rather than rejected: this
  * only tunes allocation behavior and is not worth refusing the whole
@@ -3686,46 +3738,31 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
  */
 static void _validate_buffer_alloc(slurm_conf_t *conf)
 {
-	char *temp_str = NULL;
+	uint32_t bytes = 0;
 
 	conf->buffer_alloc_type = BUF_ALLOC_DEFAULT;
 	conf->buffer_alloc_bytes = 0;
 
-	temp_str = xstrcasestr(conf->comm_params, "buffer_alloc_linear=");
-	if (temp_str) {
-		long tmp_val = strtol(temp_str + 20, NULL, 10);
-
-		if ((tmp_val > 0) && (tmp_val <= INT_MAX)) {
-			conf->buffer_alloc_type = BUF_ALLOC_LINEAR;
-			conf->buffer_alloc_bytes = tmp_val;
-
-			/*
-			 * An increment under MIN_BUF_SIZE would mean an
-			 * xrealloc() per handful of bytes
-			 */
-			if (conf->buffer_alloc_bytes < MIN_BUF_SIZE) {
-				error_in_daemon(
-					"CommunicationParameters option buffer_alloc_linear=%u is too small, using %d instead",
-					conf->buffer_alloc_bytes, MIN_BUF_SIZE);
-				conf->buffer_alloc_bytes = MIN_BUF_SIZE;
-			}
-		} else
-			error("CommunicationParameters option buffer_alloc_linear=%ld is invalid, ignored",
-			      tmp_val);
+	if (_get_buffer_alloc_bytes(conf->comm_params, "buffer_alloc_linear",
+				    &bytes)) {
+		conf->buffer_alloc_type = BUF_ALLOC_LINEAR;
+		conf->buffer_alloc_bytes = bytes;
 	}
 
-	if (xstrcasestr(conf->comm_params, "buffer_alloc_geometric")) {
+	if (_get_buffer_alloc_bytes(conf->comm_params, "buffer_alloc_geometric",
+				    &bytes)) {
 		if (conf->buffer_alloc_type != BUF_ALLOC_DEFAULT)
 			error("CommunicationParameters buffer_alloc_* options are mutually exclusive, using buffer_alloc_geometric");
 		conf->buffer_alloc_type = BUF_ALLOC_GEOMETRIC;
-		conf->buffer_alloc_bytes = 0;
+		conf->buffer_alloc_bytes = bytes;
 	}
 
-	if (xstrcasestr(conf->comm_params, "buffer_alloc_exponential")) {
+	if (_get_buffer_alloc_bytes(conf->comm_params,
+				    "buffer_alloc_exponential", &bytes)) {
 		if (conf->buffer_alloc_type != BUF_ALLOC_DEFAULT)
 			error("CommunicationParameters buffer_alloc_* options are mutually exclusive, using buffer_alloc_exponential");
 		conf->buffer_alloc_type = BUF_ALLOC_EXPONENTIAL;
-		conf->buffer_alloc_bytes = 0;
+		conf->buffer_alloc_bytes = bytes;
 	}
 }
 
