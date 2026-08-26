@@ -1601,9 +1601,8 @@ static int _convert_data_bool(data_t *data)
 
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 	{
 		str = data_get_string(data);
 
@@ -1656,7 +1655,7 @@ static int _convert_data_bool(data_t *data)
 
 		goto fail;
 	}
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
 	default:
 		goto fail;
