@@ -46,6 +46,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -918,8 +919,8 @@ START_TEST(test_try_grow_buf_remaining_policy)
 	 * this returns, so the promised free space must never depend on how
 	 * the cluster happens to be configured
 	 */
-	for (int t = 0; t < 4; t++) {
-		for (int i = 0; i < 5; i++) {
+	for (size_t t = 0; t < ARRAY_SIZE(types); t++) {
+		for (size_t i = 0; i < ARRAY_SIZE(requests); i++) {
 			buf_t *buf = init_buf(BUF_SIZE);
 			uint32_t need = requests[i];
 
