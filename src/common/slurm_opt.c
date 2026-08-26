@@ -4677,7 +4677,8 @@ static const slurm_cli_opt_t *common_options[] = {
 struct option *slurm_option_table_create(slurm_opt_t *opt,
 					 char **opt_string)
 {
-	struct option *optz = optz_create(), *spanked;
+	struct option *spanked = NULL, *runtime_optz = NULL;
+	struct option *optz = optz_create();
 
 	*opt_string = xstrdup("+");
 
@@ -4738,8 +4739,10 @@ struct option *slurm_option_table_create(slurm_opt_t *opt,
 		}
 	}
 
-	spanked = spank_option_table_create(optz);
+	runtime_optz = runtime_cli_add_args(optz);
+	spanked = spank_option_table_create(runtime_optz);
 	optz_destroy(optz);
+	optz_destroy(runtime_optz);
 
 	return spanked;
 }
