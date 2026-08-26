@@ -904,6 +904,11 @@ extern int namespace_p_recv_stepd(int fd)
 
 	safe_read(fd, &len, sizeof(len));
 
+	if ((len <= 0) || (len > MAX_BUF_SIZE)) {
+		error("%s: invalid conf length %d", __func__, len);
+		goto rwfail;
+	}
+
 	buf = init_buf(len);
 	safe_read(fd, buf->head, len);
 
