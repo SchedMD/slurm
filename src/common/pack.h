@@ -101,6 +101,14 @@ extern buf_t *create_buf(char *data, uint32_t size);
 extern buf_t *create_mmap_buf(const char *file);
 extern buf_t *create_shadow_buf(char *data, uint32_t size);
 extern void free_buf(buf_t *my_buf);
+/*
+ * Create buffer of the given number of bytes.
+ * IN size - number of bytes in buffer, or 0 or INFINITE to start at the size
+ *	set by CommunicationParameters
+ * RET ptr to buffer
+ * WARNING: a caller passing a length from an untrusted source must bound it
+ *	first. Only a named size is honored as given.
+ */
 extern buf_t *init_buf(uint32_t size);
 
 /*
@@ -112,8 +120,11 @@ extern buf_t *init_buf(uint32_t size);
 extern void assign_buf(buf_t *buf, char **data_ptr, uint32_t bytes);
 /*
  * Try to create buffer by given number of bytes.
- * IN size - number of bytes in buffer
+ * IN size - number of bytes in buffer, or 0 or INFINITE to start at the size
+ *	set by CommunicationParameters
  * RET ptr to buffer or NULL on error
+ * WARNING: a caller passing a length from an untrusted source must bound it
+ *	first. Only a named size is honored as given.
  */
 extern buf_t *try_init_buf(uint32_t size);
 /*

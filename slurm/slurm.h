@@ -3088,8 +3088,9 @@ typedef struct {
 	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
-	uint32_t buffer_alloc_bytes; /* bytes to grow a buf_t by when
-				      * buffer_alloc_type is BUF_ALLOC_LINEAR */
+	uint32_t buffer_alloc_bytes; /* bytes a buf_t starts at, and grows by
+				      * when buffer_alloc_type is
+				      * BUF_ALLOC_LINEAR. 0 when unset */
 	buf_alloc_type_t buffer_alloc_type; /* how to grow a buf_t */
 	char *certgen_params;	/* certgen parameters */
 	char *certgen_type;	/* certgen type */

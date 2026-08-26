@@ -392,17 +392,58 @@ extern int buf_append_str(buf_t *buf, const char *str)
 	return SLURM_SUCCESS;
 }
 
-/* init_buf - create an empty buffer of the given size */
+/*
+ * Resolve the size a new buffer starts at.
+ *
+ * IN size - bytes the caller needs, or 0 or INFINITE to take the starting
+ *	size set by CommunicationParameters
+ * RET bytes to allocate
+ *
+ * The configured size is clamped rather than trusted. init_buf() aborts on an
+ * oversize request, so a value that could reach that limit must not get that
+ * far, and a start under MIN_BUF_SIZE would take an xrealloc() per handful of
+ * bytes - the same floor _grow_byte_count() applies to a growth.
+ *
+ * slurm_conf is zeroed until slurm.conf is read and 0 is never a configured
+ * size, so a process that never loaded a configuration starts at BUF_SIZE
+ * just as it always has.
+ */
+static uint32_t _init_byte_count(uint32_t size)
+{
+	if (size && (size != INFINITE))
+		return size;
+
+	if (!slurm_conf.buffer_alloc_bytes)
+		return BUF_SIZE;
+
+	if (slurm_conf.buffer_alloc_bytes < MIN_BUF_SIZE)
+		return MIN_BUF_SIZE;
+
+	/*
+	 * Unreachable from slurm.conf, which caps the value well below this.
+	 * Kept because init_buf() aborts rather than failing on an oversize
+	 * request, so the configured size must never be able to reach it.
+	 */
+	if (slurm_conf.buffer_alloc_bytes > MAX_BUF_SIZE)
+		return MAX_BUF_SIZE;
+
+	return slurm_conf.buffer_alloc_bytes;
+}
+
+/*
+ * init_buf - create an empty buffer of the given size, or of the size set by
+ * CommunicationParameters for 0 or INFINITE
+ */
 buf_t *init_buf(uint32_t size)
 {
 	buf_t *my_buf;
+
+	size = _init_byte_count(size);
 
 	if (size > MAX_BUF_SIZE)
 		fatal_abort("%s: Buffer size limit exceeded (%u > %u)",
 			    __func__, size, MAX_BUF_SIZE);
 
-	if (size <= 0)
-		size = BUF_SIZE;
 	my_buf = xmalloc(sizeof(*my_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
@@ -441,8 +482,7 @@ extern buf_t *try_init_buf(uint32_t size)
 {
 	buf_t *buf;
 
-	if (!size)
-		size = BUF_SIZE;
+	size = _init_byte_count(size);
 
 	if (size > MAX_BUF_SIZE) {
 		error("%s: Buffer size limit exceeded (%u > %u)",
