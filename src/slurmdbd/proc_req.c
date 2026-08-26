@@ -300,6 +300,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	      slurmdbd_conn->pcon->auth_uid, slurmdbd_conn->rem_host, slurmdbd_conn->fd);
 
 	slurmdbd_conn->pcon->cluster_name = xstrdup(init_msg->cluster_name);
+	slurmdbd_conn->cluster_name = xstrdup(init_msg->cluster_name);
 
 	/* When dealing with rollbacks it turns out it is much faster
 	   to do the commit once or once in a while instead of
