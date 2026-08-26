@@ -788,6 +788,27 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	paths = list_create(_list_delete_path_t);
 	parsers = parsers_ptr;
 
+	/*
+	 * Only the version is substituted into a {data_parser} URL, so two
+	 * plugins of the same version resolve to one path and the second bind
+	 * would collide inside the router. Reject it here where the offending
+	 * plugins can be named.
+	 */
+	for (int i = 0; parsers && parsers[i]; i++) {
+		const char *version =
+			data_parser_get_plugin_version(parsers[i]);
+
+		for (int j = (i + 1); parsers[j]; j++) {
+			if (xstrcmp(version,
+				    data_parser_get_plugin_version(parsers[j])))
+				continue;
+
+			fatal("data_parser plugins %s and %s both resolve to URL version %s. Only one data_parser per version may be loaded.",
+			      data_parser_get_plugin(parsers[i]),
+			      data_parser_get_plugin(parsers[j]), version);
+		}
+	}
+
 	/* must have JSON plugin to parse the openapi.json */
 	serializer_required(MIME_TYPE_JSON);
 
