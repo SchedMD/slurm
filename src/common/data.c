@@ -1507,25 +1507,24 @@ static void _convert_data_string(data_t *data)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 		break;
-	case TYPE_BOOL:
-		data_set_string(data, (data->data.bool_u ? "true" : "false"));
+	case DATA_TYPE_BOOL:
+		data_set_string(data, (data_get_bool(data) ? "true" : "false"));
 		break;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		data_set_string(data, "");
 		break;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 	{
-		char *str = xstrdup_printf("%lf", data->data.float_u);
+		char *str = xstrdup_printf("%lf", data_get_float(data));
 		data_set_string_own(data, str);
 		break;
 	}
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 	{
-		char *str = xstrdup_printf("%"PRId64, data->data.int_u);
+		char *str = xstrdup_printf("%"PRId64, data_get_int(data));
 		data_set_string_own(data, str);
 		break;
 	}
