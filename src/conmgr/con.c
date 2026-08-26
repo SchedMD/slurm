@@ -1760,8 +1760,13 @@ extern int conmgr_con_fstat_input(conmgr_fd_ref_t *ref, struct stat *stat_ptr)
 		return EBADF;
 	}
 
-	if (!con_flag(con, FLAG_READ_EOF))
-		input_fd = con->input_fd;
+	/*
+	 * Only the file type of the descriptor is being queried, which stays
+	 * valid after EOF, so do not gate this on FLAG_READ_EOF the way a read
+	 * would be. Callers use this to tell a socket from a FIFO and would
+	 * otherwise fail once the whole request has been read.
+	 */
+	input_fd = con->input_fd;
 
 	slurm_mutex_unlock(&mgr.mutex);
 
