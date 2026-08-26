@@ -707,6 +707,36 @@ START_TEST(test_init_buf_conf_floor)
 
 END_TEST
 
+START_TEST(test_init_buf_sentinel_band)
+{
+	buf_t *buf;
+
+	/*
+	 * INFINITE is the only value above MAX_BUF_SIZE that means anything.
+	 * Every other size in that band was refused before the sentinel was
+	 * given a meaning and has to stay refused, or a length that came from
+	 * somewhere else is quietly handed a buffer of the wrong size instead.
+	 * NO_VAL sits immediately below the sentinel.
+	 */
+	ck_assert(try_init_buf(MAX_BUF_SIZE + 1) == NULL);
+	ck_assert(try_init_buf(0xfffff000) == NULL);
+	ck_assert(try_init_buf(NO_VAL) == NULL);
+
+	/* the band stays shut once a size is configured */
+	_set_alloc(BUF_ALLOC_LINEAR, 4096);
+
+	ck_assert(try_init_buf(MAX_BUF_SIZE + 1) == NULL);
+	ck_assert(try_init_buf(NO_VAL) == NULL);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
 START_TEST(test_try_grow_buf_infinite)
 {
 	buf_t *buf = init_buf(BUF_SIZE);
@@ -932,6 +962,7 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_init_buf_conf);
 	tcase_add_test(tc_core, test_try_init_buf_conf);
 	tcase_add_test(tc_core, test_init_buf_conf_floor);
+	tcase_add_test(tc_core, test_init_buf_sentinel_band);
 	tcase_add_test(tc_core, test_try_grow_buf_infinite);
 	tcase_add_test(tc_core, test_try_grow_buf_exponential);
 	tcase_add_test(tc_core, test_try_grow_buf_geometric);
