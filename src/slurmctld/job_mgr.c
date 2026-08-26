@@ -14032,7 +14032,18 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	    (job_desc->bitflags & TASKS_CHANGED)) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_desc->num_tasks < 1)
+		else if (detail_ptr &&
+			 ((detail_ptr->task_dist & SLURM_DIST_STATE_BASE) ==
+			  SLURM_DIST_ARBITRARY)) {
+			/*
+			 * The task count is the number of entries in the
+			 * arbitrary node list, and arbitrary_tpn is derived
+			 * from it, so it cannot be set independently.
+			 */
+			info("%s: Cannot update task count of %pJ. Not compatible with arbitrary distribution",
+			     __func__, job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+		} else if (job_desc->num_tasks < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else if (job_desc->num_tasks < detail_ptr->min_nodes) {
 			info("%s: num_tasks (%u) less than min_nodes (%u) for %pJ",

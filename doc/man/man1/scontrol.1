@@ -1300,6 +1300,9 @@ Set the job's count of requested tasks to the specified value.
 The number of tasks started in a specific step inside the allocation may differ
 from this value, for instance when a different number of tasks is requested on
 step creation. This is the same as ReqProcs.
+
+\fBNOTE\fR: The task count of jobs with arbitrary distribution cannot be
+updated. The count is the number of entries in the requested node list.
 .IP
 
 .TP
