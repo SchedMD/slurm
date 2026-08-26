@@ -1985,18 +1985,18 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 
 		break;
 	case DATA_TYPE_DICT:
-		if (data->type == TYPE_DICT)
+		if (data_get_type(data) == DATA_TYPE_DICT)
 			return DATA_TYPE_DICT;
-		else if ((data->type == TYPE_LIST) &&
+		else if ((data_get_type(data) == DATA_TYPE_LIST) &&
 			 !_convert_data_list_dict(data))
 			return DATA_TYPE_DICT;
 
 		/* data_parser should be used for this conversion instead. */
 		break;
 	case DATA_TYPE_LIST:
-		if (data->type == TYPE_LIST)
+		if (data_get_type(data) == DATA_TYPE_LIST)
 			return DATA_TYPE_LIST;
-		else if ((data->type == TYPE_DICT) &&
+		else if ((data_get_type(data) == DATA_TYPE_DICT) &&
 			 !_convert_data_dict_list(data))
 			return DATA_TYPE_LIST;
 
