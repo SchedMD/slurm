@@ -171,7 +171,7 @@ static void _connection_fini_callback(void *arg)
 			int fd = dbd_conn->pcon_send->last_fd;
 			if (fd > 0) {
 				debug("Terminating send to the slurmctld on cluster %s. It is restarting or shutting down.",
-				      dbd_conn->pcon->cluster_name);
+				      dbd_conn->cluster_name);
 				shutdown(fd, SHUT_RDWR);
 			}
 		}
@@ -190,7 +190,7 @@ static void _connection_fini_callback(void *arg)
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
-			cluster_rec.name = dbd_conn->pcon->cluster_name;
+			cluster_rec.name = dbd_conn->cluster_name;
 			cluster_rec.control_host = dbd_conn->rem_host;
 			cluster_rec.control_port = dbd_conn->rem_port;
 			cluster_rec.rpc_version = dbd_conn->pcon->version;
@@ -198,7 +198,7 @@ static void _connection_fini_callback(void *arg)
 			if (dbd_conn->flags & PERSIST_FLAG_EXT_DBD)
 				cluster_rec.flags = CLUSTER_FLAG_EXT;
 			debug("cluster %s has disconnected",
-			      dbd_conn->pcon->cluster_name);
+			      dbd_conn->cluster_name);
 
 			clusteracct_storage_g_fini_ctld(
 				dbd_conn->db_conn, &cluster_rec);

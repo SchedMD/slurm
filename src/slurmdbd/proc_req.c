@@ -198,7 +198,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 
 	if (!dbd_conn->rem_port) {
 		error("%s: trying to register a cluster (%s) with no remote port",
-		      __func__, dbd_conn->pcon->cluster_name);
+		      __func__, dbd_conn->cluster_name);
 		return;
 	}
 
@@ -218,11 +218,11 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 			existing_fd = slurmdbd_conn->fd;
 		}
 
-		if (!xstrcmp(dbd_conn->pcon->cluster_name,
-			     slurmdbd_conn->pcon->cluster_name) &&
+		if (!xstrcmp(dbd_conn->cluster_name,
+			     slurmdbd_conn->cluster_name) &&
 		    (new_fd != existing_fd)) {
 			error("A new registration for cluster %s CONN:%d just came in, but I am already talking to that cluster (CONN:%d), closing other connection.",
-			      dbd_conn->pcon->cluster_name, new_fd, existing_fd);
+			      dbd_conn->cluster_name, new_fd, existing_fd);
 			slurmdbd_conn->rem_port = 0;
 			/* Mirror to pcon: persist_conn.c logs from it. */
 			slurmdbd_conn->pcon->rem_port = 0;
@@ -235,7 +235,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 		slurm_mutex_lock(&dbd_conn->pcon_send_lock);
 		dbd_conn->pcon_send = xmalloc(sizeof(persist_conn_t));
 		dbd_conn->pcon_send->cluster_name =
-			xstrdup(dbd_conn->pcon->cluster_name);
+			xstrdup(dbd_conn->cluster_name);
 		dbd_conn->pcon_send->persist_type = PERSIST_TYPE_ACCT_UPDATE;
 		dbd_conn->pcon_send->my_port = slurmdbd_conf->dbd_port;
 		dbd_conn->pcon_send->rem_host = xstrdup(dbd_conn->rem_host);
@@ -256,7 +256,7 @@ static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 		/* if (slurm_persist_conn_open(dbd_conn->pcon_send) != */
 		/*     SLURM_SUCCESS) { */
 		/* 	error("persist_conn_send: Unable to open connection to cluster %s who is actively talking to us.", */
-		/* 	      dbd_conn->pcon->cluster_name); */
+		/* 	      dbd_conn->cluster_name); */
 		/* } */
 
 		list_append(registered_clusters, dbd_conn);
@@ -299,7 +299,6 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	      init_msg->cluster_name, init_msg->version,
 	      slurmdbd_conn->pcon->auth_uid, slurmdbd_conn->rem_host, slurmdbd_conn->fd);
 
-	slurmdbd_conn->pcon->cluster_name = xstrdup(init_msg->cluster_name);
 	slurmdbd_conn->cluster_name = xstrdup(init_msg->cluster_name);
 
 	/* When dealing with rollbacks it turns out it is much faster
@@ -309,8 +308,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	*/
 	slurmdbd_conn->db_conn =
 		acct_storage_g_get_connection(slurmdbd_conn->fd, NULL, true,
-					      slurmdbd_conn->pcon
-						      ->cluster_name);
+					      slurmdbd_conn->cluster_name);
 	slurmdbd_conn->pcon->version = init_msg->version;
 	if (errno)
 		rc = errno;
@@ -825,8 +823,8 @@ static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	debug2("DBD_CLUSTER_TRES: called in CONN %d for %s(%s)",
-	       slurmdbd_conn->fd,
-	       slurmdbd_conn->pcon->cluster_name, cluster_tres_msg->tres_str);
+	       slurmdbd_conn->fd, slurmdbd_conn->cluster_name,
+	       cluster_tres_msg->tres_str);
 
 	rc = clusteracct_storage_g_cluster_tres(
 		slurmdbd_conn->db_conn,
@@ -1403,8 +1401,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		 * send the default for this cluster. */
 		if (!cluster_list) {
 			cluster_list = list_create(NULL);
-			list_append(cluster_list,
-				    slurmdbd_conn->pcon->cluster_name);
+			list_append(cluster_list, slurmdbd_conn->cluster_name);
 			user_cond->assoc_cond->cluster_list = cluster_list;
 		}
 	}
@@ -1533,8 +1530,7 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	debug2("DBD_FLUSH_JOBS: called in CONN %d for %s",
-	       slurmdbd_conn->fd,
-	       slurmdbd_conn->pcon->cluster_name);
+	       slurmdbd_conn->fd, slurmdbd_conn->cluster_name);
 
 	rc = acct_storage_g_flush_jobs_on_cluster(
 		slurmdbd_conn->db_conn,
@@ -2372,13 +2368,14 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	debug2("DBD_REGISTER_CTLD: called in CONN %d for %s(%u), cluster_id=%u",
-	       slurmdbd_conn->fd, slurmdbd_conn->pcon->cluster_name, register_ctld_msg->port, register_ctld_msg->cluster_id);
+	       slurmdbd_conn->fd, slurmdbd_conn->cluster_name,
+	       register_ctld_msg->port, register_ctld_msg->cluster_id);
 
 	/* Just to make sure we don't allow a NULL cluster name to attempt
 	   to connect.  This should never happen, but here just for
 	   sanity check.
 	*/
-	if (!slurmdbd_conn->pcon->cluster_name) {
+	if (!slurmdbd_conn->cluster_name) {
 		comment = "Must have a cluster name to register it";
 		error("CONN:%d %s", slurmdbd_conn->fd, comment);
 		rc = ESLURM_BAD_NAME;
@@ -2392,7 +2389,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	slurmdb_init_cluster_rec(&cluster, 0);
 
 	cluster_q.cluster_list = list_create(NULL);
-	list_append(cluster_q.cluster_list, slurmdbd_conn->pcon->cluster_name);
+	list_append(cluster_q.cluster_list, slurmdbd_conn->cluster_name);
 	cluster.control_host = slurmdbd_conn->rem_host;
 	cluster.control_port = register_ctld_msg->port;
 	cluster.dimensions = register_ctld_msg->dimensions;
@@ -2412,7 +2409,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		list_t *add_list = list_create(NULL);
 		list_append(add_list, &cluster);
 
-		cluster.name = slurmdbd_conn->pcon->cluster_name;
+		cluster.name = slurmdbd_conn->cluster_name;
 		cluster.flags |= CLUSTER_FLAG_REGISTER;
 		cluster.id = register_ctld_msg->cluster_id;
 
@@ -3176,9 +3173,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = slurmdbd_msg_type_2_str(msg->msg_type, 1);
-		if (slurmdbd_conn->pcon->cluster_name) {
+		if (slurmdbd_conn->cluster_name) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
-			     __func__, p, slurmdbd_conn->pcon->cluster_name,
+			     __func__, p, slurmdbd_conn->cluster_name,
 			     slurmdbd_conn->rem_host,
 			     slurmdbd_conn->pcon->auth_uid);
 		} else {

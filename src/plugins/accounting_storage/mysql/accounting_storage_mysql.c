@@ -2917,7 +2917,8 @@ static int _send_ctld_update(void *x, void *arg)
 	slurm_mutex_lock(&dbd_conn->pcon_send_lock);
 
 	if (!dbd_conn->pcon_send) {
-		debug("slurmctld for cluster %s left at the moment we were about to send to it.", dbd_conn->pcon->cluster_name);
+		debug("slurmctld for cluster %s left at the moment we were about to send to it.",
+		      dbd_conn->cluster_name);
 		slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 		return 0;
 	}
