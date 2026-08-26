@@ -165,7 +165,7 @@ typedef struct {
 
 typedef struct {
 	size_t count;
-	type_t match;
+	data_type_t match;
 } convert_args_t;
 
 #define CONVERT_DATA_FOREACH_LIST_DICT_ARGS_MAGIC 0x139414ab
@@ -200,7 +200,7 @@ typedef struct {
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
-static size_t _convert_tree(data_t *data, const type_t match);
+static size_t _convert_tree(data_t *data, const data_type_t match);
 static char *_type_to_string(type_t type);
 
 static data_list_t *_data_list_new(void)
@@ -2030,7 +2030,7 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 	return DATA_FOR_EACH_CONT;
 }
 
-static size_t _convert_tree(data_t *data, const type_t match)
+static size_t _convert_tree(data_t *data, const data_type_t match)
 {
 	convert_args_t args = {
 		.match = match,
@@ -2040,15 +2040,15 @@ static size_t _convert_tree(data_t *data, const type_t match)
 	if (!data)
 		return 0;
 
-	switch (data->type) {
-	case TYPE_DICT:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_DICT:
 		(void)data_dict_for_each(data, _convert_dict_entry, &args);
 		break;
-	case TYPE_LIST:
+	case DATA_TYPE_LIST:
 		(void)data_list_for_each(data, _convert_list_entry, &args);
 		break;
 	default:
-		if (match == (int) data_convert_type(data, (int) match))
+		if (match == data_convert_type(data, match))
 			args.count++;
 		break;
 	}
