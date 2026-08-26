@@ -274,7 +274,6 @@ void unsetenvp(char **env, const char *name)
 		while (*dp++);
 
 		/*  Continue loop in case `name' appears again. */
-		++ep;
 	}
 	return;
 }
