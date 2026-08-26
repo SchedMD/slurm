@@ -1540,22 +1540,21 @@ static void _convert_data_force_bool(data_t *data)
 	/* attempt to detect the type first */
 	(void) data_convert_type(data, DATA_TYPE_NONE);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 		/* non-empty string but not recognized format */
 		data_set_bool(data, true);
 		break;
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		break;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		data_set_bool(data, false);
 		break;
-	case TYPE_FLOAT:
-		data_set_bool(data, data->data.float_u != 0);
+	case DATA_TYPE_FLOAT:
+		data_set_bool(data, data_get_float(data) != 0);
 		break;
-	case TYPE_INT_64:
-		data_set_bool(data, data->data.int_u != 0);
+	case DATA_TYPE_INT_64:
+		data_set_bool(data, data_get_int(data) != 0);
 		break;
 	default:
 		break;
