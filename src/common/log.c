@@ -75,6 +75,7 @@
 #include "src/common/macros.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -749,7 +750,7 @@ static void _set_timestamp(char *buf, size_t size)
 	const char *usec_fmt = ".%6.6d";
 	rfc5424_prec_t prec = RFC5424_NONE;
 	bool tz = false;
-	struct timeval tv = { 0 };
+	timespec_t ts = { 0 };
 	struct tm tm = { 0 };
 	size_t used = 0;
 
@@ -814,10 +815,9 @@ static void _set_timestamp(char *buf, size_t size)
 		goto thread_id;
 	}
 
-	if (gettimeofday(&tv, NULL) == -1)
-		fprintf(stderr, "gettimeofday() failed\n");
+	ts = timespec_now();
 
-	if (!localtime_r(&tv.tv_sec, &tm))
+	if (!localtime_r(&ts.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	if (!(used = strftime(buf, size, date_fmt, &tm))) {
@@ -831,11 +831,11 @@ static void _set_timestamp(char *buf, size_t size)
 		break;
 	case RFC5424_MSEC:
 		used += snprintf((buf + used), (size - used), ".%3.3d",
-				 (int) (tv.tv_usec / 1000));
+				 (int) (ts.tv_nsec / NSEC_IN_MSEC));
 		break;
 	case RFC5424_USEC:
 		used += snprintf((buf + used), (size - used), usec_fmt,
-				 (int) tv.tv_usec);
+				 (int) (ts.tv_nsec / NSEC_IN_USEC));
 		break;
 	}
 
