@@ -149,7 +149,13 @@ static int _load_runtime(const char *plugin_name, runtime_context_t context,
 		goto done;
 	}
 
-	if ((rc = ops[idx].init(idx, context))) {
+	slurm_mutex_unlock(&init_lock);
+
+	rc = ops[idx].init(idx, context);
+
+	slurm_mutex_lock(&init_lock);
+
+	if (rc) {
 		plugin_context_destroy(g_context[idx]);
 		g_context[idx] = NULL;
 		goto done;
