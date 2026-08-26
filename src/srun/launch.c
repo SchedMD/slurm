@@ -1268,6 +1268,35 @@ extern int launch_handle_multi_prog_verify(int command_pos,
 		return 0;
 }
 
+/*
+ * Cancel the placeholder a queued step left in the stepmgr, so nothing later
+ * creates the step for an srun that has stopped waiting for it.
+ * IN step_req - create request carrying the queued step's assigned id
+ */
+static void _cancel_queued_step(job_step_create_request_msg_t *step_req)
+{
+	/* SIGKILL because only a terminating signal reaps a placeholder. */
+	if (slurm_kill_job_step(&step_req->step_id, SIGKILL, 0))
+		debug("Could not cancel queued %ps: %m", &step_req->step_id);
+}
+
+/*
+ * Release a step create request after a failed launch, first cancelling the
+ * placeholder a queued step left in the stepmgr when asked.
+ * IN step_req - create request to release
+ * IN cancel - cancel the queued step's assigned id in the stepmgr first
+ * RET SLURM_ERROR, to return directly from the failed launch path
+ */
+static int _fail_step_create(job_step_create_request_msg_t *step_req,
+			     bool cancel)
+{
+	if (cancel)
+		_cancel_queued_step(step_req);
+	_free_built_launch_params(step_req);
+	slurm_free_job_step_create_request_msg(step_req);
+	return SLURM_ERROR;
+}
+
 extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 				  slurm_opt_t *opt_local)
 {
@@ -1277,6 +1306,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 	uint16_t slurmctld_timeout;
 	slurm_step_layout_t *step_layout;
 	job_step_create_request_msg_t *step_req;
+	bool step_queued = false;
 	int tmp_srun_destroy_sig;
 
 	xassert(srun_opt);
@@ -1330,9 +1360,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 		if ((rc = step_ctx_listener_create(job, &port))) {
 			error("unable to initialize step request socket: %s",
 			      slurm_strerror(rc));
-			_free_built_launch_params(step_req);
-			slurm_free_job_step_create_request_msg(step_req);
-			return SLURM_ERROR;
+			return _fail_step_create(step_req, false);
 		}
 		step_req->port = port;
 	}
@@ -1372,6 +1400,9 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 							&retry_cause);
 		}
 		rc = errno;
+		if (retry_cause == ESLURM_STEP_QUEUED)
+			step_queued = true;
+
 		if (job->step_ctx ||
 		    (srun_opt->async &&
 		      (rc == ESLURM_STEP_QUEUED))) {
@@ -1383,9 +1414,18 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 		if (rc == ESLURM_STEP_CANCELLED) {
 			/* step_ctx_create_timeout() logged the cancel. */
-			_free_built_launch_params(step_req);
-			slurm_free_job_step_create_request_msg(step_req);
-			return SLURM_ERROR;
+			slurm_mutex_lock(&srun_destroy_sig_lock);
+			tmp_srun_destroy_sig = srun_destroy_sig;
+			slurm_mutex_unlock(&srun_destroy_sig_lock);
+
+			/*
+			 * A local signal ended the wait, so the stepmgr still
+			 * holds the placeholder; a pushed cancel already
+			 * reaped it.
+			 */
+			return _fail_step_create(step_req,
+						 step_queued &&
+							 tmp_srun_destroy_sig);
 		}
 
 		if (((opt_local->immediate != 0) &&
@@ -1396,9 +1436,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     !launch_step_retry_errno(rc))) {
 			error("Unable to create step for job %u: %m",
 			      step_req->step_id.job_id);
-			_free_built_launch_params(step_req);
-			slurm_free_job_step_create_request_msg(step_req);
-			return SLURM_ERROR;
+			return _fail_step_create(step_req, step_queued);
 		}
 
 		if (i == 0) {
@@ -1457,8 +1495,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 		if (tmp_srun_destroy_sig) {
 			info("Cancelled pending step for job %u",
 			     step_req->step_id.job_id);
-			slurm_free_job_step_create_request_msg(step_req);
-			return SLURM_ERROR;
+			return _fail_step_create(step_req, step_queued);
 		}
 	}
 
