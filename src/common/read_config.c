@@ -3334,6 +3334,11 @@ extern void read_conf_recv_stepd(int fd)
 
 	safe_read(fd, &len, sizeof(int));
 
+	if ((len <= 0) || (len > MAX_BUF_SIZE)) {
+		error("%s: invalid conf length %d", __func__, len);
+		goto rwfail;
+	}
+
 	conf_buf = init_buf(len);
 	safe_read(fd, conf_buf->head, len);
 	conf_hashtbl = s_p_unpack_hashtbl_full(conf_buf,
