@@ -983,14 +983,16 @@ static void _aggregate_prec(jag_prec_t *prec, jag_prec_t *ancestor)
  * usage data to the ancestor's <prec> record. Recurse to gather data
  * for *all* subsequent generations.
  *
- * IN:	prec_list       list of prec's
- *      ancestor	The entry in precTable[] to which the data
+ * IN:	ancestor	The entry in precTable[] to which the data
  *			should be added. Even as we recurse, this will
  *			always be the prec for the base of the family
  *			tree.
  *	pid		The process for which we are currently looking
  *			for offspring.
  * IN/OUT:
+ *      prec_list       list of prec's; completed entries other than the
+ *                      traversal root are removed and freed during
+ *                      traversal
  *      permanent_anc Pointer to the original ancestor. Changes to
  *	              it are saved, so we can permanently save
  *		      the values from completed processes.
