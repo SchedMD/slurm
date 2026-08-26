@@ -2058,7 +2058,7 @@ static size_t _convert_tree(data_t *data, const data_type_t match)
 
 extern size_t data_convert_tree(data_t *data, const data_type_t match)
 {
-	return _convert_tree(data, (int) match);
+	return _convert_tree(data, match);
 }
 
 static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
