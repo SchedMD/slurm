@@ -370,7 +370,7 @@ in <i>cgroup/v1</i> provides metrics in USER_HZ.
 </tr>
 <tr>
 <td>memory.soft_limit_in_bytes</td>
-<td>memory.high</td>
+<td>none</td>
 </tr>
 <tr>
 <td>memory.memsw_limit_in_bytes</td>
@@ -408,6 +408,13 @@ in <i>cgroup/v1</i> provides metrics in USER_HZ.
 </h3>
 
 <ul>
+<li>Slurm sets no soft memory limit under cgroup/v2. The <i>memory.high</i>
+interface is not a substitute for the cgroup/v1 advisory
+<i>memory.soft_limit_in_bytes</i>. It is always enforced and throttles the job
+with reclaim and penalty sleeps, so the job can stall long before it reaches
+<i>memory.max</i> and is OOM-killed.
+</li>
+
 <li>When using cgroup/v1, some configurations can exclude the swap cgroup
 accounting. This accounting is part of the features provided by the memory
 controller.  If this feature is disabled from the kernel or boot parameters,
