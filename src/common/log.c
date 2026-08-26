@@ -718,15 +718,17 @@ typedef enum {
 } rfc5424_prec_t;
 
 /*
- * Write the timestamp named by the LogTimeFormat timestamp format into buf
- * IN/OUT buf - buffer to write the timestamp into
+ * Write what "%M" stands for into buf: the timestamp named by the
+ * LogTimeFormat timestamp format, and the process and thread when either the
+ * option or the deprecated format asks for them
+ * IN/OUT buf - buffer to write into
  * IN size - bytes available in buf
- * RET bytes written
  *
- * Note: every format is the same strftime() call with an optional fractional
- * second and an optional timezone offset, so they share one renderer.
+ * Note: every timestamp format is the same strftime() call with an optional
+ * fractional second and an optional timezone offset, so they share one
+ * renderer.
  */
-static size_t _set_timestamp(char *buf, size_t size)
+static void _set_timestamp(char *buf, size_t size)
 {
 	const char *date_fmt = "%Y-%m-%dT%T";
 	const char *usec_fmt = ".%6.6d";
@@ -735,6 +737,8 @@ static size_t _set_timestamp(char *buf, size_t size)
 	struct timeval tv = { 0 };
 	struct tm tm = { 0 };
 	size_t used = 0;
+
+	buf[0] = '\0';
 
 	switch (log->fmt) {
 	case LOG_FMT_ISO8601_MS:
@@ -772,7 +776,7 @@ static size_t _set_timestamp(char *buf, size_t size)
 		if (used >= size)
 			used = (size - 1);
 
-		return used;
+		goto thread_id;
 	case LOG_FMT_SHORT:
 		/* "%M" => "Mon DD hh:mm:ss" */
 		date_fmt = "%b %d %T";
@@ -791,9 +795,8 @@ static size_t _set_timestamp(char *buf, size_t size)
 		prec = RFC5424_USEC;
 		break;
 	case LOG_FMT_OMIT:
-		/* Nothing to substitute for the omit format */
-		buf[0] = '\0';
-		return 0;
+		/* omit drops the timestamp and nothing else */
+		goto thread_id;
 	}
 
 	if (gettimeofday(&tv, NULL) == -1)
@@ -805,7 +808,7 @@ static size_t _set_timestamp(char *buf, size_t size)
 	if (!(used = strftime(buf, size, date_fmt, &tm))) {
 		fprintf(stderr, "strftime() returned 0\n");
 		buf[0] = '\0';
-		return 0;
+		goto thread_id;
 	}
 
 	switch (prec) {
@@ -848,12 +851,14 @@ static size_t _set_timestamp(char *buf, size_t size)
 			used = (size - 1);
 	}
 
-	if (log->fmt == LOG_FMT_THREAD_ID) {
+thread_id:
+	/*
+	 * The deprecated format prints the same fields as the option, so honor
+	 * either of them.
+	 */
+	if ((log->flags & LOG_FLAG_THREAD_ID) ||
+	    (log->fmt == LOG_FMT_THREAD_ID))
 		_set_thread_id(buf, size, used);
-		used = strlen(buf);
-	}
-
-	return used;
 }
 
 /*
