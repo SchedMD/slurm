@@ -759,6 +759,12 @@ extern int cgroup_read_conf(int fd)
 	slurm_rwlock_wrlock(&cg_conf_lock);
 
 	safe_read(fd, &len, sizeof(int));
+
+	if ((len <= 0) || (len > MAX_BUF_SIZE)) {
+		error("%s: invalid cgroup.conf length %d", __func__, len);
+		goto rwfail;
+	}
+
 	buffer = init_buf(len);
 	safe_read(fd, buffer->head, len);
 
