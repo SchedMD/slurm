@@ -1091,6 +1091,11 @@ static slurmd_conf_t *_read_slurmd_conf_lite(int fd)
 
 	safe_read(fd, &len, sizeof(int));
 
+	if ((len <= 0) || (len > MAX_MSG_SIZE)) {
+		error("%s: invalid slurmd_conf length %d", __func__, len);
+		goto rwfail;
+	}
+
 	buffer = init_buf(len);
 	safe_read(fd, buffer->head, len);
 
