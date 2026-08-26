@@ -1682,9 +1682,8 @@ static int _convert_data_int(data_t *data, bool force)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 	{
 		int64_t x = -1;
 		char *end_ptr = NULL;
@@ -1758,7 +1757,7 @@ static int _convert_data_int(data_t *data, bool force)
 		data_set_int(data, x);
 		return SLURM_SUCCESS;
 	}
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		if (force) {
 			const double f = data_get_float(data);
 
@@ -1779,9 +1778,9 @@ static int _convert_data_int(data_t *data, bool force)
 			return SLURM_SUCCESS;
 		}
 		return ESLURM_DATA_CONV_FAILED;
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 		return SLURM_SUCCESS;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		if (force) {
 			/*
 			 * Conversion from NULL to integer is a loss of
