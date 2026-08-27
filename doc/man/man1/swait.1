@@ -42,7 +42,7 @@ Errors will still be displayed. Mutually exclusive with
 .TP
 \fB\-\-timeout\fR=\fISECS\fR
 Wait at most \fISECS\fR seconds for the job's steps to drain, then exit
-1. \fISECS\fR must be a non-negative integer. With no \fB\-\-timeout\fR,
+2. \fISECS\fR must be a non-negative integer. With no \fB\-\-timeout\fR,
 or with \fB\-\-timeout\fR=0, \fBswait\fR blocks indefinitely until the
 steps drain.
 .IP
@@ -96,23 +96,17 @@ Location of the Slurm configuration file.
 .SH "EXIT STATUS"
 .TP
 \fB0\fR
-.RS
 There are no running steps, and no pending async steps.
-.RE
 .IP
 
 .TP
 \fB1\fR
-.RS
-\fB\-\-timeout\fR elapsed before steps completed.
-.RE
+\fBswait\fR encountered an error.
 .IP
 
 .TP
 \fB2\fR
-.RS
-\fBswait\fR encountered an error.
-.RE
+\fB\-\-timeout\fR elapsed before steps completed.
 .IP
 
 .SH "EXAMPLES"
