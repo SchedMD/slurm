@@ -32,6 +32,11 @@ def setup():
     atf.require_slurm_running()
 
 
+# 26.11 renumbered swait's exit codes: an error moved 2 -> 1 and --timeout
+# expiry 1 -> 2. This module runs against clients of both vintages, so name
+# the two codes rather than asserting a bare number.
+RC_ERROR, RC_TIMEOUT = (1, 2) if atf.get_version("bin/swait") >= (26, 11) else (2, 1)
+
 # Long enough that swait subscribes while the step is still running.
 LATENCY_SLEEP_SECS = 6
 # Catches latency regressions in the SRUN_STEPS_DRAINED wake path.
@@ -110,7 +115,7 @@ def test_timeout_granularity_short():
 
     TIMEOUT_SECS = 5
     rc, elapsed = _swait_push(f"--timeout {TIMEOUT_SECS}", sleep_secs=120, xfail=True)
-    assert rc == 1, f"swait exited {rc}, expected 1 for --timeout"
+    assert rc == RC_TIMEOUT, f"swait exited {rc}, expected {RC_TIMEOUT} for --timeout"
     # Ceiling absorbs swait startup + conmgr init + subscribe RPC +
     # the timer + shutdown on loaded runners; match LATENCY_CEILING_SECS
     # budget (+8) to be consistent with other timing-bound tests.
@@ -281,13 +286,13 @@ def test_array_task_env_fast_path():
     ), f"swait returned in {result['duration']:.1f}s; expected to wait"
 
 
-def test_unreachable_stepmgr_exits_two():
-    """swait exits 2 when the stepmgr host cannot be resolved/reached.
+def test_unreachable_stepmgr_errors():
+    """swait exits RC_ERROR when the stepmgr host cannot be resolved/reached.
 
     Exercises the _setup_push failure path: an unresolvable
     SLURM_STEPMGR forces slurm_send_recv_node_msg() to fail before any
-    subscribe RPC is even attempted. Exit 1 is reserved for --timeout;
-    any other runtime/network failure exits 2.
+    subscribe RPC is even attempted. RC_TIMEOUT is reserved for --timeout;
+    any other runtime/network failure exits RC_ERROR.
     """
 
     # Below MAX_VAL (0xfffffff0) so swait's env fast-path is not
@@ -301,8 +306,8 @@ def test_unreachable_stepmgr_exits_two():
         timeout=30,
     )
     assert (
-        result["exit_code"] == 2
-    ), f"swait exited {result['exit_code']}, expected 2 (stderr: {result['stderr']!r})"
+        result["exit_code"] == RC_ERROR
+    ), f"swait exited {result['exit_code']}, expected {RC_ERROR} (stderr: {result['stderr']!r})"
     assert (
         "subscribe to stepmgr" in result["stderr"]
     ), f"unexpected stderr: {result['stderr']!r}"
