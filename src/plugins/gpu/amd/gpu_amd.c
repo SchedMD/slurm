@@ -359,8 +359,15 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 		debug2("GPU(amd) card%d:", amdgpu_cards[i].card);
 		debug2("    PCI Address: %s", amdgpu_cards[i].pci_address);
 
-		file = xstrdup_printf("%s/renderD%d", GPU_AMD_DEV_DIR,
-				      amdgpu_cards[i].render_minor);
+		/*
+		 * Both DRM nodes as one MultipleFiles group, so the device
+		 * cgroup confines the card node too: a card node left
+		 * accessible hands its first opener the DRM master role with
+		 * the full API.
+		 */
+		file = xstrdup_printf("%s/renderD%d,%s/card%d", GPU_AMD_DEV_DIR,
+				      amdgpu_cards[i].render_minor,
+				      GPU_AMD_DEV_DIR, amdgpu_cards[i].card);
 		debug2("    Device File: %s", file);
 
 		/* Links: emit-order placeholder */
