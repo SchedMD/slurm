@@ -867,6 +867,22 @@ extern int add_connection(conmgr_con_type_t type,
 		}
 	}
 
+	/*
+	 * When TLS is enabled, fingerprint inbound inet RPC listeners so that
+	 * accepted connections detect an incoming TLS handshake. Unix domain
+	 * sockets and connections already pinned to TLS_SERVER or TLS_CLIENT
+	 * are exempt.
+	 *
+	 * NOTE: This only enables TLS fingerprinting on these connections.
+	 * Rejection of non-TLS connections is handled by
+	 * on_rpc_connection_data() for CON_TYPE_RPC connections. Any other
+	 * connection type must handle rejection in the caller.
+	 */
+	if (is_listen && (type == CON_TYPE_RPC) && conn_tls_enabled() &&
+	    (con->address.ss_family != AF_LOCAL) &&
+	    !con_flag(con, FLAG_TLS_SERVER) && !con_flag(con, FLAG_TLS_CLIENT))
+		con_set_flag(con, FLAG_TLS_FINGERPRINT);
+
 	if (has_out) {
 		int bytes = -1;
 

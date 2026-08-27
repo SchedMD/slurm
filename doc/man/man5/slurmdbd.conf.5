@@ -1154,9 +1154,19 @@ Default security policy is "20230317", which is FIPS compliant and includes TLS 
 .TP
 \fBTLSType\fR
 Specify the TLS implementation that will be used.
+When set to a TLS plugin, \fBslurmdbd\fR requires TLS on inbound connections and
+closes any that is not TLS wrapped. Refer to the TLS guide for more details:
+<https://slurm.schedmd.com/tls.html>
+Defaults to \fBtls/none\fR.
+.br
 Acceptable values at present:
 .IP
 .RS
+.TP
+\fBtls/none\fR
+No TLS. This is the default.
+.IP
+
 .TP
 \fBtls/s2n\fR
 Use the s2n TLS plugin.

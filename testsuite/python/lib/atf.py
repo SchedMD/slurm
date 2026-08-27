@@ -3528,6 +3528,35 @@ def require_config_parameter_excludes(name, value, source="slurm"):
             )
 
 
+def require_tls():
+    """Skips the test unless the cluster is configured to use TLS.
+
+    Unlike require_config_parameter('TLSType', ...), this never enables TLS in
+    auto-config mode: a working TLSType needs certificate infrastructure (a CA,
+    per-daemon certificates and the TLSParameters pointing at them) that cannot
+    be synthesized here, so a cluster without it is skipped in both modes.
+
+    The config file is consulted first so that a non-TLS cluster is skipped
+    without having to start Slurm. That read does not follow Include
+    directives, so a TLSType found only in an included file reads as absent
+    here; fall back to the live value when the file says nothing and a
+    controller is available.
+
+    Returns:
+        None
+    """
+    tls_type = get_config_parameter("TLSType", default=None, live=False, quiet=True)
+    if tls_type is None and is_slurmctld_running(quiet=True):
+        tls_type = get_config_parameter("TLSType", default=None, quiet=True)
+
+    if not tls_type or tls_type.casefold() == "tls/none":
+        pytest.skip(
+            "This test requires the TLSType parameter to be set to a TLS "
+            "plugin such as tls/s2n (run under the -s2n test variant)",
+            allow_module_level=True,
+        )
+
+
 def require_tty(number):
     """Creates a TTY device file if it does not exist.
 

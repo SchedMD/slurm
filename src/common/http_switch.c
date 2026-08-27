@@ -81,18 +81,18 @@ extern conmgr_con_flags_t http_switch_con_flags(void)
 static int _reply_tls_required(conmgr_fd_ref_t *con)
 {
 	int rc = EINVAL;
-	slurm_msg_t msg = SLURM_MSG_INITIALIZER;
 
-	error("%s: [%s] rejecting non-TLS RPC connection",
+	debug("%s: [%s] rejecting non-TLS RPC connection",
 	      __func__, conmgr_con_get_name(con));
 
-	/* Fake request message to construct a reply */
-	msg.conmgr_con = conmgr_con_link(con);
-	msg.protocol_version = SLURM_PROTOCOL_VERSION;
-
-	/* Notify client that TLS is required */
-	rc = slurm_send_rc_msg(&msg, ESLURM_TLS_REQUIRED);
-	conmgr_con_queue_close(con);
+	/*
+	 * Reply at the pending request's version (the peer chose it, so the
+	 * peer can parse the reply) rather than a local constant, which could
+	 * be out of the peer's supported range in a mixed-version cluster.
+	 */
+	rc = conmgr_con_reply_rc_and_close(
+		con, ESLURM_TLS_REQUIRED,
+		conmgr_con_peek_rpc_protocol_version(con));
 
 	/*
 	 * Switch back to raw connection mode after sending reply to avoid any
@@ -102,7 +102,6 @@ static int _reply_tls_required(conmgr_fd_ref_t *con)
 		rc = conmgr_fd_change_mode(conmgr_fd_get_ref(con),
 					   CON_TYPE_RAW);
 
-	slurm_free_msg_members(&msg);
 	return rc;
 }
 

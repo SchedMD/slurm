@@ -1062,9 +1062,6 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 		};
 	}
 
-	if (conn_tls_enabled())
-		flags |= CON_FLAG_TLS_FINGERPRINT;
-
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
 	sls->resp_port = xcalloc(sls->num_resp_port, sizeof(uint16_t));
 

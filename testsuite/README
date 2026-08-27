@@ -1150,3 +1150,10 @@ test_165_1   Test multi-partition job/array keeps partition on restart
 test_165_2   Test completing job keeps partition on recovery
 test_165_3   Test multi-partition job keeps partition across changes
 test_165_4   Test partition PriorityTier ordering of a pending job
+
+test_166_#   Testing TLS.
+==========================
+test_166_1   Test RPC listeners reject non-TLS and accept TLS connections
+test_166_2   Test slurmctld rejects non-TLS RPCs with HTTP listening disabled
+test_166_3   Test swait's listener rejects non-TLS connections
+test_166_4   Test slurmdbd closes connections that are not TLS wrapped

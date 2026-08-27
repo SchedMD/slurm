@@ -466,7 +466,6 @@ static int _setup_steps_drained_listener(void)
 			rc = SLURM_ERROR;
 			goto fail;
 		}
-		flags |= CON_FLAG_TLS_FINGERPRINT;
 	}
 
 	/* Send stepmgr listening socket info so it can talk back to us */
