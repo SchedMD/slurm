@@ -20,6 +20,21 @@ allocation of cpus to jobs and tasks.
 .br
 https://slurm.schedmd.com/cpu_management.html
 
+A synchronous step (the \fBsrun\fR default) that cannot start immediately because the
+job's resources are busy is queued and assigned its StepId at that point, which
+\fBsrun\fR reports on stderr as "StepId=<\fIjobid\fR>.<\fIstepid\fR> queued", and again as
+"StepId=<\fIjobid\fR>.<\fIstepid\fR> started" when it launches. With \fB\-v\fR,
+"StepId=<\fIjobid\fR>.<\fIstepid\fR> still pending" is also logged on each retry while it
+waits. The step keeps its StepId when it launches. While queued it is visible
+to \fBscontrol show step\fR in state PENDING and can be cancelled with
+\fBscancel\fR <\fIjobid\fR>.<\fIstepid\fR>. An asynchronous step (\fB\-\-async\fR) is also
+assigned its StepId at submission, but reports it on stdout as "Submitted step
+<\fIjobid\fR>.<\fIstepid\fR>" instead.
+
+\fBNOTE\fR: For a synchronous step, a StepId assigned at submission requires
+\fBsrun\fR 26.11 or newer. An older \fBsrun\fR is not assigned one until the
+step launches, and its queued step is shown as <\fIjob_id\fR>.TBD.
+
 .SH "RETURN VALUE"
 srun will return the highest exit code of all tasks run or the highest signal
 (with the high\-order bit set in an 8\-bit integer \-\- e.g. 128 + signal) of any
@@ -31,6 +46,11 @@ When invoked with \fB\-\-async\fR, \fBsrun\fR returns 0 once the controller
 accepts the step\-create request, regardless of how the step's tasks
 ultimately exit. Use \fBsacct\fR(1) to inspect the step's exit code after
 it completes.
+
+If a queued step is cancelled (see \fBscancel\fR(1)) before it launches,
+\fBsrun\fR logs "Pending job step cancelled" (or, if \fBsrun\fR itself was
+interrupted, "Cancelled pending job step with signal <N>") and returns
+non\-zero.
 
 .SH "EXECUTABLE PATH RESOLUTION"
 
@@ -4575,8 +4595,10 @@ The escape sequence \fB<control\-z>\fR is presently ignored.
 
 Signal forwarding is not available for asynchronous steps (\fB\-\-async\fR);
 \fBsrun\fR exits before the step starts and holds no connection to the
-running tasks. Use \fBscancel \-\-signal\fR to send signals to an
-asynchronous step.
+running tasks. Use \fBscancel\fR to send signals to an asynchronous step;
+while that step is still queued, either omit \fB\-\-signal\fR or add
+\fB\-\-ctld\fR, and only a terminating signal has any effect (see
+\fBscancel\fR(1)).
 
 .SH "MPI SUPPORT"
 MPI use depends upon the type of MPI being used.
@@ -4844,8 +4866,8 @@ $ srun -n1 --exclusive -l date +%T &
 14:36:17
 [1] 144429
 [2] 144430
-srun: Job 9553 step creation temporarily disabled, retrying (Requested nodes are busy)
-srun: Step created for job 9553
+srun: StepId=9553.3 queued
+srun: StepId=9553.3 started
 0: 14:36:20
 [1]-  Done                    srun -n1 --exclusive -l sleep 3
 [2]+  Done                    srun -n1 --exclusive -l date +%T
@@ -4875,8 +4897,8 @@ $ srun -n4 --exact sleep 1800 &
 [1] 151837
 
 $ srun -n2 --exact hostname
+srun: StepId=2677.1 queued
 ^Csrun: Cancelled pending job step with signal 2
-srun: error: Unable to create step for job 2677: Job/step already completing or completed
 .fi
 
 If the job step is started, explicitly requesting a single node, then the

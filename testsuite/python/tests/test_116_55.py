@@ -20,6 +20,7 @@ them when writing the output file (or opening stdin) on the compute node.
 """
 
 import re
+from pathlib import Path
 
 import pytest
 
@@ -1139,4 +1140,286 @@ def test_async_terminal_input_not_forwarded(input_form):
     assert sentinel not in text, (
         f"--input={input_form} must not forward srun's stdin to an async task; "
         f"sentinel unexpectedly reached the output: {text!r}"
+    )
+
+
+# Issue 50938: the pending synchronous step id-at-submit work touches code
+# shared with asynchronous steps. These guard against it regressing --async.
+
+# Tasks the hog step asks for. A step without --exact takes all of the node's
+# CPUs whatever this is, so it need not match the node's CPU count.
+HOG_TASKS = 2
+
+requires_id_at_submit = pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50938: pending-step id-at-submit requires a 26.11+ srun",
+)
+
+
+def _run_async_script(tag, body, timeout=180):
+    """Submit body as an sbatch script, wait for it to finish, return its
+    combined output lines.
+
+    The timeout is well above atf.default_polling_timeout because these
+    scripts wait out a hog, a queued step and a launch in sequence.
+
+    -t caps the job itself so a script that cannot make progress ends rather
+    than running until the suite tears it down.
+    """
+    script = Path(f"{tag}.sh")
+    out = Path(f"{tag}.out")
+    atf.make_bash_script(script, body)
+    job_id = atf.submit_job_sbatch(
+        f"-N1 --exclusive -t5 --output={out} --error={out} {script}", fatal=True
+    )
+    atf.wait_for_job_state(job_id, "DONE", timeout=timeout, fatal=True)
+    atf.assert_file_contents(out, "DONE", contains=True, timeout=timeout)
+    lines = atf.run_command_output(f"cat {out}", fatal=True).splitlines()
+    assert "HOG_NOT_HELD" not in lines, (
+        "the hog never took the node, so nothing was ever forced to queue: " f"{lines}"
+    )
+    return lines
+
+
+def _hold_node_snippet(held, task):
+    """Bash lines that hog the whole node and block until the task actually
+    holds it, so a following srun sees a genuinely busy node.
+
+    Bounded, and bails loudly rather than falling through: the busy node is
+    a precondition, and every caller asserts against a step that had to
+    queue behind it.
+    """
+    return f"""srun -n{HOG_TASKS} bash -c 'touch "{held}"; {task}' &
+for k in $(seq 1 150); do [ -f '{held}' ] && break; sleep 0.2; done
+[ -f '{held}' ] || {{ echo HOG_NOT_HELD; echo DONE; exit 1; }}"""
+
+
+def _hog_and_queue_async(held, async_ran):
+    """Bash snippet: hog the whole node, queue an asynchronous step behind it,
+    and wait for the controller to register its pending placeholder. Leaves
+    $asyncid set for the caller.
+
+    Bails loudly if the submit produced no id: several callers below key off a
+    *negated* grep for $asyncid, which an empty id would satisfy vacuously.
+    """
+    return f"""{_hold_node_snippet(held, "sleep infinity")}
+asyncid=$(srun --async -n{HOG_TASKS} bash -c 'touch "{async_ran}"' 2>&1 \
+          | sed -n 's/^Submitted step //p')
+echo "ASYNCID=$asyncid"
+[ -n "$asyncid" ] || {{ echo NO_ASYNCID; exit 1; }}
+for k in $(seq 1 50); do
+    scontrol -o show step $SLURM_JOB_ID 2>/dev/null \
+        | grep -qE "StepId=$asyncid( |$)" && break
+    sleep 0.2
+done"""
+
+
+def _free_hog_and_wait_async(async_ran):
+    """Bash snippet: free the hog (step .0) and wait for the asynchronous
+    step's marker file (or the timeout, for callers expecting it to stay
+    cancelled)."""
+    return f"""scancel $SLURM_JOB_ID.0
+for k in $(seq 1 15); do [ -f '{async_ran}' ] && break; sleep 2; done
+echo DONE"""
+
+
+@requires_id_at_submit
+def test_nonfatal_signal_leaves_pending_async_step():
+    """A non-terminating signal (USR1) to a queued asynchronous step is a no-op: the
+    placeholder survives and the step still launches once the node frees."""
+    held = Path("nf_held")
+    async_ran = Path("nf_async_ran")
+    body = f"""
+{_hog_and_queue_async(held, async_ran)}
+scancel --ctld --signal=USR1 "$asyncid"
+echo "USR1_RC=$?"
+# A reap would arrive via the controller's asynchronous forward to the stepmgr
+# node, so allow it the same window test_116_61 gives before concluding the
+# placeholder survived.
+sleep 10
+if scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -qE "StepId=$asyncid( |$)"; then
+    echo SURVIVED_USR1
+fi
+{_free_hog_and_wait_async(async_ran)}
+"""
+    lines = _run_async_script("nf_async", body)
+    assert "DONE" in lines, "script did not finish"
+    assert any(
+        line.startswith("ASYNCID=") and line != "ASYNCID=" for line in lines
+    ), "the asynchronous step was not queued with an id"
+    # Without this the survival assertion below passes whenever the signal was
+    # never delivered at all.
+    assert "USR1_RC=0" in lines, (
+        "scancel --ctld --signal=USR1 should succeed against a queued "
+        f"asynchronous step, got: {lines}"
+    )
+    assert "SURVIVED_USR1" in lines, (
+        "a non-terminating signal cancelled the pending asynchronous step; it should "
+        "be a no-op, as for a pending synchronous step (test_116_61)"
+    )
+    assert atf.wait_for_file(async_ran), (
+        "the pending asynchronous step did not launch after resources freed -- the "
+        "non-terminating signal must have reaped it"
+    )
+
+
+@requires_id_at_submit
+def test_terminating_signal_cancels_pending_async_step():
+    """scancel --ctld --signal=TERM cancels a queued asynchronous step before
+    it launches, the same way it cancels a queued synchronous one."""
+    held = Path("term_held")
+    async_ran = Path("term_async_ran")
+    body = f"""
+{_hog_and_queue_async(held, async_ran)}
+scancel --ctld --signal=TERM "$asyncid"
+echo "TERM_RC=$?"
+# The controller forwards the signal to the stepmgr node asynchronously, so
+# scancel returns before the placeholder is reaped.
+for k in $(seq 1 50); do
+    scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -qE "StepId=$asyncid( |$)" || break
+    sleep 0.2
+done
+if scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -qE "StepId=$asyncid( |$)"; then
+    echo STILL_PRESENT
+else
+    echo REAPED
+fi
+{_free_hog_and_wait_async(async_ran)}
+"""
+    lines = _run_async_script("term_async", body)
+    assert "DONE" in lines, "script did not finish"
+    assert "TERM_RC=0" in lines, (
+        "scancel --ctld --signal=TERM should succeed against a queued "
+        f"asynchronous step, got: {lines}"
+    )
+    assert "STILL_PRESENT" not in lines and "REAPED" in lines, (
+        "a terminating signal should reap the queued asynchronous placeholder, "
+        f"as it does a synchronous one (test_116_61), got: {lines}"
+    )
+    # The script already waited out its own launch window, so a short check is
+    # enough to show the cancelled step never ran.
+    assert not atf.wait_for_file(
+        async_ran, timeout=5, xfail=True
+    ), "a cancelled asynchronous step should never launch"
+
+
+@requires_id_at_submit
+def test_signal_without_ctld_fails_against_pending_async_step():
+    """An explicit --signal without --ctld goes to the step's nodes directly,
+    and a queued asynchronous step has no slurmstepd on any node yet, so
+    scancel fails and the placeholder is untouched."""
+    held = Path("noctld_held")
+    async_ran = Path("noctld_async_ran")
+    body = f"""
+{_hog_and_queue_async(held, async_ran)}
+scancel --signal=TERM "$asyncid"
+echo "NOCTLD_RC=$?"
+if scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -qE "StepId=$asyncid( |$)"; then
+    echo SURVIVED_NOCTLD
+fi
+{_free_hog_and_wait_async(async_ran)}
+"""
+    lines = _run_async_script("noctld_async", body)
+    assert "DONE" in lines, "script did not finish"
+    assert "NOCTLD_RC=0" not in lines, (
+        "scancel --signal without --ctld should fail against a queued "
+        f"asynchronous step, got: {lines}"
+    )
+    assert "SURVIVED_NOCTLD" in lines, (
+        "the queued asynchronous placeholder should survive a failed "
+        "no-ctld signal: it never reached it"
+    )
+    assert atf.wait_for_file(
+        async_ran
+    ), "the queued asynchronous step should still launch once the node frees"
+
+
+@requires_id_at_submit
+def test_async_step_returns_immediately_when_queued():
+    """srun --async returns immediately (fire-and-forget) even when the node
+    is fully busy and the step must queue.
+
+    Making the queued errno retryable for a synchronous pending step must not
+    pull --async into that retry loop, where it would block for the full
+    retry window instead of returning right away."""
+    held = Path("ret_held")
+    async_ran = Path("ret_async_ran")
+    body = f"""
+{_hold_node_snippet(held, "sleep 30")}
+start=$(date +%s)
+srun --async -n{HOG_TASKS} bash -c 'touch "{async_ran}"' >/dev/null 2>&1
+rc=$?
+end=$(date +%s)
+echo "RC=$rc"
+echo "ELAPSED=$((end - start))"
+echo DONE
+"""
+    lines = _run_async_script("ret_async", body, timeout=60)
+    assert "DONE" in lines, "script did not finish"
+    assert "RC=0" in lines, "srun --async should exit 0 even though the node is busy"
+    elapsed = next(
+        (int(line.split("=", 1)[1]) for line in lines if line.startswith("ELAPSED=")),
+        None,
+    )
+    assert elapsed is not None, "did not capture srun --async's elapsed time"
+    assert elapsed < 10, (
+        f"srun --async took {elapsed}s to return while queued; it must return "
+        "immediately (fire-and-forget), not retry using the same "
+        "ESLURM_STEP_QUEUED errno a synchronous pending step relies on"
+    )
+
+
+@requires_id_at_submit
+def test_async_and_sync_pending_steps_coexist_without_interference():
+    """A synchronous pending step and an asynchronous pending step queued
+    behind the same hog on the same host don't interfere: the synchronous
+    step's own create/re-send/launch cycle must never purge, poke, or
+    otherwise disturb the asynchronous placeholder, and both must launch once
+    resources free."""
+    held = Path("coexist_held")
+    async_ran = Path("coexist_async_ran")
+    sync_ran = Path("coexist_sync_ran")
+    body = f"""
+{_hog_and_queue_async(held, async_ran)}
+srun -n{HOG_TASKS} bash -c 'touch "{sync_ran}"' &
+syncpid=$!
+# Wait for the synchronous step to also reach PENDING alongside the asynchronous
+# placeholder, so the survival check below actually exercises the synchronous
+# step's create-time purge-duplicate-steps pass instead of racing it.
+for k in $(seq 1 50); do
+    if [ "$(scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -c 'State=PENDING')" -ge 2 ]; then
+        echo BOTH_PENDING
+        break
+    fi
+    sleep 0.2
+done
+# Both placeholders pending; confirm the asynchronous one hasn't been reaped by the
+# synchronous step's own create-time purge-duplicate-steps pass.
+if scontrol -o show step $SLURM_JOB_ID 2>/dev/null | grep -qE "StepId=$asyncid( |$)"; then
+    echo ASYNC_SURVIVED_SYNC_CREATE
+fi
+# Free the node; both the synchronous step and the still-alive asynchronous step launch.
+scancel $SLURM_JOB_ID.0
+wait "$syncpid"
+for k in $(seq 1 15); do [ -f '{async_ran}' ] && break; sleep 2; done
+echo DONE
+"""
+    lines = _run_async_script("coexist", body)
+    assert "DONE" in lines, "script did not finish"
+    assert any(
+        line.startswith("ASYNCID=") and line != "ASYNCID=" for line in lines
+    ), "the asynchronous step was not queued with an id"
+    assert "BOTH_PENDING" in lines, (
+        "the synchronous step never reached PENDING alongside the asynchronous placeholder "
+        "-- the create-time race this test targets was never exercised"
+    )
+    assert "ASYNC_SURVIVED_SYNC_CREATE" in lines, (
+        "the asynchronous placeholder did not survive a synchronous step's create/pend "
+        "cycle on the same host -- the state-based placeholder match must "
+        "exclude asynchronous placeholders"
+    )
+    assert atf.wait_for_file(sync_ran), "the pending synchronous step did not launch"
+    assert atf.wait_for_file(async_ran), (
+        "the pending asynchronous step did not launch after resources freed -- it "
+        "may have been collaterally purged or poked by the synchronous step"
     )

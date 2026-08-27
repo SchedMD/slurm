@@ -222,6 +222,19 @@ the shell may forward the signal.
 When \fB\-\-batch\fR is not used but \fB\-\-signal\fR is used,
 then all job steps will be signaled, but the batch script itself
 will not be signaled.
+
+A queued (PENDING) step may also be targeted by its step ID, but only through
+the controller: use \fBscancel\fR \fIjob_id\fR.\fIstep_id\fR with no
+\fB\-\-signal\fR, or add \fB\-\-ctld\fR. A queued step has no tasks on any node,
+so a signal sent directly to the slurmd daemons fails. A terminating signal
+(INT, TERM, or KILL) cancels the step before it launches; any other signal is a
+no-op, since the step has no tasks yet. This applies equally to a step queued
+by \fBsrun \-\-async\fR.
+
+A queued step is targetable by step ID only if it was submitted by \fBsrun\fR
+26.11 or newer; an older \fBsrun\fR's queued step is shown as
+\fIjob_id\fR.TBD and can only be cancelled at the job level. See
+\fBsrun\fR(1).
 .IP
 
 .SH "PERFORMANCE"

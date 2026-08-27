@@ -1,7 +1,9 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+import re
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -100,3 +102,58 @@ def test_immediate_cancel(itime, block_job_node):
         f"-w {block_job_node} --immediate={itime} true", xfail=True
     )
     assert_cancel(job_id, itime)
+
+
+def test_immediate_does_not_wait_on_a_queued_step():
+    """
+    Spawn a srun with --immediate for a step while the job's own resources
+    are busy. --immediate applies to step allocations as well as job
+    allocations, so it must fail promptly instead of inheriting the
+    MAX(60, SlurmctldTimeout) wait a queued step otherwise gets.
+    """
+    # With defer, job start waits for the periodic scheduling loop, which can
+    # consume most of this test's budget before the step srun even runs.
+    atf.require_config_parameter_excludes("SchedulerParameters", "defer")
+
+    out = Path("immediate_step.out")
+    ready = Path("immediate_step_ready")
+    script = Path("immediate_step.sh")
+    # The first step takes the whole allocation, so the second cannot start
+    # until it ends. Aborting when the hog never took it keeps a slow runner
+    # from reading as a product failure.
+    atf.make_bash_script(
+        script,
+        f"""srun -N1 --exclusive sh -c 'touch "{ready}"; exec sleep infinity' &
+for _ in $(seq 1 60); do [ -f '{ready}' ] && break; sleep 0.5; done
+[ -f '{ready}' ] || {{ echo HOG_NOT_READY; exit 1; }}
+start=$SECONDS
+srun --immediate=1 -N1 --exclusive true
+echo "IMMEDIATE_RC=$?"
+echo "IMMEDIATE_ELAPSED=$((SECONDS - start))"
+""",
+    )
+    job_id = atf.submit_job(
+        "sbatch",
+        f"-N1 --exclusive -t5 --output={out} --error={out}",
+        str(script),
+        wrap_job=False,
+        fatal=True,
+    )
+    assert job_id != 0, "sbatch should submit the job"
+
+    # Longer than the atf default: the script first waits up to 30s for the
+    # hog to take the allocation before srun --immediate even runs.
+    atf.assert_file_contents(out, "IMMEDIATE_ELAPSED=", contains=True, timeout=90)
+    text = atf.run_command_output(f"cat {out}", quiet=True, fatal=True)
+    assert (
+        "IMMEDIATE_RC=0" not in text
+    ), f"srun --immediate=1 should fail while the allocation is busy, got: {text}"
+    # Pin the failure to the --immediate path rather than any other srun error.
+    assert (
+        "Unable to create step for job" in text
+    ), f"srun should report it could not create the step, got: {text}"
+    elapsed = int(re.search(r"IMMEDIATE_ELAPSED=(\d+)", text).group(1))
+    assert elapsed < 5, (
+        f"srun --immediate=1 should give up after its 1s step wait, not wait "
+        f"out the pending-step timeout; took {elapsed}s"
+    )

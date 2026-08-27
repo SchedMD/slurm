@@ -103,8 +103,9 @@ typedef struct {
 	uint32_t node_rank;
 } node_rank_order_t;
 
-static void _build_pending_step(job_record_t *job_ptr,
-				job_step_create_request_msg_t *step_specs);
+static bool _build_pending_step(job_record_t *job_ptr,
+				job_step_create_request_msg_t *step_specs,
+				uint16_t protocol_version);
 static int _step_partial_comp(step_record_t *step_ptr,
 			      step_complete_msg_t *req, bool finish,
 			      int *rem, uint32_t *max_rc);
@@ -201,10 +202,18 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	job_step_create_request_msg_t *step_specs =
 		(job_step_create_request_msg_t *) arg;
 
-	if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP) &&
-	    (step_ptr->state == JOB_PENDING) &&
-	    (step_ptr->srun_pid	== step_specs->srun_pid) &&
+	if ((step_ptr->state == JOB_PENDING) &&
+	    !(step_ptr->flags & SSF_ASYNC) &&
+	    (step_ptr->srun_pid == step_specs->srun_pid) &&
 	    (!xstrcmp(step_ptr->host, step_specs->host))) {
+		/*
+		 * A raced re-send arrives with NO_VAL; keep the StepId already
+		 * assigned to the placeholder we are reaping so the replacement
+		 * reuses it rather than skipping to a fresh id.
+		 */
+		if ((step_specs->step_id.step_id == NO_VAL) &&
+		    (step_ptr->step_id.step_id != SLURM_PENDING_STEP))
+			step_specs->step_id.step_id = step_ptr->step_id.step_id;
 		return 1;
 	}
 
@@ -278,20 +287,35 @@ static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
 	return ctx;
 }
 
-/* The step with a state of PENDING is used as a placeholder for a host and
- * port that can be used to wake a pending srun as soon another step ends */
-static void _build_pending_step(job_record_t *job_ptr,
-				job_step_create_request_msg_t *step_specs)
+/*
+ * Create a JOB_PENDING placeholder recording the host/port used to wake a
+ * pending srun once another step ends.
+ *
+ * Terminology: a synchronous step (the srun default) blocks its srun until
+ * the step launches; an asynchronous step (SSF_ASYNC, i.e. srun --async) is
+ * fire-and-forget.  Either kind can be queued here as a JOB_PENDING
+ * placeholder while it waits for resources.
+ * IN job_ptr - job to add the placeholder under
+ * IN/OUT step_specs - step create request; for a >= 26.11 peer its step_id is
+ *     set to the assigned id, else left unchanged
+ * IN protocol_version - create request's negotiated version; gates whether a
+ *     real id is assigned now or the SLURM_PENDING_STEP sentinel is kept.
+ *     When 26.05 is no longer supported remove this parameter.
+ * RET true if a placeholder was created
+ */
+static bool _build_pending_step(job_record_t *job_ptr,
+				job_step_create_request_msg_t *step_specs,
+				uint16_t protocol_version)
 {
 	step_record_t *step_ptr;
 
 	if ((!step_specs->host || !step_specs->port) &&
 	    !(step_specs->flags & SSF_ASYNC))
-		return;
+		return false;
 
 	step_ptr = create_step_record(job_ptr, 0);
 	if (step_ptr == NULL)
-		return;
+		return false;
 
 	*stepmgr_ops->last_job_update = time(NULL);
 
@@ -315,14 +339,63 @@ static void _build_pending_step(job_record_t *job_ptr,
 					     step_ptr);
 		job_ptr->pending_async_steps++;
 	} else {
-		step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
-		step_ptr->step_id.step_id = SLURM_PENDING_STEP;
+		/*
+		 * Assign a real id only when the peer can round-trip it on a
+		 * re-send; otherwise keep the sentinel and the id-at-launch
+		 * behavior (an old srun re-sends NO_VAL and would relaunch
+		 * with a different id).
+		 */
+		if (protocol_version > SLURM_26_05_PROTOCOL_VERSION) {
+			/* A re-queue re-sends its already-assigned id. */
+			if (step_specs->step_id.step_id == NO_VAL) {
+				_set_step_id(step_ptr, step_specs);
+				step_specs->step_id = step_ptr->step_id;
+			} else {
+				step_ptr->step_id = step_specs->step_id;
+				step_ptr->step_id.sluid =
+					job_ptr->step_id.sluid;
+				if (step_specs->array_task_id != NO_VAL)
+					step_ptr->step_id.job_id =
+						job_ptr->job_id;
+			}
+		} else {
+			step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+			step_ptr->step_id.step_id = SLURM_PENDING_STEP;
+		}
 		step_ptr->port = step_specs->port;
 	}
 
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
+
+	return true;
+}
+
+/*
+ * Queue a placeholder for a step that failed to schedule on a busy resource
+ * (unless it is an immediate asynchronous step) and report it as queued.
+ * IN job_ptr - job the step belongs to
+ * IN/OUT step_specs - create request; gains an assigned step_id when queued
+ * IN protocol_version - negotiated create-request version.
+ *     When 26.05 is no longer supported remove this parameter.
+ * IN busy_errno - the busy failure being handled
+ * RET ESLURM_STEP_QUEUED if queued, else busy_errno unchanged
+ */
+static int _queue_pending_step(job_record_t *job_ptr,
+			       job_step_create_request_msg_t *step_specs,
+			       uint16_t protocol_version, int busy_errno)
+{
+	if (!((step_specs->flags & SSF_ASYNC) && step_specs->immediate) &&
+	    !_build_pending_step(job_ptr, step_specs, protocol_version))
+		return busy_errno;
+
+	/* A step id is assigned only for a >= 26.11 peer */
+	if (((protocol_version > SLURM_26_05_PROTOCOL_VERSION) ||
+	     (step_specs->flags & SSF_ASYNC)) &&
+	    (step_specs->step_id.step_id != NO_VAL))
+		return ESLURM_STEP_QUEUED;
+	return busy_errno;
 }
 
 static void _internal_step_complete(step_record_t *step_ptr, int remaining)
@@ -358,8 +431,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
-	if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP) ||
-	    (step_ptr->state == JOB_PENDING))
+	if (step_ptr->state == JOB_PENDING)
 		return;
 
 	/*
@@ -394,6 +466,23 @@ static void _cleanup_failed_step(step_record_t *step_ptr)
 	delete_step_record(job_ptr, step_ptr);
 }
 
+/*
+ * Whether a signal cancels a queued (taskless) step.
+ * IN signal - signal number from the kill request
+ * RET true if the signal aborts the pending step, false to ignore it
+ */
+static bool _sig_aborts_pending_step(uint16_t signal)
+{
+	switch (signal) {
+	case SIGINT:
+	case SIGTERM:
+	case SIGKILL:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static int _step_signal(void *object, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *)object;
@@ -406,9 +495,19 @@ static int _step_signal(void *object, void *arg)
 	    !find_step_id(step_ptr, &step_signal->step_id))
 		return SLURM_SUCCESS;
 
-	if ((step_ptr->state == JOB_PENDING) &&
-	    (step_ptr->flags & SSF_ASYNC))
+	if (step_ptr->state == JOB_PENDING) {
+		/*
+		 * A terminating signal aborts the queued create (the
+		 * placeholder is reaped in _delete_pending_steps()),
+		 * anything else is a no-op.  Nudge the waiting srun
+		 * for synchronous steps.
+		 */
+		step_signal->found = true;
+		if (_sig_aborts_pending_step(step_signal->signal) &&
+		    !(step_ptr->flags & SSF_ASYNC))
+			srun_step_signal(step_ptr, step_signal->signal);
 		return SLURM_SUCCESS;
+	}
 
 	step_signal->found = true;
 	signal = step_signal->signal;
@@ -455,7 +554,7 @@ static int _step_not_cleaning(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	int *remaining = (int *) arg;
 
-	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
+	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
 		srun_step_signal(step_ptr, 0);
 	_internal_step_complete(step_ptr, *remaining);
 
@@ -472,7 +571,7 @@ static int _finish_step_comp(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
-	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
+	if ((step_ptr->state == JOB_PENDING) && !(step_ptr->flags & SSF_ASYNC))
 		return 0;
 
 	remaining = list_count(job_ptr->step_list);
@@ -592,6 +691,13 @@ static int _delete_pending_steps(void *x, void *arg)
 
 	if ((step_ptr->state == JOB_PENDING) &&
 	    verify_step_id(&step_ptr->step_id, &step_signal->step_id)) {
+		/*
+		 * Reap a placeholder only on a terminating signal,
+		 * synchronous or asynchronous.
+		 */
+		if (!_sig_aborts_pending_step(step_signal->signal))
+			return 0;
+
 		step_signal->found = true;
 		if (step_ptr->flags & SSF_ASYNC)
 			jobacct_storage_g_step_complete(
@@ -3593,7 +3699,14 @@ static int _step_create(job_record_t *job_ptr,
 	if (step_specs->user_id != job_ptr->user_id)
 		return ESLURM_ACCESS_DENIED ;
 
-	if ((step_specs->step_id.step_id != NO_VAL) &&
+	/*
+	 * Synchronous requests are eligible even with a NO_VAL id: a re-send
+	 * that raced the queued response (controller committed a placeholder,
+	 * srun never saw the id) comes back as NO_VAL and must still reap its
+	 * own stale placeholder instead of stacking a second one.
+	 */
+	if (((step_specs->step_id.step_id != NO_VAL) ||
+	     !(step_specs->flags & SSF_ASYNC)) &&
 	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate)) {
 		if (list_delete_first(job_ptr->step_list,
 				      _purge_duplicate_steps,
@@ -3757,15 +3870,10 @@ static int _step_create(job_record_t *job_ptr,
 				   cpus_per_task, node_count, &ret_code);
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
-		if (ret_code == ESLURM_NODES_BUSY) {
-			if (step_specs->flags & SSF_ASYNC) {
-				if (!step_specs->immediate)
-					_build_pending_step(job_ptr, step_specs);
-				if (step_specs->step_id.step_id != NO_VAL)
-					ret_code = ESLURM_STEP_QUEUED;
-			} else
-				_build_pending_step(job_ptr, step_specs);
-		}
+		if (ret_code == ESLURM_NODES_BUSY)
+			ret_code =
+				_queue_pending_step(job_ptr, step_specs,
+						    protocol_version, ret_code);
 		return ret_code;
 	}
 	_set_def_cpu_bind(job_ptr);
@@ -3797,7 +3905,32 @@ static int _step_create(job_record_t *job_ptr,
 		/* Async pending step already has a step_id. */
 		step_ptr->step_id = step_specs->step_id;
 	} else if (!(step_specs->flags & SSF_ASYNC)) {
-		_set_step_id(step_ptr, step_specs);
+		if (step_specs->step_id.step_id != NO_VAL) {
+			/* Sync pending step already has a step_id. */
+			step_ptr->step_id = step_specs->step_id;
+			step_ptr->step_id.sluid = job_ptr->step_id.sluid;
+			if (step_specs->array_task_id != NO_VAL)
+				step_ptr->step_id.job_id = job_ptr->job_id;
+			/*
+			 * Keep the auto-assign counter past a caller-supplied
+			 * id without consuming one, so a re-send of an already
+			 * assigned id does not leave a StepId gap.
+			 */
+			if (step_ptr->step_id.step_het_comp == NO_VAL)
+				job_ptr->next_step_id =
+					MAX(job_ptr->next_step_id,
+					    step_ptr->step_id.step_id + 1);
+		} else {
+			_set_step_id(step_ptr, step_specs);
+			/*
+			 * Echo the assigned id back so that if this create
+			 * then fails on busy reserved ports the pending
+			 * placeholder reuses it, instead of
+			 * _build_pending_step() assigning a second id and
+			 * skipping a StepId.
+			 */
+			step_specs->step_id = step_ptr->step_id;
+		}
 	}
 
 	/* Here is where the node list is set for the step */
@@ -3943,16 +4076,9 @@ static int _step_create(job_record_t *job_ptr,
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 		i = resv_port_step_alloc(step_ptr);
 		if (i != SLURM_SUCCESS) {
-			if (i == ESLURM_PORTS_BUSY) {
-				if (step_specs->flags & SSF_ASYNC) {
-					if (!step_specs->immediate)
-						_build_pending_step(job_ptr,
-								    step_specs);
-					if (step_specs->step_id.step_id != NO_VAL)
-						i = ESLURM_STEP_QUEUED;
-				} else
-					_build_pending_step(job_ptr, step_specs);
-			}
+			if (i == ESLURM_PORTS_BUSY)
+				i = _queue_pending_step(job_ptr, step_specs,
+							protocol_version, i);
 			delete_step_record(job_ptr, step_ptr);
 			return i;
 		}
@@ -4823,7 +4949,8 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 			goto stepmgr;
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
-		if (req->time_limit) {
+		/* A queued step is now addressable but has nothing to start. */
+		if (req->time_limit && (step_ptr->state == JOB_RUNNING)) {
 			step_ptr->time_limit = req->time_limit;
 			args.mod_cnt++;
 
@@ -5504,20 +5631,22 @@ end_it:
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 		else if (error_code == ESLURM_STEP_QUEUED) {
-			log_flag(STEPS, "%s queued async %ps: %s",
+			log_flag(STEPS, "%s queued %ps: %s",
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 			/*
-			 * The pending step retains step_req; stop the
-			 * regular RPC flow from freeing it.  Reply with
+			 * An asynchronous pending step retains step_req on the
+			 * placeholder; stop the regular RPC flow from freeing
+			 * it.  A synchronous pending step does not retain it,
+			 * so let the normal flow free it.  Reply with
 			 * RESPONSE_JOB_STEP_CREATE carrying the assigned
-			 * step_id and state = JOB_PENDING so srun can
-			 * surface it.  _step_create translates busy
-			 * errnos to ESLURM_STEP_QUEUED only after a
-			 * successful _build_pending_step, so step_id is
-			 * guaranteed to be set here.
+			 * step_id and state = JOB_PENDING so srun can surface
+			 * it.  _step_create() translates busy errnos to
+			 * ESLURM_STEP_QUEUED only after a successful
+			 * _build_pending_step(), so step_id is guaranteed set.
 			 */
-			msg->data = NULL;
+			if (req_step_msg->flags & SSF_ASYNC)
+				msg->data = NULL;
 
 			memset(&job_step_resp, 0, sizeof(job_step_resp));
 			job_step_resp.step_id = req_step_msg->step_id;
@@ -5690,6 +5819,9 @@ extern int stepmgr_get_step_layouts(job_record_t *job_ptr,
 	itr = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(itr))) {
 		if (!verify_step_id(&step_ptr->step_id, step_id))
+			continue;
+		/* A queued placeholder has no layout yet */
+		if (!step_ptr->step_layout)
 			continue;
 		/*
 		 * Rebuild alias_addrs if need after restart of slurmctld

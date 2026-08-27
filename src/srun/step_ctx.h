@@ -42,13 +42,18 @@
  * IN step_req - job step request
  * IN timeout - in milliseconds
  * IN srun_opt - srun options
- * OUT timed_out - indicate if poll timed-out
+ * OUT retry_cause - why the step could not be created yet, so the caller can
+ *	report it alongside ESLURM_STEP_TIMED_OUT
  * RET the step context or NULL on failure with slurm errno set
+ *	(ESLURM_STEP_TIMED_OUT or ESLURM_STEP_CANCELLED while waiting on a
+ *	queued step)
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
-extern slurm_step_ctx_t *step_ctx_create_timeout(
-	job_step_create_request_msg_t *step_req, int timeout, bool *timed_out,
-	srun_opt_t *srun_opt);
+extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
+							 *step_req,
+						 int timeout,
+						 srun_opt_t *srun_opt,
+						 int *retry_cause);
 
 /*
  * step_ctx_create_no_alloc - Create a job step and its context without

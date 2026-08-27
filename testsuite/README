@@ -70,7 +70,7 @@ test1.8    Confirm that basic srun stdin, stdout, and stderr options work
 	   (--input, --output, and --error option respectively).
 test1.9    Test of srun verbose mode (--verbose option).
 test1.12   Test srun --overlap
-test1.14   Test exclusive resource allocation for a step (--exclusive option).
+test1.14   Test exclusive GRES/GPU allocation for a job (--exclusive option).
 test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
 test1.32   Test of srun signal forwarding
@@ -884,6 +884,8 @@ test_116_57  Test srun in het job nested in non-het job
 test_116_58  Test srun --async --kill-on-bad-exit kills remaining tasks
 test_116_59  Test the --runtime job submission option and its runtime plugins
 test_116_60  Test the srun/salloc/sbatch --runtime=list option
+test_116_61  Verify a pending synchronous step is assigned a real step ID at submission
+test_116_62  Verify a synchronous step pending on exhausted reserved ports gets a real step ID at submission
 
 test_117_#   Testing of sstat options.
 ======================================
@@ -1132,6 +1134,7 @@ test_162_#   Testing of swait and stepmgr/async-step integration.
 test_162_1   Test swait against a stepmgr-enabled cluster
 test_162_2   Test swait's steps-drained push path
 test_162_3   Test scontrol visibility and reconfigure-survival of async steps
+test_162_4   Verify pending synchronous step id-at-submit holds under stepmgr
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
