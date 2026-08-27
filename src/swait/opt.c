@@ -119,11 +119,11 @@ static void _parse_jobid_or_die(const char *src, slurm_selected_step_t *id)
 	    SLURM_SUCCESS) {
 		error("%s: cannot parse job id", src);
 		FREE_NULL_BITMAP(id->array_bitmap);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	if (_validate_selected_step(id, src) != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(id->array_bitmap);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 }
 
@@ -147,7 +147,7 @@ static void _resolve_target(const char *argv_jobid, slurm_selected_step_t *id)
 		;
 	} else {
 		error("no job id given and SLURM_JOB_SLUID/SLURM_JOB_ID are not set");
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 
 	_parse_jobid_or_die(src, id);
@@ -204,23 +204,23 @@ extern void parse_command_line(int argc, char **argv)
 			    parse_uint32(optarg, &opt.timeout)) {
 				error("--timeout: invalid value '%s' (must be a non-negative integer)",
 				      optarg ? optarg : "");
-				exit(2);
+				exit(SWAIT_RC_ERROR);
 			}
 			break;
 		default:
 			info("Try \"swait --help\" for more information");
-			exit(2);
+			exit(SWAIT_RC_ERROR);
 		}
 	}
 
 	if (opt.quiet && opt.verbose) {
 		error("--verbose (-v) and --quiet (-Q) are mutually exclusive");
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 
 	if ((argc - optind) > 1) {
 		error("too many positional arguments (expected at most one job id)");
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	if ((argc - optind) == 1)
 		argv_jobid = argv[optind];

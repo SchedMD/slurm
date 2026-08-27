@@ -17,5 +17,5 @@ Help options:
 
 Exit status:
   0  All regular steps have ended.
-  1  --timeout expired.
-  2  swait encountered an error.
+  1  swait encountered an error.
+  2  --timeout expired.

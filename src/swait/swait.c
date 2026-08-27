@@ -63,8 +63,8 @@
 #define SWAIT_WORKERPOOL_THREADS 3
 
 /*
- * exit_lock arbitrates between _on_msg (steps-drained: keep exit_rc=0) and
- * _timeout_fire (timeout: exit_rc=1). exit_decided is set by whichever
+ * exit_lock arbitrates between _on_msg (steps-drained: SWAIT_RC_OK) and
+ * _timeout_fire (SWAIT_RC_TIMEOUT). exit_decided is set by whichever
  * callback wins the race; the loser becomes a no-op.
  */
 static pthread_mutex_t exit_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -93,12 +93,12 @@ static char *_resolve_stepmgr_via_ctld(slurm_step_id_t *target)
 	if (slurm_load_job(&resp, *target, SHOW_ALL) != SLURM_SUCCESS) {
 		error("cannot load %pI: %s", target, slurm_strerror(errno));
 		slurm_free_job_info_msg(resp);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	if (!resp || (resp->record_count < 1) || !resp->job_array) {
 		error("cannot load %pI: empty controller response", target);
 		slurm_free_job_info_msg(resp);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	for (uint32_t i = 0; i < resp->record_count; i++) {
 		if (resp->job_array[i].array_task_id != NO_VAL)
@@ -118,7 +118,7 @@ static char *_resolve_stepmgr_via_ctld(slurm_step_id_t *target)
 			else
 				error("%pI: not an array job", target);
 			slurm_free_job_info_msg(resp);
-			exit(2);
+			exit(SWAIT_RC_ERROR);
 		}
 		target->job_id = info->job_id;
 	} else if (is_array && !target->sluid) {
@@ -126,7 +126,7 @@ static char *_resolve_stepmgr_via_ctld(slurm_step_id_t *target)
 			error("%pI is an array job; pass a specific task offset (jobid_task)",
 			      target);
 			slurm_free_job_info_msg(resp);
-			exit(2);
+			exit(SWAIT_RC_ERROR);
 		}
 		info = &resp->job_array[0];
 		opt.array_job_id = info->array_job_id;
@@ -139,7 +139,7 @@ static char *_resolve_stepmgr_via_ctld(slurm_step_id_t *target)
 	if (!(info->bitflags & STEPMGR_ENABLED)) {
 		error("%pI does not have stepmgr enabled", target);
 		slurm_free_job_info_msg(resp);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	if (!info->batch_host || !*info->batch_host) {
 		if (IS_JOB_PENDING(info))
@@ -149,7 +149,7 @@ static char *_resolve_stepmgr_via_ctld(slurm_step_id_t *target)
 			error("%pI: stepmgr host is unknown (controller bug?)",
 			      target);
 		slurm_free_job_info_msg(resp);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	host = xstrdup(info->batch_host);
 	verbose("resolved %pI via controller: stepmgr=%s, JobId=%u",
@@ -344,7 +344,7 @@ out:
 }
 
 /*
- * One-shot --timeout deadline: sets exit_rc=1 and requests conmgr shutdown.
+ * One-shot --timeout deadline: sets SWAIT_RC_TIMEOUT and requests shutdown.
  * IN args - conmgr callback args
  * IN arg  - unused
  */
@@ -359,7 +359,7 @@ static void _timeout_fire(conmgr_callback_args_t args, void *arg)
 		return;
 	}
 	exit_decided = true;
-	exit_rc = 1;
+	exit_rc = SWAIT_RC_TIMEOUT;
 	slurm_mutex_unlock(&exit_lock);
 
 	error("timed out after %u seconds", opt.timeout);
@@ -505,7 +505,8 @@ fail:
 }
 
 /*
- * swait entry point. RET 0 on success, 1 on error.
+ * swait entry point.
+ * RET SWAIT_RC_OK, SWAIT_RC_ERROR or SWAIT_RC_TIMEOUT
  */
 int main(int argc, char **argv)
 {
@@ -534,11 +535,11 @@ int main(int argc, char **argv)
 	} else if (setup_rc == EAGAIN) {
 		error("stepmgr %s subscriber slots full; try again later",
 		      stepmgr_node);
-		exit_rc = 2;
+		exit_rc = SWAIT_RC_ERROR;
 	} else if (setup_rc) {
 		error("subscribe to stepmgr %s failed: %s",
 		      stepmgr_node, slurm_strerror(setup_rc));
-		exit_rc = 2;
+		exit_rc = SWAIT_RC_ERROR;
 	} else {
 		if (opt.timeout > 0) {
 			verbose("waiting for steps to drain (timeout %us)",

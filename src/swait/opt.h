@@ -41,6 +41,16 @@
 
 #include "slurm/slurm.h"
 
+/*
+ * Exit codes; keep in sync with EXIT STATUS in doc/man/man1/swait.1.
+ * OK - the wait completed
+ * ERROR - swait encountered an error
+ * TIMEOUT - --timeout elapsed before the wait completed
+ */
+#define SWAIT_RC_OK 0
+#define SWAIT_RC_ERROR 1
+#define SWAIT_RC_TIMEOUT 2
+
 typedef struct {
 	uint32_t array_job_id; /* array master id from input, or NO_VAL */
 	uint32_t array_task_id; /* task offset from input, or NO_VAL */
