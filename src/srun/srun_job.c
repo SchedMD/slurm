@@ -131,6 +131,9 @@ pthread_mutex_t srun_first_job_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct termios termdefaults;
 
+static mode_t prev_umask;
+static bool slurm_umask_set = false;
+
 /*
  * Prototypes:
  */
@@ -1570,6 +1573,17 @@ extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
 		exit(error_exit);
 	}
 
+	/*
+	 * Set here, after --prolog, so that script is unaffected. Restored
+	 * in fini_srun() before --epilog runs, for the same reason.
+	 */
+	char *slurm_umask = getenv("SLURM_UMASK");
+	if (slurm_umask) {
+		mode_t mask = strtol(slurm_umask, NULL, 8);
+		prev_umask = umask(mask);
+		slurm_umask_set = true;
+	}
+
 	env_array_merge(&job->env, (const char **)environ);
 }
 
@@ -1585,6 +1599,12 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc)
 			slurm_complete_job(&job->step_id, *global_rc);
 	}
 	_shepherd_notify(shepherd_fd);
+
+	/* See pre_launch_srun_job(). */
+	if (slurm_umask_set) {
+		umask(prev_umask);
+		slurm_umask_set = false;
+	}
 
 	_run_srun_epilog(job);
 
