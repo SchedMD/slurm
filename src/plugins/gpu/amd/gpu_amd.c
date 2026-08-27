@@ -367,13 +367,14 @@ static bitstr_t *_set_cpu_affinity(int (*xcpuinfo_mac_to_abs)(char *mac,
  * gres_list (IN/OUT) The system GRES list to append to.
  * file (IN) The GRES device file.
  * type_name (IN) The GRES type name, or NULL to emit an untyped GRES.
+ * unique_id (IN) The ROCR GPU-<hex> token, or NULL for selection by index.
  * cores (IN) The abstract core affinity range, or NULL when unresolved.
  * cpus_bitmap (IN) The machine CPU affinity bitmap, or NULL when unresolved.
  * links (IN) The GRES Links vector.
  */
 static void _emit_gpu_gres(uint32_t cpu_cnt, list_t *gres_list, char *file,
-			   char *type_name, char *cores, bitstr_t *cpus_bitmap,
-			   char *links)
+			   char *type_name, char *unique_id, char *cores,
+			   bitstr_t *cpus_bitmap, char *links)
 {
 	gres_slurmd_conf_t gres_slurmd_conf = {
 		.config_flags = (GRES_CONF_ENV_RSMI | GRES_CONF_AUTODETECT),
@@ -386,6 +387,7 @@ static void _emit_gpu_gres(uint32_t cpu_cnt, list_t *gres_list, char *file,
 		.links = links,
 		.name = "gpu",
 		.type_name = type_name,
+		.unique_id = unique_id,
 	};
 
 	xassert(gres_list);
@@ -514,6 +516,7 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 {
 	list_t *gres_list_system = NULL;
 	bitstr_t *enabled_cpus = NULL;
+	int nuuid = 0;
 
 	xassert(node_config);
 
@@ -526,7 +529,8 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 	enabled_cpus = gpu_common_get_enabled_cpus();
 
 	for (int i = 0; i < amdgpu_ncards; i++) {
-		char *file = NULL, *cores = NULL, *links = NULL;
+		char *file = NULL, *uuid = NULL, *unique_id = NULL;
+		char *cores = NULL, *links = NULL;
 		bitstr_t *cpus_bitmap = NULL;
 
 		debug2("GPU(amd) card%d:", amdgpu_cards[i].card);
@@ -543,6 +547,22 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 				      amdgpu_cards[i].render_minor,
 				      GPU_AMD_DEV_DIR, amdgpu_cards[i].card);
 		debug2("    Device File: %s", file);
+
+		/*
+		 * amdgpu exports 16 hex ID digits only for GPUs carrying a
+		 * hardware ID, leaving the attribute absent or empty on the
+		 * rest. ROCR reports the same digits as "GPU-<hex>" and
+		 * matches a ROCR_VISIBLE_DEVICES token regardless of case. Under
+		 * Flags=env_uuid a job allocated a GPU with no ID gets numeric
+		 * indices for all of its GPUs.
+		 */
+		if ((uuid = _read_card_attr(amdgpu_cards[i].card,
+					    "unique_id"))) {
+			unique_id = xstrdup_printf("GPU-%s", uuid);
+			xfree(uuid);
+			nuuid++;
+		}
+		debug2("    UUID: %s", unique_id);
 
 		cpus_bitmap =
 			_set_cpu_affinity(node_config->xcpuinfo_mac_to_abs,
@@ -561,8 +581,10 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 		debug2("    Links: %s", links);
 
 		_emit_gpu_gres(node_config->cpu_cnt, gres_list_system, file,
-			       amdgpu_cards[i].name, cores, cpus_bitmap, links);
+			       amdgpu_cards[i].name, unique_id, cores,
+			       cpus_bitmap, links);
 
+		xfree(unique_id);
 		xfree(cores);
 		FREE_NULL_BITMAP(cpus_bitmap);
 		xfree(file);
@@ -576,6 +598,8 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 	 * GRES load both run this discovery.
 	 */
 	if (!discovery_logged) {
+		if (nuuid && (nuuid < amdgpu_ncards))
+			warning("gpu/amd: node has GPUs both with and without a UUID. With Flags=env_uuid, a job allocated a GPU without a UUID gets numeric indices for all of its GPUs.");
 		_log_capabilities();
 		discovery_logged = true;
 	}
