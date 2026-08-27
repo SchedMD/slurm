@@ -64,6 +64,8 @@ typedef struct http_con_s {
 	conmgr_fd_ref_t *con;
 	/* True to xfree() this pointer */
 	bool free_on_close;
+	/* True once a rejection response has been sent */
+	bool rejected;
 	const http_con_server_events_t *events;
 	void *arg; /* arbitrary pointer from caller */
 	http_parser_state_t *parser; /* http parser plugin state */
@@ -382,7 +384,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 						 (length + 1))))
 			return _send_reject(hcon, rc);
 
-		xassert(remaining_buf(request->content) >= nlength);
+		xassert(remaining_buf(request->content) >= (length + 1));
 		memmove((get_buf_data(request->content) +
 			 get_buf_offset(request->content)),
 			at, length);
@@ -393,7 +395,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 		/* final byte must in body must always be NULL terminated */
 		{
 			char *term = (get_buf_data(request->content) +
-				      get_buf_offset(request->content) + 1);
+				      get_buf_offset(request->content));
 			*term = '\0';
 		}
 	}
@@ -624,31 +626,40 @@ extern int http_con_send_response(http_con_t *hcon,
 static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 {
 	http_con_request_t *request = &hcon->request;
-	bool close_header = false;
 	const char *error = slurm_strerror(error_number);
 	const size_t error_len = strlen(error);
 	const buf_t body = SHADOW_BUF_INITIALIZER(error, error_len);
 
 	xassert(hcon->magic == MAGIC);
 
-	if (!_valid_http_version(request->http_version.major,
-				 request->http_version.minor)) {
+	if (hcon->rejected) {
 		/*
-		 * Default to HTTP/1.1 when version is invalid or failed to
-		 * parse for rejecting a request:
+		 * Callbacks reject and return the error, which the parser
+		 * hands back to _on_data(). Only respond once.
+		 */
+		log_flag(NET, "%s: [%s] Ignoring duplicate rejection: %s",
+			 __func__, conmgr_con_get_name(hcon->con),
+			 slurm_strerror(error_number));
+		return error_number;
+	}
+
+	hcon->rejected = true;
+
+	if ((!request->http_version.major && !request->http_version.minor) ||
+	    _valid_http_version(request->http_version.major,
+				request->http_version.minor)) {
+		/*
+		 * Default to HTTP/1.1 when version is missing, invalid or
+		 * failed to parse for rejecting a request:
 		 */
 		request->http_version.major = 1;
 		request->http_version.minor = 1;
 	}
 
-	close_header = (request->connection_close ||
-			_valid_http_version(request->http_version.major,
-					    request->http_version.minor));
-
+	/* The connection is always closed after a rejection */
 	(void) http_con_send_response(hcon,
 				      http_status_from_error(error_number),
-				      NULL, close_header, &body,
-				      MIME_TYPE_TEXT);
+				      NULL, true, &body, MIME_TYPE_TEXT);
 
 	/* ensure connection gets closed */
 	conmgr_con_queue_close(hcon->con);
