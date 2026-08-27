@@ -1132,6 +1132,7 @@ test_144_25  Test --gres-flags=enforce-links on a GRES configured by count
 test_144_26  Test --gres-flags=enforce-links with RestrictedCoresPerGPU
 test_144_27  Test --gres-flags=enforce-links with enforce-binding
 test_144_28  Test the energy plugin on a step node holding no GPU bitmap
+test_144_29  Test gres.conf Cores= binds GRES as a preference, not a constraint
 
 test_145_#   Testing --constraint and --prefer.
 ===============================================
