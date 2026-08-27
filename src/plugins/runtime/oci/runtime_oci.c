@@ -387,7 +387,7 @@ static bool _match_env(const data_t *data, void *needle)
 	const char *needle_name = needle;
 	char *name = NULL, *value;
 
-	if (!data_get_string_converted(data, &name)) {
+	if (data_get_string_converted(data, &name)) {
 		xfree(name);
 		return false;
 	}
@@ -398,6 +398,10 @@ static bool _match_env(const data_t *data, void *needle)
 		*value = '\0';
 
 	match = !xstrcmp(name, needle_name);
+
+	if (match)
+		debug3("%s: collapsing duplicate %s in /process/env",
+		       __func__, name);
 
 	xfree(name);
 
