@@ -702,6 +702,9 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->gpu_spec_bitmap;
 			node_state_rec->gpu_spec_bitmap = NULL;
 			node_ptr->tmp_disk = node_state_rec->tmp_disk;
+			if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION)
+				node_ptr->suspend_time_configured =
+					node_state_rec->suspend_time_configured;
 			xfree(node_ptr->mcs_label);
 			node_ptr->mcs_label = node_state_rec->mcs_label;
 			node_state_rec->mcs_label = NULL;
@@ -2476,7 +2479,7 @@ end:
 
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields
- *	consistent for Features, Gres and Weight
+ *	consistent for Features, Gres, Weight and SuspendTime
  * IN recover -
  *              0, 1 - use data from config record, built using slurm.conf
  *              2 = use data from node record, built from saved state
@@ -2500,6 +2503,19 @@ extern void restore_node_features(int recover)
 				node_ptr->weight = node_ptr->config_ptr->
 						   weight;
 			}
+		}
+		if ((recover == 2) && (node_ptr->suspend_time_configured !=
+				       node_ptr->config_ptr->suspend_time)) {
+			char tmp_buf[12];
+
+			info("Node %s: restoring SuspendTime(%s) from state, overriding slurm.conf",
+			     node_ptr->name,
+			     _suspend_time_str(
+				     node_ptr->suspend_time_configured,
+				     tmp_buf, sizeof(tmp_buf)));
+			_update_node_suspend_time(
+				node_ptr->name,
+				node_ptr->suspend_time_configured);
 		}
 		if (xstrcmp(node_ptr->config_ptr->feature, node_ptr->features)){
 			if (node_features_plugin_cnt == 0) {
