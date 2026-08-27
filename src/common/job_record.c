@@ -2381,6 +2381,39 @@ extern void job_record_pack_details_common(
 	}
 }
 
+/*
+ * Report the highest requested priority for an ordinary pending job.
+ * IN job_ptr - job whose reportable priority is computed
+ * IN for_state - true when packing for the state file, false for clients
+ * RET priority value to report
+ */
+static uint32_t _priority_to_report(job_record_t *job_ptr, bool for_state)
+{
+	uint32_t best = 0;
+	size_t cnt = 0;
+
+	/* Preserve held, administrator-set and state-file priorities. */
+	if (for_state || !job_ptr->priority || job_ptr->direct_set_prio ||
+	    !IS_JOB_PENDING(job_ptr) || !job_ptr->prio_mult ||
+	    !job_ptr->prio_mult->priority_array)
+		return job_ptr->priority;
+
+	/* Partition PriorityTier order does not imply priority order. */
+	cnt = (size_t) MAX(list_count(job_ptr->part_ptr_list), 1) *
+	      MAX(list_count(job_ptr->qos_list), 1);
+	cnt = MIN(cnt,
+		  xsize(job_ptr->prio_mult->priority_array) / sizeof(uint32_t));
+	if (!cnt)
+		return job_ptr->priority;
+	best = job_ptr->prio_mult->priority_array[0];
+	for (size_t i = 1; i < cnt; i++) {
+		if (job_ptr->prio_mult->priority_array[i] > best)
+			best = job_ptr->prio_mult->priority_array[i];
+	}
+
+	return best;
+}
+
 extern void job_record_pack_common(job_record_t *dump_job_ptr,
 				   bool for_state,
 				   buf_t *buffer,
@@ -2446,7 +2479,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
-		pack32(dump_job_ptr->priority, buffer);
+		pack32(_priority_to_report(dump_job_ptr, for_state), buffer);
 		pack32(dump_job_ptr->profile, buffer);
 
 		pack8(dump_job_ptr->reboot, buffer);
@@ -2537,7 +2570,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
-		pack32(dump_job_ptr->priority, buffer);
+		pack32(_priority_to_report(dump_job_ptr, for_state), buffer);
 		pack32(dump_job_ptr->profile, buffer);
 
 		pack8(dump_job_ptr->reboot, buffer);
@@ -2627,7 +2660,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
-		pack32(dump_job_ptr->priority, buffer);
+		pack32(_priority_to_report(dump_job_ptr, for_state), buffer);
 		pack32(dump_job_ptr->profile, buffer);
 
 		pack8(dump_job_ptr->reboot, buffer);
@@ -2719,7 +2752,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		pack_time(dump_job_ptr->preempt_time, buffer);
 		pack_time(dump_job_ptr->pre_sus_time, buffer);
-		pack32(dump_job_ptr->priority, buffer);
+		pack32(_priority_to_report(dump_job_ptr, for_state), buffer);
 		pack32(dump_job_ptr->profile, buffer);
 
 		pack8(dump_job_ptr->reboot, buffer);
