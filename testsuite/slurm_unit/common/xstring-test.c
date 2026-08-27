@@ -148,6 +148,86 @@ START_TEST(test_try_xstrndup)
 
 END_TEST
 
+START_TEST(test_try_xstrdup_printf)
+{
+	int i;
+	char *str = NULL, *xstr = NULL;
+	char pad[8192];
+
+	memset(pad, 'x', sizeof(pad) - 1);
+	pad[sizeof(pad) - 1] = '\0';
+
+	/*
+	 * A result that fits the initial allocation. _vprintf() starts at 100
+	 * bytes, so nothing shorter than that ever reallocates.
+	 */
+	str = try_xstrdup_printf("%s: %s", "Connection", "Close");
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "Connection: Close");
+	ck_assert_int_ge(xsize(str), strlen(str) + 1);
+	xfree(str);
+
+	/* an empty result must not be NULL, so NULL only ever means ENOMEM */
+	str = try_xstrdup_printf("%s", "");
+	ck_assert(str != NULL);
+	ck_assert_str_eq(str, "");
+	xfree(str);
+
+	/*
+	 * A result larger than the initial allocation must grow rather than
+	 * truncate. This is the only path that reallocates.
+	 */
+	str = try_xstrdup_printf("%s", pad);
+	ck_assert(str != NULL);
+	ck_assert_int_eq(strlen(str), sizeof(pad) - 1);
+	ck_assert_str_eq(str, pad);
+	ck_assert_int_ge(xsize(str), strlen(str) + 1);
+	xfree(str);
+
+	/* lengths either side of the initial allocation must not truncate */
+	for (i = 90; i <= 110; i++) {
+		char n_pad[128];
+
+		memset(n_pad, 'y', i);
+		n_pad[i] = '\0';
+
+		str = try_xstrdup_printf("%s", n_pad);
+		ck_assert(str != NULL);
+		ck_assert_str_eq(str, n_pad);
+		xfree(str);
+	}
+
+	/*
+	 * The header from the report that prompted try_xstrdup_printf(): it is
+	 * exactly MAX_HEADER_BYTES, the first length http_con.c could not fit
+	 * in its stack buffer. Kept to document the reproducer only. It is
+	 * still under the 100 byte initial allocation, so it reaches no path
+	 * the first case above does not, and it does not exercise
+	 * _write_fmt_header()'s heap fallback at all.
+	 */
+	str = try_xstrdup_printf(
+		"%s: %s%s", "Location",
+		"http://slurmctld1.aion-cluster.uni.lux:6817/metrics/jobs-users-accts",
+		"\r\n");
+	ck_assert(str != NULL);
+	ck_assert_str_eq(
+		str,
+		"Location: http://slurmctld1.aion-cluster.uni.lux:6817/metrics/jobs-users-accts\r\n");
+	xfree(str);
+
+	/* results must match xstrdup_printf(), including the size allocated */
+	str = try_xstrdup_printf("%s-%d", pad, 42);
+	xstr = xstrdup_printf("%s-%d", pad, 42);
+	ck_assert(str != NULL);
+	ck_assert(xstr != NULL);
+	ck_assert_str_eq(str, xstr);
+	ck_assert_int_eq(xsize(str), xsize(xstr));
+	xfree(str);
+	xfree(xstr);
+}
+
+END_TEST
+
 Suite *xstring_suite(void)
 {
 	Suite *s = suite_create("xstring");
@@ -155,6 +235,7 @@ Suite *xstring_suite(void)
 	tcase_add_loop_test(tc_core, test_xstrtrim, 0 , sizeof(xstrtrim_data) /
 			    sizeof(xstrtrim_data_t) );
 	tcase_add_test(tc_core, test_try_xstrndup);
+	tcase_add_test(tc_core, test_try_xstrdup_printf);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
