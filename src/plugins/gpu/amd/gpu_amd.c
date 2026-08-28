@@ -49,6 +49,13 @@
 	"PCI_SLOT_NAME=%" XSTRINGIFY(GPU_AMD_PCI_NAME_MAX) "s"
 #define GPU_AMD_SYSFS_BUF 256
 
+/* The slurmd configuration, defined for real by slurmd and slurmstepd. */
+#if defined(__APPLE__)
+extern slurmd_conf_t *conf __attribute__((weak_import));
+#else
+slurmd_conf_t *conf = NULL;
+#endif
+
 /* A card kept by discovery. */
 typedef struct {
 	int card; /* DRM card number */
@@ -294,6 +301,65 @@ static char *_read_card_model(int card_num)
 }
 
 /*
+ * Read a card's CPU affinity from sysfs (device/local_cpulist) and convert it
+ * from machine format to Slurm's abstract format.
+ *
+ * xcpuinfo_mac_to_abs (IN) Converts a machine CPU range to abstract format.
+ * card_num (IN) The DRM card number.
+ * enabled_cpus (IN) The CPUs Slurm schedules, masking the list, or NULL to
+ *	keep every listed CPU.
+ * cores (OUT) The abstract core range (caller frees), NULL when the affinity
+ *	could not be resolved.
+ *
+ * Returns the machine CPU affinity bitmap (caller frees), NULL when the
+ * affinity could not be resolved.
+ */
+static bitstr_t *_set_cpu_affinity(int (*xcpuinfo_mac_to_abs)(char *mac,
+							      char **abs),
+				   int card_num, bitstr_t *enabled_cpus,
+				   char **cores)
+{
+	char *path = NULL, *line = NULL, *mac_range = NULL;
+	bitstr_t *cpus_bitmap = NULL;
+
+	xassert(xcpuinfo_mac_to_abs);
+	xassert(cores);
+
+	*cores = NULL;
+
+	path = _card_device_path(card_num, "local_cpulist");
+	if (!(line = _read_sysfs_line(path))) {
+		error("%s: unable to read %s", __func__, path);
+		xfree(path);
+		return NULL;
+	}
+
+	cpus_bitmap = bit_alloc(MAX_CPUS);
+	if (bit_unfmt(cpus_bitmap, line)) {
+		error("%s: unable to parse CPU list \"%s\" from %s",
+		      __func__, line, path);
+		FREE_NULL_BITMAP(cpus_bitmap);
+		xfree(line);
+		xfree(path);
+		return NULL;
+	}
+	xfree(line);
+	xfree(path);
+
+	if (enabled_cpus)
+		bit_and(cpus_bitmap, enabled_cpus);
+
+	mac_range = bit_fmt_full(cpus_bitmap);
+	if (xcpuinfo_mac_to_abs(mac_range, cores)) {
+		error("%s: machine to abstract conversion failed", __func__);
+		FREE_NULL_BITMAP(cpus_bitmap);
+	}
+	xfree(mac_range);
+
+	return cpus_bitmap;
+}
+
+/*
  * Emit one GRES from its already-resolved fields. The caller keeps ownership
  * of every pointer argument.
  *
@@ -301,15 +367,21 @@ static char *_read_card_model(int card_num)
  * gres_list (IN/OUT) The system GRES list to append to.
  * file (IN) The GRES device file.
  * type_name (IN) The GRES type name, or NULL to emit an untyped GRES.
+ * cores (IN) The abstract core affinity range, or NULL when unresolved.
+ * cpus_bitmap (IN) The machine CPU affinity bitmap, or NULL when unresolved.
  * links (IN) The GRES Links vector.
  */
 static void _emit_gpu_gres(uint32_t cpu_cnt, list_t *gres_list, char *file,
-			   char *type_name, char *links)
+			   char *type_name, char *cores, bitstr_t *cpus_bitmap,
+			   char *links)
 {
 	gres_slurmd_conf_t gres_slurmd_conf = {
 		.config_flags = (GRES_CONF_ENV_RSMI | GRES_CONF_AUTODETECT),
 		.count = 1,
 		.cpu_cnt = cpu_cnt,
+		/* The GRES cpus field carries the abstract core range. */
+		.cpus = cores,
+		.cpus_bitmap = cpus_bitmap,
 		.file = file,
 		.links = links,
 		.name = "gpu",
@@ -441,6 +513,7 @@ static int _discover_gpus(void)
 static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 {
 	list_t *gres_list_system = NULL;
+	bitstr_t *enabled_cpus = NULL;
 
 	xassert(node_config);
 
@@ -449,8 +522,12 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 
 	gres_list_system = list_create(destroy_gres_slurmd_conf);
 
+	/* Mask out E-cores, which local_cpulist lists but slurmd may not. */
+	enabled_cpus = gpu_common_get_enabled_cpus();
+
 	for (int i = 0; i < amdgpu_ncards; i++) {
-		char *file = NULL, *links = NULL;
+		char *file = NULL, *cores = NULL, *links = NULL;
+		bitstr_t *cpus_bitmap = NULL;
 
 		debug2("GPU(amd) card%d:", amdgpu_cards[i].card);
 		debug2("    Name: %s", amdgpu_cards[i].name);
@@ -467,16 +544,32 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 				      GPU_AMD_DEV_DIR, amdgpu_cards[i].card);
 		debug2("    Device File: %s", file);
 
+		cpus_bitmap =
+			_set_cpu_affinity(node_config->xcpuinfo_mac_to_abs,
+					  amdgpu_cards[i].card, enabled_cpus,
+					  &cores);
+		if (cpus_bitmap) {
+			char *mac_range = bit_fmt_full(cpus_bitmap);
+
+			debug2("    CPU Affinity Range - Machine: %s", mac_range);
+			xfree(mac_range);
+		}
+		debug2("    Core Affinity Range - Abstract: %s", cores);
+
 		/* Links: emit-order placeholder */
 		links = gres_links_create_empty(i, amdgpu_ncards);
 		debug2("    Links: %s", links);
 
 		_emit_gpu_gres(node_config->cpu_cnt, gres_list_system, file,
-			       amdgpu_cards[i].name, links);
+			       amdgpu_cards[i].name, cores, cpus_bitmap, links);
 
+		xfree(cores);
+		FREE_NULL_BITMAP(cpus_bitmap);
 		xfree(file);
 		xfree(links);
 	}
+
+	FREE_NULL_BITMAP(enabled_cpus);
 
 	/*
 	 * Log once per process: with AutoDetect=full the plugin probe and the
