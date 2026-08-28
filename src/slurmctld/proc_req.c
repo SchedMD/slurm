@@ -2703,7 +2703,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 			(request->show_flags & SHOW_ALL) || privileged;
 		pack_step_args_t args = {0};
 
-		buffer = init_buf(BUF_SIZE);
+		buffer = init_buf(INFINITE);
 
 		args.step_id = &request->step_id,
 		args.show_flags = request->show_flags,
