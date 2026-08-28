@@ -327,7 +327,7 @@ static int _stepd_send_to_slurmd(int fd, slurm_msg_t *req, int timeout,
 				 uint16_t proxy_type)
 {
 	uint32_t length_position, end_position;
-	buf_t *buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(INFINITE);
 
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 
