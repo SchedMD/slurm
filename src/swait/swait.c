@@ -292,6 +292,48 @@ static int _resolve_stepmgr_addr(const char *node, slurm_addr_t *addr)
 }
 
 /*
+ * Print one step's completion to stdout unless --quiet.
+ * IN body - per-step notification body (exit_code NO_VAL means never-launched)
+ */
+static void _print_step(srun_steps_drained_msg_t *body)
+{
+	char *line = NULL;
+	char id_str[64];
+	uint16_t exit_status = 0, term_sig = 0;
+	bool launched = false;
+	const char *reason = NULL;
+
+	if (opt.quiet || !body)
+		return;
+
+	launched = (body->exit_code != NO_VAL);
+	if (launched)
+		exit_code_decode(body->exit_code, &exit_status, &term_sig);
+
+	/*
+	 * Show a reason only for a terminal-failure state (job states past
+	 * JOB_COMPLETE, e.g. NODE_FAIL, TIMEOUT); a normally-completed step
+	 * has none.
+	 */
+	if ((body->state & JOB_STATE_BASE) > JOB_COMPLETE)
+		reason = job_state_string(body->state & JOB_STATE_BASE);
+
+	log_build_step_id_str(&body->step_id, id_str, sizeof(id_str),
+			      STEP_ID_FLAG_NONE);
+	line = xstrdup(id_str);
+	if (launched)
+		xstrfmtcat(line, " code=%u:%u", exit_status, term_sig);
+	else
+		xstrcat(line, " never-launched");
+	if (reason)
+		xstrfmtcat(line, " reason=%s", reason);
+
+	printf("%s\n", line);
+	fflush(stdout);
+	xfree(line);
+}
+
+/*
  * Print the whole-set drain summary to stdout unless --quiet.
  * IN body - drain terminator body; body->step_id.job_id identifies the job
  */
@@ -321,8 +363,8 @@ static void _print_drain(srun_steps_drained_msg_t *body)
 
 /*
  * conmgr on-message callback: authenticate, dispatch on msg_type, free msg.
- * On SRUN_STEPS_DRAINED, prints the drain summary, sets exit_decided, and
- * requests conmgr shutdown.
+ * On SRUN_STEPS_DRAINED, renders the completion per mode, sets
+ * exit_decided, and requests conmgr shutdown.
  * IN args      - conmgr callback args
  * IN msg       - unpacked message; freed before return
  * IN unpack_rc - non-zero if message unpack failed
@@ -356,13 +398,31 @@ static int _on_msg(conmgr_callback_args_t args, slurm_msg_t *msg, int unpack_rc,
 
 	switch (msg->msg_type) {
 	case SRUN_STEPS_DRAINED:
-		_print_drain(msg->data);
+	{
+		srun_steps_drained_msg_t *body = msg->data;
+
+		/* Whole-set / per-step drain: final line, then stop. */
+		if (opt.mode != STEPS_DRAINED_SUB_STEP) {
+			_print_drain(body);
+		} else if (body && (body->step_id.step_id != NO_VAL)) {
+			_print_step(body);
+		} else {
+			/*
+			 * The set drained without the target being reported:
+			 * it never launched, or it ended and was reaped before
+			 * the subscribe. No result was recorded, so print none.
+			 */
+			verbose("%ps was not reported before the set drained",
+				&opt.target);
+		}
+
 		verbose("wait satisfied; shutting down");
 		slurm_mutex_lock(&exit_lock);
 		exit_decided = true;
 		slurm_mutex_unlock(&exit_lock);
 		conmgr_request_shutdown();
 		break;
+	}
 	default:
 		debug("swait: unexpected msg type %d/%s",
 		      msg->msg_type, rpc_num2string(msg->msg_type));
@@ -432,6 +492,7 @@ static int _send_subscribe(const char *node, const char *host, uint16_t port,
 
 	data = (steps_drained_sub_msg_t) {
 		.host = (char *) host,
+		.mode = opt.mode,
 		.port = port,
 		.step_id = opt.target,
 		.tls_cert = (char *) cert,
@@ -562,7 +623,8 @@ int main(int argc, char **argv)
 
 	setup_rc = _setup_steps_drained_listener();
 	if (setup_rc == ESLURM_STEPS_DRAINED) {
-		verbose("steps already drained; exiting without waiting");
+		/* No result is recorded once a step is reaped, so print none. */
+		verbose("target already ended; exiting without waiting");
 	} else if (setup_rc == EAGAIN) {
 		error("stepmgr %s subscriber slots full; try again later",
 		      stepmgr_node);

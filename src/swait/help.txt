@@ -1,6 +1,9 @@
-Usage: swait [OPTIONS] [<jobid>[_<task>] | s<sluid>]
+Usage: swait [OPTIONS] [<jobid>[_<task>] | s<sluid>][.<stepid>]
 
-Block until a job's running steps and pending --async steps complete.
+Block until a job's steps complete.
+
+With no step id, swait waits until the job's running and pending --async
+steps have all drained. With <jobid>.<stepid> it waits for that one step.
 
 If no job id is given, swait reads SLURM_JOB_SLUID, then SLURM_JOB_ID.
 The target job must have been launched with stepmgr enabled.
@@ -19,6 +22,6 @@ Help options:
       --usage             display a brief summary of swait options
 
 Exit status:
-  0  The wait completed (steps drained).
+  0  The wait completed (steps drained, or the target step was reported).
   1  swait encountered an error.
   2  --timeout expired.
