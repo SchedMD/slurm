@@ -280,3 +280,39 @@ def test_multi_qos_job_priority_displayed(setup_qos_account, qos_req):
     assert (
         int(squeue_prio) == expected
     ), f"squeue should report {expected} for a '{qos_req}' job, got {squeue_prio}"
+
+
+def test_priority_display_updated_on_qos_change(setup_qos_account):
+    """Adding a higher-priority QOS updates the pending job's reported priority."""
+    fillers = [_submit(mid_qos, name="filler") for _ in range(node_cpus)]
+    for job_id in fillers:
+        atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    job_id = _submit(f"{mid_qos},{low_qos}", name="qos-update")
+    atf.wait_for_job_state(job_id, "PENDING", fatal=True)
+    _wait_for_sched_cycles(2)
+    assert (
+        atf.get_job_parameter(job_id, "Priority") == 50 * 10000
+    ), f"a '{mid_qos},{low_qos}' job should report {mid_qos}'s priority"
+
+    # Add a QOS with a higher priority than either original QOS.
+    new_qos = f"{high_qos},{mid_qos},{low_qos}"
+    atf.run_command(
+        f"scontrol update jobid={job_id} QoS={new_qos}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert (
+        atf.get_job_parameter(job_id, "QOS") == new_qos
+    ), "the job should report the QOS list it was updated to"
+
+    # Wait for the reported priority to reflect the updated QOS list.
+    expected = 100 * 10000
+    priority = None
+    for _ in atf.timer(timeout=120, poll_interval=5):
+        priority = atf.get_job_parameter(job_id, "Priority")
+        if priority == expected:
+            break
+    assert (
+        priority == expected
+    ), f"after adding {high_qos} the job should report {expected}, got {priority}"
