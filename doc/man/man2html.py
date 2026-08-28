@@ -3,7 +3,6 @@
 import re
 import sys
 import os
-import codecs
 
 canonical_url = "https://slurm.schedmd.com/"
 
@@ -277,8 +276,8 @@ for f in sys.argv[4:]:
 for filename in files:
     newfilename = filename[:-6] + ".html"
     print("Converting", filename, "->", newfilename)
-    shtml = codecs.open(filename, "r", encoding="utf-8")
-    html = codecs.open(newfilename, "w", encoding="utf-8")
+    shtml = open(filename, "r", encoding="utf-8")
+    html = open(newfilename, "w", encoding="utf-8")
 
     for line in shtml.readlines():
         result = first_header_regex.match(line)
