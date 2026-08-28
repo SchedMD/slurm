@@ -92,11 +92,6 @@ static persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 
 	dbd_conn->shutdown = &ext_shutdown;
 
-	if (_register_external_dbd(dbd_conn)) {
-		dbd_conn_close(&dbd_conn);
-		dbd_conn = NULL;
-	}
-
 	return dbd_conn;
 }
 
@@ -119,7 +114,7 @@ static int _find_ext_conn(void *x, void *key)
 	return 0;
 }
 
-static void _create_ext_conns(void)
+static void _create_ext_conns(bool register_new)
 {
 	char *ext_hosts;
 	char *tok = NULL, *save_ptr = NULL;
@@ -144,10 +139,15 @@ static void _create_ext_conns(void)
 		 * connections are preserved and old can be removed.
 		 */
 		if (!ext_conns_list ||
-		    !(dbd_conn = list_remove_first(ext_conns_list,
-						   _find_ext_conn,
-						   &tmp_conn)))
+		    !(dbd_conn =
+			      list_remove_first(ext_conns_list, _find_ext_conn,
+						&tmp_conn))) {
 			dbd_conn = _create_slurmdbd_conn(tok, port);
+			if (register_new && _register_external_dbd(dbd_conn)) {
+				_destroy_external_host_conns(dbd_conn);
+				dbd_conn = NULL;
+			}
+		}
 
 		if (dbd_conn)
 			list_append(new_list, dbd_conn);
@@ -235,7 +235,7 @@ extern void ext_dbd_init(void)
 		return;
 
 	slurm_mutex_lock(&ext_conns_mutex);
-	_create_ext_conns();
+	_create_ext_conns(false);
 	if (ext_conns_list)
 		_create_ext_thread();
 	slurm_mutex_unlock(&ext_conns_mutex);
@@ -252,7 +252,7 @@ extern void ext_dbd_register(void)
 	 * points at the active controller.
 	 */
 	slurm_mutex_lock(&ext_conns_mutex);
-	_create_ext_conns();
+	_create_ext_conns(false);
 	if (ext_conns_list) {
 		list_delete_all(ext_conns_list, _for_each_register_ext_conn,
 				NULL);
@@ -282,7 +282,8 @@ extern void ext_dbd_reconfig(void)
 		return;
 
 	slurm_mutex_lock(&ext_conns_mutex);
-	_create_ext_conns();
+	/* Register only new AccountingStorageExternalHost connections. */
+	_create_ext_conns(true);
 	if (ext_thread_tid && !ext_conns_list)
 		destroy = true;
 	else if (!ext_thread_tid && ext_conns_list)
