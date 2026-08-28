@@ -2155,7 +2155,7 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	job_msg.msg_type         = RESPONSE_JOB_INFO;
 	job_msg.data = job_buffer;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if ((rc = pack_msg(&job_msg, buffer))) {
 		error("%s: packing %s for %s failed: %s", __func__,
 		      rpc_num2string(job_msg.msg_type), sib_name,
