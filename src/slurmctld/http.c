@@ -309,7 +309,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
 			return _reply_error(hcon, name, request, EPERM);
 
-		body = init_buf(BUF_SIZE);
+		body = init_buf(INFINITE);
 	}
 
 	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
