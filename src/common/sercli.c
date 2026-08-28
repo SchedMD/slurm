@@ -457,7 +457,7 @@ extern int sercli_dump_str(data_parser_type_t type, void *db_conn, void *src,
 					      db_conn))) {
 		error("%s->%s: assigning database connection failed: %s",
 		      caller, __func__, slurm_strerror(rc));
-	} else if (!(buf = init_buf(BUF_SIZE))) {
+	} else if (!(buf = init_buf(INFINITE))) {
 		rc = ENOMEM;
 		error("%s->%s: unable to allocate memory for buffer",
 		      caller, __func__);
