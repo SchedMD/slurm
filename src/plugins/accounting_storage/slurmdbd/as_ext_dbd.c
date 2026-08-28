@@ -64,8 +64,26 @@ static void _destroy_external_host_conns(void *object)
 	slurm_persist_conn_destroy(pcon);
 }
 
-/* don't connect now as it will block the ctld */
-extern persist_conn_t *_create_slurmdbd_conn(char *host, int port)
+/*
+ * Register this slurmctld with an external slurmdbd connection.
+ * Returns true if the external cluster rejected the registration (access
+ * denied) and the connection should be dropped.
+ */
+static bool _register_external_dbd(persist_conn_t *dbd_conn)
+{
+	xassert(dbd_conn->flags & PERSIST_FLAG_EXT_DBD);
+
+	if (clusteracct_storage_p_register_ctld(dbd_conn,
+						slurm_conf.slurmctld_port) ==
+	    ESLURM_ACCESS_DENIED) {
+		error("Not allowed to register to external cluster, not going to try again.");
+		return true;
+	}
+
+	return false;
+}
+
+static persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 {
 	uint16_t persist_conn_flags = PERSIST_FLAG_EXT_DBD;
 	persist_conn_t *dbd_conn =
@@ -73,10 +91,7 @@ extern persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 
 	dbd_conn->shutdown = &ext_shutdown;
 
-	if ((clusteracct_storage_p_register_ctld(dbd_conn,
-						 slurm_conf.slurmctld_port) ==
-	     ESLURM_ACCESS_DENIED)) {
-		error("Not allowed to register to external cluster, not going to try again.");
+	if (_register_external_dbd(dbd_conn)) {
 		dbd_conn_close(&dbd_conn);
 		dbd_conn = NULL;
 	}
@@ -143,23 +158,16 @@ static void _create_ext_conns(void)
 
 static int _for_each_check_ext_conn(void *x, void *arg)
 {
-	bool delete = false;
 	persist_conn_t *dbd_conn = x;
 
 	if (slurm_persist_conn_writeable(dbd_conn) == -1) {
-		int rc;
 		slurm_persist_conn_reopen(dbd_conn);
 
 		/* slurm_persist_send_msg will reconnect */
-		rc = clusteracct_storage_p_register_ctld(
-			dbd_conn, slurm_conf.slurmctld_port);
-		if (rc == ESLURM_ACCESS_DENIED) {
-			error("Not allowed to register to external cluster, not going to try again.");
-			delete = true;
-		}
+		return _register_external_dbd(dbd_conn);
 	}
 
-	return delete;
+	return false;
 }
 
 static void _check_ext_conns(void)
