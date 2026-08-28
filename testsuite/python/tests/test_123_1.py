@@ -50,6 +50,31 @@ REJECT_MSG = {
 }
 
 
+# Skip rather than xfail: the old advance landed on the right day for some
+# parameters on some days of the week, so an xfail would XPASS.
+ADVANCE_FIX_REASON = (
+    "Ticket 17310: WEEKDAY/WEEKEND advance counted days from the current day "
+    "instead of the reservation start day until 26.11"
+)
+
+# Interval each fixed interval reoccurring flag advances by.
+ADVANCE_DELTA = {
+    "HOURLY": datetime.timedelta(hours=1),
+    "DAILY": datetime.timedelta(days=1),
+    "WEEKLY": datetime.timedelta(days=7),
+}
+
+# Days a reoccurring reservation must advance when its current occurrence is
+# skipped. A WEEKDAY reservation jumps over the weekend, a WEEKEND one jumps
+# over the working week.
+SKIP_DELTA = {
+    ("WEEKDAY", "Monday"): 1,
+    ("WEEKDAY", "Friday"): 3,
+    ("WEEKEND", "Saturday"): 1,
+    ("WEEKEND", "Sunday"): 6,
+}
+
+
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_accounting(modify=True)
@@ -481,10 +506,16 @@ def test_create_reoccurring_good_start_day(flag, day, cleanup_resv):
     """Verify that a WEEKDAY or WEEKEND reservation can be created with a start
     time inside of the days covered by the flag"""
 
+    # Resolve the start date once. next_date() reads today(), and the "always
+    # in the future" rule moves the answer a whole week if the local date rolls
+    # over between two calls, which would make the assertions below disagree
+    # with the reservation that was actually created.
+    start_date = next_date(day)
+
     logging.info(f"Create a {flag} reservation starting on a {day}")
     atf.run_command(
         "scontrol create reservationname=resv1 "
-        f"user={atf.properties['test-user']} start={next_day(day)} "
+        f"user={atf.properties['test-user']} start={format_start(start_date)} "
         f"duration=1 nodecnt=1 flags={flag}",
         user=atf.properties["slurm-user"],
         fatal=True,
@@ -493,6 +524,13 @@ def test_create_reoccurring_good_start_day(flag, day, cleanup_resv):
     logging.info(f"Assert the reservation has the {flag} flag")
     flags = atf.get_reservation_parameter("resv1", "Flags", default="") or ""
     assert flag in flags, f"Reservation resv1 should have the {flag} flag, got {flags}"
+
+    logging.info(f"Assert the reservation still starts on the requested {day}")
+    expected = format_start(start_date)
+    start_time = atf.get_reservation_parameter("resv1", "StartTime", default="")
+    assert (
+        start_time == expected
+    ), f"Reservation resv1 should start at {expected}, got StartTime={start_time}"
 
 
 @pytest.mark.xfail(
@@ -562,6 +600,202 @@ def test_create_reoccurring_good_start_day_over_midnight(flag, day, cleanup_resv
     assert (
         end_time == expected_end
     ), f"Reservation resv1 should end at {expected_end}, got EndTime={end_time}"
+
+
+@pytest.mark.skipif(CTLD_VERSION < (26, 11), reason=ADVANCE_FIX_REASON)
+@pytest.mark.parametrize(
+    "flag, day",
+    [
+        ("WEEKDAY", "Monday"),
+        ("WEEKDAY", "Friday"),
+        ("WEEKEND", "Saturday"),
+        ("WEEKEND", "Sunday"),
+    ],
+)
+def test_reoccurring_advance_start_day(flag, day, cleanup_resv):
+    """Verify that a skipped WEEKDAY or WEEKEND reservation advances to a day
+    covered by its flag, at the same time of day.
+
+    This cannot be an xfail. Before 26.11 the advance counted from the current
+    day, so it landed on the right day for some of the parameters on some days
+    of the week, and an xfail would XPASS.
+    """
+
+    # Resolve the start date once; see test_create_reoccurring_good_start_day.
+    start_date = next_date(day)
+
+    logging.info(f"Create a {flag} reservation starting on a {day}")
+    atf.run_command(
+        "scontrol create reservationname=resv1 "
+        f"user={atf.properties['test-user']} start={format_start(start_date)} "
+        f"duration=1 nodecnt=1 flags={flag}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Skipping advances the reservation right away, so no wait is needed. The
+    # start day and the day this runs on are independent, which is what catches
+    # an advance that counts days from the wrong one.
+    logging.info("Skip the current occurrence to make the reservation advance")
+    atf.run_command(
+        "scontrol update reservation=resv1 skip",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Compare the whole timestamp, not just the date. WEEKDAY and WEEKEND are
+    # documented to repeat "at the same time", so an advance that lands on the
+    # right day at the wrong hour is still wrong.
+    advanced = start_date + datetime.timedelta(days=SKIP_DELTA[(flag, day)])
+    expected = format_start(advanced)
+
+    logging.info(f"Assert the next occurrence starts at {expected}")
+    start_time = atf.get_reservation_parameter("resv1", "StartTime", default="")
+    assert (
+        start_time == expected
+    ), f"Reservation resv1 should advance to {expected}, got StartTime={start_time}"
+
+
+@pytest.mark.skipif(CTLD_VERSION < (26, 11), reason=ADVANCE_FIX_REASON)
+@pytest.mark.parametrize(
+    "flag, day",
+    [
+        ("WEEKDAY", "Friday"),
+        ("WEEKEND", "Sunday"),
+    ],
+)
+def test_reoccurring_advance_over_midnight(flag, day, cleanup_resv):
+    """Verify that an occurrence which ends on the next day advances both its
+    start and its end, and lands at the same time of day.
+
+    start_time and end_time are advanced by separate calls, so an advance that
+    moves one and not the other silently resizes the occurrence.
+    """
+
+    # 23:00 for four hours, so the occurrence ends at 03:00 the following day
+    # and the end day is never the start day. The tests above all start and
+    # end within one day, so only this one separates the two.
+    start_date = next_date(day)
+    start = format_start(start_date, "23:00:00")
+
+    logging.info(f"Create a {flag} reservation starting on a {day} at 23:00")
+    atf.run_command(
+        "scontrol create reservationname=resv1 "
+        f"user={atf.properties['test-user']} start={start} "
+        f"duration=240 nodecnt=1 flags={flag}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    logging.info("Skip the current occurrence to make the reservation advance")
+    atf.run_command(
+        "scontrol update reservation=resv1 skip",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    advanced = start_date + datetime.timedelta(days=SKIP_DELTA[(flag, day)])
+    expected_start = format_start(advanced, "23:00:00")
+    expected_end = format_start(advanced + datetime.timedelta(days=1), "03:00:00")
+
+    logging.info(f"Assert the next occurrence starts at {expected_start}")
+    start_time = atf.get_reservation_parameter("resv1", "StartTime", default="")
+    assert (
+        start_time == expected_start
+    ), f"Reservation resv1 should advance to {expected_start}, got {start_time}"
+
+    # start_time and end_time are advanced by separate calls, so check both. An
+    # advance that moves one and not the other silently resizes the occurrence.
+    logging.info(f"Assert the next occurrence ends at {expected_end}")
+    end_time = atf.get_reservation_parameter("resv1", "EndTime", default="")
+    assert (
+        end_time == expected_end
+    ), f"Reservation resv1 should end at {expected_end}, got {end_time}"
+
+
+@pytest.mark.skipif(CTLD_VERSION < (26, 11), reason=ADVANCE_FIX_REASON)
+@pytest.mark.parametrize(
+    "flag, day, offsets",
+    [
+        # Thursday -> Friday -> Monday. The second advance has to count from
+        # Friday, the +3 branch, not from Thursday again.
+        ("WEEKDAY", "Thursday", (1, 4)),
+        # Saturday -> Sunday -> Saturday. The second advance has to count from
+        # Sunday, the +6 branch.
+        ("WEEKEND", "Saturday", (1, 7)),
+    ],
+)
+def test_reoccurring_advance_twice(flag, day, offsets, cleanup_resv):
+    """Verify that a reoccurring reservation still advances correctly on its
+    second advance, counting from the day it landed on rather than the day it
+    was created on"""
+
+    start_date = next_date(day)
+
+    logging.info(f"Create a {flag} reservation starting on a {day}")
+    atf.run_command(
+        "scontrol create reservationname=resv1 "
+        f"user={atf.properties['test-user']} start={format_start(start_date)} "
+        f"duration=1 nodecnt=1 flags={flag}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # _advance_resv_time() re-anchors start_time_first on every advance. The
+    # tests above skip once, which cannot tell that apart from an advance that
+    # keeps counting from the original day. Without the re-anchor a WEEKDAY
+    # reservation would stay on its second occurrence forever.
+    for offset in offsets:
+        logging.info("Skip the current occurrence to make the reservation advance")
+        atf.run_command(
+            "scontrol update reservation=resv1 skip",
+            user=atf.properties["slurm-user"],
+            fatal=True,
+        )
+
+        expected = format_start(start_date + datetime.timedelta(days=offset))
+
+        logging.info(f"Assert the occurrence starts at {expected}")
+        start_time = atf.get_reservation_parameter("resv1", "StartTime", default="")
+        assert (
+            start_time == expected
+        ), f"Reservation resv1 should advance to {expected}, got {start_time}"
+
+
+@pytest.mark.parametrize("flag", ["HOURLY", "DAILY", "WEEKLY"])
+@pytest.mark.parametrize("day", ["Monday", "Saturday"])
+def test_reoccurring_advance_other_flags(flag, day, cleanup_resv):
+    """Verify that the fixed interval reoccurring flags advance by their own
+    interval, from any start day. They share _advance_resv_time() with WEEKDAY
+    and WEEKEND, and carry no start day rule of their own."""
+
+    advance = ADVANCE_DELTA[flag]
+    start_dt = datetime.datetime.combine(next_date(day), datetime.time(10))
+
+    logging.info(f"Create a {flag} reservation starting on a {day}")
+    atf.run_command(
+        "scontrol create reservationname=resv1 "
+        f"user={atf.properties['test-user']} "
+        f"start={start_dt.strftime('%Y-%m-%dT%H:%M:%S')} "
+        f"duration=1 nodecnt=1 flags={flag}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    logging.info("Skip the current occurrence to make the reservation advance")
+    atf.run_command(
+        "scontrol update reservation=resv1 skip",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    expected = (start_dt + advance).strftime("%Y-%m-%dT%H:%M:%S")
+
+    logging.info(f"Assert the next occurrence starts at {expected}")
+    start_time = atf.get_reservation_parameter("resv1", "StartTime", default="")
+    assert (
+        start_time == expected
+    ), f"Reservation resv1 should advance to {expected}, got StartTime={start_time}"
 
 
 @pytest.mark.xfail(
