@@ -112,6 +112,7 @@ typedef enum {
 
 /* Current supported cgroup controller features */
 typedef enum {
+	CG_DMEM_MAX,
 	CG_FALSE_ROOT,
 	CG_MEMCG_OOMGROUP,
 	CG_MEMCG_PEAK,
