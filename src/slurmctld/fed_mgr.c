@@ -1216,7 +1216,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	tmp_msg.data             = &requeue_req;
 	tmp_msg.protocol_version = conn->rpc_version;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if ((rc = pack_msg(&tmp_msg, buffer))) {
 		error("%s: packing %s for %s failed: %s", __func__,
 		      rpc_num2string(tmp_msg.msg_type), conn->name,
