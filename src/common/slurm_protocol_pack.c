@@ -3282,10 +3282,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
+static int _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
 {
 	buf_t *msg_buffer = msg->data;
-	packmem_array(msg_buffer->head, msg_buffer->processed, buffer);
+	return packmem_array(msg_buffer->head, msg_buffer->processed, buffer);
 }
 
 static void _pack_job_script_msg(const slurm_msg_t *smsg, buf_t *buffer)
@@ -13644,8 +13644,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_STATS_INFO:
 	case RESPONSE_RESOURCE_LAYOUT:
-		_pack_buf_msg(msg, buffer);
-		break;
+		return _pack_buf_msg(msg, buffer);
 	case REQUEST_NODE_INFO:
 		_pack_node_info_request_msg(msg, buffer);
 		break;
