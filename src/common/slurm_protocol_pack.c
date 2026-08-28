@@ -10252,7 +10252,15 @@ static void _pack_ret_list(list_t *ret_list, uint16_t size_val, buf_t *buffer,
 
 		msg.msg_type = ret_data_info->type;
 		msg.data = ret_data_info->data;
-		pack_msg(&msg, buffer);
+		/*
+		 * The pack_msg() status is deliberately dropped here. Reporting
+		 * it means making pack_header() fallible, and there is nothing
+		 * useful to do with it at this point in any case: ret_cnt was
+		 * written before the loop, so a short entry shifts everything
+		 * after it and the peer can no longer parse the header at all.
+		 * Making that recoverable is its own change.
+		 */
+		(void) pack_msg(&msg, buffer);
 	}
 	list_iterator_destroy(itr);
 }
