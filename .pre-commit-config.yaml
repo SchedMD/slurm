@@ -19,7 +19,7 @@ repos:
   rev: 5.13.2
   hooks:
   - id: isort
-    args: [--profile, black, --project, atf, --skip-gitignore]
+    args: [--profile, black, --project, atf, --project, hdf5_profile, --skip-gitignore]
 
 - repo: https://github.com/pycqa/flake8
   rev: 7.1.1
