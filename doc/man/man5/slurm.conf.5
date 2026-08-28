@@ -875,6 +875,55 @@ Comma\-separated options identifying communication options.
 .IP
 .RS
 .TP 15
+\fBbuffer_alloc_exponential\fR[=<\fIbytes\fR>]
+Double the size of an internal buffer each time it must be enlarged, rather
+than growing it by a fixed amount. This reallocates less often than
+\fBbuffer_alloc_linear\fR while overshooting less than
+\fBbuffer_alloc_geometric\fR does. The optional value is the number of bytes
+an internal buffer starts at. The default is 16384, and values below 512 are
+raised to 512. A value outside the range 1 to 2147483647 is logged as invalid
+and the option is ignored. Mutually exclusive with the other
+\fBbuffer_alloc_\fR options: if more than one is set an error is logged and
+\fBbuffer_alloc_exponential\fR takes precedence over
+\fBbuffer_alloc_geometric\fR, which takes precedence over
+\fBbuffer_alloc_linear\fR.
+.IP
+
+.TP
+\fBbuffer_alloc_geometric\fR[=<\fIbytes\fR>]
+Multiply the size of an internal buffer by e (approximately 2.718) each time it
+must be enlarged. Because e is greater than 2, this grows faster than
+\fBbuffer_alloc_exponential\fR: it reallocates the fewest times of the three
+strategies, at the cost of the largest overshoot on the final growth. The
+optional value is the number of bytes an internal buffer starts at. The
+default is 16384, and values below 512 are raised to 512. A value outside the
+range 1 to 2147483647 is logged as invalid and the option is ignored.
+Mutually exclusive with the other \fBbuffer_alloc_\fR options: if more than one
+is set an error is logged and \fBbuffer_alloc_exponential\fR takes precedence
+over \fBbuffer_alloc_geometric\fR, which takes precedence over
+\fBbuffer_alloc_linear\fR.
+.IP
+
+.TP
+\fBbuffer_alloc_linear\fR[=<\fIbytes\fR>]
+Grow an internal buffer by a fixed number of bytes each time it must be
+enlarged. The optional value is both the number of bytes an internal buffer
+starts at and the number of bytes it grows by. The default is 16384, and
+values below 512 are raised to 512. A value outside the range 1 to 2147483647
+is logged as invalid and the option is ignored. Larger values reduce the number
+of reallocations needed to assemble a large message or response, at the cost of
+more memory for buffers that never grow large. Mutually exclusive with the
+other \fBbuffer_alloc_\fR options: if more than one is set an error is logged
+and \fBbuffer_alloc_exponential\fR takes precedence over
+\fBbuffer_alloc_geometric\fR, which takes precedence over
+\fBbuffer_alloc_linear\fR.
+.IP
+\fBNOTE\fR: The starting size applies to every buffer created without a size
+requirement of its own, so it is paid once per buffer in flight rather than
+once per cluster. A large value multiplies accordingly.
+.IP
+
+.TP
 \fBdisable_http\fR
 Prevent slurmctld and slurmd from responding to incoming HTTP requests.
 .IP
