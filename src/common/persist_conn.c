@@ -465,6 +465,20 @@ extern void slurm_persist_conn_recv_server_fini(void)
 	slurm_mutex_unlock(&thread_count_lock);
 }
 
+/* Run and clear persist_conn->callback_fini().  */
+static void _run_callback_fini(persist_conn_t *persist_conn, void *arg)
+{
+	persist_conn_callback_fini_t callback_fini = NULL;
+
+	if (!persist_conn)
+		return;
+
+	SWAP(callback_fini, persist_conn->callback_fini);
+
+	if (callback_fini)
+		callback_fini(arg);
+}
+
 extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 						int fd, int thread_loc,
 						void *arg)
@@ -474,8 +488,14 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 
 	if (thread_loc < 0)
 		thread_loc = slurm_persist_conn_wait_for_thread_loc();
-	if (thread_loc < 0)
+	if (thread_loc < 0) {
+		/*
+		 * Shutdown started before a slot could be claimed, so no thread
+		 * will ever service this connection.
+		 */
+		_run_callback_fini(persist_conn, arg);
 		return;
+	}
 
 	slurm_mutex_lock(&thread_count_lock);
 	service_conn = persist_service_conn[thread_loc];
@@ -495,6 +515,8 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 
 		slurm_cond_broadcast(&thread_count_cond);
 		slurm_mutex_unlock(&thread_count_lock);
+
+		_run_callback_fini(persist_conn, arg);
 		slurm_persist_conn_destroy(persist_conn);
 		fd_close(&fd);
 		return;
