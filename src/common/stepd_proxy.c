@@ -75,7 +75,7 @@ static int _slurmd_pack_msg_to_stepd(slurm_msg_t *resp, buf_t *out)
 
 static int _slurmd_send_resp_to_stepd(conmgr_fd_t *con, slurm_msg_t *resp)
 {
-	buf_t *out = init_buf(BUF_SIZE);
+	buf_t *out = init_buf(INFINITE);
 	int rc = SLURM_SUCCESS;
 
 	if (_slurmd_pack_msg_to_stepd(resp, out)) {
