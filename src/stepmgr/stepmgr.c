@@ -4383,14 +4383,16 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		else
 			usable_cpus = cpus - cpus_used;
 
-		if (usable_cpus <= 0)
-			continue;
-
 		if ((step_ptr->pn_min_memory & MEM_PER_CPU) && _is_mem_resv()) {
 			uint64_t mem_use = step_ptr->pn_min_memory;
 			mem_use &= (~MEM_PER_CPU);
-			usable_mem = job_resrcs_ptr->memory_allocated[pos] -
-				     job_resrcs_ptr->memory_used[pos];
+			if (job_resrcs_ptr->memory_allocated[pos] >
+			    job_resrcs_ptr->memory_used[pos])
+				usable_mem =
+					job_resrcs_ptr->memory_allocated[pos] -
+					job_resrcs_ptr->memory_used[pos];
+			else
+				usable_mem = 0;
 			usable_mem /= mem_use;
 			usable_cpus = MIN(usable_cpus, usable_mem);
 		}
@@ -4398,8 +4400,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		gres_test_args.node_offset = pos;
 
 		gres_cpus = gres_stepmgr_step_test(&gres_test_args);
-		if (usable_cpus > gres_cpus)
-			usable_cpus = gres_cpus;
+		if (usable_cpus > 0)
+			usable_cpus = MIN(usable_cpus, gres_cpus);
 		if (usable_cpus <= 0) {
 			error("%s: no usable CPUs", __func__);
 			if (step_hl)
