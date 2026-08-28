@@ -4453,6 +4453,8 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 {
 	hostlist_t *hl;
 	char *node_name;
+	job_resources_t *job_resrcs = job_ptr->job_resrcs;
+	bitstr_t *orig_job_node_bitmap = bit_copy(job_resrcs->node_bitmap);
 
 	log_flag(STEPS, "%s: %pJ removed_nodes=%s",
 		 __func__, job_ptr, node_list);
@@ -4461,12 +4463,30 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 	while ((node_name = hostlist_shift(hl))) {
 		node_record_t *node_ptr = find_node_record(node_name);
 		if (node_ptr) {
+			int job_node_inx;
+
 			kill_step_on_node(job_ptr, node_ptr, false);
 			/*
 			 * Excise the removed node from the stepmgr's local
 			 * view of the job so subsequent step launches against
-			 * this job are allowed only in surviving nodes.
+			 * this job are allowed only in surviving nodes. The
+			 * job resources are excised after the steps, which
+			 * still need the node's cpus and memory to be
+			 * deallocated.
 			 */
+			job_node_inx =
+				job_get_node_inx(node_ptr->name,
+						 job_resrcs->node_bitmap);
+			if (job_node_inx >= 0) {
+				gres_stepmgr_job_dealloc(
+					job_ptr->gres_list_alloc,
+					node_ptr->gres_list, job_node_inx,
+					job_ptr->job_id, node_ptr->name, false,
+					true);
+				extract_job_resources_node(job_resrcs,
+							   job_node_inx);
+			}
+
 			if (job_ptr->node_bitmap &&
 			    bit_test(job_ptr->node_bitmap, node_ptr->index)) {
 				bit_clear(job_ptr->node_bitmap,
@@ -4481,6 +4501,9 @@ extern int stepmgr_kill_steps_on_resize(job_record_t *job_ptr, char *node_list)
 
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
+
+	rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
+	FREE_NULL_BITMAP(orig_job_node_bitmap);
 
 	return SLURM_SUCCESS;
 }
