@@ -147,8 +147,10 @@ returns immediately after the step is accepted by the controller and reports
 its step ID, without waiting for the step to start or finish.
 See \fB\-\-parsable\fR for details on output format. Use \fBswait\fR(1)
 with the step ID reported by \fB\-\-parsable\fR to wait for the step and
-print its exit code. See \fBREQUIREMENTS\fR in \fBswait\fR(1) for the
-stepmgr version \fBswait\fR requires.
+print its exit code. \fBswait\fR(1) prints nothing and exits 3 for a
+step that has already ended; use \fBsacct\fR(1) after the fact. See
+\fBREQUIREMENTS\fR in \fBswait\fR(1) for the stepmgr version
+\fBswait\fR requires.
 
 Output is written directly on the compute nodes to the files named by
 \fB\-\-output\fR and \fB\-\-error\fR; if neither is given, \fIslurm-%J.out\fR
