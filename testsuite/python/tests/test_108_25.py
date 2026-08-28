@@ -252,3 +252,31 @@ def test_multi_qos_job_is_scheduled_with_the_qos_it_is_on(setup_qos_account):
     assert (
         atf.get_job_parameter(mid_job, "JobState") == "PENDING"
     ), f"mid_job should stay pending, {high_qos} outranks {mid_qos}"
+
+
+@pytest.mark.parametrize("qos_req", [f"{high_qos},{low_qos}", f"{low_qos},{high_qos}"])
+def test_multi_qos_job_priority_displayed(setup_qos_account, qos_req):
+    """Both clients report the highest requested QOS priority in either order."""
+    # Fill all CPUs so the job stays pending through scheduler cycles
+    fillers = [_submit(mid_qos, name="filler") for _ in range(node_cpus)]
+    for job_id in fillers:
+        atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    job_id = _submit(qos_req, name="dispjob")
+    atf.wait_for_job_state(job_id, "PENDING", fatal=True)
+    _wait_for_sched_cycles(2)
+
+    # Priority = highest QOS priority * PriorityWeightQOS = 100 * 10000
+    expected = 100 * 10000
+    assert (
+        atf.get_job_parameter(job_id, "Priority") == expected
+    ), f"scontrol should report {high_qos}'s priority for a '{qos_req}' job"
+
+    # squeue is a separate display path, and it is the one squeue.1 documents.
+    # PriorityLong is %Q, the integer; Priority is %p, normalized to 0.0-1.0.
+    squeue_prio = atf.run_command_output(
+        f"squeue -h -j {job_id} -O PriorityLong", fatal=True
+    ).strip()
+    assert (
+        int(squeue_prio) == expected
+    ), f"squeue should report {expected} for a '{qos_req}' job, got {squeue_prio}"
