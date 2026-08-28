@@ -261,7 +261,7 @@ static int _cli_dump_state(data_parser_type_t type, void *obj, int obj_bytes,
 	xassert(ctxt->mime_type);
 	xassert(ctxt->meta);
 
-	out = init_buf(BUF_SIZE);
+	out = init_buf(INFINITE);
 
 	do {
 		rc = serdes_dump(&dump_state, parser, type, obj, obj_bytes, out,
