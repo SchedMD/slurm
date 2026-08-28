@@ -11,7 +11,9 @@ swait \- Wait for a job's steps to complete
 \fBswait\fR blocks until there are no running steps and no pending
 \fB\-\-async\fR steps. Use \fBswait\fR in a batch script to wait for
 all \fB\-\-async\fR steps to complete. With a
-\fIjobid\fR.\fIstepid\fR target it instead waits for that one step.
+\fIjobid\fR.\fIstepid\fR target it instead waits for that one step. With
+\fB\-\-follow\fR it reports every step's completion until there are no
+running steps or pending \fB\-\-async\fR steps.
 
 A \fIjobid\fR.\fIstepid\fR target that has already ended
 cannot be distinguished from one that never existed; both exit 3 with no
@@ -33,14 +35,16 @@ The positional argument is a numeric job ID, a single array task
 task lists, and het\-job component offsets (\fIjobid\fR+\fIoffset\fR) are
 not supported. When the target is an array job with more than one task,
 a specific task must be selected with \fIjobid\fR_\fItask\fR. A
-\&.\fIstepid\fR suffix may also be appended to any of these target
-forms. The target must be a regular step, not a special step (batch,
-extern, or interactive).
+\&.\fIstepid\fR suffix may also be appended to any of these target forms,
+and is mutually exclusive with \fB\-\-follow\fR. The target must be a
+regular step, not a special step (batch, extern, or interactive).
 
 Heterogeneous (het) step \fIstepid\fRs are not supported; \fBswait\fR
 exits 1, either when it parses the argument or when the stepmgr rejects
 the subscribe request. See
-<https://slurm.schedmd.com/heterogeneous_jobs.html>.
+<https://slurm.schedmd.com/heterogeneous_jobs.html>. However,
+\fB\-\-follow\fR reports completion of het step components. The
+human\-readable output does not distinguish one component from another.
 
 With no positional argument, \fBswait\fR consults \fBSLURM_JOB_SLUID\fR
 first, and falls back to \fBSLURM_JOB_ID\fR. This lets \fBswait\fR run
@@ -49,6 +53,21 @@ automatically wait on the enclosing job's steps.
 
 .SH "OPTIONS"
 .TP
+\fB\-\-follow\fR
+Report every regular step as it ends, one record per completion, until
+the regular\-step set drains, rather than blocking on a single event. A
+final \fBJobId=\fR\fIjobid\fR \fBsteps drained\fR line is printed when
+the wait ends. Mutually exclusive with a \fIstepid\fR target.
+
+\fBNOTE\fR: Completions that arrive close to the drain are not
+guaranteed to be reported, and the order in which they are reported is
+not guaranteed either. \fBswait\fR exits as soon as the drain
+notification arrives, so any step\-completion notifications still in
+flight are lost. Wait on \fIjobid\fR.\fIstepid\fR when a specific step's
+result must not be missed.
+.IP
+
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help information and exit.
 .IP
@@ -56,17 +75,18 @@ Print help information and exit.
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Suppress informational messages on stderr and step\-completion output on
-stdout. This covers the whole\-set \fBsteps drained\fR line as well.
-Errors will still be displayed. Mutually exclusive with
-\fB\-\-verbose\fR.
+stdout. This covers the whole\-set \fBsteps drained\fR line as well, so
+stdout is empty even under \fB\-\-follow\fR. Errors will still be
+displayed. Mutually exclusive with \fB\-\-verbose\fR.
 .IP
 
 .TP
 \fB\-\-timeout\fR=\fISECS\fR
 Give up after \fISECS\fR seconds and exit 2. The wait completes when the
-job's steps drain, or when a \fIjobid\fR.\fIstepid\fR target ends.
-\fISECS\fR must be a non\-negative integer. With no \fB\-\-timeout\fR,
-or with \fB\-\-timeout\fR=0, \fBswait\fR blocks indefinitely.
+job's steps drain, including under \fB\-\-follow\fR, or when a
+\fIjobid\fR.\fIstepid\fR target ends. \fISECS\fR must be a
+non\-negative integer. With no \fB\-\-timeout\fR, or with \fB\-\-timeout\fR=0,
+\fBswait\fR blocks indefinitely.
 .IP
 
 .TP
@@ -91,8 +111,9 @@ Print version information and exit.
 .IP
 
 .SH "OUTPUT"
-With a \fIjobid\fR.\fIstepid\fR target, unless \fB\-\-quiet\fR is
-given, each step completion is reported on stdout as one line:
+Under \fB\-\-follow\fR or with a \fIjobid\fR.\fIstepid\fR target,
+unless \fB\-\-quiet\fR is given, each step completion is reported on
+stdout as one line:
 
 .nf
 StepId=\fIjobid\fR.\fIstepid\fR code=\fIexit\fR:\fIsig\fR [reason=\fISTATE\fR]
@@ -122,9 +143,11 @@ When the wait ends a final line is printed:
 JobId=\fIjobid\fR steps drained
 .fi
 
-This line is printed whenever a wait actually completes. A
-\fIjobid\fR.\fIstepid\fR wait that is satisfied by its target step
-prints that step's line instead. \fB\-\-quiet\fR suppresses this line
+This line is printed whenever a whole\-set wait completes, not just
+under \fB\-\-follow\fR. A \fIjobid\fR.\fIstepid\fR wait never prints
+it: it prints its target step's line instead, or nothing at all when
+the set drains without the target being reported, in which case only
+the exit code carries the outcome. \fB\-\-quiet\fR suppresses this line
 too.
 
 Nothing at all is printed when there is no wait to perform: when the job
@@ -142,10 +165,10 @@ This can be verified with \fBscontrol show job <jobid>\fR; look for
 \fBStepMgrEnabled=Yes\fR. Against a job without it, \fBswait\fR exits 1
 with \fBdoes not have stepmgr enabled\fR rather than waiting.
 
-A \fIjobid\fR.\fIstepid\fR target additionally requires the job's
-stepmgr, which runs in the job's extern \fBslurmstepd\fR(8) on the job's
-\fBBatchHost\fR (visible in \fBscontrol show job\fR), to be Slurm 26.11
-or newer.
+A \fIjobid\fR.\fIstepid\fR target and \fB\-\-follow\fR additionally
+require the job's stepmgr, which runs in the job's extern
+\fBslurmstepd\fR(8) on the job's \fBBatchHost\fR (visible in
+\fBscontrol show job\fR), to be Slurm 26.11 or newer.
 Against an older stepmgr the subscribe request fails and \fBswait\fR
 exits 1; it does not fall back to a whole\-set wait. Note that
 \fBslurmd\fR(8) may already be upgraded while a running job's
@@ -264,6 +287,15 @@ swait           # then wait for everything else
 If \fB./solve_a\fR ends before \fBswait\fR subscribes, nothing is printed
 and \fBswait\fR exits 3; see the note on already\-ended step targets in
 \fBDESCRIPTION\fR.
+
+Follow every step as it ends.
+
+.nf
+$ swait \-\-follow 1234
+StepId=1234.0 code=0:0
+StepId=1234.1 code=7:0
+JobId=1234 steps drained
+.fi
 
 \fBswait\fR is only for \fB\-\-async\fR steps; if a script merely
 backgrounds \fBsrun\fR commands with the shell, the shell's \fIwait\fR
