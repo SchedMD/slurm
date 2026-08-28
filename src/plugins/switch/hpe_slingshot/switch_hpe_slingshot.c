@@ -129,7 +129,7 @@ extern int switch_p_save(void)
 		return SLURM_SUCCESS;
 
 	/* Pack state into a buffer */
-	state_buf = init_buf(BUF_SIZE);
+	state_buf = init_buf(INFINITE);
 	pack32(slingshot_state.version, state_buf);
 	pack16(slingshot_state.vni_min, state_buf);
 	pack16(slingshot_state.vni_max, state_buf);
