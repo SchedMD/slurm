@@ -4860,11 +4860,26 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
 		job_env_t job_env;
-		int node_id = nodelist_find(req->nodes, conf->node_name);
 
 		memset(&job_env, 0, sizeof(job_env));
-		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
-				    node_id);
+
+		/*
+		 * The job's per-node GRES is keyed by job_hostlist order.
+		 * req->nodes holds only the nodes being killed, which can be
+		 * fewer than the job's. The credential is optional in
+		 * kill_job_msg_t, and without it there is no way to locate
+		 * this node in the job.
+		 */
+		if (req->cred) {
+			slurm_cred_arg_t *cred_arg =
+				slurm_cred_get_args(req->cred);
+			int node_id = nodelist_find(cred_arg->job_hostlist,
+						    conf->node_name);
+
+			slurm_cred_unlock_args(req->cred);
+			gres_g_prep_set_env(&job_env.gres_job_env,
+					    req->job_gres_prep, node_id);
+		}
 		job_env.step_id = req->step_id;
 		job_env.derived_ec = req->derived_ec;
 		job_env.exit_code = req->exit_code;
@@ -5096,11 +5111,26 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
 		job_env_t job_env;
-		int node_id = nodelist_find(req->nodes, conf->node_name);
 
 		memset(&job_env, 0, sizeof(job_env));
-		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
-				    node_id);
+
+		/*
+		 * The job's per-node GRES is keyed by job_hostlist order.
+		 * req->nodes holds only the nodes being killed, which can be
+		 * fewer than the job's. The credential is optional in
+		 * kill_job_msg_t, and without it there is no way to locate
+		 * this node in the job.
+		 */
+		if (req->cred) {
+			slurm_cred_arg_t *cred_arg =
+				slurm_cred_get_args(req->cred);
+			int node_id = nodelist_find(cred_arg->job_hostlist,
+						    conf->node_name);
+
+			slurm_cred_unlock_args(req->cred);
+			gres_g_prep_set_env(&job_env.gres_job_env,
+					    req->job_gres_prep, node_id);
+		}
 
 		job_env.step_id = req->step_id;
 		job_env.derived_ec = req->derived_ec;
