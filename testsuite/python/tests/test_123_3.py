@@ -11,6 +11,9 @@ import atf
 
 pytestmark = pytest.mark.slow
 
+# atf.get_version() shells out through sudo, so resolve it once.
+CTLD_VERSION = atf.get_version("sbin/slurmctld")
+
 
 def _dst_shift_within(weeks):
     """True if the local UTC offset changes between now and now+weeks"""
@@ -513,22 +516,60 @@ def test_overlap_replacing(get_and_down_nodes, reocurring_flag):
     ), f"resv2 should use node {nodes[2]} now"
 
 
+def overlap_weekdays_starts(week_flag):
+    """Return the resv1, resv2 and resv3 start dates of test_overlap_weekdays.
+
+    A WEEKDAY or WEEKEND reservation must start on a day its flag covers, so
+    NOW cannot be used: it makes the test depend on the day it runs on.
+    HOURLY and DAILY accept any day, and no parameter of the test mixes
+    WEEKDAY with WEEKEND, so week_flag alone picks the anchor day.
+    """
+    today = datetime.date.today()
+    anchor = 5 if week_flag == "WEEKEND" else 0
+    base = today + datetime.timedelta(days=(anchor - today.weekday()) % 7 or 7)
+
+    return [base + datetime.timedelta(weeks=weeks) for weeks in (3, 1, 5)]
+
+
+def xfail_dst_before_2605(week_flag):
+    """Return an xfail mark for test_overlap_weekdays before 26.05 when a DST
+    change falls between resv2 and resv3. The overlap check ignored DST until
+    then (see test_overlap_DST), so resv1 lands an hour off them."""
+    _, resv2_start, resv3_start = overlap_weekdays_starts(week_flag)
+    utc_offsets = {
+        datetime.datetime.combine(date, datetime.time(17)).astimezone().utcoffset()
+        for date in (resv2_start, resv3_start)
+    }
+
+    return pytest.mark.xfail(
+        len(utc_offsets) > 1 and CTLD_VERSION < (26, 5),
+        reason="Ticket 24758: DST-aware reoccurring reservation overlap check "
+        "added in 26.05",
+    )
+
+
+# An HOURLY resv1 still overlaps an hour off, so it needs no xfail_dst_before_2605().
 @pytest.mark.parametrize(
     "reocurring_flag,week_flag",
     [
         ("HOURLY", "WEEKDAY"),
         ("HOURLY", "WEEKEND"),
-        ("DAILY", "WEEKDAY"),
-        ("DAILY", "WEEKEND"),
-        ("WEEKDAY", "WEEKDAY"),
-        ("WEEKEND", "WEEKEND"),
+        pytest.param("DAILY", "WEEKDAY", marks=xfail_dst_before_2605("WEEKDAY")),
+        pytest.param("DAILY", "WEEKEND", marks=xfail_dst_before_2605("WEEKEND")),
+        pytest.param("WEEKDAY", "WEEKDAY", marks=xfail_dst_before_2605("WEEKDAY")),
+        pytest.param("WEEKEND", "WEEKEND", marks=xfail_dst_before_2605("WEEKEND")),
     ],
 )
-@xfail_dst_before_2611
 def test_overlap_weekdays(get_and_down_nodes, reocurring_flag, week_flag):
     """Verify that recurring reservations with weekdays and weekends handle overlapping properly with other reocurrings"""
 
     nodes = get_and_down_nodes
+
+    resv1_start, resv2_start, resv3_start = overlap_weekdays_starts(week_flag)
+
+    logging.info(f"resv1_start = {resv1_start}")
+    logging.info(f"resv2_start = {resv2_start}")
+    logging.info(f"resv3_start = {resv3_start}")
 
     logging.info(f"Resuming only node {nodes[0]}:")
     atf.run_command(
@@ -544,14 +585,14 @@ def test_overlap_weekdays(get_and_down_nodes, reocurring_flag, week_flag):
 
     logging.info("Creating resv1:")
     rc = atf.run_command(
-        f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}",
+        f"scontrol create reservation ReservationName=resv1 StartTime={resv1_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}",
         user=atf.properties["slurm-user"],
     )
     assert rc["exit_code"] == 0, "resv1 should be created"
 
     logging.info("Ensuring that resv2 cannot be created before resv1:")
     rc = atf.run_command(
-        f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}",
+        f"scontrol create reservation ReservationName=resv2 StartTime={resv2_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
@@ -561,7 +602,7 @@ def test_overlap_weekdays(get_and_down_nodes, reocurring_flag, week_flag):
 
     logging.info("Ensuring that resv3 cannot be created after resv1:")
     rc = atf.run_command(
-        f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}",
+        f"scontrol create reservation ReservationName=resv3 StartTime={resv3_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
@@ -586,9 +627,8 @@ def test_no_overlap_weekday_weekend(get_and_down_nodes, resv1_flag, resv2_flag):
 
     nodes = get_and_down_nodes
 
-    # Current code implementation allows start times not in weekends or
-    # weekdays even if reservations used those flags.
-    # So, we need to specify the right start times/dates for this test.
+    # A WEEKDAY or WEEKEND reservation must start on a day its flag covers,
+    # so specify the right start times/dates for this test.
     today = datetime.date.today()
     if resv1_flag == "WEEKEND":
         # resv1: next saturday
