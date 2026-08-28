@@ -412,7 +412,7 @@ extern data_parser_t **data_parser_g_new_array(
 	plugrack_foreach_t listf,
 	bool skip_loading)
 {
-	int rc, i = 0;
+	int rc, i = 0, count = 0;
 	data_parser_t **parsers = NULL;
 	plugin_param_t *pparams;
 
@@ -431,8 +431,20 @@ extern data_parser_t **data_parser_g_new_array(
 		goto cleanup;
 	}
 
-	/* always allocate for all possible plugins */
-	parsers = xcalloc((plugins->count + 1), sizeof(*parsers));
+	/*
+	 * Several requested parsers can share one loaded plugin, as a
+	 * version and each of its "+params" variants all resolve to the
+	 * same plugin. Sizing by plugins->count then leaves no room for
+	 * the NULL terminator and every walk of the array reads past its
+	 * end. Size by whichever count is larger.
+	 */
+	for (int j = 0; pparams && pparams[j].plugin_type; j++)
+		count++;
+
+	if (count < plugins->count)
+		count = plugins->count;
+
+	parsers = xcalloc((count + 1), sizeof(*parsers));
 
 	if (pparams) {
 		for (; pparams[i].plugin_type; i++) {
@@ -477,7 +489,7 @@ cleanup:
 	}
 
 	if (plugins && parsers)
-		for (int j = 0; j < plugins->count; j++)
+		for (int j = 0; j < count; j++)
 			FREE_NULL_DATA_PARSER(parsers[j]);
 	xfree(parsers);
 
