@@ -52,6 +52,7 @@
 /* A card kept by discovery. */
 typedef struct {
 	int card; /* DRM card number */
+	char *name; /* lowercased GPU model, owned and freed per element */
 	char *pci_address; /* PCI slot name, owned and freed per element */
 	int render_minor; /* DRM render node minor */
 } amd_card_t;
@@ -112,6 +113,36 @@ static bool _is_amdgpu_card(int card_num)
 	link[len] = '\0';
 
 	return !xstrcmp(xbasename(link), "amdgpu");
+}
+
+/*
+ * Read the first line of a sysfs file, stripping the line terminator.
+ *
+ * path (IN) Full path of the sysfs file to read.
+ *
+ * Returns the xmalloc'd line (caller frees), NULL when the file cannot be read
+ * or the line is empty.
+ */
+static char *_read_sysfs_line(const char *path)
+{
+	FILE *fp = NULL;
+	char *line = NULL, *value = NULL;
+	size_t size = 0;
+
+	xassert(path);
+
+	if (!(fp = fopen(path, "r")))
+		return NULL;
+
+	if (getline(&line, &size, fp) > 0) {
+		line[strcspn(line, "\n")] = '\0';
+		if (line[0])
+			value = xstrdup(line);
+	}
+	fclose(fp);
+	free(line);
+
+	return value;
 }
 
 /*
@@ -220,16 +251,60 @@ static char *_read_pci_address(int card_num)
 }
 
 /*
+ * Read one line of a card's device/<attr> sysfs attribute.
+ *
+ * card_num (IN) The DRM card number.
+ * attr (IN) The attribute name under the card's device directory.
+ *
+ * Returns the xmalloc'd line (caller frees), NULL when the attribute cannot be
+ * read or is empty.
+ */
+static char *_read_card_attr(int card_num, const char *attr)
+{
+	char *path = NULL, *line = NULL;
+
+	xassert(attr);
+
+	path = _card_device_path(card_num, attr);
+	line = _read_sysfs_line(path);
+	xfree(path);
+
+	return line;
+}
+
+/*
+ * Read a card's model name, lower-cased and underscorified to serve as a GRES
+ * type name. product_name exists only where the driver read a board FRU
+ * EEPROM, so fall back to the PCI device ID (device/device).
+ *
+ * card_num (IN) The DRM card number.
+ *
+ * Returns the xmalloc'd model name (caller frees), NULL when none is read.
+ */
+static char *_read_card_model(int card_num)
+{
+	char *name = NULL;
+
+	if (!(name = _read_card_attr(card_num, "product_name")))
+		name = _read_card_attr(card_num, "device");
+	if (name)
+		gpu_common_underscorify_tolower(name);
+
+	return name;
+}
+
+/*
  * Emit one GRES from its already-resolved fields. The caller keeps ownership
  * of every pointer argument.
  *
  * cpu_cnt (IN) The node's CPU count, recorded on the GRES.
  * gres_list (IN/OUT) The system GRES list to append to.
  * file (IN) The GRES device file.
+ * type_name (IN) The GRES type name, or NULL to emit an untyped GRES.
  * links (IN) The GRES Links vector.
  */
 static void _emit_gpu_gres(uint32_t cpu_cnt, list_t *gres_list, char *file,
-			   char *links)
+			   char *type_name, char *links)
 {
 	gres_slurmd_conf_t gres_slurmd_conf = {
 		.config_flags = (GRES_CONF_ENV_RSMI | GRES_CONF_AUTODETECT),
@@ -238,6 +313,7 @@ static void _emit_gpu_gres(uint32_t cpu_cnt, list_t *gres_list, char *file,
 		.file = file,
 		.links = links,
 		.name = "gpu",
+		.type_name = type_name,
 	};
 
 	xassert(gres_list);
@@ -293,13 +369,15 @@ static int _discover_gpus(void)
 		return 0;
 
 	/*
-	 * Keep only cards exposing a render node, caching them so the emit loop
-	 * needs no second read. The kept list is dense, so every Links vector
-	 * discovery sizes to it is exact (an over-wide one drains the node).
+	 * Keep only cards exposing a render node and a readable model, caching
+	 * them so the emit loop needs no second read. The kept list is dense,
+	 * so every Links vector discovery sizes to it is exact (an over-wide
+	 * one drains the node).
 	 */
 	amdgpu_cards = xcalloc(ncards, sizeof(*amdgpu_cards));
 	for (int i = 0; i < ncards; i++) {
 		amd_card_t *kept = &amdgpu_cards[amdgpu_ncards];
+		char *mode = NULL;
 
 		/* Skip: a fileless GRES cannot be device-cgroup isolated. */
 		if ((kept->render_minor = _get_render_minor(cards[i])) < 0) {
@@ -311,6 +389,24 @@ static int _discover_gpus(void)
 			error("%s: card%d: unreadable PCI address, no GRES emitted",
 			      __func__, cards[i]);
 			continue;
+		}
+		if (!(kept->name = _read_card_model(cards[i]))) {
+			error("%s: card%d: unreadable model, no GRES emitted",
+			      __func__, cards[i]);
+			xfree(kept->pci_address);
+			continue;
+		}
+		/*
+		 * A compute partition mode other than SPX splits the GPU into
+		 * several KFD devices this DRM scan does not see; the GRES
+		 * stays the whole GPU.
+		 */
+		if ((mode = _read_card_attr(cards[i],
+					    "current_compute_partition"))) {
+			if (xstrcasecmp(mode, "SPX"))
+				error("%s: card%d: compute partition mode %s is not supported, only SPX; the whole GPU is one GRES",
+				      __func__, cards[i], mode);
+			xfree(mode);
 		}
 		kept->card = cards[i];
 		amdgpu_ncards++;
@@ -357,6 +453,7 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 		char *file = NULL, *links = NULL;
 
 		debug2("GPU(amd) card%d:", amdgpu_cards[i].card);
+		debug2("    Name: %s", amdgpu_cards[i].name);
 		debug2("    PCI Address: %s", amdgpu_cards[i].pci_address);
 
 		/*
@@ -375,7 +472,7 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 		debug2("    Links: %s", links);
 
 		_emit_gpu_gres(node_config->cpu_cnt, gres_list_system, file,
-			       links);
+			       amdgpu_cards[i].name, links);
 
 		xfree(file);
 		xfree(links);
@@ -410,8 +507,10 @@ extern int init(void)
  */
 extern void fini(void)
 {
-	for (int i = 0; i < amdgpu_ncards; i++)
+	for (int i = 0; i < amdgpu_ncards; i++) {
+		xfree(amdgpu_cards[i].name);
 		xfree(amdgpu_cards[i].pci_address);
+	}
 	xfree(amdgpu_cards);
 	amdgpu_ncards = 0;
 	discovery_logged = false;
