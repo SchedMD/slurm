@@ -1659,11 +1659,18 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			} else {
 				uint16_t tpc = _get_threads_per_core(
 					step_spec->threads_per_core, job_ptr);
+				uint16_t used =
+					job_resrcs_ptr->cpus_used[node_inx];
+				uint16_t blocked;
 
-				usable_cpu_cnt[i] -=
-					job_resrcs_ptr->cpus_used[node_inx];
-				job_blocked_cpus +=
-					job_resrcs_ptr->cpus_used[node_inx];
+				/*
+				 * --overcommit can leave cpus_used above
+				 * cpus, which would wrap this unsigned count
+				 * into a huge number of free CPUs.
+				 */
+				blocked = MIN(usable_cpu_cnt[i], used);
+				usable_cpu_cnt[i] -= blocked;
+				job_blocked_cpus += blocked;
 				if (step_spec->threads_per_core != NO_VAL16 &&
 				    (node_ptr->threads != tpc)) {
 					log_flag(STEPS, "%s, %pJ requested threads per core does not match node defaults, adjusting usable cpu count",
