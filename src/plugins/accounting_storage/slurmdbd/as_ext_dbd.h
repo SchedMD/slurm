@@ -37,6 +37,8 @@
 #define _EXT_DBD_H
 
 extern void ext_dbd_init(void);
+/* Register this controller with AccountingStorageExternalHost slurmdbds. */
+extern void ext_dbd_register(void);
 extern void ext_dbd_fini(void);
 extern void ext_dbd_reconfig(void);
 

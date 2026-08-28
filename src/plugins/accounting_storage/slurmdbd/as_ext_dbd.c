@@ -76,7 +76,8 @@ static bool _register_external_dbd(persist_conn_t *dbd_conn)
 	if (clusteracct_storage_p_register_ctld(dbd_conn,
 						slurm_conf.slurmctld_port) ==
 	    ESLURM_ACCESS_DENIED) {
-		error("Not allowed to register to external cluster, not going to try again.");
+		error("Not allowed to register to external cluster %s:%u, will retry on next registration",
+		      dbd_conn->rem_host, dbd_conn->rem_port);
 		return true;
 	}
 
@@ -97,6 +98,13 @@ static persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 	}
 
 	return dbd_conn;
+}
+
+/* list_delete_all() predicate: register every external connection */
+static int _for_each_register_ext_conn(void *x, void *arg)
+{
+	persist_conn_t *dbd_conn = x;
+	return _register_external_dbd(dbd_conn);
 }
 
 static int _find_ext_conn(void *x, void *key)
@@ -230,6 +238,27 @@ extern void ext_dbd_init(void)
 	_create_ext_conns();
 	if (ext_conns_list)
 		_create_ext_thread();
+	slurm_mutex_unlock(&ext_conns_mutex);
+}
+
+extern void ext_dbd_register(void)
+{
+	if (!running_in_slurmctld())
+		return;
+
+	/*
+	 * Called when this controller registers with AccountingStorageHost.
+	 * (Re)register every AccountingStorageExternalHost so its ControlHost
+	 * points at the active controller.
+	 */
+	slurm_mutex_lock(&ext_conns_mutex);
+	_create_ext_conns();
+	if (ext_conns_list) {
+		list_delete_all(ext_conns_list, _for_each_register_ext_conn,
+				NULL);
+		if (!ext_thread_tid)
+			_create_ext_thread();
+	}
 	slurm_mutex_unlock(&ext_conns_mutex);
 }
 
