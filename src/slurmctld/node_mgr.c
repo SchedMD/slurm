@@ -100,6 +100,13 @@
 #define DEFAULT_NODE_REG_MEM_PERCENT 100.0
 #define DEFAULT_CLOUD_REG_MEM_PERCENT 90.0
 
+/*
+ * Starting size for the all-nodes reply. This is the largest response the
+ * controller assembles, so it is sized for a real cluster up front rather
+ * than left to grow into one xrealloc() per increment.
+ */
+#define BUF_MIN_NODES_BYTES (BUF_SIZE * 16)
+
 static bool config_list_update = false;
 static pthread_mutex_t config_list_update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -993,7 +1000,7 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	buffer = init_buf(BUF_SIZE * 16);
+	buffer = init_buf(BUF_MIN_NODES_BYTES);
 	nodes_packed = 0;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
