@@ -5185,7 +5185,7 @@ extern int dump_all_resv_state(void)
 		.conf = READ_LOCK,
 		.node = READ_LOCK,
 	};
-	buf_t *buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(INFINITE);
 	DEF_TIMERS;
 
 	START_TIMER;
