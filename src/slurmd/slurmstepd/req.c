@@ -567,7 +567,7 @@ static int _handle_job_step_get_info(int fd, uid_t uid, pid_t remote_pid)
 
 	request = msg.data;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 
 	slurm_mutex_lock(&stepmgr_mutex);
 	args.step_id = &request->step_id;
