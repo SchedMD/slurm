@@ -1081,7 +1081,7 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	nodes_packed = 0;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
