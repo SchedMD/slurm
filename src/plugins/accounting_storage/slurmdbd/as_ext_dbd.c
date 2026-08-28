@@ -39,6 +39,7 @@
 #include "src/common/threadpool.h"
 
 #include "src/interfaces/accounting_storage.h"
+#include "src/slurmctld/slurmctld.h"
 
 #include "dbd_conn.h"
 #include "as_ext_dbd.h"
@@ -168,6 +169,10 @@ static int _for_each_check_ext_conn(void *x, void *arg)
 {
 	persist_conn_t *dbd_conn = x;
 
+	/* Only the active controller registers with external clusters */
+	if (slurmctld_listeners_in_standby())
+		return false;
+
 	if (slurm_persist_conn_writeable(dbd_conn) == -1) {
 		slurm_persist_conn_reopen(dbd_conn);
 
@@ -227,18 +232,6 @@ static void _destroy_ext_thread(void)
 	slurm_mutex_unlock(&ext_thread_mutex);
 
 	slurm_thread_join(ext_thread_tid);
-}
-
-extern void ext_dbd_init(void)
-{
-	if (!running_in_slurmctld())
-		return;
-
-	slurm_mutex_lock(&ext_conns_mutex);
-	_create_ext_conns(false);
-	if (ext_conns_list)
-		_create_ext_thread();
-	slurm_mutex_unlock(&ext_conns_mutex);
 }
 
 extern void ext_dbd_register(void)

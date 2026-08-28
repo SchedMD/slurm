@@ -207,8 +207,6 @@ extern int init(void)
 
 		verbose("%s loaded", plugin_name);
 
-		ext_dbd_init();
-
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
