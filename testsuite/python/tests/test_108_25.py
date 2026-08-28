@@ -316,3 +316,37 @@ def test_priority_display_updated_on_qos_change(setup_qos_account):
     assert (
         priority == expected
     ), f"after adding {high_qos} the job should report {expected}, got {priority}"
+
+
+def test_admin_set_priority_orders_multi_qos_job(setup_qos_account):
+    """An administrator's priority controls multi-QOS ordering and reporting."""
+    fillers = [_submit(mid_qos, name="filler") for _ in range(node_cpus)]
+    for job_id in fillers:
+        atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+
+    mid_job = _submit(mid_qos, name="midjob")
+    multi_job = _submit(f"{high_qos},{low_qos}", name="multijob")
+    atf.wait_for_job_state(mid_job, "PENDING", fatal=True)
+    atf.wait_for_job_state(multi_job, "PENDING", fatal=True)
+    _wait_for_sched_cycles(2)
+
+    # Admin lowers multi_job's priority below mid_job's, so mid_job should win
+    # even though multi_job is on the higher QOS.
+    admin_prio = 40 * 10000
+    atf.run_command(
+        f"scontrol update jobid={multi_job} Priority={admin_prio}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    _wait_for_sched_cycles(2)
+
+    assert (
+        atf.get_job_parameter(multi_job, "Priority") == admin_prio
+    ), "an admin-set priority should be what a multi-QOS job reports"
+
+    # Free one CPU; mid_job (500000) should outrank multi_job (admin 400000)
+    atf.cancel_jobs([fillers[0]], fatal=True)
+    atf.wait_for_job_state(mid_job, "RUNNING", fatal=True)
+    assert (
+        atf.get_job_parameter(multi_job, "JobState") == "PENDING"
+    ), f"mid_job ({50 * 10000}) should outrank multi_job (admin {admin_prio})"
