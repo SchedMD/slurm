@@ -5122,7 +5122,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	START_TIMER;
 	_create_resv_lists(false);
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	pack_args.buffer = buffer;
 
 	/* write header: version and time */
