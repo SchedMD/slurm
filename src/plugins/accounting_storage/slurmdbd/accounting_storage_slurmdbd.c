@@ -2574,6 +2574,8 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	persist_msg_t msg = {0};
 	dbd_register_ctld_msg_t req;
 	int rc = SLURM_SUCCESS;
+	bool is_ext = (db_conn && (((persist_conn_t *) db_conn)->flags &
+				   PERSIST_FLAG_EXT_DBD));
 
 	memset(&req, 0, sizeof(dbd_register_ctld_msg_t));
 
@@ -2585,8 +2587,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	msg.pcon         = db_conn;
 	msg.data         = &req;
 
-	if (db_conn &&
-	    (((persist_conn_t *) db_conn)->flags & PERSIST_FLAG_EXT_DBD)) {
+	if (is_ext) {
 		req.flags |= CLUSTER_FLAG_EXT;
 		info("Registering slurmctld at port %u with slurmdbd %s:%d",
 		     port,
