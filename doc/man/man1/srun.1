@@ -1090,6 +1090,13 @@ requested and be one per line or comma separated. If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
 .br
+The node list reported to the job (\fBSLURM_JOB_NODELIST\fR,
+\fBSLURM_STEP_NODELIST\fR) follows the same order, with a repeated host
+collapsed
+to the position of its first occurrence. A hostfile of node10, node10,
+node01, node06 gives a node list of node[10,01,06], while the tasks stay on
+node10, node10, node01 and node06.
+.br
 \fBNOTE\fR: The arbitrary distribution option is supported only with the generic
 allocation method and cannot be used with features such as topology, CR_LLN,
 CR_Pack_Nodes, or pack_serial_at_end. This option is meant primarily to control
@@ -2389,7 +2396,7 @@ Specify an optional argument of "off" disable the effect of the
 
 The default action is to terminate the job upon node failure.
 
-\fBNOTE\fR: This option has no effect on the \fBjob allocation\fR when
+\fBNOTE\fR: This option has no effect on the job allocation when
 \fB\-\-distribution\fR=\fIarbitrary\fR is used. The task layout of such a
 job comes from its requested node list and cannot be rebuilt for a smaller set
 of nodes, so Slurm terminates the job when one of its nodes fails. The option
@@ -2401,8 +2408,9 @@ still applies to job steps.
 Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
 \fInode file\fR. The node names of the list may also span multiple lines
 in the file. Duplicate node names in the file will be ignored.
-The order of the node names in the list is not important; the node names
-will be sorted by Slurm.
+With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node names is
+significant and a repeated name places another task on that node. Otherwise
+the order is not important and the node names will be sorted by Slurm.
 .IP
 
 .TP
@@ -2420,10 +2428,11 @@ processor count may only require a subset of the supplied node list.
 The list may be specified as a comma\-separated list of nodes, a range of nodes
 (e.g. node[1\-5,7,...]), or a filename.
 The nodes list will be assumed to be a filename if it contains a "/" character.
-The order of the node names in the list is not important; the node names
-will be sorted by Slurm.
+With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node names is
+significant and a repeated name places another task on that node. Otherwise
+the order is not important and the node names will be sorted by Slurm.
 
-Repeated node names may be useful when using \fB\-\-distribution=arbitrary\fR.
+Repeated node names may be useful when using \fB\-\-distribution\fR=\fIarbitrary\fR.
 An asterisk and a repetition count may be appended to a node name. For example,
 "node1,node1" and "node1*2" are equivalent. This option applies to job and step
 allocations.
@@ -4370,7 +4379,10 @@ create a job step (i.e. within an existing job allocation).
 
 .TP
 \fBSLURM_JOB_NODELIST\fR
-List of nodes allocated to the job.
+List of nodes allocated to the job, ordered to match task placement rather
+than sorted by node name: the first node runs the task with the lowest
+\fBSLURM_PROCID\fR. \fBSLURM_JOB_CPUS_PER_NODE\fR and
+\fBSLURM_TASKS_PER_NODE\fR are read in this same order.
 .IP
 
 .TP
@@ -4448,7 +4460,8 @@ Set to the value of the \fB\-\-network\fR option, if specified.
 
 .TP
 \fBSLURM_NODEID\fR
-The relative node ID of the current node.
+The relative node ID of the current node. This is the node's position in
+\fBSLURM_STEP_NODELIST\fR, counting from zero.
 .IP
 
 .TP
@@ -4543,7 +4556,8 @@ Step launcher port.
 
 .TP
 \fBSLURM_STEP_NODELIST\fR
-List of nodes allocated to the step.
+List of nodes allocated to the step, in the order tasks are assigned to them.
+\fBSLURM_NODEID\fR is a position in this list.
 .IP
 
 .TP
