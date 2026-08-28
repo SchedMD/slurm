@@ -361,6 +361,28 @@ reservation: <b>HOURLY</b>, <b>DAILY</b>, <b>WEEKLY</b>, <b>WEEKDAY</b>, or
 while the last two represent the type of day on which the reservation should
 repeat.</p>
 
+<p>A <b>WEEKDAY</b> reservation must start on a weekday, and a <b>WEEKEND</b>
+reservation must start on a Saturday or a Sunday. The start day is determined
+in the local time zone of the slurmctld host. This is checked when the
+reservation is created and on any update that sets <b>StartTime</b> or
+specifies a recurring flag, so adding <b>WEEKEND</b> to a reservation
+that starts on a Tuesday is rejected unless the update also sets a
+<b>StartTime</b> on a day that flag covers.</p>
+
+<p>Similarly, swapping between <b>WEEKDAY</b> and <b>WEEKEND</b> also needs a
+new <b>StartTime</b> on a day the incoming flag covers:</p>
+
+<pre>
+# 2026-08-29 was a Saturday; any future Saturday or Sunday works
+$ scontrol update ReservationName=resv1 \
+   Flags=-WEEKDAY,+WEEKEND StartTime=2026-08-29T09:00:00
+</pre>
+
+<p>A reservation whose current occurrence has started cannot have its
+<b>StartTime</b> changed, so it cannot be swapped while it is active. A
+recurring reservation moves to its next start time once the occurrence
+ends, and the swap is accepted again from then on.</p>
+
 <p><b>NOTE</b>: When a recurring reservation attempts to replace nodes, it
 will consider future availability of the resources and will only reserve
 resources that are in an overlapping reservation or unreserved at that time.</p>
