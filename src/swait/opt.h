@@ -43,13 +43,15 @@
 
 /*
  * Exit codes; keep in sync with EXIT STATUS in doc/man/man1/swait.1.
- * OK - the wait completed
+ * OK - the wait completed and the target was reported
  * ERROR - swait encountered an error
  * TIMEOUT - --timeout elapsed before the wait completed
+ * UNOBSERVED - the set drained without the target being reported
  */
 #define SWAIT_RC_OK 0
 #define SWAIT_RC_ERROR 1
 #define SWAIT_RC_TIMEOUT 2
+#define SWAIT_RC_UNOBSERVED 3
 
 typedef struct {
 	uint32_t array_job_id; /* array master id from input, or NO_VAL */

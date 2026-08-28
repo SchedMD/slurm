@@ -64,9 +64,10 @@
 #define SWAIT_WORKERPOOL_THREADS 3
 
 /*
- * exit_lock arbitrates between _on_msg (steps-drained: SWAIT_RC_OK) and
- * _timeout_fire (SWAIT_RC_TIMEOUT). exit_decided is set by whichever
- * callback wins the race; the loser becomes a no-op.
+ * exit_lock arbitrates between _on_msg (steps-drained: SWAIT_RC_OK, or
+ * SWAIT_RC_UNOBSERVED when a STEP target never reported) and _timeout_fire
+ * (SWAIT_RC_TIMEOUT). exit_decided is set by whichever callback wins the
+ * race; the loser becomes a no-op.
  */
 static pthread_mutex_t exit_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool exit_decided;
@@ -400,6 +401,7 @@ static int _on_msg(conmgr_callback_args_t args, slurm_msg_t *msg, int unpack_rc,
 	case SRUN_STEPS_DRAINED:
 	{
 		srun_steps_drained_msg_t *body = msg->data;
+		bool unobserved = false;
 
 		/* Whole-set / per-step drain: final line, then stop. */
 		if (opt.mode != STEPS_DRAINED_SUB_STEP) {
@@ -410,15 +412,21 @@ static int _on_msg(conmgr_callback_args_t args, slurm_msg_t *msg, int unpack_rc,
 			/*
 			 * The set drained without the target being reported:
 			 * it never launched, or it ended and was reaped before
-			 * the subscribe. No result was recorded, so print none.
+			 * the subscribe. No result was recorded, so print none
+			 * and let the exit code carry it.
 			 */
 			verbose("%ps was not reported before the set drained",
 				&opt.target);
+			unobserved = true;
 		}
 
 		verbose("wait satisfied; shutting down");
 		slurm_mutex_lock(&exit_lock);
-		exit_decided = true;
+		if (!exit_decided) {
+			exit_decided = true;
+			if (unobserved)
+				exit_rc = SWAIT_RC_UNOBSERVED;
+		}
 		slurm_mutex_unlock(&exit_lock);
 		conmgr_request_shutdown();
 		break;
@@ -598,7 +606,7 @@ fail:
 
 /*
  * swait entry point.
- * RET SWAIT_RC_OK, SWAIT_RC_ERROR or SWAIT_RC_TIMEOUT
+ * RET SWAIT_RC_OK, SWAIT_RC_ERROR, SWAIT_RC_TIMEOUT or SWAIT_RC_UNOBSERVED
  */
 int main(int argc, char **argv)
 {
@@ -625,6 +633,8 @@ int main(int argc, char **argv)
 	if (setup_rc == ESLURM_STEPS_DRAINED) {
 		/* No result is recorded once a step is reaped, so print none. */
 		verbose("target already ended; exiting without waiting");
+		if (opt.mode == STEPS_DRAINED_SUB_STEP)
+			exit_rc = SWAIT_RC_UNOBSERVED;
 	} else if (setup_rc == EAGAIN) {
 		error("stepmgr %s subscriber slots full; try again later",
 		      stepmgr_node);

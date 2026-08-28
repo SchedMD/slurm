@@ -24,4 +24,5 @@ Help options:
 Exit status:
   0  The wait completed (steps drained, or the target step was reported).
   1  swait encountered an error.
-  2  --timeout expired.
+  2  --timeout elapsed before the wait completed.
+  3  The target step was never reported before the set drained.
