@@ -1033,6 +1033,7 @@ test_141_5   Test powered down nodes are not left UNKNOWN on reconfigure/restart
 test_141_6   Test NOT_RESPONDING is not set on, and is cleared from, powered down nodes
 test_141_7   Test that a job launches promptly once its powering-up nodes register
 test_141_8   Test that a job launches promptly once its rebooted nodes register
+test_141_9   Test that a job launches promptly once its feature-rebooted nodes register
 
 test_143_#   Testing --switches.
 ================================
