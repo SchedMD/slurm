@@ -8711,7 +8711,6 @@ static void *_update_resv_jobs(void *arg)
  * as appropriate. */
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 {
-	time_t now;
 	struct tm tm;
 	int day_cnt = 0, hour_cnt = 0;
 	int rc = SLURM_ERROR;
@@ -8725,24 +8724,32 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		hour_cnt = 1;
 	} else if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
 		day_cnt = 1;
-	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
-		now = time(NULL);
-		localtime_r(&now, &tm);
-		if (tm.tm_wday == 5)		/* Friday */
-			day_cnt = 3;
-		else if (tm.tm_wday == 6)	/* Saturday */
-			day_cnt = 2;
-		else
-			day_cnt = 1;
-	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKEND) {
-		now = time(NULL);
-		localtime_r(&now, &tm);
-		if (tm.tm_wday == 0)		/* Sunday */
-			day_cnt = 6;
-		else if (tm.tm_wday == 6)	/* Saturday */
-			day_cnt = 1;
-		else
-			day_cnt = 6 - tm.tm_wday;
+	} else if (resv_ptr->flags &
+		   (RESERVE_FLAG_WEEKDAY | RESERVE_FLAG_WEEKEND)) {
+		/*
+		 * start_time_first comes from the request and the state
+		 * file, so localtime_r() can fail.
+		 */
+		if (!localtime_r(&resv_ptr->start_time_first, &tm)) {
+			error("%s: Could not convert the start time of reservation %s",
+			      __func__, resv_ptr->name);
+			return rc;
+		}
+		if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
+			if (tm.tm_wday == 5) /* Friday */
+				day_cnt = 3;
+			else if (tm.tm_wday == 6) /* Saturday */
+				day_cnt = 2;
+			else
+				day_cnt = 1;
+		} else {
+			if (tm.tm_wday == 0) /* Sunday */
+				day_cnt = 6;
+			else if (tm.tm_wday == 6) /* Saturday */
+				day_cnt = 1;
+			else
+				day_cnt = 6 - tm.tm_wday;
+		}
 	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKLY) {
 		day_cnt = 7;
 	}
