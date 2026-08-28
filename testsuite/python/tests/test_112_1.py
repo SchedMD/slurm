@@ -40,6 +40,31 @@ def test_s():
     assert atf.run_command_exit("slurmrestd -s invalid_plugin") != 0
 
 
+def test_d():
+    """Check -d option"""
+
+    assert atf.run_command_exit("slurmrestd -d list") == 0
+    assert atf.run_command_exit("slurmrestd -d invalid_plugin") != 0
+
+
+def test_d_repeated_plugin():
+    """Verify a -d list naming one plugin more than once is accepted
+
+    LATEST_PLUGIN_NAME resolves to an explicit version, so "latest,latest"
+    asks for one data_parser twice. Only the version reaches a {data_parser}
+    URL, so the repeat cannot be served and must be dropped rather than built
+    a second time.
+    """
+
+    assert (
+        atf.run_command_exit(
+            "slurmrestd -a rest_auth/local -d latest,latest",
+            input="GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n",
+        )
+        == 0
+    )
+
+
 def test_get_a_rest_auth():
     """Check response to GET with -a rest_auth"""
 
