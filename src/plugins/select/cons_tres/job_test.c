@@ -593,6 +593,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		if (!sock_gres_list) {	/* GRES requirement fail */
 			log_flag(SELECT_TYPE, "Test fail on node %s: gres_sock_list_create",
 				 node_ptr->name);
+			FREE_NULL_BITMAP(create_args.req_sock_map);
 			return NULL;
 		}
 	}
@@ -602,6 +603,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		if (hres_leaf_idx == NO_VAL16) {
 			log_flag(SELECT_TYPE, "Test fail on node %s: hres_select_find_leaf",
 				 node_ptr->name);
+			FREE_NULL_BITMAP(create_args.req_sock_map);
+			FREE_NULL_LIST(sock_gres_list);
 			return NULL;
 		}
 	}
@@ -866,6 +869,8 @@ check_nodes:
 	for (int idx = 0; idx < avail_node_cnt; idx++) {
 		int i = sorted_nodes[idx]->index;
 
+		/* Free any stale result before a retry pass overwrites it */
+		_free_avail_res(avail_res_array[i]);
 		avail_res_array[i] =
 			_can_job_run_on_node(job_ptr, topo_eval->avail_core, i,
 					     s_p_n, node_usage,
