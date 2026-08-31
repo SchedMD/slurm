@@ -72,6 +72,7 @@
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/cli_filter.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/api/pmi_server.h"
 
@@ -352,6 +353,15 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	static bool check_het_step = false;
 
 	is_step = getenv("SLURM_JOB_ID") ? true : false;
+
+	/*
+	 * Resolve the runtime before any option table is built, so that the
+	 * options the plugin provides are in it. _get_het_group() builds a
+	 * table of its own and runs first, so this cannot wait for
+	 * _set_options().
+	 */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SRUN, NULL))
+		fatal("failed to initialize runtime plugin");
 
 	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
 				      &opt_found);
