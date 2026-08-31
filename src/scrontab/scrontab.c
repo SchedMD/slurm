@@ -53,6 +53,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/cli_filter.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/runtime.h"
 
 #include "scrontab.h"
 
@@ -698,9 +699,14 @@ extern int main(int argc, char **argv)
 	if (spank_init_allocator())
 		fatal("failed to initialize plugin stack");
 
+	/* Resolve the runtime first so its options are in the option table */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SCRONTAB, NULL))
+		fatal("failed to initialize runtime plugin");
+
 	_edit_and_update_crontab(crontab);
 
 	cli_filter_fini();
+	runtime_g_fini();
 	spank_fini(NULL);
 
 	return 0;
