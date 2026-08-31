@@ -74,8 +74,8 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 				    slurmdbd_msg_type_t type, buf_t *buffer);
 
-extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version);
-extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
+extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version);
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 			       buf_t *buffer);
 
 #endif	/* !_SLURMDBD_PACK_H */

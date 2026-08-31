@@ -41,15 +41,99 @@
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdbd_pack.h"
 
 typedef struct {
 	persist_conn_t *pcon;
+	int fd; /* underlying input fd, captured at accept for log/db ids */
+
+	/* Peer identity (filled in from REQUEST_PERSIST_INIT). */
+	char *cluster_name;
+	char *rem_host;
+	uint16_t rem_port;
+
+	/* Negotiated protocol version. */
+	uint16_t version;
+
+	/*
+	 * Auth state cached from REQUEST_PERSIST_INIT.
+	 * auth_cred is borrowed from pcon, do not destroy it.
+	 */
+	void *auth_cred;
+	uid_t auth_uid;
+	gid_t auth_gid;
+	bool auth_ids_set;
+
+	/* PERSIST_FLAG_* bits applicable to this connection. */
+	uint16_t flags;
+
 	persist_conn_t *pcon_send;
 	pthread_mutex_t pcon_send_lock;
 	void *db_conn; /* database connection */
 	char *tres_str;
 } slurmdbd_conn_t;
+
+/*
+ * Safe defaults for a slurmdbd_conn_t.
+ *
+ * The connection starts out fail-closed: the peer has no identity until
+ * REQUEST_PERSIST_INIT authenticates it, and a zeroed auth_uid would read
+ * as root. fd is -1 so an unset descriptor cannot be mistaken for stdin.
+ *
+ * The caller still fills in fd, rem_host and the pcon members.
+ */
+#define SLURMDBD_CONN_INITIALIZER \
+	((slurmdbd_conn_t) { \
+		.fd = -1, \
+		.auth_uid = SLURM_AUTH_NOBODY, \
+		.auth_gid = SLURM_AUTH_NOBODY, \
+		.flags = PERSIST_FLAG_DBD, \
+		.version = SLURM_MIN_PROTOCOL_VERSION, \
+	})
+
+/*
+ * Initialize a slurmdbd_conn_t to SLURMDBD_CONN_INITIALIZER.
+ * IN/OUT dbd_conn - connection to initialize
+ */
+extern void slurmdbd_conn_init(slurmdbd_conn_t *dbd_conn);
+
+/*
+ * Free the members a slurmdbd_conn_t owns, not the struct itself.
+ *
+ * Does not touch pcon or pcon_send, which the persist_conn code owns.
+ * auth_cred is borrowed from pcon and so is not destroyed here.
+ *
+ * IN/OUT dbd_conn - connection whose members are freed
+ */
+extern void slurmdbd_conn_members_destroy(slurmdbd_conn_t *dbd_conn);
+
+/*
+ * Build a PERSIST_RC reply buffer (with optional reply flags).
+ * Bypasses slurm_persist_make_rc_msg() to avoid the persist_conn_t
+ * round-trip.
+ * IN sc       - slurmdbd connection providing the negotiated version
+ * IN rc       - return code to report
+ * IN comment  - optional human-readable comment
+ * IN flags    - PERSIST_RC reply flags
+ * IN ret_info - message type the rc is in response to
+ * RET packed PERSIST_RC buffer
+ */
+extern buf_t *slurmdbd_make_rc_msg_flags(slurmdbd_conn_t *sc, uint32_t rc,
+					 char *comment, uint16_t flags,
+					 uint16_t ret_info);
+
+/*
+ * Build a PERSIST_RC reply buffer with no reply flags.
+ * IN sc       - slurmdbd connection providing the negotiated version
+ * IN rc       - return code to report
+ * IN comment  - optional human-readable comment
+ * IN ret_info - message type the rc is in response to
+ * RET packed PERSIST_RC buffer
+ */
+extern buf_t *slurmdbd_make_rc_msg(slurmdbd_conn_t *sc, uint32_t rc,
+				   char *comment, uint16_t ret_info);
 
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
@@ -59,6 +143,6 @@ typedef struct {
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer);
+extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer);
 
 #endif /* !_PROC_REQ */

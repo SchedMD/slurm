@@ -34,6 +34,8 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/persist_conn.h"
 #include "src/common/threadpool.h"
 
 #include "src/interfaces/accounting_storage.h"

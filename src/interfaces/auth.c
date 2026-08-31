@@ -43,6 +43,7 @@
 #include <sys/socket.h>
 
 #include "src/common/macros.h"
+#include "src/common/persist_conn.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"

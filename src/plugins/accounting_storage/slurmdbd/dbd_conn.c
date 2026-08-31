@@ -43,11 +43,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "slurmdbd_agent.h"
 #include "src/common/fd.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/interfaces/conn.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "slurmdbd_agent.h"
 
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 
@@ -341,6 +342,7 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 	int rc = SLURM_SUCCESS;
 	buf_t *buffer;
 	persist_conn_t *use_conn = req->pcon;
+	slurmdbd_msg_t dbd_msg = { 0 };
 
 	xassert(req);
 	xassert(resp);
@@ -356,7 +358,11 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 		}
 	}
 
-	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
+	dbd_msg = (slurmdbd_msg_t) {
+		.data = req->data,
+		.msg_type = req->msg_type,
+	};
+	if (!(buffer = pack_slurmdbd_msg(&dbd_msg, rpc_version))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -378,7 +384,10 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 		goto end_it;
 	}
 
-	rc = unpack_slurmdbd_msg(resp, rpc_version, buffer);
+	dbd_msg = (slurmdbd_msg_t) { 0 };
+	rc = unpack_slurmdbd_msg(&dbd_msg, rpc_version, buffer);
+	resp->data = dbd_msg.data;
+	resp->msg_type = dbd_msg.msg_type;
 	/* check for the rc of the start job message */
 	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC)
 		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;
@@ -455,7 +464,7 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 			msg->comment = NULL;
 		}
 
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	}
 
 	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d",

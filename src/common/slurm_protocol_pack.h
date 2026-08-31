@@ -154,4 +154,14 @@ extern int slurm_unpack_stepmgr_job_info(void **out,
 					 uint16_t protocol_version,
 					 buf_t *buffer);
 
+extern void pack_persist_init_req_msg(persist_init_req_msg_t *msg,
+				      buf_t *buffer);
+extern int unpack_persist_init_req_msg(persist_init_req_msg_t **msg,
+				       buf_t *buffer);
+
+extern void pack_persist_rc_msg(persist_rc_msg_t *msg, buf_t *buffer,
+				uint16_t protocol_version);
+extern int unpack_persist_rc_msg(persist_rc_msg_t **msg, buf_t *buffer,
+				 uint16_t protocol_version);
+
 #endif

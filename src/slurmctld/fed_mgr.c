@@ -41,6 +41,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"

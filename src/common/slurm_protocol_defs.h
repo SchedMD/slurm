@@ -62,12 +62,12 @@
 #include "src/common/macros.h"
 #include "src/common/msg_type.h"
 #include "src/common/part_record.h"
-#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 
 /*
@@ -1215,6 +1215,49 @@ typedef struct {
 	list_t *nodes;
 } resource_layout_msg_t;
 
+/*
+ * Persistent-connection protocol: flags, connection-type enum, and
+ * wire message bodies.
+ */
+#define PERSIST_FLAG_NONE 0x0000
+#define PERSIST_FLAG_DBD SLURM_BIT(0)
+#define PERSIST_FLAG_RECONNECT SLURM_BIT(1)
+#define PERSIST_FLAG_ALREADY_INITED SLURM_BIT(2)
+#define PERSIST_FLAG_P_USER_CASE SLURM_BIT(3)
+#define PERSIST_FLAG_SUPPRESS_ERR SLURM_BIT(4)
+#define PERSIST_FLAG_EXT_DBD SLURM_BIT(5)
+#define PERSIST_FLAG_DONT_UPDATE_CLUSTER SLURM_BIT(6)
+#define PERSIST_FLAG_P_RESOURCE_CASE SLURM_BIT(7)
+
+typedef enum {
+	PERSIST_TYPE_NONE = 0,
+	PERSIST_TYPE_DBD,
+	PERSIST_TYPE_FED,
+	PERSIST_TYPE_HA_CTL,
+	PERSIST_TYPE_HA_DBD,
+	PERSIST_TYPE_ACCT_UPDATE,
+} persist_conn_type_t;
+
+typedef struct {
+	char *cluster_name; /* cluster this message is coming from */
+	uint16_t persist_type; /* really persist_conn_type_t, uint16_t on
+				* wire */
+	uint16_t port; /* If you want to open a new connection, this is
+			* the port to talk to. */
+	uint16_t version; /* protocol version */
+	uint32_t uid; /* UID originating connection,
+		       * filled by authentication plugin */
+} persist_init_req_msg_t;
+
+typedef struct {
+	char *comment;
+	uint16_t flags;
+	uint32_t rc;
+	uint16_t ret_info; /* protocol version we are connecting to since
+			    * we sent the lowest one to begin with, or the
+			    * return of a message type sent. */
+} persist_rc_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -2123,6 +2166,9 @@ extern uint16_t get_job_exclusive_display_value(job_record_t *job_ptr);
  * Free stepmgr_job_info_t
  */
 extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
+
+extern void slurm_free_persist_init_req_msg(persist_init_req_msg_t *msg);
+extern void slurm_free_persist_rc_msg(persist_rc_msg_t *msg);
 
 /* Resv creation msg client validation. On error err_msg is set */
 extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,

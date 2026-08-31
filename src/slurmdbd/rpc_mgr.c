@@ -52,6 +52,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
 
@@ -62,6 +63,42 @@
 
 /* Local functions */
 static void _connection_fini_callback(void *arg);
+
+/*
+ * Bridge from the persist_conn callback ABI (persist_msg_t *) to the
+ * slurmdbd handler ABI (slurmdbd_msg_t *). Both structs carry the
+ * same {data, msg_type} payload; the persist_conn_t back-pointer is
+ * unused by proc_req(). Removed when slurmdbd stops using the
+ * persist_conn callback machinery.
+ */
+static int _proc_req_bridge(void *arg, persist_msg_t *pmsg, buf_t **out_buffer)
+{
+	slurmdbd_conn_t *dbd_conn = arg;
+	slurmdbd_msg_t msg = {
+		.data = pmsg->data,
+		.msg_type = pmsg->msg_type,
+	};
+
+	/*
+	 * slurm_persist_msg_unpack() caches the authenticated identity on
+	 * the persist_conn_t when REQUEST_PERSIST_INIT is processed, which
+	 * happens before this callback runs. Republish it on the
+	 * slurmdbd_conn_t, which is what proc_req() and every authorization
+	 * check read.
+	 *
+	 * auth_cred stays owned by the persist_conn_t. Do not free this copy,
+	 * and do not read it outside the dispatch it was published for.
+	 * slurm_persist_msg_unpack() destroys the old cred on every
+	 * REQUEST_PERSIST_INIT, including one it goes on to reject, which
+	 * leaves this copy dangling until the next message republishes it.
+	 */
+	dbd_conn->auth_cred = dbd_conn->pcon->auth_cred;
+	dbd_conn->auth_uid = dbd_conn->pcon->auth_uid;
+	dbd_conn->auth_gid = dbd_conn->pcon->auth_gid;
+	dbd_conn->auth_ids_set = dbd_conn->pcon->auth_ids_set;
+
+	return proc_req(arg, &msg, out_buffer);
+}
 
 /* Local variables */
 static pthread_t       master_thread_id = 0;
@@ -99,9 +136,12 @@ extern void *rpc_mgr(void *no_data)
 		fd_set_nonblocking(newsockfd);
 
 		dbd_conn = xmalloc(sizeof(slurmdbd_conn_t));
+		slurmdbd_conn_init(dbd_conn);
+		dbd_conn->fd = newsockfd;
+
 		dbd_conn->pcon = xmalloc(sizeof(persist_conn_t));
 		dbd_conn->pcon->flags = PERSIST_FLAG_DBD;
-		dbd_conn->pcon->callback_proc = proc_req;
+		dbd_conn->pcon->callback_proc = _proc_req_bridge;
 		dbd_conn->pcon->callback_fini = _connection_fini_callback;
 		dbd_conn->pcon->shutdown = &shutdown_time;
 		dbd_conn->pcon->version = SLURM_MIN_PROTOCOL_VERSION;
@@ -110,6 +150,9 @@ extern void *rpc_mgr(void *no_data)
 		 * later if it is a slurmctld connection. */
 		slurm_get_ip_str(&cli_addr, dbd_conn->pcon->rem_host,
 				 INET6_ADDRSTRLEN);
+
+		/* pcon keeps its own rem_host: persist_conn.c logs from it. */
+		dbd_conn->rem_host = xstrdup(dbd_conn->pcon->rem_host);
 
 		slurm_persist_conn_recv_thread_init(dbd_conn->pcon, newsockfd,
 						    -1, dbd_conn);
@@ -165,7 +208,7 @@ static void _connection_fini_callback(void *arg)
 			int fd = dbd_conn->pcon_send->last_fd;
 			if (fd > 0) {
 				debug("Terminating send to the slurmctld on cluster %s. It is restarting or shutting down.",
-				      dbd_conn->pcon->cluster_name);
+				      dbd_conn->cluster_name);
 				shutdown(fd, SHUT_RDWR);
 			}
 		}
@@ -180,19 +223,19 @@ static void _connection_fini_callback(void *arg)
 	dbd_conn->pcon_send = NULL;
 	slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 
-	if (dbd_conn->pcon->rem_port) {
+	if (dbd_conn->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
-			cluster_rec.name = dbd_conn->pcon->cluster_name;
-			cluster_rec.control_host = dbd_conn->pcon->rem_host;
-			cluster_rec.control_port = dbd_conn->pcon->rem_port;
-			cluster_rec.rpc_version = dbd_conn->pcon->version;
+			cluster_rec.name = dbd_conn->cluster_name;
+			cluster_rec.control_host = dbd_conn->rem_host;
+			cluster_rec.control_port = dbd_conn->rem_port;
+			cluster_rec.rpc_version = dbd_conn->version;
 			cluster_rec.tres_str = dbd_conn->tres_str;
-			if (dbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD)
+			if (dbd_conn->flags & PERSIST_FLAG_EXT_DBD)
 				cluster_rec.flags = CLUSTER_FLAG_EXT;
 			debug("cluster %s has disconnected",
-			      dbd_conn->pcon->cluster_name);
+			      dbd_conn->cluster_name);
 
 			clusteracct_storage_g_fini_ctld(
 				dbd_conn->db_conn, &cluster_rec);
@@ -222,6 +265,6 @@ static void _connection_fini_callback(void *arg)
 	/* handled directly in the internal persist_conn code */
 	//slurm_persist_conn_members_destroy(&dbd_conn->pcon);
 	slurm_mutex_destroy(&dbd_conn->pcon_send_lock);
-	xfree(dbd_conn->tres_str);
+	slurmdbd_conn_members_destroy(dbd_conn);
 	xfree(dbd_conn);
 }

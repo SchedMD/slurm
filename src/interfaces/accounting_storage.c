@@ -45,13 +45,14 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
+#include "src/common/persist_conn.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/select.h"
 #include "src/slurmctld/slurmctld.h"
 
 uid_t db_api_uid = -1;

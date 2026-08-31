@@ -44,6 +44,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/list.h"
+#include "src/common/persist_conn.h"
 #include "src/interfaces/accounting_storage.h"
 
 #define RC_AS_CLUSTER_ID SLURM_BIT(31)
@@ -176,6 +177,11 @@ typedef enum {
 				    */
 	SLURM_PERSIST_INIT_TLS = 6501,
 } slurmdbd_msg_type_t;
+
+typedef struct {
+	void *data; /* pointer to a message type below */
+	uint16_t msg_type; /* slurmdbd_msg_type_t / slurm_msg_type_t */
+} slurmdbd_msg_t;
 
 /*****************************************************************************\
  * Slurm DBD protocol data structures
@@ -461,7 +467,7 @@ extern void slurmdbd_free_buffer(void *x);
 
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 extern void slurmdbd_free_cluster_tres_msg(dbd_cluster_tres_msg_t *msg);
-extern void slurmdbd_free_msg(persist_msg_t *msg);
+extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);

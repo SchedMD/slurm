@@ -41,7 +41,7 @@
 
 #include "slurm/slurmdb.h"
 
-#include "src/common/persist_conn.h"
+typedef struct persist_conn_s persist_conn_t;
 
 /* Defined purge macros */
 #define SLURMDB_PURGE_GET_UNITS(_X) \

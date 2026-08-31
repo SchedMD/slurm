@@ -641,7 +641,7 @@ extern list_t *acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -686,7 +686,7 @@ extern list_t *acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -733,7 +733,7 @@ extern list_t *acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -781,7 +781,7 @@ extern list_t *acct_storage_p_modify_assocs(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -828,7 +828,7 @@ extern list_t *acct_storage_p_modify_federations(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -883,7 +883,7 @@ extern list_t *acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -928,7 +928,7 @@ extern list_t *acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -973,7 +973,7 @@ extern list_t *acct_storage_p_modify_res(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1018,7 +1018,7 @@ extern list_t *acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1104,7 +1104,7 @@ extern list_t *acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1152,7 +1152,7 @@ extern list_t *acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1196,7 +1196,7 @@ extern list_t *acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1242,7 +1242,7 @@ extern list_t *acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1289,7 +1289,7 @@ extern list_t *acct_storage_p_remove_assocs(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1336,7 +1336,7 @@ extern list_t *acct_storage_p_remove_federations(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1383,7 +1383,7 @@ extern list_t *acct_storage_p_remove_qos(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1429,7 +1429,7 @@ extern list_t *acct_storage_p_remove_res(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1473,7 +1473,7 @@ extern list_t *acct_storage_p_remove_wckeys(
 			if (errno != SLURM_NO_CHANGE_IN_DATA)
 				error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("response type not DBD_GOT_LIST: %u",
 		      resp.msg_type);
@@ -1556,7 +1556,7 @@ extern list_t *acct_storage_p_get_users(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_USERS) {
 		error("response type not DBD_GOT_USERS: %u",
 		      resp.msg_type);
@@ -1598,7 +1598,7 @@ extern list_t *acct_storage_p_get_accts(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ACCOUNTS) {
 		error("response type not DBD_GOT_ACCOUNTS: %u",
 		      resp.msg_type);
@@ -1641,7 +1641,7 @@ extern list_t *acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_CLUSTERS) {
 		error("response type not DBD_GOT_CLUSTERS: %u",
 		      resp.msg_type);
@@ -1684,7 +1684,7 @@ extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_FEDERATIONS) {
 		error("response type not DBD_GOT_FEDERATIONS: %u",
 		      resp.msg_type);
@@ -1734,7 +1734,7 @@ extern int acct_storage_p_get_config(void *db_conn,
 			error("%s", msg->comment);
 
 		rc = msg->rc;
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type == DBD_GOT_CONFIG_KEYPAIRS) {
 		error("%s: unsupported DBD_GOT_CONFIG_KEYPAIRS: %u",
 		      __func__, resp.msg_type);
@@ -1742,9 +1742,13 @@ extern int acct_storage_p_get_config(void *db_conn,
 		slurmdbd_free_list_msg(resp.data);
 		rc = ESLURM_NOT_SUPPORTED;
 	} else if (resp.msg_type != DBD_GOT_CONFIG) {
+		slurmdbd_msg_t dbd_msg = {
+			.data = resp.data,
+			.msg_type = resp.msg_type,
+		};
 		error("response type not DBD_GOT_CONFIG: %u",
 		      resp.msg_type);
-		slurmdbd_free_msg(&resp);
+		slurmdbd_free_msg(&dbd_msg);
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	} else {
 		*slurmdbd_conf_ptr = resp.data;
@@ -1782,7 +1786,7 @@ extern list_t *acct_storage_p_get_tres(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_TRES) {
 		error("response type not DBD_GOT_TRES: %u",
 		      resp.msg_type);
@@ -1824,7 +1828,7 @@ extern list_t *acct_storage_p_get_assocs(
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ASSOCS) {
 		error("response type not DBD_GOT_ASSOCS: %u",
 		      resp.msg_type);
@@ -1866,7 +1870,7 @@ extern list_t *acct_storage_p_get_events(void *db_conn, uint32_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_EVENTS) {
 		error("response type not DBD_GOT_EVENTS: %u",
 		      resp.msg_type);
@@ -1907,7 +1911,7 @@ extern list_t *acct_storage_p_get_instances(
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_INSTANCES) {
 		error("response type not DBD_GOT_INSTANCES: %u",
 		      resp.msg_type);
@@ -1949,7 +1953,7 @@ extern list_t *acct_storage_p_get_problems(
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_PROBS) {
 		error("response type not DBD_GOT_PROBS: %u",
 		      resp.msg_type);
@@ -1991,7 +1995,7 @@ extern list_t *acct_storage_p_get_qos(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_QOS) {
 		error("response type not DBD_GOT_QOS: %u",
 		      resp.msg_type);
@@ -2040,7 +2044,7 @@ extern list_t *acct_storage_p_get_res(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_RES) {
 		error("response type not DBD_GOT_RES: %u",
 		      resp.msg_type);
@@ -2089,7 +2093,7 @@ extern list_t *acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_WCKEYS) {
 		error("response type not DBD_GOT_WCKEYS: %u",
 		      resp.msg_type);
@@ -2139,7 +2143,7 @@ extern list_t *acct_storage_p_get_reservations(
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_RESVS) {
 		error("response type not DBD_GOT_RESVS: %u",
 		      resp.msg_type);
@@ -2188,7 +2192,7 @@ extern list_t *acct_storage_p_get_txn(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_TXN) {
 		error("response type not DBD_GOT_TXN: %u",
 		      resp.msg_type);
@@ -2254,7 +2258,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE
 		   && resp.msg_type != DBD_GOT_WCKEY_USAGE
 		   && resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
@@ -2935,7 +2939,7 @@ extern list_t *jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_JOBS) {
 		error("response type not DBD_GOT_JOBS: %u",
 		      resp.msg_type);
@@ -2986,7 +2990,7 @@ extern int jobacct_storage_p_archive(void *db_conn,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else {
 		error("unknown return for archive_dump");
 		rc = SLURM_ERROR;
@@ -3023,7 +3027,7 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 			errno = msg->rc;
 			error("%s", msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else {
 		error("unknown return msg_type for archive_load: %s(%u)",
 		      rpc_num2string(resp.msg_type), resp.msg_type);
@@ -3103,7 +3107,7 @@ extern int acct_storage_p_get_stats(void *db_conn, slurmdb_stats_rec_t **stats)
 			info("RC:%d %s", msg->rc, msg->comment);
 		}
 		rc = msg->rc;
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 	} else if (resp.msg_type != DBD_GOT_STATS) {
 		error("response type not DBD_GOT_STATS: %u",
 		      resp.msg_type);

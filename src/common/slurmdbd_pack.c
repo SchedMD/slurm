@@ -1364,7 +1364,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_slurmdbd_conf(const persist_msg_t *pmsg,
+static void _pack_slurmdbd_conf(const slurmdbd_msg_t *pmsg,
 				const uint16_t protocol_version, buf_t *buffer)
 {
 	const slurmdbd_conf_t *msg = pmsg->data;
@@ -1445,7 +1445,7 @@ static void _pack_slurmdbd_conf(const persist_msg_t *pmsg,
 	}
 }
 
-static int _unpack_slurmdbd_conf(persist_msg_t *pmsg,
+static int _unpack_slurmdbd_conf(slurmdbd_msg_t *pmsg,
 				 const uint16_t protocol_version, buf_t *buffer)
 {
 	slurmdbd_conf_t *build_ptr = xmalloc(sizeof(*build_ptr));
@@ -1745,7 +1745,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
+extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 {
 	buf_t *buffer;
 
@@ -1755,15 +1755,19 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 		return NULL;
 	}
 
+	log_flag(NET, "%s: packing msg_type=%s rpc_version=%hu",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, true),
+		 rpc_version);
+
 	buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 
 	switch (req->msg_type) {
 	case REQUEST_PERSIST_INIT:
-		slurm_persist_pack_init_req_msg(req->data, buffer);
+		pack_persist_init_req_msg(req->data, buffer);
 		break;
 	case PERSIST_RC:
-		slurm_persist_pack_rc_msg(req->data, buffer, rpc_version);
+		pack_persist_rc_msg(req->data, buffer, rpc_version);
 		break;
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:
@@ -1943,7 +1947,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 	return buffer;
 }
 
-extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 			       buf_t *buffer)
 {
 	int rc = SLURM_SUCCESS;

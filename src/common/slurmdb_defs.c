@@ -41,16 +41,19 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/auth.h"
+#include "src/common/persist_conn.h"
+#include "src/common/print_fields.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/select.h"
+
 #include "src/slurmdbd/read_config.h"
-#include "src/common/print_fields.h"
 
 #define FORMAT_STRING_SIZE 34
 

@@ -44,8 +44,8 @@
 \*****************************************************************************/
 
 #include "accounting_storage_mysql.h"
+
 #include "as_mysql_acct.h"
-#include "as_mysql_tres.h"
 #include "as_mysql_archive.h"
 #include "as_mysql_assoc.h"
 #include "as_mysql_cluster.h"
@@ -59,10 +59,13 @@
 #include "as_mysql_resource.h"
 #include "as_mysql_resv.h"
 #include "as_mysql_rollup.h"
+#include "as_mysql_tres.h"
 #include "as_mysql_txn.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
+
+#include "src/common/persist_conn.h"
 
 #include "src/slurmdbd/proc_req.h"
 
@@ -2907,14 +2910,15 @@ static int _send_ctld_update(void *x, void *arg)
 	slurmdbd_conn_t *dbd_conn = x;
 	list_t *update_list = arg;
 
-	if ((dbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD) ||
-	    (dbd_conn->pcon->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
+	if ((dbd_conn->flags & PERSIST_FLAG_EXT_DBD) ||
+	    (dbd_conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
 		return 0;
 
 	slurm_mutex_lock(&dbd_conn->pcon_send_lock);
 
 	if (!dbd_conn->pcon_send) {
-		debug("slurmctld for cluster %s left at the moment we were about to send to it.", dbd_conn->pcon->cluster_name);
+		debug("slurmctld for cluster %s left at the moment we were about to send to it.",
+		      dbd_conn->cluster_name);
 		slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 		return 0;
 	}

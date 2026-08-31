@@ -5462,10 +5462,10 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurmdb_destroy_federation_rec(data);
 		break;
 	case REQUEST_PERSIST_INIT:
-		slurm_persist_free_init_req_msg(data);
+		slurm_free_persist_init_req_msg(data);
 		break;
 	case PERSIST_RC:
-		slurm_persist_free_rc_msg(data);
+		slurm_free_persist_rc_msg(data);
 		break;
 	case REQUEST_REBOOT_NODES:
 		slurm_free_reboot_msg(data);
@@ -5593,9 +5593,16 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_suspend_exc_update_msg(data);
 		break;
 	case REQUEST_DBD_RELAY:
-		slurmdbd_free_msg(data);
+	{
+		persist_msg_t *pmsg = data;
+		slurmdbd_msg_t dbd_msg = {
+			.data = pmsg->data,
+			.msg_type = pmsg->msg_type,
+		};
+		slurmdbd_free_msg(&dbd_msg);
 		xfree(data);
 		break;
+	}
 	case RESPONSE_CONTROL_STATUS:
 		slurm_free_control_status_msg(data);
 		break;
@@ -6824,6 +6831,22 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object)
 
 	xfree(object->stepmgr);
 	xfree(object);
+}
+
+extern void slurm_free_persist_init_req_msg(persist_init_req_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
+}
+
+extern void slurm_free_persist_rc_msg(persist_rc_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->comment);
+		xfree(msg);
+	}
 }
 
 /* Resv creation msg client validation. On error err_msg is set */

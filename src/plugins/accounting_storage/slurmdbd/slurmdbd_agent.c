@@ -40,6 +40,8 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/fd.h"
+#include "src/common/persist_conn.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/threadpool.h"
 #include "src/common/xstring.h"
@@ -157,12 +159,12 @@ static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer,
 	uint16_t msg_type = -1;
 	persist_rc_msg_t *msg;
 	dbd_id_rc_msg_t *id_msg;
-	persist_msg_t resp;
+	slurmdbd_msg_t resp;
 	int rc = SLURM_ERROR;
 
 	xassert(rc_msg);
 
-	memset(&resp, 0, sizeof(persist_msg_t));
+	memset(&resp, 0, sizeof(resp));
 	if ((rc = unpack_slurmdbd_msg(&resp, slurmdbd_conn->version, buffer))
 	    != SLURM_SUCCESS) {
 		error("unpack message error");
@@ -213,7 +215,7 @@ static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer,
 				      msg->ret_info,
 				      msg->comment);
 		}
-		slurm_persist_free_rc_msg(msg);
+		slurm_free_persist_rc_msg(msg);
 		break;
 	default:
 		error("bad message type %s != PERSIST_RC",
@@ -300,9 +302,9 @@ static int _handle_mult_rc_ret(list_t **id_rc_list)
 		slurmdbd_free_list_msg(list_msg);
 		break;
 	case PERSIST_RC:
-		if (slurm_persist_unpack_rc_msg(
-			    &msg, buffer, slurmdbd_conn->version)
-		    == SLURM_SUCCESS) {
+		if (unpack_persist_rc_msg(&msg, buffer,
+					  slurmdbd_conn->version) ==
+		    SLURM_SUCCESS) {
 			rc = msg->rc;
 			if (rc != SLURM_SUCCESS) {
 				if (msg->ret_info == DBD_REGISTER_CTLD &&
@@ -327,7 +329,7 @@ static int _handle_mult_rc_ret(list_t **id_rc_list)
 					      msg->ret_info,
 					      msg->comment);
 			}
-			slurm_persist_free_rc_msg(msg);
+			slurm_free_persist_rc_msg(msg);
 		} else
 			error("unpack message error");
 		break;
@@ -444,7 +446,7 @@ static void _load_dbd_state(void)
 				 * PROTOCOL_VERSION just so we keep
 				 * things up to date.
 				 */
-				persist_msg_t msg = {0};
+				slurmdbd_msg_t msg = { 0 };
 				int rc;
 				set_buf_offset(buffer, 0);
 				rc = unpack_slurmdbd_msg(
@@ -695,12 +697,11 @@ static void *_agent(void *x)
 	buf_t *buffer;
 	struct timespec abs_time;
 	static time_t fail_time = 0;
-	persist_msg_t list_req = {0};
+	slurmdbd_msg_t list_req = { 0 };
 	dbd_list_msg_t list_msg;
 	DEF_TIMERS;
 
 	list_req.msg_type = DBD_SEND_MULT_MSG;
-	list_req.pcon = slurmdbd_conn;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
 
@@ -1062,6 +1063,10 @@ extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 	uint32_t cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 	bool trigger_dbd_fail = false, trigger_acct_full = false;
+	slurmdbd_msg_t dbd_msg = {
+		.data = req->data,
+		.msg_type = req->msg_type,
+	};
 
 	xassert(running_in_slurmctld());
 	xassert(slurm_conf.max_dbd_msgs);
@@ -1070,7 +1075,7 @@ extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 		 slurmdbd_msg_type_2_str(req->msg_type, 1),
 		 list_count(agent_list));
 
-	buffer = pack_slurmdbd_msg(req, SLURM_PROTOCOL_VERSION);
+	buffer = pack_slurmdbd_msg(&dbd_msg, SLURM_PROTOCOL_VERSION);
 	if (!buffer)	/* pack error */
 		return SLURM_ERROR;
 
