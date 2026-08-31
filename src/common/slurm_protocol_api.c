@@ -1663,7 +1663,13 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	 * Pack message into buffer
 	 */
 	buffers->body = init_buf(BUF_SIZE);
-	pack_msg(msg, buffers->body);
+	if ((rc = pack_msg(msg, buffers->body))) {
+		error("%s: packing %s failed: %s", __func__,
+		      rpc_num2string(msg->msg_type), slurm_strerror(rc));
+		/* pack_msg() can return SLURM_ERROR, which is not an errno */
+		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
+		goto failed;
+	}
 	log_flag_hex(NET_RAW, get_buf_data(buffers->body),
 		     get_buf_offset(buffers->body),
 		     "%s: packed body", __func__);
