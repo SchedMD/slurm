@@ -70,6 +70,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/cli_filter.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/sbatch/opt.h"
 
@@ -294,7 +295,18 @@ extern char *process_options_first_pass(int argc, char **argv)
 	char **local_argv, *script_file = NULL;
 	int opt_char, option_index = 0;
 	char *opt_string = NULL;
-	struct option *optz = slurm_option_table_create(&opt, &opt_string);
+	struct option *optz = NULL;
+
+	/*
+	 * Resolve the runtime before the option table is built, so that the
+	 * options the plugin provides are in it. The second pass and the
+	 * batch script directives build tables of their own, but they run
+	 * later in the same process and the plugin is loaded by then.
+	 */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SBATCH, NULL))
+		fatal("failed to initialize runtime plugin");
+
+	optz = slurm_option_table_create(&opt, &opt_string);
 
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, true);
