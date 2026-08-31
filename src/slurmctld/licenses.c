@@ -459,6 +459,8 @@ static int _license_find_overlap_mode3(void *x, void *key)
 	/* Must be the same level */
 	if (license_entry->hres_rec.level != license_key->hres_rec.level)
 		return 0;
+	if (!license_entry->node_bitmap || !license_key->node_bitmap)
+		return 0;
 
 	return bit_overlap_any(license_entry->node_bitmap,
 			       license_key->node_bitmap);
@@ -992,71 +994,46 @@ static int _foreach_license_set_hres(void *x, void *key)
 				   license->name);
 
 	if (!hres_head) {
-		error("%s:_license_find_rec: %s not in cluster_license_list",
+		fatal("%s:_license_find_rec: %s not in cluster_license_list",
 		      __func__,
 		      license->name);
-		return -1;
 	}
 
-	if (license->nodes) {
+	if (license->mode != HRES_MODE_OFF) {
 		if (hres_head->mode != license->mode) {
-			error("%s HRES Mode mismatch %s", __func__,
+			fatal("%s HRES Mode mismatch %s", __func__,
 			      license->name);
-			return -1;
+		}
+		if (license->hres_rec.parent_name &&
+		    (license->mode != HRES_MODE_3)) {
+			fatal("%s: HRES=%s layer=%s parent specified for non-mode 3 HRES",
+			      __func__, license->name,
+			      license->hres_rec.layer_name);
 		}
 		if (license != hres_head) {
-			licenses_find_rec_by_nodes_t args = {
-				.name = license->name,
-				.nodes = license->nodes,
-			};
-			licenses_t *hres_dup =
-				list_find_first_ro(cluster_license_list,
-						   _license_find_rec_by_nodes,
-						   &args);
-			if (!hres_dup) {
-				error("%s:_license_find_rec_by_nodes: %s not in cluster_license_list (%s)",
-				      __func__,
-				      license->name,
-				      license->nodes);
-				return -1;
-			}
-
-			if (hres_dup != license) {
-				error("%s HRes %s duplicate layer", __func__,
-				      license->name);
-				return -1;
-			}
 			license->id.hres_id = hres_head->id.hres_id;
 		} else
 			license->id.hres_id = license->id.lic_id;
 
-		if (node_name2bitmap(license->nodes, false,
-				     &license->node_bitmap, NULL))
-			return -1;
+		if (license->nodes) {
+			if (node_name2bitmap(license->nodes, false,
+					     &license->node_bitmap, NULL)) {
+				fatal("%s: HRES=%s layer=%s can't set node_bitmap for nodes=%s",
+				      __func__, license->name,
+				      license->hres_rec.layer_name,
+				      license->nodes);
+			}
+		} else {
+			license->node_bitmap = bit_alloc(node_record_count);
+		}
 	} else {
-		xassert(license->mode == HRES_MODE_OFF);
 		if (license != hres_head) {
-			error("%s duplicate license %s", __func__,
+			fatal("%s duplicate license %s", __func__,
 			      license->name);
-			return -1;
 		}
 		license->id.hres_id = NO_VAL16;
 	}
 
-	return 0;
-}
-
-static int _license_find_parent(void *x, void *key)
-{
-	licenses_t *license_entry = x;
-	licenses_t *child = key;
-
-	if (child == license_entry)
-		return 0;
-	if (child->id.hres_id != license_entry->id.hres_id)
-		return 0;
-	if (bit_super_set(child->node_bitmap, license_entry->node_bitmap))
-		return 1;
 	return 0;
 }
 
@@ -1066,20 +1043,27 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 	foreach_hres_set_mode3_t *args = arg;
 
 	if (license->mode == HRES_MODE_3) {
-		licenses_t *parent =
-			list_find_first_ro(cluster_license_list,
-					   _license_find_parent, license);
-		license->hres_rec.idx = args->idx++;
-		license->hres_rec.path_idx[0] = license->hres_rec.idx;
+		licenses_t *parent;
+		licenses_find_layer_t find_layer = {
+			.hres_name = license->name,
+			.layer_name = license->hres_rec.parent_name,
+		};
+
+		parent = list_find_first_ro(cluster_license_list,
+					    _license_find_layer, &find_layer);
 		if (!parent) {
+			if (find_layer.layer_name) {
+				error("%s: HRES=%s layer=%s: could not find parent=%s",
+				      __func__, license->name,
+				      license->hres_rec.layer_name,
+				      find_layer.layer_name);
+				return -1;
+			}
 			if (args->prev_hres_id == license->id.hres_id) {
 				error("%s %s isn't a rooted tree", __func__,
 				      license->name);
 				return -1;
 			}
-
-			/* root is last, reset idx for next HRES */
-			args->idx = 0;
 			args->prev_hres_id = license->id.hres_id;
 
 			if (license->hres_rec.topology_name) {
@@ -1095,6 +1079,16 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 				}
 			} else
 				license->hres_rec.topology_idx = -1;
+		} else if (parent->nodes) {
+			error("%s: Mode 3 HRES=%s non-leaf layer=%s defined nodes, only leaves can define nodes",
+			      __func__, license->name,
+			      parent->hres_rec.layer_name);
+			return -1;
+		} else if (parent == license) {
+			error("%s: Mode 3 HRES=%s layer=%s parent specified as self",
+			      __func__, license->name,
+			      license->hres_rec.layer_name);
+			return -1;
 		} else {
 			if (license->hres_rec.topology_name) {
 				xassert(!parent->hres_rec.topology_name);
@@ -1102,9 +1096,36 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 					license->hres_rec.topology_name;
 				license->hres_rec.topology_name = NULL;
 			}
-			parent->hres_rec.level = license->hres_rec.level + 1;
 			license->hres_rec.parent = parent;
 		}
+	}
+	return 0;
+}
+
+static int _foreach_license_set_idx_level(void *x, void *arg)
+{
+	licenses_t *license = x;
+	foreach_hres_set_mode3_t *args = arg;
+
+	if (license->mode != HRES_MODE_3)
+		return 0;
+
+	license->hres_rec.idx = args->idx++;
+	license->hres_rec.path_idx[0] = license->hres_rec.idx;
+
+	if (!license->hres_rec.parent) {
+		/* root is last, reset idx for next HRES */
+		args->idx = 0;
+		args->prev_hres_id = license->id.hres_id;
+	} else {
+		/*
+		 * Leaf-first sorting allows us to simply set level of the
+		 * parent as we iterate through the list. Multiple layers with
+		 * the same parent will still set the parent's level to the
+		 * same value.
+		 */
+		license->hres_rec.parent->hres_rec.level =
+			license->hres_rec.level + 1;
 	}
 	return 0;
 }
@@ -1112,43 +1133,37 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 static int _foreach_license_set_path(void *x, void *key)
 {
 	licenses_t *license = x;
-	licenses_t *child = key;
+	licenses_t *parent;
+	int i;
+
+	/*
+	 * Path is an array of hres_idx:
+	 * [self, parent, grandparent, ..., root]
+	 */
+	for (i = 0, parent = license->hres_rec.parent; parent;
+	     i++, parent = parent->hres_rec.parent) {
+		license->hres_rec.path_idx[i + 1] = parent->hres_rec.idx;
+	}
+
+	return 0;
+}
+
+static int _foreach_license_set_depth(void *x, void *arg)
+{
+	licenses_t *license = x;
+
 	if (license->mode != HRES_MODE_3)
 		return 0;
-
-	if (child == license)
-		return 0;
-
-	if (!child && license->hres_rec.level)
-		return 0;
-
-	if (!child) { /* leaf */
-		return list_for_each_ro(cluster_license_list,
-					_foreach_license_set_path, license);
-	}
-
-	if (license != child->hres_rec.parent)
-		return 0;
-
-	if (!license->hres_rec.depth) { /* first check */
-		if (!license->hres_rec.parent) { /* root */
-			license->hres_rec.depth = 1;
-		} else {
-			list_for_each_ro(cluster_license_list,
-					 _foreach_license_set_path, license);
+	license->hres_rec.depth = 1; /* root has depth == 1 */
+	for (licenses_t *parent = license->hres_rec.parent; parent;
+	     parent = parent->hres_rec.parent) {
+		license->hres_rec.depth++;
+		/* The if check here will guard against recursive parents */
+		if (license->hres_rec.depth > MAX_HIERARCHY_DEPTH) {
+			fatal("%s: depth of HRES=%s is greater than %d",
+			      __func__, license->name, MAX_HIERARCHY_DEPTH);
 		}
 	}
-
-	child->hres_rec.depth = license->hres_rec.depth + 1;
-
-	if (child->hres_rec.depth > MAX_HIERARCHY_DEPTH) {
-		error("%s depth of %s is greater than %d", __func__,
-		      license->name, MAX_HIERARCHY_DEPTH);
-		return -1;
-	}
-
-	for (int i = 0; i < license->hres_rec.depth; i++)
-		child->hres_rec.path_idx[i + 1] = license->hres_rec.path_idx[i];
 
 	return 0;
 }
@@ -1252,9 +1267,10 @@ static int _sort_hres(void *void1, void *void2)
 	}
 
 	if (lic1->mode == HRES_MODE_3) {
-		if (bit_super_set(lic1->node_bitmap, lic2->node_bitmap))
+		/* Sort by depth: leaves (greater depth) first, root last. */
+		if (lic1->hres_rec.depth > lic2->hres_rec.depth)
 			return -1;
-		else if (bit_super_set(lic2->node_bitmap, lic1->node_bitmap))
+		else if (lic1->hres_rec.depth < lic2->hres_rec.depth)
 			return 1;
 	}
 
@@ -1310,8 +1326,8 @@ static int _foreach_license_mode3_uniform_depth(void *x, void *arg)
 
 /*
  * Validate that all leaf layers have the same depth within each mode 3 HRES.
- * _sort_hres() sorts by HRES ID, so all leaves of the same HRES ID will be
- * found before encountering any leaves of a different HRES ID.
+ * Layers of the same HRES are contiguous in the list by construction, so all
+ * leaves of one HRES are found before encountering any other HRES.
  */
 static bool _is_uniform_depth(void)
 {
@@ -1324,6 +1340,32 @@ static bool _is_uniform_depth(void)
 			     _foreach_license_mode3_uniform_depth, &arg) < 0)
 		return false;
 	return true;
+}
+
+static int _foreach_license_set_mode3_nodes(void *x, void *arg)
+{
+	licenses_t *license = x;
+	licenses_t *parent;
+
+	if (license->mode != HRES_MODE_3)
+		return 0;
+	/*
+	 * The list is sorted leaf first. When arriving at a non-leaf, all of
+	 * its children's nodes have been OR'd into its node_bitmap. We can now
+	 * generate the nodes string.
+	 */
+	if (license->hres_rec.level) { /* non-leaf */
+		xfree(license->nodes);
+		license->nodes = bitmap2node_name(license->node_bitmap);
+	}
+	parent = license->hres_rec.parent;
+	if (parent) {
+		if (!parent->node_bitmap)
+			parent->node_bitmap = bit_copy(license->node_bitmap);
+		else
+			bit_or(parent->node_bitmap, license->node_bitmap);
+	}
+	return 0;
 }
 
 extern int hres_init(void)
@@ -1342,11 +1384,7 @@ extern int hres_init(void)
 
 	last_license_update = time(NULL);
 
-	if (list_for_each_ro(cluster_license_list, _foreach_license_set_hres,
-			     NULL) < 0)
-		fatal("Can't set hres_id or bitmap");
-	list_sort(cluster_license_list, _sort_hres);
-
+	list_for_each_ro(cluster_license_list, _foreach_license_set_hres, NULL);
 	/* Enforce uniqueness of hres_rec.layer_name */
 	list_for_each_ro(cluster_license_list, _foreach_validate_layer_name,
 			 NULL);
@@ -1354,17 +1392,27 @@ extern int hres_init(void)
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_mode3,
 			     &arg) < 0)
 		fatal("Can't set MODE3");
+	list_for_each_ro(cluster_license_list, _foreach_license_set_depth,
+			 NULL);
 
-	if (list_for_each_ro(cluster_license_list, _foreach_license_set_path,
-			     NULL) < 0)
-		fatal("Can't set MODE3 path");
+	/* Sort leaf-first before setting level and testing uniform depth */
+	list_sort(cluster_license_list, _sort_hres);
 
+	/* Reuse arg */
+	arg.idx = 0;
+	arg.prev_hres_id = NO_VAL16;
+	list_for_each_ro(cluster_license_list, _foreach_license_set_idx_level,
+			 &arg);
 	if (!_is_uniform_depth())
 		fatal("MODE3 HRES is not a uniform depth tree");
+	list_for_each_ro(cluster_license_list, _foreach_license_set_path, NULL);
 
 	if (list_for_each_ro(cluster_license_list,
 			     _foreach_license_mode3_no_overlap, NULL) < 0)
 		fatal("Invalid MODE3");
+	/* Propagate leaf node_bitmaps up the tree */
+	list_for_each(cluster_license_list, _foreach_license_set_mode3_nodes,
+		      NULL);
 
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_cnt,
 			     &root) < 0)

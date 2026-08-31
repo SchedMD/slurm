@@ -7519,7 +7519,7 @@ static int _foreach_license(void *x, void *arg)
 	xassert(license);
 	xassert(resources);
 
-	if (!license->nodes)
+	if (license->mode == HRES_MODE_OFF)
 		return SLURM_SUCCESS; /* not a hierarchical resource - skip */
 
 	if (!*resources)
@@ -11629,10 +11629,10 @@ static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
 	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_LAYER)[] = {
 	add_parse_req(STRING, layer_name, "layer_name", "Layer name. Must be unique (case insensitive)."),
-	add_parse(STRING, parent_name, "parent_name", "Name of parent layer. Required for mode 3, except for the root layer. Ignored for mode 1 and 2."),
-	add_parse_req(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
+	add_parse(STRING, parent_name, "parent_name", "Name of parent layer. Only valid for mode 3, where it is required for every layer except the root."),
+	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
 	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
-	add_parse_req(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
 };
 #undef add_parse
 #undef add_parse_req
