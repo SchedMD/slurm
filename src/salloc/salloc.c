@@ -72,6 +72,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
@@ -681,6 +682,7 @@ relinquish:
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
+	runtime_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_fini();
 	log_fini();

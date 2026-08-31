@@ -71,6 +71,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/cli_filter.h"
+#include "src/interfaces/runtime.h"
 #include "src/salloc/opt.h"
 #include "src/salloc/salloc.h"
 
@@ -115,6 +116,13 @@ static void  _set_options(int argc, char **argv);
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
 				       int het_job_inx)
 {
+	/*
+	 * Resolve the runtime before the option table is built in
+	 * _set_options(), so that the options the plugin provides are in it.
+	 */
+	if (runtime_g_init(NULL, RUNTIME_CTXT_SALLOC, NULL))
+		fatal("failed to initialize runtime plugin");
+
 	/*
 	 * Record which component these options describe before the reset,
 	 * which drops what the runtime holds for it.
