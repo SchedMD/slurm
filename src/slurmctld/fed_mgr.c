@@ -3800,7 +3800,21 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 			FREE_NULL_BUFFER(buffer);
 			msg->protocol_version = sibling->rpc_version;
 			buffer = init_buf(BUF_SIZE);
-			pack_msg(msg, buffer);
+			if ((rc = pack_msg(msg, buffer))) {
+				error("%s: packing %s for %s failed: %s",
+				      __func__, rpc_num2string(msg->msg_type),
+				      sibling->name, slurm_strerror(rc));
+				FREE_NULL_BUFFER(buffer);
+				sib_msg.data_buffer = NULL;
+				/*
+				 * Nothing is cached for this version, so the
+				 * next sibling must pack again rather than
+				 * reuse the buffer just released
+				 */
+				last_rpc_version = NO_VAL16;
+				ret_rc |= rc;
+				continue;
+			}
 			sib_msg.data_buffer  = buffer;
 			sib_msg.data_version = msg->protocol_version;
 
@@ -3836,7 +3850,24 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 
 				tmp_msg.protocol_version = sibling->rpc_version;
 				buffer = init_buf(BUF_SIZE);
-				pack_msg(&tmp_msg, buffer);
+				if ((rc = pack_msg(&tmp_msg, buffer))) {
+					error("%s: packing %s for %s failed: %s",
+					      __func__,
+					      rpc_num2string(tmp_msg.msg_type),
+					      sibling->name,
+					      slurm_strerror(rc));
+					FREE_NULL_BUFFER(buffer);
+					sib_msg.data_buffer = NULL;
+					/*
+					 * Nothing is cached for this version,
+					 * so the next sibling must pack again
+					 * rather than reuse the buffer just
+					 * released
+					 */
+					last_rpc_version = NO_VAL16;
+					ret_rc |= rc;
+					continue;
+				}
 				sib_msg.data_buffer = buffer;
 				sib_msg.data_offset = 0;
 				sib_msg.data_version = msg->protocol_version;
