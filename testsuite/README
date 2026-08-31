@@ -758,6 +758,7 @@ test_107_1   /commands/scancel/test_--help.py
 test_107_2   /commands/scancel/test_--usage.py
 test_107_3   Test scancel --ctld and filtering options
 test_107_4   Test scancel signals jobs by mixes of Job IDs and SLUIDs
+test_107_5   Test scancel of a hetjob step keeps the component jobs running
 
 test_108_#   Testing of scontrol options.
 =========================================
@@ -886,6 +887,8 @@ test_116_59  Test the --runtime job submission option and its runtime plugins
 test_116_60  Test the srun/salloc/sbatch --runtime=list option
 test_116_61  Verify a pending synchronous step is assigned a real step ID at submission
 test_116_62  Verify a synchronous step pending on exhausted reserved ports gets a real step ID at submission
+test_116_63  Test MPI/PMIx abort propagation across hetjob components
+test_116_64  Test srun forced termination of a hetjob
 
 test_117_#   Testing of sstat options.
 ======================================

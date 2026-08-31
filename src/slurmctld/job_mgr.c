@@ -226,6 +226,7 @@ typedef struct {
 } foreach_hetcomp_args_t;
 
 typedef struct {
+	bool found;
 	job_step_kill_msg_t *job_step_kill_msg;
 	int rc;
 	uint32_t uid;
@@ -2643,7 +2644,6 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
 	xassert(job_ptr);
-	xassert(job_ptr->job_id == job_step_kill_msg->step_id.job_id);
 
 	START_TIMER;
 
@@ -2721,13 +2721,24 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	foreach_kill_hetjob_step_t *foreach_kill_hetjob_step = arg;
 	job_step_kill_msg_t *job_step_kill_msg =
 		foreach_kill_hetjob_step->job_step_kill_msg;
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(het_job_ptr);
 	int rc;
 
-	job_step_kill_msg->step_id = STEP_ID_FROM_JOB_RECORD(het_job_ptr);
+	/*
+	 * Retarget the request to this component job but keep the requested
+	 * step, otherwise the whole component job would be signaled instead
+	 * of only its step and flags like KILL_NO_SIG_FAIL would be dropped.
+	 */
+	step_id.step_id = job_step_kill_msg->step_id.step_id;
+	step_id.step_het_comp = job_step_kill_msg->step_id.step_het_comp;
+	job_step_kill_msg->step_id = step_id;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
 			    foreach_kill_hetjob_step->uid);
 
-	if (rc != SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS)
+		foreach_kill_hetjob_step->found = true;
+	else if ((rc != ESLURM_INVALID_JOB_ID) &&
+		 (foreach_kill_hetjob_step->rc == SLURM_SUCCESS))
 		foreach_kill_hetjob_step->rc = rc;
 
 	return 0;
@@ -2783,7 +2794,8 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		goto endit;
 
 	if (job_ptr->het_job_list &&
-	    (job_step_kill_msg->signal == SIGKILL) &&
+	    ((job_step_kill_msg->signal == SIGKILL) ||
+	     (job_step_kill_msg->signal == SIG_TERM_KILL)) &&
 	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
 		foreach_kill_hetjob_step_t foreach_kill_hetjob_step = {
 			.job_step_kill_msg = job_step_kill_msg,
@@ -2793,6 +2805,15 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		(void) list_for_each(job_ptr->het_job_list,
 				     _foreach_kill_hetjob_step,
 				     &foreach_kill_hetjob_step);
+		/*
+		 * A step does not need to exist in every component. Keep the
+		 * first real error so that it is not masked by the components
+		 * simply not having the step, and report the step as not found
+		 * only when no component had it and nothing else failed.
+		 */
+		if (!foreach_kill_hetjob_step.found &&
+		    (foreach_kill_hetjob_step.rc == SLURM_SUCCESS))
+			foreach_kill_hetjob_step.rc = ESLURM_INVALID_JOB_ID;
 		if (foreach_kill_hetjob_step.rc != SLURM_SUCCESS)
 			error_code = foreach_kill_hetjob_step.rc;
 	} else {
