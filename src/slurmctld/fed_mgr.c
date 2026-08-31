@@ -2156,7 +2156,14 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	job_msg.data = job_buffer;
 
 	buffer = init_buf(BUF_SIZE);
-	pack_msg(&job_msg, buffer);
+	if ((rc = pack_msg(&job_msg, buffer))) {
+		error("%s: packing %s for %s failed: %s", __func__,
+		      rpc_num2string(job_msg.msg_type), sib_name,
+		      slurm_strerror(rc));
+		FREE_NULL_BUFFER(job_buffer);
+		FREE_NULL_BUFFER(buffer);
+		return rc;
+	}
 
 	memset(&sib_msg, 0, sizeof(sib_msg_t));
 	sib_msg.sib_msg_type = FED_JOB_SYNC;
