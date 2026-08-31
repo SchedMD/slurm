@@ -6187,6 +6187,7 @@ extern bool is_prolog_running(job_record_t *job_ptr)
 extern int prolog_complete(prolog_complete_msg_t *msg)
 {
 	job_record_t *job_ptr;
+	bool all_done = false;
 
 	if (!(job_ptr = find_job(&msg->step_id))) {
 		info("prolog_complete: invalid %pI", &msg->step_id);
@@ -6220,7 +6221,25 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 		if (job_ptr->state_reason == WAIT_PROLOG)
 			job_ptr->state_reason = WAIT_NO_REASON;
 		agent_trigger(999, false, true);
+		all_done = true;
 	}
+
+	/*
+	 * On a prolog failure slurmd fails or requeues the job right after
+	 * sending this RPC, so don't finish configuring a job that is not
+	 * going to run.
+	 */
+	if (!msg->prolog_rc)
+		job_scheduler_cf_test_fini(job_ptr);
+
+	/*
+	 * Keep the bitmap until every node has reported in. It also marks that
+	 * the prolog has already run for this allocation, so job_config_fini()
+	 * does not launch it a second time.
+	 */
+	if (all_done)
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+
 	last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
@@ -9463,17 +9482,42 @@ static void _het_job_time_limit_incr(job_record_t *job_ptr,
 extern void job_config_fini(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
+	bool prolog_ran = (job_ptr->bit_flags & JOB_PROLOG_LAUNCHED);
+
+	/*
+	 * The Prolog launched at allocation is part of configuring the job, so
+	 * the job is not done configuring until it is done.
+	 */
+	if (job_scheduler_node_prolog_running(job_ptr))
+		return;
 
 	last_job_update = now;
+
+	/*
+	 * Clear the flag before the accounting below. _job_time_limit_incr()
+	 * reads it to tell a component that has finished configuring from a
+	 * sibling that has not, so leaving it set here would cost this job its
+	 * tot_sus_time and its "Extending ..." message.
+	 */
 	job_state_unset_flag(job_ptr, JOB_CONFIGURING);
-	if (IS_JOB_POWER_UP_NODE(job_ptr)) {
-		info("Resetting %pJ start time for node power up", job_ptr);
-		job_state_unset_flag(job_ptr, JOB_POWER_UP_NODE);
-		job_ptr->start_time = now;
-		_het_job_time_limit_incr(job_ptr, job_ptr->job_id);
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	} else {
-		_het_job_time_limit_incr(job_ptr, 0);
+
+	/*
+	 * Only node configuration extends the time limit. The Prolog does not:
+	 * it counted against the limit before it became part of configuring,
+	 * and it still has to, so account for the configuration that ends here
+	 * and never again when the Prolog that follows completes.
+	 */
+	if (!prolog_ran) {
+		if (IS_JOB_POWER_UP_NODE(job_ptr)) {
+			info("Resetting %pJ start time for node power up",
+			     job_ptr);
+			job_state_unset_flag(job_ptr, JOB_POWER_UP_NODE);
+			job_ptr->start_time = now;
+			_het_job_time_limit_incr(job_ptr, job_ptr->job_id);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		} else {
+			_het_job_time_limit_incr(job_ptr, 0);
+		}
 	}
 
 	if (job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD"))
@@ -9482,8 +9526,21 @@ extern void job_config_fini(job_record_t *job_ptr)
 	/*
 	 * Request asynchronous launch of a prolog for a non-batch job.
 	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
+	 *
+	 * JOB_PROLOG_LAUNCHED says it has already been launched for this
+	 * allocation. node_bitmap_pr cannot answer that: prolog_complete()
+	 * frees it once every node has reported, which happens even on the
+	 * paths that leave the job configuring, and it does not survive a
+	 * restart at every protocol version.
+	 *
+	 * launch_prolog() puts the job back into CONFIGURING itself, and only
+	 * when the job is held for its Prolog: not with NoHold, not for an
+	 * external job, and only after it has packed the job for a stepmgr
+	 * stepd. The job write lock is held throughout, so nothing outside
+	 * this call sees the job between the clear above and there.
 	 */
-	if (slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC)
+	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    !(job_ptr->bit_flags & JOB_PROLOG_LAUNCHED))
 		launch_prolog(job_ptr);
 }
 
@@ -9556,11 +9613,26 @@ extern void launch_ready_jobs_on_node(node_record_t *node_ptr)
 	list_for_each(job_list, _foreach_launch_ready_job, node_ptr);
 }
 
+/*
+ * Return true if this job is configuring in a way that exempts it from its
+ * limits.
+ *
+ * Waiting on the Prolog launched at allocation does not exempt a job from its
+ * limits: the Prolog counts against the job's time limit. Booting nodes is the
+ * opposite: that time is given back, so it still exempts the job. The two never
+ * overlap, as node_bitmap_pr is only set once the boot has completed.
+ */
+static bool _job_configuring_exempt(job_record_t *job_ptr)
+{
+	return (IS_JOB_CONFIGURING(job_ptr) &&
+		!job_scheduler_node_prolog_running(job_ptr));
+}
+
 static int _foreach_het_job_configuring_test(void *x, void *arg)
 {
 	job_record_t *het_job = x;
 
-	if (IS_JOB_CONFIGURING(het_job))
+	if (_job_configuring_exempt(het_job))
 		return 1;
 	return 0;
 }
@@ -9568,12 +9640,14 @@ static int _foreach_het_job_configuring_test(void *x, void *arg)
 /*
  * For non-hetjob, return true if this job is configuring.
  * For hetjob, return true if any component of the job is configuring.
+ * Either way, a component waiting on its Prolog does not count, see
+ * _job_configuring_exempt().
  */
 static bool _het_job_configuring_test(job_record_t *job_ptr)
 {
 	job_record_t *het_job_leader;
 
-	if (IS_JOB_CONFIGURING(job_ptr))
+	if (_job_configuring_exempt(job_ptr))
 		return true;
 	if (!job_ptr->het_job_id)
 		return false;
@@ -10135,6 +10209,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 	job_desc_msg->bitflags &= ~RESET_ACCRUE_TIME;
 	job_desc_msg->bitflags &= ~RESET_CONSOLIDATE_SEGMENTS;
 	job_desc_msg->bitflags &= ~RESET_SPREAD_SEGMENTS;
+	job_desc_msg->bitflags &= ~JOB_PROLOG_LAUNCHED;
 	if (!cron)
 		job_desc_msg->bitflags &= ~CRON_JOB;
 
@@ -17056,6 +17131,12 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 	job_resv_clear_magnetic_flag(job_ptr);
 	job_ptr->epilog_failed = false;
+
+	/*
+	 * The Prolog that ran belonged to the allocation being given up, so the
+	 * next one has to run for the new allocation. Left set, this stops it.
+	 */
+	job_ptr->bit_flags &= ~JOB_PROLOG_LAUNCHED;
 
 	if (job_ptr->details) {
 		time_t now = time(NULL);

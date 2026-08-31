@@ -225,6 +225,13 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
 extern void print_job_dependency(job_record_t *job_ptr, const char *func);
 
 /*
+ * Test if a job is still waiting on the Prolog launched at allocation time
+ * (PrologFlags=Alloc).
+ * RET true if the job can not run until a Prolog finishes
+ */
+extern bool job_scheduler_node_prolog_running(job_record_t *job_ptr);
+
+/*
  * Finish a job's configuration and launch it if it is no longer waiting on
  * anything. No-op unless the job is configuring and every prolog and node it
  * was waiting on is ready.
