@@ -1774,6 +1774,19 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		bitstr_t *selected_nodes = NULL;
 		int selected_nodes_cnt = 0;
 
+		/*
+		 * An arbitrary list must be a literal list of node names, not
+		 * a hostlist function (feature{...}, switch{...}, ...).
+		 */
+		if (((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
+		     SLURM_DIST_ARBITRARY) &&
+		    xstrchr(step_spec->node_list, '{')) {
+			log_flag(STEPS, "%s: invalid node list %s for arbitrary distribution",
+				 __func__, step_spec->node_list);
+			*return_code = ESLURM_INVALID_NODE_NAME;
+			goto cleanup;
+		}
+
 		log_flag(STEPS, "%s: selected nodelist is %s",
 			 __func__, step_spec->node_list);
 		error_code = node_name2bitmap(step_spec->node_list, false,
