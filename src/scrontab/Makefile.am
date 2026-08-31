@@ -2,7 +2,6 @@ AUTOMAKE_OPTIONS = foreign
 
 SRCS = \
 	env.c \
-	opt.c \
 	parse.c \
 	scrontab.c \
 	scrontab.h
