@@ -86,7 +86,7 @@ extern int serdes_parse(serialize_parse_state_t **state_ptr,
 	int rc = serialize_g_parse(state_ptr, parser, type, dst, dst_bytes, src,
 				   mime_type);
 
-	if (rc != ESLURM_NOT_SUPPORTED)
+	if (!src || (rc != ESLURM_NOT_SUPPORTED))
 		return rc;
 
 	return _indirect_parse(state_ptr, parser, type, dst, dst_bytes, src,
@@ -100,10 +100,12 @@ extern int serdes_parse_buf(data_parser_t *parser, data_parser_type_t type,
 	serialize_parse_state_t *state = NULL;
 	int rc = EINVAL;
 
-	do {
-		rc = serdes_parse(&state, parser, type, dst, dst_bytes, src,
-				  mime_type);
-	} while (!rc && state);
+	rc = serdes_parse(&state, parser, type, dst, dst_bytes, src, mime_type);
+
+	/* Always release state as this is a one time parse request */
+	if (state)
+		(void) serdes_parse(&state, parser, type, dst, dst_bytes, NULL,
+				    mime_type);
 
 	xassert(!state);
 	return rc;
@@ -130,9 +132,6 @@ static int _indirect_dump(serialize_dump_state_t **state_ptr,
 	d = data_new();
 
 	if (!(rc = data_parser_g_dump(parser, type, src, src_bytes, d))) {
-		if (data_parser_g_is_complex(parser))
-			flags |= SER_FLAGS_COMPLEX;
-
 		if (!(rc = serialize_g_data_to_string(&buf, &length, d,
 						      mime_type, flags)))
 			assign_buf(dst, &buf, length);
@@ -150,10 +149,19 @@ extern int serdes_dump(serialize_dump_state_t **state_ptr,
 		       void *src, ssize_t src_bytes, buf_t *dst,
 		       const char *mime_type, serializer_flags_t flags)
 {
-	int rc = serialize_g_dump(state_ptr, parser, type, src, src_bytes, dst,
-				  mime_type, flags);
+	int rc = EINVAL;
 
-	if (rc != ESLURM_NOT_SUPPORTED)
+	if (data_parser_g_is_complex(parser))
+		flags |= SER_FLAGS_COMPLEX;
+
+	rc = serialize_g_dump(state_ptr, parser, type, src, src_bytes, dst,
+			      mime_type, flags);
+
+	/*
+	 * _indirect_dump() writes dst unconditionally, so it can not serve an
+	 * abandon call. Only a serializer can release its own dump state.
+	 */
+	if (!dst || (rc != ESLURM_NOT_SUPPORTED))
 		return rc;
 
 	return _indirect_dump(state_ptr, parser, type, src, src_bytes, dst,
@@ -169,10 +177,13 @@ extern int serdes_dump_buf(data_parser_t *parser, data_parser_type_t type,
 
 	while (!rc) {
 		if ((rc = serdes_dump(&state, parser, type, src, src_bytes, dst,
-				      mime_type, flags)))
+				      mime_type, flags)) != ENOSPC)
 			break;
 
-		/* check if dump is complete */
+		/*
+		 * ENOSPC without state means the serializer can not resume, so
+		 * there is nothing to grow towards. Treat it as a hard error.
+		 */
 		if (!state)
 			break;
 

@@ -692,7 +692,7 @@ extern int slurm_write_utf8_character(const utf_code_t utf, utf8_t *dst,
 
 extern int slurm_read_utf8_character(const utf8_t *src, const utf8_t *end,
 				     utf_code_t *utf_ptr, int *bytes_ptr,
-				     bool check_valid)
+				     bool validate)
 {
 	int rc = EINVAL;
 	const ptrdiff_t remaining = end - src;
@@ -815,7 +815,7 @@ extern int slurm_read_utf8_character(const utf8_t *src, const utf8_t *end,
 	xassert((bytes >= 0) && (bytes <= 4));
 
 	/* check against invalid UTF codes */
-	if (check_valid && (rc = utf_is_valid(utf)))
+	if (validate && (rc = utf_is_valid(utf)))
 		goto reject;
 
 	rc = SLURM_SUCCESS;
