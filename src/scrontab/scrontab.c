@@ -435,6 +435,7 @@ edit:
 	while ((line = lines[lineno])) {
 		char *pos = line;
 		cron_entry_t *entry;
+		job_desc_msg_t *job = NULL;
 
 		if (setup_next_entry) {
 			_reset_options();
@@ -511,7 +512,15 @@ edit:
 
 		entry->line_end = lineno;
 
-		list_append(jobs, _entry_to_job(entry, script));
+		if (!(job = _entry_to_job(entry, script))) {
+			badline = xstrdup_printf("%d-%d", entry->line_start,
+						 lineno);
+			free_cron_entry(entry);
+			xfree(script);
+			break;
+		}
+
+		list_append(jobs, job);
 		script = NULL;
 		setup_next_entry = true;
 		lineno++;
