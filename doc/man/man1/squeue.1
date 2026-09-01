@@ -1725,6 +1725,16 @@ The job terminated with a non\-zero exit code.
 .IP
 
 .TP
+\fBPartitionCpuLimit\fR
+The number of CPUs required by this job exceeds the number of CPUs
+configured in its partition, or exceeds the partition's
+\fBMaxCPUsPerNode\fR limit multiplied by its node count.
+Can also indicate that the partition currently has no nodes in it, as is
+common for a partition backed by dynamic nodes that have not registered
+yet.
+.IP
+
+.TP
 \fBPartitionDown\fR
 The partition required by this job is in a DOWN state.
 .IP

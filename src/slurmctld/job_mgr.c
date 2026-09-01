@@ -4035,6 +4035,7 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 						   true,
 						   SLURMDB_JOB_FLAG_SUBMIT);
 	} else if ((job_node_select->rc_part_limits != WAIT_PART_CONFIG) &&
+		   (job_node_select->rc_part_limits != WAIT_PART_CPU_LIMIT) &&
 		   (job_node_select->rc_part_limits != WAIT_PART_NODE_LIMIT)) {
 		job_node_select->rc = select_nodes(job_node_select,
 						   true,
@@ -7279,10 +7280,9 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		case ESLURM_INVALID_NODE_COUNT:
 			fail_reason = WAIT_PART_NODE_LIMIT;
 			break;
-		/* FIXME */
-		/* case ESLURM_TOO_MANY_REQUESTED_CPUS: */
-		/* 	failt_reason = NON_EXISTANT_WAIT_PART_CPU_LIMIT; */
-		/* 	break; */
+		case ESLURM_TOO_MANY_REQUESTED_CPUS:
+			fail_reason = WAIT_PART_CPU_LIMIT;
+			break;
 		default:
 			fail_reason = WAIT_PART_CONFIG;
 			break;
@@ -15517,6 +15517,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			error_code = ESLURM_QOS_THRES;
 		else if ((fail_reason == WAIT_PART_TIME_LIMIT) ||
 			 (fail_reason == WAIT_PART_NODE_LIMIT) ||
+			 (fail_reason == WAIT_PART_CPU_LIMIT) ||
 			 (fail_reason == WAIT_PART_DOWN) ||
 			 (fail_reason == WAIT_HELD))
 			error_code = SLURM_SUCCESS;

@@ -663,6 +663,7 @@ enum job_state_reason {
 	WAIT_MAX_POWERED_NODES,            /* max_powered_nodes reached */
 	WAIT_MPI_PORTS_BUSY,		   /* MPI resv_ports busy */
 	WAIT_HRES_DISABLED, /* requested HRES is disabled */
+	WAIT_PART_CPU_LIMIT, /* exceeds partition CPU limit */
 	REASON_END, /* end of table */
 };
 

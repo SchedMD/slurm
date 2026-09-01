@@ -69,6 +69,10 @@ static const entry_t jsra[] = {
 		.flags = JSR_PART,
 		.str = "PartitionNodeLimit",
 	},
+	[WAIT_PART_CPU_LIMIT] = {
+		.flags = JSR_PART,
+		.str = "PartitionCpuLimit",
+	},
 	[WAIT_PART_TIME_LIMIT] = {
 		.flags = JSR_PART,
 		.str = "PartitionTimeLimit",
