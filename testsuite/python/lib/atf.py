@@ -1200,7 +1200,9 @@ def start_slurmd(slurmd_name, quiet=False):
             )
             run_command(f"kill -9 {pid}", user="root")
             for t in timer():
-                if run_command(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
+                # quiet, as a non-zero exit code (no match) is what we want
+                rc = run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=True)
+                if rc != 0:
                     break
             else:
                 pytest.fail(f"Unable to kill already running slurmd ({pid})")
