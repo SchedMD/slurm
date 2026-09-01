@@ -50,20 +50,6 @@
 #include "src/interfaces/data_parser.h"
 
 /*
- * Find tag assigned to given path
- * IN path - split up path to match
- * IN/OUT params - on match, will populate any OAS parameters in path.
- * 	params must be DATA_TYPE_DICT.
- *
- * IN method - HTTP method to match
- * RET -1 if path tag was not found, or
- *     -2 if path tag was found, but method wasn't found within path tag, or
- *     the tag assigned to the given path.
- */
-extern int find_path_tag(const data_t *path, data_t *params,
-			 http_request_method_t method);
-
-/*
  * Init the OpenAPI data structs.
  * IN plugins_list - comma delimited list of plugins or "list"
  * 	pass NULL to load all found or "" to load none of them
