@@ -508,9 +508,9 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 	node_record_t *node_ptr = NULL;
 	action_entry_t *entry = NULL;
 	list_t *action_list = list_create(_free_action_entry);
-	bool is_default = false;
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		char *key = NULL;
+		bool is_default = false;
 		if (node_ptr->power_action_name) {
 			if (force_default) {
 				debug3("%s: force default power action '%s' for node %s",
