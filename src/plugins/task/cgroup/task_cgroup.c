@@ -51,6 +51,7 @@
 #include "task_cgroup_memory.h"
 #include "task_cgroup_devices.h"
 #include "task_cgroup_dmem.h"
+#include "task_cgroup_pids.h"
 
 const char plugin_name[]        = "Tasks containment cgroup plugin";
 const char plugin_type[]        = "task/cgroup";
@@ -60,6 +61,7 @@ static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
 static bool use_dmem = false;
+static bool use_pids    = false;
 
 extern int init(void)
 {
@@ -106,6 +108,9 @@ extern int init(void)
 			log_flag(CGROUP, "ConstrainDeviceMemory=yes but the dmem cgroup controller is not available, device memory will not be enforced");
 	}
 
+	if (!(use_pids = cgroup_g_has_feature(CG_PIDS_CONTROLLER)))
+		log_flag(CGROUP, "pids controller not available, --max-pids will not be enforced");
+
 	if (use_cpuset) {
 		if ((rc = task_cgroup_cpuset_init())) {
 			error("failure enabling core enforcement: %s",
@@ -141,6 +146,16 @@ extern int init(void)
 		} else
 			debug("device memory enforcement enabled");
 	}
+
+	if (use_pids) {
+		if ((rc = task_cgroup_pids_init())) {
+			error("failure enabling pids enforcement: %s",
+			      slurm_strerror(rc));
+			return rc;
+		} else {
+			debug("pids enforcement enabled");
+		}
+	}
 end:
 	debug("%s loaded", plugin_name);
 	return rc;
@@ -160,6 +175,9 @@ extern int fini(void)
 		rc = SLURM_ERROR;
 
 	if (use_dmem && (task_cgroup_dmem_fini() != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
+	if (use_pids && (task_cgroup_pids_fini() != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	debug("%s unloaded", plugin_name);
@@ -199,6 +217,9 @@ extern int task_p_pre_setuid(stepd_step_rec_t *step)
 	if (use_dmem && (task_cgroup_dmem_create(step) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
+	if (use_pids && (task_cgroup_pids_create(step) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
 	return rc;
 }
 
@@ -229,6 +250,11 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid,
 	if (use_devices &&
 	    (task_cgroup_devices_constrain(step, node_tid, global_tid) !=
 	     SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
+	if (use_pids &&
+	    (task_cgroup_pids_add_pid(step, step->task[node_tid]->pid,
+				      global_tid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	return rc;
@@ -282,6 +308,9 @@ extern int task_p_add_pid(pid_t pid)
 
 	if (use_devices &&
 	    (task_cgroup_devices_add_extern_pid(pid) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
+	if (use_pids && (task_cgroup_pids_add_extern_pid(pid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	return rc;
