@@ -1640,7 +1640,7 @@ job_force_termination(srun_job_t *job)
 		}
 		if (kill_sent == 1) {
 			/* Try sending SIGKILL through slurmctld */
-			slurm_kill_job_step(&job->step_id, SIGKILL, 0);
+			launch_step_terminate();
 		}
 	}
 	kill_sent++;

@@ -159,8 +159,14 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 	memcpy(&_pmixp_job_info.step_id, &step->step_id,
 	       sizeof(_pmixp_job_info.step_id));
 
-	if (step->het_job_id && (step->het_job_id != NO_VAL))
+	if (step->het_job_id && (step->het_job_id != NO_VAL)) {
 		_pmixp_job_info.step_id.job_id = step->het_job_id;
+		/*
+		 * Clear the component sluid since the newly copied job_id
+		 * refers to the leader
+		 */
+		_pmixp_job_info.step_id.sluid = 0;
+	}
 
 	if ((step->het_job_offset != NO_VAL) &&
 	    (step->het_job_step_task_cnts)) {
