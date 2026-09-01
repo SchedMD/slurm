@@ -1981,9 +1981,13 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				int assoc_cnt;
 				uint64_t resv_unused_secs;
 
+				/*
+				 * A job's TRES ratio can differ from the
+				 * reservation's, so one TRES can be saturated
+				 * while another still has idle time.
+				 */
 				if (idle <= 0)
-					break; /* since this will be
-						* the same for all TRES	*/
+					continue;
 
 				/* now divide that time by the number of
 				   associations in the reservation and add
