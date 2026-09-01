@@ -50,6 +50,10 @@ _RESV_IDLE_REASON = (
     "Ticket 24919: reservation idle was charged the reservation's TRES count "
     "instead of the job's before 26.11"
 )
+_ENERGY_REASON = (
+    "Ticket 24919: energy from a zero-elapsed row was charged to the previous "
+    "row's assoc/QOS/wckey before 26.11"
+)
 
 # Slurm job states (enum job_states)
 _JOB_RUNNING = 1
@@ -63,6 +67,7 @@ _NODE_STATE_POWERED_DOWN = 0x1000  # SLURM_BIT(12)
 # Standard Slurm TRES IDs
 _CPU = 1
 _MEM = 2
+_ENERGY = 3
 _NODE = 4
 _BILLING = 5
 
@@ -226,6 +231,23 @@ def db(sql_statement_repeat):
         f"sacctmgr -i remove account {_ACCOUNT2}",
         user=slurm_user,
     )
+
+
+@pytest.fixture(scope="function")
+def second_assoc(db):
+    """Add a second account/association on the test cluster; return its id."""
+    slurm_user = atf.properties["slurm-user"]
+    atf.run_command(
+        f"sacctmgr -i add account {_ACCOUNT2} cluster={_CLUSTER}",
+        user=slurm_user,
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i add user {_USER} account={_ACCOUNT2} cluster={_CLUSTER}",
+        user=slurm_user,
+        fatal=True,
+    )
+    return _assoc_id_of(slurm_user, _ACCOUNT2)
 
 
 def _assoc_id_of(slurm_user, account):
@@ -1246,3 +1268,136 @@ def test_running_job_alloc(db):
     expected = _CPU_COUNT * (3600 - 100) + _CPU_COUNT * (3600 - 200)
     used = _sreport_account_used(ws)
     assert used == expected, f"running-job cpu alloc={used}, expected {expected}"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmdbd") < (26, 11), reason=_RESV_IDLE_REASON
+)
+def test_reservation_idle_multi_assoc(db, second_assoc):
+    """Reservation idle TRES-seconds must be split evenly across every
+    eligible association, on top of each assoc's own in-reservation usage."""
+    mysql_cmd, ws, assoc_id, _ = db
+    assoc_id2 = second_assoc
+
+    job_elapsed = 1800
+    resv_cpu = 8
+    _add_cluster_event(mysql_cmd, ws)
+    _sql(
+        mysql_cmd,
+        f"INSERT INTO `{_CLUSTER}_resv_table` "
+        f"(id_resv, assoclist, nodelist, resv_name, tres, "
+        f"time_start, time_end, flags, unused_wall) "
+        f"VALUES ({_RESV_ID}, '{assoc_id},{assoc_id2}', 'n1', 'resv{_RESV_ID}', "
+        f"'1={resv_cpu}', {ws}, {ws + 3600}, 0, 0.0)",
+    )
+    # Fewer CPUs than the reservation holds; see the comment in
+    # test_reservation_idle_redistribution about why half does not work.
+    job_cpu = 2
+    _add_job(
+        mysql_cmd,
+        assoc_id=assoc_id,
+        resv_id=_RESV_ID,
+        time_start=ws + 100,
+        time_end=ws + 100 + job_elapsed,
+        time_eligible=ws,
+        tres_alloc=f"1={job_cpu}",
+        cpus_req=job_cpu,
+    )
+    _rollup(ws, ws + 3600)
+
+    # The reservation is charged what the job actually used, and the rest is
+    # split evenly across the two eligible assocs.
+    job_cpu_secs = job_cpu * job_elapsed
+    idle_share = (resv_cpu * 3600 - job_cpu_secs) // 2
+    running_assoc = _sreport_account_used(ws, account=_ACCOUNT)
+    idle_assoc = _sreport_account_used(ws, account=_ACCOUNT2)
+    assert running_assoc == job_cpu_secs + idle_share, (
+        f"job-running assoc cpu alloc={running_assoc}, "
+        f"expected {job_cpu_secs + idle_share} (job {job_cpu_secs} + "
+        f"idle share {idle_share})"
+    )
+    assert (
+        idle_assoc == idle_share
+    ), f"idle-only assoc cpu alloc={idle_assoc}, expected {idle_share}"
+
+    # No QOS is connected with idle time, so it is counted against the
+    # account's default QOS, or 'normal' where there is none.  Neither test
+    # account has a default.
+    idle_qos = _sreport_qos_used(ws, "normal", account=_ACCOUNT2)
+    assert (
+        idle_qos == idle_share
+    ), f"idle-only assoc normal-QOS alloc={idle_qos}, expected {idle_share}"
+
+    # Reservation time still has to land somewhere in the cluster row.
+    _assert_cluster_reconciles(ws, _CLUSTER_CPU)
+
+
+@pytest.mark.skipif(atf.get_version("sbin/slurmdbd") < (26, 11), reason=_ENERGY_REASON)
+def test_zero_duration_row_energy_attribution(db, second_assoc, qos_id):
+    """A row with no elapsed time must not charge its energy to another id.
+
+    ENERGY is the one TRES the rollup does not scale by elapsed time, so a job
+    row that contributes no time to the window still carries a non-zero energy
+    value into the accumulators.  Such a row reaches calc_cluster without
+    setting them, so its energy lands on whichever assoc/QOS/wckey the
+    preceding row left there.
+
+    Both rows sit in the same hour and the assertion is on the victim: the
+    running job's assoc, QOS and wckey must be charged its own energy and
+    nothing more.  The rollup selects running rows (time_end=0) and completed
+    rows in separate UNION ALL branches in that order, so the running job
+    below reaches the accumulators before the zero-elapsed row does.
+    """
+    mysql_cmd, ws, assoc_id, wckey_id = db
+    assoc_id2 = second_assoc
+    hour2 = ws + 3600
+
+    energy1 = 1000
+    energy2 = 5000
+    _add_cluster_event(mysql_cmd, ws)
+
+    # Still running, and eligible only from hour 2, so it is the first row that
+    # hour selects and it leaves the accumulators pointing at its own ids.
+    _add_job(
+        mysql_cmd,
+        db_inx=1,
+        assoc_id=assoc_id,
+        qos_id=qos_id,
+        wckey_id=wckey_id,
+        time_start=ws + 3700,
+        time_end=0,
+        time_eligible=ws + 3700,
+        state=_JOB_RUNNING,
+        tres_alloc=f"1={_CPU_COUNT},{_ENERGY}={energy1}",
+    )
+    # Ends exactly on the hour boundary: real elapsed time in hour 1, none in
+    # hour 2, where it is still selected and carries its energy in.
+    _add_job(
+        mysql_cmd,
+        db_inx=2,
+        assoc_id=assoc_id2,
+        time_start=ws + 200,
+        time_end=hour2,
+        time_eligible=ws,
+        tres_alloc=f"1={_CPU_COUNT},{_ENERGY}={energy2}",
+    )
+    _rollup(ws, ws + 7200)
+
+    # Hour 1 is ordinary accounting: the completed job's energy is its own.
+    assert (
+        _sreport_account_used(ws, account=_ACCOUNT2, tres="energy") == energy2
+    ), f"hour 1 assoc2 energy != {energy2}"
+
+    for label, got in (
+        ("assoc", _sreport_account_used(hour2, tres="energy")),
+        ("qos", _sreport_qos_used(hour2, _QOS, tres="energy")),
+        ("wckey", _sreport_wckey_used(hour2, tres="energy")),
+    ):
+        assert got == energy1, (
+            f"hour 2 {label} energy={got}, expected {energy1}; a zero-elapsed "
+            f"row charged its energy to the running job's {label}"
+        )
+
+    assert (
+        _sreport_account_used(hour2, account=_ACCOUNT2, tres="energy", default=0) == 0
+    ), "hour 2 assoc2 energy != 0; a zero-elapsed row was credited its own energy"
