@@ -3958,6 +3958,7 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
 
     if live:
         # TODO: Remove extra debug info for t22858 instead of fatal
+        run_command_kwargs.pop("fatal", None)
         result = run_command(
             "scontrol show nodes --json -F",
             fatal=False,
@@ -4198,7 +4199,7 @@ def get_reservations(quiet=False, **run_command_kwargs):
     resv_dict = {}
 
     output = run_command_output(
-        "scontrol show reservations -o", fatal=True, quiet=quiet, **run_command_kwargs
+        "scontrol show reservations -o", quiet=quiet, **run_command_kwargs
     )
     for line in output.splitlines():
         if line == "":
@@ -4704,7 +4705,7 @@ def get_qos(name=None, **run_command_kwargs):
     command = "sacctmgr --json show qos"
     if id is not None:
         command += f" {name}"
-    output = run_command_output(command, fatal=True, quiet=True, **run_command_kwargs)
+    output = run_command_output(command, **run_command_kwargs)
 
     qos_dict = {}
     qos_list = json.loads(output)["qos"]
@@ -4740,9 +4741,7 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
         command = "sacct --json -X"
         if job_id is not None:
             command += f" -j {job_id}"
-        output = run_command_output(
-            command, fatal=True, quiet=True, **run_command_kwargs
-        )
+        output = run_command_output(command, **run_command_kwargs)
 
         jobs_list = json.loads(output)["jobs"]
         for job in jobs_list:
@@ -6169,9 +6168,7 @@ def get_partitions(**run_command_kwargs):
 
     partitions_dict = {}
 
-    output = run_command_output(
-        "scontrol show partition -o", fatal=True, **run_command_kwargs
-    )
+    output = run_command_output("scontrol show partition -o", **run_command_kwargs)
 
     partition_dict = {}
     for line in output.splitlines():
