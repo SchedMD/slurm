@@ -515,7 +515,6 @@ test21.38  sacctmgr modify limits for nested accounts with multiple users
 test21.40  Test association plus partition/job QoS unique node limits enforced
 test21.41  sacctmgr update job set newwckey=
 test21.42  Test if headers returned by sacctmgr show can be used as format= specifiers
-test21.43  Test usagefactor
 test21.44  Test sacctmgr show assoc where qos=
 
 test22.#   Testing of sreport commands and options.
@@ -980,6 +979,7 @@ test_130_1   /parameters/slurm/PriorityType/basic/test_priority.py
 test_130_2   multifactor plugin algo test for fairshare=parent
 test_130_3   /parameters/slurm/PriorityType/multifactor/test_priority.py
 test_130_4   Test TRESRunMins usage when a QOS UsageFactor is modified mid-run
+test_130_5   Test TRESRunMins give-back with priority/basic and a UsageFactor
 
 test_131_#   Testing of sshare options.
 ========================================
