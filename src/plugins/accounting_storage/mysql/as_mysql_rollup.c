@@ -273,7 +273,7 @@ static void _remove_job_tres_time_from_cluster(list_t *c_tres, list_t *j_tres,
 
 static local_tres_usage_t *_add_time_tres(list_t *tres_list, int type,
 					  uint32_t id, uint64_t time,
-					  bool times_count)
+					  bool skip_missing)
 {
 	local_tres_usage_t *loc_tres;
 
@@ -286,7 +286,7 @@ static local_tres_usage_t *_add_time_tres(list_t *tres_list, int type,
 	loc_tres = list_find_first(tres_list, _find_loc_tres, &id);
 
 	if (!loc_tres) {
-		if (times_count)
+		if (skip_missing)
 			return NULL;
 		loc_tres = xmalloc(sizeof(local_tres_usage_t));
 		loc_tres->id = id;
@@ -297,7 +297,7 @@ static local_tres_usage_t *_add_time_tres(list_t *tres_list, int type,
 	 * A TRES tracked with no count can't be charged against, and adding to
 	 * it would make the idle time of whatever owns the list go negative.
 	 */
-	if (times_count && !loc_tres->count)
+	if (skip_missing && !loc_tres->count)
 		return NULL;
 
 	switch (type) {
@@ -323,7 +323,7 @@ static local_tres_usage_t *_add_time_tres(list_t *tres_list, int type,
 }
 
 static void _add_time_tres_list(list_t *tres_list_out, list_t *tres_list_in,
-				int type, uint64_t time_in, bool times_count)
+				int type, uint64_t time_in, bool skip_missing)
 {
 	list_itr_t *itr;
 	local_tres_usage_t *loc_tres;
@@ -336,7 +336,7 @@ static void _add_time_tres_list(list_t *tres_list_out, list_t *tres_list_in,
 		_add_time_tres(tres_list_out, type,
 			       loc_tres->id,
 			       time_in ? time_in : loc_tres->total_time,
-			       times_count);
+			       skip_missing);
 	list_iterator_destroy(itr);
 }
 
@@ -506,7 +506,7 @@ static void _transfer_loc_tres(list_t **loc_tres, local_id_usage_t *usage)
 
 static void _add_tres_time_2_list(list_t *tres_list, char *tres_str,
 				  int type, int seconds, int suspend_seconds,
-				  bool times_count)
+				  bool skip_missing)
 {
 	char *tmp_str = tres_str;
 	int id;
@@ -551,7 +551,7 @@ static void _add_tres_time_2_list(list_t *tres_list, char *tres_str,
 			time *= loc_seconds;
 
 		loc_tres = _add_time_tres(tres_list, type, id,
-					  time, times_count);
+					  time, skip_missing);
 
 		if (loc_tres && !loc_tres->count)
 			loc_tres->count = count;
