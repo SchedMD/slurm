@@ -544,39 +544,6 @@ Output the contents of key_pairs which is a list of opaque data type C<config_ke
 
 
 
-=head2 SLURM JOB RESOURCES READ/PRINT FUNCTIONS
-
-=head3 $num = $slurm->job_cpus_allocated_on_node_id($job_res, $node_id);
-
-Get the number of cpus allocated to a job on a node by node id.
-
-=over 2
-
-=item * IN $job_res: job resources data, with structure of C<job_resources_t>.
-
-=item * IN $node_id: zero-origin node id in allocation.
-
-=item * RET: number of CPUs allocated to job on this node or -1 on error.
-
-=back
-
-=head3 $num = $slurm->job_cpus_allocated_on_node($job_res, $node_name);
-
-Get the number of cpus allocated to a job on a node by node name.
-
-=over 2
-
-=item * IN $job_res: job resources data, with structure of C<job_resources_t>.
-
-=item * IN $node_name: name of node.
-
-=item * RET: number of CPUs allocated to job on this node or -1 on error.
-
-=back
-
-
-
-
 =head2 SLURM JOB CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 
 =head3 $time = $slurm->get_end_time($job_id);
