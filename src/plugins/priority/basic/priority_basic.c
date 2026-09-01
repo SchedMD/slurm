@@ -155,6 +155,14 @@ extern void priority_p_job_end(job_record_t *job_ptr)
 
 	/* No decaying in basic priority. Just remove the total secs. */
 	unused_tres_run_secs = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
+
+	/*
+	 * Give the usage back with the factor it was booked at.
+	 * acct_policy_job_begin() applied it, and the QOS may have been
+	 * modified while the job was running.
+	 */
+	time_limit_secs *= job_ptr->booked_usage_factor;
+
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
 			continue;
