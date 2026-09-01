@@ -293,11 +293,12 @@ static local_tres_usage_t *_add_time_tres(list_t *tres_list, int type,
 		list_append(tres_list, loc_tres);
 	}
 
-	if (times_count) {
-		if (!loc_tres->count)
-			return NULL;
-		time *= loc_tres->count;
-	}
+	/*
+	 * A TRES tracked with no count can't be charged against, and adding to
+	 * it would make the idle time of whatever owns the list go negative.
+	 */
+	if (times_count && !loc_tres->count)
+		return NULL;
 
 	switch (type) {
 	case TIME_ALLOC:
@@ -1897,10 +1898,18 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 							loc_seconds,
 							0, 0);
 
-					_add_time_tres_list(
-						r_usage->loc_tres,
-						loc_tres, TIME_ALLOC,
-						loc_seconds, 1);
+					/*
+					 * Charge the reservation the job's
+					 * own TRES seconds for the overlap,
+					 * not the reservation's TRES count,
+					 * and only for TRES the reservation
+					 * actually has.
+					 */
+					_add_tres_time_2_list(r_usage->loc_tres,
+							      row[JOB_REQ_TRES],
+							      TIME_ALLOC,
+							      loc_seconds, 0,
+							      true);
 					if ((rc = _update_unused_wall(
 						     r_usage,
 						     loc_tres,
