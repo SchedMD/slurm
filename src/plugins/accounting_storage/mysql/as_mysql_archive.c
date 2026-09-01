@@ -127,6 +127,7 @@ typedef struct {
 	char *env_hash_inx;
 	char *exclusive;
 	char *exit_code;
+	char *rc;
 	char *extra;
 	char *eligible;
 	char *end;
@@ -212,6 +213,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->env_hash_inx);
 		xfree(object->exclusive);
 		xfree(object->exit_code);
+		xfree(object->rc);
 		xfree(object->extra);
 		xfree(object->eligible);
 		xfree(object->end);
@@ -588,6 +590,7 @@ static char *job_req_inx[] = {
 	"env_hash_inx",
 	"exclusive",
 	"exit_code",
+	"slurm_rc",
 	"extra",
 	"flags",
 	"timelimit",
@@ -657,6 +660,7 @@ enum {
 	JOB_REQ_ENV_HASH_INX,
 	JOB_REQ_EXCLUSIVE,
 	JOB_REQ_EXIT_CODE,
+	JOB_REQ_RC,
 	JOB_REQ_EXTRA,
 	JOB_REQ_FLAGS,
 	JOB_REQ_TIMELIMIT,
@@ -1077,6 +1081,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->env_hash_inx, buffer);
 	packstr(object->exclusive, buffer);
 	packstr(object->exit_code, buffer);
+	packstr(object->rc, buffer);
 	packstr(object->extra, buffer);
 	packstr(object->flags, buffer);
 	packstr(object->timelimit, buffer);
@@ -1155,6 +1160,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->env_hash_inx, buffer);
 		safe_unpackstr(&object->exclusive, buffer);
 		safe_unpackstr(&object->exit_code, buffer);
+		safe_unpackstr(&object->rc, buffer);
 		safe_unpackstr(&object->extra, buffer);
 		safe_unpackstr(&object->flags, buffer);
 		safe_unpackstr(&object->timelimit, buffer);
@@ -2156,6 +2162,10 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 	/* sluid was added in 26.05. Older archives lack it, so set a 0. */
 	if (!object->sluid)
 		object->sluid = xstrdup("0");
+
+	/* slurm_rc was added in 26.11. Older archives lack it, so set a 0. */
+	if (!object->rc)
+		object->rc = xstrdup("0");
 
 	return SLURM_SUCCESS;
 
@@ -3921,6 +3931,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.env_hash_inx = row[JOB_REQ_ENV_HASH_INX];
 		job.exclusive = row[JOB_REQ_EXCLUSIVE];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
+		job.rc = row[JOB_REQ_RC];
 		job.extra = row[JOB_REQ_EXTRA];
 		job.flags = row[JOB_REQ_FLAGS];
 		job.timelimit = row[JOB_REQ_TIMELIMIT];
@@ -3992,6 +4003,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_DERIVED_EC,
 		JOB_REQ_ENV_HASH_INX,
 		JOB_REQ_EXIT_CODE,
+		JOB_REQ_RC,
 		JOB_REQ_FLAGS,
 		JOB_REQ_TIMELIMIT,
 		JOB_REQ_ELIGIBLE,
@@ -4180,6 +4192,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     object.derived_ec,
 			     object.env_hash_inx,
 			     object.exit_code,
+			     object.rc,
 			     object.flags,
 			     object.timelimit,
 			     object.eligible,
