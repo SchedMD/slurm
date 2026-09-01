@@ -1160,3 +1160,7 @@ test_166_1   Test RPC listeners reject non-TLS and accept TLS connections
 test_166_2   Test slurmctld rejects non-TLS RPCs with HTTP listening disabled
 test_166_3   Test swait's listener rejects non-TLS connections
 test_166_4   Test slurmdbd closes connections that are not TLS wrapped
+
+test_167_#   Testing of HealthCheckProgram.
+===========================================
+test_167_1   Test SLURM_NODE_IS_HEALTHY reporting to HealthCheckProgram
