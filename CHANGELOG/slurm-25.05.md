@@ -1,3 +1,23 @@
+## Changes in 25.05.9
+
+* Fix potential crash when reconfiguring with auth/slurm.
+* Fix possible slurmstepd crash on invalid step socket requests. CVE-2026-65168.
+* Fix sbcast shared objects skipping credential verification. CVE-2026-65107.
+* Fix possible slurmd crash on invalid sbcast filenames. CVE-2026-65107.
+* Fix a slurmstepd stack overflow when a job environment contains an oversized SPANK option variable. CVE-2026-65108.
+* Fix slurmstepd removing files outside the container spool directory when cleaning up an OCI container. CVE-2026-65109.
+* Fix slurmstepd leaving OCI container spool directories behind when ContainerPath contains a task id pattern. CVE-2026-65109.
+* Fix heap over-read when unpacking a malformed forward data RPC in slurmd. CVE-2026-65138.
+* Fix a slurmd crash when handling a malformed forward data RPC with a missing socket address. CVE-2026-65138.
+* Reject cluster names containing characters that are unsafe to use in an accounting database query. CVE-2026-65139.
+* Reject unsafe cluster names on the accounting usage, add and runaway job paths. CVE-2026-65139.
+* Reject unsafe cluster names when opening a connection to the slurmdbd. CVE-2026-65139.
+* Reject non-numeric id values in accounting database queries. CVE-2026-65139.
+* Fix a privilege escalation where an operator could alter Administrator accounts through the accounting database. CVE-2026-65140.
+* Fix node count of a job step using arbitrary distribution. CVE-2026-65165.
+* Reject a hostlist function in the node list of a job step using arbitrary distribution. CVE-2026-65165.
+* Reject a job step whose arbitrary node list disagrees with its node count. CVE-2026-65165.
+
 ## Changes in 25.05.8
 
 * slurmctld - Correct race condition during reconfigure and creating new cluster in slurmdbd that could cause both daemons to deadlock.
