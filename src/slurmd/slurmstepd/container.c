@@ -35,6 +35,7 @@
 
 #include "config.h"
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -1210,9 +1211,69 @@ extern void container_run(stepd_step_task_info_t *task)
 		_create_start(task);
 }
 
+/*
+ * Return the portion of path below base, or NULL if path is not below base.
+ * Caller must xfree() the result.
+ */
+static char *_relative_subpath(const char *base, const char *path)
+{
+	size_t len = strlen(base);
+
+	if (xstrncmp(path, base, len))
+		return NULL;
+
+	path += len;
+	while (path[0] == '/')
+		path++;
+
+	if (!path[0])
+		return NULL;
+
+	return xstrdup(path);
+}
+
+/*
+ * Open the directory holding stop, descending rel from basefd one component
+ * at a time with O_NOFOLLOW so no component can be swapped for a symlink.
+ * IN basefd - directory to descend from
+ * IN rel - path relative to basefd
+ * IN stop - pointer into rel to the component to stop before
+ * RET fd of the parent directory, or -1 with errno set
+ */
+static int _open_subdir(int basefd, char *rel, const char *stop)
+{
+	int fd;
+
+	if ((fd = dup(basefd)) < 0)
+		return -1;
+
+	for (char *tok = rel; tok < stop;) {
+		int next;
+		char *sep = xstrchr(tok, '/');
+
+		if (!sep)
+			break;
+
+		*sep = '\0';
+		next = openat(fd, tok, (O_DIRECTORY | O_NOFOLLOW));
+		*sep = '/';
+		fd_close(&fd);
+
+		if (next < 0)
+			return -1;
+
+		fd = next;
+		tok = sep + 1;
+	}
+
+	return fd;
+}
+
 extern void cleanup_container(void)
 {
 	step_container_t *c = step->container;
+	char *parent = NULL, *stepdir = NULL, *stepname = NULL;
+	int basefd = -1, stepfd = -1;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
@@ -1233,46 +1294,115 @@ extern void cleanup_container(void)
 	if (!c->spool_dir)
 		c->spool_dir = _generate_spooldir(NULL);
 
+	/*
+	 * The job user owns the step spool directory and can replace any
+	 * component below it with a symlink, so never resolve these paths as
+	 * root. Descend with O_NOFOLLOW and remove relative to the directory
+	 * handles instead.
+	 */
+	/*
+	 * ContainerPath may hold a taskid pattern, in which case the step
+	 * spool dir is the pattern trimmed at that component and so ends in a
+	 * '/'. Drop any trailing separators before splitting it.
+	 */
+	stepdir = xstrdup(c->spool_dir);
+	for (int i = strlen(stepdir) - 1; (i > 0) && (stepdir[i] == '/'); i--)
+		stepdir[i] = '\0';
+
+	parent = xdirname(stepdir);
+	stepname = xbasename(stepdir);
+
+	if ((basefd = open(parent, O_DIRECTORY)) < 0) {
+		if (errno != ENOENT)
+			error("open(%s): %m", parent);
+		goto cleanup_fds;
+	}
+
+	if ((stepfd = openat(basefd, stepname,
+			     (O_DIRECTORY | O_NOFOLLOW))) < 0) {
+		if (errno != ENOENT)
+			error("openat(%s/%s): %m", parent, stepname);
+		goto cleanup_fds;
+	}
+
 	if (step->node_tasks > 0) {
 		/* clear every config.json and task dir */
 		for (int i = 0; i < step->node_tasks; i++) {
+			int taskfd = -1, taskparentfd = -1;
+			char *rel = NULL, *taskdir = NULL;
+
 			xfree(c->task_spool_dir);
 			c->task_spool_dir = _generate_spooldir(step->task[i]);
 
 			_generate_patterns(step->task[i]);
 
-			if (!oci_conf->ignore_config_json) {
-				char *jconfig = NULL;
-
-				xstrfmtcat(jconfig, "%s/config.json",
-					   c->task_spool_dir);
-
-				if ((unlink(jconfig) < 0) && (errno != ENOENT))
-					error("unlink(%s): %m", jconfig);
-				xfree(jconfig);
+			/*
+			 * The task dir is not always a direct child of the
+			 * step dir: a taskid pattern in ContainerPath leaves
+			 * intervening components. Walk them one at a time.
+			 */
+			rel = _relative_subpath(stepdir, c->task_spool_dir);
+			if (!rel) {
+				error("%s: %s is not below %s",
+				      __func__, c->task_spool_dir, stepdir);
+				continue;
 			}
 
-			if (oci_conf->create_env_file) {
-				char *envfile = NULL;
+			taskdir = xbasename(rel);
+			taskparentfd = _open_subdir(stepfd, rel, taskdir);
 
-				xstrfmtcat(envfile, "%s/%s", c->task_spool_dir,
-					   SLURM_CONTAINER_ENV_FILE);
-
-				if (unlink(envfile) && (errno != ENOENT))
-					error("unlink(%s): %m", envfile);
-
-				xfree(envfile);
+			if (taskparentfd < 0) {
+				if (errno != ENOENT)
+					error("openat(%s): %m",
+					      c->task_spool_dir);
+				xfree(rel);
+				continue;
 			}
 
-			if (rmdir(c->task_spool_dir) && (errno != ENOENT))
-				error("rmdir(%s): %m", c->task_spool_dir);
+			if ((taskfd = openat(taskparentfd, taskdir,
+					     (O_DIRECTORY | O_NOFOLLOW))) < 0) {
+				if (errno != ENOENT)
+					error("openat(%s): %m",
+					      c->task_spool_dir);
+				fd_close(&taskparentfd);
+				xfree(rel);
+				continue;
+			}
+
+			if (!oci_conf->ignore_config_json &&
+			    unlinkat(taskfd, "config.json", 0) &&
+			    (errno != ENOENT))
+				error("unlinkat(%s/config.json): %m",
+				      c->task_spool_dir);
+
+			if (oci_conf->create_env_file &&
+			    unlinkat(taskfd, SLURM_CONTAINER_ENV_FILE, 0) &&
+			    (errno != ENOENT))
+				error("unlinkat(%s/%s): %m",
+				      c->task_spool_dir,
+				      SLURM_CONTAINER_ENV_FILE);
+
+			fd_close(&taskfd);
+
+			if (unlinkat(taskparentfd, taskdir, AT_REMOVEDIR) &&
+			    (errno != ENOENT))
+				error("unlinkat(%s): %m", c->task_spool_dir);
+
+			fd_close(&taskparentfd);
+			xfree(rel);
 		}
 
 		xfree(c->task_spool_dir);
 	}
 
-	if (rmdir(c->spool_dir) && (errno != ENOENT))
-		error("rmdir(%s): %m", c->spool_dir);
+	if (unlinkat(basefd, stepname, AT_REMOVEDIR) && (errno != ENOENT))
+		error("unlinkat(%s): %m", c->spool_dir);
+
+cleanup_fds:
+	fd_close(&stepfd);
+	fd_close(&basefd);
+	xfree(parent);
+	xfree(stepdir);
 
 done:
 	FREE_NULL_OCI_CONF(oci_conf);

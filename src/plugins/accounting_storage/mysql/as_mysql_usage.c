@@ -568,6 +568,9 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		return SLURM_ERROR;
 	}
 
+	if (as_mysql_validate_cluster_name(cluster_rec->name) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
 	if (set_usage_information(&my_usage_table, type, &start, &end)
 	    != SLURM_SUCCESS) {
 		return SLURM_ERROR;
@@ -892,6 +895,11 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (!cluster_name) {
 		error("We need a cluster_name to set data for getting usage");
+		xfree(id_str);
+		return SLURM_ERROR;
+	}
+
+	if (as_mysql_validate_cluster_name(cluster_name) != SLURM_SUCCESS) {
 		xfree(id_str);
 		return SLURM_ERROR;
 	}

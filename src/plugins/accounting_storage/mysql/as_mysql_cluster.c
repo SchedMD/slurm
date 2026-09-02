@@ -320,6 +320,12 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_remove(itr);
 			continue;
 		}
+		if (as_mysql_validate_cluster_name(object->name) !=
+		    SLURM_SUCCESS) {
+			rc = ESLURM_INVALID_CLUSTER_NAME;
+			list_delete_item(itr);
+			continue;
+		}
 		if ((object->flags != NO_VAL) &&
 		    (object->flags & CLUSTER_FLAG_EXT))
 			external_cluster = true;
@@ -627,6 +633,10 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (as_mysql_validate_cluster_list(cluster_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	/* force to only do non-deleted clusters */
 	cluster_cond->with_deleted = 0;
 	_setup_cluster_cond_limits(cluster_cond, &extra);
@@ -863,6 +873,10 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (as_mysql_validate_cluster_list(cluster_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	/* force to only do non-deleted clusters */
 	cluster_cond->with_deleted = 0;
 	_setup_cluster_cond_limits(cluster_cond, &extra);
@@ -1026,6 +1040,10 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
+
+	if (as_mysql_validate_cluster_list(cluster_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 
 	_setup_cluster_cond_limits(cluster_cond, &extra);
 
@@ -1208,6 +1226,10 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 
 	if (!event_cond)
 		goto empty;
+
+	if (as_mysql_validate_cluster_list(event_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 
 	if (event_cond->cpus_min) {
 		if (extra)
@@ -1608,6 +1630,10 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 
+	if (instance_cond &&
+	    (as_mysql_validate_cluster_list(instance_cond->cluster_list) !=
+	     SLURM_SUCCESS))
+		return NULL;
 
 	/* determine cluster list */
 	if (instance_cond && instance_cond->cluster_list &&
