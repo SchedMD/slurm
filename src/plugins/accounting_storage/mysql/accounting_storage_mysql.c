@@ -1150,6 +1150,43 @@ extern void reset_mysql_conn(mysql_conn_t *mysql_conn)
 	list_flush(mysql_conn->update_list);
 }
 
+static int _find_unsafe_cluster(void *x, void *key)
+{
+	char *cluster_name = x;
+
+	return (cluster_name && strpbrk(cluster_name, "'\"\\`"));
+}
+
+extern int as_mysql_validate_cluster_name(char *cluster_name)
+{
+	if (_find_unsafe_cluster(cluster_name, NULL)) {
+		error("%s: rejecting unsafe cluster name '%s'",
+		      __func__, cluster_name);
+		errno = ESLURM_INVALID_CLUSTER_NAME;
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int as_mysql_validate_cluster_list(list_t *cluster_list)
+{
+	char *cluster_name;
+
+	if (!cluster_list || !list_count(cluster_list))
+		return SLURM_SUCCESS;
+
+	if ((cluster_name = list_find_first(cluster_list, _find_unsafe_cluster,
+					    NULL))) {
+		error("%s: rejecting unsafe cluster name '%s'",
+		      __func__, cluster_name);
+		errno = ESLURM_INVALID_CLUSTER_NAME;
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int create_cluster_assoc_table(
 	mysql_conn_t *mysql_conn, char *cluster_name)
 {
@@ -3060,6 +3097,13 @@ extern void *acct_storage_p_get_connection(
 	mysql_conn_t *mysql_conn = NULL;
 
 	debug2("request new connection %d", rollback);
+
+	/*
+	 * The cluster name comes off the wire and is used unquoted to build
+	 * table names, so it has to be checked before anything uses it.
+	 */
+	if (as_mysql_validate_cluster_name(cluster_name) != SLURM_SUCCESS)
+		return NULL;
 
 	if (!(mysql_conn = create_mysql_conn(
 		      conn_num, rollback, cluster_name))) {

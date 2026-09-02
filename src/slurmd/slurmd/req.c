@@ -3990,12 +3990,28 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 			.uid = key.uid,
 			.job_id = key.job_id,
 			.step_id = key.step_id,
-			.exe_fname = xstrdup(req->exe_fname),
 		};
 		char *fname = NULL;
-		size_t exe_fname_len = strlen(libdir_args.exe_fname);
 
-		if (libdir_args.exe_fname[exe_fname_len - 1] == '/')
+		if (!req->fname || !req->fname[0] ||
+		    xstrchr(req->fname, '/') ||
+		    !xstrcmp(req->fname, "..")) {
+			error("Invalid sbcast shared object filename `%s` from uid %u",
+			      req->fname, key.uid);
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		if (!req->exe_fname || !req->exe_fname[0]) {
+			error("Missing sbcast executable path from uid %u",
+			      key.uid);
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		libdir_args.exe_fname = xstrdup(req->exe_fname);
+
+		if (req->exe_fname[strlen(req->exe_fname) - 1] == '/')
 			/*
 			 * Append the default filename to the executable path in
 			 * the search key so this shared object is associated
@@ -4022,6 +4038,10 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		xfree(req->fname);
 		req->fname = fname;
 		slurm_rwlock_unlock(&file_bcast_lock);
+	} else if (!req->fname || !req->fname[0]) {
+		error("Invalid sbcast filename from uid %u", key.uid);
+		rc = SLURM_ERROR;
+		goto done;
 	} else if (req->fname[strlen(req->fname) - 1] == '/') {
 		/*
 		 * "srun --bcast" was called with a target directory instead of
