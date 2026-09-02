@@ -516,8 +516,10 @@ static void _alloc_job(void)
 		.scrun = true,
 	};
 	char *opt_string = NULL;
-	struct option *spanked = slurm_option_table_create(&opt, &opt_string);
+	struct option *spanked = NULL;
 	job_desc_msg_t *desc;
+
+	spanked = slurm_option_table_create(&opt, &opt_string);
 
 	slurm_reset_all_options(&opt, true);
 
