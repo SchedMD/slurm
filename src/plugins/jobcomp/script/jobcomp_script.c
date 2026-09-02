@@ -135,7 +135,7 @@ struct jobcomp_info {
 	sluid_t original_sluid;
 	uint32_t array_job_id;
 	uint32_t array_task_id;
-	uint32_t exit_code;
+	job_exit_rc_t job_exit_rc;
 	uint32_t db_flags;
 	uint32_t derived_ec;
 	uint32_t uid;
@@ -180,7 +180,7 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 	j->jobid = job->job_id;
 	j->sluid = job->db_index;
 	j->original_sluid = job->step_id.sluid;
-	j->exit_code = job->job_exit_rc.exit_code;
+	j->job_exit_rc = job->job_exit_rc;
 	if (job->details)
 		j->constraints = xstrdup(job->details->features);
 	j->db_flags = job->db_flags;
@@ -394,8 +394,9 @@ static char ** _create_environment (struct jobcomp_info *job)
 		_env_append(&env, "ORIGINAL_SLUID", sluid_str);
 	}
 
-	exit_code_decode(job->exit_code, &exit_status, &term_sig);
+	exit_code_decode(job->job_exit_rc.exit_code, &exit_status, &term_sig);
 	_env_append_fmt(&env, "EXITCODE", "%u:%u", exit_status, term_sig);
+	_env_append_fmt(&env, "SLURM_RC", "%u", job->job_exit_rc.rc);
 	exit_code_decode(job->derived_ec, &exit_status, &term_sig);
 	_env_append_fmt(&env, "DERIVED_EC", "%u:%u", exit_status, term_sig);
 	_env_append_fmt (&env, "ARRAYJOBID", "%u", job->array_job_id);
