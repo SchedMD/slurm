@@ -172,6 +172,7 @@ enum {
 	SORTID_PREFER,
 	SORTID_PRIORITY,
 	SORTID_QOS,
+	SORTID_RC,
 	SORTID_REASON,
 	SORTID_REBOOT,
 	SORTID_REQUEUE,
@@ -310,6 +311,8 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXIT_CODE, "Exit Code", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{ G_TYPE_STRING, SORTID_RC, "SlurmRC", false,
+	  EDIT_NONE, refresh_job, create_model_job, admin_edit_job },
 	{G_TYPE_STRING, SORTID_BATCH, "Batch Flag", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_BATCH_HOST, "Batch Host", false,
@@ -1399,6 +1402,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_EXIT_CODE),
 				   tmp_char);
 
+	snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_exit_rc.rc);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job, SORTID_RC),
+				   tmp_char);
+
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_EXTRA),
@@ -1862,7 +1870,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_time_run[40],  tmp_time_resize[256], tmp_time_submit[256];
 	char tmp_time_elig[256], tmp_time_start[256],  tmp_time_end[256];
 	char tmp_time_sus[40],  tmp_time_limit[40],  tmp_alloc_node[40];
-	char tmp_exit[40], tmp_derived_ec[40];
+	char tmp_exit[40], tmp_derived_ec[40], tmp_rc[40];
 	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
@@ -2051,6 +2059,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	exit_code_decode(job_ptr->job_exit_rc.exit_code, &term_code, &term_sig);
 	snprintf(tmp_exit, sizeof(tmp_exit), "%u:%u", term_code, term_sig);
+
+	snprintf(tmp_rc, sizeof(tmp_rc), "%u", job_ptr->job_exit_rc.rc);
 
 	tmp_gname = gid_to_string(job_ptr->group_id);
 
@@ -2266,6 +2276,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_DEPENDENCY,   job_ptr->dependency,
 				   SORTID_DERIVED_EC,   tmp_derived_ec,
 				   SORTID_EXIT_CODE,    tmp_exit,
+				   SORTID_RC,           tmp_rc,
 				   SORTID_EXTRA, job_ptr->extra,
 				   SORTID_FEATURES,     job_ptr->features,
 				   SORTID_PREFER, job_ptr->prefer,
