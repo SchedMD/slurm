@@ -1394,7 +1394,10 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		return NULL;
 	}
 
-	if (step_spec->min_nodes == INFINITE) {	/* use all nodes */
+	if ((step_spec->min_nodes == INFINITE) &&
+	    (!step_spec->node_list ||
+	     ((step_spec->task_dist & SLURM_DIST_STATE_BASE) !=
+	      SLURM_DIST_ARBITRARY))) { /* use all nodes */
 		if ((step_spec->num_tasks == NO_VAL) && nodes_avail &&
 		    !(step_spec->flags & SSF_EXT_LAUNCHER)) {
 			_set_max_num_tasks(step_spec, job_ptr, nodes_avail,
@@ -1425,10 +1428,14 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	/*
 	 * An allocating srun will send in the same node_list that was already
 	 * used to construct the job allocation. In that case, we can assume
-	 * that the job allocation already satisfies those requirements.
+	 * that the job allocation already satisfies those requirements. An
+	 * arbitrary list is always checked: it drives the step's task layout
+	 * and indexes the job's resources.
 	 */
-	if (step_spec->node_list && xstrcmp(step_spec->node_list,
-					    job_ptr->details->req_nodes)) {
+	if (step_spec->node_list &&
+	    (xstrcmp(step_spec->node_list, job_ptr->details->req_nodes) ||
+	     ((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
+	      SLURM_DIST_ARBITRARY))) {
 		bitstr_t *selected_nodes = NULL;
 		log_flag(STEPS, "%s: selected nodelist is %s",
 			 __func__, step_spec->node_list);
@@ -1468,10 +1475,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
-		if ((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
-		    SLURM_DIST_ARBITRARY) {
-			step_spec->min_nodes = bit_set_count(selected_nodes);
-		}
 		if (selected_nodes) {
 			int node_cnt = 0;
 			/*
@@ -1495,8 +1498,21 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					 step_spec->max_nodes);
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
-			} else if (step_spec->min_nodes &&
-				   (node_cnt > step_spec->min_nodes)) {
+			}
+			/*
+			 * Pin the node count to the list only after the
+			 * check above, so that a max_nodes smaller than the
+			 * arbitrary list is still rejected rather than
+			 * silently overridden.
+			 */
+			if ((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
+			    SLURM_DIST_ARBITRARY) {
+				step_spec->min_nodes = node_cnt;
+				step_spec->max_nodes = node_cnt;
+			}
+
+			if (step_spec->min_nodes &&
+			    (node_cnt > step_spec->min_nodes)) {
 				nodes_picked = bit_alloc(bit_size(nodes_avail));
 				FREE_NULL_BITMAP(nodes_avail);
 				nodes_avail = selected_nodes;
