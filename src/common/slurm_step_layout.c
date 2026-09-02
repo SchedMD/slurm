@@ -110,8 +110,20 @@ slurm_step_layout_t *slurm_step_layout_create(
 		arbitrary_nodes = xstrdup(step_layout_req->node_list);
 		hl = hostlist_create(step_layout_req->node_list);
 		hostlist_uniq(hl);
+		/*
+		 * The list must span exactly the nodes the caller counted;
+		 * otherwise node_cnt would not match the layout.
+		 */
+		if (hostlist_count(hl) != step_layout_req->num_hosts) {
+			error("%s: arbitrary node list %s has %d nodes but %u were expected",
+			      __func__, step_layout_req->node_list,
+			      hostlist_count(hl), step_layout_req->num_hosts);
+			hostlist_destroy(hl);
+			xfree(arbitrary_nodes);
+			slurm_step_layout_destroy(step_layout);
+			return NULL;
+		}
 		buf = hostlist_ranged_string_xmalloc(hl);
-		step_layout_req->num_hosts = hostlist_count(hl);
 		hostlist_destroy(hl);
 		step_layout->node_list = buf;
 	} else {
