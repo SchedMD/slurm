@@ -4874,6 +4874,16 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 				opt->state[i].set = false;
 		}
 	}
+
+	/*
+	 * het_job_inx is not an option and has no entry above, so the loop
+	 * never reaches it. Clients set it immediately after this call, so a
+	 * later pass never reads the index left by the component before it.
+	 * Clear it on a first pass, so that a caller starting over, or one
+	 * that never sets it, gets a defined zero.
+	 */
+	if (first_pass)
+		opt->het_job_inx = 0;
 }
 
 /*

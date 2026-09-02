@@ -313,6 +313,16 @@ typedef struct {
 
 	slurm_opt_state_t *state;
 
+	/*
+	 * Heterogeneous job component these options describe.
+	 *
+	 * This is not an option. The clients set it as they parse, and srun's
+	 * _opt_copy() carries it with the rest of the struct, so every saved
+	 * component keeps the index it was parsed for. A client that submits
+	 * one job at a time leaves it at zero.
+	 */
+	int het_job_inx;
+
 	void (*help_func)(void);	/* Print --help info		*/
 	void (*usage_func)(void);	/* Print --usage info		*/
 	void (*autocomplete_func)(const char *); /* Print --autocomplete= info*/
