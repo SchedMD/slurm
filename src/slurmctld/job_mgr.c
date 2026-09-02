@@ -20182,6 +20182,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 		setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u",
 			job_ptr->job_exit_rc.exit_code);
+		setenvf(&my_env, "SLURM_JOB_RC", "%u", job_ptr->job_exit_rc.rc);
 	}
 
 	if (job_ptr->array_task_id != NO_VAL) {

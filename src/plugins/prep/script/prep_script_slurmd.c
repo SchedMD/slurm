@@ -292,6 +292,7 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			job_env->job_exit_rc.exit_code);
 		setenvf(&env, "SLURM_JOB_EXIT_CODE2", "%d:%d", exit_code,
 			signal);
+		setenvf(&env, "SLURM_JOB_RC", "%u", job_env->job_exit_rc.rc);
 	}
 
 	if (cred) {
