@@ -7194,6 +7194,8 @@ static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->data_version, buffer);
 		pack64(msg->fed_siblings, buffer);
 		pack32(msg->group_id, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
 		pack32(msg->job_state, buffer);
 		pack32(msg->return_code, buffer);
 		pack_time(msg->start_time, buffer);
@@ -7301,6 +7303,8 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->data_version, buffer);
 		safe_unpack64(&msg->fed_siblings, buffer);
 		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
@@ -7335,6 +7339,16 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->group_id, buffer);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
+		msg->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code = (msg->return_code == 1) ?
+						     W_EXITCODE(1, 0) :
+						     msg->return_code;
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackstr(&msg->resp_host, buffer);
 		safe_unpack32(&msg->req_uid, buffer);
@@ -7369,6 +7383,16 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
+		msg->job_exit_rc.rc = 0;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code = (msg->return_code == 1) ?
+						     W_EXITCODE(1, 0) :
+						     msg->return_code;
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackstr(&msg->resp_host, buffer);
 		safe_unpack32(&msg->req_uid, buffer);

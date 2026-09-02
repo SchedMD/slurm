@@ -5867,7 +5867,7 @@ void cleanup_completing(job_record_t *job_ptr, bool requeue)
 
 	/* Job could be pending if the job was requeued due to a node failure */
 	if (IS_JOB_COMPLETED(job_ptr))
-		fed_mgr_job_complete(job_ptr, job_ptr->job_exit_rc.exit_code,
+		fed_mgr_job_complete(job_ptr, job_ptr->job_exit_rc,
 				     job_ptr->start_time);
 	if (requeue)
 		batch_requeue_fini(job_ptr);

@@ -2928,7 +2928,7 @@ static int _foreach_kill_job_by_part_name(void *x, void *arg)
 		job_ptr->end_time = now;
 		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_completion_logger(job_ptr, false);
-		fed_mgr_job_complete(job_ptr, 0, now);
+		fed_mgr_job_complete(job_ptr, (job_exit_rc_t) { 0 }, now);
 	}
 	job_ptr->part_ptr = NULL;
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
@@ -5455,7 +5455,7 @@ extern int job_signal(slurm_msg_t *msg, job_record_t *job_ptr, uint16_t signal,
 		 * pending origin job is put into a hold state and the siblings
 		 * are removed or when the job is canceled from the origin.
 		 */
-		fed_mgr_job_complete(job_ptr, 0, now);
+		fed_mgr_job_complete(job_ptr, (job_exit_rc_t) { 0 }, now);
 		verbose("%s: %u of pending %pJ successful",
 			__func__, signal, job_ptr);
 		return SLURM_SUCCESS;

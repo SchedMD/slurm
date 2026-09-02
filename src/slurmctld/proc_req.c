@@ -758,7 +758,7 @@ static int _het_job_cancel(void *x, void *arg)
 	job_ptr->end_time	= now;
 	job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 	job_completion_logger(job_ptr, false);
-	fed_mgr_job_complete(job_ptr, 0, now);
+	fed_mgr_job_complete(job_ptr, (job_exit_rc_t) { 0 }, now);
 
 	return 0;
 }

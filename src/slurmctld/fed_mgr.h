@@ -72,8 +72,8 @@ extern int       fed_mgr_job_allocate(slurm_msg_t *msg,
 extern int fed_mgr_job_cancel(slurm_msg_t *msg, job_record_t *job_ptr,
 			      uint16_t signal, uint16_t flags,
 			      bool kill_viable);
-extern int       fed_mgr_job_complete(job_record_t *job_ptr,
-				      uint32_t return_code, time_t start_time);
+extern int fed_mgr_job_complete(job_record_t *job_ptr,
+				job_exit_rc_t job_exit_rc, time_t start_time);
 extern bool      fed_mgr_job_is_locked(job_record_t *job_ptr);
 extern bool      fed_mgr_job_is_self_owned(job_record_t *job_ptr);
 extern int       fed_mgr_job_lock(job_record_t *job_ptr);

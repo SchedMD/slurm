@@ -1424,8 +1424,13 @@ typedef struct {
 	uint16_t data_version;	/* Version that data is packed with */
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t group_id;      /* gid of submitted job */
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status of a
+				    * completing job. FED_JOB_COMPLETE only. */
 	uint32_t job_state;     /* state of job */
-	uint32_t return_code;   /* return code of job */
+	uint32_t return_code; /* RPC status for the submit and update
+			       * response messages; the completing job's
+			       * exit status for FED_JOB_COMPLETE, which
+			       * job_exit_rc supersedes from 26.11. */
 	time_t   start_time;    /* time sibling job started */
 	char    *resp_host;     /* response host for interactive allocations */
 	uint32_t req_uid;       /* uid of user making the request. e.g if a
