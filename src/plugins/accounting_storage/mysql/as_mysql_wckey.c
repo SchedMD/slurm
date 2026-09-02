@@ -746,6 +746,13 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		if (as_mysql_validate_cluster_name(object->cluster) !=
+		    SLURM_SUCCESS) {
+			rc = ESLURM_INVALID_CLUSTER_NAME;
+			list_delete_item(itr);
+			continue;
+		}
+
 		if (!added_user_list)
 			added_user_list = list_create(NULL);
 		if (!list_find_first(added_user_list,
@@ -895,6 +902,10 @@ extern char *as_mysql_add_wckeys_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (as_mysql_validate_cluster_list(add_assoc->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	if (add_assoc->cluster_list && list_count(add_assoc->cluster_list))
 		use_cluster_list = add_assoc->cluster_list;
 	else
@@ -963,6 +974,10 @@ extern list_t *as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	}
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if (as_mysql_validate_cluster_list(wckey_cond->cluster_list) !=
+	    SLURM_SUCCESS)
 		return NULL;
 
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
@@ -1064,6 +1079,10 @@ extern list_t *as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
+	if (as_mysql_validate_cluster_list(wckey_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
+
 	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 
 empty:
@@ -1137,6 +1156,10 @@ extern list_t *as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
+
+	if (as_mysql_validate_cluster_list(wckey_cond->cluster_list) !=
+	    SLURM_SUCCESS)
+		return NULL;
 
 	if (slurm_conf.private_data & PRIVATE_DATA_USERS) {
 		if (!(is_admin = is_user_min_admin_level(

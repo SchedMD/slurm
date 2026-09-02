@@ -43,6 +43,7 @@
 typedef struct {
 	list_t *acct_list; /* for coords, a list of just char * instead of
 			    * slurmdb_coord_rec_t */
+	bool admin_set;
 	char *coord_query;
 	char *coord_query_pos;
 	mysql_conn_t *mysql_conn;
@@ -342,7 +343,7 @@ static int _foreach_add_user(void *x, void *arg)
 	char *name = x;
 	add_user_cond_t *add_user_cond = arg;
 	slurmdb_user_rec_t *object, check_object;
-	char *extra, *tmp_extra;
+	char *extra = NULL, *tmp_extra = NULL;
 	int rc;
 	char *query;
 
@@ -368,9 +369,9 @@ static int _foreach_add_user(void *x, void *arg)
 		add_user_cond->user_in->coord_accts);
 
 	query = xstrdup_printf(
-		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
-		user_table, add_user_cond->now, add_user_cond->now,
-		object->name, object->admin_level);
+		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update name=VALUES(name), admin_level=IF(deleted=1, VALUES(admin_level), admin_level), deleted=0, mod_time=VALUES(mod_time);",
+		user_table, add_user_cond->now, add_user_cond->now, object->name,
+		object->admin_level);
 
 	DB_DEBUG(DB_ASSOC, add_user_cond->mysql_conn->conn, "query:\n%s",
 		 query);
@@ -403,8 +404,10 @@ static int _foreach_add_user(void *x, void *arg)
 		return -1;
 	}
 
-	extra = xstrdup_printf("admin_level=%u", object->admin_level);
-	tmp_extra = slurm_add_slash_to_quotes(extra);
+	if (add_user_cond->admin_set) {
+		extra = xstrdup_printf("admin_level=%u", object->admin_level);
+		tmp_extra = slurm_add_slash_to_quotes(extra);
+	}
 
 	if (!add_user_cond->txn_query)
 		xstrfmtcatat(add_user_cond->txn_query,
@@ -420,7 +423,7 @@ static int _foreach_add_user(void *x, void *arg)
 		     &add_user_cond->txn_query_pos,
 		     "(%ld, %u, '%s', '%s', '%s')",
 		     add_user_cond->now, DBD_ADD_USERS, name,
-		     add_user_cond->user_name, tmp_extra);
+		     add_user_cond->user_name, tmp_extra ? tmp_extra : "");
 	xfree(tmp_extra);
 	xfree(extra);
 
@@ -443,6 +446,28 @@ static int _foreach_add_user(void *x, void *arg)
 	return 0;
 }
 
+/* Return true if name is not already an existing, non-deleted user. */
+static bool _admin_level_applies(mysql_conn_t *mysql_conn, char *name)
+{
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	bool applies;
+
+	query = xstrdup_printf(
+		"select name from %s where deleted=0 and name='%s';",
+		user_table, name);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return false;
+
+	applies = !mysql_num_rows(result);
+	mysql_free_result(result);
+
+	return applies;
+}
+
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			      list_t *user_list)
 {
@@ -453,11 +478,12 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *txn_query_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *extra = NULL, *tmp_extra = NULL;
+	char *extra = NULL, *audit_extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
 	list_t *assoc_list;
 	list_t *wckey_list;
 	bool is_admin = false;
+	bool is_super_user = false;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -485,6 +511,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	} else {
 		is_admin = true;
+		is_super_user = is_user_min_admin_level(
+			mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER);
 	}
 
 	if (!user_list || !list_count(user_list)) {
@@ -515,19 +543,39 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				rc = ESLURM_ACCESS_DENIED;
 				break;
 			}
+			if ((object->admin_level >=
+			     SLURMDB_ADMIN_SUPER_USER) &&
+			    !is_super_user) {
+				error("Only Administrators can add an Administrator");
+				rc = ESLURM_ACCESS_DENIED;
+				break;
+			}
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
-			xstrfmtcat(extra, ", admin_level=%u",
-				   object->admin_level);
-		} else
-			xstrfmtcat(extra, ", admin_level=%u",
-				   SLURMDB_ADMIN_NONE);
+			xstrfmtcat(extra,
+				   ", admin_level=IF(deleted=1, "
+				   "VALUES(admin_level), admin_level)");
+			/*
+			 * The admin_level is only applied to a new or deleted
+			 * user, so only record it as changed in those cases.
+			 */
+			if (_admin_level_applies(mysql_conn, object->name))
+				xstrfmtcat(audit_extra, ", admin_level=%u",
+					   object->admin_level);
+		} else {
+			xstrcat(cols, ", admin_level");
+			xstrfmtcat(vals, ", %u", SLURMDB_ADMIN_NONE);
+			xstrfmtcat(extra,
+				   ", admin_level=IF(deleted=1, "
+				   "VALUES(admin_level), admin_level)");
+		}
 
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
-			"on duplicate key update name=VALUES(name), deleted=0, mod_time=%ld %s;",
+			"on duplicate key update name=VALUES(name)%s, "
+			"deleted=0, mod_time=%ld;",
 			user_table, cols, vals,
-			(long)now, extra);
+			extra, (long) now);
 		xfree(cols);
 		xfree(vals);
 
@@ -536,6 +584,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add user %s", object->name);
 			xfree(extra);
+			xfree(audit_extra);
 			continue;
 		}
 
@@ -543,6 +592,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!affect_rows) {
 			debug("nothing changed");
 			xfree(extra);
+			xfree(audit_extra);
 			continue;
 		}
 
@@ -562,21 +612,30 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = _get_user_coords(mysql_conn, object);
 		}
 
-		if (rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS) {
+			xfree(extra);
+			xfree(audit_extra);
 			continue;
+		}
 
 		if (addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
 				      object) == SLURM_SUCCESS)
 			list_remove(itr);
 
-		/* we always have a ', ' as the first 2 chars */
-		tmp_extra = slurm_add_slash_to_quotes(extra+2);
+		/*
+		 * audit_extra is only set when the caller explicitly requested
+		 * an admin_level; otherwise the txn info is left empty rather
+		 * than recording the SQL fragment from extra. We always have
+		 * a ', ' as the first 2 chars.
+		 */
+		if (audit_extra)
+			tmp_extra = slurm_add_slash_to_quotes(audit_extra + 2);
 
 		if (txn_query)
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     ", (%ld, %u, '%s', '%s', '%s')",
 				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra);
+				     user_name, tmp_extra ? tmp_extra : "");
 		else
 			xstrfmtcatat(txn_query, &txn_query_pos,
 				     "insert into %s "
@@ -584,9 +643,10 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     "values (%ld, %u, '%s', '%s', '%s')",
 				     txn_table,
 				     (long)now, DBD_ADD_USERS, object->name,
-				     user_name, tmp_extra);
+				     user_name, tmp_extra ? tmp_extra : "");
 		xfree(tmp_extra);
 		xfree(extra);
+		xfree(audit_extra);
 		if (object->assoc_list)
 			list_transfer(assoc_list, object->assoc_list);
 
@@ -594,6 +654,8 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_transfer(wckey_list, object->wckey_list);
 	}
 	list_iterator_destroy(itr);
+	xfree(cols);
+	xfree(vals);
 	xfree(user_name);
 
 	if (rc == SLURM_SUCCESS) {
@@ -673,12 +735,23 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
+	if ((user->admin_level >= SLURMDB_ADMIN_SUPER_USER) &&
+	    !is_user_min_admin_level(mysql_conn, uid,
+				     SLURMDB_ADMIN_SUPER_USER)) {
+		ret_str =
+			xstrdup("Only Administrators can add an Administrator");
+		error("%s", ret_str);
+		errno = ESLURM_ACCESS_DENIED;
+		return ret_str;
+	}
+
 	if (user->admin_level == SLURMDB_ADMIN_NOTSET)
 		user->admin_level = SLURMDB_ADMIN_NONE;
 	else
 		admin_set = true;
 
 	memset(&add_user_cond, 0, sizeof(add_user_cond));
+	add_user_cond.admin_set = admin_set;
 	add_user_cond.user_in = user;
 	add_user_cond.mysql_conn = mysql_conn;
 	add_user_cond.now = time(NULL);
@@ -917,6 +990,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	bool is_super_user = false;
 
 	if (!user_cond || !user) {
 		error("we need something to change");
@@ -967,7 +1041,7 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf(
-		"select distinct name from %s where deleted=0 %s;",
+		"select distinct name, admin_level from %s where deleted=0 %s;",
 		user_table, extra);
 	xfree(extra);
 	if (!(result = mysql_db_query_ret(
@@ -977,12 +1051,31 @@ extern list_t *as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	if (user->name)
+		is_super_user = is_user_min_admin_level(
+			mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER);
+
 	if (!ret_list)
 		ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_user_rec_t *user_rec = NULL;
 
 		object = row[0];
+		/*
+		 * A rename carries the admin_level over to the new name, so
+		 * it has to be checked before _change_user_name() below.
+		 */
+		if (user->name && !is_super_user &&
+		    (slurm_atoul(row[1]) >= SLURMDB_ADMIN_SUPER_USER)) {
+			error("Only Administrators can rename an Administrator");
+			mysql_free_result(result);
+			xfree(name_char);
+			xfree(query);
+			xfree(vals);
+			FREE_NULL_LIST(ret_list);
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
+		}
 		slurm_addto_char_list(ret_list, object);
 		if (!name_char)
 			xstrfmtcat(name_char, "(name='%s'", object);
@@ -1176,6 +1269,56 @@ static bool _is_coord_over_all_accts(mysql_conn_t *mysql_conn,
 	return has_access;
 }
 
+static int _foreach_quoted_name(void *x, void *arg)
+{
+	char *name = x;
+	create_string_t *create_string = arg;
+
+	if (!name[0])
+		return 0;
+
+	xstrfmtcatat(create_string->query, &create_string->query_pos,
+		     "%s'%s'",
+		     create_string->query ? ", " : "", name);
+	return 0;
+}
+
+/*
+ * Return ESLURM_ACCESS_DENIED if any name in name_list is an Administrator.
+ */
+static int _check_for_admins(mysql_conn_t *mysql_conn, list_t *name_list)
+{
+	create_string_t create_string = { 0 };
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	int rc = SLURM_SUCCESS;
+
+	(void) list_for_each_ro(name_list, _foreach_quoted_name,
+				&create_string);
+
+	if (!create_string.query)
+		return SLURM_SUCCESS;
+
+	query = xstrdup_printf(
+		"select name from %s "
+		"where deleted=0 and admin_level>=%u and name in (%s);",
+		user_table, SLURMDB_ADMIN_SUPER_USER, create_string.query);
+	xfree(create_string.query);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+	if (!result)
+		return ESLURM_ACCESS_DENIED;
+
+	if (mysql_num_rows(result)) {
+		error("Only Administrators can remove an Administrator");
+		rc = ESLURM_ACCESS_DENIED;
+	}
+	mysql_free_result(result);
+
+	return rc;
+}
+
 extern list_t *as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_user_cond_t *user_cond)
 {
@@ -1304,6 +1447,22 @@ no_user_table:
 		return ret_list;
 	}
 	xfree(query);
+
+	/*
+	 * ret_list is also filled in from the default account and wckey
+	 * conditions, which never look at the user_table, so the admin_level
+	 * has to be checked here on the full list.
+	 */
+	if (!is_user_min_admin_level(mysql_conn, uid,
+				     SLURMDB_ADMIN_SUPER_USER)) {
+		rc = _check_for_admins(mysql_conn, ret_list);
+
+		if (rc != SLURM_SUCCESS) {
+			FREE_NULL_LIST(ret_list);
+			errno = rc;
+			return NULL;
+		}
+	}
 
 	memset(&user_coord_cond, 0, sizeof(slurmdb_user_cond_t));
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
