@@ -41,6 +41,7 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
+ libpmix2t64 | libpmix2,
 Recommends:
  munge,
 Conflicts:
