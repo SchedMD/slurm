@@ -1866,8 +1866,9 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 
 	if (!job)
 		_print_str("EXIT_CODE", width, right_justify, true);
-	else if (job->exit_code != NO_VAL) {
-		exit_code_decode(job->exit_code, &exit_status, &term_sig);
+	else if (job->job_exit_rc.exit_code != NO_VAL) {
+		exit_code_decode(job->job_exit_rc.exit_code, &exit_status,
+				 &term_sig);
 		xstrfmtcat(out, "%u:%u", exit_status, term_sig);
 		_print_str(out, width, right_justify, true);
 		xfree(out);

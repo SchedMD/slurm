@@ -1950,7 +1950,6 @@ typedef struct job_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t exclusive; /* JOB_EXCLUSIVE_* (NONE/NODE/USER/MCS/TOPO) */
-	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *extra;		/* Arbitrary string */
 	char *failed_node;	/* if set, node that caused job to fail */
 	char *features;		/* comma separated list of required features */
@@ -4109,7 +4108,9 @@ extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal);
 /*
  * slurm_complete_job - note the completion of a job and all of its steps
  * IN step_id - the job's id
- * IN job_return_code - the highest exit code of any task of the job
+ * IN job_return_code - the job's wait(2) status, such as the highest status
+ *	of any of its tasks; pass W_EXITCODE(1, 0) to report a failure, as a
+ *	bare 1 is read as killed by signal 1
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_complete_job(slurm_step_id_t *step_id,

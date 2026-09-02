@@ -1025,7 +1025,7 @@ extern bool deadline_ok(job_record_t *job_ptr, const char *func)
 	if (fail_job) {
 		last_job_update = now;
 		job_state_set(job_ptr, JOB_DEADLINE);
-		job_ptr->exit_code = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->state_reason = FAIL_DEADLINE;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = now;
@@ -2525,8 +2525,8 @@ job_failed:
 	last_job_update = time(NULL);
 	slurm_free_job_launch_msg(launch_msg_ptr);
 	/* ignore the return as job is in an unknown state anyway */
-	job_complete(NULL, &step_id, false, false, 1,
-		     (job_exit_rc_t) { .exit_code = 1 });
+	job_complete(NULL, &step_id, false, false,
+		     (job_exit_rc_t) { .exit_code = W_EXITCODE(1, 0) });
 	return NULL;
 }
 
@@ -5867,7 +5867,7 @@ void cleanup_completing(job_record_t *job_ptr, bool requeue)
 
 	/* Job could be pending if the job was requeued due to a node failure */
 	if (IS_JOB_COMPLETED(job_ptr))
-		fed_mgr_job_complete(job_ptr, job_ptr->exit_code,
+		fed_mgr_job_complete(job_ptr, job_ptr->job_exit_rc.exit_code,
 				     job_ptr->start_time);
 	if (requeue)
 		batch_requeue_fini(job_ptr);

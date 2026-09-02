@@ -272,7 +272,8 @@ extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 	exit_code_decode(job_ptr->derived_ec, &exit_status, &term_sig);
 	xstrfmtcat(derived_ec_str, "%u:%u", exit_status, term_sig);
 
-	exit_code_decode(job_ptr->exit_code, &exit_status, &term_sig);
+	exit_code_decode(job_ptr->job_exit_rc.exit_code, &exit_status,
+			 &term_sig);
 	xstrfmtcat(exit_code_str, "%u:%u", exit_status, term_sig);
 
 	xstrfmtcat(job_rec, JOB_FORMAT,

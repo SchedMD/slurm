@@ -989,8 +989,6 @@ typedef struct {
 	time_t end;
 	char *env;
 	char *exclusive;
-	uint32_t exitcode; /* Alias of job_exit_rc.exit_code, kept for
-			    * compatibility. */
 	char *extra; /* Extra - arbitrary string */
 	char *failed_node;
 	uint32_t flags;

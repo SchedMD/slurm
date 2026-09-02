@@ -1392,7 +1392,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_DERIVED_EC),
 				   tmp_char);
 
-	exit_code_decode(job_ptr->exit_code, &term_code, &term_sig);
+	exit_code_decode(job_ptr->job_exit_rc.exit_code, &term_code, &term_sig);
 	snprintf(tmp_char, sizeof(tmp_char), "%u:%u", term_code, term_sig);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2049,7 +2049,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	snprintf(tmp_derived_ec, sizeof(tmp_derived_ec), "%u:%u",
 		 term_code, term_sig);
 
-	exit_code_decode(job_ptr->exit_code, &term_code, &term_sig);
+	exit_code_decode(job_ptr->job_exit_rc.exit_code, &term_code, &term_sig);
 	snprintf(tmp_exit, sizeof(tmp_exit), "%u:%u", term_code, term_sig);
 
 	tmp_gname = gid_to_string(job_ptr->group_id);

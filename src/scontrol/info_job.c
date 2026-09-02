@@ -254,7 +254,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	xstrfmtcat(out, "Requeue=%u Restarts=%u BatchFlag=%u Reboot=%u ",
 		 job_ptr->requeue, job_ptr->restart_cnt, job_ptr->batch_flag,
 		 job_ptr->reboot);
-	exit_code_decode(job_ptr->exit_code, &exit_status, &term_sig);
+	exit_code_decode(job_ptr->job_exit_rc.exit_code, &exit_status,
+			 &term_sig);
 	xstrfmtcat(out, "ExitCode=%u:%u", exit_status, term_sig);
 	xstrcat(out, line_end);
 

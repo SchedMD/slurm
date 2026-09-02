@@ -180,7 +180,7 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 	j->jobid = job->job_id;
 	j->sluid = job->db_index;
 	j->original_sluid = job->step_id.sluid;
-	j->exit_code = job->exit_code;
+	j->exit_code = job->job_exit_rc.exit_code;
 	if (job->details)
 		j->constraints = xstrdup(job->details->features);
 	j->db_flags = job->db_flags;

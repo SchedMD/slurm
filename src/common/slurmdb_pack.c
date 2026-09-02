@@ -4087,7 +4087,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->end, buffer);
 		packstr(job->env, buffer);
 		packstr(job->exclusive, buffer);
-		pack32((uint32_t) job->exitcode, buffer);
+		pack32(job->job_exit_rc.exit_code, buffer);
 		packstr(job->extra, buffer);
 		packstr(job->failed_node, buffer);
 		pack32(job->flags, buffer);
@@ -4181,7 +4181,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->eligible, buffer);
 		pack_time(job->end, buffer);
 		packstr(job->env, buffer);
-		pack32((uint32_t)job->exitcode, buffer);
+		pack32(job->job_exit_rc.exit_code, buffer);
 		packstr(job->extra, buffer);
 		packstr(job->failed_node, buffer);
 		pack32(job->flags, buffer);
@@ -4293,12 +4293,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->exclusive, buffer);
 		safe_unpack_job_exit_rc(&job_ptr->job_exit_rc, buffer,
 					protocol_version);
-		/*
-		 * exitcode is not packed. It is kept in slurmdb_job_rec_t
-		 * as an alias of job_exit_rc.exit_code so that existing
-		 * consumers of the public API keep working.
-		 */
-		job_ptr->exitcode = job_ptr->job_exit_rc.exit_code;
 		safe_unpackstr(&job_ptr->extra, buffer);
 		safe_unpackstr(&job_ptr->failed_node, buffer);
 		safe_unpack32(&job_ptr->flags, buffer);
@@ -4389,10 +4383,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack_time(&job_ptr->end, buffer);
 		safe_unpackstr(&job_ptr->env, buffer);
 		safe_unpackstr(&job_ptr->exclusive, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->exitcode = (int32_t) uint32_tmp;
+		safe_unpack32(&job_ptr->job_exit_rc.exit_code, buffer);
 		job_ptr->job_exit_rc.rc = 0;
-		job_ptr->job_exit_rc.exit_code = job_ptr->exitcode;
 		safe_unpackstr(&job_ptr->extra, buffer);
 		safe_unpackstr(&job_ptr->failed_node, buffer);
 		safe_unpack32(&job_ptr->flags, buffer);
@@ -4481,10 +4473,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack_time(&job_ptr->eligible, buffer);
 		safe_unpack_time(&job_ptr->end, buffer);
 		safe_unpackstr(&job_ptr->env, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->exitcode = (int32_t)uint32_tmp;
+		safe_unpack32(&job_ptr->job_exit_rc.exit_code, buffer);
 		job_ptr->job_exit_rc.rc = 0;
-		job_ptr->job_exit_rc.exit_code = job_ptr->exitcode;
 		safe_unpackstr(&job_ptr->extra, buffer);
 		safe_unpackstr(&job_ptr->failed_node, buffer);
 		safe_unpack32(&job_ptr->flags, buffer);

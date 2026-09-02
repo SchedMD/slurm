@@ -1252,7 +1252,6 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	int rc = SLURM_SUCCESS, job_state;
 	time_t submit_time, end_time;
-	uint32_t exit_code = 0;
 
 	if (!job_ptr->db_index
 	    && ((!job_ptr->details || !job_ptr->details->submit_time)
@@ -1365,15 +1364,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if (job_ptr->failed_node)
 		xstrfmtcat(query, ", failed_node='%s'", job_ptr->failed_node);
 
-	exit_code = job_ptr->exit_code;
-	if (exit_code == 1) {
-		/* This wasn't signaled, it was set by Slurm so don't
-		 * treat it like a signal.
-		 */
-		exit_code = 256;
-	}
-	xstrfmtcat(query, ", exit_code=%d, slurm_rc=%u, ", exit_code,
-		   job_ptr->job_exit_rc.rc);
+	xstrfmtcat(query, ", exit_code=%u, slurm_rc=%u, ",
+		   job_ptr->job_exit_rc.exit_code, job_ptr->job_exit_rc.rc);
 
 	if (job_ptr->kill_requid == (uid_t) -1)
 		xstrfmtcat(query, "kill_requid=null ");

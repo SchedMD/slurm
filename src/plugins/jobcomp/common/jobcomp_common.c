@@ -179,7 +179,8 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		exit_code_decode(job_ptr->derived_ec, &exit_status, &term_sig);
 		xstrfmtcat(derived_ec_str, "%u:%u", exit_status, term_sig);
 
-		exit_code_decode(job_ptr->exit_code, &exit_status, &term_sig);
+		exit_code_decode(job_ptr->job_exit_rc.exit_code, &exit_status,
+				 &term_sig);
 		xstrfmtcat(exit_code_str, "%u:%u", exit_status, term_sig);
 	}
 

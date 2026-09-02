@@ -900,8 +900,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->sluid = slurm_atoull(row[JOB_REQ_SLUID]);
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = slurm_atoul(row[JOB_REQ_GID]);
-		job->exitcode = slurm_atoul(row[JOB_REQ_EXIT_CODE]);
-		job->job_exit_rc.exit_code = job->exitcode;
+		job->job_exit_rc.exit_code =
+			slurm_atoul(row[JOB_REQ_EXIT_CODE]);
 		job->job_exit_rc.rc = slurm_atoul(row[JOB_REQ_RC]);
 		job->failed_node = xstrdup(row[JOB_REQ_FAILED_NODE]);
 		job->derived_ec = slurm_atoul(row[JOB_REQ_DERIVED_EC]);

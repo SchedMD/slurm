@@ -351,8 +351,6 @@ struct job_record {
 	 * job_record_t for accounting storage. NULL in live ctld jobs.
 	 */
 	char *exclusive;
-	uint32_t exit_code;		/* exit code for job (status from
-					 * wait call) */
 	char *extra;			/* Arbitrary string */
 	elem_t *extra_constraints;	/* Head of tree built from constraints
 					 * defined in "extra". Not state saved.

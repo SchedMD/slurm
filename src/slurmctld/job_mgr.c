@@ -268,7 +268,6 @@ typedef struct {
 typedef struct {
 	job_record_t *het_job_leader;
 	job_exit_rc_t job_exit_rc;
-	uint32_t job_return_code;
 	slurm_msg_t *msg; /* needed for auth */
 	bool node_fail;
 	bool requeue;
@@ -2916,7 +2915,7 @@ static int _foreach_kill_job_by_part_name(void *x, void *arg)
 				difftime(now, job_ptr->suspend_time);
 		} else
 			job_ptr->end_time = now;
-		job_ptr->exit_code = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_completion_logger(job_ptr, false);
 		if (!pending)
 			deallocate_nodes(job_ptr, false, suspended, false);
@@ -2927,7 +2926,7 @@ static int _foreach_kill_job_by_part_name(void *x, void *arg)
 		job_state_set(job_ptr, JOB_CANCELLED);
 		job_ptr->start_time = now;
 		job_ptr->end_time = now;
-		job_ptr->exit_code = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_completion_logger(job_ptr, false);
 		fed_mgr_job_complete(job_ptr, 0, now);
 	}
@@ -3142,7 +3141,7 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 			job_state_set(job_ptr, JOB_NODE_FAIL);
 			job_ptr->failed_node = xstrdup(node_ptr->name);
 			build_cg_bitmap(job_ptr);
-			job_ptr->exit_code = 1;
+			job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 			job_completion_logger(job_ptr, true);
 			deallocate_nodes(job_ptr, false, suspended, false);
 
@@ -3158,7 +3157,6 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 			/* clear signal sent flag on requeue */
 			job_ptr->warn_flags &= ~WARN_SENT;
 
-			job_ptr->exit_code = 0;
 			job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 
 			/*
@@ -3188,7 +3186,7 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 						 job_ptr->suspend_time);
 			} else
 				job_ptr->end_time = foreach_kill_job_by->now;
-			job_ptr->exit_code = 1;
+			job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 			job_completion_logger(job_ptr, false);
 			deallocate_nodes(job_ptr, false, suspended, false);
 		}
@@ -4325,7 +4323,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			/* this should never really happen here */
 			job_mgr_record_job_queue(job_ptr);
 			job_state_set(job_ptr, JOB_FAILED);
-			job_ptr->exit_code = 1;
+			job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
@@ -4380,7 +4378,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		/* Rejected after entering the queue, as accounting records */
 		job_mgr_record_job_queue(job_ptr);
 		job_state_set(job_ptr, JOB_FAILED);
-		job_ptr->exit_code  = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
@@ -4419,7 +4417,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		int rc;
 		rc = job_start_data(job_ptr, resp);
 		job_state_set(job_ptr, JOB_FAILED);
-		job_ptr->exit_code  = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->start_time = job_ptr->end_time = now;
 		purge_job_record(job_ptr->job_id);
 		return rc;
@@ -4561,7 +4559,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 			/* Only a hetjob component is still unrecorded here */
 			job_mgr_record_job_queue(job_ptr);
 			job_state_set(job_ptr, JOB_FAILED);
-			job_ptr->exit_code  = 1;
+			job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
@@ -4588,7 +4586,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		/* Only a hetjob component is still unrecorded here */
 		job_mgr_record_job_queue(job_ptr);
 		job_state_set(job_ptr, JOB_FAILED);
-		job_ptr->exit_code  = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
@@ -4602,7 +4600,7 @@ extern int job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	if (will_run) {		/* job would run, flag job destruction */
 		job_state_set(job_ptr, JOB_FAILED);
-		job_ptr->exit_code  = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->start_time = job_ptr->end_time = now;
 		purge_job_record(job_ptr->job_id);
 	}
@@ -4653,7 +4651,7 @@ static int _job_fail(job_record_t *job_ptr, uint32_t job_state)
 			job_ptr->end_time       = now;
 		last_job_update                 = now;
 		job_state_set(job_ptr, (job_state | JOB_COMPLETING));
-		job_ptr->exit_code = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->state_reason = FAIL_LAUNCH;
 		xfree(job_ptr->state_desc);
 		job_completion_logger(job_ptr, false);
@@ -6216,7 +6214,6 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 
 	if (msg->prolog_rc) {
 		error("Prolog launch failure, %pJ", job_ptr);
-		job_ptr->exit_code = msg->prolog_rc;
 		job_ptr->job_exit_rc.rc = msg->prolog_rc;
 		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 
@@ -6283,8 +6280,7 @@ static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller)
 }
 
 static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
-			 bool node_fail, uint32_t job_return_code,
-			 job_exit_rc_t job_exit_rc)
+			 bool node_fail, job_exit_rc_t job_exit_rc)
 {
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
@@ -6298,34 +6294,40 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (IS_JOB_FINISHED(job_ptr)) {
-		if (job_ptr->exit_code == 0) {
-			job_ptr->exit_code = job_return_code;
+		/*
+		 * Fill in what the finished job is missing, but never
+		 * overwrite a value it already has. Guard each half on
+		 * itself; a stored rc is not implied by a stored exit
+		 * status.
+		 */
+		if (!job_ptr->job_exit_rc.exit_code)
 			job_ptr->job_exit_rc.exit_code = job_exit_rc.exit_code;
-		}
+		if (!job_ptr->job_exit_rc.rc)
+			job_ptr->job_exit_rc.rc = job_exit_rc.rc;
 		return ESLURM_ALREADY_DONE;
 	}
 
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;	/* avoid replay */
 
-	if ((job_return_code & 0xff) == SIG_OOM) {
+	if ((job_exit_rc.exit_code & 0xff) == SIG_OOM) {
 		info("%s: %pJ OOM failure",  __func__, job_ptr);
-	} else if (WIFSIGNALED(job_return_code)) {
+	} else if (WIFSIGNALED(job_exit_rc.exit_code)) {
 		info("%s: %pJ WTERMSIG %d",
-		     __func__, job_ptr, WTERMSIG(job_return_code));
-	} else if (WIFEXITED(job_return_code)) {
+		     __func__, job_ptr, WTERMSIG(job_exit_rc.exit_code));
+	} else if (WIFEXITED(job_exit_rc.exit_code)) {
 		info("%s: %pJ WEXITSTATUS %d",
-		     __func__, job_ptr, WEXITSTATUS(job_return_code));
+		     __func__, job_ptr, WEXITSTATUS(job_exit_rc.exit_code));
 	}
 
 	if (IS_JOB_RUNNING(job_ptr))
 		job_comp_flag = JOB_COMPLETING;
 	else if (IS_JOB_PENDING(job_ptr)) {
-		job_return_code = NO_VAL;
+		job_exit_rc.exit_code = NO_VAL;
 		fed_mgr_job_revoke_sibs(job_ptr);
 	}
 
-	if ((job_return_code == NO_VAL) &&
+	if ((job_exit_rc.exit_code == NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_PENDING(job_ptr))) {
 		if (node_fail) {
 			info("%s: %pJ cancelled by node failure",
@@ -6371,7 +6373,6 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 			job_ptr->bit_flags &= (~GRACE_PREEMPT);
 		} else {
 			job_state_set(job_ptr, JOB_NODE_FAIL);
-			job_ptr->exit_code = job_return_code;
 			job_ptr->job_exit_rc = job_exit_rc;
 		}
 
@@ -6400,9 +6401,7 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 		/* clear signal sent flag on requeue */
 		job_ptr->warn_flags &= ~WARN_SENT;
 
-
 		job_state_set(job_ptr, (JOB_PENDING | job_comp_flag));
-		job_ptr->exit_code = 0;
 		job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 		/*
 		 * Since the job completion logger removes the job submit
@@ -6438,36 +6437,32 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 
 		if (node_fail) {
 			job_state_set(job_ptr, (JOB_NODE_FAIL | job_comp_flag));
-			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->kill_requid = msg->auth.uid;
 		} else if (job_ptr->bit_flags & GRACE_PREEMPT) {
 			job_state_set(job_ptr, (JOB_PREEMPTED | job_comp_flag));
-		} else if (job_return_code == NO_VAL) {
+		} else if (job_exit_rc.exit_code == NO_VAL) {
 			job_state_set(job_ptr, (JOB_CANCELLED | job_comp_flag));
 			job_ptr->kill_requid = msg->auth.uid;
-		} else if ((job_return_code & 0xff) == SIG_OOM) {
+		} else if ((job_exit_rc.exit_code & 0xff) == SIG_OOM) {
 			job_state_set(job_ptr, (JOB_OOM | job_comp_flag));
-			job_ptr->exit_code = job_return_code;
 			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->state_reason = FAIL_OOM;
 			xfree(job_ptr->state_desc);
-		} else if (WIFEXITED(job_return_code) &&
-			   WEXITSTATUS(job_return_code)) {
+		} else if (WIFEXITED(job_exit_rc.exit_code) &&
+			   WEXITSTATUS(job_exit_rc.exit_code)) {
 			job_state_set(job_ptr, (JOB_FAILED | job_comp_flag));
-			job_ptr->exit_code = job_return_code;
 			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
 			xfree(job_ptr->state_desc);
-		} else if (WIFSIGNALED(job_return_code)) {
+		} else if (WIFSIGNALED(job_exit_rc.exit_code)) {
 			job_state_set(job_ptr, (JOB_FAILED | job_comp_flag));
-			job_ptr->exit_code = job_return_code;
 			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->state_reason = FAIL_SIGNAL;
 			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc,
-				   "RaisedSignal:%d(%s)",
-				   WTERMSIG(job_return_code),
-				   strsignal(WTERMSIG(job_return_code)));
+			xstrfmtcat(job_ptr->state_desc, "RaisedSignal:%d(%s)",
+				   WTERMSIG(job_exit_rc.exit_code),
+				   strsignal(WTERMSIG(job_exit_rc.exit_code)));
 		} else if (job_comp_flag
 			   && ((job_ptr->end_time
 				+ over_time_limit * 60) < now)) {
@@ -6480,7 +6475,6 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 			xfree(job_ptr->state_desc);
 		} else {
 			job_state_set(job_ptr, (JOB_COMPLETE | job_comp_flag));
-			job_ptr->exit_code = job_return_code;
 			job_ptr->job_exit_rc = job_exit_rc;
 		}
 
@@ -6526,7 +6520,6 @@ static int _foreach_het_job_complete(void *x, void *arg)
 	rc = _job_complete(foreach_complete_hetjob->msg, het_job_ptr,
 			   foreach_complete_hetjob->requeue,
 			   foreach_complete_hetjob->node_fail,
-			   foreach_complete_hetjob->job_return_code,
 			   foreach_complete_hetjob->job_exit_rc);
 	if (rc != SLURM_SUCCESS)
 		foreach_complete_hetjob->rc = rc;
@@ -6535,8 +6528,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 }
 
 extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
-			bool requeue, bool node_fail, uint32_t job_return_code,
-			job_exit_rc_t job_exit_rc)
+			bool requeue, bool node_fail, job_exit_rc_t job_exit_rc)
 {
 	job_record_t *job_ptr;
 	int rc;
@@ -6565,7 +6557,6 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		foreach_complete_hetjob_t foreach_complete_hetjob = {
 			.het_job_leader = job_ptr,
 			.job_exit_rc = job_exit_rc,
-			.job_return_code = job_return_code,
 			.msg = msg,
 			.node_fail = node_fail,
 			.requeue = requeue,
@@ -6578,7 +6569,7 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		rc = foreach_complete_hetjob.rc;
 	} else {
 		rc = _job_complete(msg, job_ptr, requeue, node_fail,
-				   job_return_code, job_exit_rc);
+				   job_exit_rc);
 	}
 
 	return rc;
@@ -7987,7 +7978,7 @@ static int _job_create(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 cleanup_fail:
 	if (job_ptr) {
 		job_state_set(job_ptr, JOB_FAILED);
-		job_ptr->exit_code = 1;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 		job_ptr->state_reason = FAIL_SYSTEM;
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
@@ -12463,7 +12454,6 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 		job_ptr->details->begin_time = 0;
 	job_state_unset_flag(job_ptr, JOB_SPECIAL_EXIT);
 	xfree(job_ptr->state_desc);
-	job_ptr->exit_code = 0;
 	job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 	job_mgr_release_set(job_ptr);
 
@@ -16244,7 +16234,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 
 	msg->derived_ec = job_ptr->derived_ec;
 	msg->details = xstrdup(job_ptr->state_desc);
-	msg->exit_code = job_ptr->exit_code;
+	msg->exit_code = job_ptr->job_exit_rc.exit_code;
 	msg->het_job_id = job_ptr->het_job_id;
 	msg->job_gres_prep = gres_g_prep_build_env(job_ptr->gres_list_alloc);
 	msg->job_state = job_ptr->job_state;
@@ -16638,8 +16628,8 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		     job_ptr, job_ptr->batch_host, requeue_msg);
 		xfree(job_ptr->failed_node);
 		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-		job_complete(NULL, &step_id, requeue, true, 1,
-			     (job_exit_rc_t) { .exit_code = 1 });
+		job_complete(NULL, &step_id, requeue, true,
+			     (job_exit_rc_t) { .exit_code = W_EXITCODE(1, 0) });
 	} else {
 		foreach_purge_missing_jobs->job_ptr = job_ptr;
 
@@ -16675,8 +16665,9 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 
 			error("%s: Revoking job %pI due to nodes not responding",
 			      __func__, &step_id);
-			job_complete(NULL, &step_id, requeue, true, 1,
-				     (job_exit_rc_t) { .exit_code = 1 });
+			job_complete(NULL, &step_id, requeue, true,
+				     (job_exit_rc_t) {
+					     .exit_code = W_EXITCODE(1, 0) });
 		}
 	}
 	return 0;
@@ -17056,7 +17047,7 @@ static int _test_state_dir_flag(void *x, void *arg)
 
 	error("Script for %pJ lost, state set to FAILED", job_ptr);
 	job_state_set(job_ptr, JOB_FAILED);
-	job_ptr->exit_code = 1;
+	job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 	job_ptr->state_reason = FAIL_SYSTEM;
 	xfree(job_ptr->state_desc);
 	job_ptr->start_time = job_ptr->end_time = time(NULL);
@@ -17575,7 +17566,7 @@ static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 	uint32_t status;
 
 	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
-		status = job_ptr->exit_code;
+		status = job_ptr->job_exit_rc.exit_code;
 		if ((status == 0) && !IS_JOB_COMPLETE(job_ptr)) {
 			/* Avoid max_exit_code == 0 if task did not run to
 			 * successful completion (e.g. Cancelled, NodeFail) */
@@ -20179,18 +20170,18 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 
 	if (is_complete) {
 		exit_code = signal = 0;
-		if (WIFEXITED(job_ptr->exit_code)) {
-			exit_code = WEXITSTATUS(job_ptr->exit_code);
+		if (WIFEXITED(job_ptr->job_exit_rc.exit_code)) {
+			exit_code = WEXITSTATUS(job_ptr->job_exit_rc.exit_code);
 		}
-		if (WIFSIGNALED(job_ptr->exit_code)) {
-			signal = WTERMSIG(job_ptr->exit_code);
+		if (WIFSIGNALED(job_ptr->job_exit_rc.exit_code)) {
+			signal = WTERMSIG(job_ptr->job_exit_rc.exit_code);
 		}
 		snprintf(buf, sizeof(buf), "%d:%d", exit_code, signal);
 		setenvf(&my_env, "SLURM_JOB_DERIVED_EC", "%u",
 			job_ptr->derived_ec);
 		setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 		setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u",
-			job_ptr->exit_code);
+			job_ptr->job_exit_rc.exit_code);
 	}
 
 	if (job_ptr->array_task_id != NO_VAL) {
@@ -20548,5 +20539,5 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");
-	job_complete(NULL, &step_id, true, false, 0, (job_exit_rc_t) { 0 });
+	job_complete(NULL, &step_id, true, false, (job_exit_rc_t) { 0 });
 }

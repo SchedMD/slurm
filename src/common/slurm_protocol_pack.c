@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
@@ -4081,7 +4082,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
 		safe_unpack_job_exit_rc(&job->job_exit_rc, buffer,
 					protocol_version);
 		safe_unpackstr(&job->extra, buffer);
@@ -4305,9 +4305,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->job_exit_rc.exit_code, buffer);
 		job->job_exit_rc.rc = 0;
-		job->job_exit_rc.exit_code = job->exit_code;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4526,9 +4525,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->job_exit_rc.exit_code, buffer);
 		job->job_exit_rc.rc = 0;
-		job->job_exit_rc.exit_code = job->exit_code;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4735,9 +4733,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->derived_ec, buffer);
 
-		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->job_exit_rc.exit_code, buffer);
 		job->job_exit_rc.rc = 0;
-		job->job_exit_rc.exit_code = job->exit_code;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -10355,13 +10352,27 @@ static int _unpack_complete_job_allocation_msg(slurm_msg_t *smsg, buf_t *buffer)
 					    smsg->protocol_version);
 		safe_unpack32(&msg->job_rc, buffer);
 		msg->job_exit_rc.rc = 0;
-		msg->job_exit_rc.exit_code = msg->job_rc;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code =
+			(msg->job_rc == 1) ? W_EXITCODE(1, 0) : msg->job_rc;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_rc, buffer);
 		msg->job_exit_rc.rc = 0;
-		msg->job_exit_rc.exit_code = msg->job_rc;
+		/*
+		 * A pre-26.11 peer reports a job that Slurm failed as a bare
+		 * 1 rather than as a wait(2) status. Read it as
+		 * W_EXITCODE(1, 0), which is what accounting has always
+		 * stored for it.
+		 */
+		msg->job_exit_rc.exit_code =
+			(msg->job_rc == 1) ? W_EXITCODE(1, 0) : msg->job_rc;
 	}
 
 	smsg->data = msg;

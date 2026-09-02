@@ -1261,7 +1261,6 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		job.db_index = job_comp_msg->db_index;
 	job.derived_ec = job_comp_msg->derived_ec;
 	job.end_time = job_comp_msg->end_time;
-	job.exit_code = job_comp_msg->exit_code;
 	job.extra = job_comp_msg->extra;
 	job.failed_node = job_comp_msg->failed_node;
 	job.job_exit_rc = job_comp_msg->job_exit_rc;

@@ -1428,7 +1428,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 		if (_create_job_step(job, false, srun_job_list, het_job_id,
 				     het_job_nodelist) < 0) {
 			if (*got_alloc)
-				slurm_complete_job(&my_step_id, 1);
+				slurm_complete_job(&my_step_id,
+						   W_EXITCODE(1, 0));
 			else
 				_cancel_steps(srun_job_list);
 			exit(error_exit);
@@ -1466,7 +1467,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 				_set_env_vars(resp, ++het_job_offset);
 				_set_env_vars2(resp, het_job_offset);
 				if (_validate_relative(resp, opt_local)) {
-					slurm_complete_job(&my_step_id, 1);
+					slurm_complete_job(&my_step_id,
+							   W_EXITCODE(1, 0));
 					exit(error_exit);
 				}
 				job = job_create_allocation(resp, opt_local);
@@ -1497,7 +1499,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			_print_job_information(resp);
 			_set_env_vars(resp, -1);
 			if (_validate_relative(resp, &opt)) {
-				slurm_complete_job(&resp->step_id, 1);
+				slurm_complete_job(&resp->step_id,
+						   W_EXITCODE(1, 0));
 				exit(error_exit);
 			}
 			job = job_create_allocation(resp, &opt);
@@ -1515,7 +1518,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 
 		if (_create_job_step(job, true, srun_job_list, het_job_id,
 				     het_job_nodelist) < 0) {
-			slurm_complete_job(&my_step_id, 1);
+			slurm_complete_job(&my_step_id, W_EXITCODE(1, 0));
 			exit(error_exit);
 		}
 		xfree(het_job_nodelist);

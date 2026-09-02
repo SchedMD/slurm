@@ -858,7 +858,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "end_time")) {
 		lua_pushnumber(L, job_ptr->end_time);
 	} else if (!xstrcmp(name, "exit_code")) {
-		lua_pushnumber(L, job_ptr->exit_code);
+		lua_pushnumber(L, job_ptr->job_exit_rc.exit_code);
 	} else if (!xstrcmp(name, "extra")) {
 		lua_pushstring(L, job_ptr->extra);
 	} else if (!xstrcmp(name, "features")) {
