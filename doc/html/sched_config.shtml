@@ -129,6 +129,10 @@ see the <a href="slurm.conf.html">slurm.conf(5)</a> man page.
 <UL>
 <LI><B>bf_continue</B> - If set, then continue backfill scheduling after
 periodically releasing locks for other operations.</LI>
+<LI><B>bf_hetjob_sticky_preempt_timeout=#</B> - Number of seconds the backfill
+scheduler will keep retrying the same heterogeneous job start attempt after
+preemption has started for one of its components. Default value is 1800 seconds.
+Set to 0 to disable.</LI>
 <LI><B>bf_interval=#</B> - Interval between backfill scheduling attempts.
 Default value is 30 seconds.</LI>
 <LI><B>bf_max_job_part=#</B> - Maximum number of jobs to initiate per partition
