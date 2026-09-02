@@ -745,6 +745,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->real_memory = config_ptr->real_memory;
 	node_ptr->res_cores_per_gpu = config_ptr->res_cores_per_gpu;
 	node_ptr->suspend_time = config_ptr->suspend_time;
+	node_ptr->suspend_time_configured = config_ptr->suspend_time;
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->tot_sockets = config_ptr->tot_sockets;
@@ -1729,7 +1730,9 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack32(object->next_state, buffer);
 		pack32(object->node_state, buffer);
 		pack32(object->cpu_bind, buffer);
-		pack32(object->suspend_time, buffer);
+		pack32(object->config_ptr ? object->config_ptr->suspend_time :
+					    NO_VAL,
+		       buffer);
 		pack16(object->cpus, buffer);
 		pack16(object->boards, buffer);
 		pack16(object->tot_cores, buffer);
@@ -1941,6 +1944,7 @@ extern int node_record_unpack(void **out,
 {
 	node_record_t *object = xmalloc(sizeof(*object));
 	object->magic = NODE_MAGIC;
+	object->suspend_time_configured = NO_VAL;
 	*out = object;
 
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
@@ -1961,7 +1965,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack32(&object->next_state, buffer);
 		safe_unpack32(&object->node_state, buffer);
 		safe_unpack32(&object->cpu_bind, buffer);
-		safe_unpack32(&object->suspend_time, buffer);
+		safe_unpack32(&object->suspend_time_configured, buffer);
 		safe_unpack16(&object->cpus, buffer);
 		safe_unpack16(&object->boards, buffer);
 		safe_unpack16(&object->tot_cores, buffer);
@@ -2012,6 +2016,8 @@ extern int node_record_unpack(void **out,
 		safe_unpack32(&object->node_state, buffer);
 		safe_unpack32(&object->cpu_bind, buffer);
 		safe_unpack32(&object->suspend_time, buffer);
+		/* Older state files have no separate configured value. */
+		object->suspend_time_configured = object->suspend_time;
 		safe_unpack16(&object->cpus, buffer);
 		safe_unpack16(&object->boards, buffer);
 		safe_unpack16(&object->tot_cores, buffer);
@@ -2169,7 +2175,7 @@ extern config_record_t *config_record_from_node_record(node_record_t *node_ptr)
 	config_ptr->nodes = xstrdup(node_ptr->name);
 	config_ptr->real_memory = node_ptr->real_memory;
 	config_ptr->res_cores_per_gpu = node_ptr->res_cores_per_gpu;
-	config_ptr->suspend_time = node_ptr->suspend_time;
+	config_ptr->suspend_time = node_ptr->suspend_time_configured;
 	config_ptr->threads = node_ptr->threads;
 	config_ptr->tmp_disk = node_ptr->tmp_disk;
 	config_ptr->topology_str = xstrdup(node_ptr->topology_str);
