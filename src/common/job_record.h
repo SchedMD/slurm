@@ -48,6 +48,11 @@ typedef struct slurmctld_resv slurmctld_resv_t;
 extern time_t last_job_update;	/* time of last update to job records */
 extern list_t *purge_files_list; /* list of job ids to purge files of */
 
+/*
+ * WARNING: STEP_ID_FROM_JOB_RECORD resets .step_id and .step_het_comp to
+ * NO_VAL which calling code might need to replace these values that get
+ * changed by the macro.
+ */
 #define STEP_ID_FROM_JOB_RECORD(job_ptr) \
 	(slurm_step_id_t) \
 	{ \
