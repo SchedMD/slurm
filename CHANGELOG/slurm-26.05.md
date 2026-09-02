@@ -1,3 +1,52 @@
+## Changes in 26.05.4
+
+* slurmctld - Fix double-free when a job partition, QOS, or account update request fails for a job in a reservation.
+* Fix bug with heterogeneous job components getting their time limits overwritten due to a rejected component QOS or association update.
+* Fix a memory leak in the slurmstepd gethost request handler.
+* Fix sinfo and scontrol show node occasionally reporting incorrect node allocated memory while a job memory resize completes.
+* Fix sinfo and scontrol show node reporting stale node allocated memory after a job memory resize.
+* Fix slurmstepd reading freed memory when PropagatePrioProcess is configured.
+* conmgr - Downgrade benign warning logs about deferring connections in client commands to debug2.
+* Fix handling of a TLS connection closed before the handshake completes.
+* Fix memory leak in slurmd and slurmstepd when unpacking a job credential.
+* Fix potential corruption (bumped requeue counter and missing start time) of previous accounting records when requeueing jobs in completing state.
+* slurmctld - Prevent condition that could lead to a rare segfault when requeueing completing jobs.
+* Fix slurmdbd being unable to run StoragePassScript, hanging for several minutes and failing to retrieve the database password.
+* slurmctld - Fix jobs submitted with multiple QoS being moved to a different QoS while in running state, after a reconfigure or controller restart.
+* Fix possible slurmstepd crash on IPv6 node address lookups.
+* Fix possible slurmstepd crash on invalid step socket requests.
+* slurmctld - Prevent condition that could lead to a rare segfault when requeueing completing jobs.
+* Fix possible slurmstepd crash on invalid step socket requests.
+* tls/s2n - Harden all conmgr RPC listening sockets to automatically reject non-TLS connections in case clients are misconfigured with TLSType=tls/none. This affects api/step_launch (srun/sattach) and swait listening sockets. slurmctld and slurmd already reject non-TLS connections.
+* slurmctld,slurmd,slurmrestd - Fix out of bounds write while receiving an HTTP request body.
+* slurmctld,slurmd,slurmrestd - Fix duplicate HTTP response being sent for a rejected request.
+* slurmctld,slurmd,slurmrestd - Fix HTTP version of a rejected HTTP request.
+* slurmctld,slurmd,slurmrestd - Fix Connection header of a rejected HTTP request.
+* Fix slurmctld memory leaks when a job requesting GRES or Mode 3 HRES fails to be scheduled on a node.
+* Fix slurmctld memory leak on the single-node scheduling retry path when the first topology-aware placement pass fails.
+* mpi/pmix - Fix srun intermittently not reporting the status given to MPI_Abort() when the abort comes from a heterogeneous job component.
+* mpi/pmix - Fix slurmctld abort when a PMIx error path signals a step of a non-leader het job component.
+* slurmctld - Fix potential abort when processing a step cancel request whose SLUID resolves to a different job than its numeric job id, such as one sent by the MPI plugins from a hetjob component.
+* slurmctld - Fix MPI_Abort() in one hetjob component leaving the tasks of the other components running when using mpi/pmix or mpi/pmi2.
+* srun - Fix repeated Ctrl-C in a hetjob only requesting termination of the first component step through slurmctld.
+* slurmctld - Fix cancellation of a hetjob component step canceling the whole component jobs instead of only their steps, and ignoring the KILL_NO_SIG_FAIL flag when doing so.
+* slurmctld - Fix scancel wrongly reporting an invalid job id when canceling a step that only exists in some components of a heterogeneous job.
+* Fix sbcast shared objects skipping credential verification. CVE-2026-65107.
+* Fix possible slurmd crash on invalid sbcast filenames. CVE-2026-65107.
+* Fix a slurmstepd stack overflow when a job environment contains an oversized SPANK option variable. CVE-2026-65108.
+* Fix slurmstepd removing files outside the container spool directory when cleaning up an OCI container. CVE-2026-65109.
+* Fix slurmstepd leaving OCI container spool directories behind when ContainerPath contains a task id pattern. CVE-2026-65109.
+* Fix heap over-read when unpacking a malformed forward data RPC in slurmd. CVE-2026-65138.
+* Fix a slurmd crash when handling a malformed forward data RPC with a missing socket address. CVE-2026-65138.
+* Reject cluster names containing characters that are unsafe to use in an accounting database query. CVE-2026-65139.
+* Reject unsafe cluster names on the accounting usage, add and runaway job paths. CVE-2026-65139.
+* Reject unsafe cluster names when opening a connection to the slurmdbd. CVE-2026-65139.
+* Reject non-numeric id values in accounting database queries. CVE-2026-65139.
+* Fix a privilege escalation where an operator could alter Administrator accounts through the accounting database. CVE-2026-65140.
+* Fix node count of a job step using arbitrary distribution. CVE-2026-65165.
+* Reject a hostlist function in the node list of a job step using arbitrary distribution. CVE-2026-65165.
+* Reject a job step whose arbitrary node list disagrees with its node count. CVE-2026-65165.
+
 ## Changes in 26.05.3
 
 * async srun steps now honor --kill-on-bad-exit and kill peers.
