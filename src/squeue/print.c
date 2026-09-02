@@ -1879,6 +1879,23 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_rc(job_info_t *job, int width, bool right_justify, char *suffix)
+{
+	char *out = NULL;
+
+	if (!job) {
+		_print_str("SLURM_RC", width, right_justify, true);
+	} else {
+		xstrfmtcat(out, "%u", job->job_exit_rc.rc);
+		_print_str(out, width, right_justify, true);
+		xfree(out);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
 			    char* suffix)
 {

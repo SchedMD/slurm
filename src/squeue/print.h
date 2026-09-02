@@ -257,6 +257,7 @@ int _print_job_eligible_time(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
 int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
+int _print_job_rc(job_info_t *job, int width, bool right_justify, char *suffix);
 int _print_job_fed_origin(job_info_t * job, int width, bool right_justify,
 			  char* suffix);
 int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
