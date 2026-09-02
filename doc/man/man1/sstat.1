@@ -282,9 +282,11 @@ Requested CPU frequency for the step, in kHz.
 .TP
 \f3SLUID\fP
 The Slurm Lexicographically\-sortable Unique Identifier assigned to the job.
-This value remains constant during the lifetime of the job, even after a resize.
-Be aware that the accounting database tracks a separate SLUID per accounting
-record that changes on resize or requeue.
+This value remains constant during a run of the job, even after a resize, but
+changes when the job is requeued or restarted.
+It is reported as \fBOriginalSLUID\fR by \fBsacct\fR(1).
+Be aware that the \fBSLUID\fR field in \fBsacct\fR(1) identifies the accounting record and
+additionally changes on resize.
 .IP
 
 .TP
