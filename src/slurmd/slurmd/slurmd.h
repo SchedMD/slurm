@@ -60,7 +60,7 @@ extern pthread_mutex_t cached_features_mutex;
 typedef struct {
 	slurm_step_id_t step_id;
 	uint32_t derived_ec;
-	uint32_t exit_code;
+	job_exit_rc_t job_exit_rc;
 	char **gres_job_env;
 	uint32_t het_job_id;
 	char *node_aliases;

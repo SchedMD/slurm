@@ -974,8 +974,8 @@ typedef struct kill_job_msg {
 	slurm_cred_t *cred;
 	char *details;
 	uint32_t derived_ec;
-	uint32_t exit_code;
 	uint32_t het_job_id;
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	list_t *job_gres_prep;	/* Used to set Epilog environment variables */
 	uint32_t job_state;
 	uint32_t job_uid;

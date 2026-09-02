@@ -3246,7 +3246,8 @@ static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
-		pack32(msg->exit_code, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -3269,7 +3270,7 @@ static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
-		pack32(msg->exit_code, buffer);
+		pack32(msg->job_exit_rc.exit_code, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -3301,7 +3302,8 @@ static int _unpack_kill_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 		safe_unpackstr(&msg->details, buffer);
 		safe_unpack32(&msg->derived_ec, buffer);
-		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
@@ -3327,7 +3329,7 @@ static int _unpack_kill_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 		safe_unpackstr(&msg->details, buffer);
 		safe_unpack32(&msg->derived_ec, buffer);
-		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->job_exit_rc.exit_code, buffer);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;

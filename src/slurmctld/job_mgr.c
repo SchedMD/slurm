@@ -16234,7 +16234,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 
 	msg->derived_ec = job_ptr->derived_ec;
 	msg->details = xstrdup(job_ptr->state_desc);
-	msg->exit_code = job_ptr->job_exit_rc.exit_code;
+	msg->job_exit_rc = job_ptr->job_exit_rc;
 	msg->het_job_id = job_ptr->het_job_id;
 	msg->job_gres_prep = gres_g_prep_build_env(job_ptr->gres_list_alloc);
 	msg->job_state = job_ptr->job_state;
