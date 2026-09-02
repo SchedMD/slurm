@@ -2768,7 +2768,7 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
 	gres_device->unique_id = xstrdup(unique_id);
 
 	if (_set_gres_device_desc(gres_device) != SLURM_SUCCESS) {
-		xfree(gres_device);
+		destroy_gres_device(gres_device);
 		return NULL;
 	}
 
