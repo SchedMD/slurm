@@ -50,6 +50,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/runtime.h"
+
 #include "src/conmgr/conmgr.h"
 
 #include "src/scrun/scrun.h"
@@ -518,6 +520,14 @@ static void _alloc_job(void)
 	char *opt_string = NULL;
 	struct option *spanked = NULL;
 	job_desc_msg_t *desc;
+
+	/*
+	 * Resolve the runtime before the option table is built, so that the
+	 * options the plugin provides are in it.
+	 */
+	if ((rc = runtime_g_init(NULL, RUNTIME_CTXT_SCRUN, NULL)))
+		fatal("%s: failed to initialize runtime plugin: %s",
+		      __func__, slurm_strerror(rc));
 
 	spanked = slurm_option_table_create(&opt, &opt_string);
 

@@ -70,6 +70,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/runtime.h"
+
 #include "src/conmgr/conmgr.h"
 
 #include "src/scrun/scrun.h"
@@ -1586,6 +1588,7 @@ extern int spawn_anchor(void)
 
 done:
 	spank_rc = spank_fini(NULL);
+	runtime_g_fini();
 	destroy_lua();
 
 	debug2("%s: rc[%d]=%s spank_rc[%d]=%s srun_rc[%d]=%s",
