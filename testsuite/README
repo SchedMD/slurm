@@ -1237,6 +1237,7 @@ test_162_6   Test swait reporting for steps ending in a terminal-failure state
 test_162_7   Test swait --follow and the whole-set drain
 test_162_8   Test swait --json/--yaml output and data_parser selection
 test_162_9   Test swait against a cluster without stepmgr enabled
+test_162_10  Test a step create carrying an array task id under stepmgr
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
