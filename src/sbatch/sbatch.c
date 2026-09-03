@@ -72,7 +72,7 @@
 
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
-static int _job_wait(slurm_step_id_t step_id);
+static int _job_wait(uint32_t job_id);
 static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
 static int   _set_rlimit_env(void);
@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 	}
 
 	if (sbopt.wait)
-		rc = _job_wait(resp->step_id);
+		rc = _job_wait(resp->step_id.job_id);
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
@@ -368,13 +368,15 @@ int main(int argc, char **argv)
 }
 
 /* Wait for specified job ID to terminate, return it's exit code */
-static int _job_wait(slurm_step_id_t step_id)
+static int _job_wait(uint32_t job_id)
 {
 	slurm_job_info_t *job_ptr;
 	job_info_msg_t *resp = NULL;
 	int ec = 0, ec2, i, rc;
 	int sleep_time = 2;
 	bool complete = false;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
 
 	while (!complete) {
 		complete = true;
