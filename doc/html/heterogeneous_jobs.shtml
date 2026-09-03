@@ -135,7 +135,14 @@ executes) using the default output file name.</p>
 
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job
-(e.g. <i>SBATCH_ACCOUNT</i>).</p>
+(e.g. <i>SBATCH_ACCOUNT</i>). This holds even for options that are not
+propagated: each component reads the environment for itself, so a
+non-propagated option supplied through the environment is applied to every
+component, while the same option given on the command line applies only to
+the component it is written on. For example,
+<i>SBATCH_RUNTIME=oci sbatch -N1 : -N1</i> sets the runtime on both
+components, whereas <i>sbatch -N1 --runtime=oci : -N1</i> sets it only on
+the first.</p>
 
 <p>Batch job options can be included in the submitted script for multiple
 heterogeneous job components. Each component should be separated by a line
