@@ -60,10 +60,8 @@ static int _slurmd_pack_msg_to_stepd(slurm_msg_t *resp, buf_t *out)
 	pack32(0, out);
 
 	pack16(resp->msg_type, out);
-	if (pack_msg(resp, out) != SLURM_SUCCESS) {
-		FREE_NULL_BUFFER(out);
+	if (pack_msg(resp, out))
 		return SLURM_ERROR;
-	}
 
 	/* write length then reset out to end of message */
 	end_position = get_buf_offset(out);
