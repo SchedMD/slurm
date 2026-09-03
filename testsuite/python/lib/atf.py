@@ -5800,13 +5800,78 @@ def create_node(node_dict):
         restart_slurm(quiet=True)
 
 
+def _hardware_node_parameters(requirements_list):
+    """Resolve hardware-matching requirements against the test host's topology.
+
+    Args:
+        requirements_list (list of tuples): List of (parameter_name,
+            parameter_value) tuples, as passed to require_nodes().
+
+    Returns:
+        A 2-tuple (hardware_values, remaining_requirements). hardware_values
+        is a dict of the topology parameters to apply to any node created to
+        satisfy require_nodes(). remaining_requirements is requirements_list
+        with the parameters checked here removed.
+    """
+    if not properties["auto-config"]:
+        logging.warning(
+            "Assuming the nodes are configured with the hardware they run on. "
+            "A test failing right after this may be running on a node whose "
+            "configuration does not match what 'slurmd -C' reports for it."
+        )
+        return ({}, requirements_list)
+
+    hardware = get_slurmd_C()
+    sockets = hardware["Boards"] * hardware["SocketsPerBoard"]
+    available = {
+        "CPUs": hardware["CPUs"],
+        "Cores": sockets * hardware["CoresPerSocket"],
+        "Sockets": sockets,
+        "Boards": hardware["Boards"],
+        "SocketsPerBoard": hardware["SocketsPerBoard"],
+        "CoresPerSocket": hardware["CoresPerSocket"],
+        "ThreadsPerCore": hardware["ThreadsPerCore"],
+    }
+
+    write_params = (
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "CPUs",
+    )
+    # Cores is checked against the hardware and then dropped because it is
+    # derived from the topology rather than written to the node line.
+    drop_params = write_params + ("Sockets", "Cores")
+
+    remaining_requirements = []
+    for requirement in requirements_list:
+        parameter_name, parameter_value = requirement[0:2]
+        if parameter_name in available and available[parameter_name] < int(
+            parameter_value
+        ):
+            pytest.skip(
+                f"This test requires a node with {parameter_value} "
+                f"{parameter_name} matching its hardware, but the host has "
+                f"{available[parameter_name]}",
+                allow_module_level=True,
+            )
+        if parameter_name not in drop_params:
+            remaining_requirements.append(requirement)
+
+    hardware_values = {name: hardware[name] for name in write_params}
+    logging.info(f"Nodes will be created with the detected hardware: {hardware_values}")
+
+    return (hardware_values, remaining_requirements)
+
+
 # requirements_list is a list of (parameter_name, parameter_value) tuples.
 # Uses non-live node info because must copy from existing node config line
 # We implemented requirements_list as a list of tuples so that this could
 # later be extended to include a comparator, etc.
 # atf.require_nodes(1, [('CPUs', 4), ('RealMemory', 40)])
 # atf.require_nodes(2, [('Gres', 'gpu:1,mps:100')])
-def require_nodes(requested_node_count, requirements_list=[]):
+def require_nodes(requested_node_count, requirements_list=[], require_hardware=False):
     """Ensure that a requested number of nodes have the required properties.
 
     In local-config mode, the test is skipped if an insufficient number of
@@ -5818,6 +5883,13 @@ def require_nodes(requested_node_count, requirements_list=[]):
         requested_node_count (integer): Number of required nodes.
         requirements_list (list of tuples): List of (parameter_name,
             parameter_value) tuples.
+        require_hardware (boolean): In auto-config mode, nodes created by this
+            call are given the CPU topology reported by 'slurmd -C' on the test
+            host, and existing nodes must be configured to the reported topology
+            to qualify. The test is skipped when the detected hardware cannot
+            satisfy the CPU, core or socket requirements. In local-config mode
+            a warning is logged and the node configuration is assumed to match
+            the hardware already.
 
     Currently supported node requirement types include:
         CPUs
@@ -5830,13 +5902,24 @@ def require_nodes(requested_node_count, requirements_list=[]):
     but this could stop slurm from starting.
 
     Returns:
-        None
+        At least requested_node_count node names with the required properties.
 
     Example:
         >>> require_nodes(2, [('CPUs', 4), ('RealMemory', 40)])
+        ['node1', 'node2']
         >>> require_nodes(2, [('CPUs', 2), ('RealMemory', 30), ('Features', 'gpu,mpi')])
+        ['node1', 'node2', 'node3']
         >>> require_nodes(2, [('CPUs', 4), ('Sockets', 1)])
+        ['node4', 'node5']
+        >>> require_nodes(1, [('CPUs', 4)], require_hardware=True)
+        ['node2', 'node3']
     """
+
+    hardware_values = {}
+    if require_hardware:
+        hardware_values, requirements_list = _hardware_node_parameters(
+            requirements_list
+        )
 
     # Always read from slurm.conf (live=False), so we never use --json.
     nodes_dict = get_nodes(live=False, quiet=True)
@@ -5865,11 +5948,10 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 original_nodes[node_name][parameter_name] = parameter_value
 
     # Check to see how many qualifying nodes we have
-    qualifying_node_count = 0
+    qualifying_node_names = []
     node_count = 0
     nonqualifying_node_count = 0
     first_node_name = ""
-    first_qualifying_node_name = ""
     node_indices = {}
     augmentation_dict = {}
     for node_name in sorted(original_nodes):
@@ -5892,6 +5974,30 @@ def require_nodes(requested_node_count, requirements_list=[]):
             ]
 
         node_qualifies = True
+
+        if hardware_values:
+            boards = int(lower_node_dict.get("boards", 1))
+            sockets_per_board = int(lower_node_dict.get("socketsperboard", 1))
+            cores_per_socket = int(lower_node_dict.get("corespersocket", 1))
+            threads_per_core = int(lower_node_dict.get("threadspercore", 1))
+            default_cpus = (
+                boards * sockets_per_board * cores_per_socket * threads_per_core
+            )
+            node_hardware = {
+                "Boards": boards,
+                "SocketsPerBoard": sockets_per_board,
+                "CoresPerSocket": cores_per_socket,
+                "ThreadsPerCore": threads_per_core,
+                "CPUs": int(lower_node_dict.get("cpus", default_cpus)),
+            }
+            if "sockets" in lower_node_dict or any(
+                node_hardware[parameter_name] != hardware_values[parameter_name]
+                for parameter_name in hardware_values.keys()
+            ):
+                if node_qualifies:
+                    node_qualifies = False
+                    nonqualifying_node_count += 1
+
         for requirement_tuple in requirements_list:
             parameter_name, parameter_value = requirement_tuple[0:2]
             if parameter_name in ["CPUs", "RealMemory"]:
@@ -5983,20 +6089,18 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     node_qualifies = False
                     nonqualifying_node_count += 1
         if node_qualifies:
-            qualifying_node_count += 1
-            if first_qualifying_node_name == "":
-                first_qualifying_node_name = node_name
+            qualifying_node_names.append(node_name)
 
     # Not enough qualifying nodes
-    if qualifying_node_count < requested_node_count:
+    if len(qualifying_node_names) < requested_node_count:
         # If auto-config, configure what is required
         if properties["auto-config"]:
             # Create new nodes to meet requirements ignoring default node0
             new_node_count = requested_node_count
 
             # If we already have a qualifying node, we will use it as the template
-            if qualifying_node_count > 0:
-                template_node_name = first_qualifying_node_name
+            if qualifying_node_names:
+                template_node_name = qualifying_node_names[0]
                 template_node = nodes_dict[template_node_name].copy()
             # Otherwise we will use the first node as a template and augment it
             else:
@@ -6004,6 +6108,16 @@ def require_nodes(requested_node_count, requirements_list=[]):
                 template_node = nodes_dict[template_node_name].copy()
                 for parameter_name, parameter_value in augmentation_dict.items():
                     template_node[parameter_name] = parameter_value
+
+            if hardware_values:
+                # Drop every spelling of the topology keys so each is set once
+                hardware_keys = {key.lower() for key in hardware_values}
+                hardware_keys.add("sockets")
+                # Iterate a snapshot, not the real dict so we can delete
+                for key in list(template_node):
+                    if key.lower() in hardware_keys:
+                        del template_node[key]
+                template_node.update(hardware_values)
 
             base_port = int(nodes_dict[template_node_name]["Port"])
 
@@ -6036,7 +6150,12 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         map(lambda x: base_port - template_node_index + x, new_indices)
                     )
                 )
+            new_node_names = [
+                template_node_prefix + str(new_index) for new_index in new_indices
+            ]
             create_node(new_node_dict)
+
+            return qualifying_node_names + new_node_names
 
         # If local-config, skip
         else:
@@ -6044,6 +6163,8 @@ def require_nodes(requested_node_count, requirements_list=[]):
             if requirements_list:
                 message += f" with {requirements_list}"
             pytest.skip(message, allow_module_level=True)
+
+    return qualifying_node_names
 
 
 def make_bash_script(script_name, script_contents):
