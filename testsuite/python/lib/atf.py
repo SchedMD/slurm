@@ -3127,6 +3127,65 @@ def is_tool(tool):
     return which(tool) is not None
 
 
+def get_node_cpu_topology(node=None, require_numa=False):
+    """Return the CPU topology a node reports, or skip.
+
+    Maps every CPU id the node presents to the socket, core and NUMA node
+    holding it. This map may include cpuset-restricted CPUs.
+
+    Args:
+        node (string): The node to read or None to read the test host directly.
+        require_numa (boolean): Skip unless a NUMA node is reported for every
+            CPU. Otherwise an unreported NUMA node is returned as None.
+
+    Returns:
+        A map from cpu_id to a dict of socket, core, numa_node.
+
+    Example:
+        >>> get_node_cpu_topology('node1')[3]
+        {'socket': 0, 'core': 1, 'numa_node': 0}
+    """
+
+    command = "lscpu -p=CPU,CORE,SOCKET,NODE -b"
+    node_str = "the test host"
+    if node is None:
+        require_tool("lscpu")
+        results = run_command(command, quiet=True, fatal=True)
+    else:
+        node_str = f"node {node}"
+        srun = f"srun --nodelist={node} -N1"
+        run_command(f"{srun} true", quiet=True, fatal=True)
+        results = run_command(f"{srun} {command}", quiet=True)
+        if results["exit_code"] != 0:
+            pytest.skip(f"This test requires lscpu on {node_str}")
+
+    topology = {}
+    for line in results["stdout"].splitlines():
+        if not line or line.startswith("#"):
+            continue
+        fields = line.split(",")
+        if len(fields) < 3 or not all(field.isdigit() for field in fields[:3]):
+            pytest.skip(f"This test requires lscpu on {node_str} to report a CPU")
+        cpu_id, core, socket = (int(field) for field in fields[:3])
+
+        numa_field = fields[3] if len(fields) > 3 else ""
+        if not numa_field.isdigit():
+            if require_numa:
+                pytest.skip(
+                    f"This test requires lscpu on {node_str} to report a NUMA node"
+                )
+            numa_node = None
+        else:
+            numa_node = int(numa_field)
+
+        topology[cpu_id] = {"socket": socket, "core": core, "numa_node": numa_node}
+
+    if not topology:
+        pytest.skip(f"This test requires lscpu on {node_str} to report a CPU")
+
+    return topology
+
+
 def require_tool(tool):
     """Skips if the supplied tool is not found.
 
