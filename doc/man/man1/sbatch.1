@@ -1480,6 +1480,19 @@ The default value is the submitting user.
 .IP
 
 .TP
+\fB\-\-max\-pids\fR=<\fIn\fR|max>
+Specify the maximum number of PIDs that may exist simultaneously in each step
+of the job on each node, including the batch and the extern steps. A step
+may lower it with its own \fBsrun \-\-max\-pids\fR but not raise it.
+Requires \fBtask/cgroup\fR with cgroup v2 and the pids controller available.
+Otherwise this option is silently ignored.
+By default there is no limit. The value must be a number greater than zero or
+\fBmax\fR to explicitly set no limit. Once the limit is reached, the kernel
+fails further process and thread creation in the step with EAGAIN. Slurm does
+not detect this condition and the application sees the failure directly.
+.IP
+
+.TP
 \fB\-\-mcs\-label\fR=<\fImcs\fR>
 Used only when a compatible \fBMCSPlugin\fR is enabled. This parameter is a
 group that the user belongs to (\fBmcs/group\fR) or an arbitrary label string

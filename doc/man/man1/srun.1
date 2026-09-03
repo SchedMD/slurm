@@ -1876,6 +1876,20 @@ allocations.
 .IP
 
 .TP
+\fB\-\-max\-pids\fR=<\fIn\fR|max>
+Specify the maximum number of PIDs that may exist simultaneously in the step
+on each node.
+Requires \fBtask/cgroup\fR with cgroup v2 and the pids controller available.
+Otherwise this option is silently ignored.
+The default is the limit set for the job with \fBsbatch\fR or \fBsalloc\fR,
+and a larger value or \fBmax\fR is then rejected. Without a job limit there
+is no limit by default. The value must be a number greater than zero or
+\fBmax\fR to explicitly set no limit. Once the limit is reached, the kernel
+fails further process and thread creation in the step with EAGAIN. Slurm does
+not detect this condition and the application sees the failure directly.
+.IP
+
+.TP
 \fB\-\-mcs\-label\fR=<\fImcs\fR>
 Used only when a compatible \fBMCSPlugin\fR is enabled. This parameter is a
 group that the user belongs to (\fBmcs/group\fR) or an arbitrary label string
