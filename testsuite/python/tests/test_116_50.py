@@ -254,41 +254,6 @@ def assert_binding_order(task_data, verbose, expected_cpus, bind_type):
     assert_binding(task_data, verbose, masks, bind_type)
 
 
-def test_invalid_map_cpu_arguments(allocation):
-    """Test that invalid map_cpu arguments fail appropriately."""
-    # Test with NaN value
-    result = atf.run_command_error(
-        f"srun --jobid={allocation.job_id} -c1 --cpu-bind=verbose,map_cpu:NaN hostname",
-        xfail=True,
-        fatal=True,
-    )
-    assert (
-        "Failed to validate number: NaN" in result
-    ), "Should report validation error for NaN, got {result}"
-
-    # Test with hex value (0x0)
-    result = atf.run_command_error(
-        f"srun --jobid={allocation.job_id} -c1 --cpu-bind=verbose,map_cpu:0x0 hostname",
-        xfail=True,
-        fatal=True,
-    )
-    assert (
-        "Failed to validate number: 0x0" in result
-    ), "Should report validation error for hex, got {result}"
-
-
-def test_invalid_mask_cpu_arguments(allocation):
-    """Test that invalid mask_cpu arguments fail appropriately."""
-    result = atf.run_command_error(
-        f"srun --jobid={allocation.job_id} -c1 --cpu-bind=verbose,mask_cpu:NaN hostname",
-        xfail=True,
-        fatal=True,
-    )
-    assert (
-        "Failed to validate number: NaN" in result
-    ), "Should report validation error for NaN"
-
-
 def test_cpu_bind_none(allocation):
     """Test that --cpu-bind=none removes the binding that would apply by default."""
 

@@ -913,6 +913,7 @@ test_116_65  Test srun --bcast in a hetjob
 test_116_66  Test that stopping and resuming a waiting srun does not end its wait
 test_116_67  Verify srun keeps a controller step cancel received during --prolog
 test_116_68  Test memory affinity as observed on the node for NUMA systems (--mem-bind and ldom)
+test_116_69  Test srun --cpu-bind and --mem-bind parsing and help
 
 test_117_#   Testing of sstat options.
 ======================================
