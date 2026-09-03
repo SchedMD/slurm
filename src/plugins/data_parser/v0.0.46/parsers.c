@@ -79,8 +79,6 @@
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
-extern void __attribute__((weak)) hres_variable_free(void *x);
-
 #define SLURM_24_11_PROTOCOL_VERSION MAKE_SLURM_VER(42)
 
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
@@ -7446,14 +7444,13 @@ static int _foreach_layer(void *x, void *arg)
 	license->hres_rec.layer_name = xstrdup(layer->layer_name);
 	license->hres_rec.total = layer->count;
 
-	if (((void *) hres_variable_free) && list_count(layer->base)) {
+	if (list_count(layer->base)) {
 		license->hres_rec.base = list_create(hres_variable_free);
 		list_for_each(layer->base, _foreach_variable,
 			      license->hres_rec.base);
 	}
 
-	if (((void *) hres_variable_free) && args->first_layer &&
-	    list_count(args->resource->variables)) {
+	if (args->first_layer && list_count(args->resource->variables)) {
 		license->hres_rec.variables = list_create(hres_variable_free);
 		list_for_each(args->resource->variables, _foreach_variable,
 			      license->hres_rec.variables);
@@ -7535,8 +7532,7 @@ static int _foreach_license(void *x, void *arg)
 		list_append(*resources, resource);
 	}
 
-	if (!resource->variables && ((void *) hres_variable_free) &&
-	    list_count(license->hres_rec.variables)) {
+	if (!resource->variables && list_count(license->hres_rec.variables)) {
 		resource->variables = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.variables, _foreach_variable,
 			      resource->variables);
@@ -7551,8 +7547,7 @@ static int _foreach_license(void *x, void *arg)
 	if (!resource->topology_name)
 		resource->topology_name =
 			xstrdup(license->hres_rec.topology_name);
-	if (((void *) hres_variable_free) &&
-	    list_count(license->hres_rec.base)) {
+	if (list_count(license->hres_rec.base)) {
 		layer->base = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.base, _foreach_variable,
 			      layer->base);
