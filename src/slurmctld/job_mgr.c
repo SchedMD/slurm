@@ -6187,6 +6187,7 @@ extern bool is_prolog_running(job_record_t *job_ptr)
 extern int prolog_complete(prolog_complete_msg_t *msg)
 {
 	job_record_t *job_ptr;
+	node_record_t *node_ptr = NULL;
 	bool all_done = false;
 
 	if (!(job_ptr = find_job(&msg->step_id))) {
@@ -6197,17 +6198,27 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;
 
+	if (job_ptr->node_bitmap_pr && msg->node_name)
+		node_ptr = find_node_record(msg->node_name);
+
 	if (msg->prolog_rc) {
 		error("Prolog launch failure, %pJ", job_ptr);
 		job_ptr->exit_code = msg->prolog_rc;
+
+		/*
+		 * Only a node this allocation is still waiting on can fail its
+		 * Prolog. A report from an earlier allocation can arrive after
+		 * the job was requeued and batch_requeue_fini() cleared the
+		 * latch, and setting it again then would hold the next
+		 * allocation in CONFIGURING with nothing left to clear it.
+		 */
+		if (job_ptr->node_bitmap_pr &&
+		    (!node_ptr ||
+		     bit_test(job_ptr->node_bitmap_pr, node_ptr->index)))
+			job_ptr->node_prolog_failed = true;
 	}
 
 	if (job_ptr->node_bitmap_pr) {
-		node_record_t *node_ptr = NULL;
-
-		if (msg->node_name)
-			node_ptr = find_node_record(msg->node_name);
-
 		if (node_ptr) {
 			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
@@ -6224,13 +6235,7 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 		all_done = true;
 	}
 
-	/*
-	 * On a prolog failure slurmd fails or requeues the job right after
-	 * sending this RPC, so don't finish configuring a job that is not
-	 * going to run.
-	 */
-	if (!msg->prolog_rc)
-		job_scheduler_cf_test_fini(job_ptr);
+	job_scheduler_cf_test_fini(job_ptr);
 
 	/*
 	 * Keep the bitmap until every node has reported in. It also marks that
@@ -17134,9 +17139,13 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 	/*
 	 * The Prolog that ran belonged to the allocation being given up, so the
-	 * next one has to run for the new allocation. Left set, this stops it.
+	 * next one has to run for the new allocation. Left set,
+	 * JOB_PROLOG_LAUNCHED stops it from running at all, and
+	 * node_prolog_failed makes job_scheduler_cf_test_fini() give up on a
+	 * job that never gets another chance to finish configuring.
 	 */
 	job_ptr->bit_flags &= ~JOB_PROLOG_LAUNCHED;
+	job_ptr->node_prolog_failed = false;
 
 	if (job_ptr->details) {
 		time_t now = time(NULL);

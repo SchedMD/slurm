@@ -367,6 +367,7 @@ extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	 */
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	job_ptr->bit_flags &= ~JOB_PROLOG_LAUNCHED;
+	job_ptr->node_prolog_failed = false;
 
 	acct_policy_job_fini(job_ptr, false);
 
@@ -3399,6 +3400,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
 	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
 		job_ptr->state_reason = WAIT_PROLOG;
+		job_ptr->node_prolog_failed = false;
 		job_state_set_flag(job_ptr, JOB_CONFIGURING);
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);

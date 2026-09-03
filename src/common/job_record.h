@@ -474,6 +474,9 @@ struct job_record {
 	uint32_t prep_epilog_cnt;	/* count of epilog async tasks left */
 	uint32_t prep_prolog_cnt;	/* count of prolog async tasks left */
 	bool prep_prolog_failed;	/* any prolog_slurmctld failed */
+	bool node_prolog_failed;	/* the Prolog failed on an allocated
+					 * node, (Internal use only,
+					 * don't save) */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	priority_factors_t *prio_factors; /* cached value of priority factors

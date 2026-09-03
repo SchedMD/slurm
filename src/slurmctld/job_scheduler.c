@@ -5135,6 +5135,15 @@ extern void job_scheduler_cf_test_fini(job_record_t *job_ptr)
 	if (!IS_JOB_CONFIGURING(job_ptr))
 		return;
 
+	/*
+	 * A Prolog failed somewhere in this allocation. slurmd requeues or
+	 * kills the job on its own, so never finish configuring a job that is
+	 * not going to run, and never let job_config_fini() launch the Prolog
+	 * a second time.
+	 */
+	if (job_ptr->node_prolog_failed)
+		return;
+
 	/* PrologSlurmctld or a burst buffer stage in is still running */
 	if (job_ptr->details && job_ptr->details->prolog_running)
 		return;
