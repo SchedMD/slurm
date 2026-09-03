@@ -1823,9 +1823,11 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					if ((rc = _update_unused_wall(
 						     r_usage,
 						     loc_tres,
-						     loc_seconds))
-					    != SLURM_SUCCESS)
+						     loc_seconds)) !=
+					    SLURM_SUCCESS) {
+						mysql_free_result(result);
 						goto end_it;
+					}
 				}
 
 				_transfer_loc_tres(&loc_tres, a_usage);
