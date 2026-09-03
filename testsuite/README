@@ -117,7 +117,6 @@ test1.86   Confirm node selection from within a job step on existing allocation
 	   (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation
 	   (--relative, --nodes and --nprocs options).
-test1.90   Test of memory affinity support for NUMA systems.
 test1.91   Test of CPU affinity for multi-core systems.
 test1.92   Test of task distribution support on multi-core systems.
 test1.93   Test of default CPU binding support.
@@ -913,6 +912,7 @@ test_116_64  Test srun forced termination of a hetjob
 test_116_65  Test srun --bcast in a hetjob
 test_116_66  Test that stopping and resuming a waiting srun does not end its wait
 test_116_67  Verify srun keeps a controller step cancel received during --prolog
+test_116_68  Test memory affinity as observed on the node for NUMA systems (--mem-bind and ldom)
 
 test_117_#   Testing of sstat options.
 ======================================

@@ -5369,6 +5369,11 @@ def parse_taskget(output):
     return _parse_json_tasks(output, ["mask"])
 
 
+def parse_numaget(output):
+    """Parse numaget output, return an array of reported task bindings"""
+    return _parse_json_tasks(output, ["mem_mask", "allowed_mask", "policy_mask"])
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="

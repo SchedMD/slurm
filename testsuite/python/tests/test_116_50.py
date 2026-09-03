@@ -20,6 +20,8 @@ import atf
 # and are not assumed equal to the CPUs the step holds. Every expectation is
 # phrased against that measured set. lscpu, through atf.get_node_cpu_topology(),
 # only answers which socket or core a measured CPU belongs to.
+#
+# The ldom bind types are covered in test_116_68, which requires a libnuma build.
 
 pytestmark = pytest.mark.slow
 

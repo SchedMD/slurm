@@ -740,6 +740,38 @@ def taskget(module_setup):
 
 
 @pytest.fixture(scope="module")
+def numaget(module_setup):
+    """
+    Create the numaget program from the numaget.c in scripts directory.
+    Returns its bin path, or skips if libnuma is unavailable.
+    """
+
+    atf.require_tool("gcc")
+
+    probe = (
+        "#include <numa.h>\n"
+        "#if !defined(LIBNUMA_API_VERSION) || (LIBNUMA_API_VERSION < 2)\n"
+        '#error "libnuma API version 2 or higher is required."\n'
+        "#endif\n"
+        "int main(void) { return 0; }\n"
+    )
+    exit_status = atf.run_command_exit(
+        f"printf '%s' '{probe}' | gcc -x c - -lnuma -o /dev/null",
+        quiet=True,
+    )
+    if exit_status != 0:
+        pytest.skip("libnuma unavailable, cannot test with numaget")
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/numaget.c"
+    bin_path = os.getcwd() + "/numaget"
+    atf.run_command(f"gcc {src_path} -lnuma -o {bin_path}", fatal=True)
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
 def mpi_program(request, module_setup):
     """Create an MPI program from a .c file in the scripts directory.
     Returns the bin path of the compiled program.

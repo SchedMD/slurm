@@ -415,7 +415,6 @@ python/tests/test_102_3.py,python,4.45,34
 expect/test21.36,expect,4.49,35
 expect/test21.31,expect,4.52,35
 python/tests/test_116_46.py,python,4.56,34
-expect/test1.90,expect,4.58,35
 expect/test1.17,expect,4.65,35
 python/tests/test_105_2.py,python,4.73,34
 expect/test5.10,expect,4.75,35
