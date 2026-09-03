@@ -1619,10 +1619,13 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				return NULL;
 			}
 		}
-		if (IS_JOB_CONFIGURING(job_ptr)) {
-			info("%s: Configuration for %pJ is complete",
-			     __func__, job_ptr);
+		/* stepd_stepmgr_ops does not set job_config_fini */
+		if (IS_JOB_CONFIGURING(job_ptr) &&
+		    stepmgr_ops->job_config_fini) {
 			stepmgr_ops->job_config_fini(job_ptr);
+			if (!IS_JOB_CONFIGURING(job_ptr))
+				info("%s: Configuration for %pJ is complete",
+				     __func__, job_ptr);
 		}
 	}
 

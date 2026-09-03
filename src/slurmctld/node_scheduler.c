@@ -3316,15 +3316,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
-	/* Locks: Write job */
-	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
-	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
-		job_ptr->state_reason = WAIT_PROLOG;
-		job_state_set_flag(job_ptr, JOB_CONFIGURING);
-		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
-		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
-	}
-
 	prolog_msg_ptr->alloc_tls_cert = xstrdup(job_ptr->alloc_tls_cert);
 	prolog_msg_ptr->job_gres_prep =
 		gres_g_prep_build_env(job_ptr->gres_list_alloc);
@@ -3395,6 +3386,22 @@ extern void launch_prolog(job_record_t *job_ptr)
 				 protocol_version);
 
 		FREE_NULL_LIST(job_node_array);
+	}
+
+	/*
+	 * Locks: Write job
+	 *
+	 * This has to stay after the stepmgr pack above. A stepmgr stepd never
+	 * refreshes the job record it is handed, so a snapshot taken while the
+	 * job is CONFIGURING would leave it configuring for the life of the
+	 * allocation.
+	 */
+	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
+		job_ptr->state_reason = WAIT_PROLOG;
+		job_state_set_flag(job_ptr, JOB_CONFIGURING);
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
 	}
 
 	xassert(job_ptr->job_resrcs);
