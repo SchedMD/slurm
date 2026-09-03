@@ -80,6 +80,13 @@ int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 	safe_unpack16(&hdr->gtaskid, buffer);
 	safe_unpack16(&hdr->ltaskid, buffer);
 	safe_unpack32(&hdr->length, buffer);
+
+	if (hdr->length > SLURM_IO_MAX_MSG_LEN) {
+		error("%s: message length of %u exceeds maximum of %u",
+		      __func__, hdr->length, SLURM_IO_MAX_MSG_LEN);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 
     unpack_error:
@@ -245,6 +252,7 @@ extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 {
 	buf_t *buf = NULL;
 	uint32_t len;
+	ssize_t n;
 	int rc;
 
 	xassert(msg);
@@ -255,18 +263,34 @@ extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
-	if (conn_tls_enabled()) {
-		conn_g_recv(conn, &len, sizeof(uint32_t));
-	} else {
-		safe_read(fd, &len, sizeof(uint32_t));
+	n = _full_read(fd, conn, &len, sizeof(uint32_t));
+	if (n != sizeof(uint32_t)) {
+		if (n >= 0)
+			errno = EIO;
+		goto rwfail;
 	}
 	len = ntohl(len);
-	buf = init_buf(len);
 
-	if (conn_tls_enabled()) {
-		conn_g_recv(conn, buf->head, len);
-	} else {
-		safe_read(fd, buf->head, len);
+	/*
+	 * A pre-26.11 peer sends the full credential signature as the io_key,
+	 * so the message grows with the node count. When 26.05 is no longer
+	 * supported the io_key is a fixed hash, so tighten this to
+	 * SLURM_IO_MAX_MSG_LEN.
+	 */
+	if (!len || (len > MAX_MSG_SIZE)) {
+		error_in_daemon("%s: rejecting io init message length %u",
+				__func__, len);
+		return SLURM_ERROR;
+	}
+
+	if (!(buf = try_init_buf(len)))
+		return SLURM_ERROR;
+
+	n = _full_read(fd, conn, buf->head, len);
+	if (n != len) {
+		if (n >= 0)
+			errno = EIO;
+		goto rwfail;
 	}
 
 	if ((rc = io_init_msg_unpack(msg, buf)))
