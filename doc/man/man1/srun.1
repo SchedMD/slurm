@@ -2441,8 +2441,26 @@ will be set to the count of nodes actually
 allocated to the job. See the \fBENVIRONMENT VARIABLES\fR section
 for more information. If \fB\-N\fR is not specified, the default
 behavior is to allocate enough nodes to satisfy the requested resources as
-expressed by per\-job specification options, e.g. \fB\-n\fR, \fB\-c\fR and
-\fB--gpus\fR.
+expressed by per\-job specification options, e.g. \fB\-n\fR, \fB\-c\fR,
+\fB\-\-ntasks\-per\-node\fR and \fB\-\-gpus\fR.
+
+This derivation applies to job allocations only.
+When \fB\-N\fR is omitted, the derived count is \fB\-\-ntasks\fR, or
+\fB\-\-ntasks\fR divided by \fB\-\-ntasks\-per\-node\fR and rounded up if that
+option is given.
+Without \fB\-\-ntasks\-per\-node\fR the count is only an upper bound, so
+\fBMaxNodes\fR reduces it rather than rejecting the job.
+With \fB\-\-ntasks\-per\-node\fR the count is the number of nodes the job
+requires, and \fBMaxNodes\fR rejects it as it would an explicit count.
+Either way, a job whose tasks do not fit is rejected or left in a PENDING
+state.
+
+The derived count is not lower than the partition's \fBMinNodes\fR at submit
+time.
+Raising the partition's \fBMinNodes\fR later does not re-derive it, so a job
+whose count is below the new value stays PENDING until its node count is set
+explicitly.
+
 The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
 If the number of tasks is given and a number of requested nodes is also given,
@@ -2460,6 +2478,8 @@ of "k" (multiplies numeric value by 1,024) or "m" (multiplies numeric value by
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
 Specify the number of tasks to run. Request that \fBsrun\fR
 allocate resources for \fIntasks\fR tasks.
+For a job allocation, if the \fB\-\-nodes\fR option is not used, this option
+is used to implicitly determine the node count.
 The default is one task per node, but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default. This option
 applies to job and step allocations.
@@ -2511,6 +2531,9 @@ If used with the \fB\-\-ntasks\fR option, the \fB\-\-ntasks\fR option will take
 precedence and the \fB\-\-ntasks\-per\-node\fR will be treated as a
 \fImaximum\fR count of tasks per node.
 Meant to be used with the \fB\-\-nodes\fR option.
+If the \fB\-\-nodes\fR option is not used and \fB\-\-ntasks\fR is given,
+this option determines the job's node count.
+See \fB\-N\fR, \fB\-\-nodes\fR.
 This is related to \fB\-\-cpus\-per\-task\fR=\fIncpus\fR,
 but does not require knowledge of the actual number of cpus on
 each node. In some cases, it is more convenient to be able to

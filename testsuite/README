@@ -798,6 +798,7 @@ test_112_#   Testing of slurmrestd options.
 ===========================================
 test_112_1   /commands/slurmrestd/test_options.py
 test_112_2   Test slurmrestd's http_parser plugin
+test_112_3   Test the implicit max_nodes rollback on a rejected update
 test_112_41  Test slurmrestd v0.0.41 requests
 test_112_42  Test slurmrestd v0.0.42 requests
 test_112_43  Test slurmrestd v0.0.43 requests
@@ -1056,6 +1057,8 @@ test_145_3   Test job with --constraint will not preempt other jobs if resources
 test_146_#   Testing partitions.
 ================================
 test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
+test_146_2   Test MaxNodes
+test_146_3   Test MinNodes
 
 test_147_#   Testing SPANK.
 ===========================

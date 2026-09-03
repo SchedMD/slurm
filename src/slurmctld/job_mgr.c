@@ -7101,9 +7101,17 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	job_desc.alloc_node = job_ptr->alloc_node;
 	job_desc.min_cpus = detail_ptr->orig_min_cpus;
 	job_desc.min_nodes = detail_ptr->min_nodes;
-	/* _part_access_check looks for NO_VAL instead of 0 */
-	job_desc.max_nodes = detail_ptr->max_nodes ?
-		detail_ptr->max_nodes : NO_VAL;;
+	/*
+	 * _part_access_check looks for NO_VAL instead of 0. An implicit
+	 * max_nodes without --ntasks-per-node is a loose bound; don't let it
+	 * reject the job against MaxNodes (get_node_cnts() still clamps).
+	 */
+	if ((job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
+	    !detail_ptr->ntasks_per_node)
+		job_desc.max_nodes = NO_VAL;
+	else
+		job_desc.max_nodes =
+			detail_ptr->max_nodes ? detail_ptr->max_nodes : NO_VAL;
 	if (check_min_time && job_ptr->time_min)
 		job_desc.time_limit = job_ptr->time_min;
 	else
@@ -8691,6 +8699,21 @@ static int _unroll_min_max_node(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * A job that gave a task count but no node count needs one node per
+ * ntasks_per_node tasks; without that directive assume one task per node.
+ */
+static uint32_t _implicit_max_nodes(job_details_t *detail_ptr)
+{
+	uint32_t max_nodes = detail_ptr->num_tasks;
+
+	if (detail_ptr->ntasks_per_node)
+		max_nodes = ROUNDUP(detail_ptr->num_tasks,
+				    detail_ptr->ntasks_per_node);
+
+	return MAX(max_nodes, detail_ptr->min_nodes);
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
 static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
@@ -9040,7 +9063,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	} else if ((detail_ptr->max_nodes == 0) &&
 		   (detail_ptr->num_tasks != 0) &&
 		   (detail_ptr->num_tasks != NO_VAL)) {
-		detail_ptr->max_nodes = detail_ptr->num_tasks;
+		detail_ptr->max_nodes = _implicit_max_nodes(detail_ptr);
 		job_ptr->bit_flags |= JOB_IMPLICIT_MAX_NODES;
 	}
 
@@ -12508,7 +12531,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	bool is_coord_oldacc = false, is_coord_newacc = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
-	job_details_t *detail_ptr;
+	bool save_implicit_max_nodes = false;
+	job_details_t *detail_ptr = NULL;
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	bitstr_t *orig_job_node_bitmap = NULL;
@@ -13772,6 +13796,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
 			save_max_nodes = detail_ptr->max_nodes;
+			save_implicit_max_nodes =
+				(job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES);
 			detail_ptr->max_nodes = job_desc->max_nodes;
 			job_ptr->bit_flags &= ~JOB_IMPLICIT_MAX_NODES;
 		}
@@ -13782,6 +13808,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		     detail_ptr->max_nodes, detail_ptr->min_nodes,
 		     job_ptr);
 		error_code = ESLURM_INVALID_NODE_COUNT;
+	}
+	if (error_code != SLURM_SUCCESS) {
+		/* Undo the node counts so a failed update applies nothing */
 		if (save_min_nodes) {
 			detail_ptr->min_nodes = save_min_nodes;
 			save_min_nodes = 0;
@@ -13789,10 +13818,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (save_max_nodes) {
 			detail_ptr->max_nodes = save_max_nodes;
 			save_max_nodes = 0;
+			if (save_implicit_max_nodes)
+				job_ptr->bit_flags |= JOB_IMPLICIT_MAX_NODES;
 		}
-	}
-	if (error_code != SLURM_SUCCESS)
 		goto fini;
+	}
 
 	if (save_min_nodes && (save_min_nodes!= detail_ptr->min_nodes)) {
 		info("%s: setting min_nodes from %u to %u for %pJ", __func__,
@@ -13946,19 +13976,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 */
 			if (job_desc->bitflags & JOB_NTASKS_SET)
 				job_ptr->bit_flags |= JOB_NTASKS_SET;
-
-			if ((job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
-			    (detail_ptr->max_nodes != detail_ptr->num_tasks)) {
-				info("%s: setting max_nodes from %u to %u for %pJ",
-				     __func__, detail_ptr->max_nodes,
-				     detail_ptr->num_tasks, job_ptr);
-				detail_ptr->max_nodes = detail_ptr->num_tasks;
-				job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
-					acct_policy_limit_set
-						.tres[TRES_ARRAY_NODE];
-				update_accounting = true;
-				FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
-			}
 
 			info("%s: setting num_tasks to %u for %pJ",
 			     __func__, job_desc->num_tasks, job_ptr);
@@ -15368,6 +15385,28 @@ fini:
 	FREE_NULL_LIST(part_ptr_list);
 	FREE_NULL_LIST(new_qos_list);
 	FREE_NULL_LIST(new_resv_list);
+
+	/*
+	 * num_tasks and ntasks_per_node are applied at several points above,
+	 * and an error can return after num_tasks was already applied, so the
+	 * bound is derived here where every path converges.
+	 */
+	if (detail_ptr && IS_JOB_PENDING(job_ptr) &&
+	    (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
+	    detail_ptr->num_tasks && (detail_ptr->num_tasks != NO_VAL)) {
+		uint32_t new_max_nodes = _implicit_max_nodes(detail_ptr);
+
+		if (detail_ptr->max_nodes != new_max_nodes) {
+			info("%s: setting max_nodes from %u to %u for %pJ",
+			     __func__, detail_ptr->max_nodes, new_max_nodes,
+			     job_ptr);
+			detail_ptr->max_nodes = new_max_nodes;
+			job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
+				acct_policy_limit_set.tres[TRES_ARRAY_NODE];
+			update_accounting = true;
+			FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+		}
+	}
 
 	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
