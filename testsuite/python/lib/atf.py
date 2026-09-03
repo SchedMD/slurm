@@ -124,6 +124,17 @@ def list_to_range(numeric_list):
     return re.sub(r"^\[(.*)\]$", r"\1", node_range_expression)
 
 
+def mask_to_list(mask):
+    """Converts an integer bitmask to a sorted list of its set-bit indices.
+
+    Example:
+        >>> mask_to_list(0b1011)
+        [0, 1, 3]
+    """
+
+    return [i for i in range(mask.bit_length()) if mask >> i & 1]
+
+
 def get_coredumps():
     """
     Return the coredumps with the expected pattern in the tmp dirs of the test
