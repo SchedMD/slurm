@@ -104,6 +104,8 @@ libcommon_la_SOURCES =				\
 	optz.h					\
 	pack.c					\
 	pack.h					\
+	pack_data.c				\
+	pack_data.h				\
 	parse_config.c				\
 	parse_config.h				\
 	parse_time.c				\

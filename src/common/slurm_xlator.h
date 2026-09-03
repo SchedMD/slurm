@@ -327,6 +327,10 @@
 #define	packmem_array		slurm_packmem_array
 #define	unpackmem_array		slurm_unpackmem_array
 
+/* pack_data.[ch] functions */
+#define pack_data slurm_pack_data
+#define unpack_data slurm_unpack_data
+
 /* parse_time.[ch] functions */
 #define parse_time              slurm_parse_time
 #define time_str2mins           slurm_time_str2mins
