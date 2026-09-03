@@ -16384,15 +16384,29 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	time_t startup_time = foreach_purge_missing_jobs->batch_startup_time;
 	slurm_step_id_t step_id;
 
-	if ((IS_JOB_CONFIGURING(job_ptr) ||
-	     (!IS_JOB_RUNNING(job_ptr) &&
-	      !IS_JOB_SUSPENDED(job_ptr))) ||
-	    (!bit_test(job_ptr->node_bitmap,
-		       foreach_purge_missing_jobs->node_inx)))
+	/*
+	 * A job waiting on its Prolog is CONFIGURING, but the prolog_timeout
+	 * revoke below is the only thing that ever cleans up a job whose
+	 * Prolog completion was lost, so it has to be reachable.
+	 */
+	if (IS_JOB_CONFIGURING(job_ptr) &&
+	    (job_ptr->state_reason != WAIT_PROLOG))
+		return 0;
+
+	if ((!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) ||
+	    !bit_test(job_ptr->node_bitmap,
+		      foreach_purge_missing_jobs->node_inx))
 		return 0;
 
 	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
-	if (job_ptr->batch_flag &&
+	/*
+	 * The batch script is not launched until the job is done configuring,
+	 * so a job still waiting on its Prolog is not missing from its batch
+	 * node yet. BatchStartTimeout says nothing about how long a Prolog may
+	 * take, so let such a job fall through to the revoke below, which
+	 * measures from the Prolog launch instead.
+	 */
+	if (job_ptr->batch_flag && !IS_JOB_CONFIGURING(job_ptr) &&
 	    !job_ptr->het_job_offset &&
 	    (job_ptr->time_last_active < startup_time) &&
 	    (job_ptr->start_time < startup_time) &&
@@ -16429,14 +16443,24 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		 * prolog_timeout, this logic is skipped. And we need to wait
 		 * the ping logic to cycle over MAX_REG_FREQUENCY before
 		 * triggering this logic again in the worst case.
+		 *
+		 * A batch job only reaches here while it is still configuring,
+		 * as the branch above handles it once its script has been
+		 * launched. Requeue it rather than cancel it, as that branch
+		 * does, because none of the job has run yet.
 		 */
-		if (is_prolog_running(job_ptr) && !job_ptr->batch_flag &&
+		if (is_prolog_running(job_ptr) &&
+		    (!job_ptr->batch_flag || IS_JOB_CONFIGURING(job_ptr)) &&
 		    (difftime(time(NULL), job_ptr->prolog_launch_time) >
 		     slurm_conf.prolog_timeout)) {
+			bool requeue =
+				(job_ptr->batch_flag && job_ptr->details &&
+				 job_ptr->details->requeue);
+
 			error("%s: Revoking job %pI due to nodes not responding",
 			      __func__, &step_id);
-			job_complete(&step_id, slurm_conf.slurm_user_id, false,
-				     true, 1);
+			job_complete(&step_id, slurm_conf.slurm_user_id,
+				     requeue, true, 1);
 		}
 	}
 	return 0;
