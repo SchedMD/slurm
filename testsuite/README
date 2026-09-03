@@ -426,7 +426,6 @@ test17.38  Test for sbatch --signal.
 test17.39  Validate dependency OR option.
 test17.40  Test of --thread-spec option.
 test17.41  Validate that sbatch, srun, salloc return partition error message.
-test17.42  Test of sbatch --wait option.
 test17.43  Test sbatch handling of very long lines in script
 test17.44  Validate that aftercorr dependency is enforced.
 test17.45  Test of sbatch --bbf option
