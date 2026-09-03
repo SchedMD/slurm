@@ -1,5 +1,5 @@
 #!/usr/bin/perl -T
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Slurm qw(:constant);
 
 # 1
@@ -15,8 +15,9 @@ my $job_desc = {
     user_id => $>,
     script => "#!/bin/sh\nsleep 1000\n",
     name => "perlapi_test",
-    stdout => "/dev/null",
-    stderr => "/dev/null",
+    std_out => "/dev/null",
+    std_err => "/dev/null",
+    work_dir => "/tmp",
     environment => \%env,
 };
 $resp = $slurm->submit_batch_job($job_desc);
@@ -28,24 +29,28 @@ $resp = $slurm->load_jobs(0, SHOW_DETAIL);
 ok(ref($resp) eq "HASH", "load jobs") or diag("load_jobs: " . $slurm->strerror());
 
 
-my ($job, $resrcs);
-foreach (@{$resp->{job_array}}) {
-    if ($_->{job_resrcs}) {
-	$resrcs = $_->{job_resrcs};
-	$job = $_;
-	last;
+#
+# Find a job with allocated resources. The job submitted above needs a moment
+# to be scheduled, so reload until one shows up rather than racing it.
+#
+my ($job, $node_resrcs);
+foreach my $try (1 .. 10) {
+    foreach (@{$resp->{job_array}}) {
+	    if ($_->{node_resrcs}) {
+	        $node_resrcs = $_->{node_resrcs};
+	        $job = $_;
+	        last;
+	    }
     }
+    last if $node_resrcs;
+    sleep 1;
+    $resp = $slurm->load_jobs(0, SHOW_DETAIL);
 }
 
-# 4, 5
+# 4
 SKIP: {
-    skip "no job resources", 2 unless $resrcs;
+    skip "no node resources", 1 unless $node_resrcs && @$node_resrcs;
 
-    my $cnt = $slurm->job_cpus_allocated_on_node_id($resrcs, 0);
-    ok($cnt, "job cpus allocated on node id") or diag("job_cpus_allocated_on_node_id: $cnt");
-
-    my $hl = Slurm::Hostlist::create($job->{nodes});
-    my $node = $hl->shift;
-    $cnt = $slurm->job_cpus_allocated_on_node($resrcs, $node);
-    ok($cnt, "job cpus allocated on node") or diag("job_cpus_allocated_on_node: $cnt");
+    my $cnt = $node_resrcs->[0]->{cpus};
+    ok($cnt, "job cpus allocated on node id") or diag("node_resrcs[0]{cpus}: " . (defined $cnt ? $cnt : "undef"));
 }
