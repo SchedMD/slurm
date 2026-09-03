@@ -1,7 +1,6 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
-import json
 import re
 
 import pytest
@@ -48,9 +47,6 @@ def allocation():
     task_data = run_affinity_test_in_allocation()
     task_cnt = len(task_data)
 
-    if task_cnt > 32:
-        pytest.fail("Cannot work with more than 32-bit numbers")
-
     yield job_id
 
 
@@ -59,22 +55,12 @@ def uint2hex(value):
     return f"{value:08x}"
 
 
-def parse_task_output(output):
-    """Parse task output and return task_id to mask mapping."""
-    task_data = {}
-    for line in output.strip().split("\n"):
-        if line.strip():  # Skip empty lines
-            data = json.loads(line)
-            task_data[data["task_id"]] = data["mask"]
-    return task_data
-
-
 def run_affinity_test_in_allocation(cpu_bind_args=""):
     """Run srun within the allocation with cpu-bind options and return parsed task data."""
     # Run srun within the existing allocation
     cmd = f"srun --jobid={job_id} -c1 {cpu_bind_args} {file_prog}"
     output = atf.run_command_output(cmd, fatal=True)
-    return parse_task_output(output)
+    return {data["task_id"]: data["mask"] for data in atf.parse_taskget(output)}
 
 
 def get_available_cpu_ids():

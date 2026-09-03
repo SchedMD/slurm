@@ -5342,6 +5342,22 @@ def get_step_parameter(step_id, parameter_name, default=None, quiet=False):
         return default
 
 
+def _parse_json_tasks(output, hex_fields):
+    task_data = []
+    for line in output.split("\n"):
+        if line.strip():  # Skip empty lines
+            data = json.loads(line)
+            for key in hex_fields:
+                data[key] = int(data[key], 16)
+            task_data.append(data)
+    return task_data
+
+
+def parse_taskget(output):
+    """Parse taskget output, return an array of reported task bindings"""
+    return _parse_json_tasks(output, ["mask"])
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="
