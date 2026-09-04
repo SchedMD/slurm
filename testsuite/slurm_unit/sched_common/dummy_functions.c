@@ -75,9 +75,11 @@ void resv_replace_update(job_record_t *job_ptr)
 	debug("%s %pJ", __func__, job_ptr);
 }
 
-void job_time_adj_resv(job_record_t *job_ptr)
+uint32_t job_get_resv_time_limit(job_record_t *job_ptr)
 {
 	debug("%s %pJ", __func__, job_ptr);
+
+	return job_ptr->time_limit;
 }
 
 bool job_independent(job_record_t *job_ptr)
