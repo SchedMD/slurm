@@ -39,6 +39,13 @@
 
 #include "src/interfaces/gres.h"
 
+/* How links steer GRES selection */
+typedef enum {
+	GRES_LINKS_PREFER = 0, /* Default: prefer better linked devices */
+	GRES_LINKS_ENFORCE, /* --gres-flags=enforce-links */
+	GRES_LINKS_IGNORE, /* --gres-flags=ignore-links */
+} gres_links_mode_t;
+
 typedef struct {
 	bool *avail_cores_by_sock;
 	uint16_t *avail_gpus; /* Count of available GPUs on this node */
@@ -87,6 +94,9 @@ typedef struct {
  */
 extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
 					      gres_remove_unused_args_t *args);
+
+/* Return the link mode job_bit_flags asks for */
+extern gres_links_mode_t gres_select_filter_links_mode(uint64_t job_bit_flags);
 
 /*
  * Make final GRES selection for the job
