@@ -972,6 +972,7 @@ test_128_3   Test hetjob is exempt from preemption under SUSPEND,GANG
 test_128_4   Test hetjob REQUEUE/CANCEL preemption, as victim and as preemptor
 test_128_5   Test hetjob mixed-mode components resolve REQUEUE then CANCEL, and per-component GraceTime
 test_128_6   Test hetjob preemption under preempt/qos: SUSPEND exemption, mode resolution, component eligibility
+test_128_7   Test hetjob is excluded from oversubscription while GANG is enabled
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
