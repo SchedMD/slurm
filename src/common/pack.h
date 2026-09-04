@@ -232,7 +232,16 @@ extern int safe_unpackstr_func(void **object,
 extern void packstr_array(char **valp, uint32_t size_val, buf_t *buffer);
 extern int unpackstr_array(char ***valp, uint32_t* size_val, buf_t *buffer);
 
-extern void packmem_array(char *valp, uint32_t size_val, buf_t *buffer);
+/*
+ * Store a chunk of memory into a buf_t, growing it as needed.
+ * The bytes are copied verbatim, with no length prefix and no byte order
+ * conversion, so unpackmem_array() has to be told the size separately.
+ * IN valp - pointer to the bytes to store
+ * IN size_val - number of bytes to store
+ * IN buffer - buffer to store into
+ * RET SLURM_SUCCESS or error (EINVAL / ESLURM_DATA_TOO_LARGE / ENOMEM)
+ */
+extern int packmem_array(char *valp, uint32_t size_val, buf_t *buffer);
 extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 
 #define safe_unpack_time(valp,buf) do {			\
