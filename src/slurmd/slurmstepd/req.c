@@ -580,8 +580,11 @@ static int _handle_job_step_get_info(int fd, uid_t uid, pid_t remote_pid)
 	pack_job_step_info_response_msg(&args);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_JOB_STEP_INFO,
-					       buffer);
+	if ((rc = stepd_proxy_send_resp_to_slurmd(fd, &msg,
+						  RESPONSE_JOB_STEP_INFO,
+						  buffer)))
+		error("%s: [fd:%d] Unable to send %s", __func__, fd,
+		      rpc_num2string(RESPONSE_JOB_STEP_INFO));
 	FREE_NULL_BUFFER(buffer);
 	slurm_free_msg_members(&msg);
 
@@ -819,9 +822,11 @@ static int _handle_step_layout(int fd, uid_t uid, pid_t remote_pid)
 	rc = stepmgr_get_step_layouts(job_step_ptr, request, &step_layout);
 	slurm_mutex_unlock(&stepmgr_mutex);
 	if (!rc) {
-		(void) stepd_proxy_send_resp_to_slurmd(fd, &msg,
-						       RESPONSE_STEP_LAYOUT,
-						       step_layout);
+		if ((rc = stepd_proxy_send_resp_to_slurmd(fd, &msg,
+							  RESPONSE_STEP_LAYOUT,
+							  step_layout)))
+			error("%s: [fd:%d] Unable to send %s", __func__, fd,
+			      rpc_num2string(RESPONSE_STEP_LAYOUT));
 		slurm_step_layout_destroy(step_layout);
 	} else {
 		rc_msg.return_code = rc;
@@ -857,9 +862,11 @@ static int _handle_job_sbcast_cred(int fd, uid_t uid, pid_t remote_pid)
 	if (rc)
 		goto resp;
 
-	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg,
-					       RESPONSE_JOB_SBCAST_CRED,
-					       job_info_resp_msg);
+	if ((rc = stepd_proxy_send_resp_to_slurmd(fd, &msg,
+						  RESPONSE_JOB_SBCAST_CRED,
+						  job_info_resp_msg)))
+		error("%s: [fd:%d] Unable to send %s", __func__, fd,
+		      rpc_num2string(RESPONSE_JOB_SBCAST_CRED));
 
 	slurm_free_sbcast_cred_msg(job_info_resp_msg);
 	slurm_free_msg_members(&msg);
@@ -911,9 +918,11 @@ static int _handle_het_job_alloc_info(int fd, uid_t uid, pid_t remote_pid)
 
 	slurm_mutex_unlock(&stepmgr_mutex);
 
-	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg,
-					       RESPONSE_HET_JOB_ALLOCATION,
-					       resp_list);
+	if ((rc = stepd_proxy_send_resp_to_slurmd(fd, &msg,
+						  RESPONSE_HET_JOB_ALLOCATION,
+						  resp_list)))
+		error("%s: [fd:%d] Unable to send %s", __func__, fd,
+		      rpc_num2string(RESPONSE_HET_JOB_ALLOCATION));
 
 	FREE_NULL_LIST(resp_list);
 	slurm_free_msg_members(&msg);
