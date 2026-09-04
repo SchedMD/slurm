@@ -165,7 +165,7 @@ typedef struct {
 
 typedef struct {
 	size_t count;
-	type_t match;
+	data_type_t match;
 } convert_args_t;
 
 #define CONVERT_DATA_FOREACH_LIST_DICT_ARGS_MAGIC 0x139414ab
@@ -200,7 +200,7 @@ typedef struct {
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
-static size_t _convert_tree(data_t *data, const type_t match);
+static size_t _convert_tree(data_t *data, const data_type_t match);
 static char *_type_to_string(type_t type);
 
 static data_list_t *_data_list_new(void)
@@ -1507,25 +1507,24 @@ static void _convert_data_string(data_t *data)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 		break;
-	case TYPE_BOOL:
-		data_set_string(data, (data->data.bool_u ? "true" : "false"));
+	case DATA_TYPE_BOOL:
+		data_set_string(data, (data_get_bool(data) ? "true" : "false"));
 		break;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		data_set_string(data, "");
 		break;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 	{
-		char *str = xstrdup_printf("%lf", data->data.float_u);
+		char *str = xstrdup_printf("%lf", data_get_float(data));
 		data_set_string_own(data, str);
 		break;
 	}
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 	{
-		char *str = xstrdup_printf("%"PRId64, data->data.int_u);
+		char *str = xstrdup_printf("%"PRId64, data_get_int(data));
 		data_set_string_own(data, str);
 		break;
 	}
@@ -1541,22 +1540,21 @@ static void _convert_data_force_bool(data_t *data)
 	/* attempt to detect the type first */
 	(void) data_convert_type(data, DATA_TYPE_NONE);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 		/* non-empty string but not recognized format */
 		data_set_bool(data, true);
 		break;
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		break;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		data_set_bool(data, false);
 		break;
-	case TYPE_FLOAT:
-		data_set_bool(data, data->data.float_u != 0);
+	case DATA_TYPE_FLOAT:
+		data_set_bool(data, data_get_float(data) != 0);
 		break;
-	case TYPE_INT_64:
-		data_set_bool(data, data->data.int_u != 0);
+	case DATA_TYPE_INT_64:
+		data_set_bool(data, data_get_int(data) != 0);
 		break;
 	default:
 		break;
@@ -1567,9 +1565,8 @@ static int _convert_data_null(data_t *data)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 	{
 		const char *str = data_get_string(data);
 
@@ -1584,7 +1581,7 @@ static int _convert_data_null(data_t *data)
 
 		goto fail;
 	}
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
@@ -1604,9 +1601,8 @@ static int _convert_data_bool(data_t *data)
 
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 	{
 		str = data_get_string(data);
 
@@ -1659,7 +1655,7 @@ static int _convert_data_bool(data_t *data)
 
 		goto fail;
 	}
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
 	default:
 		goto fail;
@@ -1686,9 +1682,8 @@ static int _convert_data_int(data_t *data, bool force)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 	{
 		int64_t x = -1;
 		char *end_ptr = NULL;
@@ -1762,7 +1757,7 @@ static int _convert_data_int(data_t *data, bool force)
 		data_set_int(data, x);
 		return SLURM_SUCCESS;
 	}
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		if (force) {
 			const double f = data_get_float(data);
 
@@ -1783,9 +1778,9 @@ static int _convert_data_int(data_t *data, bool force)
 			return SLURM_SUCCESS;
 		}
 		return ESLURM_DATA_CONV_FAILED;
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 		return SLURM_SUCCESS;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		if (force) {
 			/*
 			 * Conversion from NULL to integer is a loss of
@@ -1877,11 +1872,10 @@ static int _convert_data_float(data_t *data)
 {
 	_check_magic(data);
 
-	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
 		return _convert_data_float_from_string(data);
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 		if (data_get_int(data) == INFINITE64)
 			data_set_float(data, HUGE_VAL);
 		else if (data_get_int(data) == NO_VAL64)
@@ -1889,7 +1883,7 @@ static int _convert_data_float(data_t *data)
 		else /* attempt normal fp conversion */
 			data_set_float(data, data_get_int(data));
 		return SLURM_SUCCESS;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
@@ -1991,18 +1985,18 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 
 		break;
 	case DATA_TYPE_DICT:
-		if (data->type == TYPE_DICT)
+		if (data_get_type(data) == DATA_TYPE_DICT)
 			return DATA_TYPE_DICT;
-		else if ((data->type == TYPE_LIST) &&
+		else if ((data_get_type(data) == DATA_TYPE_LIST) &&
 			 !_convert_data_list_dict(data))
 			return DATA_TYPE_DICT;
 
 		/* data_parser should be used for this conversion instead. */
 		break;
 	case DATA_TYPE_LIST:
-		if (data->type == TYPE_LIST)
+		if (data_get_type(data) == DATA_TYPE_LIST)
 			return DATA_TYPE_LIST;
-		else if ((data->type == TYPE_DICT) &&
+		else if ((data_get_type(data) == DATA_TYPE_DICT) &&
 			 !_convert_data_dict_list(data))
 			return DATA_TYPE_LIST;
 
@@ -2036,7 +2030,7 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 	return DATA_FOR_EACH_CONT;
 }
 
-static size_t _convert_tree(data_t *data, const type_t match)
+static size_t _convert_tree(data_t *data, const data_type_t match)
 {
 	convert_args_t args = {
 		.match = match,
@@ -2046,15 +2040,15 @@ static size_t _convert_tree(data_t *data, const type_t match)
 	if (!data)
 		return 0;
 
-	switch (data->type) {
-	case TYPE_DICT:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_DICT:
 		(void)data_dict_for_each(data, _convert_dict_entry, &args);
 		break;
-	case TYPE_LIST:
+	case DATA_TYPE_LIST:
 		(void)data_list_for_each(data, _convert_list_entry, &args);
 		break;
 	default:
-		if (match == (int) data_convert_type(data, (int) match))
+		if (match == data_convert_type(data, match))
 			args.count++;
 		break;
 	}
@@ -2064,7 +2058,7 @@ static size_t _convert_tree(data_t *data, const type_t match)
 
 extern size_t data_convert_tree(data_t *data, const data_type_t match)
 {
-	return _convert_tree(data, (int) match);
+	return _convert_tree(data, match);
 }
 
 static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
