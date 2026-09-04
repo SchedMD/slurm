@@ -361,9 +361,15 @@ This is an ordered list in which the number of connections this specific
 device has to device number 0 would be in the first position, the number of
 connections it has to device number 1 in the second position, etc.
 A \-1 indicates the device itself and a 0 indicates no connection.
+The list covers every device of this GRES name on the node, whatever its
+\fBType\fR, so it has one entry per device of that name.
 If specified, then this line can only contain a single GRES device (i.e. can
 only contain a single file via \fBFile\fR).
 
+Better connected devices are only preferred by default. A job can require that
+every co\-allocated device be linked with \fB\-\-gres\-flags=enforce\-links\fR,
+or have the preference disregarded with \fB\-\-gres\-flags=ignore\-links\fR
+(see \fBsalloc\fR(1), \fBsbatch\fR(1), and \fBsrun\fR(1)).
 
 This is an optional value and is usually automatically determined if
 \fBAutoDetect\fR is enabled.
