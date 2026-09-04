@@ -4082,6 +4082,7 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 	int32_t j, resv_delay;
 	uint32_t orig_time_limit = job_ptr->time_limit;
 	uint32_t new_time_limit = job_ptr->time_limit;
+	uint32_t resv_time_limit;
 
 	for (j = 0; ; ) {
 		if ((node_space[j].begin_time != now) && // No current conflicts
@@ -4097,6 +4098,11 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
+	resv_time_limit = job_get_resv_time_limit(job_ptr);
+
+	/* Honor both the node_space and the reservation deadlines */
+	new_time_limit = MIN(new_time_limit, resv_time_limit);
+	/* Time_limit cannot be shorter than requested time_min */
 	new_time_limit = MAX(job_ptr->time_min, new_time_limit);
 	/*
 	 * acct_policy_alter_job() computes the usage to give back from
@@ -4104,10 +4110,10 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 	 * booked against. Don't lower it above.
 	 */
 	acct_policy_alter_job(job_ptr, new_time_limit);
-	job_ptr->time_limit = new_time_limit;
-	job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
 
-	job_time_adj_resv(job_ptr);
+	job_ptr->time_limit = new_time_limit;
+
+	job_end_time_reset(job_ptr);
 
 	if (orig_time_limit != job_ptr->time_limit) {
 		info("%pJ time limit changed from %u to %u",

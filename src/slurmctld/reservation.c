@@ -81,7 +81,6 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
 
-#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -7658,10 +7657,14 @@ extern void resv_replace_update(job_record_t *job_ptr)
 }
 
 /*
- * Adjust a job's time_limit and end_time as needed to avoid using
- * reserved resources. Don't go below job's time_min value.
+ * Return the highest time limit, in minutes, that keeps a job clear of every
+ * advance reservation it would otherwise overlap. The result is capped at the
+ * job's current time_limit and is not floored by time_min. The caller applies
+ * that, along with any other limit it has to honor.
+ *
+ * The job record is not modified, but expired reservations may be advanced.
  */
-extern void job_time_adj_resv(job_record_t *job_ptr)
+extern uint32_t job_get_resv_time_limit(job_record_t *job_ptr)
 {
 	list_itr_t *iter;
 	slurmctld_resv_t * resv_ptr;
@@ -7694,15 +7697,8 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 		new_time_limit = MIN(new_time_limit, resv_begin_time);
 	}
 	list_iterator_destroy(iter);
-	new_time_limit = MAX(new_time_limit, job_ptr->time_min);
-	/*
-	 * acct_policy_alter_job() computes the usage to give back from
-	 * job_ptr->time_limit, so it must still hold the limit the usage was
-	 * booked against. Don't lower it above.
-	 */
-	acct_policy_alter_job(job_ptr, new_time_limit);
-	job_ptr->time_limit = new_time_limit;
-	job_end_time_reset(job_ptr);
+
+	return new_time_limit;
 }
 
 /*
