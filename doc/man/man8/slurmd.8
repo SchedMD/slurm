@@ -27,8 +27,13 @@ Report node rebooted when daemon restarted. Used for testing purposes.
 
 .TP
 \fB\-c\fR
-Clear system locks as needed. This may be required if \fBslurmd\fR terminated
-abnormally.
+Discard the saved \fBslurmd\fR state and kill all jobs and job steps
+running on this node.
+
+Restarting \fBslurmd\fR without \fB\-c\fR is normally sufficient after an
+abnormal termination; independent \fBslurmstepd\fR(8) processes handle the
+execution of job steps and are picked up again on restart.
+Use \fB\-c\fR when the jobs on this node should actually be killed.
 .IP
 
 .TP
