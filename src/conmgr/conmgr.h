@@ -1047,31 +1047,37 @@ extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
 extern int conmgr_con_fstat_input(conmgr_fd_ref_t *con, struct stat *stat_ptr);
 
 /*
- * Check to see if the con->output_fd is currently open and can (in theory)
- * accept more write()s.
+ * Check to see if the connection is still fully open: input has not hit EOF
+ * and output can (in theory) accept more write()s.
  *
  * WARNING: This check is inherently a race condition and should only be used to
  * verify a connection is still valid before an expensive operation. The
- * connection output could close or fail at anytime after this check which will
- * be relayed via callbacks on the connection.
+ * connection could close or fail at anytime after this check which will be
+ * relayed via callbacks on the connection.
  *
- * RET true if output is still open or false if otherwise
+ * NOTE: A connection created without an input fd always returns false as its
+ * input is closed from the start.
+ *
+ * RET true if both directions are still open or false if otherwise
  */
-extern bool conmgr_fd_is_output_open(conmgr_fd_t *con);
+extern bool conmgr_fd_is_open(conmgr_fd_t *con);
 
 /*
- * Check to see if the con->output_fd is currently open and can (in theory)
- * accept more write()s.
+ * Check to see if the connection is still fully open: input has not hit EOF
+ * and output can (in theory) accept more write()s.
  *
  * WARNING: This check is inherently a race condition and should only be used to
  * verify a connection is still valid before an expensive operation. The
- * connection output could close or fail at anytime after this check which will
- * be relayed via callbacks on the connection.
+ * connection could close or fail at anytime after this check which will be
+ * relayed via callbacks on the connection.
+ *
+ * NOTE: A connection created without an input fd always returns false as its
+ * input is closed from the start.
  *
  * IN ref reference to connection
- * RET true if output is still open or false if otherwise
+ * RET true if both directions are still open or false if otherwise
  */
-extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref);
+extern bool conmgr_con_is_open(conmgr_fd_ref_t *ref);
 
 /*
  * Check if conmgr is enabled in this process

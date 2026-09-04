@@ -2511,34 +2511,34 @@ extern int conmgr_quiesce_con(conmgr_fd_ref_t *ref)
 	return rc;
 }
 
-static bool _is_output_open(conmgr_fd_t *con)
+static bool _is_open(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	return (!con_flag(con, FLAG_READ_EOF) &&
 		!con_flag(con, FLAG_WRITE_EOF));
 }
 
-extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
+extern bool conmgr_fd_is_open(conmgr_fd_t *con)
 {
 	bool open;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
-	open = _is_output_open(con);
+	open = _is_open(con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return open;
 }
 
-extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref)
+extern bool conmgr_con_is_open(conmgr_fd_ref_t *ref)
 {
 	bool open;
 
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 
 	slurm_mutex_lock(&mgr.mutex);
-	open = _is_output_open(ref->con);
+	open = _is_open(ref->con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return open;
