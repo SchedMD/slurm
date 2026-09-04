@@ -7634,6 +7634,21 @@ Also see \fBFeatures\fR for Boolean flags to filter nodes using job constraints.
 .IP
 
 .TP
+\fBHRES\fR
+A JSON list of objects, each naming a hierarchical resource (\fIhres_name\fR)
+and one of its layers (\fIlayer_name\fR) that the node joins, as defined in
+\fBresources.yaml\fR(5). In mode 3 the layer must be a leaf layer and each
+resource may be listed only once.
+Only honored for dynamic nodes created with \fBscontrol create NodeName\fR or
+\fBslurmd \-Z \-\-conf\fR; it is ignored for nodes defined in slurm.conf.
+Malformed JSON makes the node creation fail. If a layer does not exist or
+cannot accept the node, an error is logged and the node is created without
+HRES membership. Deleting the node removes it from all layers.
+For example: HRES='[{"hres_name":"power","layer_name":"rack2"}]'.
+See <https://slurm.schedmd.com/hres.html> for more information.
+.IP
+
+.TP
 \fBMemSpecLimit\fR
 Amount of \fBRealMemory\fR, in mebibytes, reserved for system use and not
 available for user allocations. Must be less than the amount defined for
