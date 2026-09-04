@@ -1392,6 +1392,8 @@ function __slurm_comp_common_flags() {
 		"allow-task-sharing"
 		"disable-binding"
 		"enforce-binding"
+		"enforce-links"
+		"ignore-links"
 		"multiple-tasks-per-sharing"
 		"one-task-per-sharing"
 	)

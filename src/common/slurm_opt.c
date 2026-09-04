@@ -1834,8 +1834,9 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 	char *tmp_str, *tok, *last = NULL;
 
 	/* clear gres flag options first */
-	opt->job_flags &= ~(GRES_DISABLE_BIND | GRES_ENFORCE_BIND |
-			    GRES_ONE_TASK_PER_SHARING);
+	opt->job_flags &=
+		~(GRES_DISABLE_BIND | GRES_ENFORCE_BIND | GRES_ENFORCE_LINKS |
+		  GRES_IGNORE_LINKS | GRES_ONE_TASK_PER_SHARING);
 
 	if (!arg)
 		return SLURM_ERROR;
@@ -1854,6 +1855,10 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 			opt->job_flags |= GRES_DISABLE_BIND;
 		} else if (!xstrcasecmp(tok, "enforce-binding")) {
 			opt->job_flags |= GRES_ENFORCE_BIND;
+		} else if (!xstrcasecmp(tok, "enforce-links")) {
+			opt->job_flags |= GRES_ENFORCE_LINKS;
+		} else if (!xstrcasecmp(tok, "ignore-links")) {
+			opt->job_flags |= GRES_IGNORE_LINKS;
 		} else if (!xstrcasecmp(tok, "multiple-tasks-per-sharing")) {
 			opt->job_flags |= GRES_MULT_TASKS_PER_SHARING;
 		} else if (!xstrcasecmp(tok, "one-task-per-sharing")) {
@@ -1870,6 +1875,12 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 	if ((opt->job_flags & GRES_DISABLE_BIND) &&
 	    (opt->job_flags & GRES_ENFORCE_BIND)) {
 		error("Invalid --gres-flags combo: disable-binding and enforce-binding are mutually exclusive.");
+		return SLURM_ERROR;
+	}
+
+	if ((opt->job_flags & GRES_ENFORCE_LINKS) &&
+	    (opt->job_flags & GRES_IGNORE_LINKS)) {
+		error("Invalid --gres-flags combo: enforce-links and ignore-links are mutually exclusive.");
 		return SLURM_ERROR;
 	}
 
@@ -1897,6 +1908,10 @@ static char *arg_get_gres_flags(slurm_opt_t *opt)
 		xstrcatat(tmp, &tmp_pos, "disable-binding,");
 	if (opt->job_flags & GRES_ENFORCE_BIND)
 		xstrcatat(tmp, &tmp_pos, "enforce-binding,");
+	if (opt->job_flags & GRES_ENFORCE_LINKS)
+		xstrcatat(tmp, &tmp_pos, "enforce-links,");
+	if (opt->job_flags & GRES_IGNORE_LINKS)
+		xstrcatat(tmp, &tmp_pos, "ignore-links,");
 	if (opt->job_flags & GRES_MULT_TASKS_PER_SHARING)
 		xstrcatat(tmp, &tmp_pos, "multiple-tasks-per-sharing,");
 	if (opt->job_flags & GRES_ONE_TASK_PER_SHARING)
@@ -1915,6 +1930,8 @@ static void arg_reset_gres_flags(slurm_opt_t *opt)
 {
 	opt->job_flags &= ~(GRES_DISABLE_BIND);
 	opt->job_flags &= ~(GRES_ENFORCE_BIND);
+	opt->job_flags &= ~(GRES_ENFORCE_LINKS);
+	opt->job_flags &= ~(GRES_IGNORE_LINKS);
 	opt->job_flags &= ~(GRES_MULT_TASKS_PER_SHARING);
 	opt->job_flags &= ~(GRES_ONE_TASK_PER_SHARING);
 }
