@@ -771,6 +771,14 @@ extern int add_connection(conmgr_con_type_t type,
 		return SLURM_COMMUNICATIONS_INVALID_FD;
 	}
 
+	/* TLS requires bi-directional communications */
+	if (!has_in && (flags & (CON_FLAG_TLS_SERVER | CON_FLAG_TLS_CLIENT |
+				 CON_FLAG_TLS_FINGERPRINT))) {
+		log_flag(CONMGR, "%s: [fd:%d->%d] refusing TLS connection without input fd",
+			 __func__, input_fd, output_fd);
+		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
+	}
+
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
 		    (has_out && S_ISSOCK(out_stat.st_mode));
 	is_fifo = (has_in && S_ISFIFO(in_stat.st_mode)) ||
