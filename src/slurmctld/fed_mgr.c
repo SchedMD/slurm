@@ -904,7 +904,13 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	tmp_msg.protocol_version = conn->rpc_version;
 
 	buffer = init_buf(BUF_SIZE);
-	pack_msg(&tmp_msg, buffer);
+	if ((rc = pack_msg(&tmp_msg, buffer))) {
+		error("%s: packing %s for %s failed: %s", __func__,
+		      rpc_num2string(tmp_msg.msg_type), conn->name,
+		      slurm_strerror(rc));
+		FREE_NULL_BUFFER(buffer);
+		return rc;
+	}
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_UPDATE;
@@ -1155,7 +1161,13 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	tmp_msg.protocol_version = conn->rpc_version;
 
 	buffer = init_buf(BUF_SIZE);
-	pack_msg(&tmp_msg, buffer);
+	if ((rc = pack_msg(&tmp_msg, buffer))) {
+		error("%s: packing %s for %s failed: %s", __func__,
+		      rpc_num2string(tmp_msg.msg_type), conn->name,
+		      slurm_strerror(rc));
+		FREE_NULL_BUFFER(buffer);
+		return rc;
+	}
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_CANCEL;
@@ -1205,7 +1217,13 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	tmp_msg.protocol_version = conn->rpc_version;
 
 	buffer = init_buf(BUF_SIZE);
-	pack_msg(&tmp_msg, buffer);
+	if ((rc = pack_msg(&tmp_msg, buffer))) {
+		error("%s: packing %s for %s failed: %s", __func__,
+		      rpc_num2string(tmp_msg.msg_type), conn->name,
+		      slurm_strerror(rc));
+		FREE_NULL_BUFFER(buffer);
+		return rc;
+	}
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_REQUEUE;
