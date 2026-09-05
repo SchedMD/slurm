@@ -7704,7 +7704,8 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 	 */
 	job_ptr->priority = job_desc->priority;
 	if (job_ptr->priority == 0) {
-		if (user_submit_priority == 0)
+		if ((user_submit_priority == 0) &&
+		    (job_desc->alloc_sid != ALLOC_SID_ADMIN_HOLD))
 			job_ptr->state_reason = WAIT_HELD_USER;
 		else
 			job_ptr->state_reason = WAIT_HELD;

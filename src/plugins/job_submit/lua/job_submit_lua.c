@@ -511,6 +511,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->admin_comment);
 	} else if (!xstrcmp(name, "alloc_node")) {
 		lua_pushstring(L, job_desc->alloc_node);
+	} else if (!xstrcmp(name, "alloc_sid")) {
+		lua_pushnumber(L, job_desc->alloc_sid);
 	} else if (!xstrcmp(name, "argc")) {
 		lua_pushnumber(L, job_desc->argc);
 	} else if (!xstrcmp(name, "argv")) {
@@ -827,6 +829,8 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->admin_comment);
 		if (strlen(value_str))
 			job_desc->admin_comment = xstrdup(value_str);
+	} else if (!xstrcmp(name, "alloc_sid")) {
+		job_desc->alloc_sid = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "array_inx")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->array_inx);
