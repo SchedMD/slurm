@@ -378,3 +378,37 @@ def test_purge_slurm_db_tables(sql_statement_repeat):
         logging.info(
             f"{entry['type']} purge took {time_sec}s to remove {rows_removed} rows from {table_count} tables ({rate} rows/sec)"
         )
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmdbd") < (26, 11)
+    or atf.get_version("bin/sacctmgr") < (26, 11),
+    reason="Ticket 24919: DisableArchiveAnalyze was added in 26.11, and show "
+    "config is rendered by sacctmgr, so an older client omits the keypair",
+)
+def test_disable_archive_analyze_config():
+    """DisableArchiveAnalyze must default to off and be honored once set.
+
+    The option gates the ANALYZE TABLE slurmdbd runs after each archive/purge
+    cycle.  ANALYZE is only logged when it fails, so there is no success
+    signature to match on; what is checked here is that the keypair reaches
+    sacctmgr show config with the documented default, that setting it is
+    reported back.
+
+    It deliberately does not trigger a rollup to exercise the purge path.
+    sacctmgr rollup takes no cluster filter, and this module configures every
+    Purge*After, so a rollup here runs an archive/purge cycle over every
+    cluster in the shared database -- including the multi-day-old rows other
+    test files are concurrently relying on.
+    """
+    for configured, expected in ((None, "no"), ("yes", "yes")):
+        atf.require_config_parameter(
+            "DisableArchiveAnalyze", configured, source="slurmdbd"
+        )
+        reported = atf.get_config_parameter(
+            "DisableArchiveAnalyze", live=True, source="sacctmgr"
+        )
+        assert reported is not None and reported.lower() == expected, (
+            f"sacctmgr show config reports DisableArchiveAnalyze={reported}, "
+            f"expected {expected}"
+        )
