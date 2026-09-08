@@ -1083,6 +1083,7 @@ test_150_6   Test topology/tree + RouteTree relays a forwarded message once per 
 test_150_7   Test topology preserved when a partial node update splits the config
 test_150_8   Test overcommit with cpus-per-task across a topology cluster
 test_150_9   Test bad topology.yaml handling
+test_150_10  Test --contiguous node selection per topology plugin
 
 test_151_#   Testing Oversubscribe
 ===========================================

@@ -7,6 +7,7 @@ LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
 check_PROGRAMS = \
 	$(TESTS)
 
+EXTRA_DIST = slurm.conf
 
 SCHED_HARNESS_SOURCES = \
 	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.c	\
@@ -21,9 +22,9 @@ if CLANG
 MYCFLAGS += -Xclang -pic-level -Xclang 0
 endif
 
-TESTS = backfill-test
+TESTS = topology-test
 
-backfill_test_SOURCES = backfill_test.c	\
+topology_test_SOURCES = topology_test.c	\
 			$(SCHED_HARNESS_SOURCES) \
 			$(top_srcdir)/src/plugins/sched/backfill/backfill.c	\
 			$(top_srcdir)/src/plugins/sched/backfill/backfill.h	\
@@ -33,8 +34,8 @@ backfill_test_SOURCES = backfill_test.c	\
 			$(top_srcdir)/src/slurmctld/licenses.c			\
 			$(top_srcdir)/src/slurmctld/node_scheduler.c
 
-backfill_test_CFLAGS = $(MYCFLAGS)
-backfill_test_LDADD  = $(LDADD) @CHECK_LIBS@
-backfill_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
+topology_test_CFLAGS = $(MYCFLAGS)
+topology_test_LDADD  = $(LDADD) @CHECK_LIBS@
+topology_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 
 endif

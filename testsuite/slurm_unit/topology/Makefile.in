@@ -92,8 +92,8 @@ host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_1)
 @CLANG_TRUE@@HAVE_CHECK_TRUE@am__append_1 = -Xclang -pic-level -Xclang 0
-@HAVE_CHECK_TRUE@TESTS = backfill-test$(EXEEXT)
-subdir = testsuite/slurm_unit/backfill
+@HAVE_CHECK_TRUE@TESTS = topology-test$(EXEEXT)
+subdir = testsuite/slurm_unit/topology
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -156,28 +156,28 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_CHECK_TRUE@am__EXEEXT_1 = backfill-test$(EXEEXT)
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = topology-test$(EXEEXT)
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_1 = $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.$(OBJEXT) \
-	$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.$(OBJEXT)
-@HAVE_CHECK_TRUE@am_backfill_test_OBJECTS =  \
-@HAVE_CHECK_TRUE@	backfill_test-backfill_test.$(OBJEXT) \
+am__objects_1 = $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.$(OBJEXT) \
+	$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.$(OBJEXT)
+@HAVE_CHECK_TRUE@am_topology_test_OBJECTS =  \
+@HAVE_CHECK_TRUE@	topology_test-topology_test.$(OBJEXT) \
 @HAVE_CHECK_TRUE@	$(am__objects_1) \
-@HAVE_CHECK_TRUE@	$(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.$(OBJEXT) \
-@HAVE_CHECK_TRUE@	$(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.$(OBJEXT) \
-@HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.$(OBJEXT) \
-@HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/backfill_test-licenses.$(OBJEXT) \
-@HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.$(OBJEXT)
-backfill_test_OBJECTS = $(am_backfill_test_OBJECTS)
+@HAVE_CHECK_TRUE@	$(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.$(OBJEXT) \
+@HAVE_CHECK_TRUE@	$(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.$(OBJEXT) \
+@HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/topology_test-job_scheduler.$(OBJEXT) \
+@HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/topology_test-licenses.$(OBJEXT) \
+@HAVE_CHECK_TRUE@	$(top_builddir)/src/slurmctld/topology_test-node_scheduler.$(OBJEXT)
+topology_test_OBJECTS = $(am_topology_test_OBJECTS)
 am__DEPENDENCIES_1 =
-@HAVE_CHECK_TRUE@backfill_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
+@HAVE_CHECK_TRUE@topology_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-backfill_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(backfill_test_CFLAGS) \
-	$(CFLAGS) $(backfill_test_LDFLAGS) $(LDFLAGS) -o $@
+topology_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(topology_test_CFLAGS) \
+	$(CFLAGS) $(topology_test_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -193,14 +193,14 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Po \
-	$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Po \
-	$(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Po \
-	$(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Po \
-	$(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Po \
-	$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Po \
-	$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Po \
-	./$(DEPDIR)/backfill_test-backfill_test.Po
+am__depfiles_remade = $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Po \
+	$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Po \
+	$(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Po \
+	$(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Po \
+	$(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Po \
+	$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Po \
+	$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Po \
+	./$(DEPDIR)/topology_test-topology_test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -220,7 +220,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(backfill_test_SOURCES)
+SOURCES = $(topology_test_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -721,6 +721,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/plugins/sched/backfill \
 	      -I$(top_srcdir)/testsuite/slurm_unit/sched_common
 
 LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
+EXTRA_DIST = slurm.conf
 SCHED_HARNESS_SOURCES = \
 	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.c	\
 	$(top_srcdir)/testsuite/slurm_unit/sched_common/sched_harness.h	\
@@ -728,7 +729,7 @@ SCHED_HARNESS_SOURCES = \
 
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE \
 @HAVE_CHECK_TRUE@	$(am__append_1)
-@HAVE_CHECK_TRUE@backfill_test_SOURCES = backfill_test.c	\
+@HAVE_CHECK_TRUE@topology_test_SOURCES = topology_test.c	\
 @HAVE_CHECK_TRUE@			$(SCHED_HARNESS_SOURCES) \
 @HAVE_CHECK_TRUE@			$(top_srcdir)/src/plugins/sched/backfill/backfill.c	\
 @HAVE_CHECK_TRUE@			$(top_srcdir)/src/plugins/sched/backfill/backfill.h	\
@@ -738,9 +739,9 @@ SCHED_HARNESS_SOURCES = \
 @HAVE_CHECK_TRUE@			$(top_srcdir)/src/slurmctld/licenses.c			\
 @HAVE_CHECK_TRUE@			$(top_srcdir)/src/slurmctld/node_scheduler.c
 
-@HAVE_CHECK_TRUE@backfill_test_CFLAGS = $(MYCFLAGS)
-@HAVE_CHECK_TRUE@backfill_test_LDADD = $(LDADD) @CHECK_LIBS@
-@HAVE_CHECK_TRUE@backfill_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
+@HAVE_CHECK_TRUE@topology_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@topology_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@topology_test_LDFLAGS = -z lazy  -Wl,--unresolved-symbols=ignore-all -Wl,--allow-multiple-definition  -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 all: all-am
 
 .SUFFIXES:
@@ -754,9 +755,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign testsuite/slurm_unit/backfill/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign testsuite/slurm_unit/topology/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign testsuite/slurm_unit/backfill/Makefile
+	  $(AUTOMAKE) --foreign testsuite/slurm_unit/topology/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -784,9 +785,9 @@ $(top_builddir)/testsuite/slurm_unit/sched_common/$(am__dirstamp):
 $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)
 	@: >>$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.$(OBJEXT): $(top_builddir)/testsuite/slurm_unit/sched_common/$(am__dirstamp) \
+$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.$(OBJEXT): $(top_builddir)/testsuite/slurm_unit/sched_common/$(am__dirstamp) \
 	$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.$(OBJEXT): $(top_builddir)/testsuite/slurm_unit/sched_common/$(am__dirstamp) \
+$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.$(OBJEXT): $(top_builddir)/testsuite/slurm_unit/sched_common/$(am__dirstamp) \
 	$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/$(am__dirstamp)
 $(top_builddir)/src/plugins/sched/backfill/$(am__dirstamp):
 	@$(MKDIR_P) $(top_builddir)/src/plugins/sched/backfill
@@ -794,10 +795,10 @@ $(top_builddir)/src/plugins/sched/backfill/$(am__dirstamp):
 $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)
 	@: >>$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.$(OBJEXT):  \
+$(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.$(OBJEXT):  \
 	$(top_builddir)/src/plugins/sched/backfill/$(am__dirstamp) \
 	$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.$(OBJEXT):  \
+$(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.$(OBJEXT):  \
 	$(top_builddir)/src/plugins/sched/backfill/$(am__dirstamp) \
 	$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/$(am__dirstamp)
 $(top_builddir)/src/slurmctld/$(am__dirstamp):
@@ -806,19 +807,19 @@ $(top_builddir)/src/slurmctld/$(am__dirstamp):
 $(top_builddir)/src/slurmctld/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) $(top_builddir)/src/slurmctld/$(DEPDIR)
 	@: >>$(top_builddir)/src/slurmctld/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.$(OBJEXT):  \
+$(top_builddir)/src/slurmctld/topology_test-job_scheduler.$(OBJEXT):  \
 	$(top_builddir)/src/slurmctld/$(am__dirstamp) \
 	$(top_builddir)/src/slurmctld/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/src/slurmctld/backfill_test-licenses.$(OBJEXT):  \
+$(top_builddir)/src/slurmctld/topology_test-licenses.$(OBJEXT):  \
 	$(top_builddir)/src/slurmctld/$(am__dirstamp) \
 	$(top_builddir)/src/slurmctld/$(DEPDIR)/$(am__dirstamp)
-$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.$(OBJEXT):  \
+$(top_builddir)/src/slurmctld/topology_test-node_scheduler.$(OBJEXT):  \
 	$(top_builddir)/src/slurmctld/$(am__dirstamp) \
 	$(top_builddir)/src/slurmctld/$(DEPDIR)/$(am__dirstamp)
 
-backfill-test$(EXEEXT): $(backfill_test_OBJECTS) $(backfill_test_DEPENDENCIES) $(EXTRA_backfill_test_DEPENDENCIES) 
-	@rm -f backfill-test$(EXEEXT)
-	$(AM_V_CCLD)$(backfill_test_LINK) $(backfill_test_OBJECTS) $(backfill_test_LDADD) $(LIBS)
+topology-test$(EXEEXT): $(topology_test_OBJECTS) $(topology_test_DEPENDENCIES) $(EXTRA_topology_test_DEPENDENCIES) 
+	@rm -f topology-test$(EXEEXT)
+	$(AM_V_CCLD)$(topology_test_LINK) $(topology_test_OBJECTS) $(topology_test_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -829,14 +830,14 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backfill_test-backfill_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@$(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology_test-topology_test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -868,117 +869,117 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-backfill_test-backfill_test.o: backfill_test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT backfill_test-backfill_test.o -MD -MP -MF $(DEPDIR)/backfill_test-backfill_test.Tpo -c -o backfill_test-backfill_test.o `test -f 'backfill_test.c' || echo '$(srcdir)/'`backfill_test.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/backfill_test-backfill_test.Tpo $(DEPDIR)/backfill_test-backfill_test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='backfill_test.c' object='backfill_test-backfill_test.o' libtool=no @AMDEPBACKSLASH@
+topology_test-topology_test.o: topology_test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT topology_test-topology_test.o -MD -MP -MF $(DEPDIR)/topology_test-topology_test.Tpo -c -o topology_test-topology_test.o `test -f 'topology_test.c' || echo '$(srcdir)/'`topology_test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/topology_test-topology_test.Tpo $(DEPDIR)/topology_test-topology_test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='topology_test.c' object='topology_test-topology_test.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o backfill_test-backfill_test.o `test -f 'backfill_test.c' || echo '$(srcdir)/'`backfill_test.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o topology_test-topology_test.o `test -f 'topology_test.c' || echo '$(srcdir)/'`topology_test.c
 
-backfill_test-backfill_test.obj: backfill_test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT backfill_test-backfill_test.obj -MD -MP -MF $(DEPDIR)/backfill_test-backfill_test.Tpo -c -o backfill_test-backfill_test.obj `if test -f 'backfill_test.c'; then $(CYGPATH_W) 'backfill_test.c'; else $(CYGPATH_W) '$(srcdir)/backfill_test.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/backfill_test-backfill_test.Tpo $(DEPDIR)/backfill_test-backfill_test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='backfill_test.c' object='backfill_test-backfill_test.obj' libtool=no @AMDEPBACKSLASH@
+topology_test-topology_test.obj: topology_test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT topology_test-topology_test.obj -MD -MP -MF $(DEPDIR)/topology_test-topology_test.Tpo -c -o topology_test-topology_test.obj `if test -f 'topology_test.c'; then $(CYGPATH_W) 'topology_test.c'; else $(CYGPATH_W) '$(srcdir)/topology_test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/topology_test-topology_test.Tpo $(DEPDIR)/topology_test-topology_test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='topology_test.c' object='topology_test-topology_test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o backfill_test-backfill_test.obj `if test -f 'backfill_test.c'; then $(CYGPATH_W) 'backfill_test.c'; else $(CYGPATH_W) '$(srcdir)/backfill_test.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o topology_test-topology_test.obj `if test -f 'topology_test.c'; then $(CYGPATH_W) 'topology_test.c'; else $(CYGPATH_W) '$(srcdir)/topology_test.c'; fi`
 
-$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.o: $(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.o -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.o: $(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.o -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
 
-$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.obj: $(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.obj -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.obj: $(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.obj -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-sched_harness.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-sched_harness.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/sched_harness.c'; fi`
 
-$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.o: $(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.o -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.o: $(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.o -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.o `test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' || echo '$(srcdir)/'`$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
 
-$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.obj: $(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.obj -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.obj: $(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.obj -MD -MP -MF $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Tpo -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Tpo $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c' object='$(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/backfill_test-dummy_functions.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/testsuite/slurm_unit/sched_common/topology_test-dummy_functions.obj `if test -f '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; then $(CYGPATH_W) '$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/testsuite/slurm_unit/sched_common/dummy_functions.c'; fi`
 
-$(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.o: $(top_builddir)/src/plugins/sched/backfill/backfill.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.o -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.o `test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/backfill.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/backfill.c' object='$(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.o: $(top_builddir)/src/plugins/sched/backfill/backfill.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.o -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.o `test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/backfill.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/backfill.c' object='$(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.o `test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/backfill.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.o `test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/backfill.c
 
-$(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.obj: $(top_builddir)/src/plugins/sched/backfill/backfill.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.obj -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/backfill.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/backfill.c' object='$(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.obj: $(top_builddir)/src/plugins/sched/backfill/backfill.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.obj -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/backfill.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/backfill.c' object='$(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-backfill.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/backfill.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-backfill.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/backfill.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/backfill.c'; fi`
 
-$(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.o: $(top_builddir)/src/plugins/sched/backfill/oracle.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.o -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.o `test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/oracle.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/oracle.c' object='$(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.o: $(top_builddir)/src/plugins/sched/backfill/oracle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.o -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.o `test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/oracle.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/oracle.c' object='$(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.o `test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/oracle.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.o `test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/sched/backfill/oracle.c
 
-$(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.obj: $(top_builddir)/src/plugins/sched/backfill/oracle.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.obj -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/oracle.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/oracle.c' object='$(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.obj: $(top_builddir)/src/plugins/sched/backfill/oracle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.obj -MD -MP -MF $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Tpo -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/oracle.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Tpo $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/plugins/sched/backfill/oracle.c' object='$(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/backfill_test-oracle.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/oracle.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/plugins/sched/backfill/topology_test-oracle.obj `if test -f '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; then $(CYGPATH_W) '$(top_builddir)/src/plugins/sched/backfill/oracle.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/plugins/sched/backfill/oracle.c'; fi`
 
-$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.o: $(top_builddir)/src/slurmctld/job_scheduler.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/backfill_test-job_scheduler.o -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/backfill_test-job_scheduler.o `test -f '$(top_builddir)/src/slurmctld/job_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/job_scheduler.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/job_scheduler.c' object='$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/slurmctld/topology_test-job_scheduler.o: $(top_builddir)/src/slurmctld/job_scheduler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/topology_test-job_scheduler.o -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/topology_test-job_scheduler.o `test -f '$(top_builddir)/src/slurmctld/job_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/job_scheduler.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/job_scheduler.c' object='$(top_builddir)/src/slurmctld/topology_test-job_scheduler.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/backfill_test-job_scheduler.o `test -f '$(top_builddir)/src/slurmctld/job_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/job_scheduler.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/topology_test-job_scheduler.o `test -f '$(top_builddir)/src/slurmctld/job_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/job_scheduler.c
 
-$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.obj: $(top_builddir)/src/slurmctld/job_scheduler.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/backfill_test-job_scheduler.obj -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/backfill_test-job_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/job_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/job_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/job_scheduler.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/job_scheduler.c' object='$(top_builddir)/src/slurmctld/backfill_test-job_scheduler.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/slurmctld/topology_test-job_scheduler.obj: $(top_builddir)/src/slurmctld/job_scheduler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/topology_test-job_scheduler.obj -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/topology_test-job_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/job_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/job_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/job_scheduler.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/job_scheduler.c' object='$(top_builddir)/src/slurmctld/topology_test-job_scheduler.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/backfill_test-job_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/job_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/job_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/job_scheduler.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/topology_test-job_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/job_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/job_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/job_scheduler.c'; fi`
 
-$(top_builddir)/src/slurmctld/backfill_test-licenses.o: $(top_builddir)/src/slurmctld/licenses.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/backfill_test-licenses.o -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Tpo -c -o $(top_builddir)/src/slurmctld/backfill_test-licenses.o `test -f '$(top_builddir)/src/slurmctld/licenses.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/licenses.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/licenses.c' object='$(top_builddir)/src/slurmctld/backfill_test-licenses.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/slurmctld/topology_test-licenses.o: $(top_builddir)/src/slurmctld/licenses.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/topology_test-licenses.o -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Tpo -c -o $(top_builddir)/src/slurmctld/topology_test-licenses.o `test -f '$(top_builddir)/src/slurmctld/licenses.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/licenses.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/licenses.c' object='$(top_builddir)/src/slurmctld/topology_test-licenses.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/backfill_test-licenses.o `test -f '$(top_builddir)/src/slurmctld/licenses.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/licenses.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/topology_test-licenses.o `test -f '$(top_builddir)/src/slurmctld/licenses.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/licenses.c
 
-$(top_builddir)/src/slurmctld/backfill_test-licenses.obj: $(top_builddir)/src/slurmctld/licenses.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/backfill_test-licenses.obj -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Tpo -c -o $(top_builddir)/src/slurmctld/backfill_test-licenses.obj `if test -f '$(top_builddir)/src/slurmctld/licenses.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/licenses.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/licenses.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/licenses.c' object='$(top_builddir)/src/slurmctld/backfill_test-licenses.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/slurmctld/topology_test-licenses.obj: $(top_builddir)/src/slurmctld/licenses.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/topology_test-licenses.obj -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Tpo -c -o $(top_builddir)/src/slurmctld/topology_test-licenses.obj `if test -f '$(top_builddir)/src/slurmctld/licenses.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/licenses.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/licenses.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/licenses.c' object='$(top_builddir)/src/slurmctld/topology_test-licenses.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/backfill_test-licenses.obj `if test -f '$(top_builddir)/src/slurmctld/licenses.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/licenses.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/licenses.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/topology_test-licenses.obj `if test -f '$(top_builddir)/src/slurmctld/licenses.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/licenses.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/licenses.c'; fi`
 
-$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.o: $(top_builddir)/src/slurmctld/node_scheduler.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/backfill_test-node_scheduler.o -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/backfill_test-node_scheduler.o `test -f '$(top_builddir)/src/slurmctld/node_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/node_scheduler.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/node_scheduler.c' object='$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.o' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/slurmctld/topology_test-node_scheduler.o: $(top_builddir)/src/slurmctld/node_scheduler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/topology_test-node_scheduler.o -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/topology_test-node_scheduler.o `test -f '$(top_builddir)/src/slurmctld/node_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/node_scheduler.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/node_scheduler.c' object='$(top_builddir)/src/slurmctld/topology_test-node_scheduler.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/backfill_test-node_scheduler.o `test -f '$(top_builddir)/src/slurmctld/node_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/node_scheduler.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/topology_test-node_scheduler.o `test -f '$(top_builddir)/src/slurmctld/node_scheduler.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmctld/node_scheduler.c
 
-$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.obj: $(top_builddir)/src/slurmctld/node_scheduler.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/backfill_test-node_scheduler.obj -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/backfill_test-node_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/node_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/node_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/node_scheduler.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/node_scheduler.c' object='$(top_builddir)/src/slurmctld/backfill_test-node_scheduler.obj' libtool=no @AMDEPBACKSLASH@
+$(top_builddir)/src/slurmctld/topology_test-node_scheduler.obj: $(top_builddir)/src/slurmctld/node_scheduler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT $(top_builddir)/src/slurmctld/topology_test-node_scheduler.obj -MD -MP -MF $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Tpo -c -o $(top_builddir)/src/slurmctld/topology_test-node_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/node_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/node_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/node_scheduler.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Tpo $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_builddir)/src/slurmctld/node_scheduler.c' object='$(top_builddir)/src/slurmctld/topology_test-node_scheduler.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(backfill_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/backfill_test-node_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/node_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/node_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/node_scheduler.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o $(top_builddir)/src/slurmctld/topology_test-node_scheduler.obj `if test -f '$(top_builddir)/src/slurmctld/node_scheduler.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmctld/node_scheduler.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmctld/node_scheduler.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1204,9 +1205,9 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-backfill-test.log: backfill-test$(EXEEXT)
-	@p='backfill-test$(EXEEXT)'; \
-	b='backfill-test'; \
+topology-test.log: topology-test$(EXEEXT)
+	@p='topology-test$(EXEEXT)'; \
+	b='topology-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1276,14 +1277,14 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Po
-	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Po
-	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Po
-	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Po
-	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Po
-	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Po
-	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Po
-	-rm -f ./$(DEPDIR)/backfill_test-backfill_test.Po
+	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Po
+	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Po
+	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Po
+	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Po
+	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Po
+	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Po
+	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Po
+	-rm -f ./$(DEPDIR)/topology_test-topology_test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1329,14 +1330,14 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-backfill.Po
-	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/backfill_test-oracle.Po
-	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-job_scheduler.Po
-	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-licenses.Po
-	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/backfill_test-node_scheduler.Po
-	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-dummy_functions.Po
-	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/backfill_test-sched_harness.Po
-	-rm -f ./$(DEPDIR)/backfill_test-backfill_test.Po
+	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-backfill.Po
+	-rm -f $(top_builddir)/src/plugins/sched/backfill/$(DEPDIR)/topology_test-oracle.Po
+	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-job_scheduler.Po
+	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-licenses.Po
+	-rm -f $(top_builddir)/src/slurmctld/$(DEPDIR)/topology_test-node_scheduler.Po
+	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-dummy_functions.Po
+	-rm -f $(top_builddir)/testsuite/slurm_unit/sched_common/$(DEPDIR)/topology_test-sched_harness.Po
+	-rm -f ./$(DEPDIR)/topology_test-topology_test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
