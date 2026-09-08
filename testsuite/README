@@ -1024,6 +1024,7 @@ test_127_#   Testing of Epilog.
 ===============================
 test_127_1   Test Epilog timeout and child process cleanup
 test_127_2   Test that a resent or aborted job termination sets the Epilog env
+test_127_3   Test the Epilog environment reports a job's exit and return codes
 
 test_128_#   Testing of PreemptType.
 ====================================
