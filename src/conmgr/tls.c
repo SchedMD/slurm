@@ -585,8 +585,6 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
-	xassert(con->input_fd >= 0);
-	xassert(con->output_fd >= 0);
 	xassert(!con->tls_in);
 	xassert(!con->tls_out);
 	/* Should not be any outgoing data yet */
@@ -628,13 +626,29 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
+	if ((con->input_fd < 0) || (con->output_fd < 0)) {
+		/*
+		 * Closed while mgr.mutex was unlocked. Close the other half
+		 * too or con->out could still be written in the clear.
+		 */
+		close_con(true, con);
+		close_con_output(true, con);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		FREE_NULL_BUFFER(tls_in);
+		FREE_NULL_LIST(tls_out);
+
+		log_flag(CONMGR, "%s: [%s] skip TLS create due to connection closing",
+			 __func__, con->name);
+		return;
+	}
+
 	xassert(!con->tls);
 	xassert(!con->tls_in);
 	xassert(!con->tls_out);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
-	xassert(con->input_fd >= 0);
-	xassert(con->output_fd >= 0);
 
 	/*
 	 * Move the TLS handshake to con->tls_in to allow TLS plugin to read
