@@ -675,6 +675,9 @@ reservation.</p>
 <p>The srun command's --no-allocate option is not supported
 for heterogeneous jobs.</p>
 
+<p>The srun command's --async option is not supported for heterogeneous jobs,
+even when the step manager is enabled.</p>
+
 <p>Only one job step per heterogeneous job component can be launched by a
 single srun command (e.g.
 "srun --het-group=0 alpha : --het-group=0 beta" is not supported).</p>

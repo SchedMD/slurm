@@ -5644,10 +5644,9 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	}
 
 	if ((req_step_msg->flags & SSF_ASYNC) &&
-	    (running_in_slurmctld() ||
-	     req_step_msg->immediate ||
-	     !req_step_msg->launch_params ||
-	     req_step_msg->launch_params->pty)) {
+	    (running_in_slurmctld() || req_step_msg->immediate ||
+	     !req_step_msg->launch_params || req_step_msg->launch_params->pty ||
+	     job_ptr->het_job_id)) {
 		error("Invalid async step create request");
 		error_code = ESLURM_INVALID_FEATURE;
 		goto end_it;
