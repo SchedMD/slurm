@@ -273,7 +273,8 @@ def test_async_scancel():
 def test_async_rejected_in_hetjob():
     """srun --async fails inside a heterogeneous job.
 
-    Hetjobs cannot use stepmgr, so the create request is rejected.
+    Async steps are not supported on hetjobs, so the create request is
+    rejected.
     """
     marker = "het_marker"
     out_file = "het.out"
