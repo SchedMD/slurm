@@ -1,6 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+import logging
+
 import pexpect
 import pytest
 
@@ -38,7 +40,9 @@ def test_multiple_jobs():
 
     node_dict = atf.get_nodes()
     node = list(node_dict.keys())[0]
-    for it in range(100):
+    iterations = 100
+    for it in range(iterations):
+        logging.info(f"Running iteration {it} of {iterations}...")
         children = [
             pexpect.spawn(f"srun -N1 --nodelist={node} printenv SLURMD_NODENAME"),
             pexpect.spawn(
