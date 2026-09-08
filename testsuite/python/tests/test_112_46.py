@@ -2416,6 +2416,11 @@ def test_jobs(slurm, slurmdb, non_admin):
         assert job.job_id == jobid1
         assert job.name == "runjob"
         assert job.partition == partition_name
+        # slurm_rc is the job's Slurm error code. Slurm did not fail this job, so
+        # it is 0.
+        assert (
+            job.slurm_rc == 0
+        ), f"Job {job.job_id} was not failed by Slurm, so its slurm_rc should be 0"
 
     resp = slurm.slurm_v0046_get_job(str(jobid1))
     assert len(resp.warnings) == 0
@@ -2590,6 +2595,11 @@ def test_jobs(slurm, slurmdb, non_admin):
         logging.debug(job)
         assert job.comment == job_modify.comment
         assert job.derived_exit_code.return_code == WIFEXIT_CODE
+        # The same on the slurmdb job model, a separate model behind a
+        # separate endpoint.
+        assert (
+            job.slurm_rc == 0
+        ), f"Job {job.job_id} was not failed by Slurm, so its slurm_rc should be 0"
         assert job.extra == job_modify.extra
         found_tres = False
         for tres in job.tres.allocated:
