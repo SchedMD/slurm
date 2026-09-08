@@ -11,6 +11,25 @@ import atf
 
 pytestmark = pytest.mark.slow
 
+# sbatch -W polls at t = 2, 10, 42, 74s (_job_wait(), capped at
+# MAX_WAIT_SLEEP_TIME), so a job noticed late can take longer than atf's
+# 60s default.
+WAIT_TIMEOUT = 120
+
+# A working directory the stepd cannot open a job's output file in, which is
+# how the test below makes Slurm fail a job before its script ever runs. Two
+# properties are load-bearing:
+#   - The job must use the DEFAULT output file. expand_stdio_fields() joins
+#     this directory onto slurm-%j.out when the step record is built, so the
+#     stepd opens an absolute path under it. An explicit --output would
+#     disarm the primitive and the job would simply run.
+#   - The directory must be one the stepd cannot CREATE, not merely one that
+#     is absent: on ENOENT it calls mkdirpath() and retries the open, so a
+#     missing directory under a writable parent is created and the job runs.
+#     Nesting it under /dev/null gives ENOTDIR instead, on every node and
+#     whichever user the job runs as.
+UNUSABLE_WORK_DIR = "/dev/null/slurm_test_workdir"
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
@@ -24,6 +43,9 @@ def setup():
     [
         (0, ("COMPLETED", "COMPLETING")),
         (3, ("FAILED", "COMPLETING")),
+        # Above 128, so a reader that confuses the exit status with a signal
+        # would report something other than 200.
+        (200, ("FAILED", "COMPLETING")),
     ],
 )
 def test_wait_normal_job(script_exit, expected_states):
@@ -59,6 +81,28 @@ def test_wait_normal_job(script_exit, expected_states):
     assert (
         job_state in expected_states
     ), f"sbatch should have waited for job {job_id} to finish, but it is in state {job_state}"
+
+
+def test_wait_slurm_failed_job():
+    """sbatch -W exits 1 for a job Slurm failed before its script ran.
+
+    The job's working directory cannot be used, so the stepd fails while
+    opening the output file and the script never runs. The status sbatch
+    reports is then the one Slurm recorded, ExitCode=1:0, rather than a
+    Slurm error code.
+    """
+
+    result = atf.run_command(
+        f"sbatch -N1 -W --no-requeue --chdir={UNUSABLE_WORK_DIR} --wrap 'exit 0'",
+        timeout=WAIT_TIMEOUT,
+        xfail=True,
+    )
+
+    assert result["exit_code"] == 1, (
+        "sbatch -W should exit 1 for a job Slurm failed before it ran, not"
+        f" {result['exit_code']}. A status of 0 would mean the failure is not"
+        " reaching the caller at all."
+    )
 
 
 @pytest.mark.parametrize(
