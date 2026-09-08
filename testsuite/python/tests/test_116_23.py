@@ -39,34 +39,25 @@ def test_multiple_jobs():
     node_dict = atf.get_nodes()
     node = list(node_dict.keys())[0]
     for it in range(100):
-        child1 = pexpect.spawn(f"srun -N1 --nodelist={node} true")
-        child2 = pexpect.spawn(
-            f'sudo -u {suser} bash -lc "srun -N1 --nodelist={node} -Z sleep 0.5"'
-        )
-        child3 = pexpect.spawn(
-            f'sudo -u {suser} bash -lc "srun -N1 --nodelist={node} -Z sleep 0.25"'
-        )
+        children = [
+            pexpect.spawn(f"srun -N1 --nodelist={node} printenv SLURMD_NODENAME"),
+            pexpect.spawn(
+                f"sudo -u {suser} bash -lc \"srun -N1 --nodelist={node} -Z bash -c 'printenv SLURMD_NODENAME; sleep 0.5'\""
+            ),
+            pexpect.spawn(
+                f"sudo -u {suser} bash -lc \"srun -N1 --nodelist={node} -Z bash -c 'printenv SLURMD_NODENAME; sleep 0.25'\""
+            ),
+        ]
 
-        pattern_index = child2.expect(
-            [r"error:.*configuring interconnect", r"error:", pexpect.EOF],
-            timeout=atf.default_command_timeout,
-        )
-        assert pattern_index != 1, f"Child 2 failed to run on iteration {it}"
-        pattern_index = child3.expect(
-            [r"error:.*configuring interconnect", r"error:", pexpect.EOF],
-            timeout=atf.default_command_timeout,
-        )
-        assert pattern_index != 1, f"Child 3 failed to run on iteration {it}"
-        pattern_index = child1.expect(
-            [r"error:.*configuring interconnect", r"error:", pexpect.EOF],
-            timeout=atf.default_command_timeout,
-        )
-        assert pattern_index != 1, f"Child 1 failed to run on iteration {it}"
-
-        # Ensure that jobs ended
-        for child in [child1, child2, child3]:
-            atf.repeat_until(
-                lambda: child1.isalive(),
-                lambda alive: not alive,
-                fatal=True,
-            )
+        for n, child in enumerate(children, 1):
+            child.expect(pexpect.EOF, timeout=atf.default_command_timeout)
+            child.close()
+            # Use errors="replace" to avoid potentially false UnicodeDecodeError
+            output = child.before.decode(errors="replace")
+            output_lines = [line.strip() for line in output.splitlines()]
+            assert (
+                node in output_lines
+            ), f"Child {n} should report being run on '{node}' on iteration {it}; got: {output!r}"
+            assert (
+                child.exitstatus == 0
+            ), f"Child {n} should end correctly on iteration {it}; got {child.exitstatus}"
