@@ -802,6 +802,7 @@ test_108_20  Test that a job update's new ReqNodeList must fit its new partition
 test_108_21  Test scontrol authorization for job, step, partition and
              reservation commands
 test_108_22  Test scontrol authorization for node commands
+test_108_23  Test scontrol reports SlurmRC only with --details
 
 test_109_#   Testing of sdiag options.
 ======================================
