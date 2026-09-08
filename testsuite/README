@@ -703,6 +703,7 @@ test_101_12  Performance test: sacct --state=SUSPENDED must not scan the job
              table
 test_101_13  Test a job's suspend records are closed when the job ends
 test_101_14  Test the job exit status and Slurm return code stay separate
+test_101_15  Test a SIGHUP-killed job is recorded as signaled
 
 test_102_#   Testing of sacctmgr options.
 =========================================
