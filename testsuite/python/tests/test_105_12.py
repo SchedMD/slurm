@@ -49,7 +49,6 @@ def setup():
     atf.require_config_parameter("HealthCheckInterval", health_check_interval)
     atf.require_config_parameter("HealthCheckNodeState", "ANY")
     atf.require_config_parameter("HealthCheckProgram", "/bin/true")
-    atf.require_config_parameter("HealthCheckTimeout", 0)
     # Disable cgroup RAM and swap constraining so the kernel does not OOM-kill
     # a step before job_mem_limit_enforce() can detect the over-limit condition
     # and send REQUEST_CANCEL_JOB_STEP to the controller.
