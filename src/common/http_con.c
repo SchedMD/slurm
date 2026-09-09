@@ -568,7 +568,7 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 	 * field in any 2xx (Successful) response to a CONNECT request
 	 */
 
-	if ((status_code > HTTP_STATUS_INFO_BEGIN) &&
+	if ((status_code >= HTTP_STATUS_INFO_BEGIN) &&
 	    (status_code <= HTTP_STATUS_INFO_END))
 		return SLURM_SUCCESS;
 
