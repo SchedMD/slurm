@@ -633,6 +633,9 @@ cleanup:
 		*plugins_ptr = plugins;
 	else if (plugins != *plugins_ptr)
 		unload_plugins(plugins);
+	else
+		fatal("%s: unable to load %s plugin into loaded set: %s",
+		      __func__, major_type, slurm_strerror(rc));
 
 	return rc;
 }
