@@ -45,6 +45,7 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 
 #include "src/interfaces/select.h"
 
@@ -57,6 +58,9 @@
 
 /* Log an error for ping that takes more than 100 seconds to complete */
 #define PING_TIMEOUT 100
+
+/* Minimum seconds between HEALTH_CHECK_CYCLE chunks. */
+#define HC_CYCLE_INTERVAL 2
 
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool ping_updated = false;
@@ -425,9 +429,26 @@ extern void run_health_check(void)
 		HEALTH_CHECK_CYCLE;
 	static int base_node_loc = 0;
 	static time_t cycle_start_time = (time_t) 0;
+	static timespec_t last_cycle_chunk = { 0 };
 
 	if (run_cyclic) {
 		time_t now = time(NULL);
+		timespec_t chunk_time = { 0 };
+
+		clock_gettime(CLOCK_MONOTONIC, &chunk_time);
+		/*
+		 * Do not simplify to timespec_diff() < HC_CYCLE_INTERVAL:
+		 * timespec_diff() drops nanoseconds, which would let a chunk
+		 * run only ~1s after the previous one instead of the full
+		 * HC_CYCLE_INTERVAL.
+		 */
+		if (timespec_is_after(
+			    timespec_add(last_cycle_chunk,
+					 (timespec_t) {
+						 .tv_sec = HC_CYCLE_INTERVAL,
+					 }),
+			    chunk_time))
+			return;
 		if (cycle_start_time == (time_t) 0)
 			cycle_start_time = now;
 		else if (base_node_loc > 0)
@@ -436,12 +457,13 @@ extern void run_health_check(void)
 		         slurm_conf.health_check_interval)
 			return;	/* Wait to start next cycle */
 		cycle_start_time = now;
+		last_cycle_chunk = chunk_time;
 		/*
 		 * Determine how many nodes we want to test on each call of
 		 * run_health_check() to spread out the work.
 		 */
-		node_limit = (active_node_record_count * 2) /
-		             slurm_conf.health_check_interval;
+		node_limit = (active_node_record_count * HC_CYCLE_INTERVAL) /
+			     slurm_conf.health_check_interval;
 		node_limit = MAX(node_limit, 10);
 	}
 
