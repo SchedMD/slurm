@@ -139,12 +139,12 @@ static int _req_livez(http_con_t *hcon, const char *name,
 		static const char live[] = "LIVE";
 
 		return http_con_send_response(
-			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
 			&SHADOW_BUF_INITIALIZER(live, strlen(live)),
 			MIME_TYPE_TEXT);
 	}
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
 static int _req_healthz(http_con_t *hcon, const char *name,
