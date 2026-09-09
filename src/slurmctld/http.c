@@ -233,7 +233,7 @@ static bool _metrics_redirect_to_primary(http_con_t *hcon,
 
 		*rc_out = http_con_send_response(
 			hcon, HTTP_STATUS_CODE_REDIRECT_SEE_OTHER, headers,
-			true, NULL, NULL);
+			false, NULL, NULL);
 		FREE_NULL_LIST(headers);
 		return true;
 	}
