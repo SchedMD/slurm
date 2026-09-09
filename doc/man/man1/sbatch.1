@@ -2909,6 +2909,10 @@ of the submitted job. If the job terminated due to a signal rather than a
 normal exit, the exit code will be set to 1.
 In the case of a job array, the exit code recorded will be the highest value
 for any task in the job array.
+An exit code of 1 may also mean Slurm failed the job.
+\fBSlurmRC\fR, reported by \fBsacct\fR(1) or by \fBscontrol\fR(1) with
+\fB\-\-details\fR, holds the error code when Slurm recorded one;
+otherwise check the job's state and reason.
 .IP
 
 .TP
