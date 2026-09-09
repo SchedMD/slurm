@@ -324,8 +324,6 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 	data_t *ppath = NULL;
 
 	xassert(args->magic == MAGIC_FOREACH_LIST);
-	check_parser(parser);
-	check_parser(lparser);
 	xassert(!args->dlist); /* only for dumping */
 	xassert((args->index > 0) || (args->index == -1));
 
@@ -372,7 +370,6 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	xassert(!*list_ptr || (list_count(*list_ptr) >= 0));
 	xassert(args->magic == MAGIC_ARGS);
-	check_parser(parser);
 
 	SWAP(*list_ptr, list_args.list);
 
@@ -788,7 +785,6 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	data_t *ppath = NULL, *src_obj = src;
 	char *path = NULL;
 
-	check_parser(parser);
 	verify_parser_sliced(parser);
 
 	if (parser->model ==
@@ -964,7 +960,6 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
 
-	check_parser(parser);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(src) != DATA_TYPE_NONE);
@@ -1268,7 +1263,6 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 	uint64_t used_equal_bits = 0;
 
 	xassert(args->magic == MAGIC_ARGS);
-	check_parser(parser);
 
 	if (!parser->single_flag) {
 		if (data_get_type(dst) == DATA_TYPE_NULL)
@@ -1292,7 +1286,6 @@ static int _foreach_dump_list(void *obj, void *arg)
 
 	xassert(args->magic == MAGIC_FOREACH_LIST);
 	xassert(args->args->magic == MAGIC_ARGS);
-	check_parser(args->parser);
 	xassert(args->parser->ptr_offset == NO_VAL);
 
 	/* we don't know the size of the items in the list */
@@ -1317,7 +1310,6 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 	};
 
 	xassert(args->magic == MAGIC_ARGS);
-	check_parser(parser);
 	xassert(!list_ptr || !*list_ptr || (list_count(*list_ptr) >= 0));
 	xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
 		(data_get_type(dst) == DATA_TYPE_LIST));
@@ -1491,7 +1483,6 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 {
 	int rc = SLURM_SUCCESS;
 
-	check_parser(parser);
 	verify_parser_sliced(parser);
 
 	if ((parser->ptr_offset != NO_VAL) && src)
@@ -1610,7 +1601,6 @@ extern int dump(void *src, ssize_t src_bytes,
 		 parser->obj_type_string, (uintptr_t) src, parser->type_string,
 		 (uintptr_t) parser, (uintptr_t) dst);
 
-	check_parser(parser);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(dst && (data_get_type(dst) != DATA_TYPE_NONE));
 	xassert(args->magic == MAGIC_ARGS);

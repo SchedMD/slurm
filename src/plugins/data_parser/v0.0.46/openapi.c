@@ -107,7 +107,6 @@ static char *_get_parser_key(const parser_t *parser)
 	char *stype;
 	char *key = NULL;
 
-	check_parser(parser);
 	xassert(!xstrncmp(parser->type_string, TYPE_PREFIX,
 			  strlen(TYPE_PREFIX)));
 
