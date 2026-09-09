@@ -3243,8 +3243,6 @@ typedef struct {
 	char *schedtype;	/* type of scheduler to use */
 	char *scron_params;	/* ScronParameters */
 	char *select_type;	/* type of node selector to use */
-	list_t *select_conf_key_pairs; /* key-pair list which can be
-				      * listed with slurm_print_key_pairs() */
 	uint16_t select_type_param; /* Parameters
 				     * describing the select_type plugin */
 	char *serializer_params; /* SerializerParameters */

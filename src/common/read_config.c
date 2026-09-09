@@ -2857,7 +2857,6 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->schedtype);
 	xfree(conf->scron_params);
 	xfree(conf->select_type);
-	FREE_NULL_LIST(conf->select_conf_key_pairs);
 	xfree(conf->serializer_params);
 	xfree(conf->serializer_plugins);
 	xfree(conf->site_factor_params);

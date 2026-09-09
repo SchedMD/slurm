@@ -299,7 +299,6 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* schedtype */
 	/* scron_params */
 	packstr(slurm_conf.select_type, buffer);
-	/* select_conf_key_pairs */
 	pack16(slurm_conf.select_type_param, buffer);
 	/* serializer_params */
 	/* serializer_plugins */
@@ -539,7 +538,6 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* schedtype */
 	/* scron_params */
 	safe_unpackstr(&slurm_conf.select_type, buffer);
-	/* select_conf_key_pairs */
 	safe_unpack16(&slurm_conf.select_type_param, buffer);
 	/* serializer_params */
 	/* serializer_plugins */

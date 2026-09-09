@@ -243,7 +243,6 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	char time_str[256], tmp_str[300];
 	GtkTreeIter iter;
 	list_t *ret_list = NULL;
-	char *select_title = "Select Plugin Configuration";
 	char *tmp_title = NULL;
 
 	if (!slurm_conf_ptr)
@@ -271,9 +270,6 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 	_gtk_print_config_plugin_params_list(slurm_conf_ptr->node_features_conf,
 					     tmp_title, 0, treestore, &iter);
 	xfree(tmp_title);
-
-	_gtk_print_key_pairs(slurm_conf_ptr->select_conf_key_pairs,
-			     select_title, 0, treestore, &iter);
 }
 
 static void _layout_conf_dbd(GtkTreeStore *treestore)
