@@ -1003,6 +1003,8 @@ void step_launch_state_destroy(step_launch_state_t *sls)
 	if (sls->resp_port != NULL) {
 		xfree(sls->resp_port);
 	}
+
+	xfree(sls);
 }
 
 /**********************************************************************

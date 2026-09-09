@@ -983,14 +983,16 @@ static void _aggregate_prec(jag_prec_t *prec, jag_prec_t *ancestor)
  * usage data to the ancestor's <prec> record. Recurse to gather data
  * for *all* subsequent generations.
  *
- * IN:	prec_list       list of prec's
- *      ancestor	The entry in precTable[] to which the data
+ * IN:	ancestor	The entry in precTable[] to which the data
  *			should be added. Even as we recurse, this will
  *			always be the prec for the base of the family
  *			tree.
  *	pid		The process for which we are currently looking
  *			for offspring.
  * IN/OUT:
+ *      prec_list       list of prec's; completed entries other than the
+ *                      traversal root are removed and freed during
+ *                      traversal
  *      permanent_anc Pointer to the original ancestor. Changes to
  *	              it are saved, so we can permanently save
  *		      the values from completed processes.
@@ -1005,6 +1007,7 @@ static void _get_offspring_data(list_t *prec_list, jag_prec_t *ancestor,
 	jag_prec_t *prec = NULL;
 	jag_prec_t *prec_tmp = NULL;
 	list_t *tmp_list = NULL;
+	bool root = true;
 
 	/* reset all precs to be not visited */
 	(void)list_for_each(prec_list, (ListForF)_reset_visited, NULL);
@@ -1037,10 +1040,18 @@ static void _get_offspring_data(list_t *prec_list, jag_prec_t *ancestor,
 			}
 			list_append(tmp_list, prec);
 		}
+		/*
+		 * The root prec stays owned by prec_list; every other
+		 * completed prec was removed from it above and is ours to
+		 * free.
+		 */
+		if (!root && prec_tmp->completed)
+			destroy_jag_prec(prec_tmp);
+		root = false;
 	}
-	FREE_NULL_LIST(tmp_list);
 
-	return;
+	FREE_NULL_LIST(tmp_list);
+	xassert(!root);
 }
 
 extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
