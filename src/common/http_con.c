@@ -569,6 +569,64 @@ static int _send_http_status_response(http_con_request_t *request,
 	return conmgr_con_queue_write_data(con, buffer, wrote);
 }
 
+/*
+ * Determine if the connection must be closed once the response is sent.
+ *
+ * Note: The version defaults are applied here rather than relying on
+ * _on_headers_complete() having set connection_close, as neither http_parser
+ * plugin ever calls that callback.
+ *
+ * IN hcon - HTTP connection to examine
+ * IN status_code - status of the response being written, or
+ *	HTTP_STATUS_CODE_INVALID when no response is being written
+ * RET true if the connection must be closed
+ */
+static bool _require_close_connection(http_con_t *hcon,
+				      http_status_code_t status_code)
+{
+	http_con_request_t *request = &hcon->request;
+
+	/*
+	 * RFC7231-6.2 / RFC9112-9.3: a 1xx (informational) response is not
+	 * the final response to the request, and RFC9112-9.3 excuses every
+	 * 1xx status from the "send close in every response" requirement
+	 * that otherwise applies to all of them. A client that gets "100
+	 * Continue" is expected to keep sending the rest of the request
+	 * afterward -- that is the entire point of "Expect: 100-continue"
+	 * (RFC9110-10.1.1). Closing on an interim response would tear down
+	 * the read side before that body arrives.
+	 */
+	if ((status_code >= HTTP_STATUS_INFO_BEGIN) &&
+	    (status_code <= HTTP_STATUS_INFO_END))
+		return false;
+
+	/* RFC7230-6.1: Client asked for the connection to be closed */
+	if (request->connection_close)
+		return true;
+
+	/*
+	 * A quiesce was requested while the request was underway (see
+	 * _on_quiesce())
+	 */
+	if (hcon->quiesced)
+		return true;
+
+	/*
+	 * RFC9112-C.2.2: A persistent connection is not the default before
+	 * HTTP/1.1 and has to be explicitly negotiated by an HTTP/1.0 client
+	 * with a "Connection: keep-alive" request header field. Anything
+	 * older never persists.
+	 */
+	if (request->http_version.major < 1)
+		return true;
+
+	if ((request->http_version.major == 1) &&
+	    (request->http_version.minor < 1))
+		return !request->keep_alive;
+
+	return false;
+}
+
 static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 				http_status_code_t status_code,
 				const size_t body_length)
@@ -638,27 +696,27 @@ extern int http_con_send_response(http_con_t *hcon,
 
 	/*
 	 * RFC7230-6.6: a server closing the connection should say so in the
-	 * final response. The client asking to close is reason enough, and so
-	 * is a quiesce requested while the request was underway (see
-	 * _on_quiesce()), so honor both here where the headers are still being
-	 * written.
-	 *
-	 * RFC7231-6.2 / RFC9112-9.3: a 1xx (informational) response is not
-	 * the final response to the request, and RFC9112-9.3 excuses every
-	 * 1xx status from the "send close in every response" requirement
-	 * that otherwise applies to all of them. A client that gets "100
-	 * Continue" is expected to keep sending the rest of the request
-	 * afterward -- that is the entire point of "Expect: 100-continue"
-	 * (RFC9110-10.1.1). Closing here on request->connection_close or a
-	 * quiesce would tear down the read side before that body arrives, so
-	 * only an explicit close_header (never requested for an interim
-	 * response today) can close on a 1xx.
+	 * final response. Whatever _require_close_connection() decides is
+	 * reason enough, so honor it here where the headers are still being
+	 * written. An explicit close_header still closes on any status,
+	 * including an interim response, which nothing requests today.
 	 */
-	if ((close_header || ((request->connection_close || hcon->quiesced) &&
-			      ((status_code < HTTP_STATUS_INFO_BEGIN) ||
-			       (status_code > HTTP_STATUS_INFO_END)))) &&
-	    (rc = _send_http_connection_close(hcon)))
-		return rc;
+	if (close_header || _require_close_connection(hcon, status_code)) {
+		if ((rc = _send_http_connection_close(hcon)))
+			return rc;
+	} else if ((request->http_version.major == 1) &&
+		   (request->http_version.minor < 1) &&
+		   ((status_code < HTTP_STATUS_INFO_BEGIN) ||
+		    (status_code > HTTP_STATUS_INFO_END))) {
+		/*
+		 * RFC9112-C.2.2: an HTTP/1.0 client only keeps the connection
+		 * after a response that confirms it with "Connection:
+		 * keep-alive". Without the confirmation the client has to
+		 * assume the server is closing.
+		 */
+		if ((rc = _write_fmt_header(con, "Connection", "keep-alive")))
+			return rc;
+	}
 
 	if (body && (get_buf_offset(body) > 0)) {
 		const size_t body_length = get_buf_offset(body);
