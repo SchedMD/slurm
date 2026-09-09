@@ -483,6 +483,13 @@ Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 <li><b>SLURM_JOB_ACCOUNT</b>
 Account name used for the job.</li>
 
+<li><b>SLURM_JOB_ALLOC_MEM_PER_NODE</b>
+Memory allocated to the job on current node, in MiB.
+A --mem-per-cpu request is multiplied out, and --mem=0 is expanded to the
+node's real memory less MemSpecLimit.
+Only set when memory is a consumable resource (see SelectTypeParameters).
+Available in Prolog.</li>
+
 <li><b>SLURM_JOB_COMMENT</b>
 Comment added to the job.
 Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
