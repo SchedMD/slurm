@@ -4212,10 +4212,6 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->schedtype, buffer);
 		packstr(conf->scron_params, buffer);
 		packstr(conf->select_type, buffer);
-
-		pack_key_pair_list(conf->select_conf_key_pairs,
-				   protocol_version, buffer);
-
 		pack16(conf->select_type_param, buffer);
 		packstr(conf->serializer_params, buffer);
 		packstr(conf->serializer_plugins, buffer);
@@ -4487,8 +4483,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->scron_params, buffer);
 		packstr(conf->select_type, buffer);
 
-		pack_key_pair_list(conf->select_conf_key_pairs,
-				   protocol_version, buffer);
+		pack32(NO_VAL, buffer); /* was select_conf_key_pairs */
 
 		pack16(conf->select_type_param, buffer);
 
@@ -4752,8 +4747,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->scron_params, buffer);
 		packstr(conf->select_type, buffer);
 
-		pack_key_pair_list(conf->select_conf_key_pairs,
-				   protocol_version, buffer);
+		pack32(NO_VAL, buffer); /* was select_conf_key_pairs */
 
 		pack16(conf->select_type_param, buffer);
 
@@ -5011,8 +5005,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->scron_params, buffer);
 		packstr(conf->select_type, buffer);
 
-		pack_key_pair_list(conf->select_conf_key_pairs,
-				   protocol_version, buffer);
+		pack32(NO_VAL, buffer); /* was select_conf_key_pairs */
 
 		pack16(conf->select_type_param, buffer);
 
@@ -5091,6 +5084,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 			      const uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
+	list_t *tmp_list = NULL;
 	slurm_conf_t *conf = xmalloc(sizeof(*conf));
 
 	xassert(!*conf_ptr);
@@ -5309,12 +5303,6 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->schedtype, buffer);
 		safe_unpackstr(&conf->scron_params, buffer);
 		safe_unpackstr(&conf->select_type, buffer);
-
-		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
-					 protocol_version,
-					 buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-
 		safe_unpack16(&conf->select_type_param, buffer);
 		safe_unpackstr(&conf->serializer_params, buffer);
 		safe_unpackstr(&conf->serializer_plugins, buffer);
@@ -5604,10 +5592,11 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->scron_params, buffer);
 		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
-					 protocol_version,
-					 buffer) != SLURM_SUCCESS)
+		/* was select_conf_key_pairs */
+		if (unpack_key_pair_list(&tmp_list, protocol_version, buffer) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
+		FREE_NULL_LIST(tmp_list);
 
 		safe_unpack16(&conf->select_type_param, buffer);
 
@@ -5889,10 +5878,11 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->scron_params, buffer);
 		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
-					 protocol_version,
-					 buffer) != SLURM_SUCCESS)
+		/* was select_conf_key_pairs */
+		if (unpack_key_pair_list(&tmp_list, protocol_version, buffer) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
+		FREE_NULL_LIST(tmp_list);
 
 		safe_unpack16(&conf->select_type_param, buffer);
 
@@ -6169,10 +6159,11 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->scron_params, buffer);
 		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
-					 protocol_version,
-					 buffer) != SLURM_SUCCESS)
+		/* was select_conf_key_pairs */
+		if (unpack_key_pair_list(&tmp_list, protocol_version, buffer) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
+		FREE_NULL_LIST(tmp_list);
 
 		safe_unpack16(&conf->select_type_param, buffer);
 

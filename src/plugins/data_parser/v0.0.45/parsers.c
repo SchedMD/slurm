@@ -12560,8 +12560,6 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(CSV_STRING, scron_params, "ScronParameters", "Options controlling scrontab behavior"),
 	add_parse(STRING, select_type, "SelectType", "Type of node selector to use"),
 	add_parse(SELECT_TYPE_PARAM, select_type_param, "SelectTypeParameters", "Scheduler consumable resource selection type"),
-	/* select_conf_key_pairs is not populated or used anywhere */
-	add_skip(select_conf_key_pairs),
 	add_parse(STRING, site_factor_plugin, "PrioritySiteFactorPlugin", "Plugin for computing site-specific priority factors"),
 	add_parse(STRING, site_factor_params, "PrioritySiteFactorParameters", "Parameters for the site-specific priority factor plugin"),
 	add_skip(slurm_conf),
@@ -12820,7 +12818,6 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(schedtype),
 	add_skip(scron_params),
 	add_skip(select_type),
-	add_skip(select_conf_key_pairs),
 	add_skip(select_type_param),
 	add_skip(site_factor_plugin),
 	add_skip(site_factor_params),

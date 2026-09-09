@@ -484,7 +484,6 @@ void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_conf_ptr)
 {
 	char time_str[32], tmp_str[256];
 	void *ret_list = NULL;
-	char *select_title = "Select Plugin Configuration";
 	char *tmp2_str = NULL;
 
 	if (slurm_conf_ptr == NULL)
@@ -516,9 +515,6 @@ void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_conf_ptr)
 						 ->node_features_conf,
 					 tmp2_str);
 	xfree(tmp2_str);
-
-	slurm_print_key_pairs(out, slurm_conf_ptr->select_conf_key_pairs,
-			      select_title);
 }
 
 static char *_accountingstoreflags(uint32_t conf_flags)
