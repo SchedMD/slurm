@@ -2862,7 +2862,6 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 		       reg_msg->node_name, reg_msg->hostname);
 
 		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			slurm_addr_t addr;
 			char *comm_name = NULL;
 
 			if (!IS_NODE_FUTURE(node_ptr))
@@ -2882,7 +2881,7 @@ static int _find_avail_future_node(slurm_msg_t *msg)
 			/* Get IP of slurmd */
 			if (msg->address.ss_family != AF_UNSPEC) {
 				comm_name = xmalloc(INET6_ADDRSTRLEN);
-				slurm_get_ip_str(&addr, comm_name,
+				slurm_get_ip_str(&msg->address, comm_name,
 						 INET6_ADDRSTRLEN);
 			}
 
