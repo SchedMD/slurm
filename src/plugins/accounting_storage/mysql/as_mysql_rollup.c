@@ -1804,7 +1804,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					loc_tres->time_alloc;
 				char *assoc = NULL;
 				list_itr_t *tmp_itr = NULL;
-				int assoc_cnt, resv_unused_secs;
+				int assoc_cnt;
+				uint64_t resv_unused_secs;
 
 				if (idle <= 0)
 					break; /* since this will be
@@ -1817,8 +1818,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				assoc_cnt = list_count(r_usage->local_assocs);
 				if (assoc_cnt)
 					resv_unused_secs /= assoc_cnt;
-				/* info("resv %d got %d seconds for TRES %u " */
-				/*      "for %d assocs", */
+				/* info("resv %d got %"PRIu64" seconds " */
+				/*      "for TRES %u for %d assocs", */
 				/*      r_usage->id, resv_unused_secs, */
 				/*      loc_tres->id, */
 				/*      list_count(r_usage->local_assocs)); */
