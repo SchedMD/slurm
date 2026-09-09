@@ -174,8 +174,6 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 		xfree(dup);
 	}
 
-	parsers_init();
-
 	return args;
 }
 
