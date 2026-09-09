@@ -462,6 +462,11 @@ extern data_parser_t **data_parser_g_new_array(
 	for (int j = 0; pparams && pparams[j].plugin_type; j++)
 		count++;
 
+	if (!plugins) {
+		error("%s: no data_parser plugins loaded", __func__);
+		goto cleanup;
+	}
+
 	if (count < plugins->count)
 		count = plugins->count;
 
