@@ -159,18 +159,42 @@ wait
 </h2>
 
 <p>If <i>AutoDetect=nvml</i>, <i>AutoDetect=nvidia</i>, <i>AutoDetect=rsmi</i>,
-<i>AutoDetect=nrt</i>, or <i>AutoDetect=oneapi</i> are set in <i>gres.conf</i>,
-configuration details will automatically be filled in for any system-detected
-GPU. This removes the need to explicitly configure GPUs in gres.conf, though the
-<i>Gres=</i> line in slurm.conf is still required in order to tell slurmctld how
-many GRES to expect.</p>
+<i>AutoDetect=amd</i>, <i>AutoDetect=nrt</i>, or <i>AutoDetect=oneapi</i> are
+set in <i>gres.conf</i>, configuration details will automatically be filled in
+for any system-detected GPU. This removes the need to explicitly configure GPUs
+in gres.conf, though the <i>Gres=</i> line in slurm.conf is still required in
+order to tell slurmctld how many GRES to expect.</p>
 
 <p>Note that <i>AutoDetect=nvml</i>, <i>AutoDetect=rsmi</i>,
 and <i>AutoDetect=oneapi</i> need their corresponding GPU management libraries
 installed on the node and found during Slurm configuration in order to work.
 Both <i>AutoDetect=nvml</i> and <i>AutoDetect=nvidia</i> detect NVIDIA GPUs.
 <i>AutoDetect=nvidia</i> (added in Slurm 24.11) doesn't require the
-nvml library to be installed, but doesn't detect MIGs or NVlinks.</p>
+nvml library to be installed, but doesn't detect MIGs or NVlinks.
+Both <i>AutoDetect=rsmi</i> and <i>AutoDetect=amd</i> detect AMD GPUs.
+<i>AutoDetect=amd</i> (added in Slurm 26.11) does not require the ROCm SMI
+library to be installed, reading the amdgpu kernel driver through sysfs
+instead.</p>
+
+<p>With <i>AutoDetect=amd</i>, the detected <i>Type</i> is the GPU model name,
+lowercased with underscores in place of spaces (for example,
+<i>amd_instinct_mi355_oam</i>), or the PCI device ID (for example,
+<i>0x744c</i>) on a GPU that does not report a model name. The model name is the
+board FRU product name, which can differ from the marketing name, so take the
+<i>Type</i> from <code>slurmd -G</code>. Only the SPX compute partition mode is
+supported. Each GPU is a
+<a href="gres.conf.html#OPT_MultipleFiles">MultipleFiles</a> GRES carrying its
+render node and its primary node under <i>/dev/dri</i>, so that
+<a href="cgroup.conf.html#OPT_ConstrainDevices">ConstrainDevices</a> confines
+both. <a href="gres.conf.html#OPT_Cores">Cores</a> and
+<a href="gres.conf.html#OPT_Links">Links</a> are filled from the GPU's CPU
+affinity and from its XGMI connections to the other GPUs, and
+<a href="gres.conf.html#OPT_env_uuid">Flags=env_uuid</a> uses the UUID that the
+amdgpu kernel driver exposes for the GPU. A job allocated a GPU for which the
+driver exposes no UUID gets numeric indices for all of its GPUs. For
+<i>Flags=env_uuid</i> to apply to every autodetected GPU, give the gres.conf
+line the same <i>Type</i> and <i>Count</i> as the node's <i>Gres</i> in
+slurm.conf.</p>
 
 <p>When AutoDetect needs to load a GPU management library as stated above it
 will usually unload this library immediately after the slurmd is started

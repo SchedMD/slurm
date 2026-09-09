@@ -60,6 +60,8 @@ through generic Linux interfaces rather than their proprietary library. This
 plugin doesn't detect MIGs or NVlinks.</li>
 <li><b>AutoDetect=rsmi</b> enables autodetection of AMD GPUs through their
 proprietary RSMI library (tested on x86_64 and arm64).</li>
+<li><b>AutoDetect=amd</b> also enables autodetection of AMD GPUs, but through
+the amdgpu kernel driver in sysfs rather than their proprietary library.</li>
 <li><b>AutoDetect=oneapi</b> enables autodetection of Intel GPUs through their
 proprietary oneAPI library.</li>
 <li><b>AutoDetect=nrt</b> enables autodetection of AWS Trainium/Inferentia
