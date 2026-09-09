@@ -140,6 +140,7 @@ typedef enum {
 	HTTP_REQUEST_HEAD,
 	HTTP_REQUEST_PATCH,
 	HTTP_REQUEST_TRACE,
+	HTTP_REQUEST_CONNECT,
 	/* place holder for invalid max method */
 	HTTP_REQUEST_INVALID_MAX,
 } http_request_method_t;
