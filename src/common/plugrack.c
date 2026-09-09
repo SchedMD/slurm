@@ -631,7 +631,7 @@ extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
 cleanup:
 	if (!rc)
 		*plugins_ptr = plugins;
-	else
+	else if (plugins != *plugins_ptr)
 		unload_plugins(plugins);
 
 	return rc;
