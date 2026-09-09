@@ -429,7 +429,10 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     the set <code>nid[10-20]</code> from being powered down. Multiple sets of
     nodes can be specified with or without counts in a comma separated list
     (e.g <code>nid[10-20]:4,nid[80-90]:2</code>). By default, no nodes are
-    excluded. This value may be updated with scontrol. See
+    excluded. Nodes explicitly requested to power down, including nodes
+    allocated from a partition configured with
+    <a href="#PowerDownOnIdle">PowerDownOnIdle=YES</a>, are not affected by
+    this option. This value may be updated with scontrol. See
     <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.</p>
   </dd>
 
@@ -439,8 +442,11 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
 
   <dd>
     <p>List of partitions with nodes to never place in power saving mode.
-    Multiple partitions may be specified using a comma separator. By default,
-    no nodes are excluded. This value may be updated with scontrol. See
+    Multiple partitions may be specified using a comma separator.
+    By default, no nodes are excluded. Nodes explicitly requested to power down,
+    including nodes allocated from a partition configured with
+    <a href="#PowerDownOnIdle">PowerDownOnIdle=YES</a>, are not affected by
+    this option. This value may be updated with scontrol. See
     <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.</p>
   </dd>
 
@@ -453,9 +459,11 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
     Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM,
     FAIL, INVALID_REG, MAINTENANCE, NOT_RESPONDING, PLANNED, and RESERVED.
     By default, any of these states, if idle for
-    <b>SuspendTime</b>, would be powered down. This value may be updated with
-    scontrol. See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting
-    persistence.</p>
+    <b>SuspendTime</b>, would be powered down. Nodes explicitly requested to
+    power down, including nodes allocated from a partition configured with
+    <a href="#PowerDownOnIdle">PowerDownOnIdle=YES</a>, are not affected by
+    this option. This value may be updated with scontrol. See
+    <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.</p>
   </dd>
 
   <dt id="SuspendProgram"><b>SuspendProgram</b><a class="slurm_link" href=
@@ -594,8 +602,13 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       but before another job is allocated.</li>
     </ul>
 
+    <p><b>NOTE</b>: Nodes allocated from this partition will still be sent a
+    power down request even if they are excluded from automatic power saving
+    mode by <b>SuspendExcNodes</b>, <b>SuspendExcParts</b>, or
+    <b>SuspendExcStates</b>.</p>
+
     <p><b>NOTE</b>: Nodes are still subject to powering down when being IDLE
-    for <b>SuspendTime</b> when PowerDownOnIdle is set to NO.</p>
+    for <b>SuspendTime</b> when <b>PowerDownOnIdle</b> is set to <i>NO</i>.</p>
   </dd>
 
   <dt id="ResumeTimeout_1"><b>ResumeTimeout</b><a class="slurm_link" href=

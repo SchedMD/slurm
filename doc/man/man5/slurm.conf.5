@@ -6443,6 +6443,9 @@ For example "nid[10\-20]:4" will prevent 4 powered up nodes in the set
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
 By default no nodes are excluded.
+Nodes explicitly requested to power down, including nodes allocated from a
+partition configured with \fBPowerDownOnIdle=YES\fR, are not affected by this
+option.
 This value may be updated with scontrol.
 See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
@@ -6453,6 +6456,9 @@ Specifies the partitions whose nodes are to not be placed in power save
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
+Nodes explicitly requested to power down, including nodes allocated from a
+partition configured with \fBPowerDownOnIdle=YES\fR, are not affected by this
+option.
 This value may be updated with scontrol.
 See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
@@ -6464,6 +6470,9 @@ Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
 INVALID_REG, MAINTENANCE, NOT_RESPONDING, PLANNED, and RESERVED.
 By default, any of these states, if idle for \fBSuspendTime\fR, would be
 powered down.
+Nodes explicitly requested to power down, including nodes allocated from a
+partition configured with \fBPowerDownOnIdle=YES\fR, are not affected by this
+option.
 This value may be updated with scontrol.
 See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
@@ -8392,8 +8401,7 @@ allocated at least one job.
 These nodes will not power down until they transition from COMPLETING to IDLE.
 If set to "NO" then power saving will operate as configured for the partition.
 The default value is "NO".
-See <https://slurm.schedmd.com/power_save.html> and
-<https://slurm.schedmd.com/elastic_computing.html> for more details.
+See <https://slurm.schedmd.com/power_save.html> for more details.
 
 \fBNOTE\fR:
 The following will cause a transition from COMPLETING to IDLE:
@@ -8407,8 +8415,13 @@ user's job is allocated.
 job is allocated.
 
 \fBNOTE\fR:
+Nodes allocated from this partition will still be sent a power down request even
+if they are excluded from automatic power save mode by \fBSuspendExcNodes\fR,
+\fBSuspendExcParts\fR, or \fBSuspendExcStates\fR.
+
+\fBNOTE\fR:
 Nodes are still subject to powering down when being IDLE for \fBSuspendTime\fR
-when PowerDownOnIdle is set to NO.</p>
+when \fBPowerDownOnIdle\fR is set to "NO".
 
 Also see \fBSuspendTime\fR.
 .IP
