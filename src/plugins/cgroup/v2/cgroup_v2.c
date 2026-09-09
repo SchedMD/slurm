@@ -2329,13 +2329,10 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 			    limits->limit_in_bytes) != SLURM_SUCCESS) {
 			rc = SLURM_ERROR;
 		}
-		if ((limits->soft_limit_in_bytes != NO_VAL64) &&
-		    common_cgroup_set_uint64_param(
-			    &int_cg[level],
-			    "memory.high",
-			    limits->soft_limit_in_bytes) != SLURM_SUCCESS) {
-			rc = SLURM_ERROR;
-		}
+		/*
+		 * soft_limit_in_bytes is ignored because cgroup/v2 has no
+		 * equivalent of cgroup/v1's memory.soft_limit_in_bytes.
+		 */
 		if ((limits->memsw_limit_in_bytes != NO_VAL64) &&
 		    common_cgroup_set_uint64_param(
 			    &int_cg[level],
