@@ -185,6 +185,7 @@ for test in test_files:
             # Get the failure in the suite and evaluate if they are xfail or we should fail
             suite_fails = [test for test in test_cases if test["@result"] != "success"]
             xfails_found = []
+            real_fails = []
             for failure in suite_fails:
                 for i, xfail in enumerate(suite_xfails):
                     if xfail[1] == failure["id"]:
@@ -194,7 +195,15 @@ for test in test_files:
                         break
                 else:
                     # failure is not xfail
-                    pytest.fail(f"{failure['id']}: {failure['message']}")
+                    real_fails.append(
+                        f"{failure['id']}[{failure['iteration']}]"
+                        f" ({failure['fn']}): {failure['message']}"
+                    )
+
+            # Report every failure, not just the first one. A loop test runs
+            # one unit per item, so a systemic breakage fails many of them.
+            if real_fails:
+                pytest.fail("\n".join(real_fails))
 
             # Check if we still have remaining xfails (not popped above)
             for xfail in suite_xfails:
