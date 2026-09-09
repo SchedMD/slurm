@@ -987,33 +987,18 @@ static void _parse_hierarchical_resources(list_t **license_list_ptr)
 	}
 }
 
-/* Initialize licenses on this system based upon slurm.conf */
-extern int license_init(char *licenses)
+extern void license_init(void)
 {
-	bool valid = true;
-
 	if (xstrcasestr(slurm_conf.preempt_params, "reclaim_licenses"))
 		preempt_for_licenses = true;
 
 	last_license_update = time(NULL);
 
 	slurm_mutex_lock(&license_mutex);
-	if (cluster_license_list)
-		fatal("cluster_license_list already defined");
-
-	cluster_license_list =
-		_build_license_list(licenses, &valid, false, false);
-	if (!valid)
-		fatal("Invalid configured licenses: %s", licenses);
-
-	_parse_hierarchical_resources(&cluster_license_list);
 
 	next_lic_id = 0;
-	_set_license_ids();
 
-	_licenses_print("init_license", cluster_license_list, NULL);
 	slurm_mutex_unlock(&license_mutex);
-	return SLURM_SUCCESS;
 }
 
 static int _foreach_license_set_hres(void *x, void *key)
@@ -2539,6 +2524,7 @@ extern int license_update(char *licenses)
 	license_update_args_t args = { 0 };
 	bool valid = true;
 
+	last_license_update = time(NULL);
 	args.new_list = _build_license_list(licenses, &valid, false, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
@@ -2547,9 +2533,7 @@ extern int license_update(char *licenses)
 
 	slurm_mutex_lock(&license_mutex);
 	if (!cluster_license_list) { /* no licenses before now */
-		cluster_license_list = args.new_list;
-		slurm_mutex_unlock(&license_mutex);
-		return SLURM_SUCCESS;
+		goto fini;
 	}
 
 	/*
@@ -2574,6 +2558,7 @@ extern int license_update(char *licenses)
 			 &args);
 
 	FREE_NULL_LIST(cluster_license_list);
+fini:
 	cluster_license_list = args.new_list;
 	_set_license_ids();
 

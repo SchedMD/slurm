@@ -126,8 +126,8 @@ typedef struct {
 
 extern time_t last_license_update;
 
-/* Initialize licenses on this system based upon slurm.conf */
-extern int license_init(char *licenses);
+/* Initialize license parameters on this system. Does not load licenses. */
+extern void license_init(void);
 
 extern int hres_init(void);
 extern int hres_update(hres_update_msg_t *msg, char **err_msg);
