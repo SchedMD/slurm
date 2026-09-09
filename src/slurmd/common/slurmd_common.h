@@ -54,10 +54,16 @@ extern int notify_slurmctld_mem_update_fini(slurm_step_id_t *step_id,
  *  Wait for up to max_time seconds.
  *  If max_time == 0, send SIGKILL to tasks repeatedly
  *
+ *  If skip_on_shutdown is true, stop waiting once conmgr has been asked to
+ *  shut down. Only slurmd's terminate/abort handlers set this (so slurmd can
+ *  exit rather than hang forever on a step whose slurmstepd is retrying an
+ *  unreachable slurmctld); slurmstepd's callers pass false so a stepd that is
+ *  itself signaled does not cut its own step waits short.
+ *
  *  Returns true if all job processes are gone
  */
 extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
-				     bool ignore_extern);
+				     bool ignore_extern, bool skip_on_shutdown);
 
 /*
  * terminate_all_steps - signals the container of all steps of a job

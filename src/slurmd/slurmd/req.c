@@ -95,6 +95,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
@@ -4762,6 +4764,7 @@ static void
 _rpc_abort_job(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req    = msg->data;
+	bool completed = true;
 
 	/*
 	 * "revoke" all future credentials for this jobid
@@ -4786,9 +4789,22 @@ _rpc_abort_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(&req->step_id, 0,
-					 (slurm_conf.prolog_flags &
-					  PROLOG_FLAG_RUN_IN_JOB));
+		completed = pause_for_job_completion(&req->step_id, 0,
+						     (slurm_conf.prolog_flags &
+						      PROLOG_FLAG_RUN_IN_JOB),
+						     true);
+	}
+
+	/*
+	 * If the step is still completing (slurmstepd is retrying an
+	 * unreachable slurmctld) and slurmd is shutting down, stop here so
+	 * slurmd can exit. Do not run the epilog; slurmctld re-drives the
+	 * abort once it is back and the slurmstepd delivers its completion.
+	 */
+	if (!completed && conmgr_is_shutdown()) {
+		debug("Not running epilog for %pI: slurmd shutting down",
+		      &req->step_id);
+		return;
 	}
 
 	/*
@@ -4838,6 +4854,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	int             nsteps = 0;
 	int		delay;
 	bool send_response = true;
+	bool completed = false;
 
 	debug("%s: starting for %pI %ps",
 	      __func__, &req->step_id, &req->step_id);
@@ -4992,22 +5009,38 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		send_response = false;
 	}
 
-	/*
-	 *  Check for corpses
-	 */
+	/* Check for jobs that have already exited */
 	delay = MAX(slurm_conf.kill_wait, 5);
-	if (!pause_for_job_completion(&req->step_id, delay,
-				      (slurm_conf.prolog_flags &
-				       PROLOG_FLAG_RUN_IN_JOB)) &&
-	    terminate_all_steps(&req->step_id, true,
-				!(slurm_conf.prolog_flags &
-				  PROLOG_FLAG_RUN_IN_JOB))) {
+	completed = pause_for_job_completion(&req->step_id, delay,
+					     (slurm_conf.prolog_flags &
+					      PROLOG_FLAG_RUN_IN_JOB),
+					     false);
+	if (!completed && terminate_all_steps(&req->step_id, true,
+					      !(slurm_conf.prolog_flags &
+						PROLOG_FLAG_RUN_IN_JOB))) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(&req->step_id, 0,
-					 (slurm_conf.prolog_flags &
-					  PROLOG_FLAG_RUN_IN_JOB));
+		completed = pause_for_job_completion(&req->step_id, 0,
+						     (slurm_conf.prolog_flags &
+						      PROLOG_FLAG_RUN_IN_JOB),
+						     true);
+	}
+
+	/*
+	 * If the step is still completing (slurmstepd is retrying an
+	 * unreachable slurmctld) and slurmd is shutting down, abandon the
+	 * rest of the termination so slurmd can exit. Leave the job
+	 * COMPLETING and do NOT run the epilog or send epilog_complete: the
+	 * slurmstepd survives slurmd and delivers its completion once
+	 * slurmctld is back, which then re-drives the terminate (and epilog)
+	 * on restart. Sending epilog_complete now would clear COMPLETING and
+	 * let slurmctld purge the step before that late delivery, losing
+	 * accounting.
+	 */
+	if (!completed && conmgr_is_shutdown()) {
+		_waiter_complete(&req->step_id);
+		return;
 	}
 
 	/*
