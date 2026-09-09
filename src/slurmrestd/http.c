@@ -237,12 +237,12 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 		static const char healthy[] = "HEALTHY";
 
 		return http_con_send_response(
-			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, true,
+			hcon, HTTP_STATUS_CODE_SUCCESS_OK, NULL, false,
 			&SHADOW_BUF_INITIALIZER(healthy, strlen(healthy)),
 			MIME_TYPE_TEXT);
 	}
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	return http_con_send_response(hcon, status, NULL, false, NULL, NULL);
 }
 
 static int _reply_error(http_con_t *hcon, const char *name,
