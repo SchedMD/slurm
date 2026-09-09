@@ -592,10 +592,8 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 	if (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)
 		return SLURM_SUCCESS;
 
-	/*
-	 * TODO: Add reference to request method to only limit CONNECT requests
-	 */
-	if ((status_code > HTTP_STATUS_SUCCESS_BEGIN) &&
+	if ((hcon->request.method == HTTP_REQUEST_CONNECT) &&
+	    (status_code >= HTTP_STATUS_SUCCESS_BEGIN) &&
 	    (status_code <= HTTP_STATUS_SUCCESS_END))
 		return SLURM_SUCCESS;
 
