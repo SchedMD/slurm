@@ -263,7 +263,7 @@ static int _req_metrics(http_con_t *hcon, const char *name,
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
-				      NULL, true,
+				      NULL, false,
 				      &SHADOW_BUF_INITIALIZER(body,
 							      strlen(body)),
 				      MIME_TYPE_TEXT);
