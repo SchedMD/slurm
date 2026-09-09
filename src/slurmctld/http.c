@@ -340,7 +340,7 @@ static int _send_metrics_resp(http_con_t *hcon, char *stats_str)
 			MIME_TYPE_TEXT);
 	}
 
-	rc = http_con_send_response(hcon, status, NULL, true,
+	rc = http_con_send_response(hcon, status, NULL, false,
 				    &SHADOW_BUF_INITIALIZER(stats_str,
 							    strlen(stats_str)),
 				    MIME_TYPE_TEXT);
