@@ -216,7 +216,7 @@ static bool _metrics_redirect_to_primary(http_con_t *hcon,
 			*rc_out = http_con_send_response(
 				hcon,
 				HTTP_STATUS_CODE_SRVERR_SERVICE_UNAVAILABLE,
-				NULL, true,
+				NULL, false,
 				&SHADOW_BUF_INITIALIZER(body, strlen(body)),
 				MIME_TYPE_TEXT);
 			return true;
