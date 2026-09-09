@@ -679,6 +679,15 @@ extern int http_con_send_response(http_con_t *hcon,
 			return rc;
 	} else {
 		/*
+		 * Always declare the empty body to keep the response self
+		 * delimiting. Without it, RFC7230-3.3.3 leaves the client
+		 * reading until the connection is closed which will hang any
+		 * client reusing a persistent connection.
+		 */
+		if ((rc = _send_content_length(hcon, con, status_code, 0)))
+			return rc;
+
+		/*
 		 * RFC2616 Section 6 Response always requires empty line after
 		 * headers in the HTTP Response message
 		 */
