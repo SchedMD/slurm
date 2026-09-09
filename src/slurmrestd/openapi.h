@@ -50,45 +50,6 @@
 #include "src/interfaces/data_parser.h"
 
 /*
- * Register a given unique tag against a path binding.
- *
- * IN in_path - string path to assign to given tag or
- * 	NULL (to use path in op_path)
- * IN op_path - Operation binding for path
- * IN meta - Meta information from plugin (or NULL)
- * IN parser - Relevant data_parser (or NULL)
- * IN/OUT tag_ptr - Sets tag on success
- * RET SLURM_SUCCESS or
- *	ESLURM_NOT_SUPPORTED: if data_parser doesn't support all types in method
- *	or any other Slurm error
- *
- * Can safely be called multiple times for same path.
- */
-extern int register_path_binding(const char *in_path,
-				 const openapi_path_binding_t *op_path,
-				 const openapi_resp_meta_t *meta,
-				 data_parser_t *parser, int *tag_ptr);
-
-/*
- * Find tag assigned to given path
- * IN path - split up path to match
- * IN/OUT params - on match, will populate any OAS parameters in path.
- * 	params must be DATA_TYPE_DICT.
- *
- * IN method - HTTP method to match
- * RET -1 if path tag was not found, or
- *     -2 if path tag was found, but method wasn't found within path tag, or
- *     the tag assigned to the given path.
- */
-extern int find_path_tag(const data_t *path, data_t *params,
-			 http_request_method_t method);
-
-/*
- * Print registered methods for the requested tag at log level DEBUG4.
- */
-extern void print_path_tag_methods(int tag);
-
-/*
  * Init the OpenAPI data structs.
  * IN plugins_list - comma delimited list of plugins or "list"
  * 	pass NULL to load all found or "" to load none of them
@@ -168,5 +129,11 @@ extern int generate_spec(data_t *dst, const char **mime_types);
  * Warning: Do not call with set=true after multithreading started
  */
 extern bool is_spec_generation_only(bool set);
+
+typedef struct openapi_entry_s openapi_entry_t;
+
+/* Resolve out the path as parameters */
+extern int resolve_params(const openapi_entry_t *entry, const char *url_path,
+			  data_t *params);
 
 #endif /* SLURMRESTD_OPENAPI_H */

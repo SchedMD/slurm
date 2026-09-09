@@ -56,6 +56,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
+#include "src/common/http_router.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/probes.h"
@@ -379,6 +380,13 @@ static void _usage(void)
 	xfree(txt);
 }
 
+static int _req_not_found_stub(http_con_t *hcon, const char *name,
+			       const http_con_request_t *request, void *arg,
+			       void *path_arg)
+{
+	fatal_abort("should never be called");
+}
+
 /*
  * Load only required plugins to dump OpenAPI Specification to stdout
  */
@@ -392,6 +400,8 @@ static void dump_spec(int argc, char **argv)
 	size_t output_len = 0;
 
 	_setup_logging(argc, argv);
+
+	http_router_init(_req_not_found_stub);
 
 	(void) is_spec_generation_only(true);
 

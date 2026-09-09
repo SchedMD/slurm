@@ -34,8 +34,10 @@
 \*****************************************************************************/
 
 #include "slurm/slurm_errno.h"
+
 #include "src/common/data.h"
 #include "src/common/http.h"
+#include "src/common/http_router.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
@@ -43,6 +45,8 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/serializer.h"
+
+#include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
@@ -77,36 +81,36 @@ typedef enum {
  * parameters but we will only honor having a single parameter
  * as an dir entry for now
  */
-typedef struct {
+typedef struct openapi_entry_s {
 	char *entry;
 	entry_type_t type;
 	openapi_type_t parameter;
 } entry_t;
 
+#define RESOLVE_PARAMS_ARGS_MAGIC 0x0b1a2e3f
+
+typedef struct {
+	int magic; /* RESOLVE_PARAMS_ARGS_MAGIC */
+	const entry_t *entry;
+	data_t *params;
+} resolve_params_args_t;
+
 typedef struct {
 	const openapi_path_binding_method_t *bound;
 	entry_t *entries;
+	bool has_params;
 	http_request_method_t method;
 } entry_method_t;
 
 #define MAGIC_PATH 0x0a0b09fd
-typedef struct {
+
+typedef struct openapi_path_s {
 	int magic; /* MAGIC_PATH */
 	char *path; /* path as string */
 	const openapi_path_binding_t *bound;
 	data_parser_t *parser;
 	entry_method_t *methods;
-	int tag;
 } path_t;
-
-typedef struct {
-	const data_t *dpath;
-	path_t *path;
-	data_t *params;
-	http_request_method_t method;
-	entry_t *entry;
-	int tag;
-} match_path_from_data_t;
 
 #define MAGIC_MERGE_PATH 0x22b2ae44
 typedef struct {
@@ -162,9 +166,19 @@ typedef struct {
 } url_parse_operation_id_args_t;
 
 static list_t *paths = NULL;
-static int path_tag_counter = 0;
 static plugins_t *plugins = NULL;
 static data_parser_t **parsers = NULL; /* symlink to parser array */
+
+#define MAGIC_BIND_METHOD_PATH 0x10aa0bf0
+
+typedef struct {
+	int magic; /* MAGIC_BIND_METHOD_PATH */
+	entry_t *entry;
+	const openapi_resp_meta_t *meta;
+	const openapi_path_binding_method_t *op_method;
+	const openapi_path_binding_t *op_path;
+	data_parser_t *parser;
+} bind_method_path_t;
 
 static const struct {
 	char *openapi_version;
@@ -330,8 +344,6 @@ static const http_status_code_t default_response_status_codes[] = {
 	HTTP_STATUS_CODE_INVALID,
 };
 
-static char *_entry_to_string(entry_t *entry);
-
 static const char *_get_entry_type_string(entry_type_t type)
 {
 	switch (type) {
@@ -353,8 +365,7 @@ static int _resolve_parser_index(data_parser_t *parser)
 	fatal_abort("Unable to find parser. This should never happen!");
 }
 
-static void _free_entry_list(entry_t *entry, int tag,
-			     entry_method_t *method)
+static void _free_entry_list(entry_t *entry, entry_method_t *method)
 {
 	entry_t *itr = entry;
 
@@ -362,10 +373,10 @@ static void _free_entry_list(entry_t *entry, int tag,
 		return;
 
 	while (itr->type) {
-		debug5("%s: remove path tag:%d method:%s entry:%s",
-		       __func__, tag, (method ?
-				       get_http_method_string(method->method) :
-				       "N/A"), itr->entry);
+		debug5("%s: remove path method:%s entry:%s",
+		       __func__, (method ?
+				  get_http_method_string(method->method) :
+				  "N/A"), itr->entry);
 		xfree(itr->entry);
 		itr++;
 	}
@@ -382,14 +393,13 @@ static void _list_delete_path_t(void *x)
 
 	path_t *path = x;
 	xassert(path->magic == MAGIC_PATH);
-	xassert(path->tag != -1);
 	em = path->methods;
 
 	while (em->entries) {
-		debug5("%s: remove path tag:%d method:%s", __func__, path->tag,
-		       get_http_method_string(em->method));
+		debug5("%s: remove path method:%s",
+		       __func__, get_http_method_string(em->method));
 
-		_free_entry_list(em->entries, path->tag, em);
+		_free_entry_list(em->entries, em);
 		em->entries = NULL;
 		em++;
 	}
@@ -459,46 +469,6 @@ static entry_t *_parse_openapi_path(const char *str_path, int *count_ptr)
 		*count_ptr = args.count;
 
 	return entries;
-}
-
-static int _print_path_tag_methods(void *x, void *arg)
-{
-	path_t *path = (path_t *) x;
-	int *tag = (int *) arg;
-
-	xassert(path->magic == MAGIC_PATH);
-
-	if (path->tag != *tag)
-		return 0;
-
-	if (!path->methods->entries)
-		debug4("%s: no methods found in path tag %d",
-		       __func__, path->tag);
-
-	for (entry_method_t *em = path->methods; em->entries; em++) {
-		char *path_str = _entry_to_string(em->entries);
-
-		debug4("%s: path tag %d entry: %s %s",
-		       __func__, path->tag, get_http_method_string(em->method),
-		       path_str);
-
-		xfree(path_str);
-	}
-
-	/*
-	 * We found the (unique) tag, so return -1 to exit early. The item's
-	 * index returned by list_for_each_ro() will be negative.
-	 */
-	return -1;
-}
-
-extern void print_path_tag_methods(int tag)
-{
-	if (get_log_level() < LOG_LEVEL_DEBUG4)
-		return;
-
-	if (list_for_each_ro(paths, _print_path_tag_methods, &tag) >= 0)
-		error("%s: Tag %d not found in paths", __func__, tag);
 }
 
 static void _clone_entries(entry_t **dst_ptr, entry_t *src, int count)
@@ -587,21 +557,19 @@ static bool _data_parser_supports_method(data_parser_t *parser,
 	return true;
 }
 
-extern int register_path_binding(const char *in_path,
-				 const openapi_path_binding_t *op_path,
-				 const openapi_resp_meta_t *meta,
-				 data_parser_t *parser, int *tag_ptr)
+static path_t *_register_path(const char *path,
+			      const openapi_path_binding_t *op_path,
+			      const openapi_resp_meta_t *meta,
+			      data_parser_t *parser)
 {
 	entry_t *entries = NULL;
-	int tag = -1, methods_count = 0, entries_count = 0;
+	int methods_count = 0, entries_count = 0;
 	path_t *p = NULL;
-	const char *path = (in_path ? in_path : op_path->path);
 
 	debug4("%s: attempting to bind %s with %s",
 	       __func__, (parser ? data_parser_get_plugin_version(parser) :
 			  "data_parser/none"), path);
 
-	xassert(!!in_path == !!(op_path->flags & OPENAPI_BIND_DATA_PARSER));
 	_check_openapi_path_binding(op_path);
 
 	if (!(entries = _parse_openapi_path(path, &entries_count)))
@@ -618,16 +586,13 @@ extern int register_path_binding(const char *in_path,
 	if (!methods_count) {
 		debug5("%s: skip binding %s with %s",
 		       __func__, path, data_parser_get_plugin(parser));
-		_free_entry_list(entries, -1, NULL);
-		return ESLURM_NOT_SUPPORTED;
+		_free_entry_list(entries, NULL);
+		return NULL;
 	}
-
-	tag = path_tag_counter++;
 
 	p = xmalloc(sizeof(*p));
 	p->magic = MAGIC_PATH;
 	p->methods = xcalloc((methods_count + 1), sizeof(*p->methods));
-	p->tag = tag;
 	p->bound = op_path;
 	p->parser = parser;
 	p->path = xstrdup(path);
@@ -662,15 +627,17 @@ extern int register_path_binding(const char *in_path,
 		}
 
 		for (; e->type; e++) {
-			if (e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER)
+			if (e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER) {
 				e->parameter =
 					data_parser_g_resolve_openapi_type(
 						parser, m->parameters,
 						e->entry);
+				t->has_params = true;
+			}
 
-			debug5("%s: add binded path %s entry: method=%s tag=%d entry=%s parameter=%s entry_type=%s",
+			debug5("%s: add binded path %s entry: method=%s entry=%s parameter=%s entry_type=%s",
 			       __func__, path,
-			       get_http_method_string(m->method), tag, e->entry,
+			       get_http_method_string(m->method), e->entry,
 			       openapi_type_to_string(e->parameter),
 			       _get_entry_type_string(e->type));
 		}
@@ -680,247 +647,128 @@ extern int register_path_binding(const char *in_path,
 	}
 
 	list_append(paths, p);
-	*tag_ptr = tag;
-	return SLURM_SUCCESS;
+	return p;
 }
 
-/*
- * Check if the entry matches based on the OAS type
- * and if it does, then add that matched parameter
- */
-static bool _match_param(const data_t *data, match_path_from_data_t *args)
+static int _on_request(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
 {
-	bool matched = false;
-	entry_t *entry = args->entry;
-	data_t *params = args->params;
-	data_t *match = data_new();
+	bind_method_path_t *bmp = path_arg;
+	http_context_t *ctxt = arg;
 
-	data_copy(match, data);
+	xassert(bmp->magic == MAGIC_BIND_METHOD_PATH);
 
-	switch (entry->parameter) {
-	case OPENAPI_TYPE_NUMBER:
-	{
-		if (data_convert_type(match, DATA_TYPE_FLOAT) ==
-		    DATA_TYPE_FLOAT) {
-			data_set_float(data_key_set(params, entry->entry),
-				       data_get_float(match));
-			matched = true;
-		}
-		break;
-	}
-	case OPENAPI_TYPE_INTEGER:
-	{
-		if (data_convert_type(match, DATA_TYPE_INT_64) ==
-		    DATA_TYPE_INT_64) {
-			data_set_int(data_key_set(params, entry->entry),
-				     data_get_int(match));
-			matched = true;
-		}
-		break;
-	}
-	default: /* assume string */
-		debug("%s: unknown parameter type %s",
-		      __func__, openapi_type_to_string(entry->parameter));
-		/* fall through */
-	case OPENAPI_TYPE_STRING:
-	{
-		if (data_convert_type(match, DATA_TYPE_STRING) ==
-		    DATA_TYPE_STRING) {
-			data_set_string(data_key_set(params, entry->entry),
-					data_get_string(match));
-			matched = true;
-		}
-		break;
-	}
-	}
-
-	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		char *str = NULL;
-		data_get_string_converted(data, &str);
-
-		debug5("%s: parameter %s[%s]->%s[%s] result=%s",
-		       __func__, entry->entry,
-		       openapi_type_to_string(entry->parameter),
-		       str, data_get_type_string(data),
-		       (matched ? "matched" : "failed"));
-
-		xfree(str);
-	}
-
-	FREE_NULL_DATA(match);
-	return matched;
+	return on_request(hcon, name, ctxt, request, bmp->op_path,
+			  bmp->op_method, bmp->meta, bmp->parser, bmp->entry);
 }
 
-static data_for_each_cmd_t _match_path(const data_t *data, void *y)
+static void _on_fini(http_router_on_request_event_t on_request, void *path_arg)
 {
-	match_path_from_data_t *args = y;
-	entry_t *entry = args->entry;
+	bind_method_path_t *bmp = path_arg;
 
-	if (!entry->type)
-		return DATA_FOR_EACH_FAIL;
+	xassert(bmp->magic == MAGIC_BIND_METHOD_PATH);
+	xassert(on_request == _on_request);
 
-	if (entry->type == OPENAPI_PATH_ENTRY_MATCH_STRING) {
-		bool match;
-
-		if (data_get_type(data) != DATA_TYPE_STRING)
-			return DATA_FOR_EACH_FAIL;
-
-		match = !xstrcmp(data_get_string(data), entry->entry);
-
-		debug5("%s: string attempt match %s to %s: %s",
-		       __func__, entry->entry, data_get_string(data),
-		       (match ? "SUCCESS" : "FAILURE"));
-
-		if (!match)
-			return DATA_FOR_EACH_FAIL;
-	} else if (entry->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER) {
-		if (!_match_param(data, args))
-			return DATA_FOR_EACH_FAIL;
-	} else
-		fatal_abort("%s: unknown OAS path entry match type",
-			    __func__);
-
-	args->entry++;
-	return DATA_FOR_EACH_CONT;
+	bmp->magic = ~MAGIC_BIND_METHOD_PATH;
+	xfree(bmp);
 }
 
-static char *_entry_to_string(entry_t *entry)
+static void _bind_path(const char *url_path,
+		       const openapi_path_binding_t *op_path,
+		       const openapi_path_binding_method_t *op_method,
+		       const openapi_resp_meta_t *meta, data_parser_t *parser,
+		       entry_t *entry)
 {
-	char *path = NULL;
-	data_t *d = data_set_list(data_new());
-
-	for (; entry->type; entry++) {
-		switch (entry->type) {
-		case OPENAPI_PATH_ENTRY_MATCH_STRING:
-			data_set_string(data_list_append(d), entry->entry);
-			break;
-		case OPENAPI_PATH_ENTRY_MATCH_PARAMETER:
-			data_set_string_fmt(data_list_append(d), "{%s}",
-					    entry->entry);
-			break;
-		case OPENAPI_PATH_ENTRY_UNKNOWN:
-		case OPENAPI_PATH_ENTRY_MAX:
-			fatal_abort("invalid entry type");
-		}
-	}
-
-	serialize_g_data_to_string(&path, NULL, d, MIME_TYPE_JSON,
-				   SER_FLAGS_COMPACT);
-
-	FREE_NULL_DATA(d);
-	return path;
-}
-
-static int _match_path_from_data(void *x, void *key)
-{
-	char *dst_path = NULL, *src_path = NULL;
-	match_path_from_data_t *args = key;
-	path_t *path = x;
-	entry_method_t *method;
-	bool matched = false;
-
-	xassert(path->magic == MAGIC_PATH);
-
-	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		serialize_g_data_to_string(&dst_path, NULL,
-					   (data_t *) args->dpath,
-					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
-	}
-
-	args->path = path;
-	for (method = path->methods; method->entries; method++) {
-		int entries = 0;
-
-		if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-			xfree(src_path);
-			src_path = _entry_to_string(method->entries);
-		}
-
-		if (args->method != method->method) {
-			debug5("%s: method skip for %s(%d, %s != %s) to %s(0x%"PRIXPTR")",
-			       __func__, src_path, args->path->tag,
-			       get_http_method_string(args->method),
-			       get_http_method_string(method->method),
-			       dst_path, (uintptr_t) args->dpath);
-			continue;
-		}
-
-		for (args->entry = method->entries; args->entry->type;
-		     entries++, args->entry++)
-			/* do nothing */;
-
-		if (data_get_list_length(args->dpath) != entries) {
-			debug5("%s: skip non-matching subdirectories: registered=%u requested=%zu ",
-			       __func__, entries,
-			       data_get_list_length(args->dpath));
-			continue;
-		}
-
-		args->entry = method->entries;
-		if (data_list_for_each_const(args->dpath, _match_path,
-					     args) < 0) {
-			debug5("%s: match failed %s",
-			       __func__, args->entry->entry);
-			continue;
-		}
-
-		/*
-		 * The list is NULL terminated, so if entry->type is not NULL
-		 * we didn't match the whole list, but we already don't have
-		 * anything to compare in request.
-		 */
-		if (!args->entry->type) {
-			args->tag = path->tag;
-			matched = true;
-			break;
-		}
-	}
-
-	debug5("%s: match %s for %s(%d, %s) to %s(0x%"PRIXPTR")",
-	       __func__,
-	       matched ? "successful" : "failed",
-	       src_path,
-	       args->path->tag,
-	       get_http_method_string(args->method),
-	       dst_path,
-	       (uintptr_t) args->dpath);
-
-	xfree(src_path);
-	xfree(dst_path);
-
-	return matched;
-}
-
-extern int find_path_tag(const data_t *dpath, data_t *params,
-			 http_request_method_t method)
-{
-	match_path_from_data_t args = {
-		.params = params,
-		.dpath = dpath,
-		.method = method,
-		.tag = -1,
+	bind_method_path_t *bmp = xmalloc(sizeof(*bmp));
+	*bmp = (bind_method_path_t) {
+		.magic = MAGIC_BIND_METHOD_PATH,
+		.entry = entry,
+		.meta = meta,
+		.op_method = op_method,
+		.op_path = op_path,
+		.parser = parser,
 	};
 
-	xassert(data_get_type(params) == DATA_TYPE_DICT);
+	xassert(bmp->parser);
+	xassert(bmp->op_path);
+	xassert(bmp->op_method);
 
-	(void) list_find_first(paths, _match_path_from_data, &args);
-
-	return args.tag;
+	http_router_bind(op_method->method, url_path, _on_request, _on_fini,
+			 bmp);
 }
 
-static int _bind_paths(const openapi_path_binding_t *paths,
-		       const openapi_resp_meta_t *meta)
+static void _bind_op_path_parser(const openapi_path_binding_t *op_path,
+				 const openapi_resp_meta_t *meta,
+				 data_parser_t *parser)
 {
-	int rc = SLURM_SUCCESS;
+	path_t *path = NULL;
+	char *url_path = NULL;
+	const char *url = NULL;
 
-	for (int i = 0; paths[i].path; i++) {
-		const openapi_path_binding_t *op_path = &paths[i];
+	if (op_path->flags & OPENAPI_BIND_DATA_PARSER) {
+		url_path = xstrdup(op_path->path);
 
-		if ((rc = bind_operation_path(op_path, meta)))
-			break;
+		xassert(xstrstr(url_path, OPENAPI_DATA_PARSER_PARAM));
+
+		xstrsubstitute(url_path, OPENAPI_DATA_PARSER_PARAM,
+			       data_parser_get_plugin_version(parser));
+
+		url = url_path;
+	} else {
+		url = op_path->path;
 	}
 
-	return rc;
+	if ((path = _register_path(url, op_path, meta, parser))) {
+		for (int i = 0; path->methods[i].bound; i++) {
+			_bind_path(url, op_path, path->methods[i].bound, meta,
+				   parser,
+				   (path->methods[i].has_params ?
+					    path->methods[i].entries :
+					    NULL));
+		}
+	}
+
+	xfree(url_path);
+}
+
+static void _bind_op_path(const openapi_path_binding_t *op_path,
+			  const openapi_resp_meta_t *meta,
+			  data_parser_t *default_parser)
+{
+	if (op_path->flags & OPENAPI_BIND_DATA_PARSER)
+		for (int i = 0; parsers[i]; i++)
+			_bind_op_path_parser(op_path, meta, parsers[i]);
+	else
+		_bind_op_path_parser(op_path, meta, default_parser);
+}
+
+static void _bind_paths(const openapi_path_binding_t *paths,
+			const openapi_resp_meta_t *meta)
+{
+	data_parser_t *default_parser = NULL;
+
+	if (!parsers || !parsers[0])
+		fatal("No data_parsers plugins loaded. Refusing to load.");
+
+	for (int i = 0; parsers[i]; i++) {
+		if (!xstrcmp(data_parser_get_plugin(parsers[i]),
+			     SLURM_DATA_PARSER_VERSION)) {
+			default_parser = parsers[i];
+			break;
+		}
+	}
+
+	/*
+	 * The current version is not always loaded, such as with
+	 * slurmrestd -d v0.0.43, so fall back to the first parser given.
+	 */
+	if (!default_parser)
+		default_parser = parsers[0];
+
+	for (const openapi_path_binding_t *op_path = &paths[0]; op_path->path;
+	     op_path++)
+		_bind_op_path(op_path, meta, default_parser);
 }
 
 extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
@@ -938,13 +786,31 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		response_status_codes = default_response_status_codes;
 
 	paths = list_create(_list_delete_path_t);
+	parsers = parsers_ptr;
+
+	/*
+	 * Only the version is substituted into a {data_parser} URL, so two
+	 * plugins of the same version resolve to one path and the second bind
+	 * would collide inside the router. Reject it here where the offending
+	 * plugins can be named.
+	 */
+	for (int i = 0; parsers && parsers[i]; i++) {
+		const char *version =
+			data_parser_get_plugin_version(parsers[i]);
+
+		for (int j = (i + 1); parsers[j]; j++) {
+			if (xstrcmp(version,
+				    data_parser_get_plugin_version(parsers[j])))
+				continue;
+
+			fatal("data_parser plugins %s and %s both resolve to URL version %s. Only one data_parser per version may be loaded.",
+			      data_parser_get_plugin(parsers[i]),
+			      data_parser_get_plugin(parsers[j]), version);
+		}
+	}
 
 	/* must have JSON plugin to parse the openapi.json */
 	serializer_required(MIME_TYPE_JSON);
-
-	if ((rc = _bind_paths(openapi_paths, NULL)))
-		fatal("Unable to bind openapi specification paths: %s",
-		      slurm_strerror(rc));
 
 	rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
 			  syms, ARRAY_SIZE(syms));
@@ -962,7 +828,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 	if (!plugins->count)
 		fatal("No OpenAPI plugins loaded.");
 
-	parsers = parsers_ptr;
+	_bind_paths(openapi_paths, NULL);
 
 	for (size_t i = 0; i < plugins->count; i++) {
 		const funcs_t *funcs = plugins->functions[i];
@@ -973,9 +839,7 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 			fatal("Failure loading plugin path bindings: %s",
 			      slurm_strerror(rc));
 
-		if ((rc = _bind_paths(paths, meta)))
-			fatal("Unable to bind openapi specification paths: %s",
-			      slurm_strerror(rc));
+		_bind_paths(paths, meta);
 	}
 
 	/* Call init() after all plugins are fully loaded */
@@ -1726,4 +1590,98 @@ extern bool is_spec_generation_only(bool set)
 		is_spec_only = true;
 
 	return is_spec_only;
+}
+
+/*
+ * Populate one OAS parameter from the matching request URL entry
+ * IN entry - entry from the request URL path
+ * IN template - always false: request URLs never carry {templates}
+ * IN arg - resolve_params_args_t
+ * RET SLURM_SUCCESS or ESLURM_URL_INVALID_PATH
+ *
+ * The HTTP router already matched this path to pick the binding, so there is
+ * nothing here to match. Literal entries are walked past and only a parameter
+ * entry creates a data_t, which is why the request URL is never converted as a
+ * whole.
+ */
+static int _on_path_entry(const char *entry, bool template, void *arg)
+{
+	resolve_params_args_t *args = arg;
+	const entry_t *e = args->entry;
+	data_t *param = NULL;
+	data_type_t type = DATA_TYPE_NONE;
+
+	xassert(args->magic == RESOLVE_PARAMS_ARGS_MAGIC);
+	xassert(!template);
+
+	if (!e->type) {
+		debug5("%s: request has more entries than %s was registered with",
+		       __func__, entry);
+		return ESLURM_URL_INVALID_PATH;
+	}
+
+	args->entry++;
+
+	if (e->type == OPENAPI_PATH_ENTRY_MATCH_STRING) {
+		/* router matched every literal to get here */
+		xassert(!xstrcmp(entry, e->entry));
+		return SLURM_SUCCESS;
+	}
+
+	xassert(e->type == OPENAPI_PATH_ENTRY_MATCH_PARAMETER);
+
+	param = data_key_set(args->params, e->entry);
+	data_set_string(param, entry);
+
+	type = openapi_type_to_data_type(e->parameter);
+
+	/*
+	 * A URL path segment is always a scalar string. Force every type that
+	 * can not be converted from one to a string, including types that
+	 * never resolved, instead of rejecting the request.
+	 */
+	if ((type == DATA_TYPE_NONE) || (type == DATA_TYPE_DICT) ||
+	    (type == DATA_TYPE_LIST)) {
+		debug5("%s: parameter %s[%s] forced to string",
+		       __func__, e->entry,
+		       openapi_type_to_string(e->parameter));
+		type = DATA_TYPE_STRING;
+	}
+
+	if (data_convert_type(param, type) != type) {
+		debug5("%s: parameter %s[%s] rejected value %s",
+		       __func__, e->entry,
+		       openapi_type_to_string(e->parameter), entry);
+		return ESLURM_URL_INVALID_PATH;
+	}
+
+	debug5("%s: parameter %s[%s] = %s",
+	       __func__, e->entry, openapi_type_to_string(e->parameter), entry);
+
+	return SLURM_SUCCESS;
+}
+
+extern int resolve_params(const openapi_entry_t *entry, const char *url_path,
+			  data_t *params)
+{
+	int rc = EINVAL;
+	resolve_params_args_t args = {
+		.magic = RESOLVE_PARAMS_ARGS_MAGIC,
+		.entry = entry,
+		.params = params,
+	};
+
+	xassert(entry);
+	xassert(data_get_type(params) == DATA_TYPE_DICT);
+
+	if ((rc = url_path_walk(url_path, false, _on_path_entry, &args)))
+		return rc;
+
+	if (args.entry->type) {
+		debug5("%s: %s is shorter than the registered path",
+		       __func__, url_path);
+		return ESLURM_URL_INVALID_PATH;
+	}
+
+	return SLURM_SUCCESS;
 }

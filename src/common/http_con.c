@@ -580,7 +580,27 @@ extern int http_con_send_response(http_con_t *hcon,
 			return args.rc;
 	}
 
-	if (close_header && (rc = _send_http_connection_close(hcon)))
+	/*
+	 * RFC7230-6.6: a server closing the connection should say so in the
+	 * final response. The client asking to close is reason enough, so
+	 * honor it here where the headers are still being written.
+	 *
+	 * RFC7231-6.2 / RFC9112-9.3: a 1xx (informational) response is not
+	 * the final response to the request, and RFC9112-9.3 excuses every
+	 * 1xx status from the "send close in every response" requirement
+	 * that otherwise applies to all of them. A client that gets "100
+	 * Continue" is expected to keep sending the rest of the request
+	 * afterward -- that is the entire point of "Expect: 100-continue"
+	 * (RFC9110-10.1.1). Closing here on request->connection_close alone
+	 * would tear down the read side before that body arrives, so only an
+	 * explicit close_header (never requested for an interim response
+	 * today) can close on a 1xx.
+	 */
+	if ((close_header ||
+	     (request->connection_close &&
+	      ((status_code < HTTP_STATUS_INFO_BEGIN) ||
+	       (status_code > HTTP_STATUS_INFO_END)))) &&
+	    (rc = _send_http_connection_close(hcon)))
 		return rc;
 
 	if (body && (get_buf_offset(body) > 0)) {
@@ -689,11 +709,13 @@ static int _on_content_complete(void *arg)
 	rc = hcon->events->on_request(hcon, conmgr_con_get_name(hcon->con),
 				      &hcon->request, hcon->arg);
 
-	if (request->connection_close) {
-		/* Notify client that this connection will be closed now */
-		_send_http_connection_close(hcon);
+	/*
+	 * The response has already been written, so the client was told the
+	 * connection is closing by http_con_send_response(). Writing a header
+	 * here would land after the body.
+	 */
+	if (request->connection_close)
 		conmgr_con_queue_close(hcon->con);
-	}
 
 	_request_reset(hcon);
 
