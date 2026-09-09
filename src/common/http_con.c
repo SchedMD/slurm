@@ -575,6 +575,10 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
 		return SLURM_SUCCESS;
 
+	/* RFC7232-4.1: 304 (Not Modified) never carries a body */
+	if (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)
+		return SLURM_SUCCESS;
+
 	/*
 	 * TODO: Add reference to request method to only limit CONNECT requests
 	 */
