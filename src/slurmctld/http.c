@@ -335,7 +335,7 @@ static int _send_metrics_resp(http_con_t *hcon, char *stats_str)
 	if (!stats_str) {
 		static const char body[] = "";
 		return http_con_send_response(
-			hcon, status, NULL, true,
+			hcon, status, NULL, false,
 			&SHADOW_BUF_INITIALIZER(body, strlen(body)),
 			MIME_TYPE_TEXT);
 	}
