@@ -906,8 +906,16 @@ finished:	;
 	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
 	    (agent_ptr->msg_type == REQUEST_NODE_HEALTH_CHECK) ||
 	    (agent_ptr->msg_type == REQUEST_ACCT_GATHER_UPDATE) ||
-	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
+	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS)) {
 		ping_end();
+		/*
+		 * Wake _agent_nodes_update() rather than letting it wait out
+		 * its timer. Call only after ping_end(), since ping_end()
+		 * clears the flag that the drain's ping_nodes_update() sets
+		 * and is_ping_done() tests.
+		 */
+		slurm_cond_signal(&update_nodes_cond);
+	}
 }
 
 /* Report a communications error for specified node
