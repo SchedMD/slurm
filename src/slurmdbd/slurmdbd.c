@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	become_slurm_user();
 
-	workerpool_init(0, 0, NULL);
+	workerpool_init(0, 0, slurmdbd_conf->parameters);
 	conmgr_init(0);
 
 	_register_signal_handlers();
