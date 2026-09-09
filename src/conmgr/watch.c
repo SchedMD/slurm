@@ -896,7 +896,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			 */
 		}
 	} else if (!con_flag(con, FLAG_READ_EOF) &&
-		   !con_flag(con, FLAG_WRITE_EOF)) {
+		   !con_flag(con, FLAG_WRITE_EOF) &&
+		   !con_flag(con, FLAG_CLOSE_REQUESTED)) {
 		xassert(!con_flag(con, FLAG_CAN_READ) &&
 			!con_flag(con, FLAG_CAN_WRITE));
 
