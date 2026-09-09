@@ -602,18 +602,18 @@ extern const char *data_parser_get_plugin_params(data_parser_t *parser)
 extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 {
 	DEF_TIMERS;
-	const parse_funcs_t *funcs;
+	const parse_funcs_t *funcs = NULL;
 
 	if (!parser)
 		return;
-
-	funcs = plugins->functions[parser->plugin_offset];
 
 	if (plugins) {
 		xassert(plugins->magic == PLUGINS_MAGIC);
 		xassert(plugins->functions[parser->plugin_offset]);
 		xassert(parser->magic == PARSE_MAGIC);
 		xassert(parser->plugin_offset < plugins->count);
+
+		funcs = plugins->functions[parser->plugin_offset];
 	}
 
 	START_TIMER;
