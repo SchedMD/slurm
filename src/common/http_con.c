@@ -627,6 +627,33 @@ static bool _require_close_connection(http_con_t *hcon,
 	return false;
 }
 
+/*
+ * Determine if a status code forbids a response body outright, regardless
+ * of method.
+ *
+ * RFC7230-3.3.2: a 1xx (Informational) or 204 (No Content) response MUST
+ * NOT carry a body.
+ * RFC7232-4.1: 304 (Not Modified) never carries a body.
+ *
+ * _send_content_length() and the body-write decision in
+ * http_con_send_response() both consult this, so a status that forbids
+ * content can never suppress the length while leaving the body written.
+ */
+static bool _status_forbids_content(http_status_code_t status_code)
+{
+	if ((status_code >= HTTP_STATUS_INFO_BEGIN) &&
+	    (status_code <= HTTP_STATUS_INFO_END))
+		return true;
+
+	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
+		return true;
+
+	if (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)
+		return true;
+
+	return false;
+}
+
 static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 				http_status_code_t status_code,
 				const size_t body_length)
@@ -639,15 +666,7 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 	 * field in any 2xx (Successful) response to a CONNECT request
 	 */
 
-	if ((status_code >= HTTP_STATUS_INFO_BEGIN) &&
-	    (status_code <= HTTP_STATUS_INFO_END))
-		return SLURM_SUCCESS;
-
-	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
-		return SLURM_SUCCESS;
-
-	/* RFC7232-4.1: 304 (Not Modified) never carries a body */
-	if (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)
+	if (_status_forbids_content(status_code))
 		return SLURM_SUCCESS;
 
 	if ((hcon->request.method == HTTP_REQUEST_CONNECT) &&
@@ -720,6 +739,20 @@ extern int http_con_send_response(http_con_t *hcon,
 
 	if (body && (get_buf_offset(body) > 0)) {
 		const size_t body_length = get_buf_offset(body);
+		/*
+		 * RFC9110-9.3.2: a HEAD response carries the same header fields
+		 * a GET would have carried, including Content-Length, but must
+		 * not carry the content itself. Sending it anyway leaves the
+		 * body in the stream at the point where the client looks for
+		 * the next response once the connection is reused.
+		 *
+		 * A status that forbids content (1xx, 204, 304) is folded in
+		 * here too: _send_content_length() already declines to
+		 * declare a length for those, so a body written alongside
+		 * them would sit in the stream with no framing at all.
+		 */
+		const bool omit_body = (request->method == HTTP_REQUEST_HEAD) ||
+					_status_forbids_content(status_code);
 
 		if ((rc = _send_content_length(hcon, con, status_code,
 					       body_length)))
@@ -734,18 +767,25 @@ extern int http_con_send_response(http_con_t *hcon,
 		if ((rc = conmgr_con_queue_write_data(con, CRLF, strlen(CRLF))))
 			return rc;
 
-		log_flag(NET, "%s: [%s] rc=%s(%u) sending %zu bytes of body",
-			 __func__, conmgr_con_get_name(con),
-			 get_http_status_code_string(status_code), status_code,
-			 body_length);
+		if (omit_body) {
+			log_flag(NET, "%s: [%s] rc=%s(%u) declaring but not sending %zu bytes of body for HEAD",
+				 __func__, conmgr_con_get_name(con),
+				 get_http_status_code_string(status_code),
+				 status_code, body_length);
+		} else {
+			log_flag(NET, "%s: [%s] rc=%s(%u) sending %zu bytes of body",
+				 __func__, conmgr_con_get_name(con),
+				 get_http_status_code_string(status_code),
+				 status_code, body_length);
 
-		log_flag_hex(NET_RAW, get_buf_data(body), body_length,
-			     "%s: [%s] sending body", __func__,
-			     conmgr_con_get_name(con));
+			log_flag_hex(NET_RAW, get_buf_data(body), body_length,
+				     "%s: [%s] sending body", __func__,
+				     conmgr_con_get_name(con));
 
-		if ((rc = conmgr_con_queue_write_data(con, get_buf_data(body),
-						      body_length)))
-			return rc;
+			if ((rc = conmgr_con_queue_write_data(
+				     con, get_buf_data(body), body_length)))
+				return rc;
+		}
 	} else {
 		/*
 		 * Always declare the empty body to keep the response self
