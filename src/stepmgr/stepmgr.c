@@ -3321,7 +3321,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return;
 
-	order_map = step_node_order(step_ptr, &order_cnt, &alloc_order);
+	order_map = step_layout_order(step_ptr, &order_cnt, &alloc_order);
 
 	if (step_ptr->memory_allocated && _is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
@@ -3335,18 +3335,13 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		int inx;
 		uint16_t vpus;
 		job_node_inx = order_map[k].job_pos;
+		step_node_inx++;
 		/*
 		 * The node left the job (shrink, failure) or the cluster;
-		 * count it to stay aligned with the step layout, but skip
-		 * its job-side accounting — those resources are already gone.
+		 * its job-side resources are already gone.
 		 */
-		if (job_node_inx < 0) {
-			step_node_inx++;
+		if (job_node_inx < 0)
 			continue;
-		}
-		if (!bit_test(step_ptr->step_node_bitmap, i))
-			continue;
-		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
 		node_ptr = node_record_table_ptr[i];

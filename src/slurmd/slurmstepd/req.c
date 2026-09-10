@@ -1029,23 +1029,16 @@ static int _cap_step_mem(void *x, void *arg)
 		return SLURM_SUCCESS;
 
 	/* memory_allocated[] is indexed in the step's layout order */
-	order_map = step_node_order(step_ptr, &order_cnt, &alloc_order);
+	order_map = step_layout_order(step_ptr, &order_cnt, &alloc_order);
 	for (int k = 0; k < order_cnt; k++) {
-		int i = order_map[k].node_inx;
-
 		job_node_inx = order_map[k].job_pos;
+		step_node_inx++;
 		/*
 		 * The node left the job (shrink, failure) or the cluster;
-		 * count it to stay aligned with the step layout, but skip
-		 * its job-side accounting — those resources are already gone.
+		 * its job-side resources are already gone.
 		 */
-		if (job_node_inx < 0) {
-			step_node_inx++;
+		if (job_node_inx < 0)
 			continue;
-		}
-		if (!bit_test(step_ptr->step_node_bitmap, i))
-			continue;
-		step_node_inx++;
 		step_ptr->memory_allocated[step_node_inx] =
 			MIN(step_ptr->memory_allocated[step_node_inx],
 			    new_job_mem);
