@@ -433,17 +433,12 @@ static void _read_slurm_cgroup_conf(void)
 			tmp_str = NULL;
 		}
 
-		if (s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
-				    "IgnoreSystemd", tbl)) {
-			/* Implicitly set these other one. */
-			slurm_cgroup_conf.ignore_systemd_on_failure = true;
-		}
+		(void) s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
+				       "IgnoreSystemd", tbl);
 
-		if (!slurm_cgroup_conf.ignore_systemd &&
-		    (!s_p_get_boolean(
-			    &slurm_cgroup_conf.ignore_systemd_on_failure,
-			    "IgnoreSystemdOnFailure", tbl)))
-			slurm_cgroup_conf.ignore_systemd_on_failure = false;
+		(void) s_p_get_boolean(&slurm_cgroup_conf
+						.ignore_systemd_on_failure,
+				       "IgnoreSystemdOnFailure", tbl);
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf.enable_controllers,
 				       "EnableControllers", tbl);
