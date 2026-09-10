@@ -711,6 +711,7 @@ static int _delete_pending_steps(void *x, void *arg)
 		if (step_ptr->flags & SSF_ASYNC)
 			jobacct_storage_g_step_complete(
 				stepmgr_ops->acct_db_conn, step_ptr);
+		step_ptr->state = JOB_CANCELLED;
 		return 1;
 	}
 
