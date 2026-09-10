@@ -508,10 +508,17 @@ typedef struct resv_info_request_msg {
         time_t last_update;
 } resv_info_request_msg_t;
 
+typedef enum {
+	STEPS_DRAINED_SUB_DRAIN = 0, /* one whole-set drain event */
+	STEPS_DRAINED_SUB_ALL, /* a bodied event on every user-step end */
+	STEPS_DRAINED_SUB_STEP, /* one bodied event for a target step */
+} steps_sub_mode_t;
+
 typedef struct steps_drained_sub_msg {
 	char *host; /* hostname the stepmgr should push to */
+	uint16_t mode; /* steps_sub_mode_t */
 	uint16_t port; /* listening port on host */
-	slurm_step_id_t step_id; /* job to watch */
+	slurm_step_id_t step_id; /* job/step to watch */
 	char *tls_cert; /* self-signed PEM cert, or NULL */
 } steps_drained_sub_msg_t;
 
