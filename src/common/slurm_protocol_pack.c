@@ -3282,10 +3282,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
+static int _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
 {
 	buf_t *msg_buffer = msg->data;
-	packmem_array(msg_buffer->head, msg_buffer->processed, buffer);
+	return packmem_array(msg_buffer->head, msg_buffer->processed, buffer);
 }
 
 static void _pack_job_script_msg(const slurm_msg_t *smsg, buf_t *buffer)
@@ -10243,7 +10243,15 @@ static void _pack_ret_list(list_t *ret_list, uint16_t size_val, buf_t *buffer,
 
 		msg.msg_type = ret_data_info->type;
 		msg.data = ret_data_info->data;
-		pack_msg(&msg, buffer);
+		/*
+		 * The pack_msg() status is deliberately dropped here. Reporting
+		 * it means making pack_header() fallible, and there is nothing
+		 * useful to do with it at this point in any case: ret_cnt was
+		 * written before the loop, so a short entry shifts everything
+		 * after it and the peer can no longer parse the header at all.
+		 * Making that recoverable is its own change.
+		 */
+		(void) pack_msg(&msg, buffer);
 	}
 	list_iterator_destroy(itr);
 }
@@ -13635,8 +13643,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_STATS_INFO:
 	case RESPONSE_RESOURCE_LAYOUT:
-		_pack_buf_msg(msg, buffer);
-		break;
+		return _pack_buf_msg(msg, buffer);
 	case REQUEST_NODE_INFO:
 		_pack_node_info_request_msg(msg, buffer);
 		break;

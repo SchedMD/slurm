@@ -1663,7 +1663,13 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	 * Pack message into buffer
 	 */
 	buffers->body = init_buf(BUF_SIZE);
-	pack_msg(msg, buffers->body);
+	if ((rc = pack_msg(msg, buffers->body))) {
+		error("%s: packing %s failed: %s", __func__,
+		      rpc_num2string(msg->msg_type), slurm_strerror(rc));
+		/* pack_msg() can return SLURM_ERROR, which is not an errno */
+		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
+		goto failed;
+	}
 	log_flag_hex(NET_RAW, get_buf_data(buffers->body),
 		     get_buf_offset(buffers->body),
 		     "%s: packed body", __func__);
@@ -1743,10 +1749,8 @@ skip_auth1:
 	if (rc) {
 		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
-		auth_g_destroy(auth_cred);
-		FREE_NULL_BUFFER(buffers->auth);
-		FREE_NULL_BUFFER(buffers->body);
-		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+		goto failed;
 	}
 	auth_g_destroy(auth_cred);
 	log_flag_hex(NET_RAW, get_buf_data(buffers->auth),
@@ -1766,6 +1770,19 @@ skip_auth2:
 		     "%s: packed header", __func__);
 
 	return rc;
+
+failed:
+	/*
+	 * auth_g_destroy() asserts the plugin layer is up before it checks for
+	 * NULL, so only call it when a credential was actually created. The
+	 * pack failure above jumps here from before auth runs, and a
+	 * SLURM_NO_AUTH_CRED message never brings the layer up at all.
+	 */
+	if (auth_cred)
+		auth_g_destroy(auth_cred);
+	FREE_NULL_BUFFER(buffers->auth);
+	FREE_NULL_BUFFER(buffers->body);
+	slurm_seterrno_ret(rc);
 }
 
 /**********************************************************************\

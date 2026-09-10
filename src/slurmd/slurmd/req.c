@@ -472,7 +472,7 @@ static int
 _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 		      hostlist_t *step_hset, uint16_t protocol_version)
 {
-	int len = 0;
+	int len = 0, rc = EINVAL;
 	buf_t *buffer = NULL;
 	slurm_msg_t msg;
 
@@ -589,7 +589,13 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 
 	/* always force the RPC format to the latest */
 	msg.protocol_version = SLURM_PROTOCOL_VERSION;
-	pack_msg(&msg, buffer);
+	if ((rc = pack_msg(&msg, buffer))) {
+		error("%s: packing %s failed: %s", __func__,
+		      rpc_num2string(msg.msg_type), slurm_strerror(rc));
+		/* fail: reports errno, which pack_msg() does not set */
+		errno = rc;
+		goto fail;
+	}
 	len = get_buf_offset(buffer);
 
 	/* send the srun protocol_version over, which may be older */
