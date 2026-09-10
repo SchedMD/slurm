@@ -57,6 +57,7 @@
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/common/list.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/strnatcmp.h"
 #include "src/common/xstring.h"
 
@@ -311,6 +312,30 @@ static int _validate_cpus_links_uuid(gres_slurmd_conf_t *conf_gres,
 	return 1;
 }
 
+/*
+ * A gres.conf UUID is only checked for duplicates against other gres.conf
+ * records (see _validate_unique_ids() in gres.c), before AutoDetect has run.
+ * _merge_system_gres_conf() can still copy a configured UUID onto a
+ * system-detected device that had none, or keep a config-only device whose
+ * UUID was never checked against the system at all; either can collide
+ * with a UUID AutoDetect found on another device. Catch that here, after the
+ * merge.
+ *
+ * RET SLURM_SUCCESS or SLURM_ERROR (duplicate found)
+ */
+static int _validate_merged_unique_ids(list_t *gres_list_gpu)
+{
+	gres_slurmd_conf_t *dup = gres_find_duplicate_unique_id(gres_list_gpu);
+
+	if (!dup)
+		return SLURM_SUCCESS;
+
+	error("Duplicate UUID=%s for GRES %s after merging gres.conf with detected devices. Each device must have a unique UUID",
+	      dup->unique_id, dup->name);
+
+	return SLURM_ERROR;
+}
+
 /* Sort gres/gpu records by "File" value in ascending order, with nulls last */
 static int _sort_gpu_by_file(void *x, void *y)
 {
@@ -382,16 +407,17 @@ static int _sort_gpu_by_links_order(void *x, void *y)
  * 	*type
  * 	*file
  */
-static void _merge_system_gres_conf(list_t *gres_list_conf,
-				    list_t *gres_list_system)
+static int _merge_system_gres_conf(list_t *gres_list_conf,
+				   list_t *gres_list_system)
 {
+	int rc = SLURM_SUCCESS;
 	list_itr_t *itr, *itr2;
 	gres_slurmd_conf_t *gres_slurmd_conf, *gres_slurmd_conf_sys;
 	list_t *gres_list_conf_single, *gres_list_gpu = NULL, *gres_list_non_gpu;
 
 	if (gres_list_conf == NULL) {
 		error("gres_list_conf is NULL. This shouldn't happen");
-		return;
+		return SLURM_SUCCESS;
 	}
 
 	gres_list_conf_single = list_create(destroy_gres_slurmd_conf);
@@ -605,6 +631,9 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 		print_gres_list(gres_list_system, LOG_LEVEL_INFO);
 	}
 
+	if (gres_list_gpu && list_count(gres_list_gpu))
+		rc = _validate_merged_unique_ids(gres_list_gpu);
+
 	/* Add GPUs + non-GPUs to gres_list_conf */
 	list_flush(gres_list_conf);
 	if (gres_list_gpu && list_count(gres_list_gpu)) {
@@ -621,6 +650,8 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 	FREE_NULL_LIST(gres_list_gpu);
 	FREE_NULL_LIST(gres_list_conf_single);
 	FREE_NULL_LIST(gres_list_non_gpu);
+
+	return rc;
 }
 
 extern int init(void)
@@ -646,7 +677,7 @@ extern void fini(void)
 extern int gres_p_node_config_load(list_t *gres_conf_list,
 				   node_config_load_t *node_config)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
 	list_t *gres_list_system = NULL;
 	log_level_t log_lvl;
 
@@ -669,7 +700,9 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
 		log_var(log_lvl,
 			"%s: Merging configured GRES with system GPUs",
 			plugin_name);
-		_merge_system_gres_conf(gres_conf_list, gres_list_system);
+		rc2 = _merge_system_gres_conf(gres_conf_list, gres_list_system);
+		if (rc == SLURM_SUCCESS)
+			rc = rc2;
 		FREE_NULL_LIST(gres_list_system);
 
 		if (!gres_conf_list || list_is_empty(gres_conf_list))
@@ -682,7 +715,9 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
 		}
 	}
 
-	rc = gres_node_config_load(gres_conf_list, node_config, &gres_devices);
+	rc2 = gres_node_config_load(gres_conf_list, node_config, &gres_devices);
+	if (rc == SLURM_SUCCESS)
+		rc = rc2;
 
 	/*
 	 * See what envs the gres_slurmd_conf records want to set (if one
@@ -694,8 +729,17 @@ extern int gres_p_node_config_load(list_t *gres_conf_list,
 			     gres_common_set_env_types_on_node_flags,
 			     &node_flags);
 
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
+		/*
+		 * Cloud/dynamic nodes are validated from slurmctld; fatal()
+		 * there would kill the whole controller over one node's bad
+		 * config, so just return the error and let the node be
+		 * rejected instead.
+		 */
+		if (running_in_slurmctld())
+			return rc;
 		fatal("%s failed to load configuration", plugin_name);
+	}
 
 	return rc;
 }

@@ -443,7 +443,8 @@ that count describes shared TRES units carved out of the single device. A
 shared GRES inherits the UUID of the device it shares; a UUID configured on
 its own line must match.
 
-The value may not contain a comma.
+The value may not contain a comma and must be unique among all devices of the
+same GRES name on a node, whether it was set here or found by \fBAutoDetect\fR.
 
 If \fBAutoDetect\fR also finds a UUID for the device, the two must agree,
 otherwise the device is excluded from the configuration.

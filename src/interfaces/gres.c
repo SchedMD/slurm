@@ -375,6 +375,11 @@ typedef struct {
 	uint16_t protocol_version;
 } pack_state_t;
 
+typedef struct {
+	gres_slurmd_conf_t *dup;
+	list_t *seen;
+} find_dup_unique_id_args_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -2916,6 +2921,76 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 	return fill_in_gres_devices.rc;
 }
 
+static int _match_unique_id(void *x, void *key)
+{
+	gres_slurmd_conf_t *conf = x;
+	gres_slurmd_conf_t *match = key;
+
+	return (conf->plugin_id == match->plugin_id) &&
+	       !xstrcmp(conf->unique_id, match->unique_id);
+}
+
+static int _find_dup_unique_id(void *x, void *arg)
+{
+	gres_slurmd_conf_t *conf = x;
+	find_dup_unique_id_args_t *args = arg;
+
+	if (!conf->unique_id)
+		return 0;
+
+	if (!list_find_first(args->seen, _match_unique_id, conf)) {
+		list_append(args->seen, conf);
+		return 0;
+	}
+
+	args->dup = conf;
+
+	return -1;
+}
+
+extern gres_slurmd_conf_t *gres_find_duplicate_unique_id(list_t *gres_conf_list)
+{
+	find_dup_unique_id_args_t args = { 0 };
+
+	args.seen = list_create(NULL);
+	(void) list_for_each(gres_conf_list, _find_dup_unique_id, &args);
+	FREE_NULL_LIST(args.seen);
+
+	return args.dup;
+}
+
+/*
+ * Make sure no two gres.conf records of the same GRES name share a UUID.
+ * A duplicate would make a device impossible to name unambiguously, both for
+ * the vendor env vars and for drain/resume by UUID.
+ *
+ * Only gres.conf-supplied UUIDs are seen here; AutoDetect does not run
+ * until node_config_load(), well after this.
+ *
+ * RET SLURM_SUCCESS or ESLURM_UNSUPPORTED_GRES (duplicate found)
+ */
+static int _validate_unique_ids(list_t *gres_conf_list)
+{
+	gres_slurmd_conf_t *dup = gres_find_duplicate_unique_id(gres_conf_list);
+
+	if (!dup)
+		return SLURM_SUCCESS;
+
+	/*
+	 * This runs in slurmctld too (for cloud nodes), where fatal() would
+	 * kill the whole controller over one node's bad config. Reject just
+	 * that node there instead.
+	 */
+	if (!running_in_slurmctld())
+		fatal("Duplicate UUID=%s for GRES %s in gres.conf. Each device must have a unique UUID",
+		      dup->unique_id, dup->name);
+
+	error("Duplicate UUID=%s for GRES %s in gres.conf on node %s. Each device must have a unique UUID",
+	      dup->unique_id, dup->name, gres_node_name);
+
+	return ESLURM_UNSUPPORTED_GRES;
+}
+
 /*
  * Parse gres.conf into gres_conf_list and update autodetect_flags. Refreshes
  * gres_node_name to match node_name. Caller must hold gres_context_lock.
@@ -2991,6 +3066,10 @@ static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 		}
 		s_p_hashtbl_destroy(tbl);
 	}
+
+	rc = _validate_unique_ids(tmp_gres_conf_list);
+	if (rc != SLURM_SUCCESS)
+		goto fini;
 
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = tmp_gres_conf_list;
