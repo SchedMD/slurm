@@ -15,9 +15,7 @@ queue of pending work.
 
 # NOTES FOR GITHUB DEVELOPERS
 
-The official issue tracker for Slurm is at
-
-:   <https://support.schedmd.com/>
+The official issue tracker for Slurm is at: <https://support.schedmd.com/>
 
 We welcome code contributions and patches. Please see
 [the contributing guidelines](CONTRIBUTING.md) for further details.
