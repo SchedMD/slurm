@@ -211,15 +211,14 @@ setenvfs(const char *fmt, ...)
 {
 	va_list ap;
 	char *buf, *loc;
-	int rc, size;
+	int rc;
 
 	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf(buf, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 
-	size = strlen(buf);
-	if (size >= MAX_ENV_STRLEN) {
+	if (_env_check_len(buf, NULL)) {
 		if ((loc = strchr(buf, '=')))
 			*loc = '\0';
 		error("environment variable %s is too long", buf);
