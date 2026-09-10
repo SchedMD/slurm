@@ -68,13 +68,11 @@ description of the subdirectories of the Slurm distribution follows:
 
 # COMPILING AND INSTALLING THE DISTRIBUTION
 
-Please see the instructions at
+Please see the instructions at:
+<https://slurm.schedmd.com/quickstart_admin.html>
 
-:   <https://slurm.schedmd.com/quickstart_admin.html>
-
-Extensive documentation is available from our home page at
-
-:   <https://slurm.schedmd.com/slurm.html>
+Extensive documentation is available from our home page at:
+<https://slurm.schedmd.com/slurm.html>
 
 # LEGAL
 
