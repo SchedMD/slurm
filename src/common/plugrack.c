@@ -539,12 +539,17 @@ extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
 	}
 
 	if (listf && !xstrcasecmp(plugin_list, "list")) {
-		/* call list function ptr and then load all */
 		plugrack_foreach(plugins->rack, listf, NULL);
-		rc = SLURM_SUCCESS;
-		/* reusing plugins on a list request makes no sense */
-		xassert(!*plugins_ptr);
-		goto cleanup;
+
+		/*
+		 * A list request only enumerates: it must never change the
+		 * loaded plugin set. Leave *plugins_ptr alone and release the
+		 * rack if it was created just for this request.
+		 */
+		if (!*plugins_ptr)
+			unload_plugins(plugins);
+
+		return SLURM_SUCCESS;
 	}
 
 	if (!plugin_list) {
