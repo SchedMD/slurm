@@ -896,7 +896,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			 */
 		}
 	} else if (!con_flag(con, FLAG_READ_EOF) &&
-		   !con_flag(con, FLAG_WRITE_EOF)) {
+		   !con_flag(con, FLAG_WRITE_EOF) &&
+		   !con_flag(con, FLAG_CLOSE_REQUESTED)) {
 		xassert(!con_flag(con, FLAG_CAN_READ) &&
 			!con_flag(con, FLAG_CAN_WRITE));
 
@@ -1131,6 +1132,9 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 				 __func__, con->name);
 			add_work_con_fifo(true, con, tls_shutdown, NULL);
 		} else if (con_flag(con, FLAG_ON_DATA_TRIED)) {
+			xassert(con->input_fd >= 0);
+			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
+
 			log_flag(CONMGR, "%s: [%s] waiting for incoming to continue TLS shutdown",
 				 __func__, con->name);
 		} else {

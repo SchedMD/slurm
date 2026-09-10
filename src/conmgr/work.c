@@ -496,6 +496,14 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 	add_work(false, con, callback, control, 0, caller);
 }
 
+extern void conmgr_con_add_work(conmgr_fd_ref_t *ref,
+				conmgr_callback_t callback,
+				conmgr_work_control_t control,
+				const char *caller)
+{
+	add_work(false, conmgr_fd_get_ref(ref), callback, control, 0, caller);
+}
+
 extern size_t printf_work(const work_t *work, char *buffer, size_t len,
 			  bool include_connection)
 {

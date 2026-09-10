@@ -692,6 +692,20 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 			    conmgr_work_control_t control, const char *caller);
 
 /*
+ * Add work to run (reference-based variant)
+ * IN ref - reference to connection to run work or NULL
+ * IN callback - callback function details
+ * IN control - work controls to determine when work is run
+ * IN caller - __func__ from caller for logging
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+extern void conmgr_con_add_work(conmgr_fd_ref_t *ref,
+				conmgr_callback_t callback,
+				conmgr_work_control_t control,
+				const char *caller);
+
+/*
  * Add work to run for connection
  * IN con - connection to assign work
  * IN _func - function pointer to run work
@@ -776,6 +790,49 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 							    delay_nanoseconds),\
 			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
 		}, __func__)
+
+/*
+ * Add work to run for connection (reference-based variant)
+ * IN ref - reference to connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_con_add_work_fifo(ref, _func, func_arg) \
+	conmgr_con_add_work(ref, \
+			    (conmgr_callback_t) { \
+				    .func = _func, \
+				    .arg = func_arg, \
+				    .func_name = #_func, \
+			    }, \
+			    (conmgr_work_control_t) { \
+				    .depend_type = CONMGR_WORK_DEP_NONE, \
+				    .schedule_type = CONMGR_WORK_SCHED_FIFO, \
+			    }, \
+			    __func__)
+
+/*
+ * Add work to run when all pending writes are complete (reference-based)
+ * IN ref - reference to connection to assign work
+ * IN _func - function pointer to run work
+ * IN func_arg - arg to hand to function pointer
+ * NOTE: never add a thread that will never return or conmgr_run() will never
+ * return either.
+ */
+#define conmgr_con_add_work_write_complete_fifo(ref, _func, func_arg) \
+	conmgr_con_add_work( \
+		ref, \
+		(conmgr_callback_t) { \
+			.func = _func, \
+			.arg = func_arg, \
+			.func_name = #_func, \
+		}, \
+		(conmgr_work_control_t) { \
+			.depend_type = CONMGR_WORK_DEP_CON_WRITE_COMPLETE, \
+			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
+		}, \
+		__func__)
 
 /*
  * Add work to call on signal received
@@ -990,31 +1047,37 @@ extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
 extern int conmgr_con_fstat_input(conmgr_fd_ref_t *con, struct stat *stat_ptr);
 
 /*
- * Check to see if the con->output_fd is currently open and can (in theory)
- * accept more write()s.
+ * Check to see if the connection is still fully open: input has not hit EOF
+ * and output can (in theory) accept more write()s.
  *
  * WARNING: This check is inherently a race condition and should only be used to
  * verify a connection is still valid before an expensive operation. The
- * connection output could close or fail at anytime after this check which will
- * be relayed via callbacks on the connection.
+ * connection could close or fail at anytime after this check which will be
+ * relayed via callbacks on the connection.
  *
- * RET true if output is still open or false if otherwise
+ * NOTE: A connection created without an input fd always returns false as its
+ * input is closed from the start.
+ *
+ * RET true if both directions are still open or false if otherwise
  */
-extern bool conmgr_fd_is_output_open(conmgr_fd_t *con);
+extern bool conmgr_fd_is_open(conmgr_fd_t *con);
 
 /*
- * Check to see if the con->output_fd is currently open and can (in theory)
- * accept more write()s.
+ * Check to see if the connection is still fully open: input has not hit EOF
+ * and output can (in theory) accept more write()s.
  *
  * WARNING: This check is inherently a race condition and should only be used to
  * verify a connection is still valid before an expensive operation. The
- * connection output could close or fail at anytime after this check which will
- * be relayed via callbacks on the connection.
+ * connection could close or fail at anytime after this check which will be
+ * relayed via callbacks on the connection.
+ *
+ * NOTE: A connection created without an input fd always returns false as its
+ * input is closed from the start.
  *
  * IN ref reference to connection
- * RET true if output is still open or false if otherwise
+ * RET true if both directions are still open or false if otherwise
  */
-extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref);
+extern bool conmgr_con_is_open(conmgr_fd_ref_t *ref);
 
 /*
  * Check if conmgr is enabled in this process

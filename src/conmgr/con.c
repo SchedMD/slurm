@@ -111,6 +111,7 @@ static const struct {
 	T(FLAG_TCP_NODELAY),
 	T(FLAG_WRITE_EOF),
 	T(FLAG_ENABLE_TLS_SHUTDOWN),
+	T(FLAG_CLOSE_REQUESTED),
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
@@ -283,6 +284,16 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
+	/*
+	 * Record that a close was explicitly requested and wake up the
+	 * connection watch loop. This is necessary for a connection whose input
+	 * is already closed, which would otherwise not wake the watch loop.
+	 */
+	if (!con_flag(con, FLAG_CLOSE_REQUESTED)) {
+		con_set_flag(con, FLAG_CLOSE_REQUESTED);
+		EVENT_SIGNAL(&mgr.watch_sleep);
+	}
+
 	if ((con->input_fd == con->output_fd) || con_flag(con, FLAG_WRITE_EOF))
 		con_unset_flag(con, FLAG_QUIESCE);
 
@@ -295,7 +306,7 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		if (!locked)
 			slurm_mutex_unlock(&mgr.mutex);
 
-		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
+		log_flag(CONMGR, "%s: [%s] input already closed; close requested",
 			 __func__, con->name);
 		return;
 	}
@@ -758,6 +769,14 @@ extern int add_connection(conmgr_con_type_t type,
 		log_flag(CONMGR, "%s: refusing connection without input or output fd",
 			 __func__);
 		return SLURM_COMMUNICATIONS_INVALID_FD;
+	}
+
+	/* TLS requires bi-directional communications */
+	if (!has_in && (flags & (CON_FLAG_TLS_SERVER | CON_FLAG_TLS_CLIENT |
+				 CON_FLAG_TLS_FINGERPRINT))) {
+		log_flag(CONMGR, "%s: [fd:%d->%d] refusing TLS connection without input fd",
+			 __func__, input_fd, output_fd);
+		return SLURM_COMMUNICATIONS_INVALID_INCOMING_FD;
 	}
 
 	is_socket = (has_in && S_ISSOCK(in_stat.st_mode)) ||
@@ -2492,34 +2511,34 @@ extern int conmgr_quiesce_con(conmgr_fd_ref_t *ref)
 	return rc;
 }
 
-static bool _is_output_open(conmgr_fd_t *con)
+static bool _is_open(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	return (!con_flag(con, FLAG_READ_EOF) &&
 		!con_flag(con, FLAG_WRITE_EOF));
 }
 
-extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
+extern bool conmgr_fd_is_open(conmgr_fd_t *con)
 {
 	bool open;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
-	open = _is_output_open(con);
+	open = _is_open(con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return open;
 }
 
-extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref)
+extern bool conmgr_con_is_open(conmgr_fd_ref_t *ref)
 {
 	bool open;
 
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 
 	slurm_mutex_lock(&mgr.mutex);
-	open = _is_output_open(ref->con);
+	open = _is_open(ref->con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return open;
