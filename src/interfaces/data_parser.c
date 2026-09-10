@@ -391,27 +391,6 @@ cleanup:
 	return parser;
 }
 
-/*
- * Check if a parser was already built from this plugin
- * IN parsers - parsers built so far
- * IN count - number of populated entries in parsers
- * IN plugin_offset - resolved plugin index of the candidate
- * RET true if this plugin already has a parser
- *
- * Parameters are deliberately not compared. Only the version reaches a
- * {data_parser} URL, so every parser built from one plugin resolves to the
- * same path and only the first can be served.
- */
-static bool _duplicate_parser(data_parser_t **parsers, int count,
-			      int plugin_offset)
-{
-	for (int i = 0; i < count; i++)
-		if (parsers[i]->plugin_offset == plugin_offset)
-			return true;
-
-	return false;
-}
-
 extern data_parser_t **data_parser_g_new_array(
 	data_parser_on_error_t on_parse_error,
 	data_parser_on_error_t on_dump_error,
@@ -425,7 +404,7 @@ extern data_parser_t **data_parser_g_new_array(
 	plugrack_foreach_t listf,
 	bool skip_loading)
 {
-	int rc, i = 0, count = 0;
+	int rc, i = 0;
 	data_parser_t **parsers = NULL;
 	plugin_param_t *pparams;
 
@@ -444,24 +423,10 @@ extern data_parser_t **data_parser_g_new_array(
 		goto cleanup;
 	}
 
-	/*
-	 * Several requested parsers can share one loaded plugin, as a
-	 * version and each of its "+params" variants all resolve to the
-	 * same plugin. Sizing by plugins->count then leaves no room for
-	 * the NULL terminator and every walk of the array reads past its
-	 * end. Size by whichever count is larger.
-	 */
-	for (int j = 0; pparams && pparams[j].plugin_type; j++)
-		count++;
-
-	if (count < plugins->count)
-		count = plugins->count;
-
-	parsers = xcalloc((count + 1), sizeof(*parsers));
+	/* always allocate for all possible plugins */
+	parsers = xcalloc((plugins->count + 1), sizeof(*parsers));
 
 	if (pparams) {
-		int n = 0;
-
 		for (; pparams[i].plugin_type; i++) {
 			int index =
 				_find_plugin_by_type(pparams[i].plugin_type);
@@ -472,26 +437,11 @@ extern data_parser_t **data_parser_g_new_array(
 				goto cleanup;
 			}
 
-			/*
-			 * A version and LATEST_PLUGIN_NAME name the same
-			 * parser, so one can be requested twice. Asking for it
-			 * twice is not an error, but building it twice is:
-			 * callers bind one parser per version.
-			 */
-			if (_duplicate_parser(parsers, n, index)) {
-				log_flag(DATA, "%s: skipping repeat request for plugin %s",
-					 __func__, plugins->types[index]);
-				xfree(pparams[i].params);
-				xfree(pparams[i].plugin_type);
-				continue;
-			}
-
-			parsers[n++] =
-				_new_parser(on_parse_error, on_dump_error,
-					    on_query_error, error_arg,
-					    on_parse_warn, on_dump_warn,
-					    on_query_warn, warn_arg, index,
-					    pparams[i].params);
+			parsers[i] = _new_parser(on_parse_error, on_dump_error,
+						 on_query_error, error_arg,
+						 on_parse_warn, on_dump_warn,
+						 on_query_warn, warn_arg, index,
+						 pparams[i].params);
 
 			pparams[i].params = NULL;
 			xfree(pparams[i].plugin_type);
@@ -519,7 +469,7 @@ cleanup:
 	}
 
 	if (plugins && parsers)
-		for (int j = 0; j < count; j++)
+		for (int j = 0; j < plugins->count; j++)
 			FREE_NULL_DATA_PARSER(parsers[j]);
 	xfree(parsers);
 
