@@ -190,6 +190,15 @@ extern node_rank_order_t *step_node_order(step_record_t *step_ptr,
 					  node_rank_order_t **alloc_order);
 
 /*
+ * Like step_node_order(), but always build from step_layout->node_list.
+ * Use at teardown, where a step may outlive a node removed from its job.
+ * OUT alloc_order - caller xfrees
+ */
+extern node_rank_order_t *step_layout_order(step_record_t *step_ptr,
+					    int *order_cnt,
+					    node_rank_order_t **alloc_order);
+
+/*
  * Return the order the job's nodes are emitted in, along with the matching
  * node list: the user's list deduplicated in first-occurrence order for
  * --distribution=arbitrary, where that list drives the task layout, and

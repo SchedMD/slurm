@@ -2738,6 +2738,27 @@ extern node_rank_order_t *step_node_order(step_record_t *step_ptr,
 	return *alloc_order;
 }
 
+/*
+ * Build the node order from the step layout's node list, regardless of
+ * distribution. Used at teardown, where a non-arbitrary step may have outlived
+ * a node removed from its job: the layout still names it, so counting it keeps
+ * step_node_inx aligned with tasks[]/memory_allocated[]/cpu_alloc_reps[] while
+ * job_get_node_inx() returns -1 for the gone node.
+ */
+extern node_rank_order_t *step_layout_order(step_record_t *step_ptr,
+					    int *order_cnt,
+					    node_rank_order_t **alloc_order)
+{
+	job_resources_t *job_resrcs_ptr = step_ptr->job_ptr->job_resrcs;
+	hostlist_t *step_hl = hostlist_create(step_ptr->step_layout->node_list);
+
+	*alloc_order =
+		_build_arbitrary_order(job_resrcs_ptr, step_hl, order_cnt);
+	hostlist_destroy(step_hl);
+
+	return *alloc_order;
+}
+
 extern node_rank_order_t *job_node_order(job_record_t *job_ptr, int *order_cnt,
 					 node_rank_order_t **alloc_order,
 					 char **node_list)
