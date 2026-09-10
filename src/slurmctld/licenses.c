@@ -278,12 +278,14 @@ static int _foreach_license_print(void *x, void *arg)
 	foreach_license_print_t *args = arg;
 
 	if (license_entry->id.hres_id != NO_VAL16) {
-		info("licenses: %s=%s lic_id=%u hres_id=%u mode=%u layer_name=%s nodes:%s total=%u used=%u",
+		info("licenses: %s=%s lic_id=%u hres_id=%u mode=%u layer_name=%s nodes:%s total=%u used=%u disable_hres=%s disable_layer=%s",
 		     args->header, license_entry->name, license_entry->id.lic_id,
 		     license_entry->id.hres_id, license_entry->mode,
 		     license_entry->hres_rec.layer_name,
 		     license_entry->nodes, license_entry->total,
-		     license_entry->used);
+		     license_entry->used,
+		     license_entry->hres_rec.disable_hres ? "true" : "false",
+		     license_entry->hres_rec.disable_layer ? "true" : "false");
 		if (license_entry->mode == HRES_MODE_3) {
 			licenses_t *parent = license_entry->hres_rec.parent;
 			uint16_t parent_id = NO_VAL16;
@@ -1984,6 +1986,8 @@ static int _foreach_hres_filter_mode1(void *x, void *arg)
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
+	if (match->hres_rec.disable_hres || match->hres_rec.disable_layer)
+		return 0;
 
 	resv_licenses =
 		job_test_lic_resv(args->job_ptr, match->id, args->when, false);
@@ -2001,6 +2005,10 @@ static int _foreach_hres_filter_mode2(void *x, void *arg)
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
+	if (match->hres_rec.disable_hres || match->hres_rec.disable_layer) {
+		bit_and_not(args->node_mask, match->node_bitmap);
+		return 0;
+	}
 
 	resv_licenses =
 		job_test_lic_resv(args->job_ptr, match->id, args->when, false);
@@ -2294,6 +2302,13 @@ static int _foreach_hres_pre_select(void *x, void *key)
 
 	if (license->id.hres_id != hres_select->root_id.hres_id)
 		return 0;
+
+	if (!hres_select->test_only && (license->hres_rec.disable_hres ||
+					license->hres_rec.disable_layer)) {
+		hres_select->avail_hres[license->hres_rec.idx] = 0;
+		hres_select->avail_hres_orig[license->hres_rec.idx] = 0;
+		return 0;
+	}
 
 	hres_select->avail_hres[license->hres_rec.idx] = license->total;
 
@@ -3231,8 +3246,19 @@ static int _foreach_hres_job_get(void *x, void *arg)
 		return 0;
 
 	if (args->license_entry->mode == HRES_MODE_1) {
-		int resv_licenses = job_test_lic_resv(args->job_ptr, match->id,
-						      args->when, false);
+		int resv_licenses;
+
+		/*
+		 * A disabled layer must not be the one the job is charged to.
+		 * _foreach_hres_filter_mode1() does the same check.
+		 */
+		if (match->hres_rec.disable_hres ||
+		    match->hres_rec.disable_layer)
+			return 0;
+
+		resv_licenses = job_test_lic_resv(args->job_ptr, match->id,
+						  args->when, false);
+
 		if (!_sufficient_licenses(args->license_entry, match,
 					  resv_licenses))
 			return 0;
@@ -3736,6 +3762,8 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack32(lic->last_deficit, buffer);
 		pack_time(lic->last_update, buffer);
 		pack8(lic->mode, buffer);
+		packbool(lic->hres_rec.disable_hres, buffer);
+		packbool(lic->hres_rec.disable_layer, buffer);
 		packstr(lic->nodes, buffer);
 		packstr(lic->hres_rec.layer_name, buffer);
 		packstr(lic->hres_rec.parent_name, buffer);
@@ -3808,11 +3836,17 @@ static int _foreach_bf_licenses_initial(void *x, void *arg)
 	bf_licenses_initial_args_t *args = arg;
 	bf_license_t *bf_entry = xmalloc(sizeof(*bf_entry));
 
-	bf_entry->remaining = license_entry->total;
+	if (license_entry->hres_rec.disable_hres ||
+	    license_entry->hres_rec.disable_layer) {
+		/* Disable backfill planning */
+		bf_entry->remaining = 0;
+	} else {
+		bf_entry->remaining = license_entry->total;
+		if (!args->bf_running_job_reserve &&
+		    (bf_entry->remaining != INFINITE))
+			bf_entry->remaining -= license_entry->used;
+	}
 	bf_entry->id = license_entry->id;
-
-	if (!args->bf_running_job_reserve && (bf_entry->remaining != INFINITE))
-		bf_entry->remaining -= license_entry->used;
 
 	list_append(args->bf_list, bf_entry);
 
@@ -3918,6 +3952,15 @@ static int _foreach_hres_deduct(void *x, void *arg)
 	match = list_find_first_ro(cluster_license_list,
 				   _license_find_rec_by_id, &bf_lic->id);
 	if (!match)
+		return 0;
+
+	/*
+	 * A disabled layer starts the plan with nothing remaining, see
+	 * _foreach_bf_licenses_initial(). Jobs already running on it keep
+	 * what they hold, so there is nothing to deduct and no underflow
+	 * to report.
+	 */
+	if (match->hres_rec.disable_hres || match->hres_rec.disable_layer)
 		return 0;
 
 	if (args->license_entry->mode == HRES_MODE_3) {

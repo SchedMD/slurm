@@ -497,12 +497,14 @@ typedef struct {
 typedef struct {
 	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
+	bool disable_layer;
 	char *layer_name;
 	char *nodes;
 	char *parent_name;
 } hierarchy_layer_t;
 
 typedef struct {
+	bool disable_hres;
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
@@ -7446,6 +7448,8 @@ static int _foreach_layer(void *x, void *arg)
 	license->hres_rec.layer_name = xstrdup(layer->layer_name);
 	license->hres_rec.parent_name = xstrdup(layer->parent_name);
 	license->hres_rec.total = layer->count;
+	license->hres_rec.disable_hres = args->resource->disable_hres;
+	license->hres_rec.disable_layer = layer->disable_layer;
 
 	if (list_count(layer->base)) {
 		license->hres_rec.base = list_create(hres_variable_free);
@@ -7532,6 +7536,7 @@ static int _foreach_license(void *x, void *arg)
 		resource = xmalloc(sizeof(*resource));
 		resource->name = xstrdup(license->name);
 		resource->mode = license->mode;
+		resource->disable_hres = license->hres_rec.disable_hres;
 		list_append(*resources, resource);
 	}
 
@@ -7548,6 +7553,7 @@ static int _foreach_license(void *x, void *arg)
 	layer->parent_name = xstrdup(license->hres_rec.parent_name);
 	layer->nodes = xstrdup(license->nodes);
 	layer->count = license->hres_rec.total;
+	layer->disable_layer = license->hres_rec.disable_layer;
 	if (!resource->topology_name)
 		resource->topology_name =
 			xstrdup(license->hres_rec.topology_name);
@@ -9511,6 +9517,8 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(TIMESTAMP, last_update, "LastUpdate", "When the license information was last updated (UNIX Timestamp)"),
 	add_parse(STRING, layer_name, "LayerName", "Name of HRES Layer"),
 	add_parse(STRING, parent_name, "ParentName", "Name of HRES Layer's parent"),
+	add_parse(BOOL, disable_hres, "DisableHRES", "If true, this HRES is disabled for scheduling. Jobs requesting this HRES will remain pending."),
+	add_parse(BOOL, disable_layer, "DisableLayer", "If true, this HRES layer is disabled for scheduling; jobs may still be scheduled on other layers in the same HRES."),
 	add_parse(STRING, nodes, "Nodes", "HRes nodes"),
 	add_parse(H_VARIABLE_LIST, base, "Base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer."),
 };
@@ -11652,6 +11660,7 @@ static const parser_t PARSER_ARRAY(H_LAYER)[] = {
 	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
 	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
 	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parse(BOOL, disable_layer, "disable_layer", "If true, disables this HRES layer for scheduling. Jobs may still be scheduled on other layers in the same HRES."),
 };
 #undef add_parse
 #undef add_parse_req
@@ -11666,6 +11675,7 @@ static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
 	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
 	add_parse(STRING, topology_name, "topology", "Name of topology associated to hierarchical resource"),
 	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
+	add_parse(BOOL, disable_hres, "disable_hres", "If true, disables this HRES for scheduling. Jobs requesting this HRES will remain pending."),
 };
 #undef add_parse_req
 #undef add_parse

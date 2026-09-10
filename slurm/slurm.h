@@ -3563,6 +3563,8 @@ typedef struct slurm_license_info {
 	uint32_t last_deficit;
 	time_t last_update;  /* last updated (for remote) */
 	uint8_t mode;
+	bool disable_hres;
+	bool disable_layer;
 	char *nodes;
 	char *layer_name;
 	char *parent_name;
