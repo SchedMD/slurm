@@ -1007,6 +1007,40 @@ extern void fini(void)
 }
 
 /*
+ * Build the UUID string for an Intel GPU from its Level Zero device UUID.
+ *
+ * ze_device_uuid_t is 16 opaque bytes; render them in the canonical 8-4-4-4-12
+ * form so the value matches what the Intel tooling (zeinfo, sycl-ls) prints for
+ * the device and an admin can paste it straight into a drain request.
+ *
+ * Returns NULL if the device reports an all-zero UUID, which is what an
+ * unset/unsupported value looks like. Devices all claiming the same UUID would
+ * be useless for naming one of them anyway.
+ *
+ * NOTE: this is deliberately not fed to ZE_AFFINITY_MASK, which only accepts
+ * device indexes. See gres_common_gpu_set_env().
+ */
+static char *_oneapi_get_device_uuid_str(ze_device_properties_t *device_props)
+{
+	uint8_t *id = device_props->uuid.id;
+	bool all_zero = true;
+
+	for (int i = 0; i < ZE_MAX_DEVICE_UUID_SIZE; i++) {
+		if (id[i]) {
+			all_zero = false;
+			break;
+		}
+	}
+	if (all_zero)
+		return NULL;
+
+	return xstrdup_printf(
+		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		id[0], id[1], id[2], id[3], id[4], id[5], id[6], id[7], id[8],
+		id[9], id[10], id[11], id[12], id[13], id[14], id[15]);
+}
+
+/*
  * Creates and returns a gres conf list of detected Intel gpus on the node.
  * If an error occurs, return NULL
  * Caller is responsible for freeing the list.
@@ -1116,9 +1150,13 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 			continue;
 		}
 
+		gres_slurmd_conf.unique_id =
+			_oneapi_get_device_uuid_str(&device_props);
+
 		debug2("GPU index %u:", i);
 		debug2("    Name: %s", device_props.name);
 		debug2("    DeviceId: %u", device_props.deviceId);
+		debug2("    UUID: %s", gres_slurmd_conf.unique_id);
 		debug2("    PCI Domain/Bus/Device/Function: %u:%u:%u:%u",
 			pci.address.domain, pci.address.bus,
 			pci.address.device, pci.address.function);
@@ -1142,6 +1180,7 @@ static list_t *_get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		xfree(cpu_aff_mac_range);
 		xfree(gres_slurmd_conf.cpus);
 		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.unique_id);
 	}
 
 	return gres_list_system;
