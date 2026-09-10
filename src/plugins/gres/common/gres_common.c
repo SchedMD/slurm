@@ -190,7 +190,7 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 			    log_level_t log_lvl)
 {
 	log_var(log_lvl, "    GRES[%s] Type:%s Count:%"PRIu64" Cores(%d):%s  "
-		"Links:%s Flags:%s File:%s UniqueId:%s", gres_slurmd_conf->name,
+		"Links:%s Flags:%s File:%s UUID:%s", gres_slurmd_conf->name,
 		gres_slurmd_conf->type_name, gres_slurmd_conf->count,
 		gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
 		gres_slurmd_conf->links,

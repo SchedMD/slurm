@@ -3158,7 +3158,7 @@ static int _add_to_gres_conf_list(gres_slurmd_conf_t *conf, char *node_name)
 	if (!conf->count)
 		goto empty;
 
-	log_flag(GRES, "Node:%s Gres:%s Type:%s UniqueId:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+	log_flag(GRES, "Node:%s Gres:%s Type:%s UUID:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
 		 node_name, conf->name, conf->type_name, conf->unique_id,
 		 gres_flags2str(conf->config_flags), conf->cpus, conf->cpu_cnt,
 		 conf->count, conf->links);

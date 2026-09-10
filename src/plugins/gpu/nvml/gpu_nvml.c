@@ -1287,7 +1287,7 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 	debug2("GPU minor %u, MIG index %u:", gpu_minor, mig_index);
 	debug2("    MIG Profile: %s", nvml_mig->profile_name);
 	debug2("    MIG UUID: %s", mig_uuid);
-	debug2("    UniqueID: %s", nvml_mig->unique_id);
+	debug2("    UUID: %s", nvml_mig->unique_id);
 	debug2("    GPU Instance (GI) ID: %u", gi_id);
 	debug2("    Compute Instance (CI) ID: %u", ci_id);
 	debug2("    GI Minor Number: %u", gi_minor);
