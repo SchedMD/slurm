@@ -359,10 +359,11 @@ static void *_cluster_rollup_usage(void *arg)
 	/*
 	 * Advance each rollup timestamp only if it is at or above the value
 	 * this roll started from (last_hour, last_day, last_month). While this
-	 * roll was running, a runaway job fix or trigger_reroll() may have moved
-	 * the timestamp backwards and deleted usage that must be rebuilt from
-	 * that point. Overwriting it here would skip that range forever, so the
-	 * IF() leaves a lower value alone and the next roll resumes from it.
+	 * roll was running, trigger_reroll() may have moved the timestamp
+	 * backwards for a late record that must be rolled from that point.
+	 * Overwriting it here would skip that range forever, so the IF() leaves
+	 * a lower value alone and the next roll resumes from it. Runaway job
+	 * fixes cannot overlap a rollup, they take usage_rollup_lock.
 	 *
 	 * ">=" rather than "=" because on "sacctmgr rollup <start>" the start
 	 * value comes from the command line and may be below the stored

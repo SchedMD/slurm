@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "as_mysql_fix_runaway_jobs.h"
+#include "as_mysql_usage.h"
 #include "src/common/list.h"
 #include "src/common/slurmdb_defs.h"
 
@@ -117,6 +118,19 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_job_rec_t *first_job;
 	char *temp_cluster_name = mysql_conn->cluster_name;
 	uint32_t end_state = JOB_COMPLETE;
+
+	/*
+	 * The rewind of the rollup timestamps and the usage deletes that go
+	 * with it cannot run while a rollup is rebuilding that same usage. The
+	 * rollup would advance its timestamps past the usage we deleted,
+	 * leaving it unrebuildable, or deadlock with us over the last_ran and
+	 * usage tables. Do not wait for the rollup, a catch-up roll can take
+	 * hours; tell the caller to retry instead.
+	 */
+	if (pthread_mutex_trylock(&usage_rollup_lock) == EBUSY) {
+		debug("Rollup in progress, not fixing runaway jobs");
+		return ESLURM_ROLLUP_IN_PROGRESS;
+	}
 
 	if (!runaway_jobs) {
 		error("%s: No list of runaway jobs to fix given.",
@@ -228,5 +242,6 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 bail:
 	xfree(job_ids);
 	mysql_conn->cluster_name = temp_cluster_name;
+	slurm_mutex_unlock(&usage_rollup_lock);
 	return rc;
 }
