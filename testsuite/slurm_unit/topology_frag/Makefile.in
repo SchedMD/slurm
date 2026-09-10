@@ -91,8 +91,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_1)
-@HAVE_CHECK_TRUE@TESTS = topology-test$(EXEEXT)
-subdir = testsuite/slurm_unit/topology
+@HAVE_CHECK_TRUE@TESTS = topology-frag-test$(EXEEXT)
+subdir = testsuite/slurm_unit/topology_frag
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -155,18 +155,21 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_CHECK_TRUE@am__EXEEXT_1 = topology-test$(EXEEXT)
-topology_test_SOURCES = topology-test.c
-topology_test_OBJECTS = topology_test-topology-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = topology-frag-test$(EXEEXT)
+topology_frag_test_SOURCES = topology-frag-test.c
+topology_frag_test_OBJECTS =  \
+	topology_frag_test-topology-frag-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-@HAVE_CHECK_TRUE@topology_test_DEPENDENCIES = $(am__DEPENDENCIES_1)
+@HAVE_CHECK_TRUE@topology_frag_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-topology_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(topology_test_CFLAGS) \
-	$(CFLAGS) $(topology_test_LDFLAGS) $(LDFLAGS) -o $@
+topology_frag_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(topology_frag_test_CFLAGS) $(CFLAGS) \
+	$(topology_frag_test_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -182,7 +185,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/topology_test-topology-test.Po
+am__depfiles_remade =  \
+	./$(DEPDIR)/topology_frag_test-topology-frag-test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -202,7 +206,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = topology-test.c
+SOURCES = topology-frag-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -702,9 +706,9 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
 LDADD = -ldl -lpthread -L$(top_builddir)/src/api/.libs -lslurmfull
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE
-@HAVE_CHECK_TRUE@topology_test_CFLAGS = $(MYCFLAGS)
-@HAVE_CHECK_TRUE@topology_test_LDADD = @CHECK_LIBS@ $(LDADD)
-@HAVE_CHECK_TRUE@topology_test_LDFLAGS = -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
+@HAVE_CHECK_TRUE@topology_frag_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@topology_frag_test_LDADD = @CHECK_LIBS@ $(LDADD)
+@HAVE_CHECK_TRUE@topology_frag_test_LDFLAGS = -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 all: all-am
 
 .SUFFIXES:
@@ -718,9 +722,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign testsuite/slurm_unit/topology/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign testsuite/slurm_unit/topology_frag/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign testsuite/slurm_unit/topology/Makefile
+	  $(AUTOMAKE) --foreign testsuite/slurm_unit/topology_frag/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -743,9 +747,9 @@ clean-checkPROGRAMS:
 	$(am__rm_f) $(check_PROGRAMS)
 	test -z "$(EXEEXT)" || $(am__rm_f) $(check_PROGRAMS:$(EXEEXT)=)
 
-topology-test$(EXEEXT): $(topology_test_OBJECTS) $(topology_test_DEPENDENCIES) $(EXTRA_topology_test_DEPENDENCIES) 
-	@rm -f topology-test$(EXEEXT)
-	$(AM_V_CCLD)$(topology_test_LINK) $(topology_test_OBJECTS) $(topology_test_LDADD) $(LIBS)
+topology-frag-test$(EXEEXT): $(topology_frag_test_OBJECTS) $(topology_frag_test_DEPENDENCIES) $(EXTRA_topology_frag_test_DEPENDENCIES) 
+	@rm -f topology-frag-test$(EXEEXT)
+	$(AM_V_CCLD)$(topology_frag_test_LINK) $(topology_frag_test_OBJECTS) $(topology_frag_test_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -753,7 +757,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology_test-topology-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology_frag_test-topology-frag-test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -782,19 +786,19 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-topology_test-topology-test.o: topology-test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT topology_test-topology-test.o -MD -MP -MF $(DEPDIR)/topology_test-topology-test.Tpo -c -o topology_test-topology-test.o `test -f 'topology-test.c' || echo '$(srcdir)/'`topology-test.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/topology_test-topology-test.Tpo $(DEPDIR)/topology_test-topology-test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='topology-test.c' object='topology_test-topology-test.o' libtool=no @AMDEPBACKSLASH@
+topology_frag_test-topology-frag-test.o: topology-frag-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_frag_test_CFLAGS) $(CFLAGS) -MT topology_frag_test-topology-frag-test.o -MD -MP -MF $(DEPDIR)/topology_frag_test-topology-frag-test.Tpo -c -o topology_frag_test-topology-frag-test.o `test -f 'topology-frag-test.c' || echo '$(srcdir)/'`topology-frag-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/topology_frag_test-topology-frag-test.Tpo $(DEPDIR)/topology_frag_test-topology-frag-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='topology-frag-test.c' object='topology_frag_test-topology-frag-test.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o topology_test-topology-test.o `test -f 'topology-test.c' || echo '$(srcdir)/'`topology-test.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_frag_test_CFLAGS) $(CFLAGS) -c -o topology_frag_test-topology-frag-test.o `test -f 'topology-frag-test.c' || echo '$(srcdir)/'`topology-frag-test.c
 
-topology_test-topology-test.obj: topology-test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -MT topology_test-topology-test.obj -MD -MP -MF $(DEPDIR)/topology_test-topology-test.Tpo -c -o topology_test-topology-test.obj `if test -f 'topology-test.c'; then $(CYGPATH_W) 'topology-test.c'; else $(CYGPATH_W) '$(srcdir)/topology-test.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/topology_test-topology-test.Tpo $(DEPDIR)/topology_test-topology-test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='topology-test.c' object='topology_test-topology-test.obj' libtool=no @AMDEPBACKSLASH@
+topology_frag_test-topology-frag-test.obj: topology-frag-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_frag_test_CFLAGS) $(CFLAGS) -MT topology_frag_test-topology-frag-test.obj -MD -MP -MF $(DEPDIR)/topology_frag_test-topology-frag-test.Tpo -c -o topology_frag_test-topology-frag-test.obj `if test -f 'topology-frag-test.c'; then $(CYGPATH_W) 'topology-frag-test.c'; else $(CYGPATH_W) '$(srcdir)/topology-frag-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/topology_frag_test-topology-frag-test.Tpo $(DEPDIR)/topology_frag_test-topology-frag-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='topology-frag-test.c' object='topology_frag_test-topology-frag-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_test_CFLAGS) $(CFLAGS) -c -o topology_test-topology-test.obj `if test -f 'topology-test.c'; then $(CYGPATH_W) 'topology-test.c'; else $(CYGPATH_W) '$(srcdir)/topology-test.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(topology_frag_test_CFLAGS) $(CFLAGS) -c -o topology_frag_test-topology-frag-test.obj `if test -f 'topology-frag-test.c'; then $(CYGPATH_W) 'topology-frag-test.c'; else $(CYGPATH_W) '$(srcdir)/topology-frag-test.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1020,9 +1024,9 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-topology-test.log: topology-test$(EXEEXT)
-	@p='topology-test$(EXEEXT)'; \
-	b='topology-test'; \
+topology-frag-test.log: topology-frag-test$(EXEEXT)
+	@p='topology-frag-test$(EXEEXT)'; \
+	b='topology-frag-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1086,7 +1090,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/topology_test-topology-test.Po
+	-rm -f ./$(DEPDIR)/topology_frag_test-topology-frag-test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1132,7 +1136,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/topology_test-topology-test.Po
+	-rm -f ./$(DEPDIR)/topology_frag_test-topology-frag-test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

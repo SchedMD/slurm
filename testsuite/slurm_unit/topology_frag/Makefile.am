@@ -9,9 +9,9 @@ check_PROGRAMS = \
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE
-TESTS = topology-test
+TESTS = topology-frag-test
 
-topology_test_CFLAGS = $(MYCFLAGS)
-topology_test_LDADD = @CHECK_LIBS@ $(LDADD)
-topology_test_LDFLAGS = -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
+topology_frag_test_CFLAGS = $(MYCFLAGS)
+topology_frag_test_LDADD = @CHECK_LIBS@ $(LDADD)
+topology_frag_test_LDFLAGS = -Wl,-rpath=$(top_builddir)/src/api/.libs -export-dynamic
 endif
