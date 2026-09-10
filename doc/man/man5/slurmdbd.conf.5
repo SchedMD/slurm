@@ -588,6 +588,30 @@ unless something is explicitly set by the admin with the create.
 .IP
 
 .TP
+\fBDisableArchiveAnalyze\fR
+After each archive/purge cycle slurmdbd runs ANALYZE TABLE on the tables it
+purged, so the query optimizer's row estimates stay accurate for later
+rollup and reporting queries. Set this to yes to skip that refresh.
+Analyzing a very large table can be time consuming, so disable it if the
+added time at the end of the purge cycle is a problem, or if the site
+schedules ANALYZE TABLE separately. Only relevant when one or more
+Purge*After options are configured. Accepted values are yes or no (default).
+.br
+Every purged per\-cluster table is analyzed, as is the shared transaction
+table when any cluster's transaction rows are purged. When the job table is
+purged, the matching \fB<cluster>_job_env_table\fR and
+\fB<cluster>_job_script_table\fR tables are analyzed at the same time
+unless \fBPurgeJobEnvAfter\fR or \fBPurgeJobScriptAfter\fR (respectively) are
+configured, in which case each is purged and analyzed on its own schedule.
+.br
+ANALYZE TABLE failures are logged to the slurmdbd log; set
+\fBDebugFlags=DB_ARCHIVE\fR for additional detail about which table failed.
+.br
+\fBNOTE\fR: Some MySQL/MariaDB error conditions encountered during ANALYZE
+TABLE, such as a lock wait timeout, will terminate slurmdbd.
+.IP
+
+.TP
 \fBDisableArchiveCommands\fR
 Disable the ability to run sacctmgr archive commands.
 .IP

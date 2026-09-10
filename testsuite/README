@@ -696,6 +696,9 @@ test_100_1   Run all libcheck tests
 test_100_2   Test live upgrades
 test_100_3   Performance test: slurmdbd purge large tables
 test_100_4   Meta-test: testing test environment (coredump generation)
+test_100_5   Performance test: slurmdbd usage rollup triggered via sacctmgr
+             rollup with realistic workload. Rolls up every cluster in the
+             accounting DB; use a throwaway DB.
 
 test_101_#   Testing of sacct options.
 ======================================
@@ -823,9 +826,14 @@ test_114_3   /commands/squeue/test_--json.py
 test_114_4   Validate that squeue --only-job-state is listing jobs accurately.
 test_114_5   Check squeue SLUID support
 
-test_115_#   Testing of sreport options.
-========================================
+test_115_#   Testing of sreport options and rollup correctness.
+===============================================================
 test_115_1   /commands/sreport/test_reports.py
+test_115_2   Rollup arithmetic correctness: assoc, QOS, wckey, cluster utilization
+             (alloc/down/plan/invariant), reservation idle redistribution,
+             energy attribution, and hourly->daily->monthly aggregation.
+             Requires auto-config mode. Rolls up every cluster in the
+             accounting DB; use a throwaway DB.
 
 test_116_#   Testing of srun options.
 =====================================

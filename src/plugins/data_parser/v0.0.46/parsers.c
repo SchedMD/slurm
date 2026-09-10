@@ -8872,6 +8872,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_DBD)[] = {
 	add_flag_bit(DBD_CONF_FLAG_DISABLE_COORD_DBD, "DisableCoordDBD"),
 	add_flag_hidden_bit(DBD_CONF_FLAG_GET_DBVER, "GetDBVer"),
 	add_flag_bit(DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS, "DisableArchiveCommands"),
+	add_flag_bit(DBD_CONF_FLAG_DISABLE_ARCHIVE_ANALYZE, "DisableArchiveAnalyze"),
 };
 
 #define add_parse(mtype, field, path, desc)				\

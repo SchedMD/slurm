@@ -156,6 +156,7 @@ extern int read_slurmdbd_conf(void)
 		{"DebugLevel", S_P_STRING},
 		{"DebugLevelSyslog", S_P_STRING},
 		{"DefaultQOS", S_P_STRING},
+		{"DisableArchiveAnalyze", S_P_BOOLEAN},
 		{"DisableCoordDBD", S_P_BOOLEAN},
 		{"DisableArchiveCommands", S_P_BOOLEAN},
 		{"DisableRollups", S_P_BOOLEAN},
@@ -362,6 +363,12 @@ extern int read_slurmdbd_conf(void)
 				slurmdbd_conf->purge_job |=
 					SLURMDB_PURGE_MONTHS;
 		}
+
+		tmp_bool = false;
+		s_p_get_boolean(&tmp_bool, "DisableArchiveAnalyze", tbl);
+		if (tmp_bool)
+			slurmdbd_conf->flags |=
+				DBD_CONF_FLAG_DISABLE_ARCHIVE_ANALYZE;
 
 		tmp_bool = false;
 		s_p_get_boolean(&tmp_bool, "DisableCoordDBD", tbl);

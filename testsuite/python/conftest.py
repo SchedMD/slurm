@@ -1022,14 +1022,14 @@ def sql_statement_repeat(module_setup):
     statement_repeat_sql = """
         delimiter //
         drop procedure if exists statement_repeat //
-        create procedure statement_repeat(stmt_str varchar(500), seq_start bigint, seq_end bigint, step bigint, use_trans int)
+        create procedure statement_repeat(stmt_str text, seq_start bigint, seq_end bigint, step bigint, use_trans int)
         begin
           declare counter bigint;
           declare incr bigint;
           declare max bigint;
           declare multi int default 0;
           declare pos int;
-          declare rem_str varchar(500);
+          declare rem_str text;
 
           -- ensure sane values
           set seq_start = ifnull(seq_start, 1);
