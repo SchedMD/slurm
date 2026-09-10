@@ -207,7 +207,11 @@ typedef struct gres_slurmd_conf {
 	/* Type of this GRES (e.g. model name) */
 	char *type_name;
 
-	/* Used for GPU binding with MIGs */
+	/*
+	 * Device UUID. Used for GPU binding with MIGs, for the vendor env vars
+	 * when GRES_CONF_UUID is set, and to anchor GRES drains to a device.
+	 * Set by AutoDetect or by UUID in gres.conf.
+	 */
 	char *unique_id;
 
 	/* GRES ID number */

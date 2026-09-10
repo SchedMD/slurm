@@ -421,6 +421,29 @@ gres.conf file, the Type specified should match or be a substring of the value
 that is detected, using an underscore in lieu of any spaces.
 .IP
 
+.TP
+\fBUUID\fR
+An optional string that uniquely identifies a single device, normally the
+UUID reported by the vendor tooling (for example \fBnvidia\-smi \-L\fR). The
+exact format varies by device and \fBAutoDetect\fR mechanism; run \fBslurmd
+\-G\fR to display the UUID Slurm actually detected for each device rather
+than guessing at the format.
+
+Only \fBgres/gpu\fR (and a shared GRES layered on a GPU, such as \fBmps\fR or
+\fBshard\fR) consumes this value; other GRES plugins accept it but make no
+use of it. It is used to set the vendor environment variables when
+\fBFlags\fR=\fIenv_uuid\fR is configured.
+
+Because this names one physical device, \fBFile\fR or \fBMultipleFiles\fR is
+required, and \fBFile\fR may only contain a single device file. A shared GRES
+(\fBmps\fR or \fBshard\fR) may still use a \fBCount\fR greater than one, since
+that count describes shared TRES units carved out of the single device. A
+shared GRES inherits the UUID of the device it shares; a UUID configured on
+its own line must match.
+
+The value may not contain a comma.
+.IP
+
 .SH "EXAMPLES"
 .nf
 ##################################################################
@@ -485,7 +508,19 @@ NodeName=tux[12\-15] Name=gpu File=/dev/nvidia[0\-3]
 # resource use on these nodes for workflow purposes
 ##################################################################
 NodeName=tux[0\-7] Name=bandwidth Type=lustre Count=4G Flags=CountOnly
+.fi
+
 .nf
+##################################################################
+# Slurm's Generic Resource (GRES) configuration file
+# Give each GPU a UUID without relying on AutoDetect, so that the
+# vendor env vars use UUIDs
+##################################################################
+Name=gpu File=/dev/nvidia0 Flags=env_uuid \
+	UUID=GPU\-8932f937\-d72c\-4106\-c12f\-20bd9faed9f6
+Name=gpu File=/dev/nvidia1 Flags=env_uuid \
+	UUID=GPU\-4ae6da5f\-3a1b\-49c7\-9f2d\-0c1e77ab3d10
+.fi
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.

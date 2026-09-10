@@ -112,6 +112,7 @@ static s_p_options_t _gres_options[] = {
 	{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
 	{"Name",  S_P_STRING},	/* Gres name */
 	{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
+	{ "UUID", S_P_STRING }, /* Device UUID/unique identifier */
 	{NULL}
 };
 
@@ -1118,7 +1119,7 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	}
 
 	if (p->cpus && (index != -1)) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Cores=%s CoreCnt=%u Links=%s Flags=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Cores=%s CoreCnt=%u Links=%s Flags=%s%s%s",
 		     p->name,
 		     p->type_name,
 		     p->count,
@@ -1128,9 +1129,11 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		     p->cpus,
 		     p->cpu_cnt,
 		     p->links,
-		     gres_flags2str(p->config_flags));
+		     gres_flags2str(p->config_flags),
+		     p->unique_id ? " UUID=" : "",
+		     p->unique_id ? p->unique_id : "");
 	} else if (index != -1) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Links=%s Flags=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Links=%s Flags=%s%s%s",
 		     p->name,
 		     p->type_name,
 		     p->count,
@@ -1138,16 +1141,20 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		     p->plugin_id,
 		     p->file,
 		     p->links,
-		     gres_flags2str(p->config_flags));
+		     gres_flags2str(p->config_flags),
+		     p->unique_id ? " UUID=" : "",
+		     p->unique_id ? p->unique_id : "");
 	} else if (p->file) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s Links=%s Flags=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s Links=%s Flags=%s%s%s",
 		     p->name,
 		     p->type_name,
 		     p->count,
 		     p->plugin_id,
 		     p->file,
 		     p->links,
-		     gres_flags2str(p->config_flags));
+		     gres_flags2str(p->config_flags),
+		     p->unique_id ? " UUID=" : "",
+		     p->unique_id ? p->unique_id : "");
 	} else {
 		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u Links=%s Flags=%s",
 		     p->name,
@@ -1172,7 +1179,7 @@ static int _post_plugin_gres_conf(void *x, void *arg)
 
 	if (gres_slurmd_conf->config_flags & GRES_CONF_UUID) {
 		if (!gres_slurmd_conf->unique_id) {
-			warning("Flags=env_uuid set but no GPU UUID available for device %s. Falling back to numeric indices.",
+			warning("Flags=env_uuid set but no GPU UUID available for device %s. Falling back to numeric indices. Use AutoDetect or set UUID in gres.conf to provide UUIDs.",
 				gres_slurmd_conf->file ? gres_slurmd_conf->file :
 				"(unknown)");
 			gres_slurmd_conf->config_flags &= ~GRES_CONF_UUID;
@@ -1650,6 +1657,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	uint64_t tmp_uint64, mult;
 	char *tmp_str, *last;
 	bool cores_flag = false, cpus_flag = false;
+	int file_dev_cnt = 0;
 	char *type_str = NULL;
 	char *autodetect_string = NULL;
 	bool autodetect = false, set_default_envs = true;
@@ -1739,7 +1747,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_string(&p->file, "File", tbl) ||
 	    s_p_get_string(&p->file, "Files", tbl)) {
-		p->count = _validate_file(p->file, p->name);
+		file_dev_cnt = _validate_file(p->file, p->name);
+		p->count = file_dev_cnt;
 		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
@@ -1748,6 +1757,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (p->config_flags & GRES_CONF_HAS_FILE)
 			fatal("File and MultipleFiles options are mutually exclusive");
 		p->count = 1;
+		/* All of the files together describe a single device */
+		file_dev_cnt = 1;
 		file_count = _validate_file(p->file, p->name);
 		if (file_count < 2)
 			fatal("MultipleFiles does not contain multiple files. Use File instead");
@@ -1827,6 +1838,19 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	}
 
+	if (s_p_get_string(&p->unique_id, "UUID", tbl)) {
+		if (!p->unique_id[0])
+			fatal("Invalid GRES record for %s, UUID is empty",
+			      p->name);
+		/*
+		 * A comma would split the value apart in the vendor env vars
+		 * set by Flags=env_uuid, which are comma-separated lists.
+		 */
+		if (xstrchr(p->unique_id, ','))
+			fatal("Invalid GRES record for %s, UUID (%s) may not contain a comma",
+			      p->name, p->unique_id);
+	}
+
 	_set_shared_flag(p->name, &p->config_flags);
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
@@ -1858,6 +1882,22 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		xfree(tmp_str);
 	} else if (p->count == 0)
 		p->count = 1;
+
+	/*
+	 * A UUID names one physical device, so the record it is on has to
+	 * resolve to exactly one. MultipleFiles is fine here: its files are all
+	 * part of a single device. A shared GRES (mps/shard) may still have a
+	 * count > 1, since that count is the number of shared TRES units
+	 * carved out of the one device.
+	 */
+	if (p->unique_id) {
+		if (!(p->config_flags & GRES_CONF_HAS_FILE))
+			fatal("Invalid GRES record for %s, UUID requires File or MultipleFiles",
+			      p->name);
+		if (file_dev_cnt > 1)
+			fatal("Invalid GRES record for %s, UUID requires a single device file, but File=%s has %d",
+			      p->name, p->file, file_dev_cnt);
+	}
 
 	s_p_hashtbl_destroy(tbl);
 
