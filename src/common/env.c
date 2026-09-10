@@ -243,7 +243,7 @@ setenvfs(const char *fmt, ...)
 extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 {
 	char *value;
-	int rc;
+	int rc = EINVAL;
 
 	if (!name || name[0] == '\0')
 		return EINVAL;
@@ -262,8 +262,8 @@ extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 			rc = 0;
 		else
 			rc = 1;
-	} else {
-		rc = setenv(name, value, 1);
+	} else if ((rc = setenv(name, value, 1))) {
+		rc = errno;
 	}
 
 	xfree(value);
