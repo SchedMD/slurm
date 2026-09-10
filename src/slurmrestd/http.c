@@ -117,7 +117,7 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 	     request->url.path);
 
 	return http_con_send_response(hcon, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
-				      NULL, true, &buf, MIME_TYPE_TEXT);
+				      NULL, false, &buf, MIME_TYPE_TEXT);
 }
 
 /*
