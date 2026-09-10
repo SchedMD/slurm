@@ -38,6 +38,7 @@
 
 #include <errno.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -291,8 +292,37 @@ static int _resolve_stepmgr_addr(const char *node, slurm_addr_t *addr)
 }
 
 /*
+ * Print the whole-set drain summary to stdout unless --quiet.
+ * IN body - drain terminator body; body->step_id.job_id identifies the job
+ */
+static void _print_drain(srun_steps_drained_msg_t *body)
+{
+	uint32_t job_id = body ? body->step_id.job_id : 0;
+
+	if (opt.quiet)
+		return;
+
+	/* A pre-26.11 stepmgr sends no body, so job_id unpacks as 0. */
+	if (!job_id && (opt.target.job_id != NO_VAL))
+		job_id = opt.target.job_id;
+
+	if (job_id) {
+		printf("JobId=%u steps drained\n", job_id);
+	} else {
+		slurm_step_id_t id = opt.target;
+		char id_str[64];
+
+		id.step_id = NO_VAL; /* render the job, not the step target */
+		log_build_step_id_str(&id, id_str, sizeof(id_str),
+				      STEP_ID_FLAG_NONE);
+		printf("%s steps drained\n", id_str);
+	}
+}
+
+/*
  * conmgr on-message callback: authenticate, dispatch on msg_type, free msg.
- * On SRUN_STEPS_DRAINED, sets exit_decided and requests conmgr shutdown.
+ * On SRUN_STEPS_DRAINED, prints the drain summary, sets exit_decided, and
+ * requests conmgr shutdown.
  * IN args      - conmgr callback args
  * IN msg       - unpacked message; freed before return
  * IN unpack_rc - non-zero if message unpack failed
@@ -326,7 +356,8 @@ static int _on_msg(conmgr_callback_args_t args, slurm_msg_t *msg, int unpack_rc,
 
 	switch (msg->msg_type) {
 	case SRUN_STEPS_DRAINED:
-		verbose("received SRUN_STEPS_DRAINED; shutting down");
+		_print_drain(msg->data);
+		verbose("wait satisfied; shutting down");
 		slurm_mutex_lock(&exit_lock);
 		exit_decided = true;
 		slurm_mutex_unlock(&exit_lock);
