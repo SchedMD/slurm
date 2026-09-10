@@ -181,6 +181,19 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	if (request->url.scheme == URL_SCHEME_INVALID)
 		request->url.scheme = URL_SCHEME_HTTP;
 
+	/*
+	 * RFC9110-9.3.6: CONNECT asks for a tunnel to a destination host,
+	 * which is proxy behavior that no Slurm daemon implements. It parses
+	 * as a known method only so it can be refused here by name rather
+	 * than by failing to parse.
+	 *
+	 * Refused before the URL path is checked because RFC9112-3.2.3 gives
+	 * CONNECT an authority-form target carrying no path, which would
+	 * otherwise be refused below for the wrong reason.
+	 */
+	if (req->method == HTTP_REQUEST_CONNECT)
+		return _send_reject(hcon, ESLURM_HTTP_INVALID_METHOD);
+
 	if (!request->url.path) {
 		error("%s: [%s] Rejecting request with empty URL path",
 		      __func__, conmgr_con_get_name(hcon->con));
