@@ -198,16 +198,7 @@ static bool _env_check_len(const char *name, const char *value)
 	return ((len + 1) >= MAX_ENV_STRLEN);
 }
 
-/*
- * setenvfs() - set an environment variable; args are printf style.
- *
- * setenv() copies the name and value into glibc-managed storage, so
- * the local buffer is freed on return (no leak).
- *
- * Example: setenvfs("RMS_RANK=%d", rank);
- */
-int
-setenvfs(const char *fmt, ...)
+__attribute__((format(printf, 1, 2))) extern int setenvfs(const char *fmt, ...)
 {
 	va_list ap;
 	char *buf, *loc;
