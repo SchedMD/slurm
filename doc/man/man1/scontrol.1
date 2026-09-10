@@ -126,7 +126,6 @@ normally not be. Sorting and formatting arguments passed to other options are
 ignored; however, most filtering arguments are still used. This option is not
 available for every command.
 This option implicitly sets the \fB\-\-details\fR option.
-
 .IP
 
 .SH "COMMANDS"
@@ -660,6 +659,7 @@ threads\-per\-core then it will display '*' in the ReqS:C:T=*:*:* field.
 Displays statistics about all configured licenses (local and remote) by
 default. If an optional license name is specified, details for just that
 license will be displayed.
+.IP
 
 .TP
 \fBnode\fR
@@ -1993,6 +1993,14 @@ exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 .TP
 \fBFreeMem\fR
 The total memory, in MiB, currently free on the node as reported by the OS.
+.IP
+
+.TP
+\fBGresUsed\fR
+The generic resources on the node that are currently allocated to jobs.
+Only displayed with the \fB\-d\fR, \fB\-\-details\fR option.
+For shared GRES (\fBshard\fR or \fBmps\fR) usage syntax, see
+<https://slurm.schedmd.com/gres.html#Shared_GRES_Usage>.
 .IP
 
 .TP
