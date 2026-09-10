@@ -47,7 +47,6 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/data_parser.h"
-#include "src/interfaces/serializer.h"
 
 #define PARSE_MAJOR_TYPE "data_parser"
 #define PARSE_MAGIC 0x0ea0b1be
@@ -284,8 +283,6 @@ static int _load_plugins(plugin_param_t *pparams, plugrack_foreach_t listf,
 		return rc;
 
 	slurm_mutex_lock(&init_mutex);
-
-	serializer_required(MIME_TYPE_JSON);
 
 	xassert(sizeof(parse_funcs_t) ==
 		(sizeof(void *) * ARRAY_SIZE(parse_syms)));
