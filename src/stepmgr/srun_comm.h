@@ -91,6 +91,12 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op);
 extern void srun_step_complete(step_record_t *step_ptr);
 
 /*
+ * srun_step_drained - notify steps_drained_subs of one step's end.
+ * IN step_ptr - the step that ended
+ */
+extern void srun_step_drained(step_record_t *step_ptr);
+
+/*
  * srun_steps_drained - notify subscribers in steps_drained_subs that all
  * regular steps of a job have ended
  * IN job_ptr - pointer to the slurmctld job record
