@@ -614,9 +614,9 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 
 	if (plugins) {
 		xassert(plugins->magic == PLUGINS_MAGIC);
-		xassert(plugins->functions[parser->plugin_offset]);
 		xassert(parser->magic == PARSE_MAGIC);
 		xassert(parser->plugin_offset < plugins->count);
+		xassert(plugins->functions[parser->plugin_offset]);
 
 		funcs = plugins->functions[parser->plugin_offset];
 	}
