@@ -56,6 +56,6 @@ Extensive documentation is available from our home page at:
 
 # LEGAL
 
-Slurm is provided \"as is\" and with no warranty. This software is
+Slurm is provided "as is" and with no warranty. This software is
 distributed under the GNU General Public License, please see the files
 COPYING, DISCLAIMER, and LICENSE.OpenSSL for details.
