@@ -235,7 +235,8 @@ setenvfs(const char *fmt, ...)
 	}
 	*loc++ = '\0';
 
-	rc = setenv(buf, loc, 1);
+	if ((rc = setenv(buf, loc, 1)))
+		rc = errno;
 	xfree(buf);
 	return rc;
 }
