@@ -63,7 +63,6 @@ typedef struct {
 	uint32_t nnodes_job; /* number of nodes in current job */
 	uint32_t ntasks; /* total number of tasks in current step */
 	uint32_t ntasks_job; /* total possible number of tasks in job */
-	uint32_t ncpus_job; /* total possible number of cpus in job */
 	uint32_t *task_cnts; /* Number of tasks on each node in this step */
 	uint32_t app_ldr; /* first global rank of this het component */
 	int node_id; /* relative position of this node in this step */

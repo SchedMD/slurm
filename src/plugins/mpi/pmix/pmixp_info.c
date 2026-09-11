@@ -338,7 +338,6 @@ static int _resources_set(char ***env)
 						    _pmixp_job_info.hostname);
 
 	_pmixp_job_info.ntasks_job = _pmixp_job_info.ntasks;
-	_pmixp_job_info.ncpus_job = _pmixp_job_info.ntasks;
 
 	/* Save task-to-node mapping */
 	p = getenvp(*env, PMIXP_SLURM_MAPPING_ENV);
