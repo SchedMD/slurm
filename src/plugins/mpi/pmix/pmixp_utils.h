@@ -51,7 +51,6 @@ size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt,
 
 int pmixp_fd_set_nodelay(int fd);
 bool pmixp_fd_read_ready(int fd, int *shutdown);
-int pmixp_srun_send(slurm_addr_t *addr, uint32_t len, char *data);
 int pmixp_stepd_send(const char *nodelist, const char *address,
 		     const char *data, uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent);

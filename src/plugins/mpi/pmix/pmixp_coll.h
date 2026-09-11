@@ -302,9 +302,6 @@ int pmixp_coll_tree_child(pmixp_coll_t *coll, uint32_t nodeid,
 			  uint32_t seq, buf_t *buf);
 int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t nodeid,
 			   uint32_t seq, buf_t *buf);
-void pmixp_coll_tree_bcast(pmixp_coll_t *coll);
-bool pmixp_coll_tree_progress(pmixp_coll_t *coll, char *fwd_node,
-			      void **data, uint64_t size);
 int pmixp_coll_tree_unpack(buf_t *buf, pmixp_coll_type_t *type,
 			   int *nodeid, pmix_proc_t **r,
 			   size_t *nr);
@@ -319,7 +316,6 @@ int pmixp_coll_ring_local(pmixp_coll_t  *coll, char *data, size_t size,
 			  void *cbfunc, void *cbdata);
 int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 			     buf_t *buf);
-void pmixp_coll_ring_reset(pmixp_coll_ring_ctx_t *coll);
 int pmixp_coll_ring_unpack(buf_t *buf, pmixp_coll_type_t *type,
 			   pmixp_coll_ring_msg_hdr_t *ring_hdr,
 			   pmix_proc_t **r, size_t *nr);
