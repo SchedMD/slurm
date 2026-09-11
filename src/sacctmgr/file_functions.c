@@ -993,6 +993,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 
 	if (changed) {
 		list_t *ret_list = NULL;
+		int mod_errno = 0;
 
 		assoc_cond.cluster_list = list_create(NULL);
 		list_push(assoc_cond.cluster_list, assoc->cluster);
@@ -1015,6 +1016,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			db_conn,
 			&assoc_cond,
 			&mod_assoc);
+		/* Grab errno before anything else can overwrite it. */
+		mod_errno = errno;
 		notice_thread_fini();
 
 		FREE_NULL_LIST(mod_assoc.qos_list);
@@ -1037,8 +1040,14 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		if (ret_list) {
 			printf("%s", my_info);
 			FREE_NULL_LIST(ret_list);
-		} else
+		} else if (mod_errno == SLURM_NO_CHANGE_IN_DATA) {
 			changed = 0;
+		} else {
+			exit_code = 1;
+			fprintf(stderr, " Error modifying %s %s: %s\n",
+				type, name, slurm_strerror(mod_errno));
+			changed = SLURM_ERROR;
+		}
 		xfree(my_info);
 	}
 
@@ -1048,7 +1057,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 			slurmdb_cluster_rec_t *cluster, char *parent)
 {
-	int changed = 0;
+	int changed = 0, assoc_rc;
 	char *my_info = NULL;
 	slurmdb_cluster_rec_t mod_cluster;
 	slurmdb_cluster_cond_t cluster_cond;
@@ -1107,10 +1116,12 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 		exit(1);
 	}
 
-	changed += _mod_assoc(file_opts, cluster->root_assoc,
+	assoc_rc = _mod_assoc(file_opts, cluster->root_assoc,
 			      MOD_CLUSTER, parent);
+	if (assoc_rc < 0)
+		return assoc_rc;
 
-	return changed;
+	return changed + assoc_rc;
 }
 
 static int _mod_acct(sacctmgr_file_opts_t *file_opts,
@@ -2633,6 +2644,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	print_field_t *field = NULL;
 
 	int set = 0, command_len = 0;
+	int mod_rc = 0;
 
 	if (readonly_flag) {
 		exit_code = 1;
@@ -3148,6 +3160,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			} else {
 				set = _mod_cluster(file_opts,
 						   cluster, parent);
+				if (set < 0) {
+					set = 0;
+					rc = SLURM_ERROR;
+					_destroy_sacctmgr_file_opts(file_opts);
+					file_opts = NULL;
+					break;
+				}
 			}
 
 			_destroy_sacctmgr_file_opts(file_opts);
@@ -3303,8 +3322,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					assoc2->acct = xstrdup(file_opts->name);
 					assoc2->parent_acct =
 						xstrdup(assoc->parent_acct);
-					if (_mod_assoc(file_opts,
-						       assoc, MOD_ACCT, parent))
+					mod_rc = _mod_assoc(file_opts, assoc,
+							    MOD_ACCT, parent);
+					if (mod_rc < 0) {
+						rc = SLURM_ERROR;
+						break;
+					}
+					if (mod_rc)
 						set = 1;
 				} else {
 					debug2("already modified this assoc");
@@ -3414,8 +3438,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					assoc2->user = xstrdup(file_opts->name);
 					assoc2->partition = xstrdup(
 						file_opts->assoc_rec.partition);
-					if (_mod_assoc(file_opts,
-						       assoc, MOD_USER, parent))
+					mod_rc = _mod_assoc(file_opts, assoc,
+							    MOD_USER, parent);
+					if (mod_rc < 0) {
+						rc = SLURM_ERROR;
+						break;
+					}
+					if (mod_rc)
 						set = 1;
 				} else {
 					debug2("already modified this assoc");
