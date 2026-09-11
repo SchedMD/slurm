@@ -720,6 +720,7 @@ test_102_17  Test sacctmgr TresDecayHalfLife set, show, inherit and dump/load
 test_102_18  Test sacctmgr load and dump baseline functionality
 test_102_19  Test sacctmgr declarative load
 test_102_20  Test sacctmgr load clean=account and clean=qos (isolated)
+test_102_21  Test limits inherited from a parent account follow an account move
 
 test_103_#   Testing of salloc options.
 =======================================
