@@ -632,10 +632,164 @@ static int _foreach_assoc_qos_merge_new(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * A declarative load sends the complete desired TRES set. The modify path
+ * merges what it is sent over the stored string, keeping the first entry seen
+ * for each id, so ids being cleared have to be named explicitly.
+ *
+ * The removal sentinel is a count of INFINITE64 written as unsigned decimal.
+ * A literal "-1" would not do: the merge parses a leading '-' as an amend
+ * sign and subtracts 1 from the stored count instead of dropping the entry.
+ */
+static int _foreach_tres_removal(void *x, void *arg)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+	char **want = arg;
+	slurmdb_tres_rec_t *found;
+
+	if ((found = slurmdb_find_tres_in_string(*want, tres_rec->id))) {
+		slurmdb_destroy_tres_rec(found);
+		return 0;
+	}
+
+	xstrfmtcat(*want, "%s%u=%"PRIu64,
+		   *want ? "," : "", tres_rec->id, INFINITE64);
+
+	return 0;
+}
+
+static void _tres_add_removals(char **want, char *cur)
+{
+	list_t *cur_list = NULL;
+
+	if (!cur || !cur[0])
+		return;
+
+	slurmdb_tres_list_from_string(&cur_list, cur, TRES_STR_FLAG_NONE, NULL);
+	if (!cur_list)
+		return;
+
+	(void) list_for_each(cur_list, _foreach_tres_removal, want);
+	FREE_NULL_LIST(cur_list);
+}
+
+/* Blank entries are the "clear it" marker, not a QOS, so leave them out. */
+static int _foreach_copy_qos_entry(void *x, void *arg)
+{
+	char *qos_item = x;
+	list_t *dest = arg;
+
+	if (qos_item[0])
+		list_append(dest, xstrdup(qos_item));
+
+	return 0;
+}
+
+/* Sorted, comma joined entries so two QOS lists can be compared as sets. */
+static char *_qos_set_str(list_t *qos_list)
+{
+	list_t *entries;
+	char *str;
+
+	if (!qos_list || !list_count(qos_list))
+		return NULL;
+
+	entries = list_create(xfree_ptr);
+	(void) list_for_each_ro(qos_list, _foreach_copy_qos_entry, entries);
+	/* Sorts as well as joins. */
+	str = slurm_char_list_to_xstr(entries);
+	FREE_NULL_LIST(entries);
+
+	return str;
+}
+
+/*
+ * Declarative load sends the file's QOS entries as they were written. Bare ids
+ * make the modify write the qos column outright, "+id"/"-id" keep their usual
+ * relative meaning, and a lone empty entry clears the list.
+ */
+static bool _set_declarative_assoc_qos(slurmdb_assoc_rec_t *mod_assoc,
+				       list_t *want, list_t *cur)
+{
+	char *want_str = _qos_set_str(want);
+	char *cur_str = _qos_set_str(cur);
+	bool changed = xstrcmp(want_str, cur_str) ? true : false;
+
+	xfree(want_str);
+	xfree(cur_str);
+
+	if (!changed)
+		return false;
+
+	mod_assoc->qos_list = list_create(xfree_ptr);
+
+	if (want)
+		(void) list_for_each_ro(want, _foreach_copy_qos_entry,
+					mod_assoc->qos_list);
+
+	if (!list_count(mod_assoc->qos_list))
+		list_append(mod_assoc->qos_list, xstrdup(""));
+
+	return true;
+}
+
+/*
+ * Declarative load: every limit and QOS field sacctmgr dump writes for an
+ * association that the file left out goes back to its built-in default.
+ * Metadata is left alone even where dump does write it: association Comment,
+ * Parent and the user default-account flag are only ever set, never reset.
+ *
+ * Fairshare and DefaultQOS read back as 1 and 0 when unset but must be sent as
+ * INFINITE to clear, so they are only sent when something is actually stored.
+ */
+static void _set_declarative_assoc_defaults(sacctmgr_file_opts_t *file_opts,
+					    slurmdb_assoc_rec_t *assoc)
+{
+	slurmdb_assoc_rec_t *want = &file_opts->assoc_rec;
+
+	if ((want->shares_raw == NO_VAL) && (assoc->shares_raw != 1))
+		want->shares_raw = INFINITE;
+
+	if ((want->def_qos_id == NO_VAL) && assoc->def_qos_id &&
+	    (assoc->def_qos_id != INFINITE))
+		want->def_qos_id = INFINITE;
+
+	if (want->grp_jobs == NO_VAL)
+		want->grp_jobs = INFINITE;
+	if (want->grp_jobs_accrue == NO_VAL)
+		want->grp_jobs_accrue = INFINITE;
+	if (want->grp_submit_jobs == NO_VAL)
+		want->grp_submit_jobs = INFINITE;
+	if (want->grp_wall == NO_VAL)
+		want->grp_wall = INFINITE;
+	if (want->max_jobs == NO_VAL)
+		want->max_jobs = INFINITE;
+	if (want->max_jobs_accrue == NO_VAL)
+		want->max_jobs_accrue = INFINITE;
+	if (want->max_submit_jobs == NO_VAL)
+		want->max_submit_jobs = INFINITE;
+	if (want->max_wall_pj == NO_VAL)
+		want->max_wall_pj = INFINITE;
+	if (want->min_prio_thresh == NO_VAL)
+		want->min_prio_thresh = INFINITE;
+	if (want->priority == NO_VAL)
+		want->priority = INFINITE;
+
+	_tres_add_removals(&want->grp_tres, assoc->grp_tres);
+	_tres_add_removals(&want->grp_tres_mins, assoc->grp_tres_mins);
+	_tres_add_removals(&want->grp_tres_run_mins, assoc->grp_tres_run_mins);
+	_tres_add_removals(&want->max_tres_pj, assoc->max_tres_pj);
+	_tres_add_removals(&want->max_tres_pn, assoc->max_tres_pn);
+	_tres_add_removals(&want->max_tres_mins_pj, assoc->max_tres_mins_pj);
+	_tres_add_removals(&want->max_tres_run_mins, assoc->max_tres_run_mins);
+	_tres_add_removals(&want->tres_decay_hl, assoc->tres_decay_hl);
+}
+
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		      slurmdb_assoc_rec_t *assoc,
 		      sacctmgr_mod_type_t mod_type,
-		      char *parent)
+		      char *parent,
+		      bool declarative)
 {
 	int changed = 0;
 	slurmdb_assoc_rec_t mod_assoc;
@@ -661,6 +815,9 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		return 0;
 		break;
 	}
+	if (declarative)
+		_set_declarative_assoc_defaults(file_opts, assoc);
+
 	slurmdb_init_assoc_rec(&mod_assoc, 0);
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 
@@ -926,18 +1083,37 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 
 	if ((file_opts->assoc_rec.def_qos_id != NO_VAL) &&
 	    (assoc->def_qos_id != file_opts->assoc_rec.def_qos_id)) {
+		char *def_qos_str;
+
 		mod_assoc.def_qos_id = file_opts->assoc_rec.def_qos_id;
 		changed = 1;
 		if (!g_qos_list)
 			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+		def_qos_str = slurmdb_qos_str(g_qos_list,
+					      file_opts->assoc_rec.def_qos_id);
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s %8s\n",
 			   " Set DefaultQOS",
 			   type, name,
-			   slurmdb_qos_str(g_qos_list, file_opts->assoc_rec.def_qos_id));
+			   def_qos_str ? def_qos_str : "");
 	}
 
-	if (assoc->qos_list && list_count(assoc->qos_list) &&
+	if (declarative) {
+		if (_set_declarative_assoc_qos(&mod_assoc,
+					       file_opts->assoc_rec.qos_list,
+					       assoc->qos_list)) {
+			char *new_qos = get_qos_complete_str(
+				g_qos_list, mod_assoc.qos_list);
+
+			xstrfmtcat(my_info,
+				   "%-30.30s for %-7.7s %-10.10s %8s\n",
+				   " Set QOS",
+				   type, name,
+				   new_qos);
+			xfree(new_qos);
+			changed = 1;
+		}
+	} else if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {
 		char *new_qos = NULL;
@@ -1124,8 +1300,12 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 		exit(1);
 	}
 
+	/*
+	 * Cluster metadata and root-association fields keep additive load
+	 * behavior, so never reset them here.
+	 */
 	assoc_rc = _mod_assoc(file_opts, cluster->root_assoc,
-			      MOD_CLUSTER, parent);
+			      MOD_CLUSTER, parent, false);
 	if (assoc_rc < 0)
 		return assoc_rc;
 
@@ -3354,8 +3534,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					assoc2->acct = xstrdup(file_opts->name);
 					assoc2->parent_acct =
 						xstrdup(assoc->parent_acct);
-					mod_rc = _mod_assoc(file_opts, assoc,
-							    MOD_ACCT, parent);
+					mod_rc = _mod_assoc(
+						file_opts, assoc, MOD_ACCT,
+						parent, declarative_load);
 					if (mod_rc < 0) {
 						rc = SLURM_ERROR;
 						break;
@@ -3470,8 +3651,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					assoc2->user = xstrdup(file_opts->name);
 					assoc2->partition = xstrdup(
 						file_opts->assoc_rec.partition);
-					mod_rc = _mod_assoc(file_opts, assoc,
-							    MOD_USER, parent);
+					mod_rc = _mod_assoc(
+						file_opts, assoc, MOD_USER,
+						parent, declarative_load);
 					if (mod_rc < 0) {
 						rc = SLURM_ERROR;
 						break;
