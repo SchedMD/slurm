@@ -47,9 +47,9 @@
  *
  * ld will replace any '.' with '_'.
  */
-#define decl_static_data(name)                     \
-	extern const void *_binary_##name##_start; \
-	extern const void *_binary_##name##_end;   \
+#define decl_static_data(name) \
+	extern const void *_binary_##name##_start __attribute__((aligned(1))); \
+	extern const void *_binary_##name##_end __attribute__((aligned(1))); \
 	extern const void *_binary_##name##_size;
 
 /*
