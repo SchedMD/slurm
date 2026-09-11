@@ -1914,8 +1914,11 @@ int hostlist_push(hostlist_t *hl, const char *hosts)
 
 int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 {
-	hostrange_t *hr;
-	hostname_t *hn;
+	/* hostlist_push_range() folds or copies, so it keeps no pointer here. */
+	hostrange_t hr = { .singlehost = 1 };
+	char prefix_buf[HOST_NAME_MAX + 1];
+	char *prefix = prefix_buf;
+	int len, plen, rc;
 
 	if (!str || !hl)
 		return 0;
@@ -1923,21 +1926,30 @@ int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
 
-	if (!(hn = hostname_create_dims(str, dims))) {
+	len = strlen(str);
+
+	rc = _parse_hostname_len(str, len, dims, &plen, &hr.lo, &hr.width);
+	if (rc < 0) {
 		error("%s: Invalid host name: `%s'", __func__, str);
 		return 0;
 	}
 
-	if (hostname_suffix_is_valid(hn))
-		hr = hostrange_create(hn->prefix, hn->num, hn->num,
-				      hostname_suffix_width(hn));
-	else
-		hr = hostrange_create_single(str);
+	if (rc) {
+		if ((size_t) plen >= sizeof(prefix_buf))
+			prefix = xmalloc(plen + 1);
+		memcpy(prefix, str, plen);
+		prefix[plen] = '\0';
+		hr.hi = hr.lo;
+		hr.prefix = prefix;
+		hr.singlehost = 0;
+	} else {
+		hr.prefix = (char *) str;
+	}
 
-	hostlist_push_range(hl, hr);
+	hostlist_push_range(hl, &hr);
 
-	hostrange_destroy(hr);
-	hostname_destroy(hn);
+	if (prefix != prefix_buf)
+		xfree(prefix);
 
 	return 1;
 }
