@@ -62,8 +62,6 @@ const char *g_cg_name[CG_CTL_CNT] = {
 	"cpuacct"
 };
 
-static bool oom_kill_active = false;
-
 /* Task tracking artifacts */
 list_t *g_task_list[CG_CTL_CNT];
 static uint32_t g_max_task_id = 0;
@@ -1190,7 +1188,6 @@ extern int cgroup_p_step_init_oom(stepd_step_rec_t *step)
 	}
 
 	xfree(event_file);
-	oom_kill_active = true;
 	return SLURM_SUCCESS;
 }
 
@@ -1237,9 +1234,6 @@ extern cgroup_oom_t *cgroup_p_step_get_oom(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results = NULL;
 	uint64_t oom_kill_count = 0;
-
-	if (!oom_kill_active)
-		return results;
 
 	if (common_cgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
 	    SLURM_SUCCESS)
