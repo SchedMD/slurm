@@ -2612,10 +2612,11 @@ fini:
 	    (job_ptr->bit_flags & STEPMGR_ENABLED) && IS_JOB_RUNNING(job_ptr)) {
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
-			args->stepmgr_jobs = list_create(NULL);
+			args->stepmgr_jobs = list_create(
+				(ListDelF) slurm_free_stepmgr_job_info);
 		sji->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		sji->step_id.step_id = args->step_id->step_id;
-		sji->stepmgr = job_ptr->batch_host;
+		sji->stepmgr = xstrdup(job_ptr->batch_host);
 		list_append(args->stepmgr_jobs, sji);
 	}
 
