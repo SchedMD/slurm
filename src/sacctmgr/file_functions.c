@@ -633,6 +633,23 @@ static int _foreach_assoc_qos_merge_new(void *x, void *arg)
 }
 
 /*
+ * A declarative reset names each TRES id it is clearing with a count of
+ * INFINITE64, which is what makes the modify drop that id. Print those as -1,
+ * the way sacctmgr accepts them, rather than as the raw count.
+ */
+static void _print_change_info(char *change_info)
+{
+	char *info = xstrdup(change_info);
+	char *cleared = xstrdup_printf("=%"PRIu64, INFINITE64);
+
+	xstrsubstituteall(info, cleared, "=-1");
+	printf("%s", info);
+
+	xfree(cleared);
+	xfree(info);
+}
+
+/*
  * A declarative load sends the complete desired TRES set. The modify path
  * merges what it is sent over the stored string, keeping the first entry seen
  * for each id, so ids being cleared have to be named explicitly.
@@ -1222,7 +1239,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 /* 		} */
 
 		if (ret_list) {
-			printf("%s", my_info);
+			_print_change_info(my_info);
 			FREE_NULL_LIST(ret_list);
 		} else if (mod_errno == SLURM_NO_CHANGE_IN_DATA) {
 			changed = 0;
@@ -1406,6 +1423,15 @@ static void _destroy_local_mod_qos(void *x)
 	xfree(local_mod_qos);
 }
 
+/* INFINITE means "no limit" for these; show it as -1 rather than as a count. */
+static double _dbl_print(double val)
+{
+	if (fuzzy_equal(val, INFINITE))
+		return -1;
+
+	return val;
+}
+
 /*
  * Declarative load: every field sacctmgr dump writes for a QOS that the file
  * left out goes back to its built-in default. Description and Flags are left
@@ -1523,7 +1549,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grace_time != NO_VAL) &&
 	    (qos_rec->grace_time != qos_rec_in->grace_time)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GraceTime",
 			   type, name,
 			   qos_rec->grace_time,
@@ -1533,7 +1559,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_jobs_accrue != NO_VAL) &&
 	    (qos_rec->grp_jobs_accrue != qos_rec_in->grp_jobs_accrue)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpJobsAccrue",
 			   type, name,
 			   qos_rec->grp_jobs_accrue,
@@ -1543,7 +1569,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_jobs != NO_VAL) &&
 	    (qos_rec->grp_jobs != qos_rec_in->grp_jobs)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpJobs",
 			   type, name,
 			   qos_rec->grp_jobs,
@@ -1553,7 +1579,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_submit_jobs != NO_VAL) &&
 	    (qos_rec->grp_submit_jobs != qos_rec_in->grp_submit_jobs)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpSubmitJobs",
 			   type, name,
 			   qos_rec->grp_submit_jobs,
@@ -1596,7 +1622,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_wall != NO_VAL) &&
 	    (qos_rec->grp_wall != qos_rec_in->grp_wall)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpWallDuration",
 			   type, name,
 			   qos_rec->grp_wall,
@@ -1609,14 +1635,14 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
 			   " Changed LimitFactor",
 			   type, name,
-			   qos_rec->limit_factor,
-			   qos_rec_in->limit_factor);
+			   _dbl_print(qos_rec->limit_factor),
+			   _dbl_print(qos_rec_in->limit_factor));
 	}
 
 	if ((qos_rec_in->max_jobs_pa != NO_VAL) &&
 	    (qos_rec->max_jobs_pa != qos_rec_in->max_jobs_pa)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsPerAccount",
 			   type, name,
 			   qos_rec->max_jobs_pa,
@@ -1626,7 +1652,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_jobs_pu != NO_VAL) &&
 	    (qos_rec->max_jobs_pu != qos_rec_in->max_jobs_pu)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsPerUser",
 			   type, name,
 			   qos_rec->max_jobs_pu,
@@ -1636,7 +1662,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_jobs_accrue_pa != NO_VAL) &&
 	    (qos_rec->max_jobs_accrue_pa != qos_rec_in->max_jobs_accrue_pa)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsAccruePerAccount",
 			   type, name,
 			   qos_rec->max_jobs_accrue_pa,
@@ -1646,7 +1672,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_jobs_accrue_pu != NO_VAL) &&
 	    (qos_rec->max_jobs_accrue_pu != qos_rec_in->max_jobs_accrue_pu)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsAccruePerUser",
 			   type, name,
 			   qos_rec->max_jobs_accrue_pu,
@@ -1656,7 +1682,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_submit_jobs_pa != NO_VAL) &&
 	    (qos_rec->max_submit_jobs_pa != qos_rec_in->max_submit_jobs_pa)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxSubmitJobsPerAccount",
 			   type, name,
 			   qos_rec->max_submit_jobs_pa,
@@ -1666,7 +1692,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_submit_jobs_pu != NO_VAL) &&
 	    (qos_rec->max_submit_jobs_pu != qos_rec_in->max_submit_jobs_pu)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxSubmitJobsPerUser",
 			   type, name,
 			   qos_rec->max_submit_jobs_pu,
@@ -1751,7 +1777,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_wall_pj != NO_VAL) &&
 	    (qos_rec->max_wall_pj != qos_rec_in->max_wall_pj)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob",
 			   type, name,
 			   qos_rec->max_wall_pj,
@@ -1761,7 +1787,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->min_prio_thresh != NO_VAL) &&
 	    (qos_rec->min_prio_thresh != qos_rec_in->min_prio_thresh)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MinPrioThresh",
 			   type, name,
 			   qos_rec->min_prio_thresh,
@@ -1852,7 +1878,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->preempt_exempt_time != NO_VAL) &&
 	    (qos_rec->preempt_exempt_time != qos_rec_in->preempt_exempt_time)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed PreemptExemptTime",
 			   type, name,
 			   qos_rec->preempt_exempt_time,
@@ -1862,7 +1888,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->priority != NO_VAL) &&
 	    (qos_rec->priority != qos_rec_in->priority)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed Priority",
 			   type, name,
 			   qos_rec->priority,
@@ -1886,8 +1912,8 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
 			   " Changed UsageFactor",
 			   type, name,
-			   qos_rec->usage_factor,
-			   qos_rec_in->usage_factor);
+			   _dbl_print(qos_rec->usage_factor),
+			   _dbl_print(qos_rec_in->usage_factor));
 	}
 
 	if (!fuzzy_equal(qos_rec_in->usage_thres, NO_VAL) &&
@@ -1896,8 +1922,8 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
 			   " Changed UsageThreshold",
 			   type, name,
-			   qos_rec->usage_thres,
-			   qos_rec_in->usage_thres);
+			   _dbl_print(qos_rec->usage_thres),
+			   _dbl_print(qos_rec_in->usage_thres));
 	}
 	return my_info;
 }
@@ -1930,7 +1956,7 @@ static int _mod_qos(void *x, void *arg)
 /* 	} */
 
 	if (ret_list) {
-		printf("%s", local_mod_qos->change_info);
+		_print_change_info(local_mod_qos->change_info);
 		FREE_NULL_LIST(ret_list);
 	}
 
