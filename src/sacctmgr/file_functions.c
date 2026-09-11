@@ -80,6 +80,9 @@ typedef enum {
 #define SACCTMGR_CLEAN_USER SLURM_BIT(2)
 #define SACCTMGR_CLEAN_QOS SLURM_BIT(3)
 
+/* True when 'declarative' was given to sacctmgr load. */
+static bool declarative_load = false;
+
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
 	if (!file_opts)
@@ -2660,6 +2663,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	/* reset the connection to get the most recent stuff */
 	slurmdb_connection_commit(db_conn, 0);
 
+	declarative_load = false;
+
 	for (i = 0; i < argc; i++) {
 		int op_type;
 		int end = parse_option_end(argv[i], &op_type, &command_len);
@@ -2680,6 +2685,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				xfree(clean_types);
 			}
 			start_clean |= SACCTMGR_CLEAN_CLUSTER;
+		} else if (!end && !xstrncasecmp(argv[i], "Declarative",
+						 MAX(command_len, 4))) {
+			declarative_load = true;
 		} else if (!end || !xstrncasecmp(argv[i], "File",
 						 MAX(command_len, 1))) {
 			if (file_name) {
@@ -2714,6 +2722,15 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	if (exit_code) {
 		xfree(cluster_name);
 		xfree(file_name);
+		return;
+	}
+
+	if (start_clean && declarative_load) {
+		exit_code = 1;
+		xfree(cluster_name);
+		xfree(file_name);
+		fprintf(stderr,
+			" 'clean' and 'declarative' can't be used together.\n");
 		return;
 	}
 
