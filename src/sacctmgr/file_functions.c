@@ -2707,6 +2707,16 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		}
 	}
 
+	/*
+	 * A bad option leaves exit_code set. Stop here rather than loading the
+	 * file, since the options say what the load is meant to do.
+	 */
+	if (exit_code) {
+		xfree(cluster_name);
+		xfree(file_name);
+		return;
+	}
+
 	if (!file_name) {
 		exit_code = 1;
 		xfree(cluster_name);
