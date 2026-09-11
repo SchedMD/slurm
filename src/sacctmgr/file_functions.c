@@ -1406,8 +1406,91 @@ static void _destroy_local_mod_qos(void *x)
 	xfree(local_mod_qos);
 }
 
+/*
+ * Declarative load: every field sacctmgr dump writes for a QOS that the file
+ * left out goes back to its built-in default. Description and Flags are left
+ * alone, the same way account Description and Organization are.
+ *
+ * GraceTime, Priority and UsageFactor read back as 0, 0 and 1 when unset but
+ * must be sent as INFINITE to clear, so they are only sent when something is
+ * actually stored.
+ */
+static void _set_declarative_qos_defaults(slurmdb_qos_rec_t *want,
+					  slurmdb_qos_rec_t *qos_rec)
+{
+	if ((want->grace_time == NO_VAL) && qos_rec->grace_time &&
+	    (qos_rec->grace_time != INFINITE))
+		want->grace_time = INFINITE;
+
+	if ((want->priority == NO_VAL) && qos_rec->priority &&
+	    (qos_rec->priority != INFINITE))
+		want->priority = INFINITE;
+
+	if (fuzzy_equal(want->usage_factor, NO_VAL) &&
+	    !fuzzy_equal(qos_rec->usage_factor, 1))
+		want->usage_factor = INFINITE;
+
+	if (want->preempt_mode == NO_VAL16)
+		want->preempt_mode = 0;
+
+	if (want->grp_jobs == NO_VAL)
+		want->grp_jobs = INFINITE;
+	if (want->grp_jobs_accrue == NO_VAL)
+		want->grp_jobs_accrue = INFINITE;
+	if (want->grp_submit_jobs == NO_VAL)
+		want->grp_submit_jobs = INFINITE;
+	if (want->grp_wall == NO_VAL)
+		want->grp_wall = INFINITE;
+	if (want->max_jobs_pa == NO_VAL)
+		want->max_jobs_pa = INFINITE;
+	if (want->max_jobs_pu == NO_VAL)
+		want->max_jobs_pu = INFINITE;
+	if (want->max_jobs_accrue_pa == NO_VAL)
+		want->max_jobs_accrue_pa = INFINITE;
+	if (want->max_jobs_accrue_pu == NO_VAL)
+		want->max_jobs_accrue_pu = INFINITE;
+	if (want->max_submit_jobs_pa == NO_VAL)
+		want->max_submit_jobs_pa = INFINITE;
+	if (want->max_submit_jobs_pu == NO_VAL)
+		want->max_submit_jobs_pu = INFINITE;
+	if (want->max_wall_pj == NO_VAL)
+		want->max_wall_pj = INFINITE;
+	if (want->min_prio_thresh == NO_VAL)
+		want->min_prio_thresh = INFINITE;
+	if (want->preempt_exempt_time == NO_VAL)
+		want->preempt_exempt_time = INFINITE;
+	if (fuzzy_equal(want->usage_thres, NO_VAL))
+		want->usage_thres = INFINITE;
+	if (fuzzy_equal(want->limit_factor, NO_VAL))
+		want->limit_factor = INFINITE;
+
+	_tres_add_removals(&want->grp_tres, qos_rec->grp_tres);
+	_tres_add_removals(&want->grp_tres_mins, qos_rec->grp_tres_mins);
+	_tres_add_removals(&want->grp_tres_run_mins,
+			   qos_rec->grp_tres_run_mins);
+	_tres_add_removals(&want->max_tres_mins_pj, qos_rec->max_tres_mins_pj);
+	_tres_add_removals(&want->max_tres_pa, qos_rec->max_tres_pa);
+	_tres_add_removals(&want->max_tres_pj, qos_rec->max_tres_pj);
+	_tres_add_removals(&want->max_tres_pn, qos_rec->max_tres_pn);
+	_tres_add_removals(&want->max_tres_pu, qos_rec->max_tres_pu);
+	_tres_add_removals(&want->max_tres_run_mins_pa,
+			   qos_rec->max_tres_run_mins_pa);
+	_tres_add_removals(&want->max_tres_run_mins_pu,
+			   qos_rec->max_tres_run_mins_pu);
+	_tres_add_removals(&want->min_tres_pj, qos_rec->min_tres_pj);
+	_tres_add_removals(&want->tres_decay_hl, qos_rec->tres_decay_hl);
+
+	/* Preempt is a char list on the modify; a lone empty entry clears it. */
+	if (!want->preempt_list && qos_rec->preempt_bitstr &&
+	    (bit_ffs(qos_rec->preempt_bitstr) != -1)) {
+		want->preempt_list = list_create(xfree_ptr);
+		list_append(want->preempt_list, xstrdup(""));
+	}
+}
+
 static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
-			    slurmdb_qos_rec_t *qos_rec)
+			    slurmdb_qos_rec_t *qos_rec,
+			    bool declarative)
 {
 	char *type = "QOS";
 	char *name = qos_rec->name;
@@ -1694,6 +1777,35 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   type, name,
 			   qos_rec->min_tres_pj,
 			   qos_rec_in->min_tres_pj);
+	}
+
+	/*
+	 * A load file fills preempt_list, never preempt_bitstr, so the check
+	 * below never fires for it. Report off preempt_list for declarative
+	 * loads, where Preempt has to reset; additive load is left as is.
+	 */
+	if (declarative && qos_rec_in->preempt_list) {
+		char *preempt, *preempt_old;
+
+		if (!g_qos_list)
+			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+
+		preempt = get_qos_complete_str(g_qos_list,
+					       qos_rec_in->preempt_list);
+		preempt_old = get_qos_complete_str_bitstr(
+			g_qos_list, qos_rec->preempt_bitstr);
+
+		if (xstrcmp(preempt, preempt_old)) {
+			xstrfmtcat(my_info,
+				   "%-30.30s for %-7.7s %-10.10s "
+				   "%8s -> %s\n",
+				   " Changed Preempt",
+				   type, name,
+				   preempt_old,
+				   preempt);
+		}
+		xfree(preempt);
+		xfree(preempt_old);
 	}
 
 	if (qos_rec_in->preempt_bitstr) {
@@ -3041,8 +3153,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				/* We haven't seen this one, add it. */
 				list_append(qos_list, qos_rec_in);
 			} else {
-				char *tmp_char = _check_mod_qos(qos_rec_in,
-								qos_rec);
+				char *tmp_char;
+
+				if (declarative_load)
+					_set_declarative_qos_defaults(
+						qos_rec_in, qos_rec);
+
+				tmp_char = _check_mod_qos(qos_rec_in, qos_rec,
+							  declarative_load);
 				if (tmp_char) {
 					local_mod_qos_t *local_mod_qos =
 						xmalloc(sizeof(*local_mod_qos));
