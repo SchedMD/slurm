@@ -43,7 +43,7 @@
 #include "pmixp_nspaces.h"
 #include "pmixp_coll.h"
 
-pmixp_state_t _pmixp_state;
+static pmixp_state_t _pmixp_state;
 
 void _xfree_coll(void *x)
 {

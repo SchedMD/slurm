@@ -81,12 +81,6 @@ int pmixp_nspaces_add(char *name, uint32_t nnodes, int node_id,
 		      char *task_map_packed, hostlist_t *hl);
 
 /* operations on the specific namespace */
-static inline hostlist_t *pmixp_nspace_hostlist(pmixp_namespace_t *nsptr)
-{
-	hostlist_t *hl = hostlist_copy(nsptr->hl);
-	return hl;
-}
-
 hostlist_t *pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr,
 				  const uint32_t *ranks, size_t nranks);
 int pmixp_nspace_resolve(const char *name, int rank);
