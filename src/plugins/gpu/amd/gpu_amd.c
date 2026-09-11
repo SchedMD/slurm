@@ -44,10 +44,15 @@
 
 #define GPU_AMD_DEV_DIR "/dev/dri"
 #define GPU_AMD_DRM_DIR "/sys/class/drm"
+#define GPU_AMD_PCI_NAME_MAX 16 /* at most %04x:%02x:%02x.%d */
+#define GPU_AMD_PCI_SLOT_NAME_SCAN \
+	"PCI_SLOT_NAME=%" XSTRINGIFY(GPU_AMD_PCI_NAME_MAX) "s"
+#define GPU_AMD_SYSFS_BUF 256
 
 /* A card kept by discovery. */
 typedef struct {
 	int card; /* DRM card number */
+	char *pci_address; /* PCI slot name, owned and freed per element */
 	int render_minor; /* DRM render node minor */
 } amd_card_t;
 
@@ -110,8 +115,8 @@ static bool _is_amdgpu_card(int card_num)
 }
 
 /*
- * Collect the amdgpu card numbers on the node, ordered ascending so the GPU
- * index used everywhere is deterministic.
+ * Collect the amdgpu card numbers on the node, ordered ascending so the cache
+ * fill walks them deterministically.
  *
  * cards (OUT) An xmalloc'd array of the card numbers (caller frees), NULL when
  *	none was found.
@@ -186,6 +191,35 @@ static int _get_render_minor(int card_num)
 }
 
 /*
+ * Read a card's PCI address from the PCI_SLOT_NAME line of its device uevent.
+ *
+ * card_num (IN) The DRM card number.
+ *
+ * Returns the xmalloc'd address (caller frees), NULL when none was read.
+ */
+static char *_read_pci_address(int card_num)
+{
+	char *path = NULL, *pci_address = NULL;
+	FILE *fp = NULL;
+	char line[GPU_AMD_SYSFS_BUF] = { 0 };
+	char addr[GPU_AMD_PCI_NAME_MAX + 1] = { 0 };
+
+	path = _card_device_path(card_num, "uevent");
+	fp = fopen(path, "r");
+	xfree(path);
+	if (!fp)
+		return NULL;
+
+	while (!pci_address && fgets(line, sizeof(line), fp)) {
+		if (sscanf(line, GPU_AMD_PCI_SLOT_NAME_SCAN, addr) == 1)
+			pci_address = xstrdup(addr);
+	}
+	fclose(fp);
+
+	return pci_address;
+}
+
+/*
  * Emit one GRES from its already-resolved fields. The caller keeps ownership
  * of every pointer argument.
  *
@@ -222,7 +256,26 @@ static void _log_capabilities(void)
 }
 
 /*
- * Discover the GPUs on the first call, caching them in ascending card order,
+ * Order cached cards by PCI address, the device numbering gres.conf documents.
+ * The kernel zero pads the address fields, so text order is numeric order.
+ *
+ * a (IN) First card to compare (amd_card_t).
+ * b (IN) Second card to compare (amd_card_t).
+ *
+ * Returns negative, zero, or positive as a sorts before, at, or after b.
+ */
+static int _sort_by_pci_address(const void *a, const void *b)
+{
+	const amd_card_t *ca = a, *cb = b;
+
+	xassert(a);
+	xassert(b);
+
+	return xstrcmp(ca->pci_address, cb->pci_address);
+}
+
+/*
+ * Discover the GPUs on the first call, caching them ordered by PCI address,
  * packed densely so entry i is the card behind GRES index i. A failed listing
  * stays uncached for a later retry.
  *
@@ -254,6 +307,11 @@ static int _discover_gpus(void)
 			      __func__, cards[i]);
 			continue;
 		}
+		if (!(kept->pci_address = _read_pci_address(cards[i]))) {
+			error("%s: card%d: unreadable PCI address, no GRES emitted",
+			      __func__, cards[i]);
+			continue;
+		}
 		kept->card = cards[i];
 		amdgpu_ncards++;
 	}
@@ -261,8 +319,17 @@ static int _discover_gpus(void)
 	xfree(cards);
 
 	/* The array, not the count, marks a fill, keeping failure retryable. */
-	if (!amdgpu_ncards)
+	if (!amdgpu_ncards) {
 		xfree(amdgpu_cards);
+		return 0;
+	}
+
+	/*
+	 * Order the cache by PCI address, so GRES index i is the GPU with the
+	 * i-th smallest address, the device numbering gres.conf documents.
+	 */
+	qsort(amdgpu_cards, amdgpu_ncards, sizeof(*amdgpu_cards),
+	      _sort_by_pci_address);
 
 	return amdgpu_ncards;
 }
@@ -290,6 +357,7 @@ static list_t *_get_system_gpu_list_amd(const node_config_load_t *node_config)
 		char *file = NULL, *links = NULL;
 
 		debug2("GPU(amd) card%d:", amdgpu_cards[i].card);
+		debug2("    PCI Address: %s", amdgpu_cards[i].pci_address);
 
 		file = xstrdup_printf("%s/renderD%d", GPU_AMD_DEV_DIR,
 				      amdgpu_cards[i].render_minor);
@@ -335,6 +403,8 @@ extern int init(void)
  */
 extern void fini(void)
 {
+	for (int i = 0; i < amdgpu_ncards; i++)
+		xfree(amdgpu_cards[i].pci_address);
 	xfree(amdgpu_cards);
 	amdgpu_ncards = 0;
 	discovery_logged = false;
