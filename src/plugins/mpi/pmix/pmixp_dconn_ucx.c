@@ -391,7 +391,7 @@ static int _activate_progress(void)
 	return SLURM_SUCCESS;
 }
 
-void _ucx_process_msg(char *buffer, size_t len)
+static void _ucx_process_msg(char *buffer, size_t len)
 {
 	xassert(_direct_hdr_set);
 	_direct_hdr.hdr_unpack_cb(buffer, _host_hdr);

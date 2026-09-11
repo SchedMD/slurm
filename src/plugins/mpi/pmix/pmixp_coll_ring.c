@@ -409,7 +409,7 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 	} while(ret);
 }
 
-pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_new(pmixp_coll_t *coll)
+static pmixp_coll_ring_ctx_t *_ring_ctx_new(pmixp_coll_t *coll)
 {
 	int i;
 	pmixp_coll_ring_ctx_t *coll_ctx = NULL, *ret_ctx = NULL,
@@ -575,7 +575,7 @@ int pmixp_coll_ring_local(pmixp_coll_t *coll, char *data, size_t size,
 	coll->cbfunc = cbfunc;
 	coll->cbdata = cbdata;
 
-	coll_ctx = pmixp_coll_ring_ctx_new(coll);
+	coll_ctx = _ring_ctx_new(coll);
 	if (!coll_ctx) {
 		PMIXP_ERROR("Can not get new ring collective context, seq=%u",
 			    coll->seq);
