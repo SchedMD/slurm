@@ -2925,6 +2925,7 @@ function __sacctmgr_load() {
 	local parameters=(
 		"clean"
 		"cluster="
+		"declarative"
 		"file="
 	)
 
