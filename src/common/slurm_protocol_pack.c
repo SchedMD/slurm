@@ -3681,7 +3681,8 @@ static int _unpack_job_step_info_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 				goto unpack_error;
 
 		if (slurm_unpack_list(&msg->stepmgr_jobs,
-				      slurm_unpack_stepmgr_job_info, xfree_ptr,
+				      slurm_unpack_stepmgr_job_info,
+				      (ListDelF) slurm_free_stepmgr_job_info,
 				      buffer, smsg->protocol_version))
 			goto unpack_error;
 	}
