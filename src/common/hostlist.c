@@ -507,7 +507,12 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 
 	hn->num = strtoul(hn->suffix, &p, hostlist_base);
 
-	if (*p == '\0') {
+	if (!*p && (hn->num == ULONG_MAX)) {
+		hostname_destroy(hn);
+		return NULL;
+	}
+
+	if (!*p) {
 		hn->prefix = xstrndup(hostname, (idx + 1));
 	} else {
 		hn->prefix = xstrdup(hostname);
@@ -1584,7 +1589,7 @@ static int _parse_single_range(char *str, struct _range *range, int dims)
 
 	range->hi = (p && *p) ? strtoul(p, &q, hostlist_base) : range->lo;
 
-	if (q == p || *q != '\0') {
+	if ((q == p) || *q || (range->hi == ULONG_MAX)) {
 		error("%s: Invalid range: `%s'", __func__, orig);
 		free(orig);
 		return 0;
@@ -1768,7 +1773,8 @@ static hostlist_t *_hostlist_create_bracketed(const char *hostlist, char *sep,
 				goto error;
 			}
 		} else {
-			hostlist_push_host_dims(new, tok, dims);
+			if (!hostlist_push_host_dims(new, tok, dims))
+				goto error;
 		}
 	}
 	xfree(ranges);
@@ -1902,7 +1908,10 @@ int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
 
-	hn = hostname_create_dims(str, dims);
+	if (!(hn = hostname_create_dims(str, dims))) {
+		error("%s: Invalid host name: `%s'", __func__, str);
+		return 0;
+	}
 
 	if (hostname_suffix_is_valid(hn))
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
@@ -2221,7 +2230,8 @@ int hostlist_find_dims(hostlist_t *hl, const char *hostname, int dims)
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
 
-	hn = hostname_create_dims(hostname, dims);
+	if (!(hn = hostname_create_dims(hostname, dims)))
+		return -1;
 
 	LOCK_HOSTLIST(hl);
 
@@ -3488,7 +3498,8 @@ static int hostset_find_host(hostset_t *set, const char *host)
 	int retval = 0;
 	hostname_t *hn;
 	LOCK_HOSTLIST(set->hl);
-	hn = hostname_create(host);
+	if (!(hn = hostname_create(host)))
+		goto done;
 	for (i = 0; i < set->hl->nranges; i++) {
 		/*
 		 * FIXME: THIS WILL NOT ALWAYS WORK CORRECTLY IF CALLED FROM A
