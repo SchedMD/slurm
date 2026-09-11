@@ -227,10 +227,8 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started.
 	 */
-	if (!root_locked && (common_cgroup_lock(root_cg) != SLURM_SUCCESS)) {
-		error("common_cgroup_lock error (%s)", log_str);
+	if (!root_locked && (common_cgroup_lock(root_cg) != SLURM_SUCCESS))
 		return SLURM_ERROR;
-	}
 
 	/*
 	 * Always try to move slurmstepd process to the root cgroup, otherwise
@@ -719,10 +717,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 	 * terminated, they could remove the directories while we're creating
 	 * them.
 	 */
-	if (common_cgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("common_cgroup_lock error");
+	if (common_cgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	}
 
 	/* Don't let other plugins destroy our structs. */
 	g_step_active_cnt[sub]++;
@@ -1474,10 +1470,8 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 	}
 
 	if (common_cgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
-	    SLURM_SUCCESS) {
-		error("common_cgroup_lock error: %m");
+	    SLURM_SUCCESS)
 		goto fail_oom_results;
-	}
 
 	results = xmalloc(sizeof(*results));
 
