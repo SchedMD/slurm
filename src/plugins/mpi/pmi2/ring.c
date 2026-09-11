@@ -309,39 +309,6 @@ int pmix_ring_init(const pmi2_job_info_t* job, char*** env)
 	return rc;
 }
 
-/* free resources allocated to track PMIX_Ring state */
-int pmix_ring_finalize(void)
-{
-	int rc = SLURM_SUCCESS;
-
-	/* clear the pmix_ring_in messages for next ring operation */
-        if (pmix_ring_msgs != NULL) {
-		int i;
-		for (i = 0; i < pmix_ring_children; i++) {
-			/* free any memory allocated for each message */
-			pmix_ring_msg* msg = &pmix_ring_msgs[i];
-			msg->count = 0;
-			if (msg->left != NULL) {
-				xfree(msg->left);
-				msg->left = NULL;
-			}
-			if (msg->right != NULL) {
-				xfree(msg->right);
-				msg->right = NULL;
-			}
-		}
-
-		/* free array of messages */
-		xfree(pmix_ring_msgs);
-		pmix_ring_msgs = NULL;
-	}
-
-	/* free host list */
-	FREE_NULL_HOSTLIST(pmix_stepd_hostlist);
-
-	return rc;
-}
-
 /* ring_out messages come in from our parent,
  * we process this and send ring_out messages to each of our children:
  *   count - starting rank for our leftmost application process

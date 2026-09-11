@@ -308,21 +308,3 @@ kvs_put(char *key, char *val)
 	debug3("mpi/pmi2: put kvs %s=%s", key, val);
 	return SLURM_SUCCESS;
 }
-
-extern int
-kvs_clear(void)
-{
-	kvs_bucket_t *bucket;
-	int i, j;
-
-	for (i = 0; i < hash_size; i ++){
-		bucket = &kvs_hash[i];
-		for (j = 0; j < bucket->count; j ++) {
-			xfree (bucket->pairs[KEY_INDEX(j)]);
-			xfree (bucket->pairs[VAL_INDEX(j)]);
-		}
-	}
-	xfree(kvs_hash);
-
-	return SLURM_SUCCESS;
-}
