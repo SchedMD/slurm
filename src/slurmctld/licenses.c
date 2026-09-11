@@ -72,6 +72,11 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 typedef struct {
+	uint16_t disable_hres;
+	char *hres_name;
+} foreach_disable_hres_args_t;
+
+typedef struct {
 	licenses_t *lic; /* Pointer to record in cluster_license_list */
 	bitstr_t *new_nodes_bitmap;
 } hres_update_nodes_t;
@@ -107,6 +112,11 @@ typedef struct {
 	char *header;
 	job_record_t *job_ptr;
 } foreach_license_print_t;
+
+typedef struct {
+	char *hres_name;
+	foreach_license_print_t *print_arg;
+} foreach_print_hres_arg_t;
 
 typedef struct {
 	char *name;
@@ -336,6 +346,17 @@ static void _licenses_print(char *header, list_t *licenses,
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
 		return;
 	list_for_each(licenses, _foreach_license_print, &args);
+}
+
+static int _foreach_license_print_hres(void *x, void *arg)
+{
+	licenses_t *license = x;
+	foreach_print_hres_arg_t *args = arg;
+
+	if (xstrcmp(license->name, args->hres_name))
+		return 0;
+	_foreach_license_print(license, args->print_arg);
+	return 0;
 }
 
 /* Free a license_t record (for use by FREE_NULL_LIST) */
@@ -1665,8 +1686,12 @@ static void _log_hres_update_req(hres_update_msg_t *msg)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
 		return;
 	info("%s:", __func__);
-	info("HRES Name=%s Layer=%s Nodes=%s Count=%u",
-	     msg->hres_name, msg->layer_name, msg->nodes, msg->count);
+	info("HRES Name=%s Layer=%s Nodes=%s Count=%u DisableHRES=%s DisableLayer=%s",
+	     msg->hres_name, msg->layer_name, msg->nodes, msg->count,
+	     (msg->disable_hres == NO_VAL16) ? "" :
+	     (msg->disable_hres ? "true" : "false"),
+	     (msg->disable_layer == NO_VAL16) ? "" :
+	     (msg->disable_layer ? "true" : "false"));
 	if (!msg->base)
 		return;
 	info("\tBase:");
@@ -1778,14 +1803,33 @@ static int _update_hres_count_base(hres_update_msg_t *msg, licenses_t *lic,
 	return SLURM_SUCCESS;
 }
 
+/* A disable field is a boolean, or NO_VAL16 to leave it unchanged. */
+static bool _valid_hres_disable(uint16_t disable)
+{
+	return ((disable == NO_VAL16) || (disable <= 1));
+}
+
+static int _foreach_update_disable_hres(void *x, void *arg)
+{
+	licenses_t *license = x;
+	foreach_disable_hres_args_t *args = arg;
+
+	if ((license->id.hres_id == NO_VAL16) ||
+	    xstrcmp(license->name, args->hres_name))
+		return 0;
+	license->hres_rec.disable_hres = args->disable_hres;
+	return 0;
+}
+
 extern int hres_update(hres_update_msg_t *msg, char **err_msg)
 {
 	int rc = SLURM_SUCCESS;
-	licenses_t *lic;
+	licenses_t *lic = NULL;
 	bitstr_t *new_nodes_bitmap = NULL;
 	foreach_license_print_t print_arg = {
 		.header = "Updated HRES",
 	};
+	foreach_disable_hres_args_t disable_hres_args = { 0 };
 
 	_log_hres_update_req(msg);
 	slurm_mutex_lock(&license_mutex);
@@ -1793,6 +1837,37 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg)
 	if (!cluster_license_list) {
 		rc = ESLURM_INVALID_HRES_NAME;
 		goto fini;
+	}
+	if (!_valid_hres_disable(msg->disable_hres) ||
+	    !_valid_hres_disable(msg->disable_layer)) {
+		rc = ESLURM_HRES_INVALID_DISABLE;
+		goto fini;
+	}
+	if (!msg->layer_name) {
+		/*
+		 * Only disable_hres is a valid update without a layer name.
+		 * Invalidate request if any other update is specified, or if
+		 * disable_hres is missing.
+		 */
+		if ((msg->disable_hres == NO_VAL16) ||
+		    (msg->disable_layer != NO_VAL16) || msg->base ||
+		    (msg->count != NO_VAL) || msg->nodes) {
+			rc = ESLURM_HRES_MISSING_LAYER_NAME;
+			goto fini;
+		}
+	}
+	if ((msg->disable_hres != NO_VAL16) && (!msg->layer_name)) {
+		/*
+		 * No layer specified. Validate that an HRES of hres_name
+		 * exists.
+		 */
+		lic = list_find_first_ro(cluster_license_list,
+					 _license_find_rec, msg->hres_name);
+		if (!lic || (lic->id.hres_id == NO_VAL16)) {
+			rc = ESLURM_INVALID_HRES_NAME;
+			goto fini;
+		}
+		goto disable_hres_update;
 	}
 	if ((rc = _validate_hres_update_nodes(msg->hres_name, msg->layer_name,
 					      msg->nodes, NULL, &lic,
@@ -1803,10 +1878,38 @@ extern int hres_update(hres_update_msg_t *msg, char **err_msg)
 		goto fini;
 
 	_update_hres_nodes(lic, new_nodes_bitmap);
+
+	if (msg->disable_layer != NO_VAL16)
+		lic->hres_rec.disable_layer = msg->disable_layer;
+
+disable_hres_update:
+	/*
+	 * disable_hres applies to all layers, whether or not a
+	 * specific layer is requested.
+	 */
+	if (msg->disable_hres != NO_VAL16) {
+		disable_hres_args.hres_name = msg->hres_name;
+		disable_hres_args.disable_hres = msg->disable_hres;
+		list_for_each(cluster_license_list,
+			      _foreach_update_disable_hres, &disable_hres_args);
+	}
+
 	last_license_update = time(NULL);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)
-		_foreach_license_print(lic, &print_arg);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE) {
+		if (!msg->layer_name) {
+			foreach_print_hres_arg_t print_hres_args = {
+				.hres_name = msg->hres_name,
+				.print_arg = &print_arg,
+			};
+
+			list_for_each(cluster_license_list,
+				      _foreach_license_print_hres,
+				      &print_hres_args);
+		} else {
+			_foreach_license_print(lic, &print_arg);
+		}
+	}
 fini:
 	FREE_NULL_BITMAP(new_nodes_bitmap);
 	slurm_mutex_unlock(&license_mutex);

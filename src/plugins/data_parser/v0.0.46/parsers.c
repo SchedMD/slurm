@@ -9529,6 +9529,8 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 static const parser_t PARSER_ARRAY(HRES_UPDATE_MSG)[] = {
 	add_parse(H_VARIABLE_LIST, base, "base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer"),
 	add_parse(UINT32_NO_VAL, count, "count", "Resource count for the layer; omit to leave unchanged"),
+	add_parse(BOOL16_NO_VAL, disable_hres, "disable_hres", "If true, disable this HRES for scheduling; jobs requesting this HRES remain pending. If false, enable this HRES for scheduling. Omit to leave unchanged."),
+	add_parse(BOOL16_NO_VAL, disable_layer, "disable_layer", "If true, disable this HRES layer for scheduling; jobs may still be scheduled on other layers in the same HRES. If false, enable this HRES layer for scheduling. Omit to leave unchanged."),
 	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update"),
 	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update"),
 	add_parse(STRING, nodes, "nodes", "Nodes assigned to the layer"),

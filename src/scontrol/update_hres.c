@@ -61,6 +61,21 @@ static int _parse_count(char *str, bool allow_infinite, uint32_t *count)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Convert the "true" or "false" string accepted by DisableHRES and
+ * DisableLayer into the boolean sent in hres_update_msg_t.
+ */
+static int _parse_disable(char *str, uint16_t *disable)
+{
+	if (!xstrcasecmp(str, "true"))
+		*disable = true;
+	else if (!xstrcasecmp(str, "false"))
+		*disable = false;
+	else
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
+}
+
 static int _parse_one_base(char *str, list_t *base)
 {
 	hres_variable_t *hres_var;
@@ -125,6 +140,8 @@ extern int scontrol_update_hres(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 
 	msg->count = NO_VAL;
+	msg->disable_hres = NO_VAL16;
+	msg->disable_layer = NO_VAL16;
 
 	for (int i = 0; i < argc; i++) {
 		char *tag = argv[i];
@@ -163,14 +180,30 @@ extern int scontrol_update_hres(int argc, char **argv)
 				goto fini;
 			}
 			update_cnt++;
+		} else if (!xstrcasecmp(tag, "DisableHRES")) {
+			if (_parse_disable(val, &msg->disable_hres)) {
+				error("Invalid DisableHRES \"%s\"; acceptable values are \"true\" or \"false\"",
+				      val);
+				rc = SLURM_ERROR;
+				goto fini;
+			}
+			update_cnt++;
+		} else if (!xstrcasecmp(tag, "DisableLayer")) {
+			if (_parse_disable(val, &msg->disable_layer)) {
+				error("Invalid DisableLayer \"%s\"; acceptable values are \"true\" or \"false\"",
+				      val);
+				rc = SLURM_ERROR;
+				goto fini;
+			}
+			update_cnt++;
 		} else {
 			error("Invalid input: %s=%s", tag, val);
 			rc = SLURM_ERROR;
 			goto fini;
 		}
 	}
-	if (!msg->hres_name || !msg->layer_name) {
-		error("HRESName and LayerName are required");
+	if (!msg->hres_name) {
+		error("HRESName is required");
 		rc = SLURM_ERROR;
 		goto fini;
 	}

@@ -13877,6 +13877,8 @@ static void _pack_update_hres_msg(slurm_msg_t *smsg, buf_t *buffer)
 		slurm_pack_list(msg->base, slurm_pack_hres_variable, buffer,
 				smsg->protocol_version);
 		pack32(msg->count, buffer);
+		pack16(msg->disable_hres, buffer);
+		pack16(msg->disable_layer, buffer);
 		packstr(msg->hres_name, buffer);
 		packstr(msg->layer_name, buffer);
 		packstr(msg->nodes, buffer);
@@ -13896,6 +13898,8 @@ static int _unpack_update_hres_msg(slurm_msg_t *smsg, buf_t *buffer)
 				      smsg->protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&msg->count, buffer);
+		safe_unpack16(&msg->disable_hres, buffer);
+		safe_unpack16(&msg->disable_layer, buffer);
 		safe_unpackstr(&msg->hres_name, buffer);
 		safe_unpackstr(&msg->layer_name, buffer);
 		safe_unpackstr(&msg->nodes, buffer);

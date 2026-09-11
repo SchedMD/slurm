@@ -3582,6 +3582,8 @@ typedef struct license_info_msg {
 typedef struct {
 	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
+	uint16_t disable_hres; /* bool, NO_VAL16 for no change */
+	uint16_t disable_layer; /* bool, NO_VAL16 for no change */
 	char *hres_name;
 	char *layer_name;
 	char *nodes;

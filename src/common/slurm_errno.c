@@ -994,6 +994,14 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_HRES_BASE_OVERFLOW),
 		"Base would result in overflow",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_INVALID_DISABLE),
+		"Invalid value for disable; acceptable values are \"true\" or \"false\"",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_MISSING_LAYER_NAME),
+		"Specified updates require a layer_name",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

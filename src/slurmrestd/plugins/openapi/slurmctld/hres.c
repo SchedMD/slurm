@@ -46,6 +46,8 @@ static int _update_hres(openapi_ctxt_t *ctxt)
 	hres_update_msg_t *msg = xmalloc(sizeof(*msg));
 
 	msg->count = NO_VAL;
+	msg->disable_hres = NO_VAL16;
+	msg->disable_layer = NO_VAL16;
 
 	if ((rc = DATA_PARSE(ctxt->parser, HRES_UPDATE_MSG, *msg, ctxt->query,
 			     ppath)))
