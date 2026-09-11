@@ -1004,11 +1004,16 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		if (mod_type == MOD_USER) {
 			assoc_cond.user_list = list_create(NULL);
 			list_push(assoc_cond.user_list, assoc->user);
-			if (assoc->partition) {
-				assoc_cond.partition_list = list_create(NULL);
-				list_push(assoc_cond.partition_list,
-					  assoc->partition);
-			}
+			/*
+			 * Always scope to one partition. Leaving the list
+			 * empty matches every association for this user and
+			 * account, so a line with no Partition would modify
+			 * the partition specific ones too; '' is the stored
+			 * value for the association without a partition.
+			 */
+			assoc_cond.partition_list = list_create(NULL);
+			list_push(assoc_cond.partition_list,
+				  assoc->partition ? assoc->partition : "");
 		}
 
 		notice_thread_init();
