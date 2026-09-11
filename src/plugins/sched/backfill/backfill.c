@@ -2413,15 +2413,15 @@ static void _attempt_backfill(void)
 		node_space_handler.node_space_recs = &node_space_recs;
 
 		if (bf_licenses) {
-			int cluster_list_count = cluster_license_count();
+			int base_lic_count = list_count(node_space[0].licenses);
 
 			list_for_each(resv_list, _bf_reserve_resv_licenses,
 				      &node_space_handler);
 			j = 0;
-			while (cluster_list_count) {
+			while (base_lic_count) {
 				/* if 2+ resv license was added sort the list */
 				if (list_count(node_space[j].licenses) >
-				    (cluster_list_count + 1)) {
+				    (base_lic_count + 1)) {
 					list_sort(node_space[j].licenses,
 						  bf_license_cmp);
 				}
