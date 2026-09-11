@@ -273,7 +273,6 @@ static char * _next_tok(char *, char **);
 static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);
 
-static int           host_prefix_end(const char *, int dims);
 static hostname_t *hostname_create(const char *);
 static void hostname_destroy(hostname_t *);
 static int hostname_suffix_is_valid(hostname_t *);
@@ -449,16 +448,9 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
 /*
  * return the location of the last char in the hostname prefix
  */
-static int host_prefix_end(const char *hostname, int dims)
+static int _prefix_end_len(const char *hostname, int len, int dims)
 {
-	int idx;
-
-	xassert(hostname);
-
-	if (!dims)
-		dims = slurmdb_setup_cluster_dims();
-
-	idx = strlen(hostname) - 1;
+	int idx = len - 1;
 
 	if (dims > 1) {
 		while ((idx >= 0) &&
@@ -473,47 +465,70 @@ static int host_prefix_end(const char *hostname, int dims)
 	return idx;
 }
 
+/*
+ * Read the numeric suffix of a hostname that holds len characters. plen gets
+ * the length of the prefix in front of it, num the value of the suffix and
+ * width the number of characters it was written in.
+ *
+ * Returns -1 when the suffix is ULONG_MAX or larger, 0 when the name holds no
+ * suffix or has other characters after the digits, and 1 when the suffix is
+ * read. plen is always set, num and width only when the suffix is read.
+ * ULONG_MAX is refused because a range can not end on it.
+ */
+static int _parse_hostname_len(const char *hostname, int len, int dims,
+			       int *plen, unsigned long *num, int *width)
+{
+	int base = hostlist_get_base(dims);
+	unsigned long val;
+	char *p;
+	int slen;
+
+	*plen = _prefix_end_len(hostname, len, dims) + 1;
+	slen = len - *plen;
+
+	if (!slen)
+		return 0;
+
+	if ((dims > 1) && (slen != dims))
+		base = 10;
+
+	val = strtoul(hostname + *plen, &p, base);
+	if (*p)
+		return 0;
+	if (val == ULONG_MAX)
+		return -1;
+
+	*num = val;
+	*width = slen;
+
+	return 1;
+}
+
 static hostname_t *hostname_create_dims(const char *hostname, int dims)
 {
-	hostname_t *hn = NULL;
-	char *p;
-	int idx = 0;
-	int hostlist_base;
+	hostname_t *hn;
+	unsigned long num = 0;
+	int len, plen, width, rc;
 
 	xassert(hostname);
 
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
-	hostlist_base = hostlist_get_base(dims);
+
+	len = strlen(hostname);
+
+	if ((rc = _parse_hostname_len(hostname, len, dims, &plen, &num,
+				      &width)) < 0)
+		return NULL;
 
 	hn = xmalloc(sizeof(*hn));
 
-	idx = host_prefix_end(hostname, dims);
-
 	hn->hostname = xstrdup(hostname);
+	hn->num = num;
 
-	hn->num = 0;
-	hn->prefix = NULL;
-	hn->suffix = NULL;
-	if (idx == (strlen(hostname) - 1)) {
-		hn->prefix = xstrdup(hostname);
-		return hn;
-	}
-
-	hn->suffix = hn->hostname + idx + 1;
-
-	if ((dims > 1) && (strlen(hn->suffix) != dims))
-		hostlist_base = 10;
-
-	hn->num = strtoul(hn->suffix, &p, hostlist_base);
-
-	if (!*p && (hn->num == ULONG_MAX)) {
-		hostname_destroy(hn);
-		return NULL;
-	}
-
-	if (!*p) {
-		hn->prefix = xstrndup(hostname, (idx + 1));
+	if (rc) {
+		hn->prefix = xstrndup(hostname, plen);
+		hn->suffix = hn->hostname + plen;
 	} else {
 		hn->prefix = xstrdup(hostname);
 		hn->suffix = NULL;
