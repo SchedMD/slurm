@@ -715,6 +715,12 @@ const openapi_path_binding_t openapi_paths[] = {
 	{0}
 };
 
+static bool _is_get_or_head_request(const ctxt_t *ctxt)
+{
+	return ((ctxt->method == HTTP_REQUEST_GET) ||
+		(ctxt->method == HTTP_REQUEST_HEAD));
+}
+
 extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 				  db_list_query_func_t func, void *cond,
 				  const char *func_name, const char *caller,
@@ -739,7 +745,7 @@ extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 	}
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
-		if (ignore_empty_result) {
+		if (ignore_empty_result || !_is_get_or_head_request(ctxt)) {
 			resp_warn(ctxt, caller, "%s() reports nothing changed",
 				  func_name);
 			rc = SLURM_SUCCESS;
@@ -800,7 +806,7 @@ extern int db_modify_list_funcname(ctxt_t *ctxt, list_t **list, void *cond,
 	}
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
-		if (ignore_empty_result) {
+		if (ignore_empty_result || !_is_get_or_head_request(ctxt)) {
 			resp_warn(ctxt, caller, "%s() reports nothing changed",
 				  func_name);
 			rc = SLURM_SUCCESS;
@@ -840,7 +846,15 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 		else
 			rc = SLURM_ERROR;
 
-		return resp_error(ctxt, rc, caller, "%s() failed", func_name);
+		if ((rc == SLURM_NO_CHANGE_IN_DATA) &&
+		    !_is_get_or_head_request(ctxt)) {
+			resp_warn(ctxt, caller, "%s() reports nothing changed",
+				  func_name);
+			rc = SLURM_SUCCESS;
+		} else {
+			return resp_error(ctxt, rc, caller, "%s() failed",
+					  func_name);
+		}
 	}
 
 	FREE_NULL_LIST(changed);

@@ -61,9 +61,8 @@ static void _delete_cluster(ctxt_t *ctxt, slurmdb_cluster_cond_t *cluster_cond)
 			   cluster_cond))
 		db_query_commit(ctxt);
 
-	if (cluster_list)
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_REMOVED_RESP,
-					 cluster_list, ctxt);
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_REMOVED_RESP, cluster_list,
+				 ctxt);
 
 	FREE_NULL_LIST(cluster_list);
 }

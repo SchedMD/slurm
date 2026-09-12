@@ -268,8 +268,14 @@ static void _add_accounts_association(ctxt_t *ctxt,
 
 	errno = 0;
 	ret_str = slurmdb_accounts_add_cond(ctxt->db_conn, add_assoc, acct);
+	rc = errno;
 
-	if ((rc = errno))
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		resp_warn(ctxt, XSTRINGIFY(slurmdb_accounts_add_cond),
+			  "%s() reports nothing changed",
+			  XSTRINGIFY(slurmdb_accounts_add_cond));
+		rc = SLURM_SUCCESS;
+	} else if (rc)
 		resp_error(ctxt, rc, __func__,
 			   "slurmdb_accounts_add_cond() failed");
 	else
@@ -329,7 +335,7 @@ static void _delete_account(ctxt_t *ctxt, char *account)
 
 	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_REMOVED_RESP, removed, ctxt);
 
-	if (!list_is_empty(removed))
+	if (list_count(removed))
 		db_query_commit(ctxt);
 
 cleanup:
