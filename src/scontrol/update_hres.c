@@ -139,9 +139,7 @@ extern int scontrol_update_hres(int argc, char **argv)
 	int update_cnt = 0;
 	int rc = SLURM_SUCCESS;
 
-	msg->count = NO_VAL;
-	msg->disable_hres = NO_VAL16;
-	msg->disable_layer = NO_VAL16;
+	slurm_init_hres_update_msg(msg);
 
 	for (int i = 0; i < argc; i++) {
 		char *tag = argv[i];

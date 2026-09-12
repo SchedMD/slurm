@@ -3879,6 +3879,18 @@ extern void slurm_destroy_hres_variable(void *object);
 extern int slurm_load_licenses(time_t, license_info_msg_t **, uint16_t);
 extern void slurm_free_license_info_msg(license_info_msg_t *);
 
+/*
+ * slurm_init_hres_update_msg - initialize HRES update message with default
+ *	values
+ * OUT hres_msg - user defined HRES update descriptor
+ */
+extern void slurm_init_hres_update_msg(hres_update_msg_t *hres_msg);
+
+/*
+ * slurm_update_hres - issue RPC to update an HRES layer
+ * IN msg - HRES update descriptor
+ * RET SLURM_SUCCESS on success, otherwise a Slurm error code
+ */
 extern int slurm_update_hres(hres_update_msg_t *msg);
 
 /* get the running assoc_mgr info
