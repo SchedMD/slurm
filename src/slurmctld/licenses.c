@@ -1911,6 +1911,15 @@ disable_hres_update:
 		}
 	}
 fini:
+	if (rc && (slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)) {
+		if (*err_msg) {
+			log_flag(LICENSE, "%s: %s: %s",
+				 __func__, slurm_strerror(rc), *err_msg);
+		} else {
+			log_flag(LICENSE, "%s: %s",
+				 __func__, slurm_strerror(rc));
+		}
+	}
 	FREE_NULL_BITMAP(new_nodes_bitmap);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
