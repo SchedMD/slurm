@@ -6252,16 +6252,16 @@ def run_check_test(source_file, build_args=""):
         env_vars=f"CK_XML_LOG_FILE_NAME={xml_test} srcdir={src_dir}",
     )
 
+    logging.info(f"{result['stdout']}")
+    if result["exit_code"]:
+        logging.error(f"\n{result['stderr']}")
+
     # Parse the xml output
     if not os.path.exists(xml_test):
         pytest.fail(f"Test results not found: {xml_test}")
 
     with open(xml_test) as f:
         xml_data = xmltodict.parse(f.read())
-
-    logging.info(f"{result['stdout']}")
-    if result["exit_code"]:
-        logging.error(f"\n{result['stderr']}")
 
     return xml_data["testsuites"]["suite"]
 

@@ -247,6 +247,11 @@ for test in test_files:
             # Run the libcheck tests and get the xml parsed results
             test_results = atf.run_check_test(src, build_args="-Wl,--export-dynamic")
 
+            if "test" not in test_results:
+                pytest.fail(
+                    f"{src}: zero tests ran; the suite's setup fixture probably failed"
+                )
+
             # Get a list of test cases (ensure it's a list)
             test_cases = test_results["test"]
             if not isinstance(test_cases, list):
