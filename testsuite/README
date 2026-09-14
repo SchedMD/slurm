@@ -1255,3 +1255,4 @@ test_173_1   Test the DBD agent queue drains after a stranded requeue of a resiz
 test_174_#   Testing of main scheduler.
 =======================================
 test_174_1   Test scheduling after het job components fail by partition
+test_174_2   Test scheduling after reservation jobs fail by partition
