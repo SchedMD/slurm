@@ -385,7 +385,6 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 {
 	int rc = SLURM_SUCCESS;
 
-	check_parser(parser);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert((op == PARSING) || (op == DUMPING) || (op == QUERYING));
 

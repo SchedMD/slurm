@@ -82,6 +82,34 @@ if atf.get_version() < (26, 11):
             "workerpool is new in Slurm 26.11",
         )
     )
+if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
+    skip_tests.append(
+        (
+            "plugins/data_parser/test_parsers_v0_0_43.c",
+            "data_parser/v0.0.43 available from Slurm 25.05 to 26.11",
+        )
+    )
+if atf.get_version() < (25, 11) or (27, 5) < atf.get_version()[:2]:
+    skip_tests.append(
+        (
+            "plugins/data_parser/test_parsers_v0_0_44.c",
+            "data_parser/v0.0.44 available from Slurm 25.11 to 27.05",
+        )
+    )
+if atf.get_version() < (26, 5) or (27, 11) < atf.get_version()[:2]:
+    skip_tests.append(
+        (
+            "plugins/data_parser/test_parsers_v0_0_45.c",
+            "data_parser/v0.0.45 available from Slurm 26.05 to 27.11",
+        )
+    )
+if atf.get_version() < (26, 11) or (28, 5) < atf.get_version()[:2]:
+    skip_tests.append(
+        (
+            "plugins/data_parser/test_parsers_v0_0_46.c",
+            "data_parser/v0.0.46 available from Slurm 26.11 to 28.05",
+        )
+    )
 if atf.get_version() < (26, 5):
     xfail_tests.append(
         (
@@ -185,6 +213,7 @@ for test in test_files:
             # Get the failure in the suite and evaluate if they are xfail or we should fail
             suite_fails = [test for test in test_cases if test["@result"] != "success"]
             xfails_found = []
+            real_fails = []
             for failure in suite_fails:
                 for i, xfail in enumerate(suite_xfails):
                     if xfail[1] == failure["id"]:
@@ -194,7 +223,15 @@ for test in test_files:
                         break
                 else:
                     # failure is not xfail
-                    pytest.fail(f"{failure['id']}: {failure['message']}")
+                    real_fails.append(
+                        f"{failure['id']}[{failure['iteration']}]"
+                        f" ({failure['fn']}): {failure['message']}"
+                    )
+
+            # Report every failure, not just the first one. A loop test runs
+            # one unit per item, so a systemic breakage fails many of them.
+            if real_fails:
+                pytest.fail("\n".join(real_fails))
 
             # Check if we still have remaining xfails (not popped above)
             for xfail in suite_xfails:

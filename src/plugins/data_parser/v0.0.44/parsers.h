@@ -161,16 +161,7 @@ typedef struct parser_s {
 	need_t needs;
 } parser_t;
 
-/*
- * Called at startup to run any setup of parsers and testing
- */
-extern void parsers_init(void);
-
 #ifndef NDEBUG
-extern void check_parser_funcname(const parser_t *const parser,
-				  const char *func_name);
-#define check_parser(parser) check_parser_funcname(parser, __func__)
-
 /*
  * Verify that the parser is sliced parser from an array.
  *
@@ -195,7 +186,6 @@ extern void verify_parser_not_sliced_funcname(const parser_t *const parser,
 #define verify_parser_not_sliced(parser) \
 	verify_parser_not_sliced_funcname(parser, __func__, __FILE__, __LINE__)
 #else
-#define check_parser(parser) {}
 #define verify_parser_not_sliced(parser) {}
 #define verify_parser_sliced(parser) {}
 #endif
