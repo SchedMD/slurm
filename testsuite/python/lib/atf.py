@@ -536,6 +536,25 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
         failures.append(reason)
         return
 
+    reason = "Issue 51119: srun - SIGSEGV in slurm_free_node_alias_addrs on powered down cloud node with stepmgr. Fixed in 26.05."
+    component = "bin/srun"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "src/common/xmalloc.c" in bt
+        and "src/common/slurm_protocol_defs.c" in bt
+        and "src/api/allocate.c" in bt
+        and "in slurm_xfree" in bt
+        and "in slurm_free_node_alias_addrs_members" in bt
+        and "in slurm_free_node_alias_addrs" in bt
+        and "in slurm_job_step_create" in bt
+    ):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
