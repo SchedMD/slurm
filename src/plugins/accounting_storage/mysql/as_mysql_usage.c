@@ -102,6 +102,7 @@ static void *_cluster_rollup_usage(void *arg)
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
 	mysql_conn.flags |= DB_CONN_FLAG_ROLLBACK;
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
+	mysql_conn.wsrep_trx_fragment_size_orig = NO_VAL64;
 	slurm_mutex_init(&mysql_conn.lock);
 
 	acct_storage_p_auth_connection(&mysql_conn, &msg_auth);
@@ -112,6 +113,12 @@ static void *_cluster_rollup_usage(void *arg)
 
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
+
+	/*
+	 * A rollup commits its window as one transaction, which on Galera can
+	 * exceed wsrep_max_ws_size. Probes first, so a no-op below Galera 4.
+	 */
+	mysql_db_enable_streaming_replication(&mysql_conn);
 
 	if (!local_rollup->sent_start) {
 		char *tmp = NULL, *sep = "";
@@ -439,6 +446,9 @@ end_it:
 			error("rollback failed");
 	}
 
+	/* If streaming replication was changed, restore to initial values */
+	mysql_db_restore_streaming_replication(&mysql_conn);
+	xfree(mysql_conn.wsrep_trx_fragment_unit_orig);
 	mysql_db_close_db_connection(&mysql_conn);
 	slurm_mutex_destroy(&mysql_conn.lock);
 
