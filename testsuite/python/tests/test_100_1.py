@@ -114,6 +114,12 @@ if atf.get_version() < (26, 11):
             "Issue #50192. LogTimeFormat options introduced in Slurm 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "common/test_http_con.c",
+            "Issue #50528: conmgr/workerpool added in 26.11+",
+        )
+    )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
     skip_tests.append(
         (
