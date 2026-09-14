@@ -528,6 +528,15 @@ For torus3d, the format is <code>topo-name:torus_name:x:y:z</code>
 <b>--conf</b> flag is <b>Topology</b>, and when the node is powered down the
 topology will be restored to what is defined in the configuration files.</p>
 
+<p>A node whose topology no longer resolves when slurmctld reads its
+configuration, for example because the block or first switch it names was
+renamed or removed, is drained with the reason <code>InvalidTopology</code>.
+Until its topology resolves, the node is removed from every topology,
+including any placement given in the topology configuration file.
+See the <b>Topology</b> option of
+<a href="scontrol.html#OPT_Topology">scontrol update</a> for how to return it
+to service.</p>
+
 <p>Examples using <code>scontrol</code>:</p>
 
 <pre>

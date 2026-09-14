@@ -2546,4 +2546,10 @@ extern void job_mgr_limit_to_req_nodes(job_record_t *job_ptr,
  */
 extern void node_mgr_set_nodes_topo(void);
 
+/*
+ * Drain every node with invalid_topo set, with the reason InvalidTopology.
+ * Call after the node to job syncs and set_cluster_tres() of a config read.
+ */
+extern void node_mgr_drain_invalid_topo(void);
+
 #endif /* !_HAVE_SLURMCTLD_H */

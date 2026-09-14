@@ -114,6 +114,9 @@
  */
 #define BUF_MIN_NODES_BYTES (BUF_SIZE * 16)
 
+/* Drain reason recorded for a node whose topology_str does not resolve */
+#define INVALID_TOPO_REASON "InvalidTopology"
+
 static bool config_list_update = false;
 static pthread_mutex_t config_list_update_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -4680,6 +4683,17 @@ static void _drain_node(node_record_t *node_ptr, char *reason,
 	}
 }
 
+/* Drain a node whose topology_str does not resolve, adding to its reason */
+static void _drain_invalid_topo(node_record_t *node_ptr, time_t now)
+{
+	/* Set the reason first so the drain event carries it */
+	if (!xstrstr(node_ptr->reason, INVALID_TOPO_REASON))
+		set_node_reason(node_ptr, INVALID_TOPO_REASON, now);
+	_drain_node(node_ptr, INVALID_TOPO_REASON, slurm_conf.slurm_user_id,
+		    now);
+	last_node_update = now;
+}
+
 /*
  * drain_nodes - drain one or more nodes,
  *  no-op for nodes already drained or draining
@@ -7706,5 +7720,16 @@ extern void node_mgr_set_nodes_topo(void)
 			SWAP(node_ptr->topology_orig_str, tmp_orig_topo_str);
 			xfree(tmp_orig_topo_str);
 		}
+	}
+}
+
+extern void node_mgr_drain_invalid_topo(void)
+{
+	node_record_t *node_ptr;
+	time_t now = time(NULL);
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
+		if (node_ptr->invalid_topo)
+			_drain_invalid_topo(node_ptr, now);
 	}
 }

@@ -1832,6 +1832,8 @@ extern int read_slurm_conf(int recover)
 
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	_requeue_job_node_failed();
+	/* Must follow set_cluster_tres() and the node to job syncs */
+	node_mgr_drain_invalid_topo();
 	load_part_uid_allow_list(true);
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
