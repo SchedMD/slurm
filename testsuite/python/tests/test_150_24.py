@@ -10,7 +10,8 @@ both plugins need coverage.
 A node whose topology names a single leaf switch fails to resolve once that
 switch is renamed. A multi-level unit like "sw_root:sw_new" behaves
 differently, because the tree plugin creates a missing child under a parent it
-does know, so this test only covers the bare leaf form.
+does know, so such a node must survive the same reconfigure undrained.
+Renaming that parent drains it like any other.
 """
 
 import re
@@ -25,6 +26,9 @@ PORT_BASE = 61530
 NODES = [
     {"name": "node1", "topo": "tree_topo:sw_alpha", "port": PORT_BASE},
     {"name": "node2", "topo": "tree_topo:sw_plain", "port": PORT_BASE + 1},
+    # scontrol(1) promises intermediate switches are created if needed, so
+    # sw_child resolves under the sw_root the config does define.
+    {"name": "node3", "topo": "tree_topo:sw_root:sw_child", "port": PORT_BASE + 2},
 ]
 
 
@@ -36,8 +40,8 @@ def setup():
     )
 
     atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter_includes("SelectTypeParameters", "CR_Core_Memory")
-    atf.require_config_parameter("MaxNodeCount", 4)
+    atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
+    atf.require_config_parameter("MaxNodeCount", 6)
     atf.require_config_file("topology.yaml", topology_yaml("sw_alpha"))
 
     atf.require_slurm_running()
@@ -56,14 +60,14 @@ def dynamic_nodes(setup):
         atf.delete_node(node["name"])
 
 
-def topology_yaml(leaf_name):
-    """Return a topology.yaml whose first leaf switch carries the given name."""
+def topology_yaml(leaf_name, root_name="sw_root"):
+    """Return a topology.yaml with the given first leaf and root switch names."""
     return f"""
 - topology: tree_topo
   cluster_default: true
   tree:
     switches:
-      - switch: sw_root
+      - switch: {root_name}
         children: {leaf_name},sw_plain
       - switch: {leaf_name}
       - switch: sw_plain
@@ -141,6 +145,19 @@ def test_switch_rename_drains_nodes():
         "DRAIN" not in nodes["node2"]["state"]
     ), "node2 still has a valid topology and should not be drained"
 
+    # node3 names a switch the config does not define, but under a parent it
+    # does, so the tree plugin creates it rather than failing to resolve.
+    assert (
+        "DRAIN" not in nodes["node3"]["state"]
+    ), "node3 should not be drained for a switch the plugin creates"
+    assert (
+        nodes["node3"]["topology"] == "tree_topo:sw_root:sw_child"
+    ), "node3 should keep its multi-level topology affiliation"
+    # The string above is echoed back verbatim, so prove sw_child exists.
+    assert switches_for_node("node3", "tree_topo") == {
+        "sw_child"
+    }, "node3's intermediate switch should have been created for it"
+
 
 def test_recover_with_valid_switch():
     """Pointing the node at the renamed switch recovers it."""
@@ -170,3 +187,25 @@ def test_recover_with_valid_switch():
 
     nodes = atf.get_nodes()
     assert "DRAIN" not in nodes["node1"]["state"], "node1 should no longer be drained"
+
+
+def test_root_switch_rename_drains_a_multi_level_node():
+    """Renaming the parent a multi-level unit names drains the node.
+
+    The tree plugin creates a missing child only under a parent it knows, so
+    node3's sw_root:sw_child stops resolving once sw_root is renamed.
+    """
+
+    atf.require_config_file("topology.yaml", topology_yaml("sw_delta", "sw_top"))
+    reconfigure()
+
+    nodes = atf.get_nodes()
+    assert "DRAIN" in nodes["node3"]["state"], "node3 should be drained"
+    assert (
+        nodes["node3"]["reason"] == "InvalidTopology"
+    ), "node3 should say why it was drained"
+
+    # node2 names only sw_plain, which still exists under the renamed root.
+    assert (
+        "DRAIN" not in nodes["node2"]["state"]
+    ), "node2 still has a valid topology and should not be drained"
