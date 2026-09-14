@@ -2356,6 +2356,33 @@ intermediate switch names, which will be created if needed (colon-delimited,
 e.g., Topology=topo-tree:sw_root:s1:s2).
 This configuration overrides node topology affiliation settings from
 \fItopology.conf\fR and \fItopology.yaml\fR.
+For a node defined in \fIslurm.conf\fR other than a cloud node, the value is
+lost on \fBscontrol reconfigure\fR or a plain restart of \fBslurmctld\fR.
+A full state recovery keeps it: a restart of \fBslurmctld\fR with \fB\-R\fR,
+or a backup \fBslurmctld\fR taking control.
+For dynamic and cloud nodes, the value is also kept across reconfigures and
+restarts.
+In all cases it is replaced when the node is powered down, or when it reboots
+with a \fBTopology\fR in the \fB\-\-conf\fR of its \fBslurmd\fR.
+
+If the node's topology no longer resolves when slurmctld reads its
+configuration, for example because the block or first switch it names was
+renamed or removed, the node is drained with the reason "InvalidTopology".
+Until its topology resolves, the node is removed from every topology,
+including any placement given in \fBtopology.conf\fR(5) or
+\fBtopology.yaml\fR(5).
+The topology resolves again after an update of \fBTopology\fR, or once the
+unit is restored and slurmctld reads its configuration, but the node stays
+drained until it is resumed.
+A node that is already drained keeps its reason, and "InvalidTopology" is
+appended to it.
+\fBState\fR=\fBRESUME\fR, \fBRESUME_KEEP_TRES\fR, \fBUNDRAIN\fR, and
+\fBIDLE\fR are then refused with "Invalid node state transition" until the
+node is given a topology that resolves.
+If its drain is cleared another way, the node is drained again: when it
+registers, for example after \fBState\fR=\fBFUTURE\fR; when a pending ASAP
+reboot is cancelled; or when it finishes powering down and the topology it
+reverts to does not resolve either.
 .IP
 
 .TP
