@@ -174,7 +174,7 @@ static int _update_node_gres(char *node_names, char *gres, uid_t auth_uid);
 static int _update_node_suspend_time(char *node_names, uint32_t suspend_time);
 static char *_suspend_time_str(uint32_t suspend_time, char *buf, size_t len);
 static int	_update_node_weight(char *node_names, uint32_t weight);
-static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
+static bool _valid_node_state_change(node_record_t *node_ptr, uint32_t new);
 
 static char *_get_msg_hostname(slurm_msg_t *msg)
 {
@@ -3054,6 +3054,8 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 			if ((rc = node_mgr_set_node_topology(
 				     node_ptr, update_node_msg->topology_str)))
 				error_code = rc;
+			else
+				node_ptr->invalid_topo = false;
 		}
 
 		state_val = update_node_msg->node_state;
@@ -3104,12 +3106,14 @@ extern int update_node(slurm_msg_t *msg, update_node_msg_t *update_node_msg,
 
 		if (state_val != NO_VAL) {
 			base_state = node_ptr->node_state;
-			if (!_valid_node_state_change(base_state, state_val)) {
+			if (!_valid_node_state_change(node_ptr, state_val)) {
 				info("Invalid node state transition requested "
-				     "for node %s from=%s to=%s",
+				     "for node %s from=%s to=%s%s",
 				     this_node_name,
 				     node_state_string(base_state),
-				     node_state_string(state_val));
+				     node_state_string(state_val),
+				     node_ptr->invalid_topo ?
+				     " (invalid topology)" : "");
 				state_val = NO_VAL;
 				error_code =
 					ESLURM_INVALID_NODE_STATE_TRANSITION;
@@ -4485,6 +4489,7 @@ extern void reset_node_topology(node_record_t *node_ptr)
 	xassert(node_ptr);
 
 	char *old_topo = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (node_ptr->config_ptr->topology_str)
 		old_topo = node_ptr->config_ptr->topology_str;
@@ -4498,13 +4503,17 @@ extern void reset_node_topology(node_record_t *node_ptr)
 		 * start with. Topology is only from topology.conf|yaml.
 		 */
 	} else {
-		node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+		rc = node_mgr_set_node_topology(node_ptr,
+						old_topo ? old_topo : "");
 	}
 
 	if (old_topo == node_ptr->topology_orig_str) {
 		xfree(node_ptr->topology_str);
 	}
 	xfree(node_ptr->topology_orig_str);
+
+	if (!rc || !node_ptr->topology_str)
+		node_ptr->invalid_topo = false;
 }
 
 /*
@@ -4721,8 +4730,9 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 	return error_code;
 }
 /* Return true if admin request to change node state from old to new is valid */
-static bool _valid_node_state_change(uint32_t old, uint32_t new)
+static bool _valid_node_state_change(node_record_t *node_ptr, uint32_t new)
 {
+	uint32_t old = node_ptr->node_state;
 	uint32_t base_state, node_flags;
 
 	if (old == new)
@@ -4739,7 +4749,8 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			return true;
 
 		case NODE_STATE_UNDRAIN:
-			if (!(node_flags & NODE_STATE_INVALID_REG))
+			if (!(node_flags & NODE_STATE_INVALID_REG) &&
+			    !node_ptr->invalid_topo)
 				return true;
 			break;
 
@@ -4753,6 +4764,8 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 
 		case NODE_RESUME_KEEP_TRES:
 		case NODE_RESUME:
+			if (node_ptr->invalid_topo)
+				return false;
 			if (node_flags & NODE_STATE_POWERING_DOWN)
 				return true;
 			if (node_flags & NODE_STATE_INVALID_REG)
@@ -4788,6 +4801,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 
 		case NODE_STATE_IDLE:
 			if (!(node_flags & NODE_STATE_INVALID_REG) &&
+			    !node_ptr->invalid_topo &&
 			    !(node_flags & NODE_STATE_REBOOT_ISSUED) &&
 			    ((base_state == NODE_STATE_DOWN) ||
 			     (base_state == NODE_STATE_IDLE)))
@@ -5585,15 +5599,19 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 					   reason_down ? ", " : "");
 			} else if (conf_node->topology_str &&
 				   xstrcmp(conf_node->topology_str,
-					   node_ptr->topology_str) &&
-				   ((rc = node_mgr_set_node_topology(
+					   node_ptr->topology_str)) {
+				if ((rc = node_mgr_set_node_topology(
 					     node_ptr,
-					     conf_node->topology_str)))) {
-				error_code = rc;
-				xstrfmtcat(reason_down,
-					   "%sFailed to set topology '%s'",
-					   reason_down ? ", " : "",
-					   conf_node->topology_str);
+					     conf_node->topology_str))) {
+					error_code = rc;
+					xstrfmtcat(
+						reason_down,
+						"%sFailed to set topology '%s'",
+						reason_down ? ", " : "",
+						conf_node->topology_str);
+				} else {
+					node_ptr->invalid_topo = false;
+				}
 			}
 			s_p_hashtbl_destroy(node_hashtbl);
 			xfree(tmp_conf);
@@ -7583,6 +7601,28 @@ extern void set_node_reason(node_record_t *node_ptr,
 	}
 }
 
+/*
+ * Apply node_ptr->topology_str. If it does not resolve, the units before the
+ * bad one were already applied, so remove the node from all topologies to
+ * keep its placement from depending on token order.
+ * RET result of applying topology_str
+ */
+static int _add_rm_node_topology(node_record_t *node_ptr)
+{
+	char *invalid_str;
+	int rc;
+
+	if (!(rc = topology_g_add_rm_node(node_ptr)))
+		return rc;
+
+	invalid_str = node_ptr->topology_str;
+	node_ptr->topology_str = NULL;
+	(void) topology_g_add_rm_node(node_ptr);
+	node_ptr->topology_str = invalid_str;
+
+	return rc;
+}
+
 extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 				      char *new_topology_str)
 {
@@ -7618,7 +7658,7 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 		     node_ptr->topology_str);
 		xfree(node_ptr->topology_str);
 		node_ptr->topology_str = topology_str_old;
-		topology_g_add_rm_node(node_ptr);
+		(void) _add_rm_node_topology(node_ptr);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		if (from_config)
 			xfree(node_ptr->topology_str);
@@ -7631,10 +7671,9 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 	return rc;
 }
 
-extern int node_mgr_set_nodes_topo(void)
+extern void node_mgr_set_nodes_topo(void)
 {
 	node_record_t *node_ptr;
-	int rc = SLURM_SUCCESS;
 	char *tmp_orig_topo_str = NULL;
 
 	last_node_update = time(NULL);
@@ -7658,17 +7697,14 @@ extern int node_mgr_set_nodes_topo(void)
 					topology_g_get_topology_str(node_ptr);
 			}
 
-			if ((rc = topology_g_add_rm_node(node_ptr))) {
-				xfree(tmp_orig_topo_str);
+			if (_add_rm_node_topology(node_ptr)) {
 				error("Invalid node topology specified %s for %s",
 				      node_ptr->topology_str, node_ptr->name);
-				break;
+				node_ptr->invalid_topo = true;
 			}
 
 			SWAP(node_ptr->topology_orig_str, tmp_orig_topo_str);
 			xfree(tmp_orig_topo_str);
 		}
 	}
-
-	return rc;
 }
