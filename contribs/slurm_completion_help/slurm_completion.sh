@@ -818,6 +818,21 @@ function __slurm_boolean() {
 	echo "${output}"
 }
 
+# Slurm helper function to return accepted true/false values
+#
+# RET: boolean list
+function __slurm_boolean_true_false() {
+	local boolean=(
+		"false"
+		"true"
+	)
+	local output
+	output="${boolean[*]}"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
+}
+
 # Slurm helper function to return accepted compress type values
 #
 # RET: compress_types list
@@ -1008,6 +1023,22 @@ function __slurm_jobnames() {
 # RET: space delimited list
 function __slurm_licenses() {
 	local cmd="scontrol -o show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
+	__slurm_ctld_cmd "$cmd"
+}
+
+# Slurm helper function to get the list of HRES names
+#
+# RET: space delimited list
+function __slurm_hres() {
+	local cmd="scontrol -o show license | grep -P 'Mode=' | grep -Po 'LicenseName=\S+' | cut -d'=' -f2 | sort -u"
+	__slurm_ctld_cmd "$cmd"
+}
+
+# Slurm helper function to get the list of HRES layer names
+#
+# RET: space delimited list
+function __slurm_hres_layers() {
+	local cmd="scontrol -o show license | grep -Po 'LayerName=\S+' | cut -d'=' -f2 | sort -u"
 	__slurm_ctld_cmd "$cmd"
 }
 
@@ -3293,6 +3324,7 @@ function __scontrol_create_nodename() {
 		"cpuspeclist="
 		"features="
 		"gres="
+		"hres="
 		"memspeclimit="
 		"nodeaddr="
 		"nodehostname="
@@ -3941,6 +3973,36 @@ function __scontrol_update_frontendname() {
 	esac
 }
 
+# completion handler for: scontrol update hresname=* [key=val]...
+function __scontrol_update_hresname() {
+	local parameters=(
+		"base="
+		"count="
+		"disablehres="
+		"disablelayer="
+		"hresname=" # meta
+		"layername="
+		"nodes="
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	disablehres | disablelayer)
+		__slurm_compreply "$(__slurm_boolean_true_false)"
+		;;
+	hresname) __slurm_compreply "$(__slurm_hres)" ;;
+	layername) __slurm_compreply "$(__slurm_hres_layers)" ;;
+	nodes) __slurm_compreply_list "$(__slurm_nodes)" "" "true" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
 # completion handler for: scontrol update jobname=* [key=val]...
 function __scontrol_update_jobname() {
 	__scontrol_update_jobid
@@ -4419,6 +4481,7 @@ function __scontrol_update_suspendexcstates() {
 function __scontrol_update() {
 	local parameters=(
 		"frontendname="
+		"hresname="
 		"jobid="
 		"jobname="
 		"nodename="
