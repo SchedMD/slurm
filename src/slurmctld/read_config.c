@@ -1758,11 +1758,7 @@ extern int read_slurm_conf(int recover)
 	 */
 	_build_bitmaps();
 
-	if (node_mgr_set_nodes_topo()) {
-		error("Invalid node topology");
-		error_code = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		goto end_it;
-	}
+	node_mgr_set_nodes_topo();
 
 	/* Active and available features can be different on -R */
 	if ((node_features_g_count() == 0) && (recover != 2))
