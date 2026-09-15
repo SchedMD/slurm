@@ -3978,6 +3978,12 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (running_in_slurmctld() &&
 	    xstrcasestr(conf->comm_params, "NoAddrCache"))
 		error("The CommunicationParameters option \"NoAddrCache\" is defunct, please remove it from slurm.conf.");
+	if (running_in_slurmctld() &&
+	    xstrcasestr(conf->comm_params, "block_null_hash"))
+		error("The CommunicationParameters option \"block_null_hash\" is defunct, please remove it from slurm.conf.");
+	if (running_in_slurmctld() &&
+	    xstrcasestr(conf->comm_params, "block_zero_hash"))
+		error("The CommunicationParameters option \"block_zero_hash\" is defunct, please remove it from slurm.conf.");
 
 	if (xstrcasestr(slurm_conf.comm_params, "disable_http"))
 		conf->conf_flags |= CONF_FLAG_DISABLE_HTTP;
