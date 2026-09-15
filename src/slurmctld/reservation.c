@@ -3608,14 +3608,14 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	}
 
 	license_list = license_validate(resv_desc_ptr->licenses, true, true,
-					true, NULL, valid, NULL);
+					HRES_SYNTAX_LAYERS, NULL, valid, NULL);
 	if (resv_desc_ptr->licenses == NULL)
 		return license_list;
 
 	merged_licenses = xstrdup(resv_desc_ptr->licenses);
 	list_for_each_ro(resv_list, _foreach_merge_licenses, &args);
-	merged_list = license_validate(merged_licenses, true, true, true, NULL,
-				       valid, NULL);
+	merged_list = license_validate(merged_licenses, true, true,
+				       HRES_SYNTAX_LAYERS, NULL, valid, NULL);
 	xfree(merged_licenses);
 	FREE_NULL_LIST(merged_list);
 	return license_list;
@@ -5256,14 +5256,25 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		bool fuzzy_match = false;
 
 		FREE_NULL_LIST(resv_ptr->license_list);
+		/*
+		 * HRES_SYNTAX_ANY is only needed for support reservations from
+		 * Slurm version <= 26.05, and then the syntax is automatically
+		 * converted to the new format. Replace HRES_SYNTAX_ANY with
+		 * HRES_SYNTAX_LAYERS after upgrading from
+		 * SLURM_26_05_PROTOCOL_VERSION is no longer supported, and
+		 * replace the
+		 * else { license_list_to_string() } with
+		 * else if (fuzzy_match) { license_list_to_string() }
+		 */
 		resv_ptr->license_list =
-			license_validate(resv_ptr->licenses, true, true, true,
-					 NULL, &valid, &fuzzy_match);
+			license_validate(resv_ptr->licenses, true, true,
+					 HRES_SYNTAX_ANY, NULL, &valid,
+					 &fuzzy_match);
 		if (!valid) {
 			error("Reservation %s has invalid licenses (%s)",
 			      resv_ptr->name, resv_ptr->licenses);
 			return false;
-		} else if (fuzzy_match) {
+		} else {
 			xfree(resv_ptr->licenses);
 			resv_ptr->licenses =
 				license_list_to_string(resv_ptr->license_list);

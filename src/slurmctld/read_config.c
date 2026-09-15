@@ -2430,12 +2430,18 @@ extern void restore_job_licenses(job_record_t *job_ptr, bool validate)
 	 * If the job is pending, validate the license request against
 	 * configured licenses and hold the job if it is not valid.
 	 */
-	license_list =
-		license_validate(job_ptr->licenses, validate, validate, false,
-				 job_ptr->tres_req_cnt, &valid, NULL);
+	license_list = license_validate(job_ptr->licenses, validate, validate,
+					HRES_SYNTAX_NONE, job_ptr->tres_req_cnt,
+					&valid, NULL);
+	/*
+	 * HRES_SYNTAX_ANY is only needed for support jobs from Slurm version
+	 * <= 26.05, and then the syntax is automatically converted to the new
+	 * format. Replace HRES_SYNTAX_ANY with HRES_SYNTAX_LAYERS after
+	 * upgrading from SLURM_26_05_PROTOCOL_VERSION is no longer supported.
+	 */
 	license_list_alloc =
 		license_validate(job_ptr->licenses_allocated, false, false,
-				 true, NULL, &alloc_valid, NULL);
+				 HRES_SYNTAX_ANY, NULL, &alloc_valid, NULL);
 	FREE_NULL_LIST(job_ptr->license_list);
 
 	if (valid) {

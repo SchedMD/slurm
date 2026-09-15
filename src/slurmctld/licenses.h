@@ -97,9 +97,33 @@ typedef struct {
 	list_t *variables; /* list of hres_variable_t */
 } hres_rec_t;
 
+/* How the "(...)" part of a license string is interpreted */
+typedef enum {
+	HRES_SYNTAX_NONE = 0, /* "(" is an ordinary character */
+	HRES_SYNTAX_LAYERS, /* "(layer[*node_cnt][,...])" */
+	HRES_SYNTAX_ANY, /* layer syntax, falling back to the node list form
+			  * written by Slurm 26.05 and older */
+} hres_syntax_t;
+
+/*
+ * One charge made against a layer of an HRES on behalf of a job or a
+ * reservation. The layers charged are recorded when the resource is acquired
+ * so that exactly the same amount is released later, even if the nodes of a
+ * layer changed in between.
+ */
+typedef struct {
+	licenses_id_t id; /* layer that was charged */
+	char *layer_name; /* hres_rec.layer_name of that layer */
+	uint16_t node_cnt; /* nodes of the job under this layer; 1 for modes
+			    * 1 and 2 */
+} hres_charge_t;
+
 struct slurm_licenses {
 	licenses_id_t id;
 	char *		name;		/* name associated with a license */
+	list_t *hres_charges; /* list of hres_charge_t. Set on job and
+			       * reservation records only, never on
+			       * cluster_license_list records. */
 	bool op_or; /* Whether the licenses were requested with AND or OR */
 	uint32_t	total;		/* total licenses available:
 					 *   configured - base_usage */
@@ -199,6 +223,9 @@ extern void license_free(void);
 /* Free a license_t record (for use by list_destroy) */
 extern void license_free_rec(void *x);
 
+/* Free an hres_charge_t record (for use by list_destroy) */
+extern void hres_charge_free(void *x);
+
 /*
  * license_copy - create a copy of license list
  * RET a copy of the license list
@@ -283,7 +310,8 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  * RET license_list, must be destroyed by caller
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
-				bool validate_existing, bool hres,
+				bool validate_existing,
+				hres_syntax_t hres_syntax,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match);
 
