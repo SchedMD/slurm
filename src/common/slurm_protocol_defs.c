@@ -4456,6 +4456,7 @@ extern void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *
 			_free_all_step_info(msg);
 			xfree(msg->job_steps);
 		}
+		FREE_NULL_LIST(msg->stepmgr_jobs);
 		xfree(msg);
 	}
 }
