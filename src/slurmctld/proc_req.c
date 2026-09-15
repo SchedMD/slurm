@@ -4986,16 +4986,16 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 /* Check if prolog has already finished */
 static int _is_prolog_finished(slurm_step_id_t *step_id)
 {
-	int is_running = 0;
+	int is_finished = 0;
 	job_record_t *job_ptr;
 
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	lock_slurmctld(job_read_lock);
 	if ((job_ptr = find_job(step_id)))
-		is_running = (job_ptr->state_reason != WAIT_PROLOG);
+		is_finished = !is_prolog_running(job_ptr);
 	unlock_slurmctld(job_read_lock);
-	return is_running;
+	return is_finished;
 }
 
 /* get node select info plugin */

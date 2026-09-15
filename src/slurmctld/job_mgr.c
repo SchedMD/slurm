@@ -6108,6 +6108,12 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	agent_queue_request(agent_args);
 }
 
+extern bool is_prolog_running(job_record_t *job_ptr)
+{
+	return (job_ptr->node_bitmap_pr &&
+		(bit_ffs(job_ptr->node_bitmap_pr) != -1));
+}
+
 /*
  * prolog_complete - note the normal termination of the prolog
  * RET - 0 on success, otherwise ESLURM error code
@@ -6149,9 +6155,7 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 			bit_clear_all(job_ptr->node_bitmap_pr);
 		}
 	}
-	if (!job_ptr->node_bitmap_pr ||
-	    (bit_ffs(job_ptr->node_bitmap_pr) == -1))
-	{
+	if (!is_prolog_running(job_ptr)) {
 		if (job_ptr->state_reason == WAIT_PROLOG)
 			job_ptr->state_reason = WAIT_NO_REASON;
 		agent_trigger(999, false, true);
@@ -15164,23 +15168,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			}
 			goto fini;
 		}
-	} else if ((job_ptr->state_reason != WAIT_HELD)
-		   && (job_ptr->state_reason != WAIT_HELD_USER)
-		   && (job_ptr->state_reason != WAIT_RESV_DELETED)
-		   /*
-		    * A job update can come while the prolog is running.
-		    * Don't change state_reason if the prolog is running.
-		    * _is_prolog_finished() relies on state_reason==WAIT_PROLOG
-		    * to know if the prolog is running. If we change it here,
-		    * then slurmctld will think that the prolog isn't running
-		    * anymore and _slurm_rpc_job_ready will tell srun that the
-		    * prolog is done even if it isn't. Then srun can launch a
-		    * job step before the prolog is done, which breaks the
-		    * behavior of PrologFlags=alloc and means that the job step
-		    * could launch before the extern step sets up x11.
-		    */
-		   && (job_ptr->state_reason != WAIT_PROLOG)
-		   && (job_ptr->state_reason != WAIT_MAX_REQUEUE)) {
+	} else if ((job_ptr->state_reason != WAIT_HELD) &&
+		   (job_ptr->state_reason != WAIT_HELD_USER) &&
+		   (job_ptr->state_reason != WAIT_RESV_DELETED) &&
+		   /* Keep reporting the prolog until it finishes. */
+		   (job_ptr->state_reason != WAIT_PROLOG) &&
+		   (job_ptr->state_reason != WAIT_MAX_REQUEUE)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 	}
@@ -16231,8 +16224,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		 * the ping logic to cycle over MAX_REG_FREQUENCY before
 		 * triggering this logic again in the worst case.
 		 */
-		if ((job_ptr->state_reason == WAIT_PROLOG) &&
-		    !job_ptr->batch_flag &&
+		if (is_prolog_running(job_ptr) && !job_ptr->batch_flag &&
 		    (difftime(time(NULL), job_ptr->prolog_launch_time) >
 		     slurm_conf.prolog_timeout)) {
 			error("%s: Revoking job %pI due to nodes not responding",
@@ -18718,15 +18710,8 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
 				bitmap2node_name(job_ptr->node_bitmap);
 		}
 	}
-	if (job_ptr->state_reason == WAIT_PROLOG) {
-		if (job_ptr->node_bitmap_pr) {
-			job_ptr->nodes_pr =
-				bitmap2node_name(job_ptr->node_bitmap_pr);
-		} else {
-			job_ptr->nodes_pr =
-				bitmap2node_name(job_ptr->node_bitmap);
-		}
-	}
+	if (is_prolog_running(job_ptr))
+		job_ptr->nodes_pr = bitmap2node_name(job_ptr->node_bitmap_pr);
 	if (IS_JOB_RESIZING(job_ptr) && job_ptr->node_bitmap_rs) {
 		job_ptr->nodes_rs = bitmap2node_name(job_ptr->node_bitmap_rs);
 	}
