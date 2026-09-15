@@ -1749,8 +1749,8 @@ will be held until their Fairshare Usage goes above the Threshold.
 .TP
 \fBNoDecay\fR
 If set, this QOS will not have its GrpTRESMins,
-GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife or
-PriorityUsageResetPeriod settings. This allows a QOS to provide aggregate
+GrpWall and RawUsage decayed by the slurm.conf PriorityDecayHalfLife
+setting. This allows a QOS to provide aggregate
 limits that, once consumed, will not be replenished automatically. Such a
 QOS will act as a time\-limited quota of resources for an association
 that has access to it. Account/user usage will still be decayed for
@@ -1759,6 +1759,9 @@ GrpWall limits can be increased or the QOS RawUsage value reset to 0
 (zero) to again allow jobs submitted with this QOS to be queued (if
 DenyOnLimit is set) or run (pending with QOSGrp{TRES}MinutesLimit
 or QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+
+\fBNOTE\fR: This flag does not affect \fBPriorityUsageResetPeriod\fR, which
+still zeroes these counters on its own schedule.
 .IP
 
 .TP
