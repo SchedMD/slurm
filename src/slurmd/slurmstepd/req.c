@@ -937,6 +937,54 @@ done:
 	return rc;
 }
 
+/*
+ * _handle_het_step_id - serve REQUEST_HET_STEP_ID on the het leader stepmgr.
+ */
+static int _handle_het_step_id(int fd, uid_t uid, pid_t remote_pid)
+{
+	slurm_msg_t msg;
+	int rc;
+	return_code_msg_t rc_msg = { 0 };
+	het_step_id_msg_t *request;
+	het_step_id_msg_t response = { .step_id = SLURM_STEP_ID_INITIALIZER };
+
+	if ((rc = _handle_stepmgr_relay_msg(fd, uid, &msg, REQUEST_HET_STEP_ID,
+					    true)))
+		goto done;
+
+	request = msg.data;
+
+	slurm_mutex_lock(&stepmgr_mutex);
+
+	if (!job_step_ptr->het_job_id ||
+	    (request->step_id.job_id != job_step_ptr->job_id)) {
+		error("REQUEST_HET_STEP_ID for %pI misrouted to stepmgr jobid %u (het_job_id=%u) from uid=%u",
+		      &request->step_id, job_step_ptr->job_id,
+		      job_step_ptr->het_job_id, uid);
+		rc = ESLURM_INVALID_JOB_ID;
+		slurm_mutex_unlock(&stepmgr_mutex);
+		goto resp;
+	}
+
+	response.step_id = request->step_id;
+	response.step_id.step_id = job_step_ptr->next_step_id++;
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+	(void) stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_HET_STEP_ID,
+					       &response);
+
+	slurm_free_msg_members(&msg);
+	return rc;
+
+resp:
+	rc_msg.return_code = rc;
+	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);
+	slurm_free_msg_members(&msg);
+
+done:
+	return rc;
+}
+
 static int _handle_sluid(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->step_id.sluid, sizeof(sluid_t));
@@ -2858,6 +2906,10 @@ slurmstepd_rpc_t stepd_proxy_rpcs[] = {
 	{
 		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
 		.func = _handle_het_job_alloc_info,
+	},
+	{
+		.msg_type = REQUEST_HET_STEP_ID,
+		.func = _handle_het_step_id,
 	},
 	{
 		/* terminate the array. this must be last. */

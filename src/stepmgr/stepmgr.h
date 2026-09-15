@@ -53,6 +53,7 @@ typedef struct {
 	job_record_t *(*find_job_array_rec)(uint32_t array_job_id,
 					    uint32_t array_task_id);
 	void (*agent_queue_request)(agent_arg_t *agent_arg_ptr);
+	int (*get_het_step_id)(uint32_t het_job_id, uint32_t *step_id_out);
 } stepmgr_ops_t;
 
 extern stepmgr_ops_t *stepmgr_ops;

@@ -2343,16 +2343,24 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 {
 	xassert(args->magic == MAGIC_FOREACH_BY_JOBID_ARGS);
 
-	if (!filter->step_id.job_id) {
-		/* 0 is never a valid job so just return now */
-		goto done;
-	} else if (filter->step_id.sluid) {
+	if (filter->step_id.sluid) {
 		args->job_ptr = find_sluid(filter->step_id.sluid);
-		if (args->job_ptr)
+		if (!args->job_ptr) {
+			if (args->null_callback)
+				args->control =
+					args->null_callback(filter,
+							    args->callback_arg);
+		} else if (args->job_ptr->het_job_list) {
+			/* Expand het leader into all its components. */
+			xassert(args->job_ptr->het_job_id > 0);
+			(void) list_for_each(args->job_ptr->het_job_list,
+					     _foreach_by_het_job, args);
+		} else {
 			_foreach_by_job_callback(args->job_ptr, args);
-		else if (args->null_callback)
-			args->control =
-				args->null_callback(filter, args->callback_arg);
+		}
+		goto done;
+	} else if (!filter->step_id.job_id) {
+		/* 0 is never a valid job so just return now */
 		goto done;
 	} else if (filter->step_id.job_id == NO_VAL) {
 		/* walk all jobs */
@@ -2373,8 +2381,8 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 		args->job_ptr = find_job_array_rec(filter->step_id.job_id,
 						   filter->array_task_id);
 	else if (filter->het_job_offset != NO_VAL)
-		args->job_ptr = find_job_record(filter->step_id.job_id +
-						filter->het_job_offset);
+		args->job_ptr = find_het_job_record(filter->step_id.job_id,
+						    filter->het_job_offset);
 	else /* not array task or het component */
 		args->job_ptr = find_job(&filter->step_id);
 
@@ -2596,6 +2604,19 @@ extern job_record_t *find_sluid(sluid_t sluid)
 	}
 
 	return NULL;
+}
+
+extern int get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
+{
+	job_record_t *het_leader;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+
+	if (!(het_leader = find_job_record(het_job_id)))
+		return ESLURM_INVALID_JOB_ID;
+
+	*step_id_out = het_leader->next_step_id++;
+	return SLURM_SUCCESS;
 }
 
 extern job_record_t *find_job(const slurm_step_id_t *step_id)
@@ -7301,8 +7322,7 @@ static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 					  "enable_stepmgr");
 	}
 
-	if ((stepmgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) &&
-	    (job_desc->het_job_offset == NO_VAL)) {
+	if (stepmgr_enabled || (job_desc->bitflags & STEPMGR_ENABLED)) {
 		job_ptr->bit_flags |= STEPMGR_ENABLED;
 	} else {
 		job_ptr->bit_flags &= ~STEPMGR_ENABLED;

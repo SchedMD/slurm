@@ -14,11 +14,13 @@ import atf
 def setup():
     # Het jobs are only started by backfill; don't wait for its full cycle
     atf.require_config_parameter_includes("SchedulerParameters", ("bf_interval", 1))
+    # --stepmgr is silently dropped without it, see PrologFlags in slurm.conf(5)
+    atf.require_config_parameter_includes("PrologFlags", "Contain")
     atf.require_nodes(2, [("CPUs", 2)])
     atf.require_slurm_running()
 
 
-def submit_hetjob_with_step(het_group, file_out, msg_done):
+def submit_hetjob_with_step(het_group, file_out, msg_done, stepmgr=False):
     """Submit a 2 component het job running a step on the given het groups.
 
     The batch script echoes msg_done once the step returns, so that the file
@@ -26,11 +28,13 @@ def submit_hetjob_with_step(het_group, file_out, msg_done):
 
     Returns a (leader_job_id, component_job_ids) tuple.
     """
-    script = f"hetjob_step_{het_group.replace(',', '_')}.sh"
+    suffix = "_stepmgr" if stepmgr else ""
+    script = f"hetjob_step_{het_group.replace(',', '_')}{suffix}.sh"
+    leader_opts = "-n1" + (" --stepmgr" if stepmgr else "")
     atf.make_bash_script(
         script,
         f"""
-#SBATCH -n1
+#SBATCH {leader_opts}
 #SBATCH hetjob
 #SBATCH -n1
 
@@ -154,13 +158,16 @@ def test_cancel_hetjob_step_of_one_component(het_group):
 @pytest.mark.xfail(
     (25, 11) <= atf.get_version("sbin/slurmctld") < (26, 5, 4),
     reason="Issue 51060: since 4d70133431 (25.11) the propagation to the het"
-    " components reported success for a step id that none of them has",
+    " components canceled the component jobs for a step id that none of them"
+    " has",
 )
 def test_cancel_hetjob_step_of_no_component():
     """Issue 51060: canceling a step id that no het job component has.
 
-    Only a step that no component has is reported as an invalid job id, and
-    such a cancellation must leave the existing steps running.
+    Canceling a step no component has must leave the existing steps running.
+    Without stepmgr that request is reported as an invalid job id; with
+    stepmgr the controller forwards the cancel to the components' stepmgr and
+    cannot tell synchronously that no component has the step.
     """
     file_out = "hetjob_step_none.out"
     msg_done = "step_terminated"
@@ -169,15 +176,29 @@ def test_cancel_hetjob_step_of_no_component():
         "0,1", file_out, msg_done
     )
 
+    # Keyed off the job, not SlurmctldParameters: before 26.11 a het job does
+    # not get a stepmgr even where enable_stepmgr is configured.
+    jobs = atf.get_jobs(leader_job_id, fatal=True)
+    stepmgr_enabled = jobs[leader_job_id].get("StepMgrEnabled") == "Yes"
+
     for job_id in component_job_ids:
         atf.wait_for_step(job_id, 0, fatal=True)
 
-    result = atf.run_command(f"scancel {leader_job_id}.7", xfail=True)
-
-    assert "Invalid job id" in result["stderr"], (
-        "canceling a step id that no het job component has must report an"
-        f" invalid job id. stderr:\n{result['stderr']}"
+    result = atf.run_command(
+        f"scancel {leader_job_id}.7", fatal=True, xfail=not stepmgr_enabled
     )
+
+    if stepmgr_enabled:
+        assert result["exit_code"] == 0, (
+            "with stepmgr the cancel is forwarded to the components' stepmgr"
+            " and must be accepted, got exit code"
+            f" {result['exit_code']}. stderr:\n{result['stderr']}"
+        )
+    else:
+        assert "Invalid job id" in result["stderr"], (
+            "canceling a step id that no het job component has must report an"
+            f" invalid job id. stderr:\n{result['stderr']}"
+        )
 
     for job_id in component_job_ids:
         assert any(
@@ -187,3 +208,48 @@ def test_cancel_hetjob_step_of_no_component():
             f"step {job_id}.0 must keep running after canceling a step id that"
             " no het job component has"
         )
+
+
+# The client tools upgrade last, so gating on srun >= 26.11 already implies
+# slurmd and slurmctld are >= 26.11.
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 11),
+    reason="Issue 50976: het jobs only run with stepmgr since 26.11",
+)
+def test_cancel_hetjob_step_with_stepmgr():
+    """Canceling a het job step of a --stepmgr het job keeps the allocations.
+
+    With stepmgr the controller forwards the cancel to the components' step
+    managers rather than killing the steps itself, so the propagation is a
+    different path from the controller-managed one.
+    """
+    file_out = "hetjob_step_stepmgr.out"
+    msg_done = "step_terminated"
+
+    leader_job_id, component_job_ids = submit_hetjob_with_step(
+        "0,1", file_out, msg_done, stepmgr=True
+    )
+
+    jobs = atf.get_jobs(leader_job_id, fatal=True)
+    assert jobs[leader_job_id].get("StepMgrEnabled") == "Yes", (
+        "the het job must have a stepmgr for this test to exercise the stepmgr"
+        " cancel path"
+    )
+
+    for job_id in component_job_ids:
+        atf.wait_for_step(job_id, 0, fatal=True)
+
+    atf.run_command(f"scancel {leader_job_id}.0", fatal=True)
+
+    atf.assert_file_contents(
+        file_out,
+        msg_done,
+        contains=True,
+        message=f"srun did not return after scancel {leader_job_id}.0 on a"
+        " stepmgr het job, so the step of some component was not canceled",
+    )
+
+    for job_id in component_job_ids:
+        assert (
+            atf.get_job_parameter(job_id, "JobState", fatal=True) == "RUNNING"
+        ), f"component job {job_id} must survive the cancellation of its step"
