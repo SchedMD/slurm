@@ -16908,13 +16908,20 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->node_addrs);
 	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->nodes_pr);
 	xfree(job_ptr->nodes_rs);
 	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->resv_ports);
+
+	if (job_ptr->state_reason == WAIT_PROLOG) {
+		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
+	}
 
 	/*
 	 * Rebuild license_list from the request (licenses_allocated was cleared
