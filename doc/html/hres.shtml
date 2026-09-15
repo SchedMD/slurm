@@ -130,9 +130,9 @@ syntax already used for licenses:</p>
 <ul>
 <li>View HRES<pre>scontrol show license</pre></li>
 <li>Reserve HRES
-<pre>scontrol create reservation account=root licenses=natural(node[01-016]):30,flat(node[09-12]):4,flat(node[29-32]):2</pre>
-Note that the layer must be specified for each reserved HRES, identified by the
-node list present available through that layer</li>
+<pre>scontrol create reservation account=root licenses=natural(low1):30,flat(low2):4,flat(low4):2</pre>
+Note that the layer must be named for each reserved HRES, using its
+<code>layer_name</code> from <b>resources.yaml</b></li>
 <li>Request HRES on a job
 <pre>sbatch --license=flat:2,natural:1 my_script.sh</pre></li>
 </ul>
@@ -251,6 +251,15 @@ base list, and an empty <code>Base=</code> clears it. In <b>Mode 3</b>,
 <code>Nodes</code> may only be changed on leaf layers. Node and base changes
 are propagated to the ancestors. Running jobs are never affected, so lowering
 a count below the current usage makes new jobs wait until usage drops.</p>
+
+<p>A running job keeps the layers it was charged on, even when those layers
+later gain or lose nodes. The job releases exactly what it took, so changing
+the nodes of a layer under a running job does not distort the usage counts.
+The layers a job holds are shown by the <b>LicensesAlloc</b> field of
+<code>scontrol show job</code>, for example
+<code>power(rack1,row1,datacenter):1000</code>. In <b>Mode 3</b> a layer that
+the job holds on several of its nodes is followed by that node count, as in
+<code>rack1*2</code>.</p>
 
 <pre>
 scontrol update HRESName=power LayerName=rack2 Nodes=+node[33-36] Count=45000

@@ -2917,6 +2917,9 @@ nodes of the cluster) which are to be reserved.
 License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g. "Licenses=foo:4,bar").
+A hierarchical resource is reserved on one of its layers, named in parentheses
+after the resource, for example "Licenses=power(rack1):10". See
+\fBresources.yaml\fR(5).
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 If a reservation includes Licenses, but no NodeCnt or Nodes, then the option

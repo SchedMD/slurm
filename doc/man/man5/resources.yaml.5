@@ -93,7 +93,10 @@ containing:
 .RS
 .TP
 \fBlayer_name\fR
-The name of the layer, unique within the resource (case-insensitive).
+The name of the layer, unique within the resource (case-insensitive). The name
+identifies the layer in the licenses of jobs and reservations, so it may not
+contain whitespace or any of the characters
+\fB, ; | : = ( ) *\fR.
 .IP
 .TP
 \fBparent_name\fR
