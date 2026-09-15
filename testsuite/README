@@ -986,6 +986,7 @@ test_131_1   Test basic sshare --json
 test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
+test_132_2   Test holds placed on a running job during its node prolog
 
 test_134_#   Testing of SwitchType.
 ===================================
