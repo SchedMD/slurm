@@ -243,8 +243,6 @@ extern void hres_charge_free(void *x);
 extern list_t *license_copy(list_t *license_list_src);
 extern list_t *cluster_license_copy(void);
 
-extern int cluster_license_count(void);
-
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
 					  licenses_id_t id);
 /*
