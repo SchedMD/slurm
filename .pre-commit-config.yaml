@@ -45,7 +45,7 @@ repos:
   rev: v0.19.1
   hooks:
   - id: gitlint
-    args: [--config, tools/gitlint, --msg-filename]
+    args: [--config, tools/gitlint, --staged, --msg-filename]
   - id: gitlint-ci
     alias: gitlint-ci-draft
     args: [--config, tools/gitlint]
