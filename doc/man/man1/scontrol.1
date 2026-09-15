@@ -1867,6 +1867,9 @@ slurmctld will then attempt to contact slurmd to request that the node
 register itself.
 
 \fBNOTE\fR: A value of \-1 will unschedule the node state resume.
+
+\fBNOTE\fR: The same \fB\%POWERED_DOWN\fR and \fB\%POWERING_DOWN\fR behavior
+described under \fBRESUME\fR (below) applies.
 .IP
 
 .TP
@@ -1908,17 +1911,25 @@ at some point in the future.
 
 .TP
 \fBIDLE\fR
-Will clear \fBDOWN\fR, \fBDRAIN\fR and \fBFAIL\fR states.
-Will set the state to \fBIDLE\fR and \fBNoResp\fR. slurmctld will then
-attempt to contact slurmd to request that the node register itself.
-Once registered, the node state will then remove the \fBNoResp\fR flag and
-will resume normal operations.
+Will clear \fBDOWN\fR, \fBDRAIN\fR and \fBFAIL\fR states and set the base
+state to \fBIDLE\fR.
+Unlike \fBRESUME\fR, this does not set \fBNoResp\fR and does not request that
+the node register itself.
+A node that already has the \fBNoResp\fR flag set does not become eligible to
+be allocated until it registers, unless it is \fB\%POWERED_DOWN\fR.
+\fB\%POWERING_DOWN\fR is not an exception here; such a node stays ineligible
+until it finishes powering down.
 .IP
 
 .TP
 \fBNoResp\fR
 This will set the "Not Responding" flag for a node without changing its
 underlying state.
+
+\fBNOTE\fR: On a node that is \fB\%POWERED_DOWN\fR or \fB\%POWERING_DOWN\fR
+this flag is cleared when slurmctld next reads its saved state on a reconfigure
+or a restart. Such a node cannot register while it is powered down, so a flag
+that persisted there would keep it out of the available nodes for good.
 .IP
 
 .TP
@@ -1929,15 +1940,28 @@ slurmctld will then attempt to contact slurmd to request that the node
 register itself. Once registered, the node state will then remove the
 \fBNoResp\fR flag and will resume normal operations. It will also clear the
 \fBPOWERING_DOWN\fR state of a node and make it eligible to be allocated.
+
+\fBNOTE\fR: This does not set \fBNoResp\fR on a node that is
+\fB\%POWERED_DOWN\fR or \fB\%POWERING_DOWN\fR. Such a node is neither pinged nor
+able to register while it is powered down, so the flag would persist and keep
+the node out of the available nodes. The node is still required to register
+when it powers up.
 .IP
 
 .TP
 \fBUNDRAIN\fR
 Clears the node from being drained (like \fBRESUME\fR), but will
-not change the node's base state (e.g. \fBDOWN\fR). \fBUNDRAIN\fR requires a
+not change the node's base state (e.g. \fBDOWN\fR). For a node that is not
+\fB\%POWERED_DOWN\fR or \fB\%POWERING_DOWN\fR, \fBUNDRAIN\fR requires a
 valid node registration before new jobs can be scheduled on the node.
-Setting a node \fBDOWN\fR will cause all running and suspended jobs on that
-node to be terminated.
+Setting a node \fBDOWN\fR will cause all running and suspended jobs on
+that node to be terminated.
+
+\fBNOTE\fR: As with \fBRESUME\fR, this does not set \fBNoResp\fR on a node
+that is \fB\%POWERED_DOWN\fR or \fB\%POWERING_DOWN\fR. A \fB\%POWERED_DOWN\fR
+node whose base state is \fBIDLE\fR is then eligible to be allocated; the
+scheduler will power it up and registration will follow. A
+\fB\%POWERING_DOWN\fR node is not eligible until it finishes powering down.
 .RE
 .IP
 

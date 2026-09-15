@@ -712,6 +712,18 @@ extern int load_all_node_state ( bool state_only )
 		if (node_ptr) {
 			node_cnt++;
 
+			/*
+			 * Scrub a NO_RESPOND flag recovered on a powered down
+			 * node. Such a node is never pinged, so the flag would
+			 * stick forever and keep the node out of
+			 * avail_node_bitmap. This also recovers nodes that were
+			 * stuck by a prior version of _require_node_reg().
+			 */
+			if (IS_NODE_POWERED_DOWN(node_ptr) ||
+			    IS_NODE_POWERING_DOWN(node_ptr))
+				node_ptr->node_state &=
+					(~NODE_STATE_NO_RESPOND);
+
 			node_ptr->next_state = node_state_rec->next_state;
 
 			if (IS_NODE_DOWN(node_ptr)) {
@@ -1533,6 +1545,15 @@ static void _undo_reboot_asap(node_record_t *node_ptr)
 static void _require_node_reg(node_record_t *node_ptr)
 {
 	if (IS_NODE_EXTERNAL(node_ptr))
+		return;
+	/*
+	 * A powered down node is skipped by ping_nodes(), so there is nothing
+	 * to require of it and nothing to ping. A NO_RESPOND flag set here
+	 * would never be cleared, refreshing last_response would record a
+	 * response that was never received, and ping_nodes_now would schedule
+	 * a ping cycle that skips this very node.
+	 */
+	if (IS_NODE_POWERED_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr))
 		return;
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	/*

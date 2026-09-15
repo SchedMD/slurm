@@ -374,3 +374,40 @@ def test_power_down_up_action_slurmd(current_nodes):
     )
     assert res["exit_code"] == 1, "Expected exit code 1"
     assert "Invalid power action" in res["stderr"], "expected error message"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmctld") < (26, 5, 5),
+    reason="Ticket 25110: _require_node_reg() sets NO_RESPOND on POWERING_DOWN"
+    " nodes before 26.05.5",
+)
+def test_undrain_powering_down_no_not_responding(current_nodes):
+    """UNDRAIN must not leave a POWERING_DOWN node NOT_RESPONDING.
+
+    State=UNDRAIN is the only path that reaches _require_node_reg() with
+    POWERING_DOWN still set; the RESUME paths clear POWERING_DOWN first. A
+    POWERING_DOWN node is skipped by ping_nodes(), so a NoResp flag set here
+    would never be cleared and would keep the node out of avail_node_bitmap.
+    Ticket 25110.
+    """
+    nodelist = atf.node_list_to_range(current_nodes)
+    atf.run_command(
+        f"scontrol power down {nodelist} action=suspend-ctld", fatal=True, user="slurm"
+    )
+    for node in current_nodes:
+        atf.wait_for_node_state(node, "POWERING_DOWN", fatal=True)
+
+    atf.run_command(
+        f"scontrol update nodename={nodelist} state=UNDRAIN", fatal=True, user="slurm"
+    )
+
+    for node in current_nodes:
+        st = atf.get_node_parameter(node, "state")
+        assert "POWERING_DOWN" in st, (
+            f"Setup error: {node} should still be POWERING_DOWN after UNDRAIN; "
+            f"the NOT_RESPONDING check is only meaningful there; state={st!r}"
+        )
+        assert "NOT_RESPONDING" not in st, (
+            f"POWERING_DOWN {node} must not be NOT_RESPONDING after UNDRAIN; "
+            f"state={st!r}"
+        )
