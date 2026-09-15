@@ -2799,8 +2799,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 
 		if (IS_JOB_COMPLETING(dump_job_ptr))
 			packstr(dump_job_ptr->nodes_completing, buffer);
-		if (dump_job_ptr->state_reason == WAIT_PROLOG)
-			packstr(dump_job_ptr->nodes_pr, buffer);
+		packstr(dump_job_ptr->nodes_pr, buffer);
 		if (IS_JOB_RESIZING(dump_job_ptr))
 			packstr(dump_job_ptr->nodes_rs, buffer);
 		packstr(dump_job_ptr->nodes, buffer);
@@ -3330,8 +3329,7 @@ extern int job_record_unpack(job_record_t **out,
 
 		if (job_ptr->job_state & JOB_COMPLETING)
 			safe_unpackstr(&job_ptr->nodes_completing, buffer);
-		if (job_ptr->state_reason == WAIT_PROLOG)
-			safe_unpackstr(&job_ptr->nodes_pr, buffer);
+		safe_unpackstr(&job_ptr->nodes_pr, buffer);
 		if (job_ptr->job_state & JOB_RESIZING)
 			safe_unpackstr(&job_ptr->nodes_rs, buffer);
 		safe_unpackstr(&job_ptr->nodes, buffer);
