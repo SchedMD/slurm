@@ -576,7 +576,36 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	setup_job_cluster_cond_limits(mysql_conn, job_cond,
 				      cluster_name, &extra);
 
-	query = xstrdup_printf("select %s from \"%s_%s\" as t1 "
+	/*
+	 * Index-level optimizer hint for the job_table access path.
+	 *
+	 * On very large job tables (hundreds of millions of rows) the InnoDB
+	 * range estimate for "time_end >= X" can degrade to half the table,
+	 * at which point the optimizer abandons the rollup2 index and falls
+	 * back to a full table scan for plain time-window queries. Pinning a
+	 * single index is not an option: MySQL 8.0 treats INDEX() hints as
+	 * FORCE INDEX, so any predicate the pinned index cannot serve (a
+	 * job id lookup, for instance) becomes a full scan instead.
+	 *
+	 * The list below names every job_table index the WHERE clauses built
+	 * by setup_job_cond_limits() and _setup_job_cond_selected_steps() can
+	 * use, so the optimizer keeps index_merge for job id lists, ref on
+	 * sacct_def/sacct_def2 for user filters, and range on rollup2 for pure
+	 * time windows. A table scan remains possible only when none of the
+	 * listed indexes applies, which is unchanged from the unhinted plan.
+	 * SET_VAR raises eq_range_index_dive_limit so that job id lists of 200
+	 * or more entries keep their index_merge plan instead of falling back
+	 * to index statistics.
+	 *
+	 * Servers that do not understand optimizer hints ignore the comment
+	 * with a warning; it is never an error.
+	 */
+	query = xstrdup_printf("select "
+			       "/*+ INDEX(t1 id_job, het_job, array_job, "
+			       "rollup2, sacct_def, sacct_def2, association, "
+			       "qos, wckey, reserv) "
+			       "SET_VAR(eq_range_index_dive_limit=10000) */ "
+			       "%s from \"%s_%s\" as t1 "
 			       "left join \"%s_%s\" as t2 "
 			       "on t1.id_assoc=t2.id_assoc "
 			       "left join \"%s_%s\" as t3 "
