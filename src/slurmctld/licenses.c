@@ -3207,6 +3207,33 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 	return rc;
 }
 
+static int _foreach_hres_variable_copy(void *x, void *arg)
+{
+	hres_variable_t *var_src = x;
+	list_t *dest_list = arg;
+	hres_variable_t *var_dest = xmalloc(sizeof(*var_dest));
+
+	var_dest->name = xstrdup(var_src->name);
+	var_dest->value = var_src->value;
+	list_append(dest_list, var_dest);
+
+	return 0;
+}
+
+static list_t *_hres_variable_list_copy(list_t *src_list)
+{
+	list_t *dest_list = NULL;
+
+	if (!src_list)
+		return NULL;
+
+	dest_list = list_create(hres_variable_free);
+	list_for_each_ro(src_list, _foreach_hres_variable_copy, dest_list);
+
+	return dest_list;
+}
+
+/* Deep copy a licenses_t record */
 static int _foreach_license_copy(void *x, void *arg)
 {
 	licenses_t *license_entry_src = x;
@@ -3214,16 +3241,31 @@ static int _foreach_license_copy(void *x, void *arg)
 	list_t *license_list_dest = arg;
 
 	/*
-	 * HRES and nodes intentionally not copied as they are unused by
-	 * consumers of this function.
+	 * memcpy, then replace pointers with malloc'd copies. Set parent
+	 * pointer to NULL - it is currently unused by callers, and if it
+	 * ever needs to be set then the parent pointers would need to be
+	 * reconstructed from the new list.
+	 *
 	 */
+	memcpy(license_entry_dest, license_entry_src,
+	       sizeof(*license_entry_dest));
 	license_entry_dest->name = xstrdup(license_entry_src->name);
-	license_entry_dest->total = license_entry_src->total;
-	license_entry_dest->used = license_entry_src->used;
-	license_entry_dest->last_deficit = license_entry_src->last_deficit;
-	license_entry_dest->id = license_entry_src->id;
-	license_entry_dest->mode = license_entry_src->mode;
-	license_entry_dest->op_or = license_entry_src->op_or;
+	license_entry_dest->nodes = xstrdup(license_entry_src->nodes);
+	if (license_entry_src->node_bitmap)
+		license_entry_dest->node_bitmap =
+			bit_copy(license_entry_src->node_bitmap);
+	license_entry_dest->hres_rec.layer_name =
+		xstrdup(license_entry_src->hres_rec.layer_name);
+	license_entry_dest->hres_rec.parent_name =
+		xstrdup(license_entry_src->hres_rec.parent_name);
+	license_entry_dest->hres_rec.parent = NULL;
+	license_entry_dest->hres_rec.topology_name =
+		xstrdup(license_entry_src->hres_rec.topology_name);
+	license_entry_dest->hres_rec.base =
+		_hres_variable_list_copy(license_entry_src->hres_rec.base);
+	license_entry_dest->hres_rec.variables =
+		_hres_variable_list_copy(license_entry_src->hres_rec.variables);
+
 	list_append(license_list_dest, license_entry_dest);
 
 	return 0;
