@@ -1627,7 +1627,7 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 			   bitstr_t *add_nodes_bitmap,
 			   bitstr_t **new_nodes_bitmap, char **err_msg)
 {
-	char *tmp_nodes = NULL, *tmp_dup_nodes = NULL;
+	char *tmp_nodes = NULL;
 	bool additive = false;
 	bool subtractive = false;
 	int rc = SLURM_SUCCESS;
@@ -1675,30 +1675,7 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 		bit_not(*new_nodes_bitmap);
 		bit_and(*new_nodes_bitmap, license->node_bitmap);
 	}
-	/* Canonical form, comparable with the nodes string of other layers */
-	tmp_dup_nodes = bitmap2node_name(*new_nodes_bitmap);
 
-	if (license->mode != HRES_MODE_3) {
-		/*
-		 * Prevent layers with identical node sets. The mode 3 check
-		 * below for overlapping nodes is stricter, so this does not
-		 * need to happen for mode 3.
-		 */
-		licenses_find_rec_by_nodes_t args = {
-			.name = license->name,
-			.nodes = tmp_dup_nodes,
-		};
-
-		licenses_t *hres_dup =
-			list_find_first_ro(cluster_license_list,
-					   _license_find_rec_by_nodes,
-					   &args);
-
-		if (hres_dup && (hres_dup != license)) {
-			rc = ESLURM_HRES_DUPLICATE_LAYER;
-			goto fini;
-		}
-	}
 	if (license->mode == HRES_MODE_3) {
 		licenses_t *overlap_lic;
 		bitstr_t *orig_bitmap = license->node_bitmap;
@@ -1710,18 +1687,20 @@ static int _validate_nodes(licenses_t *license, char *nodes,
 						 license);
 		license->node_bitmap = orig_bitmap;
 		if (overlap_lic) {
-			*err_msg =
-				xstrdup_printf("Nodes=%s overlaps with layer=%s nodes=%s",
-					       tmp_dup_nodes,
-					       overlap_lic->hres_rec.layer_name,
-					       overlap_lic->nodes);
+			char *tmp_dup_nodes =
+				bitmap2node_name(*new_nodes_bitmap);
+
+			*err_msg = xstrdup_printf(
+				"Nodes=%s overlaps with layer=%s nodes=%s",
+				tmp_dup_nodes, overlap_lic->hres_rec.layer_name,
+				overlap_lic->nodes);
+			xfree(tmp_dup_nodes);
 			rc = ESLURM_HRES_MODE3_OVERLAP;
 			goto fini;
 		}
 	}
 
 fini:
-	xfree(tmp_dup_nodes);
 	if (rc)
 		FREE_NULL_BITMAP(*new_nodes_bitmap);
 	return rc;

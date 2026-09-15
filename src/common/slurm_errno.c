@@ -975,10 +975,6 @@ slurm_errtab_t slurm_errtab[] = {
 		"Invalid nodes specification",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_HRES_DUPLICATE_LAYER),
-		"Specified nodes would result in a duplicate layer",
-	},
-	{
 		ERRTAB_ENTRY(ESLURM_HRES_MODE3_NON_LEAF),
 		"HRES Mode 3 node updates must happen on a leaf",
 	},
