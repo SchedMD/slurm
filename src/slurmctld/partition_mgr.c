@@ -246,6 +246,24 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		bit_clear_all(part_ptr->node_bitmap);
 	}
 
+	if (!xstrcasecmp(part_ptr->orig_nodes, "ALL")) {
+		xfree(part_ptr->nodesets);
+		part_ptr->nodesets = xstrdup("ALL");
+
+		for (int i = 0; (node_ptr = next_node(&i)); i++)
+			_add_node_to_part(part_ptr, node_ptr, old_bitmap);
+
+		xfree(part_ptr->nodes);
+		if (part_ptr->total_nodes)
+			part_ptr->nodes =
+				bitmap2node_name(part_ptr->node_bitmap);
+		else
+			info("%s: No nodes in partition %s",
+			     __func__, part_ptr->name);
+
+		goto fini;
+	}
+
 	if (!(host_list = nodespec_to_hostlist(part_ptr->orig_nodes, true,
 					       &part_ptr->nodesets))) {
 		/* Error, restore original bitmap */
@@ -312,6 +330,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	xfree(part_ptr->nodes);
 	part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
 
+fini:
 	_unlink_free_nodes(old_bitmap, part_ptr);
 	last_node_update = time(NULL);
 	FREE_NULL_BITMAP(old_bitmap);
