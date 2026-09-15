@@ -187,6 +187,34 @@ extern void set_partition_tres(bool assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
 
+/* Put one node in the partition and update the partition totals. */
+static void _add_node_to_part(part_record_t *part_ptr, node_record_t *node_ptr,
+			      bitstr_t *old_bitmap)
+{
+	int i;
+
+	part_ptr->total_nodes++;
+	part_ptr->total_cpus += node_ptr->cpus;
+	part_ptr->max_cpu_cnt = MAX(part_ptr->max_cpu_cnt, node_ptr->cpus);
+	part_ptr->max_core_cnt =
+		MAX(part_ptr->max_core_cnt, node_ptr->tot_cores);
+
+	for (i = 0; i < node_ptr->part_cnt; i++) {
+		if (node_ptr->part_pptr[i] == part_ptr)
+			break;
+	}
+	if (i == node_ptr->part_cnt) { /* Node in new partition */
+		node_ptr->part_cnt++;
+		xrecalloc(node_ptr->part_pptr, node_ptr->part_cnt,
+			  sizeof(part_record_t *));
+		node_ptr->part_pptr[node_ptr->part_cnt - 1] = part_ptr;
+	}
+	if (old_bitmap)
+		bit_clear(old_bitmap, node_ptr->index);
+
+	bit_set(part_ptr->node_bitmap, node_ptr->index);
+}
+
 /*
  * build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap
  *	for the specified partition, also reset the partition pointers in
@@ -204,7 +232,6 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	bitstr_t *old_bitmap;
 	node_record_t *node_ptr;
 	hostlist_t *host_list, *missing_hostlist = NULL;
-	int i;
 
 	part_ptr->total_cpus = 0;
 	part_ptr->total_nodes = 0;
@@ -258,27 +285,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 			rc = ESLURM_INVALID_NODE_NAME;
 			continue;
 		}
-		part_ptr->total_nodes++;
-		part_ptr->total_cpus += node_ptr->cpus;
-		part_ptr->max_cpu_cnt = MAX(part_ptr->max_cpu_cnt,
-					    node_ptr->cpus);
-		part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
-					     node_ptr->tot_cores);
-
-		for (i = 0; i < node_ptr->part_cnt; i++) {
-			if (node_ptr->part_pptr[i] == part_ptr)
-				break;
-		}
-		if (i == node_ptr->part_cnt) { /* Node in new partition */
-			node_ptr->part_cnt++;
-			xrecalloc(node_ptr->part_pptr, node_ptr->part_cnt,
-				  sizeof(part_record_t *));
-			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
-		}
-		if (old_bitmap)
-			bit_clear(old_bitmap, node_ptr->index);
-
-		bit_set(part_ptr->node_bitmap, node_ptr->index);
+		_add_node_to_part(part_ptr, node_ptr, old_bitmap);
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
