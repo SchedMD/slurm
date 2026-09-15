@@ -59,8 +59,8 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
-#include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 
 /*

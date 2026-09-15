@@ -82,6 +82,12 @@ if atf.get_version() < (26, 11):
             "workerpool is new in Slurm 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "common/test_pack_data.c",
+            "pack_data() is new in Slurm 26.11",
+        )
+    )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
     skip_tests.append(
         (
