@@ -6137,9 +6137,6 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 		job_ptr->exit_code = msg->prolog_rc;
 	}
 
-	/*
-	 * job_ptr->node_bitmap_pr is always NULL for front end systems
-	 */
 	if (job_ptr->node_bitmap_pr) {
 		node_record_t *node_ptr = NULL;
 
