@@ -778,12 +778,20 @@ scontrol power &lt;up|down&gt; [asap|force] {ALL|&lt;nodelist&gt;|&lt;nodeset&gt
   <dt id="RESUME"><b>RESUME</b><a class="slurm_link" href="#RESUME"></a>
   </dt>
 
-  <dd>Not an actual node state, but will change a node state from DRAIN,
-  DRAINING, DOWN or REBOOT to IDLE and NoResp. slurmctld will then attempt to
-  contact slurmd to request that the node register itself. Once registered,
-  the node state will then remove the NoResp flag and will resume normal
-  operations. It will also clear the POWERING_DOWN state of a node and make
-  it eligible to be allocated.</dd>
+  <dd>
+    <p>Not an actual node state, but will change a node state from DRAIN,
+    DRAINING, DOWN or REBOOT to IDLE and NoResp. slurmctld will then attempt
+    to contact slurmd to request that the node register itself. Once
+    registered, the node state will then remove the NoResp flag and will
+    resume normal operations. It will also clear the POWERING_DOWN state of a
+    node and make it eligible to be allocated.</p>
+
+    <p><b>NOTE</b>: This does not set <b>NoResp</b> on a node that is
+    <b>POWERED_DOWN</b> or <b>POWERING_DOWN</b>. Such a node is neither pinged
+    nor able to register while it is powered down, so the flag would persist
+    and keep the node out of the available nodes. The node is still required
+    to register when it powers up.</p>
+  </dd>
 </dl>
 
 <h2 id="resume_suspend">Resume and Suspend Programs<a class="slurm_link"
