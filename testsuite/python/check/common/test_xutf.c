@@ -13,7 +13,6 @@
  *   - the newline (5.8), space (Table 6-2) and C0/C1 control sets.
  *****************************************************************************/
 
-#define _GNU_SOURCE
 #include <check.h>
 
 #include <inttypes.h>

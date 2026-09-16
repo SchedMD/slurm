@@ -2,7 +2,6 @@
  *  Copyright (C) SchedMD LLC.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include <check.h>
 #include <time.h>
 

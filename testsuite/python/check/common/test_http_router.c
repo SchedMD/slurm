@@ -4,7 +4,6 @@
  * Test the HTTP router.
  *****************************************************************************/
 
-#define _GNU_SOURCE
 #include <check.h>
 
 #include <stdint.h>

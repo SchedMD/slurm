@@ -4,7 +4,6 @@
  * Add tests validating use of uid/username cache and negative cache
  *****************************************************************************/
 
-#define _GNU_SOURCE
 #include <check.h>
 
 #include <fcntl.h>
