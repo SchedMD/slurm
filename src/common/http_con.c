@@ -628,16 +628,15 @@ static bool _require_close_connection(http_con_t *hcon,
 }
 
 /*
- * Determine if a status code forbids a response body outright, regardless
- * of method.
+ * Determine if a status code forbids any content in the response.
  *
- * RFC7230-3.3.2: a 1xx (Informational) or 204 (No Content) response MUST
- * NOT carry a body.
+ * RFC7230-3.3.2: a server MUST NOT send a Content-Length header field in
+ * any response with a status code of 1xx (Informational) or 204 (No
+ * Content).
  * RFC7232-4.1: 304 (Not Modified) never carries a body.
  *
- * _send_content_length() and the body-write decision in
- * http_con_send_response() both consult this, so a status that forbids
- * content can never suppress the length while leaving the body written.
+ * IN status_code - status of the response being written
+ * RET true if the status forbids content
  */
 static bool _status_forbids_content(http_status_code_t status_code)
 {
@@ -658,17 +657,13 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 				http_status_code_t status_code,
 				const size_t body_length)
 {
-	/*
-	 * RFC7230-3.3.2:
-	 * A server MUST NOT send a Content-Length header field in any
-	 * response with a status code of 1xx (Informational) or 204 (No
-	 * Content). A server MUST NOT send a Content-Length header
-	 * field in any 2xx (Successful) response to a CONNECT request
-	 */
-
 	if (_status_forbids_content(status_code))
 		return SLURM_SUCCESS;
 
+	/*
+	 * RFC7230-3.3.2: A server MUST NOT send a Content-Length header
+	 * field in any 2xx (Successful) response to a CONNECT request
+	 */
 	if ((hcon->request.method == HTTP_REQUEST_CONNECT) &&
 	    (status_code >= HTTP_STATUS_SUCCESS_BEGIN) &&
 	    (status_code <= HTTP_STATUS_SUCCESS_END))
@@ -745,14 +740,8 @@ extern int http_con_send_response(http_con_t *hcon,
 		 * not carry the content itself. Sending it anyway leaves the
 		 * body in the stream at the point where the client looks for
 		 * the next response once the connection is reused.
-		 *
-		 * A status that forbids content (1xx, 204, 304) is folded in
-		 * here too: _send_content_length() already declines to
-		 * declare a length for those, so a body written alongside
-		 * them would sit in the stream with no framing at all.
 		 */
-		const bool omit_body = (request->method == HTTP_REQUEST_HEAD) ||
-					_status_forbids_content(status_code);
+		const bool omit_body = (request->method == HTTP_REQUEST_HEAD);
 
 		if ((rc = _send_content_length(hcon, con, status_code,
 					       body_length)))
