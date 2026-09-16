@@ -1106,6 +1106,7 @@ test_144_23  Test --gres-flags=ignore-links selects GRES without using links
 test_144_24  Test --gres-flags=enforce-links where a node's request gets split
 test_144_25  Test --gres-flags=enforce-links on a GRES configured by count
 test_144_26  Test --gres-flags=enforce-links with RestrictedCoresPerGPU
+test_144_27  Test --gres-flags=enforce-links with enforce-binding
 
 test_145_#   Testing --constraint.
 ==================================
