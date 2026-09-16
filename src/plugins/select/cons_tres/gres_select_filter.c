@@ -635,15 +635,21 @@ static int _compare_gres_by_links(const void *x, const void *y)
 
 /*
  * Allocate the arrays that make the loop pick the best linked devices. Left
- * NULL when the node has no usable link matrix, so the loop uses index order.
+ * NULL when the node has no usable link matrix or the job asked to ignore
+ * them, so the loop uses index order.
  * IN gres_ns - node GRES state providing the links_cnt matrix
  * IN gres_cnt - number of devices on this node
+ * IN links_mode - how the links steer the selection
  * OUT links_cnt - per device count of links to the devices already picked
  * OUT sorted_gres - device indexes, in the order to pick them
  */
 static void _init_links_sort(gres_node_state_t *gres_ns, int gres_cnt,
-			     int **links_cnt, int **sorted_gres)
+			     gres_links_mode_t links_mode, int **links_cnt,
+			     int **sorted_gres)
 {
+	if (links_mode == GRES_LINKS_IGNORE)
+		return;
+
 	if (gres_ns->link_len != gres_cnt)
 		return;
 
@@ -878,7 +884,8 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 
-	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
+	_init_links_sort(gres_ns, gres_cnt, links_mode, &links_cnt,
+			 &sorted_gres);
 
 	gres_needed = used_sock_cnt * gres_js->gres_per_socket;
 	gres_needed -= total_res_gres;
@@ -1037,7 +1044,14 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 	} else
 		max_gres -= total_res_gres;
 
-	if ((max_gres > 1) && (gres_ns->link_len == gres_cnt))
+	/*
+	 * Only the default preference wants to over-select and then trim to the
+	 * best connected. Ignored, the first devices found will do. Enforced,
+	 * they already come from a set sized for the node, and over-selecting
+	 * would defeat that sizing.
+	 */
+	if ((max_gres > 1) && (links_mode == GRES_LINKS_PREFER) &&
+	    (gres_ns->link_len == gres_cnt))
 		pick_gres  = NO_VAL16;
 	else {
 		/*
@@ -1098,7 +1112,7 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 		      node_inx);
 	}
 	/* Now pick the "best" max_gres GRES with respect to link counts. */
-	if (alloc_gres_cnt > max_gres) {
+	if ((links_mode != GRES_LINKS_IGNORE) && (alloc_gres_cnt > max_gres)) {
 		int best_link_cnt = -1, best_inx = -1;
 		for (s = 0; s < gres_cnt; s++) {
 			if (!bit_test(gres_js->gres_bit_select[node_inx], s))
@@ -1189,7 +1203,8 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 	 */
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 	if (gres_js->gres_per_job > gres_js->total_gres)
-		_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
+		_init_links_sort(gres_ns, gres_cnt, links_mode, &links_cnt,
+				 &sorted_gres);
 	if (sorted_gres) {
 		/* Add links for all gres already selected */
 		for (g = 0; g < gres_cnt; g++) {
@@ -1275,7 +1290,8 @@ static int _set_node_bits(int node_inx, int job_node_inx,
 	if (!gres_needed)
 		return SLURM_SUCCESS;
 
-	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
+	_init_links_sort(gres_ns, gres_cnt, links_mode, &links_cnt,
+			 &sorted_gres);
 
 	/*
 	 * Now pick specific GRES for these sockets.
@@ -1369,7 +1385,8 @@ static int _set_task_bits(int node_inx, sock_gres_t *sock_gres, uint32_t job_id,
 		return ESLURM_INVALID_GRES;
 	}
 
-	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
+	_init_links_sort(gres_ns, gres_cnt, links_mode, &links_cnt,
+			 &sorted_gres);
 
 	gres_needed = _get_task_cnt_node(tasks_per_socket, sock_cnt) *
 		gres_js->gres_per_task;
@@ -1767,7 +1784,8 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 			(*sock_with_res_cnt)++;
 	}
 
-	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
+	_init_links_sort(gres_ns, gres_cnt, links_mode, &links_cnt,
+			 &sorted_gres);
 
 	/*
 	 * Now pick specific GRES for these sockets.
