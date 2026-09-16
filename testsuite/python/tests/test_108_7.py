@@ -18,6 +18,9 @@ job_mem = 2
 # Big enough to avoid busy systems to detect false suspend times
 suspend_time = 5
 
+# A job id that will never exist
+invalid_job_id = 4294967292
+
 # To wait for some file content
 file_pattern = re.compile(r"01\s+\d+\n" r"02\s+\d+\n")
 
@@ -156,3 +159,22 @@ def test_job_suspend_resume(job_script, node):
 
     assert "AllDone" in output1, f"Job {job_id1} should finish properly"
     assert "AllDone" in output2, f"Job {job_id2} should finish properly"
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 11),
+    reason="Ticket 25672: slurmctld did not respond to suspend/resume of an invalid job id before 26.11",
+)
+@pytest.mark.parametrize("op", ["suspend", "resume"])
+def test_invalid_job_id(op):
+    """Test that suspend and resume of an invalid job id return an error."""
+
+    result = atf.run_command(
+        f"scontrol {op} {invalid_job_id}",
+        user=atf.properties["slurm-user"],
+        xfail=True,
+        fatal=True,
+    )
+    assert (
+        "Invalid job id specified" in result["stderr"]
+    ), f"scontrol {op} of an invalid job id should report it as invalid"

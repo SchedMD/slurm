@@ -4976,6 +4976,8 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	job_record_t *job_ptr;
 	char *op;
+	/* job_suspend() and job_suspend2() send their own response. */
+	bool send_response = true;
 
 	START_TIMER;
 	switch (sus_ptr->op) {
@@ -5037,14 +5039,19 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		      job_ptr->fed_details->cluster_lock);
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 	} else if (sus_ptr->job_id_str) {
+		send_response = false;
 		error_code = job_suspend2(msg, sus_ptr, msg->auth_uid, true,
 					  msg->protocol_version);
 	} else {
+		send_response = false;
 		error_code = job_suspend(msg, sus_ptr, msg->auth_uid,
 					 true, msg->protocol_version);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
+
+	if (send_response)
+		slurm_send_rc_msg(msg, error_code);
 
 	if (!sus_ptr->job_id_str)
 		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
