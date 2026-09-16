@@ -17,35 +17,42 @@ resources_yaml = """
     - name: full_gpu_node
       value: 5000
   layers:
-    - nodes:
+    - layer_name: "leaf1"
+      parent_name: "mid1"
+      nodes:
         - "node[1-8]"
       count: 40000
       base:
         - name: storage
           value: 5000
-    - nodes:
+    - layer_name: "leaf2"
+      parent_name: "mid1"
+      nodes:
         - "node[9-16]"
       count: 40000
-    - nodes:
+    - layer_name: "leaf3"
+      parent_name: "mid2"
+      nodes:
         - "node[17-24]"
       count: 40000
-    - nodes:
+    - layer_name: "leaf4"
+      parent_name: "mid2"
+      nodes:
         - "node[25-32]"
       count: 60000
-    - nodes:
-        - "node[1-16]"
+    - layer_name: "mid1"
+      parent_name: "root"
       count: 60000
       base:
         - name: network1
           value: 3000
-    - nodes:
-        - "node[17-32]"
+    - layer_name: "mid2"
+      parent_name: "root"
       count: 80000
       base:
         - name: network2
           value: 2000
-    - nodes:
-        - "node[1-32]"
+    - layer_name: "root"
       count: 130000
       base:
         - name: acUnit1
@@ -58,7 +65,7 @@ resources_yaml = """
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_version((25, 11), component="bin/sacctmgr")
+    atf.require_version((26, 11), component="bin/sacctmgr")
     atf.require_nodes(32)
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
