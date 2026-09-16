@@ -2464,6 +2464,22 @@ static void _attempt_backfill(void)
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
+			/*
+			 * Restore features in case the previous iteration
+			 * evaluated this job with "preferred" features
+			 * (use_prefer). features_use/feature_list_use must
+			 * never be left pointing at the prefer constraints
+			 * after the job's backfill attempt ends, otherwise the
+			 * preferred features would act as hard constraints in
+			 * subsequent scheduling cycles and would be packed to
+			 * clients as the job's displayed Features string.
+			 */
+			if (job_ptr->details) {
+				job_ptr->details->features_use =
+					job_ptr->details->features;
+				job_ptr->details->feature_list_use =
+					job_ptr->details->feature_list;
+			}
 			job_resv_clear_magnetic_flag(job_ptr);
 			fill_array_reasons(job_ptr, reject_array_job);
 
@@ -3998,6 +4014,24 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
 		last_job_update = time(NULL);
+		/*
+		 * The allocation succeeded. If this was a "preferred" attempt,
+		 * features_use/feature_list_use still point at the prefer
+		 * constraints. Restore the real --constraint features NOW,
+		 * before the job record is consumed by srun_allocate()/
+		 * launch_job() (which pack the record, build step credentials,
+		 * and set the displayed Features string). Otherwise a
+		 * successful complex/multi-feature --prefer (containing '&' or
+		 * '|') permanently bakes the prefer string into the running
+		 * job's active record, wiping out the mandatory hard
+		 * constraints from the job metadata.
+		 */
+		if (job_ptr->details) {
+			job_ptr->details->features_use =
+				job_ptr->details->features;
+			job_ptr->details->feature_list_use =
+				job_ptr->details->feature_list;
+		}
 		log_flag(HETJOB, "Started %pJ in %s on %s",
 		     job_ptr, job_ptr->part_ptr->name, job_ptr->nodes);
 		if (job_ptr->batch_flag == 0) {
