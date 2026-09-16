@@ -1475,6 +1475,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 
 			packdouble((double) NO_VAL64, buffer);
 			packdouble((double) NO_VAL64, buffer);
+			packdouble((double) NO_VAL64, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
