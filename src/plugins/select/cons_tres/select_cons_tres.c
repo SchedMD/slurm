@@ -87,6 +87,7 @@ bitstr_t *idle_node_bitmap;
 bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
 bool     gang_mode            = false;
+bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 bool     spec_cores_first     = false;
@@ -260,6 +261,10 @@ extern int select_p_node_init(void)
 		backfill_busy_nodes = true;
 	else
 		backfill_busy_nodes = false;
+	if (xstrcasestr(slurm_conf.sched_params, "pack_serial_at_end"))
+		pack_serial_at_end = true;
+	else
+		pack_serial_at_end = false;
 
 	preempt_type = slurm_get_preempt_type();
 	preempt_by_part = false;
