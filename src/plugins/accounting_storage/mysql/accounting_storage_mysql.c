@@ -2870,14 +2870,11 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	 * query fails, assume that the variable is OFF. Report this variable
 	 * separately, because it is fatal at run time.
 	 */
-	if (!xstrcasestr(db_info, "mariadb")) {
+	if (!xstrcasestr(db_info, "mariadb"))
 		value = 0;
-	} else if (mysql_db_get_var_u64(mysql_conn, snapshot_var, &value, 0)) {
+	else if (mysql_db_get_var_u64(mysql_conn, snapshot_var, &value,
+				      DB_QUERY_FLAG_OPTIONAL_VAR))
 		value = 0;
-		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-			error("The prior error message regarding an undefined '%s' variable is innocuous.  MariaDB without this variable will operate normally.",
-			      snapshot_var);
-	}
 	debug2("%s: %"PRIu64, snapshot_var, value);
 	if (value)
 		error("%s is enabled, which is not supported by Slurm and will cause slurmdbd to fatal when a write conflicts with a concurrent transaction.  Set %s=OFF.",
