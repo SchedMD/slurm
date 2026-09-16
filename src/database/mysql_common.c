@@ -1553,11 +1553,9 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	uint64_t wsrep_on, wsrep_max_ws_size, fragment_size;
 
 	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
-	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on, 0)) {
+	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on,
+				 DB_QUERY_FLAG_OPTIONAL_VAR))
 		wsrep_on = 0;
-		if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-			error("The prior error message regarding an undefined 'wsrep_on' variable is innocuous.  MySQL and MariaDB servers built without wsrep support do not have this variable and Slurm will operate normally without it.");
-	}
 
 	debug2("wsrep_on=%"PRIu64, wsrep_on);
 
@@ -1584,25 +1582,27 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	 */
 	if (!mysql_conn->wsrep_trx_fragment_unit_orig) {
 		rc = mysql_db_get_var_str(
-			mysql_conn,
-			"wsrep_trx_fragment_unit",
-			&mysql_conn->wsrep_trx_fragment_unit_orig, 0);
+			mysql_conn, "wsrep_trx_fragment_unit",
+			&mysql_conn->wsrep_trx_fragment_unit_orig,
+			DB_QUERY_FLAG_OPTIONAL_VAR);
 		if (rc) {
 			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-				error("This version of galera does not support streaming replication.");
-			error("Unable to fetch wsrep_trx_fragment_unit.");
+				debug2("This version of galera does not support streaming replication.");
+			else
+				error("Unable to fetch wsrep_trx_fragment_unit.");
 			return;
 		}
 	}
 	if (mysql_conn->wsrep_trx_fragment_size_orig == NO_VAL64) {
 		rc = mysql_db_get_var_u64(
-			mysql_conn,
-			"wsrep_trx_fragment_size",
-			&mysql_conn->wsrep_trx_fragment_size_orig, 0);
+			mysql_conn, "wsrep_trx_fragment_size",
+			&mysql_conn->wsrep_trx_fragment_size_orig,
+			DB_QUERY_FLAG_OPTIONAL_VAR);
 		if (rc) {
 			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-				error("This version of galera does not support streaming replication.");
-			error("Unable to fetch wsrep_trx_fragment_size.");
+				debug2("This version of galera does not support streaming replication.");
+			else
+				error("Unable to fetch wsrep_trx_fragment_size.");
 			return;
 		}
 	}
