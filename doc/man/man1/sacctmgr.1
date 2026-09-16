@@ -2635,7 +2635,16 @@ Comma\-separated list of reservation names.
 
 .TP
 \fBNodes\fR=<\fInode_name\fR>[,<\fInode_name\fR>,...]
-Node names where reservation ran.
+Only show reservations that include any of these nodes, whether they have
+already run, are running, or have not started yet. Default is all. A node name
+that was never part of the cluster matches nothing, and nothing reports that
+either. \fBClusters\fR should be given as well. Without it sacctmgr asks
+whether to use the local cluster and makes no query at all if the answer is
+no, while \fB\-i\fR takes the local cluster without asking. Only one cluster
+can be asked about at a time, and naming more than one is an error. Note that
+giving \fBStart\fR without \fBEnd\fR ends the period at now, which hides a
+reservation that has not started yet; give an \fBEnd\fR past its start time to
+see it.
 .IP
 
 .TP
