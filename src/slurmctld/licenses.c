@@ -642,7 +642,11 @@ static int _license_find_layer(void *x, void *key)
 	licenses_t *lic = x;
 	licenses_find_layer_t *args = key;
 
-	if (lic->id.hres_id == NO_VAL16)
+	/*
+	 * Check if it is an HRES by layer_name rather than by hres_id since
+	 * this function can be used before IDs are assigned.
+	 */
+	if (!lic->hres_rec.layer_name)
 		return 0;
 	if (xstrcmp(lic->name, args->hres_name))
 		return 0;
@@ -2667,14 +2671,16 @@ static int _foreach_license_update_match(void *x, void *arg)
 	license_update_args_t *args = arg;
 	licenses_t *match = NULL;
 
-	if (args->new_list) {
-		licenses_find_rec_by_nodes_t find_args = {
-			.name = license_entry->name,
-			.nodes = license_entry->nodes,
+	if (args->new_list && license_entry->hres_rec.layer_name) {
+		licenses_find_layer_t find_args = {
+			.hres_name = license_entry->name,
+			.layer_name = license_entry->hres_rec.layer_name,
 		};
-		match = list_find_first_ro(args->new_list,
-					   _license_find_rec_by_nodes,
+		match = list_find_first_ro(args->new_list, _license_find_layer,
 					   &find_args);
+	} else if (args->new_list) {
+		match = list_find_first_ro(args->new_list, _license_find_rec,
+					   license_entry->name);
 	}
 
 	if (!match) {
@@ -2727,7 +2733,10 @@ extern int license_update(char *licenses)
 
 	/*
 	 * Match remaining non-remote licenses against the new list to log
-	 * removals and propagate ids to the matching entry.
+	 * removals and propagate ids to the matching entry. This is only
+	 * relevant to multiple slurmctld failover events, where a backup
+	 * slurmctld may be calling license_update() more than once (once per
+	 * failover).
 	 */
 	list_for_each_ro(cluster_license_list, _foreach_license_update_match,
 			 &args);
