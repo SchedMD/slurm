@@ -377,6 +377,37 @@ def test_nodeless_overlap_flex_still_excludes_maint(nodes):
     )
 
 
+@requires_ticket_24080
+@pytest.mark.parametrize(
+    "res2_flags, expected_reason",
+    [
+        (None, "Reserved for other reservations"),
+        ("MAINT", "Reserved for maintenance"),
+    ],
+)
+def test_pending_reason_names_the_blocking_reservation(res2_flags, expected_reason):
+    """A blocked job names maintenance only when maintenance is what blocks it.
+
+    res1 holds no nodes of its own, so every node it could reach belongs to
+    res2 and the job pends with its whole usable set removed.
+    """
+    all_nodes = sorted(atf.get_nodes(quiet=True))
+    create_resv("res2", atf.node_list_to_range(all_nodes), flags=res2_flags)
+    create_resv("res1", flags="ANY_NODES,FLEX", licenses=f"{LICENSE}:1")
+
+    job = atf.submit_job_sbatch(
+        f"--reservation=res1 --licenses={LICENSE}:1 --wrap='sleep infinity'",
+        fatal=True,
+    )
+    assert atf.wait_for_job_state(
+        job, "PENDING"
+    ), f"job {job} should pend: res2 holds every node res1 could reach"
+    reason = atf.get_job_parameter(job, "Reason").replace("_", " ")
+    assert (
+        expected_reason in reason
+    ), f"job {job} pended with reason '{reason}', expected '{expected_reason}'"
+
+
 def test_maint_bypasses_overlap_guard(nodes):
     """MAINT reservations may use nodes that other reservations claim."""
     n1, n2, *_ = nodes
