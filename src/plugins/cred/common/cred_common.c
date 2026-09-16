@@ -120,6 +120,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		pack32(cred->job_ntasks, buffer);
 		packstr(cred->job_hostlist, buffer);
 		packstr(cred->job_licenses, buffer);
+		pack32(cred->job_max_npids, buffer);
 		pack32(cred->job_mem_alloc_size, buffer);
 		if (cred->job_mem_alloc_size) {
 			pack64_array(cred->job_mem_alloc,
@@ -312,6 +313,10 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 
 	cred = slurm_cred_alloc(true);
 	cred_arg = cred->arg;
+
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	cred_arg->job_max_npids = NO_VAL;
+
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred_arg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -385,6 +390,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&cred_arg->job_ntasks, buffer);
 		safe_unpackstr(&cred_arg->job_hostlist, buffer);
 		safe_unpackstr(&cred_arg->job_licenses, buffer);
+		safe_unpack32(&cred_arg->job_max_npids, buffer);
 
 		safe_unpack32(&cred_arg->job_mem_alloc_size, buffer);
 		if (cred_arg->job_mem_alloc_size) {
