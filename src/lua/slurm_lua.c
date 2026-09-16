@@ -1805,3 +1805,444 @@ extern int slurm_lua_to_data(lua_State *L, data_t **dst_ptr)
 
 	return rc;
 }
+
+static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
+			       const char *name)
+{
+	/*
+	 * Be careful with 64-bit numbers.
+	 * Lua prior to 5.3 stored all numbers as bit floating point numbers,
+	 * which can cause loss of precision.
+	 * Lua 5.3 onward can store 64-bit signed integers, but not unsigned
+	 * integers, but Lua will also convert between its integer and floating
+	 * point data types for certain operations - see section 3.4.3
+	 * "Coercions and Conversions" of the Lua manual.
+	 */
+	if (!job_info) {
+		error("_job_info_field: job_info is NULL");
+		lua_pushnil(L);
+	} else if (!xstrcmp(name, "account")) {
+		lua_pushstring(L, job_info->account);
+	} else if (!xstrcmp(name, "accrue_time")) {
+		lua_pushinteger(L, job_info->accrue_time);
+	} else if (!xstrcmp(name, "admin_comment")) {
+		lua_pushstring(L, job_info->admin_comment);
+	} else if (!xstrcmp(name, "alloc_node")) {
+		lua_pushstring(L, job_info->alloc_node);
+	} else if (!xstrcmp(name, "alloc_sid")) {
+		lua_pushinteger(L, job_info->alloc_sid);
+	} else if (!xstrcmp(name, "array_job_id")) {
+		lua_pushinteger(L, job_info->array_job_id);
+	} else if (!xstrcmp(name, "array_task_id")) {
+		lua_pushinteger(L, job_info->array_task_id);
+	} else if (!xstrcmp(name, "array_max_tasks")) {
+		lua_pushinteger(L, job_info->array_max_tasks);
+	} else if (!xstrcmp(name, "array_task_str")) {
+		lua_pushstring(L, job_info->array_task_str);
+	} else if (!xstrcmp(name, "assoc_id")) {
+		lua_pushinteger(L, job_info->assoc_id);
+	} else if (!xstrcmp(name, "batch_features")) {
+		lua_pushstring(L, job_info->batch_features);
+	} else if (!xstrcmp(name, "batch_flag")) {
+		lua_pushinteger(L, job_info->batch_flag);
+	} else if (!xstrcmp(name, "batch_host")) {
+		lua_pushstring(L, job_info->batch_host);
+		/* Ignore bitflags */
+	} else if (!xstrcmp(name, "boards_per_node")) {
+		lua_pushinteger(L, job_info->boards_per_node);
+	} else if (!xstrcmp(name, "burst_buffer")) {
+		lua_pushstring(L, job_info->burst_buffer);
+	} else if (!xstrcmp(name, "burst_buffer_state")) {
+		lua_pushstring(L, job_info->burst_buffer_state);
+	} else if (!xstrcmp(name, "cluster")) {
+		lua_pushstring(L, job_info->cluster);
+	} else if (!xstrcmp(name, "cluster_features")) {
+		lua_pushstring(L, job_info->cluster_features);
+	} else if (!xstrcmp(name, "command")) {
+		lua_pushstring(L, job_info->command);
+	} else if (!xstrcmp(name, "comment")) {
+		lua_pushstring(L, job_info->comment);
+	} else if (!xstrcmp(name, "container")) {
+		lua_pushstring(L, job_info->container);
+	} else if (!xstrcmp(name, "container_id")) {
+		lua_pushstring(L, job_info->container_id);
+	} else if (!xstrcmp(name, "runtime")) {
+		lua_pushstring(L, job_info->runtime);
+	} else if (!xstrcmp(name, "contiguous")) {
+		lua_pushinteger(L, job_info->contiguous);
+	} else if (!xstrcmp(name, "core_spec")) {
+		lua_pushinteger(L, job_info->core_spec);
+	} else if (!xstrcmp(name, "cores_per_socket")) {
+		lua_pushinteger(L, job_info->cores_per_socket);
+	} else if (!xstrcmp(name, "billable_tres")) {
+		lua_pushnumber(L, job_info->billable_tres);
+	} else if (!xstrcmp(name, "cpus_per_task")) {
+		lua_pushinteger(L, job_info->cpus_per_task);
+	} else if (!xstrcmp(name, "cpu_freq_min")) {
+		lua_pushinteger(L, job_info->cpu_freq_min);
+	} else if (!xstrcmp(name, "cpu_freq_max")) {
+		lua_pushinteger(L, job_info->cpu_freq_max);
+	} else if (!xstrcmp(name, "cpu_freq_gov")) {
+		lua_pushinteger(L, job_info->cpu_freq_gov);
+	} else if (!xstrcmp(name, "cpus_per_tres")) {
+		lua_pushstring(L, job_info->cpus_per_tres);
+	} else if (!xstrcmp(name, "cronspec")) {
+		lua_pushstring(L, job_info->cronspec);
+	} else if (!xstrcmp(name, "deadline")) {
+		lua_pushinteger(L, job_info->deadline);
+	} else if (!xstrcmp(name, "delay_boot")) {
+		lua_pushinteger(L, job_info->delay_boot);
+	} else if (!xstrcmp(name, "dependency")) {
+		lua_pushstring(L, job_info->dependency);
+	} else if (!xstrcmp(name, "derived_ec")) {
+		lua_pushinteger(L, job_info->derived_ec);
+	} else if (!xstrcmp(name, "eligible_time")) {
+		lua_pushinteger(L, job_info->eligible_time);
+	} else if (!xstrcmp(name, "end_time")) {
+		lua_pushinteger(L, job_info->end_time);
+	} else if (!xstrcmp(name, "exc_nodes")) {
+		lua_pushstring(L, job_info->exc_nodes);
+		/* Ignore exc_node_inx */
+	} else if (!xstrcmp(name, "exclusive")) {
+		lua_pushinteger(L, job_info->exclusive);
+	} else if (!xstrcmp(name, "exit_code")) {
+		lua_pushinteger(L, job_info->job_exit_rc.exit_code);
+	} else if (!xstrcmp(name, "features")) {
+		lua_pushstring(L, job_info->features);
+	} else if (!xstrcmp(name, "fed_origin_str")) {
+		lua_pushstring(L, job_info->fed_origin_str);
+		/* Ignore fed_siblings_active */
+	} else if (!xstrcmp(name, "fed_siblings_active_str")) {
+		lua_pushstring(L, job_info->fed_siblings_active_str);
+		/* Ignore fed_siblings_viable */
+	} else if (!xstrcmp(name, "fed_siblings_viable_str")) {
+		lua_pushstring(L, job_info->fed_siblings_viable_str);
+	} else if (!xstrcmp(name, "gres_detail_cnt")) {
+		lua_pushinteger(L, job_info->gres_detail_cnt);
+	} else if (!xstrcmp(name, "gres_detail_str")) {
+		if (!job_info->gres_detail_cnt)
+			lua_pushnil(L);
+		else {
+			/*
+			 * Add a table: key=index i+1, value=gres_detail_str[i]
+			 * (index=i+1 because Lua is one-indexed)
+			 */
+			lua_newtable(L);
+			for (int i = 0; i < job_info->gres_detail_cnt; i++) {
+				lua_pushinteger(L, i + 1);
+				lua_pushstring(L, job_info->gres_detail_str[i]);
+				/*
+				 * Adds this key-value pair to the table which
+				 * is 3 from the top of the stack
+				 */
+				lua_settable(L, -3);
+			}
+		}
+	} else if (!xstrcmp(name, "gres_total")) {
+		lua_pushstring(L, job_info->gres_total);
+	} else if (!xstrcmp(name, "group_id")) {
+		lua_pushinteger(L, job_info->group_id);
+	} else if (!xstrcmp(name, "het_job_id")) {
+		lua_pushinteger(L, job_info->het_job_id);
+	} else if (!xstrcmp(name, "het_job_id_set")) {
+		lua_pushstring(L, job_info->het_job_id_set);
+	} else if (!xstrcmp(name, "het_job_offset")) {
+		lua_pushinteger(L, job_info->het_job_offset);
+	} else if (!xstrcmp(name, "job_id")) {
+		lua_pushinteger(L, job_info->step_id.job_id);
+		/* Ignore job_resrcs */
+	} else if (!xstrcmp(name, "job_state")) {
+		lua_pushinteger(L, job_info->job_state);
+	} else if (!xstrcmp(name, "last_sched_eval")) {
+		lua_pushinteger(L, job_info->last_sched_eval);
+	} else if (!xstrcmp(name, "licenses")) {
+		lua_pushstring(L, job_info->licenses);
+	} else if (!xstrcmp(name, "mail_type")) {
+		lua_pushinteger(L, job_info->mail_type);
+	} else if (!xstrcmp(name, "mail_user")) {
+		lua_pushstring(L, job_info->mail_user);
+	} else if (!xstrcmp(name, "max_cpus")) {
+		lua_pushinteger(L, job_info->max_cpus);
+	} else if (!xstrcmp(name, "max_nodes")) {
+		lua_pushinteger(L, job_info->max_nodes);
+	} else if (!xstrcmp(name, "mcs_label")) {
+		lua_pushstring(L, job_info->mcs_label);
+	} else if (!xstrcmp(name, "mem_per_tres")) {
+		lua_pushstring(L, job_info->mem_per_tres);
+	} else if (!xstrcmp(name, "min_mem_per_node")) {
+		if ((job_info->pn_min_memory != NO_VAL64) &&
+		    !(job_info->pn_min_memory & MEM_PER_CPU))
+			lua_pushinteger(L, job_info->pn_min_memory);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
+		if ((job_info->pn_min_memory != NO_VAL64) &&
+		    (job_info->pn_min_memory & MEM_PER_CPU))
+			lua_pushinteger(L,
+					job_info->pn_min_memory & ~MEM_PER_CPU);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "name")) {
+		lua_pushstring(L, job_info->name);
+	} else if (!xstrcmp(name, "network")) {
+		lua_pushstring(L, job_info->network);
+	} else if (!xstrcmp(name, "nodes")) {
+		lua_pushstring(L, job_info->nodes);
+	} else if (!xstrcmp(name, "nice")) {
+		lua_pushinteger(L, job_info->nice);
+		/* Ignore node_inx */
+	} else if (!xstrcmp(name, "ntasks_per_core")) {
+		lua_pushinteger(L, job_info->ntasks_per_core);
+	} else if (!xstrcmp(name, "ntasks_per_tres")) {
+		lua_pushinteger(L, job_info->ntasks_per_tres);
+	} else if (!xstrcmp(name, "ntasks_per_node")) {
+		lua_pushinteger(L, job_info->ntasks_per_node);
+	} else if (!xstrcmp(name, "ntasks_per_socket")) {
+		lua_pushinteger(L, job_info->ntasks_per_socket);
+	} else if (!xstrcmp(name, "ntasks_per_board")) {
+		lua_pushinteger(L, job_info->ntasks_per_board);
+	} else if (!xstrcmp(name, "num_cpus")) {
+		lua_pushinteger(L, job_info->num_cpus);
+	} else if (!xstrcmp(name, "num_nodes")) {
+		lua_pushinteger(L, job_info->num_nodes);
+	} else if (!xstrcmp(name, "num_tasks")) {
+		lua_pushinteger(L, job_info->num_tasks);
+	} else if (!xstrcmp(name, "oversubscribe")) {
+		lua_pushinteger(L, job_info->oversubscribe);
+	} else if (!xstrcmp(name, "partition")) {
+		lua_pushstring(L, job_info->partition);
+	} else if (!xstrcmp(name, "prefer")) {
+		lua_pushstring(L, job_info->prefer);
+		/* Ignore pn_min_memory - use min_mem_per_node|cpu instead */
+	} else if (!xstrcmp(name, "pn_min_cpus")) {
+		lua_pushinteger(L, job_info->pn_min_cpus);
+	} else if (!xstrcmp(name, "pn_min_tmp_disk")) {
+		lua_pushinteger(L, job_info->pn_min_tmp_disk);
+	} else if (!xstrcmp(name, "preempt_time")) {
+		lua_pushinteger(L, job_info->preempt_time);
+	} else if (!xstrcmp(name, "preemptable_time")) {
+		lua_pushinteger(L, job_info->preemptable_time);
+	} else if (!xstrcmp(name, "pre_sus_time")) {
+		lua_pushinteger(L, job_info->pre_sus_time);
+	} else if (!xstrcmp(name, "priority")) {
+		lua_pushinteger(L, job_info->priority);
+	} else if (!xstrcmp(name, "profile")) {
+		lua_pushinteger(L, job_info->profile);
+	} else if (!xstrcmp(name, "qos")) {
+		lua_pushstring(L, job_info->qos);
+	} else if (!xstrcmp(name, "reboot")) {
+		lua_pushinteger(L, job_info->reboot);
+	} else if (!xstrcmp(name, "req_nodes")) {
+		lua_pushstring(L, job_info->req_nodes);
+		/* Ignore req_node_inx */
+	} else if (!xstrcmp(name, "req_switch")) {
+		lua_pushinteger(L, job_info->req_switch);
+	} else if (!xstrcmp(name, "requeue")) {
+		lua_pushinteger(L, job_info->requeue);
+	} else if (!xstrcmp(name, "resize_time")) {
+		lua_pushinteger(L, job_info->resize_time);
+	} else if (!xstrcmp(name, "restart_cnt")) {
+		lua_pushinteger(L, job_info->restart_cnt);
+	} else if (!xstrcmp(name, "resv_name")) {
+		lua_pushstring(L, job_info->resv_name);
+	} else if (!xstrcmp(name, "sched_nodes")) {
+		lua_pushstring(L, job_info->sched_nodes);
+	} else if (!xstrcmp(name, "selinux_context")) {
+		lua_pushstring(L, job_info->selinux_context);
+	} else if (!xstrcmp(name, "site_factor")) {
+		lua_pushinteger(L, job_info->site_factor);
+	} else if (!xstrcmp(name, "slurm_rc")) {
+		lua_pushinteger(L, job_info->job_exit_rc.rc);
+	} else if (!xstrcmp(name, "sockets_per_board")) {
+		lua_pushinteger(L, job_info->sockets_per_board);
+	} else if (!xstrcmp(name, "sockets_per_node")) {
+		lua_pushinteger(L, job_info->sockets_per_node);
+	} else if (!xstrcmp(name, "start_time")) {
+		lua_pushinteger(L, job_info->start_time);
+	} else if (!xstrcmp(name, "start_protocol_ver")) {
+		lua_pushinteger(L, job_info->start_protocol_ver);
+	} else if (!xstrcmp(name, "state_desc")) {
+		lua_pushstring(L, job_info->state_desc);
+	} else if (!xstrcmp(name, "state_reason")) {
+		lua_pushinteger(L, job_info->state_reason);
+	} else if (!xstrcmp(name, "std_err")) {
+		lua_pushstring(L, job_info->std_err);
+	} else if (!xstrcmp(name, "std_in")) {
+		lua_pushstring(L, job_info->std_in);
+	} else if (!xstrcmp(name, "std_out")) {
+		lua_pushstring(L, job_info->std_out);
+	} else if (!xstrcmp(name, "submit_time")) {
+		lua_pushinteger(L, job_info->submit_time);
+	} else if (!xstrcmp(name, "suspend_time")) {
+		lua_pushinteger(L, job_info->suspend_time);
+	} else if (!xstrcmp(name, "system_comment")) {
+		lua_pushstring(L, job_info->system_comment);
+	} else if (!xstrcmp(name, "time_limit")) {
+		lua_pushinteger(L, job_info->time_limit);
+	} else if (!xstrcmp(name, "time_min")) {
+		lua_pushinteger(L, job_info->time_min);
+	} else if (!xstrcmp(name, "threads_per_core")) {
+		lua_pushinteger(L, job_info->threads_per_core);
+	} else if (!xstrcmp(name, "tres_bind")) {
+		lua_pushstring(L, job_info->tres_bind);
+	} else if (!xstrcmp(name, "tres_freq")) {
+		lua_pushstring(L, job_info->tres_freq);
+	} else if (!xstrcmp(name, "tres_per_job")) {
+		lua_pushstring(L, job_info->tres_per_job);
+	} else if (!xstrcmp(name, "tres_per_node")) {
+		lua_pushstring(L, job_info->tres_per_node);
+	} else if (!xstrcmp(name, "tres_per_socket")) {
+		lua_pushstring(L, job_info->tres_per_socket);
+	} else if (!xstrcmp(name, "tres_per_task")) {
+		lua_pushstring(L, job_info->tres_per_task);
+	} else if (!xstrcmp(name, "tres_req_str")) {
+		lua_pushstring(L, job_info->tres_req_str);
+	} else if (!xstrcmp(name, "tres_alloc_str")) {
+		lua_pushstring(L, job_info->tres_alloc_str);
+	} else if (!xstrcmp(name, "user_id")) {
+		lua_pushinteger(L, job_info->user_id);
+		/*
+	 * user_name is not guaranteed to be set, but is accurate when it is.
+	 * See slurm_job_info_t in slurm.h. This is for performance reasons,
+	 * as we are avoiding using a job_write_lock to set it in job_info
+	 * before it is packed, and we are avoiding doing a lookup with UID
+	 * multiple times per job in the lua script. If performance is not a
+	 * concern and username is needed, the script may do a lookup using
+	 * the UID.
+	 */
+	} else if (!xstrcmp(name, "user_name")) {
+		lua_pushstring(L, job_info->user_name);
+	} else if (!xstrcmp(name, "wait4switch")) {
+		lua_pushinteger(L, job_info->wait4switch);
+	} else if (!xstrcmp(name, "wckey")) {
+		lua_pushstring(L, job_info->wckey);
+	} else if (!xstrcmp(name, "work_dir")) {
+		lua_pushstring(L, job_info->work_dir);
+	} else {
+		lua_pushnil(L);
+	}
+
+	return 1;
+}
+
+/*
+ * Arguments are passed to us on the stack of L:
+ * (1) The table (second from the top of the stack)
+ * (2) The key (top of the stack)
+ */
+static int _job_info_field_index(lua_State *L)
+{
+	const char *name = luaL_checkstring(L, 2);
+	job_info_t *job_info;
+
+	/* Pushes the metatable of the table onto the stack */
+	lua_getmetatable(L, -2);
+	/*
+	 * Pushes metatable["_job_info_ptr"] onto the stack, which is just a
+	 * pointer to job_info.
+	 */
+	lua_getfield(L, -1, "_job_info_ptr");
+	/* Now we can get the pointer to job_info from the top of the stack */
+	job_info = lua_touserdata(L, -1);
+
+	return _lua_job_info_field(L, job_info, name);
+}
+
+/*
+ * This function results in a single metatable on the stack:
+ *
+ * <metatable> = {
+ *   __index = _job_info_field_index
+ *   _job_info_ptr = job_info
+ * }
+ *
+ * The metatable defines the behavior of special operations on the table.
+ * The __index operation is called when indexing job_info in lua.
+ * When a lua script does this:
+ *   job_info["some_value"]
+ * Then the function _job_info_field_index is called with the table and key
+ * as the arguments:
+ *   (1) This job_info table, (2) "some_value"
+ *
+ * See the lua manual section 2.4 Metatables and Metamethods for the various
+ * table operations (which are identified by keys in the metatable).
+ *
+ * Negative indices reference the top of the stack:
+ *   stack[-1] is the top of the stack, stack[-2] is the second from the top of
+ *   the stack, etc.
+ */
+extern void slurm_lua_push_job_info(job_info_t *job_info, lua_State *L)
+{
+	/*
+	 * Push a table onto the stack
+	 * Stack after this call:
+	 * -1  table1
+	 */
+	lua_newtable(L);
+
+	/*
+	 * Push a table the stack.
+	 * Stack after this call:
+	 * -1  table2
+	 * -2  table1
+	 */
+	lua_newtable(L);
+	/*
+	 * Push a c function to the stack.
+	 * Stack after this call:
+	 * -1  function = _push_job_info_field_index
+	 * -2  table2
+	 * -3  table1
+	 */
+	lua_pushcfunction(L, _job_info_field_index);
+	/*
+	 * - Pop _job_info_field_index
+	 * - table2["__index"] = _job_info_field_index
+	 * Stack after this call:
+	 * -1  table2 = {
+	 *     __index = _job_info_field_index
+	 *   }
+	 * -2  table1
+	 */
+	lua_setfield(L, -2, "__index");
+	/*
+	 * The next two calls store the job_info in the metatable, so the index
+	 * function knows which struct it's getting data for.
+	 * lightuserdata represents a C pointer (a void*).
+	 */
+	/*
+	 * Pushes lightuserdata onto the stack.
+	 * Stack after this call:
+	 * -1 userdata = pointer to job_info
+	 * -2  table2 = {
+	 *     __index = _job_info_field_index
+	 *   }
+	 * -3  table1
+	 */
+	lua_pushlightuserdata(L, job_info);
+	/*
+	 * - Pop userdata (pointer to job_info) from the stack
+	 * - table2["_job_info_ptr"] = userdata
+	 * Stack after this call:
+	 * Assigns second from top value on stack to the value on the top
+	 * of the stack and pops the top value from the stack
+	 * -1  table2 = {
+	 *     __index = _job_info_field_index
+	 *     _job_info_ptr = job_info
+	 *   }
+	 * -2  table1
+	 */
+	lua_setfield(L, -2, "_job_info_ptr");
+	/*
+	 * Pops a value from the stack and sets it as the new metatable for
+	 * the value at the given index (second from the top value on the stack)
+	 * - Pop table2 from the stack
+	 * - table1 metatable = table2
+	 * Stack after this call:
+	 * -1 table1 metatable = {
+	 *      __index = _job_info_field_index
+	 *     _job_info_ptr = job_info
+	 *    }
+	 */
+	lua_setmetatable(L, -2);
+}

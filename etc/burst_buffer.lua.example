@@ -30,7 +30,7 @@
 --demonstrates how to read the data in this table. A complete list of fields is
 --in the Slurm source code in the following location:
 --
---src/plugins/burst_buffer/lua/burst_buffer_lua.c:_lua_job_info_field
+--src/lua/slurm_lua.c:_lua_job_info_field
 --
 --NOTE: job_info is read-only. It is a snapshot of job information
 --just before this function was called. The actual job record can be changed

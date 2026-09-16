@@ -160,4 +160,12 @@ extern int slurm_lua_init(void);
  */
 extern void slurm_lua_fini(void);
 
+/*
+ * Push a read-only Lua table of job_info fields onto the stack of L.
+ *
+ * This is an incomplete list of job info fields. Add more as needed and
+ * send patches to slurm-dev@schedmd.com.
+ */
+extern void slurm_lua_push_job_info(job_info_t *job_info, lua_State *L);
+
 #endif
