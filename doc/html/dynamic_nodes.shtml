@@ -93,11 +93,13 @@ slurmd -Z --conf "RealMemory=80000 Gres=gpu:2 Feature=f1"
 <p>Create nodes using scontrol by specifying the same <b>NodeName</b>
 line that you would define in the slurm.conf. See slurm.conf
 <a href="slurm.conf.html#SECTION_NODE-CONFIGURATION">man</a> page for node
-options. Only <b>State=CLOUD</b> and <b>State=FUTURE</b> are supported. The
+options. Only <b>State=CLOUD</b>, <b>State=EXTERNAL</b> and
+<b>State=FUTURE</b> are supported. The
 node configuration should match what the slurmd will register with
-(e.g. slurmd -C) plus any additional attributes.
-</p>
-
+(e.g. slurmd -C) plus any additional attributes. Creation is all-or-nothing.
+If any node in the request cannot be created, the command fails, no node from
+the request is created, and every node that already existed &mdash; whether
+created dynamically or defined in slurm.conf &mdash; is left unchanged.
 </p>
 e.g.
 <pre>
