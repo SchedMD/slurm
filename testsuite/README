@@ -1052,6 +1052,7 @@ test_144_11  Test GRES reservation with node table changes
 test_144_12  Test dynamic-normal slurmd (`slurmd -Z`) GRES autofill
 test_144_13  Test CountOnly GRES does not alter per-socket core distribution
 test_144_14  Test overcommit with GRES tres-per-task
+test_144_15  Test gres.conf UUID supplies device UUIDs without AutoDetect
 
 test_145_#   Testing --constraint.
 ==================================
