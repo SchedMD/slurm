@@ -40,6 +40,7 @@
  * It tests the serializer/json plugin for round-trip correctness.
  */
 
+/* _GNU_SOURCE required for HAVE_MALLINFO2 for better logging */
 #define _GNU_SOURCE
 #include <limits.h>
 

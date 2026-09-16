@@ -2,6 +2,7 @@
  *  test_148_1.c - Test conmgr
 \*****************************************************************************/
 
+/* _GNU_SOURCE is required for unshare() */
 #define _GNU_SOURCE
 #include <check.h>
 
