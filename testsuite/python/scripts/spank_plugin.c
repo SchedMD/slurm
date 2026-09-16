@@ -26,12 +26,24 @@
  *                          is baked in at compile time. Useful for verifying
  *                          hook isolation inside job containers (contain_spank).
  *
- *  Both capabilities are independent: both, one, or neither may be active at
+ *  JOB INFO LOGGING
+ *    SPANK_HOOK_LOG_JOB_INFO -- boolean (any non-empty value enables). Logs what
+ *                          spank_get_item() and slurm_load_job() report for each
+ *                          task, appending to SPANK_TMP_DIR/spank_job_info.log.
+ *                          All lines share one layout so a single regex parses:
+ *                            caller=<func> source=<source> \
+ *                            self_job_id=<id> self_step_id=<id> \
+ *                            job_id=<id> array_job_id=<id> array_task_id=<id> \
+ *                            [rc=<rc>]
+ *                          Inert if unset.
+ *
+ *  All capabilities are independent: any combination may be active at
  *  the same time. In remote context, env vars are read via spank_getenv()
  *  because the process environment is wiped; in other contexts, getenv() is
  *  used on the client process environment.
 \*****************************************************************************/
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +51,7 @@
 #include <unistd.h>
 
 #include <pthread.h>
+#include <slurm/slurm.h>
 #include <slurm/spank.h>
 
 #ifndef PLUGIN_NAME
@@ -55,6 +68,7 @@
 SPANK_PLUGIN(PLUGIN_NAME, 1);
 
 #define MAX_PATH 4096
+#define MAX_LINE 1024
 
 int slurm_spank_init_failure_mode = ESPANK_NODE_FAILURE;
 
@@ -123,6 +137,105 @@ static void _write_hook_marker(const char *func)
 }
 
 /*
+ * Append one line with a single write(2) on an O_APPEND fd: lines are shorter
+ * than PIPE_BUF, so concurrent tasks can't interleave them, while stdio buffers
+ * would be lost when the task exec's right after slurm_spank_task_init().
+ */
+static void _log_line(const char *path, const char *fmt, ...)
+{
+	char line[MAX_LINE];
+	int len, fd;
+	va_list ap;
+
+	va_start(ap, fmt);
+	len = vsnprintf(line, sizeof(line), fmt, ap);
+	va_end(ap);
+
+	if (len < 0)
+		return;
+	if (len >= (int) sizeof(line))
+		len = sizeof(line) - 1;
+
+	if ((fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0666)) < 0) {
+		slurm_error("%s: unable to open %s: %m", plugin_name, path);
+		return;
+	}
+
+	if (write(fd, line, len) != len)
+		slurm_error("%s: unable to write to %s: %m", plugin_name, path);
+
+	close(fd);
+}
+
+static void _log_job_info(spank_t sp, const char *path, const char *caller)
+{
+	/*
+	 * slurm_load_job() can only be called from slurm_spank_task_init,
+	 * once slurmstepd dropped its auth setuid lock.
+	 */
+	if (strcmp(caller, "slurm_spank_task_init") != 0)
+		return;
+
+	uint32_t step_id = NO_VAL, job_id = NO_VAL;
+	uint32_t array_job_id = NO_VAL, array_task_id = NO_VAL;
+	job_info_msg_t *job_info = NULL;
+	uint32_t i;
+	int rc;
+
+	if (!(rc = spank_get_item(sp, S_JOB_STEPID, &step_id)) &&
+	    !(rc = spank_get_item(sp, S_JOB_ID, &job_id)) &&
+	    !(rc = spank_get_item(sp, S_JOB_ARRAY_ID, &array_job_id)))
+		rc = spank_get_item(sp, S_JOB_ARRAY_TASK_ID, &array_task_id);
+
+	if (rc) {
+		_log_line(path,
+			  "caller=%s source=spank_get_item_error self_job_id=%u self_step_id=%u job_id=%u array_job_id=%u array_task_id=%u rc=%d\n",
+			  caller, job_id, step_id, job_id, array_job_id,
+			  array_task_id, rc);
+		return;
+	}
+
+	_log_line(path,
+		  "caller=%s source=spank_get_item self_job_id=%u self_step_id=%u job_id=%u array_job_id=%u array_task_id=%u\n",
+		  caller, job_id, step_id, job_id, array_job_id, array_task_id);
+
+	/*
+	 * This RPC deadlocks the task unless slurmstepd dropped its auth setuid
+	 * lock before the SPANK stack (task.c:spank_user_task).
+	 */
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+	slurm_step_id_t load_step_id = SLURM_STEP_ID_INITIALIZER;
+	load_step_id.job_id = job_id;
+	rc = slurm_load_job(&job_info, load_step_id, SHOW_DETAIL);
+#else /* Ticket 13506 (!3137): Change API to accept slurm_step_id_t */
+	rc = slurm_load_job(&job_info, job_id, SHOW_DETAIL);
+#endif
+	if (rc) {
+		_log_line(path,
+			  "caller=%s source=load_job_error self_job_id=%u self_step_id=%u job_id=%u array_job_id=%u array_task_id=%u rc=%d\n",
+			  caller, job_id, step_id, job_id, array_job_id,
+			  array_task_id, rc);
+		return;
+	}
+
+	for (i = 0; i < job_info->record_count; i++) {
+		slurm_job_info_t *job = job_info->job_array + i;
+
+		_log_line(path,
+			  "caller=%s source=load_job self_job_id=%u self_step_id=%u job_id=%u array_job_id=%u array_task_id=%u\n",
+			  caller, job_id, step_id,
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25, 11, 0)
+			  job->step_id.job_id,
+#else
+			  job->job_id,
+#endif
+			  job->array_job_id, job->array_task_id);
+	}
+
+	slurm_free_job_info_msg(job_info);
+}
+
+/*
  * Failure injection: check whether this callback is the targeted one.
  * Returns -ESPANK_ERROR when targeted, ESPANK_SUCCESS otherwise.
  */
@@ -176,6 +289,17 @@ static int _fail_if_targeted(spank_t sp, const char *func)
 		if (_get_env(sp, "SPANK_HOOK_CREATE_FILE",                    \
 			     _enabled, sizeof(_enabled)) == 0)                \
 			_write_hook_marker(__func__);                         \
+		                                                              \
+		/* Log job info in the log file if configured */              \
+		if (spank_context() == S_CTX_REMOTE) {                        \
+			char _ji[4] = {0};                                    \
+			if (_get_env(sp, "SPANK_HOOK_LOG_JOB_INFO", _ji,      \
+				     sizeof(_ji)) == 0)                       \
+				_log_job_info(sp,                             \
+					      SPANK_TMP_DIR                   \
+					      "/spank_job_info.log",          \
+					      __func__);                      \
+		}                                                             \
 		                                                              \
 		/* Return failure if configured */                            \
 		return _fail_if_targeted(sp, __func__);                       \
