@@ -51,6 +51,9 @@ typedef struct {
 	bool enforce_binding; /* GRES must be co-allocated with cores */
 	uint16_t max_cpus; /* maximum CPUs available on this node (limited by
 			      specialized cores and partition CPUs-per-node) */
+	uint32_t max_nodes; /* most nodes the job can be spread over, after
+			     * partition and QOS/association limits, 0 when
+			     * that is not constrained */
 	uint16_t *near_gpus; /* # of GPUs avail on sockets with avail CPUs */
 	uint16_t sockets; /* Count of sockets on the node*/
 	uint32_t sock_per_node; /* sockets wanted by job per node or NO_VAL */
@@ -72,6 +75,8 @@ typedef struct {
  * IN args->sockets - Count of sockets on the node
  * IN args->cores_per_sock - Count of cores per socket on this node
  * IN args->cpus_per_core - Count of CPUs per core on this node
+ * IN args->max_nodes - most nodes the job can be spread over, 0 if
+ *                      unconstrained
  * IN args->sock_per_node - sockets requested by job per node or NO_VAL
  * IN args->task_per_node - tasks requested by job per node or NO_VAL16
  * IN args->cpus_per_task - Count of CPUs per task

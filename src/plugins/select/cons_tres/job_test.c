@@ -552,6 +552,8 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
  * IN/OUT core_map  - per-node bitmap of available cores
  * IN node_i        - index of node to be evaluated
  * IN s_p_n         - Expected sockets_per_node (NO_VAL if not limited)
+ * IN max_nodes     - most nodes the job can use, after partition and
+ *                    QOS/association limits
  * IN cr_type       - Consumable Resource setting
  * IN test_only     - Determine if job could ever run, ignore allocated memory
  *		      check
@@ -568,11 +570,11 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
  */
 static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 					 bitstr_t **core_map,
-					 const uint32_t node_i,
-					 uint32_t s_p_n,
+					 const uint32_t node_i, uint32_t s_p_n,
+					 uint32_t max_nodes,
 					 node_use_record_t *node_usage,
-					 uint16_t cr_type,
-					 bool test_only, bool will_run,
+					 uint16_t cr_type, bool test_only,
+					 bool will_run,
 					 bitstr_t **part_core_map,
 					 resv_exc_t *resv_exc_ptr)
 {
@@ -697,6 +699,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 			.avail_mem = avail_mem,
 			.max_cpus = avail_res->avail_cpus,
 			.enforce_binding = create_args.enforce_binding,
+			.max_nodes = max_nodes,
 			.core_bitmap = core_map[node_i],
 			.sockets = node_ptr->tot_sockets,
 			.cores_per_sock = node_ptr->cores,
@@ -816,6 +819,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
  * IN: job_ptr       - pointer to the job requesting resources
  * IN: node_map      - bitmap of available nodes
  * IN/OUT: core_map  - per-node bitmaps of available cores
+ * IN: max_nodes     - most nodes the job can use, after partition and
+ *                     QOS/association limits
  * IN: cr_type       - resource type
  * IN: test_only     - Determine if job could ever run, ignore allocated memory
  *		       check
@@ -827,8 +832,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
  *
  * RET array of avail_res_t pointers, free using _free_avail_res_array()
  */
-static avail_res_t **_get_res_avail(job_record_t *job_ptr,
-				    bitstr_t *node_map, bitstr_t **core_map,
+static avail_res_t **_get_res_avail(job_record_t *job_ptr, bitstr_t *node_map,
+				    bitstr_t **core_map, uint32_t max_nodes,
 				    node_use_record_t *node_usage,
 				    uint16_t cr_type, bool test_only,
 				    bool will_run, bitstr_t **part_core_map,
@@ -847,11 +852,12 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(node_map, i))
 			avail_res_array[i] =
-				_can_job_run_on_node(
-					job_ptr, core_map, i,
-					s_p_n, node_usage,
-					cr_type, test_only, will_run,
-					part_core_map, resv_exc_ptr);
+				_can_job_run_on_node(job_ptr, core_map, i,
+						     s_p_n, max_nodes,
+						     node_usage, cr_type,
+						     test_only, will_run,
+						     part_core_map,
+						     resv_exc_ptr);
 	}
 
 	return avail_res_array;
@@ -917,9 +923,9 @@ check_nodes:
 		_free_avail_res(avail_res_array[i]);
 		avail_res_array[i] =
 			_can_job_run_on_node(job_ptr, topo_eval->avail_core, i,
-					     s_p_n, node_usage,
-					     topo_eval->cr_type, test_only,
-					     will_run, part_core_map,
+					     s_p_n, topo_eval->max_nodes,
+					     node_usage, topo_eval->cr_type,
+					     test_only, will_run, part_core_map,
 					     resv_exc_ptr);
 
 		if (!avail_res_array[i] || !avail_res_array[i]->avail_cpus)
@@ -1104,7 +1110,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 	/* Determine resource availability on each node for pending job */
 	topo_eval.avail_res_array =
 		_get_res_avail(topo_eval.job_ptr, topo_eval.node_map,
-			       topo_eval.avail_core,
+			       topo_eval.avail_core, topo_eval.max_nodes,
 			       node_usage, topo_eval.cr_type, test_only,
 			       will_run, part_core_map, resv_exc_ptr);
 	if (!topo_eval.avail_res_array)

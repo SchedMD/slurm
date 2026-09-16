@@ -140,6 +140,9 @@ static int _foreach_remove_unusable(void *x, void *arg)
 			tmp_u64 *= args->task_per_node;
 		min_gres = MAX(min_gres, tmp_u64);
 	}
+	/* A per-job request bounds this node only when it cannot leave it */
+	if (gres_js->gres_per_job && (args->max_nodes == 1))
+		min_gres = MAX(min_gres, gres_js->gres_per_job);
 
 	if (gres_js->cpus_per_gres)
 		cpus_per_gres = gres_js->cpus_per_gres;
