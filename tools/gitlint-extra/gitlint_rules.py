@@ -231,3 +231,62 @@ class TrailerValidation(CommitRule):
             if len(line) > 76
         )
         return violations
+
+
+# Kept in sync by hand with slurm-pick's classifier (main/slurm-pick.go). The
+# cherry-pick job runs slurm-pick over every merge commit on a protected
+# branch; a commit it classifies as mixed stops the pick at that point and the
+# resulting MR is opened as a Draft carrying an ERROR. This rule keeps such a
+# commit from being written in the first place.
+#
+# These directories are removed from the release branches, so slurm-pick can
+# never carry a change to them out of master.
+SKIP_TRIGGER_PREFIXES = ("testsuite/python/", "testsuite/expect/")
+
+# ...whereas this one does exist on the release branches, so it is picked along
+# with the code it tests. Mixing it into the same commit as the above is a
+# violation just as much as mixing in a path outside testsuite/ is.
+PICKABLE_TESTSUITE_PREFIXES = ("testsuite/slurm_unit/",)
+
+
+def is_skip_trigger(path: str) -> bool:
+    """Path whose presence stops slurm-pick from picking the commit."""
+    return path.startswith(SKIP_TRIGGER_PREFIXES)
+
+
+def is_pickable(path: str) -> bool:
+    """Path slurm-pick carries to a release branch."""
+    return not path.startswith("testsuite/") or path.startswith(
+        PICKABLE_TESTSUITE_PREFIXES
+    )
+
+
+def abbreviate_paths(paths: list[str], limit: int = 3) -> str:
+    shown = ", ".join(paths[:limit])
+    if len(paths) > limit:
+        shown += f" and {len(paths) - limit} more"
+    return shown
+
+
+class TestsuitePurity(CommitRule):
+    """Keep un-pickable testsuite changes out of otherwise pickable commits."""
+
+    name = "testsuite-purity"
+    id = "UC101"
+
+    def validate(self, commit):
+        skipped = sorted(f for f in commit.changed_files if is_skip_trigger(f))
+        if not skipped:
+            return []
+        pickable = sorted(f for f in commit.changed_files if is_pickable(f))
+        if not pickable:
+            return []
+        return [
+            RuleViolation(
+                self.id,
+                "The cherry-pick job cannot pick this commit: it changes "
+                f"{abbreviate_paths(skipped)}, which the release branches do "
+                f"not have, together with {abbreviate_paths(pickable)}. Move "
+                "the testsuite/[python|expect] changes to their own commit.",
+            )
+        ]

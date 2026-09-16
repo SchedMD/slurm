@@ -15,8 +15,6 @@
  * with src/plugins/data_parser/v0.0.46/, not with the other versions.
  */
 
-#define _GNU_SOURCE
-
 #define DATA_PARSER_PLUGIN_TYPE "data_parser/v0.0.46"
 /*
  * plugin_load_and_link() appends ".so" and maps only '/' to '_', never '.', so

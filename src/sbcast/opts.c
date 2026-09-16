@@ -70,44 +70,49 @@ static void _fill_in_selected_step_from_controller(void);
 static void _fill_in_selected_step_from_env(void);
 static void _fill_in_selected_steps_from_env(char *het_size_str);
 static void     _help( void );
-static bool _need_hetjob_components(job_info_msg_t **job_info_msg);
+static bool _need_hetjob_components(job_state_response_msg_t **jsr);
 static uint32_t _map_size( char *buf );
 static void     _print_options( void );
 static void     _usage( void );
 
-static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
+static bool _need_hetjob_components(job_state_response_msg_t **jsr)
 {
-	slurm_job_info_t *jobs = NULL;
+	job_state_response_job_t *jobs = NULL;
 	int rc;
 
-	/* If <jobid>+<offset> specified we target single component. */
-	if (params.selected_step->het_job_offset != NO_VAL)
-		return false;
-
-	if (!job_info_msg) {
-		error("job_info_msg pointer is NULL before calling slurm_load_job().");
+	if (!jsr) {
+		error("jsr pointer is NULL before calling slurm_load_job_state().");
 		exit(1);
 	}
 
-	if ((rc = slurm_load_job(job_info_msg, params.selected_step->step_id,
-				 SHOW_ALL)) != SLURM_SUCCESS) {
+	if ((rc = slurm_load_job_state(1, params.selected_step, jsr)) !=
+	    SLURM_SUCCESS) {
 		error("Failed to load %pI: '%s'",
 		      &params.selected_step->step_id,
 		      slurm_strerror(rc));
 		exit(1);
-	} else if (!*job_info_msg || (((*job_info_msg)->record_count) <= 0)) {
+	} else if (!*jsr || !(*jsr)->jobs_count) {
 		error("Failed to load %pI: No jobs returned.",
 		      &params.selected_step->step_id);
 		exit(1);
 	}
 
-	jobs = (*job_info_msg)->job_array;
+	jobs = (*jsr)->jobs;
 
-	if (jobs->step_id.job_id != jobs->het_job_id)
+	if ((jobs->job_id != jobs->het_job_id) ||
+	    (params.selected_step->het_job_offset != NO_VAL)) {
+		/*
+		 * Single component (--jobid=N+M or non-hetjob). Rewrite
+		 * selected_step with the resolved job_id so downstream
+		 * slurmd's _get_job_uid() can match the local stepd.
+		 */
+		params.selected_step->step_id.job_id = jobs->job_id;
+		params.selected_step->het_job_offset = NO_VAL;
 		return false;
+	}
 
-	if ((*job_info_msg)->record_count < 2)
-		fatal("slurm_load_job(%u) returned less than 2 records",
+	if ((*jsr)->jobs_count < 2)
+		fatal("slurm_load_job_state(%u) returned less than 2 records",
 		      params.selected_step->step_id.job_id);
 
 	/* <jobid> without +<offset> and its HetJob leader */
@@ -116,25 +121,32 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 
 static void _fill_in_selected_step_from_controller(void)
 {
-	job_info_msg_t *job_info_msg = NULL;
-	slurm_job_info_t *job = NULL;
-	char *job_id_str = NULL;
+	job_state_response_msg_t *jsr = NULL;
+	job_state_response_job_t *job = NULL;
 
-	if (!_need_hetjob_components(&job_info_msg))
+	if (!_need_hetjob_components(&jsr)) {
+		slurm_free_job_state_response_msg(jsr);
 		return;
+	}
 
-	job = job_info_msg->job_array;
+	job = jsr->jobs;
 	params.selected_steps = list_create(slurm_destroy_selected_step);
 
-	for (int i = 0; i < job_info_msg->record_count; i++, job++) {
-		job_id_str = xstrdup_printf("%u+%u", job->het_job_id,
-					    job->het_job_offset);
-		list_append(params.selected_steps,
-			    slurm_parse_step_str(job_id_str));
-		xfree(job_id_str);
+	for (uint32_t i = 0; i < jsr->jobs_count; i++, job++) {
+		/*
+		 * Send the component's own job_id; target slurmd's
+		 * _get_job_uid() can't match "<leader>+<offset>".
+		 */
+		slurm_selected_step_t *sel = xmalloc(sizeof(*sel));
+		sel->array_task_id = NO_VAL;
+		sel->het_job_offset = NO_VAL;
+		sel->step_id = SLURM_STEP_ID_INITIALIZER;
+		sel->step_id.job_id = job->job_id;
+		list_append(params.selected_steps, sel);
 	}
 
 	xassert(list_count(params.selected_steps) >= 2);
+	slurm_free_job_state_response_msg(jsr);
 }
 
 static void _fill_in_selected_steps_from_env(char *het_size_str)

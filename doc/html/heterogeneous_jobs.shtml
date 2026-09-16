@@ -503,6 +503,9 @@ kill both 1721.0 and 1722.0, while
 <span class="commandline">scancel 1721.1</span> would kill step 1 in the only
 component that has it, which is not an error.
 Only a step ID that no component has is reported as an invalid job ID.
+When the job's steps are managed by a step manager (see <b>--stepmgr</b>), the
+cancel is forwarded to each component's step manager and a step ID that no
+component has is accepted rather than reported as an error.
 As with any other job, cancelling a step never cancels the job itself: the
 component allocations keep running.
 Signals other than SIGKILL that you send with scancel are sent only to the step
@@ -518,6 +521,9 @@ $ scancel 1721.1   # Kills step 1 in the only component that has it
 
 <p>It is not an error that some components do not have the step.
 Only a step ID that no component has is reported as an invalid job ID.
+When the job's steps are managed by a step manager (see <b>--stepmgr</b>), the
+cancel is forwarded to each component's step manager and a step ID that no
+component has is accepted rather than reported as an error.
 As with any other job, cancelling a step never cancels the job itself: the
 component allocations keep running.
 Cancelling a step through an individual component signals only that
@@ -675,6 +681,9 @@ reservation.</p>
 <p>The srun command's --no-allocate option is not supported
 for heterogeneous jobs.</p>
 
+<p>The srun command's --async option is not supported for heterogeneous jobs,
+even when the step manager is enabled.</p>
+
 <p>Only one job step per heterogeneous job component can be launched by a
 single srun command (e.g.
 "srun --het-group=0 alpha : --het-group=0 beta" is not supported).</p>
@@ -684,7 +693,12 @@ a heterogeneous job at a time.</p>
 
 <p>License requests are only allowed on the first component
 job (e.g.
-"sbatch -L ansys:2 : script.sh").<p>
+"sbatch -L ansys:2 : script.sh").</p>
+
+<p>The slurmstepd step management (<i>--stepmgr</i>) setting cannot be
+configured independently per component. The <i>--stepmgr</i> setting on the
+first component (the heterogeneous job leader) is applied to the whole job;
+the setting on any other component is overridden to match the leader.</p>
 
 <p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
 The more frequently executed scheduling logic only starts jobs on a first-in

@@ -2,7 +2,6 @@
  *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include <check.h>
 
 #include "src/common/log.h"

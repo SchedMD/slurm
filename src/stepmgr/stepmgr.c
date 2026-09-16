@@ -231,8 +231,8 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	return 0;
 }
 
-static void _set_step_id(step_record_t *step_ptr,
-			 job_step_create_request_msg_t *step_specs)
+static int _set_step_id(step_record_t *step_ptr,
+			job_step_create_request_msg_t *step_specs)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
@@ -256,17 +256,19 @@ static void _set_step_id(step_record_t *step_ptr,
 		}
 	} else if (job_ptr->het_job_id &&
 		   (job_ptr->het_job_id != job_ptr->job_id)) {
-		job_record_t *het_job;
-		het_job = stepmgr_ops->find_job_record(job_ptr->het_job_id);
-		if (het_job)
-			step_ptr->step_id.step_id = het_job->next_step_id++;
-		else
-			step_ptr->step_id.step_id = job_ptr->next_step_id++;
+		uint32_t *id_out = &step_ptr->step_id.step_id;
+		int rc;
+
+		rc = stepmgr_ops->get_het_step_id(job_ptr->het_job_id, id_out);
+		if (rc != SLURM_SUCCESS)
+			return rc;
 		job_ptr->next_step_id =
 			MAX(job_ptr->next_step_id, step_ptr->step_id.step_id);
 	} else {
 		step_ptr->step_id.step_id = job_ptr->next_step_id++;
 	}
+
+	return SLURM_SUCCESS;
 }
 
 static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
@@ -319,6 +321,13 @@ static bool _build_pending_step(job_record_t *job_ptr,
 
 	*stepmgr_ops->last_job_update = time(NULL);
 
+	if (step_specs->flags & SSF_ASYNC) {
+		if (_set_step_id(step_ptr, step_specs)) {
+			delete_step_record(job_ptr, step_ptr);
+			return false;
+		}
+	}
+
 	step_ptr->cpu_count = step_specs->num_tasks;
 	step_ptr->cwd = xstrdup(step_specs->cwd);
 	step_ptr->flags = step_specs->flags;
@@ -331,7 +340,6 @@ static bool _build_pending_step(job_record_t *job_ptr,
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 	if (step_specs->flags & SSF_ASYNC) {
 		step_ptr->step_req = step_specs;
-		_set_step_id(step_ptr, step_specs);
 		step_specs->step_id = step_ptr->step_id;
 		step_ptr->name = xstrdup(step_specs->name);
 
@@ -348,7 +356,10 @@ static bool _build_pending_step(job_record_t *job_ptr,
 		if (protocol_version > SLURM_26_05_PROTOCOL_VERSION) {
 			/* A re-queue re-sends its already-assigned id. */
 			if (step_specs->step_id.step_id == NO_VAL) {
-				_set_step_id(step_ptr, step_specs);
+				if (_set_step_id(step_ptr, step_specs)) {
+					delete_step_record(job_ptr, step_ptr);
+					return false;
+				}
 				step_specs->step_id = step_ptr->step_id;
 			} else {
 				step_ptr->step_id = step_specs->step_id;
@@ -3715,6 +3726,7 @@ static int _step_create(job_record_t *job_ptr,
 	uint32_t max_tasks;
 	uint32_t over_time_limit;
 	bool resv_ports_present = false;
+	bool async = step_specs->flags & SSF_ASYNC;
 
 	*new_step_record = NULL;
 
@@ -3733,9 +3745,8 @@ static int _step_create(job_record_t *job_ptr,
 	 * srun never saw the id) comes back as NO_VAL and must still reap its
 	 * own stale placeholder instead of stacking a second one.
 	 */
-	if (((step_specs->step_id.step_id != NO_VAL) ||
-	     !(step_specs->flags & SSF_ASYNC)) &&
-	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate)) {
+	if (!async || ((step_specs->step_id.step_id != NO_VAL) &&
+		       !step_specs->immediate)) {
 		if (list_delete_first(job_ptr->step_list,
 				      _purge_duplicate_steps,
 				      step_specs) < 0)
@@ -3929,10 +3940,10 @@ static int _step_create(job_record_t *job_ptr,
 	step_ptr->start_time = time(NULL);
 	step_ptr->state      = JOB_RUNNING;
 
-	if ((step_specs->flags & SSF_ASYNC) && step_specs->immediate) {
+	if (async && step_specs->immediate) {
 		/* Async pending step already has a step_id. */
 		step_ptr->step_id = step_specs->step_id;
-	} else if (!(step_specs->flags & SSF_ASYNC)) {
+	} else if (!async) {
 		if (step_specs->step_id.step_id != NO_VAL) {
 			/* Sync pending step already has a step_id. */
 			step_ptr->step_id = step_specs->step_id;
@@ -3949,7 +3960,10 @@ static int _step_create(job_record_t *job_ptr,
 					MAX(job_ptr->next_step_id,
 					    step_ptr->step_id.step_id + 1);
 		} else {
-			_set_step_id(step_ptr, step_specs);
+			if ((ret_code = _set_step_id(step_ptr, step_specs))) {
+				delete_step_record(job_ptr, step_ptr);
+				return ret_code;
+			}
 			/*
 			 * Echo the assigned id back so that if this create
 			 * then fails on busy reserved ports the pending
@@ -4102,18 +4116,23 @@ static int _step_create(job_record_t *job_ptr,
 	if ((step_specs->resv_port_cnt != NO_VAL16) &&
 	    (step_specs->resv_port_cnt != 0)) {
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-		i = resv_port_step_alloc(step_ptr);
-		if (i != SLURM_SUCCESS) {
-			if (i == ESLURM_PORTS_BUSY)
-				i = _queue_pending_step(job_ptr, step_specs,
-							protocol_version, i);
+		ret_code = resv_port_step_alloc(step_ptr);
+		if (ret_code != SLURM_SUCCESS) {
+			if (ret_code == ESLURM_PORTS_BUSY)
+				ret_code =
+					_queue_pending_step(job_ptr, step_specs,
+							    protocol_version,
+							    ret_code);
 			delete_step_record(job_ptr, step_ptr);
-			return i;
+			return ret_code;
 		}
 	}
 
-	if ((step_specs->flags & SSF_ASYNC) && !step_specs->immediate)
-		_set_step_id(step_ptr, step_specs);
+	if (async && !step_specs->immediate &&
+	    (ret_code = _set_step_id(step_ptr, step_specs))) {
+		delete_step_record(job_ptr, step_ptr);
+		return ret_code;
+	}
 
 	if ((ret_code = _switch_setup(step_ptr))) {
 		delete_step_record(job_ptr, step_ptr);
@@ -5380,7 +5399,10 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	/* Needed for not considering it in _mark_busy_nodes */
 	step_ptr->flags |= SSF_EXT_LAUNCHER;
 
-	_set_step_id(step_ptr, step_specs);
+	if ((rc = _set_step_id(step_ptr, step_specs))) {
+		delete_step_record(job_ptr, step_ptr);
+		return rc;
+	}
 
 	/* The step needs to run on all the cores. */
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
@@ -5622,10 +5644,9 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	}
 
 	if ((req_step_msg->flags & SSF_ASYNC) &&
-	    (running_in_slurmctld() ||
-	     req_step_msg->immediate ||
-	     !req_step_msg->launch_params ||
-	     req_step_msg->launch_params->pty)) {
+	    (running_in_slurmctld() || req_step_msg->immediate ||
+	     !req_step_msg->launch_params || req_step_msg->launch_params->pty ||
+	     job_ptr->het_job_id)) {
 		error("Invalid async step create request");
 		error_code = ESLURM_INVALID_FEATURE;
 		goto end_it;
@@ -5830,6 +5851,7 @@ extern int pack_job_step_info_response_msg(pack_step_args_t *args)
 		set_buf_offset(args->buffer, tmp_offset);
 	}
 
+	FREE_NULL_LIST(args->stepmgr_jobs);
 	xfree(args->visible_parts);
 
 	return error_code;
@@ -6035,6 +6057,10 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 		job_info_resp_msg->qos = xstrdup(qos->name);
 	}
 	job_info_resp_msg->resv_name      = xstrdup(job_ptr->resv_name);
+
+	if (job_ptr->bit_flags & STEPMGR_ENABLED)
+		job_info_resp_msg->stepmgr_host = xstrdup(job_ptr->batch_host);
+
 	if (job_ptr->details) {
 		if (job_ptr->bit_flags & JOB_MEM_SET) {
 			job_info_resp_msg->pn_min_memory =

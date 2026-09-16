@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Fail if any tracked file is matched by an ignore rule. That combination is
+# always a mistake: git status stops reporting edits to the file, so changes
+# go unnoticed. It usually happens when a configure-generated file is promoted
+# to a tracked source file and the stale rule is left behind.
+#
+# core.excludesFile=/dev/null keeps the verdict dependent only on the ignore
+# files in the repository, not on a developer's global excludes.
+
+set -e
+
+tracked_ignored=$(git -c core.excludesFile=/dev/null \
+	ls-files --cached --ignored --exclude-standard)
+
+if [ -z "$tracked_ignored" ]; then
+	exit 0
+fi
+
+echo "These tracked files are matched by an ignore rule:"
+echo
+# --no-index because check-ignore skips tracked files otherwise, which is
+# exactly the set being reported here.
+echo "$tracked_ignored" | while read -r file; do
+	git -c core.excludesFile=/dev/null \
+		check-ignore --no-index -v "$file" || echo "  $file"
+done
+echo
+echo "A tracked file must not be ignored. Either delete the file, or drop"
+echo "or negate the rule that matches it."
+
+exit 1

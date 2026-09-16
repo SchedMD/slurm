@@ -1345,6 +1345,7 @@ slurm_copy_resource_allocation_response_msg(
 	new->partition = xstrdup(msg->partition);
 	new->qos = xstrdup(msg->qos);
 	new->resv_name = xstrdup(msg->resv_name);
+	new->stepmgr_host = xstrdup(msg->stepmgr_host);
 	new->uid = msg->uid;
 	new->user_name = xstrdup(msg->user_name);
 	new->working_cluster_rec = NULL;
@@ -1412,6 +1413,11 @@ extern void slurm_free_reroute_msg(reroute_msg_t *msg)
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
 		xfree(msg);
 	}
+}
+
+extern void slurm_free_het_step_id_msg(het_step_id_msg_t *msg)
+{
+	xfree(msg);
 }
 
 extern void slurm_free_batch_script_msg(char *msg)
@@ -4316,6 +4322,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->partition);
 		xfree(msg->qos);
 		xfree(msg->resv_name);
+		xfree(msg->stepmgr_host);
 		xfree(msg->tres_per_node);
 		xfree(msg->tres_per_task);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
@@ -4456,6 +4463,7 @@ extern void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *
 			_free_all_step_info(msg);
 			xfree(msg->job_steps);
 		}
+		FREE_NULL_LIST(msg->stepmgr_jobs);
 		xfree(msg);
 	}
 }
@@ -5422,6 +5430,10 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
 		slurm_free_reroute_msg(data);
+		break;
+	case REQUEST_HET_STEP_ID:
+	case RESPONSE_HET_STEP_ID:
+		slurm_free_het_step_id_msg(data);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		slurm_free_job_step_create_response_msg(data);

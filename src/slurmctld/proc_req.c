@@ -169,6 +169,12 @@ typedef struct {
 	slurm_msg_t *msg;
 } foreach_multi_msg_t;
 
+typedef struct {
+	const char *het_job_id_set;
+	bool leader_stepmgr;
+	bool log_submit;
+} foreach_het_job_finalize_t;
+
 extern void record_rpc_stats(slurm_msg_t *msg, long delta)
 {
 	slurm_mutex_lock(&rpc_mutex);
@@ -842,21 +848,6 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 					xstrdup(job_ptr->details->env_sup[i]);
 			}
 		}
-		/*
-		 * Only advertise the stepmgr once batch_host is known. For a
-		 * powered-down cloud node batch_host is still NULL here, and
-		 * setting SLURM_STEPMGR to a NULL value stringifies to the
-		 * literal "(null)" - leave it unset so step creation is routed
-		 * through the controller (which reroutes once the node is up).
-		 */
-		if ((job_ptr->bit_flags & STEPMGR_ENABLED) &&
-		    job_ptr->batch_host) {
-			env_array_overwrite(&alloc_msg->environment,
-					    "SLURM_STEPMGR",
-					    job_ptr->batch_host);
-			alloc_msg->env_size =
-				PTR_ARRAY_SIZE(alloc_msg->environment) - 1;
-		}
 
 		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
 			char *task_count = get_tasks_per_node(job_ptr);
@@ -886,6 +877,9 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	}
 	if (job_ptr->resv_name)
 		alloc_msg->resv_name = xstrdup(job_ptr->resv_name);
+
+	if (job_ptr->bit_flags & STEPMGR_ENABLED)
+		alloc_msg->stepmgr_host = xstrdup(job_ptr->batch_host);
 
 	set_remote_working_response(alloc_msg, job_ptr,
 				    job_ptr->origin_cluster);
@@ -964,6 +958,27 @@ static void _exclude_het_job_nodes(list_t *job_req_list)
 	}
 	list_iterator_destroy(iter);
 	xfree(req_nodes);
+}
+
+static int _foreach_het_job_finalize(void *x, void *arg)
+{
+	foreach_het_job_finalize_t *args = arg;
+	job_record_t *job_ptr = x;
+
+	job_ptr->het_job_id_set = xstrdup(args->het_job_id_set);
+	if (args->log_submit)
+		log_flag(HETJOB, "Submit %pJ", job_ptr);
+
+	/*
+	 * Stepmgr-on-stepd must agree across all components, so align
+	 * each component to the leader.
+	 */
+	if (args->leader_stepmgr)
+		job_ptr->bit_flags |= STEPMGR_ENABLED;
+	else
+		job_ptr->bit_flags &= ~STEPMGR_ENABLED;
+
+	return 0;
 }
 
 /*
@@ -1292,11 +1307,14 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 
 	if (first_job_ptr)
 		first_job_ptr->het_job_list = submit_job_list;
-	iter = list_iterator_create(submit_job_list);
-	while ((job_ptr = list_next(iter))) {
-		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(submit_job_list, _foreach_het_job_finalize,
+			     &(foreach_het_job_finalize_t) {
+				     .het_job_id_set = het_job_id_set,
+				     .leader_stepmgr =
+					     first_job_ptr &&
+					     (first_job_ptr->bit_flags &
+					      STEPMGR_ENABLED),
+			     });
 	xfree(het_job_id_set);
 
 	_het_job_val_rem(submit_job_list);
@@ -2612,10 +2630,11 @@ fini:
 	    (job_ptr->bit_flags & STEPMGR_ENABLED) && IS_JOB_RUNNING(job_ptr)) {
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
-			args->stepmgr_jobs = list_create(NULL);
+			args->stepmgr_jobs = list_create(
+				(ListDelF) slurm_free_stepmgr_job_info);
 		sji->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		sji->step_id.step_id = args->step_id->step_id;
-		sji->stepmgr = job_ptr->batch_host;
+		sji->stepmgr = xstrdup(job_ptr->batch_host);
 		list_append(args->stepmgr_jobs, sji);
 	}
 
@@ -3246,6 +3265,56 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 
 	(void) send_msg_response(msg, RESPONSE_HET_JOB_ALLOCATION, resp);
 	FREE_NULL_LIST(resp);
+}
+
+/*
+ * Reroute REQUEST_HET_STEP_ID to the het leader's stepmgr stepd.
+ */
+static void _slurm_rpc_het_step_id(slurm_msg_t *msg)
+{
+	int error_code = SLURM_SUCCESS;
+	job_record_t *job_ptr;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+	het_step_id_msg_t *req = msg->data;
+	reroute_msg_t reroute_msg = { 0 };
+	DEF_TIMERS;
+
+	START_TIMER;
+
+	if (!validate_slurmd_user(msg->auth_uid)) {
+		error("Security violation, REQUEST_HET_STEP_ID RPC from uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	lock_slurmctld(job_read_lock);
+
+	job_ptr = find_job_record(req->step_id.job_id);
+
+	if (!job_ptr) {
+		error_code = ESLURM_INVALID_JOB_ID;
+	} else if (!job_ptr->het_job_list) {
+		error_code = job_ptr->het_job_id ? ESLURM_NOT_HET_JOB_LEADER :
+						   ESLURM_INVALID_JOB_ID;
+	} else if (!(job_ptr->bit_flags & STEPMGR_ENABLED)) {
+		error_code = ESLURM_NOT_SUPPORTED;
+	} else {
+		reroute_msg.stepmgr = job_ptr->batch_host;
+	}
+
+	if (error_code != SLURM_SUCCESS) {
+		debug2("%s: %pI uid=%u: %s", __func__, &req->step_id,
+		       msg->auth_uid, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		(void) send_msg_response(msg, RESPONSE_SLURM_REROUTE_MSG,
+					 &reroute_msg);
+	}
+
+	unlock_slurmctld(job_read_lock);
+
+	END_TIMER2(__func__);
 }
 
 /* _slurm_rpc_job_sbcast_cred - process RPC to get details on existing job
@@ -4251,13 +4320,16 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	if (first_job_ptr)
 		first_job_ptr->het_job_list = submit_job_list;
 
-	iter = list_iterator_create(submit_job_list);
-	while ((job_ptr = list_next(iter))) {
-		job_ptr->het_job_id_set = xstrdup(het_job_id_set);
-		if (error_code == SLURM_SUCCESS)
-			log_flag(HETJOB, "Submit %pJ", job_ptr);
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(submit_job_list, _foreach_het_job_finalize,
+			     &(foreach_het_job_finalize_t) {
+				     .het_job_id_set = het_job_id_set,
+				     .leader_stepmgr =
+					     first_job_ptr &&
+					     (first_job_ptr->bit_flags &
+					      STEPMGR_ENABLED),
+				     .log_submit =
+					     (error_code == SLURM_SUCCESS),
+			     });
 	xfree(het_job_id_set);
 
 	_het_job_val_rem(submit_job_list);
@@ -7081,6 +7153,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.node = READ_LOCK,
 			.part = NO_LOCK,
 		},
+	},{
+		.msg_type = REQUEST_HET_STEP_ID,
+		.func = _slurm_rpc_het_step_id,
 	},{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
 		.func = _slurm_rpc_job_sbcast_cred,

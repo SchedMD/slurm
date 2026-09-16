@@ -54,6 +54,7 @@
 #include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
 #include "src/common/probes.h"
+#include "src/common/read_config.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
@@ -129,6 +130,14 @@ list_t *job_node_array = NULL;
 time_t last_job_update = 0;
 bool time_limit_thread_shutdown = false;
 pthread_t time_limit_thread_id = 0;
+
+/*
+ * Cached het leader stepmgr host, used only by _remote_get_het_step_id().
+ * Seeded from the launch cred at extern step init (best effort); otherwise
+ * populated on first call via the ctld reroute response. Access is
+ * serialized by the caller's stepmgr_mutex.
+ */
+static char *stepmgr_leader_nodename = NULL;
 
 static int _foreach_ret_data_info(void *x, void *arg)
 {
@@ -442,11 +451,142 @@ static void *_step_time_limit_thread(void *data)
 	return NULL;
 }
 
+static void _resolve_add_addr(char *node_name)
+{
+	slurm_node_alias_addrs_t *alias_addrs = NULL;
+
+	if (!slurm_conf_check_addr(node_name, NULL))
+		return;
+
+	/* Not in conf; ask slurmctld for the alias. */
+	if (!slurm_get_node_alias_addrs(node_name, &alias_addrs)) {
+		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
+					      alias_addrs->node_addrs);
+	}
+	slurm_free_node_alias_addrs(alias_addrs);
+}
+
+/*
+ * _remote_get_het_step_id - RPC to the het leader's REQUEST_HET_STEP_ID.
+ *
+ * First call goes to slurmctld which replies with RESPONSE_SLURM_REROUTE_MSG
+ * carrying the leader's batch_host. The nodename is cached in
+ * stepmgr_leader_nodename (serialized by the caller's stepmgr_mutex) and
+ * reused on subsequent calls that go directly to the leader stepd via slurmd.
+ * The cache may also be pre-seeded from the launch cred at extern step init
+ * (see _init_stepmgr()).
+ *
+ * NOTE: stepmgr_mutex is held by the caller across the RPCs below, which
+ * stalls other stepmgr RPCs on this stepd by up to MessageTimeout per hop.
+ */
+static int _remote_get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
+{
+	int rc = SLURM_SUCCESS;
+	het_step_id_msg_t req = { .step_id = SLURM_STEP_ID_INITIALIZER };
+	slurm_msg_t req_msg, resp_msg;
+
+	req.step_id.job_id = het_job_id;
+	req.step_id.step_id = NO_VAL;
+	req.step_id.step_het_comp = NO_VAL;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_HET_STEP_ID;
+	req_msg.data = &req;
+
+	slurm_msg_t_init(&resp_msg);
+
+	if (!stepmgr_leader_nodename) {
+		if (slurm_send_recv_controller_msg(&req_msg, &resp_msg, NULL) <
+		    0) {
+			rc = SLURM_ERROR;
+			goto done;
+		}
+		if (resp_msg.msg_type == RESPONSE_SLURM_REROUTE_MSG) {
+			reroute_msg_t *rr_msg = resp_msg.data;
+			stepmgr_leader_nodename = rr_msg->stepmgr;
+			rr_msg->stepmgr = NULL;
+
+			if (!stepmgr_leader_nodename) {
+				rc = SLURM_ERROR;
+				goto done;
+			}
+			_resolve_add_addr(stepmgr_leader_nodename);
+		} else if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
+			rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+			if (rc == SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+			goto done;
+		} else {
+			error("%s: unexpected ctld response %s", __func__,
+			      rpc_num2string(resp_msg.msg_type));
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		slurm_free_msg_members(&resp_msg);
+	}
+
+	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+
+	if (slurm_conf_get_addr(stepmgr_leader_nodename, &req_msg.address,
+				req_msg.flags)) {
+		error("%s: cannot get leader stepmgr %s", __func__,
+		      stepmgr_leader_nodename);
+		xfree(stepmgr_leader_nodename);
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0)) {
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_HET_STEP_ID:
+	{
+		het_step_id_msg_t *resp = resp_msg.data;
+		*step_id_out = resp->step_id.step_id;
+		break;
+	}
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		if (rc == SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+		break;
+	default:
+		error("%s: unexpected response %s", __func__,
+		      rpc_num2string(resp_msg.msg_type));
+		rc = SLURM_ERROR;
+		break;
+	}
+
+done:
+	slurm_free_msg_members(&resp_msg);
+	return rc;
+}
+
+static int _get_het_step_id(uint32_t het_job_id, uint32_t *step_id_out)
+{
+	xassert(job_step_ptr);
+
+	/* stepmgr_mutex is already held by the caller (_set_step_id). */
+
+	if (job_step_ptr->job_id == het_job_id) {
+		/* I am the leader: allocate from my own counter. */
+		*step_id_out = job_step_ptr->next_step_id++;
+		return SLURM_SUCCESS;
+	}
+
+	return _remote_get_het_step_id(het_job_id, step_id_out);
+}
+
 stepmgr_ops_t stepd_stepmgr_ops = {
 	.find_job = find_job,
 	.find_job_record = find_job_record,
 	.last_job_update = &last_job_update,
 	.agent_queue_request = _agent_queue_request,
+	.get_het_step_id = _get_het_step_id,
 };
 
 static int _foreach_job_node_array(void *x, void *arg)
@@ -1244,6 +1384,59 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
 }
 
 /*
+ * Take the stepmgr role for this launch when this node hosts the job's
+ * stepmgr (i.e. it is the job's batch_host). Extracts the job_record and
+ * per-node data the stepmgr needs from the launch message and cred.
+ * No-op on non-stepmgr nodes.
+ */
+static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
+{
+	slurm_addr_t *node_addrs;
+
+	if (!task_msg->job_ptr ||
+	    xstrcmp(conf->node_name, task_msg->job_ptr->batch_host))
+		return;
+
+	/* only allow one stepd to be stepmgr. */
+	slurm_daemon |= WITH_STEPMGR;
+	switch_g_stepmgr_init();
+	job_step_ptr = task_msg->job_ptr;
+	job_step_ptr->part_ptr = task_msg->part_ptr;
+	job_node_array = task_msg->job_node_array;
+
+	/*
+	 * job_record doesn't pack its node_addrs array, so get it from the
+	 * cred.
+	 */
+	if (task_msg->cred &&
+	    (node_addrs = slurm_cred_get(task_msg->cred,
+					 CRED_DATA_JOB_NODE_ADDRS))) {
+		add_remote_nodes_to_conf_tbls(job_step_ptr->nodes, node_addrs);
+
+		job_step_ptr->node_addrs =
+			xcalloc(job_step_ptr->node_cnt, sizeof(slurm_addr_t));
+		memcpy(job_step_ptr->node_addrs, node_addrs,
+		       job_step_ptr->node_cnt * sizeof(slurm_addr_t));
+	}
+
+	/*
+	 * Best-effort pre-seed of stepmgr_leader_nodename so
+	 * _remote_get_het_step_id() can skip the ctld reroute on the first
+	 * call. NULL for leader stepmgrs and when the leader had no
+	 * batch_host at cred create time.
+	 */
+	if (task_msg->cred) {
+		slurm_cred_arg_t *cred_arg =
+			slurm_cred_get_args(task_msg->cred);
+		stepmgr_leader_nodename =
+			xstrdup(cred_arg->job_het_stepmgr_host);
+		slurm_cred_unlock_args(task_msg->cred);
+		if (stepmgr_leader_nodename)
+			_resolve_add_addr(stepmgr_leader_nodename);
+	}
+}
+
+/*
  *  This function handles the initialization information from slurmd
  *  sent by _send_slurmstepd_init() in src/slurmd/slurmd/req.c.
  */
@@ -1372,36 +1565,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		step_id = task_msg->step_id;
 		runtime = task_msg->runtime;
 
-		if (task_msg->job_ptr &&
-		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
-			slurm_addr_t *node_addrs;
-
-			/* only allow one stepd to be stepmgr. */
-			slurm_daemon |= WITH_STEPMGR;
-			switch_g_stepmgr_init();
-			job_step_ptr = task_msg->job_ptr;
-			job_step_ptr->part_ptr = task_msg->part_ptr;
-			job_node_array = task_msg->job_node_array;
-
-			/*
-			 * job_record doesn't pack its node_addrs array, so get
-			 * it from the cred.
-			 */
-			if (task_msg->cred &&
-			    (node_addrs = slurm_cred_get(
-				     task_msg->cred,
-				     CRED_DATA_JOB_NODE_ADDRS))) {
-				add_remote_nodes_to_conf_tbls(
-					job_step_ptr->nodes, node_addrs);
-
-				job_step_ptr->node_addrs =
-					xcalloc(job_step_ptr->node_cnt,
-						sizeof(slurm_addr_t));
-				memcpy(job_step_ptr->node_addrs, node_addrs,
-				       job_step_ptr->node_cnt *
-				       sizeof(slurm_addr_t));
-			}
-		}
+		_init_stepmgr(task_msg);
 
 		break;
 	}
@@ -1567,6 +1731,8 @@ static void _step_cleanup(slurm_msg_t *msg, int rc)
 		if (!step->batch)
 			stepd_step_rec_destroy();
 	}
+
+	xfree(stepmgr_leader_nodename);
 
 	/*
 	 * The message cannot be freed until the jobstep is complete

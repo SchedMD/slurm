@@ -3077,7 +3077,13 @@ static bool _filter_job(job_info_t *job)
 	if (job->step_id.job_id == 0)
 		return true;
 
-	if (params.job_list) {
+	/*
+	 * With --only-job-state, RESPONSE_JOB_STATE entries lack the sluid
+	 * (and other fields the filters below rely on) so the sluid match
+	 * always misses. The controller has already applied params.job_list
+	 * for us, so skip the redundant client-side job_list filter here.
+	 */
+	if (!params.only_state && params.job_list) {
 		bool filter = true;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {

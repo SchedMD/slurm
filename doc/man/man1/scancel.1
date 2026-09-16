@@ -31,6 +31,9 @@ Cancelling a step through an individual component signals only that component's
 step.
 It is not an error for a component not to have that step; only a step ID that
 no component has is reported as an invalid job ID.
+When the job's steps are managed by a step manager (see \fB\-\-stepmgr\fR in
+\fBsalloc\fR(1)), the cancel is forwarded to each component's step manager and
+a step ID that no component has is accepted rather than reported as an error.
 Signals other than the default SIGKILL are sent only to the step of the
 Step IDs are unique across the whole heterogeneous job.
 Cancelling a step through component zero (the heterogeneous job leader)
@@ -38,6 +41,9 @@ kills that step in every component that has it, and leaves the component
 allocations running.
 It is not an error if some components do not have that step; only a step ID
 that no component has is reported as an invalid job ID.
+When the job's steps are managed by a step manager (see \fB\-\-stepmgr\fR in
+\fBsalloc\fR(1)), the cancel is forwarded to each component's step manager and
+a step ID that no component has is accepted rather than reported as an error.
 Cancelling a step through an individual component signals only that
 component's step.
 If that component does not have the step, the request is reported as an

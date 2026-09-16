@@ -637,7 +637,6 @@ test37.17  Test local and remote job dependencies
 
 test38.#   Testing of heterogeneous jobs.
 =========================================
-test38.2   Validate sbatch heterogeneous job environment variables.
 test38.3   Validate salloc heterogeneous job options.
 test38.4   Validate salloc heterogeneous job environment variables.
 test38.5   Validate squeue heterogeneous job fields
@@ -736,7 +735,6 @@ test_104_2   Test sattach gets job output, by JobID and by SLUID.
 test_105_#   Testing of sbatch options.
 =======================================
 test_105_1   /commands/sbatch/test_gpu_options.py
-test_105_2   /commands/sbatch/test_hetjob.py
 test_105_3   /commands/sbatch/test_invalid_mps_options.py
 test_105_4   /commands/sbatch/test_--usage.py
 test_105_5   Test sbatch --output and --error options work, including use of spaces, %j, and %u
@@ -1037,6 +1035,7 @@ test_141_2   Testing Global,Per-Partition,Per-Node Cloud Options
 test_141_3   Test node reboot and power down/up actions via slurmctld and slurmd
 test_141_4   Test srun to a powered down cloud node with enable_stepmgr
 test_141_5   Test powered down nodes are not left UNKNOWN on reconfigure/restart
+test_141_6   Test NOT_RESPONDING is not set on, and is cleared from, powered down nodes
 
 test_143_#   Testing --switches.
 ================================
@@ -1179,3 +1178,10 @@ test_166_4   Test slurmdbd closes connections that are not TLS wrapped
 test_167_#   Testing of HealthCheckProgram.
 ===========================================
 test_167_1   Test SLURM_NODE_IS_HEALTHY reporting to HealthCheckProgram
+
+test_168_#   Testing of heterogeneous jobs.
+===========================================
+test_168_1   Validate sbatch heterogeneous job environment variables.
+test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
+test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
+test_168_4   Validate scontrol show job fields for heterogeneous job components.

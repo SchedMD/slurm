@@ -1189,17 +1189,88 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/*
+ * Pack the allocation's environment array. Pre-26.11 clients read the stepmgr
+ * node from SLURM_STEPMGR in this array; 26.11+ clients get it from the
+ * stepmgr_host field, so only inject SLURM_STEPMGR here for the older wire
+ * format.
+ */
+static void _pack_alloc_env(const resource_allocation_response_msg_t *msg,
+			    buf_t *buffer)
+{
+	char **env;
+	char *stepmgr_env = NULL;
+
+	if (!msg->stepmgr_host) {
+		packstr_array(msg->environment, msg->env_size, buffer);
+		return;
+	}
+
+	xstrfmtcat(stepmgr_env, "SLURM_STEPMGR=%s", msg->stepmgr_host);
+	env = xcalloc(msg->env_size + 2, sizeof(char *));
+	for (uint32_t i = 0; i < msg->env_size; i++)
+		env[i] = msg->environment[i];
+	env[msg->env_size] = stepmgr_env;
+	packstr_array(env, msg->env_size + 1, buffer);
+	xfree(stepmgr_env);
+	xfree(env);
+}
+
 static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 						   buf_t *buffer)
 {
 	resource_allocation_response_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 
 		packstr(msg->batch_host, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
+		pack32(msg->error_code, buffer);
+		pack32(msg->gid, buffer);
+		packstr(msg->group_name, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
+		pack32(msg->node_cnt, buffer);
+
+		packstr(msg->node_list, buffer);
+		pack16(msg->ntasks_per_board, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+		pack16(msg->ntasks_per_socket, buffer);
+		pack32(msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups) {
+			pack16_array(msg->cpus_per_node, msg->num_cpu_groups,
+				     buffer);
+			pack32_array(msg->cpu_count_reps, msg->num_cpu_groups,
+				     buffer);
+		}
+		packstr(msg->partition, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->resv_name, buffer);
+		pack16(msg->segment_size, buffer);
+		pack16(msg->start_protocol_ver, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		packstr(msg->stepmgr_host, buffer);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_task, buffer);
+		pack32(msg->uid, buffer);
+		packstr(msg->user_name, buffer);
+
+		if (msg->working_cluster_rec) {
+			pack8(1, buffer);
+			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
+						 smsg->protocol_version,
+						 buffer);
+		} else {
+			pack8(0, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+
+		packstr(msg->batch_host, buffer);
+		_pack_alloc_env(msg, buffer);
 		pack32(msg->error_code, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);
@@ -1244,7 +1315,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->account, buffer);
 
 		packstr(msg->batch_host, buffer);
-		packstr_array(msg->environment, msg->env_size, buffer);
+		_pack_alloc_env(msg, buffer);
 		pack32(msg->error_code, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);
@@ -1293,7 +1364,56 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->batch_host, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
+		safe_unpack32(&msg->error_code, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpackstr(&msg->group_name, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
+
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack32(&msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups > 0) {
+			safe_unpack16_array(&msg->cpus_per_node, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+			safe_unpack32_array(&msg->cpu_count_reps, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
+				goto unpack_error;
+		} else {
+			msg->cpus_per_node = NULL;
+			msg->cpu_count_reps = NULL;
+		}
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->resv_name, buffer);
+		safe_unpack16(&msg->segment_size, buffer);
+		safe_unpack16(&msg->start_protocol_ver, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpackstr(&msg->stepmgr_host, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
+
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			slurmdb_unpack_cluster_rec(
+				(void **) &msg->working_cluster_rec,
+				smsg->protocol_version, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->account, buffer);
 		safe_unpackstr(&msg->batch_host, buffer);
 		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
@@ -3230,7 +3350,8 @@ static int _unpack_job_step_info_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 				goto unpack_error;
 
 		if (slurm_unpack_list(&msg->stepmgr_jobs,
-				      slurm_unpack_stepmgr_job_info, xfree_ptr,
+				      slurm_unpack_stepmgr_job_info,
+				      (ListDelF) slurm_free_stepmgr_job_info,
 				      buffer, smsg->protocol_version))
 			goto unpack_error;
 	}
@@ -8125,6 +8246,29 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_het_step_id_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	het_step_id_msg_t *msg = smsg->data;
+
+	pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+}
+
+static int _unpack_het_step_id_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	het_step_id_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (unpack_step_id_members(&msg->step_id, buffer,
+				   smsg->protocol_version))
+		goto unpack_error;
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_het_step_id_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_reattach_tasks_request_msg(const slurm_msg_t *smsg,
 					     buf_t *buffer)
 {
@@ -9736,7 +9880,15 @@ static void _pack_job_state_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_state_request_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->count, buffer);
+		for (int i = 0; i < msg->count; i++) {
+			pack_step_id(&msg->job_ids[i].step_id, buffer,
+				     smsg->protocol_version);
+			pack32(msg->job_ids[i].array_task_id, buffer);
+			pack32(msg->job_ids[i].het_job_offset, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(msg->count, buffer);
 		for (int i = 0; i < msg->count; i++) {
 			pack32(msg->job_ids[i].step_id.job_id, buffer);
@@ -9757,7 +9909,31 @@ static int _unpack_job_state_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_state_request_msg_t *js = xmalloc(sizeof(*js));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&js->count, buffer);
+
+		if (js->count >= MAX_JOB_ID)
+			goto unpack_error;
+
+		if (js->count &&
+		    !(js->job_ids =
+			      try_xcalloc(js->count, sizeof(*js->job_ids))))
+			goto unpack_error;
+
+		for (int i = 0; i < js->count; i++) {
+			/*
+			 * Do not use slurm_unpack_selected_step to avoid
+			 * unpacking array_bitmap which is unused in this rpc.
+			 */
+			js->job_ids[i] = (slurm_selected_step_t)
+				SLURM_SELECTED_STEP_INITIALIZER;
+			safe_unpack_step_id_members(&js->job_ids[i].step_id,
+						    buffer,
+						    smsg->protocol_version);
+			safe_unpack32(&js->job_ids[i].array_task_id, buffer);
+			safe_unpack32(&js->job_ids[i].het_job_offset, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack32(&js->count, buffer);
 
 		if (js->count >= MAX_JOB_ID)
@@ -13907,6 +14083,10 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_SLURM_REROUTE_MSG:
 		_pack_reroute_msg(msg, buffer);
 		break;
+	case REQUEST_HET_STEP_ID:
+	case RESPONSE_HET_STEP_ID:
+		_pack_het_step_id_msg(msg, buffer);
+		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		_pack_job_step_create_response_msg(msg, buffer);
 		break;
@@ -14449,6 +14629,10 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
 		rc = _unpack_reroute_msg(msg, buffer);
+		break;
+	case REQUEST_HET_STEP_ID:
+	case RESPONSE_HET_STEP_ID:
+		rc = _unpack_het_step_id_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		rc = _unpack_job_step_create_response_msg(msg, buffer);

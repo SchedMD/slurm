@@ -45,6 +45,7 @@
 #include <limits.h>
 #include <netdb.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/eventfd.h>
@@ -1916,17 +1917,47 @@ static int _run_srun_script (srun_job_t *job, char *script)
 	/* NOTREACHED */
 }
 
-static char *_build_key(char *base, int het_job_offset)
+static void _setenvf_key(const char *key, const char *fmt, va_list ap)
+{
+	va_list ap_copy;
+
+	if (getenv(key))
+		return;
+
+	va_copy(ap_copy, ap);
+	if (vsetenvf(NULL, key, fmt, ap_copy) < 0)
+		error("unable to set %s in environment", key);
+	va_end(ap_copy);
+}
+
+/*
+ * Set env var <base> if not part of a hetjob. For hetjob components emit
+ * both <base>_HET_GROUP_<N> and the legacy <base>_PACK_GROUP_<N>
+ * Skips a key when it is already set in the environment.
+ */
+__attribute__((format(printf, 3, 4))) static void _setenvf_het(
+	char *base, int het_job_offset, const char *fmt, ...)
 {
 	char *key = NULL;
+	va_list ap;
 
 	/* If we are a local_het_step we treat it like a normal step */
-	if (local_het_step || (het_job_offset == -1))
-		key = xstrdup(base);
-	else
-		xstrfmtcat(key, "%s_PACK_GROUP_%d", base, het_job_offset);
+	if (local_het_step || (het_job_offset == -1)) {
+		va_start(ap, fmt);
+		_setenvf_key(base, fmt, ap);
+		va_end(ap);
+		return;
+	}
 
-	return key;
+	va_start(ap, fmt);
+	xstrfmtcat(key, "%s_HET_GROUP_%d", base, het_job_offset);
+	_setenvf_key(key, fmt, ap);
+	xfree(key);
+
+	xstrfmtcat(key, "%s_PACK_GROUP_%d", base, het_job_offset);
+	_setenvf_key(key, fmt, ap);
+	xfree(key);
+	va_end(ap);
 }
 
 static void _set_env_vars(resource_allocation_response_msg_t *resp,
@@ -1935,16 +1966,15 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 	char *key, *value, *tmp;
 	int i;
 
-	key = _build_key("SLURM_JOB_CPUS_PER_NODE", het_job_offset);
-	if (!getenv(key)) {
-		tmp = uint32_compressed_to_str(resp->num_cpu_groups,
-					       resp->cpus_per_node,
-					       resp->cpu_count_reps);
-		if (setenvf(NULL, key, "%s", tmp) < 0)
-			error("unable to set %s in environment", key);
-		xfree(tmp);
-	}
-	xfree(key);
+	tmp = uint32_compressed_to_str(resp->num_cpu_groups,
+				       resp->cpus_per_node,
+				       resp->cpu_count_reps);
+	_setenvf_het("SLURM_JOB_CPUS_PER_NODE", het_job_offset, "%s", tmp);
+	xfree(tmp);
+
+	if (resp->stepmgr_host)
+		_setenvf_het("SLURM_STEPMGR", het_job_offset, "%s",
+			     resp->stepmgr_host);
 
 	if (resp->env_size) {	/* Used to set Burst Buffer environment */
 		for (i = 0; i < resp->env_size; i++) {
@@ -1962,30 +1992,17 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 
 	if (resp->pn_min_memory & MEM_PER_CPU) {
 		uint64_t tmp_mem = resp->pn_min_memory & (~MEM_PER_CPU);
-		key = _build_key("SLURM_MEM_PER_CPU", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%"PRIu64, tmp_mem) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
+		_setenvf_het("SLURM_MEM_PER_CPU", het_job_offset, "%" PRIu64,
+			     tmp_mem);
 	} else if (resp->pn_min_memory) {
 		uint64_t tmp_mem = resp->pn_min_memory;
-		key = _build_key("SLURM_MEM_PER_NODE", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%"PRIu64, tmp_mem) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
+		_setenvf_het("SLURM_MEM_PER_NODE", het_job_offset, "%" PRIu64,
+			     tmp_mem);
 	}
 
-	if (resp->segment_size) {
-		key = _build_key("SLURM_JOB_SEGMENT_SIZE", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%u", resp->segment_size) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
-	}
+	if (resp->segment_size)
+		_setenvf_het("SLURM_JOB_SEGMENT_SIZE", het_job_offset, "%u",
+			     resp->segment_size);
 
 	return;
 }
@@ -1996,55 +2013,25 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 			   int het_job_offset)
 {
-	char *key;
+	if (resp->account)
+		_setenvf_het("SLURM_JOB_ACCOUNT", het_job_offset, "%s",
+			     resp->account);
 
-	if (resp->account) {
-		key = _build_key("SLURM_JOB_ACCOUNT", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%s", resp->account) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
-	}
+	_setenvf_het("SLURM_JOB_ID", het_job_offset, "%u",
+		     resp->step_id.job_id);
 
-	key = _build_key("SLURM_JOB_ID", het_job_offset);
-	if (!getenv(key) &&
-	    (setenvf(NULL, key, "%u", resp->step_id.job_id) < 0)) {
-		error("unable to set %s in environment", key);
-	}
-	xfree(key);
+	_setenvf_het("SLURM_JOB_NODELIST", het_job_offset, "%s",
+		     resp->node_list);
 
-	key = _build_key("SLURM_JOB_NODELIST", het_job_offset);
-	if (!getenv(key) &&
-	    (setenvf(NULL, key, "%s", resp->node_list) < 0)) {
-		error("unable to set %s in environment", key);
-	}
-	xfree(key);
+	_setenvf_het("SLURM_JOB_PARTITION", het_job_offset, "%s",
+		     resp->partition);
 
-	key = _build_key("SLURM_JOB_PARTITION", het_job_offset);
-	if (!getenv(key) &&
-	    (setenvf(NULL, key, "%s", resp->partition) < 0)) {
-		error("unable to set %s in environment", key);
-	}
-	xfree(key);
+	if (resp->qos)
+		_setenvf_het("SLURM_JOB_QOS", het_job_offset, "%s", resp->qos);
 
-	if (resp->qos) {
-		key = _build_key("SLURM_JOB_QOS", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%s", resp->qos) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
-	}
-
-	if (resp->resv_name) {
-		key = _build_key("SLURM_JOB_RESERVATION", het_job_offset);
-		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%s", resp->resv_name) < 0)) {
-			error("unable to set %s in environment", key);
-		}
-		xfree(key);
-	}
+	if (resp->resv_name)
+		_setenvf_het("SLURM_JOB_RESERVATION", het_job_offset, "%s",
+			     resp->resv_name);
 }
 
 /* Set SLURM_RLIMIT_* environment variables with current resource

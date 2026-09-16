@@ -58,6 +58,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -813,6 +814,44 @@ static int _job_will_run_cluster(job_desc_msg_t *req,
 }
 
 /*
+ * Look up SLURM_STEPMGR_HET_GROUP_<N> by matching job_id against
+ * SLURM_JOB_ID_HET_GROUP_<N>. Returns NULL when called outside a hetjob
+ * allocation or when no component matches.
+ */
+static char *_get_het_stepmgr_env_for_jobid(uint32_t job_id)
+{
+	char *het_size_env, *mgr_env = NULL;
+	uint32_t het_size = 0;
+
+	het_size_env = getenv("SLURM_HET_SIZE");
+	if (!het_size_env)
+		return NULL;
+
+	if (parse_uint32(het_size_env, &het_size) || (het_size < 2))
+		return NULL;
+
+	for (uint32_t i = 0; i < het_size; i++) {
+		char *name = NULL, *id_str;
+		uint32_t comp_id;
+
+		xstrfmtcat(name, "SLURM_JOB_ID_HET_GROUP_%u", i);
+		id_str = getenv(name);
+		xfree(name);
+		if (!id_str || parse_uint32(id_str, &comp_id))
+			continue;
+		if (comp_id != job_id)
+			continue;
+
+		xstrfmtcat(name, "SLURM_STEPMGR_HET_GROUP_%u", i);
+		mgr_env = xstrdup(getenv(name));
+		xfree(name);
+		break;
+	}
+
+	return mgr_env;
+}
+
+/*
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
@@ -836,7 +875,10 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 
 re_send:
 	/* xstrdup() to be consistent with reroute and be able to free. */
-	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
+	stepmgr_nodename = _get_het_stepmgr_env_for_jobid(req->step_id.job_id);
+	if (!stepmgr_nodename)
+		stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR"));
+	if (stepmgr_nodename) {
 trystepmgr:
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
@@ -846,7 +888,7 @@ trystepmgr:
 			 * The node isn't in the conf, see if the
 			 * controller has an address for it.
 			 */
-			slurm_node_alias_addrs_t *alias_addrs;
+			slurm_node_alias_addrs_t *alias_addrs = NULL;
 			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
 							&alias_addrs)) {
 				add_remote_nodes_to_conf_tbls(
@@ -873,6 +915,7 @@ trystepmgr:
 		xfree(stepmgr_nodename);
 		stepmgr_nodename = rr_msg->stepmgr;
 		rr_msg->stepmgr = NULL;
+		slurm_free_msg_members(&resp_msg);
 		if (stepmgr_nodename)
 			goto trystepmgr;
 		else
@@ -951,12 +994,17 @@ extern int (slurm_allocation_lookup)(slurm_step_id_t step_id,
 	return SLURM_SUCCESS;
 }
 
-extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
+/*
+ * Send REQUEST_HET_JOB_ALLOC_INFO to a single target and merge the response
+ * list into *info. If stepmgr_nodename is NULL, queries slurmctld.
+ */
+static int _het_job_lookup_one(char *stepmgr_nodename, slurm_step_id_t step_id,
+			       list_t **info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
+	list_t *resp_list;
 	slurm_msg_t resp_msg;
-	char *stepmgr_nodename = NULL;
 
 	memset(&req, 0, sizeof(req));
 	req.step_id = step_id;
@@ -964,9 +1012,9 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_HET_JOB_ALLOC_INFO;
-	req_msg.data     = &req;
+	req_msg.data = &req;
 
-	if ((stepmgr_nodename = xstrdup(getenv("SLURM_STEPMGR")))) {
+	if (stepmgr_nodename) {
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
 		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
@@ -975,7 +1023,7 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 			 * The node isn't in the conf, see if the
 			 * controller has an address for it.
 			 */
-			slurm_node_alias_addrs_t *alias_addrs;
+			slurm_node_alias_addrs_t *alias_addrs = NULL;
 			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
 							&alias_addrs)) {
 				add_remote_nodes_to_conf_tbls(
@@ -986,7 +1034,6 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
 					    req_msg.flags);
 		}
-		xfree(stepmgr_nodename);
 
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
 			return SLURM_ERROR;
@@ -995,17 +1042,21 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 		return SLURM_ERROR;
 	}
 
-	req.req_cluster = NULL;
-
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
 			return SLURM_ERROR;
-		*info = NULL;
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
-		*info = resp_msg.data;
-		return SLURM_SUCCESS;
+		resp_list = resp_msg.data;
+		if (!(*info)) {
+			*info = resp_list;
+			resp_list = NULL;
+		} else {
+			list_transfer(*info, resp_list);
+		}
+
+		FREE_NULL_LIST(resp_list);
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
@@ -1013,6 +1064,62 @@ extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern int(slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
+{
+	char *het_size_env, *stepmgr_nodename = NULL;
+	uint32_t het_size = 0;
+	int rc = SLURM_SUCCESS;
+
+	*info = NULL;
+
+	/*
+	 * For stepmgr het jobs each component's stepmgr only knows its own
+	 * job_record_t. Fan out one REQUEST_HET_JOB_ALLOC_INFO per component
+	 * using SLURM_STEPMGR_HET_GROUP_<N> / SLURM_JOB_ID_HET_GROUP_<N> and
+	 * merge the responses.
+	 */
+	het_size_env = getenv("SLURM_HET_SIZE");
+	if (het_size_env)
+		parse_uint32(het_size_env, &het_size);
+	if ((het_size > 1) && getenv("SLURM_STEPMGR_HET_GROUP_0")) {
+		for (uint32_t i = 0; i < het_size; i++) {
+			slurm_step_id_t het_id = SLURM_STEP_ID_INITIALIZER;
+			char *job_id_str;
+			char *name = NULL;
+			char *node;
+
+			xstrfmtcat(name, "SLURM_STEPMGR_HET_GROUP_%u", i);
+			node = getenv(name);
+			xfree(name);
+			xstrfmtcat(name, "SLURM_JOB_ID_HET_GROUP_%u", i);
+			job_id_str = getenv(name);
+			xfree(name);
+			if (!node || !job_id_str ||
+			    parse_uint32(job_id_str, &het_id.job_id)) {
+				FREE_NULL_LIST(*info);
+				return SLURM_ERROR;
+			}
+
+			rc = _het_job_lookup_one(node, het_id, info);
+			if (rc != SLURM_SUCCESS) {
+				FREE_NULL_LIST(*info);
+				return rc;
+			}
+		}
+
+		return SLURM_SUCCESS;
+	}
+
+	stepmgr_nodename = getenv("SLURM_STEPMGR");
+
+	rc = _het_job_lookup_one(stepmgr_nodename, step_id, info);
+
+	if (rc != SLURM_SUCCESS)
+		FREE_NULL_LIST(*info);
+
+	return rc;
 }
 
 /*
@@ -1045,7 +1152,7 @@ trystepmgr:
 			 * The node isn't in the conf, see if the
 			 * controller has an address for it.
 			 */
-			slurm_node_alias_addrs_t *alias_addrs;
+			slurm_node_alias_addrs_t *alias_addrs = NULL;
 			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
 							&alias_addrs)) {
 				add_remote_nodes_to_conf_tbls(

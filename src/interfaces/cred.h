@@ -108,6 +108,11 @@ typedef struct {
 	time_t job_end_time;            /* UNIX timestamp for job end time */
 	uint16_t job_exclusive; /* JOB_EXCLUSIVE_NONE/NODE/USER/MCS/TOPO */
 	char *job_extra;		/* Extra - arbitrary string */
+	char *job_het_stepmgr_host; /* for a stepmgr-enabled hetjob follower,
+				     * the het leader's batch_host (== the
+				     * het leader's stepmgr); NULL otherwise
+				     * or when not known at cred create
+				     * time */
 	char *job_hostlist;		/* list of nodes allocated to JOB */
 	char *job_licenses;		/* Licenses allocated to job */
 	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
@@ -123,7 +128,7 @@ typedef struct {
 	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t job_restart_cnt;	/* restart count */
 	char *job_selinux_context;
-	time_t job_start_time;          /* UNIX timestamp for job start time */
+	time_t job_start_time; /* UNIX timestamp for job start time */
 	char *job_std_err;
 	char *job_std_in;
 	char *job_std_out;
