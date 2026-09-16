@@ -857,6 +857,45 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 }
 
 /*
+ * Most devices of this GRES the job can take on this node for a per-job
+ * request, before the restricted-core devices are taken off.
+ * IN sock_gres - job/node request specifications for this node
+ * IN tres_mc_ptr - job's multi-core options
+ * IN cpus_per_core - CPUs per core on this node
+ * IN total_cores - cores the job has on this node
+ * IN rem_nodes - count of nodes remaining to place resources on
+ * RET device count, which may be below 1 when gres_per_job < rem_nodes
+ */
+static int _job_max_gres(sock_gres_t *sock_gres, gres_mc_data_t *tres_mc_ptr,
+			 uint16_t cpus_per_core, uint32_t total_cores,
+			 int rem_nodes)
+{
+	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
+	uint16_t cpus_per_gres = 0;
+	int max_gres;
+
+	max_gres =
+		gres_js->gres_per_job - gres_js->total_gres - (rem_nodes - 1);
+	max_gres = MIN(max_gres, sock_gres->total_cnt);
+	if (gres_js->cpus_per_gres) {
+		cpus_per_gres = gres_js->cpus_per_gres;
+	} else if (gres_js->ntasks_per_gres &&
+		   (gres_js->ntasks_per_gres != NO_VAL16)) {
+		cpus_per_gres =
+			gres_js->ntasks_per_gres * tres_mc_ptr->cpus_per_task;
+	}
+	if (cpus_per_gres) {
+		if (tres_mc_ptr->threads_per_core)
+			cpus_per_core = MIN(cpus_per_core,
+					    tres_mc_ptr->threads_per_core);
+		max_gres = MIN(max_gres,
+			       ((total_cores * cpus_per_core) / cpus_per_gres));
+	}
+
+	return max_gres;
+}
+
+/*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-job resource specification. Use only socket-local GRES
  * node_inx IN - global node index
@@ -884,7 +923,6 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 	int alloc_gres_cnt = 0;
 	int max_gres, pick_gres;
 	int fini = 0;
-	uint16_t cpus_per_gres = 0;
 	float gres_needed_per_core;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
@@ -894,25 +932,9 @@ static int _set_job_bits1(int node_inx, int job_node_inx, int rem_nodes,
 	sock_cnt = sock_gres->sock_cnt;
 	if (job_node_inx == 0)
 		gres_js->total_gres = 0;
-	max_gres = gres_js->gres_per_job - gres_js->total_gres -
-		(rem_nodes - 1);
-	max_gres = MIN(max_gres, sock_gres->total_cnt);
+	max_gres = _job_max_gres(sock_gres, tres_mc_ptr, cpus_per_core,
+				 total_cores, rem_nodes);
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
-	if (gres_js->cpus_per_gres) {
-		cpus_per_gres = gres_js->cpus_per_gres;
-	} else if (gres_js->ntasks_per_gres &&
-		   (gres_js->ntasks_per_gres != NO_VAL16)) {
-		cpus_per_gres = gres_js->ntasks_per_gres *
-			tres_mc_ptr->cpus_per_task;
-	}
-	if (cpus_per_gres) {
-		if (tres_mc_ptr->threads_per_core)
-			cpus_per_core = MIN(cpus_per_core,
-					    tres_mc_ptr->threads_per_core);
-		max_gres = MIN(max_gres,
-			       ((total_cores * cpus_per_core) /
-				cpus_per_gres));
-	}
 	if (total_res_gres && (max_gres <= total_res_gres)) {
 		gres_js->total_gres += total_res_gres;
 		fini = 1;
