@@ -512,10 +512,19 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 		job_ptr->bit_flags |= TRES_STR_CALC;
 	}
 
-	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
-
-	if (IS_STEP_PENDING(step_ptr))
+	if (IS_STEP_PENDING(step_ptr)) {
+		/*
+		 * A placeholder torn down before it ever launched still has to
+		 * be reported, or a per-step wait on it only ever sees the
+		 * whole-set drain.  The push reads state; force it terminal
+		 * first, matching the signal path in _delete_pending_steps().
+		 */
+		_complete_unlaunched_step(step_ptr);
+		srun_step_drained(step_ptr);
 		return;
+	}
+
+	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
 	/*
 	 * Derived exit code is the highest exit code of srun steps, so we
