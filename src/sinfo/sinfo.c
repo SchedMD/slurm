@@ -914,7 +914,7 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 	    (node_ptr->port != sinfo_ptr->port))
 		return false;
 	if ((params.match_flags & MATCH_FLAG_VERSION) &&
-	    (node_ptr->version     != sinfo_ptr->version))
+	    xstrcmp(node_ptr->version, sinfo_ptr->version))
 		return false;
 
 	return true;
