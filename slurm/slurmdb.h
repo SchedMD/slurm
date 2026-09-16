@@ -1473,7 +1473,7 @@ typedef struct {
 typedef struct {
 	char *acct;
 	char *cluster;
-	uint32_t id;
+	uint32_t id; /* 0 when the row covers several associations */
 	uint32_t id_alt;
 	char *parent_acct;
 	list_t *tres_list; /* list of slurmdb_tres_rec_t *'s */
