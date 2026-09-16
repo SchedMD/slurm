@@ -20,6 +20,11 @@ def setup():
     )
     atf.require_version(
         (26, 11),
+        "bin/salloc",
+        reason="Issue 50190: --runtime plugin ownership added in 26.11",
+    )
+    atf.require_version(
+        (26, 11),
         "bin/sbatch",
         reason="Issue 50190: --runtime plugin ownership added in 26.11",
     )
@@ -34,6 +39,11 @@ def setup():
         reason="Issue 50190: squeue -O Runtime added in 26.11",
     )
     atf.require_auto_config("deletes oci.conf directly on teardown")
+    # salloc rejects --container without an interactive step to pass it to.
+    atf.require_config_parameter_includes("LaunchParameters", "use_interactive_step")
+    # A het job's components are co-scheduled, so a running one needs a node
+    # per component.
+    atf.require_nodes(2)
     atf.require_slurm_running()
 
 
@@ -135,6 +145,90 @@ def test_runtime_oci_uses_container(oci_enabled):
     atf.run_command_error(
         "srun --runtime=oci --container=invalid hostname", xfail=True, fatal=True
     )
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize(
+    "options,parameter,expected,inherited",
+    [
+        ("--runtime=oci", "Runtime", "runtime/oci", None),
+        (
+            "--container=/nonexistent/bundle",
+            "Container",
+            "/nonexistent/bundle",
+            None,
+        ),
+        ("--container-id=abc123", "ContainerID", "abc123", "abc123"),
+    ],
+    ids=["runtime", "container", "container-id"],
+)
+def test_hetjob_component_option_propagation(
+    command, options, parameter, expected, inherited
+):
+    """A heterogeneous component that omits an option records what that
+    option's propagation rule says, not whatever the previous component
+    asked for.
+
+    --runtime and --container are reset for each component, so the second
+    records neither. --container-id is propagated, so the second inherits
+    it. heterogeneous_jobs.html lists which options fall on which side.
+
+    Only an omitted option can inherit. A component that names the option
+    explicitly always wins, so giving every component its own value would
+    prove nothing either way.
+
+    The job is held and never launched, so this asserts on the submitted job
+    records. A component that asked for neither records neither - the runtime
+    falls back to DefRuntimePlugin later, when slurmstepd loads the plugin.
+    """
+
+    if command == "sbatch":
+        job_id = atf.submit_job_sbatch(
+            f"-N1 {options} --hold --wrap=true : -N1", fatal=True
+        )
+    else:
+        # A held salloc or srun never returns, so it has to be backgrounded.
+        job_id = atf.submit_job(
+            command,
+            f"-N1 {options} --hold : -N1",
+            "true",
+            background=True,
+            fatal=True,
+        )
+    jobs = list(atf.get_jobs(job_id, fatal=True).values())
+
+    assert len(jobs) == 2, "the het job should have two components"
+    components = {job["HetJobOffset"]: job for job in jobs}
+    assert (
+        components[0][parameter] == expected
+    ), f"component 0 should record the {parameter} it asked for"
+    assert (
+        components[1].get(parameter) == inherited
+    ), f"component 1 asked for no {parameter} and should record {inherited}"
+
+
+def test_hetjob_component_runtime_at_step_launch(oci_enabled):
+    """Each heterogeneous component launches its step under its own runtime.
+
+    With DefRuntimePlugin=runtime/none, the component naming --runtime=oci
+    engages its --container value and fails on an invalid bundle, while the
+    component naming no runtime ignores --container and succeeds. Exactly one
+    of the two steps failing is what separates per-component plugin selection
+    from either component's runtime being used for both.
+
+    The job runs, unlike the submission tests above, because the plugin is
+    chosen in slurmstepd rather than at submission.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
+
+    error = atf.run_command_error(
+        "srun -N1 --runtime=oci --container=invalid : -N1 --container=invalid true",
+        fatal=True,
+    )
+    assert (
+        error.count("Task launch for StepId=") == 1
+    ), "only the component that asked for runtime/oci should fail its step launch"
 
 
 def test_runtime_env_vars():

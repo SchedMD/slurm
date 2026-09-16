@@ -916,6 +916,7 @@ static slurm_cli_opt_t slurm_opt_container = {
 	.set_func = arg_set_container,
 	.get_func = arg_get_container,
 	.reset_func = arg_reset_container,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION(container_id);
@@ -977,6 +978,7 @@ static slurm_cli_opt_t slurm_opt_runtime = {
 	.set_func = arg_set_runtime,
 	.get_func = arg_get_runtime,
 	.reset_func = arg_reset_runtime,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION_SET(context);

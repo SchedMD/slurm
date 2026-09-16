@@ -105,12 +105,12 @@
 #define DEF_WORKPOOL_THREAD_COUNT 4
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
-			    slurm_msg_t **_msg);
+			     slurm_msg_t **_msg, int *runtime_idx);
 
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock, int rc);
 static void _got_ack_from_slurmd(int);
-static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
+static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg, int runtime_idx);
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(slurm_msg_t *msg, int rc);
 #endif
@@ -809,6 +809,7 @@ extern int main(int argc, char **argv)
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	slurm_addr_t *cli;
 	slurm_msg_t *msg;
+	int idx = RUNTIME_IDX_INVALID;
 	int rc = SLURM_SUCCESS;
 	bool only_mem = true;
 
@@ -827,7 +828,7 @@ extern int main(int argc, char **argv)
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg, &idx);
 
 	/*
 	 * auth/slurm calls conmgr_init and we need to apply conmgr params
@@ -866,7 +867,7 @@ extern int main(int argc, char **argv)
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
 	 * the new stepd_step_rec_t before continuing
 	 */
-	if (_step_setup(cli, msg) || _validate_step()) {
+	if (_step_setup(cli, msg, idx) || _validate_step()) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
@@ -977,7 +978,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	 */
 	proctrack_g_destroy(step->cont_id);
 
-	runtime_g_cleanup(conf, step);
+	runtime_g_cleanup(step->runtime_idx, conf, step);
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (namespace_g_stepd_delete(step))
@@ -1440,9 +1441,8 @@ static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
  *  This function handles the initialization information from slurmd
  *  sent by _send_slurmstepd_init() in src/slurmd/slurmd/req.c.
  */
-static int
-_init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
-		  slurm_msg_t **_msg)
+static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
+			     slurm_msg_t **_msg, int *runtime_idx)
 {
 	char *incoming_buffer = NULL;
 	buf_t *buffer;
@@ -1595,7 +1595,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (namespace_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS) ||
-	    runtime_g_init(runtime, RUNTIME_CTXT_SLURMSTEPD))
+	    runtime_g_init(runtime, RUNTIME_CTXT_SLURMSTEPD, runtime_idx))
 		fatal("Couldn't load all plugins");
 
 	/*
@@ -1651,7 +1651,7 @@ rwfail:
 	exit(1);
 }
 
-static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
+static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg, int runtime_idx)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1669,6 +1669,15 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
+
+	/*
+	 * The runtime does not change for the life of the step, so record it as
+	 * soon as the step record exists. The batch setup paths can fail with
+	 * the record still allocated, and stepd_cleanup() runs on it - it must
+	 * find the plugin that was loaded, not RUNTIME_IDX_INVALID.
+	 */
+	if (step)
+		step->runtime_idx = runtime_idx;
 
 	if (rc) {
 		error("%s: %s", __func__, slurm_strerror(rc));
@@ -1713,7 +1722,7 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 
 	set_msg_node_id();
 
-	if ((rc = runtime_g_setup(conf, step, cli, msg))) {
+	if ((rc = runtime_g_setup(step->runtime_idx, conf, step, cli, msg))) {
 		error("%s: runtime setup failed: %s",
 		      __func__, slurm_strerror(rc));
 		stepd_step_rec_destroy();

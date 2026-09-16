@@ -283,6 +283,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 	opt_dup->comment = xstrdup(opt.comment);
 	opt.constraint = NULL;		/* Moved by memcpy */
+	opt.container = NULL; /* Moved by memcpy */
 	opt_dup->context = xstrdup(opt.context);
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 	opt_dup->chdir = xstrdup(opt.chdir);
@@ -317,6 +318,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
 	opt_dup->qos = xstrdup(opt.qos);
 	opt_dup->reservation = xstrdup(opt.reservation);
+	opt.runtime = NULL; /* Moved by memcpy */
 	opt.spank_job_env = NULL;	/* Moved by memcpy */
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
