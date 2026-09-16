@@ -460,11 +460,6 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr; /* pointer to the partition record */
-	uint32_t pending_async_steps; /* count of async pending placeholders in
-				       * step_list; combined with a step_list
-				       * walk for running steps, gates swait.
-				       * Only maintained in stepmgr context;
-				       * always 0 elsewhere. DON'T PACK */
 	priority_mult_t *prio_mult;	/* priority based on requested partition
 					 * and qos */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
@@ -854,12 +849,14 @@ extern step_record_t *find_step_record(job_record_t *job_ptr,
 				       slurm_step_id_t *step_id);
 
 /*
- * Return true if the job has at least one step in JOB_RUNNING state (with a
- * non-special step_id and not JOB_COMPLETING).
+ * Return true if the job has at least one regular step that a steps-drained
+ * wait must block on: any non-completing step with a real id. Pending
+ * placeholders that reserved a real id are exactly the ones the stepmgr
+ * will create at wake and deliver itself.
  * IN job_ptr - pointer to the job record
- * RET true if a running step is present, false otherwise
+ * RET true if a blocking step is present, false otherwise
  */
-extern bool job_has_running_step(job_record_t *job_ptr);
+extern bool job_has_blocking_step(job_record_t *job_ptr);
 
 /*
  * Realloc and possibly update a job_ptr->limit_set->tres array.

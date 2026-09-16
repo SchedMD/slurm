@@ -611,9 +611,7 @@ extern void srun_steps_drained(job_record_t *job_ptr)
 
 	if (!job_ptr->steps_drained_subs)
 		return;
-	if (job_has_running_step(job_ptr))
-		return;
-	if (job_ptr->pending_async_steps)
+	if (job_has_blocking_step(job_ptr))
 		return;
 
 	list_delete_all(job_ptr->steps_drained_subs, _dispatch_steps_drained,

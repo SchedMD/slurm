@@ -373,7 +373,6 @@ static bool _build_pending_step(job_record_t *job_ptr,
 
 		jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
 					     step_ptr);
-		job_ptr->pending_async_steps++;
 	} else {
 		/*
 		 * Assign a real id only when the peer can round-trip it on a
@@ -1192,8 +1191,6 @@ static void _launch_in_stepmgr(job_record_t *job_ptr,
 		 */
 		slurm_free_job_step_create_request_msg(step_req);
 		pend_step_ptr->step_req = NULL;
-		if (job_ptr->pending_async_steps)
-			job_ptr->pending_async_steps--;
 	}
 }
 
@@ -1305,8 +1302,7 @@ static int _wake_steps(void *x, void *arg)
 		 * failed push reaps it).  _step_create() copied everything it
 		 * needs out of step_req, so free it and clear the alias: that
 		 * way free_step_record(), run when the placeholder unlinks
-		 * below, neither double-frees it nor touches
-		 * pending_async_steps.
+		 * below, does not double-free it.
 		 */
 		new_step_ptr->state |= JOB_CONFIGURING;
 		if (!srun_step_alloc(new_step_ptr, step_resp))
