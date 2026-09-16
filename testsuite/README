@@ -1185,3 +1185,7 @@ test_168_1   Validate sbatch heterogeneous job environment variables.
 test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
 test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
 test_168_4   Validate scontrol show job fields for heterogeneous job components.
+
+test_169_#   Testing of scrontab options.
+=========================================
+test_169_1   Test that scrontab builds a job description from a #SCRON line
