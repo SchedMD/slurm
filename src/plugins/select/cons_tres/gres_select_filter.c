@@ -633,6 +633,27 @@ static int _compare_gres_by_links(const void *x, const void *y)
 	return 0;
 }
 
+/*
+ * Allocate the arrays that make the loop pick the best linked devices. Left
+ * NULL when the node has no usable link matrix, so the loop uses index order.
+ * IN gres_ns - node GRES state providing the links_cnt matrix
+ * IN gres_cnt - number of devices on this node
+ * OUT links_cnt - per device count of links to the devices already picked
+ * OUT sorted_gres - device indexes, in the order to pick them
+ */
+static void _init_links_sort(gres_node_state_t *gres_ns, int gres_cnt,
+			     int **links_cnt, int **sorted_gres)
+{
+	if (gres_ns->link_len != gres_cnt)
+		return;
+
+	*links_cnt = xcalloc(gres_cnt, sizeof(int));
+	*sorted_gres = xcalloc(gres_cnt, sizeof(int));
+	/* Add index for each gres. They will be sorted later */
+	for (int g = 0; g < gres_cnt; g++)
+		(*sorted_gres)[g] = g;
+}
+
 static void _update_and_sort_by_links(int *sorted_gres, int *links_cnt,
 				      int gres_inx, int gres_cnt,
 				      gres_node_state_t *gres_ns)
@@ -845,7 +866,7 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
-	int g, s;
+	int s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int *links_cnt = NULL, *sorted_gres = NULL;
@@ -857,14 +878,7 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 
-	if (gres_ns->link_len == gres_cnt) {
-		links_cnt = xcalloc(gres_cnt, sizeof(int));
-		sorted_gres = xcalloc(gres_cnt, sizeof(int));
-		/* Add index for each gres. They will be sorted later */
-		for (g = 0; g < gres_cnt; g++) {
-			sorted_gres[g] = g;
-		}
-	}
+	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
 
 	gres_needed = used_sock_cnt * gres_js->gres_per_socket;
 	gres_needed -= total_res_gres;
@@ -1174,15 +1188,9 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
 	 * maximizing link count (connectivity of the GRES).
 	 */
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
-	if ((gres_js->gres_per_job > gres_js->total_gres) &&
-	    (gres_ns->link_len == gres_cnt)) {
-		links_cnt = xcalloc(gres_cnt, sizeof(int));
-		sorted_gres = xcalloc(gres_cnt, sizeof(int));
-		/* Add index for each gres. They will be sorted later */
-		for (g = 0; g < gres_cnt; g++) {
-			sorted_gres[g] = g;
-		}
-
+	if (gres_js->gres_per_job > gres_js->total_gres)
+		_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
+	if (sorted_gres) {
 		/* Add links for all gres already selected */
 		for (g = 0; g < gres_cnt; g++) {
 			if (!bit_test(gres_js->gres_bit_select[node_inx], g))
@@ -1249,7 +1257,7 @@ static int _set_node_bits(int node_inx, int job_node_inx,
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
-	int g, s;
+	int s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	uint64_t gres_needed;
@@ -1267,14 +1275,7 @@ static int _set_node_bits(int node_inx, int job_node_inx,
 	if (!gres_needed)
 		return SLURM_SUCCESS;
 
-	if (gres_ns->link_len == gres_cnt) {
-		links_cnt = xcalloc(gres_cnt, sizeof(int));
-		sorted_gres = xcalloc(gres_cnt, sizeof(int));
-		/* Add index for each gres. They will be sorted later */
-		for (g = 0; g < gres_cnt; g++) {
-			sorted_gres[g] = g;
-		}
-	}
+	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
 
 	/*
 	 * Now pick specific GRES for these sockets.
@@ -1350,7 +1351,7 @@ static int _set_task_bits(int node_inx, sock_gres_t *sock_gres, uint32_t job_id,
 			  bool enforce_binding, gres_links_mode_t links_mode)
 {
 	uint16_t sock_cnt = 0;
-	int gres_cnt, g, s;
+	int gres_cnt, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	uint64_t gres_needed, sock_gres_needed;
@@ -1368,14 +1369,7 @@ static int _set_task_bits(int node_inx, sock_gres_t *sock_gres, uint32_t job_id,
 		return ESLURM_INVALID_GRES;
 	}
 
-	if (gres_ns->link_len == gres_cnt) {
-		links_cnt = xcalloc(gres_cnt, sizeof(int));
-		sorted_gres = xcalloc(gres_cnt, sizeof(int));
-		/* Add index for each gres. They will be sorted later */
-		for (g = 0; g < gres_cnt; g++) {
-			sorted_gres[g] = g;
-		}
-	}
+	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
 
 	gres_needed = _get_task_cnt_node(tasks_per_socket, sock_cnt) *
 		gres_js->gres_per_task;
@@ -1773,14 +1767,7 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 			(*sock_with_res_cnt)++;
 	}
 
-	if (gres_ns->link_len == gres_cnt) {
-		links_cnt = xcalloc(gres_cnt, sizeof(int));
-		sorted_gres = xcalloc(gres_cnt, sizeof(int));
-		/* Add index for each gres. They will be sorted later */
-		for (int g = 0; g < gres_cnt; g++) {
-			sorted_gres[g] = g;
-		}
-	}
+	_init_links_sort(gres_ns, gres_cnt, &links_cnt, &sorted_gres);
 
 	/*
 	 * Now pick specific GRES for these sockets.
