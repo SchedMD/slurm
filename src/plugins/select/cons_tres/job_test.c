@@ -962,6 +962,47 @@ static bool _is_preemptable(job_record_t *job_ptr, list_t *preemptee_candidates)
 }
 
 /*
+ * Topology-agnostic check if job can use the single-node fast path that
+ * bypasses topology evaluation.
+ *
+ * IN topo_eval->
+ *  IN cr_type - allocation type (sockets, cores, etc.)
+ *  IN job_ptr - pointer to the job requesting resources
+ *  IN prefer_alloc_nodes - prefer use of already allocated nodes
+ *  IN req_nodes - number of requested nodes
+ * RET true if the fast path is allowed, false if full topology evaluation
+ *     is required even for single-node jobs.
+ */
+static bool _allow_fast_path(topology_eval_t *topo_eval)
+{
+	/*
+	 * Skip the single-node job scheduling path IFF:
+	 *  LLN is enabled globally or on the job's partition
+	 *  bf_busy_nodes is enabled
+	 *  pack_serial_at_end is enabled
+	 * The logic for these parameters is not optimized for
+	 * single-node jobs, so we want to fall through to the standard
+	 * scheduling path.
+	 *
+	 * These conditions are a copy of the dispatch ladder in eval_nodes()
+	 * (src/plugins/topology/common/eval_nodes.c) and have to stay in step
+	 * with it. An option added to that ladder and not added here is
+	 * silently skipped for single-node jobs, which is the regression this
+	 * check exists to undo.
+	 */
+	if ((topo_eval->prefer_alloc_nodes &&
+	     !topo_eval->job_ptr->details->contiguous) ||
+	    ((topo_eval->cr_type & SELECT_LLN) ||
+	     (topo_eval->job_ptr->part_ptr &&
+	      (topo_eval->job_ptr->part_ptr->flags & PART_FLAG_LLN))) ||
+	    (pack_serial_at_end &&
+	     (topo_eval->job_ptr->details->min_cpus == 1) &&
+	     (topo_eval->req_nodes == 1)))
+		return false;
+	return true;
+}
+
+/*
  * Select the best set of resources for the given job
  * IN: job_ptr      - pointer to the job requesting resources
  * IN: min_nodes    - minimum number of nodes required
@@ -1028,7 +1069,8 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 		       topo_eval.node_map, topo_eval.avail_core);
 
 	if ((topo_eval.max_nodes == 1) &&
-	    topology_g_allow_one_node(job_ptr->part_ptr->topology_idx)) {
+	    topology_g_allow_one_node(job_ptr->part_ptr->topology_idx) &&
+	    _allow_fast_path(&topo_eval)) {
 		rc = _get_one_res(&topo_eval, node_usage, test_only, will_run,
 				  part_core_map, resv_exc_ptr);
 		goto sync;
