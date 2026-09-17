@@ -593,6 +593,17 @@ extern int slurm_conf_get_ctld_addr(const char *node_name,
 				    slurm_addr_t *address);
 
 /*
+ * Report whether node_name is resolved through the local resolver rather than
+ * through an address the controller distributed.
+ *
+ * IN node_name - NodeName to check
+ * RET true if the local resolver is authoritative for node_name
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern bool slurm_conf_resolve_locally(const char *node_name);
+
+/*
  * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.
  *
  * IN nodeline - NodeName= line string.

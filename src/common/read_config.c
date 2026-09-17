@@ -2844,6 +2844,21 @@ extern int slurm_conf_get_ctld_addr(const char *node_name,
 	return rc;
 }
 
+extern bool slurm_conf_resolve_locally(const char *node_name)
+{
+	names_ll_t *p;
+	bool resolve_locally = false;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	p = _find_alias(node_name);
+	if (p)
+		resolve_locally = p->resolve_locally;
+	slurm_conf_unlock();
+
+	return resolve_locally;
+}
+
 extern int slurm_conf_check_addr(const char *node_name, bool *dynamic)
 {
 	int idx;

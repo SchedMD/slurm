@@ -2151,7 +2151,10 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 
 	if (!(mode & GETHOST_NOT_MATCH_PID) && !pid_match)
 		debug("%s: no pid_match", __func__);
-	else if (nodename && (!slurm_conf_get_addr(nodename, &addr, 0))) {
+	else if (nodename && slurm_conf_resolve_locally(nodename)) {
+		debug("%s: %s is resolved through the system resolver",
+		      __func__, nodename);
+	} else if (nodename && (!slurm_conf_get_addr(nodename, &addr, 0))) {
 		char *tmp_str;
 
 		found = 1;
