@@ -13,6 +13,11 @@ table, so this covers filtering reservations by node across such a change. Once
 a reservation keeps a single record, that record can be older than any snapshot
 a query looks at. Both consumers of that filter are covered, along with a
 reservation that has not started yet, which no snapshot can describe.
+
+Reservations whose association list denies every user are covered as well,
+since the list that gets stored with the record is then empty. So is a change
+to those denials alone on a started reservation, which the stored list cannot
+show but which must still add a record.
 """
 
 import os
@@ -104,6 +109,54 @@ def create_reservation(request, resv_node):
 
 
 @pytest.fixture
+def assoc_for_test_user():
+    """Gives the test user an association for a reservation to record.
+
+    Only users that have one are recorded with a reservation, so without this
+    a deny-only reservation has no list for the denials to be taken out of,
+    and the code that takes them out never runs at all.
+    """
+    slurm_user = atf.properties["slurm-user"]
+    test_user = atf.properties["test-user"]
+    account = f"acct_{test_name}"
+
+    atf.run_command(
+        f"sacctmgr -i add account {account}",
+        user=slurm_user,
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i add user {test_user} account={account}",
+        user=slurm_user,
+        fatal=True,
+    )
+
+    # A reservation records the associations that slurmctld knows of, so wait
+    # for the new one to reach it before any reservation is created.
+    for _ in atf.timer(fatal=True):
+        if account in atf.run_command_output(
+            f"scontrol show assoc_mgr users={test_user} flags=assoc",
+            quiet=True,
+        ):
+            break
+
+    yield
+
+    atf.run_command(
+        f"sacctmgr -i remove user {test_user} account={account}",
+        user=slurm_user,
+        fatal=True,
+        quiet=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i remove account {account}",
+        user=slurm_user,
+        fatal=True,
+        quiet=True,
+    )
+
+
+@pytest.fixture
 def churn_dynamic_node():
     slurm_user = atf.properties["slurm-user"]
 
@@ -168,6 +221,21 @@ def get_dbd_resv_rows_for_nodes(res_name, nodes, cluster, end=None):
         f"sacctmgr -Pn show reservation names={res_name} nodes={nodes} "
         f"clusters={cluster} start=now {f'end={end} ' if end else ''}"
         "format=name,start,nodenames",
+        fatal=True,
+    )
+    return [line for line in output.splitlines() if line.strip()]
+
+
+def get_dbd_resv_assocs(res_name):
+    """One output line per resv_table row, holding its association list.
+
+    The list is empty both for a reservation that never had one and for one
+    whose entries were all denials, so telling those apart takes a
+    reservation that is known to have a non-empty list to compare against.
+    """
+    output = atf.run_command_output(
+        f"sacctmgr -Pn show reservation names={res_name} "
+        "start=now-5minutes format=name,associations",
         fatal=True,
     )
     return [line for line in output.splitlines() if line.strip()]
@@ -365,4 +433,101 @@ def test_node_filter_on_pending_reservation(
     assert len(rows) == 0, (
         f"Reservation {res_name} starts in the future, so it should not be "
         f"matched by a query period ending now, got: {rows}"
+    )
+
+
+def test_deny_only_reservation_record(create_reservation, assoc_for_test_user):
+    """A reservation whose association list is entirely denials is recorded."""
+
+    test_user = atf.properties["test-user"]
+
+    # An allowed user is recorded as an association. This is the control for
+    # the deny-only reservation below, whose list is empty because the
+    # denials were taken out of it rather than because it never had one.
+    allow_name = create_reservation()
+    for _ in atf.timer(fatal=True):
+        allow_rows = get_dbd_resv_assocs(allow_name)
+        if len(allow_rows) == 1:
+            break
+    assert allow_rows != [f"{allow_name}|"], (
+        f"Reservation {allow_name} allows {test_user}, who has an "
+        f"association, so one should be recorded with it, got: {allow_rows}"
+    )
+
+    # A deny-only user list leaves nothing behind once the denials are removed
+    # from the association list that is stored with the record, which used to
+    # run the length of that list negative.
+    deny_name = create_reservation(user=f"-{test_user}")
+
+    assert (
+        atf.get_reservation_parameter(deny_name, "Users") == f"-{test_user}"
+    ), f"Reservation {deny_name} should deny {test_user}"
+
+    for _ in atf.timer(fatal=True):
+        deny_rows = get_dbd_resv_assocs(deny_name)
+        if len(deny_rows) == 1:
+            break
+    assert deny_rows == [f"{deny_name}|"], (
+        f"Reservation {deny_name} only denies {test_user}, so its recorded "
+        f"association list should be empty, got: {deny_rows}"
+    )
+
+
+def test_deny_change_adds_record(create_reservation, assoc_for_test_user):
+    """A change to the users a started reservation denies must add a record."""
+
+    slurm_user = atf.properties["slurm-user"]
+    test_user = atf.properties["test-user"]
+
+    # root has an association on every cluster, so denying it puts an id in
+    # the association list slurmctld keeps, even though the list stored with
+    # the record leaves denials out.
+    res_name = create_reservation(user="-root")
+
+    # Giving an end keeps a row that starts in the current second in view.
+    # Without one the query period ends now, and a record that the update
+    # below starts now would be missing from a read made in the same second.
+    for _ in atf.timer(fatal=True):
+        rows = get_dbd_resv_rows(res_name, end="now+1hour")
+        if len(rows) == 1:
+            break
+    initial_rows = rows
+    initial_start = rows[0].split("|")[1]
+
+    # A record is keyed on a start time in whole seconds, so a change in the
+    # same second as the start would update the record instead.
+    time.sleep(2)
+
+    # On a deny list, -user adds the user to it.
+    atf.run_command(
+        f"scontrol update reservationname={res_name} users=-{test_user}",
+        user=slurm_user,
+        fatal=True,
+    )
+    assert (
+        atf.get_reservation_parameter(res_name, "Users") == f"-root,-{test_user}"
+    ), f"Reservation {res_name} should deny root and {test_user}"
+
+    # slurmctld counts a change to the denied users as a change and moves the
+    # accounting start of a started reservation to now, while the stored
+    # record sees nothing different. Updating that record in place would move
+    # its start forward too, losing the time it had already covered, so either
+    # a new record or a moved start ends the wait, and only the first is right.
+    for _ in atf.timer(fatal=True):
+        rows = get_dbd_resv_rows(res_name, end="now+1hour")
+        if rows != initial_rows:
+            break
+    assert len(rows) == 2, (
+        f"Changing the users started reservation {res_name} denies should "
+        f"close its accounting record and add one more, got: {rows} "
+        f"(was {initial_rows})"
+    )
+
+    # scontrol's StartTime is the first start and does not move, so the check
+    # that no time was lost is made on the records themselves.
+    old_start, old_end = rows[0].split("|")[1:3]
+    new_start = rows[1].split("|")[1]
+    assert old_start == initial_start and old_end == new_start, (
+        f"The first record of {res_name} should keep its start and end where "
+        f"the new one starts, got: {rows} (was {initial_rows})"
     )
