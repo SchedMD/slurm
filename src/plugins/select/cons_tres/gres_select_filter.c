@@ -799,18 +799,12 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 	gres_node_state_t *gres_ns;
 	int *links_cnt = NULL, *sorted_gres = NULL;
 	uint64_t gres_needed, gres_this_sock;
-	uint32_t *settled_sock, *used_sock = used_cores_on_sock;
+	uint32_t *used_sock = used_cores_on_sock;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
-
-	settled_sock = _settle_used_socks(sock_gres, tres_mc_ptr, job_id,
-					  node_inx, used_cores_on_sock,
-					  &used_sock_cnt);
-	if (settled_sock)
-		used_sock = settled_sock;
 
 	if (gres_ns->link_len == gres_cnt) {
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
@@ -873,7 +867,6 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 
 	xfree(links_cnt);
 	xfree(sorted_gres);
-	xfree(settled_sock);
 
 	if (gres_needed) {
 		error("%s: Insufficient gres/%s allocated for job %u on node %s (node_inx %d) (gres still needed %"PRIu64", total requested: %"PRIu64", gres per socket: %"PRIu64")",
@@ -1769,6 +1762,8 @@ static int _select_and_set_node(void *x, void *arg)
 	gres_mc_data_t *tres_mc_ptr;
 	uint32_t **tasks_per_node_socket;
 	uint32_t *res_gres_per_sock = NULL;
+	uint32_t *settled_sock = NULL, *used_sock;
+	uint32_t used_sock_cnt;
 	uint32_t total_res_gres = 0;
 	int sock_with_res_cnt = 0;
 	int node_inx, job_node_inx, rem_node_cnt;
@@ -1806,6 +1801,15 @@ static int _select_and_set_node(void *x, void *arg)
 		if (*rc != SLURM_SUCCESS)
 			return -1;
 	}
+	/*
+	 * Read the core counts only now that _set_used_cnts() has had the
+	 * chance to build them: they are filled in on the first call that
+	 * needs them, so taking them at the top of this function would leave
+	 * a per-socket request with a socket count of 0, and the node would
+	 * hand over no devices at all.
+	 */
+	used_sock = args->used_cores_on_sock;
+	used_sock_cnt = args->used_sock_cnt;
 	if (gres_js->gres_per_task && /* Data needed */
 	    !*args->tasks_per_node_socket) { /* Not built yet */
 		*rc = _build_tasks_per_node_sock(job_res,
@@ -1866,14 +1870,32 @@ static int _select_and_set_node(void *x, void *arg)
 	gres_js->gres_bit_select[node_inx] = bit_alloc(gres_cnt);
 	gres_js->gres_cnt_node_select[node_inx] = 0;
 
+	/*
+	 * A per-socket request has its socket count reconciled against the
+	 * sockets the job's allocation actually holds cores on, which changes
+	 * how many devices this node is to hand over. Settle that first, so
+	 * that the count recorded below and the restricted cores pass that
+	 * follows both work from the node's real allocation.
+	 */
+	if (!gres_id_shared(sock_gres->gres_state_job->config_flags) &&
+	    !gres_js->gres_per_node && gres_js->gres_per_socket)
+		settled_sock =
+			_settle_used_socks(sock_gres, tres_mc_ptr, job_id,
+					   node_inx, args->used_cores_on_sock,
+					   &used_sock_cnt);
+	if (settled_sock)
+		used_sock = settled_sock;
+
 	if (gres_js->res_gpu_cores && gres_js->res_gpu_cores[node_inx] &&
 	    !gres_id_shared(sock_gres->gres_state_job->config_flags) &&
 	    !(job_ptr->details &&
 	      (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED))) {
 		*rc = _set_res_core_bits(&res_gres_per_sock, &total_res_gres,
 					 &sock_with_res_cnt, args, sock_gres);
-		if (*rc != SLURM_SUCCESS)
+		if (*rc != SLURM_SUCCESS) {
+			xfree(settled_sock);
 			return SLURM_ERROR;
+		}
 	}
 
 	if (gres_id_shared(sock_gres->gres_state_job->config_flags)) {
@@ -1900,10 +1922,9 @@ static int _select_and_set_node(void *x, void *arg)
 				     enforce_binding, links_mode);
 	} else if (gres_js->gres_per_socket) {
 		*rc = _set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
-				     tres_mc_ptr, args->used_cores_on_sock,
-				     res_gres_per_sock, total_res_gres,
-				     args->used_sock_cnt, enforce_binding,
-				     links_mode);
+				     tres_mc_ptr, used_sock, res_gres_per_sock,
+				     total_res_gres, used_sock_cnt,
+				     enforce_binding, links_mode);
 	} else if (gres_js->gres_per_task) {
 		*rc = _set_task_bits(node_inx, sock_gres, job_id,
 				     tasks_per_node_socket[node_inx],
@@ -1930,6 +1951,7 @@ static int _select_and_set_node(void *x, void *arg)
 		gres_js->total_gres += gres_js->gres_cnt_node_select[node_inx];
 	}
 	xfree(res_gres_per_sock);
+	xfree(settled_sock);
 	return 0;
 }
 
