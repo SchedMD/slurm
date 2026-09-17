@@ -21,6 +21,18 @@ controller then passes the node addresses to the clients so that they
 communicate, and even fanout, to other nodes.
 </p>
 
+<p>
+Starting in Slurm 26.11, set the <b>SlurmctldParameters</b> option
+<a href="slurm.conf.html#OPT_dynamic_node_dns">dynamic_node_dns</a>
+to have each host resolve a dynamic node's <b>NodeName</b> through its own
+system resolver instead of using the address the controller recorded. This
+lets node-to-node traffic use a different network than the controller does.
+Every host in the cluster, including login and submit hosts, must then be able
+to resolve the <b>NodeName</b> of each node the option applies to. Slurm does
+not fall back to the recorded address. See the option's description for which
+nodes it applies to and how a failed lookup is logged.
+</p>
+
 <h2 id="config">Slurm Configuration
 <a class="slurm_link" href="#config"></a>
 </h2>
