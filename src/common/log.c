@@ -1082,13 +1082,12 @@ static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
 	}
 	case 'J': /* "%pJ" => "JobId=..." */
 	{
-		int i;
 		void *ptr = NULL;
 		job_record_t *job_ptr;
 		va_list ap_copy;
 
 		va_copy(ap_copy, ap);
-		for (i = 0; i < *cnt; i++)
+		for (int i = 0; i < *cnt; i++)
 			ptr = va_arg(ap_copy, void *);
 		job_ptr = ptr;
 		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
