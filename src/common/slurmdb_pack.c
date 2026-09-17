@@ -1340,32 +1340,42 @@ extern void slurmdb_pack_assoc_rec_with_usage(void *in,
 					      buf_t *buffer)
 {
 	slurmdb_assoc_rec_t *object = (slurmdb_assoc_rec_t *)in;
-	uint32_t tres_cnt = 0;
 
 	slurmdb_pack_assoc_rec(in, protocol_version, buffer);
 	slurmdb_pack_assoc_usage(object->usage, protocol_version, buffer);
 
-	if (object && object->usage)
-		tres_cnt = object->usage->tres_cnt;
-
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		pack64_array(object->grp_tres_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_run_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_ctld, tres_cnt, buffer);
+		pack64_array(object->grp_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_ctld,
+			     object->usage->tres_cnt, buffer);
 
-		pack64_array(object->max_tres_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_run_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pn_ctld, tres_cnt, buffer);
+		pack64_array(object->max_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pn_ctld,
+			     object->usage->tres_cnt, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack64_array(object->grp_tres_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_run_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_ctld, tres_cnt, buffer);
+		pack64_array(object->grp_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_ctld,
+			     object->usage->tres_cnt, buffer);
 
-		pack64_array(object->max_tres_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_run_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pn_ctld, tres_cnt, buffer);
+		pack64_array(object->max_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pn_ctld,
+		     object->usage->tres_cnt, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -1982,43 +1992,57 @@ extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
 					    buf_t *buffer)
 {
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
-	uint32_t tres_cnt = 0;
 
 	slurmdb_pack_qos_rec(in, protocol_version, buffer);
 
-	if (object && object->usage)
-		tres_cnt = object->usage->tres_cnt;
-
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
-		pack64_array(object->grp_tres_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_run_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_ctld, tres_cnt, buffer);
+		pack64_array(object->grp_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_ctld,
+			     object->usage->tres_cnt, buffer);
 
-		pack64_array(object->max_tres_mins_pj_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_run_mins_pa_ctld, tres_cnt,
-			     buffer);
-		pack64_array(object->max_tres_run_mins_pu_ctld, tres_cnt,
-			     buffer);
-		pack64_array(object->max_tres_pa_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pj_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pn_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pu_ctld, tres_cnt, buffer);
-		pack64_array(object->min_tres_pj_ctld, tres_cnt, buffer);
+		pack64_array(object->max_tres_mins_pj_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_pa_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_pu_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pa_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pj_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pn_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pu_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->min_tres_pj_ctld,
+			     object->usage->tres_cnt, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack64_array(object->grp_tres_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_run_mins_ctld, tres_cnt, buffer);
-		pack64_array(object->grp_tres_ctld, tres_cnt, buffer);
+		pack64_array(object->grp_tres_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_run_mins_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->grp_tres_ctld,
+			     object->usage->tres_cnt, buffer);
 
-		pack64_array(object->max_tres_mins_pj_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_run_mins_pa_ctld, tres_cnt,
-			     buffer);
-		pack64_array(object->max_tres_run_mins_pu_ctld, tres_cnt,
-			     buffer);
-		pack64_array(object->max_tres_pa_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pj_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pn_ctld, tres_cnt, buffer);
-		pack64_array(object->max_tres_pu_ctld, tres_cnt, buffer);
-		pack64_array(object->min_tres_pj_ctld, tres_cnt, buffer);
+		pack64_array(object->max_tres_mins_pj_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_pa_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_run_mins_pu_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pa_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pj_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pn_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->max_tres_pu_ctld,
+			     object->usage->tres_cnt, buffer);
+		pack64_array(object->min_tres_pj_ctld,
+			     object->usage->tres_cnt, buffer);
 	} else {
 		error("%s: version too old %u", __func__, protocol_version);
 		return;
