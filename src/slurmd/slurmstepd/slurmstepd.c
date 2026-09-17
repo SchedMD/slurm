@@ -1528,13 +1528,18 @@ static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
 	job_node_array = task_msg->job_node_array;
 
 	/*
-	 * job_record doesn't pack its node_addrs array, so get it from the
-	 * cred.
+	 * job_record doesn't pack its node_addrs array or resolve_nodes, so
+	 * get them from the cred.
 	 */
 	if (task_msg->cred &&
 	    (node_addrs = slurm_cred_get(task_msg->cred,
 					 CRED_DATA_JOB_NODE_ADDRS))) {
-		add_remote_nodes_to_conf_tbls(job_step_ptr->nodes, node_addrs);
+		char *resolve_nodes =
+			slurm_cred_get(task_msg->cred,
+				       CRED_DATA_JOB_RESOLVE_NODES);
+
+		add_remote_nodes_to_conf_tbls(job_step_ptr->nodes, node_addrs,
+					      resolve_nodes);
 
 		job_step_ptr->node_addrs =
 			xcalloc(job_step_ptr->node_cnt, sizeof(slurm_addr_t));
@@ -1837,7 +1842,8 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg, int runtime_idx)
 
 	/* Reset addrs for dynamic/cloud nodes to hash tables */
 	if (step->node_addrs &&
-	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
+	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs,
+					  step->resolve_nodes)) {
 		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
 		stepd_step_rec_destroy();
