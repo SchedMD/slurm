@@ -400,7 +400,8 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		/* Default log time format */
-		slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
+		slurm_conf.log_flags = LOG_FLAGS_DEFAULT;
+		slurm_conf.log_fmt = LOG_FMT_DEFAULT;
 		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
 			if (xstrcasestr(temp_str, "iso8601_ms"))
 				slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
@@ -408,6 +409,8 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_ISO8601;
 			else if (xstrcasestr(temp_str, "rfc5424_ms"))
 				slurm_conf.log_fmt = LOG_FMT_RFC5424_MS;
+			else if (xstrcasestr(temp_str, "rfc5424_us"))
+				slurm_conf.log_fmt = LOG_FMT_RFC5424_US;
 			else if (xstrcasestr(temp_str, "rfc5424"))
 				slurm_conf.log_fmt = LOG_FMT_RFC5424;
 			else if (xstrcasestr(temp_str, "rfc3339"))
@@ -416,10 +419,19 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_CLOCK;
 			else if (xstrcasestr(temp_str, "short"))
 				slurm_conf.log_fmt = LOG_FMT_SHORT;
-			else if (xstrcasestr(temp_str, "thread_id"))
-				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
 			else if (xstrcasestr(temp_str, "omit"))
 				slurm_conf.log_fmt = LOG_FMT_OMIT;
+			else if (xstrcasestr(temp_str, "thread_id"))
+				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
+
+			/*
+			 * thread_id names the option whenever a timestamp
+			 * format took the value instead, so that it may
+			 * accompany that format.
+			 */
+			if ((slurm_conf.log_fmt != LOG_FMT_THREAD_ID) &&
+			    xstrcasestr(temp_str, "thread_id"))
+				slurm_conf.log_flags |= LOG_FLAG_THREAD_ID;
 			xfree(temp_str);
 		}
 

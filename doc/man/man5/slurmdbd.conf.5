@@ -677,20 +677,34 @@ if a pathname is specified.
 
 .TP
 \fBLogTimeFormat\fR
-Format of the timestamp in slurmdbd log files. Accepted format values include
-"iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms", "rfc3339", "clock", "short",
-"thread_id" and "omit". The values ending in "_ms" differ from the ones without
-in that fractional seconds with millisecond precision are printed.
-The default value is "iso8601_ms". The "rfc5424" formats are the same
-as the "iso8601" formats except that the timezone value is also shown.
-The "clock" format shows a timestamp in microseconds retrieved
-with the C standard clock() function. The "short" format is a short
-date and time format. The "thread_id" format shows the timestamp
-in the C standard ctime() function form without the year but
-including the microseconds, the daemon's process ID and the current thread name
-and ID. The "omit" format disables the timestamp at the start of each log line.
-This is useful when logging through a service such as systemd's journal that
+Comma\-separated list controlling the timestamp in slurmdbd log files. Give at
+most one timestamp format, optionally followed by any of the flags.
+
+Accepted format values are "iso8601", "iso8601_ms", "rfc5424", "rfc5424_ms",
+"rfc5424_us", "rfc3339", "clock", "short", and "omit". The values ending in
+"_ms" differ from the ones without in that fractional seconds with millisecond
+precision are printed, and "rfc5424_us" prints them with microsecond precision,
+which is the most RFC 5424 allows. The default value is "iso8601_ms". The
+"rfc5424" formats are the same as the "iso8601" formats except that the
+timezone value is also shown. The "clock" format shows a timestamp in
+microseconds retrieved with the C standard clock() function. The "short" format
+is a short date and time format. The "omit" format writes no timestamp at all,
+which is useful when logging through a service such as systemd's journal that
 records its own timestamps.
+
+Accepted flag values are "thread_id". The "thread_id" adds the daemon's process
+ID and the current thread name and ID after the timestamp. The timestamp itself
+is whichever format was given. The "thread_id" flag's output is not affected by
+"omit", which drops only the timestamp, so "omit,thread_id" prefixes each log
+line with the process and thread alone. Flags are disabled by default.
+
+\fBNOTE\fR: "thread_id" is also still accepted as a timestamp format value,
+which prints a short date and time, then the microsecond count, the process ID,
+and the current thread name and ID. The microsecond count is left justified in
+a six character field rather than zero padded, so it is not a well formed
+fractional second. It is kept as is so that existing configurations keep
+printing what they always have. Given beside a timestamp format it names the
+flag instead, so that format is printed with the process and thread after it.
 .IP
 
 .TP

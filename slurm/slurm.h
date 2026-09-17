@@ -3018,15 +3018,31 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
 
-#define LOG_FMT_ISO8601_MS      0
-#define LOG_FMT_ISO8601         1
-#define LOG_FMT_RFC5424_MS      2
-#define LOG_FMT_RFC5424         3
-#define LOG_FMT_CLOCK           4
-#define LOG_FMT_SHORT           5
-#define LOG_FMT_THREAD_ID       6
-#define LOG_FMT_RFC3339         7
-#define LOG_FMT_OMIT 8
+/* Timestamp format for LogTimeFormat. */
+typedef enum {
+	LOG_FMT_ISO8601_MS = 0,
+	LOG_FMT_ISO8601 = 1,
+	LOG_FMT_RFC5424_MS = 2,
+	LOG_FMT_RFC5424 = 3,
+	LOG_FMT_CLOCK = 4,
+	LOG_FMT_SHORT = 5,
+	/* Deprecated as a format, see LOG_FLAG_THREAD_ID */
+	LOG_FMT_THREAD_ID = 6,
+	LOG_FMT_RFC3339 = 7,
+	LOG_FMT_OMIT = 8,
+	LOG_FMT_RFC5424_US = 9,
+} log_fmt_t;
+
+/* Options accompanying the LogTimeFormat timestamp format. */
+typedef enum {
+	LOG_FLAGS_NONE = 0,
+	LOG_FLAG_THREAD_ID = SLURM_BIT(0),
+} log_flags_t;
+
+/* Default timestamp format */
+#define LOG_FMT_DEFAULT LOG_FMT_ISO8601_MS
+/* Default LogTimeFormat options */
+#define LOG_FLAGS_DEFAULT LOG_FLAGS_NONE
 
 /*
  * If adding to slurm_conf_t contents that need to be used in the slurmstepd
@@ -3150,6 +3166,7 @@ typedef struct {
 	char *launch_params;	/* step launcher plugin options */
 	char *license_params; /* license parameters */
 	char *licenses;		/* licenses available on this cluster */
+	log_flags_t log_flags; /* Log file timestamp options */
 	uint16_t log_fmt;       /* Log file timestamp format */
 	char *mail_domain;	/* default domain to append to usernames */
 	char *mail_prog;	/* pathname of mail program */

@@ -4241,6 +4241,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->launch_params, buffer);
 		packstr(conf->license_params, buffer);
 		packstr(conf->licenses, buffer);
+		pack16((uint16_t) conf->log_flags, buffer);
 		pack16(conf->log_fmt, buffer);
 
 		pack32(conf->max_array_sz, buffer);
@@ -5204,6 +5205,7 @@ static void _pack_slurm_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 			      const uint16_t protocol_version, buf_t *buffer)
 {
+	uint16_t uint16_tmp = 0;
 	uint32_t uint32_tmp = 0;
 	list_t *tmp_list = NULL;
 	slurm_conf_t *conf = xmalloc(sizeof(*conf));
@@ -5328,6 +5330,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->launch_params, buffer);
 		safe_unpackstr(&conf->license_params, buffer);
 		safe_unpackstr(&conf->licenses, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		conf->log_flags = uint16_tmp;
 		safe_unpack16(&conf->log_fmt, buffer);
 
 		safe_unpack32(&conf->max_array_sz, buffer);

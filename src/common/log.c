@@ -76,6 +76,7 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
+#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -88,7 +89,8 @@
 #  define LINEBUFSIZE 256
 #endif
 
-#define NAMELEN 16
+/* Field width the thread name is padded to in the "%M" prefix */
+#define THREAD_NAME_WIDTH 12
 
 #define LOG_MACRO(level, sched, fmt) {				\
 	if ((level <= highest_log_level) ||			\
@@ -137,7 +139,8 @@ typedef struct {
 	log_facility_t facility;
 	log_options_t opt;
 	bool initialized;
-	uint16_t fmt;            /* Flag for specifying timestamp format */
+	log_flags_t flags; /* Options accompanying the timestamp format */
+	log_fmt_t fmt; /* Timestamp format */
 }	log_t;
 
 /* static variables */
@@ -232,6 +235,7 @@ size_t log_timestamp(char *s, size_t max)
 		return _make_timestamp(s, max, "%Y-%m-%dT%T");
 	switch (log->fmt) {
 	case LOG_FMT_RFC5424_MS:
+	case LOG_FMT_RFC5424_US:
 	case LOG_FMT_RFC5424:
 	{
 		size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
@@ -667,33 +671,31 @@ void log_oom(const char *file, int line, const char *func)
 	}
 }
 
-
-/* Set the timestamp format flag */
-void log_set_timefmt(unsigned fmtflag)
+/* Set the timestamp format flag and the options accompanying it */
+void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
 {
-	if (log) {
-		slurm_mutex_lock(&log_lock);
-		log->fmt = fmtflag;
-		slurm_mutex_unlock(&log_lock);
-	} else {
-		fprintf(stderr, "%s:%d: %s Slurm log not initialized\n",
-			__FILE__, __LINE__, __func__);
-	}
+	xassert(log);
+
+	if (!log)
+		return;
+
+	slurm_mutex_lock(&log_lock);
+	log->fmt = fmt;
+	log->flags = flags;
+	slurm_mutex_unlock(&log_lock);
 }
 
 /*
- * _set_idbuf()
- * Write in the input buffer the current time and milliseconds
- * the process id and the current thread id.
+ * Write the process id and the current thread name and id into buf
+ * IN/OUT buf - buffer holding whatever "%M" has rendered so far
+ * IN size - bytes available in buf
+ * IN used - bytes already written to buf, which a separator follows
  */
-static void _set_idbuf(char *idbuf, size_t size)
+static void _set_thread_id(char *buf, size_t size, size_t used)
 {
-	struct timeval now;
-	char time[25];
-	char thread_name[NAMELEN];
-	int max_len = 12; /* handles current longest thread name */
+	char thread_name[PRCTL_BUF_BYTES] = { 0 };
+	int max_len = THREAD_NAME_WIDTH;
 
-	gettimeofday(&now, NULL);
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_GET_NAME, thread_name, NULL, NULL, NULL) < 0) {
 		fprintf(stderr, "failed to get thread name: %m\n");
@@ -705,11 +707,173 @@ static void _set_idbuf(char *idbuf, size_t size)
 	max_len = 0;
 	thread_name[0] = '\0';
 #endif
-	slurm_ctime2_r(&now.tv_sec, time);
 
-	snprintf(idbuf, size, "%.15s.%-6d %5d %-*s %p",
-		 time + 4, (int) now.tv_usec, (int) getpid(), max_len,
-		 thread_name, (void *) pthread_self());
+	snprintf((buf + used), (size - used), "%s%5d %-*s %p",
+		 (used ? " " : ""), (int) getpid(), max_len, thread_name,
+		 (void *) pthread_self());
+}
+
+/*
+ * RET true if the "%M" specifier has anything to render, which is the only
+ *	thing the log line prefix holds
+ */
+static bool _have_timefmt(void)
+{
+	if (log->fmt != LOG_FMT_OMIT)
+		return true;
+
+	/* omit drops the timestamp, not everything printed beside it */
+	return (log->flags & LOG_FLAG_THREAD_ID);
+}
+
+/* Fractional second precision, which RFC 5424 allows no more of than usec */
+typedef enum {
+	RFC5424_NONE = 0,
+	RFC5424_MSEC = 3,
+	RFC5424_USEC = 6,
+} rfc5424_prec_t;
+
+/*
+ * Write what "%M" stands for into buf: the timestamp named by the
+ * LogTimeFormat timestamp format, and the process and thread when either the
+ * option or the deprecated format asks for them
+ * IN/OUT buf - buffer to write into
+ * IN size - bytes available in buf
+ *
+ * Note: every timestamp format is the same strftime() call with an optional
+ * fractional second and an optional timezone offset, so they share one
+ * renderer.
+ */
+static void _set_timestamp(char *buf, size_t size)
+{
+	const char *date_fmt = "%Y-%m-%dT%T";
+	const char *usec_fmt = ".%6.6d";
+	rfc5424_prec_t prec = RFC5424_NONE;
+	bool tz = false;
+	timespec_t ts = { 0 };
+	struct tm tm = { 0 };
+	size_t used = 0;
+
+	buf[0] = '\0';
+
+	switch (log->fmt) {
+	case LOG_FMT_ISO8601_MS:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff" */
+		prec = RFC5424_MSEC;
+		break;
+	case LOG_FMT_ISO8601:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss" */
+		break;
+	case LOG_FMT_RFC5424_MS:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+		prec = RFC5424_MSEC;
+		tz = true;
+		break;
+	case LOG_FMT_RFC5424:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_RFC5424_US:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.ffffff(+/-)hh:mm" */
+		prec = RFC5424_USEC;
+		tz = true;
+		break;
+	case LOG_FMT_RFC3339:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_CLOCK:
+		/* "%M" => "usec" */
+#if defined(__FreeBSD__)
+		used = snprintf(buf, size, "%d", clock());
+#else
+		used = snprintf(buf, size, "%ld", clock());
+#endif
+		if (used >= size)
+			used = (size - 1);
+
+		goto thread_id;
+	case LOG_FMT_SHORT:
+		/* "%M" => "Mon DD hh:mm:ss" */
+		date_fmt = "%b %d %T";
+		break;
+	case LOG_FMT_THREAD_ID:
+		/*
+		 * "%M" => "Mon DD hh:mm:ss.f     "
+		 *
+		 * The fraction is left justified rather than zero padded. That
+		 * is not a well formed fractional second, but it is what this
+		 * deprecated format has always printed, so keep it rather than
+		 * change what an existing configuration writes.
+		 */
+		date_fmt = "%b %d %T";
+		usec_fmt = ".%-6d";
+		prec = RFC5424_USEC;
+		break;
+	case LOG_FMT_OMIT:
+		/* omit drops the timestamp and nothing else */
+		goto thread_id;
+	}
+
+	ts = timespec_now();
+
+	if (!localtime_r(&ts.tv_sec, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (!(used = strftime(buf, size, date_fmt, &tm))) {
+		fprintf(stderr, "strftime() returned 0\n");
+		buf[0] = '\0';
+		goto thread_id;
+	}
+
+	switch (prec) {
+	case RFC5424_NONE:
+		break;
+	case RFC5424_MSEC:
+		used += snprintf((buf + used), (size - used), ".%3.3d",
+				 (int) (ts.tv_nsec / NSEC_IN_MSEC));
+		break;
+	case RFC5424_USEC:
+		used += snprintf((buf + used), (size - used), usec_fmt,
+				 (int) (ts.tv_nsec / NSEC_IN_USEC));
+		break;
+	}
+
+	/*
+	 * snprintf() returns the length it wanted to write, so a truncated
+	 * fraction would leave used past the end of buf.
+	 */
+	if (used >= size)
+		used = (size - 1);
+
+	if (tz) {
+		char z[12] = "";
+
+		/*
+		 * strftime() writes the offset as (+/-)hhmm where RFC 5424
+		 * writes it as (+/-)hh:mm, so shift the minutes one step back
+		 * and insert the colon.
+		 */
+		if (!strftime(z, sizeof(z), "%z", &tm))
+			fprintf(stderr, "strftime() returned 0\n");
+		z[5] = z[4];
+		z[4] = z[3];
+		z[3] = ':';
+
+		used += snprintf((buf + used), (size - used), "%s", z);
+
+		if (used >= size)
+			used = (size - 1);
+	}
+
+thread_id:
+	/*
+	 * The deprecated format prints the same fields as the option, so honor
+	 * either of them.
+	 */
+	if ((log->flags & LOG_FLAG_THREAD_ID) ||
+	    (log->fmt == LOG_FMT_THREAD_ID))
+		_set_thread_id(buf, size, used);
 }
 
 /*
@@ -1114,60 +1278,10 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					xiso8601timecat(substitute, true);
 					break;
 				}
-				switch (log->fmt) {
-				case LOG_FMT_ISO8601_MS:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-					xiso8601timecat(substitute, true);
-					break;
-				case LOG_FMT_ISO8601:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-					xiso8601timecat(substitute, false);
-					break;
-				case LOG_FMT_RFC5424_MS:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-					xrfc5424timecat(substitute, true);
-					break;
-				case LOG_FMT_RFC5424:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-					xrfc5424timecat(substitute, false);
-					break;
-				case LOG_FMT_RFC3339:
-					/* "%M" => "yyyy-mm-ddThh:mm:ssZ" */
-					xrfc3339timecat(substitute);
-					break;
-				case LOG_FMT_CLOCK:
-					/* "%M" => "usec" */
-#if defined(__FreeBSD__)
-					snprintf(substitute_on_stack,
-						 sizeof(substitute_on_stack),
-						 "%d", clock());
-#else
-					snprintf(substitute_on_stack,
-						 sizeof(substitute_on_stack),
-						 "%ld", clock());
-#endif
-					substitute = substitute_on_stack;
-					should_xfree = 0;
-					break;
-				case LOG_FMT_SHORT:
-					/* "%M" => "Mon DD hh:mm:ss" */
-					xstrftimecat(substitute, "%b %d %T");
-					break;
-				case LOG_FMT_THREAD_ID:
-					_set_idbuf(substitute_on_stack,
-						   sizeof(substitute_on_stack));
-					substitute = substitute_on_stack;
-					should_xfree = 0;
-					break;
-				case LOG_FMT_OMIT:
-					/*
-					 * Nothing to substitute: the timestamp
-					 * is dropped at the log_msg() call
-					 * sites, so "%M" is never emitted in
-					 * this mode.
-					 */
-					break;
-				}
+				_set_timestamp(substitute_on_stack,
+					       sizeof(substitute_on_stack));
+				substitute = substitute_on_stack;
+				should_xfree = 0;
 				break;
 			}
 			fmt++;
@@ -1352,8 +1466,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
-		xlogfmtcat(&msgbuf,
-			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+		xlogfmtcat(&msgbuf, (_have_timefmt() ? "[%M] %s%s" : "%s%s"),
 			   sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s%s\n", msgbuf, buf);
@@ -1426,7 +1539,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
 		} else if (running_in_daemon()) {
-			if (log->fmt == LOG_FMT_OMIT) {
+			if (!_have_timefmt()) {
 				_log_printf(log, log->buf, stderr, "%s%s%s",
 					    pfx, buf, eol);
 			} else {
@@ -1476,8 +1589,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		fflush(log->logfp);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
-		xlogfmtcat(&msgbuf,
-			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+		xlogfmtcat(&msgbuf, (_have_timefmt() ? "[%M] %s%s" : "%s%s"),
 			   log->prefix, pfx);
 		_log_printf(log, log->fbuf, log->logfp, "%s%s\n", msgbuf, buf);
 		fflush(log->logfp);

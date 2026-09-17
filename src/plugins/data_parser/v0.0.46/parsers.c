@@ -11933,16 +11933,22 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIVATE_DATA)[] = {
 	add_flag_bit_desc(PRIVATE_DATA_USERS, "users", "Prevents users from viewing information of any user other than themselves."),
 };
 
-/* based on _logfmtstr() */
+/* based on _logfmtstr() log_opts[] */
+static const flag_bit_t PARSER_FLAG_ARRAY(LOG_FLAGS)[] = {
+	add_flag_bit_desc(LOG_FLAG_THREAD_ID, "thread_id", "Print the process ID and the current thread name and ID after the timestamp."),
+};
+
+/* based on _logfmtstr() log_fmts[] */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_TIME_FORMAT)[] = {
 	add_flag_equal_desc(LOG_FMT_ISO8601_MS, INFINITE64, "iso8601_ms", "ISO 8601 timestamp with millisecond precision."),
 	add_flag_equal_desc(LOG_FMT_ISO8601, INFINITE64, "iso8601", "ISO 8601 timestamp."),
 	add_flag_equal_desc(LOG_FMT_RFC5424_MS, INFINITE64, "rfc5424_ms", "RFC 5424 timestamp with millisecond precision. Same as iso8601_ms with timezone."),
+	add_flag_equal_desc(LOG_FMT_RFC5424_US, INFINITE64, "rfc5424_us", "RFC 5424 timestamp with microsecond precision, the most RFC 5424 allows."),
 	add_flag_equal_desc(LOG_FMT_RFC5424, INFINITE64, "rfc5424", "RFC 5424 timestamp. Same as iso8601 with timezone."),
 	add_flag_equal_desc(LOG_FMT_RFC3339, INFINITE64, "rfc3339", "RFC 3339 timestamp."),
 	add_flag_equal_desc(LOG_FMT_CLOCK, INFINITE64, "clock", "Timestamp in microseconds from C standard clock() function."),
 	add_flag_equal_desc(LOG_FMT_SHORT, INFINITE64, "short", "Short date and time format."),
-	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Timestamp in ctime() format without the year, with microseconds, process ID, and thread name and ID."),
+	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Legacy format: short date and time (non-standard fractional seconds), process ID, and thread name and ID. Deprecated — prefer the thread_id flag in LogTimeFormat instead."),
 	add_flag_equal_desc(LOG_FMT_OMIT, INFINITE64, "omit", "Omit the timestamp."),
 };
 
@@ -12153,6 +12159,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(CSV_STRING, launch_params, "LaunchParameters", "Step launcher plugin options"),
 	add_parse(CSV_STRING, licenses, "Licenses", "Licenses available on this cluster"),
 	add_parse(CSV_STRING, license_params, "LicenseParameters", "Options for licenses/HRES"),
+	add_parse(LOG_FLAGS, log_flags, "LogTimeFormatOptions", "Options accompanying the timestamp in slurmctld and slurmd log files"),
 	add_parse(LOG_TIME_FORMAT, log_fmt, "LogTimeFormat", "Format of the timestamp in slurmctld and slurmd log files"),
 	add_parse(STRING, mail_domain, "MailDomain", "Default domain to append to usernames"),
 	add_parse(STRING, mail_prog, "MailProg", "Pathname of mail program"),
@@ -12425,6 +12432,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(launch_params),
 	add_skip(licenses),
 	add_skip(license_params),
+	add_skip(log_flags),
 	add_skip(log_fmt),
 	add_skip(mail_domain),
 	add_skip(mail_prog),
@@ -13612,6 +13620,7 @@ static const parser_t parsers[] = {
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfas(LOG_TIME_FORMAT, uint16_t),
+	addfa(LOG_FLAGS, log_flags_t),
 	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),
 	addfa(PRIVATE_DATA, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),

@@ -102,6 +102,7 @@ static void _pack_bb_script_info(bb_script_info_msg_t *msg, buf_t *buffer)
 	pack32(msg->job_id, buffer);
 	pack16(msg->slurmctld_debug, buffer);
 	packstr(msg->slurmctld_logfile, buffer);
+	pack16((uint16_t) msg->log_flags, buffer);
 	pack16(msg->log_fmt, buffer);
 	packstr(msg->plugindir, buffer);
 	packstr(msg->slurm_user_name, buffer);
@@ -111,6 +112,7 @@ static void _pack_bb_script_info(bb_script_info_msg_t *msg, buf_t *buffer)
 static int _unpack_bb_script_info(bb_script_info_msg_t **msg, buf_t *buffer)
 {
 	bb_script_info_msg_t *bb_msg = xmalloc(sizeof(*bb_msg));
+	uint16_t uint16_tmp = 0;
 
 	*msg = bb_msg;
 
@@ -126,6 +128,8 @@ static int _unpack_bb_script_info(bb_script_info_msg_t **msg, buf_t *buffer)
 	safe_unpack32(&bb_msg->job_id, buffer);
 	safe_unpack16(&bb_msg->slurmctld_debug, buffer);
 	safe_unpackstr(&bb_msg->slurmctld_logfile, buffer);
+	safe_unpack16(&uint16_tmp, buffer);
+	bb_msg->log_flags = uint16_tmp;
 	safe_unpack16(&bb_msg->log_fmt, buffer);
 	safe_unpackstr(&bb_msg->plugindir, buffer);
 	safe_unpackstr(&bb_msg->slurm_user_name, buffer);
