@@ -811,6 +811,7 @@ extern int main(int argc, char **argv)
 	slurm_msg_t *msg;
 	int idx = RUNTIME_IDX_INVALID;
 	int rc = SLURM_SUCCESS;
+	int setup_rc = SLURM_SUCCESS;
 	bool only_mem = true;
 
 	probe_init();
@@ -867,9 +868,15 @@ extern int main(int argc, char **argv)
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
 	 * the new stepd_step_rec_t before continuing
 	 */
-	if (_step_setup(cli, msg, idx) || _validate_step()) {
+	if ((setup_rc = _step_setup(cli, msg, idx)) ||
+	    (setup_rc = _validate_step())) {
+		/*
+		 * Report the specific reason to slurmd, which forwards it to
+		 * the client. Keep rc generic: it is also this process' exit
+		 * status.
+		 */
 		rc = SLURM_ERROR;
-		_send_fail_to_slurmd(STDOUT_FILENO, rc);
+		_send_fail_to_slurmd(STDOUT_FILENO, setup_rc);
 		goto ending;
 	}
 

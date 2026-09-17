@@ -260,7 +260,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	debug3("entering stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
-		return SLURM_ERROR;
+		return ESLURMD_INVALID_ACCT_FREQ;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 	step->msg = msg;
@@ -500,7 +500,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	debug3("entering batch_stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
-		return SLURM_ERROR;
+		return ESLURMD_INVALID_ACCT_FREQ;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 
