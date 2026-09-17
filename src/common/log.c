@@ -1008,6 +1008,150 @@ static char *_print_data_json(data_t *d, char *buffer, int size)
 	return buffer;
 }
 
+static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
+				   char **intermediate_fmt_ptr,
+				   char **intermediate_pos_ptr,
+				   char *substitute_on_stack,
+				   const int substitute_on_stack_bytes)
+{
+	*fmt_ptr += 1;
+	switch (**fmt_ptr) {
+	case 'A': /* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
+	{
+		void *ptr = NULL;
+		slurm_addr_t *addr_ptr;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		addr_ptr = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _addr2fmt(addr_ptr, substitute_on_stack,
+				    substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'd': /* "%pd" -> compact JSON serialized string */
+	{
+		data_t *d = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			d = va_arg(ap_copy, void *);
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _print_data_json(d, substitute_on_stack,
+					   substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'D': /* "%pD" -> data_type(0xDEADBEEF) */
+	{
+		data_t *d = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			d = va_arg(ap_copy, void *);
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _print_data_t(d, substitute_on_stack,
+					substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%pI" => "JobID=... SLUID=..." on a
+	 * slurm_step_id_t
+	 */
+	case 'I':
+	{
+		void *ptr = NULL;
+		slurm_step_id_t *step_id = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_id = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  log_build_job_id_str(step_id, substitute_on_stack,
+					       substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'J': /* "%pJ" => "JobId=..." */
+	{
+		int i;
+		void *ptr = NULL;
+		job_record_t *job_ptr;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		job_ptr = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _jobid2fmt(job_ptr, substitute_on_stack,
+				     substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%ps" => "StepId=... " on a
+	 * slurm_step_id_t
+	 */
+	case 's':
+	{
+		int i;
+		void *ptr = NULL;
+		slurm_step_id_t *step_id = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_id = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  log_build_step_id_str(step_id, substitute_on_stack,
+						substitute_on_stack_bytes,
+						STEP_ID_FLAG_PS));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%pS" => "JobId=... StepId=..." on a
+	 * step_record_t
+	 */
+	case 'S':
+	{
+		int i;
+		void *ptr = NULL;
+		step_record_t *step_ptr = NULL;
+		job_record_t *job_ptr = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_ptr = ptr;
+		if (step_ptr && (step_ptr->magic == STEP_MAGIC))
+			job_ptr = step_ptr->job_ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _jobid2fmt(job_ptr, substitute_on_stack,
+				     substitute_on_stack_bytes));
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _stepid2fmt(step_ptr, substitute_on_stack,
+				      substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	default:
+		/* Unknown */
+		break;
+	}
+}
+
 static void _vxstrfmt_on_our_fmt(const char **fmt_ptr, va_list ap,
 				 const char **p_ptr, int *cnt,
 				 char **intermediate_fmt_ptr,
@@ -1033,145 +1177,10 @@ static void _vxstrfmt_on_our_fmt(const char **fmt_ptr, va_list ap,
 	 */
 	switch (*fmt) {
 	case 'p':
-		fmt = (*fmt_ptr += 1);
-		switch (*fmt) {
-		case 'A': /* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
-		{
-			void *ptr = NULL;
-			slurm_addr_t *addr_ptr;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (int i = 0; i < *cnt; i++)
-				ptr = va_arg(ap_copy, void *);
-			addr_ptr = ptr;
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  _addr2fmt(addr_ptr, substitute_on_stack,
-					    sizeof(substitute_on_stack)));
-			va_end(ap_copy);
-			break;
-		}
-		case 'd': /* "%pd" -> compact JSON serialized string */
-		{
-			data_t *d = NULL;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (int i = 0; i < *cnt; i++)
-				d = va_arg(ap_copy, void *);
-			xstrcatat(
-				*intermediate_fmt_ptr, intermediate_pos_ptr,
-				_print_data_json(d, substitute_on_stack,
-						 sizeof(substitute_on_stack)));
-			va_end(ap_copy);
-			break;
-		}
-		case 'D': /* "%pD" -> data_type(0xDEADBEEF) */
-		{
-			data_t *d = NULL;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (int i = 0; i < *cnt; i++)
-				d = va_arg(ap_copy, void *);
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  _print_data_t(d, substitute_on_stack,
-						sizeof(substitute_on_stack)));
-			va_end(ap_copy);
-			break;
-		}
-		/*
-		 * "%pI" => "JobID=... SLUID=..." on a
-		 * slurm_step_id_t
-		 */
-		case 'I':
-		{
-			void *ptr = NULL;
-			slurm_step_id_t *step_id = NULL;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (int i = 0; i < *cnt; i++)
-				ptr = va_arg(ap_copy, void *);
-			step_id = ptr;
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  log_build_job_id_str(
-					  step_id, substitute_on_stack,
-					  sizeof(substitute_on_stack)));
-			va_end(ap_copy);
-			break;
-		}
-		case 'J': /* "%pJ" => "JobId=..." */
-		{
-			int i;
-			void *ptr = NULL;
-			job_record_t *job_ptr;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (i = 0; i < *cnt; i++)
-				ptr = va_arg(ap_copy, void *);
-			job_ptr = ptr;
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  _jobid2fmt(job_ptr, substitute_on_stack,
-					     sizeof(substitute_on_stack)));
-			va_end(ap_copy);
-			break;
-		}
-		/*
-		 * "%ps" => "StepId=... " on a
-		 * slurm_step_id_t
-		 */
-		case 's':
-		{
-			int i;
-			void *ptr = NULL;
-			slurm_step_id_t *step_id = NULL;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (i = 0; i < *cnt; i++)
-				ptr = va_arg(ap_copy, void *);
-			step_id = ptr;
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  log_build_step_id_str(
-					  step_id, substitute_on_stack,
-					  sizeof(substitute_on_stack),
-					  STEP_ID_FLAG_PS));
-			va_end(ap_copy);
-			break;
-		}
-		/*
-		 * "%pS" => "JobId=... StepId=..." on a
-		 * step_record_t
-		 */
-		case 'S':
-		{
-			int i;
-			void *ptr = NULL;
-			step_record_t *step_ptr = NULL;
-			job_record_t *job_ptr = NULL;
-			va_list ap_copy;
-
-			va_copy(ap_copy, ap);
-			for (i = 0; i < *cnt; i++)
-				ptr = va_arg(ap_copy, void *);
-			step_ptr = ptr;
-			if (step_ptr && (step_ptr->magic == STEP_MAGIC))
-				job_ptr = step_ptr->job_ptr;
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  _jobid2fmt(job_ptr, substitute_on_stack,
-					     sizeof(substitute_on_stack)));
-			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
-				  _stepid2fmt(step_ptr, substitute_on_stack,
-					      sizeof(substitute_on_stack)));
-			va_end(ap_copy);
-			break;
-		}
-		default:
-			/* Unknown */
-			break;
-		}
+		_vxstrfmt_on_our_p_fmt(fmt_ptr, ap, cnt, intermediate_fmt_ptr,
+				       intermediate_pos_ptr,
+				       substitute_on_stack,
+				       sizeof(substitute_on_stack));
 		break;
 	case 'm': /* "%m" => strerror(errno) */
 		substitute = slurm_strerror(errno);
