@@ -635,6 +635,9 @@ static bool _require_close_connection(http_con_t *hcon,
  * Content).
  * RFC7232-4.1: 304 (Not Modified) never carries a body.
  *
+ * The Content-Length and the body write both consult this, so a status
+ * that forbids content can never suppress one and emit the other.
+ *
  * IN status_code - status of the response being written
  * RET true if the status forbids content
  */
@@ -740,8 +743,13 @@ extern int http_con_send_response(http_con_t *hcon,
 		 * not carry the content itself. Sending it anyway leaves the
 		 * body in the stream at the point where the client looks for
 		 * the next response once the connection is reused.
+		 *
+		 * A status that forbids content leaves the stream worse off:
+		 * _send_content_length() declines to declare a length for it,
+		 * so writing the body anyway leaves it with no framing at all.
 		 */
-		const bool omit_body = (request->method == HTTP_REQUEST_HEAD);
+		const bool omit_body = (request->method == HTTP_REQUEST_HEAD) ||
+				       _status_forbids_content(status_code);
 
 		if ((rc = _send_content_length(hcon, con, status_code,
 					       body_length)))
