@@ -1102,13 +1102,12 @@ static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
 	 */
 	case 's':
 	{
-		int i;
 		void *ptr = NULL;
 		slurm_step_id_t *step_id = NULL;
 		va_list ap_copy;
 
 		va_copy(ap_copy, ap);
-		for (i = 0; i < *cnt; i++)
+		for (int i = 0; i < *cnt; i++)
 			ptr = va_arg(ap_copy, void *);
 		step_id = ptr;
 		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
