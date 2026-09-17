@@ -1047,7 +1047,9 @@ static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
 	while ((node_name = hostlist_next(hi))) {
 		slurm_addr_t *addr =
 			&forward->alias_addrs.node_addrs[addr_index];
-		if (!slurm_conf_get_addr(node_name, addr, msg->flags)) {
+		/* Keep the controller's address for locally resolved nodes */
+		if (!slurm_conf_get_ctld_addr(node_name, addr) ||
+		    !slurm_conf_get_addr(node_name, addr, msg->flags)) {
 			++addr_index;
 		} else {
 			hostlist_remove(hi);

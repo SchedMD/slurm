@@ -2822,6 +2822,28 @@ extern int slurm_conf_get_resolved_addr(const char *node_name,
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_conf_get_ctld_addr(const char *node_name,
+				    slurm_addr_t *address)
+{
+	int rc = SLURM_ERROR;
+	names_ll_t *p;
+
+	/* slurmctld never resolves a NodeName itself, so has no ctld_addr */
+	if (running_in_slurmctld())
+		return rc;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	if ((p = _find_alias(node_name)) && p->resolve_locally) {
+		*address = p->ctld_addr;
+		rc = SLURM_SUCCESS;
+	}
+	slurm_conf_unlock();
+
+	return rc;
+}
+
 extern int slurm_conf_check_addr(const char *node_name, bool *dynamic)
 {
 	int idx;

@@ -578,6 +578,21 @@ extern int slurm_conf_get_resolved_addr(const char *node_name,
 					slurm_addr_t *address, uint16_t flags);
 
 /*
+ * Return the address the controller holds for a NodeName this host resolves
+ * locally. The host that starts a fan-out passes this on rather than its own
+ * lookup, because hosts that ignore the marking connect to it.
+ *
+ * IN node_name - NodeName to look up
+ * OUT address - address the controller distributed for node_name
+ * RET SLURM_SUCCESS on success, SLURM_ERROR if node_name is not resolved
+ *	locally
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern int slurm_conf_get_ctld_addr(const char *node_name,
+				    slurm_addr_t *address);
+
+/*
  * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.
  *
  * IN nodeline - NodeName= line string.
