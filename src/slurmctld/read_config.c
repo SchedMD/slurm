@@ -1825,6 +1825,8 @@ extern int read_slurm_conf(int recover)
 
 	/* Must precede _sync_nodes_to_jobs(), which builds job alias lists */
 	cloud_dns = xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns");
+	dynamic_node_dns =
+		xstrcasestr(slurm_conf.slurmctld_params, "dynamic_node_dns");
 
 	/*
 	 * The burst buffer plugin must be initialized and state loaded before

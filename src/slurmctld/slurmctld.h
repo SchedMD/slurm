@@ -268,6 +268,7 @@ extern int   batch_sched_delay;
 extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
+extern bool dynamic_node_dns;
 extern int listen_nports;
 extern int max_depend_depth;
 extern uint32_t max_powered_nodes;
@@ -298,6 +299,33 @@ extern list_t *conf_includes_list;  /* list of conf_includes_map_t */
 	(IS_NODE_DYNAMIC_FUTURE(_X) || \
 	 IS_NODE_DYNAMIC_NORM(_X) || \
 	 (!cloud_dns && IS_NODE_CLOUD(_X)))
+
+/* Receivers resolve this node's NodeName rather than use its stored address */
+#define RESOLVE_ADDR_LOCALLY(_X) \
+	(dynamic_node_dns && !IS_NODE_CLOUD(_X) && !IS_NODE_EXTERNAL(_X) && \
+	 (IS_NODE_DYNAMIC_FUTURE(_X) || IS_NODE_DYNAMIC_NORM(_X)))
+
+/* Collect _X into _hl when the receivers have to resolve its NodeName */
+#define RESOLVE_ADDR_PUSH(_X, _hl) \
+	do { \
+		if (RESOLVE_ADDR_LOCALLY(_X)) { \
+			if (!(_hl)) \
+				(_hl) = hostlist_create(NULL); \
+			hostlist_push_host((_hl), (_X)->name); \
+		} \
+	} while (0)
+
+/*
+ * Record how a message must reach _X: whether slurmctld has to ship the
+ * node's address with it, and whether the receivers must resolve the
+ * NodeName themselves instead of using that address.
+ */
+#define SET_FANOUT_ADDRS(_X, _flags, _hl) \
+	do { \
+		if (PACK_FANOUT_ADDRS(_X)) \
+			(_flags) |= SLURM_PACK_ADDRS; \
+		RESOLVE_ADDR_PUSH(_X, _hl); \
+	} while (0)
 
 /*****************************************************************************\
  *  NODE states and bitmaps
