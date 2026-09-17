@@ -232,6 +232,10 @@ static void *_rpc_thread(void *data)
 	msg.flags = agent_arg_ptr->msg_flags;
 	msg.msg_type = agent_arg_ptr->msg_type;
 	msg.protocol_version = agent_arg_ptr->protocol_version;
+	if (agent_arg_ptr->resolve_hostlist)
+		msg.forward.alias_addrs.resolve_nodes =
+			hostlist_ranged_string_xmalloc(
+				agent_arg_ptr->resolve_hostlist);
 	msg.tls_cert = xstrdup(agent_arg_ptr->tls_cert);
 
 	slurm_msg_set_r_uid(&msg, agent_arg_ptr->r_uid);
@@ -1545,6 +1549,7 @@ static void _init_stepmgr(launch_tasks_request_msg_t *task_msg)
 			xcalloc(job_step_ptr->node_cnt, sizeof(slurm_addr_t));
 		memcpy(job_step_ptr->node_addrs, node_addrs,
 		       job_step_ptr->node_cnt * sizeof(slurm_addr_t));
+		job_step_ptr->resolve_nodes = xstrdup(resolve_nodes);
 	}
 
 	/*

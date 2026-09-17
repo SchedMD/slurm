@@ -910,6 +910,15 @@ extern int job_step_signal(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	return step_signal.rc_in;
 }
 
+/* slurmstepd is never sent SlurmctldParameters, so use the job record's copy */
+static void _set_resolve_hostlist(job_record_t *job_ptr,
+				  agent_arg_t *agent_args)
+{
+	if (job_ptr->resolve_nodes)
+		agent_args->resolve_hostlist =
+			hostlist_create(job_ptr->resolve_nodes);
+}
+
 /*
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
@@ -922,6 +931,7 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	node_record_t *node_ptr;
 	static bool cloud_dns = false;
 	static time_t last_update = 0;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
 
@@ -967,6 +977,7 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 		xfree(agent_args);
 		return;
 	}
+	_set_resolve_hostlist(job_ptr, agent_args);
 
 	agent_args->msg_args = signal_tasks_msg;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
@@ -5507,6 +5518,7 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 		slurm_free_kill_job_msg(kill_step);
 		return;
 	}
+	_set_resolve_hostlist(job_ptr, agent_args);
 
 	agent_args->msg_args = kill_step;
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
