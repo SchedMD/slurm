@@ -680,6 +680,99 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
 }
 
 /*
+ * Reconcile the socket count the job asked for against the sockets its
+ * allocation holds cores on. Must run before the first device is picked: the
+ * count it settles sizes the linked set, and the restricted cores pass picks
+ * before _set_sock_bits() is reached.
+ * IN sock_gres - GRES availability for this node
+ * IN tres_mc_ptr - job's multi-core options
+ * IN job_id - job ID for logging
+ * IN node_inx - global node index
+ * IN used_cores_on_sock - cores the job holds on each socket
+ * IN/OUT used_sock_cnt - sockets the job is to be given devices on
+ * RET per-socket array to use in place of used_cores_on_sock (caller xfrees),
+ *     or NULL when the caller's own array still stands
+ */
+static uint32_t *_settle_used_socks(sock_gres_t *sock_gres,
+				    gres_mc_data_t *tres_mc_ptr,
+				    uint32_t job_id, int node_inx,
+				    uint32_t *used_cores_on_sock,
+				    uint32_t *used_sock_cnt)
+{
+	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
+	gres_node_state_t *gres_ns = sock_gres->gres_state_node->gres_data;
+	uint16_t sock_cnt = sock_gres->sock_cnt;
+	uint32_t *used_sock;
+	int s;
+
+	if (!tres_mc_ptr || !tres_mc_ptr->sockets_per_node ||
+	    (tres_mc_ptr->sockets_per_node == *used_sock_cnt) ||
+	    !gres_ns->gres_bit_alloc || !sock_gres->bits_by_sock)
+		return NULL;
+
+	used_sock = xcalloc(sock_cnt, sizeof(int));
+	memcpy(used_sock, used_cores_on_sock, sock_cnt * sizeof(int));
+
+	if (tres_mc_ptr->sockets_per_node > *used_sock_cnt) {
+		/* Somehow we have too few sockets in job allocation */
+		error("%s: Inconsistent requested/allocated socket count (%d > %d) for job %u on node %s (node_inx %d)",
+		      __func__, tres_mc_ptr->sockets_per_node,
+		      *used_sock_cnt, job_id,
+		      node_record_table_ptr[node_inx]->name, node_inx);
+		for (s = 0; s < sock_cnt; s++) {
+			if (used_sock[s] || !sock_gres->bits_by_sock[s])
+				continue;
+			/* Determine currently free GRES by socket */
+			used_sock[s] =
+				bit_set_count(sock_gres->bits_by_sock[s]) -
+				bit_overlap(sock_gres->bits_by_sock[s],
+					    gres_ns->gres_bit_alloc);
+			if ((used_sock[s] == 0) ||
+			    (used_sock[s] < gres_js->gres_per_socket)) {
+				used_sock[s] = 0;
+			} else if (++(*used_sock_cnt) ==
+				   tres_mc_ptr->sockets_per_node) {
+				break;
+			}
+		}
+	} else {
+		/* May have needed extra CPUs, exceeding socket count */
+		debug("%s: Inconsistent requested/allocated socket count (%d < %d) for job %u on node %s (node_inx %d)",
+		      __func__, tres_mc_ptr->sockets_per_node,
+		      *used_sock_cnt, job_id,
+		      node_record_table_ptr[node_inx]->name, node_inx);
+		for (s = 0; s < sock_cnt; s++) {
+			if (!used_sock[s] || !sock_gres->bits_by_sock[s])
+				continue;
+			/* Determine currently free GRES by socket */
+			used_sock[s] =
+				bit_set_count(sock_gres->bits_by_sock[s]) -
+				bit_overlap(sock_gres->bits_by_sock[s],
+					    gres_ns->gres_bit_alloc);
+			if (used_sock[s] == 0)
+				(*used_sock_cnt)--;
+		}
+		/* Exclude sockets with low GRES counts */
+		while (tres_mc_ptr->sockets_per_node > *used_sock_cnt) {
+			int low_sock_inx = -1;
+			for (s = sock_cnt - 1; s >= 0; s--) {
+				if (used_sock[s] == 0)
+					continue;
+				if ((low_sock_inx == -1) ||
+				    (used_sock[s] < used_sock[low_sock_inx]))
+					low_sock_inx = s;
+			}
+			if (low_sock_inx == -1)
+				break;
+			used_sock[low_sock_inx] = 0;
+			(*used_sock_cnt)--;
+		}
+	}
+
+	return used_sock;
+}
+
+/*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-socket resource specification
  * node_inx IN - global node index
@@ -688,6 +781,8 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
  *		  gres_bit_select
  * job_id IN - job ID for logging
  * tres_mc_ptr IN - job's multi-core options
+ * used_cores_on_sock IN - cores the job holds on each socket
+ * used_sock_cnt IN - sockets the job is to be given devices on
  */
 static int _set_sock_bits(int node_inx, int job_node_inx,
 			  sock_gres_t *sock_gres, uint32_t job_id,
@@ -704,81 +799,18 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 	gres_node_state_t *gres_ns;
 	int *links_cnt = NULL, *sorted_gres = NULL;
 	uint64_t gres_needed, gres_this_sock;
-	uint32_t *used_sock = used_cores_on_sock;
-	bool allocated_array_copy = false;
+	uint32_t *settled_sock, *used_sock = used_cores_on_sock;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 
-	if (tres_mc_ptr && tres_mc_ptr->sockets_per_node     &&
-	    (tres_mc_ptr->sockets_per_node != used_sock_cnt) &&
-	    gres_ns->gres_bit_alloc && sock_gres->bits_by_sock) {
-		used_sock = xcalloc(sock_gres->sock_cnt, sizeof(int));
-		memcpy(used_sock, used_cores_on_sock,
-		       sock_gres->sock_cnt * sizeof(int));
-		allocated_array_copy = true;
-		if (tres_mc_ptr->sockets_per_node > used_sock_cnt) {
-			/* Somehow we have too few sockets in job allocation */
-			error("%s: Inconsistent requested/allocated socket count (%d > %d) for job %u on node %s (node_inx %d)",
-			      __func__, tres_mc_ptr->sockets_per_node,
-			      used_sock_cnt, job_id,
-			      node_record_table_ptr[node_inx]->name, node_inx);
-			for (s = 0; s < sock_cnt; s++) {
-				if (used_sock[s] || !sock_gres->bits_by_sock[s])
-					continue;
-				/* Determine currently free GRES by socket */
-				used_sock[s] = bit_set_count(
-					sock_gres->bits_by_sock[s]) -
-					bit_overlap(
-						sock_gres->bits_by_sock[s],
-						gres_ns->gres_bit_alloc);
-				if ((used_sock[s] == 0) ||
-				    (used_sock[s] < gres_js->gres_per_socket)){
-					used_sock[s] = 0;
-				} else if (++used_sock_cnt ==
-					   tres_mc_ptr->sockets_per_node) {
-					break;
-				}
-			}
-		} else {
-			/* May have needed extra CPUs, exceeding socket count */
-			debug("%s: Inconsistent requested/allocated socket count (%d < %d) for job %u on node %s (node_inx %d)",
-			      __func__, tres_mc_ptr->sockets_per_node,
-			      used_sock_cnt, job_id,
-			      node_record_table_ptr[node_inx]->name, node_inx);
-			for (s = 0; s < sock_cnt; s++) {
-				if (!used_sock[s] ||
-				    !sock_gres->bits_by_sock[s])
-					continue;
-				/* Determine currently free GRES by socket */
-				used_sock[s] = bit_set_count(
-					sock_gres->bits_by_sock[s]) -
-					bit_overlap(
-						sock_gres->bits_by_sock[s],
-						gres_ns->gres_bit_alloc);
-				if (used_sock[s] == 0)
-					used_sock_cnt--;
-			}
-			/* Exclude sockets with low GRES counts */
-			while (tres_mc_ptr->sockets_per_node > used_sock_cnt) {
-				int low_sock_inx = -1;
-				for (s = sock_cnt - 1; s >= 0; s--) {
-					if (used_sock[s] == 0)
-						continue;
-					if ((low_sock_inx == -1) ||
-					    (used_sock[s] <
-					     used_sock[low_sock_inx]))
-						low_sock_inx = s;
-				}
-				if (low_sock_inx == -1)
-					break;
-				used_sock[low_sock_inx] = 0;
-				used_sock_cnt--;
-			}
-		}
-	}
+	settled_sock = _settle_used_socks(sock_gres, tres_mc_ptr, job_id,
+					  node_inx, used_cores_on_sock,
+					  &used_sock_cnt);
+	if (settled_sock)
+		used_sock = settled_sock;
 
 	if (gres_ns->link_len == gres_cnt) {
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
@@ -788,7 +820,6 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 			sorted_gres[g] = g;
 		}
 	}
-
 
 	gres_needed = used_sock_cnt * gres_js->gres_per_socket;
 	gres_needed -= total_res_gres;
@@ -842,8 +873,7 @@ static int _set_sock_bits(int node_inx, int job_node_inx,
 
 	xfree(links_cnt);
 	xfree(sorted_gres);
-	if (allocated_array_copy)
-		xfree(used_sock);
+	xfree(settled_sock);
 
 	if (gres_needed) {
 		error("%s: Insufficient gres/%s allocated for job %u on node %s (node_inx %d) (gres still needed %"PRIu64", total requested: %"PRIu64", gres per socket: %"PRIu64")",
