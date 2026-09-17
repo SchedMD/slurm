@@ -595,7 +595,8 @@ static int _create_ns(stepd_step_rec_t *step)
 				error("%s: could not mount private shm",
 				      __func__);
 		}
-		exit(rc);
+		/* Never execs: use _exit(), not exit(). */
+		_exit(rc);
 	} else {
 		int wstatus;
 		char *proc_path = NULL;
