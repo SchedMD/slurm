@@ -182,6 +182,16 @@ extern void hres_rm_node(node_record_t *node_ptr);
 
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
+/*
+ * Test whether disabled HRES layers alone leave a job no node to run on in a
+ * partition: a requested HRES disabled as a whole, or every candidate node
+ * served only by disabled layers.
+ * IN job_ptr - job whose license_list is examined
+ * IN part_ptr - partition being tried
+ * RET true if the job cannot run until layers are enabled again
+ */
+extern bool hres_job_disabled(job_record_t *job_ptr, part_record_t *part_ptr);
+
 extern bool hres_select_check(hres_select_t *hres_select,
 			      uint16_t hres_leaf_idx);
 

@@ -152,6 +152,8 @@ typedef struct {
 } foreach_get_total_t;
 
 typedef struct {
+	bool blocked_by_disable; /* a disabled layer removed nodes */
+	bool ignore_usage; /* filter on the disable flags only, not on usage */
 	job_record_t *job_ptr;
 	licenses_t *license_entry;
 	bitstr_t *node_mask;
@@ -159,6 +161,8 @@ typedef struct {
 } foreach_hres_filter_t;
 
 typedef struct {
+	bool blocked_by_disable; /* a disabled layer removed nodes */
+	bool ignore_usage; /* filter on the disable flags only, not on usage */
 	job_record_t *job_ptr;
 	list_t *license_list;
 	bitstr_t *node_bitmap;
@@ -2149,8 +2153,14 @@ static int _foreach_hres_filter_mode1(void *x, void *arg)
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
-	if (match->hres_rec.disable_hres || match->hres_rec.disable_layer)
+	if (match->hres_rec.disable_hres || match->hres_rec.disable_layer) {
+		args->blocked_by_disable = true;
 		return 0;
+	}
+	if (args->ignore_usage) {
+		bit_or(args->node_mask, match->node_bitmap);
+		return 0;
+	}
 
 	resv_licenses =
 		job_test_lic_resv(args->job_ptr, match->id, args->when, false);
@@ -2169,9 +2179,12 @@ static int _foreach_hres_filter_mode2(void *x, void *arg)
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
 	if (match->hres_rec.disable_hres || match->hres_rec.disable_layer) {
+		args->blocked_by_disable = true;
 		bit_and_not(args->node_mask, match->node_bitmap);
 		return 0;
 	}
+	if (args->ignore_usage)
+		return 0;
 
 	resv_licenses =
 		job_test_lic_resv(args->job_ptr, match->id, args->when, false);
@@ -2236,25 +2249,34 @@ static int _foreach_hres_filter(void *x, void *arg)
 	hres_filter_args_t *args = arg;
 	bitstr_t *node_mask;
 	foreach_hres_filter_t arg2 = {
+		.ignore_usage = args->ignore_usage,
 		.job_ptr = args->job_ptr,
 		.license_entry = license_entry,
 		.when = args->when,
 	};
 
+	/* Mode 3 usage is left to hres_pre_select(), its disabled layers not */
 	if ((license_entry->id.hres_id == NO_VAL16) ||
-	    (license_entry->mode == HRES_MODE_3))
+	    ((license_entry->mode == HRES_MODE_3) && !args->ignore_usage))
 		return 0;
 
 	node_mask = bit_alloc(node_record_count);
 	arg2.node_mask = node_mask;
 
 	list_for_each_ro(args->license_list, _foreach_hres_filter_mode1, &arg2);
-	if (license_entry->mode == HRES_MODE_2)
+	/*
+	 * Mode 3 only gets here with ignore_usage set and reuses the mode 2
+	 * pass: a disabled layer removes its nodes, and a disabled parent
+	 * already holds the nodes of its whole subtree.
+	 */
+	if (license_entry->mode != HRES_MODE_1)
 		list_for_each_ro(args->license_list, _foreach_hres_filter_mode2,
 				 &arg2);
 
 	bit_and(args->node_bitmap, node_mask);
 	FREE_NULL_BITMAP(node_mask);
+	if (arg2.blocked_by_disable)
+		args->blocked_by_disable = true;
 
 	return 0;
 }
@@ -2275,6 +2297,38 @@ extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	list_for_each_ro(job_ptr->license_list, _foreach_hres_filter,
 			 &filter_args);
 	return SLURM_SUCCESS;
+}
+
+extern bool hres_job_disabled(job_record_t *job_ptr, part_record_t *part_ptr)
+{
+	hres_filter_args_t filter_args = {
+		.ignore_usage = true,
+		.job_ptr = job_ptr,
+		.when = time(NULL),
+	};
+	bitstr_t *usable = NULL;
+	bool blocked = false;
+
+	if (!job_ptr->license_list)
+		return false;
+
+	usable = bit_copy(part_ptr->node_bitmap);
+	if (job_ptr->details->req_node_bitmap)
+		bit_and(usable, job_ptr->details->req_node_bitmap);
+
+	slurm_mutex_lock(&license_mutex);
+	if (cluster_license_list && (bit_ffs(usable) != -1)) {
+		filter_args.license_list = cluster_license_list;
+		filter_args.node_bitmap = usable;
+		list_for_each_ro(job_ptr->license_list, _foreach_hres_filter,
+				 &filter_args);
+		blocked = (filter_args.blocked_by_disable &&
+			   (bit_ffs(usable) == -1));
+	}
+	slurm_mutex_unlock(&license_mutex);
+	FREE_NULL_BITMAP(usable);
+
+	return blocked;
 }
 
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap)

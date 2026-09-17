@@ -1853,6 +1853,13 @@ skip_start:
 				_set_schedule_exit(SCHEDULE_EXIT_LIC);
 				break;
 			}
+		} else if (error_code == ESLURM_HRES_DISABLED) {
+			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
+				     job_ptr,
+				     job_state_string(job_ptr->job_state),
+				     job_state_reason_string(
+					     job_ptr->state_reason),
+				     job_ptr->priority);
 		} else if (error_code == ESLURM_BURST_BUFFER_WAIT) {
 			if (job_ptr->start_time == 0) {
 				job_ptr->start_time = last_job_sched_start;

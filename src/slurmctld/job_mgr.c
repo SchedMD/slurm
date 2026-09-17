@@ -4488,6 +4488,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 		 (error_code == ESLURM_PARTITION_DOWN) ||
 		 (error_code == ESLURM_LICENSES_UNAVAILABLE) ||
+		 (error_code == ESLURM_HRES_DISABLED) ||
 		 (error_code == ESLURM_PORTS_BUSY) ||
 		 ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 		  (job_ptr->state_reason == FAIL_CONSTRAINTS)) ||
