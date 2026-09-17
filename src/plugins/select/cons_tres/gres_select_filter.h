@@ -56,6 +56,7 @@ typedef struct {
 	uint16_t cpus_per_core; /* Count of CPUs per core on this node */
 	uint16_t cpus_per_task; /* Count of CPUs per task */
 	bool enforce_binding; /* GRES must be co-allocated with cores */
+	gres_links_mode_t links_mode; /* How links steer selection */
 	uint16_t max_cpus; /* maximum CPUs available on this node (limited by
 			      specialized cores and partition CPUs-per-node) */
 	uint32_t max_nodes; /* most nodes the job can be spread over, after
@@ -78,6 +79,8 @@ typedef struct {
  * IN args->max_cpus - maximum CPUs available on this node (limited by
  *                     specialized cores and partition CPUs-per-node)
  * IN args->enforce_binding - GRES must be co-allocated with cores
+ * IN args->links_mode - how the links between devices steer the selection of
+ *                       them
  * IN args->core_bitmap - Identification of available cores on this node
  * IN args->sockets - Count of sockets on the node
  * IN args->cores_per_sock - Count of cores per socket on this node

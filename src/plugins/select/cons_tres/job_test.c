@@ -695,10 +695,13 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 
 	if (sock_gres_list) {
 		uint16_t near_gpu_cnt = 0;
+		gres_links_mode_t links_mode =
+			gres_select_filter_links_mode(job_ptr->bit_flags);
 		gres_remove_unused_args_t gres_rm_args = {
 			.avail_mem = avail_mem,
 			.max_cpus = avail_res->avail_cpus,
 			.enforce_binding = create_args.enforce_binding,
+			.links_mode = links_mode,
 			.max_nodes = max_nodes,
 			.core_bitmap = core_map[node_i],
 			.sockets = node_ptr->tot_sockets,
