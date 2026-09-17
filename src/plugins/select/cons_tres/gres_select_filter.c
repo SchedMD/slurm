@@ -651,6 +651,22 @@ static void _update_and_sort_by_links(int *sorted_gres, int *links_cnt,
 	sorting_links_cnt = NULL;
 }
 
+/*
+ * Pick up to gres_needed devices for the job on this node, from one socket or
+ * from the socket-independent ones when socket_index is ANY_SOCK_TEST. With
+ * enforce-links the pick is handed to gres_links_select(). Otherwise
+ * devices are walked in sorted_gres order, or index order when that is NULL,
+ * skipping those already selected or held by another job.
+ * IN/OUT sock_gres - GRES availability, its job state updated with the picks
+ * IN gres_needed - number of devices this call is to select
+ * IN node_inx - global node index
+ * IN socket_index - socket to pick from, or ANY_SOCK_TEST
+ * IN sorted_gres - device indexes in the order to pick them, or NULL
+ * IN links_cnt - per device count of links to those already picked, or NULL
+ * IN links_mode - how links steer the selection
+ * IN sock_required - true when only this socket's devices may be handed over
+ * RET count of devices selected
+ */
 static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
 				int node_inx, int socket_index,
 				int *sorted_gres, int *links_cnt,
