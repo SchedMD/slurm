@@ -757,10 +757,11 @@ extern int http_con_send_response(http_con_t *hcon,
 			return rc;
 
 		if (omit_body) {
-			log_flag(NET, "%s: [%s] rc=%s(%u) declaring but not sending %zu bytes of body for HEAD",
+			log_flag(NET, "%s: [%s] rc=%s(%u) not sending %zu bytes of body for %s request",
 				 __func__, conmgr_con_get_name(con),
 				 get_http_status_code_string(status_code),
-				 status_code, body_length);
+				 status_code, body_length,
+				 get_http_method_string(request->method));
 		} else {
 			log_flag(NET, "%s: [%s] rc=%s(%u) sending %zu bytes of body",
 				 __func__, conmgr_con_get_name(con),
