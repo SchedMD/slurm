@@ -67,6 +67,7 @@ static char *slurmd_config_files[] = {
 	"namespace.yaml",
 	"oci.conf",
 	"plugstack.conf",
+	"runtime.lua",
 	"scrun.lua",
 	"slurm.conf",
 	"topology.conf",
