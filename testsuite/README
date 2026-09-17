@@ -994,6 +994,7 @@ test_130_6   Test per-TRES decay of GrpTRESMins usage with TresDecayHalfLife
 test_130_7   Test TresDecayHalfLife with PriorityDecayHalfLife disabled
 test_130_8   Test a frozen GrpTRESMins quota keeps blocking jobs
 test_130_9   Test setting TresDecayHalfLife applies without a restart
+test_130_10  Test a PriorityDecayHalfLife reconfigure leaves overrides alone
 
 test_131_#   Testing of sshare options.
 ========================================
