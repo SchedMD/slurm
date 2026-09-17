@@ -156,6 +156,7 @@ static void _fwd_msg_free(forward_msg_t *fwd_msg)
 	fwd_msg->header.forward.alias_addrs.net_cred = NULL;
 	fwd_msg->header.forward.alias_addrs.node_addrs = NULL;
 	fwd_msg->header.forward.alias_addrs.node_list = NULL;
+	fwd_msg->header.forward.alias_addrs.resolve_nodes = NULL;
 	destroy_forward(&fwd_msg->header.forward);
 	xfree(fwd_msg);
 }

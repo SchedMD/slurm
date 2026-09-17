@@ -3643,6 +3643,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	/* The split-off record is pending, so it has no allocated partition. */
 	job_ptr_pend->alloc_partition = NULL;
 	job_ptr_pend->node_addrs = NULL;
+	job_ptr_pend->resolve_nodes = NULL;
 
 	job_ptr_pend->array_recs = job_ptr->array_recs;
 	job_ptr->array_recs = NULL;
@@ -17292,6 +17293,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->licenses_allocated);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->node_addrs);
+	xfree(job_ptr->resolve_nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
 	xfree(job_ptr->nodes_rs);

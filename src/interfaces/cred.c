@@ -288,6 +288,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_partition);
 	xfree(arg->job_qos);
 	xfree(arg->job_reservation);
+	xfree(arg->job_resolve_nodes);
 	xfree(arg->job_selinux_context);
 	xfree(arg->job_std_err);
 	xfree(arg->job_std_in);
@@ -339,6 +340,9 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 		break;
 	case CRED_DATA_JOB_NODE_ADDRS:
 		rc = (void *) cred->arg->job_node_addrs;
+		break;
+	case CRED_DATA_JOB_RESOLVE_NODES:
+		rc = (void *) cred->arg->job_resolve_nodes;
 		break;
 	case CRED_DATA_STEP_GRES_LIST:
 		rc = (void *) cred->arg->step_gres_list;
