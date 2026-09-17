@@ -57,7 +57,7 @@
  ********************/
 typedef struct build_part_info {
 	node_info_msg_t *node_msg;
-	uint16_t part_num;
+	int part_num;
 	partition_info_t *part_ptr;
 	list_t *sinfo_list;
 } build_part_info_t;
@@ -93,9 +93,8 @@ static int  _find_part_list(void *x, void *key);
 static bool _filter_out(node_info_t *node_ptr);
 static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 		     char *cluster_name, data_parser_t *parser);
-static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
-			    partition_info_t *part_ptr,
-			    node_info_t *node_ptr);
+static int _insert_node_ptr(list_t *sinfo_list, int part_num,
+			    partition_info_t *part_ptr, node_info_t *node_ptr);
 static int  _load_resv(reserve_info_msg_t ** reserv_pptr, bool clear_old);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
@@ -534,7 +533,7 @@ void *_build_part_info(void *args)
 	partition_info_t *part_ptr;
 	node_info_msg_t *node_msg;
 	node_info_t *node_ptr = NULL;
-	uint16_t part_num;
+	int part_num;
 	int j = 0;
 
 	if (_serial_part_data())
@@ -648,7 +647,7 @@ static int _build_sinfo_data(list_t *sinfo_list,
 		/* Process each partition using a separate thread */
 		build_struct_ptr = xmalloc(sizeof(build_part_info_t));
 		build_struct_ptr->node_msg   = node_msg;
-		build_struct_ptr->part_num   = (uint16_t) j;
+		build_struct_ptr->part_num = j;
 		build_struct_ptr->part_ptr   = part_ptr;
 		build_struct_ptr->sinfo_list = sinfo_list;
 
@@ -1132,9 +1131,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->cpus_idle += total_cpus;
 }
 
-static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
-			    partition_info_t *part_ptr,
-			    node_info_t *node_ptr)
+static int _insert_node_ptr(list_t *sinfo_list, int part_num,
+			    partition_info_t *part_ptr, node_info_t *node_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
@@ -1155,7 +1153,8 @@ static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
 	/* if no match, create new sinfo_data entry */
 	if (!sinfo_ptr) {
 		list_append(sinfo_list,
-			    _create_sinfo(part_ptr, part_num, node_ptr));
+			    _create_sinfo(part_ptr, (uint16_t) part_num,
+					  node_ptr));
 	}
 
 	return rc;
