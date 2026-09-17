@@ -12658,8 +12658,8 @@ static void _update_job_mem_on_nodes(job_record_t *job_ptr)
 	     i++) {
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, agent_args->msg_flags,
+				 agent_args->resolve_hostlist);
 	}
 
 	if (agent_args->node_count == 0) {
@@ -16210,8 +16210,8 @@ static void _send_job_kill(job_record_t *job_ptr)
 	     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i)); i++) {
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, agent_args->msg_flags,
+				 agent_args->resolve_hostlist);
 	}
 	if (agent_args->node_count == 0) {
 		if (job_ptr->details->expanding_jobid == 0) {
@@ -17845,8 +17845,8 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	     i++) {
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, agent_args->msg_flags,
+				 agent_args->resolve_hostlist);
 	}
 
 	if (agent_args->node_count == 0) {
@@ -17887,8 +17887,8 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 	     i++) {
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, agent_args->msg_flags,
+				 agent_args->resolve_hostlist);
 	}
 
 	if (agent_args->node_count == 0) {

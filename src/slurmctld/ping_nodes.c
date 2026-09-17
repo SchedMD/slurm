@@ -261,8 +261,8 @@ void ping_nodes (void)
 			hostlist_push_host(reg_agent_args->hostlist,
 					   node_ptr->name);
 			reg_agent_args->node_count++;
-			if (PACK_FANOUT_ADDRS(node_ptr))
-				reg_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+			SET_FANOUT_ADDRS(node_ptr, reg_agent_args->msg_flags,
+					 reg_agent_args->resolve_hostlist);
 			continue;
 		}
 
@@ -283,8 +283,8 @@ void ping_nodes (void)
 				node_ptr->protocol_version;
 		hostlist_push_host(ping_agent_args->hostlist, node_ptr->name);
 		ping_agent_args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			ping_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, ping_agent_args->msg_flags,
+				 ping_agent_args->resolve_hostlist);
 	}
 
 	restart_flag = false;
@@ -399,8 +399,8 @@ extern void run_health_check_individual(node_record_t *node_ptr)
 
 	hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 	check_agent_args->node_count++;
-	if (PACK_FANOUT_ADDRS(node_ptr))
-		check_agent_args->msg_flags |= SLURM_PACK_ADDRS;
+	SET_FANOUT_ADDRS(node_ptr, check_agent_args->msg_flags,
+			 check_agent_args->resolve_hostlist);
 
 	debug("Spawning health check agent for %s", node_ptr->node_hostname);
 	ping_begin();
@@ -546,8 +546,8 @@ extern void run_health_check(void)
 			args->protocol_version = node_ptr->protocol_version;
 		hostlist_push_host(args->hostlist, node_ptr->name);
 		args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, args->msg_flags,
+				 args->resolve_hostlist);
 	}
 	if (!node_ptr)
 		base_node_loc = 0;
@@ -585,8 +585,8 @@ extern void update_nodes_acct_gather_data(void)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
-		if (PACK_FANOUT_ADDRS(node_ptr))
-			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+		SET_FANOUT_ADDRS(node_ptr, agent_args->msg_flags,
+				 agent_args->resolve_hostlist);
 	}
 
 	if (agent_args->node_count == 0) {
