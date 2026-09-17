@@ -1123,14 +1123,13 @@ static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
 	 */
 	case 'S':
 	{
-		int i;
 		void *ptr = NULL;
 		step_record_t *step_ptr = NULL;
 		job_record_t *job_ptr = NULL;
 		va_list ap_copy;
 
 		va_copy(ap_copy, ap);
-		for (i = 0; i < *cnt; i++)
+		for (int i = 0; i < *cnt; i++)
 			ptr = va_arg(ap_copy, void *);
 		step_ptr = ptr;
 		if (step_ptr && (step_ptr->magic == STEP_MAGIC))
