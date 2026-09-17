@@ -47,14 +47,19 @@ def test_slurm_spank_init_failure_mode(mode, cleanup_state, spank_fail_lib):
 
     # Ensure the SPANK plugin is included in plugstack.conf
     atf.require_config_parameter(
-        "required",
-        f"{spank_fail_lib} slurm_spank_init remote {mode}",
-        delimiter=" ",
-        source="plugstack",
+        "required", spank_fail_lib, delimiter=" ", source="plugstack"
     )
 
     node = next(iter(atf.nodes))
-    job_id = atf.submit_job_sbatch(f"-w {node} --wrap 'srun true'", fatal=True)
+    job_id = atf.submit_job_sbatch(
+        f"-w {node} --wrap 'srun true'",
+        env_vars=(
+            "SPANK_FAIL_TEST_FUNC=slurm_spank_init "
+            "SPANK_FAIL_TEST_CTXT=remote "
+            f"SPANK_FAIL_TEST_MODE={mode}"
+        ),
+        fatal=True,
+    )
 
     if mode == "job":
         # The node should NOT be DRAIN
