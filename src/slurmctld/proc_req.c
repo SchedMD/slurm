@@ -3340,8 +3340,17 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		job_ptr = find_het_job_record(job_info_msg->step_id.job_id,
 					      job_info_msg->het_job_offset);
 		if (job_ptr) {
+			uint32_t req_step_id = job_info_msg->step_id.step_id;
+			uint32_t req_step_het_comp =
+				job_info_msg->step_id.step_het_comp;
+
 			job_info_msg->step_id =
 				STEP_ID_FROM_JOB_RECORD(job_ptr);
+
+			/* recover obliterated fields needed for hetjob */
+			job_info_msg->step_id.step_id = req_step_id;
+			job_info_msg->step_id.step_het_comp = req_step_het_comp;
+
 			error_code = job_alloc_info(msg->auth_uid,
 						    &job_info_msg->step_id,
 						    &job_ptr);

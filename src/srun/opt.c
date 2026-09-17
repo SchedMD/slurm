@@ -276,6 +276,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->argv = xcalloc(sizeof(char *), opt.argc);
 	for (i = 0; i < opt.argc; i++)
 		opt_dup->argv[i] = xstrdup(opt.argv[i]);
+	sropt.bcast_exclude = NULL; /* Moved by memcpy */
 	sropt.bcast_file = NULL;	/* Moved by memcpy */
 	opt.burst_buffer = NULL;	/* Moved by memcpy */
 	opt_dup->c_constraint = xstrdup(opt.c_constraint);
