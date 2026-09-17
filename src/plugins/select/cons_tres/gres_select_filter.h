@@ -56,6 +56,7 @@ typedef struct {
 	uint16_t cpus_per_core; /* Count of CPUs per core on this node */
 	uint16_t cpus_per_task; /* Count of CPUs per task */
 	bool enforce_binding; /* GRES must be co-allocated with cores */
+	uint32_t job_id; /* job ID, for logging */
 	gres_links_mode_t links_mode; /* How links steer selection */
 	uint16_t max_cpus; /* maximum CPUs available on this node (limited by
 			      specialized cores and partition CPUs-per-node) */
@@ -63,6 +64,7 @@ typedef struct {
 			     * partition and QOS/association limits, 0 when
 			     * that is not constrained */
 	uint16_t *near_gpus; /* # of GPUs avail on sockets with avail CPUs */
+	int node_inx; /* global node index, for logging */
 	uint16_t sockets; /* Count of sockets on the node*/
 	uint32_t sock_per_node; /* sockets wanted by job per node or NO_VAL */
 	uint16_t task_per_node; /* tasks wanted by job per node or NO_VAL16 */
@@ -79,8 +81,10 @@ typedef struct {
  * IN args->max_cpus - maximum CPUs available on this node (limited by
  *                     specialized cores and partition CPUs-per-node)
  * IN args->enforce_binding - GRES must be co-allocated with cores
+ * IN args->job_id - job ID, for logging
  * IN args->links_mode - how the links between devices steer the selection of
  *                       them
+ * IN args->node_inx - global node index, for logging
  * IN args->core_bitmap - Identification of available cores on this node
  * IN args->sockets - Count of sockets on the node
  * IN args->cores_per_sock - Count of cores per socket on this node

@@ -254,8 +254,10 @@ static int _foreach_remove_unusable(void *x, void *arg)
 	if ((sock_gres->total_cnt < min_gres) ||
 	    ((sock_gres->max_node_gres != 0) &&
 	     (sock_gres->max_node_gres < min_gres))) {
-		log_flag(SELECT_TYPE, "min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")%s",
-			 min_gres, sock_gres->max_node_gres,
+		log_flag(SELECT_TYPE, "job %u rejected node %s (node_inx %d): min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")%s",
+			 args->job_id,
+			 node_record_table_ptr[args->node_inx]->name,
+			 args->node_inx, min_gres, sock_gres->max_node_gres,
 			 sock_gres->total_cnt,
 			 (args->links_mode == GRES_LINKS_ENFORCE) ?
 			 " (counts limited to linked gres by enforce-links)" :
