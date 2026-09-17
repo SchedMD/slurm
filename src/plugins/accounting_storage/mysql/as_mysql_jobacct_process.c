@@ -591,8 +591,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "t3.time_end = 0)) or "
 			       "(t3.time_start > t1.time_submit))))",
 			       job_fields, cluster_name, job_table,
-			       cluster_name, assoc_table,
-			       cluster_name, resv_table);
+			       cluster_name, assoc_table, cluster_name,
+			       resv_table);
 
 	if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
 		xstrfmtcat(query,
