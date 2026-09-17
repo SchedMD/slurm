@@ -836,9 +836,10 @@ static int _on_content_complete(void *arg)
 	/*
 	 * The response has already been written, so the client was told the
 	 * connection is closing by http_con_send_response(). Writing a header
-	 * here would land after the body.
+	 * here would land after the body. No response is being written here,
+	 * so there is no status code to weigh.
 	 */
-	if (request->connection_close || hcon->quiesced)
+	if (_require_close_connection(hcon, HTTP_STATUS_CODE_INVALID))
 		conmgr_con_queue_close(hcon->con);
 
 	_request_reset(hcon);
