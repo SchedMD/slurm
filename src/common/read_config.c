@@ -2670,28 +2670,24 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	return;
 }
 
-/*
- * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
- */
-extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
-			       uint16_t flags)
+static names_ll_t *_find_alias(const char *alias)
 {
-	int idx;
-	names_ll_t *p;
+	names_ll_t *p = node_to_host_hashtbl[_get_hash_idx(alias)];
 
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	idx = _get_hash_idx(node_name);
-	p = node_to_host_hashtbl[idx];
-	while (p && xstrcmp(p->alias, node_name))
+	while (p && xstrcmp(p->alias, alias))
 		p = p->next_alias;
 
-	if (!p) {
-		slurm_conf_unlock();
+	return p;
+}
+
+/* Caller must hold slurm_conf_lock() and have run _init_slurmd_nodehash() */
+static int _get_addr(const char *node_name, slurm_addr_t *address,
+		     uint16_t flags)
+{
+	names_ll_t *p = _find_alias(node_name);
+
+	if (!p)
 		return SLURM_ERROR;
-	}
 
 	if (!p->port)
 		p->port = (uint16_t) conf_ptr->slurmd_port;
@@ -2704,30 +2700,41 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 		if (!p->bcast_addr_initialized) {
 			slurm_set_addr(&p->bcast_addr, p->port,
 				       p->bcast_address);
-			if (slurm_addr_is_unspec(&p->bcast_addr)) {
-				slurm_conf_unlock();
+			if (slurm_addr_is_unspec(&p->bcast_addr))
 				return SLURM_ERROR;
-			}
 		}
 		p->bcast_addr_initialized = true;
 		*address = p->bcast_addr;
-		slurm_conf_unlock();
 		return SLURM_SUCCESS;
 	}
 
 	if (!p->addr_initialized) {
 		slurm_set_addr(&p->addr, p->port, p->address);
-		if (slurm_addr_is_unspec(&p->addr)) {
-			slurm_conf_unlock();
+		if (slurm_addr_is_unspec(&p->addr))
 			return SLURM_ERROR;
-		}
 		if (!p->is_cloud)
 			p->addr_initialized = true;
 	}
 
 	*address = p->addr;
-	slurm_conf_unlock();
 	return SLURM_SUCCESS;
+}
+
+/*
+ * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
+ * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
+ */
+extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
+			       uint16_t flags)
+{
+	int rc = SLURM_ERROR;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	rc = _get_addr(node_name, address, flags);
+	slurm_conf_unlock();
+
+	return rc;
 }
 
 extern int slurm_conf_check_addr(const char *node_name, bool *dynamic)
