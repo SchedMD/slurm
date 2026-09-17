@@ -539,7 +539,12 @@ extern void exec_task(int local_proc_id)
 	}
 	errno = saved_errno;
 	error("execve(): %s: %m", task->argv[0]);
-	_exit(errno);
+
+	/* Avoid truncation of the return status */
+	if ((saved_errno > 0) && (saved_errno < 255))
+		_exit(saved_errno);
+	else
+		_exit(SLURM_ERROR);
 }
 
 static void _make_tmpdir(void)
