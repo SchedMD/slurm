@@ -158,6 +158,7 @@ the <a href=#LIMITATIONS>limitations</a> section.</p>
 <li>namespace.yaml</li>
 <li>oci.conf</li>
 <li>plugstack.conf</li>
+<li>runtime.lua</li>
 <li>scrun.lua</li>
 <li>topology.conf</li>
 <li>topology.yaml</li>
