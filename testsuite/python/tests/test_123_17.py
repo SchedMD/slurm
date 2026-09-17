@@ -12,7 +12,8 @@ Node list changes also close the current cluster node snapshot in the event
 table, so this covers filtering reservations by node across such a change. Once
 a reservation keeps a single record, that record can be older than any snapshot
 a query looks at. Both consumers of that filter are covered, along with a
-reservation that has not started yet, which no snapshot can describe.
+reservation that has not started yet, which no snapshot can describe, and the
+documented behavior of asking about more than one cluster.
 
 Reservations whose association list denies every user are covered as well,
 since the list that gets stored with the record is then empty. So is a change
@@ -34,9 +35,9 @@ dyn_node = f"dyn_{test_name}"
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_version(
-        (25, 11),
+        (26, 11),
         "sbin/slurmctld",
-        reason="Ticket 25553: reservation re-record fix only in 25.11+",
+        reason="Ticket 25553: reservation re-record fix is 26.11 and later",
     )
     atf.require_auto_config("wants dynamic nodes and accounting")
     atf.require_config_parameter("MaxNodeCount", 32)
@@ -96,16 +97,26 @@ def create_reservation(request, resv_node):
 
     yield create
 
+    # The reservations are permanent and MAGNETIC on the cluster's only node,
+    # so one left behind would attract later tests' jobs. Collect the failures
+    # and report them after the loop: failing inside it would skip every
+    # reservation after the first failure, leaking the ones it was most
+    # important to remove.
+    errors = []
+
     for res_name in created:
-        # The reservations are permanent and MAGNETIC on the cluster's only
-        # node, so a delete that silently failed would attract later tests'
-        # jobs.
-        atf.run_command(
+        results = atf.run_command(
             f"scontrol delete reservationname={res_name}",
             user=slurm_user,
-            fatal=True,
             quiet=True,
         )
+        if results["exit_code"] != 0:
+            errors.append(
+                f"Failed to delete reservation {res_name}: {results['stderr']}"
+            )
+
+    if errors:
+        pytest.fail("; ".join(errors))
 
 
 @pytest.fixture
@@ -157,6 +168,33 @@ def assoc_for_test_user():
 
 
 @pytest.fixture
+def extra_cluster():
+    """Registers a second cluster in the accounting database.
+
+    Only the accounting tables of that cluster are needed, so nothing is run
+    for it. Naming a cluster that was never added would not do, since a query
+    then has no tables to read.
+    """
+    slurm_user = atf.properties["slurm-user"]
+    cluster = f"cluster_{test_name}"
+
+    atf.run_command(
+        f"sacctmgr -i add cluster {cluster}",
+        user=slurm_user,
+        fatal=True,
+    )
+
+    yield cluster
+
+    atf.run_command(
+        f"sacctmgr -i remove cluster {cluster}",
+        user=slurm_user,
+        fatal=True,
+        quiet=True,
+    )
+
+
+@pytest.fixture
 def churn_dynamic_node():
     slurm_user = atf.properties["slurm-user"]
 
@@ -192,9 +230,14 @@ def churn_dynamic_node():
 def get_dbd_resv_rows(res_name, end=None):
     """One output line per resv_table time-period row for a reservation.
 
-    An explicit start narrows the window to this run. sacctmgr's default is
-    00:00:00 of the previous day, which would pick up rows left behind by an
-    aborted earlier run, since the reservation name is stable across runs.
+    An explicit start narrows the window past sacctmgr's default of 00:00:00 of
+    the previous day, which keeps out the rows of an earlier run that did
+    delete its reservations, since deleting one sets time_end to the delete
+    time. It does not keep out a row an aborted run left behind without
+    deleting its reservation: the window is an overlap test, not a containment
+    one, and a permanent reservation's time_end is a year out. The reservation
+    name is stable across runs, so such a row is still picked up.
+
     Giving a start without an end ends the period now, so an end in the future
     is needed to see a reservation that has not started yet.
     """
@@ -284,10 +327,10 @@ def test_node_churn_single_resv_record(create_reservation, churn_dynamic_node):
             f"record after node-list churn, got {len(rows)}: {rows}"
         )
 
-    assert get_dbd_resv_rows(res_name)[0] == initial_row, (
+    rows = get_dbd_resv_rows(res_name)
+    assert rows == [initial_row], (
         f"The reservation accounting record should not be changed by "
-        f"node-list churn (was '{initial_row}', "
-        f"now '{get_dbd_resv_rows(res_name)[0]}')"
+        f"node-list churn (was '{initial_row}', now: {rows})"
     )
 
     assert atf.get_reservation_parameter(res_name, "StartTime") == initial_start, (
@@ -390,6 +433,97 @@ def test_sreport_node_filter_after_node_churn(
     )
 
 
+def test_sreport_node_filter_needs_one_cluster(
+    create_reservation, resv_node, cluster_name, extra_cluster
+):
+    """sreport refuses a node filter unless one cluster is asked about.
+
+    Naming several and asking about all of them are both refused, since a node
+    index only means something against one cluster's node list either way.
+    The refusal is checked by what comes back as well as by the exit code,
+    since a report that was never filtered looks like an ordinary one.
+
+    The refusal asserted here is printed by sreport, not by the controller the
+    module gates on, and client commands are upgraded last. An older sreport
+    sends the query and reports what it gets back in its own words.
+    """
+    # Not a skipif: sreport -V fails until accounting is configured by setup().
+    atf.require_version(
+        (26, 11),
+        "bin/sreport",
+        reason="Ticket 25553: sreport refuses a multi-cluster node filter in 26.11+",
+    )
+
+    res_name = create_reservation()
+
+    for _ in atf.timer(fatal=True):
+        if len(get_dbd_resv_rows(res_name)) == 1:
+            break
+
+    # A second cluster is registered, so all_clusters really is more than one.
+    # It is a bare keyword rather than a value of cluster=, which is the only
+    # spelling sreport recognizes for it.
+    # No fatal=True: the failure is what is being asserted.
+    for asked in (f"cluster={cluster_name},{extra_cluster}", "all_clusters"):
+        result = atf.run_command(
+            f"sreport -Pn reservation utilization {asked} names={res_name} "
+            f"nodes={resv_node} start=now end=now+1hour format=Name,Nodes"
+        )
+        assert result["exit_code"] != 0, (
+            f"Asking sreport about more than one cluster with a node filter "
+            f"should fail ({asked}), got exit_code {result['exit_code']} and "
+            f"stdout: {result['stdout']}"
+        )
+        assert "one cluster" in result["stderr"], (
+            f"The refusal should say a node filter takes one cluster ({asked}), "
+            f"got: {result['stderr']}"
+        )
+        assert res_name not in result["stdout"], (
+            f"A refused query should report nothing ({asked}), but {res_name} "
+            f"was reported: {result['stdout']}"
+        )
+
+
+def test_sreport_default_period_hides_running_reservation(
+    create_reservation, resv_node, cluster_name
+):
+    """sreport's default reporting period does not reach a running reservation.
+
+    The default period starts on the previous day and ends at 01:00 of the
+    current one, so a reservation that started later today is outside it. An
+    empty report then means the period rather than the nodes, which is worth
+    pinning because an empty report was also what the node filter bug produced.
+    """
+    res_name = create_reservation()
+    start = atf.get_reservation_parameter(res_name, "StartTime")
+
+    for _ in atf.timer(fatal=True):
+        if len(get_dbd_resv_rows(res_name)) == 1:
+            break
+
+    rows = get_sreport_resv_rows(res_name, resv_node, cluster_name, "now+1hour")
+    assert rows == [f"{res_name}|{resv_node}"], (
+        f"Reservation {res_name} is on {resv_node}, so sreport should match a "
+        f"filter for that node when the period reaches it, got: {rows}"
+    )
+
+    # The same query without a period.
+    output = atf.run_command_output(
+        f"sreport -Pn reservation utilization cluster={cluster_name} "
+        f"names={res_name} nodes={resv_node} format=Name,Nodes -tSeconds",
+        fatal=True,
+    )
+    today = time.strftime("%Y-%m-%d")
+    if not start.startswith(today) or start.startswith(f"{today}T00:"):
+        pytest.skip(f"The default reporting period reaches {start}")
+
+    rows = [line for line in output.splitlines() if line.strip()]
+    assert len(rows) == 0, (
+        f"Reservation {res_name} started at {start}, so the default reporting "
+        f"period, which ends at 01:00 today, should not reach it, got: {rows}"
+    )
+
+
 def test_node_filter_on_pending_reservation(
     create_reservation, resv_node, cluster_name
 ):
@@ -433,6 +567,57 @@ def test_node_filter_on_pending_reservation(
     assert len(rows) == 0, (
         f"Reservation {res_name} starts in the future, so it should not be "
         f"matched by a query period ending now, got: {rows}"
+    )
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/sacctmgr") < (26, 11),
+    reason="Ticket 25553: sacctmgr refuses a multi-cluster node filter in 26.11+",
+)
+def test_node_filter_needs_one_cluster(
+    create_reservation, resv_node, cluster_name, extra_cluster
+):
+    """A node filter is refused unless one cluster is asked about.
+
+    The refusal asserted here is printed by sacctmgr, not by the controller the
+    module gates on, and client commands are upgraded last. An older sacctmgr
+    sends the query and reports what it gets back in its own words.
+    """
+
+    res_name = create_reservation()
+
+    # Wait for the reservation's record to reach the database
+    for _ in atf.timer(fatal=True):
+        if len(get_dbd_resv_rows(res_name)) == 1:
+            break
+
+    # Asking one cluster about a node that has never been part of it excludes
+    # the reservation, so the node that is asked for is what matters below.
+    rows = get_dbd_resv_rows_for_nodes(res_name, f"not{dyn_node}", cluster_name)
+    assert len(rows) == 0, (
+        f"Reservation {res_name} is on {resv_node}, so it should not match a "
+        f"filter for a node that does not exist, got: {rows}"
+    )
+
+    # Documented in sacctmgr.1 and sreport.1: a node index only means anything
+    # against the node list of one cluster, so asking about more than one is
+    # refused rather than answered without the filter. sacctmgr refuses before
+    # querying, and slurmdbd refuses a request that reaches it anyway.
+    #
+    # No fatal=True here: the failure is what is being asserted, so failing the
+    # test on it would invert this case.
+    result = atf.run_command(
+        f"sacctmgr -Pn show reservation names={res_name} "
+        f"nodes=not{dyn_node} clusters={cluster_name},{extra_cluster} "
+        f"start=now format=name,start,nodenames"
+    )
+    assert result["exit_code"] != 0, (
+        f"Asking about more than one cluster with a node filter should fail, "
+        f"got exit_code {result['exit_code']} and stdout: {result['stdout']}"
+    )
+    assert "one cluster" in result["stderr"], (
+        f"The refusal should say a node filter takes one cluster, got: "
+        f"{result['stderr']}"
     )
 
 
