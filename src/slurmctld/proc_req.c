@@ -6744,6 +6744,8 @@ static void _slurm_rpc_node_alias_addrs(slurm_msg_t *msg)
 	bit_and_not(node_bitmap, external_node_bitmap);
 	if (bit_ffs(node_bitmap) != -1) {
 		int addr_index = 0;
+		hostlist_t *resolve_hl = NULL;
+
 		alias_addrs.node_list = bitmap2node_name_sortable(node_bitmap,
 								  false);
 		alias_addrs.node_cnt = bit_set_count(node_bitmap);
@@ -6751,9 +6753,16 @@ static void _slurm_rpc_node_alias_addrs(slurm_msg_t *msg)
 						 sizeof(slurm_addr_t));
 		for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i));
 		     i++) {
+			RESOLVE_ADDR_PUSH(node_ptr, resolve_hl);
 			slurm_conf_get_addr(
 				node_ptr->name,
 				&alias_addrs.node_addrs[addr_index++], 0);
+		}
+
+		if (resolve_hl) {
+			alias_addrs.resolve_nodes =
+				hostlist_ranged_string_xmalloc(resolve_hl);
+			hostlist_destroy(resolve_hl);
 		}
 	}
 
@@ -6769,6 +6778,7 @@ end_it:
 
 	xfree(alias_addrs.node_addrs);
 	xfree(alias_addrs.node_list);
+	xfree(alias_addrs.resolve_nodes);
 	FREE_NULL_BITMAP(node_bitmap);
 }
 

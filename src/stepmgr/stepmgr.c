@@ -6052,6 +6052,7 @@ extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr)
 	memcpy(alias_addrs->node_addrs, job_ptr->node_addrs,
 	       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 	alias_addrs->node_list = xstrdup(job_ptr->nodes);
+	alias_addrs->resolve_nodes = xstrdup(job_ptr->resolve_nodes);
 
 	return alias_addrs;
 }
