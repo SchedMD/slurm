@@ -868,6 +868,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_licenses = job_ptr->licenses;
 	cred_arg->job_node_addrs = job_ptr->node_addrs;
 	cred_arg->job_reservation = job_ptr->resv_name;
+	cred_arg->job_resolve_nodes = job_ptr->resolve_nodes;
 	cred_arg->job_restart_cnt = job_ptr->restart_cnt;
 	cred_arg->job_selinux_context = job_ptr->selinux_context;
 	cred_arg->job_start_time = job_ptr->start_time;

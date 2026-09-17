@@ -280,6 +280,7 @@ extern void set_job_node_addrs(job_record_t *job_ptr,
 	      xstrcmp(origin_cluster, slurm_conf.cluster_name)) ||
 	     (job_ptr->alias_list && xstrcmp(job_ptr->alias_list, "TBD")))) {
 		node_record_t *node_ptr;
+		hostlist_t *resolve_hl = NULL;
 
 		job_ptr->node_addrs =
 			xcalloc(bit_set_count(job_ptr->node_bitmap),
@@ -288,9 +289,16 @@ extern void set_job_node_addrs(job_record_t *job_ptr,
 		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
 						  &i));
 		     i++) {
+			RESOLVE_ADDR_PUSH(node_ptr, resolve_hl);
 			slurm_conf_get_addr(node_ptr->name,
 					    &job_ptr->node_addrs[addr_index++],
 					    0);
+		}
+
+		if (resolve_hl) {
+			job_ptr->resolve_nodes =
+				hostlist_ranged_string_xmalloc(resolve_hl);
+			hostlist_destroy(resolve_hl);
 		}
 	}
 }
