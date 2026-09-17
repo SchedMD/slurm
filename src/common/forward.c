@@ -1033,13 +1033,21 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
 {
 	hostlist_iterator_t *hi;
-	char *node_name;
+	char *node_name, *resolve_nodes = NULL;
 	int addr_index = 0;
 	forward_t *forward = &(msg->forward);
 
 	if (!(msg->flags & SLURM_PACK_ADDRS))
 		return;
+
+	/*
+	 * resolve_nodes comes from the caller, which is the only side that
+	 * knows the node records, so carry it across the rebuild below.
+	 */
+	resolve_nodes = forward->alias_addrs.resolve_nodes;
+	forward->alias_addrs.resolve_nodes = NULL;
 	slurm_free_node_alias_addrs_members(&forward->alias_addrs);
+	forward->alias_addrs.resolve_nodes = resolve_nodes;
 
 	forward->alias_addrs.node_addrs = xcalloc(*cnt, sizeof(slurm_addr_t));
 

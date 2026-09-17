@@ -6879,6 +6879,7 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 		return;
 
 	hostlist_destroy(agent_arg_ptr->hostlist);
+	hostlist_destroy(agent_arg_ptr->resolve_hostlist);
 	xfree(agent_arg_ptr->addr);
 	xfree(agent_arg_ptr->tls_cert);
 	if (agent_arg_ptr->msg_args) {

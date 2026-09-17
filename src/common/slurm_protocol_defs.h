@@ -2239,6 +2239,7 @@ typedef struct {
 					   addr not hostlist */
 	hostlist_t *hostlist;		/* hostlist containing the
 					 * nodes we are sending to */
+	hostlist_t *resolve_hostlist; /* nodes the receivers resolve */
 	uint16_t        protocol_version; /* protocol version to use */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void		*msg_args;	/* RPC data to be transmitted */
