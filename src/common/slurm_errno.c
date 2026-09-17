@@ -998,6 +998,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_HRES_MISSING_LAYER_NAME),
 		"Specified updates require a layer_name",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_DISABLED),
+		"Requested hierarchical resource is disabled",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{
