@@ -282,6 +282,9 @@ static uint64_t _build_shared_dev_info(list_t *gres_conf_list,
 				    &shared_conf->id))
 			error("gres.conf: %s device %s ends in the same number as another one of the node, so the count of neither can be told from the other. Give the devices of a node file names that end in different numbers.",
 			      gres_slurmd_conf->name, gres_slurmd_conf->file);
+		log_flag(GRES, "%s: %s id=%d count=%"PRIu64,
+			 __func__, gres_slurmd_conf->file, shared_conf->id,
+			 shared_conf->count);
 		list_append(shared_info, shared_conf);
 		shared_count += gres_slurmd_conf->count;
 	}
