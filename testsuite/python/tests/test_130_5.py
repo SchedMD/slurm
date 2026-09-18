@@ -48,6 +48,11 @@ def setup_db():
 
     atf.cancel_all_jobs(quiet=True)
     atf.run_command(
+        "scontrol update partitionname=part1 qos=",
+        user=atf.properties["slurm-user"],
+        quiet=True,
+    )
+    atf.run_command(
         f"sacctmgr -i remove user {test_user} where account={account}",
         user=atf.properties["slurm-user"],
         quiet=True,
@@ -272,4 +277,53 @@ def test_usage_factor_below_one_leaves_running_usage():
     assert remaining_usage == one_job_usage, (
         f"The still-running job's usage should be {one_job_usage} after the "
         f"other job ended, but it is {remaining_usage}"
+    )
+
+
+def test_partition_qos_ignores_usage_factor():
+    """Verify a partition QOS books TRESRunMins at the job QOS's UsageFactor.
+
+    The usage factor only applies to the job's QOS and not the partition QOS,
+    so a job whose own QOS is normal books unscaled minutes even when the
+    partition QOS carries a factor of 2. The give-back has to match, which is
+    the pairing of the two priority/basic fixes: one chooses the factor, the
+    other adds the partition QOS to the records usage is returned to.
+    """
+
+    create_qos(2)
+
+    atf.run_command(
+        f"scontrol update partitionname=part1 qos={qos1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    job_id = atf.submit_job_sbatch(
+        f"-N1 --exclusive -t{job_time_limit} -A {account} --wrap 'sleep infinity'",
+        fatal=True,
+    )
+    assert atf.wait_for_job_state(
+        job_id, "RUNNING", fatal=True
+    ), f"Job {job_id} should be running"
+    assert atf.get_job_parameter(job_id, "QOS") == "normal", (
+        f"The job must hold normal as its job QOS so that {qos1} is reached "
+        f"only as the partition QOS"
+    )
+
+    unscaled = booked_cpu_mins(job_id, 1)
+    usage = used_run_mins()
+    assert usage.get("cpu") == unscaled, (
+        f"The partition QOS should have booked {unscaled} cpu TRESRunMins, "
+        f"unscaled by its own UsageFactor, but {usage.get('cpu')} is booked"
+    )
+
+    atf.cancel_jobs([job_id], fatal=True)
+    remaining = None
+    for _ in atf.timer(timeout=60, poll_interval=2):
+        remaining = used_run_mins()
+        if not remaining:
+            break
+    assert not remaining, (
+        "All usage should have been given back on the partition QOS after the "
+        f"job ended, but {remaining} is still booked"
     )
