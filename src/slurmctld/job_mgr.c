@@ -5414,17 +5414,24 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	if (flags & KILL_HURRY)
 		job_ptr->bit_flags |= JOB_KILL_HURRY;
 
+	if (preempt)
+		job_term_state = JOB_PREEMPTED;
+	else if (flags & KILL_FAIL_JOB)
+		job_term_state = JOB_FAILED;
+	else
+		job_term_state = JOB_CANCELLED;
+
 	if (IS_JOB_CONFIGURING(job_ptr) && (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = now;
-		job_state_set(job_ptr, (JOB_CANCELLED | JOB_COMPLETING));
+		job_state_set(job_ptr, (job_term_state | JOB_COMPLETING));
 		if (flags & KILL_FED_REQUEUE)
 			job_state_set_flag(job_ptr, JOB_REQUEUE);
 		slurmscriptd_flush_job(job_ptr->job_id);
 		track_script_flush_job(job_ptr->job_id);
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
-		deallocate_nodes(job_ptr, false, false, false);
+		deallocate_nodes(job_ptr, false, false, preempt);
 		if (flags & KILL_FED_REQUEUE)
 			job_state_unset_flag(job_ptr, JOB_REQUEUE);
 
@@ -5459,12 +5466,6 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		return SLURM_SUCCESS;
 	}
 
-	if (preempt)
-		job_term_state = JOB_PREEMPTED;
-	else if (flags & KILL_FAIL_JOB)
-		job_term_state = JOB_FAILED;
-	else
-		job_term_state = JOB_CANCELLED;
 	if (IS_JOB_SUSPENDED(job_ptr) && (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = job_ptr->suspend_time;
