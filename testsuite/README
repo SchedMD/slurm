@@ -426,7 +426,6 @@ test17.38  Test for sbatch --signal.
 test17.39  Validate dependency OR option.
 test17.40  Test of --thread-spec option.
 test17.41  Validate that sbatch, srun, salloc return partition error message.
-test17.42  Test of sbatch --wait option.
 test17.43  Test sbatch handling of very long lines in script
 test17.44  Validate that aftercorr dependency is enforced.
 test17.45  Test of sbatch --bbf option
@@ -744,6 +743,7 @@ test_105_9   Test sbatch --requeue=expedite option (success, failure, epilog fai
 test_105_10  Test --oom-kill-step option
 test_105_11  Test sbatch --parsable output format
 test_105_12  Test JobAcctGatherParams=OverMemoryKill enforcement
+test_105_15  Test sbatch --wait (-W) blocking and exit code propagation for normal and array jobs
 
 test_106_#   Testing of sbcast options.
 =======================================
