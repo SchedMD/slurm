@@ -1038,6 +1038,10 @@ test_141_4   Test srun to a powered down cloud node with enable_stepmgr
 test_141_5   Test powered down nodes are not left UNKNOWN on reconfigure/restart
 test_141_6   Test NOT_RESPONDING is not set on, and is cleared from, powered down nodes
 
+test_142_#   Testing of select/cons_tres.
+=========================================
+test_142_1   Test ntasks-per-socket values submitted through the API
+
 test_143_#   Testing --switches.
 ================================
 test_143_1   Test switches with topology/tree + select/cons_tres
