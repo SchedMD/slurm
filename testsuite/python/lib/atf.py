@@ -5663,6 +5663,41 @@ def wait_for_step(job_id, step_id, state="RUNNING", **repeat_until_kwargs):
     )
 
 
+def wait_for_step_count_snippet(count, op="-ge", timeout=60):
+    """Return Bash lines that wait for the script's job to reach a step count.
+
+    Polls `scontrol show step` from inside a batch script until the number of
+    the job's steps with numeric StepIds (excluding .batch/.extern, which
+    never match) bears the given test(1) integer relation to count. Aborts
+    the script on timeout: the gate orders step submissions, so a script
+    that ran anyway would report the missing ordering as a product failure.
+
+    Args:
+        count (integer): The step count to compare against.
+        op (string): A test(1) integer relation (e.g. -ge, -eq). Defaults
+            to -ge: wait until at least count steps are registered.
+        timeout (integer): Seconds to wait before aborting the script.
+
+    Returns:
+        Bash lines embedding the wait, terminated by a newline.
+
+    Example:
+        >>> make_bash_script("s.sh", wait_for_step_count_snippet(2) + "srun true\\n")
+        None
+    """
+
+    pattern = "StepId=$SLURM_JOB_ID[.][0-9]+([[:space:]+]|$)"
+    reached = (
+        f'[ "$(scontrol -o show step "$SLURM_JOB_ID" 2>/dev/null | '
+        f'grep -cE "{pattern}")" {op} {count} ]'
+    )
+    return (
+        f"for _ in $(seq 1 {int(timeout * 2)}); do {reached} && break; "
+        "sleep 0.5; done\n"
+        f"{reached} || {{ echo STEP_COUNT_NOT_{op}_{count}; exit 1; }}\n"
+    )
+
+
 def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     """Wait for specified job step to appear in accounting database (`sacct`).
 
