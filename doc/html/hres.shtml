@@ -109,6 +109,17 @@ So it would pull 8000 from <code>node[01-08]</code>,
 8000 from <code>node[09-16]</code>, 16000 from  <code>node[01-16]</code>, and
 16000 from <code>node[01-32]</code>.</p>
 
+<h4 id="mode3_preemption">Preemption<a class="slurm_link" href="#mode3_preemption"></a></h4>
+
+<p>A pending job can preempt lower-priority running jobs to reclaim a
+<b>Mode 3</b> resource. Because per-node usage is summed into every layer above
+it, a job holding the resource under a shared layer is a preemption candidate
+even when it does not share any nodes with the preemptor.
+Preemption is governed by the usual <b>PreemptType</b> and <b>PreemptMode</b>
+configuration; only the <b>CANCEL</b> and <b>REQUEUE</b> preemption modes are
+supported for <b>Mode 3</b> resources. Preemption to reclaim a hierarchical
+resource is not supported for <b>Mode 1</b> or <b>Mode 2</b> resources.</p>
+
 <h2 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a></h2>
 
 <ul>
@@ -119,8 +130,12 @@ So it would pull 8000 from <code>node[01-08]</code>,
 <li>The layer structure (layers, variables, and modes) is static. Changing it
 	requires editing <b>resources.yaml</b> and restarting or reconfiguring
 	(see <a href="#updates">Runtime Updates</a>)</li>
-<li>Preemption to reclaim busy licenses (<b>PreemptParameters=reclaim_licenses</b>
-	in <b>slurm.conf</b>) does not apply to HRES, only to regular licenses</li>
+<li><b>PreemptParameters=reclaim_licenses</b> in <b>slurm.conf</b> applies only
+	to regular licenses, not to HRES. <b>Mode 3</b> resources are instead
+	reclaimed by their own preemption path (see
+	<a href="#mode3_preemption">Preemption</a>)</li>
+<li>Preemption to reclaim a <b>Mode 3</b> resource is only performed by the main
+	scheduler, not during backfill scheduling</li>
 </ul>
 
 <h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
