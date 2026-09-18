@@ -938,7 +938,8 @@ static job_record_t *_find_step_req_job(slurm_step_id_t *step_id,
 /*
  * Create a pending step's real step_record at wake time and build its
  * step-create response (the shared spine of the async and, later, sync wake
- * arms). On terminal error, logs and records accounting as the async arm did.
+ * arms). On terminal error, logs and records accounting for an async
+ * placeholder, which alone got a step_start.
  * IN  job_ptr - owning job
  * IN  pend_step_ptr - the pending placeholder (carries step_req)
  * OUT new_step_ptr - the created step_record on success
@@ -959,32 +960,47 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 
 	step_req->immediate = 1;
 	rc = _step_create(job_ptr, step_req, new_step_ptr,
-			  job_ptr->start_protocol_ver, &err_msg);
+			  pend_step_ptr->start_protocol_ver, &err_msg);
 	step_req->immediate = 0;
 	xfree(err_msg);
 
 	if (rc == ESLURM_STEP_QUEUED) {
-		debug2("Resources busy, async step still queued");
+		debug2("Resources busy, step still queued");
 		return rc;
 	} else if (rc) {
-		error("Could not create async step: %s", slurm_strerror(rc));
-		jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn,
-						pend_step_ptr);
+		error("Could not create step at wake: %s", slurm_strerror(rc));
+		/*
+		 * Async placeholders got a jobacct step_start at build; balance
+		 * it here.
+		 */
+		if (pend_step_ptr->flags & SSF_ASYNC)
+			jobacct_storage_g_step_complete(stepmgr_ops
+								->acct_db_conn,
+							pend_step_ptr);
 		srun_step_drained(pend_step_ptr);
 		return rc;
 	}
 
 	rc = _make_step_cred(*new_step_ptr, &slurm_cred,
-			     job_ptr->start_protocol_ver);
+			     (*new_step_ptr)->start_protocol_ver);
 	if (rc) {
-		error("Could not create cred for async step: %s",
+		error("Could not create cred for step at wake: %s",
 		      slurm_strerror(rc));
 		_cleanup_failed_step(*new_step_ptr);
 		return rc;
 	}
 
 	resp = xmalloc(sizeof(*resp));
-	resp->def_cpu_bind_type = step_req->launch_params->cpu_bind_type;
+	/*
+	 * Async steps carry launch_params; a sync step does not, so fall back
+	 * to the job's default bind as the regular create reply does.
+	 */
+	if (step_req->launch_params)
+		resp->def_cpu_bind_type =
+			step_req->launch_params->cpu_bind_type;
+	else if (job_ptr->details &&
+		 (job_ptr->details->cpu_bind_type != NO_VAL16))
+		resp->def_cpu_bind_type = job_ptr->details->cpu_bind_type;
 	resp->resv_ports = xstrdup((*new_step_ptr)->resv_ports);
 	resp->state = JOB_RUNNING;
 	resp->step_id = (*new_step_ptr)->step_id;
@@ -992,8 +1008,8 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 		slurm_step_layout_copy((*new_step_ptr)->step_layout);
 	resp->stepmgr = xstrdup(job_ptr->batch_host);
 	resp->cred = slurm_cred;
-	resp->use_protocol_ver = job_ptr->start_protocol_ver;
-	step_req->use_protocol_ver = job_ptr->start_protocol_ver;
+	resp->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
+	step_req->use_protocol_ver = (*new_step_ptr)->start_protocol_ver;
 	*step_resp = resp;
 
 	return SLURM_SUCCESS;
@@ -1045,63 +1061,80 @@ static void _launch_in_stepmgr(job_record_t *job_ptr,
 	}
 }
 
+/*
+ * True if this pending step is (re)created under the lock at wake and its
+ * result delivered (create-at-wake), rather than poked to re-send.  Only
+ * async steps are for now; sync create-at-wake reuses this spine next.
+ * IN step_ptr - the pending placeholder
+ * RET true if the step is (re)created at wake, false if it is poked to re-send
+ */
+static bool _step_uses_create_at_wake(step_record_t *step_ptr)
+{
+	return (step_ptr->flags & SSF_ASYNC);
+}
+
 static int _wake_steps(void *x, void *arg)
 {
 	step_record_t *pend_step_ptr = x;
 	wake_steps_args_t *args = arg;
+	job_record_t *job_ptr = NULL;
+	step_record_t *new_step_ptr = NULL;
+	job_step_create_response_msg_t *step_resp = NULL;
+	job_step_create_request_msg_t *step_req = NULL;
+	bool is_async = false;
+	int rc = EINVAL;
 
 	if (!IS_STEP_PENDING(pend_step_ptr))
 		return 0;
 
-	if ((args->start_count < args->config_start_count) ||
-	    (pend_step_ptr->time_last_active <= args->max_age)) {
-		if (pend_step_ptr->flags & SSF_ASYNC) {
-			job_record_t *job_ptr;
-			step_record_t *new_step_ptr = NULL;
-			job_step_create_response_msg_t *step_resp = NULL;
-			job_step_create_request_msg_t *step_req =
-				pend_step_ptr->step_req;
-			int rc;
+	if (!((args->start_count < args->config_start_count) ||
+	      (pend_step_ptr->time_last_active <= args->max_age)))
+		return 0;
 
-			debug2("Attempting launching of pending async step");
-			_dump_step_desc(step_req);
-
-			job_ptr = _find_step_req_job(&pend_step_ptr->step_id,
-						     step_req->array_task_id);
-
-			/*
-			 * We hold the lock so it shouldn't be possible for a
-			 * job_ptr to be deleted out from under us, but double
-			 * check just in case
-			 */
-			if (!job_ptr) {
-				debug("%s: job for pending async step %ps no longer exists, dropping",
-				      __func__, &pend_step_ptr->step_id);
-				jobacct_storage_g_step_complete(
-					stepmgr_ops->acct_db_conn,
-					pend_step_ptr);
-				srun_step_drained(pend_step_ptr);
-				return 1;
-			}
-
-			rc = _create_step_at_wake(job_ptr, pend_step_ptr,
-						  &new_step_ptr, &step_resp);
-			if (rc == ESLURM_STEP_QUEUED)
-				return 0; /* don't remove step from pending list */
-			if (rc)
-				return 1; /* error already logged + accounted */
-
-			_launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
-					   step_resp);
-			return 1;
-		} else {
-			srun_step_signal(pend_step_ptr, 0);
-			args->start_count++;
-			return 1;
-		}
+	/* Not created at wake: poke srun to re-send. */
+	if (!_step_uses_create_at_wake(pend_step_ptr)) {
+		srun_step_signal(pend_step_ptr, 0);
+		args->start_count++;
+		return 1;
 	}
 
-	return 0;
+	is_async = (pend_step_ptr->flags & SSF_ASYNC);
+	step_req = pend_step_ptr->step_req;
+
+	debug2("Attempting create-at-wake of pending %s step",
+	       is_async ? "async" : "sync");
+	_dump_step_desc(step_req);
+
+	job_ptr = _find_step_req_job(&pend_step_ptr->step_id,
+				     step_req->array_task_id);
+
+	/*
+	 * We hold the lock so it shouldn't be possible for a job_ptr to be
+	 * deleted out from under us, but double check just in case.
+	 */
+	if (!job_ptr) {
+		debug("%s: job for pending step %ps no longer exists, dropping",
+		      __func__, &pend_step_ptr->step_id);
+		if (is_async)
+			jobacct_storage_g_step_complete(stepmgr_ops
+								->acct_db_conn,
+							pend_step_ptr);
+		srun_step_drained(pend_step_ptr);
+		return 1;
+	}
+
+	rc = _create_step_at_wake(job_ptr, pend_step_ptr, &new_step_ptr,
+				  &step_resp);
+	if (rc == ESLURM_STEP_QUEUED)
+		return 0; /* don't remove step from pending list */
+	if (rc)
+		return 1; /* error already logged + accounted */
+
+	if (is_async)
+		_launch_in_stepmgr(job_ptr, pend_step_ptr, new_step_ptr,
+				   step_resp);
+
+	return 1;
 }
 
 /* A step just completed, signal srun processes with pending steps to retry */
@@ -3827,7 +3860,7 @@ static int _job_can_run_step(job_record_t *job_ptr)
 {
 	uint32_t over_time_limit = NO_VAL;
 
-	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
+	if (!job_ptr->details || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
 
 	if (job_ptr->node_bitmap_rs)
