@@ -1994,7 +1994,15 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 	return rc;
 }
 
-/* Note that a reservation has been updated */
+/*
+ * Note that a reservation has been updated
+ *
+ * IN resv_ptr - the reservation, in its current state
+ * IN old_resv_ptr - the reservation as it was before the update, or NULL if the
+ *                   reservation itself didn't change (e.g., when only the
+ *                   cluster node list changed)
+ * RET SLURM_SUCCESS or error
+ */
 static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 			     slurmctld_resv_t *old_resv_ptr)
 {
@@ -2002,8 +2010,6 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	bool change = false;
 	slurmdb_reservation_rec_t resv;
 	time_t now = time(NULL);
-
-	xassert(old_resv_ptr);
 
 	_set_boot_time(resv_ptr);
 
@@ -2021,11 +2027,12 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.nodes = resv_ptr->node_list;
 	resv.comment = resv_ptr->comment;
 
-	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list) ||
-	    xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str)	||
-	    (old_resv_ptr->flags != resv_ptr->flags) ||
-	    xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list) ||
-	    xstrcmp(old_resv_ptr->comment, resv_ptr->comment))
+	if (old_resv_ptr &&
+	    (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list) ||
+	     xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str) ||
+	     (old_resv_ptr->flags != resv_ptr->flags) ||
+	     xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list) ||
+	     xstrcmp(old_resv_ptr->comment, resv_ptr->comment)))
 		change = true;
 
 	/* Here if the reservation has started already we need
@@ -2042,6 +2049,13 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.time_start = resv_ptr->start_time;
 	resv.time_start_prev = resv_ptr->start_time_prev;
 
+	/*
+	 * A node index only means something against the cluster node snapshot it
+	 * was resolved under, so a reservation that has already started has to
+	 * keep the one it was recorded with. Send it anyway: only the database
+	 * knows whether it is updating that record or writing a new one, and a
+	 * new one needs an index. See as_mysql_modify_resv().
+	 */
 	resv.node_inx = acct_storage_g_node_inx(acct_db_conn,
 						resv_ptr->node_list);
 
@@ -8894,11 +8908,14 @@ static int _foreach_send_resv_to_accounting(void *x, void *arg)
 		_post_resv_create(resv_ptr);
 	} else if (db_rc == ACCOUNTING_NODES_CHANGE_DB) {
 		/*
-		 * This makes it so we always get the correct node
-		 * indexes in the database.
+		 * Cluster nodes have changed, possibly affecting the node
+		 * indexes stored on the reservation DB entry. Pass a NULL old
+		 * state since the reservation itself hasn't changed. Node
+		 * indexes will be updated in the existing DB row for
+		 * reservations that have not started yet - see
+		 * _post_resv_update().
 		 */
-		slurmctld_resv_t tmp_resv = { 0 };
-		_post_resv_update(resv_ptr, &tmp_resv);
+		_post_resv_update(resv_ptr, NULL);
 	} else {
 		error("%s: unknown db_rc %d", __func__, db_rc);
 		return -1;

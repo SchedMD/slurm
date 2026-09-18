@@ -475,6 +475,18 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		resv->time_end = slurm_atoul(row[RESV_END]);
 
 	/*
+	 * A node index only means something against the cluster node snapshot
+	 * that was open when the record it belongs to started, so a record that
+	 * has started keeps the index it was written with. The ones that do take
+	 * the index just sent are left alone here: a record that hasn't started
+	 * yet still tracks the current snapshot, a start that has moved to now
+	 * gets a new record below, and the record added above, when none was
+	 * found at all, is new as well.
+	 */
+	if ((start <= now) && (resv->time_start == start))
+		xfree(resv->node_inx);
+
+	/*
 	 * This needs to happen before the differences are checked below, as it
 	 * puts resv->assocs into the form that is stored in the table.
 	 */
