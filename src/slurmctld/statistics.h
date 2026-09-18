@@ -37,6 +37,7 @@
 #define _STATISTICS_H
 
 #include "src/common/bitstring.h"
+#include "src/common/hostlist.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct node_stats {
@@ -198,6 +199,8 @@ typedef struct job_statistics {
 	uint64_t memory_alloc;
 	uint16_t min_nodes;
 	bitstr_t *node_bitmap;
+	char *nodes; /* nodes allocated to the job, only set for jobs in
+		      * RUNNING or SUSPENDED state */
 	char *partition;
 	uint32_t state_reason;
 	char *user_name;
@@ -222,6 +225,11 @@ typedef struct jobs_statistics {
 	uint64_t memory_alloc;
 	bitstr_t *node_bitmap;
 	uint16_t nodes_alloc;
+	char *nodes; /* when aggregated per user or account: uniq'd,
+		      * range-compressed union of the nodes of its active
+		      * jobs, mirroring node_bitmap */
+	hostlist_t *nodes_hl; /* transient accumulator used to build nodes
+			       * while aggregating, NULL once finalized */
 	uint32_t node_failed;
 	uint32_t oom;
 	uint32_t pending;
