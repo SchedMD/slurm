@@ -115,8 +115,13 @@ typedef struct {
  * 	*ptr may be NULL or will use existing plugins
  * IN major_type - major type of plugin
  * IN plugin_list - comma delimited list of plugins
- * IN listf - callback on each possible plugin if plugin_list="list"
- * RET SLURM_SUCCESS or error
+ * IN listf - callback on each possible plugin if plugin_list="list".
+ * 	A "list" request only enumerates. *plugins_ptr is left untouched, so it
+ * 	is still NULL on return when it was NULL on entry.
+ * RET SLURM_SUCCESS, or an error only when *plugins_ptr was NULL on entry.
+ * 	A failed load into an already populated *plugins_ptr calls fatal()
+ * 	instead of returning, because the entries the failed call added cannot
+ * 	be taken back out of the caller's set.
  */
 extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
 			const char *plugin_list, plugrack_foreach_t listf,
