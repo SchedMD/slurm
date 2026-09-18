@@ -4828,6 +4828,7 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
             if line == "":
                 continue
 
+            original_line = line
             while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
                 param_name, param_value = match.group(1), match.group(2)
 
@@ -4846,10 +4847,16 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
                 job_dict[param_name] = param_value
 
             # Add the job dictionary to the jobs dictionary
-            if job_dict:
+            if "JobId" in job_dict:
                 jobs_dict[job_dict["JobId"]] = job_dict
 
                 # Clear the job dictionary for use by the next job
+                job_dict = {}
+            elif job_dict:
+                # A line carrying parameters but no JobId belongs to no job of
+                # its own, the way a detail line of the record before it does.
+                # Keeping it would attribute its parameters to the next job.
+                logging.debug(f"Ignoring job line without a JobId: {original_line}")
                 job_dict = {}
 
     return jobs_dict
