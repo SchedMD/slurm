@@ -268,7 +268,7 @@ static int _mpi_fini_locked(void)
 	return rc;
 }
 
-static bool _is_none_plugin(char *mpi_type)
+extern bool mpi_is_none_plugin(const char *mpi_type)
 {
 	if (!mpi_type ||
 	    !xstrcmp(mpi_type, "openmpi") ||
@@ -299,7 +299,7 @@ static int _mpi_init_locked(char **mpi_type)
 		 * The openmpi plugin has been equivalent to none for a while.
 		 * Return immediately if no plugin is needed.
 		 */
-		if (_is_none_plugin(*mpi_type)) {
+		if (mpi_is_none_plugin(*mpi_type)) {
 			xfree(*mpi_type);
 			g_context_cnt = 0;
 			client_plugin_id = NO_VAL;
@@ -718,7 +718,7 @@ extern int mpi_id_from_plugin_type(char *mpi_type)
 {
 	int id = -1;
 
-	if (_is_none_plugin(mpi_type))
+	if (mpi_is_none_plugin(mpi_type))
 		return NO_VAL;
 
 	xassert(g_context_cnt);
