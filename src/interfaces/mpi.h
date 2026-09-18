@@ -156,6 +156,9 @@ extern int mpi_conf_recv_stepd(int fd);
 /* given a mpi_type return the plugin_id see mpi_plugin_type above */
 extern int mpi_id_from_plugin_type(char *mpi_type);
 
+/* Return true if mpi_type selects no MPI plugin (NULL, "none", "openmpi") */
+extern bool mpi_is_none_plugin(const char *mpi_type);
+
 /* Tear down things in the MPI plugin */
 extern int mpi_fini(void);
 
