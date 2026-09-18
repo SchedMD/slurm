@@ -115,9 +115,13 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 /*
  * acct_policy_job_runnable_post_select - After nodes have been
  *	selected for the job verify the counts don't exceed aggregated limits.
+ *	When preemptee_job_list is non-NULL, a GrpTRES failure at the
+ *	association level will be retried with usage reduced by the TRES
+ *	that preempting those jobs would free.
  */
 extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 						 uint64_t *tres_req_cnt,
+						 list_t *preemptee_job_list,
 						 bool assoc_mgr_locked);
 
 /*
