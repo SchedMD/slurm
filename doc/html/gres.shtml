@@ -197,7 +197,7 @@ jobs share gpus on the node, you may also need to set
 <P>By default, all system-detected devices are added to the node.
 However, if <i>Type</i> and <i>File</i> in gres.conf match a GPU on
 the system, any other properties explicitly specified (e.g.
-<i>Cores</i> or <i>Links</i>) can be double-checked against it.
+<i>Cores</i>, <i>Links</i>, or <i>UUID</i>) can be double-checked against it.
 If the system-detected GPU differs from its matching GPU configuration, then the
 GPU is omitted from the node with an error.
 This allows <i>gres.conf</i> to serve as an optional sanity check and notifies

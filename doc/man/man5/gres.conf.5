@@ -111,11 +111,13 @@ E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
 \fIAutoDetect\fR cannot be used with cloud nodes.
 
 
-\fIAutoDetect\fR will automatically detect files, cores, links, and any other
-hardware. If a parameter such as \fBFile\fR, \fBCores\fR, or \fBLinks\fR are
-specified when \fIAutoDetect\fR is used, then the specified values are used to
-sanity check the auto detected values. If there is a mismatch, then the node's
-state is set to invalid and the node is drained.
+\fIAutoDetect\fR will automatically detect the device UUID, files, cores, links,
+and any other hardware. \fBFile\fR (and \fBType\fR, if set) is used to match a
+gres.conf record to the corresponding AutoDetect\-found device. Once matched,
+if \fBCores\fR, \fBLinks\fR, or \fBUUID\fR is also specified, the specified
+value is used to sanity check the auto detected value. If there is a mismatch,
+then the device is excluded and, if that drops the node below its configured
+GRES count, the node's state is set to invalid and the node is drained.
 .IP
 
 .TP
@@ -442,6 +444,9 @@ shared GRES inherits the UUID of the device it shares; a UUID configured on
 its own line must match.
 
 The value may not contain a comma.
+
+If \fBAutoDetect\fR also finds a UUID for the device, the two must agree,
+otherwise the device is excluded from the configuration.
 .IP
 
 .SH "EXAMPLES"

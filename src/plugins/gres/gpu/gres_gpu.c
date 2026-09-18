@@ -268,11 +268,11 @@ static int _match_gres(gres_slurmd_conf_t *conf_gres,
 }
 
 /*
- * Check that a gres.conf GRES has the same CPUs and Links as a system GRES, if
- * specified
+ * Check that a gres.conf GRES has the same CPUs, Links and UUID as a system
+ * GRES, if specified
  */
-static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
-			        gres_slurmd_conf_t *sys_gres)
+static int _validate_cpus_links_uuid(gres_slurmd_conf_t *conf_gres,
+				     gres_slurmd_conf_t *sys_gres)
 {
 	/*
 	 * If conf_gres->cpus doesn't convert into conf_gres->cpus_bitmap, then
@@ -296,6 +296,15 @@ static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
 	 */
 	if (conf_gres->links && sys_gres->links &&
 	    xstrcmp(conf_gres->links, sys_gres->links))
+		return 0;
+
+	/*
+	 * If the config gres has a UUID defined check it with what is found
+	 * on the system. AutoDetect knows the real UUID, so a mismatch means the
+	 * admin pinned the wrong device.
+	 */
+	if (conf_gres->unique_id && sys_gres->unique_id &&
+	    xstrcmp(conf_gres->unique_id, sys_gres->unique_id))
 		return 0;
 
 	/* If all checks out above, return */
@@ -357,9 +366,9 @@ static int _sort_gpu_by_links_order(void *x, void *y)
  * gres_list_conf is cleared, gres_list_gpu and gres_list_non_gpu are combined,
  * and this final merged list is returned in gres_list_conf.
  *
- * If a conf GPU corresponds to a system GPU, CPUs and Links are checked to see
- * if they are the same. If not, an error is emitted and that device is excluded
- * from the final list.
+ * If a conf GPU corresponds to a system GPU, CPUs, Links and UUID are
+ * checked to see if they are the same. If not, an error is emitted and that
+ * device is excluded from the final list.
  *
  * gres_list_conf   - (in/out) The GRES records as parsed from [slurm|gres].conf
  * gres_list_system - (in) The gpu devices detected by the system. Each record
@@ -484,10 +493,10 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 			 * does not match the system, emit error. If null, just
 			 * use the system-detected value.
 			 */
-			if (!_validate_cpus_links(gres_slurmd_conf,
-						  gres_slurmd_conf_sys)) {
+			if (!_validate_cpus_links_uuid(gres_slurmd_conf,
+						       gres_slurmd_conf_sys)) {
 				/* What was specified differs from system */
-				error("This GPU specified in [slurm|gres].conf has mismatching Cores or Links from the device found on the system. Ignoring it.");
+				error("This GPU specified in [slurm|gres].conf has mismatching Cores, Links or UUID from the device found on the system. Ignoring it.");
 				error("[slurm|gres].conf:");
 				print_gres_conf(gres_slurmd_conf,
 						LOG_LEVEL_ERROR);
@@ -544,6 +553,16 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 			gres_slurmd_conf_sys->config_flags |=
 				gres_slurmd_conf->config_flags &
 				(GRES_CONF_EXPLICIT | GRES_CONF_UUID);
+			/*
+			 * Take the configured UUID if AutoDetect did not
+			 * find one -- not every device reports a UUID. If both
+			 * have one they are known to be equal;
+			 * _validate_cpus_links_uuid() already checked.
+			 */
+			if (gres_slurmd_conf->unique_id &&
+			    !gres_slurmd_conf_sys->unique_id)
+				gres_slurmd_conf_sys->unique_id =
+					xstrdup(gres_slurmd_conf->unique_id);
 
 			list_remove(itr2);
 			list_append(gres_list_gpu, gres_slurmd_conf_sys);
