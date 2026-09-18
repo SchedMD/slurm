@@ -201,7 +201,7 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 
 /*
  * Print the gres.conf record in a parsable format
- * Do NOT change the format of this without also changing test39.18!
+ * Do NOT change the format of this without also changing test_144_17!
  */
 static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 				      log_level_t log_lvl)
