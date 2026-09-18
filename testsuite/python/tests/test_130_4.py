@@ -237,3 +237,61 @@ def test_usage_factor_modified_while_running(start_factor, new_factor):
         "All usage should have been given back once every job ended, "
         f"but {remaining} is still booked"
     )
+
+
+def test_usage_factor_rebooked_on_reconfigure():
+    """Verify a reconfigure rebooks running jobs at the current UsageFactor.
+
+    Modifying the factor leaves running jobs alone, but a reconfigure clears
+    the booked usage and books every running job again, so from that point the
+    job counts at the factor in effect then rather than the one it started
+    with.
+    """
+
+    set_usage_factor(1, grp_jobs_marker)
+
+    job_id = submit_and_wait()
+    booked_at_start = booked_cpu_mins(job_id, 1)
+    usage = used_run_mins()
+    assert usage.get("cpu") == booked_at_start, (
+        f"Starting the job should have booked {booked_at_start} cpu "
+        f"TRESRunMins, but {usage.get('cpu')} is booked"
+    )
+
+    set_usage_factor(2, grp_jobs_marker + 1)
+    usage = used_run_mins()
+    assert usage.get("cpu") == booked_at_start, (
+        f"Modifying the UsageFactor should have left the running job at "
+        f"{booked_at_start} cpu TRESRunMins, but {usage.get('cpu')} is booked"
+    )
+
+    atf.run_command(
+        "scontrol reconfigure",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Rebooking charges the time the job has left, not its whole limit, so the
+    # scaled figure is bounded by the factor rather than equal to it.
+    rebooked = booked_cpu_mins(job_id, 2)
+    reconfigured = None
+    for _ in atf.timer(timeout=60, poll_interval=2):
+        reconfigured = used_run_mins().get("cpu")
+        if reconfigured is not None and reconfigured > booked_at_start:
+            break
+    assert booked_at_start < reconfigured <= rebooked, (
+        f"A reconfigure should have rebooked the running job above "
+        f"{booked_at_start} and at most {rebooked} cpu TRESRunMins, but "
+        f"{reconfigured} is booked"
+    )
+
+    atf.cancel_jobs([job_id], fatal=True)
+    remaining = None
+    for _ in atf.timer(timeout=60, poll_interval=2):
+        remaining = used_run_mins()
+        if not remaining:
+            break
+    assert not remaining, (
+        "All usage should have been given back after the job ended, "
+        f"but {remaining} is still booked"
+    )
