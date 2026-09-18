@@ -15,6 +15,11 @@ a query looks at. Both consumers of that filter are covered, along with a
 reservation that has not started yet, which no snapshot can describe, and the
 documented behavior of asking about more than one cluster.
 
+A reservation that has not started yet is also the only one kept in step with
+the cluster node list as node churn happens, so that it is still matched by a
+filter for its own node afterwards. That is covered separately from the
+filtering cases above.
+
 Reservations whose association list denies every user are covered as well,
 since the list that gets stored with the record is then empty. So is a change
 to those denials alone on a started reservation, which the stored list cannot
@@ -221,6 +226,35 @@ def churn_dynamic_node():
     if dyn_node in atf.get_nodes(quiet=True):
         atf.run_command(
             f"scontrol delete NodeName={dyn_node}",
+            user=slurm_user,
+            fatal=True,
+            quiet=True,
+        )
+
+
+@pytest.fixture
+def sort_first_node():
+    """Creates a dynamic node whose name sorts before every other node's.
+
+    Adding it shifts the position of every other node in the cluster's node
+    list, whatever the other nodes are named.
+    """
+    slurm_user = atf.properties["slurm-user"]
+    node = f"0{dyn_node}"
+
+    def create():
+        atf.run_command(
+            f"scontrol create NodeName={node} State=CLOUD",
+            user=slurm_user,
+            fatal=True,
+        )
+        return node
+
+    yield create
+
+    if node in atf.get_nodes(quiet=True):
+        atf.run_command(
+            f"scontrol delete NodeName={node}",
             user=slurm_user,
             fatal=True,
             quiet=True,
@@ -567,6 +601,59 @@ def test_node_filter_on_pending_reservation(
     assert len(rows) == 0, (
         f"Reservation {res_name} starts in the future, so it should not be "
         f"matched by a query period ending now, got: {rows}"
+    )
+
+
+def test_node_filter_on_pending_reservation_after_node_churn(
+    create_reservation, sort_first_node, resv_node, cluster_name
+):
+    """A reservation that has not started still matches by node after churn.
+
+    A node index is a position in the cluster's node list, so adding a node
+    that sorts ahead of the reserved one moves it. A reservation that has not
+    started tracks the current list, and what that buys is asked for here the
+    way a user would ask: the reservation still matches a filter for the node
+    it is on. An index left at the old position would resolve against the new
+    list and name the node that took that position instead.
+
+    Note this guards behavior the node index fix deliberately kept, rather
+    than behavior it introduced, so it passes with or without that fix.
+    """
+    res_name = create_reservation(start="now+1hour")
+
+    for _ in atf.timer(fatal=True):
+        if len(get_dbd_resv_rows(res_name, end="now+2hours")) == 1:
+            break
+
+    rows = get_dbd_resv_rows_for_nodes(
+        res_name, resv_node, cluster_name, end="now+2hours"
+    )
+    assert len(rows) == 1, (
+        f"Reservation {res_name} is on {resv_node}, so it should match a "
+        f"filter for that node before any churn, got: {rows}"
+    )
+
+    node = sort_first_node()
+
+    matched = []
+    for _ in atf.timer():
+        matched = get_dbd_resv_rows_for_nodes(
+            res_name, resv_node, cluster_name, end="now+2hours"
+        )
+        if len(matched) == 1:
+            break
+    assert len(matched) == 1, (
+        f"Reservation {res_name} has not started yet and is on {resv_node}, "
+        f"so it should still match a filter for that node after {node} moved "
+        f"its position, got: {matched}"
+    )
+
+    # The one record it had is the one that was updated, not a second one.
+    rows = get_dbd_resv_rows(res_name, end="now+2hours")
+    assert len(rows) == 1, (
+        f"Node-list churn on {res_name}, which has not started yet, should "
+        f"update its existing accounting record rather than add another, "
+        f"got: {rows}"
     )
 
 
