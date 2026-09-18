@@ -56,11 +56,25 @@
 #define GPU_HIGH_M1     ((unsigned int) -3)
 #define GPU_HIGH        ((unsigned int) -4)
 
+/* Size of the machine CPU bitmaps a GPU's CPU affinity is read into. */
+#define MAX_CPUS 0x8000
+
 /*
  * Convert a frequency value to a string
  * Returned string must be xfree()'ed
  */
 extern char *gpu_common_freq_value_to_string(unsigned int freq);
+
+/*
+ * Build the bitmap of the machine CPUs slurmd schedules, to mask the CPU
+ * affinity a GPU reports. Slurmd drops E-cores from its topology unless
+ * SlurmdParameters=allow_ecores is set, so an affinity still listing them
+ * cannot be converted to abstract cores.
+ *
+ * RET bitmap of the machine CPUs slurmd schedules (caller frees), or NULL
+ *	when E-cores are allowed and the affinity needs no masking.
+ */
+extern bitstr_t *gpu_common_get_enabled_cpus(void);
 
 /*
  * Convert frequency to nearest valid frequency found in frequency array

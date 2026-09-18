@@ -37,11 +37,17 @@
 
 #include <ctype.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+
+#include "src/slurmd/slurmd/slurmd.h"
+
+/* The slurmd configuration, defined for real by slurmd and slurmstepd. */
+extern slurmd_conf_t *conf;
 
 static unsigned int _xlate_freq_code(char *gpu_freq)
 {
@@ -132,6 +138,29 @@ extern char *gpu_common_freq_value_to_string(unsigned int freq)
 	default:
 		return xstrdup_printf("%u", freq);
 	}
+}
+
+/*
+ * Build the bitmap of the machine CPUs slurmd schedules, to mask the CPU
+ * affinity a GPU reports. Slurmd drops E-cores from its topology unless
+ * SlurmdParameters=allow_ecores is set, so an affinity still listing them
+ * cannot be converted to abstract cores.
+ *
+ * RET bitmap of the machine CPUs slurmd schedules (caller frees), or NULL
+ *	when E-cores are allowed and the affinity needs no masking.
+ */
+extern bitstr_t *gpu_common_get_enabled_cpus(void)
+{
+	bitstr_t *enabled_cpus = NULL;
+
+	if (slurm_conf.conf_flags & CONF_FLAG_ECORE)
+		return NULL;
+
+	enabled_cpus = bit_alloc(MAX_CPUS);
+	for (int i = 0; i < conf->block_map_size; i++)
+		bit_set(enabled_cpus, conf->block_map[i]);
+
+	return enabled_cpus;
 }
 
 /*
