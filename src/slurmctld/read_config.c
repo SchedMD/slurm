@@ -330,6 +330,8 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(asap_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
+	FREE_NULL_BITMAP(job_launch_node_bitmap);
+	FREE_NULL_BITMAP(het_job_launch_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(cloud_node_bitmap);
@@ -344,6 +346,8 @@ static void _init_bitmaps(void)
 	asap_node_bitmap = bit_alloc(node_record_count);
 	avail_node_bitmap = bit_alloc(node_record_count);
 	bf_ignore_node_bitmap = bit_alloc(node_record_count);
+	job_launch_node_bitmap = bit_alloc(node_record_count);
+	het_job_launch_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
 	cloud_node_bitmap = bit_alloc(node_record_count);

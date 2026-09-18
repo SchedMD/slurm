@@ -402,6 +402,12 @@ struct job_record {
 	bool preempt_in_progress;	/* Preemption of other jobs in progress
 					 * in order to start this job,
 					 * (Internal use only, don't save) */
+	bool bf_launch_transaction;
+	time_t bf_launch_retry_after;
+	uint16_t bf_launch_replan_count;
+	bool bf_launch_replan_blocked;
+	bool bf_launch_array_slot;
+	uint32_t bf_launch_array_slots;
 	uint32_t prep_epilog_cnt;	/* count of epilog async tasks left */
 	uint32_t prep_prolog_cnt;	/* count of prolog async tasks left */
 	bool prep_prolog_failed;	/* any prolog_slurmctld failed */

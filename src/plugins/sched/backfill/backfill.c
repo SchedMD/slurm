@@ -69,6 +69,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/job_features.h"
+#include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
@@ -96,6 +97,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 #include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
@@ -107,6 +109,14 @@
 #define BACKFILL_RESOLUTION	60
 #define BACKFILL_WINDOW		(24 * 60 * 60)
 #define BF_MAX_JOB_ARRAY_RESV	20
+#define BF_MAX_JOB_ARRAY_LAUNCH 20
+#define BF_HETJOB_COMMIT_TIMEOUT 1800
+#define BF_JOB_COMMIT_TIMEOUT 1800
+#define BF_LAUNCH_REPLAN_DELAY 300
+#define BF_LAUNCH_MAX_REPLANS 1
+#define LAUNCH_TXN_START_RETRY_INTERVAL 5
+#define LAUNCH_TXN_HOLD_WARN_INTERVAL 300
+#define LAUNCH_TXN_MATCH_TIMEOUT 120
 
 #define YIELD_INTERVAL		2000000	/* time in micro-seconds */
 #define YIELD_SLEEP		500000;	/* time in micro-seconds */
@@ -126,6 +136,8 @@
 #define MAX_MAX_RPC_CNT                1000
 #define MAX_YIELD_RPC_CNT 200
 #define MAX_YIELD_SLEEP                10000000 /* 10 seconds in usec */
+#define LAUNCH_TXN_SYSTEM_COMMENT_PREFIX "LaunchTxn: "
+#define LAUNCH_TXN_COMMENT_NODE_CHARS 256
 
 #define MAX_BF_MAX_JOB_ASSOC           MAX_BF_MAX_JOB_TEST
 #define MAX_BF_MAX_JOB_USER            MAX_BF_MAX_JOB_TEST
@@ -148,14 +160,77 @@ typedef struct {
 	time_t latest_start;		/* Time when expected to start */
 	part_record_t *part_ptr;
 	slurmctld_resv_t *resv_ptr;
+	bool launch_started;		/* Component allocated in this transaction */
+	bitstr_t *planned_node_bitmap;	/* Nodes selected by backfill */
+	list_t *planned_resident_job_ids; /* Jobs already on planned nodes */
+	list_t *planned_preemptee_job_ids; /* Job IDs to preempt for plan */
 } het_job_rec_t;
+
+typedef enum {
+	HET_LAUNCH_NONE = 0,
+	HET_LAUNCH_COMMITTED,
+	HET_LAUNCH_CLEANUP,
+	HET_LAUNCH_COOLDOWN,
+	HET_LAUNCH_BLOCKED,
+} het_launch_state_t;
 
 typedef struct {
 	uint32_t comp_time_limit;	/* Time limit for hetjob */
 	uint32_t het_job_id;
 	list_t *het_job_rec_list;	/* list of het_job_rec_t */
 	time_t prev_start;		/* Expected start time from last test */
+	het_launch_state_t launch_state; /* Current launch transaction state */
+	bool launch_irrevocable;	/* At least one component was allocated */
+	bool preemption_started;	/* At least one planned victim was signaled */
+	time_t launch_start;		/* Time launch transaction started */
+	time_t retry_after;		/* Earliest time a replacement plan may form */
+	time_t next_start_retry;	/* Earliest time to retry the exact plan */
+	uint16_t replan_count;		/* Automatic replacement plans attempted */
+	int last_start_rc;		/* Last exact-plan start return code */
+	char *failure_reason;		/* Why cleanup or retry is active */
+	time_t hold_warn_time;		/* Last operator warning for a held
+					 * partial launch */
 } het_job_map_t;
+
+typedef enum {
+	JOB_LAUNCH_COMMITTED = 0,
+	JOB_LAUNCH_CLEANUP,
+} job_launch_state_t;
+
+typedef struct {
+	uint32_t job_id;
+	job_launch_state_t state;
+	time_t launch_start;
+	time_t last_queue_match;	/* Last time a queue record matched
+					 * the committed plan */
+	time_t next_start_retry;
+	bool preemption_started;
+	char *failure_reason;
+	char *part_name;
+	uint32_t qos_id;
+	uint32_t resv_id;
+	bool use_prefer;
+	bitstr_t *planned_node_bitmap;
+	list_t *planned_resident_job_ids;
+	list_t *planned_preemptee_job_ids;
+} job_launch_t;
+
+typedef struct {
+	uint32_t blocker_count;
+	uint32_t uninitiated_count;
+	time_t grace_deadline;
+	time_t grace_duration;
+	bool waiting_for_nodes;
+	bitstr_t *blocker_node_bitmap;
+	list_t *blocker_job_ids;
+} launch_preempt_status_t;
+
+typedef enum {
+	HET_START_OK = SLURM_SUCCESS,
+	HET_START_FAILED = SLURM_ERROR,
+	HET_START_WAIT_RESOURCES = 1,
+	HET_START_WAIT_RETRY = 2,
+} het_start_rc_t;
 
 typedef struct {
 	uint32_t het_job_id;
@@ -215,6 +290,7 @@ static int backfill_resolution = BACKFILL_RESOLUTION;
 static int backfill_window = BACKFILL_WINDOW;
 static int bf_job_part_count_reserve = 0;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
+static int bf_max_job_array_launch = BF_MAX_JOB_ARRAY_LAUNCH;
 static int bf_min_age_reserve = 0;
 static int bf_node_space_size = 0;
 static bool bf_running_job_reserve = false;
@@ -223,6 +299,10 @@ static uint32_t bf_min_prio_reserve = 0;
 static list_t *deadlock_global_list = NULL;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
+static int bf_hetjob_commit_timeout = BF_HETJOB_COMMIT_TIMEOUT;
+static int bf_job_commit_timeout = BF_JOB_COMMIT_TIMEOUT;
+static int bf_launch_replan_delay = BF_LAUNCH_REPLAN_DELAY;
+static int bf_launch_max_replans = BF_LAUNCH_MAX_REPLANS;
 static bool bf_one_resv_per_job = false;
 static bool bf_allow_magnetic_slot = false;
 static bool bf_topopt_enable = false;
@@ -241,6 +321,11 @@ static int yield_rpc_cnt = 0;
 static int yield_interval = YIELD_INTERVAL;
 static int yield_sleep   = YIELD_SLEEP;
 static list_t *het_job_list = NULL;
+static list_t *job_launch_list = NULL;
+static time_t launch_txn_promote_time = 0; /* Last time the backfill queue was
+					    * scanned for launch-transaction
+					    * owners (_job_launch_promote_queue)
+					    */
 static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
 static bitstr_t *planned_bitmap = NULL;
 static bool soft_time_limit = false;
@@ -263,6 +348,60 @@ static uint32_t _hetjob_calc_prio(job_record_t *het_leader);
 static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader);
 static void _het_job_deadlock_fini(void);
 static bool _het_job_deadlock_test(job_record_t *job_ptr);
+static job_launch_t *_job_launch_begin(
+	job_record_t *job_ptr, part_record_t *part_ptr,
+	slurmdb_qos_rec_t *qos_ptr, slurmctld_resv_t *resv_ptr,
+	bool use_prefer, bitstr_t *planned_node_bitmap,
+	list_t *planned_preemptee_job_ids);
+static void _job_launch_clear(job_launch_t *launch, const char *reason);
+static void _job_launch_clear_expired(void);
+static void _job_launch_del(void *x);
+static void _job_launch_enter_cleanup(job_launch_t *launch,
+				      const char *reason);
+static void _job_launch_filter(job_launch_t *launch,
+			       bitstr_t *avail_bitmap);
+static job_launch_t *_job_launch_find(uint32_t job_id);
+static void _job_launch_handoff_sync_queue(list_t *job_queue);
+static bool _job_launch_planned_jobs_pending(job_record_t *job_ptr,
+					     job_launch_t *launch);
+static void _job_launch_promote_queue(list_t *job_queue);
+static bool _job_launch_queue_matches(job_launch_t *launch,
+				      job_queue_rec_t *job_queue_rec);
+static bool _job_launch_preempt_planned_jobs(job_record_t *job_ptr,
+					     job_launch_t *launch);
+static void _job_launch_rebuild_bitmap(void);
+static void _job_launch_reset_retry_state(job_record_t *job_ptr);
+static void _job_launch_schedule_replan(job_launch_t *launch, time_t now,
+					const char *reason);
+static void _job_launch_set_state(job_record_t *job_ptr,
+				  const char *state_desc);
+static void _job_launch_set_replan_status(job_record_t *job_ptr, time_t now,
+					  const char *reason);
+static void _job_launch_set_start_retry(job_record_t *job_ptr,
+					job_launch_t *launch, int rc,
+					time_t now);
+static void _job_launch_update_status(job_record_t *job_ptr,
+				      job_launch_t *launch, time_t now,
+				      bool waiting_for_nodes);
+static void _launch_txn_append_blocker_nodes(
+	char **comment, launch_preempt_status_t *status);
+static void _launch_txn_add_preempt_status(
+	launch_preempt_status_t *status, job_record_t *preemptor,
+	bitstr_t *planned_node_bitmap, list_t *planned_preemptee_job_ids,
+	time_t now);
+static bool _launch_nodes_usable(bitstr_t *planned_node_bitmap,
+				 uint32_t component_id, char **reason);
+static bool _launch_txn_clear_status(job_record_t *job_ptr);
+static void _launch_txn_clear_stale_status(void);
+static bool _launch_txn_owns_sched_nodes(job_record_t *job_ptr);
+static char *_launch_txn_make_system_comment(
+	launch_preempt_status_t *status, time_t now, time_t launch_start,
+	int commit_timeout, bool irrevocable);
+static bool _launch_txn_set_sched_nodes(job_record_t *job_ptr,
+					bitstr_t *planned_node_bitmap);
+static void _launch_txn_set_system_comment(job_record_t *job_ptr,
+					   const char *comment);
+static bool _launch_transactions_active(void);
 static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
@@ -272,10 +411,41 @@ static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			       bool *has_mor);
 static int  _het_job_find_map(void *x, void *key);
 static void _het_job_map_del(void *x);
-static void _het_job_start_clear(void);
+static bool _het_job_id_in_list(list_t *job_id_list, uint32_t job_id);
+static bool _het_job_job_on_planned_nodes(bitstr_t *planned_node_bitmap,
+					  job_record_t *job_ptr);
+static void _het_job_clear_launch_status(het_job_map_t *map);
+static void _het_job_update_launch_status(het_job_map_t *map, time_t now,
+					  bool waiting_for_nodes,
+					  const char *detail);
+static list_t *_het_job_select_planned_preemptee_ids(
+	job_record_t *job_ptr, bitstr_t *planned_node_bitmap,
+	uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+	resv_exc_t *resv_exc_ptr, int *select_rc);
+static bool _het_job_launch_active(uint32_t het_job_id);
+static bool _het_job_all_components_ready(het_job_map_t *map, char **reason);
+static bool _het_job_launch_begin(het_job_map_t *map);
+static void _het_job_launch_enter_cleanup(het_job_map_t *map,
+					  const char *reason);
+static bool _het_job_latch_started_components(het_job_map_t *map);
+static void _het_job_launch_clear_internal(het_job_map_t *map,
+					   const char *reason,
+					   bool rebuild_bitmap);
+static void _het_job_launch_clear(het_job_map_t *map, const char *reason);
+static void _het_job_launch_rebuild_bitmap(void);
+static bool _het_job_nodes_usable(het_job_map_t *map, char **reason);
+static bool _het_job_planned_components_pending(het_job_map_t *map);
+static void _het_job_schedule_replan(het_job_map_t *map, time_t now,
+				     const char *reason);
+static bool _het_job_component_started(job_record_t *job_ptr);
+static void _het_job_kill_now(het_job_map_t *map, bool rebuild_bitmap);
+static void _het_job_start_launches(node_space_map_t *node_space);
+static void _het_job_start_clear(bool launch_only);
 static time_t _het_job_start_find(job_record_t *job_ptr);
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
-			       uint32_t comp_time_limit);
+			       uint32_t comp_time_limit,
+			       bitstr_t *planned_node_bitmap,
+			       list_t *planned_preemptee_job_ids);
 static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single);
 static int  _het_job_start_test_list(void *map, void *node_space);
@@ -998,6 +1168,67 @@ static void _load_config(void)
 		info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
 	}
 
+	bf_hetjob_commit_timeout = BF_HETJOB_COMMIT_TIMEOUT;
+	if ((tmp_ptr = xstrcasestr(sched_params,
+				   "bf_hetjob_commit_timeout="))) {
+		bf_hetjob_commit_timeout =
+			atoi(tmp_ptr + strlen("bf_hetjob_commit_timeout="));
+		if (bf_hetjob_commit_timeout < 0) {
+			error("Invalid SchedulerParameters bf_hetjob_commit_timeout: %d",
+			      bf_hetjob_commit_timeout);
+			bf_hetjob_commit_timeout = BF_HETJOB_COMMIT_TIMEOUT;
+		}
+	}
+
+	bf_job_commit_timeout = BF_JOB_COMMIT_TIMEOUT;
+	if ((tmp_ptr = xstrcasestr(sched_params,
+				   "bf_job_commit_timeout="))) {
+		bf_job_commit_timeout =
+			atoi(tmp_ptr + strlen("bf_job_commit_timeout="));
+		if (bf_job_commit_timeout < 0) {
+			error("Invalid SchedulerParameters bf_job_commit_timeout: %d",
+			      bf_job_commit_timeout);
+			bf_job_commit_timeout = BF_JOB_COMMIT_TIMEOUT;
+		}
+	}
+	if (!bf_job_commit_timeout || (backfill_interval == -1))
+		bf_launch_txn_clear_handoffs();
+
+	bf_max_job_array_launch = BF_MAX_JOB_ARRAY_LAUNCH;
+	if ((tmp_ptr = xstrcasestr(sched_params, "bf_max_job_array_launch="))) {
+		tmp_val = strtol(tmp_ptr + strlen("bf_max_job_array_launch="),
+				 NULL, 10);
+		if ((tmp_val < 0) || (tmp_val > MAX_BF_MAX_JOB_ARRAY_RESV))
+			error("Invalid SchedulerParameters bf_max_job_array_launch: %ld",
+			      tmp_val);
+		else
+			bf_max_job_array_launch = tmp_val;
+	}
+
+	bf_launch_replan_delay = BF_LAUNCH_REPLAN_DELAY;
+	if ((tmp_ptr = xstrcasestr(sched_params,
+				   "bf_launch_replan_delay="))) {
+		bf_launch_replan_delay =
+			atoi(tmp_ptr + strlen("bf_launch_replan_delay="));
+		if (bf_launch_replan_delay < 0) {
+			error("Invalid SchedulerParameters bf_launch_replan_delay: %d",
+			      bf_launch_replan_delay);
+			bf_launch_replan_delay = BF_LAUNCH_REPLAN_DELAY;
+		}
+	}
+
+	bf_launch_max_replans = BF_LAUNCH_MAX_REPLANS;
+	if ((tmp_ptr = xstrcasestr(sched_params,
+				   "bf_launch_max_replans="))) {
+		bf_launch_max_replans =
+			atoi(tmp_ptr + strlen("bf_launch_max_replans="));
+		if (bf_launch_max_replans < 0) {
+			error("Invalid SchedulerParameters bf_launch_max_replans: %d",
+			      bf_launch_max_replans);
+			bf_launch_max_replans = BF_LAUNCH_MAX_REPLANS;
+		}
+	}
+
 	if (xstrcasestr(sched_params, "bf_one_resv_per_job"))
 		bf_one_resv_per_job = true;
 	else
@@ -1126,10 +1357,13 @@ extern void __attempt_backfill(void)
 {
 	_load_config();
 	het_job_list = list_create(_het_job_map_del);
+	job_launch_list = list_create(_job_launch_del);
 	_init_planned_bitmap();
 	_attempt_backfill();
+	FREE_NULL_LIST(job_launch_list);
 	FREE_NULL_LIST(het_job_list);
 	FREE_NULL_BITMAP(planned_bitmap);
+	bf_launch_txn_clear_handoffs();
 }
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
@@ -1143,7 +1377,7 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	bool load_config;
 	bool short_sleep = false;
-	int backfill_cnt = 0;
+	bool launch_retry;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "bckfl", NULL, NULL, NULL) < 0) {
@@ -1154,6 +1388,11 @@ extern void *backfill_agent(void *args)
 	last_backfill_time = time(NULL);
 	_init_planned_bitmap();
 	het_job_list = list_create(_het_job_map_del);
+	job_launch_list = list_create(_job_launch_del);
+	lock_slurmctld(all_locks);
+	bf_launch_txn_prune_handoffs();
+	_launch_txn_clear_stale_status();
+	unlock_slurmctld(all_locks);
 	while (!stop_backfill) {
 		if (short_sleep)
 			_my_sleep(USEC_IN_SEC);
@@ -1164,10 +1403,6 @@ extern void *backfill_agent(void *args)
 		if (stop_backfill)
 			break;
 
-		if (slurmctld_config.scheduling_disabled)
-			continue;
-
-		list_flush(het_job_list);
 		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;
@@ -1178,6 +1413,17 @@ extern void *backfill_agent(void *args)
 		slurm_mutex_unlock(&config_lock);
 		if (load_config)
 			_load_config();
+		if ((het_job_list && list_count(het_job_list)) ||
+		    (job_launch_list && list_count(job_launch_list)) ||
+		    bf_launch_txn_handoffs_active()) {
+			lock_slurmctld(all_locks);
+			bf_launch_txn_prune_handoffs();
+			_job_launch_clear_expired();
+			_het_job_start_clear(true);
+			unlock_slurmctld(all_locks);
+		}
+		if (slurmctld_config.scheduling_disabled)
+			continue;
 		if (backfill_interval == -1) {
 			log_flag(BACKFILL, "skipping backfill cycle for %ds",
 				 BACKFILL_INTERVAL);
@@ -1185,9 +1431,11 @@ extern void *backfill_agent(void *args)
 		}
 		now = time(NULL);
 		wait_time = difftime(now, last_backfill_time);
-		if ((wait_time < backfill_interval) ||
-		    job_is_completing(NULL) || _many_pending_rpcs() ||
-		    !_more_work(last_backfill_time)) {
+		launch_retry = _launch_transactions_active();
+		if (((wait_time < backfill_interval) && !launch_retry) ||
+		    (job_is_completing(NULL) && !launch_retry) ||
+		    _many_pending_rpcs() ||
+		    (!_more_work(last_backfill_time) && !launch_retry)) {
 			short_sleep = true;
 			continue;
 		}
@@ -1198,8 +1446,8 @@ extern void *backfill_agent(void *args)
 
 		lock_slurmctld(all_locks);
 		validate_all_reservations(true, false);
-		if ((backfill_cnt++ % 2) == 0)
-			_het_job_start_clear();
+		_job_launch_clear_expired();
+		_het_job_start_clear(false);
 		_attempt_backfill();
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
@@ -1209,9 +1457,23 @@ extern void *backfill_agent(void *args)
 		slurmctld_diag_stats.bf_active = 0;
 		slurm_mutex_unlock(&check_bf_running_lock);
 
-		short_sleep = false;
+		short_sleep = _launch_transactions_active();
 	}
+	lock_slurmctld(all_locks);
+	if (het_job_launch_node_bitmap)
+		bit_clear_all(het_job_launch_node_bitmap);
+	if (job_launch_node_bitmap)
+		bit_clear_all(job_launch_node_bitmap);
+	FREE_NULL_LIST(job_launch_list);
+	/*
+	 * _het_job_map_del() mutates job records through
+	 * _het_job_clear_launch_status(), so het_job_list must also be
+	 * destroyed while the job write lock is held.
+	 */
 	FREE_NULL_LIST(het_job_list);
+	_launch_txn_clear_stale_status();
+	unlock_slurmctld(all_locks);
+	bf_launch_txn_clear_handoffs();
 	xhash_free(user_usage_map); /* May have been init'ed if used */
 	FREE_NULL_BITMAP(planned_bitmap);
 
@@ -1228,7 +1490,8 @@ static int _clear_job_estimates(void *x, void *arg)
 	job_record_t *job_ptr = (job_record_t *) x;
 	if (IS_JOB_PENDING(job_ptr)) {
 		job_ptr->start_time = 0;
-		xfree(job_ptr->sched_nodes);
+		if (!_launch_txn_owns_sched_nodes(job_ptr))
+			xfree(job_ptr->sched_nodes);
 	}
 	return SLURM_SUCCESS;
 }
@@ -1331,7 +1594,7 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 	 * max_run_tasks number of jobs in the array. If max_run_tasks is 0, it
 	 * wasn't set, so ignore it.
 	 */
-	if (job_ptr->array_recs &&
+	if (!job_ptr->bf_launch_array_slot && job_ptr->array_recs &&
 	    ((job_ptr->array_recs->pend_run_tasks >= bf_max_job_array_resv) ||
 	     (job_ptr->array_recs->max_run_tasks &&
 	      ((job_ptr->array_recs->pend_run_tasks +
@@ -2143,14 +2406,20 @@ static void _attempt_backfill(void)
 	gettimeofday(&start_tv, NULL);
 
 	_handle_planned(nodes_planned);
+	_job_launch_rebuild_bitmap();
+	_het_job_launch_rebuild_bitmap();
 
+	bf_launch_txn_prune_handoffs();
+	bf_launch_txn_handoff_cycle_begin();
 	job_queue = build_job_queue(true, true);
+	_job_launch_handoff_sync_queue(job_queue);
 	job_test_count = list_count(job_queue);
 	if (job_test_count == 0) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL)
 			info("no jobs to backfill");
 		else
 			debug("no jobs to backfill");
+		bf_launch_txn_handoff_cycle_end();
 		FREE_NULL_LIST(job_queue);
 		return;
 	} else
@@ -2183,6 +2452,9 @@ static void _attempt_backfill(void)
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	/* Make "resuming" nodes available to be scheduled in backfill */
 	bit_or(node_space[0].avail_bitmap, rs_node_bitmap);
+	if (het_job_launch_node_bitmap)
+		bit_and_not(node_space[0].avail_bitmap,
+			    het_job_launch_node_bitmap);
 
 	if (bf_licenses)
 		node_space[0].licenses =
@@ -2222,6 +2494,7 @@ static void _attempt_backfill(void)
 	}
 
 	sort_job_queue(job_queue);
+	_job_launch_promote_queue(job_queue);
 
 	/* Ignore nodes that have been set as available during this cycle. */
 	bit_clear_all(bf_ignore_node_bitmap);
@@ -2232,9 +2505,11 @@ static void _attempt_backfill(void)
 	while (1) {
 		uint32_t bf_job_priority, prio_reserve;
 		bool get_boot_time = false;
+		bool launch_handoff = false;
 		bool licenses_unavail;
 		bool use_prefer = false;
 		slurmctld_resv_t *resv_ptr = NULL;
+		job_launch_t *job_launch = NULL;
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
@@ -2272,8 +2547,15 @@ static void _attempt_backfill(void)
 			break;
 		}
 
-		if (job_test_cnt >=
-		    max_backfill_job_cnt) {
+		job_ptr          = job_queue_rec->job_ptr;
+		part_ptr         = job_queue_rec->part_ptr;
+		bf_job_priority  = job_queue_rec->priority;
+		qos_ptr = job_queue_rec->qos_ptr;
+		use_prefer = job_queue_rec->use_prefer;
+		launch_handoff = bf_launch_txn_handoff_pending(job_ptr);
+
+		if ((job_test_cnt >= max_backfill_job_cnt) &&
+		    !launch_handoff) {
 			log_flag(BACKFILL, "bf_max_job_test: limit of %d reached",
 				 max_backfill_job_cnt);
 			_set_bf_exit(BF_EXIT_MAX_JOB_TEST);
@@ -2285,13 +2567,8 @@ static void _attempt_backfill(void)
 			_set_bf_exit(BF_EXIT_TIMEOUT);
 			break;
 		}
-		job_ptr          = job_queue_rec->job_ptr;
-		part_ptr         = job_queue_rec->part_ptr;
-		bf_job_priority  = job_queue_rec->priority;
-		qos_ptr = job_queue_rec->qos_ptr;
-		use_prefer = job_queue_rec->use_prefer;
 
-		if (job_ptr->array_recs &&
+		if (job_ptr->array_job_id &&
 		    (job_queue_rec->array_task_id == NO_VAL))
 			is_job_array_head = true;
 		else
@@ -2347,13 +2624,46 @@ static void _attempt_backfill(void)
 			if (!job_ptr)	/* All task array elements started */
 				continue;
 			job_queue_rec->job_ptr = job_ptr;
+			launch_handoff = bf_launch_txn_handoff_pending(job_ptr);
+		}
+		if (launch_handoff)
+			bf_launch_txn_handoff_considered(job_ptr);
+
+		job_launch = _job_launch_find(job_ptr->job_id);
+		if (job_launch &&
+		    !_job_launch_queue_matches(job_launch, job_queue_rec)) {
+			xfree(job_queue_rec);
+			continue;
+		}
+		if (job_launch &&
+		    (job_launch->state != JOB_LAUNCH_COMMITTED)) {
+			xfree(job_queue_rec);
+			continue;
+		}
+		if (job_launch && (job_launch->next_start_retry > now)) {
+			xfree(job_queue_rec);
+			continue;
+		}
+		if (!job_launch && job_ptr->bf_launch_transaction) {
+			if (!bf_job_commit_timeout) {
+				_job_launch_reset_retry_state(job_ptr);
+			} else if (job_ptr->bf_launch_replan_blocked) {
+				_job_launch_set_replan_status(job_ptr, now, NULL);
+				xfree(job_queue_rec);
+				continue;
+			} else if (job_ptr->bf_launch_retry_after > now) {
+				_job_launch_set_replan_status(job_ptr, now, NULL);
+				xfree(job_queue_rec);
+				continue;
+			}
 		}
 
 		/*
 		 * Establish baseline (worst case) start time for hetjob
 		 * Update time once start time estimate established
 		 */
-		_het_job_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL);
+		_het_job_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL,
+				   NULL, NULL);
 
 		if (job_ptr->het_job_id &&
 		    (job_ptr->state_reason == WAIT_NO_REASON)) {
@@ -2385,6 +2695,13 @@ static void _attempt_backfill(void)
 		het_job_time = _het_job_start_find(job_ptr);
 		if (het_job_time > (now + backfill_window))
 			continue;
+
+		if (job_ptr->het_job_id &&
+		    _het_job_launch_active(job_ptr->het_job_id)) {
+			_het_job_start_test(node_space, job_ptr->het_job_id,
+					    nodes_used, nodes_used_list);
+			continue;
+		}
 
 		if (job_ptr->qos_ptr) {
 			assoc_mgr_lock_t locks = {
@@ -2451,8 +2768,8 @@ static void _attempt_backfill(void)
 			log_flag(BACKFILL, "%pJ has a prio_reserve of %u",
 				 job_ptr, prio_reserve);
 
-		job_no_reserve = 0;
-		if (prio_reserve &&
+		job_no_reserve = launch_handoff ? TEST_NOW_ONLY : 0;
+		if (!launch_handoff && prio_reserve &&
 		    (job_ptr->priority < prio_reserve)) {
 			job_no_reserve = TEST_NOW_ONLY;
 		} else if (bf_min_age_reserve && job_ptr->details->begin_time) {
@@ -2579,7 +2896,8 @@ next_task:
 			 job_ptr->resv_ptr ? job_ptr->resv_ptr->name : "NONE");
 
 		/* Test to see if we've exceeded any per user/partition limit */
-		if (_job_exceeds_max_bf_param(job_ptr, orig_sched_start))
+		if (!launch_handoff &&
+		    _job_exceeds_max_bf_param(job_ptr, orig_sched_start))
 			continue;
 
 		if (((part_ptr->state_up & PARTITION_SCHED) == 0) ||
@@ -2589,7 +2907,7 @@ next_task:
 			continue;
 		}
 
-		if (!bf_licenses &&
+		if (!launch_handoff && !bf_licenses &&
 		    license_job_test(job_ptr, time(NULL), true)) {
 			log_flag(BACKFILL, "%pJ not runable now due to licenses",
 				 job_ptr);
@@ -2681,6 +2999,8 @@ TRY_LATER:
 		     bf_max_time)) {
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			_set_bf_exit(BF_EXIT_TIMEOUT);
+			if (launch_handoff)
+				bf_launch_txn_handoff_defer_cycle(job_ptr);
 			break;
 		}
 		test_time_count++;
@@ -2711,6 +3031,9 @@ TRY_LATER:
 					 job_test_count);
 				state_changed_break = true;
 				_set_bf_exit(BF_EXIT_STATE_CHANGED);
+				if (launch_handoff)
+					bf_launch_txn_handoff_defer_cycle(
+						job_ptr);
 				break;
 			}
 
@@ -2837,6 +3160,9 @@ TRY_LATER:
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		bit_and_not(avail_bitmap, bf_ignore_node_bitmap);
+		_job_launch_filter(job_launch, avail_bitmap);
+		if (het_job_launch_node_bitmap)
+			bit_and_not(avail_bitmap, het_job_launch_node_bitmap);
 
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_and_not(avail_bitmap,
@@ -2971,6 +3297,8 @@ later_start_set:
 		bit_not(resv_bitmap);
 
 		/* this is the time consuming operation */
+		if (launch_handoff)
+			bf_launch_txn_handoff_attempt(job_ptr);
 		debug2("entering _try_sched for %pJ.",
 		       job_ptr);
 
@@ -3205,8 +3533,74 @@ later_start_set:
 			   (job_ptr->start_time <= now)) { /* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
 			uint32_t hard_limit;
+			uint32_t launch_owner_job_id = job_ptr->job_id;
+			bool launch_preemption_pending = false;
 			bool reset_time = false;
 			int rc;
+
+			if (!job_launch && bf_job_commit_timeout) {
+				int plan_rc;
+				list_t *planned_preemptee_job_ids;
+
+				planned_preemptee_job_ids =
+					_het_job_select_planned_preemptee_ids(
+						job_ptr, avail_bitmap, min_nodes,
+						max_nodes, req_nodes, &resv_exc,
+						&plan_rc);
+				if (plan_rc != SLURM_SUCCESS) {
+					log_flag(BACKFILL,
+						 "%pJ pinned victim planning failed: %s",
+						 job_ptr, slurm_strerror(plan_rc));
+					FREE_NULL_LIST(planned_preemptee_job_ids);
+					_set_job_time_limit(job_ptr, orig_time_limit);
+					reservation_delete_resv_exc_parts(&resv_exc);
+					FREE_NULL_BITMAP(avail_bitmap);
+					continue;
+				}
+				if (planned_preemptee_job_ids &&
+				    list_count(planned_preemptee_job_ids)) {
+					job_launch = _job_launch_begin(
+						job_ptr, part_ptr, qos_ptr, resv_ptr,
+						use_prefer, avail_bitmap,
+						planned_preemptee_job_ids);
+					if (launch_owner_job_id != job_ptr->job_id) {
+						job_record_t *pending_job_ptr =
+							find_job_record(launch_owner_job_id);
+
+						if (pending_job_ptr)
+							_set_job_time_limit(pending_job_ptr,
+									    orig_time_limit);
+						launch_owner_job_id = job_ptr->job_id;
+					}
+					if (!job_launch) {
+						FREE_NULL_LIST(
+							planned_preemptee_job_ids);
+						if (!job_ptr->array_job_id) {
+							rc = ESLURM_NODES_BUSY;
+							goto skip_start;
+						}
+						_set_job_time_limit(job_ptr, orig_time_limit);
+						reservation_delete_resv_exc_parts(&resv_exc);
+						FREE_NULL_BITMAP(avail_bitmap);
+						continue;
+					}
+				}
+				FREE_NULL_LIST(planned_preemptee_job_ids);
+			}
+
+			if (job_launch) {
+				FREE_NULL_BITMAP(resv_bitmap);
+				resv_bitmap = bit_copy(
+					job_launch->planned_node_bitmap);
+				bit_not(resv_bitmap);
+				launch_preemption_pending =
+					_job_launch_preempt_planned_jobs(
+						job_ptr, job_launch);
+				if (launch_preemption_pending) {
+					rc = ESLURM_NODES_BUSY;
+					goto skip_start;
+				}
+			}
 
 			/* get fed job lock from origin cluster */
 			if (fed_mgr_job_lock(job_ptr)) {
@@ -3231,6 +3625,47 @@ later_start_set:
 			}
 
 skip_start:
+			if (rc == SLURM_SUCCESS) {
+				job_record_t *pending_job_ptr =
+					find_job_record(launch_owner_job_id);
+
+				_job_launch_reset_retry_state(job_ptr);
+				if (pending_job_ptr && (pending_job_ptr != job_ptr))
+					_job_launch_reset_retry_state(pending_job_ptr);
+			}
+			if (job_launch) {
+				if (rc == SLURM_SUCCESS) {
+					/*
+					 * job_array_split() may have moved
+					 * this job's id to a new pending
+					 * array meta record, which is what
+					 * _job_launch_del() will resolve and
+					 * clear. Clear the started record
+					 * directly so it cannot carry
+					 * bf_launch_transaction into a later
+					 * requeue, where it would be
+					 * silently skipped by the main
+					 * scheduler.
+					 */
+					_job_launch_clear(job_launch,
+							  "job started");
+					job_launch = NULL;
+				} else if (rc == ESLURM_NODES_BUSY) {
+					bool victims_pending =
+						launch_preemption_pending ||
+						_job_launch_preempt_planned_jobs(
+							job_ptr, job_launch);
+
+					_job_launch_update_status(
+						job_ptr, job_launch, now,
+						!victims_pending);
+				} else {
+					_job_launch_set_start_retry(
+						job_ptr, job_launch, rc, now);
+					info("%pJ retained exact launch transaction after start error: %s",
+					     job_ptr, slurm_strerror(rc));
+				}
+			}
 			if (qos_flags & QOS_FLAG_NO_RESERVE) {
 				if (orig_time_limit == NO_VAL) {
 					acct_policy_alter_job(
@@ -3341,6 +3776,15 @@ skip_start:
 				 * Make best-effort based upon original state */
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				later_start = 0;
+				if (job_launch && job_ptr->bf_launch_array_slot) {
+					reject_array_job = NULL;
+					reject_array_part = NULL;
+					reject_array_qos = NULL;
+					reject_array_resv = NULL;
+					reservation_delete_resv_exc_parts(&resv_exc);
+					FREE_NULL_BITMAP(avail_bitmap);
+					continue;
+				}
 			} else {
 				/* Started this job, move to next one */
 
@@ -3389,14 +3833,35 @@ skip_start:
 				continue;
 			}
 		} else if (job_ptr->het_job_id != 0) {
+			int plan_rc;
 			uint32_t max_time_limit;
+			list_t *planned_preemptee_job_ids;
+
 			max_time_limit =_get_job_max_tl(job_ptr, now,
 						        node_space);
 			comp_time_limit = MIN(comp_time_limit, max_time_limit);
 			job_ptr->node_cnt_wag =
 					MAX(bit_set_count(avail_bitmap), 1);
+			planned_preemptee_job_ids =
+				_het_job_select_planned_preemptee_ids(
+					job_ptr, avail_bitmap, min_nodes,
+					max_nodes, req_nodes, &resv_exc,
+					&plan_rc);
+			if (plan_rc != SLURM_SUCCESS) {
+				log_flag(HETJOB,
+					 "%pJ pinned victim planning failed: %s",
+					 job_ptr, slurm_strerror(plan_rc));
+				FREE_NULL_LIST(planned_preemptee_job_ids);
+				_set_job_time_limit(job_ptr, orig_time_limit);
+				reservation_delete_resv_exc_parts(&resv_exc);
+				FREE_NULL_BITMAP(avail_bitmap);
+				continue;
+			}
+
 			_het_job_start_set(job_ptr, job_ptr->start_time,
-					   comp_time_limit);
+					   comp_time_limit, avail_bitmap,
+					   planned_preemptee_job_ids);
+			FREE_NULL_LIST(planned_preemptee_job_ids);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (bf_hetjob_immediate &&
 			    (!max_backfill_jobs_start ||
@@ -3643,10 +4108,15 @@ skip_start:
 	}
 
 	_het_job_deadlock_fini();
-	if (!bf_hetjob_immediate && !state_changed_break &&
+	if (!state_changed_break &&
 	    (!max_backfill_jobs_start ||
-	     (job_start_cnt < max_backfill_jobs_start)))
-		_het_job_start_test(node_space, 0, NULL, NULL);
+	     (job_start_cnt < max_backfill_jobs_start))) {
+		_het_job_start_launches(node_space);
+		if (!bf_hetjob_immediate &&
+		    (!max_backfill_jobs_start ||
+		     (job_start_cnt < max_backfill_jobs_start)))
+			_het_job_start_test(node_space, 0, NULL, NULL);
+	}
 
 	FREE_NULL_BITMAP(avail_bitmap);
 	FREE_NULL_BITMAP(excluded_topo_bitmap);
@@ -3669,6 +4139,7 @@ skip_start:
 	}
 	xfree(node_space);
 
+	bf_launch_txn_handoff_cycle_end();
 	FREE_NULL_LIST(job_queue);
 	FREE_NULL_LIST(nodes_used_list);
 	xfree(nodes_used);
@@ -4075,11 +4546,1955 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 }
 
 /*
+ * Delete het_job_rec_t record from het_job_rec_list
+ */
+static void _het_job_rec_del(void *x)
+{
+	het_job_rec_t *rec = (het_job_rec_t *) x;
+
+	if (!rec)
+		return;
+
+	FREE_NULL_BITMAP(rec->planned_node_bitmap);
+	FREE_NULL_LIST(rec->planned_resident_job_ids);
+	FREE_NULL_LIST(rec->planned_preemptee_job_ids);
+	xfree(rec);
+}
+
+static list_t *_het_job_copy_job_ids(list_t *job_ids)
+{
+	list_t *copy = NULL;
+	list_itr_t *iter;
+	uint32_t *job_id;
+
+	if (!job_ids)
+		return NULL;
+
+	iter = list_iterator_create(job_ids);
+	while ((job_id = list_next(iter))) {
+		uint32_t *job_id_copy = xmalloc(sizeof(*job_id_copy));
+		*job_id_copy = *job_id;
+		if (!copy)
+			copy = list_create(xfree_ptr);
+		list_append(copy, job_id_copy);
+	}
+	list_iterator_destroy(iter);
+
+	return copy;
+}
+
+static void _het_job_append_job_id(list_t **job_id_list, uint32_t job_id)
+{
+	uint32_t *job_id_ptr;
+
+	if (!job_id || _het_job_id_in_list(*job_id_list, job_id))
+		return;
+
+	job_id_ptr = xmalloc(sizeof(*job_id_ptr));
+	*job_id_ptr = job_id;
+	if (!*job_id_list)
+		*job_id_list = list_create(xfree_ptr);
+	list_append(*job_id_list, job_id_ptr);
+}
+
+static list_t *_het_job_build_planned_resident_ids(bitstr_t *planned_node_bitmap)
+{
+	list_itr_t *iter;
+	job_record_t *resident;
+	list_t *resident_job_ids = NULL;
+
+	if (!planned_node_bitmap)
+		return NULL;
+
+	iter = list_iterator_create(job_list);
+	while ((resident = list_next(iter))) {
+		if (!IS_JOB_RUNNING(resident) && !IS_JOB_COMPLETING(resident))
+			continue;
+		if (!_het_job_job_on_planned_nodes(planned_node_bitmap, resident))
+			continue;
+
+		_het_job_append_job_id(&resident_job_ids, resident->job_id);
+	}
+	list_iterator_destroy(iter);
+
+	return resident_job_ids;
+}
+
+static list_t *_het_job_copy_preemptee_job_ids(list_t *preemptee_jobs)
+{
+	list_itr_t *iter;
+	job_record_t *preemptee;
+	list_t *planned_preemptee_job_ids = NULL;
+
+	if (!preemptee_jobs)
+		return NULL;
+
+	iter = list_iterator_create(preemptee_jobs);
+	while ((preemptee = list_next(iter))) {
+		uint32_t *job_id;
+
+		job_id = xmalloc(sizeof(*job_id));
+		*job_id = preemptee->job_id;
+		if (!planned_preemptee_job_ids)
+			planned_preemptee_job_ids = list_create(xfree_ptr);
+		list_append(planned_preemptee_job_ids, job_id);
+	}
+	list_iterator_destroy(iter);
+
+	return planned_preemptee_job_ids;
+}
+
+static list_t *_het_job_select_planned_preemptee_ids(
+	job_record_t *job_ptr, bitstr_t *planned_node_bitmap,
+	uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+	resv_exc_t *resv_exc_ptr, int *select_rc)
+{
+	list_t *preemptee_candidates, *preemptee_job_list = NULL;
+	list_t *planned_preemptee_job_ids = NULL;
+	list_t *orig_gres_list_req, *orig_gres_list_req_accum;
+	bitstr_t *test_bitmap;
+	job_resources_t *orig_job_resrcs;
+	time_t orig_start_time;
+	int rc;
+
+	xassert(select_rc);
+	*select_rc = SLURM_SUCCESS;
+	if (!job_ptr || !planned_node_bitmap) {
+		*select_rc = EINVAL;
+		return NULL;
+	}
+
+	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
+
+	test_bitmap = bit_copy(planned_node_bitmap);
+	orig_start_time = job_ptr->start_time;
+	orig_job_resrcs = job_ptr->job_resrcs;
+	orig_gres_list_req = job_ptr->gres_list_req;
+	orig_gres_list_req_accum = job_ptr->gres_list_req_accum;
+	job_ptr->job_resrcs = NULL;
+	job_ptr->gres_list_req = gres_job_state_list_dup(orig_gres_list_req);
+	job_ptr->gres_list_req_accum =
+		gres_job_state_list_dup(orig_gres_list_req_accum);
+	rc = select_g_job_test(job_ptr, test_bitmap, min_nodes, max_nodes,
+			       req_nodes, SELECT_MODE_RUN_NOW,
+			       preemptee_candidates, &preemptee_job_list,
+			       resv_exc_ptr, NULL);
+	free_job_resources(&job_ptr->job_resrcs);
+	FREE_NULL_LIST(job_ptr->gres_list_req);
+	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
+	job_ptr->job_resrcs = orig_job_resrcs;
+	job_ptr->gres_list_req = orig_gres_list_req;
+	job_ptr->gres_list_req_accum = orig_gres_list_req_accum;
+	job_ptr->start_time = orig_start_time;
+	*select_rc = rc;
+
+	if (rc == SLURM_SUCCESS)
+		planned_preemptee_job_ids =
+			_het_job_copy_preemptee_job_ids(preemptee_job_list);
+
+	if (planned_preemptee_job_ids) {
+		if (job_ptr->het_job_id)
+			log_flag(HETJOB,
+				 "%pJ planned %d preemptee jobs for hetjob start",
+				 job_ptr,
+				 list_count(planned_preemptee_job_ids));
+		else
+			log_flag(BACKFILL,
+				 "%pJ planned %d preemptee jobs for pinned start",
+				 job_ptr,
+				 list_count(planned_preemptee_job_ids));
+	}
+
+	FREE_NULL_LIST(preemptee_job_list);
+	FREE_NULL_LIST(preemptee_candidates);
+	FREE_NULL_BITMAP(test_bitmap);
+
+	return planned_preemptee_job_ids;
+}
+
+static int _job_launch_find_id(void *x, void *key)
+{
+	job_launch_t *launch = x;
+	uint32_t *job_id = key;
+
+	return launch->job_id == *job_id;
+}
+
+static bool _launch_transactions_active(void)
+{
+	if (bf_launch_txn_handoffs_active())
+		return true;
+	if (job_launch_list && list_count(job_launch_list))
+		return true;
+	if (het_job_launch_node_bitmap &&
+	    (bit_ffs(het_job_launch_node_bitmap) >= 0))
+		return true;
+	return false;
+}
+
+static job_launch_t *_job_launch_find(uint32_t job_id)
+{
+	if (!job_launch_list || !job_id)
+		return NULL;
+
+	return list_find_first(job_launch_list, _job_launch_find_id, &job_id);
+}
+
+static bool _launch_txn_owns_sched_nodes(job_record_t *job_ptr)
+{
+	het_job_map_t *map;
+
+	if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+		return false;
+	if (_job_launch_find(job_ptr->job_id))
+		return true;
+	if (!job_ptr->het_job_id || !het_job_list)
+		return false;
+
+	map = list_find_first(het_job_list, _het_job_find_map,
+			      &job_ptr->het_job_id);
+	return map && ((map->launch_state == HET_LAUNCH_COMMITTED) ||
+		       (map->launch_state == HET_LAUNCH_CLEANUP));
+}
+
+static bool _launch_txn_set_sched_nodes(job_record_t *job_ptr,
+					bitstr_t *planned_node_bitmap)
+{
+	char *sched_nodes = NULL;
+
+	if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+		return false;
+	if (planned_node_bitmap)
+		sched_nodes = bitmap2node_name(planned_node_bitmap);
+	if ((!sched_nodes && !job_ptr->sched_nodes) ||
+	    (sched_nodes && job_ptr->sched_nodes &&
+	     !xstrcmp(sched_nodes, job_ptr->sched_nodes))) {
+		xfree(sched_nodes);
+		return false;
+	}
+
+	xfree(job_ptr->sched_nodes);
+	job_ptr->sched_nodes = sched_nodes;
+	last_job_update = time(NULL);
+	return true;
+}
+
+static bool _launch_txn_clear_status(job_record_t *job_ptr)
+{
+	bool changed = false;
+
+	if (!job_ptr)
+		return false;
+
+	if (job_ptr->system_comment &&
+	    !xstrncmp(job_ptr->system_comment,
+		      LAUNCH_TXN_SYSTEM_COMMENT_PREFIX,
+		      strlen(LAUNCH_TXN_SYSTEM_COMMENT_PREFIX))) {
+		xfree(job_ptr->system_comment);
+		changed = true;
+	}
+	if (IS_JOB_PENDING(job_ptr) &&
+	    (!xstrcmp(job_ptr->state_desc, "PreemptionPlanned") ||
+	     !xstrcmp(job_ptr->state_desc, "Preempting") ||
+	     !xstrcmp(job_ptr->state_desc, "HetjobPartialLaunch"))) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = WAIT_RESOURCES;
+		changed = true;
+	}
+	if (_launch_txn_set_sched_nodes(job_ptr, NULL))
+		changed = true;
+	if (changed)
+		last_job_update = time(NULL);
+
+	return changed;
+}
+
+static void _launch_txn_clear_stale_status(void)
+{
+	job_record_t *job_ptr;
+	list_itr_t *iter;
+	uint32_t cleared = 0;
+
+	if (!job_list)
+		return;
+
+	iter = list_iterator_create(job_list);
+	while ((job_ptr = list_next(iter))) {
+		if (job_ptr->bf_launch_transaction ||
+		    job_ptr->bf_launch_retry_after ||
+		    job_ptr->bf_launch_replan_blocked) {
+			_job_launch_reset_retry_state(job_ptr);
+			cleared++;
+		} else if (_launch_txn_clear_status(job_ptr)) {
+			cleared++;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (cleared)
+		log_flag(BACKFILL,
+			 "Cleared %u stale launch transaction statuses",
+			 cleared);
+}
+
+static void _launch_txn_set_system_comment(job_record_t *job_ptr,
+					   const char *comment)
+{
+	if (!job_ptr || !comment)
+		return;
+	if (job_ptr->system_comment &&
+	    xstrncmp(job_ptr->system_comment,
+		     LAUNCH_TXN_SYSTEM_COMMENT_PREFIX,
+		     strlen(LAUNCH_TXN_SYSTEM_COMMENT_PREFIX)))
+		return;
+	if (!xstrcmp(job_ptr->system_comment, comment))
+		return;
+
+	xfree(job_ptr->system_comment);
+	job_ptr->system_comment = xstrdup(comment);
+	last_job_update = time(NULL);
+}
+
+static void _launch_txn_add_blocker_nodes(
+	launch_preempt_status_t *status, bitstr_t *planned_node_bitmap,
+	job_record_t *preemptee)
+{
+	bitstr_t *blocker_node_bitmap = NULL;
+
+	if (!status || !planned_node_bitmap || !preemptee)
+		return;
+	if (preemptee->node_bitmap)
+		blocker_node_bitmap = bit_copy(preemptee->node_bitmap);
+	if (preemptee->node_bitmap_cg) {
+		if (blocker_node_bitmap)
+			bit_or(blocker_node_bitmap, preemptee->node_bitmap_cg);
+		else
+			blocker_node_bitmap = bit_copy(preemptee->node_bitmap_cg);
+	}
+	if (!blocker_node_bitmap)
+		return;
+
+	bit_and(blocker_node_bitmap, planned_node_bitmap);
+	if (bit_ffs(blocker_node_bitmap) < 0) {
+		FREE_NULL_BITMAP(blocker_node_bitmap);
+		return;
+	}
+	if (status->blocker_node_bitmap) {
+		bit_or(status->blocker_node_bitmap, blocker_node_bitmap);
+		FREE_NULL_BITMAP(blocker_node_bitmap);
+	} else {
+		status->blocker_node_bitmap = blocker_node_bitmap;
+	}
+}
+
+static void _launch_txn_add_preempt_status(
+	launch_preempt_status_t *status, job_record_t *preemptor,
+	bitstr_t *planned_node_bitmap, list_t *planned_preemptee_job_ids,
+	time_t now)
+{
+	list_itr_t *iter;
+	uint32_t *job_id;
+
+	if (!status || !preemptor || !planned_node_bitmap ||
+	    !planned_preemptee_job_ids)
+		return;
+
+	iter = list_iterator_create(planned_preemptee_job_ids);
+	while ((job_id = list_next(iter))) {
+		job_record_t *preemptee = find_job_record(*job_id);
+		time_t grace_duration;
+
+		if (!preemptee)
+			continue;
+		if (!job_overlap_and_running(planned_node_bitmap,
+					     preemptor->license_list,
+					     preemptee) &&
+		    !(IS_JOB_COMPLETING(preemptee) &&
+		      _het_job_job_on_planned_nodes(planned_node_bitmap,
+						    preemptee)))
+			continue;
+
+		_launch_txn_add_blocker_nodes(status, planned_node_bitmap,
+					      preemptee);
+		if (_het_job_id_in_list(status->blocker_job_ids, *job_id))
+			continue;
+		_het_job_append_job_id(&status->blocker_job_ids, *job_id);
+		status->blocker_count++;
+		if (!preemptee->preempt_time && !IS_JOB_COMPLETING(preemptee)) {
+			status->uninitiated_count++;
+			continue;
+		}
+		if (!preemptee->preempt_time ||
+		    !(preemptee->bit_flags & GRACE_PREEMPT) ||
+		    (preemptee->end_time <= now))
+			continue;
+
+		grace_duration = MAX(0, preemptee->end_time -
+					 preemptee->preempt_time);
+		if ((preemptee->end_time > status->grace_deadline) ||
+		    ((preemptee->end_time == status->grace_deadline) &&
+		     (grace_duration > status->grace_duration))) {
+			status->grace_deadline = preemptee->end_time;
+			status->grace_duration = grace_duration;
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
+static void _launch_txn_append_blocker_nodes(
+	char **comment, launch_preempt_status_t *status)
+{
+	char *nodes;
+	int node_count;
+
+	if (!comment || !*comment || !status || !status->blocker_node_bitmap)
+		return;
+	node_count = bit_set_count(status->blocker_node_bitmap);
+	if (!node_count)
+		return;
+
+	nodes = bitmap2node_name(status->blocker_node_bitmap);
+	if (!nodes)
+		return;
+	if (strlen(nodes) > LAUNCH_TXN_COMMENT_NODE_CHARS) {
+		xstrfmtcat(*comment, "; blocker node%s %.*s... (truncated)",
+			   (node_count == 1) ? "" : "s",
+			   LAUNCH_TXN_COMMENT_NODE_CHARS, nodes);
+	} else {
+		xstrfmtcat(*comment, "; blocker node%s %s",
+			   (node_count == 1) ? "" : "s", nodes);
+	}
+	xfree(nodes);
+}
+
+static char *_launch_txn_make_system_comment(
+	launch_preempt_status_t *status, time_t now, time_t launch_start,
+	int commit_timeout, bool irrevocable)
+{
+	char grace_remaining[32], grace_total[32], safety_deadline[32];
+	char *comment = NULL;
+
+	if (!status)
+		return NULL;
+
+	if (irrevocable && !status->blocker_count) {
+		if (status->waiting_for_nodes) {
+			xstrfmtcat(comment,
+				   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+				   "partial launch committed; waiting for pinned nodes to finish cleanup; no automatic timeout");
+		} else {
+			xstrfmtcat(comment,
+				   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+				   "partial launch committed; waiting for remaining components; no automatic timeout");
+		}
+	} else if (status->blocker_count &&
+		   (status->uninitiated_count == status->blocker_count)) {
+		xstrfmtcat(comment,
+			   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "%u blocker%s; preemption planned",
+			   status->blocker_count,
+			   (status->blocker_count == 1) ? "" : "s");
+	} else if (status->uninitiated_count) {
+		xstrfmtcat(comment,
+			   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "%u blocker%s; %u preemption%s not yet started",
+			   status->blocker_count,
+			   (status->blocker_count == 1) ? "" : "s",
+			   status->uninitiated_count,
+			   (status->uninitiated_count == 1) ? "" : "s");
+	} else if (status->grace_deadline > now) {
+		secs2time_str(status->grace_deadline - now,
+			      grace_remaining, sizeof(grace_remaining));
+		secs2time_str(status->grace_duration,
+			      grace_total, sizeof(grace_total));
+		xstrfmtcat(comment,
+			   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "%u blocker%s; grace %s remaining of %s",
+			   status->blocker_count,
+			   (status->blocker_count == 1) ? "" : "s",
+			   grace_remaining, grace_total);
+	} else if (status->blocker_count) {
+		xstrfmtcat(comment,
+			   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "grace elapsed; waiting for %u job%s to release resources",
+			   status->blocker_count,
+			   (status->blocker_count == 1) ? "" : "s");
+	} else if (status->waiting_for_nodes) {
+		xstrfmtcat(comment,
+			   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "preemption complete; waiting for pinned nodes to finish cleanup");
+	} else {
+		xstrfmtcat(comment,
+			   LAUNCH_TXN_SYSTEM_COMMENT_PREFIX "pinned plan ready");
+	}
+	_launch_txn_append_blocker_nodes(&comment, status);
+
+	if (irrevocable) {
+		if (status->blocker_count)
+			xstrcat(comment, "; partial launch irrevocable");
+	} else if (launch_start && commit_timeout) {
+		time_t deadline = launch_start + commit_timeout;
+
+		slurm_make_time_str(&deadline, safety_deadline,
+				    sizeof(safety_deadline));
+		xstrfmtcat(comment, "; safety deadline %s", safety_deadline);
+	}
+
+	return comment;
+}
+
+static void _job_launch_del(void *x)
+{
+	job_launch_t *launch = x;
+	job_record_t *job_ptr;
+
+	if (!launch)
+		return;
+
+	bf_launch_txn_release_nodes(launch->job_id);
+	job_ptr = find_job_record(launch->job_id);
+	job_array_launch_slot_release(job_ptr);
+	if (job_ptr && !job_ptr->bf_launch_retry_after &&
+	    !job_ptr->bf_launch_replan_blocked) {
+		_launch_txn_clear_status(job_ptr);
+		job_ptr->bf_launch_transaction = false;
+	}
+	xfree(launch->failure_reason);
+	xfree(launch->part_name);
+	FREE_NULL_BITMAP(launch->planned_node_bitmap);
+	FREE_NULL_LIST(launch->planned_resident_job_ids);
+	FREE_NULL_LIST(launch->planned_preemptee_job_ids);
+	xfree(launch);
+}
+
+static void _job_launch_reset_retry_state(job_record_t *job_ptr)
+{
+	if (!job_ptr)
+		return;
+
+	job_array_launch_slot_release(job_ptr);
+	job_ptr->bf_launch_transaction = false;
+	job_ptr->bf_launch_retry_after = 0;
+	job_ptr->bf_launch_replan_count = 0;
+	job_ptr->bf_launch_replan_blocked = false;
+	_launch_txn_clear_status(job_ptr);
+}
+
+static void _job_launch_set_state(job_record_t *job_ptr,
+				  const char *state_desc)
+{
+	if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+		return;
+
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup(state_desc);
+	job_ptr->state_reason = WAIT_RESOURCES;
+	last_job_update = time(NULL);
+}
+
+static void _job_launch_set_replan_status(job_record_t *job_ptr, time_t now,
+					  const char *reason)
+{
+	char retry_delay[32];
+	char *comment = NULL;
+	char *state_desc = NULL;
+
+	if (!job_ptr)
+		return;
+
+	if (job_ptr->bf_launch_replan_blocked) {
+		xstrfmtcat(state_desc,
+			   "Launch transaction blocked after %u failed replans",
+			   job_ptr->bf_launch_replan_count);
+		xstrfmtcat(comment, LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "automatic replan limit reached after cleanup; cancel and resubmit to retry");
+	} else {
+		secs2time_str(MAX(0, job_ptr->bf_launch_retry_after - now),
+			      retry_delay, sizeof(retry_delay));
+		xstrfmtcat(state_desc,
+			   "Launch transaction cleanup complete; replan in %s",
+			   retry_delay);
+		xstrfmtcat(comment, LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "original victims released; replacement plan allowed in %s; replan %u/%d",
+			   retry_delay, job_ptr->bf_launch_replan_count,
+			   bf_launch_max_replans);
+	}
+	if (reason && reason[0])
+		xstrfmtcat(comment, "; prior plan failed: %s", reason);
+	_job_launch_set_state(job_ptr, state_desc);
+	_launch_txn_set_system_comment(job_ptr, comment);
+	xfree(state_desc);
+	xfree(comment);
+}
+
+static void _job_launch_set_start_retry(job_record_t *job_ptr,
+					job_launch_t *launch, int rc,
+					time_t now)
+{
+	char retry_delay[32];
+	char *comment = NULL;
+
+	if (!job_ptr || !launch)
+		return;
+
+	launch->next_start_retry = now + LAUNCH_TXN_START_RETRY_INTERVAL;
+	xfree(launch->failure_reason);
+	launch->failure_reason = xstrdup(slurm_strerror(rc));
+	secs2time_str(LAUNCH_TXN_START_RETRY_INTERVAL, retry_delay,
+		      sizeof(retry_delay));
+	_job_launch_set_state(job_ptr,
+		"Launch transaction: retrying exact pinned plan");
+	xstrfmtcat(comment, LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+		   "exact pinned-plan start returned %s; retry in %s; no replacement nodes or victims selected",
+		   launch->failure_reason, retry_delay);
+	_launch_txn_set_system_comment(job_ptr, comment);
+	xfree(comment);
+}
+
+static void _job_launch_update_status(job_record_t *job_ptr,
+				      job_launch_t *launch, time_t now,
+				      bool waiting_for_nodes)
+{
+	launch_preempt_status_t status = { 0 };
+	char *comment;
+
+	if (!job_ptr || !launch)
+		return;
+
+	_launch_txn_set_sched_nodes(job_ptr, launch->planned_node_bitmap);
+	_launch_txn_add_preempt_status(&status, job_ptr,
+				       launch->planned_node_bitmap,
+				       launch->planned_preemptee_job_ids, now);
+	status.waiting_for_nodes = waiting_for_nodes;
+	_job_launch_set_state(job_ptr,
+			      (!status.uninitiated_count &&
+			       (status.blocker_count || waiting_for_nodes)) ?
+			      "Preempting" : "PreemptionPlanned");
+	comment = _launch_txn_make_system_comment(
+		&status, now, launch->launch_start, bf_job_commit_timeout, false);
+	_launch_txn_set_system_comment(job_ptr, comment);
+	xfree(comment);
+	FREE_NULL_BITMAP(status.blocker_node_bitmap);
+	FREE_NULL_LIST(status.blocker_job_ids);
+}
+
+static void _job_launch_rebuild_bitmap(void)
+{
+	list_itr_t *iter;
+	job_launch_t *launch;
+
+	if (!job_launch_node_bitmap)
+		return;
+
+	bit_clear_all(job_launch_node_bitmap);
+	if (!job_launch_list)
+		return;
+
+	iter = list_iterator_create(job_launch_list);
+	while ((launch = list_next(iter))) {
+		if (launch->planned_node_bitmap)
+			bit_or(job_launch_node_bitmap,
+			       launch->planned_node_bitmap);
+	}
+	list_iterator_destroy(iter);
+}
+
+static bool _job_launch_queue_matches(job_launch_t *launch,
+				      job_queue_rec_t *job_queue_rec)
+{
+	uint32_t qos_id, resv_id;
+
+	if (!launch || !job_queue_rec ||
+	    (launch->job_id != job_queue_rec->job_id) ||
+	    !job_queue_rec->part_ptr)
+		return false;
+
+	qos_id = job_queue_rec->qos_ptr ? job_queue_rec->qos_ptr->id : 0;
+	/*
+	 * Mirror the commit path: when a queue record carries no
+	 * reservation, the start attempt runs under job_ptr->resv_ptr
+	 * (job_queue_rec_magnetic_resv() is a no-op for such records and
+	 * the commit recorded job_ptr->resv_ptr). A plain --reservation
+	 * job's queue records never carry resv_ptr, so comparing only the
+	 * record's reservation would make its committed plan permanently
+	 * unmatchable.
+	 */
+	if (job_queue_rec->resv_ptr)
+		resv_id = job_queue_rec->resv_ptr->resv_id;
+	else if (job_queue_rec->job_ptr &&
+		 !job_queue_rec->job_ptr->resv_list &&
+		 job_queue_rec->job_ptr->resv_ptr)
+		resv_id = job_queue_rec->job_ptr->resv_ptr->resv_id;
+	else
+		resv_id = 0;
+
+	return !xstrcmp(launch->part_name, job_queue_rec->part_ptr->name) &&
+		(launch->qos_id == qos_id) &&
+		(launch->resv_id == resv_id) &&
+		(launch->use_prefer == job_queue_rec->use_prefer);
+}
+
+static void _job_launch_handoff_sync_queue(list_t *job_queue)
+{
+	job_queue_rec_t *job_queue_rec;
+	list_itr_t *iter;
+
+	if (job_queue) {
+		iter = list_iterator_create(job_queue);
+		while ((job_queue_rec = list_next(iter)))
+			bf_launch_txn_handoff_queue_seen(job_queue_rec->job_ptr);
+		list_iterator_destroy(iter);
+	}
+	bf_launch_txn_handoff_queue_end();
+}
+
+static void _job_launch_promote_queue(list_t *job_queue)
+{
+	list_t *promoted;
+	list_itr_t *iter;
+	job_queue_rec_t *job_queue_rec;
+	time_t now = time(NULL);
+
+	if (!job_queue ||
+	    ((!job_launch_list || !list_count(job_launch_list)) &&
+	     !bf_launch_txn_handoffs_active()))
+		return;
+
+	promoted = list_create(NULL);
+	iter = list_iterator_create(job_queue);
+	while ((job_queue_rec = list_next(iter))) {
+		job_launch_t *launch = _job_launch_find(job_queue_rec->job_id);
+
+		if (launch && _job_launch_queue_matches(launch,
+						       job_queue_rec)) {
+			launch->last_queue_match = now;
+			list_append(promoted, list_remove(iter));
+		} else if (bf_launch_txn_handoff_pending(
+				   job_queue_rec->job_ptr)) {
+			list_append(promoted, list_remove(iter));
+		}
+	}
+	list_iterator_destroy(iter);
+
+	list_flip(promoted);
+	while ((job_queue_rec = list_pop(promoted)))
+		list_prepend(job_queue, job_queue_rec);
+	FREE_NULL_LIST(promoted);
+
+	/*
+	 * The watchdog clock advances at the same instant matching
+	 * records are stamped, so a healthy owner can never fall behind
+	 * the clock regardless of how long the following cycle runs or
+	 * where it breaks out.
+	 */
+	launch_txn_promote_time = now;
+}
+
+static void _job_launch_filter(job_launch_t *launch,
+			       bitstr_t *avail_bitmap)
+{
+	bitstr_t *blocked_bitmap;
+
+	if (!avail_bitmap)
+		return;
+
+	if (job_launch_node_bitmap) {
+		blocked_bitmap = bit_copy(job_launch_node_bitmap);
+		if (launch && launch->planned_node_bitmap)
+			bit_and_not(blocked_bitmap,
+				    launch->planned_node_bitmap);
+		bit_and_not(avail_bitmap, blocked_bitmap);
+		FREE_NULL_BITMAP(blocked_bitmap);
+	}
+
+	if (launch && launch->planned_node_bitmap)
+		bit_and(avail_bitmap, launch->planned_node_bitmap);
+}
+
+/*
+ * Verify every node in a committed plan can still accept an allocation.
+ * DOWN nodes are also caught by up_node_bitmap checks, but DRAINING/DRAINED
+ * and FAIL nodes stay in up_node_bitmap while being excluded from
+ * avail_node_bitmap, which would otherwise stall the pinned retry until the
+ * transaction timeout while the remaining planned nodes sit fenced and idle.
+ * NOT_RESPONDING is deliberately ignored; it is transient and common while
+ * many preempted jobs exit at once.
+ */
+static bool _launch_nodes_usable(bitstr_t *planned_node_bitmap,
+				 uint32_t component_id, char **reason)
+{
+	node_record_t *node_ptr;
+
+	if (!planned_node_bitmap)
+		return true;
+
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(planned_node_bitmap, &i)); i++) {
+		if (!IS_NODE_DOWN(node_ptr) && !IS_NODE_DRAIN(node_ptr) &&
+		    !IS_NODE_FAIL(node_ptr))
+			continue;
+		if (component_id)
+			xstrfmtcat(*reason,
+				   "component %u planned node %s is %s",
+				   component_id, node_ptr->name,
+				   node_state_string(node_ptr->node_state));
+		else
+			xstrfmtcat(*reason, "planned node %s is %s",
+				   node_ptr->name,
+				   node_state_string(node_ptr->node_state));
+		return false;
+	}
+	return true;
+}
+
+static bool _job_launch_validate(job_launch_t *launch, char **reason)
+{
+	job_record_t *job_ptr, *blocker;
+	part_record_t *part_ptr;
+	list_itr_t *iter;
+
+	if (!launch || !launch->planned_node_bitmap) {
+		xstrfmtcat(*reason, "no planned nodes");
+		return false;
+	}
+
+	job_ptr = find_job_record(launch->job_id);
+	if (!job_ptr || !IS_JOB_PENDING(job_ptr) || job_ptr->het_job_id) {
+		xstrfmtcat(*reason, "job is no longer pending");
+		return false;
+	}
+
+	part_ptr = find_part_record(launch->part_name);
+	if (!part_ptr || !_job_part_valid(job_ptr, part_ptr)) {
+		xstrfmtcat(*reason, "planned partition is no longer valid");
+		return false;
+	}
+	job_ptr->part_ptr = part_ptr;
+	if (!_job_runnable_now(job_ptr)) {
+		xstrfmtcat(*reason, "job is no longer runnable");
+		return false;
+	}
+
+	/*
+	 * The owner is only retried through queue records matching the
+	 * committed plan (_job_launch_queue_matches()). If backfill keeps
+	 * scanning its queue but no record has matched the plan for a
+	 * while (for example the job's QOS was changed after commit, or
+	 * the committed reservation was deleted), the owner can never
+	 * consume its plan, so invalidate and replan instead of silently
+	 * pinning the nodes until the safety timeout. Stamp and clock are
+	 * both taken in _job_launch_promote_queue() at the same instant,
+	 * so a healthy owner can never fall behind the clock and the
+	 * watchdog stays dormant when backfill itself is not scanning
+	 * (the commit timeout remains the backstop). Job attributes are
+	 * deliberately not compared here: qos_ptr, resv_ptr, and resv_id
+	 * are per-queue-record scratch state rewritten by
+	 * build_job_queue() and the main scheduler.
+	 */
+	if ((launch->last_queue_match + LAUNCH_TXN_MATCH_TIMEOUT) <
+	    launch_txn_promote_time) {
+		xstrfmtcat(*reason,
+			   "no queue record has matched the committed plan for %ld seconds",
+			   (long) (launch_txn_promote_time -
+				   launch->last_queue_match));
+		return false;
+	}
+
+	if (!bit_super_set(launch->planned_node_bitmap,
+			   part_ptr->node_bitmap) ||
+	    !bit_super_set(launch->planned_node_bitmap, up_node_bitmap)) {
+		xstrfmtcat(*reason, "planned nodes are no longer usable");
+		return false;
+	}
+	if (!_launch_nodes_usable(launch->planned_node_bitmap, 0, reason))
+		return false;
+	if (het_job_launch_node_bitmap &&
+	    bit_overlap_any(launch->planned_node_bitmap,
+			    het_job_launch_node_bitmap)) {
+		xstrfmtcat(*reason,
+			   "planned nodes overlap a heterogeneous launch transaction");
+		return false;
+	}
+
+	iter = list_iterator_create(job_list);
+	while ((blocker = list_next(iter))) {
+		if (!IS_JOB_RUNNING(blocker) && !IS_JOB_COMPLETING(blocker))
+			continue;
+		if (!_het_job_job_on_planned_nodes(launch->planned_node_bitmap,
+						   blocker))
+			continue;
+		if (_het_job_id_in_list(launch->planned_preemptee_job_ids,
+					 blocker->job_id) ||
+		    _het_job_id_in_list(launch->planned_resident_job_ids,
+					 blocker->job_id))
+			continue;
+
+		xstrfmtcat(*reason, "planned nodes acquired unplanned job %u",
+			   blocker->job_id);
+		list_iterator_destroy(iter);
+		return false;
+	}
+	list_iterator_destroy(iter);
+
+	return true;
+}
+
+static job_launch_t *_job_launch_begin(
+	job_record_t *job_ptr, part_record_t *part_ptr,
+	slurmdb_qos_rec_t *qos_ptr, slurmctld_resv_t *resv_ptr,
+	bool use_prefer, bitstr_t *planned_node_bitmap,
+	list_t *planned_preemptee_job_ids)
+{
+	job_launch_t *launch;
+
+	if (!bf_job_commit_timeout || !job_ptr || job_ptr->het_job_id ||
+	    !part_ptr || !planned_node_bitmap ||
+	    !planned_preemptee_job_ids ||
+	    !list_count(planned_preemptee_job_ids))
+		return NULL;
+
+	if ((job_launch_node_bitmap &&
+	     bit_overlap_any(planned_node_bitmap, job_launch_node_bitmap)) ||
+	    (het_job_launch_node_bitmap &&
+	     bit_overlap_any(planned_node_bitmap,
+			     het_job_launch_node_bitmap))) {
+		_job_launch_set_state(job_ptr,
+			"Launch transaction rejected: planned nodes are already committed");
+		return NULL;
+	}
+
+	if (!job_array_launch_slot_acquire(job_ptr, bf_max_job_array_launch))
+		return NULL;
+	if (job_ptr->array_recs && (job_ptr->array_recs->task_cnt > 1)) {
+		job_record_t *pending_job_ptr;
+
+		bf_launch_txn_handoff_complete(job_ptr);
+		job_array_pre_sched(job_ptr);
+		pending_job_ptr = job_array_split(job_ptr, true);
+		_job_launch_reset_retry_state(pending_job_ptr);
+		pending_job_ptr->preempt_in_progress = false;
+		pending_job_ptr->start_time = 0;
+		last_job_update = time(NULL);
+		schedule_job_save();
+	}
+
+	launch = xmalloc(sizeof(*launch));
+	launch->job_id = job_ptr->job_id;
+	launch->state = JOB_LAUNCH_COMMITTED;
+	launch->launch_start = time(NULL);
+	launch->last_queue_match = launch->launch_start;
+	launch->part_name = xstrdup(part_ptr->name);
+	launch->qos_id = qos_ptr ? qos_ptr->id : 0;
+	launch->resv_id = resv_ptr ? resv_ptr->resv_id : 0;
+	launch->use_prefer = use_prefer;
+	launch->planned_node_bitmap = bit_copy(planned_node_bitmap);
+	launch->planned_resident_job_ids =
+		_het_job_build_planned_resident_ids(planned_node_bitmap);
+	launch->planned_preemptee_job_ids =
+		_het_job_copy_job_ids(planned_preemptee_job_ids);
+	job_ptr->bf_launch_transaction = true;
+	job_ptr->bf_launch_retry_after = 0;
+	job_ptr->bf_launch_replan_blocked = false;
+	list_append(job_launch_list, launch);
+	_job_launch_rebuild_bitmap();
+	bf_launch_txn_reserve_nodes(job_ptr->job_id,
+				    launch->planned_node_bitmap);
+
+	_job_launch_update_status(job_ptr, launch, launch->launch_start, false);
+	info("%pJ launch transaction opened: %d nodes pinned, %d planned preemptions",
+	     job_ptr, bit_set_count(launch->planned_node_bitmap),
+	     list_count(launch->planned_preemptee_job_ids));
+
+	return launch;
+}
+
+static void _job_launch_clear(job_launch_t *launch, const char *reason)
+{
+	if (!launch || !job_launch_list)
+		return;
+
+	info("JobId=%u launch transaction released: %s",
+	     launch->job_id, reason ? reason : "unknown");
+	list_delete_ptr(job_launch_list, launch);
+	_job_launch_rebuild_bitmap();
+}
+
+static bool _job_launch_planned_jobs_pending(job_record_t *job_ptr,
+					     job_launch_t *launch)
+{
+	list_itr_t *iter;
+	uint32_t *job_id;
+	bool pending = false;
+
+	if (!launch || !launch->planned_preemptee_job_ids)
+		return false;
+
+	iter = list_iterator_create(launch->planned_preemptee_job_ids);
+	while ((job_id = list_next(iter))) {
+		job_record_t *preemptee = find_job_record(*job_id);
+
+		if (!preemptee)
+			continue;
+		if (job_ptr &&
+		    job_overlap_and_running(launch->planned_node_bitmap,
+					    job_ptr->license_list, preemptee)) {
+			pending = true;
+			break;
+		}
+		if ((IS_JOB_RUNNING(preemptee) || IS_JOB_COMPLETING(preemptee)) &&
+		    _het_job_job_on_planned_nodes(launch->planned_node_bitmap,
+						   preemptee)) {
+			pending = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return pending;
+}
+
+static void _job_launch_update_cleanup_status(job_record_t *job_ptr,
+					      job_launch_t *launch,
+					      time_t now)
+{
+	launch_preempt_status_t status = { 0 };
+	char *comment;
+
+	if (!job_ptr || !launch)
+		return;
+
+	_launch_txn_set_sched_nodes(job_ptr, launch->planned_node_bitmap);
+	_launch_txn_add_preempt_status(&status, job_ptr,
+				       launch->planned_node_bitmap,
+				       launch->planned_preemptee_job_ids, now);
+	status.waiting_for_nodes = true;
+	_job_launch_set_state(job_ptr, "Preempting");
+	comment = _launch_txn_make_system_comment(
+		&status, now, launch->launch_start, bf_job_commit_timeout, false);
+	xstrcat(comment,
+		 "; committed plan invalidated; replacement victims disabled until cleanup completes");
+	if (launch->failure_reason)
+		xstrfmtcat(comment, "; detail: %s", launch->failure_reason);
+	_launch_txn_set_system_comment(job_ptr, comment);
+	xfree(comment);
+	FREE_NULL_BITMAP(status.blocker_node_bitmap);
+	FREE_NULL_LIST(status.blocker_job_ids);
+}
+
+static void _job_launch_enter_cleanup(job_launch_t *launch,
+				      const char *reason)
+{
+	job_record_t *job_ptr;
+
+	if (!launch || (launch->state == JOB_LAUNCH_CLEANUP))
+		return;
+
+	launch->state = JOB_LAUNCH_CLEANUP;
+	launch->next_start_retry = 0;
+	xfree(launch->failure_reason);
+	launch->failure_reason = xstrdup(reason ? reason : "unknown");
+	job_ptr = find_job_record(launch->job_id);
+	_job_launch_update_cleanup_status(job_ptr, launch, time(NULL));
+	info("JobId=%u launch transaction entered cleanup: %s",
+	     launch->job_id, launch->failure_reason);
+}
+
+static void _job_launch_schedule_replan(job_launch_t *launch, time_t now,
+					const char *reason)
+{
+	job_record_t *job_ptr;
+
+	if (!launch)
+		return;
+	job_ptr = find_job_record(launch->job_id);
+	if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+		return;
+
+	_launch_txn_set_sched_nodes(job_ptr, NULL);
+	job_ptr->bf_launch_transaction = true;
+	if (job_ptr->bf_launch_replan_count >= bf_launch_max_replans) {
+		job_ptr->bf_launch_retry_after = 0;
+		job_ptr->bf_launch_replan_blocked = true;
+	} else {
+		job_ptr->bf_launch_replan_count++;
+		job_ptr->bf_launch_retry_after = now + bf_launch_replan_delay;
+		job_ptr->bf_launch_replan_blocked = false;
+	}
+	_job_launch_set_replan_status(job_ptr, now, reason);
+}
+
+static void _job_launch_clear_expired(void)
+{
+	list_itr_t *iter;
+	job_launch_t *launch;
+	time_t now = time(NULL);
+	bool bitmap_dirty = false;
+
+	if (!job_launch_list)
+		return;
+
+	iter = list_iterator_create(job_launch_list);
+	while ((launch = list_next(iter))) {
+		job_record_t *job_ptr = find_job_record(launch->job_id);
+		char *reason = NULL;
+
+		if (launch->state == JOB_LAUNCH_CLEANUP) {
+			if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
+				list_delete_item(iter);
+				bitmap_dirty = true;
+				continue;
+			}
+			if (_job_launch_planned_jobs_pending(job_ptr, launch)) {
+				_job_launch_update_cleanup_status(job_ptr, launch, now);
+				continue;
+			}
+			_job_launch_schedule_replan(
+				launch, now, launch->failure_reason);
+			info("JobId=%u launch transaction cleanup complete",
+			     launch->job_id);
+			list_delete_item(iter);
+			bitmap_dirty = true;
+			continue;
+		}
+
+		if (!bf_job_commit_timeout ||
+		    ((now - launch->launch_start) > bf_job_commit_timeout)) {
+			if (bf_job_commit_timeout && launch->preemption_started &&
+			    job_ptr && IS_JOB_PENDING(job_ptr)) {
+				_job_launch_enter_cleanup(
+					launch, "launch safety timeout expired");
+				continue;
+			}
+			_job_launch_set_state(job_ptr,
+				"Launch transaction timeout expired; released planned nodes");
+			info("JobId=%u launch transaction timed out after %ld seconds",
+			     launch->job_id,
+			     (long) (now - launch->launch_start));
+			list_delete_item(iter);
+			bitmap_dirty = true;
+			continue;
+		}
+
+		if (!_job_launch_validate(launch, &reason)) {
+			char *state_desc = NULL;
+
+			if (launch->preemption_started && job_ptr &&
+			    IS_JOB_PENDING(job_ptr)) {
+				_job_launch_enter_cleanup(launch, reason);
+				xfree(reason);
+				continue;
+			}
+
+			xstrfmtcat(state_desc,
+				   "Launch transaction invalidated: %s",
+				   reason ? reason : "unknown");
+			_job_launch_set_state(job_ptr, state_desc);
+			info("JobId=%u launch transaction invalidated: %s",
+			     launch->job_id,
+			     reason ? reason : "unknown");
+			xfree(state_desc);
+			xfree(reason);
+			list_delete_item(iter);
+			bitmap_dirty = true;
+			continue;
+		}
+		xfree(reason);
+	}
+	list_iterator_destroy(iter);
+
+	if (bitmap_dirty)
+		_job_launch_rebuild_bitmap();
+}
+
+static void _het_job_rec_set_plan(het_job_rec_t *rec,
+				  bitstr_t *planned_node_bitmap,
+				  list_t *planned_preemptee_job_ids)
+{
+	if (!rec)
+		return;
+
+	rec->launch_started = false;
+	FREE_NULL_BITMAP(rec->planned_node_bitmap);
+	if (planned_node_bitmap)
+		rec->planned_node_bitmap = bit_copy(planned_node_bitmap);
+	FREE_NULL_LIST(rec->planned_resident_job_ids);
+	rec->planned_resident_job_ids =
+		_het_job_build_planned_resident_ids(planned_node_bitmap);
+	FREE_NULL_LIST(rec->planned_preemptee_job_ids);
+	rec->planned_preemptee_job_ids =
+		_het_job_copy_job_ids(planned_preemptee_job_ids);
+}
+
+static bool _het_job_id_in_list(list_t *job_id_list, uint32_t job_id)
+{
+	list_itr_t *iter;
+	uint32_t *list_job_id;
+	bool found = false;
+
+	if (!job_id_list)
+		return false;
+
+	iter = list_iterator_create(job_id_list);
+	while ((list_job_id = list_next(iter))) {
+		if (*list_job_id == job_id) {
+			found = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return found;
+}
+
+static bool _het_job_job_in_id_list(list_t *job_id_list, job_record_t *job_ptr)
+{
+	if (!job_ptr)
+		return false;
+	if (_het_job_id_in_list(job_id_list, job_ptr->job_id))
+		return true;
+	if (job_ptr->het_job_id &&
+	    _het_job_id_in_list(job_id_list, job_ptr->het_job_id))
+		return true;
+	return false;
+}
+
+static bool _het_job_job_on_planned_nodes(bitstr_t *planned_node_bitmap,
+					  job_record_t *job_ptr)
+{
+	if (!planned_node_bitmap || !job_ptr)
+		return false;
+	if (job_ptr->node_bitmap &&
+	    bit_overlap_any(planned_node_bitmap, job_ptr->node_bitmap))
+		return true;
+	return job_ptr->node_bitmap_cg &&
+		bit_overlap_any(planned_node_bitmap, job_ptr->node_bitmap_cg);
+}
+
+static job_record_t *_het_job_rec_job_ptr(het_job_map_t *map,
+					  het_job_rec_t *rec)
+{
+	job_record_t *job_ptr;
+
+	if (!map || !rec)
+		return NULL;
+
+	job_ptr = find_job_record(rec->job_id);
+	if (!job_ptr || (job_ptr->het_job_id != map->het_job_id))
+		return NULL;
+
+	rec->job_ptr = job_ptr;
+	return job_ptr;
+}
+
+static bool _het_job_map_has_component(het_job_map_t *map,
+				       job_record_t *job_ptr)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	bool found = false;
+
+	if (!map || !job_ptr)
+		return false;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		if (rec->job_id == job_ptr->job_id) {
+			found = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return found;
+}
+
+static void _het_job_set_state_desc(het_job_map_t *map, const char *state_desc)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+
+	if (!map || !state_desc)
+		return;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+			continue;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = xstrdup(state_desc);
+		job_ptr->state_reason = WAIT_RESOURCES;
+	}
+	list_iterator_destroy(iter);
+	last_job_update = time(NULL);
+}
+
+static void _het_job_clear_launch_status(het_job_map_t *map)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+
+	if (!map)
+		return;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		_launch_txn_clear_status(job_ptr);
+	}
+	list_iterator_destroy(iter);
+}
+
+static void _het_job_set_system_comment(het_job_map_t *map,
+					const char *comment)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+
+	if (!map || !comment)
+		return;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (job_ptr && !IS_JOB_FINISHED(job_ptr))
+			_launch_txn_set_system_comment(job_ptr, comment);
+	}
+	list_iterator_destroy(iter);
+}
+
+static void _het_job_update_launch_status(het_job_map_t *map, time_t now,
+					  bool waiting_for_nodes,
+					  const char *detail)
+{
+	launch_preempt_status_t status = { 0 };
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	char *comment;
+	bool irrevocable;
+
+	if (!map || ((map->launch_state != HET_LAUNCH_COMMITTED) &&
+		     (map->launch_state != HET_LAUNCH_CLEANUP)))
+		return;
+
+	irrevocable = _het_job_latch_started_components(map);
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (rec->launch_started)
+			continue;
+		_launch_txn_set_sched_nodes(job_ptr, rec->planned_node_bitmap);
+		_launch_txn_add_preempt_status(
+			&status, job_ptr, rec->planned_node_bitmap,
+			rec->planned_preemptee_job_ids, now);
+	}
+	list_iterator_destroy(iter);
+	status.waiting_for_nodes = waiting_for_nodes;
+
+	if (status.uninitiated_count) {
+		_het_job_set_state_desc(map, "PreemptionPlanned");
+	} else if (status.blocker_count || waiting_for_nodes) {
+		_het_job_set_state_desc(map, "Preempting");
+	} else if (irrevocable) {
+		_het_job_set_state_desc(map, "HetjobPartialLaunch");
+	} else {
+		_het_job_set_state_desc(map, "PreemptionPlanned");
+	}
+
+	comment = _launch_txn_make_system_comment(
+		&status, now, map->launch_start, bf_hetjob_commit_timeout,
+		irrevocable);
+	if (detail && detail[0])
+		xstrfmtcat(comment, "; detail: %s", detail);
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (job_ptr && !IS_JOB_FINISHED(job_ptr))
+			_launch_txn_set_system_comment(job_ptr, comment);
+	}
+	list_iterator_destroy(iter);
+	xfree(comment);
+	FREE_NULL_BITMAP(status.blocker_node_bitmap);
+	FREE_NULL_LIST(status.blocker_job_ids);
+}
+
+static void _het_job_set_launch_wait_state(het_job_map_t *map, time_t now,
+					   bool waiting_for_nodes)
+{
+	if (!map || ((map->launch_state != HET_LAUNCH_COMMITTED) &&
+		     (map->launch_state != HET_LAUNCH_CLEANUP)))
+		return;
+
+	_het_job_update_launch_status(map, now, waiting_for_nodes, NULL);
+}
+
+static void _het_job_set_replan_status(het_job_map_t *map, time_t now,
+				       const char *reason)
+{
+	char retry_delay[32];
+	char *comment = NULL;
+	char *state_desc = NULL;
+
+	if (!map)
+		return;
+
+	if (map->launch_state == HET_LAUNCH_BLOCKED) {
+		xstrfmtcat(state_desc,
+			   "Hetjob launch blocked after %u failed replans",
+			   map->replan_count);
+		xstrfmtcat(comment, LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "hetjob automatic replan limit reached after cleanup; cancel and resubmit to retry");
+	} else {
+		secs2time_str(MAX(0, map->retry_after - now), retry_delay,
+			      sizeof(retry_delay));
+		xstrfmtcat(state_desc,
+			   "Hetjob launch cleanup complete; replan in %s",
+			   retry_delay);
+		xstrfmtcat(comment, LAUNCH_TXN_SYSTEM_COMMENT_PREFIX
+			   "hetjob original victims released; replacement plan allowed in %s; replan %u/%d",
+			   retry_delay, map->replan_count,
+			   bf_launch_max_replans);
+	}
+	if (reason && reason[0])
+		xstrfmtcat(comment, "; prior plan failed: %s", reason);
+	_het_job_set_state_desc(map, state_desc);
+	_het_job_set_system_comment(map, comment);
+	xfree(state_desc);
+	xfree(comment);
+}
+
+static bitstr_t *_het_job_launch_build_bitmap(het_job_map_t *map)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	bitstr_t *launch_bitmap = NULL;
+
+	if (!map)
+		return NULL;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		if (!rec->planned_node_bitmap)
+			continue;
+		if (!launch_bitmap)
+			launch_bitmap = bit_copy(rec->planned_node_bitmap);
+		else
+			bit_or(launch_bitmap, rec->planned_node_bitmap);
+	}
+	list_iterator_destroy(iter);
+
+	return launch_bitmap;
+}
+
+static int _het_job_launch_rebuild_each(void *x, void *arg)
+{
+	het_job_map_t *map = x;
+	bitstr_t *launch_bitmap = arg;
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+
+	if ((map->launch_state != HET_LAUNCH_COMMITTED) &&
+	    (map->launch_state != HET_LAUNCH_CLEANUP))
+		return SLURM_SUCCESS;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		if (rec->planned_node_bitmap)
+			bit_or(launch_bitmap, rec->planned_node_bitmap);
+	}
+	list_iterator_destroy(iter);
+
+	return SLURM_SUCCESS;
+}
+
+static void _het_job_launch_rebuild_bitmap(void)
+{
+	if (!het_job_launch_node_bitmap)
+		return;
+
+	bit_clear_all(het_job_launch_node_bitmap);
+	if (het_job_list)
+		list_for_each(het_job_list, _het_job_launch_rebuild_each,
+			      het_job_launch_node_bitmap);
+}
+
+static bool _het_job_launch_active(uint32_t het_job_id)
+{
+	het_job_map_t *map;
+
+	if (!het_job_id)
+		return false;
+
+	map = list_find_first(het_job_list, _het_job_find_map, &het_job_id);
+	return map && (map->launch_state != HET_LAUNCH_NONE);
+}
+
+static bool _het_job_launch_still_runnable(het_job_map_t *map, char **reason)
+{
+	het_job_rec_t *rec;
+	job_record_t *leader;
+	list_itr_t *iter;
+	bool valid = true;
+
+	if (!map)
+		return false;
+	_het_job_latch_started_components(map);
+
+	leader = find_job_record(map->het_job_id);
+	if (!leader) {
+		xstrfmtcat(*reason, "hetjob leader is gone");
+		return false;
+	}
+	if (!leader->het_job_list) {
+		xstrfmtcat(*reason, "hetjob leader has no component list");
+		return false;
+	}
+	if (!IS_JOB_RUNNING(leader) && !_job_runnable_now(leader)) {
+		xstrfmtcat(*reason, "hetjob leader is no longer runnable");
+		return false;
+	}
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr;
+
+		if (rec->launch_started)
+			continue;
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (!job_ptr) {
+			xstrfmtcat(*reason,
+				   "component %u is no longer present",
+				   rec->job_id);
+			valid = false;
+			break;
+		}
+		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_CONFIGURING(job_ptr))
+			continue;
+		if (!IS_JOB_PENDING(job_ptr)) {
+			xstrfmtcat(*reason,
+				   "component %u is no longer runnable",
+				   rec->job_id);
+			valid = false;
+			break;
+		}
+		job_ptr->part_ptr = rec->part_ptr;
+		job_ptr->resv_ptr = rec->resv_ptr;
+		job_ptr->resv_id = rec->resv_ptr ? rec->resv_ptr->resv_id : 0;
+		if (!_job_runnable_now(job_ptr)) {
+			xstrfmtcat(*reason,
+				   "component %u is pending but no longer runnable",
+				   rec->job_id);
+			valid = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return valid;
+}
+
+static bool _het_job_latch_started_components(het_job_map_t *map)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	bool irrevocable;
+
+	if (!map)
+		return false;
+
+	irrevocable = map->launch_irrevocable;
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (!rec->launch_started && job_ptr &&
+		    _het_job_component_started(job_ptr))
+			rec->launch_started = true;
+		if (rec->launch_started)
+			irrevocable = true;
+	}
+	list_iterator_destroy(iter);
+
+	map->launch_irrevocable = irrevocable;
+	return irrevocable;
+}
+
+static bool _het_job_launch_cannot_continue(het_job_map_t *map)
+{
+	het_job_rec_t *rec;
+	job_record_t *leader;
+	list_itr_t *iter;
+	bool cannot_continue = false;
+
+	if (!map)
+		return true;
+
+	leader = find_job_record(map->het_job_id);
+	if (leader && IS_JOB_CANCELLED(leader))
+		return true;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr;
+
+		if (rec->launch_started)
+			continue;
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+		if (!job_ptr || IS_JOB_FINISHED(job_ptr)) {
+			cannot_continue = true;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return cannot_continue;
+}
+
+static bool _het_job_hold_partial_launch(het_job_map_t *map,
+					 const char *reason)
+{
+	time_t now = time(NULL);
+
+	if (!_het_job_latch_started_components(map) ||
+	    _het_job_launch_cannot_continue(map))
+		return false;
+
+	_het_job_update_launch_status(map, now, false, reason);
+	log_flag(HETJOB,
+		 "Hetjob %u partial launch remains committed: %s",
+		 map->het_job_id, reason ? reason : "retrying remaining components");
+	/*
+	 * A held partial launch is irrevocable and keeps its remaining
+	 * pinned nodes fenced from the whole scheduler until the plan
+	 * recovers or the hetjob is cancelled. Warn periodically so a
+	 * permanent hold (dead pinned node, held component) is not an
+	 * invisible capacity leak. The first hold only starts the clock,
+	 * so a transient hold that resolves within the interval never
+	 * alarms.
+	 */
+	if (reason) {
+		if (!map->hold_warn_time) {
+			map->hold_warn_time = now;
+		} else if ((map->hold_warn_time +
+			    LAUNCH_TXN_HOLD_WARN_INTERVAL) <= now) {
+			error("Hetjob %u partial launch held: %s; remaining pinned nodes stay fenced until the plan recovers or the hetjob is cancelled",
+			      map->het_job_id, reason);
+			map->hold_warn_time = now;
+		}
+	}
+	map->prev_start = now + 1;
+	return true;
+}
+
+static void _het_job_launch_clear_internal(het_job_map_t *map,
+					   const char *reason,
+					   bool rebuild_bitmap)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+
+	if (!map || ((map->launch_state != HET_LAUNCH_COMMITTED) &&
+		     (map->launch_state != HET_LAUNCH_CLEANUP)))
+		return;
+
+	bf_launch_txn_release_nodes(map->het_job_id);
+	info("Hetjob %u launch transaction released: %s",
+	     map->het_job_id, reason ? reason : "unknown");
+	map->launch_state = HET_LAUNCH_NONE;
+	map->launch_irrevocable = false;
+	map->preemption_started = false;
+	map->launch_start = 0;
+	map->retry_after = 0;
+	map->next_start_retry = 0;
+	map->last_start_rc = SLURM_SUCCESS;
+	xfree(map->failure_reason);
+	map->hold_warn_time = 0;
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		_launch_txn_clear_status(job_ptr);
+		rec->launch_started = false;
+	}
+	list_iterator_destroy(iter);
+	if (rebuild_bitmap)
+		_het_job_launch_rebuild_bitmap();
+}
+
+static void _het_job_launch_clear(het_job_map_t *map, const char *reason)
+{
+	_het_job_launch_clear_internal(map, reason, true);
+}
+
+static void _het_job_launch_enter_cleanup(het_job_map_t *map,
+					  const char *reason)
+{
+	if (!map || (map->launch_state == HET_LAUNCH_CLEANUP))
+		return;
+
+	map->launch_state = HET_LAUNCH_CLEANUP;
+	map->next_start_retry = 0;
+	xfree(map->failure_reason);
+	map->failure_reason = xstrdup(reason ? reason : "unknown");
+	_het_job_update_launch_status(
+		map, time(NULL), true,
+		"committed plan invalidated; replacement victims disabled until cleanup completes");
+	info("Hetjob %u launch transaction entered cleanup: %s",
+	     map->het_job_id, map->failure_reason);
+}
+
+static void _het_job_schedule_replan(het_job_map_t *map, time_t now,
+				     const char *reason)
+{
+	char *failure_reason;
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+
+	if (!map)
+		return;
+
+	failure_reason = xstrdup(reason ? reason : "unknown");
+	bf_launch_txn_release_nodes(map->het_job_id);
+	map->launch_irrevocable = false;
+	map->preemption_started = false;
+	map->launch_start = 0;
+	map->next_start_retry = 0;
+	map->last_start_rc = SLURM_SUCCESS;
+	xfree(map->failure_reason);
+	map->failure_reason = failure_reason;
+	if (map->replan_count >= bf_launch_max_replans) {
+		map->launch_state = HET_LAUNCH_BLOCKED;
+		map->retry_after = 0;
+	} else {
+		map->replan_count++;
+		map->launch_state = HET_LAUNCH_COOLDOWN;
+		map->retry_after = now + bf_launch_replan_delay;
+	}
+	map->prev_start = map->retry_after;
+	_het_job_launch_rebuild_bitmap();
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter)))
+		_launch_txn_set_sched_nodes(_het_job_rec_job_ptr(map, rec), NULL);
+	list_iterator_destroy(iter);
+	_het_job_set_replan_status(map, now, reason);
+	info("Hetjob %u launch transaction cleanup complete; state=%s replan=%u/%d",
+	     map->het_job_id,
+	     (map->launch_state == HET_LAUNCH_BLOCKED) ? "blocked" : "cooldown",
+	     map->replan_count, bf_launch_max_replans);
+}
+
+static bool _het_job_launch_validate(het_job_map_t *map, char **reason)
+{
+	het_job_rec_t *rec;
+	list_itr_t *rec_iter, *job_iter;
+	bitstr_t *launch_bitmap = NULL;
+	bool valid = true;
+
+	if (!map)
+		return false;
+	_het_job_latch_started_components(map);
+
+	launch_bitmap = _het_job_launch_build_bitmap(map);
+	if (!launch_bitmap) {
+		xstrfmtcat(*reason, "no planned nodes");
+		return false;
+	}
+
+	if ((map->launch_state == HET_LAUNCH_NONE) &&
+	    het_job_launch_node_bitmap &&
+	    bit_overlap_any(launch_bitmap, het_job_launch_node_bitmap)) {
+		xstrfmtcat(*reason,
+			   "planned nodes overlap another hetjob launch transaction");
+		FREE_NULL_BITMAP(launch_bitmap);
+		return false;
+	}
+	if (job_launch_node_bitmap &&
+	    bit_overlap_any(launch_bitmap, job_launch_node_bitmap)) {
+		xstrfmtcat(*reason,
+			   "planned nodes overlap a non-heterogeneous launch transaction");
+		FREE_NULL_BITMAP(launch_bitmap);
+		return false;
+	}
+	FREE_NULL_BITMAP(launch_bitmap);
+
+	rec_iter = list_iterator_create(map->het_job_rec_list);
+	while (valid && (rec = list_next(rec_iter))) {
+		job_record_t *job_ptr;
+		job_record_t *blocker;
+
+		if (rec->launch_started)
+			continue;
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+		if (!job_ptr) {
+			xstrfmtcat(*reason,
+				   "component %u is no longer present",
+				   rec->job_id);
+			valid = false;
+			break;
+		}
+		if (_het_job_component_started(job_ptr))
+			continue;
+		if (!IS_JOB_PENDING(job_ptr)) {
+			xstrfmtcat(*reason,
+				   "component %u is neither pending nor started",
+				   rec->job_id);
+			valid = false;
+			break;
+		}
+
+		if (!rec->planned_node_bitmap) {
+			xstrfmtcat(*reason, "component %u has no planned nodes",
+				   rec->job_id);
+			valid = false;
+			break;
+		}
+
+		/*
+		 * A dead or draining pinned node makes this component's
+		 * exact plan unstartable. For a transaction with no started
+		 * component this releases the plan for replanning; for a
+		 * partial launch the map is held (irrevocable) but the
+		 * reason becomes visible to operators instead of retrying
+		 * silently forever.
+		 */
+		if (!_launch_nodes_usable(rec->planned_node_bitmap,
+					  rec->job_id, reason)) {
+			valid = false;
+			break;
+		}
+
+		job_iter = list_iterator_create(job_list);
+		while ((blocker = list_next(job_iter))) {
+			uint16_t mode;
+
+			if (!IS_JOB_RUNNING(blocker) &&
+			    !IS_JOB_COMPLETING(blocker))
+				continue;
+			if (_het_job_map_has_component(map, blocker))
+				continue;
+			if (!_het_job_job_on_planned_nodes(rec->planned_node_bitmap,
+							   blocker))
+				continue;
+
+			if (_het_job_job_in_id_list(rec->planned_preemptee_job_ids,
+						    blocker))
+				continue;
+			if (_het_job_id_in_list(rec->planned_resident_job_ids,
+						blocker->job_id))
+				continue;
+
+			mode = slurm_job_preempt_mode(blocker);
+			{
+				char *nodes = bitmap2node_name(
+					rec->planned_node_bitmap);
+				xstrfmtcat(*reason,
+					   "component %u blocked by new %s job %u not in launch plan on %s",
+					   rec->job_id,
+					   (mode == PREEMPT_MODE_OFF) ?
+					   "non-preemptible" :
+					   "preemptible",
+					   blocker->job_id, nodes);
+				xfree(nodes);
+				valid = false;
+				break;
+			}
+		}
+		list_iterator_destroy(job_iter);
+	}
+	list_iterator_destroy(rec_iter);
+
+	return valid;
+}
+
+static bool _het_job_launch_begin(het_job_map_t *map)
+{
+	bitstr_t *launch_bitmap;
+	char *reason = NULL, *state_desc = NULL;
+	time_t now = time(NULL);
+
+	if (!map)
+		return false;
+	if ((map->launch_state != HET_LAUNCH_NONE) &&
+	    (map->launch_state != HET_LAUNCH_COMMITTED))
+		return false;
+
+	if (!_het_job_launch_validate(map, &reason)) {
+		bool had_launch =
+			(map->launch_state == HET_LAUNCH_COMMITTED);
+
+		log_flag(HETJOB, "Hetjob %u launch transaction %s: %s",
+			 map->het_job_id,
+			 had_launch ? "invalidated" : "rejected",
+			 reason ? reason : "unknown");
+		xstrfmtcat(state_desc, "Hetjob plan %s: %s",
+			   had_launch ?
+			   "invalidated during launch transaction" :
+			   "rejected before preemption",
+			   reason ? reason : "unknown");
+		_het_job_set_state_desc(map, state_desc);
+		if (had_launch &&
+		    !_het_job_hold_partial_launch(map, reason)) {
+			if (map->preemption_started)
+				_het_job_launch_enter_cleanup(map, reason);
+			else
+				_het_job_launch_clear(map, "launch invalidated");
+		}
+		xfree(reason);
+		xfree(state_desc);
+		return false;
+	}
+
+	if (map->launch_state == HET_LAUNCH_COMMITTED) {
+		xfree(reason);
+		return true;
+	}
+
+	if (reason) {
+		log_flag(HETJOB, "Hetjob %u launch validation detail: %s",
+			 map->het_job_id, reason ? reason : "unknown");
+		xfree(reason);
+	}
+
+	if (!bf_hetjob_commit_timeout)
+		return true;
+
+	map->launch_state = HET_LAUNCH_COMMITTED;
+	map->launch_start = now;
+	map->retry_after = 0;
+	map->next_start_retry = 0;
+	map->preemption_started = false;
+	map->last_start_rc = SLURM_SUCCESS;
+	xfree(map->failure_reason);
+	_het_job_launch_rebuild_bitmap();
+	launch_bitmap = _het_job_launch_build_bitmap(map);
+	bf_launch_txn_reserve_nodes(map->het_job_id, launch_bitmap);
+	info("Hetjob %u launch transaction opened: %d nodes pinned across %d components",
+	     map->het_job_id,
+	     launch_bitmap ? bit_set_count(launch_bitmap) : 0,
+	     list_count(map->het_job_rec_list));
+	FREE_NULL_BITMAP(launch_bitmap);
+
+	_het_job_update_launch_status(map, now, false, NULL);
+
+	return true;
+}
+
+/*
  * Delete het_job_map_t record from het_job_list
  */
 static void _het_job_map_del(void *x)
 {
 	het_job_map_t *map = (het_job_map_t *) x;
+
+	bf_launch_txn_release_nodes(map->het_job_id);
+	_het_job_clear_launch_status(map);
+	xfree(map->failure_reason);
 	FREE_NULL_LIST(map->het_job_rec_list);
 	xfree(map);
 }
@@ -4113,19 +6528,159 @@ static int _het_job_find_rec(void *x, void *key)
 }
 
 /*
+ * Verify every not-yet-started component of a committed hetjob launch
+ * transaction still has usable planned nodes. Mirrors the ordinary-job
+ * node-health check in _job_launch_validate() so a dead or draining pinned
+ * node is detected by the cheap per-iteration maintenance pass rather than
+ * only by a full backfill pass.
+ */
+static bool _het_job_nodes_usable(het_job_map_t *map, char **reason)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	bool usable = true;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		if (rec->launch_started)
+			continue;
+		if (!_launch_nodes_usable(rec->planned_node_bitmap,
+					  rec->job_id, reason)) {
+			usable = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return usable;
+}
+
+/*
  * Remove vestigial elements from het_job_list. For still active element,
  * clear the previously computted start time. This is used to periodically clear
  * history so that heterogeneous jobs do not keep getting deferred based
  * upon old system state
  */
-static void _het_job_start_clear(void)
+static void _het_job_start_clear(bool launch_only)
 {
 	het_job_map_t *map;
 	list_itr_t *iter;
+	time_t now = time(NULL);
+	bool launch_bitmap_dirty = false;
 
 	iter = list_iterator_create(het_job_list);
 	while ((map = list_next(iter))) {
-		if (map->prev_start == 0) {
+		if (map->launch_state == HET_LAUNCH_CLEANUP) {
+			char *reason = NULL;
+
+			if (!_het_job_launch_still_runnable(map, &reason)) {
+				_het_job_launch_clear_internal(map, reason, false);
+				launch_bitmap_dirty = true;
+				xfree(reason);
+				list_delete_item(iter);
+				continue;
+			}
+			xfree(reason);
+			if (_het_job_planned_components_pending(map)) {
+				_het_job_update_launch_status(
+					map, now, true,
+					"committed plan invalidated; replacement victims disabled until cleanup completes");
+				map->prev_start = now + 1;
+				continue;
+			}
+			_het_job_schedule_replan(map, now, map->failure_reason);
+			launch_bitmap_dirty = true;
+			continue;
+		} else if (map->launch_state == HET_LAUNCH_COOLDOWN) {
+			if (_het_job_launch_cannot_continue(map)) {
+				list_delete_item(iter);
+				continue;
+			}
+			if (map->retry_after > now) {
+				if (!launch_only)
+					_het_job_set_replan_status(
+						map, now, map->failure_reason);
+				continue;
+			}
+			info("Hetjob %u launch replan cooldown complete",
+			     map->het_job_id);
+			map->launch_state = HET_LAUNCH_NONE;
+			map->retry_after = 0;
+			map->prev_start = now + YEAR_SECONDS;
+			map->comp_time_limit = 0;
+			list_flush(map->het_job_rec_list);
+			continue;
+		} else if (map->launch_state == HET_LAUNCH_BLOCKED) {
+			if (_het_job_launch_cannot_continue(map)) {
+				list_delete_item(iter);
+				continue;
+			}
+			if (!launch_only)
+				_het_job_set_replan_status(
+					map, now, map->failure_reason);
+			continue;
+		} else if (map->launch_state == HET_LAUNCH_COMMITTED) {
+			char *reason = NULL;
+
+			if (!_het_job_launch_still_runnable(map, &reason)) {
+				if (_het_job_hold_partial_launch(map, reason)) {
+					xfree(reason);
+					continue;
+				}
+				log_flag(HETJOB,
+					 "Hetjob %u launch transaction released because job is no longer runnable: %s",
+					 map->het_job_id,
+					 reason ? reason : "unknown");
+				_het_job_launch_clear_internal(map, reason, false);
+				launch_bitmap_dirty = true;
+				xfree(reason);
+				list_delete_item(iter);
+				continue;
+			}
+			xfree(reason);
+
+			reason = NULL;
+			if (!_het_job_nodes_usable(map, &reason)) {
+				if (_het_job_hold_partial_launch(map, reason)) {
+					xfree(reason);
+					continue;
+				}
+				if (map->preemption_started) {
+					_het_job_launch_enter_cleanup(map, reason);
+				} else {
+					_het_job_launch_clear_internal(
+						map, reason, false);
+					launch_bitmap_dirty = true;
+					list_delete_item(iter);
+				}
+				xfree(reason);
+				continue;
+			}
+			xfree(reason);
+
+			if ((!bf_hetjob_commit_timeout ||
+			     ((now - map->launch_start) >
+			      bf_hetjob_commit_timeout)) &&
+			    !_het_job_latch_started_components(map)) {
+				if (map->preemption_started) {
+					_het_job_launch_enter_cleanup(
+						map, bf_hetjob_commit_timeout ?
+						"launch safety timeout expired" :
+						"launch transactions disabled");
+				} else {
+					_het_job_set_state_desc(map,
+						"Hetjob launch transaction timeout expired; released planned nodes");
+					_het_job_launch_clear_internal(
+						map, "launch timeout", false);
+					launch_bitmap_dirty = true;
+					list_delete_item(iter);
+				}
+			} else {
+				map->prev_start = 0;
+			}
+		} else if (launch_only) {
+			continue;
+		} else if ((map->prev_start == 0) && !map->replan_count) {
 			list_delete_item(iter);
 		} else {
 			map->prev_start = 0;
@@ -4133,6 +6688,8 @@ static void _het_job_start_clear(void)
 		}
 	}
 	list_iterator_destroy(iter);
+	if (launch_bitmap_dirty)
+		_het_job_launch_rebuild_bitmap();
 }
 
 /*
@@ -4193,7 +6750,9 @@ static time_t _het_job_start_find(job_record_t *job_ptr)
  * for the job in any partition and reservation.
  */
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
-			       uint32_t comp_time_limit)
+			       uint32_t comp_time_limit,
+			       bitstr_t *planned_node_bitmap,
+			       list_t *planned_preemptee_job_ids)
 {
 	het_job_map_t *map;
 	het_job_rec_t *rec;
@@ -4204,24 +6763,36 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 		map = list_find_first(het_job_list, _het_job_find_map,
 				      &job_ptr->het_job_id);
 		if (map) {
+			if (map->launch_state != HET_LAUNCH_NONE)
+				return;
+
 			if (!map->comp_time_limit) {
 				map->comp_time_limit = comp_time_limit;
 			} else {
 				map->comp_time_limit = MIN(map->comp_time_limit,
 							   comp_time_limit);
 			}
-			rec = list_find_first(map->het_job_rec_list,
-					      _het_job_find_rec,
-					      &job_ptr->job_id);
-			if (rec && (rec->latest_start <= latest_start)) {
-				/*
-				 * This job can start an earlier time in
-				 * some other partition, so ignore new info
-				 */
-			} else if (rec) {
+				rec = list_find_first(map->het_job_rec_list,
+						      _het_job_find_rec,
+						      &job_ptr->job_id);
+				if (rec && (rec->latest_start <= latest_start)) {
+					/*
+					 * This job can start an earlier time in
+					 * some other partition, so ignore new info
+					 */
+					if ((rec->latest_start == latest_start) &&
+					    (map->launch_state ==
+					     HET_LAUNCH_NONE))
+						_het_job_rec_set_plan(
+							rec, planned_node_bitmap,
+							planned_preemptee_job_ids);
+				} else if (rec) {
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				rec->resv_ptr = job_ptr->resv_ptr;
+				_het_job_rec_set_plan(
+					rec, planned_node_bitmap,
+					planned_preemptee_job_ids);
 			} else {
 				rec = xmalloc(sizeof(het_job_rec_t));
 				rec->job_id = job_ptr->job_id;
@@ -4229,6 +6800,9 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
 				rec->resv_ptr = job_ptr->resv_ptr;
+				_het_job_rec_set_plan(
+					rec, planned_node_bitmap,
+					planned_preemptee_job_ids);
 				list_append(map->het_job_rec_list, rec);
 			}
 		} else {
@@ -4238,11 +6812,13 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			rec->latest_start = latest_start;
 			rec->part_ptr = job_ptr->part_ptr;
 			rec->resv_ptr = job_ptr->resv_ptr;
+			_het_job_rec_set_plan(rec, planned_node_bitmap,
+					      planned_preemptee_job_ids);
 
 			map = xmalloc(sizeof(het_job_map_t));
 			map->comp_time_limit = comp_time_limit;
 			map->het_job_id = job_ptr->het_job_id;
-			map->het_job_rec_list = list_create(xfree_ptr);
+			map->het_job_rec_list = list_create(_het_job_rec_del);
 			list_append(map->het_job_rec_list, rec);
 			list_append(het_job_list, map);
 		}
@@ -4327,7 +6903,11 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 			.tres = READ_LOCK,
 		};
 
-		job_ptr = rec->job_ptr;
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+		if (!job_ptr) {
+			runnable = false;
+			break;
+		}
 		job_ptr->part_ptr = rec->part_ptr;
 		if (rec->resv_ptr) {
 			job_ptr->resv_ptr = rec->resv_ptr;
@@ -4382,7 +6962,9 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 
 	list_iterator_reset(iter);
 	while ((rec = list_next(iter))) {
-		job_ptr = rec->job_ptr;
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+		if (!job_ptr)
+			continue;
 		if (begun_jobs > fini_jobs) {
 			time_t end_time_exp = job_ptr->end_time_exp;
 			time_t end_time = job_ptr->end_time;
@@ -4408,7 +6990,343 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 /*
  * Start all components of a hetjob now
  */
-static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
+static bool _het_job_component_started(job_record_t *job_ptr)
+{
+	return IS_JOB_RUNNING(job_ptr) || IS_JOB_CONFIGURING(job_ptr) ||
+		IS_JOB_COMPLETING(job_ptr);
+}
+
+static void _het_job_add_used_nodes(bitstr_t **used_bitmap,
+				    job_record_t *job_ptr)
+{
+	if (!job_ptr->node_bitmap)
+		return;
+
+	if (!*used_bitmap)
+		*used_bitmap = bit_copy(job_ptr->node_bitmap);
+	else
+		bit_or(*used_bitmap, job_ptr->node_bitmap);
+}
+
+static bool _het_job_use_planned_nodes(job_record_t *job_ptr,
+				       het_job_rec_t *rec,
+				       bitstr_t *avail_bitmap)
+{
+	int planned_cnt, avail_cnt;
+
+	if (!rec->planned_node_bitmap)
+		return true;
+
+	planned_cnt = bit_set_count(rec->planned_node_bitmap);
+	avail_cnt = bit_set_count(avail_bitmap);
+	if (!bit_super_set(rec->planned_node_bitmap, avail_bitmap)) {
+		log_flag(HETJOB, "%pJ planned hetjob nodes no longer available: planned=%d available=%d",
+			 job_ptr, planned_cnt, avail_cnt);
+		return false;
+	}
+
+	bit_and(avail_bitmap, rec->planned_node_bitmap);
+	avail_cnt = bit_set_count(avail_bitmap);
+	if (!avail_cnt) {
+		log_flag(HETJOB, "%pJ planned hetjob node bitmap is empty",
+			 job_ptr);
+		return false;
+	}
+
+	log_flag(HETJOB, "%pJ pinned hetjob start to %d planned nodes",
+		 job_ptr, avail_cnt);
+	return true;
+}
+
+static bool _het_job_preempt_planned_jobs(job_record_t *job_ptr,
+					  het_job_rec_t *rec,
+					  het_job_map_t *map)
+{
+	list_itr_t *iter;
+	uint32_t *job_id;
+	int pending = 0, preempted = 0, planned_cnt;
+	time_t now = time(NULL);
+
+	if (!rec->planned_node_bitmap || !rec->planned_preemptee_job_ids)
+		return false;
+
+	planned_cnt = list_count(rec->planned_preemptee_job_ids);
+	if (!planned_cnt)
+		return false;
+
+	iter = list_iterator_create(rec->planned_preemptee_job_ids);
+	while ((job_id = list_next(iter))) {
+		job_record_t *preemptee = find_job_record(*job_id);
+		uint16_t mode;
+
+		if (!preemptee)
+			continue;
+		if (!job_overlap_and_running(rec->planned_node_bitmap,
+					     job_ptr->license_list,
+					     preemptee) &&
+		    !(IS_JOB_COMPLETING(preemptee) &&
+		      _het_job_job_on_planned_nodes(rec->planned_node_bitmap,
+						    preemptee)))
+			continue;
+
+		pending++;
+		if (preemptee->preempt_time || IS_JOB_COMPLETING(preemptee)) {
+			map->preemption_started = true;
+			continue;
+		}
+
+		mode = slurm_job_preempt_mode(preemptee);
+		if (mode == PREEMPT_MODE_OFF)
+			continue;
+
+		if (slurm_job_preempt(preemptee, job_ptr, mode, true) ==
+		    SLURM_SUCCESS) {
+			preempted++;
+			map->preemption_started = true;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (!pending)
+		return false;
+
+	if (job_ptr->details && !job_ptr->details->preempt_start_time)
+		job_ptr->details->preempt_start_time = now;
+	if (!job_ptr->preempt_in_progress) {
+		job_ptr->preempt_in_progress = true;
+		if (job_ptr->array_recs)
+			job_ptr->array_recs->pend_run_tasks++;
+	}
+
+	log_flag(HETJOB,
+		 "%pJ waiting on %d/%d planned jobs for pinned hetjob start; initiated %d preemptions",
+		 job_ptr, pending, planned_cnt, preempted);
+	return true;
+}
+
+static bool _het_job_preempt_planned_components(het_job_map_t *map)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	bool pending = false;
+
+	if (!map)
+		return false;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+
+		if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+			continue;
+		if (_het_job_preempt_planned_jobs(job_ptr, rec, map))
+			pending = true;
+	}
+	list_iterator_destroy(iter);
+
+	return pending;
+}
+
+static bool _het_job_planned_components_pending(het_job_map_t *map)
+{
+	het_job_rec_t *rec;
+	list_itr_t *rec_iter;
+	bool pending = false;
+
+	if (!map)
+		return false;
+
+	rec_iter = list_iterator_create(map->het_job_rec_list);
+	while (!pending && (rec = list_next(rec_iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+		list_itr_t *job_iter;
+		uint32_t *job_id;
+
+		if (!rec->planned_preemptee_job_ids)
+			continue;
+		job_iter = list_iterator_create(rec->planned_preemptee_job_ids);
+		while ((job_id = list_next(job_iter))) {
+			job_record_t *preemptee = find_job_record(*job_id);
+
+			if (!preemptee)
+				continue;
+			if (job_ptr &&
+			    job_overlap_and_running(rec->planned_node_bitmap,
+						    job_ptr->license_list,
+						    preemptee)) {
+				pending = true;
+				break;
+			}
+			if ((IS_JOB_RUNNING(preemptee) ||
+			     IS_JOB_COMPLETING(preemptee)) &&
+			    _het_job_job_on_planned_nodes(
+				    rec->planned_node_bitmap, preemptee)) {
+				pending = true;
+				break;
+			}
+		}
+		list_iterator_destroy(job_iter);
+	}
+	list_iterator_destroy(rec_iter);
+
+	return pending;
+}
+
+static bool _het_job_all_components_ready(het_job_map_t *map, char **reason)
+{
+	het_job_rec_t *rec;
+	list_itr_t *iter;
+	bitstr_t *used_bitmap = NULL;
+	bool ready = true;
+	time_t now = time(NULL);
+
+	if (!map)
+		return false;
+
+	iter = list_iterator_create(map->het_job_rec_list);
+	while ((rec = list_next(iter))) {
+		job_record_t *job_ptr = _het_job_rec_job_ptr(map, rec);
+		bitstr_t *avail_bitmap = NULL;
+		bool resv_overlap = false;
+		resv_exc_t resv_exc = { 0 };
+		time_t original_start_time;
+		time_t start_res = now;
+		uint32_t planned_node_count;
+		int rc;
+
+		if (!job_ptr) {
+			xstrfmtcat(*reason, "component %u is no longer present",
+				   rec->job_id);
+			ready = false;
+			break;
+		}
+		if (rec->launch_started || _het_job_component_started(job_ptr)) {
+			_het_job_add_used_nodes(&used_bitmap, job_ptr);
+			continue;
+		}
+		if (!rec->planned_node_bitmap) {
+			xstrfmtcat(*reason, "component %u has no planned nodes",
+				   rec->job_id);
+			ready = false;
+			break;
+		}
+
+		job_ptr->part_ptr = rec->part_ptr;
+		job_ptr->resv_ptr = rec->resv_ptr;
+		job_ptr->resv_id = rec->resv_ptr ? rec->resv_ptr->resv_id : 0;
+		rc = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
+				   &resv_exc, &resv_overlap, false);
+		if (rc == SLURM_SUCCESS) {
+			bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
+			bit_and(avail_bitmap, up_node_bitmap);
+			bit_and(avail_bitmap, avail_node_bitmap);
+			if (used_bitmap)
+				bit_and_not(avail_bitmap, used_bitmap);
+			if (job_ptr->details->exc_node_bitmap)
+				bit_and_not(avail_bitmap,
+					    job_ptr->details->exc_node_bitmap);
+			if (!_het_job_use_planned_nodes(job_ptr, rec,
+							avail_bitmap))
+				rc = ESLURM_NODES_BUSY;
+		}
+		if (rc == SLURM_SUCCESS) {
+			planned_node_count =
+				bit_set_count(rec->planned_node_bitmap);
+			original_start_time = job_ptr->start_time;
+			rc = select_g_job_test(
+				job_ptr, avail_bitmap, planned_node_count,
+				planned_node_count, planned_node_count,
+				SELECT_MODE_RUN_NOW, NULL, NULL, &resv_exc, NULL);
+			job_ptr->start_time = original_start_time;
+		}
+		reservation_delete_resv_exc_parts(&resv_exc);
+		FREE_NULL_BITMAP(avail_bitmap);
+		if (rc != SLURM_SUCCESS) {
+			xstrfmtcat(*reason,
+				   "component %u exact pinned plan is not ready: %s",
+				   rec->job_id, slurm_strerror(rc));
+			ready = false;
+			break;
+		}
+		if (!used_bitmap)
+			used_bitmap = bit_copy(rec->planned_node_bitmap);
+		else
+			bit_or(used_bitmap, rec->planned_node_bitmap);
+	}
+	list_iterator_destroy(iter);
+	FREE_NULL_BITMAP(used_bitmap);
+
+	return ready;
+}
+
+static bool _job_launch_preempt_planned_jobs(job_record_t *job_ptr,
+					     job_launch_t *launch)
+{
+	list_itr_t *iter;
+	uint32_t *job_id;
+	int pending = 0, preempted = 0, planned_cnt;
+	time_t now = time(NULL);
+
+	if (!launch || !launch->planned_node_bitmap ||
+	    !launch->planned_preemptee_job_ids)
+		return false;
+
+	planned_cnt = list_count(launch->planned_preemptee_job_ids);
+	if (!planned_cnt)
+		return false;
+
+	iter = list_iterator_create(launch->planned_preemptee_job_ids);
+	while ((job_id = list_next(iter))) {
+		job_record_t *preemptee = find_job_record(*job_id);
+		uint16_t mode;
+
+		if (!preemptee)
+			continue;
+		if (!job_overlap_and_running(launch->planned_node_bitmap,
+					     job_ptr->license_list,
+					     preemptee) &&
+		    !(IS_JOB_COMPLETING(preemptee) &&
+		      _het_job_job_on_planned_nodes(launch->planned_node_bitmap,
+						    preemptee)))
+			continue;
+
+		pending++;
+		if (preemptee->preempt_time || IS_JOB_COMPLETING(preemptee)) {
+			launch->preemption_started = true;
+			continue;
+		}
+
+		mode = slurm_job_preempt_mode(preemptee);
+		if (mode == PREEMPT_MODE_OFF)
+			continue;
+
+		if (slurm_job_preempt(preemptee, job_ptr, mode, true) ==
+		    SLURM_SUCCESS) {
+			preempted++;
+			launch->preemption_started = true;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (!pending)
+		return false;
+
+	if (job_ptr->details && !job_ptr->details->preempt_start_time)
+		job_ptr->details->preempt_start_time = now;
+	if (!job_ptr->preempt_in_progress) {
+		job_ptr->preempt_in_progress = true;
+		if (job_ptr->array_recs && !job_ptr->bf_launch_array_slot)
+			job_ptr->array_recs->pend_run_tasks++;
+	}
+
+	log_flag(BACKFILL,
+		 "%pJ waiting on %d/%d planned jobs for pinned start; initiated %d preemptions",
+		 job_ptr, pending, planned_cnt, preempted);
+	return true;
+}
+
+static het_start_rc_t _het_job_start_now(het_job_map_t *map,
+					 node_space_map_t *node_space)
 {
 	job_record_t *job_ptr;
 	bitstr_t *avail_bitmap = NULL;
@@ -4416,6 +7334,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	het_job_rec_t *rec;
 	list_itr_t *iter;
 	int rc = SLURM_SUCCESS;
+	het_start_rc_t start_rc = HET_START_OK;
 	bool resv_overlap = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
@@ -4424,11 +7343,29 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = list_next(iter))) {
 		bool reset_time = false;
-		job_ptr = rec->job_ptr;
+
+		if (rec->launch_started) {
+			job_ptr = _het_job_rec_job_ptr(map, rec);
+			if (job_ptr)
+				_het_job_add_used_nodes(&used_bitmap, job_ptr);
+			continue;
+		}
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+		if (!job_ptr) {
+			start_rc = HET_START_FAILED;
+			break;
+		}
 		job_ptr->part_ptr = rec->part_ptr;
 		if (rec->resv_ptr) {
 			job_ptr->resv_ptr = rec->resv_ptr;
 			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+		}
+
+		if (_het_job_component_started(job_ptr)) {
+			rec->launch_started = true;
+			map->launch_irrevocable = true;
+			_het_job_add_used_nodes(&used_bitmap, job_ptr);
+			continue;
 		}
 
 		/*
@@ -4441,7 +7378,9 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 		if (rc != SLURM_SUCCESS) {
 			error("%pJ failed to start due to reservation",
 			      job_ptr);
+			map->last_start_rc = rc;
 			FREE_NULL_BITMAP(avail_bitmap);
+			start_rc = HET_START_WAIT_RETRY;
 			break;
 		}
 		bit_and(avail_bitmap, job_ptr->part_ptr->node_bitmap);
@@ -4452,12 +7391,20 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 			bit_and_not(avail_bitmap,
 				job_ptr->details->exc_node_bitmap);
 		}
+		if (!_het_job_use_planned_nodes(job_ptr, rec,
+						avail_bitmap)) {
+			FREE_NULL_BITMAP(avail_bitmap);
+			start_rc = HET_START_FAILED;
+			break;
+		}
 
 		if (fed_mgr_job_lock(job_ptr)) {
 			error("%pJ failed to start due to fed job lock",
 			      job_ptr);
+			map->last_start_rc = ESLURM_FED_JOB_LOCK;
 			FREE_NULL_BITMAP(avail_bitmap);
-			continue;
+			start_rc = HET_START_WAIT_RETRY;
+			break;
 		}
 
 		resv_bitmap = avail_bitmap;
@@ -4466,6 +7413,8 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 		rc = _start_job(job_ptr, resv_bitmap);
 		FREE_NULL_BITMAP(resv_bitmap);
 		if (rc == SLURM_SUCCESS) {
+			rec->launch_started = true;
+			map->launch_irrevocable = true;
 			/*
 			 * If the following fails because of network
 			 * connectivity, the origin cluster should ask
@@ -4474,12 +7423,20 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 			 */
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 			log_flag(HETJOB, "%pJ started", job_ptr);
-			if (!used_bitmap && job_ptr->node_bitmap)
-				used_bitmap = bit_copy(job_ptr->node_bitmap);
-			else if (job_ptr->node_bitmap)
-				bit_or(used_bitmap, job_ptr->node_bitmap);
+			_het_job_add_used_nodes(&used_bitmap, job_ptr);
 		} else {
 			fed_mgr_job_unlock(job_ptr);
+			map->last_start_rc = rc;
+			if (bf_hetjob_commit_timeout &&
+			    (rc == ESLURM_NODES_BUSY) &&
+			    (map->launch_state == HET_LAUNCH_COMMITTED)) {
+				start_rc = HET_START_WAIT_RESOURCES;
+			} else if (bf_hetjob_commit_timeout &&
+				   (map->launch_state == HET_LAUNCH_COMMITTED)) {
+				start_rc = HET_START_WAIT_RETRY;
+			} else {
+				start_rc = HET_START_FAILED;
+			}
 			break;
 		}
 		if (job_ptr->time_min) {
@@ -4506,14 +7463,16 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	}
 	list_iterator_destroy(iter);
 	FREE_NULL_BITMAP(used_bitmap);
+	if (start_rc == HET_START_OK)
+		map->last_start_rc = SLURM_SUCCESS;
 
-	return rc;
+	return start_rc;
 }
 
 /*
  * Deallocate all components if failed hetjob start
  */
-static void _het_job_kill_now(het_job_map_t *map)
+static void _het_job_kill_now(het_job_map_t *map, bool rebuild_bitmap)
 {
 	job_record_t *job_ptr;
 	het_job_rec_t *rec;
@@ -4522,10 +7481,14 @@ static void _het_job_kill_now(het_job_map_t *map)
 	int cred_lifetime = 1200;
 	uint32_t save_bitflags;
 
+	_het_job_launch_clear_internal(map, "hetjob start rollback",
+				       rebuild_bitmap);
 	cred_lifetime = cred_expiration();
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = list_next(iter))) {
-		job_ptr = rec->job_ptr;
+		job_ptr = _het_job_rec_job_ptr(map, rec);
+		if (!job_ptr)
+			continue;
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
 		info("Deallocate %pJ due to hetjob start failure",
@@ -4563,14 +7526,34 @@ static bool _het_job_start_test_single(node_space_map_t *node_space,
 				       het_job_map_t *map, bool single)
 {
 	time_t now = time(NULL);
-	int rc;
+	het_start_rc_t rc;
 
 	if (!map)
 		return false;
+	if (map->launch_state == HET_LAUNCH_BLOCKED) {
+		_het_job_set_replan_status(map, now, map->failure_reason);
+		return false;
+	}
+	if (map->launch_state == HET_LAUNCH_COOLDOWN) {
+		_het_job_set_replan_status(map, now, map->failure_reason);
+		return false;
+	}
+	if (map->launch_state == HET_LAUNCH_CLEANUP) {
+		_het_job_update_launch_status(
+			map, now, true,
+			"committed plan invalidated; replacement victims disabled until cleanup completes");
+		return false;
+	}
+	if ((map->launch_state == HET_LAUNCH_COMMITTED) &&
+	    (map->next_start_retry > now))
+		return false;
 
-	if (!_het_job_full(map)) {
+	if ((map->launch_state != HET_LAUNCH_COMMITTED) &&
+	    !_het_job_full(map)) {
 		log_flag(HETJOB, "Hetjob %u has indefinite start time",
 			 map->het_job_id);
+		_het_job_set_state_desc(map,
+			"Hetjob waiting: no complete feasible component plan yet");
 		if (!single)
 			map->prev_start = now + YEAR_SECONDS;
 		return false;
@@ -4578,14 +7561,27 @@ static bool _het_job_start_test_single(node_space_map_t *node_space,
 
 	map->prev_start = _het_job_start_compute(map, 0);
 	if (map->prev_start > now) {
+		if (map->launch_state == HET_LAUNCH_COMMITTED) {
+			_het_job_set_launch_wait_state(map, now, false);
+		} else {
+			char *state_desc = NULL;
+			xstrfmtcat(state_desc,
+				   "Hetjob waiting behind higher-priority reservations; planned start in %u seconds",
+				   (uint32_t)(map->prev_start - now));
+			_het_job_set_state_desc(map, state_desc);
+			xfree(state_desc);
+		}
 		log_flag(HETJOB, "Hetjob %u should be able to start in %u seconds",
 			 map->het_job_id, (uint32_t) (map->prev_start - now));
 		return false;
 	}
 
-	if (!_het_job_limit_check(map, now)) {
+	if ((map->launch_state != HET_LAUNCH_COMMITTED) &&
+	    !_het_job_limit_check(map, now)) {
 		log_flag(HETJOB, "Hetjob %u prevented from starting by account/QOS limit",
 			 map->het_job_id);
+		_het_job_set_state_desc(map,
+			"Hetjob waiting: account or QOS limit prevents start");
 
 		map->prev_start = now + YEAR_SECONDS;
 		return false;
@@ -4593,11 +7589,90 @@ static bool _het_job_start_test_single(node_space_map_t *node_space,
 
 	log_flag(HETJOB, "Attempting to start hetjob %u", map->het_job_id);
 
+	if (!_het_job_launch_begin(map)) {
+		map->prev_start = now + 1;
+		return false;
+	}
+	if (_het_job_preempt_planned_components(map)) {
+		_het_job_set_launch_wait_state(map, now, false);
+		map->prev_start = now + 1;
+		return false;
+	}
+	{
+		char *readiness_reason = NULL;
+
+		if (!_het_job_all_components_ready(map, &readiness_reason)) {
+			map->next_start_retry =
+				now + LAUNCH_TXN_START_RETRY_INTERVAL;
+			_het_job_update_launch_status(
+				map, now, true, readiness_reason);
+			log_flag(HETJOB,
+				 "Hetjob %u exact component readiness barrier deferred launch: %s",
+				 map->het_job_id,
+				 readiness_reason ? readiness_reason : "unknown");
+			map->prev_start = map->next_start_retry;
+			xfree(readiness_reason);
+			return false;
+		}
+		xfree(readiness_reason);
+	}
+
+	map->next_start_retry = 0;
 	rc = _het_job_start_now(map, node_space);
+	if ((rc == HET_START_WAIT_RESOURCES) ||
+	    (rc == HET_START_WAIT_RETRY)) {
+		bool partial_launch =
+			_het_job_latch_started_components(map);
+		bool launch_wait_ok;
+		const char *retry_reason = NULL;
+
+		if ((rc == HET_START_WAIT_RETRY) && map->last_start_rc)
+			retry_reason = slurm_strerror(map->last_start_rc);
+
+		launch_wait_ok =
+			(map->launch_state == HET_LAUNCH_COMMITTED) &&
+			(partial_launch ||
+			 (bf_hetjob_commit_timeout &&
+			  ((now - map->launch_start) <=
+			   bf_hetjob_commit_timeout)));
+
+		if (launch_wait_ok) {
+			map->next_start_retry = now +
+				((rc == HET_START_WAIT_RETRY) ?
+				 LAUNCH_TXN_START_RETRY_INTERVAL : 1);
+			_het_job_update_launch_status(
+				map, now, true, retry_reason);
+			log_flag(HETJOB, "Hetjob %u retained exact plan after start returned %s",
+				 map->het_job_id,
+				 retry_reason ? retry_reason : "nodes busy");
+			map->prev_start = map->next_start_retry;
+			return false;
+		}
+
+		if (map->preemption_started) {
+			_het_job_launch_enter_cleanup(
+				map, "launch safety timeout expired");
+		} else {
+			log_flag(HETJOB, "Hetjob %u launch transaction timeout expired before preemption; releasing plan",
+				 map->het_job_id);
+			_het_job_kill_now(map, true);
+		}
+		return false;
+	}
+
 	if (rc != SLURM_SUCCESS) {
+		if (_het_job_latch_started_components(map)) {
+			if (!_het_job_hold_partial_launch(
+				    map, "retrying remaining component after start failure"))
+				_het_job_launch_clear(
+					map, "partial launch ended by terminal job state");
+			return false;
+		}
 		log_flag(HETJOB, "Failed to start hetjob %u", map->het_job_id);
-		_het_job_kill_now(map);
+		_het_job_kill_now(map, true);
 	} else {
+		map->replan_count = 0;
+		_het_job_launch_clear(map, "hetjob started");
 		job_start_cnt += list_count(map->het_job_rec_list);
 		if (max_backfill_jobs_start &&
 		    (job_start_cnt >= max_backfill_jobs_start)) {
@@ -4619,12 +7694,36 @@ static int _het_job_start_test_list(void *map, void *node_space)
 	return SLURM_SUCCESS;
 }
 
+static int _het_job_start_launches_each(void *x, void *arg)
+{
+	het_job_map_t *map = x;
+
+	if (map->launch_state != HET_LAUNCH_COMMITTED)
+		return SLURM_SUCCESS;
+
+	if (!max_backfill_jobs_start ||
+	    (job_start_cnt < max_backfill_jobs_start))
+		_het_job_start_test_single(arg, map, false);
+
+	return SLURM_SUCCESS;
+}
+
+static void _het_job_start_launches(node_space_map_t *node_space)
+{
+	if (!het_job_list)
+		return;
+
+	(void) list_for_each(het_job_list, _het_job_start_launches_each,
+			     node_space);
+}
+
 static int _foreach_add_job_to_nodes_used(void *x, void *arg)
 {
 	het_job_rec_t *het_rec = x;
 	node_used_t *nodes_used = arg;
+	job_record_t *job_ptr = find_job_record(het_rec->job_id);
 
-	if (_mark_nodes_usage(het_rec->job_ptr, nodes_used))
+	if (job_ptr && _mark_nodes_usage(job_ptr, nodes_used))
 		nodes_used->needs_sorting = true;
 
 	return 0;

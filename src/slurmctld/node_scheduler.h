@@ -127,6 +127,27 @@ extern void find_feature_nodes(list_t *feature_list, bool can_reboot);
  */
 extern void re_kill_job(job_record_t *job_ptr);
 
+extern void bf_launch_txn_filter_nodes(job_record_t *job_ptr,
+				       bitstr_t *usable_node_mask);
+extern void bf_launch_txn_filter_reservation_nodes(
+	bitstr_t *usable_node_mask);
+extern void bf_launch_txn_clear_handoffs(void);
+extern bool bf_launch_txn_handoff_attempt(job_record_t *job_ptr);
+extern bool bf_launch_txn_handoff_considered(job_record_t *job_ptr);
+extern void bf_launch_txn_handoff_complete(job_record_t *job_ptr);
+extern void bf_launch_txn_handoff_cycle_begin(void);
+extern void bf_launch_txn_handoff_cycle_end(void);
+extern void bf_launch_txn_handoff_defer_cycle(job_record_t *job_ptr);
+extern bool bf_launch_txn_handoff_pending(job_record_t *job_ptr);
+extern void bf_launch_txn_handoff_queue_end(void);
+extern void bf_launch_txn_handoff_queue_seen(job_record_t *job_ptr);
+extern bool bf_launch_txn_handoffs_active(void);
+extern bool bf_launch_txn_overlap_nodes(bitstr_t *node_bitmap);
+extern void bf_launch_txn_prune_handoffs(void);
+extern void bf_launch_txn_release_nodes(uint32_t owner_id);
+extern void bf_launch_txn_reserve_nodes(uint32_t owner_id,
+					bitstr_t *node_bitmap);
+
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_node_select - pointer with at least a pointer to the job record

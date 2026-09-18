@@ -123,6 +123,28 @@ enum {
 	NM_TYPES	/* Number of node types */
 };
 
+typedef struct {
+	uint32_t owner_id;
+	bitstr_t *node_bitmap;
+} bf_launch_txn_nodes_t;
+
+typedef struct {
+	uint32_t job_id;
+	bool active;
+	time_t created_at;
+	uint64_t created_cycle;
+	uint64_t queue_seen_cycle;
+	uint64_t considered_cycle;
+	uint64_t attempted_cycle;
+} bf_launch_txn_handoff_t;
+
+#define BF_LAUNCH_TXN_HANDOFF_TIMEOUT 120
+
+static list_t *bf_launch_txn_nodes = NULL;
+static list_t *bf_launch_txn_handoffs = NULL;
+static uint64_t bf_launch_txn_handoff_cycle = 0;
+static pthread_mutex_t bf_launch_txn_nodes_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static int  _build_node_list(job_record_t *job_ptr,
 			     struct node_set **node_set_pptr,
 			     int *node_set_size, char **err_msg,
@@ -151,6 +173,493 @@ static int _sort_node_set(const void *x, const void *y);
 static bitstr_t *_valid_features(job_record_t *job_ptr,
 				 config_record_t *config_ptr,
 				 bool can_reboot, bitstr_t *reboot_bitmap);
+
+static void _bf_launch_txn_nodes_del(void *x)
+{
+	bf_launch_txn_nodes_t *record = x;
+
+	if (!record)
+		return;
+	FREE_NULL_BITMAP(record->node_bitmap);
+	xfree(record);
+}
+
+static bool _bf_launch_txn_ordinary_enabled(void)
+{
+	char *tmp_ptr;
+
+	if (!slurm_conf.schedtype ||
+	    xstrcmp(slurm_conf.schedtype, "sched/backfill"))
+		return false;
+	if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+				    "bf_job_commit_timeout=")) &&
+	    (atoi(tmp_ptr + strlen("bf_job_commit_timeout=")) == 0))
+		return false;
+	if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+				    "bf_interval=")) &&
+	    (atoi(tmp_ptr + strlen("bf_interval=")) == -1))
+		return false;
+
+	return true;
+}
+
+static bf_launch_txn_handoff_t *_bf_launch_txn_handoff_find_locked(
+	uint32_t job_id)
+{
+	bf_launch_txn_handoff_t *handoff = NULL;
+	list_itr_t *iter;
+
+	if (!bf_launch_txn_handoffs)
+		return NULL;
+
+	iter = list_iterator_create(bf_launch_txn_handoffs);
+	while ((handoff = list_next(iter))) {
+		if (handoff->job_id != job_id)
+			continue;
+		break;
+	}
+	list_iterator_destroy(iter);
+
+	return handoff;
+}
+
+static bool _bf_launch_txn_handoff_expired(
+	bf_launch_txn_handoff_t *handoff, time_t now)
+{
+	return handoff && !handoff->active &&
+		((handoff->created_at + BF_LAUNCH_TXN_HANDOFF_TIMEOUT) <= now);
+}
+
+static void _bf_launch_txn_handoff_release_locked(uint32_t job_id)
+{
+	bf_launch_txn_handoff_t *handoff;
+	list_itr_t *iter;
+
+	if (!bf_launch_txn_handoffs)
+		return;
+
+	iter = list_iterator_create(bf_launch_txn_handoffs);
+	while ((handoff = list_next(iter))) {
+		if (handoff->job_id != job_id)
+			continue;
+		list_delete_item(iter);
+		break;
+	}
+	list_iterator_destroy(iter);
+	if (!list_count(bf_launch_txn_handoffs))
+		FREE_NULL_LIST(bf_launch_txn_handoffs);
+}
+
+static void _bf_launch_txn_handoff_release(uint32_t job_id)
+{
+	if (!job_id)
+		return;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	_bf_launch_txn_handoff_release_locked(job_id);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_clear_handoffs(void)
+{
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	FREE_NULL_LIST(bf_launch_txn_handoffs);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern bool bf_launch_txn_handoff_pending(job_record_t *job_ptr)
+{
+	bf_launch_txn_handoff_t *handoff;
+	bool pending;
+
+	if (!job_ptr)
+		return false;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	handoff = _bf_launch_txn_handoff_find_locked(job_ptr->job_id);
+	if (_bf_launch_txn_handoff_expired(handoff, time(NULL))) {
+		_bf_launch_txn_handoff_release_locked(job_ptr->job_id);
+		handoff = NULL;
+	}
+	pending = handoff && handoff->active;
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+
+	return pending;
+}
+
+extern bool bf_launch_txn_handoffs_active(void)
+{
+	bf_launch_txn_handoff_t *handoff;
+	list_itr_t *iter;
+	bool active = false;
+	time_t now = time(NULL);
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (bf_launch_txn_handoffs) {
+		iter = list_iterator_create(bf_launch_txn_handoffs);
+		while ((handoff = list_next(iter))) {
+			if (_bf_launch_txn_handoff_expired(handoff, now)) {
+				list_delete_item(iter);
+				continue;
+			}
+			if (!handoff->active)
+				continue;
+			active = true;
+			break;
+		}
+		list_iterator_destroy(iter);
+		if (!list_count(bf_launch_txn_handoffs))
+			FREE_NULL_LIST(bf_launch_txn_handoffs);
+	}
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+
+	return active;
+}
+
+extern void bf_launch_txn_handoff_cycle_begin(void)
+{
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	bf_launch_txn_handoff_cycle++;
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_handoff_queue_seen(job_record_t *job_ptr)
+{
+	bf_launch_txn_handoff_t *handoff;
+
+	if (!job_ptr)
+		return;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if ((handoff = _bf_launch_txn_handoff_find_locked(job_ptr->job_id)))
+		handoff->queue_seen_cycle = bf_launch_txn_handoff_cycle;
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_handoff_queue_end(void)
+{
+	bf_launch_txn_handoff_t *handoff;
+	list_itr_t *iter;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (!bf_launch_txn_handoffs) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_handoffs);
+	while ((handoff = list_next(iter))) {
+		if ((handoff->created_cycle >= bf_launch_txn_handoff_cycle) ||
+		    (handoff->queue_seen_cycle == bf_launch_txn_handoff_cycle))
+			continue;
+		info("JobId=%u launch transaction handoff released: no backfill queue record",
+		     handoff->job_id);
+		list_delete_item(iter);
+	}
+	list_iterator_destroy(iter);
+	if (!list_count(bf_launch_txn_handoffs))
+		FREE_NULL_LIST(bf_launch_txn_handoffs);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern bool bf_launch_txn_handoff_attempt(job_record_t *job_ptr)
+{
+	bf_launch_txn_handoff_t *handoff;
+	bool pending = false;
+
+	if (!job_ptr)
+		return false;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if ((handoff = _bf_launch_txn_handoff_find_locked(job_ptr->job_id)) &&
+	    handoff->active) {
+		handoff->attempted_cycle = bf_launch_txn_handoff_cycle;
+		pending = true;
+	}
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+
+	return pending;
+}
+
+extern bool bf_launch_txn_handoff_considered(job_record_t *job_ptr)
+{
+	bf_launch_txn_handoff_t *handoff;
+	bool pending = false;
+
+	if (!job_ptr)
+		return false;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if ((handoff = _bf_launch_txn_handoff_find_locked(job_ptr->job_id)) &&
+	    handoff->active) {
+		handoff->considered_cycle = bf_launch_txn_handoff_cycle;
+		pending = true;
+	}
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+
+	return pending;
+}
+
+extern void bf_launch_txn_handoff_defer_cycle(job_record_t *job_ptr)
+{
+	bf_launch_txn_handoff_t *handoff;
+
+	if (!job_ptr)
+		return;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if ((handoff = _bf_launch_txn_handoff_find_locked(job_ptr->job_id)) &&
+	    handoff->active &&
+	    (handoff->attempted_cycle != bf_launch_txn_handoff_cycle))
+		handoff->considered_cycle = 0;
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_handoff_complete(job_record_t *job_ptr)
+{
+	if (job_ptr)
+		_bf_launch_txn_handoff_release(job_ptr->job_id);
+}
+
+extern void bf_launch_txn_handoff_cycle_end(void)
+{
+	bf_launch_txn_handoff_t *handoff;
+	list_itr_t *iter;
+	time_t now = time(NULL);
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (!bf_launch_txn_handoffs) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_handoffs);
+	while ((handoff = list_next(iter))) {
+		if (!handoff->active ||
+		    (handoff->considered_cycle != bf_launch_txn_handoff_cycle))
+			continue;
+		handoff->active = false;
+		handoff->created_at = now;
+		if (handoff->attempted_cycle == bf_launch_txn_handoff_cycle)
+			info("JobId=%u launch transaction handoff cooling down: selection did not commit",
+			     handoff->job_id);
+		else
+			info("JobId=%u launch transaction handoff cooling down: job became ineligible before selection",
+			     handoff->job_id);
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_prune_handoffs(void)
+{
+	bf_launch_txn_handoff_t *handoff;
+	list_itr_t *iter;
+	time_t now = time(NULL);
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (!bf_launch_txn_handoffs) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+	if (!_bf_launch_txn_ordinary_enabled()) {
+		FREE_NULL_LIST(bf_launch_txn_handoffs);
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_handoffs);
+	while ((handoff = list_next(iter))) {
+		job_record_t *job_ptr = find_job_record(handoff->job_id);
+
+		if (!job_ptr || !IS_JOB_PENDING(job_ptr) ||
+		    IS_JOB_COMPLETING(job_ptr) || !job_ptr->priority ||
+		    _bf_launch_txn_handoff_expired(handoff, now))
+			list_delete_item(iter);
+	}
+	list_iterator_destroy(iter);
+	if (!list_count(bf_launch_txn_handoffs))
+		FREE_NULL_LIST(bf_launch_txn_handoffs);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+static bool _bf_launch_txn_should_defer_preemption(
+	job_record_t *job_ptr, uint32_t scheduler_type)
+{
+	bf_launch_txn_handoff_t *handoff;
+	bool added = false;
+
+	if (!(scheduler_type & (SLURMDB_JOB_FLAG_SUBMIT |
+				SLURMDB_JOB_FLAG_SCHED)))
+		return false;
+	if (!_bf_launch_txn_ordinary_enabled()) {
+		_bf_launch_txn_handoff_release(job_ptr->job_id);
+		return false;
+	}
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	handoff = _bf_launch_txn_handoff_find_locked(job_ptr->job_id);
+	if (_bf_launch_txn_handoff_expired(handoff, time(NULL))) {
+		_bf_launch_txn_handoff_release_locked(job_ptr->job_id);
+		handoff = NULL;
+	}
+	if (!handoff) {
+		handoff = xmalloc(sizeof(*handoff));
+
+		handoff->job_id = job_ptr->job_id;
+		handoff->active = true;
+		handoff->created_at = time(NULL);
+		handoff->created_cycle = bf_launch_txn_handoff_cycle;
+		if (!bf_launch_txn_handoffs)
+			bf_launch_txn_handoffs = list_create(xfree_ptr);
+		list_append(bf_launch_txn_handoffs, handoff);
+		added = true;
+	}
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+	if (added)
+		info("%pJ deferred preemption to backfill launch transaction",
+		     job_ptr);
+
+	return true;
+}
+
+extern void bf_launch_txn_filter_nodes(job_record_t *job_ptr,
+				       bitstr_t *usable_node_mask)
+{
+	bf_launch_txn_nodes_t *record;
+	list_itr_t *iter;
+	uint32_t owner_id;
+
+	if (!job_ptr || !usable_node_mask)
+		return;
+
+	owner_id = job_ptr->het_job_id ? job_ptr->het_job_id : job_ptr->job_id;
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (!bf_launch_txn_nodes) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_nodes);
+	while ((record = list_next(iter))) {
+		if (record->owner_id != owner_id)
+			bit_and_not(usable_node_mask, record->node_bitmap);
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_filter_reservation_nodes(
+	bitstr_t *usable_node_mask)
+{
+	bf_launch_txn_nodes_t *record;
+	list_itr_t *iter;
+
+	if (!usable_node_mask)
+		return;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (!bf_launch_txn_nodes) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_nodes);
+	while ((record = list_next(iter)))
+		bit_and_not(usable_node_mask, record->node_bitmap);
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern bool bf_launch_txn_overlap_nodes(bitstr_t *node_bitmap)
+{
+	bf_launch_txn_nodes_t *record;
+	list_itr_t *iter;
+	bool overlap = false;
+
+	if (!node_bitmap)
+		return false;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	if (!bf_launch_txn_nodes) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return false;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_nodes);
+	while ((record = list_next(iter))) {
+		if (!bit_overlap_any(node_bitmap, record->node_bitmap))
+			continue;
+		overlap = true;
+		break;
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+
+	return overlap;
+}
+
+extern void bf_launch_txn_release_nodes(uint32_t owner_id)
+{
+	bf_launch_txn_nodes_t *record;
+	list_itr_t *iter;
+
+	if (!owner_id)
+		return;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	_bf_launch_txn_handoff_release_locked(owner_id);
+	if (!bf_launch_txn_nodes) {
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+
+	iter = list_iterator_create(bf_launch_txn_nodes);
+	while ((record = list_next(iter))) {
+		if (record->owner_id != owner_id)
+			continue;
+		list_delete_item(iter);
+		break;
+	}
+	list_iterator_destroy(iter);
+	if (!list_count(bf_launch_txn_nodes))
+		FREE_NULL_LIST(bf_launch_txn_nodes);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
+
+extern void bf_launch_txn_reserve_nodes(uint32_t owner_id,
+					bitstr_t *node_bitmap)
+{
+	bf_launch_txn_nodes_t *record;
+	list_itr_t *iter;
+
+	if (!owner_id || !node_bitmap)
+		return;
+
+	slurm_mutex_lock(&bf_launch_txn_nodes_mutex);
+	_bf_launch_txn_handoff_release_locked(owner_id);
+	if (!bf_launch_txn_nodes)
+		bf_launch_txn_nodes = list_create(_bf_launch_txn_nodes_del);
+
+	iter = list_iterator_create(bf_launch_txn_nodes);
+	while ((record = list_next(iter))) {
+		if (record->owner_id != owner_id)
+			continue;
+		FREE_NULL_BITMAP(record->node_bitmap);
+		record->node_bitmap = bit_copy(node_bitmap);
+		list_iterator_destroy(iter);
+		slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+		return;
+	}
+	list_iterator_destroy(iter);
+
+	record = xmalloc(sizeof(*record));
+	record->owner_id = owner_id;
+	record->node_bitmap = bit_copy(node_bitmap);
+	list_append(bf_launch_txn_nodes, record);
+	slurm_mutex_unlock(&bf_launch_txn_nodes_mutex);
+}
 
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
@@ -1777,6 +2286,13 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
+			if (!nodes_busy)
+				count1 = bit_set_count(node_set_ptr[i].my_bitmap);
+			bf_launch_txn_filter_nodes(job_ptr,
+						   node_set_ptr[i].my_bitmap);
+			if (!nodes_busy &&
+			    (count1 != bit_set_count(node_set_ptr[i].my_bitmap)))
+				nodes_busy = true;
 			if (!nodes_busy) {
 				count1 = bit_set_count(node_set_ptr[i].
 						       my_bitmap);
@@ -1836,6 +2352,7 @@ try_sched:
 			FREE_NULL_LIST(*preemptee_job_list);
 			if (job_ptr->details->req_node_bitmap == NULL)
 				bit_and(avail_bitmap, avail_node_bitmap);
+			bf_launch_txn_filter_nodes(job_ptr, avail_bitmap);
 
 			bit_and(avail_bitmap, share_node_bitmap);
 
@@ -1863,6 +2380,7 @@ try_sched:
 				list_iterator_destroy(job_iterator);
 				bit_and(avail_bitmap, avail_node_bitmap);
 				bit_and(avail_bitmap, total_bitmap);
+				bf_launch_txn_filter_nodes(job_ptr, avail_bitmap);
 				preemptee_cand = preemptee_candidates;
 			} else
 				preemptee_cand = preemptee_candidates;
@@ -1919,6 +2437,10 @@ try_sched:
 		} /* for (i = 0; i < node_set_size; i++) */
 
 		/* try to get req_nodes now for this feature */
+		if (avail_bitmap) {
+			bf_launch_txn_filter_nodes(job_ptr, avail_bitmap);
+			avail_nodes = bit_set_count(avail_bitmap);
+		}
 		if (avail_bitmap && (!tried_sched)	&&
 		    (avail_nodes >= min_nodes)		&&
 		    ((job_ptr->details->req_node_bitmap == NULL) ||
@@ -1972,6 +2494,7 @@ try_sched:
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = bit_copy(total_bitmap);
 				bit_and(avail_bitmap, avail_node_bitmap);
+				bf_launch_txn_filter_nodes(job_ptr, avail_bitmap);
 				job_ptr->details->pn_min_memory = orig_req_mem;
 				pick_code = select_g_job_test(job_ptr,
 						avail_bitmap,
@@ -2499,6 +3022,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	list_t *gres_list_pre = NULL;
 	bool gres_list_pre_set = false;
 	job_record_t *tmp_job, *job_ptr = job_node_select->job_ptr;
+	uint32_t launch_handoff_job_id = job_ptr->job_id;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2755,7 +3279,11 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	job_ptr->cpu_cnt = job_ptr->total_cpus;
 
 	if (!test_only && preemptee_job_list
-	    && (error_code == SLURM_SUCCESS)) {
+	    && (error_code == SLURM_SUCCESS) &&
+	    _bf_launch_txn_should_defer_preemption(job_ptr, scheduler_type)) {
+		error_code = ESLURM_NODES_BUSY;
+	} else if (!test_only && preemptee_job_list
+		   && (error_code == SLURM_SUCCESS)) {
 		job_details_t *detail_ptr = job_ptr->details;
 		time_t now = time(NULL);
 		bool kill_pending = true;
@@ -3111,6 +3639,10 @@ cleanup:
 	if (test_only || (error_code != SLURM_SUCCESS)) {
 		job_ptr->details->whole_node = orig_whole_node;
 		job_ptr->details->share_res = orig_share_res;
+	}
+	if (!test_only && (error_code == SLURM_SUCCESS)) {
+		_bf_launch_txn_handoff_release(launch_handoff_job_id);
+		_bf_launch_txn_handoff_release(job_ptr->job_id);
 	}
 
 	return error_code;

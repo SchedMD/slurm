@@ -3393,6 +3393,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	save_prio_factors = job_ptr_pend->prio_factors;
 	save_step_list = job_ptr_pend->step_list;
 	memcpy(job_ptr_pend, job_ptr, sizeof(job_record_t));
+	job_ptr->bf_launch_array_slots = 0;
+	job_ptr_pend->bf_launch_array_slot = false;
 
 	job_ptr_pend->job_id   = save_job_id;
 	job_ptr_pend->details  = save_details;
@@ -3838,6 +3840,36 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 	return SLURM_ERROR;
 }
 
+static bitstr_t *_hide_job_launch_nodes(void)
+{
+	bitstr_t *save_avail_node_bitmap;
+
+	if (!avail_node_bitmap ||
+	    ((!job_launch_node_bitmap ||
+	      !bit_overlap_any(avail_node_bitmap, job_launch_node_bitmap)) &&
+	     (!het_job_launch_node_bitmap ||
+	      !bit_overlap_any(avail_node_bitmap,
+			      het_job_launch_node_bitmap))))
+		return NULL;
+
+	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	if (job_launch_node_bitmap)
+		bit_and_not(avail_node_bitmap, job_launch_node_bitmap);
+	if (het_job_launch_node_bitmap)
+		bit_and_not(avail_node_bitmap, het_job_launch_node_bitmap);
+
+	return save_avail_node_bitmap;
+}
+
+static void _restore_avail_node_bitmap(bitstr_t *save_avail_node_bitmap)
+{
+	if (!save_avail_node_bitmap)
+		return;
+
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	avail_node_bitmap = save_avail_node_bitmap;
+}
+
 static int _foreach_select_nodes_resvs(void *object, void *args)
 {
 	slurmctld_resv_t *resv_ptr = object;
@@ -3947,6 +3979,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		.test_only = test_only,
 	};
 	int rc, best_rc, part_limits_rc;
+	bitstr_t *save_avail_node_bitmap = _hide_job_launch_nodes();
 
 	if (job_ptr->part_ptr_list) {
 		/* part_ptr_list is already sorted */
@@ -3960,6 +3993,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		 */
 		(void)_select_nodes_qos(&job_node_select);
 	}
+	_restore_avail_node_bitmap(save_avail_node_bitmap);
 
 	rc = job_node_select.rc;
 	best_rc = job_node_select.rc_best;
@@ -9837,6 +9871,8 @@ static void _delete_job_common(job_record_t *job_ptr)
 {
 	if (!job_ptr->job_id)
 		return;
+
+	job_array_launch_slot_release(job_ptr);
 
 	/* Remove record from fed_job_list */
 	fed_mgr_remove_fed_job_info(job_ptr->job_id);
@@ -16747,11 +16783,46 @@ void job_fini (void)
 	FREE_NULL_BITMAP(requeue_exit_hold);
 }
 
+extern bool job_array_launch_slot_acquire(job_record_t *job_ptr,
+					uint32_t max_launches)
+{
+	job_record_t *base_job_ptr;
+
+	if (!job_ptr->array_job_id || job_ptr->bf_launch_array_slot)
+		return true;
+	base_job_ptr = find_job_record(job_ptr->array_job_id);
+	if (!base_job_ptr || !base_job_ptr->array_recs ||
+	    !job_array_start_test(job_ptr))
+		return false;
+	if (base_job_ptr->bf_launch_array_slots >= max_launches) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = xstrdup("ArrayPreemptionLimit");
+		job_ptr->state_reason = WAIT_RESOURCES;
+		return false;
+	}
+	base_job_ptr->bf_launch_array_slots++;
+	job_ptr->bf_launch_array_slot = true;
+	return true;
+}
+
+extern void job_array_launch_slot_release(job_record_t *job_ptr)
+{
+	job_record_t *base_job_ptr;
+
+	if (!job_ptr || !job_ptr->bf_launch_array_slot)
+		return;
+	job_ptr->bf_launch_array_slot = false;
+	base_job_ptr = find_job_record(job_ptr->array_job_id);
+	if (base_job_ptr && base_job_ptr->bf_launch_array_slots)
+		base_job_ptr->bf_launch_array_slots--;
+}
+
 /* Record the start of one job array task */
 extern void job_array_start(job_record_t *job_ptr)
 {
 	job_record_t *base_job_ptr;
 
+	job_array_launch_slot_release(job_ptr);
 	if ((job_ptr->array_task_id != NO_VAL) || job_ptr->array_recs) {
 		base_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (base_job_ptr && base_job_ptr->array_recs) {
@@ -16770,7 +16841,9 @@ extern bool job_array_start_test(job_record_t *job_ptr)
 		base_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (base_job_ptr && base_job_ptr->array_recs &&
 		    (base_job_ptr->array_recs->max_run_tasks != 0) &&
-		    (base_job_ptr->array_recs->tot_run_tasks >=
+		    (((uint64_t) base_job_ptr->array_recs->tot_run_tasks +
+		      (job_ptr->bf_launch_array_slot ? 0 :
+		       base_job_ptr->bf_launch_array_slots)) >=
 		     base_job_ptr->array_recs->max_run_tasks)) {
 			if (job_ptr->details &&
 			    (job_ptr->details->begin_time <= now))
