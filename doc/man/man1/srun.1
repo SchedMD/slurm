@@ -145,7 +145,11 @@ This option can only be used in an existing job allocation that has the step
 manager enabled (see \fB\-\-stepmgr\fR in \fBsalloc\fR(1)/\fBsbatch\fR(1) and
 \fBSlurmctldParameters=enable_stepmgr\fR in \fBslurm.conf\fR(5)).
 
-This option is mutually exclusive with \fB\-\-pty\fR and \fB\-\-immediate\fR.
+This option is mutually exclusive with \fB\-\-pty\fR, \fB\-\-immediate\fR, and
+any MPI type other than \fBnone\fR, whether selected with \fB\-\-mpi\fR, the
+\fBSLURM_MPI_TYPE\fR environment variable, or \fBMpiDefault\fR in
+\fBslurm.conf\fR(5); use \fB\-\-mpi=none\fR to override a non-\fBnone\fR
+default.
 
 \fBNOTE\fR: This is a new feature that is still in beta, its usage may change
 in future releases.
