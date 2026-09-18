@@ -669,7 +669,6 @@ test39.12  Test some valid combinations of srun --gpu and non-GPU GRES options
 test39.13  Validate proper GRES operation under heavy load (many jobs)
 test39.15  Test --gpus-per-tres with --overcommit option
 test39.16  Test --gpus-per-tres with --exclusive option
-test39.18  Test gres.conf and system GPU normalization and merging logic
 test39.20  Test GPU resource limits with various allocation options
 test39.22  Test heterogeneous job GPU allocations.
 test39.23  Test --gpus-per-task with implicit task count
@@ -1054,6 +1053,7 @@ test_144_13  Test CountOnly GRES does not alter per-socket core distribution
 test_144_14  Test overcommit with GRES tres-per-task
 test_144_15  Test gres.conf UUID supplies device UUIDs without AutoDetect
 test_144_16  Test gres.conf UUID merged with AutoDetect UUIDs
+test_144_17  Test GPU device merge/sort logic and gres.conf parsing/validation edge cases
 
 test_145_#   Testing --constraint.
 ==================================
