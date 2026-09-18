@@ -1342,6 +1342,19 @@ static bool _is_uniform_depth(void)
 	return true;
 }
 
+/*
+ * Canonical nodes string of a layer: the ranged node list, or NULL when the
+ * layer holds no node, the same as a layer configured without nodes.
+ * IN node_bitmap - nodes of the layer
+ * RET xmalloc'd string, or NULL
+ */
+static char *_layer_nodes_str(bitstr_t *node_bitmap)
+{
+	if (bit_ffs(node_bitmap) == -1)
+		return NULL;
+	return bitmap2node_name(node_bitmap);
+}
+
 static int _foreach_license_set_mode3_nodes(void *x, void *arg)
 {
 	licenses_t *license = x;
@@ -1356,7 +1369,7 @@ static int _foreach_license_set_mode3_nodes(void *x, void *arg)
 	 */
 	if (license->hres_rec.level) { /* non-leaf */
 		xfree(license->nodes);
-		license->nodes = bitmap2node_name(license->node_bitmap);
+		license->nodes = _layer_nodes_str(license->node_bitmap);
 	}
 	parent = license->hres_rec.parent;
 	if (parent) {
@@ -1453,7 +1466,7 @@ static void _propagate_mode3_node_update(licenses_t *leaf, bitstr_t *added,
 		bit_or(parent->node_bitmap, added);
 		bit_and_not(parent->node_bitmap, removed);
 		xfree(parent->nodes);
-		parent->nodes = bitmap2node_name(parent->node_bitmap);
+		parent->nodes = _layer_nodes_str(parent->node_bitmap);
 	}
 }
 
@@ -1485,7 +1498,7 @@ static void _update_hres_nodes(licenses_t *lic, bitstr_t *new_nodes_bitmap)
 	 */
 	bit_copybits(lic->node_bitmap, new_nodes_bitmap);
 	xfree(lic->nodes);
-	lic->nodes = bitmap2node_name(lic->node_bitmap);
+	lic->nodes = _layer_nodes_str(lic->node_bitmap);
 
 	if (lic->mode != HRES_MODE_3)
 		return;

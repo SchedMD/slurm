@@ -238,6 +238,8 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 		if (display_lic[cc]->mode) {
 			char *base_str = _lic_base2str(display_lic[cc]->base,
 						       one_liner);
+			char *nodes_str = display_lic[cc]->nodes ?
+				display_lic[cc]->nodes : "(null)";
 
 			printf("%sLayerName=%s%s%s Nodes=%s Mode=%u ConfTotal=%u BaseUsage=%u%s\n",
 			       one_liner ? " " : "\n    ",
@@ -246,7 +248,7 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 			       "",
 			       display_lic[cc]->parent_name ?
 			       display_lic[cc]->parent_name : "",
-			       display_lic[cc]->nodes, display_lic[cc]->mode,
+			       nodes_str, display_lic[cc]->mode,
 			       display_lic[cc]->conf_total,
 			       display_lic[cc]->base_usage, base_str);
 			xfree(base_str);
