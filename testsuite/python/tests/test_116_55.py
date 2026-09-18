@@ -42,6 +42,8 @@ def setup():
     # and PrologFlags=Contain are set.
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
     atf.require_config_parameter_includes("PrologFlags", "Contain")
+    # srun --async rejects any MPI plugin, so MpiDefault must not set one.
+    atf.require_config_parameter("MpiDefault", [None, "none"])
     atf.require_accounting()
     # test_async_rejected_in_hetjob submits a 2-component heterogeneous job.
     atf.require_nodes(2, [("CPUs", 2)])
@@ -301,6 +303,118 @@ echo "srun_rc=$?" >> {marker}
     assert not PARSABLE_RE.search(
         text
     ), f"srun --async in a hetjob should not return a step id: {text!r}"
+
+
+# ---------------------------------------------------------------------------
+# MPI exclusion
+# ---------------------------------------------------------------------------
+
+
+def _mpi_available(mpi):
+    """Return True if srun --mpi=list offers the named plugin."""
+    output = atf.run_command_output("srun --mpi=list", fatal=True)
+    name = re.escape(mpi)
+    return (
+        re.search(rf"^\s+{name}\s*$", output, re.MULTILINE) is not None
+        or re.search(rf"plugin versions available:.*\b{name}\b", output) is not None
+    )
+
+
+@pytest.mark.parametrize("mpi", ["pmix", "pmi2", "cray_shasta"])
+def test_async_mpi_step_rejected(mpi):
+    """srun --async --mpi=<plugin> is rejected by srun; the job survives.
+
+    Async steps have no live srun to host the MPI client prelaunch/agent
+    (mpi_g_client_prelaunch()), so srun rejects any non-none MPI plugin
+    before sending the step create request. The job must still
+    reach COMPLETED: previously the PMI2 fence failure SIGKILLed the
+    whole job.
+    """
+    if not _mpi_available(mpi):
+        pytest.skip(f"MPI plugin '{mpi}' is not available in this build")
+
+    # _run_in_alloc() asserts the job itself COMPLETED (survival).
+    stdout, stderr = _run_in_alloc(f"srun --async --mpi={mpi} -n1 true")
+
+    assert re.search(
+        r"srun_rc=[1-9]", stdout
+    ), f"srun --async --mpi={mpi} should fail, got stdout: {stdout!r}"
+    assert (
+        f"--async does not support MPI type '{mpi}'" in stderr
+    ), f"expected srun to reject MPI type '{mpi}', got stderr: {stderr!r}"
+    assert not PARSABLE_RE.search(
+        stdout
+    ), f"a rejected async step should not return a step id: {stdout!r}"
+
+
+def _run_async_mpi_none(name):
+    """Run srun --async --mpi=none and check that the step ran without MPI.
+
+    An MPI plugin sets PMI_* or PMIX_* variables in the task environment,
+    so the output file must hold only the marker line. The job and the
+    step must both complete with exit code 0.
+    """
+    out_file = f"{name}.out"
+
+    script = f"{name}.sh"
+    atf.make_bash_script(
+        script,
+        f"srun --async --mpi=none -o {out_file} "
+        "bash -c 'env | grep -E \"^PMIX?_\"; echo none-ok'\nswait\n",
+    )
+    job_id = atf.submit_job_sbatch(f"-N1 -n1 -t1 {script}", fatal=True)
+    assert atf.wait_for_step_accounted(
+        job_id, 0, fatal=True
+    ), f"async step {job_id}.0 should be recorded in accounting"
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+
+    state = atf.run_command_output(
+        f"sacct -j {job_id}.0 --noheader -P -o State,ExitCode", fatal=True
+    ).strip()
+    assert (
+        state == "COMPLETED|0:0"
+    ), f"async step {job_id}.0 should complete with exit code 0, got {state!r}"
+    atf.assert_file_contents(out_file, "none-ok")
+
+
+@pytest.fixture(scope="function")
+def _mpi_default_pmi2():
+    """Set MpiDefault=pmi2 for the duration of one test."""
+    if not _mpi_available("pmi2"):
+        pytest.skip("MPI plugin 'pmi2' is not available in this build")
+    orig_mpi_default = atf.get_config_parameter("MpiDefault", live=False, quiet=True)
+    atf.set_config_parameter("MpiDefault", "pmi2")
+    atf.restart_slurm()
+    yield
+    atf.set_config_parameter("MpiDefault", orig_mpi_default)
+    atf.restart_slurm()
+
+
+def test_async_mpi_default_rejected(_mpi_default_pmi2):
+    """With MpiDefault=pmi2, srun --async without --mpi is rejected.
+
+    srun resolves MpiDefault client-side in _opt_verify(), so a non-none
+    default is rejected exactly like an explicit --mpi.
+    """
+    stdout, stderr = _run_in_alloc("srun --async -n1 true")
+
+    assert re.search(
+        r"srun_rc=[1-9]", stdout
+    ), f"srun --async under MpiDefault=pmi2 should fail, got stdout: {stdout!r}"
+    assert (
+        "--async does not support MPI type 'pmi2'" in stderr
+    ), f"expected srun to reject MPI type 'pmi2', got stderr: {stderr!r}"
+
+
+def test_async_mpi_none_overrides_default(_mpi_default_pmi2):
+    """With MpiDefault=pmi2, srun --async --mpi=none is accepted.
+
+    --mpi=none normalizes to no plugin client-side, and stepmgr maps the
+    NULL plugin name back to "none" so the extern slurmstepd never
+    substitutes MpiDefault for an async step. Regression test for the
+    stepd-side MpiDefault re-application.
+    """
+    _run_async_mpi_none("async_none_default")
 
 
 def test_async_split_output_error():
