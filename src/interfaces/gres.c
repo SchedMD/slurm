@@ -84,8 +84,6 @@
 #include "src/common/xsched.h"
 #include "src/common/xstring.h"
 
-#define MAX_GRES_BITMAP 1024
-
 strong_alias(gres_find_id, slurm_gres_find_id);
 strong_alias(gres_find_job_by_key_exact_type,
 	     slurm_gres_find_job_by_key_exact_type);

@@ -51,6 +51,9 @@
 #define GRES_MAGIC 0x438a34d4
 #define GRES_MAX_LINK 1023
 
+/* Max devices a File-based GRES can track per node */
+#define MAX_GRES_BITMAP 1024
+
 enum {
 	GRES_VAL_TYPE_FOUND  = 0,
 	GRES_VAL_TYPE_CONFIG = 1,
