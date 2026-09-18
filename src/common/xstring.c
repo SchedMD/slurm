@@ -910,8 +910,8 @@ extern char *xbase64_from_base64url(const char *in)
 	int i;
 	size_t length = strlen(in);
 
-	/* extra padding in case the padding was stripped off */
-	out = xmalloc(length + 3);
+	/* up to three '=' in case the padding was stripped off, plus the NUL */
+	out = xmalloc(length + 4);
 
 	for (i = 0; i < length; i++) {
 		switch (in[i]) {
