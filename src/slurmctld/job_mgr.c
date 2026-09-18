@@ -4439,12 +4439,18 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 
 	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
 
-	if (error_code) {
-		job_ptr->details->features_use = NULL;
-		job_ptr->details->feature_list_use = NULL;
-	} else {
-		set_job_features_use(job_ptr->details);
-	}
+	/*
+	 * Whether the immediate allocation succeeded or failed, the job
+	 * record must not be left pointing at the "prefer" constraints.
+	 * features_use/feature_list_use are the hard constraints used by
+	 * the scheduler, packed to clients, and baked into step credentials.
+	 * Restore them to the real --constraint features so that a queued
+	 * job is not contaminated by its --prefer list (and a failed
+	 * immediate attempt does not wipe the constraints to NULL).
+	 */
+	job_ptr->details->features_use = job_ptr->details->features;
+	job_ptr->details->feature_list_use =
+		job_ptr->details->feature_list;
 
 	if (!test_only) {
 		last_job_update = now;
@@ -14561,17 +14567,30 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 					   job_ptr);
 				xfree(old_prefer);
 				FREE_NULL_LIST(old_list);
-				detail_ptr->features_use = detail_ptr->prefer;
+				/*
+				 * Leave features_use pointing at the hard
+				 * --constraint features. The scheduler applies
+				 * --prefer itself per scheduling attempt and
+				 * restores it afterwards; prefer must not
+				 * become the persistent active constraint.
+				 */
+				detail_ptr->features_use =
+					detail_ptr->features;
 				detail_ptr->feature_list_use =
-					detail_ptr->prefer_list;
+					detail_ptr->feature_list;
 			}
 		} else {
 			sched_info("%s: cleared prefer for %pJ", __func__,
 				   job_ptr);
 			xfree(detail_ptr->prefer);
 			FREE_NULL_LIST(detail_ptr->prefer_list);
-			detail_ptr->features_use = NULL;
-			detail_ptr->feature_list_use = NULL;
+			/*
+			 * Restore the hard --constraint features rather than
+			 * wiping features_use to NULL.
+			 */
+			detail_ptr->features_use = detail_ptr->features;
+			detail_ptr->feature_list_use =
+				detail_ptr->feature_list;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)

@@ -3570,6 +3570,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	job_details_t *detail_ptr = job_ptr->details;
 	int rc = SLURM_SUCCESS;
 	list_t *feature_list = NULL;
+	bool prefer_active = false;
 	valid_feature_counts_args_t args = {
 		.has_mor = has_mor,
 		.job_ptr = job_ptr,
@@ -3600,6 +3601,17 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	if (!feature_list)	/* no constraints */
 		return rc;
 
+	/*
+	 * When the "prefer" feature list is active, feature_list_use points at
+	 * prefer_list only and the hard --constraint feature_list is detached.
+	 * Detect that case so the hard constraint can be enforced (ANDed) in
+	 * addition to the preference below, guaranteeing a strict intersection
+	 * rather than letting the preference replace the mandatory constraint.
+	 */
+	prefer_active = detail_ptr->prefer &&
+			(feature_list == detail_ptr->prefer_list) &&
+			detail_ptr->feature_list;
+
 	find_feature_nodes(feature_list,
 			   node_features_g_user_update(job_ptr->user_id));
 	args.feature_bitmap = bit_copy(node_bitmap);
@@ -3609,6 +3621,71 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 		bit_and(node_bitmap, args.work_bitmap);
 	FREE_NULL_BITMAP(args.feature_bitmap);
 	FREE_NULL_BITMAP(args.paren_bitmap);
+
+	/*
+	 * Enforce the hard --constraint features as a strict AND with the
+	 * --prefer features. Without this, a node matching only the preference
+	 * (but not the mandatory constraint) would be incorrectly selected.
+	 *
+	 * This is a SOFT preference: if no node satisfies both the hard
+	 * constraint and the preference, the prefer attempt must fail cleanly
+	 * so that the scheduler falls back to evaluating the hard constraint
+	 * alone (the non-prefer queue record). Collapsing node_bitmap to empty
+	 * here would instead surface as FAIL_BAD_CONSTRAINTS and hold the job,
+	 * so on an empty intersection we restore node_bitmap to the
+	 * hard-constraint-only result and return ESLURM_NODES_BUSY. For the
+	 * prefer record the scheduler treats ESLURM_NODES_BUSY as a non-fatal
+	 * "try again" (it does not set fail_by_part nor hold the job), which
+	 * lets the non-prefer fallback pass run.
+	 */
+	if (prefer_active) {
+		bool hard_has_mor = false;
+		valid_feature_counts_args_t hard_args = {
+			.has_mor = &hard_has_mor,
+			.job_ptr = job_ptr,
+			.last_op = FEATURE_OP_AND,
+			.last_paren_op = FEATURE_OP_AND,
+			.node_bitmap = node_bitmap,
+			.use_active = use_active,
+			.features = detail_ptr->features,
+		};
+
+		find_feature_nodes(detail_ptr->feature_list,
+				   node_features_g_user_update(job_ptr->user_id));
+		hard_args.feature_bitmap = bit_copy(node_bitmap);
+		hard_args.work_bitmap = hard_args.feature_bitmap;
+		list_for_each_ro(detail_ptr->feature_list,
+				 _foreach_valid_feature_count, &hard_args);
+		if (!hard_args.have_count) {
+			/*
+			 * hard_args.work_bitmap started as a copy of
+			 * node_bitmap (already the preference-filtered set)
+			 * and was then ANDed with the hard-constraint features,
+			 * so it now holds exactly the nodes satisfying BOTH
+			 * the preference and the hard constraint.
+			 */
+			if (bit_ffs(hard_args.work_bitmap) == -1) {
+				/*
+				 * Empty intersection: the preference cannot be
+				 * satisfied together with the hard constraint.
+				 * Fail this prefer attempt softly so the
+				 * non-prefer fallback evaluates the hard
+				 * constraint alone.
+				 */
+				debug2("%s: %pJ prefer+constraint intersection is empty, falling back to hard constraint only",
+				       __func__, job_ptr);
+				FREE_NULL_BITMAP(hard_args.feature_bitmap);
+				FREE_NULL_BITMAP(hard_args.paren_bitmap);
+				return ESLURM_NODES_BUSY;
+			}
+			/* Non-empty intersection: enforce the strict AND. */
+			bit_and(node_bitmap, hard_args.work_bitmap);
+		}
+		FREE_NULL_BITMAP(hard_args.feature_bitmap);
+		FREE_NULL_BITMAP(hard_args.paren_bitmap);
+		if (hard_has_mor)
+			*has_mor = true;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		char *tmp = bitmap2node_name(node_bitmap);
