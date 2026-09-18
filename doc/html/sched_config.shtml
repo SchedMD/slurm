@@ -129,6 +129,37 @@ see the <a href="slurm.conf.html">slurm.conf(5)</a> man page.
 <UL>
 <LI><B>bf_continue</B> - If set, then continue backfill scheduling after
 periodically releasing locks for other operations.</LI>
+<LI><B>bf_hetjob_commit_timeout=#</B> - Number of seconds the backfill
+scheduler will hold a validated heterogeneous job launch transaction while
+planned preemptions clear. The transaction starts only after the hetjob passes
+normal start eligibility checks, hides the planned nodes from other jobs, and
+keeps retrying that exact plan. If the timeout expires after victims have been
+signaled, the plan enters cleanup before releasing ownership. Once any component
+starts, the remaining component plans have no automatic timeout.
+Default value is 1800 seconds. Set to 0 to disable new launch transactions.</LI>
+<LI><B>bf_job_commit_timeout=#</B> - Number of seconds the backfill scheduler
+will hold a validated non-heterogeneous job launch transaction while planned
+preemptions clear. The transaction pins the selected nodes, hides them from
+other jobs, and retries the same plan until the job starts. If the timeout
+expires after victims have been signaled, the plan enters cleanup before
+releasing ownership. Default value is 1800 seconds. Set to 0 to disable new
+transactions.</LI>
+<LI><B>bf_launch_replan_delay=#</B> - Cooldown in seconds after the original
+victims of a failed launch plan finish cleanup, before a replacement plan may
+be formed. This is separate from victim GraceTime and does not delay successful
+plans. The default is 300 seconds; zero disables the cooldown.</LI>
+<LI><B>bf_launch_max_replans=#</B> - Maximum replacement victim plans after a
+failed launch attempt. The default is 1; zero permits no replacement plan.
+After the budget is exhausted, the job remains pending for operator recovery
+instead of initiating further preemption waves.</LI>
+<LI><B>bf_max_job_array_launch=#</B> - Maximum outstanding preemption plans
+per job array. Each prepared task gets its own pending job record and node
+plan before victims are signaled. Running tasks plus preparation slots count
+against the array concurrency limit; an existing owner can consume its reserved
+slot. The default is 20, with a range of 0 through 1000. Zero stops new array
+preemption plans, not idle-resource starts or retries of existing plans.
+Lowering the limit does not discard committed plans. Victim grace time and
+ordinary non-array and heterogeneous launch transactions are unchanged.</LI>
 <LI><B>bf_interval=#</B> - Interval between backfill scheduling attempts.
 Default value is 30 seconds.</LI>
 <LI><B>bf_max_job_part=#</B> - Maximum number of jobs to initiate per partition
