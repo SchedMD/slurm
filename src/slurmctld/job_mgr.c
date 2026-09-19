@@ -1714,7 +1714,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 			if (slurmctld_init_db &&
 			    !(job_ptr->bit_flags & TRES_STR_CALC) &&
 			    job_ptr->tres_alloc_cnt &&
-			    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
+			    (job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] !=
+			     NO_VAL64))
 				assoc_mgr_set_job_tres_alloc_str(job_ptr,
 								 false);
 			jobacct_storage_g_job_complete(
@@ -17850,7 +17851,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
-	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
+	    (job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] != NO_VAL64))
 		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 
 	/*
@@ -19803,7 +19804,7 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	/* Sent event requeue to the database.  */
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
-	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64))
+	    (job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] != NO_VAL64))
 		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 
