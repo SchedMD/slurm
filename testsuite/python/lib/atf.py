@@ -2079,7 +2079,12 @@ def upgrade_component(component, new_version=True):
 
 
 def get_slurmd_C():
-    """Return a dict with the main values reported by 'slurmd -C'"""
+    """Return a dict with the main values reported by 'slurmd -C'
+
+    Numeric fields (CPUs, Boards, SocketsPerBoard, CoresPerSocket,
+    ThreadsPerCore, RealMemory) are returned as integers. Other fields
+    (NodeName and Gres) are returned as strings.
+    """
     fields = [
         "NodeName",
         "CPUs",
@@ -2090,9 +2095,21 @@ def get_slurmd_C():
         "RealMemory",
         "Gres",
     ]
+    integer_fields = (
+        "CPUs",
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "RealMemory",
+    )
     output = run_command_output("slurmd -C", fatal=True)
     keys = re.findall(r"(" + "|".join(fields) + r")=(\S+)", output)
-    return dict(keys)
+    slurmd_c = dict(keys)
+    for field in integer_fields:
+        if field in slurmd_c:
+            slurmd_c[field] = int(slurmd_c[field])
+    return slurmd_c
 
 
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
@@ -5879,7 +5896,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
             parameter_name, parameter_value = requirement_tuple[0:2]
             if parameter_name in ["CPUs", "RealMemory"]:
                 if parameter_name.lower() in lower_node_dict:
-                    if lower_node_dict[parameter_name.lower()] < parameter_value:
+                    if int(lower_node_dict[parameter_name.lower()]) < int(
+                        parameter_value
+                    ):
                         if node_qualifies:
                             node_qualifies = False
                             nonqualifying_node_count += 1
@@ -5892,11 +5911,12 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
             elif parameter_name == "Cores":
-                boards = lower_node_dict.get("boards", 1)
-                sockets_per_board = lower_node_dict.get("socketsperboard", 1)
-                cores_per_socket = lower_node_dict.get("corespersocket", 1)
+                boards = int(lower_node_dict.get("boards", 1))
+                sockets_per_board = int(lower_node_dict.get("socketsperboard", 1))
+                cores_per_socket = int(lower_node_dict.get("corespersocket", 1))
                 sockets = boards * sockets_per_board
                 cores = sockets * cores_per_socket
+                parameter_value = int(parameter_value)
                 if cores < parameter_value:
                     if node_qualifies:
                         node_qualifies = False
@@ -5922,7 +5942,7 @@ def require_nodes(requested_node_count, requirements_list=[]):
                             rf"{required_gres_name}:(\d+)",
                             lower_node_dict[parameter_name.lower()],
                         ):
-                            if match.group(1) < required_gres_value:
+                            if int(match.group(1)) < int(required_gres_value):
                                 if node_qualifies:
                                     node_qualifies = False
                                     nonqualifying_node_count += 1
