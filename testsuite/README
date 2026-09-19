@@ -1488,6 +1488,8 @@ test_172_13  Test jobcomp/elasticsearch records and resend after restart
 test_173_#   Testing of DBD Agent
 ========================================
 test_173_1   Test the DBD agent queue drains after a stranded requeue of a resized job
+test_173_2   Test when a job's allocated TRES string is sent to slurmdbd again on the
+             step-complete RPC.
 
 test_174_#   Testing of main scheduler.
 =======================================
