@@ -599,7 +599,7 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	if (IS_JOB_FINISHED(job_ptr) &&
 	    job_ptr->tres_alloc_cnt &&
-	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64) &&
+	    (job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] != NO_VAL64) &&
 	    (remaining == 1)) {
 		assoc_mgr_set_job_tres_alloc_str(job_ptr, false);
 		/* This flag says we have processed the tres alloc including
