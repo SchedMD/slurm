@@ -1105,6 +1105,9 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	int i;
 	client_io_t *cio = xmalloc(sizeof(*cio));
 
+	slurm_mutex_init(&cio->io_mutex);
+	slurm_cond_init(&cio->io_cond, NULL);
+
 	cio->num_tasks   = num_tasks;
 	cio->num_nodes   = num_nodes;
 	cio->het_job_offset = het_job_offset;
