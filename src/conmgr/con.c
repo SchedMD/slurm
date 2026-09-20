@@ -1433,7 +1433,7 @@ static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
 		 * activate socket reuse to avoid annoying timing issues
 		 * with daemon restarts
 		 */
-		if (setsockopt(fd, addr->ai_socktype, SO_REUSEADDR,
+		if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
 			       &one, sizeof(one)))
 			fatal("%s: [%s] setsockopt(SO_REUSEADDR) failed: %m",
 			      __func__, addrinfo_to_string(addr, true));
