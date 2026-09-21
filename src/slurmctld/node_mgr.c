@@ -64,6 +64,7 @@
 #include "src/common/parse_value.h"
 #include "src/common/power_action.h"
 #include "src/common/read_config.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/state_save.h"
 #include "src/common/timers.h"
@@ -5052,6 +5053,7 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	slurm_conf_node_t *conf_node;
 	config_record_t *config_ptr;
 	s_p_hashtbl_t *node_hashtbl = NULL;
+	list_t *hres_info = NULL;
 	slurmctld_lock_t write_lock = {
 		.conf = READ_LOCK,
 		.job = WRITE_LOCK,
@@ -5086,6 +5088,19 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	if ((rc = _validate_nodes_vs_nodeset(conf_node->nodenames))
 	    != SLURM_SUCCESS)
 		goto fini;
+
+	if (conf_node->hres_str &&
+	    (rc = SERCLI_PARSE_STR(NODE_HRES_INFO_LIST, NULL, hres_info,
+				   conf_node->hres_str,
+				   strlen(conf_node->hres_str),
+				   MIME_TYPE_JSON))) {
+		*err_msg =
+			xstrdup_printf("Unable to parse node %s HRES=%s: %s",
+				       conf_node->nodenames,
+				       conf_node->hres_str, slurm_strerror(rc));
+		error("%s", *err_msg);
+		goto fini;
+	}
 
 	state_val = state_str2int(conf_node->state, conf_node->nodenames);
 	if ((state_val == NO_VAL) ||
@@ -5139,6 +5154,12 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		goto fini;
 	}
 
+	if (hres_info && hres_add_nodes(hres_info, conf_node->nodenames,
+					config_ptr->node_bitmap)) {
+		error("%s: Ignoring invalid HRES specification for nodes %s: %s",
+		      __func__, conf_node->nodenames, conf_node->hres_str);
+	}
+
 	if (config_ptr->feature) {
 		node_features_update_list(avail_feature_list,
 					  config_ptr->feature,
@@ -5157,6 +5178,7 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	select_g_reconfigure();
 
 fini:
+	FREE_NULL_LIST(hres_info);
 	s_p_hashtbl_destroy(node_hashtbl);
 	unlock_slurmctld(write_lock);
 
@@ -5177,6 +5199,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	s_p_hashtbl_t *node_hashtbl = NULL;
 	slurm_conf_node_t *conf_node = NULL;
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
+	list_t *hres_info = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -5203,6 +5226,18 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			return SLURM_ERROR;
 		}
 
+		if (conf_node->hres_str &&
+		    SERCLI_PARSE_STR(NODE_HRES_INFO_LIST, NULL, hres_info,
+				     conf_node->hres_str,
+				     strlen(conf_node->hres_str),
+				     MIME_TYPE_JSON)) {
+			s_p_hashtbl_destroy(node_hashtbl);
+			error("%s: Unable to parse node %s HRES=%s",
+			      __func__, conf_node->nodenames,
+			      conf_node->hres_str);
+			FREE_NULL_LIST(hres_info);
+			return SLURM_ERROR;
+		}
 		config_ptr = config_record_from_conf_node(conf_node,
 							  slurmctld_tres_cnt);
 		if (conf_node->state)
@@ -5226,6 +5261,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		error("%s (%s)", slurm_strerror(rc), reg_msg->node_name);
 		list_delete_ptr(config_list, config_ptr);
 		s_p_hashtbl_destroy(node_hashtbl);
+		FREE_NULL_LIST(hres_info);
 		return SLURM_ERROR;
 	}
 
@@ -5257,6 +5293,12 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		xfree(node_ptr->topology_str);
 		topology_g_add_rm_node(node_ptr);
 	}
+	if (hres_info && hres_add_nodes(hres_info, node_ptr->name,
+					config_ptr->node_bitmap)) {
+		error("%s: Ignoring invalid HRES specification for node %s: %s",
+		      __func__, node_ptr->name, conf_node->hres_str);
+	}
+	FREE_NULL_LIST(hres_info);
 
 	_queue_consolidate_config_list();
 
@@ -5345,6 +5387,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 	topology_g_add_rm_node(node_ptr);
 
 	_remove_node_from_all_bitmaps(node_ptr);
+	hres_rm_node(node_ptr);
 	_remove_node_from_features(node_ptr);
 	gres_node_remove(node_ptr);
 

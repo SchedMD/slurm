@@ -324,6 +324,14 @@ extern config_record_t *config_record_from_conf_node(
 						    conf_node->nodenames);
 	}
 
+	/*
+	 * NOTE: Although hres_str is in slurm_conf_node_t, hres_str/hres_info
+	 * is intentionally not included in config_ptr. Because HRES can be
+	 * changed independently of a node, it is simpler to exclude hres_str
+	 * from config_ptr and avoid having to sync it with independent HRES
+	 * updates.
+	 */
+
 	return config_ptr;
 }
 

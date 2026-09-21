@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  api.h - Slurm REST API openapi operations handlers
+ *  hres.c - Slurm REST API HRES/license http operations handlers
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,43 +33,66 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef OPENAPI_SLURMCTLD
-#define OPENAPI_SLURMCTLD
+#include "slurm/slurm.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
 
-#include "src/common/data.h"
-#include "src/interfaces/data_parser.h"
-#include "src/slurmrestd/openapi.h"
+#include "api.h"
 
-typedef openapi_ctxt_t ctxt_t;
+static int _update_hres(openapi_ctxt_t *ctxt)
+{
+	int rc;
+	data_t *ppath = data_set_list(data_new());
+	hres_update_msg_t *msg = xmalloc(sizeof(*msg));
 
-#define resp_error(ctxt, error_code, source, why, ...) \
-	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
-#define resp_warn(ctxt, source, why, ...) \
-	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
+	slurm_init_hres_update_msg(msg);
 
-extern const openapi_path_binding_t openapi_paths[];
-extern int op_handler_shares(openapi_ctxt_t *ctxt);
-extern int op_handler_reconfigure(openapi_ctxt_t *ctxt);
-extern int op_handler_diag(openapi_ctxt_t *ctxt);
-extern int op_handler_ping(openapi_ctxt_t *ctxt);
-extern int op_handler_licenses(openapi_ctxt_t *ctxt);
-extern int op_handler_hres(openapi_ctxt_t *ctxt);
-extern int op_handler_submit_job(openapi_ctxt_t *ctxt);
-extern int op_handler_alloc_job(openapi_ctxt_t *ctxt);
-extern int op_handler_job(openapi_ctxt_t *ctxt);
-extern int op_handler_jobs(openapi_ctxt_t *ctxt);
-extern int op_handler_job_states(openapi_ctxt_t *ctxt);
-extern int op_handler_create_node(openapi_ctxt_t *ctxt);
-extern int op_handler_nodes(openapi_ctxt_t *ctxt);
-extern int op_handler_node(openapi_ctxt_t *ctxt);
-extern int op_handler_partitions(openapi_ctxt_t *ctxt);
-extern int op_handler_partition(openapi_ctxt_t *ctxt);
-extern int op_handler_reservations(openapi_ctxt_t *ctxt);
-extern int op_handler_reservation(openapi_ctxt_t *ctxt);
-extern int op_handler_reservations_update(openapi_ctxt_t *ctxt);
-extern int op_handler_resources(openapi_ctxt_t *ctxt);
-extern int op_handler_config(openapi_ctxt_t *ctxt);
-extern int op_handler_job_requeue(openapi_ctxt_t *ctxt);
-extern int op_handler_jobs_requeue(openapi_ctxt_t *ctxt);
+	if ((rc = DATA_PARSE(ctxt->parser, HRES_UPDATE_MSG, *msg, ctxt->query,
+			     ppath)))
+		goto cleanup;
+	if ((rc = slurm_update_hres(msg)))
+		rc = resp_error(ctxt, rc, __func__, "Failure to update HRES");
 
-#endif
+cleanup:
+	slurm_free_hres_update_msg(msg);
+	FREE_NULL_DATA(ppath);
+	return rc;
+}
+
+/* based on _print_license_info() from scontrol */
+extern int op_handler_licenses(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+	license_info_msg_t *msg = NULL;
+	openapi_resp_license_info_msg_t resp = { 0 };
+
+	if (ctxt->method != HTTP_REQUEST_GET)
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	else if ((rc = slurm_load_licenses(0, &msg, 0))) {
+		if (errno)
+			rc = errno;
+		resp_error(ctxt, rc, __func__,
+			   "slurm_load_licenses() was unable to load licenses");
+	}
+
+	if (msg) {
+		resp.licenses = msg;
+		resp.last_update = msg->last_update;
+	}
+
+	DATA_DUMP(ctxt->parser, OPENAPI_LICENSES_RESP, resp, ctxt->resp);
+
+	slurm_free_license_info_msg(msg);
+	return rc;
+}
+
+extern int op_handler_hres(openapi_ctxt_t *ctxt)
+{
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	return _update_hres(ctxt);
+}

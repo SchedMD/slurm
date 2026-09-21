@@ -4488,6 +4488,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
 		 (error_code == ESLURM_BURST_BUFFER_WAIT) ||
 		 (error_code == ESLURM_PARTITION_DOWN) ||
 		 (error_code == ESLURM_LICENSES_UNAVAILABLE) ||
+		 (error_code == ESLURM_HRES_DISABLED) ||
 		 (error_code == ESLURM_PORTS_BUSY) ||
 		 ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 		  (job_ptr->state_reason == FAIL_CONSTRAINTS)) ||
@@ -7521,8 +7522,8 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 
 	license_list =
 		license_validate(job_desc->licenses_tot, validate_cfgd_licenses,
-				 true, false, job_desc->tres_req_cnt, &valid,
-				 &lic_fuzzy_match);
+				 true, HRES_SYNTAX_NONE, job_desc->tres_req_cnt,
+				 &valid, &lic_fuzzy_match);
 
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
@@ -13400,7 +13401,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 		license_list =
 			license_validate(job_desc->licenses_tot, true, true,
-					 false,
+					 HRES_SYNTAX_NONE,
 					 pending ? job_desc->tres_req_cnt :
 						   NULL,
 					 &valid_licenses, &fuzzy_match);

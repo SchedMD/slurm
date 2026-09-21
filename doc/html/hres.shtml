@@ -26,7 +26,9 @@ completely separate.</p>
 
 <p>Three modes of resource planning are provided. In either case, a layer may be
 defined with a count of zero or infinite (<code>count: -1</code>) resources,
-with the impact of this depending on the mode used.</p>
+with the impact of this depending on the mode used. Every layer is identified by
+a unique <code>layer_name</code>; <code>nodes</code> and <code>count</code> are
+optional, and <code>count</code> defaults to zero.</p>
 
 <h3 id="mode1">Mode 1<a class="slurm_link" href="#mode1"></a></h3>
 
@@ -94,7 +96,10 @@ then rack level summing multiple chassis, then datacenter row ).</p>
 in the hierarchy do not exceed that layer's defined count.</p>
 
 <p><b>Important Note:</b> Layers defined under <b>Mode 3</b> must be able to be
-represented as a <b>rooted uniform depth tree</b>.
+represented as a <b>rooted uniform depth tree</b>. Every layer except the root
+names its parent with <code>parent_name</code>, and <code>nodes</code> may only
+be listed on leaf layers. Each parent inherits the union of its children's
+nodes.</p>
 
 <p>For example, consider the <b>power</b> resource defined in the example
 <a href="#resources_yaml">resources.yaml</a> file below. A job that requests
@@ -107,13 +112,13 @@ So it would pull 8000 from <code>node[01-08]</code>,
 <h2 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a></h2>
 
 <ul>
-<li>The resource counts cannot be dynamically changed; all changes must be made
-	through <b>resources.yaml</b> and applied with a restart or reconfigure</li>
-<li>Dynamic nodes are not supported</li>
 <li>This implementation is in a <b>beta</b> state (see
 	<a href="#overview">overview</a>)</li>
 <li>Resource names defined through the hierarchical resources configuration must
 	not conflict with any cluster licenses</li>
+<li>The layer structure (layers, variables, and modes) is static. Changing it
+	requires editing <b>resources.yaml</b> and restarting or reconfiguring
+	(see <a href="#updates">Runtime Updates</a>)</li>
 </ul>
 
 <h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
@@ -125,9 +130,9 @@ syntax already used for licenses:</p>
 <ul>
 <li>View HRES<pre>scontrol show license</pre></li>
 <li>Reserve HRES
-<pre>scontrol create reservation account=root licenses=natural(node[01-016]):30,flat(node[09-12]):4,flat(node[29-32]):2</pre>
-Note that the layer must be specified for each reserved HRES, identified by the
-node list present available through that layer</li>
+<pre>scontrol create reservation account=root licenses=natural(low1):30,flat(low2):4,flat(low4):2</pre>
+Note that the layer must be named for each reserved HRES, using its
+<code>layer_name</code> from <b>resources.yaml</b></li>
 <li>Request HRES on a job
 <pre>sbatch --license=flat:2,natural:1 my_script.sh</pre></li>
 </ul>
@@ -139,37 +144,47 @@ node list present available through that layer</li>
 - resource: flat
   mode: MODE_2
   layers:
-    - nodes:			# highest level
+    - layer_name: top		# highest level
+      nodes:
         - "node[01-32]"
       count: 24
-    - nodes:			# middle levels
+    - layer_name: mid1		# middle levels
+      nodes:
         - "node[01-16]"
       count: 16
-    - nodes:
+    - layer_name: mid2
+      nodes:
         - "node[17-32]"
       count: 16
-    - nodes:			# lowest levels
+    - layer_name: low1		# lowest levels
+      nodes:
         - "node[01-08]"
       count: 12
-    - nodes:
+    - layer_name: low2
+      nodes:
         - "node[09-16]"
       count: 12
-    - nodes:
+    - layer_name: low3
+      nodes:
         - "node[17-24]"
       count: 12
-    - nodes:
+    - layer_name: low4
+      nodes:
         - "node[25-32]"
       count: 12
 - resource: natural
   mode: MODE_1
   layers:
-    - nodes:			# highest level
+    - layer_name: top		# highest level
+      nodes:
         - "node[01-32]"
       count: 50
-    - nodes:			# lowest levels
+    - layer_name: low1		# lowest levels
+      nodes:
         - "node[01-16]"
       count: 100
-    - nodes:
+    - layer_name: low2
+      nodes:
         - "node[17-32]"
       count: 100
 - resource: power
@@ -181,35 +196,42 @@ node list present available through that layer</li>
     - name: full_gpu_node
       value: 2000
   layers:
-    - nodes:
+    - layer_name: rack1		# leaf layers list nodes
+      parent_name: row1
+      nodes:
         - "node[01-08]"
       count: 40000
       base:
         - name: storage
           value: 5000
-    - nodes:
+    - layer_name: rack3
+      parent_name: row2
+      nodes:
         - "node[17-24]"
       count: 40000
-    - nodes:
+    - layer_name: rack2
+      parent_name: row1
+      nodes:
         - "node[09-16]"
       count: 40000
-    - nodes:
+    - layer_name: rack4
+      parent_name: row2
+      nodes:
         - "node[25-32]"
       count: 40000
-    - nodes:
-        - "node[01-16]"
+    - layer_name: row1		# inherits node[01-16]
+      parent_name: datacenter
       count: 60000
       base:
         - name: network1
           value: 3000
-    - nodes:
-        - "node[17-32]"
+    - layer_name: row2		# inherits node[17-32]
+      parent_name: datacenter
       count: 80000
       base:
         - name: network2
           value: 2000
-    - nodes:
-        - "node[01-32]"
+    - layer_name: datacenter	# root, inherits node[01-32]
       count: 130000
       base:
         - name: acUnit1
@@ -217,5 +239,102 @@ node list present available through that layer</li>
         - name: acUnit2
           value: 8000
 </pre>
+
+<h2 id="updates">Runtime Updates<a class="slurm_link" href="#updates"></a></h2>
+
+<p>Administrators may change the nodes, count, base, and disabled state of an
+existing layer with <code>scontrol update</code>. A plain <code>Nodes</code>
+list replaces the layer's nodes, while a <code>+</code> or <code>-</code>
+prefix adds or removes nodes. <code>Count</code> is absolute and must not be
+lower than the layer's <b>BaseUsage</b>. <code>Base</code> replaces the whole
+base list, and an empty <code>Base=</code> clears it. In <b>Mode 3</b>,
+<code>Nodes</code> may only be changed on leaf layers. Node and base changes
+are propagated to the ancestors. Running jobs are never affected, so lowering
+a count below the current usage makes new jobs wait until usage drops.</p>
+
+<p>A running job keeps the layers it was charged on, even when those layers
+later gain or lose nodes. The job releases exactly what it took, so changing
+the nodes of a layer under a running job does not distort the usage counts.
+The layers a job holds are shown by the <b>LicensesAlloc</b> field of
+<code>scontrol show job</code>, for example
+<code>power(rack1,row1,datacenter):1000</code>. In <b>Mode 3</b> a layer that
+the job holds on several of its nodes is followed by that node count, as in
+<code>rack1*2</code>.</p>
+
+<pre>
+scontrol update HRESName=power LayerName=rack2 Nodes=+node[33-36] Count=45000
+scontrol update HRESName=power LayerName=rack1 Base=
+</pre>
+
+<p>The same operation is available through the REST API as
+<code>POST /slurm/v0.0.46/hres/</code> with a JSON body containing
+<code>hres_name</code>, <code>layer_name</code>, and any of <code>nodes</code>,
+<code>count</code>, <code>base</code>, <code>disable_hres</code>, and
+<code>disable_layer</code>.</p>
+
+<p>Runtime and dynamic node changes are not saved. <b>resources.yaml</b> is read
+again on the next <code>scontrol reconfigure</code> or slurmctld restart, and
+every runtime change is lost.</p>
+
+<h3 id="disable">Disabling a Resource<a class="slurm_link" href="#disable"></a></h3>
+
+<p>A resource or a single layer may be switched off without removing it from the
+configuration. <code>DisableHRES</code> applies to every layer of the resource,
+whether or not a layer is named, while <code>DisableLayer</code> applies only to
+the named layer, so jobs may still be allocated resources from the other layers.
+Both accept only <code>true</code> and <code>false</code>. Jobs may still
+request a disabled resource, but they stay pending until it is enabled again.
+A job that no enabled layer can serve pends with the reason
+<code>HRESDisabled</code>.
+Running jobs keep the resources that they already hold. The same fields may be
+set in <b>resources.yaml</b> as <code>disable_hres</code> and
+<code>disable_layer</code>.</p>
+
+<pre>
+scontrol update HRESName=power DisableHRES=true
+scontrol update HRESName=power LayerName=rack1 DisableLayer=true
+</pre>
+
+<h3 id="show">Viewing a Resource<a class="slurm_link" href="#show"></a></h3>
+
+<p><code>scontrol show license</code> prints one entry per layer.</p>
+
+<pre>
+LicenseName=power
+    Total=35000 Used=0 Free=35000 Reserved=0 Remote=no
+    LayerName=rack1 ParentName=row1 Nodes=node[01-08] Mode=3 DisableHRES=false DisableLayer=false ConfTotal=40000 BaseUsage=5000
+    Base=storage:5000
+</pre>
+
+<ul>
+<li><b>LayerName</b>, <b>ParentName</b>: the layer and, when it has one, its
+	parent layer</li>
+<li><b>Mode</b>: the planning mode of the resource</li>
+<li><b>DisableHRES</b>, <b>DisableLayer</b>: whether the resource or the layer
+	is disabled for scheduling</li>
+<li><b>ConfTotal</b>: the count configured for the layer</li>
+<li><b>BaseUsage</b>: the sum of the base values of the layer, plus, in
+	<b>Mode 3</b>, the base usage propagated up from its children</li>
+<li><b>Base</b>: the base name and value pairs, or <code>(null)</code></li>
+<li><b>Total</b>: what is left for jobs, the configured count minus the base
+	usage</li>
+</ul>
+
+<h2 id="dynamic_nodes">Dynamic Nodes<a class="slurm_link" href="#dynamic_nodes"></a></h2>
+
+<p>Dynamic nodes are not listed in <b>resources.yaml</b>. They name their
+layers when they are created, through the <b>HRES=</b> node parameter, which is
+a JSON list of resource name and layer name pairs. In <b>Mode 3</b> only one
+leaf layer per resource may be given.</p>
+
+<pre>
+scontrol create NodeName=node33 State=cloud HRES='[{"hres_name":"power","layer_name":"rack2"}]'
+slurmd -Z --conf 'HRES=[{"hres_name":"power","layer_name":"rack2"}]'
+</pre>
+
+<p>The node is added to the listed layers and their parents when it is created,
+and removed from all layers when it is deleted. An unknown or unsuitable layer
+creates the node without HRES membership and logs an error. The parameter is
+ignored for nodes defined in <b>slurm.conf</b>.</p>
 
 <!--#include virtual="footer.txt"-->

@@ -27,9 +27,11 @@ def setup():
 - resource: testhres
   mode: MODE_1
   layers:
-  - nodes: "node1"
+  - layer_name: "layer1"
+    nodes: "node1"
     count: 1
-  - nodes: "node2"
+  - layer_name: "layer2"
+    nodes: "node2"
     count: 2
 """,
     )

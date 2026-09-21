@@ -966,6 +966,42 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_STEP_CANCELLED),
 		"Pending step cancelled",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_HRES_NAME),
+		"Invalid HRES name or layer",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_HRES_NODES),
+		"Invalid nodes specification",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_MODE3_NON_LEAF),
+		"HRES Mode 3 node updates must happen on a leaf",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_MODE3_OVERLAP),
+		"Specified nodes overlap with another layer",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_HRES_COUNT),
+		"Invalid HRES count/base: count must be greater than or equal to base",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_BASE_OVERFLOW),
+		"Base would result in overflow",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_INVALID_DISABLE),
+		"Invalid value for disable; acceptable values are \"true\" or \"false\"",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_MISSING_LAYER_NAME),
+		"Specified updates require a layer_name",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_HRES_DISABLED),
+		"Requested hierarchical resource is disabled",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

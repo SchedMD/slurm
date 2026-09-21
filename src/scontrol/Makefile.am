@@ -21,6 +21,7 @@ scontrol_SOURCES =	\
 	reboot_node.c	\
 	scontrol.c	\
 	scontrol.h	\
+	update_hres.c	\
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\

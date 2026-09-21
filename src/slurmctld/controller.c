@@ -951,8 +951,7 @@ int main(int argc, char **argv)
 		fatal("Failed to initialize switch plugin");
 
 	/* Initialize licenses - serializer required to be initialized */
-	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS)
-		fatal("Invalid Licenses value: %s", slurm_conf.licenses);
+	license_init();
 
 	if (original && under_systemd)
 		xsystemd_change_mainpid(getpid());

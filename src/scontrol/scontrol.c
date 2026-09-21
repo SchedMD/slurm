@@ -1934,6 +1934,7 @@ static void _update_it(int argc, char **argv)
 {
 	char *val = NULL;
 	int i, error_code = SLURM_SUCCESS;
+	int hres_tag = 0;
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int res_tag = 0;
 	int debug_tag = 0, step_tag = 0;
@@ -1962,7 +1963,9 @@ static void _update_it(int argc, char **argv)
 			}
 			val++;
 		}
-		if (!xstrncasecmp(tag, "NodeName", MAX(tag_len, 3))) {
+		if (!xstrncasecmp(tag, "HRESName", MAX(tag_len, 8))) {
+			hres_tag = 1;
+		} else if (!xstrncasecmp(tag, "NodeName", MAX(tag_len, 3))) {
 			node_tag = 1;
 		} else if (!xstrncasecmp(tag, "PartitionName",
 					MAX(tag_len, 3))) {
@@ -2002,6 +2005,8 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_step (argc, argv);
 	else if (res_tag)
 		error_code = scontrol_update_res (argc, argv);
+	else if (hres_tag)
+		error_code = scontrol_update_hres(argc, argv);
 	else if (node_tag)
 		error_code = scontrol_update_node (argc, argv);
 	else if (part_tag)
@@ -2019,7 +2024,7 @@ static void _update_it(int argc, char **argv)
 		fprintf(stderr, "No valid entity in update command\n");
 		fprintf(stderr, "Input line must include \"NodeName\", ");
 		fprintf(stderr, "\"PartitionName\", \"Reservation\", "
-			"\"JobId\", or \"SlurmctldDebug\"\n");
+			"\"JobId\", \"HRESName\", or \"SlurmctldDebug\"\n");
 	}
 
 	if (error_code) {

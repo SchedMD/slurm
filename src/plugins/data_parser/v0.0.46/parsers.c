@@ -79,8 +79,6 @@
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
-extern void __attribute__((weak)) hres_variable_free(void *x);
-
 #define SLURM_24_11_PROTOCOL_VERSION MAKE_SLURM_VER(42)
 
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
@@ -499,10 +497,14 @@ typedef struct {
 typedef struct {
 	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
+	bool disable_layer;
+	char *layer_name;
 	char *nodes;
+	char *parent_name;
 } hierarchy_layer_t;
 
 typedef struct {
+	bool disable_hres;
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
@@ -7366,7 +7368,9 @@ static void FREE_FUNC(H_LAYER)(void *ptr)
 		return;
 
 	FREE_NULL_LIST(layer->base);
+	xfree(layer->layer_name);
 	xfree(layer->nodes);
+	xfree(layer->parent_name);
 	xfree(layer);
 }
 
@@ -7441,16 +7445,19 @@ static int _foreach_layer(void *x, void *arg)
 	license->name = xstrdup(args->resource->name);
 	license->mode = args->resource->mode;
 	license->nodes = xstrdup(layer->nodes);
+	license->hres_rec.layer_name = xstrdup(layer->layer_name);
+	license->hres_rec.parent_name = xstrdup(layer->parent_name);
 	license->hres_rec.total = layer->count;
+	license->hres_rec.disable_hres = args->resource->disable_hres;
+	license->hres_rec.disable_layer = layer->disable_layer;
 
-	if (((void *) hres_variable_free) && list_count(layer->base)) {
+	if (list_count(layer->base)) {
 		license->hres_rec.base = list_create(hres_variable_free);
 		list_for_each(layer->base, _foreach_variable,
 			      license->hres_rec.base);
 	}
 
-	if (((void *) hres_variable_free) && args->first_layer &&
-	    list_count(args->resource->variables)) {
+	if (args->first_layer && list_count(args->resource->variables)) {
 		license->hres_rec.variables = list_create(hres_variable_free);
 		list_for_each(args->resource->variables, _foreach_variable,
 			      license->hres_rec.variables);
@@ -7516,7 +7523,7 @@ static int _foreach_license(void *x, void *arg)
 	xassert(license);
 	xassert(resources);
 
-	if (!license->nodes)
+	if (license->mode == HRES_MODE_OFF)
 		return SLURM_SUCCESS; /* not a hierarchical resource - skip */
 
 	if (!*resources)
@@ -7529,11 +7536,11 @@ static int _foreach_license(void *x, void *arg)
 		resource = xmalloc(sizeof(*resource));
 		resource->name = xstrdup(license->name);
 		resource->mode = license->mode;
+		resource->disable_hres = license->hres_rec.disable_hres;
 		list_append(*resources, resource);
 	}
 
-	if (!resource->variables && ((void *) hres_variable_free) &&
-	    list_count(license->hres_rec.variables)) {
+	if (!resource->variables && list_count(license->hres_rec.variables)) {
 		resource->variables = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.variables, _foreach_variable,
 			      resource->variables);
@@ -7542,13 +7549,15 @@ static int _foreach_license(void *x, void *arg)
 	if (!resource->layers)
 		resource->layers = list_create(FREE_FUNC(H_LAYER));
 	layer = xmalloc(sizeof(*layer));
+	layer->layer_name = xstrdup(license->hres_rec.layer_name);
+	layer->parent_name = xstrdup(license->hres_rec.parent_name);
 	layer->nodes = xstrdup(license->nodes);
 	layer->count = license->hres_rec.total;
+	layer->disable_layer = license->hres_rec.disable_layer;
 	if (!resource->topology_name)
 		resource->topology_name =
 			xstrdup(license->hres_rec.topology_name);
-	if (((void *) hres_variable_free) &&
-	    list_count(license->hres_rec.base)) {
+	if (list_count(license->hres_rec.base)) {
 		layer->base = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.base, _foreach_variable,
 			      layer->base);
@@ -9496,7 +9505,9 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parser(slurm_license_info_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(STRING, name, "LicenseName", "Name of the license"),
-	add_parse(UINT32, total, "Total", "Total number of licenses present"),
+	add_parse(UINT32, conf_total, "ConfTotal", "Total number of licenses present before base usage"),
+	add_parse(UINT32, total, "Total", "Total number of licenses present after base usage"),
+	add_parse(UINT32, base_usage, "BaseUsage", "Sum of base usage"),
 	add_parse(UINT32, in_use, "Used", "Number of licenses in use"),
 	add_parse(UINT32, available, "Free", "Number of licenses currently available"),
 	add_parse(BOOL, remote, "Remote", "Indicates whether licenses are served by the database"),
@@ -9504,7 +9515,33 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, last_consumed, "LastConsumed", "Last known number of licenses that were consumed in the license manager (Remote Only)"),
 	add_parse(UINT32, last_deficit, "LastDeficit", "Number of \"missing licenses\" from the cluster's perspective"),
 	add_parse(TIMESTAMP, last_update, "LastUpdate", "When the license information was last updated (UNIX Timestamp)"),
+	add_parse(STRING, layer_name, "LayerName", "Name of HRES Layer"),
+	add_parse(STRING, parent_name, "ParentName", "Name of HRES Layer's parent"),
+	add_parse(BOOL, disable_hres, "DisableHRES", "If true, this HRES is disabled for scheduling. Jobs requesting this HRES will remain pending."),
+	add_parse(BOOL, disable_layer, "DisableLayer", "If true, this HRES layer is disabled for scheduling; jobs may still be scheduled on other layers in the same HRES."),
 	add_parse(STRING, nodes, "Nodes", "HRes nodes"),
+	add_parse(H_VARIABLE_LIST, base, "Base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer."),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(hres_update_msg_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(HRES_UPDATE_MSG)[] = {
+	add_parse(H_VARIABLE_LIST, base, "base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource count for the layer; omit to leave unchanged"),
+	add_parse(BOOL16_NO_VAL, disable_hres, "disable_hres", "If true, disable this HRES for scheduling; jobs requesting this HRES remain pending. If false, enable this HRES for scheduling. Omit to leave unchanged."),
+	add_parse(BOOL16_NO_VAL, disable_layer, "disable_layer", "If true, disable this HRES layer for scheduling; jobs may still be scheduled on other layers in the same HRES. If false, enable this HRES layer for scheduling. Omit to leave unchanged."),
+	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update"),
+	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update"),
+	add_parse(STRING, nodes, "nodes", "Nodes assigned to the layer"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(node_hres_info_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NODE_HRES_INFO)[] = {
+	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update with node"),
+	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update with node"),
 };
 #undef add_parse
 
@@ -11620,9 +11657,12 @@ static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
 #define add_parse_req(mtype, field, path, desc)				\
 	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_LAYER)[] = {
-	add_parse_req(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
+	add_parse_req(STRING, layer_name, "layer_name", "Layer name. Must be unique (case insensitive)."),
+	add_parse(STRING, parent_name, "parent_name", "Name of parent layer. Only valid for mode 3, where it is required for every layer except the root."),
+	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
 	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
-	add_parse_req(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parse(BOOL, disable_layer, "disable_layer", "If true, disables this HRES layer for scheduling. Jobs may still be scheduled on other layers in the same HRES."),
 };
 #undef add_parse
 #undef add_parse_req
@@ -11637,6 +11677,7 @@ static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
 	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
 	add_parse(STRING, topology_name, "topology", "Name of topology associated to hierarchical resource"),
 	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
+	add_parse(BOOL, disable_hres, "disable_hres", "If true, disables this HRES for scheduling. Jobs requesting this HRES will remain pending."),
 };
 #undef add_parse_req
 #undef add_parse
@@ -13395,6 +13436,8 @@ static const parser_t parsers[] = {
 	addpap(STATS_MSG, stats_info_response_msg_t, NULL, NULL),
 	addpap(NODE, node_info_t, NULL, NULL),
 	addpap(LICENSE, slurm_license_info_t, NULL, NULL),
+	addpap(HRES_UPDATE_MSG, hres_update_msg_t, NULL, NULL),
+	addpap(NODE_HRES_INFO, node_hres_info_t, NULL, slurm_free_node_hres_info),
 	addpap(JOB_INFO, slurm_job_info_t, NULL, NULL),
 	addpap(JOB_RES, job_resources_t, NULL, NULL),
 	addpap(LISTJOBS_INFO, listjobs_info_t, NULL, NULL),
@@ -13669,6 +13712,7 @@ static const parser_t parsers[] = {
 	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
 	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
+	addpl(NODE_HRES_INFO_LIST, NODE_HRES_INFO_PTR, NEED_NONE),
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),

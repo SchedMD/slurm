@@ -1,4 +1,4 @@
-.TH "resources.yaml" "5" "Slurm Configuration File" "Slurm 25.11" "Slurm Configuration File"
+.TH "resources.yaml" "5" "Slurm Configuration File" "Slurm 26.11" "Slurm Configuration File"
 
 .SH "NAME"
 resources.yaml \-  Slurm configuration file for the Hierarchical Resources (HRES).
@@ -78,17 +78,47 @@ The numeric resource count (e.g., 1000).
 .IP
 
 .TP
+\fBdisable_hres\fR
+(Optional) If true, no job is allocated resources from any layer of this
+resource. Jobs may still request the resource, but they stay pending until it
+is enabled again, with reason \fBHRESDisabled\fR. Running jobs keep the
+resources that they already hold.
+Defaults to false.
+.IP
+
+.TP
 \fBlayers\fR
 A list of layers that define the resource hierarchy. Each layer is a YAML object
 containing:
 .RS
 .TP
+\fBlayer_name\fR
+The name of the layer, unique within the resource (case-insensitive). The name
+identifies the layer in the licenses of jobs and reservations, so it may not
+contain whitespace or any of the characters
+\fB, ; | : = ( ) *\fR.
+.IP
+.TP
+\fBparent_name\fR
+The \fBlayer_name\fR of the parent layer. Only valid for \fBMODE_3\fR, where it
+is required for every layer except the root.
+.IP
+.TP
 \fBnodes\fR
-A list of node names or hostlist expressions that are part of this layer.
+(Optional) A list of node names or hostlist expressions that are part of this
+layer. Defaults to no nodes. In \fBMODE_3\fR, nodes may only be listed on leaf
+layers; each parent layer is automatically assigned the nodes of its children.
 .IP
 .TP
 \fBcount\fR
-The total number of resources available in this specific layer.
+(Optional) The total number of resources available in this specific layer.
+Defaults to 0. A value of \-1 means infinite.
+.IP
+.TP
+\fBdisable_layer\fR
+(Optional) If true, no job is allocated resources from this layer. Jobs may
+still be allocated resources from the other layers of the same resource.
+Defaults to false.
 .IP
 .TP
 \fBbase\fR
@@ -107,43 +137,60 @@ The numeric resource count this consumer uses.
 .RE
 .IP
 
+.LP
+The \fBnodes\fR, \fBcount\fR, \fBbase\fR, and \fBdisable_layer\fR of a layer,
+and the \fBdisable_hres\fR of a resource, can be changed at runtime with the
+\fBupdate HRESName\fR command of \fBscontrol\fR(1). Those changes are lost on
+the next \fBscontrol reconfigure\fR or slurmctld restart, when this file is
+read again.
+
 .SH "EXAMPLE"
 .nf
 ---
 - resource: flat
   mode: MODE_2
   layers:
-    - nodes:			# highest level
+    - layer_name: top	# highest level
+      nodes:
         - "node[01-32]"
       count: 24
-    - nodes:			# middle levels
+    - layer_name: mid1	# middle levels
+      nodes:
         - "node[01-16]"
       count: 16
-    - nodes:
+    - layer_name: mid2
+      nodes:
         - "node[17-32]"
       count: 16
-    - nodes:			# lowest levels
+    - layer_name: low1	# lowest levels
+      nodes:
         - "node[01-08]"
       count: 12
-    - nodes:
+    - layer_name: low2
+      nodes:
         - "node[09-16]"
       count: 12
-    - nodes:
+    - layer_name: low3
+      nodes:
         - "node[17-24]"
       count: 12
-    - nodes:
+    - layer_name: low4
+      nodes:
         - "node[25-32]"
       count: 12
 - resource: natural
   mode: MODE_1
   layers:
-    - nodes:			# highest level
+    - layer_name: top	# highest level
+      nodes:
         - "node[01-32]"
       count: 50
-    - nodes:			# lowest levels
+    - layer_name: low1	# lowest levels
+      nodes:
         - "node[01-16]"
       count: 100
-    - nodes:
+    - layer_name: low2
+      nodes:
         - "node[17-32]"
       count: 100
 - resource: power
@@ -155,39 +202,46 @@ The numeric resource count this consumer uses.
     - name: full_gpu_node
       value: 2000
   layers:
-    - nodes:
-        - "node[01-32]"
+    - layer_name: site	# root, nodes inherited from children
       count: 130000
       base:
         - name: acUnit1
           value: 10000
         - name: acUnit2
           value: 8000
-    - nodes:
-        - "node[01-16]"
+    - layer_name: row1
+      parent_name: site
       count: 60000
       base:
         - name: network1
           value: 3000
-    - nodes:
-        - "node[17-32]"
+    - layer_name: row2
+      parent_name: site
       count: 80000
       base:
         - name: network2
           value: 2000
-    - nodes:
+    - layer_name: rack1	# leaf layers
+      parent_name: row1
+      nodes:
         - "node[01-08]"
       count: 40000
       base:
         - name: storage
           value: 5000
-    - nodes:
+    - layer_name: rack2
+      parent_name: row1
+      nodes:
         - "node[09-16]"
       count: 40000
-    - nodes:
+    - layer_name: rack3
+      parent_name: row2
+      nodes:
         - "node[17-24]"
       count: 40000
-    - nodes:
+    - layer_name: rack4
+      parent_name: row2
+      nodes:
         - "node[25-32]"
       count: 40000
 .fi
@@ -211,4 +265,4 @@ details.
 
 .SH "SEE ALSO"
 .LP
-\fBslurm.conf\fR(5)
+\fBscontrol\fR(1), \fBslurm.conf\fR(5)

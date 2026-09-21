@@ -153,6 +153,8 @@ extern void slurm_pack_stepmgr_job_info(void *in,
 extern int slurm_unpack_stepmgr_job_info(void **out,
 					 uint16_t protocol_version,
 					 buf_t *buffer);
+extern void slurm_pack_hres_variable(void *object, uint16_t protocol_version,
+				     buf_t *buffer);
 
 extern void pack_persist_init_req_msg(persist_init_req_msg_t *msg,
 				      buf_t *buffer);

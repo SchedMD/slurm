@@ -2037,6 +2037,30 @@ extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_hres_update_msg(hres_update_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	FREE_NULL_LIST(msg->base);
+	xfree(msg->hres_name);
+	xfree(msg->layer_name);
+	xfree(msg->nodes);
+	xfree(msg);
+}
+
+extern void slurm_free_node_hres_info(void *x)
+{
+	node_hres_info_t *hres_info = x;
+
+	if (!hres_info)
+		return;
+
+	xfree(hres_info->hres_name);
+	xfree(hres_info->layer_name);
+	xfree(hres_info);
+}
+
 extern void slurm_free_node_reg_resp_msg(
 	slurm_node_reg_resp_msg_t *msg)
 {
@@ -5240,6 +5264,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_ACCT_GATHER_ENERGY:
 		slurm_free_acct_gather_node_resp_msg(data);
 		break;
+	case REQUEST_UPDATE_HRES:
+		slurm_free_hres_update_msg(data);
+		break;
 	case RESPONSE_NODE_REGISTRATION:
 		slurm_free_node_reg_resp_msg(data);
 		break;
@@ -5750,6 +5777,18 @@ extern bool valid_spank_job_env(char **spank_job_env,
 	return true;
 }
 
+extern void hres_variable_free(void *x)
+{
+	hres_variable_t *variable = x;
+
+	if (variable) {
+		xfree(variable->name);
+		xfree(variable);
+	}
+}
+
+strong_alias(hres_variable_free, slurm_destroy_hres_variable);
+
 /* slurm_free_license_info()
  *
  * Free the license info returned previously
@@ -5767,6 +5806,9 @@ slurm_free_license_info_msg(license_info_msg_t *msg)
 		for (cc = 0; cc < msg->num_lic; cc++) {
 			xfree(msg->lic_array[cc].name);
 			xfree(msg->lic_array[cc].nodes);
+			xfree(msg->lic_array[cc].layer_name);
+			xfree(msg->lic_array[cc].parent_name);
+			FREE_NULL_LIST(msg->lic_array[cc].base);
 		}
 		xfree(msg->lic_array);
 	}

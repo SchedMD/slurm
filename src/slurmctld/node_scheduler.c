@@ -2698,7 +2698,11 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	    (error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE))
 		goto cleanup;
 	else if ((error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-		 (error_code != ESLURM_RESERVATION_MAINT)) {
+		 (error_code != ESLURM_RESERVATION_MAINT) &&
+		 hres_job_disabled(job_ptr, part_ptr)) {
+		error_code = ESLURM_HRES_DISABLED;
+	} else if ((error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
+		   (error_code != ESLURM_RESERVATION_MAINT)) {
 		/* Select resources for the job here */
 		job_array_pre_sched(job_ptr);
 		if (job_ptr->job_resrcs)
@@ -2896,6 +2900,9 @@ extern int select_nodes(job_node_select_t *job_node_select,
 			xfree(job_ptr->state_desc);
 		} else if (error_code == ESLURM_LICENSES_UNAVAILABLE) {
 			job_ptr->state_reason = WAIT_LICENSES;
+			xfree(job_ptr->state_desc);
+		} else if (error_code == ESLURM_HRES_DISABLED) {
+			job_ptr->state_reason = WAIT_HRES_DISABLED;
 			xfree(job_ptr->state_desc);
 		} else if ((job_ptr->state_reason == WAIT_HELD) &&
 			   (job_ptr->priority == 0)) {
