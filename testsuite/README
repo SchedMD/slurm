@@ -1132,6 +1132,7 @@ test_153_2   Test various allocation fields for metrics/openmetrics
 test_154_#   Testing HRes.
 ========================================
 test_154_1   Test HRes MODE_3
+test_154_2   Test HRes MODE_3 preemption
 
 test_155_#   Testing sh5util
 ========================================
