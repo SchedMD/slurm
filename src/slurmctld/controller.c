@@ -2892,7 +2892,7 @@ static void *_slurmctld_background(void *no_data)
 		if (slurm_conf.acct_gather_node_freq &&
 		    (difftime(now, last_acct_gather_node_time) >=
 		     slurm_conf.acct_gather_node_freq) &&
-		    is_ping_done()) {
+		    broadcast_done(BC_ACCT_GATHER)) {
 			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_acct_gather_node_time = now;
