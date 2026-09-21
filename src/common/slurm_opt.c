@@ -64,6 +64,7 @@
 
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 #include "src/interfaces/select.h"
 
 #define COMMON_STRING_OPTION(field)	\
@@ -4949,6 +4950,12 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 				opt->state[i].set = false;
 		}
 	}
+
+	/*
+	 * Clear runtime_idx on every pass to avoid inheriting the wrong
+	 * plugin Id.
+	 */
+	opt->runtime_idx = RUNTIME_IDX_INVALID;
 }
 
 /*

@@ -416,6 +416,7 @@ typedef struct {
 	char *container;		/* --container			*/
 	char *container_id;		/* --container-id		*/
 	char *runtime; /* --runtime			*/
+	int runtime_idx; /* RUNTIME_IDX_INVALID or idx */
 	char *context;			/* --context			*/
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/
