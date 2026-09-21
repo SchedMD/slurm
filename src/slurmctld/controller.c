@@ -2901,13 +2901,10 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (((difftime(now, last_ping_node_time) >= ping_interval) ||
-		     ping_nodes_now) && is_ping_done()) {
-			lock_slurmctld(node_write_lock);
+		     ping_nodes_now) &&
+		    broadcast_done(BC_PING)) {
+			last_ping_node_time = agent_ping_nodes();
 			now = time(NULL);
-			last_ping_node_time = now;
-			ping_nodes_now = false;
-			ping_nodes();
-			unlock_slurmctld(node_write_lock);
 		}
 
 		if (slurm_conf.inactive_limit &&

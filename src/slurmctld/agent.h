@@ -84,6 +84,13 @@ extern void agent_trigger(int min_wait, bool mail_too, bool check_defer);
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge(void);
 
+/*
+ * Apply queued responses and ping nodes while holding the queue mutex and
+ * conf READ plus job/node/part WRITE locks. Call without slurmctld locks.
+ * RET time the scan started after acquiring its locks
+ */
+extern time_t agent_ping_nodes(void);
+
 /* get_agent_count - find out how many active agents we have */
 extern int get_agent_count(void);
 

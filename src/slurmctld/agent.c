@@ -1559,6 +1559,37 @@ static int _foreach_node_did_resp(void *x, void *arg)
 	return 1;
 }
 
+/*
+ * Apply queued responses and scan for DOWN nodes under the same locks.
+ * Call without slurmctld locks: the updater also takes the queue mutex first.
+ * RET time the scan started after acquiring its locks
+ */
+extern time_t agent_ping_nodes(void)
+{
+	slurmctld_lock_t node_write_lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+	};
+	time_t scan_time = 0;
+
+	slurm_mutex_lock(&update_nodes_mutex);
+	lock_slurmctld(node_write_lock);
+	if (list_count(update_node_list)) {
+		debug("%s: applying %d queued node updates", __func__,
+		      list_count(update_node_list));
+		list_delete_all(update_node_list, _foreach_node_did_resp, NULL);
+	}
+	scan_time = time(NULL);
+	ping_nodes_now = false;
+	ping_nodes();
+	unlock_slurmctld(node_write_lock);
+	slurm_mutex_unlock(&update_nodes_mutex);
+
+	return scan_time;
+}
+
 /* Start a thread to manage queued agent requests */
 static void *_agent_nodes_update(void *arg)
 {
