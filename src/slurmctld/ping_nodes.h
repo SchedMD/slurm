@@ -79,6 +79,15 @@ extern void broadcast_end(broadcast_class_t broadcast_class);
 extern bool broadcast_done(broadcast_class_t broadcast_class);
 
 /*
+ * broadcast_check_warnings() - log once per class whose agents have been in
+ *	flight longer than 3 * MessageTimeout * tree depth. Poll from the
+ *	controller loop top rather than the gates: individual health checks
+ *	run ungated and, under HEALTH_CHECK_REBOOT_ONLY, are the only health
+ *	check traffic.
+ */
+extern void broadcast_check_warnings(void);
+
+/*
  * is_ping_done - test if the last node ping cycle has completed.
  *	Use this to avoid starting a new set of ping requests before the
  *	previous one completes

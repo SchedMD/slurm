@@ -2708,6 +2708,8 @@ static void *_slurmctld_background(void *no_data)
 		now = time(NULL);
 		START_TIMER;
 
+		broadcast_check_warnings();
+
 		if (slurm_conf.slurmctld_debug <= 3)
 			no_resp_msg_interval = 300;
 		else if (slurm_conf.slurmctld_debug == 4)

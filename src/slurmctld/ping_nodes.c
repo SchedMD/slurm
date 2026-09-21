@@ -59,6 +59,12 @@
 /* Log an error for ping that takes more than 100 seconds to complete */
 #define PING_TIMEOUT 100
 
+/* Warn for a broadcast class in flight longer than this many MessageTimeouts */
+#define BROADCAST_TIMEOUT_FACTOR 3
+
+/* Stop counting broadcast tree levels at this depth */
+#define BROADCAST_MAX_DEPTH 10
+
 /* Minimum seconds between HEALTH_CHECK_CYCLE chunks. */
 #define HC_CYCLE_INTERVAL 2
 
@@ -68,6 +74,9 @@ static int ping_count = 0;
 static time_t ping_start = 0;
 
 static int broadcast_in_flight[BC_CLASS_CNT];
+
+static time_t broadcast_start[BC_CLASS_CNT];
+static bool broadcast_warned[BC_CLASS_CNT];
 
 static const char *const broadcast_class_names[BC_CLASS_CNT] = {
 	[BC_ACCT_GATHER] = "accounting gather",
@@ -126,7 +135,12 @@ bool is_ping_done (void)
 extern void broadcast_begin(broadcast_class_t broadcast_class)
 {
 	slurm_mutex_lock(&lock_mutex);
-	broadcast_in_flight[broadcast_class]++;
+	/*
+	 * Start the slow-cycle clock on the 0->1 transition only, so
+	 * successive agents of the class do not postpone the warning.
+	 */
+	if (!broadcast_in_flight[broadcast_class]++)
+		broadcast_start[broadcast_class] = time(NULL);
 	slurm_mutex_unlock(&lock_mutex);
 }
 
@@ -143,6 +157,10 @@ extern void broadcast_end(broadcast_class_t broadcast_class)
 	else
 		error("%s: %s in_flight < 0",
 		      __func__, broadcast_class_names[broadcast_class]);
+	if (!broadcast_in_flight[broadcast_class]) {
+		broadcast_start[broadcast_class] = 0;
+		broadcast_warned[broadcast_class] = false;
+	}
 	slurm_mutex_unlock(&lock_mutex);
 }
 
@@ -161,6 +179,43 @@ extern bool broadcast_done(broadcast_class_t broadcast_class)
 	slurm_mutex_unlock(&lock_mutex);
 
 	return is_done;
+}
+
+/*
+ * broadcast_check_warnings() - log once per class whose agents have been in
+ *	flight longer than BROADCAST_TIMEOUT_FACTOR * MessageTimeout * tree
+ *	depth. Poll from the controller loop top rather than the gates:
+ *	individual health checks run ungated and, under
+ *	HEALTH_CHECK_REBOOT_ONLY, are the only health check traffic.
+ */
+extern void broadcast_check_warnings(void)
+{
+	time_t now = time(NULL);
+	int depth = 1;
+	int timeout = 0;
+
+	/*
+	 * Each hop can cost a full MessageTimeout, so scale by tree depth
+	 * (_set_span() math). Recalculate: dynamic nodes change
+	 * node_record_count at any time; tree_width changes only on restart.
+	 */
+	for (uint64_t capacity = MAX(slurm_conf.tree_width, 1);
+	     (capacity < node_record_count) && (depth < BROADCAST_MAX_DEPTH);
+	     capacity *= slurm_conf.tree_width)
+		depth++;
+	timeout = slurm_conf.msg_timeout * BROADCAST_TIMEOUT_FACTOR * depth;
+
+	slurm_mutex_lock(&lock_mutex);
+	for (int i = 0; i < BC_CLASS_CNT; i++) {
+		if (!broadcast_in_flight[i] || broadcast_warned[i])
+			continue;
+		if (difftime(now, broadcast_start[i]) < timeout)
+			continue;
+		error("A node %s cycle took more than %d seconds. Node RPC requests are triggered less frequently than configured. Either many nodes are non-responsive or one of SlurmdTimeout, HealthCheckInterval, JobAcctGatherFrequency should be increased.",
+		      broadcast_class_names[i], timeout);
+		broadcast_warned[i] = true;
+	}
+	slurm_mutex_unlock(&lock_mutex);
 }
 
 void ping_begin (void)
