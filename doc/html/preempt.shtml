@@ -66,7 +66,11 @@ QOS using the <I>slurm.conf</I> file or database respectively.
 The <I>GraceTime</I> is specified in
 seconds and the default value is zero, which results in no preemption delay.
 Once a job has been selected for preemption, its end time is set to the
-current time plus <I>GraceTime</I>. The job is immediately sent SIGCONT and
+current time plus <I>GraceTime</I>, or left unchanged if it was already sooner
+than that. A job whose time limit expires before <I>GraceTime</I> elapses
+therefore receives only the remainder of its time limit, not the full
+<I>GraceTime</I>.
+The job is immediately sent SIGCONT and
 SIGTERM signals in order to provide notification of its imminent termination.
 This is followed by the SIGCONT, SIGTERM and SIGKILL signal sequence upon
 reaching its new end time.
