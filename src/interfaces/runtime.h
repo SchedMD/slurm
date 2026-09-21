@@ -70,7 +70,8 @@ typedef enum {
  * Initialize the runtime plugin.
  * IN plugin_name - Plugin name or NULL for default
  * IN context - Calling context for plugin
- * OUT idx_ptr - index of the loaded plugin, RUNTIME_IDX_INVALID on failure
+ * OUT idx_ptr - index of the loaded plugin, RUNTIME_IDX_INVALID on failure,
+ *	or NULL when the caller has no use for the index
  * RET SLURM_SUCCESS or error
  */
 extern int runtime_g_init(const char *plugin_name, runtime_context_t context,

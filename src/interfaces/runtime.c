@@ -171,10 +171,8 @@ done:
 	slurm_mutex_unlock(&init_lock);
 	xfree(full_type);
 
-	if (rc)
-		*idx_ptr = RUNTIME_IDX_INVALID;
-	else
-		*idx_ptr = idx;
+	if (idx_ptr)
+		*idx_ptr = (rc ? RUNTIME_IDX_INVALID : idx);
 
 	return rc;
 }
