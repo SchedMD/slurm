@@ -171,6 +171,13 @@ if atf.get_version() < (26, 5):
             "Ticket 25227: conmgr pollctl interrupt lost-wakeup fix lands in 26.05",
         )
     )
+    xfail_tests.append(
+        (
+            "topology/test_route_tree.c",
+            "test_disconnected_trunks",
+            "Ticket 25473: topology/tree leaf-relay fan-out fix lands in 26.05",
+        )
+    )
 if atf.get_version() < (25, 11):
     skip_tests.append(
         (

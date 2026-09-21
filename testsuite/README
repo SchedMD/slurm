@@ -988,10 +988,6 @@ test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
 
-test_133_#   Testing of TopologyParam.
-======================================
-test_133_1   python version of test33.1
-
 test_134_#   Testing of SwitchType.
 ===================================
 test_134_1   /parameters/slurm/SwitchType/none/test_window_exclusivity.py
