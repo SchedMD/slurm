@@ -802,9 +802,33 @@ def printenv(module_setup):
 
 
 @pytest.fixture(scope="module")
-def spank_plugin(module_setup):
+def spank_tmp(module_setup):
     """
-    Returns the bin path of the spank .so that will fail if configured.
+    Creates the temporary directory used by SPANK_HOOK_CREATE_FILE and returns
+    its path. Tests that need the path request this fixture directly; tests
+    that don't care get the directory as a side effect of spank_plugin.
+    """
+
+    tmp_spank = "/tmp/spank"
+    atf.run_command(f"mkdir -p {tmp_spank}", fatal=True)
+
+    yield tmp_spank
+
+    atf.run_command(f"rm -rf {tmp_spank}", fatal=True)
+
+
+@pytest.fixture(scope="module")
+def spank_plugin(module_setup, spank_tmp):
+    """
+    Compiles spank_plugin.so — a generic SPANK plugin for testing.
+
+    Capabilities are activated by environment variables:
+      SPANK_FAIL_TEST_FUNC / SPANK_FAIL_TEST_CTXT / SPANK_FAIL_TEST_MODE
+        -- failure injection (see test_147_2, test_147_3)
+      SPANK_HOOK_CREATE_FILE
+        -- create {SPANK_TMP_DIR}/{hookname}_log for each hook that runs (see test_147_1)
+
+    Returns the bin path of the compiled .so.
     """
 
     # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+
@@ -847,7 +871,12 @@ def spank_plugin(module_setup):
     bin_path = os.getcwd() + "/spank_plugin.so"
 
     atf.compile_against_libslurm(
-        src_path, bin_path, full=True, shared=True, new_prefixes=new_prefixes
+        src_path,
+        bin_path,
+        build_args=f"-DSPANK_TMP_DIR='\"{spank_tmp}\"'",
+        full=True,
+        shared=True,
+        new_prefixes=new_prefixes,
     )
 
     yield bin_path
@@ -855,56 +884,20 @@ def spank_plugin(module_setup):
     atf.run_command(f"rm -f {bin_path}", fatal=True)
 
 
-@pytest.fixture(scope="module")
-def spank_tmp_lib(module_setup):
+@pytest.fixture(autouse=True)
+def spank_tmp_clean(request):
+    """Clear SPANK_TMP_DIR contents before/after each test that uses spank_tmp.
+
+    Autouse guard: no-op when spank_tmp is not active, so tests that don't use
+    the SPANK plugin don't pay the cost and don't need to opt in explicitly.
     """
-    Compiles a SPANK plugin that will write files in a /tmp directory.
-    Returns the tmp_spank dir and the bin path of the spank .so that will write
-    files in the tmp_spank dir if configured.
-    """
-
-    # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+
-    # It also needs to be built against the same version of slurmd and submit
-    # clients like sbatch
-    new_prefixes = False
-    if atf.is_upgrade_setup():
-        slurmd_version = atf.get_version("sbin/slurmd")
-        sbatch_version = atf.get_version("bin/sbatch")
-
-        if slurmd_version != sbatch_version:
-            pytest.skip(
-                f"We need to build SPANK against Slurm version of submit clients as sbatch {sbatch_version} and slurmd {slurmd_version}, but they diffear."
-            )
-        if (
-            atf.get_version("config.h", slurm_prefix=atf.properties["new-build-prefix"])
-            == slurmd_version
-        ):
-            new_prefixes = True
-        elif (
-            not atf.get_version(
-                "config.h", slurm_prefix=atf.properties["old-build-prefix"]
-            )
-            == slurmd_version
-        ):
-            # This should never happen, slurmd should be one of those versions
-            pytest.fail(
-                "Unable to find build dir to match slurmd version {slurmd_version}"
-            )
-
-    src_path = atf.properties["testsuite_scripts_dir"] + "/spank_tmp_plugin.c"
-    bin_path = os.getcwd() + "/spank_tmp_plugin.so"
-
-    atf.compile_against_libslurm(
-        src_path, bin_path, full=True, shared=True, new_prefixes=new_prefixes
-    )
-
-    tmp_spank = "/tmp/spank"
-    atf.run_command(f"mkdir -p {tmp_spank}", fatal=True)
-
-    yield tmp_spank, bin_path
-
-    atf.run_command(f"rm -f {bin_path}", fatal=True)
-    atf.run_command(f"rm -rf {tmp_spank}", fatal=True)
+    if "spank_tmp" not in request.fixturenames:
+        yield
+        return
+    spank_tmp = request.getfixturevalue("spank_tmp")
+    atf.run_command(f"rm -rf {spank_tmp}/*", fatal=False)
+    yield
+    atf.run_command(f"rm -rf {spank_tmp}/*", fatal=False)
 
 
 @pytest.fixture(scope="module")
