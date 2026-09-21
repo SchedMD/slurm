@@ -233,6 +233,12 @@ static int _purge_duplicate_steps(void *x, void *arg)
 		if ((step_specs->step_id.step_id == NO_VAL) &&
 		    (step_ptr->step_id.step_id != SLURM_PENDING_STEP))
 			step_specs->step_id.step_id = step_ptr->step_id.step_id;
+		/*
+		 * Balance the step_start row the placeholder got at build: if
+		 * the re-send fails terminally nothing else closes it.  A
+		 * repeated step_start reopens the row when the re-send succeeds.
+		 */
+		_complete_unlaunched_step(step_ptr);
 		return 1;
 	}
 
@@ -406,6 +412,16 @@ static bool _build_pending_step(job_record_t *job_ptr,
 						job_ptr->job_id;
 			}
 
+			/*
+			 * A real id was assigned: record the placeholder as
+			 * PENDING, matching async, so a step that reserved an id
+			 * is never invisible to accounting.  The re-start when the
+			 * step is created for real updates the row's name and
+			 * start time.
+			 */
+			step_ptr->name = xstrdup(step_specs->name);
+			jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
+						     step_ptr);
 		} else {
 			step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 			step_ptr->step_id.step_id = SLURM_PENDING_STEP;
@@ -795,11 +811,7 @@ static int _delete_pending_steps(void *x, void *arg)
 			return 0;
 
 		step_signal->found = true;
-		if (step_ptr->flags & SSF_ASYNC)
-			jobacct_storage_g_step_complete(
-				stepmgr_ops->acct_db_conn, step_ptr);
-		/* The push reads state; force it terminal first. */
-		step_ptr->state = JOB_CANCELLED;
+		_complete_unlaunched_step(step_ptr);
 		srun_step_drained(step_ptr);
 		return 1;
 	}
@@ -1052,8 +1064,8 @@ static job_step_create_request_msg_t *_copy_step_req(
 /*
  * Create a pending step's real step_record at wake time and build its
  * step-create response (the shared spine of the async and sync wake arms).
- * On terminal error, logs and (for an async placeholder) records accounting;
- * a sync placeholder got no step_start, so its delivery arm records nothing.
+ * On terminal error, logs and records accounting for a placeholder that
+ * reserved a real id at build (the only ones that got a step_start).
  * IN  job_ptr - owning job
  * IN  pend_step_ptr - the pending placeholder (carries step_req)
  * OUT new_step_ptr - the created step_record on success
@@ -1092,14 +1104,11 @@ static int _create_step_at_wake(job_record_t *job_ptr,
 	} else if (rc) {
 		error("Could not create step at wake: %s", slurm_strerror(rc));
 		/*
-		 * Async placeholders got a jobacct step_start at build; balance
-		 * it here.  Sync placeholders did not, so the sync delivery arm
-		 * records nothing on a create failure.
+		 * A placeholder that reserved a real id (async, or sync with a
+		 * >= 26.11 srun) got a jobacct step_start at build; balance it
+		 * here.
 		 */
-		if (pend_step_ptr->flags & SSF_ASYNC)
-			jobacct_storage_g_step_complete(stepmgr_ops
-								->acct_db_conn,
-							pend_step_ptr);
+		_complete_unlaunched_step(pend_step_ptr);
 		srun_step_drained(pend_step_ptr);
 		slurm_free_job_step_create_request_msg(step_req);
 		return rc;
@@ -1226,6 +1235,13 @@ static int _wake_steps(void *x, void *arg)
 
 	/* Controller-managed step, or an old srun: poke + re-send. */
 	if (!_step_uses_create_at_wake(pend_step_ptr)) {
+		/*
+		 * Close the accounting row a real-id placeholder got at
+		 * build: the re-send records the step for real, and a
+		 * re-send that never comes must not leave a PENDING row
+		 * open forever.
+		 */
+		_complete_unlaunched_step(pend_step_ptr);
 		srun_step_signal(pend_step_ptr, 0);
 		args->start_count++;
 		return 1;
@@ -1248,10 +1264,7 @@ static int _wake_steps(void *x, void *arg)
 	if (!job_ptr) {
 		debug("%s: job for pending step %ps no longer exists, dropping",
 		      __func__, &pend_step_ptr->step_id);
-		if (is_async)
-			jobacct_storage_g_step_complete(stepmgr_ops
-								->acct_db_conn,
-							pend_step_ptr);
+		_complete_unlaunched_step(pend_step_ptr);
 		srun_step_drained(pend_step_ptr);
 		return 1;
 	}
