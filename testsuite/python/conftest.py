@@ -831,9 +831,9 @@ def spank_plugin(module_setup, spank_tmp):
     Returns the bin path of the compiled .so.
     """
 
-    # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+
+    # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+.
     # It also needs to be built against the same version of slurmd and submit
-    # clients like sbatch
+    # clients like sbatch.
     new_prefixes = False
     if not atf.is_upgrade_setup():
         atf.require_version((25, 5), "config.h")
@@ -843,7 +843,8 @@ def spank_plugin(module_setup, spank_tmp):
 
         if slurmd_version != sbatch_version:
             pytest.skip(
-                f"We need to build SPANK against Slurm version of submit clients as sbatch {sbatch_version} and slurmd {slurmd_version}, but they diffear."
+                f"We need to build SPANK against Slurm version of submit clients as "
+                f"sbatch {sbatch_version} and slurmd {slurmd_version}, but they differ."
             )
 
         if slurmd_version < (25, 5):
@@ -864,7 +865,7 @@ def spank_plugin(module_setup, spank_tmp):
         ):
             # This should never happen, slurmd should be one of those versions
             pytest.fail(
-                "Unable to find build dir to match slurmd version {slurmd_version}"
+                f"Unable to find build dir to match slurmd version {slurmd_version}"
             )
 
     src_path = atf.properties["testsuite_scripts_dir"] + "/spank_plugin.c"
