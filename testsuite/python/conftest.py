@@ -802,7 +802,7 @@ def printenv(module_setup):
 
 
 @pytest.fixture(scope="module")
-def spank_fail_lib(module_setup):
+def spank_plugin(module_setup):
     """
     Returns the bin path of the spank .so that will fail if configured.
     """
@@ -843,8 +843,8 @@ def spank_fail_lib(module_setup):
                 "Unable to find build dir to match slurmd version {slurmd_version}"
             )
 
-    src_path = atf.properties["testsuite_scripts_dir"] + "/spank_fail_test.c"
-    bin_path = os.getcwd() + "/spank_fail_test.so"
+    src_path = atf.properties["testsuite_scripts_dir"] + "/spank_plugin.c"
+    bin_path = os.getcwd() + "/spank_plugin.so"
 
     atf.compile_against_libslurm(
         src_path, bin_path, full=True, shared=True, new_prefixes=new_prefixes

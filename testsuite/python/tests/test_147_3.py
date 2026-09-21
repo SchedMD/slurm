@@ -11,13 +11,13 @@ import atf
 OUTPUT_FILE = "./file.out"
 ERROR_FILE = "./file.err"
 
-# The spank_fail_test plugin returns -ESPANK_ERROR on the targeted callback.
+# The spank_plugin plugin returns -ESPANK_ERROR on the targeted callback.
 # See ESPANK_ERROR in slurm/slurm_errno.h.
 SPANK_ERROR_RC = -3000
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup(spank_fail_lib):
+def setup(spank_plugin):
     """Setup test environment once for all tests"""
     global test_node
 
@@ -27,7 +27,7 @@ def setup(spank_fail_lib):
     # driven by SPANK_FAIL_TEST_FUNC / SPANK_FAIL_TEST_CTXT env vars set on
     # each test invocation, so it's loaded with no args.
     atf.require_config_parameter(
-        "required", spank_fail_lib, delimiter=" ", source="plugstack"
+        "required", spank_plugin, delimiter=" ", source="plugstack"
     )
 
     # Just to speed up the test

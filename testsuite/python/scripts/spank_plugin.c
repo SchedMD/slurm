@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  Copyright (C) SchedMD LLC.
  *****************************************************************************
- *  spank_fail_test.c - Generic SPANK plugin for testing failure-mode behavior.
+ *  spank_plugin.c - Generic SPANK plugin for testing.
  *
  *  Configuration is via environment variables:
  *
@@ -41,7 +41,7 @@
 #include <slurm/spank.h>
 
 #ifndef PLUGIN_NAME
-#define PLUGIN_NAME spank_fail_test
+#define PLUGIN_NAME spank_plugin
 #endif
 
 SPANK_PLUGIN(PLUGIN_NAME, 1);
