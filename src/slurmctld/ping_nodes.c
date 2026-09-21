@@ -67,6 +67,14 @@ static bool ping_updated = false;
 static int ping_count = 0;
 static time_t ping_start = 0;
 
+static int broadcast_in_flight[BC_CLASS_CNT];
+
+static const char *const broadcast_class_names[BC_CLASS_CNT] = {
+	[BC_ACCT_GATHER] = "accounting gather",
+	[BC_HEALTH_CHECK] = "health check",
+	[BC_PING] = "ping",
+};
+
 /*
  * is_ping_done - test if the last node ping cycle has completed.
  *	Use this to avoid starting a new set of ping requests before the
@@ -109,6 +117,52 @@ bool is_ping_done (void)
  *	for selected nodes). Matching ping_end calls must be made for each
  *	before is_ping_done returns true.
  */
+/*
+ * broadcast_begin() - record that a cyclic broadcast agent of the given class
+ *	has been queued. Matching broadcast_end() calls must be made for each
+ *	agent before broadcast_done() returns true for the class.
+ * IN broadcast_class - broadcast class the agent belongs to
+ */
+extern void broadcast_begin(broadcast_class_t broadcast_class)
+{
+	slurm_mutex_lock(&lock_mutex);
+	broadcast_in_flight[broadcast_class]++;
+	slurm_mutex_unlock(&lock_mutex);
+}
+
+/*
+ * broadcast_end() - record that a cyclic broadcast agent of the given class
+ *	has completed.
+ * IN broadcast_class - broadcast class the agent belongs to
+ */
+extern void broadcast_end(broadcast_class_t broadcast_class)
+{
+	slurm_mutex_lock(&lock_mutex);
+	if (broadcast_in_flight[broadcast_class] > 0)
+		broadcast_in_flight[broadcast_class]--;
+	else
+		error("%s: %s in_flight < 0",
+		      __func__, broadcast_class_names[broadcast_class]);
+	slurm_mutex_unlock(&lock_mutex);
+}
+
+/*
+ * broadcast_done() - test if every cyclic broadcast agent of the given class
+ *	has completed.
+ * IN broadcast_class - broadcast class to test
+ * RET true if no agents of the class are in flight, false otherwise
+ */
+extern bool broadcast_done(broadcast_class_t broadcast_class)
+{
+	bool is_done = false;
+
+	slurm_mutex_lock(&lock_mutex);
+	is_done = !broadcast_in_flight[broadcast_class];
+	slurm_mutex_unlock(&lock_mutex);
+
+	return is_done;
+}
+
 void ping_begin (void)
 {
 	slurm_mutex_lock(&lock_mutex);
@@ -152,10 +206,13 @@ void ping_end (void)
 
 /*
  * Queue a cyclic broadcast agent, or free it when it has no hosts. Each
- * queued agent gets a matching ping_begin()/ping_end() pair.
+ * queued agent gets a matching ping_begin()/ping_end() pair and a matching
+ * broadcast_begin()/broadcast_end() pair.
  * IN args - agent args (ownership taken either way)
+ * IN broadcast_class - class counted while the agent is in flight
  */
-static void _queue_broadcast(agent_arg_t *args)
+static void _queue_broadcast(agent_arg_t *args,
+			     broadcast_class_t broadcast_class)
 {
 	if (!args->node_count) {
 		purge_agent_args(args);
@@ -170,6 +227,8 @@ static void _queue_broadcast(agent_arg_t *args)
 		xfree(host_str);
 	}
 	ping_begin();
+	args->broadcast_class = broadcast_class;
+	broadcast_begin(broadcast_class);
 	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(args);
 }
@@ -316,8 +375,8 @@ void ping_nodes (void)
 	}
 
 	restart_flag = false;
-	_queue_broadcast(ping_agent_args);
-	_queue_broadcast(reg_agent_args);
+	_queue_broadcast(ping_agent_args, BC_PING);
+	_queue_broadcast(reg_agent_args, BC_PING);
 
 	if (down_hostlist) {
 		hostlist_uniq(down_hostlist);
@@ -352,7 +411,7 @@ static bool _node_unhealthy_for_hc(node_record_t *node_ptr)
  */
 static void _queue_health_check(agent_arg_t *args)
 {
-	_queue_broadcast(args);
+	_queue_broadcast(args, BC_HEALTH_CHECK);
 }
 
 extern void run_health_check_individual(node_record_t *node_ptr)
@@ -389,6 +448,8 @@ extern void run_health_check_individual(node_record_t *node_ptr)
 
 	debug("Spawning health check agent for %s", node_ptr->node_hostname);
 	ping_begin();
+	check_agent_args->broadcast_class = BC_HEALTH_CHECK;
+	broadcast_begin(BC_HEALTH_CHECK);
 	set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(check_agent_args);
 }
@@ -606,6 +667,8 @@ extern void update_nodes_acct_gather_data(void)
 			xfree(host_str);
 		}
 		ping_begin();
+		agent_args->broadcast_class = BC_ACCT_GATHER;
+		broadcast_begin(BC_ACCT_GATHER);
 		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_args);
 	}

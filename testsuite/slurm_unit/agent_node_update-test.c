@@ -339,6 +339,7 @@ void sackd_mgr_remove_node(char *node)
 int main(void)
 {
 	ping_args = xmalloc(sizeof(*ping_args));
+	ping_args->broadcast_class = BC_PING;
 	ping_args->msg_type = REQUEST_PING;
 	ping_args->node_count = 1;
 	ping_args->hostlist = hostlist_create("node0");

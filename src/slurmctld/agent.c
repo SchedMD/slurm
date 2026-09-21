@@ -374,6 +374,17 @@ void *agent(void *args)
 		 agent_info_ptr->protocol_version);
 
 cleanup:
+	if (agent_arg_ptr->broadcast_class != BC_NONE) {
+		broadcast_end(agent_arg_ptr->broadcast_class);
+		ping_end();
+		/*
+		 * Wake _agent_nodes_update() rather than letting it wait out
+		 * its timer. Call only after ping_end(), since ping_end()
+		 * clears the flag that the drain's ping_nodes_update() sets
+		 * and is_ping_done() tests.
+		 */
+		slurm_cond_signal(&update_nodes_cond);
+	}
 	purge_agent_args(agent_arg_ptr);
 
 	if (agent_info_ptr) {
@@ -901,20 +912,6 @@ finished:	;
 		run_scheduler = false;
 		/* below functions all have their own locking */
 		queue_job_scheduler();
-	}
-	if ((agent_ptr->msg_type == REQUEST_PING) ||
-	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
-	    (agent_ptr->msg_type == REQUEST_NODE_HEALTH_CHECK) ||
-	    (agent_ptr->msg_type == REQUEST_ACCT_GATHER_UPDATE) ||
-	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS)) {
-		ping_end();
-		/*
-		 * Wake _agent_nodes_update() rather than letting it wait out
-		 * its timer. Call only after ping_end(), since ping_end()
-		 * clears the flag that the drain's ping_nodes_update() sets
-		 * and is_ping_done() tests.
-		 */
-		slurm_cond_signal(&update_nodes_cond);
 	}
 }
 

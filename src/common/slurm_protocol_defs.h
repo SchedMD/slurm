@@ -2255,6 +2255,8 @@ typedef struct {
 	bool r_uid_set;			/* true if receiver UID set */
 	slurm_addr_t    *addr;          /* if set will send to this
 					   addr not hostlist */
+	int broadcast_class; /* slurmctld broadcast_class_t counted while the
+			      * agent is in flight, 0 if none */
 	hostlist_t *hostlist;		/* hostlist containing the
 					 * nodes we are sending to */
 	hostlist_t *resolve_hostlist; /* nodes the receivers resolve */

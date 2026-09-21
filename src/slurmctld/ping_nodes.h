@@ -42,6 +42,43 @@
 #include "src/common/macros.h"
 
 /*
+ * Cyclic broadcast classes, counted independently of each other.
+ * BC_NONE must stay first: it is the zero value of an agent that is not
+ * a cyclic broadcast. BC_CLASS_CNT must stay last: it sizes the per-class
+ * arrays and bounds iteration over every class.
+ */
+typedef enum {
+	BC_NONE, /* DO NOT ALPHABETIZE */
+	BC_ACCT_GATHER,
+	BC_HEALTH_CHECK,
+	BC_PING,
+	BC_CLASS_CNT /* MUST be last */
+} broadcast_class_t;
+
+/*
+ * broadcast_begin() - record that a cyclic broadcast agent of the given class
+ *	has been queued. Matching broadcast_end() calls must be made for each
+ *	agent before broadcast_done() returns true for the class.
+ * IN broadcast_class - broadcast class the agent belongs to
+ */
+extern void broadcast_begin(broadcast_class_t broadcast_class);
+
+/*
+ * broadcast_end() - record that a cyclic broadcast agent of the given class
+ *	has completed.
+ * IN broadcast_class - broadcast class the agent belongs to
+ */
+extern void broadcast_end(broadcast_class_t broadcast_class);
+
+/*
+ * broadcast_done() - test if every cyclic broadcast agent of the given class
+ *	has completed.
+ * IN broadcast_class - broadcast class to test
+ * RET true if no agents of the class are in flight, false otherwise
+ */
+extern bool broadcast_done(broadcast_class_t broadcast_class);
+
+/*
  * is_ping_done - test if the last node ping cycle has completed.
  *	Use this to avoid starting a new set of ping requests before the
  *	previous one completes
