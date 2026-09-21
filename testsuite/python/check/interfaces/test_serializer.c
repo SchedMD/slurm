@@ -1097,6 +1097,173 @@ START_TEST(test_utf8_roundtrip)
 
 END_TEST
 
+/*
+ * How a string's bytes survive parsing.
+ *
+ * serializer/xjson accepts everything RFC 8259 does and more: the JSON6 escape
+ * set, and any line ending or control byte written literally between the
+ * quotes. That is a superset of the parsing features rather than a defect, so
+ * these cases pin the value each form decodes to instead of arguing about
+ * which ones should be accepted.
+ *
+ * Dumping is not a superset. Whatever was parsed, the output must be strict
+ * RFC 8259, so every accepted case also asserts that re-dumping emits no raw
+ * control byte: each one comes back as a clean escaped character code.
+ * SER_FLAGS_COMPACT is used for that because the pretty printer emits newlines
+ * and tabs as layout.
+ *
+ * accepted_by is checked before rejected_by: JSON6 is a superset, so a JSON6
+ * plugin's grammar also has GRAMMAR_JSON set.
+ *
+ * A row with neither mask set for the bound grammar is skipped. serializer/json
+ * accepts several of these too -- raw control bytes, a lone surrogate, and an
+ * escaped NUL, which truncates its string -- but that is libjson-c's behavior
+ * rather than a grammar this suite can pin, and a stricter release of it must
+ * not turn this test red.
+ */
+static const struct {
+	const char *tag;
+	const char *doc;
+	/* grammar that must accept doc and parse it to want */
+	const grammar_t accepted_by;
+	const char *want;
+	/* grammar that must reject doc, or 0 to assert nothing */
+	const grammar_t rejected_by;
+} string_cases[] = {
+	/* RFC 8259 two character escapes: both grammars, same value */
+	{ "esc-quote", "{\"k\":\"a\\\"b\"}", GRAMMAR_JSON, "a\"b", 0 },
+	{ "esc-backslash", "{\"k\":\"a\\\\b\"}", GRAMMAR_JSON, "a\\b", 0 },
+	{ "esc-solidus", "{\"k\":\"a\\/b\"}", GRAMMAR_JSON, "a/b", 0 },
+	{ "esc-backspace", "{\"k\":\"a\\bb\"}", GRAMMAR_JSON, "a\bb", 0 },
+	{ "esc-formfeed", "{\"k\":\"a\\fb\"}", GRAMMAR_JSON, "a\fb", 0 },
+	{ "esc-newline", "{\"k\":\"a\\nb\"}", GRAMMAR_JSON, "a\nb", 0 },
+	{ "esc-return", "{\"k\":\"a\\rb\"}", GRAMMAR_JSON, "a\rb", 0 },
+	{ "esc-tab", "{\"k\":\"a\\tb\"}", GRAMMAR_JSON, "a\tb", 0 },
+	/* RFC 8259 \uXXXX, decoded to UTF-8 */
+	{ "esc-u-ascii", "{\"k\":\"a\\u0041b\"}", GRAMMAR_JSON, "aAb", 0 },
+	{ "esc-u-latin1", "{\"k\":\"a\\u00e9b\"}", GRAMMAR_JSON,
+	  "a\xc3\xa9"
+	  "b",
+	  0 },
+	{ "esc-u-bmp", "{\"k\":\"a\\u20acb\"}", GRAMMAR_JSON,
+	  "a\xe2\x82\xac"
+	  "b",
+	  0 },
+	{ "esc-u-pair", "{\"k\":\"a\\ud83d\\ude00b\"}", GRAMMAR_JSON,
+	  "a\xf0\x9f\x98\x80"
+	  "b",
+	  0 },
+	/* JSON6 adds these escapes; RFC 8259 has no such sequence */
+	{ "esc-vtab", "{\"k\":\"a\\vb\"}", GRAMMAR_JSON6, "a\vb",
+	  GRAMMAR_JSON },
+	{ "esc-single-quote", "{\"k\":\"a\\'b\"}", GRAMMAR_JSON6, "a'b",
+	  GRAMMAR_JSON },
+	{ "esc-hex", "{\"k\":\"a\\x41b\"}", GRAMMAR_JSON6, "aAb",
+	  GRAMMAR_JSON },
+	{ "esc-hex-utf8", "{\"k\":\"a\\xc3\\xa9b\"}", GRAMMAR_JSON6,
+	  "a\xc3\xa9"
+	  "b",
+	  GRAMMAR_JSON },
+	/* code points Slurm rejects by policy, in escaped form */
+	{ "esc-u-lone-surrogate", "{\"k\":\"a\\ud800b\"}", 0, NULL,
+	  GRAMMAR_JSON6 },
+	{ "esc-u-nul", "{\"k\":\"a\\u0000b\"}", 0, NULL, GRAMMAR_JSON6 },
+	/* not an escape in either grammar */
+	{ "esc-unknown", "{\"k\":\"a\\qb\"}", 0, NULL,
+	  (GRAMMAR_JSON | GRAMMAR_JSON6) },
+	/* JSON6 keeps a control byte that is written literally */
+	{ "raw-tab", "{\"k\":\"a\tb\"}", GRAMMAR_JSON6, "a\tb", 0 },
+	{ "raw-backspace", "{\"k\":\"a\bb\"}", GRAMMAR_JSON6, "a\bb", 0 },
+	{ "raw-vtab", "{\"k\":\"a\vb\"}", GRAMMAR_JSON6, "a\vb", 0 },
+	{ "raw-escape", "{\"k\":\"a\033b\"}", GRAMMAR_JSON6, "a\033b", 0 },
+	{ "raw-0x01", "{\"k\":\"a\001b\"}", GRAMMAR_JSON6, "a\001b", 0 },
+	{ "raw-0x1f", "{\"k\":\"a\037b\"}", GRAMMAR_JSON6, "a\037b", 0 },
+	/* a line ending is just another literal control byte */
+	{ "literal-crlf", "{\"k\":\"a\r\nb\"}", GRAMMAR_JSON6, "a\r\nb", 0 },
+	{ "literal-lf", "{\"k\":\"a\nb\"}", GRAMMAR_JSON6, "a\nb", 0 },
+	{ "literal-cr", "{\"k\":\"a\rb\"}", GRAMMAR_JSON6, "a\rb", 0 },
+	/*
+	 * unless a backslash precedes it, which removes it. JSON6 treats CR,
+	 * LF and CR LF alike, so a document written on Windows has to lose both
+	 * bytes: keeping the LF would leave it in the value.
+	 */
+	{ "continuation-crlf", "{\"k\":\"a\\\r\nb\"}", GRAMMAR_JSON6, "ab",
+	  GRAMMAR_JSON },
+	{ "continuation-lf", "{\"k\":\"a\\\nb\"}", GRAMMAR_JSON6, "ab",
+	  GRAMMAR_JSON },
+	{ "continuation-cr", "{\"k\":\"a\\\rb\"}", GRAMMAR_JSON6, "ab",
+	  GRAMMAR_JSON },
+	/* the terminator is the last byte: the parser must not read past it */
+	{ "continuation-cr-eof", "{\"k\":\"a\\\r", 0, NULL,
+	  (GRAMMAR_JSON | GRAMMAR_JSON6) },
+	{ "continuation-crlf-eof", "{\"k\":\"a\\\r\n", 0, NULL,
+	  (GRAMMAR_JSON | GRAMMAR_JSON6) },
+	{ "continuation-lf-eof", "{\"k\":\"a\\\n", 0, NULL,
+	  (GRAMMAR_JSON | GRAMMAR_JSON6) },
+};
+
+START_TEST(test_string_escapes)
+{
+	const grammar_t grammar = _active_grammar();
+
+	for (int i = 0; i < ARRAY_SIZE(string_cases); i++) {
+		const char *tag = string_cases[i].tag;
+		const char *doc = string_cases[i].doc;
+		const char *want = string_cases[i].want;
+		const grammar_t accepted_by = string_cases[i].accepted_by;
+		const grammar_t rejected_by = string_cases[i].rejected_by;
+		const char *parsed = NULL;
+		char *out = NULL;
+		size_t out_bytes = 0;
+		data_t *d = NULL;
+		int rc;
+
+		if (!(accepted_by & grammar)) {
+			if (!(rejected_by & grammar)) {
+				debug("skipping %s: not this grammar's to pin",
+				      tag);
+				continue;
+			}
+
+			rc = serialize_g_string_to_data(&d, doc, strlen(doc),
+							MIME_TYPE_JSON);
+			ck_assert_msg(rc,
+				      "%s: accepted \"%s\", wanted a rejection",
+				      tag, doc);
+			ck_assert_ptr_null(d);
+			continue;
+		}
+
+		rc = serialize_g_string_to_data(&d, doc, strlen(doc),
+						MIME_TYPE_JSON);
+		ck_assert_msg(!rc, "%s: rejected with rc %d", tag, rc);
+
+		parsed = data_get_string(data_key_get(d, "k"));
+		ck_assert_ptr_nonnull(parsed);
+		ck_assert_msg(!xstrcmp(parsed, want),
+			      "%s: parsed %zu bytes, wanted %zu", tag,
+			      strlen(parsed), strlen(want));
+
+		/*
+		 * Parsing is a superset, dumping is not: every control byte
+		 * has to come back out as an escaped character code.
+		 */
+		ck_assert_int_eq(serialize_g_data_to_string(&out, &out_bytes, d,
+							    MIME_TYPE_JSON,
+							    SER_FLAGS_COMPACT),
+				 0);
+		for (size_t j = 0; j < strlen(out); j++)
+			ck_assert_msg(((unsigned char) out[j]) >= 0x20,
+				      "%s: dumped raw control byte 0x%02x", tag,
+				      ((unsigned char) out[j]));
+
+		xfree(out);
+		FREE_NULL_DATA(d);
+	}
+}
+
+END_TEST
+
 /* Run every test against the one implementation selected by setup_fn */
 static void _add_tcase(Suite *suite, const char *name, SFun setup_fn)
 {
@@ -1120,6 +1287,7 @@ static void _add_tcase(Suite *suite, const char *name, SFun setup_fn)
 	tcase_add_test(tcase, test_parse_valid);
 	tcase_add_test(tcase, test_rfc_comma_positions);
 	tcase_add_test(tcase, test_utf8_roundtrip);
+	tcase_add_test(tcase, test_string_escapes);
 	tcase_add_test(tcase, test_compliance_large);
 	tcase_add_test(tcase, test_bandwidth);
 
