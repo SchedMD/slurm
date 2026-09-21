@@ -56,9 +56,6 @@
 /* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
 #define MAX_REG_FREQUENCY 20
 
-/* Log an error for ping that takes more than 100 seconds to complete */
-#define PING_TIMEOUT 100
-
 /* Warn for a broadcast class in flight longer than this many MessageTimeouts */
 #define BROADCAST_TIMEOUT_FACTOR 3
 
@@ -69,9 +66,6 @@
 #define HC_CYCLE_INTERVAL 2
 
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool ping_updated = false;
-static int ping_count = 0;
-static time_t ping_start = 0;
 
 static int broadcast_in_flight[BC_CLASS_CNT];
 
@@ -84,48 +78,6 @@ static const char *const broadcast_class_names[BC_CLASS_CNT] = {
 	[BC_PING] = "ping",
 };
 
-/*
- * is_ping_done - test if the last node ping cycle has completed.
- *	Use this to avoid starting a new set of ping requests before the
- *	previous one completes
- * RET true if ping process is done, false otherwise
- */
-bool is_ping_done (void)
-{
-	static bool ping_msg_sent = false;
-	bool is_done = true;
-
-	slurm_mutex_lock(&lock_mutex);
-	if (ping_count) {
-		is_done = false;
-		if (!ping_msg_sent &&
-		    (difftime(time(NULL), ping_start) >= PING_TIMEOUT)) {
-			error("A node ping cycle took more than %d seconds. Node RPC requests like ping, register status, health check and/or accounting gather update are triggered less frequently than configured. Either many nodes are non-responsive or one of SlurmdTimeout, HealthCheckInterval, JobAcctGatherFrequency should be increased.",
-			      PING_TIMEOUT);
-			ping_msg_sent = true;
-		}
-	} else {
-		ping_msg_sent = false;
-		/*
-		 * We can only consider the last node ping cycle to be fully
-		 * completed if ping_updated is true, meaning the
-		 * _agent_nodes_update thread finished updating the nodes
-		 * response. Otherwise, we could hit a race and incorrectly set
-		 * responding/healthy nodes to DOWN.
-		 */
-		is_done = ping_updated;
-	}
-	slurm_mutex_unlock(&lock_mutex);
-
-	return is_done;
-}
-
-/*
- * ping_begin - record that a ping cycle has begin. This can be called more
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
- *	for selected nodes). Matching ping_end calls must be made for each
- *	before is_ping_done returns true.
- */
 /*
  * broadcast_begin() - record that a cyclic broadcast agent of the given class
  *	has been queued. Matching broadcast_end() calls must be made for each
@@ -218,51 +170,9 @@ extern void broadcast_check_warnings(void)
 	slurm_mutex_unlock(&lock_mutex);
 }
 
-void ping_begin (void)
-{
-	slurm_mutex_lock(&lock_mutex);
-	ping_count++;
-	ping_start = time(NULL);
-	slurm_mutex_unlock(&lock_mutex);
-}
-
-/*
- * ping_nodes_update - A ping cycle can end but the update can still be pending
- * for the _agent_nodes_update thread. This call will confirm node info was
- * updated.
- */
-void ping_nodes_update(void)
-{
-	slurm_mutex_lock(&lock_mutex);
-	ping_updated = true;
-	slurm_mutex_unlock(&lock_mutex);
-}
-
-/*
- * ping_end - record that a ping cycle has ended. This can be called more
- *	than once (for REQUEST_PING and simultaneous REQUEST_NODE_REGISTRATION
- *	for selected nodes). Matching ping_end calls must be made for each
- *	before is_ping_done returns true.
- */
-void ping_end (void)
-{
-	slurm_mutex_lock(&lock_mutex);
-
-	if (ping_count > 0)
-		ping_count--;
-	else
-		error("%s: ping_count < 0", __func__);
-
-	if (ping_count == 0) /* no more running ping cycles */
-		ping_start = 0;
-	ping_updated = false;
-	slurm_mutex_unlock(&lock_mutex);
-}
-
 /*
  * Queue a cyclic broadcast agent, or free it when it has no hosts. Each
- * queued agent gets a matching ping_begin()/ping_end() pair and a matching
- * broadcast_begin()/broadcast_end() pair.
+ * queued agent gets a matching broadcast_begin()/broadcast_end() pair.
  * IN args - agent args (ownership taken either way)
  * IN broadcast_class - class counted while the agent is in flight
  */
@@ -281,7 +191,6 @@ static void _queue_broadcast(agent_arg_t *args,
 		      rpc_num2string(args->msg_type), host_str);
 		xfree(host_str);
 	}
-	ping_begin();
 	args->broadcast_class = broadcast_class;
 	broadcast_begin(broadcast_class);
 	set_agent_arg_r_uid(args, SLURM_AUTH_UID_ANY);
@@ -461,7 +370,8 @@ static bool _node_unhealthy_for_hc(node_record_t *node_ptr)
 
 /*
  * Queue a health check agent for the hosts in args, or free args if it has no
- * hosts. Each queued agent gets a matching ping_begin()/ping_end() pair.
+ * hosts. Each queued agent gets a matching broadcast_begin()/broadcast_end()
+ * pair.
  * IN args - agent args to queue (ownership taken) or free when empty
  */
 static void _queue_health_check(agent_arg_t *args)
@@ -502,7 +412,6 @@ extern void run_health_check_individual(node_record_t *node_ptr)
 			 check_agent_args->resolve_hostlist);
 
 	debug("Spawning health check agent for %s", node_ptr->node_hostname);
-	ping_begin();
 	check_agent_args->broadcast_class = BC_HEALTH_CHECK;
 	broadcast_begin(BC_HEALTH_CHECK);
 	set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
@@ -721,7 +630,6 @@ extern void update_nodes_acct_gather_data(void)
 				 host_str);
 			xfree(host_str);
 		}
-		ping_begin();
 		agent_args->broadcast_class = BC_ACCT_GATHER;
 		broadcast_begin(BC_ACCT_GATHER);
 		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);

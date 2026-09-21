@@ -376,7 +376,6 @@ void *agent(void *args)
 cleanup:
 	if (agent_arg_ptr->broadcast_class != BC_NONE) {
 		broadcast_end(agent_arg_ptr->broadcast_class);
-		ping_end();
 		/* Wake _agent_nodes_update() to apply queued responses. */
 		slurm_cond_signal(&update_nodes_cond);
 	}
