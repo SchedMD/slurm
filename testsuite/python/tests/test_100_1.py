@@ -208,6 +208,48 @@ if atf.get_version() < (26, 11):
             "A range start with trailing characters is rejected starting at 26.11",
         )
     )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "find_absent_shared_prefix",
+            "hostlist_find() stops matching an absent host that shares a list's prefix starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "find_absent_swallowed_suffix",
+            "hostlist_find() stops matching an absent host that shares a list's prefix starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "find_member_among_decoys",
+            "hostlist_find() stops letting a non-matching range decide a later one starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "delete_absent_is_noop",
+            "hostlist_delete_host() stops deleting a host that shares a list's prefix starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "within_multiple_hosts",
+            "hostset_within() stops matching an absent host that shares a list's prefix starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_find.c",
+            "find_resplit_no_leak",
+            "hostlist_find() stops letting a non-matching range decide a later one starting at 26.11",
+        )
+    )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
     skip_tests.append(
         (
