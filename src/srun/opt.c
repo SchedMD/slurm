@@ -381,6 +381,12 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		/* initialize option defaults */
 		_opt_default();
 
+		/*
+		 * Record which component these options describe. _opt_copy()
+		 * carries it into the entry saved for this component.
+		 */
+		opt.het_job_inx = i;
+
 		/* do not set adjust defaults in an active allocation */
 		if (!is_step) {
 			bool first = (pass_number == 1);
