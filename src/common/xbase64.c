@@ -46,6 +46,29 @@ strong_alias(xbase64_decode, slurm_xbase64_decode);
 static const char encode[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+/*
+ * Reverse of encode[]. Values are biased by one so that zero, the default for
+ * every character not listed, means the character is not in the alphabet.
+ */
+static const uint8_t decode[256] = {
+	['A'] = 1,  ['B'] = 2,  ['C'] = 3,  ['D'] = 4,  ['E'] = 5,  ['F'] = 6,
+	['G'] = 7,  ['H'] = 8,  ['I'] = 9,  ['J'] = 10, ['K'] = 11, ['L'] = 12,
+	['M'] = 13, ['N'] = 14, ['O'] = 15, ['P'] = 16, ['Q'] = 17, ['R'] = 18,
+	['S'] = 19, ['T'] = 20, ['U'] = 21, ['V'] = 22, ['W'] = 23, ['X'] = 24,
+	['Y'] = 25, ['Z'] = 26, ['a'] = 27, ['b'] = 28, ['c'] = 29, ['d'] = 30,
+	['e'] = 31, ['f'] = 32, ['g'] = 33, ['h'] = 34, ['i'] = 35, ['j'] = 36,
+	['k'] = 37, ['l'] = 38, ['m'] = 39, ['n'] = 40, ['o'] = 41, ['p'] = 42,
+	['q'] = 43, ['r'] = 44, ['s'] = 45, ['t'] = 46, ['u'] = 47, ['v'] = 48,
+	['w'] = 49, ['x'] = 50, ['y'] = 51, ['z'] = 52, ['0'] = 53, ['1'] = 54,
+	['2'] = 55, ['3'] = 56, ['4'] = 57, ['5'] = 58, ['6'] = 59, ['7'] = 60,
+	['8'] = 61, ['9'] = 62, ['+'] = 63, ['/'] = 64,
+};
+
+static int _decode_value(char c)
+{
+	return decode[(uint8_t) c] - 1;
+}
+
 extern char *xbase64_encode(const uint8_t *plain, int len)
 {
 	size_t i = 0, j = 0;
@@ -81,9 +104,8 @@ extern int xbase64_decode(uint8_t **decoded, const char *encoded)
 {
 	uint8_t *output = NULL;
 	size_t len = strlen(encoded), output_len;
-	int i = 0, j = 0;
-	const char *pos0, *pos1, *pos2, *pos3;
-	char val0, val1, val2, val3;
+	size_t i = 0, j = 0;
+	int v0, v1, v2, v3;
 
 	*decoded = NULL;
 
@@ -93,52 +115,41 @@ extern int xbase64_decode(uint8_t **decoded, const char *encoded)
 	output_len = (len / 4) * 3;
 	output = xmalloc(output_len + 1);
 
-	for (; (i + 7) < len; i += 4) {
-		pos0 = strchr(encode, encoded[i]);
-		pos1 = strchr(encode, encoded[i + 1]);
-		pos2 = strchr(encode, encoded[i + 2]);
-		pos3 = strchr(encode, encoded[i + 3]);
-
-		/* invalid characters */
-		if (!pos0 || !pos1 || !pos2 || !pos3)
+	/* Every quad but the last, which alone may carry padding. */
+	for (; i < (len - 4); i += 4) {
+		if (((v0 = _decode_value(encoded[i])) < 0) ||
+		    ((v1 = _decode_value(encoded[i + 1])) < 0) ||
+		    ((v2 = _decode_value(encoded[i + 2])) < 0) ||
+		    ((v3 = _decode_value(encoded[i + 3])) < 0))
 			goto fail;
 
-		val0 = pos0 - encode;
-		val1 = pos1 - encode;
-		val2 = pos2 - encode;
-		val3 = pos3 - encode;
-
-		output[j++] = (val0 << 2) | (val1 >> 4);
-		output[j++] = ((val1 & 0x0f) << 4) | (val2 >> 2);
-		output[j++] = ((val2 & 0x03) << 6) | val3;
+		output[j++] = (v0 << 2) | (v1 >> 4);
+		output[j++] = ((v1 & 0x0f) << 4) | (v2 >> 2);
+		output[j++] = ((v2 & 0x03) << 6) | v3;
 	}
 
-	/* last four characters are handled differently: */
-	pos0 = strchr(encode, encoded[i]);
-	pos1 = strchr(encode, encoded[i + 1]);
-	pos2 = pos3 = encode;
-	if ((encoded[i + 2] == '=') && (encoded[i + 3] == '=')) {
-		output_len -= 2;
-	} else if (encoded[i + 3] == '=') {
-		pos2 = strchr(encode, encoded[i + 2]);
-		output_len -= 1;
-	} else {
-		pos2 = strchr(encode, encoded[i + 2]);
-		pos3 = strchr(encode, encoded[i + 3]);
-	}
-
-	/* invalid characters */
-	if (!pos0 || !pos1 || !pos2 || !pos3)
+	if (((v0 = _decode_value(encoded[i])) < 0) ||
+	    ((v1 = _decode_value(encoded[i + 1])) < 0))
 		goto fail;
 
-	val0 = pos0 - encode;
-	val1 = pos1 - encode;
-	val2 = pos2 - encode;
-	val3 = pos3 - encode;
+	if ((encoded[i + 2] == '=') && (encoded[i + 3] == '=')) {
+		v2 = 0;
+		v3 = 0;
+		output_len -= 2;
+	} else if (encoded[i + 3] == '=') {
+		if ((v2 = _decode_value(encoded[i + 2])) < 0)
+			goto fail;
+		v3 = 0;
+		output_len -= 1;
+	} else {
+		if (((v2 = _decode_value(encoded[i + 2])) < 0) ||
+		    ((v3 = _decode_value(encoded[i + 3])) < 0))
+			goto fail;
+	}
 
-	output[j++] = (val0 << 2) | (val1 >> 4);
-	output[j++] = ((val1 & 0x0f) << 4) | (val2 >> 2);
-	output[j++] = ((val2 & 0x03) << 6) | val3;
+	output[j++] = (v0 << 2) | (v1 >> 4);
+	output[j++] = ((v1 & 0x0f) << 4) | (v2 >> 2);
+	output[j++] = ((v2 & 0x03) << 6) | v3;
 
 	*decoded = output;
 	return output_len;
