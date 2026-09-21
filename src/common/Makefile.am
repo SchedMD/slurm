@@ -100,6 +100,8 @@ libcommon_la_SOURCES =				\
 	oci_config.h				\
 	openapi.c				\
 	openapi.h				\
+	openssl_helper.c			\
+	openssl_helper.h			\
 	optz.c					\
 	optz.h					\
 	pack.c					\

@@ -46,6 +46,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/openssl_helper.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
 #include "src/common/slurm_time.h"
@@ -730,6 +731,12 @@ extern int init(void)
 	if (init_run)
 		return SLURM_SUCCESS;
 	init_run = true;
+
+	/*
+	 * s2n_init() initializes libcrypto, so disable OpenSSL's atexit()
+	 * cleanup first to avoid a teardown race at shutdown.
+	 */
+	openssl_helper_disable_atexit(plugin_type);
 
 	if (s2n_init() != S2N_SUCCESS) {
 		on_s2n_error(NULL, s2n_init);

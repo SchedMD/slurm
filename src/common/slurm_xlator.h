@@ -599,6 +599,9 @@
 /* run_command.[ch] functions */
 #define run_command slurm_run_command
 
+/* openssl_helper.[ch] functions */
+#define openssl_helper_disable_atexit slurm_openssl_helper_disable_atexit
+
 /* http_parser.[ch] functions */
 #define http_parser_g_init slurm_http_parser_g_init
 #define http_parser_g_fini slurm_http_parser_g_fini
