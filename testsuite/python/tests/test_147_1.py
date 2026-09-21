@@ -4,14 +4,10 @@ import pytest
 
 import atf
 
-spank_tmp = ""
-
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
-def setup(spank_tmp_lib):
-    global spank_tmp
-    spank_tmp, spank_lib = spank_tmp_lib
+def setup(spank_plugin, spank_tmp):
     atf.require_config_parameter("JobContainerType", "job_container/tmpfs")
     atf.require_config_parameter_includes("SlurmdParameters", "contain_spank")
     atf.require_config_parameter_includes("PrologFlags", "Contain")
@@ -19,7 +15,7 @@ def setup(spank_tmp_lib):
     # Ensure the SPANK plugin is included in plugstack.conf
     atf.require_config_parameter(
         "required",
-        f"{spank_lib}",
+        f"{spank_plugin}",
         delimiter=" ",
         source="plugstack",
     )
@@ -36,12 +32,11 @@ def setup(spank_tmp_lib):
     atf.require_slurm_running()
 
 
-def test_spank_plugin_tmpfs():
+def test_spank_plugin_tmpfs(spank_tmp):
     """
     Test that SPANK plugin hooks execute correctly in the tmpfs job container.
     """
-    # Clear out the private mount and create a file outside the container
-    atf.run_command(f"rm -rf {spank_tmp}/*", fatal=True)
+    # Create a file outside the container; spank_tmp_clean already wiped the dir
     atf.run_command(f"touch {spank_tmp}/file_on_host", fatal=True)
 
     atf.make_bash_script(
@@ -81,7 +76,11 @@ def test_spank_plugin_tmpfs():
     )
 
     # Wait for job to run
-    job_id = atf.submit_job_sbatch("--output=output job.sh", fatal=True)
+    job_id = atf.submit_job_sbatch(
+        "--output=output job.sh",
+        env_vars="SPANK_HOOK_CREATE_FILE=1",
+        fatal=True,
+    )
     assert atf.wait_for_job_state(
         job_id, "COMPLETED"
     ), f"Job {job_id} did not complete successfully"

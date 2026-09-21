@@ -40,14 +40,14 @@ def cleanup_state(setup):
     reason="Ticket 20604: Spank error codes were not properly propagated. Fixed in 25.05.",
 )
 @pytest.mark.parametrize("mode", ["job", "node"])
-def test_slurm_spank_init_failure_mode(mode, cleanup_state, spank_fail_lib):
+def test_slurm_spank_init_failure_mode(mode, cleanup_state, spank_plugin):
     """
     Test ESPANK_[JOB|NODE]_FAILURE
     """
 
     # Ensure the SPANK plugin is included in plugstack.conf
     atf.require_config_parameter(
-        "required", spank_fail_lib, delimiter=" ", source="plugstack"
+        "required", spank_plugin, delimiter=" ", source="plugstack"
     )
 
     node = next(iter(atf.nodes))
