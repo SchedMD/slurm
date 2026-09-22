@@ -883,23 +883,8 @@ re_send:
 trystepmgr:
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
-		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
-					req_msg.flags)) {
-			/*
-			 * The node isn't in the conf, see if the
-			 * controller has an address for it.
-			 */
-			slurm_node_alias_addrs_t *alias_addrs = NULL;
-			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
-							&alias_addrs)) {
-				add_remote_nodes_to_conf_tbls(
-					alias_addrs->node_list,
-					alias_addrs->node_addrs);
-			}
-			slurm_free_node_alias_addrs(alias_addrs);
-			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
-					    req_msg.flags);
-		}
+		slurm_conf_get_remote_addr(stepmgr_nodename, &req_msg.address,
+					   req_msg.flags);
 		xfree(stepmgr_nodename);
 
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
@@ -1018,23 +1003,8 @@ static int _het_job_lookup_one(char *stepmgr_nodename, slurm_step_id_t step_id,
 	if (stepmgr_nodename) {
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
-		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
-					req_msg.flags)) {
-			/*
-			 * The node isn't in the conf, see if the
-			 * controller has an address for it.
-			 */
-			slurm_node_alias_addrs_t *alias_addrs = NULL;
-			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
-							&alias_addrs)) {
-				add_remote_nodes_to_conf_tbls(
-					alias_addrs->node_list,
-					alias_addrs->node_addrs);
-			}
-			slurm_free_node_alias_addrs(alias_addrs);
-			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
-					    req_msg.flags);
-		}
+		slurm_conf_get_remote_addr(stepmgr_nodename, &req_msg.address,
+					   req_msg.flags);
 
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))
 			return SLURM_ERROR;
@@ -1146,23 +1116,8 @@ trystepmgr:
 	if (stepmgr_nodename) {
 		slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
-		if (slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
-					req_msg.flags)) {
-			/*
-			 * The node isn't in the conf, see if the
-			 * controller has an address for it.
-			 */
-			slurm_node_alias_addrs_t *alias_addrs = NULL;
-			if (!slurm_get_node_alias_addrs(stepmgr_nodename,
-							&alias_addrs)) {
-				add_remote_nodes_to_conf_tbls(
-					alias_addrs->node_list,
-					alias_addrs->node_addrs);
-			}
-			slurm_free_node_alias_addrs(alias_addrs);
-			slurm_conf_get_addr(stepmgr_nodename, &req_msg.address,
-					    req_msg.flags);
-		}
+		slurm_conf_get_remote_addr(stepmgr_nodename, &req_msg.address,
+					   req_msg.flags);
 		xfree(stepmgr_nodename);
 
 		if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0))

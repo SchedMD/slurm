@@ -6679,6 +6679,24 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_conf_get_remote_addr(char *name, slurm_addr_t *address,
+				      uint16_t flags)
+{
+	slurm_node_alias_addrs_t *alias_addrs = NULL;
+
+	if (!slurm_conf_get_addr(name, address, flags))
+		return SLURM_SUCCESS;
+
+	if (!slurm_get_node_alias_addrs(name, &alias_addrs) && alias_addrs)
+		add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
+					      alias_addrs->node_addrs);
+	slurm_free_node_alias_addrs(alias_addrs);
+
+	slurm_conf_get_addr(name, address, flags);
+
+	return SLURM_SUCCESS;
+}
+
 extern void slurm_conf_add_node(node_record_t *node_ptr)
 {
 	slurm_conf_lock();
