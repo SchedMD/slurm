@@ -1081,9 +1081,8 @@ extern int(slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 	 * merge the responses.
 	 */
 	het_size_env = getenv("SLURM_HET_SIZE");
-	if (het_size_env)
-		parse_uint32(het_size_env, &het_size);
-	if ((het_size > 1) && getenv("SLURM_STEPMGR_HET_GROUP_0")) {
+	if (het_size_env && !parse_uint32(het_size_env, &het_size) &&
+	    (het_size > 1) && getenv("SLURM_STEPMGR_HET_GROUP_0")) {
 		for (uint32_t i = 0; i < het_size; i++) {
 			slurm_step_id_t het_id = SLURM_STEP_ID_INITIALIZER;
 			char *job_id_str;
