@@ -1432,8 +1432,14 @@ don't bind tasks to memory (default)
 
 .TP
 .B p[refer]
-Prefer use of first specified NUMA node, but permit
- use of other available NUMA nodes.
+Bindings indicate a preference rather than a requirement.
+Each task attempts to allocate memory from its preferred NUMA node first.
+If that node cannot satisfy the allocation, any other NUMA node available to the
+step may be used instead.
+The preference does not restrict which NUMA nodes the task may use.
+If a task's binding covers more than one NUMA node, only the NUMA node with
+the lowest ID is preferred.
+The other NUMA nodes in the binding receive no preference.
 .IP
 
 .TP

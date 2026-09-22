@@ -535,12 +535,13 @@ void slurm_print_mem_bind_help(void)
 "    --mem-bind=         Bind memory to locality domains (ldom)\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
 "        v[erbose]       verbosely report binding before task runs\n"
+"        p[refer]        prefer rather than require the memory binding\n"
 "        no[ne]          don't bind tasks to memory (default)\n"
 "        rank            bind by task rank\n"
 "        local           bind to memory local to processor\n"
 "        map_mem:<list>  specify a memory binding for each task\n"
-"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
-"        mask_mem:<list> specify a memory binding mask for each tasks\n"
+"                        where <list> is <numaid1>,<numaid2>,...<numaidN>\n"
+"        mask_mem:<list> specify a memory binding mask for each task\n"
 "                        where <list> is <mask1>,<mask2>,...<maskN>\n"
 "        help            show this help message\n");
 }
