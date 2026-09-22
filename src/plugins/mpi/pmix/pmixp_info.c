@@ -84,6 +84,11 @@ extern int pmixp_info_srv_usock_fd(void)
 	return _srv_usock_fd;
 }
 
+extern void pmixp_info_srv_usock_close(void)
+{
+	fd_close(&_srv_usock_fd);
+}
+
 extern bool pmixp_info_same_arch(void)
 {
 	return _srv_same_arch;

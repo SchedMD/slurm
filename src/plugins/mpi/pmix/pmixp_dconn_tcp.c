@@ -36,7 +36,7 @@
 #include "pmixp_dconn.h"
 #include "pmixp_dconn_tcp.h"
 
-static int _server_fd;
+static int _server_fd = -1;
 static in_port_t _server_port;
 
 typedef struct {
@@ -80,7 +80,7 @@ int pmixp_dconn_tcp_prepare(pmixp_dconn_handlers_t *handlers,
 
 void pmixp_dconn_tcp_finalize(void)
 {
-	close(_server_fd);
+	fd_close(&_server_fd);
 }
 
 static void *_tcp_init(int nodeid, pmixp_p2p_data_t direct_hdr)

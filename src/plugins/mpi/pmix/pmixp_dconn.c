@@ -107,6 +107,7 @@ void pmixp_dconn_fini(void)
 	{
 		pmixp_dconn_tcp_finalize();
 	}
+	_poll_fd = -1;
 
 	xfree(_pmixp_dconn_conns);
 	_pmixp_dconn_conn_cnt = 0;
