@@ -1351,6 +1351,11 @@ any memory. This option is typically used to ensure that each task is bound to
 the memory closest to its assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 
+\fBNOTE\fR: Memory binding requires Slurm to be built with libnuma support,
+which requires the libnuma development files at build time.
+See <https://slurm.schedmd.com/quickstart_admin.html#prereqs> for the build
+prerequisites.
+
 \fBNOTE\fR: To have Slurm always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
