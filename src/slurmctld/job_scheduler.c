@@ -1802,12 +1802,11 @@ next_task:
 			fed_mgr_job_start(job_ptr, job_ptr->start_time);
 		} else {
 			/*
-			 * Node config unavailable plus state_reason
-			 * FAIL_BAD_CONSTRAINTS causes the job to be held
-			 * later. If job specs were unsatisfied due to
-			 * --prefer, give the opportunity to test the record
-			 * without it in a second attempt by resetting
-			 * state_reason to FAIL_CONSTRAINTS.
+			 * Node config unavailable causes the job to be held
+			 * later. If this record was tested with --prefer, the
+			 * job's next record tests it without --prefer instead.
+			 * Reset state_reason to FAIL_CONSTRAINTS so the job is
+			 * not held.
 			 */
 			if (ignore_prefer_validation() &&
 			    job_ptr->details->prefer &&
@@ -1816,7 +1815,7 @@ next_task:
 			     job_ptr->details->feature_list_use) &&
 			    (error_code ==
 			     ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
-			    (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS)) {
+			    use_prefer) {
 				sched_debug2("StateReason='%s' set after evaluating %pJ in partition %s (maybe unsatisfied due to --prefer while ignore_prefer_validation configured). Re-testing without --prefer if needed.",
 					     job_state_reason_string(job_ptr->state_reason), job_ptr, job_ptr->part_ptr->name);
 				job_ptr->state_reason = FAIL_CONSTRAINTS;
