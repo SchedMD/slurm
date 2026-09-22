@@ -806,8 +806,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.het_grp_bits, het_job_offset);
 
-	if (opt.container && !getenv("SLURM_CONTAINER"))
-		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 	if (opt.runtime && !getenv("SLURM_RUNTIME"))
