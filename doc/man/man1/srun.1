@@ -555,6 +555,13 @@ options which automatically generate the task binding is recommended.
 Explicitly specified masks or bindings are only honored when the job step
 has been allocated every available CPU on the node.
 
+The CPU IDs used by \fBmap_cpu\fR and \fBmask_cpu\fR are Linux/hardware CPU
+IDs, as reported in the CPU column of \fBlscpu \-e\fR.
+They may differ from the Slurm abstract CPU IDs, which Slurm assigns
+internally from the node definition in \fBslurm.conf\fR(5) and reports in
+commands such as \fBscontrol \-d show job\fR.
+See <https://slurm.schedmd.com/cpu_management.html#numbering> for details.
+
 Binding a task to a NUMA locality domain means to bind the task to the set of
 CPUs that belong to the NUMA locality domain or "NUMA node".
 If NUMA locality domain options are used on systems with no NUMA support, then
@@ -603,6 +610,7 @@ Do not bind tasks to CPUs (default unless auto binding is applied)
 .B map_cpu:<list>
 Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
 <cpu_id_for_task_0>,<cpu_id_for_task_1>,...
+These are Linux/hardware CPU IDs, not Slurm abstract CPU IDs.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
@@ -620,6 +628,7 @@ tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first mask specified in the list, etc.).
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
+The masks use Linux/hardware CPU IDs, not Slurm abstract CPU IDs.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
@@ -638,8 +647,19 @@ node is allocated to the job.
 .B map_ldom:<list>
 Bind by mapping NUMA locality domain IDs to tasks as specified where
 <list> is <ldom1>,<ldom2>,...<ldomN>.
+With libnuma support, these are the kernel's NUMA node IDs, as reported by
+\fBnumactl \-H\fR, not Slurm abstract IDs.
 The locality domain IDs are interpreted as decimal values unless they are
 preceded with '0x' in which case they are interpreted as hexadecimal values.
+The mapping is specified for a node and identical mapping is applied to the
+tasks on every node (i.e. the lowest task ID on each node is mapped to the
+first locality domain specified in the list, etc.).
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of
+the list.
+To simplify support for large task counts, the lists may follow a map with an
+asterisk and repetition count.
+For example "map_ldom:0*4,1*4".
 Not supported unless the entire node is allocated to the job.
 .IP
 
@@ -647,8 +667,19 @@ Not supported unless the entire node is allocated to the job.
 .B mask_ldom:<list>
 Bind by setting NUMA locality domain masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
+With libnuma support, the masks use the kernel's NUMA node IDs, as reported by
+\fBnumactl \-H\fR, not Slurm abstract IDs.
 NUMA locality domain masks are \fBalways\fR interpreted as hexadecimal
 values but can be preceded with an optional '0x'.
+The mapping is specified for a node and identical mapping is applied to the
+tasks on every node (i.e. the lowest task ID on each node is mapped to the
+first mask specified in the list, etc.).
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of
+the list.
+To simplify support for large task counts, the lists may follow a mask with an
+asterisk and repetition count.
+For example "mask_ldom:0x1*4,0x2*4".
 Not supported unless the entire node is allocated to the job.
 .IP
 
@@ -4287,10 +4318,12 @@ Name of the cluster on which the job is executing.
 
 .TP
 \fBSLURM_CPU_BIND_LIST\fR
-\fB\-\-cpu\-bind\fR map or mask list (list of Slurm CPU IDs or masks for this
-node, CPU_ID = Board_ID x threads_per_board +
-Socket_ID x threads_per_socket +
-Core_ID x threads_per_core + Thread_ID).
+\fB\-\-cpu\-bind\fR map or mask list (list of IDs or masks for this node).
+
+\fBNOTE\fR: For the \fBmap_cpu:\fR and \fBmask_cpu:\fR types the IDs are
+Linux/hardware CPU IDs, and for the \fBmap_ldom:\fR and \fBmask_ldom:\fR types
+they are locality domain IDs.
+Neither is a Slurm abstract CPU ID.
 .IP
 
 .TP
@@ -4465,7 +4498,8 @@ Node local task ID for the process within a job.
 
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
-\fB\-\-mem\-bind\fR map or mask list (<list of IDs or masks for this node>).
+\fB\-\-mem\-bind\fR map or mask list (list of IDs or masks for this node).
+These are NUMA node IDs, not CPU IDs.
 .IP
 
 .TP
