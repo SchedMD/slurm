@@ -3190,7 +3190,8 @@ If set, jobs may be preempted to reclaim licenses. Otherwise jobs requesting
 busy licenses will have to wait even if they have preemption priority.
 The logic to support this option is only available in the select/cons_tres
 plugin. Jobs that use OR in the license request are not eligible to preempt
-other jobs to reclaim licenses.
+other jobs to reclaim licenses, and preemption is never used to reclaim
+Hierarchical Resources (HRES).
 .IP
 
 .TP
