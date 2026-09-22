@@ -380,6 +380,7 @@ extern int common_cgroup_create(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri,
 	cg->path = xstrdup(file_path);
 	cg->uid = uid;
 	cg->gid = gid;
+	cg->fd = -1;
 
 	return SLURM_SUCCESS;
 }
@@ -453,6 +454,7 @@ extern void common_cgroup_destroy(xcgroup_t *cg)
 	xfree(cg->path);
 	cg->uid = -1;
 	cg->gid = -1;
+	cg->fd = -1;
 }
 
 extern int common_cgroup_delete(xcgroup_t *cg)
@@ -642,6 +644,7 @@ extern int common_cgroup_lock(xcgroup_t *cg)
 	if (flock(cg->fd, LOCK_EX) < 0) {
 		error("cannot lock cgroup '%s' : %m", cg->path);
 		close(cg->fd);
+		cg->fd = -1;
 		return SLURM_ERROR;
 	}
 
@@ -653,10 +656,12 @@ extern int common_cgroup_unlock(xcgroup_t *cg)
 	if (flock(cg->fd,  LOCK_UN) < 0) {
 		error("cannot unlock cgroup '%s' : %m", cg->path);
 		close(cg->fd);
+		cg->fd = -1;
 		return SLURM_ERROR;
 	}
 
 	close(cg->fd);
+	cg->fd = -1;
 	return SLURM_SUCCESS;
 }
 
