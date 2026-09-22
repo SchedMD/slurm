@@ -304,29 +304,6 @@ resolve_via_ctld:
 }
 
 /*
- * IN  node - hostname of the stepmgr stepd
- * OUT addr - filled with the resolved address on success
- * RET SLURM_SUCCESS or SLURM_ERROR
- */
-static int _resolve_stepmgr_addr(const char *node, slurm_addr_t *addr)
-{
-	slurm_node_alias_addrs_t *alias_addrs = NULL;
-
-	if (slurm_conf_get_addr(node, addr, 0) == SLURM_SUCCESS)
-		return SLURM_SUCCESS;
-
-	if (slurm_get_node_alias_addrs((char *) node, &alias_addrs) ||
-	    !alias_addrs)
-		return SLURM_ERROR;
-
-	add_remote_nodes_to_conf_tbls(alias_addrs->node_list,
-				      alias_addrs->node_addrs);
-	slurm_free_node_alias_addrs(alias_addrs);
-
-	return slurm_conf_get_addr(node, addr, 0);
-}
-
-/*
  * Serialize one notification body to stdout via the data_parser plugin
  * (DATA_PARSER_SRUN_STEPS_DRAINED_MSG), as a compact JSON object on one line
  * (--json) or a YAML document (--yaml). No-op under --quiet or no body.
@@ -580,8 +557,8 @@ static int _send_subscribe(const char *node, const char *host, uint16_t port,
 	slurm_msg_t_init(&resp_msg);
 	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
-	if (_resolve_stepmgr_addr(node, &req_msg.address)) {
-		rc = SLURM_ERROR;
+	if (slurm_conf_get_remote_addr((char *) node, &req_msg.address, 0)) {
+		rc = errno ? errno : SLURM_ERROR;
 		goto cleanup;
 	}
 
