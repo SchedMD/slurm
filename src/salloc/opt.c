@@ -318,12 +318,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		opt.argv[i] = NULL; /* End of argv's (for possible execv) */
 	}
 
-	if (opt.container &&
-	    !xstrstr(slurm_conf.launch_params, "use_interactive_step")) {
-		error("--container requires LaunchParameters=use_interactive_step");
-		exit(error_exit);
-	}
-
 	if (cli_filter_g_pre_submit(&opt, het_job_offset)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
@@ -361,23 +355,6 @@ static void _salloc_default_command(int *argcp, char **argvp[])
 		else
 			*command = '\0';
 		xstrcat(command, "srun ");
-
-		/* Explicitly pass container if requested */
-		if (opt.container) {
-			int len = strlen(opt.container);
-
-			xstrcat(command, " --container '");
-			/* escape any single quotes if they exist */
-
-			for (int i = 0; i < len; i++) {
-				if (opt.container[i] == '\'')
-					xstrcat(command, "'\"'\"'");
-				else
-					xstrcatchar(command, opt.container[i]);
-			}
-
-			xstrcat(command, "' ");
-		}
 
 		xstrcat(command, slurm_conf.interactive_step_opts);
 
