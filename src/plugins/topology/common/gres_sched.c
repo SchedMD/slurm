@@ -110,6 +110,13 @@ extern char *gres_sched_str(list_t *sock_gres_list)
 	return out_str;
 }
 
+/* Per-segment target when segmenting, otherwise the whole-job target */
+static uint64_t _gres_target(gres_job_state_t *gres_js)
+{
+	return gres_js->gres_per_job_segment ? gres_js->gres_per_job_segment :
+					       gres_js->gres_per_job;
+}
+
 /* Note - key is not used */
 static int _is_gres_per_job_met(void *x, void *key)
 {
@@ -117,7 +124,7 @@ static int _is_gres_per_job_met(void *x, void *key)
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 
 	if (gres_js->gres_per_job &&
-	    (gres_js->gres_per_job > gres_js->total_gres))
+	    (_gres_target(gres_js) > gres_js->total_gres))
 		return -1; /* break out of list_find_first */
 
 	return 0;
@@ -218,6 +225,7 @@ static int _foreach_gres_add(void *x, void *arg)
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	sock_gres_t *sock_data;
 	uint64_t gres_limit;
+	uint64_t gres_per_job = _gres_target(gres_js);
 	uint64_t min_gres;
 
 	if (!gres_js->gres_per_job) /* Don't care about totals */
@@ -245,9 +253,9 @@ static int _foreach_gres_add(void *x, void *arg)
 		*/
 		min_gres = gres_limit;
 	}
-	if (gres_js->gres_per_job > gres_js->total_gres) {
-		gres_limit = MIN((gres_js->gres_per_job - gres_js->total_gres),
-				 gres_limit);
+	if (gres_per_job > gres_js->total_gres) {
+		gres_limit =
+			MIN((gres_per_job - gres_js->total_gres), gres_limit);
 	}
 	gres_limit = MAX(gres_limit, min_gres);
 
@@ -399,17 +407,17 @@ static int _find_insufficient_gres(void *x, void *args)
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	list_t *sock_gres_list = args;
 	sock_gres_t *sock_data;
+	uint64_t gres_per_job = _gres_target(gres_js);
 
 	if (!gres_js->gres_per_job) /* Don't care about totals */
 		return 0;
-	if (gres_js->total_gres >= gres_js->gres_per_job)
+	if (gres_js->total_gres >= gres_per_job)
 		return 0;
 	sock_data = list_find_first(sock_gres_list, gres_find_sock_by_job_state,
 				    gres_state_job);
 	if (!sock_data) /* None of this GRES available */
 		return -1;
-	if ((gres_js->total_gres + sock_data->total_cnt) <
-	    gres_js->gres_per_job)
+	if ((gres_js->total_gres + sock_data->total_cnt) < gres_per_job)
 		return -1;
 
 	return 0;
