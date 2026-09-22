@@ -1377,8 +1377,10 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 
 	if (cluster_flags & CLUSTER_FLAG_MULTSD) {
 		if ((this_addr = getenv("SLURMD_NODENAME"))) {
-			slurm_conf_get_remote_addr(this_addr, &req_msg.address,
-						   req_msg.flags);
+			if (slurm_conf_get_remote_addr(this_addr,
+						       &req_msg.address,
+						       req_msg.flags))
+				return SLURM_ERROR;
 		} else {
 			this_addr = "localhost";
 			slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,

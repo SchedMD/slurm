@@ -108,8 +108,12 @@ static int _get_stepmgr_steps(void *x, void *arg)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
 
-	slurm_conf_get_remote_addr(sji->stepmgr, &req_msg.address,
-				   req_msg.flags);
+	if (slurm_conf_get_remote_addr(sji->stepmgr, &req_msg.address,
+				       req_msg.flags)) {
+		error("%s: aborting stepmgr step lookup, no address for %s: %m",
+		      __func__, sji->stepmgr);
+		return SLURM_ERROR;
+	}
 
 	job_step_info_request_msg_t req_data = {0};
 	req_data.step_id = sji->step_id;
@@ -406,11 +410,15 @@ extern slurm_step_layout_t *slurm_job_step_layout_get(slurm_step_id_t *step_id)
 
 trystepmgr:
 	if (stepmgr_nodename) {
+		int rc = SLURM_ERROR;
+
 		slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
 
-		slurm_conf_get_remote_addr(stepmgr_nodename, &req.address,
-					   req.flags);
+		rc = slurm_conf_get_remote_addr(stepmgr_nodename, &req.address,
+						req.flags);
 		xfree(stepmgr_nodename);
+		if (rc)
+			return NULL;
 
 		if (slurm_send_recv_node_msg(&req, &resp, 0))
 			return NULL;
