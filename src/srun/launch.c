@@ -65,6 +65,7 @@
 
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/runtime.h"
 
 static list_t *local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
@@ -643,13 +644,16 @@ static void _free_built_launch_params(step_create_req_msg_t *req)
 	req->launch_params = NULL;
 }
 
-/* RET SLURM_SUCCESS, or an error that means the step must not be launched */
+/*
+ * RET SLURM_SUCCESS, or an error when the runtime rejects the launch
+ *	parameters, in which case the step must not be launched
+ */
 static int _build_launch_params(slurm_step_launch_params_t *launch_params,
 				srun_job_t *job, slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	char tmp_str[128];
-	int rc = SLURM_SUCCESS;
+	int rc = EINVAL;
 
 	if (!job->env)
 		setup_one_job_env(opt_local, job, true);
@@ -749,6 +753,16 @@ static int _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->tree_width = srun_opt->tree_width;
 	launch_params->tres_bind = opt_local->tres_bind;
 	launch_params->tres_freq = opt_local->tres_freq;
+
+	/* Resolved when the step request was built */
+	xassert(opt_local->runtime_idx != RUNTIME_IDX_INVALID);
+
+	if ((rc = runtime_g_cli_apply_launch_params(opt_local->runtime_idx,
+						    opt_local->het_job_inx,
+						    RUNTIME_CTXT_SRUN,
+						    launch_params)))
+		error("runtime_g_cli_apply_launch_params() failed: %s",
+		      slurm_strerror(rc));
 
 	return rc;
 }
@@ -1037,6 +1051,23 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	step_req->container_id = xstrdup(opt_local->container_id);
 	xfree(step_req->runtime);
 	step_req->runtime = xstrdup(opt_local->runtime);
+
+	/* A step in an allocation has no job description to resolve it in */
+	if ((rc = runtime_g_init(opt_local->runtime, RUNTIME_CTXT_SRUN,
+				 &opt_local->runtime_idx))) {
+		error("Loading runtime plugin failed: %s", slurm_strerror(rc));
+		slurm_free_step_create_req_msg(step_req);
+		return NULL;
+	}
+
+	if ((rc = runtime_g_cli_apply_step_req(opt_local->runtime_idx,
+					       opt_local->het_job_inx,
+					       RUNTIME_CTXT_SRUN, step_req))) {
+		error("runtime_g_cli_apply_step_req() failed: %s",
+		      slurm_strerror(rc));
+		slurm_free_step_create_req_msg(step_req);
+		return NULL;
+	}
 
 	rc = gres_step_state_validate(step_req->cpus_per_tres,
 				     step_req->tres_per_step,
