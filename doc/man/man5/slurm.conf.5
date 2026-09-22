@@ -4931,7 +4931,9 @@ similar to \fBPrologFlags=ForceRequeueOnFail\fR.
 If defined, the salloc command will wait until all allocated nodes are ready for
 use (i.e. booted) before the command returns. By default, salloc will return as
 soon as the resource allocation has been made. The salloc command can use the
-\-\-wait\-all\-nodes option to override this configuration parameter.
+\fB\-\-wait\-all\-nodes\fR option to override this configuration parameter.
+A job whose allocated nodes must be powered up or rebooted waits for all of
+them either way.
 .IP
 
 .TP
@@ -4939,8 +4941,10 @@ soon as the resource allocation has been made. The salloc command can use the
 If defined, the sbatch script will wait until all allocated nodes are ready for
 use (i.e. booted) before the initiation. By default, the sbatch script will be
 initiated as soon as the first node in the job allocation is ready. The sbatch
-command can use the \-\-wait\-all\-nodes option to override this configuration
-parameter.
+command can use the \fB\-\-wait\-all\-nodes\fR option to override this
+configuration parameter.
+A job whose allocated nodes must be powered up or rebooted waits for all of
+them either way.
 .IP
 
 .TP

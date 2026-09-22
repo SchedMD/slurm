@@ -2724,6 +2724,10 @@ for any task in the job array.
 \fB\-\-wait\-all\-nodes\fR=<\fIvalue\fR>
 Controls when the execution of the command begins.
 By default the job will begin execution as soon as the allocation is made.
+A job whose allocated nodes must be powered up or rebooted is an
+exception: it does not begin execution until all of them are ready,
+regardless of \fB\-\-wait\-all\-nodes\fR or
+\fBSchedulerParameters=sbatch_wait_nodes\fR.
 .IP
 .RS
 .TP 5
