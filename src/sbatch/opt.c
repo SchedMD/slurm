@@ -413,11 +413,14 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 {
 	int i;
 
+	/*
+	 * Record which component these options describe before the reset,
+	 * which drops what the runtime holds for it.
+	 */
+	opt.het_job_inx = het_job_inx;
+
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, false);
-
-	/* record which component these options describe */
-	opt.het_job_inx = het_job_inx;
 
 	/* cli_filter plugins can change the defaults */
 	if (cli_filter_g_setup_defaults(&opt, false)) {
