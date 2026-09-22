@@ -57,7 +57,6 @@ extern int   temp_kvs_send(void);
 extern int   kvs_init(void);
 extern char *kvs_get(char *key);
 extern int   kvs_put(char *key, char *val);
-extern int   kvs_clear(void);
 
 
 #endif	/* _KVS_H */

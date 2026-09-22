@@ -175,45 +175,6 @@ int pmixp_fd_set_nodelay(int fd)
 	return SLURM_SUCCESS;
 }
 
-size_t pmixp_write_buf(int sd, void *buf, size_t count, int *shutdown,
-		       bool blocking)
-{
-	ssize_t ret, offs = 0;
-
-	*shutdown = 0;
-
-	if (!blocking && !pmixp_fd_write_ready(sd, shutdown)) {
-		return 0;
-	}
-
-	if (blocking) {
-		fd_set_blocking(sd);
-	}
-
-	while (count - offs > 0) {
-		ret = write(sd, (char *)buf + offs, count - offs);
-		if (ret > 0) {
-			offs += ret;
-			continue;
-		}
-		switch (errno) {
-		case EINTR:
-			continue;
-		case EWOULDBLOCK:
-			return offs;
-		default:
-			*shutdown = -errno;
-			return offs;
-		}
-	}
-
-	if (blocking) {
-		fd_set_nonblocking(sd);
-	}
-
-	return offs;
-}
-
 static int _iov_shift(struct iovec *iov, size_t iovcnt, int offset)
 {
 	int skip, i;
@@ -303,47 +264,6 @@ bool pmixp_fd_read_ready(int fd, int *shutdown)
 		}
 	}
 	return ret;
-}
-
-bool pmixp_fd_write_ready(int fd, int *shutdown)
-{
-	struct pollfd pfd[1];
-	int rc = 0;
-	struct timeval tv;
-	double start, cur;
-	pfd[0].fd = fd;
-	pfd[0].events = POLLOUT;
-	pfd[0].revents = 0;
-
-	gettimeofday(&tv,NULL);
-	start = tv.tv_sec + 1E-6*tv.tv_usec;
-	cur = start;
-	while ((cur - start) < 0.01) {
-		rc = poll(pfd, 1, 10);
-
-		/* update current timestamp */
-		gettimeofday(&tv,NULL);
-		cur = tv.tv_sec + 1E-6*tv.tv_usec;
-		if (0 > rc) {
-			if (errno == EINTR) {
-				continue;
-			} else {
-				*shutdown = -errno;
-				return false;
-			}
-		}
-		break;
-	}
-
-	if (pfd[0].revents & (POLLERR | POLLHUP | POLLNVAL)) {
-		if (pfd[0].revents & (POLLERR | POLLNVAL)) {
-			*shutdown = -EBADF;
-		} else {
-			/* POLLHUP - normal connection close */
-			*shutdown = 1;
-		}
-	}
-	return ((rc == 1) && (pfd[0].revents & POLLOUT));
 }
 
 int pmixp_stepd_send(const char *nodelist, const char *address,

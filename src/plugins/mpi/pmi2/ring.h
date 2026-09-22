@@ -4,9 +4,6 @@
 /* allocate resources to track PMIX_Ring state */
 int pmix_ring_init(const pmi2_job_info_t* job, char*** env);
 
-/* free resources allocated to track PMIX_Ring state */
-int pmix_ring_finalize(void);
-
 /* given a global rank in stepd/srun tree for message received
  * from one of our stepd children, compute corresponding child index */
 int pmix_ring_id_by_rank(int rank);

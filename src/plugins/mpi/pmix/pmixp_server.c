@@ -1815,7 +1815,7 @@ struct pp_cbdata
 	int size;
 };
 
-void pingpong_complete(int rc, pmixp_p2p_ctx_t ctx, void *data)
+static void _pingpong_complete(int rc, pmixp_p2p_ctx_t ctx, void *data)
 {
 	struct pp_cbdata *d = (struct pp_cbdata*)data;
 	FREE_NULL_BUFFER(d->buf);
@@ -1836,9 +1836,8 @@ int pmixp_server_pp_send(int nodeid, int size)
 	cbdata->buf = buf;
 	cbdata->size = size;
 	set_buf_offset(buf,get_buf_offset(buf) + size);
-	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_PINGPONG,
-				  _pmixp_pp_count, buf, pingpong_complete,
-				  (void*)cbdata);
+	rc = pmixp_server_send_nb(&ep, PMIXP_MSG_PINGPONG, _pmixp_pp_count, buf,
+				  _pingpong_complete, (void *) cbdata);
 	if (SLURM_SUCCESS != rc) {
 		char *nodename = pmixp_info_job_host(nodeid);
 		PMIXP_ERROR("Was unable to wait for the parent %s to "

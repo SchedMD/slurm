@@ -70,10 +70,6 @@ static int _handle_name_lookup(int fd, buf_t *buf);
 static int _handle_ring(int fd, buf_t *buf);
 static int _handle_ring_resp(int fd, buf_t *buf);
 
-static uint32_t  spawned_srun_ports_size = 0;
-static uint16_t *spawned_srun_ports = NULL;
-
-
 static int (*tree_cmd_handlers[]) (int fd, buf_t *buf) = {
 	_handle_kvs_fence,
 	_handle_kvs_fence_resp,
@@ -385,11 +381,6 @@ static int _handle_spawn_resp(int fd, buf_t *buf)
 	} else {		/* srun */
 		debug3("mpi/pmi2: spawned tasks of %s launched",
 		       spawn_resp->jobid);
-		spawned_srun_ports = xrealloc(spawned_srun_ports,
-					      spawn_resp->seq *
-					      sizeof(uint16_t));
-		spawned_srun_ports_size = spawn_resp->seq; /* seq start from 1 */
-		spawned_srun_ports[spawn_resp->seq - 1] = spawn_resp->pmi_port;
 		/* forward resp to stepd */
 		spawn_resp_send_to_stepd(spawn_resp, &from_node);
 		xfree(from_node);
@@ -664,26 +655,4 @@ rwfail:
 	close (fd);
 	xfree(data);
 	return SLURM_ERROR;
-}
-
-extern int
-tree_msg_to_spawned_sruns(uint32_t len, char *msg)
-{
-	int i = 0, rc = SLURM_SUCCESS, fd = -1, sent=0;
-	slurm_addr_t srun_addr;
-
-	for (i = 0; i < spawned_srun_ports_size; i ++) {
-		if (spawned_srun_ports[i] == 0)
-			continue;
-
-		slurm_set_addr(&srun_addr, spawned_srun_ports[i], "127.0.0.1");
-		fd = slurm_open_stream(&srun_addr, true);
-		if (fd < 0)
-			return SLURM_ERROR;
-		sent = slurm_msg_sendto_socket(fd, msg, len);
-		if (sent != len)
-			rc = SLURM_ERROR;
-		close(fd);
-	}
-	return rc;
 }

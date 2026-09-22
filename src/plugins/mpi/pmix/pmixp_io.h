@@ -110,18 +110,6 @@ static inline bool pmixp_io_enqueue_ok(pmixp_io_engine_t *eng)
 			(PMIXP_IO_INIT == eng->io_state);
 }
 
-static inline bool pmixp_io_finalized(pmixp_io_engine_t *eng)
-{
-	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	return (PMIXP_IO_FINALIZED == eng->io_state);
-}
-
-static inline int pmixp_io_error(pmixp_io_engine_t *eng)
-{
-	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	return eng->error;
-}
-
 /* initialize all the data structures to prepare
  * engine for operation.
  * file descriptor needs to be provided to put it
@@ -162,13 +150,6 @@ pmixp_io_recv_hdr_alloc_host(pmixp_io_engine_t *eng)
 {
 	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
 	return xmalloc(eng->h.rhdr_host_size);
-}
-
-static inline void*
-pmixp_io_recv_hdr_alloc_net(pmixp_io_engine_t *eng)
-{
-	xassert(eng->magic == PMIXP_MSGSTATE_MAGIC);
-	return xmalloc(eng->h.rhdr_net_size);
 }
 
 /* Transmitter */
