@@ -1094,11 +1094,12 @@ test_144_18  Test shard device memory enforcement (ConstrainDeviceMemory)
 test_144_19  Test per-device typed shard counts in gres.conf
 test_144_20  Test a step's GPU frequency setup across its GRES records
 
-test_145_#   Testing --constraint.
-==================================
+test_145_#   Testing --constraint and --prefer.
+===============================================
 test_145_1   Test --constraint with --ntasks-per-node
 test_145_2   Test --constraint
 test_145_3   Test job with --constraint will not preempt other jobs if resources are available
+test_145_4   Test --prefer validation, placement, and combination with --constraint
 
 test_146_#   Testing partitions.
 ================================
