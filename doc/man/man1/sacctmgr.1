@@ -2124,15 +2124,14 @@ preemptor job, even if the preemptor job requested fewer resources than that.
 These reserved nodes aren't available to other jobs during that backfill
 cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
 preempt more resources during a single backfill iteration than they requested.
-.br
+
 \fBNOTE\fR:
-For heterogeneous job to be considered for preemption all components
-must be eligible for preemption. When a heterogeneous job is to be preempted
-the first identified component of the job with the highest order PreemptMode
-(\fBSUSPEND\fR (highest), \fBREQUEUE\fR, \fBCANCEL\fR (lowest)) will be
-used to set the PreemptMode for all components. The \fBGraceTime\fR and user
-warning signal for each component of the heterogeneous job remain unique.
-Heterogeneous jobs are excluded from GANG scheduling operations.
+For a heterogeneous job to be considered for preemption, all components must be
+eligible for preemption, and a component whose \fBPreemptMode\fR resolves to
+\fBSUSPEND\fR is treated as \fBPreemptMode=OFF\fR.
+See the heterogeneous job \fBNOTE\fR under the cluster\-wide \fBPreemptMode\fR
+description in \fBslurm.conf\fR(5), and
+<https://slurm.schedmd.com/preempt.html#hetjob>.
 .IP
 .RS
 .TP 12
@@ -2162,7 +2161,12 @@ them. Therefore the \fBSUSPEND\fR preemption mode always needs the \fBGANG\fR
 option to be specified at the cluster level. Also, because the suspended jobs
 will still use memory on the allocated nodes, Slurm needs to be able to track
 memory resources to be able to suspend jobs.
-.br
+
+\fBNOTE\fR: A heterogeneous job is excluded from GANG scheduling operations, so
+it is never suspended as a preemptee, and it never preempts a job whose
+resolved \fBPreemptMode\fR is \fBSUSPEND\fR. See the heterogeneous job
+\fBNOTE\fR under \fBPreemptMode\fR above.
+
 If \fBPreemptType=preempt/qos\fR is configured and if the preempted job(s) and
 the preemptor job are on the same partition, then they will share resources with
 the Gang scheduler (time\-slicing). If not (i.e. if the preemptees and preemptor

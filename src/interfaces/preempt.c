@@ -120,19 +120,52 @@ static int _is_job_preempt_exempt_internal(void *x, void *key)
 static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 				  job_record_t *preemptor_ptr)
 {
+	uint16_t preemptee_mode = PREEMPT_MODE_OFF;
+
 	xassert(preemptee_ptr);
 	xassert(preemptor_ptr);
 
-	if (!preemptee_ptr->het_job_list)
-		return _is_job_preempt_exempt_internal(
-			preemptee_ptr, preemptor_ptr);
 	/*
+	 * Only a running or suspended job can be preempted. A hetjob leader is
+	 * itself a component of het_job_list, so a leader that is not running
+	 * makes the whole hetjob exempt below anyway.
+	 */
+	if (!IS_JOB_RUNNING(preemptee_ptr) && !IS_JOB_SUSPENDED(preemptee_ptr))
+		return true;
+
+	/*
+	 * Apply the plugin's filter before resolving the mode. It is the cheap
+	 * and highly selective half, while resolving the mode can walk
+	 * het_job_list, and this is asked once per job in job_list per
+	 * preemptor.
+	 *
 	 * All components of a job must be preemptable otherwise it is
 	 * preempt exempt
 	 */
-        return list_find_first(preemptee_ptr->het_job_list,
-			       _is_job_preempt_exempt_internal,
-			       preemptor_ptr) ? true : false;
+	if (!preemptee_ptr->het_job_list) {
+		if (_is_job_preempt_exempt_internal(preemptee_ptr,
+						    preemptor_ptr))
+			return true;
+	} else if (list_find_first(preemptee_ptr->het_job_list,
+				   _is_job_preempt_exempt_internal,
+				   preemptor_ptr))
+		return true;
+
+	preemptee_mode = slurm_job_preempt_mode(preemptee_ptr);
+
+	/*
+	 * A hetjob is excluded from gang scheduling, so as a preemptor it
+	 * cannot preempt anyone in SUSPEND mode.
+	 */
+	if (preemptor_ptr->het_job_id &&
+	    (preemptee_mode == PREEMPT_MODE_SUSPEND))
+		return true;
+
+	/* A resolved mode of OFF means this job may not be preempted. */
+	if (preemptee_mode == PREEMPT_MODE_OFF)
+		return true;
+
+	return false;
 }
 
 /*
@@ -146,6 +179,9 @@ static uint16_t _job_preempt_mode_internal(job_record_t *job_ptr)
 	if ((job_ptr->warn_flags & KILL_JOB_RESV) &&
 	    (data != PREEMPT_MODE_REQUEUE))
 		data = PREEMPT_MODE_CANCEL;
+	/* HetJobs are explicitly excluded from SUSPEND. */
+	if (job_ptr->het_job_id && (data == PREEMPT_MODE_SUSPEND))
+		data = PREEMPT_MODE_OFF;
 
 	return data;
 }
@@ -332,54 +368,62 @@ extern list_t *slurm_find_preemptable_jobs(job_record_t *job_ptr)
 }
 
 /*
+ * Resolve the PreemptMode template that applies to a heterogeneous job.
+ *
+ * The first component found with a preempt mode in the hierarchy (ordered
+ * highest to lowest: REQUEUE->CANCEL) sets the mode for all components.
+ * Hetjobs are exempt from SUSPEND, so a component resolving to SUSPEND maps to
+ * OFF; if no component resolves to REQUEUE or CANCEL the whole hetjob resolves
+ * to OFF.
+ * IN job_ptr - hetjob leader (has het_job_list) not yet resolved
+ * RET PreemptMode to apply to every component of the hetjob
+ */
+static uint16_t _het_job_preempt_mode(job_record_t *job_ptr)
+{
+	uint16_t data = PREEMPT_MODE_OFF;
+	static const uint16_t preempt_modes[] = {
+		PREEMPT_MODE_REQUEUE,
+		PREEMPT_MODE_CANCEL,
+	};
+	static const int preempt_modes_cnt =
+		sizeof(preempt_modes) / sizeof(preempt_modes[0]);
+
+	for (int i = 0; i < preempt_modes_cnt; i++) {
+		data = preempt_modes[i];
+		if ((job_ptr->job_preempt_comp =
+			     list_find_first(job_ptr->het_job_list,
+					     _find_job_by_preempt_mode, &data)))
+			break;
+	}
+	/*
+	 * Not found means every component resolved to OFF, either directly or
+	 * because a hetjob's SUSPEND maps to OFF. Leave job_preempt_comp NULL
+	 * so the next call scans again: a component's partition or QOS may be
+	 * given a preemptable mode while the job runs, and nothing clears a
+	 * cached template.
+	 */
+	if (!job_ptr->job_preempt_comp)
+		data = _job_preempt_mode_internal(job_ptr);
+
+	return data;
+}
+
+/*
  * Return the PreemptMode which should apply to stop this job
  */
 extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 {
-	uint16_t data;
-
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return PREEMPT_MODE_OFF;
 
-	if (job_ptr->het_job_list && !job_ptr->job_preempt_comp) {
-		/*
-		 * Find the component job to use as the template for
-		 * setting the preempt mode for all other components.
-		 * The first component job found having a preempt mode
-		 * in the hierarchy (ordered highest to lowest:
-		 * SUSPEND->REQUEUE->CANCEL) will be used as
-		 * the template.
-		 *
-		 * NOTE: CANCEL is not on the list below since it is handled
-		 * as the default.
-		 */
-		static const uint16_t preempt_modes[] = {
-			PREEMPT_MODE_SUSPEND,
-			PREEMPT_MODE_REQUEUE
-		};
-		static const int preempt_modes_cnt = sizeof(preempt_modes) /
-			sizeof(preempt_modes[0]);
+	if (job_ptr->het_job_list && !job_ptr->job_preempt_comp)
+		return _het_job_preempt_mode(job_ptr);
 
-		for (int pm_index = 0; pm_index < preempt_modes_cnt;
-		     pm_index++) {
-			data = preempt_modes[pm_index];
-			if ((job_ptr->job_preempt_comp = list_find_first(
-				     job_ptr->het_job_list,
-				     _find_job_by_preempt_mode,
-				     &data)))
-				break;
-		}
-		/* if not found look up the mode (CANCEL expected) */
-		if (!job_ptr->job_preempt_comp)
-			data = _job_preempt_mode_internal(job_ptr);
-	} else
-		data = _job_preempt_mode_internal(job_ptr->job_preempt_comp ?
+	return _job_preempt_mode_internal(job_ptr->job_preempt_comp ?
 						  job_ptr->job_preempt_comp :
 						  job_ptr);
-
-	return data;
 }
 
 /*

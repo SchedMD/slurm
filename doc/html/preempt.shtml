@@ -135,6 +135,11 @@ PriorityTier partitions, then you will need overlapping partitions, and
 <I>PreemptMode=SUSPEND,GANG</I> to use Gang scheduler to resume the suspended
 job(s).
 In either case, time-slicing won't happen between jobs on different partitions.
+<BR>
+<B>NOTE</B>: A heterogeneous job is excluded from GANG scheduling operations,
+including <I>PreemptMode=SUSPEND</I>, and from oversubscription while
+<I>GANG</I> is enabled. See
+<A HREF="#hetjob">heterogeneous job preemption</A> below.
 </LI>
 <LI>
 <I>REQUEUE</I>: Preempts jobs by requeuing them (if possible) or canceling
@@ -269,15 +274,32 @@ job options by using a job_submit plugin (set the value of "job_desc.shared"
 to "NO_VAL16").
 </P>
 
-<P>
-For heterogeneous job to be considered for preemption all components
-must be eligible for preemption. When a heterogeneous job is to be preempted
-the first identified component of the job with the highest order PreemptMode
-(<I>SUSPEND</I> (highest), <I>REQUEUE</I>, <I>CANCEL</I> (lowest)) will be
-used to set the PreemptMode for all components. The <I>GraceTime</I> and user
-warning signal for each component of the heterogeneous job remain unique.
+<P id="hetjob">
+For a heterogeneous job to be considered for preemption, all components
+must be eligible for preemption; <I>PreemptType</I> determines which jobs are
+eligible. Heterogeneous jobs are excluded from GANG scheduling operations,
+including <I>PreemptMode=SUSPEND</I>: a component whose <I>PreemptMode</I>
+resolves to <I>SUSPEND</I> is treated as <I>PreemptMode=OFF</I>.
+When a heterogeneous job is to be preempted, the first component found with
+<I>PreemptMode=REQUEUE</I> sets the mode for all components; if there is none,
+the first component found with <I>PreemptMode=CANCEL</I> does. The selected
+mode is applied to every component. If no component resolves to <I>REQUEUE</I>
+or <I>CANCEL</I>, the job is not preempted.
+The <I>GraceTime</I> and user warning signal for each component of the
+heterogeneous job remain unique. A heterogeneous job is never suspended as a
+preemptee, and it will never preempt a job whose resolved <I>PreemptMode</I> is
+<I>SUSPEND</I>.
 Note that preemption of heterogeneous jobs is only supported with
 <I>SelectType=select/cons_tres</I>, not with <I>select/linear</I>.
+</P>
+
+<P>
+A heterogeneous job is also excluded from oversubscription while <I>GANG</I> is
+enabled, because GANG scheduling cannot time-slice it out of a shared row. It is
+never placed on cores already allocated to another job, not even in its own
+partition's oversubscription rows. No other job is placed on its cores while it
+runs. Such a job may therefore remain pending where a non-heterogeneous job
+would start.
 </P>
 
 <p>

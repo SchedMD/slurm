@@ -1,9 +1,7 @@
 /*****************************************************************************\
- *  select_cons_tres.h - Resource selection plugin supporting Trackable
- *  RESources (TRES) policies.
+ *  gang_exempt.h - Track cores exempt from GANG oversubscription
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
- *  Derived in large part from select/cons_res plugin
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -35,50 +33,41 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_TRES_H
-#define _CONS_TRES_H
+#ifndef _CONS_TRES_GANG_EXEMPT_H
+#define _CONS_TRES_GANG_EXEMPT_H
 
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
+/*
+ * Return the cores no job may be oversubscribed onto under gang scheduling,
+ * bringing them up to date first. Reading them through here is what keeps them
+ * current, so the array itself is private to the module.
+ * RET the exempt cores, or NULL if nothing is exempt
+ */
+extern bitstr_t **gang_exempt_get_cores(void);
 
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
+/*
+ * Offer job_ptr's cores as exempt from sharing. Needs no locks: whether the
+ * job really is exempt is settled by the next read of the exempt cores, which
+ * happens before anything can be placed on them.
+ * IN job_ptr - the job that now holds an allocation
+ */
+extern void gang_exempt_add_job(job_record_t *job_ptr);
 
-#include "src/common/bitstring.h"
-#include "src/interfaces/gres.h"
-#include "src/common/core_array.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/pack.h"
-#include "src/interfaces/select.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_resource_info.h"
-#include "src/interfaces/topology.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
-#include "src/interfaces/preempt.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/slurmd/slurmd.h"
+/*
+ * Stop offering job_ptr. A no-op for a job that was never offered.
+ * IN job_ptr - the job that no longer holds an allocation
+ */
+extern void gang_exempt_remove_job(job_record_t *job_ptr);
 
-#include "cons_helpers.h"
-#include "node_data.h"
-#include "part_data.h"
-#include "job_resources.h"
-#include "job_test.h"
+/* Mark the exempt cores stale, so the next read of them re-derives them. */
+extern void gang_exempt_mark_stale(void);
 
-#include "gang_exempt.h"
+/*
+ * Discard the exempt cores after the node count may have changed, rather than
+ * clearing an array sized to the old count.
+ */
+extern void gang_exempt_node_init(void);
 
-/* Global variables */
-extern bool     backfill_busy_nodes;
-extern int      bf_window_scale;
-extern bool     gang_mode;
-extern bool     have_dragonfly;
-extern bool     pack_serial_at_end;
-extern bool     preempt_by_part;
-extern bool     preempt_by_qos;
-extern bool     spec_cores_first;
-extern bool     topo_optional;
+/* Release everything the exempt set holds. */
+extern void gang_exempt_fini(void);
 
-#endif /* !_CONS_TRES_H */
+#endif /* !_CONS_TRES_GANG_EXEMPT_H */

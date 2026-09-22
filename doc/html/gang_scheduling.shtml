@@ -34,7 +34,10 @@ resources for a <I>SchedulerTimeslice</I> interval.
 This will continue until one of the jobs terminates.
 </P>
 <P>
-<b>NOTE</b>: Heterogeneous jobs are excluded from gang scheduling operations.
+<b>NOTE</b>: A heterogeneous job is excluded from GANG scheduling operations,
+including <I>PreemptMode=SUSPEND</I>, and from oversubscription while
+<I>GANG</I> is enabled. See
+<a href="preempt.html#hetjob">heterogeneous job preemption</a>.
 </P>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
