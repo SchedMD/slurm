@@ -115,11 +115,14 @@ static void  _set_options(int argc, char **argv);
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
 				       int het_job_inx)
 {
+	/*
+	 * Record which component these options describe before the reset,
+	 * which drops what the runtime holds for it.
+	 */
+	opt.het_job_inx = het_job_inx;
+
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, first_pass);
-
-	/* record which component these options describe */
-	opt.het_job_inx = het_job_inx;
 
 	/* cli_filter plugins can change the defaults */
 	if (first_pass) {
