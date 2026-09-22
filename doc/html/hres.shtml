@@ -114,6 +114,8 @@ So it would pull 8000 from <code>node[01-08]</code>,
 	<a href="#overview">overview</a>)</li>
 <li>Resource names defined through the hierarchical resources configuration must
 	not conflict with any cluster licenses</li>
+<li>Preemption to reclaim busy licenses (<b>PreemptParameters=reclaim_licenses</b>
+	in <b>slurm.conf</b>) does not apply to HRES, only to regular licenses</li>
 </ul>
 
 <h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>

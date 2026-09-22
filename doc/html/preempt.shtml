@@ -282,9 +282,11 @@ Note that preemption of heterogeneous jobs is only supported with
 
 <p>
 Because licenses are not freed when jobs are suspended, jobs using licenses
-requested by higher priority jobs will only be prempted when PreemptMode is
+requested by higher priority jobs will only be preempted when PreemptMode is
 either <i>REQUEUE</i> or <i>CANCEL</i> and
-<i>PreemptParameters=reclaim_licenses</i> is set.
+<i>PreemptParameters=reclaim_licenses</i> is set. Note that this applies only
+to regular <a href="licenses.html">licenses</a>,
+not <a href="hres.html">Hierarchical Resources (HRES)</a>.
 </p>
 
 <h2 id="operation">Preemption Design and Operation
