@@ -522,12 +522,12 @@ static void _set_exit_code(void)
 /* Propagate SPANK environment via SLURM_SPANK_ environment variables */
 static void _set_spank_env(void)
 {
-	int i;
+	int i, rc = EINVAL;
 
 	for (i = 0; i < opt.spank_job_env_size; i++) {
-		if (setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]) < 0) {
-			error("unable to set %s in environment",
-			      opt.spank_job_env[i]);
+		if ((rc = setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]))) {
+			error("unable to set %s in environment: %s",
+			      opt.spank_job_env[i], slurm_strerror(rc));
 		}
 	}
 }
@@ -537,6 +537,7 @@ static int _set_umask_env(void)
 {
 	char mask_char[5];
 	mode_t mask;
+	int rc = EINVAL;
 
 	if (getenv("SLURM_UMASK"))	/* use this value */
 		return SLURM_SUCCESS;
@@ -550,8 +551,9 @@ static int _set_umask_env(void)
 
 	sprintf(mask_char, "0%d%d%d",
 		((mask>>6)&07), ((mask>>3)&07), mask&07);
-	if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
-		error ("unable to set SLURM_UMASK in environment");
+	if ((rc = setenvf(NULL, "SLURM_UMASK", "%s", mask_char))) {
+		error("unable to set SLURM_UMASK in environment: %s",
+		      slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
 	debug ("propagating UMASK=%s", mask_char);
@@ -735,6 +737,7 @@ static int _set_rlimit_env(void)
 	unsigned long        cur;
 	char                 name[64], *format;
 	slurm_rlimits_info_t *rli;
+	int env_rc = EINVAL;
 
 	/* Load default limits to be propagated from slurm.conf */
 	slurm_conf_lock();
@@ -767,8 +770,9 @@ static int _set_rlimit_env(void)
 		else
 			format = "%lu";
 
-		if (setenvf (NULL, name, format, cur) < 0) {
-			error ("unable to set %s in environment", name);
+		if ((env_rc = setenvf(NULL, name, format, cur))) {
+			error("unable to set %s in environment: %s", name,
+			      slurm_strerror(env_rc));
 			rc = SLURM_ERROR;
 			continue;
 		}

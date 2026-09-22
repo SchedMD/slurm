@@ -106,7 +106,14 @@ int	setenvf(char ***envp, const char *name, const char *fmt, ...)
 		__attribute__ ((format (printf, 3, 4)));
 extern int vsetenvf(char ***envp, const char *name, const char *fmt,
 		    va_list ap);
-int	setenvfs(const char *fmt, ...);
+
+/*
+ * Set a variable in the callers environment.
+ * IN fmt - printf() formatting string
+ * NOTE: setenv() copies the name and value, so nothing is left allocated.
+ * Example: setenvfs("RMS_RANK=%d", rank);
+ */
+extern int setenvfs(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 void	unsetenvp(char **env, const char *name);
 
 int	setup_env(env_t *env, bool preserve_env);

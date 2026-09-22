@@ -183,27 +183,33 @@ envcount (char **env)
 }
 
 /*
- * setenvfs() - set an environment variable; args are printf style.
- *
- * setenv() copies the name and value into glibc-managed storage, so
- * the local buffer is freed on return (no leak).
- *
- * Example: setenvfs("RMS_RANK=%d", rank);
+ * Return true if setenvf() would reject "name=value" as being too long.
+ * "value" may be NULL if "name" is already a joined "name=value" string.
+ * The byte added with the value accounts for the '=', and the last one for
+ * the terminating NUL.
  */
-int
-setenvfs(const char *fmt, ...)
+static bool _env_check_len(const char *name, const char *value)
+{
+	size_t len = strlen(name);
+
+	if (value)
+		len += strlen(value) + 1;
+
+	return ((len + 1) >= MAX_ENV_STRLEN);
+}
+
+__attribute__((format(printf, 1, 2))) extern int setenvfs(const char *fmt, ...)
 {
 	va_list ap;
 	char *buf, *loc;
-	int rc, size;
+	int rc;
 
 	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf(buf, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 
-	size = strlen(buf);
-	if (size >= MAX_ENV_STRLEN) {
+	if (_env_check_len(buf, NULL)) {
 		if ((loc = strchr(buf, '=')))
 			*loc = '\0';
 		error("environment variable %s is too long", buf);
@@ -219,7 +225,8 @@ setenvfs(const char *fmt, ...)
 	}
 	*loc++ = '\0';
 
-	rc = setenv(buf, loc, 1);
+	if ((rc = setenv(buf, loc, 1)))
+		rc = errno;
 	xfree(buf);
 	return rc;
 }
@@ -227,7 +234,7 @@ setenvfs(const char *fmt, ...)
 extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 {
 	char *value;
-	int size, rc;
+	int rc = EINVAL;
 
 	if (!name || name[0] == '\0')
 		return EINVAL;
@@ -235,8 +242,7 @@ extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 	value = xmalloc(ENV_BUFSIZE);
 	vsnprintf(value, ENV_BUFSIZE, fmt, ap);
 
-	size = strlen(name) + strlen(value) + 2;
-	if (size >= MAX_ENV_STRLEN) {
+	if (_env_check_len(name, value)) {
 		error("environment variable %s is too long", name);
 		xfree(value);
 		return ENOMEM;
@@ -247,8 +253,8 @@ extern int vsetenvf(char ***envp, const char *name, const char *fmt, va_list ap)
 			rc = 0;
 		else
 			rc = 1;
-	} else {
-		rc = setenv(name, value, 1);
+	} else if ((rc = setenv(name, value, 1))) {
+		rc = errno;
 	}
 
 	xfree(value);
@@ -483,13 +489,13 @@ int setup_env(env_t *env, bool preserve_env)
 		 * for the user and don't merit an error in the log if they
 		 * can't be set, so avoid calling setenvf().
 		 */
-		if (strlen(str_bind) >= MAX_ENV_STRLEN)
+		if (_env_check_len("SLURM_CPU_BIND", str_bind))
 			debug("Not setting SLURM_CPU_BIND: value too long");
 		else if (setenvf(&env->env, "SLURM_CPU_BIND", "%s", str_bind)) {
 			error("Unable to set SLURM_CPU_BIND");
 			rc = SLURM_ERROR;
 		}
-		if (strlen(str_bind_list) >= MAX_ENV_STRLEN)
+		if (_env_check_len("SLURM_CPU_BIND_LIST", str_bind_list))
 			debug("Not setting SLURM_CPU_BIND_LIST: value too long");
 		else if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", "%s",
 				 str_bind_list)) {
@@ -2584,49 +2590,53 @@ extern char **env_array_exclude(const char **env, const regex_t *regex)
 
 extern void set_prio_process_env(void)
 {
-        int retval;
+	int retval, rc = EINVAL;
 
-        errno = 0; /* needed to detect a real failure since prio can be -1 */
+	errno = 0; /* needed to detect a real failure since prio can be -1 */
 
-        if ((retval = getpriority(PRIO_PROCESS, 0)) == -1)  {
-                if (errno) {
-                        error("getpriority(PRIO_PROCESS): %m");
-                        return;
-                }
-        }
+	if ((retval = getpriority(PRIO_PROCESS, 0)) == -1) {
+		if (errno) {
+			error("getpriority(PRIO_PROCESS): %m");
+			return;
+		}
+	}
 
-        if (setenvf(NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
-                error("unable to set SLURM_PRIO_PROCESS in environment");
-                return;
-        }
+	if ((rc = setenvf(NULL, "SLURM_PRIO_PROCESS", "%d", retval))) {
+		error("unable to set SLURM_PRIO_PROCESS in environment: %s",
+		      slurm_strerror(rc));
+		return;
+	}
 
-        debug("propagating SLURM_PRIO_PROCESS=%d", retval);
+	debug("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
 extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name)
 {
 	char *cluster_name;
 	char host[256], work_dir[PATH_MAX];
+	int rc = EINVAL;
 
 	if (working_cluster_rec && working_cluster_rec->name)
 		cluster_name = working_cluster_rec->name;
 	else
 		cluster_name = slurm_conf.cluster_name;
 
-	if (set_cluster_name) {
-		if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s", cluster_name) < 0)
-			error("unable to set SLURM_CLUSTER_NAME in environment");
-	}
+	if (set_cluster_name &&
+	    (rc = setenvf(NULL, "SLURM_CLUSTER_NAME", "%s", cluster_name)))
+		error("unable to set SLURM_CLUSTER_NAME in environment: %s",
+		      slurm_strerror(rc));
 
 	if ((getcwd(work_dir, PATH_MAX)) == NULL)
 		error("getcwd failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0)
-		error("unable to set SLURM_SUBMIT_DIR in environment");
+	else if ((rc = setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir)))
+		error("unable to set SLURM_SUBMIT_DIR in environment: %s",
+		      slurm_strerror(rc));
 
 	if ((gethostname(host, sizeof(host))))
 		error("gethostname failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
-		error("unable to set SLURM_SUBMIT_HOST in environment");
+	else if ((rc = setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host)))
+		error("unable to set SLURM_SUBMIT_HOST in environment: %s",
+		      slurm_strerror(rc));
 
 	if (wd_ptr && work_dir[0])
 		*wd_ptr = xstrdup(work_dir);

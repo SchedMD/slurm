@@ -2284,6 +2284,7 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 {
 	stepd_step_rec_t *step;
 	spank_err_t err = spank_env_access_check (spank);
+	int rc = EINVAL;
 
 	if (err != ESPANK_SUCCESS)
 		return (err);
@@ -2296,8 +2297,11 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 	if (getenvp(step->env, var) && !overwrite)
 		return (ESPANK_ENV_EXISTS);
 
-	if (setenvf(&step->env, var, "%s", val) < 0)
+	if ((rc = setenvf(&step->env, var, "%s", val))) {
+		debug("spank: unable to set %s in environment: %s", var,
+		      slurm_strerror(rc));
 		return (ESPANK_ERROR);
+	}
 
 	return (ESPANK_SUCCESS);
 }

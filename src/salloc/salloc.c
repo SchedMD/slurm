@@ -784,12 +784,12 @@ static void _set_exit_code(void)
 /* Propagate SPANK environment via SLURM_SPANK_ environment variables */
 static void _set_spank_env(void)
 {
-	int i;
+	int i, rc = EINVAL;
 
 	for (i = 0; i < opt.spank_job_env_size; i++) {
-		if (setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]) < 0) {
-			error("unable to set %s in environment",
-			      opt.spank_job_env[i]);
+		if ((rc = setenvfs("SLURM_SPANK_%s", opt.spank_job_env[i]))) {
+			error("unable to set %s in environment: %s",
+			      opt.spank_job_env[i], slurm_strerror(rc));
 		}
 	}
 }

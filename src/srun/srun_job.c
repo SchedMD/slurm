@@ -1835,8 +1835,9 @@ static void _run_srun_epilog (srun_job_t *job)
 	int rc;
 
 	if (sropt.epilog && xstrcasecmp(sropt.epilog, "none") != 0) {
-		if (setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "epilog_srun") < 0)
-			error("unable to set SLURM_SCRIPT_CONTEXT in environment");
+		if ((rc = setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "epilog_srun")))
+			error("unable to set SLURM_SCRIPT_CONTEXT in environment: %s",
+			      slurm_strerror(rc));
 		rc = _run_srun_script(job, sropt.epilog);
 		if (rc) {
 			error("srun epilog failed status=%d", rc);
@@ -1849,8 +1850,9 @@ static void _run_srun_prolog (srun_job_t *job)
 	int rc;
 
 	if (sropt.prolog && xstrcasecmp(sropt.prolog, "none") != 0) {
-		if (setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "prolog_srun") < 0)
-			error("unable to set SLURM_SCRIPT_CONTEXT in environment");
+		if ((rc = setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "prolog_srun")))
+			error("unable to set SLURM_SCRIPT_CONTEXT in environment: %s",
+			      slurm_strerror(rc));
 		rc = _run_srun_script(job, sropt.prolog);
 		if (rc) {
 			error("srun prolog failed rc = %d. Aborting step.", rc);
@@ -1920,13 +1922,15 @@ static int _run_srun_script (srun_job_t *job, char *script)
 static void _setenvf_key(const char *key, const char *fmt, va_list ap)
 {
 	va_list ap_copy;
+	int rc;
 
 	if (getenv(key))
 		return;
 
 	va_copy(ap_copy, ap);
-	if (vsetenvf(NULL, key, fmt, ap_copy) < 0)
-		error("unable to set %s in environment", key);
+	if ((rc = vsetenvf(NULL, key, fmt, ap_copy)))
+		error("unable to set %s in environment: %s", key,
+		      slurm_strerror(rc));
 	va_end(ap_copy);
 }
 
@@ -2043,6 +2047,7 @@ static int _set_rlimit_env(void)
 	unsigned long        cur;
 	char                 name[64], *format;
 	slurm_rlimits_info_t *rli;
+	int env_rc = EINVAL;
 
 	/* Modify limits with any command-line options */
 	if (sropt.propagate
@@ -2072,8 +2077,9 @@ static int _set_rlimit_env(void)
 		else
 			format = "%lu";
 
-		if (setenvf (NULL, name, format, cur) < 0) {
-			error ("unable to set %s in environment", name);
+		if ((env_rc = setenvf(NULL, name, format, cur))) {
+			error("unable to set %s in environment: %s", name,
+			      slurm_strerror(env_rc));
 			rc = SLURM_ERROR;
 			continue;
 		}
@@ -2092,12 +2098,15 @@ static int _set_rlimit_env(void)
 /* Set some environment variables with current state */
 static int _set_umask_env(void)
 {
+	int rc = EINVAL;
+
 	if (!getenv("SRUN_DEBUG")) {	/* do not change current value */
 		/* NOTE: Default debug level is 3 (info) */
 		int log_level = LOG_LEVEL_INFO + opt.verbose - opt.quiet;
 
-		if (setenvf(NULL, "SRUN_DEBUG", "%d", log_level) < 0)
-			error ("unable to set SRUN_DEBUG in environment");
+		if ((rc = setenvf(NULL, "SRUN_DEBUG", "%d", log_level)))
+			error("unable to set SRUN_DEBUG in environment: %s",
+			      slurm_strerror(rc));
 	}
 
 	if (!getenv("SLURM_UMASK")) {	/* do not change current value */
@@ -2109,8 +2118,9 @@ static int _set_umask_env(void)
 
 		sprintf(mask_char, "0%d%d%d",
 			((mask>>6)&07), ((mask>>3)&07), mask&07);
-		if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
-			error ("unable to set SLURM_UMASK in environment");
+		if ((rc = setenvf(NULL, "SLURM_UMASK", "%s", mask_char))) {
+			error("unable to set SLURM_UMASK in environment: %s",
+			      slurm_strerror(rc));
 			return SLURM_ERROR;
 		}
 		debug ("propagating UMASK=%s", mask_char);
