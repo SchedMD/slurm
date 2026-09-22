@@ -1008,18 +1008,304 @@ static char *_print_data_json(data_t *d, char *buffer, int size)
 	return buffer;
 }
 
+static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
+				   char **intermediate_fmt_ptr,
+				   char **intermediate_pos_ptr,
+				   char *substitute_on_stack,
+				   const int substitute_on_stack_bytes)
+{
+	*fmt_ptr += 1;
+	switch (**fmt_ptr) {
+	case 'A': /* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
+	{
+		void *ptr = NULL;
+		slurm_addr_t *addr_ptr;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		addr_ptr = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _addr2fmt(addr_ptr, substitute_on_stack,
+				    substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'd': /* "%pd" -> compact JSON serialized string */
+	{
+		data_t *d = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			d = va_arg(ap_copy, void *);
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _print_data_json(d, substitute_on_stack,
+					   substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'D': /* "%pD" -> data_type(0xDEADBEEF) */
+	{
+		data_t *d = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			d = va_arg(ap_copy, void *);
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _print_data_t(d, substitute_on_stack,
+					substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%pI" => "JobID=... SLUID=..." on a
+	 * slurm_step_id_t
+	 */
+	case 'I':
+	{
+		void *ptr = NULL;
+		slurm_step_id_t *step_id = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_id = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  log_build_job_id_str(step_id, substitute_on_stack,
+					       substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'J': /* "%pJ" => "JobId=..." */
+	{
+		void *ptr = NULL;
+		job_record_t *job_ptr;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		job_ptr = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _jobid2fmt(job_ptr, substitute_on_stack,
+				     substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%ps" => "StepId=... " on a
+	 * slurm_step_id_t
+	 */
+	case 's':
+	{
+		void *ptr = NULL;
+		slurm_step_id_t *step_id = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_id = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  log_build_step_id_str(step_id, substitute_on_stack,
+						substitute_on_stack_bytes,
+						STEP_ID_FLAG_PS));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%pS" => "JobId=... StepId=..." on a
+	 * step_record_t
+	 */
+	case 'S':
+	{
+		void *ptr = NULL;
+		step_record_t *step_ptr = NULL;
+		job_record_t *job_ptr = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_ptr = ptr;
+		if (step_ptr && (step_ptr->magic == STEP_MAGIC))
+			job_ptr = step_ptr->job_ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _jobid2fmt(job_ptr, substitute_on_stack,
+				     substitute_on_stack_bytes));
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _stepid2fmt(step_ptr, substitute_on_stack,
+				      substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	default:
+		/* Unknown */
+		break;
+	}
+}
+
+static void _vxstrfmt_on_our_fmt(const char **fmt_ptr, va_list ap,
+				 const char **p_ptr, int *cnt,
+				 char **intermediate_fmt_ptr,
+				 char **intermediate_pos_ptr)
+{
+	char *substitute = NULL;
+	char substitute_on_stack[256];
+	int should_xfree = 1;
+	const char *p = *p_ptr;
+	const char *fmt = *fmt_ptr;
+
+	/*
+	 * p points to the leading % of one of our formats;
+	 * append anything from fmt up to p to the intermediate
+	 * format string:
+	 */
+	xstrncatat(*intermediate_fmt_ptr, intermediate_pos_ptr, fmt, p - fmt);
+	*fmt_ptr = fmt = p + 1;
+
+	/*
+	 * fill the substitute buffer with whatever text we want
+	 * to substitute for the format sequence in question:
+	 */
+	switch (*fmt) {
+	case 'p':
+		_vxstrfmt_on_our_p_fmt(fmt_ptr, ap, cnt, intermediate_fmt_ptr,
+				       intermediate_pos_ptr,
+				       substitute_on_stack,
+				       sizeof(substitute_on_stack));
+		break;
+	case 'm': /* "%m" => strerror(errno) */
+		substitute = slurm_strerror(errno);
+		should_xfree = 0;
+		break;
+	case 't': /* "%t" => locally preferred date/time*/
+		xstrftimecat(substitute, "%x %X");
+		break;
+	case 'T': /* "%T" => "dd, Mon yyyy hh:mm:ss off" */
+		xstrftimecat(substitute, "%a, %d %b %Y %H:%M:%S %z");
+		break;
+	case 'M':
+		if (!log) {
+			xiso8601timecat(substitute, true);
+			break;
+		}
+		_set_timestamp(substitute_on_stack,
+			       sizeof(substitute_on_stack));
+		substitute = substitute_on_stack;
+		should_xfree = 0;
+		break;
+	}
+	fmt = (*fmt_ptr += 1);
+
+	if (substitute) {
+		char *s = substitute;
+
+		while (*s && (p = *p_ptr = strchr(s, '%'))) {
+			/* append up through the '%' */
+			xstrncatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+				   s, p - s);
+			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+				  "%%");
+			s = ((char *) p) + 1;
+		}
+		if (*s) {
+			/* append whatever's left of the substitution: */
+			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+				  s);
+		}
+
+		/* deallocate substitute if necessary: */
+		if (should_xfree) {
+			xfree(substitute);
+		}
+	}
+}
+
+static bool _vxstrfmt_on_fmt(const char **fmt_ptr, va_list ap,
+			     const char **p_ptr, int *cnt, bool *is_our_format,
+			     bool *found_other_formats,
+			     char **intermediate_fmt_ptr,
+			     char **intermediate_pos_ptr)
+{
+	const char *p = *p_ptr;
+	const char *fmt = *fmt_ptr;
+
+	/*
+	 * make sure it's one of our format specifiers, skipping
+	 * any that aren't:
+	 */
+	do {
+		switch (*(p + 1)) {
+		case 'm':
+		case 't':
+		case 'T':
+		case 'M':
+			*is_our_format = true;
+			break;
+		case 'p':
+			switch (*(p + 2)) {
+			case 'A':
+			case 'd':
+			case 'D':
+			case 'I':
+			case 'J':
+			case 's':
+			case 'S':
+				*is_our_format = true;
+				/*
+				 * Need to set found_other_formats to
+				 * still consume the %.0s if not other
+				 * format strings are included.
+				 */
+				*found_other_formats = true;
+				break;
+			default:
+				*found_other_formats = true;
+				break;
+			}
+			break;
+		default:
+			*found_other_formats = true;
+			break;
+		}
+		(*cnt)++;
+	} while (!*is_our_format && (p = (char *) strchr(p + 1, '%')));
+
+	*p_ptr = p;
+
+	if (*is_our_format) {
+		_vxstrfmt_on_our_fmt(fmt_ptr, ap, p_ptr, cnt,
+				     intermediate_fmt_ptr,
+				     intermediate_pos_ptr);
+	} else {
+		/*
+		 * no more format sequences for us, append the rest of
+		 * fmt and exit the loop:
+		 */
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr, fmt);
+		return true;
+	}
+
+	return false;
+}
+
 extern char *vxstrfmt(const char *fmt, va_list ap)
 {
 	char *intermediate_fmt = NULL, *intermediate_pos = NULL;
-	char	*out_string = NULL;
-	char	*p;
+	char *out_string = NULL;
+	const char *p = NULL;
 	bool found_other_formats = false;
-	int     cnt = 0;
+	int cnt = 0;
 
 	while (*fmt != '\0') {
 		bool is_our_format = false;
 
-		p = (char *)strchr(fmt, '%');
+		p = (char *) strchr(fmt, '%');
 		if (p == NULL) {
 			/*
 			 * no more format sequences, append the rest of
@@ -1029,293 +1315,10 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			break;
 		}
 
-		/*
-		 * make sure it's one of our format specifiers, skipping
-		 * any that aren't:
-		 */
-		do {
-			switch (*(p + 1)) {
-			case 'm':
-			case 't':
-			case 'T':
-			case 'M':
-				is_our_format = true;
-				break;
-			case 'p':
-				switch (*(p + 2)) {
-				case 'A':
-				case 'd':
-				case 'D':
-				case 'I':
-				case 'J':
-				case 's':
-				case 'S':
-					is_our_format = true;
-					/*
-					 * Need to set found_other_formats to
-					 * still consume the %.0s if not other
-					 * format strings are included.
-					 */
-					found_other_formats = true;
-					break;
-				default:
-					found_other_formats = true;
-					break;
-				}
-				break;
-			default:
-				found_other_formats = true;
-				break;
-			}
-			cnt++;
-		} while (!is_our_format &&
-			 (p = (char *)strchr(p + 1, '%')));
-
-		if (is_our_format) {
-			char	*substitute = NULL;
-			char	substitute_on_stack[256];
-			int	should_xfree = 1;
-
-			/*
-			 * p points to the leading % of one of our formats;
-			 * append anything from fmt up to p to the intermediate
-			 * format string:
-			 */
-			xstrncatat(intermediate_fmt, &intermediate_pos,
-				   fmt, p - fmt);
-			fmt = p + 1;
-
-			/*
-			 * fill the substitute buffer with whatever text we want
-			 * to substitute for the format sequence in question:
-			 */
-			switch (*fmt) {
-			case 'p':
-				fmt++;
-				switch (*fmt) {
-				case 'A':	/* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
-				{
-					void *ptr = NULL;
-					slurm_addr_t *addr_ptr;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					addr_ptr = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_addr2fmt(
-							addr_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				case 'd':	/* "%pd" -> compact JSON serialized string */
-				{
-					data_t *d = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++ )
-						d = va_arg(ap_copy, void *);
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_print_data_json(
-							d,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				case 'D':	/* "%pD" -> data_type(0xDEADBEEF) */
-				{
-					data_t *d = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++ )
-						d = va_arg(ap_copy, void *);
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_print_data_t(
-							d,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				/*
-				 * "%pI" => "JobID=... SLUID=..." on a
-				 * slurm_step_id_t
-				 */
-				case 'I':
-				{
-					void *ptr = NULL;
-					slurm_step_id_t *step_id = NULL;
-					va_list ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++)
-						ptr = va_arg(ap_copy, void *);
-					step_id = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						log_build_job_id_str(
-							step_id,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				case 'J':	/* "%pJ" => "JobId=..." */
-				{
-					int i;
-					void *ptr = NULL;
-					job_record_t *job_ptr;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					job_ptr = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_jobid2fmt(
-							job_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				/*
-				 * "%ps" => "StepId=... " on a
-				 * slurm_step_id_t
-				 */
-				case 's':
-				{
-					int i;
-					void *ptr = NULL;
-					slurm_step_id_t *step_id = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					step_id = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						log_build_step_id_str(
-							step_id,
-							substitute_on_stack,
-							sizeof(substitute_on_stack),
-							STEP_ID_FLAG_PS));
-					va_end(ap_copy);
-					break;
-				}
-				/*
-				 * "%pS" => "JobId=... StepId=..." on a
-				 * step_record_t
-				 */
-				case 'S':
-				{
-					int i;
-					void *ptr = NULL;
-					step_record_t *step_ptr = NULL;
-					job_record_t *job_ptr = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					step_ptr = ptr;
-					if (step_ptr &&
-					    (step_ptr->magic == STEP_MAGIC))
-						job_ptr = step_ptr->job_ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_jobid2fmt(
-							job_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_stepid2fmt(
-							step_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				default:
-					/* Unknown */
-					break;
-				}
-				break;
-			case 'm':	/* "%m" => strerror(errno) */
-				substitute = slurm_strerror(errno);
-				should_xfree = 0;
-				break;
-			case 't': 	/* "%t" => locally preferred date/time*/
-				xstrftimecat(substitute,
-					     "%x %X");
-				break;
-			case 'T': 	/* "%T" => "dd, Mon yyyy hh:mm:ss off" */
-				xstrftimecat(substitute,
-					     "%a, %d %b %Y %H:%M:%S %z");
-				break;
-			case 'M':
-				if (!log) {
-					xiso8601timecat(substitute, true);
-					break;
-				}
-				_set_timestamp(substitute_on_stack,
-					       sizeof(substitute_on_stack));
-				substitute = substitute_on_stack;
-				should_xfree = 0;
-				break;
-			}
-			fmt++;
-
-			if (substitute) {
-				char *s = substitute;
-
-				while (*s && (p = (char *)strchr(s, '%'))) {
-					/* append up through the '%' */
-					xstrncatat(intermediate_fmt,
-						   &intermediate_pos, s, p - s);
-					xstrcatat(intermediate_fmt,
-						  &intermediate_pos, "%%");
-					s = p + 1;
-				}
-				if (*s) {
-					/* append whatever's left of the substitution: */
-					xstrcatat(intermediate_fmt,
-						  &intermediate_pos, s);
-				}
-
-				/* deallocate substitute if necessary: */
-				if (should_xfree) {
-					xfree(substitute);
-				}
-			}
-		} else {
-			/*
-			 * no more format sequences for us, append the rest of
-			 * fmt and exit the loop:
-			 */
-			xstrcatat(intermediate_fmt, &intermediate_pos, fmt);
+		if (_vxstrfmt_on_fmt(&fmt, ap, &p, &cnt, &is_our_format,
+				     &found_other_formats, &intermediate_fmt,
+				     &intermediate_pos))
 			break;
-		}
 	}
 
 	if (intermediate_fmt && found_other_formats) {
