@@ -684,7 +684,6 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->argc = opt_local->argc;
 	launch_params->argv = opt_local->argv;
 	launch_params->buffered_stdio = !srun_opt->unbuffered;
-	launch_params->container = opt_local->container;
 	launch_params->runtime = opt_local->runtime;
 	launch_params->cpu_bind = srun_opt->cpu_bind;
 	launch_params->cpu_bind_type = srun_opt->cpu_bind_type;
@@ -1030,7 +1029,6 @@ static step_create_req_msg_t *_create_job_step_create_request(
 	if (opt_local->time_limit != NO_VAL)
 		step_req->time_limit = opt_local->time_limit;
 
-	step_req->container = xstrdup(opt_local->container);
 	xfree(step_req->container_id);
 	step_req->container_id = xstrdup(opt_local->container_id);
 	xfree(step_req->runtime);

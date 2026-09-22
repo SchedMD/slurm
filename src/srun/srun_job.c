@@ -1692,9 +1692,8 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	slurm_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
-	job->container = xstrdup(opt_local->container);
- 	job->nodelist = xstrdup(ainfo->nodelist);
- 	job->partition = xstrdup(ainfo->partition);
+	job->nodelist = xstrdup(ainfo->nodelist);
+	job->partition = xstrdup(ainfo->partition);
 	memcpy(&job->step_id, &ainfo->step_id, sizeof(job->step_id));
 	job->het_job_id  = NO_VAL;
 	job->het_job_nnodes = NO_VAL;
