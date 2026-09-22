@@ -757,7 +757,7 @@ test_105_17  Test WCKey specification on job submit (sbatch --wckey)
 test_106_#   Testing of sbcast options.
 =======================================
 test_106_1   /commands/sbcast/test_--usage.py
-test_106_2   Test sbcast with job_container plugin
+test_106_2   Test sbcast transfers files into the job namespace, not the node
 test_106_3   Test sbcast with compression
 test_106_4   Test sbcast copies a file to a job with JobID and SLUID
 test_106_5   Test sbcast to a hetjob with namespace/tmpfs
