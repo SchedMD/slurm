@@ -379,14 +379,15 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			pending_append = false;
 		}
 
-		/* initialize option defaults */
-		_opt_default();
-
 		/*
-		 * Record which component these options describe. _opt_copy()
+		 * Record which component these options describe before the
+		 * reset, which drops what the runtime holds for it. _opt_copy()
 		 * carries it into the entry saved for this component.
 		 */
 		opt.het_job_inx = i;
+
+		/* initialize option defaults */
+		_opt_default();
 
 		/* do not set adjust defaults in an active allocation */
 		if (!is_step) {
