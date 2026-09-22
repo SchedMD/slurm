@@ -15269,6 +15269,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				xfree(job_ptr->lic_req);
 				job_ptr->lic_req = xstrdup(job_desc->licenses);
 			}
+			/*
+			 * Update hres_select_t only for pending jobs. If a
+			 * running job is requeued, licenses and hres_select_t
+			 * are rebuilt.
+			 */
 			hres_create_select(job_ptr);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/*
@@ -15310,7 +15315,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			FREE_NULL_LIST(license_list);
 		}
 
-		hres_select_free(job_ptr);
 		update_accounting = true;
 	}
 	if (error_code != SLURM_SUCCESS)
