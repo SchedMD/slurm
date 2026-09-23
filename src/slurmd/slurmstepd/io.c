@@ -851,7 +851,7 @@ static void *_window_manager(void *arg)
 	struct window_info *win_info = (struct window_info *) arg;
 	pty_winsz_t winsz;
 	ssize_t len;
-	struct winsize ws;
+	struct winsize ws = { 0 };
 	struct pollfd ufds;
 	char buf[4];
 
@@ -938,7 +938,7 @@ static void _spawn_window_manager(stepd_step_task_info_t *task)
 		error("SLURM_PTY_WIN_ROW env var not set");
 
 	if (rows && cols) {
-		struct winsize ws;
+		struct winsize ws = { 0 };
 		ws.ws_col = atoi(cols);
 		ws.ws_row = atoi(rows);
 		debug("init pty size %u:%u", ws.ws_row, ws.ws_col);
