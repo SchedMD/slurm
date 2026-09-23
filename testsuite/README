@@ -717,6 +717,8 @@ test_102_9   Performance test: sacctmgr delete user with large assoc table
 test_102_10  Test sacctmgr modify TRES with +=/-= syntax
 test_102_11  Test sacctmgr archive dump uses configured Purge*After when no duration is given
 test_102_12  Test sacctmgr load, confirm that typed GRES can get parsed correctly
+test_102_13  Test sacctmgr show assoc withsubaccounts matches the account
+             lineage and not a partition named like the account
 
 test_103_#   Testing of salloc options.
 =======================================
@@ -829,6 +831,9 @@ test_115_2   Rollup arithmetic correctness: assoc, QOS, wckey, cluster utilizati
              energy attribution, and hourly->daily->monthly aggregation.
              Requires auto-config mode. Rolls up every cluster in the
              accounting DB; use a throwaway DB.
+test_115_3   sreport cluster reports with partition associations. Seeds its own
+             cluster with 2008 usage and rolls that window up for every cluster
+             in the accounting DB; use a throwaway DB.
 
 test_116_#   Testing of srun options.
 =====================================

@@ -966,9 +966,20 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 			if (set)
 				xstrcat(*extra, " or ");
 			if (assoc_cond->flags & ASSOC_COND_FLAG_SUB_ACCTS) {
-				xstrfmtcat(*extra,
-					   "%s.lineage like '%%/%s/%%'",
-					   prefix, object);
+				/*
+				 * Only match the account part of the
+				 * lineage, up to this association's own
+				 * "/0-<user>/" segment, so a partition
+				 * named like the account doesn't match
+				 * through a partition-based association.
+				 * Account associations have no user
+				 * segment and match on their whole
+				 * lineage.
+				 */
+				xstrfmtcat(
+					*extra,
+					"concat(substring_index(%s.lineage, concat('/0-', %s.user, '/'), 1), '/') like '%%/%s/%%'",
+					prefix, prefix, object);
 			} else {
 				xstrfmtcat(*extra, "%s.acct='%s'",
 					   prefix, object);

@@ -41,8 +41,9 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurmdb_defs.h"
-#include "src/interfaces/accounting_storage.h"
+#include "src/common/xhash.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/accounting_storage.h"
 
 typedef enum {
 	CLUSTER_REPORT_UA,
@@ -50,6 +51,11 @@ typedef enum {
 	CLUSTER_REPORT_UW,
 	CLUSTER_REPORT_WU
 } cluster_report_t;
+
+typedef struct {
+	slurmdb_assoc_rec_t *assoc;
+	uint32_t id_alt;
+} report_assoc_key_t;
 
 static void _process_ua(list_t *user_list, slurmdb_assoc_rec_t *assoc)
 {
@@ -98,10 +104,16 @@ static void _process_ua(list_t *user_list, slurmdb_assoc_rec_t *assoc)
 static int _find_assoc_in_report(void *x, void *key)
 {
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = x;
-	slurmdb_accounting_rec_t *accting = key;
+	report_assoc_key_t *report_key = key;
 
-	if ((slurmdb_report_assoc->id == accting->id) &&
-	    (slurmdb_report_assoc->id_alt == accting->id_alt))
+	/*
+	 * Match by name rather than by association id so that the usage of
+	 * a user's partition-based associations ends up in a single row per
+	 * account.
+	 */
+	if ((slurmdb_report_assoc->id_alt == report_key->id_alt) &&
+	    !xstrcmp(slurmdb_report_assoc->acct, report_key->assoc->acct) &&
+	    !xstrcmp(slurmdb_report_assoc->user, report_key->assoc->user))
 		return 1;
 	return 0;
 }
@@ -111,16 +123,18 @@ static void _process_au(list_t *assoc_list, slurmdb_assoc_rec_t *assoc)
 	list_itr_t *itr;
 	slurmdb_accounting_rec_t *accting = NULL;
 	slurmdb_report_assoc_rec_t *slurmdb_report_assoc = NULL;
+	report_assoc_key_t report_key = { .assoc = assoc };
 
 	itr = list_iterator_create(assoc->accounting_list);
 	while ((accting = list_next(itr))) {
+		report_key.id_alt = accting->id_alt;
 		if (slurmdb_report_assoc &&
-		    _find_assoc_in_report(slurmdb_report_assoc, accting)) {
+		    _find_assoc_in_report(slurmdb_report_assoc, &report_key)) {
 			/* Same report as before, no need to look it up again */
-		} else if (!(slurmdb_report_assoc = list_find_first(
-				     assoc_list,
-				     _find_assoc_in_report,
-				     accting))) {
+		} else if (!(slurmdb_report_assoc =
+				     list_find_first(assoc_list,
+						     _find_assoc_in_report,
+						     &report_key))) {
 			slurmdb_report_assoc =
 				xmalloc(sizeof(*slurmdb_report_assoc));
 
@@ -135,6 +149,9 @@ static void _process_au(list_t *assoc_list, slurmdb_assoc_rec_t *assoc)
 			slurmdb_report_assoc->id = accting->id;
 			slurmdb_report_assoc->id_alt = accting->id_alt;
 		}
+
+		if (slurmdb_report_assoc->id != accting->id)
+			slurmdb_report_assoc->id = 0;
 
 		slurmdb_add_accounting_to_tres_list(
 			accting, &slurmdb_report_assoc->tres_list);
@@ -207,6 +224,84 @@ static void _process_wu(list_t *assoc_list, slurmdb_wckey_rec_t *wckey)
 					  &parent_assoc->tres_list);
 }
 
+/* xhash key callback: anchors are keyed on the lineage string itself */
+static void _anchor_id(void *item, const void **key, uint32_t *key_len)
+{
+	*key = item;
+	*key_len = strlen(item);
+}
+
+static bool _is_partition_assoc(slurmdb_assoc_rec_t *assoc)
+{
+	return (assoc->user && assoc->user[0] && assoc->partition &&
+		assoc->partition[0]);
+}
+
+/*
+ * A partition-based association's lineage is the lineage of the user's
+ * non-partition (partition='') association plus a partition segment:
+ *   <account lineage>0-<user>/             non-partition association
+ *   <account lineage>0-<user>/<partition>/ partition-based association
+ * Return the non-partition association's lineage, or NULL when the lineage
+ * doesn't end with the partition segment (a stale or unexpected lineage).
+ */
+static char *_get_anchor_lineage(slurmdb_assoc_rec_t *assoc)
+{
+	size_t lineage_len = 0, part_len = 0;
+
+	if (!assoc->lineage || !assoc->partition)
+		return NULL;
+
+	lineage_len = strlen(assoc->lineage);
+	part_len = strlen(assoc->partition) + 1; /* plus the trailing '/' */
+
+	if ((lineage_len <= part_len) ||
+	    (assoc->lineage[lineage_len - 1] != '/') ||
+	    (assoc->lineage[lineage_len - part_len - 1] != '/') ||
+	    xstrncmp(assoc->lineage + lineage_len - part_len, assoc->partition,
+		     part_len - 1))
+		return NULL;
+
+	return xstrndup(assoc->lineage, lineage_len - part_len);
+}
+
+/*
+ * Return the set of lineages of the non-partition user associations with
+ * usage on this cluster.
+ */
+static xhash_t *_get_anchored_assocs(list_itr_t *itr, char *cluster_name)
+{
+	xhash_t *anchors = xhash_init(_anchor_id, xfree_ptr);
+	slurmdb_assoc_rec_t *assoc = NULL;
+
+	while ((assoc = list_next(itr))) {
+		if (!assoc->user || !assoc->user[0] ||
+		    _is_partition_assoc(assoc) || !assoc->lineage ||
+		    !assoc->accounting_list ||
+		    !list_count(assoc->accounting_list) ||
+		    xstrcmp(cluster_name, assoc->cluster))
+			continue;
+
+		if (!xhash_get_str(anchors, assoc->lineage))
+			xhash_add(anchors, xstrdup(assoc->lineage));
+	}
+	list_iterator_reset(itr);
+
+	return anchors;
+}
+
+static bool _is_anchored(xhash_t *anchors, slurmdb_assoc_rec_t *assoc)
+{
+	char *lineage = _get_anchor_lineage(assoc);
+	bool anchored = false;
+
+	if (lineage)
+		anchored = (xhash_get_str(anchors, lineage) != NULL);
+	xfree(lineage);
+
+	return anchored;
+}
+
 static void _process_assoc_type(
 	list_itr_t *itr,
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster,
@@ -214,6 +309,15 @@ static void _process_assoc_type(
 	cluster_report_t type)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
+	/*
+	 * A partition-based association's usage is rolled up into the
+	 * association owning its lineage prefix, so counting both double
+	 * counts it. Skip the partition-based one when that anchor is
+	 * present, and count it on its own when it isn't. The anchors are
+	 * gathered up front because siblings sort by name only, so a user's
+	 * partition-based associations may be listed before the plain one.
+	 */
+	xhash_t *anchors = _get_anchored_assocs(itr, cluster_name);
 
 	/* now add the associations of interest here by user */
 	while((assoc = list_next(itr))) {
@@ -227,6 +331,12 @@ static void _process_assoc_type(
 		if (xstrcmp(cluster_name, assoc->cluster))
 			continue;
 
+		if (_is_partition_assoc(assoc) &&
+		    _is_anchored(anchors, assoc)) {
+			list_delete_item(itr);
+			continue;
+		}
+
 		if (type == CLUSTER_REPORT_UA)
 			_process_ua(slurmdb_report_cluster->user_list,
 				    assoc);
@@ -236,6 +346,8 @@ static void _process_assoc_type(
 
 		list_delete_item(itr);
 	}
+
+	xhash_free(anchors);
 }
 
 static void _process_wckey_type(
