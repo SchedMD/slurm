@@ -52,6 +52,13 @@ bool srun_sig_forward = false;
 
 pthread_mutex_t srun_destroy_sig_lock = PTHREAD_MUTEX_INITIALIZER;
 int srun_destroy_sig = 0;
+
+/*
+ * Broadcast under srun_destroy_sig_lock when a signal or a queued-step RPC
+ * changes something a waiter polls.  Process-lifetime: it outlives any
+ * single wait, so nothing ever destroys it.
+ */
+event_signal_t srun_wait_event = EVENT_INITIALIZER("srun_wait_event");
 bool srun_job_complete_recvd = false;
 
 int srun_sig_eventfd = -1;
@@ -214,6 +221,7 @@ static void _on_signal(int signo)
 
 	slurm_mutex_lock(&srun_destroy_sig_lock);
 	srun_destroy_sig = signo;
+	EVENT_BROADCAST(&srun_wait_event);
 	slurm_mutex_unlock(&srun_destroy_sig_lock);
 
 	/*
