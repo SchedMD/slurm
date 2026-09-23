@@ -192,30 +192,27 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 
 	rc = auth_g_get_data(cred, &cred_hash, &cred_hash_len);
 	if (cred_hash_len) {
+		char *data;
+		uint32_t size = header->body_length;
+		slurm_hash_t hash = { 0 };
+		int h_len;
+		uint16_t msg_type = htons(msg->msg_type);
+
 		log_flag_hex(NET_RAW, cred_hash, cred_hash_len,
 			     "%s: cred_hash:", __func__);
-		if (cred_hash[0] == HASH_PLUGIN_NONE) {
+
+		data = get_buf_data(buffer) + get_buf_offset(buffer);
+		hash.type = cred_hash[0];
+
+		h_len = hash_g_compute(data, size, (char *) &msg_type,
+				       sizeof(msg_type), &hash);
+		if ((h_len + 1) != cred_hash_len ||
+		    memcmp(cred_hash + 1, hash.hash, h_len))
 			rc = SLURM_ERROR;
-		} else {
-			char *data;
-			uint32_t size = header->body_length;
-			slurm_hash_t hash = { 0 };
-			int h_len;
-			uint16_t msg_type = htons(msg->msg_type);
-
-			data = get_buf_data(buffer) + get_buf_offset(buffer);
-			hash.type = cred_hash[0];
-
-			h_len = hash_g_compute(data, size, (char *) &msg_type,
-					       sizeof(msg_type), &hash);
-			if ((h_len + 1) != cred_hash_len ||
-			    memcmp(cred_hash + 1, hash.hash, h_len))
-				rc = SLURM_ERROR;
-			else
-				msg->hash_index = hash.type;
-			log_flag_hex(NET_RAW, &hash, sizeof(hash),
-				     "%s: hash:", __func__);
-		}
+		else
+			msg->hash_index = hash.type;
+		log_flag_hex(NET_RAW, &hash, sizeof(hash),
+			     "%s: hash:", __func__);
 	} else {
 		rc = SLURM_ERROR;
 	}
