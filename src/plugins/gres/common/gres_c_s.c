@@ -240,6 +240,14 @@ static int _compute_local_id(char *dev_file_name)
 	return local_id;
 }
 
+static int _find_dev_id(void *x, void *arg)
+{
+	shared_dev_info_t *shared = x;
+	int *id = arg;
+
+	return (shared->id == *id);
+}
+
 /*
  * Collect the count of every device of one shared gres, keyed by the number at
  * the end of its device file name.
@@ -270,6 +278,10 @@ static uint64_t _build_shared_dev_info(list_t *gres_conf_list,
 		shared_conf = xmalloc(sizeof(shared_dev_info_t));
 		shared_conf->count = gres_slurmd_conf->count;
 		shared_conf->id = _compute_local_id(gres_slurmd_conf->file);
+		if (list_find_first(shared_info, _find_dev_id,
+				    &shared_conf->id))
+			error("gres.conf: %s device %s ends in the same number as another one of the node, so the count of neither can be told from the other. Give the devices of a node file names that end in different numbers.",
+			      gres_slurmd_conf->name, gres_slurmd_conf->file);
 		list_append(shared_info, shared_conf);
 		shared_count += gres_slurmd_conf->count;
 	}
