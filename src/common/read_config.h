@@ -347,8 +347,8 @@ extern int read_conf_send_stepd(int fd);
 extern void read_conf_recv_stepd(int fd);
 
 /*
- * Set MailProg to the default when unset; unset it when it can not be found,
- * which is also reported.
+ * Set MailProg to the default when unset; unset it when "None" (case
+ * insensitive), empty, or not found, the last of which is also reported.
  * NOTE: Call after each configuration read, which clears what was resolved.
  */
 extern void mail_prog_resolve(void);

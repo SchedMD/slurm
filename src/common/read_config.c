@@ -5695,6 +5695,14 @@ extern void mail_prog_resolve(void)
 {
 	struct stat stat_buf = { 0 };
 
+	if (slurm_conf.mail_prog &&
+	    (!slurm_conf.mail_prog[0] ||
+	     !xstrcasecmp(slurm_conf.mail_prog, "None"))) {
+		debug3("MailProg=\"%s\" disables mail", slurm_conf.mail_prog);
+		xfree(slurm_conf.mail_prog);
+		return;
+	}
+
 	if (!slurm_conf.mail_prog) {
 		if ((stat(DEFAULT_MAIL_PROG, &stat_buf) == 0) ||
 		    (stat(DEFAULT_MAIL_PROG_ALT, &stat_buf) != 0))
