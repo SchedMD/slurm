@@ -250,9 +250,18 @@ static void *_cluster_rollup_usage(void *arg)
 /* 	info("hour end %s", slurm_ctime2(&hour_end)); */
 /* 	info("diff is %d", hour_end-hour_start); */
 
-	slurm_mutex_lock(&rollup_lock);
-	global_last_rollup = hour_end;
-	slurm_mutex_unlock(&rollup_lock);
+	/*
+	 * A bounded manual rollup (sacctmgr rollup <start> <end>) only rebuilds
+	 * that window and does not update last_ran_table, so it must not touch
+	 * global_last_rollup either. That value gates trigger_reroll(): if it
+	 * dropped below the DB watermark, records arriving in between would be
+	 * treated as not yet rolled and never trigger a rewind.
+	 */
+	if (!local_rollup->sent_end) {
+		slurm_mutex_lock(&rollup_lock);
+		global_last_rollup = hour_end;
+		slurm_mutex_unlock(&rollup_lock);
+	}
 
 	/* set up the day period */
 	if (!localtime_r(&last_day, &start_tm)) {
@@ -347,37 +356,63 @@ static void *_cluster_rollup_usage(void *arg)
 			goto end_it;
 	}
 
+	/*
+	 * Advance each rollup timestamp only if it is at or above the value
+	 * this roll started from (last_hour, last_day, last_month). While this
+	 * roll was running, trigger_reroll() may have moved the timestamp
+	 * backwards for a late record that must be rolled from that point.
+	 * Overwriting it here would skip that range forever, so the IF() leaves
+	 * a lower value alone and the next roll resumes from it. Runaway job
+	 * fixes cannot overlap a rollup, they take usage_rollup_lock.
+	 *
+	 * ">=" rather than "=" because on "sacctmgr rollup <start>" the start
+	 * value comes from the command line and may be below the stored
+	 * timestamp; the timestamp must still advance in that case.
+	 */
 	if ((hour_end - hour_start) > 0) {
 		/* If we have a sent_end do not update the last_run_table */
 		if (!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set hourly_rollup=%ld",
-				local_rollup->cluster_name,
-				last_ran_table, hour_end);
+				"update \"%s_%s\" set "
+				"hourly_rollup=IF(hourly_rollup>=%ld,%ld,"
+				"hourly_rollup)",
+				local_rollup->cluster_name, last_ran_table,
+				last_hour, hour_end);
 	} else
 		debug2("No need to roll cluster %s this hour %ld <= %ld",
 		       local_rollup->cluster_name, hour_end, hour_start);
 
 	if ((day_end - day_start) > 0) {
 		if (query && !local_rollup->sent_end)
-			xstrfmtcat(query, ", daily_rollup=%ld", day_end);
+			xstrfmtcat(query,
+				   ", daily_rollup=IF(daily_rollup>=%ld,%ld,"
+				   "daily_rollup)",
+				   last_day, day_end);
 		else if (!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set daily_rollup=%ld",
-				local_rollup->cluster_name,
-				last_ran_table, day_end);
+				"update \"%s_%s\" set "
+				"daily_rollup=IF(daily_rollup>=%ld,%ld,"
+				"daily_rollup)",
+				local_rollup->cluster_name, last_ran_table,
+				last_day, day_end);
 	} else
 		debug2("No need to roll cluster %s this day %ld <= %ld",
 		       local_rollup->cluster_name, day_end, day_start);
 
 	if ((month_end - month_start) > 0) {
 		if (query && !local_rollup->sent_end)
-			xstrfmtcat(query, ", monthly_rollup=%ld", month_end);
+			xstrfmtcat(
+				query,
+				", monthly_rollup=IF(monthly_rollup>=%ld,%ld,"
+				"monthly_rollup)",
+				last_month, month_end);
 		else if (!local_rollup->sent_end)
 			query = xstrdup_printf(
-				"update \"%s_%s\" set monthly_rollup=%ld",
-				local_rollup->cluster_name,
-				last_ran_table, month_end);
+				"update \"%s_%s\" set "
+				"monthly_rollup=IF(monthly_rollup>=%ld,%ld,"
+				"monthly_rollup)",
+				local_rollup->cluster_name, last_ran_table,
+				last_month, month_end);
 	} else
 		debug2("No need to roll cluster %s this month %ld <= %ld",
 		       local_rollup->cluster_name, month_end, month_start);
@@ -1071,12 +1106,19 @@ extern bool trigger_reroll(mysql_conn_t *mysql_conn, time_t event_time)
 		global_last_rollup = event_time;
 		slurm_mutex_unlock(&rollup_lock);
 
-		query = xstrdup_printf("update \"%s_%s\" set "
-				       "hourly_rollup=%ld, "
-				       "daily_rollup=%ld, monthly_rollup=%ld",
-				       mysql_conn->cluster_name,
-				       last_ran_table, event_time,
-				       event_time, event_time);
+		/*
+		 * Only move the rollup timestamps backwards. They can already
+		 * be older than event_time, since global_last_rollup doesn't
+		 * track rewinds done elsewhere, and setting them forward would
+		 * skip the usage that was never rolled up.
+		 */
+		query = xstrdup_printf(
+			"update \"%s_%s\" set "
+			"hourly_rollup=LEAST(hourly_rollup,%ld), "
+			"daily_rollup=LEAST(daily_rollup,%ld), "
+			"monthly_rollup=LEAST(monthly_rollup,%ld)",
+			mysql_conn->cluster_name, last_ran_table, event_time,
+			event_time, event_time);
 		DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
 		(void) mysql_db_query(mysql_conn, query);
 		xfree(query);
