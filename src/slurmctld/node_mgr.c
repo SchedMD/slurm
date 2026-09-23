@@ -3988,6 +3988,16 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			 node_ptr->comm_name, reg_msg->instance_id,
 			 reg_msg->instance_type);
 
+	/*
+	 * Now that the node has finished powering up, launch any configuring
+	 * job waiting on it whose nodes have all become ready. This avoids
+	 * waiting up to PERIODIC_TIMEOUT for the next job_time_limit() poll in
+	 * the slurmctld background thread. Gated on
+	 * SlurmctldParameters=fast_power_up_launch.
+	 */
+	if (!error_code && was_powering_up)
+		launch_ready_jobs_on_node(node_ptr);
+
 	return error_code;
 }
 

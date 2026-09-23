@@ -2404,6 +2404,9 @@ are ready for use (i.e. booted).
 By default, the salloc command will return as soon as the allocation is made.
 This default can be altered using the \fBsalloc_wait_nodes\fR option to the
 \fBSchedulerParameters\fR parameter in the slurm.conf file.
+A job whose allocated nodes must be powered up or rebooted is an
+exception: it does not return until all of them are ready, regardless of
+\fB\-\-wait\-all\-nodes\fR or \fBsalloc_wait_nodes\fR.
 .IP
 .RS
 .TP 5

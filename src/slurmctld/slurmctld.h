@@ -1839,6 +1839,14 @@ extern bool test_job_array_pending(uint32_t array_job_id);
 extern bool test_job_nodes_ready(job_record_t *job_ptr);
 
 /*
+ * launch_ready_jobs_on_node - test configuring jobs assigned to a node and
+ *	launch any whose nodes have all become ready.
+ *	No-op unless SlurmctldParameters=fast_power_up_launch is configured.
+ * IN node_ptr - node that just finished powering up
+ */
+extern void launch_ready_jobs_on_node(node_record_t *node_ptr);
+
+/*
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files

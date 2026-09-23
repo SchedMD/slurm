@@ -9445,6 +9445,65 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 	return true;
 }
 
+/*
+ * Finish a configuring job's setup and launch it once all of its nodes are
+ * ready.
+ * IN job_ptr - the (potentially) configuring job to test
+ */
+static void _test_job_config_complete(job_record_t *job_ptr)
+{
+	uint8_t prolog = 0;
+
+	if (job_ptr->details)
+		prolog = job_ptr->details->prolog_running;
+
+	if (!prolog && IS_JOB_CONFIGURING(job_ptr) &&
+	    !pick_batch_host(job_ptr) && test_job_nodes_ready(job_ptr)) {
+		info("%s: Configuration for %pJ complete", __func__, job_ptr);
+		job_config_fini(job_ptr);
+		if (job_ptr->batch_flag)
+			launch_job(job_ptr);
+		else if (job_ptr->het_job_id)
+			launch_het_job_leader(job_ptr);
+	}
+}
+
+static int _foreach_launch_ready_job(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	node_record_t *node_ptr = arg;
+
+	if (!IS_JOB_CONFIGURING(job_ptr))
+		return 0;
+	if (!job_ptr->node_bitmap ||
+	    !bit_test(job_ptr->node_bitmap, node_ptr->index))
+		return 0;
+
+	_test_job_config_complete(job_ptr);
+
+	return 0;
+}
+
+extern void launch_ready_jobs_on_node(node_record_t *node_ptr)
+{
+	static int fast_power_up_launch = -1;
+
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (fast_power_up_launch == -1)
+		fast_power_up_launch =
+			(xstrcasestr(slurm_conf.slurmctld_params,
+				     "fast_power_up_launch") != NULL);
+
+	if (!fast_power_up_launch || !node_ptr)
+		return;
+
+	list_for_each(job_list, _foreach_launch_ready_job, node_ptr);
+}
+
 static int _foreach_het_job_configuring_test(void *x, void *arg)
 {
 	job_record_t *het_job = x;
@@ -9497,7 +9556,6 @@ void job_time_limit(void)
 	                    slurm_conf.msg_timeout + 1);
 	time_t over_run;
 	uint16_t over_time_limit;
-	uint8_t prolog;
 	int job_test_count = 0;
 	uint32_t resv_over_run = slurm_conf.resv_over_run;
 
@@ -9529,21 +9587,7 @@ void job_time_limit(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_test_count++;
 
-		if (job_ptr->details)
-			prolog = job_ptr->details->prolog_running;
-		else
-			prolog = 0;
-		if ((prolog == 0) && IS_JOB_CONFIGURING(job_ptr) &&
-		    !pick_batch_host(job_ptr) &&
-		    test_job_nodes_ready(job_ptr)) {
-			info("%s: Configuration for %pJ complete",
-			     __func__, job_ptr);
-			job_config_fini(job_ptr);
-			if (job_ptr->batch_flag)
-				launch_job(job_ptr);
-			else if (job_ptr->het_job_id)
-				launch_het_job_leader(job_ptr);
-		}
+		_test_job_config_complete(job_ptr);
 
 		/*
 		 * Features have been changed on some node, make job eligiable

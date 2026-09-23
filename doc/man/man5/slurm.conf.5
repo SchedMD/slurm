@@ -4961,7 +4961,9 @@ similar to \fBPrologFlags=ForceRequeueOnFail\fR.
 If defined, the salloc command will wait until all allocated nodes are ready for
 use (i.e. booted) before the command returns. By default, salloc will return as
 soon as the resource allocation has been made. The salloc command can use the
-\-\-wait\-all\-nodes option to override this configuration parameter.
+\fB\-\-wait\-all\-nodes\fR option to override this configuration parameter.
+A job whose allocated nodes must be powered up or rebooted waits for all of
+them either way.
 .IP
 
 .TP
@@ -4969,8 +4971,10 @@ soon as the resource allocation has been made. The salloc command can use the
 If defined, the sbatch script will wait until all allocated nodes are ready for
 use (i.e. booted) before the initiation. By default, the sbatch script will be
 initiated as soon as the first node in the job allocation is ready. The sbatch
-command can use the \-\-wait\-all\-nodes option to override this configuration
-parameter.
+command can use the \fB\-\-wait\-all\-nodes\fR option to override this
+configuration parameter.
+A job whose allocated nodes must be powered up or rebooted waits for all of
+them either way.
 .IP
 
 .TP
@@ -5615,6 +5619,21 @@ Enable slurmstepd step management system wide. This enables job steps to be
 managed by a single extern slurmstepd associated with the job to manage steps.
 This is beneficial for jobs that submit many steps inside their allocations.
 \fBPrologFlags=contain\fR must be set.
+.IP
+
+.TP
+\fBfast_power_up_launch\fR
+Launch a job that is waiting on nodes to power up or reboot as soon as the last
+of its nodes registers, rather than on the next periodic poll of the slurmctld
+background thread (which can add up to 30 seconds of delay). This covers jobs
+waiting on a reboot requested with \fBsbatch \-\-reboot\fR or by a node feature
+change, as well as jobs waiting on nodes to resume from power save. Each
+registration of a powering\-up node scans the job list, so sites that
+simultaneously power up very large numbers of nodes while holding a very large
+number of jobs may prefer to leave this disabled. Unset by default.
+Jobs wait on node power up when power saving is configured with
+\fBResumeProgram\fR, and on node reboot when \fBRebootProgram\fR is
+configured. See https://slurm.schedmd.com/power_save.html for more details.
 .IP
 
 .TP
