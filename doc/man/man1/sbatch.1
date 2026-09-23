@@ -1927,10 +1927,10 @@ parameter in slurm.conf can override this setting.
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode_file\fR>
 Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
 \fInode file\fR. The node names of the list may also span multiple lines
-in the file. Duplicate node names in the file will be ignored.
-With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node names is
-significant and a repeated name places another task on that node. Otherwise
-the order is not important and the node names will be sorted by Slurm.
+in the file. With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node
+names is significant and a repeated name places another task on that node.
+Otherwise, duplicate node names are ignored and the order is not important,
+as the node names will be sorted by Slurm.
 .IP
 
 .TP
@@ -1948,10 +1948,10 @@ processor count may only require a subset of the supplied node list.
 The list may be specified as a comma\-separated list of nodes, a range of nodes
 (e.g. node[1\-5,7,...]), or a filename.
 The nodes list will be assumed to be a filename if it contains a "/" character.
-Duplicate node names in the list will be ignored.
-With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node names is
-significant and a repeated name places another task on that node. Otherwise
-the order is not important and the node names will be sorted by Slurm.
+With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node
+names is significant and a repeated name places another task on that node.
+Otherwise, duplicate node names are ignored and the order is not important,
+as the node names will be sorted by Slurm.
 .IP
 
 .TP
