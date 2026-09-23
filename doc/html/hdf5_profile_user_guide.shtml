@@ -219,7 +219,7 @@ file system with <b>groups</b> being similar to <i>directories</i> and
 to be attached to groups to store application defined properties.</p>
 
 <p>There are commodity programs, notably
-<a href="http://www.hdfgroup.org/hdf-java-html/hdfview/index.html">
+<a href="https://www.hdfgroup.org/download-hdfview/">
 HDFView</a>, for viewing and manipulating these files.
 
 <p>Below is a screen shot from HDFView expanding the job tree and showing the
