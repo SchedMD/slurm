@@ -2416,7 +2416,10 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->cpu_freq_min = job_ptr->details->cpu_freq_min;
 	launch_msg_ptr->cpu_freq_max = job_ptr->details->cpu_freq_max;
 	launch_msg_ptr->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
-	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	job_emit_node_arrays(job_ptr, &launch_msg_ptr->nodes,
+			     &launch_msg_ptr->cpus_per_node,
+			     &launch_msg_ptr->cpu_count_reps,
+			     &launch_msg_ptr->num_cpu_groups);
 	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;
 	launch_msg_ptr->cpus_per_task = job_ptr->details->cpus_per_task;
@@ -2488,18 +2491,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	}
 
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
-	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
-	launch_msg_ptr->cpus_per_node  = xmalloc(
-		sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt);
-	memcpy(launch_msg_ptr->cpus_per_node,
-	       job_ptr->job_resrcs->cpu_array_value,
-	       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
-	launch_msg_ptr->cpu_count_reps  = xmalloc(
-		sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt);
-	memcpy(launch_msg_ptr->cpu_count_reps,
-	       job_ptr->job_resrcs->cpu_array_reps,
-	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
-
 	launch_msg_ptr->account = xstrdup(job_ptr->account);
 	if (job_ptr->qos_ptr)
 		launch_msg_ptr->qos = xstrdup(job_ptr->qos_ptr->name);
@@ -2610,9 +2601,11 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_task = 1;
 	char *task_count = NULL;
+	char *nodes_str = NULL;
 	uint16_t *cpus_per_node = NULL;
 	uint16_t *cpus_per_task_array = NULL;
-	int node_inx = 0;
+	node_rank_order_t *order_map, *alloc_order = NULL;
+	int order_cnt;
 
 	slurm_step_layout_req_t step_layout_req = {
 		.plane_size = NO_VAL16,
@@ -2627,19 +2620,21 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	    (job_ptr->details->cpus_per_task != NO_VAL16))
 		cpus_per_task = job_ptr->details->cpus_per_task;
 
-	/* Expand RLE cpu_array into flat per-node arrays */
-	cpus_per_node = xcalloc(resrcs_ptr->nhosts, sizeof(*cpus_per_node));
-	cpus_per_task_array =
-		xcalloc(resrcs_ptr->nhosts, sizeof(*cpus_per_task_array));
-	for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
-		for (int j = 0; j < resrcs_ptr->cpu_array_reps[i]; j++) {
-			if (node_inx >= resrcs_ptr->nhosts)
-				break;
-			cpus_per_node[node_inx] =
-				resrcs_ptr->cpu_array_value[i];
-			cpus_per_task_array[node_inx] = cpus_per_task;
-			node_inx++;
-		}
+	/*
+	 * Build the per-node arrays in the same order as the node list they
+	 * are laid out against, so the resulting task counts line up with the
+	 * node list emitted next to them in SLURM_JOB_NODELIST.
+	 */
+	order_map =
+		job_node_order(job_ptr, &order_cnt, &alloc_order, &nodes_str);
+	cpus_per_node = xcalloc(order_cnt, sizeof(*cpus_per_node));
+	cpus_per_task_array = xcalloc(order_cnt, sizeof(*cpus_per_task_array));
+	for (int k = 0; k < order_cnt; k++) {
+		cpus_per_node[k] =
+			job_resources_get_node_cpu_cnt(resrcs_ptr,
+						       order_map[k].job_pos,
+						       order_map[k].node_inx);
+		cpus_per_task_array[k] = cpus_per_task;
 	}
 
 	step_layout_req.cpus_per_node = cpus_per_node;
@@ -2653,20 +2648,19 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 					    step_layout_req.num_hosts;
 	} else {
 		step_layout_req.num_tasks = 0;
-		for (int i = 0; i < resrcs_ptr->nhosts; i++) {
+		for (int i = 0; i < order_cnt; i++) {
 			step_layout_req.num_tasks +=
 				cpus_per_node[i] / cpus_per_task;
 		}
 	}
 
 	step_layout_req.task_dist = job_ptr->details->task_dist;
+	step_layout_req.node_list = nodes_str;
 
+	/* The raw user list drives task ids for arbitrary distribution. */
 	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
-	    SLURM_DIST_ARBITRARY) {
-		step_layout_req.node_list = job_ptr->details->req_nodes;
-	} else {
-		step_layout_req.node_list = job_ptr->nodes;
-	}
+	    SLURM_DIST_ARBITRARY)
+		step_layout_req.arbitrary_nodes = job_ptr->details->req_nodes;
 
 	if (job_ptr->details->mc_ptr->plane_size)
 		step_layout_req.plane_size =
@@ -2680,6 +2674,8 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 		slurm_step_layout_destroy(step_layout);
 	}
 
+	xfree(alloc_order);
+	xfree(nodes_str);
 	xfree(cpus_per_node);
 	xfree(cpus_per_task_array);
 	return task_count;

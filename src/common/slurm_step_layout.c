@@ -65,26 +65,6 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes);
 
-static int _task_layout_topo(slurm_step_layout_t *step_layout,
-			     uint32_t *node_ranks, uint16_t *cpus);
-
-static int _cmp_node_rank(const void *x, const void *y, void *ctx)
-{
-	uint32_t *node_ranks = ctx;
-	uint32_t ia = *(const uint32_t *) x;
-	uint32_t ib = *(const uint32_t *) y;
-
-	if (node_ranks[ia] > node_ranks[ib])
-		return 1;
-	else if (node_ranks[ia] < node_ranks[ib])
-		return -1;
-	if (ia > ib)
-		return 1;
-	else if (ia < ib)
-		return -1;
-	return 0;
-}
-
 /*
  * slurm_step_layout_create - determine how many tasks of a job will be
  *                    run on each node. Distribution is influenced
@@ -96,39 +76,31 @@ static int _cmp_node_rank(const void *x, const void *y, void *ctx)
 slurm_step_layout_t *slurm_step_layout_create(
 	slurm_step_layout_req_t *step_layout_req)
 {
-	char *arbitrary_nodes = NULL;
+	char *arbitrary_nodes = step_layout_req->arbitrary_nodes;
 	slurm_step_layout_t *step_layout =
 		xmalloc(sizeof(slurm_step_layout_t));
 
 	step_layout->task_dist = step_layout_req->task_dist;
-	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
-	    == SLURM_DIST_ARBITRARY) {
-		hostlist_t *hl = NULL;
-		char *buf = NULL;
-		/* set the node list for the task layout later if user
-		 * supplied could be different that the job allocation */
-		arbitrary_nodes = xstrdup(step_layout_req->node_list);
-		hl = hostlist_create(step_layout_req->node_list);
-		hostlist_uniq(hl);
+	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE) ==
+	    SLURM_DIST_ARBITRARY) {
+		hostlist_t *hl = hostlist_create(step_layout_req->node_list);
+		int host_cnt = hostlist_count(hl);
+
+		hostlist_destroy(hl);
 		/*
-		 * The list must span exactly the nodes the caller counted;
-		 * otherwise node_cnt would not match the layout.
+		 * The caller deduplicates the list; it must span exactly the
+		 * nodes it counted, otherwise node_cnt would not match the
+		 * layout.
 		 */
-		if (hostlist_count(hl) != step_layout_req->num_hosts) {
+		if (host_cnt != step_layout_req->num_hosts) {
 			error("%s: arbitrary node list %s has %d nodes but %u were expected",
-			      __func__, step_layout_req->node_list,
-			      hostlist_count(hl), step_layout_req->num_hosts);
-			hostlist_destroy(hl);
-			xfree(arbitrary_nodes);
+			      __func__, step_layout_req->node_list, host_cnt,
+			      step_layout_req->num_hosts);
 			slurm_step_layout_destroy(step_layout);
 			return NULL;
 		}
-		buf = hostlist_ranged_string_xmalloc(hl);
-		hostlist_destroy(hl);
-		step_layout->node_list = buf;
-	} else {
-		step_layout->node_list = xstrdup(step_layout_req->node_list);
 	}
+	step_layout->node_list = xstrdup(step_layout_req->node_list);
 
 	step_layout->task_cnt  = step_layout_req->num_tasks;
 	step_layout->node_cnt = step_layout_req->num_hosts;
@@ -138,7 +110,6 @@ slurm_step_layout_t *slurm_step_layout_create(
 		slurm_step_layout_destroy(step_layout);
 		step_layout = NULL;
 	}
-	xfree(arbitrary_nodes);
 	return step_layout;
 }
 
@@ -575,9 +546,6 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	else if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
 		 == SLURM_DIST_PLANE)
 		return _task_layout_plane(step_layout, cpus);
-	else if (step_layout_req->node_ranks)
-		return _task_layout_topo(step_layout,
-					 step_layout_req->node_ranks, cpus);
 	else
 		return _task_layout_block(step_layout, cpus);
 }
@@ -770,57 +738,6 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 			task_id++;
 		}
 	}
-	return SLURM_SUCCESS;
-}
-
-static int _task_layout_topo(slurm_step_layout_t *step_layout,
-			     uint32_t *node_ranks, uint16_t *cpus)
-{
-	int i, j, task_id = 0;
-	bool over_subscribe = false;
-	uint32_t *order_map =
-		xcalloc(step_layout->node_cnt, sizeof(*order_map));
-
-	for (i = 0; i < step_layout->node_cnt; i++) {
-		order_map[i] = i;
-	}
-	qsort_r(order_map, step_layout->node_cnt, sizeof(*order_map),
-		_cmp_node_rank, node_ranks);
-
-	/* To effectively deal with heterogeneous nodes, we fake a
-	 * cyclic distribution to determine how many tasks go on each
-	 * node and then make those assignments in a block fashion. */
-
-	for (j = 0; task_id < step_layout->task_cnt; j++) {
-		bool space_remaining = false;
-		for (i = 0; ((i < step_layout->node_cnt) &&
-			     (task_id < step_layout->task_cnt));
-		     i++) {
-			int idx = order_map[i];
-			if ((j < cpus[idx]) || over_subscribe) {
-				step_layout->tasks[idx]++;
-				task_id++;
-				if ((j + 1) < cpus[idx])
-					space_remaining = true;
-			}
-		}
-		if (!space_remaining)
-			over_subscribe = true;
-	}
-	/* Now distribute the tasks */
-	task_id = 0;
-	for (i = 0; i < step_layout->node_cnt; i++) {
-		int idx = order_map[i];
-		step_layout->tids[idx] =
-			xcalloc(step_layout->tasks[idx], sizeof(uint32_t));
-		for (j = 0; j < step_layout->tasks[idx]; j++) {
-			step_layout->tids[idx][j] = task_id;
-			task_id++;
-		}
-	}
-
-	xfree(order_map);
-
 	return SLURM_SUCCESS;
 }
 

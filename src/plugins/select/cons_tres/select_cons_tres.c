@@ -462,8 +462,9 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		to_job_resrcs_ptr->ncpus;
 	new_job_resrcs_ptr->node_req = to_job_resrcs_ptr->node_req;
 	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
-	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
-						     node_bitmap);
+	new_job_resrcs_ptr->nodes =
+		bitmap2node_name_sortable(new_job_resrcs_ptr->node_bitmap,
+					  false);
 	new_job_resrcs_ptr->whole_node = to_job_resrcs_ptr->whole_node;
 	new_job_resrcs_ptr->threads_per_core =
 		to_job_resrcs_ptr->threads_per_core;
@@ -601,6 +602,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	from_job_ptr->nodes = xstrdup("");
 	xfree(from_job_resrcs_ptr->nodes);
 	from_job_resrcs_ptr->nodes = xstrdup("");
+	xfree(from_job_resrcs_ptr->order_map);
 
 	(void) job_res_add_job(to_job_ptr, JOB_RES_ACTION_NORMAL);
 

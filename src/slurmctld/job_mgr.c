@@ -3080,9 +3080,15 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 		}
 	} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
 		foreach_kill_job_by->kill_job_cnt++;
-		if ((job_ptr->details) &&
-		    (job_ptr->kill_on_node_fail == 0) &&
+		/*
+		 * An arbitrary job's task layout is defined by its node list,
+		 * which cannot be rebuilt for a smaller node set, so it cannot
+		 * survive losing a node.
+		 */
+		if ((job_ptr->details) && (job_ptr->kill_on_node_fail == 0) &&
 		    (job_ptr->node_cnt > 1) &&
+		    ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) !=
+		     SLURM_DIST_ARBITRARY) &&
 		    !IS_JOB_CONFIGURING(job_ptr)) {
 			bitstr_t *orig_job_node_bitmap;
 
@@ -3107,8 +3113,7 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 				&job_ptr->gres_used);
 			job_post_resize_acctg(job_ptr);
 		} else if (job_ptr->batch_flag &&
-			   ((job_ptr->details &&
-			     job_ptr->details->requeue) ||
+			   ((job_ptr->details && job_ptr->details->requeue) ||
 			    (foreach_kill_job_by->requeue_on_resume_failure &&
 			     (IS_NODE_POWERED_DOWN(node_ptr) ||
 			      IS_NODE_POWERING_UP(node_ptr)) &&
@@ -3234,7 +3239,7 @@ extern void excise_node_from_job(job_record_t *job_ptr,
 {
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
-	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
+	job_ptr->nodes = bitmap2node_name_sortable(job_ptr->node_bitmap, false);
 
 	job_ptr->total_nodes = job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
 
@@ -14027,7 +14032,18 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	    (job_desc->bitflags & TASKS_CHANGED)) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_desc->num_tasks < 1)
+		else if (detail_ptr &&
+			 ((detail_ptr->task_dist & SLURM_DIST_STATE_BASE) ==
+			  SLURM_DIST_ARBITRARY)) {
+			/*
+			 * The task count is the number of entries in the
+			 * arbitrary node list, and arbitrary_tpn is derived
+			 * from it, so it cannot be set independently.
+			 */
+			info("%s: Cannot update task count of %pJ. Not compatible with arbitrary distribution",
+			     __func__, job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+		} else if (job_desc->num_tasks < 1)
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else if (job_desc->num_tasks < detail_ptr->min_nodes) {
 			info("%s: num_tasks (%u) less than min_nodes (%u) for %pJ",
@@ -15864,8 +15880,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->details = xstrdup(job_ptr->state_desc);
 	msg->exit_code = job_ptr->exit_code;
 	msg->het_job_id = job_ptr->het_job_id;
-	msg->job_gres_prep = gres_g_prep_build_env(job_ptr->gres_list_alloc,
-						   job_ptr->nodes);
+	msg->job_gres_prep = gres_g_prep_build_env(job_ptr->gres_list_alloc);
 	msg->job_state = job_ptr->job_state;
 	msg->job_uid = job_ptr->user_id;
 	msg->job_gid = job_ptr->group_id;

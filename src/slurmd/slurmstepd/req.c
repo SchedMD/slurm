@@ -1017,6 +1017,8 @@ static int _cap_step_mem(void *x, void *arg)
 	step_record_t *step_ptr = x;
 	uint64_t new_job_mem = *(uint64_t *) arg;
 	job_resources_t *resrcs = job_step_ptr->job_resrcs;
+	node_rank_order_t *order_map, *alloc_order = NULL;
+	int order_cnt;
 	int job_node_inx = -1, step_node_inx = -1;
 
 	if (step_ptr->pn_min_memory && !(step_ptr->pn_min_memory & MEM_PER_CPU))
@@ -1026,11 +1028,17 @@ static int _cap_step_mem(void *x, void *arg)
 	if (!step_ptr->memory_allocated)
 		return SLURM_SUCCESS;
 
-	for (int i = 0; next_node_bitmap(resrcs->node_bitmap, &i); i++) {
-		job_node_inx++;
-		if (!bit_test(step_ptr->step_node_bitmap, i))
-			continue;
+	/* memory_allocated[] is indexed in the step's layout order */
+	order_map = step_layout_order(step_ptr, &order_cnt, &alloc_order);
+	for (int k = 0; k < order_cnt; k++) {
+		job_node_inx = order_map[k].job_pos;
 		step_node_inx++;
+		/*
+		 * The node left the job (shrink, failure) or the cluster;
+		 * its job-side resources are already gone.
+		 */
+		if (job_node_inx < 0)
+			continue;
 		step_ptr->memory_allocated[step_node_inx] =
 			MIN(step_ptr->memory_allocated[step_node_inx],
 			    new_job_mem);
@@ -1039,6 +1047,7 @@ static int _cap_step_mem(void *x, void *arg)
 			resrcs->memory_used[job_node_inx] +=
 				step_ptr->memory_allocated[step_node_inx];
 	}
+	xfree(alloc_order);
 
 	return SLURM_SUCCESS;
 }

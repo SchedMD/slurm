@@ -82,7 +82,8 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 /*
  * step_layout_create - creates a step_layout according to the inputs.
  * IN step_ptr - step having tasks laid out
- * IN step_node_list - node list of hosts in step
+ * IN arbitrary_nodes - user-supplied node list for SLURM_DIST_ARBITRARY,
+ *	NULL otherwise
  * IN node_count - count of nodes in step allocation
  * IN num_tasks - number of tasks in step
  * IN cpus_per_task - number of cpus per task
@@ -93,7 +94,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
  *       step is freed.
  */
 extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
-					       char *step_node_list,
+					       char *arbitrary_nodes,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t cpus_per_task,
@@ -173,6 +174,52 @@ extern slurm_node_alias_addrs_t *build_alias_addrs(job_record_t *job_ptr);
  * where that node is represented in that array.
  */
 extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
+
+/*
+ * Return the step's nodes in the order its layout was built: the user's
+ * first-occurrence order for arbitrary distribution, the job's topology-rank
+ * order otherwise. The step-node index domain (step_layout->tasks/tids,
+ * step_ptr->memory_allocated, ...) follows this order.
+ *
+ * OUT order_cnt - number of entries in the returned array
+ * OUT alloc_order - set when the array is allocated here, in which case the
+ *		     caller must xfree() it
+ */
+extern node_rank_order_t *step_node_order(step_record_t *step_ptr,
+					  int *order_cnt,
+					  node_rank_order_t **alloc_order);
+
+/*
+ * Like step_node_order(), but always build from step_layout->node_list.
+ * Use at teardown, where a step may outlive a node removed from its job.
+ * OUT alloc_order - caller xfrees
+ */
+extern node_rank_order_t *step_layout_order(step_record_t *step_ptr,
+					    int *order_cnt,
+					    node_rank_order_t **alloc_order);
+
+/*
+ * Return the order the job's nodes are emitted in, along with the matching
+ * node list: the user's list deduplicated in first-occurrence order for
+ * --distribution=arbitrary, where that list drives the task layout, and
+ * order_map (topology rank) order otherwise.
+ * OUT order_cnt - number of entries in the returned order
+ * OUT alloc_order - set when the order was allocated (caller xfrees)
+ * OUT node_list - the job's nodes in the returned order (caller xfrees)
+ */
+extern node_rank_order_t *job_node_order(job_record_t *job_ptr, int *order_cnt,
+					 node_rank_order_t **alloc_order,
+					 char **node_list);
+
+/*
+ * Build the job's node list and the per-node cpu counts read alongside it
+ * (SLURM_JOB_NODELIST/SLURM_JOB_CPUS_PER_NODE) in job_node_order() order.
+ * OUT node_list, cpus_per_node, cpu_count_reps, num_cpu_groups - caller xfrees
+ */
+extern void job_emit_node_arrays(job_record_t *job_ptr, char **node_list,
+				 uint16_t **cpus_per_node,
+				 uint32_t **cpu_count_reps,
+				 uint32_t *num_cpu_groups);
 
 extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 				void (*lock_func)(bool lock),

@@ -99,6 +99,18 @@ typedef struct node_select_stats {
 	char *alloc_tres_fmt_str;	/* allocated TRES */
 } node_select_stats_t;
 
+/*
+ * Node ordering entry keyed by topology rank (see node_rank_order_cmp()).
+ * job_pos is the node's position in a job's resources (bitmap order); it is
+ * only meaningful for callers that build the order from job resources and is
+ * left zero otherwise.
+ */
+typedef struct {
+	int job_pos;
+	uint32_t node_inx;
+	uint32_t node_rank;
+} node_rank_order_t;
+
 typedef struct node_record node_record_t;
 struct node_record {
 	char *arch;			/* computer architecture */
@@ -551,6 +563,12 @@ extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
  *                      size of the cluster.
  */
 extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap);
+
+/*
+ * node_rank_order_cmp - qsort comparator for node_rank_order_t, sorting by
+ *	node_rank then node_inx (both ascending).
+ */
+extern int node_rank_order_cmp(const void *x, const void *y);
 
 /* used for stepmgr and omits sensitive fields */
 extern void node_record_pack(void *in,

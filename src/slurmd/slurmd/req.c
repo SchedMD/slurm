@@ -1395,22 +1395,35 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int rc;
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
+		slurm_cred_arg_t *arg;
+		char *job_nodes;
+		int job_node_id;
 
 		cred_insert_job(&req->step_id);
 		_add_job_running_prolog(&req->step_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
+		/*
+		 * The job's per-node GRES and CPU counts are keyed by
+		 * job_hostlist order, which may differ from complete_nodelist
+		 * (step/rank) order. Give the prolog that list so its per-node
+		 * values line up with it.
+		 */
+		arg = slurm_cred_get_args(req->cred);
+		job_nodes = xstrdup(arg->job_hostlist);
+		slurm_cred_unlock_args(req->cred);
+		job_node_id = nodelist_find(job_nodes, conf->node_name);
+
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = slurm_cred_get(req->cred,
 					       CRED_DATA_JOB_GRES_LIST);
-		gres_prep_env_list = gres_g_prep_build_env(
-			job_gres_list, req->complete_nodelist);
-		gres_g_prep_set_env(&job_env.gres_job_env,
-				    gres_prep_env_list, node_id);
+		gres_prep_env_list = gres_g_prep_build_env(job_gres_list);
+		gres_g_prep_set_env(&job_env.gres_job_env, gres_prep_env_list,
+				    job_node_id);
 		FREE_NULL_LIST(gres_prep_env_list);
 
 		job_env.step_id = req->step_id;
-		job_env.node_list = req->complete_nodelist;
+		job_env.node_list = job_nodes;
 		job_env.het_job_id = req->het_job_id;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -1420,6 +1433,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		rc = run_prolog(&job_env, req->cred);
 		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
+		xfree(job_nodes);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -2187,22 +2201,32 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	if (first_job_run) {
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
+		char *job_nodes;
 
 		cred_insert_job(&req->step_id);
 		_add_job_running_prolog(&req->step_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-		node_id = nodelist_find(req->nodes, conf->node_name);
+		/*
+		 * The job's per-node GRES and CPU counts are keyed by
+		 * job_hostlist order, which may differ from req->nodes (rank)
+		 * order. Give the prolog that list so its per-node values line
+		 * up with it.
+		 */
+		cred_arg = slurm_cred_get_args(req->cred);
+		job_nodes = xstrdup(cred_arg->job_hostlist);
+		slurm_cred_unlock_args(req->cred);
+		node_id = nodelist_find(job_nodes, conf->node_name);
+
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = slurm_cred_get(req->cred,
 					       CRED_DATA_JOB_GRES_LIST);
-		gres_prep_env_list = gres_g_prep_build_env(job_gres_list,
-							   req->nodes);
+		gres_prep_env_list = gres_g_prep_build_env(job_gres_list);
 		gres_g_prep_set_env(&job_env.gres_job_env,
 				    gres_prep_env_list, node_id);
 		FREE_NULL_LIST(gres_prep_env_list);
 		job_env.step_id = req->step_id;
-		job_env.node_list = req->nodes;
+		job_env.node_list = job_nodes;
 		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
@@ -2217,6 +2241,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		rc = run_prolog(&job_env, req->cred);
 		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
+		xfree(job_nodes);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -4835,11 +4860,26 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
 		job_env_t job_env;
-		int node_id = nodelist_find(req->nodes, conf->node_name);
 
 		memset(&job_env, 0, sizeof(job_env));
-		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
-				    node_id);
+
+		/*
+		 * The job's per-node GRES is keyed by job_hostlist order.
+		 * req->nodes holds only the nodes being killed, which can be
+		 * fewer than the job's. The credential is optional in
+		 * kill_job_msg_t, and without it there is no way to locate
+		 * this node in the job.
+		 */
+		if (req->cred) {
+			slurm_cred_arg_t *cred_arg =
+				slurm_cred_get_args(req->cred);
+			int node_id = nodelist_find(cred_arg->job_hostlist,
+						    conf->node_name);
+
+			slurm_cred_unlock_args(req->cred);
+			gres_g_prep_set_env(&job_env.gres_job_env,
+					    req->job_gres_prep, node_id);
+		}
 		job_env.step_id = req->step_id;
 		job_env.derived_ec = req->derived_ec;
 		job_env.exit_code = req->exit_code;
@@ -5071,11 +5111,26 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB)) {
 		job_env_t job_env;
-		int node_id = nodelist_find(req->nodes, conf->node_name);
 
 		memset(&job_env, 0, sizeof(job_env));
-		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
-				    node_id);
+
+		/*
+		 * The job's per-node GRES is keyed by job_hostlist order.
+		 * req->nodes holds only the nodes being killed, which can be
+		 * fewer than the job's. The credential is optional in
+		 * kill_job_msg_t, and without it there is no way to locate
+		 * this node in the job.
+		 */
+		if (req->cred) {
+			slurm_cred_arg_t *cred_arg =
+				slurm_cred_get_args(req->cred);
+			int node_id = nodelist_find(cred_arg->job_hostlist,
+						    conf->node_name);
+
+			slurm_cred_unlock_args(req->cred);
+			gres_g_prep_set_env(&job_env.gres_job_env,
+					    req->job_gres_prep, node_id);
+		}
 
 		job_env.step_id = req->step_id;
 		job_env.derived_ec = req->derived_ec;

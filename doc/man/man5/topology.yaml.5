@@ -261,7 +261,9 @@ Each flat topology may contain the following attribute:
 .TP
 \fBalpha_step_rank\fR
 If set to \fBtrue\fR, sort the job's allocated nodes alphabetically by name
-when picking step nodes and laying out tasks. By default the order follows
+when picking step nodes and laying out tasks. The node lists reported to the
+job (\fBSLURM_JOB_NODELIST\fR, \fBSLURM_STEP_NODELIST\fR) and the per\-node
+arrays read alongside them follow the same order. By default the order follows
 the internal node table index, which for dynamically registered nodes
 reflects registration order rather than name order.
 .IP

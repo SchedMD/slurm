@@ -1251,7 +1251,7 @@ static int _run_prolog_epilog(bool is_epilog)
 
 	memset(&job_env, 0, sizeof(job_env));
 
-	tmp_list = gres_g_prep_build_env(step->job_gres_list, step->node_list);
+	tmp_list = gres_g_prep_build_env(step->job_gres_list);
 	/*
 	 * When ran in the stepd we only have gres information from the cred
 	 * about this node so all index's should be 0

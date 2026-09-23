@@ -1106,7 +1106,7 @@ typedef enum {
 	/*
 	 * Disable topology node rank sort
 	 */
-	SELECT_NO_DIST_TOPO_BLOCK = SLURM_BIT(11),
+	SELECT_NO_DIST_TOPO = SLURM_BIT(11),
 	/*
 	 * By default, distribute cores using a block approach inside the
 	 * nodes
@@ -2133,8 +2133,9 @@ typedef struct suspend_exc_update_msg {
 
 typedef struct {
 	char *node_list; /* nodelist corresponding to task layout */
+	char *arbitrary_nodes; /* raw user node list (task order, with
+				* duplicates) for arbitrary distribution */
 	uint16_t *cpus_per_node; /* flat array: one entry per node */
-	uint32_t *node_ranks; /* Topology rank of each node */
 	uint32_t num_hosts; /* number of hosts we have */
 	uint32_t num_tasks; /* number of tasks to distribute across these cpus*/
 	uint16_t *cpus_per_task; /* flat array: one entry per node */

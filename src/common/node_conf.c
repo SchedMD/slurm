@@ -255,6 +255,22 @@ extern char *bitmap2node_name(bitstr_t *bitmap)
 	return bitmap2node_name_sortable(bitmap, 1);
 }
 
+extern int node_rank_order_cmp(const void *x, const void *y)
+{
+	const node_rank_order_t *nx = x;
+	const node_rank_order_t *ny = y;
+
+	if (nx->node_rank > ny->node_rank)
+		return 1;
+	else if (nx->node_rank < ny->node_rank)
+		return -1;
+	if (nx->node_inx > ny->node_inx)
+		return 1;
+	else if (nx->node_inx < ny->node_inx)
+		return -1;
+	return 0;
+}
+
 static int _check_callback(char *alias, char *hostname,
 			   char *address, char *bcast_address,
 			   uint16_t port, int state_val,

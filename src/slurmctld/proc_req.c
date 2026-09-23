@@ -793,28 +793,18 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	resource_allocation_response_msg_t *alloc_msg =
 		xmalloc(sizeof(resource_allocation_response_msg_t));
 
-	/* send job_ID and node_name_ptr */
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
-		alloc_msg->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
-		alloc_msg->cpu_count_reps = xmalloc(sizeof(uint32_t) *
-						    job_ptr->job_resrcs->
-						    cpu_array_cnt);
-		memcpy(alloc_msg->cpu_count_reps,
-		       job_ptr->job_resrcs->cpu_array_reps,
-		       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
-		alloc_msg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
-						    job_ptr->job_resrcs->
-						    cpu_array_cnt);
-		memcpy(alloc_msg->cpus_per_node,
-		       job_ptr->job_resrcs->cpu_array_value,
-		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
-	}
-
 	alloc_msg->error_code     = error_code;
 	alloc_msg->job_submit_user_msg = xstrdup(job_submit_user_msg);
 	alloc_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
-	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
+	if (job_ptr->job_resrcs) {
+		job_emit_node_arrays(job_ptr, &alloc_msg->node_list,
+				     &alloc_msg->cpus_per_node,
+				     &alloc_msg->cpu_count_reps,
+				     &alloc_msg->num_cpu_groups);
+	} else {
+		alloc_msg->node_list = xstrdup(job_ptr->nodes);
+	}
 	if (job_ptr->part_ptr)
 		alloc_msg->partition = xstrdup(job_ptr->part_ptr->name);
 	else

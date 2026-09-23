@@ -42,6 +42,7 @@
 #include <inttypes.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -122,6 +123,8 @@ struct job_resources {
 	uint32_t  node_req;
 	char	 *nodes;
 	uint32_t  ncpus;
+	/* Nodes in rank order, nhosts entries. Derived, not packed. */
+	node_rank_order_t *order_map;
 	uint32_t *sock_core_rep_count;
 	uint16_t *sockets_per_node;
 	uint16_t *tasks_per_node;
@@ -169,6 +172,38 @@ extern int build_job_resources(job_resources_t *job_resrcs_ptr);
  * values of cpus in an existing data structure
  * Return total CPU count or -1 on error */
 extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr);
+
+/*
+ * (Re)build order_map from node_bitmap and node_ranks: the job's nodes ordered
+ * by topology rank (ties broken by node index), or in node (bitmap) order when
+ * the job has no node_ranks. Must be called whenever node_bitmap changes.
+ */
+extern void build_job_resources_order_map(job_resources_t *job_resrcs_ptr);
+
+/*
+ * Build a run-length-encoded cpus-per-node array (as in the allocation
+ * response / batch launch) with nodes in the given order.
+ * IN order_map - the job's nodes in the order they are emitted in, normally
+ *	job_resrcs_ptr->order_map (topology-rank order)
+ * IN order_cnt - number of entries in order_map
+ * OUT cpus_per_node - compressed per-node cpu counts (caller xfrees)
+ * OUT cpu_count_reps - repetition count of each cpus_per_node entry (xfrees)
+ * OUT num_cpu_groups - number of entries in the two arrays
+ */
+extern void build_job_resources_rank_cpu_array(job_resources_t *job_resrcs_ptr,
+					       node_rank_order_t *order_map,
+					       int order_cnt,
+					       uint16_t **cpus_per_node,
+					       uint32_t **cpu_count_reps,
+					       uint32_t *num_cpu_groups);
+
+/*
+ * Return the names of the nodes set in node_bitmap, ordered by the job's
+ * order_map (topology rank). node_bitmap must be a subset of the job's nodes.
+ * Caller must xfree() the result.
+ */
+extern char *job_resources_node_list_by_rank(job_resources_t *job_resrcs_ptr,
+					     bitstr_t *node_bitmap);
 
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.

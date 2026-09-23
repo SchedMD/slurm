@@ -720,7 +720,7 @@ First distribution method (distribution of tasks across nodes):
 Use the default method for distributing tasks to nodes (block).
 If a topology plugin is configured and the user does not specify a
 distribution method, tasks are distributed following topology order
-rather than node index order. See \fBCR_NO_DIST_TOPO_BLOCK\fR in
+rather than node index order. See \fBCR_NO_DIST_TOPO\fR in
 \fBSelectTypeParameters\fR to disable this behavior.
 .IP
 
@@ -773,6 +773,13 @@ Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated. If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
+.br
+The node list reported to the job (\fBSLURM_JOB_NODELIST\fR,
+\fBSLURM_STEP_NODELIST\fR) follows the same order, with a repeated host
+collapsed
+to the position of its first occurrence. A hostfile of node10, node10,
+node01, node06 gives a node list of node[10,01,06], while the tasks stay on
+node10, node10, node01 and node06.
 .br
 \fBNOTE\fR: The arbitrary distribution option is supported only with the generic
 allocation method and cannot be used with features such as topology, CR_LLN,
@@ -1720,6 +1727,11 @@ Specify an optional argument of "off" to disable the effect of the
 
 By default Slurm terminates the entire job allocation if any node fails in its
 range of allocated nodes.
+
+\fBNOTE\fR: This option is ignored for a job that uses
+\fB\-\-distribution\fR=\fIarbitrary\fR. The task layout of such a job comes
+from its requested node list and cannot be rebuilt for a smaller set of nodes,
+so Slurm terminates the job when one of its nodes fails.
 .IP
 
 .TP
@@ -1742,9 +1754,10 @@ will be freed, or you can terminate the job manually using the
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode_file\fR>
 Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
 \fInode file\fR. The node names of the list may also span multiple lines
-in the file. Duplicate node names in the file will be ignored.
-The order of the node names in the list is not important; the node names
-will be sorted by Slurm.
+in the file. With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node
+names is significant and a repeated name places another task on that node.
+Otherwise, duplicate node names are ignored and the order is not important,
+as the node names will be sorted by Slurm.
 .IP
 
 .TP
@@ -1762,9 +1775,10 @@ processor count may only require a subset of the supplied node list.
 The list may be specified as a comma\-separated list of nodes, a range of nodes
 (e.g. node[1\-5,7,...]), or a filename.
 The nodes list will be assumed to be a filename if it contains a "/" character.
-Duplicate node names in the list will be ignored.
-The order of the node names in the list is not important; the node names
-will be sorted by Slurm.
+With \fB\-\-distribution\fR=\fIarbitrary\fR the order of the node
+names is significant and a repeated name places another task on that node.
+Otherwise, duplicate node names are ignored and the order is not important,
+as the node names will be sorted by Slurm.
 .IP
 
 .TP
@@ -2876,7 +2890,10 @@ Name and count of any license(s) requested.
 
 .TP
 \fBSLURM_JOB_NODELIST\fR
-List of nodes allocated to the job.
+List of nodes allocated to the job, ordered to match task placement rather
+than sorted by node name: the first node runs the task with the lowest
+\fBSLURM_PROCID\fR. \fBSLURM_JOB_CPUS_PER_NODE\fR and
+\fBSLURM_TASKS_PER_NODE\fR are read in this same order.
 .IP
 
 .TP
