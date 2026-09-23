@@ -331,7 +331,8 @@ Print the user name and uid of who set the reason a node is unavailable.
 .TP
 \fB%v\fR
 Print the running slurmd version. If reporting on a node list, print the
-version of the first node in the list.
+version of one of the nodes in the list. Use \fB\-\-exact\fR to ensure that all
+nodes on a line report the same version.
 .IP
 
 .TP
@@ -561,7 +562,9 @@ Partition name, also see \fB%P\fR.
 
 .TP
 \fBPort\fR
-Node TCP port.
+Node TCP port. If reporting on a node list, print the port of one of the
+nodes in the list. Use \fB\-\-exact\fR to ensure that all nodes on a line
+report the same port.
 .IP
 
 .TP
@@ -647,7 +650,8 @@ Print the user name and uid of who set the reason a node is unavailable.
 .TP
 \fBVersion\fR
 Print the running slurmd version. If reporting on a node list, print the
-version of the first node in the list.
+version of one of the nodes in the list. Use \fB\-\-exact\fR to ensure that all
+nodes on a line report the same version.
 .IP
 
 .TP
@@ -726,7 +730,9 @@ line for each node\-partition pair will be shown.
 If \fB\-\-partition\fR is also specified, then only one line per node in this
 partition is shown.
 The default is to print information in a partition\-oriented format.
-This is ignored if the \fB\-\-format\fR option is specified.
+If \fB\-\-format\fR is specified, the default node\-oriented format listed
+under \fB\-o\fR, \fB\-\-format\fR above is not used, but the
+one\-line\-per\-node\-partition grouping still applies.
 .IP
 
 .TP
@@ -918,7 +924,9 @@ default partition.
 
 .TP
 \fBPORT\fR
-Local TCP port used by slurmd on the node.
+Local TCP port used by slurmd on the node. If reporting on a node list,
+print the port of one of the nodes in the list. Use \fB\-\-exact\fR to
+ensure that all nodes on a line report the same port.
 .IP
 
 .TP
