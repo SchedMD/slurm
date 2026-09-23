@@ -5711,8 +5711,11 @@ extern void mail_prog_resolve(void)
 	}
 
 	/* Known TOCTOU: a configuration check, not a security check */
-	if (stat(slurm_conf.mail_prog, &stat_buf) != 0)
-		error("Configured MailProg is invalid");
+	if (stat(slurm_conf.mail_prog, &stat_buf) != 0) {
+		error("Configured MailProg is invalid, disabling mail: %s: %m",
+		      slurm_conf.mail_prog);
+		xfree(slurm_conf.mail_prog);
+	}
 }
 
 /*

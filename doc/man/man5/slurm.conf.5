@@ -2724,12 +2724,16 @@ local address itself. Changes to MailDomain will only affect new jobs.
 
 .TP
 \fBMailProg\fR
-Fully qualified pathname to the program used to send email per user request.
+Absolute pathname to the mailer program used to send email per user request.
 The default value is "/bin/mail" (or "/usr/bin/mail" if "/bin/mail" does not
 exist but "/usr/bin/mail" does exist).
 The program is called with arguments suitable for the default mail command,
 however additional information about the job is passed in the form of
 environment variables.
+The mailer program will be checked at startup to verify it exists on the
+filesystem. If the mailer program can not be found, then MailProg will be
+disabled for the life of the process. To re-enable mail, the \fBslurmctld\fR
+daemon must be reconfigured or restarted.
 
 Additional variables are the same as those passed to \fIPrologSlurmctld\fR and
 \fIEpilogSlurmctld\fR with additional variables in the following contexts:
