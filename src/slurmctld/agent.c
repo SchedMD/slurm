@@ -2369,6 +2369,12 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 	char job_time[128], term_msg[128];
 	mail_info_t *mi;
 
+	if (!slurm_conf.mail_prog) {
+		debug2("%s: MailProg is disabled, not sending %s mail for %pJ",
+		       __func__, _mail_type_str(mail_type), job_ptr);
+		return;
+	}
+
 	/*
 	 * Send mail only for first component (leader) of a hetjob,
 	 * not the individual job components.
