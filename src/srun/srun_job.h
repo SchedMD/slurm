@@ -75,6 +75,13 @@ typedef struct fname {
 	int        taskid;  /* taskid for IO if IO_ONE */
 } fname_t;
 
+/* What an RPC to the step-create listener asked srun to do. */
+typedef enum {
+	STEP_POKE_NONE = 0, /* nothing valid was read, keep waiting */
+	STEP_POKE_WAKE, /* a step ended, retry the create */
+	STEP_POKE_CANCEL, /* the step was cancelled, abort */
+} step_poke_t;
+
 typedef struct srun_job {
 	slurm_step_id_t step_id; /* assigned step id */
 	uint32_t het_job_node_offset;	/* Hetjob node offset or NO_VAL */

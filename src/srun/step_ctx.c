@@ -68,6 +68,7 @@
 
 #include "src/srun/launch.h"
 #include "src/srun/signals.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/step_ctx.h"
 
 static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
@@ -112,12 +113,6 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg->step_hostlist = NULL;
 	slurm_cred_free_args(arg);
 }
-
-typedef enum {
-	STEP_POKE_NONE = 0, /* nothing valid was read, keep waiting */
-	STEP_POKE_WAKE, /* a step ended, retry the create */
-	STEP_POKE_CANCEL, /* the step was cancelled, abort */
-} step_poke_t;
 
 /*
  * Read a controller poke from the step request socket; signal 0 is a wake
