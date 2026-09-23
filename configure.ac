@@ -603,6 +603,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/relay_io/Makefile
+		 src/plugins/relay_io/common/Makefile
 		 src/plugins/relay_io/uds_json/Makefile
 		 src/plugins/runtime/Makefile
 		 src/plugins/runtime/lua/Makefile
