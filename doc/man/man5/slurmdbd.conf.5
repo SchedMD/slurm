@@ -740,8 +740,52 @@ in seconds. Default value is 10 seconds.
 \fBParameters\fR
 Contains arbitrary comma separated parameters used to alter the behavior of
 the slurmdbd.
+
+\fBNOTE\fR: The \fBconmgr_*\fR and \fBworkerpool_threads\fR options are applied
+once, when \fBslurmdbd\fR starts. Changes to them are not picked up by
+\fBsacctmgr reconfigure\fR; they require a restart of \fBslurmdbd\fR.
+
+\fBNOTE\fR: \fBslurmdbd\fR only uses the connection manager for signal
+handling. It does not use the connection manager for \fBDbdPort\fR
+connections; each one is handled on its own thread. The \fBconmgr_*\fR options
+therefore do not change how \fBDbdPort\fR traffic is accepted or when it times
+out.
 .IP
 .RS
+.TP
+\fBconmgr_connect_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering an outbound connection attempt to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.TP
+\fBconmgr_max_connections\fR=<\fIconnection_count\fR>
+Specify the maximum number of connections to be processed at any given time.
+This does not influence the maximum number of pending connections as that is
+controlled by the kernel. Increasing this value will increase \fBslurmdbd\fR's
+memory footprint. Sites are advised to monitor memory consumption when
+increasing this value. Defaults to 150.
+.TP
+\fBconmgr_quiesce_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering quiesce to be timed out. Upon timeout,
+all (non\-listening) active connections will be closed to allow the quiesce to
+start. Defaults to two times value of \fBMessageTimeout\fR.
+.TP
+\fBconmgr_read_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a read from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
+.TP
+\fBconmgr_threads\fR=<\fIthread_count\fR>
+Alias for \fBworkerpool_threads\fR.
+.TP
+\fBconmgr_use_poll\fR
+Use \fIpoll\fR(2) instead of \fIepoll\fR(7) for monitoring file descriptors.
+.TP
+\fBconmgr_wait_write_delay\fR=<\fIseconds\fR>
+When waiting for kernel to flush outgoing buffer, poll kernel for changes every
+<\fIseconds\fR> for changes. Defaults to the value of \fBMessageTimeout\fR.
+.TP
+\fBconmgr_write_timeout\fR=<\fIseconds\fR>
+Wait <\fIseconds\fR> before considering a write from a file descriptor to be
+timed out. Defaults to the value of \fBMessageTimeout\fR.
 .TP
 \fBPreserveCaseAll\fR
 Shortcut to enable \fBPreserveCaseUser\fR and \fBPreserveCaseResource\fR.
@@ -753,6 +797,11 @@ Otherwise, the name is forced to lowercase.
 \fBPreserveCaseResource\fR
 When defining resources, preserve case on the resource name.
 Otherwise, the name is forced to lowercase.
+.TP
+\fBworkerpool_threads\fR=<\fIthread_count\fR>
+The number of process threads in the worker pool used for internal processing.
+Defaults to twice the number of CPUs available, up to a maximum default of 32
+threads.
 .RE
 .IP
 
