@@ -1431,6 +1431,18 @@ Acceptable values at present include:
 .IP
 .RS
 .TP 20
+\fBruntime/lua\fR
+Job tasks are handled by a \fBruntime.lua\fR script, read from the same
+directory as this file.
+The script is called for every task, whether or not \fB\-\-container\fR was
+requested.
+
+\fBNOTE\fR: The script is read by each task as the job user and so must be
+readable by them. Do not store anything in it that job users must not see:
+the script is loaded into the task's own process whether or not it runs the
+task.
+.IP
+.TP
 \fBruntime/none\fR
 \fB\-\-container\fR requests are ignored; job tasks are executed directly by
 slurmstepd.

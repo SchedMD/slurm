@@ -1,0 +1,66 @@
+--[[
+--Example runtime.lua file for Slurm
+--Selected with DefRuntimePlugin=runtime/lua in slurm.conf, or per job with
+--the --runtime option. See slurm.conf(5).
+--For the runtime operations and when they are called check:
+-- src/interfaces/runtime.h
+--
+--The script is re-read, re-compiled and its top level re-executed on every
+--call, not just once when the plugin is loaded. Keep top-level work cheap:
+--it runs again for every step and every task, on every node, and nothing
+--persists between calls. Every function below is
+--required to be defined, and is called with the step id as a string, in the
+--same form used elsewhere in Slurm (e.g. "1234", "1234_5", "1234.0",
+--"1234_5.batch"). task_init and run are additionally called with the
+--numeric task id as a second argument; setup and cleanup get nil there since
+--they are not called per-task.
+--]]
+
+log_prefix = 'slurm_runtime'
+
+--[[
+--Set up the runtime for the step. Runs in slurmstepd.
+--Returning anything but slurm.SUCCESS fails the step.
+--]]
+function slurm_runtime_setup(id)
+	slurm.log_debug("%s: setup %s", log_prefix, id)
+	return slurm.SUCCESS
+end
+
+--[[
+--Clean up the runtime for the step. Runs in slurmstepd.
+--The return value is only logged; the interface cannot pass it on.
+--]]
+function slurm_runtime_cleanup(id)
+	slurm.log_debug("%s: cleanup %s", log_prefix, id)
+	return slurm.SUCCESS
+end
+
+--[[
+--Prepare the runtime for a task. Runs in the task child after fork(), as the
+--job user. The return value is only logged.
+--]]
+function slurm_runtime_task_init(id, task_id)
+	slurm.log_debug("%s: task_init %s task %d", log_prefix, id, task_id)
+	return slurm.SUCCESS
+end
+
+--[[
+--Run a task within the runtime. Runs in the task child after fork(), as the
+--job user.
+--
+--A Lua script may directly exec the task, in which case this never returns.
+--Returning slurm.SUCCESS or slurm.ESLURM_NOT_SUPPORTED means "I did not run
+--it, exec it yourself" and slurmstepd execs the task as usual.
+--
+--Any other value becomes the task's exit status. A value in the range 1-255
+--is reported as the errno of a failed exec: returning 13 makes the task exit
+--13 and report "Permission denied". slurm.ERROR and the Slurm error codes
+--other than slurm.ESLURM_NOT_SUPPORTED fall outside that range and make the
+--task exit 255. In every failing case slurmstepd logs
+--"execve(): <program>: <error>" even though the task was never exec'd.
+--]]
+function slurm_runtime_run(id, task_id)
+	slurm.log_debug("%s: run %s task %d", log_prefix, id, task_id)
+	return slurm.SUCCESS
+end

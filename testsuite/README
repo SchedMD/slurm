@@ -1209,3 +1209,7 @@ test_169_1   Test that scrontab builds a job description from a #SCRON line
 test_170_#   Testing of sched/backfill.
 =======================================
 test_170_1   Test TRESRunMins usage when a --time-min job's limit is trimmed.
+
+test_171_#   Testing of the runtime plugin interface.
+=====================================================
+test_171_1   Test runtime/lua does not break srun/sbatch/salloc job launch
