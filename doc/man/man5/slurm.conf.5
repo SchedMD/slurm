@@ -4968,6 +4968,13 @@ that opted into adaptive resilience to be shrunk onto its surviving nodes
 when one of its allocated nodes fails. Below this threshold the job is
 requeued or killed as it would be without adaptive resilience. A job that
 was shrunk keeps running with the reason \fBResilienceRecovery\fR.
+When \fBpermit_job_expansion\fR is also set, a shrunk job is grown back onto
+the nodes of its original allocation as they become idle again, one node at a
+time and at most every 30 seconds, through an allocation\-only job named
+"resilience\-regrow\-<jobid>" that is merged into the job in the same way as
+a job started with \-\-dependency=expand:<jobid>. Steps already running are
+not extended onto the regained nodes; the job script has to launch new steps
+to use them.
 The default value is 70.
 .IP
 

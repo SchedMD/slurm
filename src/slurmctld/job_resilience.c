@@ -39,17 +39,20 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/identity.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/job_resilience.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -229,4 +232,152 @@ extern void job_resilience_reset(job_record_t *job_ptr)
 	job_ptr->resilience_shrink_time = 0;
 	job_ptr->resilience_orig_node_cnt = 0;
 	FREE_NULL_BITMAP(job_ptr->resilience_orig_bitmap);
+}
+
+/*
+ * Start an allocation-only job for the same user on node_ptr with an
+ * "expand:<jobid>" dependency on job_ptr and merge it into job_ptr. This is
+ * the same sequence a user follows by hand to grow a running job.
+ */
+static int _regrow_with_node(job_record_t *job_ptr, node_record_t *node_ptr)
+{
+	job_desc_msg_t *job_desc = xmalloc(sizeof(*job_desc));
+	job_details_t *detail_ptr = job_ptr->details;
+	job_record_t *helper_ptr = NULL;
+	char *err_msg = NULL;
+	int rc;
+
+	slurm_init_job_desc_msg(job_desc);
+	job_desc->user_id = job_ptr->user_id;
+	job_desc->group_id = job_ptr->group_id;
+	job_desc->id = copy_identity(job_ptr->id);
+	xstrfmtcat(job_desc->name, "resilience-regrow-%u", job_ptr->job_id);
+	job_desc->partition = xstrdup(job_ptr->part_ptr->name);
+	job_desc->account = xstrdup(job_ptr->account);
+	if (job_ptr->qos_ptr)
+		job_desc->qos = xstrdup(job_ptr->qos_ptr->name);
+	job_desc->wckey = xstrdup(job_ptr->wckey);
+	job_desc->work_dir =
+		xstrdup(detail_ptr->work_dir ? detail_ptr->work_dir : "/");
+	job_desc->alloc_node = xstrdup("slurmctld");
+	xstrfmtcat(job_desc->dependency, "expand:%u", job_ptr->job_id);
+	job_desc->req_nodes = xstrdup(node_ptr->name);
+	job_desc->min_nodes = 1;
+	job_desc->max_nodes = 1;
+	job_desc->immediate = 1;
+	job_desc->het_job_offset = NO_VAL;
+	job_desc->time_limit = job_ptr->time_limit;
+	if (detail_ptr->whole_node & WHOLE_NODE_REQUIRED)
+		job_desc->shared = JOB_SHARED_NONE;
+	if (detail_ptr->ntasks_per_node)
+		job_desc->ntasks_per_node = detail_ptr->ntasks_per_node;
+	if (detail_ptr->cpus_per_task)
+		job_desc->cpus_per_task = detail_ptr->cpus_per_task;
+	job_desc->pn_min_memory = detail_ptr->pn_min_memory;
+
+	/*
+	 * Submitted as uid 0 with a node list so job_allocate() does not
+	 * treat it as a fragmentation risk; the allocation itself is charged
+	 * to the job's user, account and QOS as usual.
+	 */
+	rc = job_allocate(job_desc, 1, false, NULL, true, 0, false, &helper_ptr,
+			  &err_msg, SLURM_PROTOCOL_VERSION);
+	slurm_free_job_desc_msg(job_desc);
+	if (err_msg) {
+		debug("%s: %pJ regrow on %s: %s", __func__, job_ptr,
+		      node_ptr->name, err_msg);
+		xfree(err_msg);
+	}
+	if (!helper_ptr || !IS_JOB_RUNNING(helper_ptr)) {
+		info("%s: could not allocate %s to grow %pJ: %s", __func__,
+		     node_ptr->name, job_ptr, slurm_strerror(rc));
+		if (helper_ptr && !IS_JOB_FINISHED(helper_ptr))
+			(void) job_signal(helper_ptr, SIGKILL, 0, 0, false);
+		return SLURM_ERROR;
+	}
+
+	rc = job_expand_merge(helper_ptr);
+	if (rc != SLURM_SUCCESS) {
+		error("%s: could not merge %pJ into %pJ: %s", __func__,
+		      helper_ptr, job_ptr, slurm_strerror(rc));
+		(void) job_signal(helper_ptr, SIGKILL, 0, 0, false);
+		return rc;
+	}
+
+	info("%s: %pJ grown back onto %s, now %u of %u nodes", __func__,
+	     job_ptr, node_ptr->name, job_ptr->node_cnt,
+	     job_ptr->resilience_orig_node_cnt);
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_collect_shrunk(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	list_t *shrunk_jobs = arg;
+
+	if ((job_ptr->bit_flags & ADAPTIVE_RESILIENCE) &&
+	    job_ptr->resilience_shrink_time &&
+	    job_ptr->resilience_orig_bitmap && IS_JOB_RUNNING(job_ptr) &&
+	    !IS_JOB_CONFIGURING(job_ptr) &&
+	    (job_ptr->node_cnt < job_ptr->resilience_orig_node_cnt))
+		list_append(shrunk_jobs, job_ptr);
+
+	return 0;
+}
+
+static void _regrow_job(job_record_t *job_ptr)
+{
+	bitstr_t *cand_bitmap = bit_copy(job_ptr->resilience_orig_bitmap);
+	node_record_t *node_ptr;
+
+	/* Original nodes the job no longer holds and that are idle again */
+	bit_and_not(cand_bitmap, job_ptr->node_bitmap);
+	bit_and(cand_bitmap, avail_node_bitmap);
+	bit_and(cand_bitmap, idle_node_bitmap);
+
+	for (int i = 0; (node_ptr = next_node_bitmap(cand_bitmap, &i)); i++) {
+		if (job_ptr->node_cnt >= job_ptr->resilience_orig_node_cnt)
+			break;
+		if (_regrow_with_node(job_ptr, node_ptr) != SLURM_SUCCESS)
+			break;
+		xfree(job_ptr->state_desc);
+		if (job_ptr->node_cnt >= job_ptr->resilience_orig_node_cnt) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			job_resilience_reset(job_ptr);
+		} else {
+			xstrfmtcat(
+				job_ptr->state_desc,
+				"Regained node %s, running on %u of %u nodes",
+				node_ptr->name, job_ptr->node_cnt,
+				job_ptr->resilience_orig_node_cnt);
+		}
+		last_job_update = time(NULL);
+	}
+	FREE_NULL_BITMAP(cand_bitmap);
+}
+
+extern void job_resilience_regrow_all(void)
+{
+	list_t *shrunk_jobs;
+
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	if (!permit_job_expansion())
+		return;
+
+	/*
+	 * Collect first: allocating the helper job appends to job_list, which
+	 * can not happen while job_list is being iterated.
+	 */
+	shrunk_jobs = list_create(NULL);
+	list_for_each(job_list, _foreach_collect_shrunk, shrunk_jobs);
+	if (list_count(shrunk_jobs)) {
+		job_record_t *job_ptr;
+		while ((job_ptr = list_pop(shrunk_jobs)))
+			_regrow_job(job_ptr);
+	}
+	FREE_NULL_LIST(shrunk_jobs);
 }

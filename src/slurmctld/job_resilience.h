@@ -39,6 +39,9 @@
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
 
+/* Seconds between attempts to grow shrunk jobs back */
+#define RESILIENCE_REGROW_PERIOD 30
+
 /*
  * Percentage (0-100) of configured nodes that are currently up.
  * Caller must hold the node read lock.
@@ -75,5 +78,16 @@ extern void job_resilience_node_recovered(node_record_t *node_ptr);
 
 /* Clear the resilience state of a job that is being requeued. */
 extern void job_resilience_reset(job_record_t *job_ptr);
+
+/*
+ * Grow every resilience-shrunk running job back onto the nodes of its
+ * original allocation that are idle again, one node at a time, using the
+ * job expansion mechanism (an internal "expand:<jobid>" allocation that is
+ * merged into the job). Requires SchedulerParameters=permit_job_expansion.
+ * Called periodically from the slurmctld background thread.
+ * Caller must hold the config read, job write, node write, partition read
+ * and federation read locks.
+ */
+extern void job_resilience_regrow_all(void);
 
 #endif
