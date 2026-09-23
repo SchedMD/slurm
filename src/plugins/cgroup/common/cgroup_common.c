@@ -628,36 +628,35 @@ extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *param,
 
 extern int common_cgroup_lock(xcgroup_t *cg)
 {
-	int fstatus = SLURM_ERROR;
-
-	if (cg->path == NULL)
-		return fstatus;
-
-	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
-		error("error from open of cgroup '%s' : %m", cg->path);
-		return fstatus;
+	if (!cg->path) {
+		error("invalid cgroup path");
+		return SLURM_ERROR;
 	}
 
-	if (flock(cg->fd,  LOCK_EX) < 0) {
-		error("error locking cgroup '%s' : %m", cg->path);
-		close(cg->fd);
-	} else
-		fstatus = SLURM_SUCCESS;
+	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
+		error("cannot open cgroup '%s' : %m", cg->path);
+		return SLURM_ERROR;
+	}
 
-	return fstatus;
+	if (flock(cg->fd, LOCK_EX) < 0) {
+		error("cannot lock cgroup '%s' : %m", cg->path);
+		close(cg->fd);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 extern int common_cgroup_unlock(xcgroup_t *cg)
 {
-	int fstatus = SLURM_ERROR;
-
 	if (flock(cg->fd,  LOCK_UN) < 0) {
-		error("error unlocking cgroup '%s' : %m", cg->path);
-	} else
-		fstatus = SLURM_SUCCESS;
+		error("cannot unlock cgroup '%s' : %m", cg->path);
+		close(cg->fd);
+		return SLURM_ERROR;
+	}
 
 	close(cg->fd);
-	return fstatus;
+	return SLURM_SUCCESS;
 }
 
 extern bool common_cgroup_wait_pid_moved(xcgroup_t *cg, pid_t pid,

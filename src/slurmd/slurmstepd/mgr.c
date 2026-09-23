@@ -1573,8 +1573,7 @@ x11_fail:
 	 * configured.
 	 */
 	for (uint32_t i = 0; i < step->node_tasks; i++)
-		if (task_g_post_term(step, step->task[i]) == ENOMEM)
-			step->oom_error = true;
+		task_g_post_term(step, step->task[i]);
 
 	/* Lock to not collide with the _x11_signal_handler thread. */
 	auth_context_lock();
@@ -2777,11 +2776,7 @@ static int _wait_for_any_task(bool waitflag)
 			    0)
 				error ("Unable to spank task %d at exit",
 				       t->id);
-			rc = task_g_post_term(step, t);
-			if (rc == ENOMEM)
-				step->oom_error = true;
-			else if (rc && !t->estatus)
-				t->estatus = rc;
+			task_g_post_term(step, t);
 
 			if (t->estatus) {
 				slurm_mutex_lock(&step_complete.lock);

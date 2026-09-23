@@ -1914,10 +1914,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * terminated and trying to destroy the job_x directory.
 	 */
-	if (common_cgroup_lock(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("common_cgroup_lock error (%s)", ctl_names[ctl]);
+	if (common_cgroup_lock(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	}
 
 	/* Don't let other plugins destroy our structs. */
 	step_active_cnt++;
@@ -2148,10 +2146,8 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t ctl)
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started and trying to create things inside job_x directory.
 	 */
-	if (common_cgroup_lock(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("common_cgroup_lock error (%s)", ctl_names[ctl]);
+	if (common_cgroup_lock(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	}
 
 	/*
 	 * FUTURE:
@@ -2685,7 +2681,7 @@ fail:
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
+extern int cgroup_p_step_init_oom(stepd_step_rec_t *step)
 {
 	/* Only set the memory.oom.group if needed. */
 	if (step->oom_kill_step) {
@@ -2702,7 +2698,7 @@ extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
+extern cgroup_oom_t *cgroup_p_step_get_oom(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *oom_step_results = NULL;
 	uint64_t job_kills = 0, step_kills = 0;

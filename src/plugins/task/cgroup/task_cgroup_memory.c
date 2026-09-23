@@ -54,7 +54,7 @@ static uint64_t max_swap;       /* Upper bound for swap */
 static uint64_t totalram;       /* Total RealMemory of node from slurm.conf */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value */
 
-static bool oom_mgr_started = false;
+static bool oom_inited = false;
 
 static uint64_t percent_in_bytes(uint64_t mb, float percent)
 {
@@ -242,8 +242,8 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *step)
 	if (_memcg_initialize(step, step->step_mem, true) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (cgroup_g_step_start_oom_mgr(step) == SLURM_SUCCESS)
-		oom_mgr_started = true;
+	if (cgroup_g_step_init_oom(step) == SLURM_SUCCESS)
+		oom_inited = true;
 
 	/* Attach the slurmstepd to the step memory cgroup. */
 	pid = getpid();
@@ -255,37 +255,13 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 	cgroup_oom_t *results;
 	int rc = SLURM_SUCCESS;
 
-	if (!oom_mgr_started)
+	if (!oom_inited)
 		return SLURM_SUCCESS;
 
-	results = cgroup_g_step_stop_oom_mgr(step);
+	results = cgroup_g_step_get_oom(step);
 
 	if (results == NULL)
 		return SLURM_ERROR;
-
-	if (results->step_memsw_failcnt > 0) {
-		/*
-		 * reports the number of times that the memory plus swap space
-		 * limit has reached the value in memory.memsw.limit_in_bytes.
-		 */
-		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	} else if (results->step_mem_failcnt > 0) {
-		/*
-		 * reports the number of times that the memory limit has reached
-		 * the value set in memory.limit_in_bytes.
-		 */
-		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	}
-
-	if (results->job_memsw_failcnt > 0) {
-		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	} else if (results->job_mem_failcnt > 0) {
-		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
-		     &step->step_id);
-	}
 
 	if (results->oom_kill_cnt) {
 		error("Detected %"PRIu64" oom_kill event%s in %ps. Some of the step tasks have been OOM Killed.",
@@ -306,6 +282,32 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 	xfree(results);
 
 	return rc;
+}
+
+extern void task_cgroup_memory_log_events(stepd_step_rec_t *step)
+{
+	cgroup_oom_t *results = NULL;
+
+	if (!oom_inited || !(results = cgroup_g_step_get_oom(step)))
+		return;
+
+	if (results->step_memsw_failcnt > 0) {
+		/*
+		 * Reports the number of times that the swap space limit has
+		 * been reached.
+		 */
+		info("%ps hit swap limit %"PRIu64" times during execution. This may or may not result in some failure.",
+		     &step->step_id, results->step_memsw_failcnt);
+	} else if (results->step_mem_failcnt > 0) {
+		/*
+		 * Reports the number of times that the memory space limit has
+		 * been reached.
+		 */
+		info("%ps hit memory limit %"PRIu64" times during execution. This may or may not result in some failure.",
+		     &step->step_id, results->step_mem_failcnt);
+	}
+
+	xfree(results);
 }
 
 extern int task_cgroup_memory_add_pid(stepd_step_rec_t *step, pid_t pid,
