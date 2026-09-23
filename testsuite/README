@@ -717,6 +717,8 @@ test_102_9   Performance test: sacctmgr delete user with large assoc table
 test_102_10  Test sacctmgr modify TRES with +=/-= syntax
 test_102_11  Test sacctmgr archive dump uses configured Purge*After when no duration is given
 test_102_12  Test sacctmgr load, confirm that typed GRES can get parsed correctly
+test_102_13  Test sacctmgr show assoc withsubaccounts matches the account
+             lineage and not a partition named like the account
 
 test_103_#   Testing of salloc options.
 =======================================
