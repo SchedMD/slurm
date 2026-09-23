@@ -1218,3 +1218,7 @@ test_170_1   Test TRESRunMins usage when a --time-min job's limit is trimmed.
 test_171_#   Testing of the runtime plugin interface.
 =====================================================
 test_171_1   Test runtime/lua does not break srun/sbatch/salloc job launch
+
+test_172_#   Testing of JobComp plugins.
+========================================
+test_172_1   Test the exit code jobcomp/filetxt records for a completed job
