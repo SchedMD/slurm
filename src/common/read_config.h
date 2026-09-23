@@ -347,6 +347,12 @@ extern int read_conf_send_stepd(int fd);
 extern void read_conf_recv_stepd(int fd);
 
 /*
+ * Set MailProg to the default when unset and report one that can not be run.
+ * NOTE: Call after each configuration read, which clears what was resolved.
+ */
+extern void mail_prog_resolve(void);
+
+/*
  * Allocate memory for a config_key_pair_t pointer and initialize it by
  * duplicating the key-value arguments. Append the resulting pair to the
  * argument list if it's not NULL.

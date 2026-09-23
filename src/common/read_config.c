@@ -5698,6 +5698,23 @@ extern char *slurm_conf_expand_slurmd_path(const char *path,
 	return dir;
 }
 
+extern void mail_prog_resolve(void)
+{
+	struct stat stat_buf = { 0 };
+
+	if (!slurm_conf.mail_prog) {
+		if ((stat(DEFAULT_MAIL_PROG, &stat_buf) == 0) ||
+		    (stat(DEFAULT_MAIL_PROG_ALT, &stat_buf) != 0))
+			slurm_conf.mail_prog = xstrdup(DEFAULT_MAIL_PROG);
+		else
+			slurm_conf.mail_prog = xstrdup(DEFAULT_MAIL_PROG_ALT);
+	}
+
+	/* Known TOCTOU: a configuration check, not a security check */
+	if (stat(slurm_conf.mail_prog, &stat_buf) != 0)
+		error("Configured MailProg is invalid");
+}
+
 /*
  * prolog_flags2str - convert a PrologFlags uint16_t to the equivalent string
  * Keep in sync with prolog_str2flags() below
