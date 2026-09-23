@@ -1512,7 +1512,12 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 			else
 				printf("Submitted step %s\n", tmp_char);
 		}
-	} else if (i > 0) {
+	} else if ((i > 0) || step_queued) {
+		/*
+		 * A step created at wake comes back inside the first create
+		 * attempt, so pair the queued notice with the started one on
+		 * the wait rather than on the retry count.
+		 */
 		info("%ps started", &step_req->step_id);
 	}
 

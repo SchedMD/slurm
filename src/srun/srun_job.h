@@ -80,6 +80,8 @@ typedef enum {
 	STEP_POKE_NONE = 0, /* nothing valid was read, keep waiting */
 	STEP_POKE_WAKE, /* a step ended, retry the create */
 	STEP_POKE_CANCEL, /* the step was cancelled, abort */
+	STEP_POKE_ALLOCATED, /* stepmgr created and pushed the step */
+	STEP_POKE_FAILED, /* stepmgr pushed a terminal create error */
 } step_poke_t;
 
 typedef struct srun_job {
@@ -137,6 +139,9 @@ typedef struct srun_job {
 	step_launch_state_t *step_launch_ready; /* set once launch takes over */
 	conmgr_fd_ref_t *step_listener; /* linked step-create listener con */
 	list_t *step_pending_msgs; /* RPCs awaiting create result or launch */
+	bool step_wait_active; /* a queued-step wait is consuming pokes */
+	slurm_step_id_t wait_step_id; /* step the active wait is for; NO_VAL if
+				     * the id was never learned */
 	char *account;    /* account of this job */
 	char *qos;        /* job's qos */
 	char *resv_name;  /* reservation the job is using */

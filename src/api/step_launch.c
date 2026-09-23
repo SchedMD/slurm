@@ -1530,6 +1530,14 @@ static int _launch_msg(slurm_msg_t *msg, void *arg)
 		debug3("slurmctld ping received");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
+	case SRUN_STEP_ALLOC_CHECK:
+		/*
+		 * The step already launched, so this srun is not waiting on a
+		 * push.  Refuse rather than leave the stepmgr waiting.
+		 */
+		debug2("refusing push check for an already launched step");
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
 		_job_complete_handler(sls, msg);
