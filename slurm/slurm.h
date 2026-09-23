@@ -652,6 +652,8 @@ enum job_state_reason {
 	WAIT_MAX_POWERED_NODES,            /* max_powered_nodes reached */
 	WAIT_MPI_PORTS_BUSY,		   /* MPI resv_ports busy */
 	WAIT_HRES_DISABLED, /* requested HRES is disabled */
+	WAIT_RESILIENCE_RECOVERY, /* adaptive resilience: running on a
+				   * reduced allocation after node failure */
 	REASON_END, /* end of table */
 };
 
@@ -1273,6 +1275,8 @@ typedef enum {
 						  * yielding locks to track if
 						  * the job has been updated in
 						  * the yield */
+#define ADAPTIVE_RESILIENCE SLURM_BIT(52) /* shrink allocation and keep
+					   * running on node failure */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

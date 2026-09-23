@@ -103,6 +103,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/gang.h"
+#include "src/slurmctld/job_resilience.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -3080,6 +3081,15 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 		}
 	} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
 		foreach_kill_job_by->kill_job_cnt++;
+		/*
+		 * Adaptive resilience: shrink the job onto its surviving nodes
+		 * and keep it running. On failure (or when the cluster health
+		 * gate rejects it) fall through to the regular no-kill,
+		 * requeue or kill handling below.
+		 */
+		if (job_resilience_eligible(job_ptr) &&
+		    (job_resilience_shrink(job_ptr, node_ptr) == SLURM_SUCCESS))
+			return 0;
 		if ((job_ptr->details) &&
 		    (job_ptr->kill_on_node_fail == 0) &&
 		    (job_ptr->node_cnt > 1) &&
@@ -3681,6 +3691,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->node_bitmap_pr = NULL;
 	job_ptr_pend->node_bitmap_rs = NULL;
 	job_ptr_pend->node_bitmap_preempt = NULL;
+	job_ptr_pend->resilience_orig_bitmap = NULL;
+	job_ptr_pend->resilience_orig_node_cnt = 0;
+	job_ptr_pend->resilience_shrink_time = 0;
 	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
 	job_ptr_pend->nodes_pr = NULL;
@@ -16904,6 +16917,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	job_resilience_reset(job_ptr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);

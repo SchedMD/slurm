@@ -27,6 +27,8 @@ slurmctld_SOURCES =     \
 	http.c	\
 	http.h	\
 	job_mgr.c 	\
+	job_resilience.c \
+	job_resilience.h \
 	job_scheduler.c	\
 	job_scheduler.h	\
 	job_state.c	\
