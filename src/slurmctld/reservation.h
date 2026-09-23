@@ -217,9 +217,11 @@ extern time_t find_resv_end(time_t start_time, int resolution);
  */
 extern int job_test_resv_now(job_record_t *job_ptr);
 
-/* Adjust a job's time_limit and end_time as needed to avoid using
- *	reserved resources. Don't go below job's time_min value. */
-extern void job_time_adj_resv(job_record_t *job_ptr);
+/*
+ * Return the highest time limit, in minutes, that keeps a job clear of every
+ * advance reservation it would otherwise overlap. Does not modify the job.
+ */
+extern uint32_t job_get_resv_time_limit(job_record_t *job_ptr);
 
 /*
  * Scan all jobs for valid reservations

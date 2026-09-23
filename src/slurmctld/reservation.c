@@ -7642,15 +7642,20 @@ extern void resv_replace_update(job_record_t *job_ptr)
 }
 
 /*
- * Adjust a job's time_limit and end_time as needed to avoid using
- * reserved resources. Don't go below job's time_min value.
+ * Return the highest time limit, in minutes, that keeps a job clear of every
+ * advance reservation it would otherwise overlap. The result is capped at the
+ * job's current time_limit and is not floored by time_min. The caller applies
+ * that, along with any other limit it has to honor.
+ *
+ * The job record is not modified, but expired reservations may be advanced.
  */
-extern void job_time_adj_resv(job_record_t *job_ptr)
+extern uint32_t job_get_resv_time_limit(job_record_t *job_ptr)
 {
 	list_itr_t *iter;
 	slurmctld_resv_t * resv_ptr;
 	time_t now = time(NULL);
 	int32_t resv_begin_time;
+	uint32_t new_time_limit = job_ptr->time_limit;
 
 	/*
 	 * This needs to be an iterator since _advance_resv_time() may
@@ -7674,11 +7679,11 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 				      job_ptr->node_bitmap) == 0)))
 			continue;	/* disjoint resources */
 		resv_begin_time = difftime(resv_ptr->start_time, now) / 60;
-		job_ptr->time_limit = MIN(job_ptr->time_limit,resv_begin_time);
+		new_time_limit = MIN(new_time_limit, resv_begin_time);
 	}
 	list_iterator_destroy(iter);
-	job_ptr->time_limit = MAX(job_ptr->time_limit, job_ptr->time_min);
-	job_end_time_reset(job_ptr);
+
+	return new_time_limit;
 }
 
 /*
