@@ -7,6 +7,7 @@ SUBDIRS = \
 	partition \
 	pbs \
 	require_timelimit \
+	resilience \
 	throttle
 
 if HAVE_LUA

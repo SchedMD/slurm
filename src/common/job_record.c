@@ -287,6 +287,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_preempt);
+	FREE_NULL_BITMAP(job_ptr->resilience_orig_bitmap);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
@@ -2865,6 +2866,10 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 			packstr(dump_job_ptr->part_ptr->name, buffer);
 		else
 			packstr(dump_job_ptr->alloc_partition, buffer);
+
+		pack_time(dump_job_ptr->resilience_shrink_time, buffer);
+		pack32(dump_job_ptr->resilience_orig_node_cnt, buffer);
+		pack_bit_str_hex(dump_job_ptr->resilience_orig_bitmap, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
@@ -3409,6 +3414,10 @@ extern int job_record_unpack(job_record_t **out,
 					  job_ptr->id->pw_name);
 		}
 		safe_unpackstr(&job_ptr->alloc_partition, buffer);
+
+		safe_unpack_time(&job_ptr->resilience_shrink_time, buffer);
+		safe_unpack32(&job_ptr->resilience_orig_node_cnt, buffer);
+		unpack_bit_str_hex(&job_ptr->resilience_orig_bitmap, buffer);
 	} else if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 		job_ptr->db_index = job_ptr->step_id.sluid;

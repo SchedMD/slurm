@@ -103,6 +103,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/gang.h"
+#include "src/slurmctld/job_resilience.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -3080,6 +3081,15 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 		}
 	} else if (IS_JOB_RUNNING(job_ptr) || suspended) {
 		foreach_kill_job_by->kill_job_cnt++;
+		/*
+		 * Adaptive resilience: shrink the job onto its surviving nodes
+		 * and keep it running. On failure (or when the cluster health
+		 * gate rejects it) fall through to the regular no-kill,
+		 * requeue or kill handling below.
+		 */
+		if (job_resilience_eligible(job_ptr) &&
+		    (job_resilience_shrink(job_ptr, node_ptr) == SLURM_SUCCESS))
+			return 0;
 		if ((job_ptr->details) &&
 		    (job_ptr->kill_on_node_fail == 0) &&
 		    (job_ptr->node_cnt > 1) &&
@@ -3681,6 +3691,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->node_bitmap_pr = NULL;
 	job_ptr_pend->node_bitmap_rs = NULL;
 	job_ptr_pend->node_bitmap_preempt = NULL;
+	job_ptr_pend->resilience_orig_bitmap = NULL;
+	job_ptr_pend->resilience_orig_node_cnt = 0;
+	job_ptr_pend->resilience_shrink_time = 0;
 	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
 	job_ptr_pend->nodes_pr = NULL;
@@ -12342,8 +12355,10 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 	    xstrchr(job_ptr2->licenses, '|'))
 		return false;
 
-	if (list_find_first_ro(job_ptr1->license_list, _find_hres, NULL) ||
-	    list_find_first_ro(job_ptr2->license_list, _find_hres, NULL))
+	if ((job_ptr1->license_list &&
+	     list_find_first_ro(job_ptr1->license_list, _find_hres, NULL)) ||
+	    (job_ptr2->license_list &&
+	     list_find_first_ro(job_ptr2->license_list, _find_hres, NULL)))
 		return false;
 
 	return true;
@@ -12481,6 +12496,80 @@ static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
 	_update_job_mem_on_nodes(job_ptr);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * job_expand_merge - move every resource of job_ptr (a job started with an
+ *	"expand:<jobid>" dependency) into the job it expands, then complete
+ *	job_ptr. Used by _update_job() for "scontrol update NumNodes=0" and by
+ *	the adaptive resilience regrow logic.
+ * IN job_ptr - the job whose resources are moved
+ * RET SLURM_SUCCESS or an error code
+ * NOTE: this calls job_post_resize_acctg() for both jobs
+ */
+extern int job_expand_merge(job_record_t *job_ptr)
+{
+	int error_code;
+	job_record_t *expand_job_ptr;
+	bitstr_t *orig_job_node_bitmap, *orig_jobx_node_bitmap;
+
+	expand_job_ptr = find_job_record(job_ptr->details->expanding_jobid);
+	if (expand_job_ptr == NULL) {
+		info("%s: JobId=%u to be expanded by %pJ not found", __func__,
+		     job_ptr->details->expanding_jobid, job_ptr);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_SUSPENDED(expand_job_ptr)) {
+		info("%s: Can not expand %pJ from %pJ, job is suspended",
+		     __func__, expand_job_ptr, job_ptr);
+		return ESLURM_JOB_SUSPENDED;
+	}
+	if ((job_ptr->step_list != NULL) &&
+	    (list_count(job_ptr->step_list) != 0)) {
+		info("%s: Attempt to merge %pJ with active steps into %pJ",
+		     __func__, job_ptr, expand_job_ptr);
+		return ESLURMD_STEP_EXISTS;
+	}
+	if (!_valid_license_job_expansion(job_ptr, expand_job_ptr)) {
+		info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
+		     __func__, job_ptr, expand_job_ptr, job_ptr->licenses,
+		     expand_job_ptr->licenses);
+		return ESLURM_INVALID_LICENSES;
+	}
+
+	sched_info("%s: killing %pJ and moving all resources to %pJ",
+		   __func__, job_ptr, expand_job_ptr);
+	job_pre_resize_acctg(job_ptr);
+	job_pre_resize_acctg(expand_job_ptr);
+	_send_job_kill(job_ptr);
+
+	xassert(job_ptr->job_resrcs);
+	xassert(job_ptr->job_resrcs->node_bitmap);
+	xassert(expand_job_ptr->job_resrcs->node_bitmap);
+	orig_job_node_bitmap = bit_copy(job_ptr->node_bitmap);
+	orig_jobx_node_bitmap = bit_copy(expand_job_ptr->job_resrcs->node_bitmap);
+	error_code = select_g_job_expand(job_ptr, expand_job_ptr);
+	if (error_code == SLURM_SUCCESS) {
+		_merge_job_licenses(job_ptr, expand_job_ptr);
+		FREE_NULL_BITMAP(job_ptr->node_bitmap);
+		job_ptr->node_bitmap = orig_job_node_bitmap;
+		orig_job_node_bitmap = NULL;
+		deallocate_nodes(job_ptr, false, false, false);
+		bit_clear_all(job_ptr->node_bitmap);
+		job_state_set(job_ptr,
+			      (JOB_COMPLETE |
+			       (job_ptr->job_state & JOB_STATE_FLAGS)));
+		_realloc_nodes(expand_job_ptr, orig_jobx_node_bitmap);
+		rebuild_step_bitmaps(expand_job_ptr, orig_jobx_node_bitmap);
+		(void) gs_job_fini(job_ptr);
+		(void) gs_job_start(expand_job_ptr);
+	}
+	FREE_NULL_BITMAP(orig_job_node_bitmap);
+	FREE_NULL_BITMAP(orig_jobx_node_bitmap);
+	job_post_resize_acctg(job_ptr);
+	job_post_resize_acctg(expand_job_ptr);
+
+	return error_code;
 }
 
 /*
@@ -14759,78 +14848,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 */
 		if ((job_desc->min_nodes == 0) && (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
-			job_record_t *expand_job_ptr;
-			bitstr_t *orig_job_node_bitmap, *orig_jobx_node_bitmap;
-
-			expand_job_ptr = find_job_record(job_ptr->details->
-							 expanding_jobid);
-			if (expand_job_ptr == NULL) {
-				info("%s: Invalid node count (%u) for %pJ update, JobId=%u to expand not found",
-				     __func__, job_desc->min_nodes, job_ptr,
-				     job_ptr->details->expanding_jobid);
-				error_code = ESLURM_INVALID_JOB_ID;
-				goto fini;
-			}
-			if (IS_JOB_SUSPENDED(job_ptr) ||
-			    IS_JOB_SUSPENDED(expand_job_ptr)) {
-				info("%s: Can not expand %pJ from %pJ, job is suspended",
-				     __func__, expand_job_ptr, job_ptr);
-				error_code = ESLURM_JOB_SUSPENDED;
-				goto fini;
-			}
-			if ((job_ptr->step_list != NULL) &&
-			    (list_count(job_ptr->step_list) != 0)) {
-				info("%s: Attempt to merge %pJ with active steps into %pJ",
-				     __func__, job_ptr, expand_job_ptr);
-				error_code = ESLURMD_STEP_EXISTS;
-				goto fini;
-			}
-			if (!_valid_license_job_expansion(job_ptr,
-							  expand_job_ptr)) {
-				info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
-				     __func__, job_ptr, expand_job_ptr,
-				     job_ptr->licenses,
-				     expand_job_ptr->licenses);
-				error_code = ESLURM_INVALID_LICENSES;
-				goto fini;
-			}
-
-			sched_info("%s: killing %pJ and moving all resources to %pJ",
-				   __func__, job_ptr, expand_job_ptr);
-			job_pre_resize_acctg(job_ptr);
-			job_pre_resize_acctg(expand_job_ptr);
-			_send_job_kill(job_ptr);
-
-			xassert(job_ptr->job_resrcs);
-			xassert(job_ptr->job_resrcs->node_bitmap);
-			xassert(expand_job_ptr->job_resrcs->node_bitmap);
-			orig_job_node_bitmap = bit_copy(job_ptr->node_bitmap);
-			orig_jobx_node_bitmap = bit_copy(expand_job_ptr->
-							 job_resrcs->
-							 node_bitmap);
-			error_code = select_g_job_expand(job_ptr,
-							 expand_job_ptr);
-			if (error_code == SLURM_SUCCESS) {
-				_merge_job_licenses(job_ptr, expand_job_ptr);
-				FREE_NULL_BITMAP(job_ptr->node_bitmap);
-				job_ptr->node_bitmap = orig_job_node_bitmap;
-				orig_job_node_bitmap = NULL;
-				deallocate_nodes(job_ptr, false, false, false);
-				bit_clear_all(job_ptr->node_bitmap);
-				job_state_set(job_ptr, (JOB_COMPLETE |
-							(job_ptr->job_state &
-							 JOB_STATE_FLAGS)));
-				_realloc_nodes(expand_job_ptr,
-					       orig_jobx_node_bitmap);
-				rebuild_step_bitmaps(expand_job_ptr,
-						     orig_jobx_node_bitmap);
-				(void) gs_job_fini(job_ptr);
-				(void) gs_job_start(expand_job_ptr);
-			}
-			FREE_NULL_BITMAP(orig_job_node_bitmap);
-			FREE_NULL_BITMAP(orig_jobx_node_bitmap);
-			job_post_resize_acctg(job_ptr);
-			job_post_resize_acctg(expand_job_ptr);
+			error_code = job_expand_merge(job_ptr);
 			/*
 			 * Since job_post_resize_acctg will restart things,
 			 * don't do it again.
@@ -16902,6 +16920,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	job_resilience_reset(job_ptr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);

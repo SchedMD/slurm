@@ -127,6 +127,7 @@
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/http.h"
+#include "src/slurmctld/job_resilience.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -2596,6 +2597,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_acct_gather_node_time;
 	static time_t last_no_resp_msg_time;
 	static time_t last_ping_node_time = (time_t) 0;
+	static time_t last_resilience_time;
 	static time_t last_ping_srun_time;
 	static time_t last_purge_job_time;
 	static time_t last_resv_time;
@@ -2656,6 +2658,7 @@ static void *_slurmctld_background(void *no_data)
 	last_checkpoint_time = last_group_time = now;
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
+	last_resilience_time = now;
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
 	last_uid_update = now;
 	last_acct_gather_node_time = now;
@@ -2843,6 +2846,15 @@ static void *_slurmctld_background(void *no_data)
 			lock_slurmctld(node_write_lock);
 			check_node_timers();
 			unlock_slurmctld(node_write_lock);
+		}
+
+		if (difftime(now, last_resilience_time) >=
+		    RESILIENCE_REGROW_PERIOD) {
+			lock_slurmctld(job_write_lock);
+			now = time(NULL);
+			last_resilience_time = now;
+			job_resilience_regrow_all();
+			unlock_slurmctld(job_write_lock);
 		}
 
 		if (!(slurm_conf.health_check_node_state &

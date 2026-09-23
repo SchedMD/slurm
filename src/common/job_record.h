@@ -583,6 +583,14 @@ struct job_record {
 	uint32_t wait4switch; /* Maximum time to wait for Maximum switches */
 	bool     best_switch; /* true=min number of switches met           */
 	time_t wait4switch_start; /* Time started waiting for switch       */
+
+	/* Adaptive resilience (ADAPTIVE_RESILIENCE bit_flag) state */
+	time_t resilience_shrink_time; /* Time of first resilience shrink,
+					* zero if the job never lost a node */
+	uint32_t resilience_orig_node_cnt; /* Node count before the first
+					    * resilience shrink */
+	bitstr_t *resilience_orig_bitmap; /* Node bitmap before the first
+					   * resilience shrink */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */

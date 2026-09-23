@@ -885,6 +885,9 @@ const static entry_t jsra[] = {
 	[WAIT_HRES_DISABLED] = {
 		.str = "HRESDisabled",
 	},
+	[WAIT_RESILIENCE_RECOVERY] = {
+		.str = "ResilienceRecovery",
+	},
 };
 
 extern const char *job_state_reason_string(enum job_state_reason inx)
