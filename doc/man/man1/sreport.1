@@ -281,6 +281,13 @@ given access to it. When a reservation is assigned to whole accounts, the
 time will be counted in the association for the accounts, not the user
 associations in the accounts. In this case, the usage of a parent account can
 be larger than the sum of its children.
+
+\fBNOTE\fR: When an account is moved (renamed or re-parented), any associations
+that belonged to the old account retain the lineage they had at that time (see
+\fBLineage\fR in \fBsacctmgr\fR(1)). Their usage therefore stays attributed to the
+accounts the user was under before the move. As a result, the account the
+user currently belongs to may show less usage than the sum of its user rows,
+and filtering the report on that account will omit that historical usage.
 .IP
 
 .TP
