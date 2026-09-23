@@ -1855,6 +1855,14 @@ extern bool permit_job_expansion(void);
 /* True if running jobs are allowed to shrink, false otherwise. */
 extern bool permit_job_shrink(void);
 
+/*
+ * job_expand_merge - move every resource of job_ptr (a job started with an
+ *	"expand:<jobid>" dependency) into the job it expands, then complete
+ *	job_ptr.
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int job_expand_merge(job_record_t *job_ptr);
+
 /* True if SchedulerParameters=ignore_prefer_validation is set. */
 extern bool ignore_prefer_validation(void);
 

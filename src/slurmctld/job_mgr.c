@@ -12499,6 +12499,80 @@ static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
 }
 
 /*
+ * job_expand_merge - move every resource of job_ptr (a job started with an
+ *	"expand:<jobid>" dependency) into the job it expands, then complete
+ *	job_ptr. Used by _update_job() for "scontrol update NumNodes=0" and by
+ *	the adaptive resilience regrow logic.
+ * IN job_ptr - the job whose resources are moved
+ * RET SLURM_SUCCESS or an error code
+ * NOTE: this calls job_post_resize_acctg() for both jobs
+ */
+extern int job_expand_merge(job_record_t *job_ptr)
+{
+	int error_code;
+	job_record_t *expand_job_ptr;
+	bitstr_t *orig_job_node_bitmap, *orig_jobx_node_bitmap;
+
+	expand_job_ptr = find_job_record(job_ptr->details->expanding_jobid);
+	if (expand_job_ptr == NULL) {
+		info("%s: JobId=%u to be expanded by %pJ not found", __func__,
+		     job_ptr->details->expanding_jobid, job_ptr);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_SUSPENDED(expand_job_ptr)) {
+		info("%s: Can not expand %pJ from %pJ, job is suspended",
+		     __func__, expand_job_ptr, job_ptr);
+		return ESLURM_JOB_SUSPENDED;
+	}
+	if ((job_ptr->step_list != NULL) &&
+	    (list_count(job_ptr->step_list) != 0)) {
+		info("%s: Attempt to merge %pJ with active steps into %pJ",
+		     __func__, job_ptr, expand_job_ptr);
+		return ESLURMD_STEP_EXISTS;
+	}
+	if (!_valid_license_job_expansion(job_ptr, expand_job_ptr)) {
+		info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
+		     __func__, job_ptr, expand_job_ptr, job_ptr->licenses,
+		     expand_job_ptr->licenses);
+		return ESLURM_INVALID_LICENSES;
+	}
+
+	sched_info("%s: killing %pJ and moving all resources to %pJ",
+		   __func__, job_ptr, expand_job_ptr);
+	job_pre_resize_acctg(job_ptr);
+	job_pre_resize_acctg(expand_job_ptr);
+	_send_job_kill(job_ptr);
+
+	xassert(job_ptr->job_resrcs);
+	xassert(job_ptr->job_resrcs->node_bitmap);
+	xassert(expand_job_ptr->job_resrcs->node_bitmap);
+	orig_job_node_bitmap = bit_copy(job_ptr->node_bitmap);
+	orig_jobx_node_bitmap = bit_copy(expand_job_ptr->job_resrcs->node_bitmap);
+	error_code = select_g_job_expand(job_ptr, expand_job_ptr);
+	if (error_code == SLURM_SUCCESS) {
+		_merge_job_licenses(job_ptr, expand_job_ptr);
+		FREE_NULL_BITMAP(job_ptr->node_bitmap);
+		job_ptr->node_bitmap = orig_job_node_bitmap;
+		orig_job_node_bitmap = NULL;
+		deallocate_nodes(job_ptr, false, false, false);
+		bit_clear_all(job_ptr->node_bitmap);
+		job_state_set(job_ptr,
+			      (JOB_COMPLETE |
+			       (job_ptr->job_state & JOB_STATE_FLAGS)));
+		_realloc_nodes(expand_job_ptr, orig_jobx_node_bitmap);
+		rebuild_step_bitmaps(expand_job_ptr, orig_jobx_node_bitmap);
+		(void) gs_job_fini(job_ptr);
+		(void) gs_job_start(expand_job_ptr);
+	}
+	FREE_NULL_BITMAP(orig_job_node_bitmap);
+	FREE_NULL_BITMAP(orig_jobx_node_bitmap);
+	job_post_resize_acctg(job_ptr);
+	job_post_resize_acctg(expand_job_ptr);
+
+	return error_code;
+}
+
+/*
  * RPC the stepmgr to complete any step that has tasks on a node that is
  * going to be removed. Called from the resize of _update_job() when
  * STEPMGR_ENABLED is set on the job.
@@ -14774,78 +14848,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 */
 		if ((job_desc->min_nodes == 0) && (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
-			job_record_t *expand_job_ptr;
-			bitstr_t *orig_job_node_bitmap, *orig_jobx_node_bitmap;
-
-			expand_job_ptr = find_job_record(job_ptr->details->
-							 expanding_jobid);
-			if (expand_job_ptr == NULL) {
-				info("%s: Invalid node count (%u) for %pJ update, JobId=%u to expand not found",
-				     __func__, job_desc->min_nodes, job_ptr,
-				     job_ptr->details->expanding_jobid);
-				error_code = ESLURM_INVALID_JOB_ID;
-				goto fini;
-			}
-			if (IS_JOB_SUSPENDED(job_ptr) ||
-			    IS_JOB_SUSPENDED(expand_job_ptr)) {
-				info("%s: Can not expand %pJ from %pJ, job is suspended",
-				     __func__, expand_job_ptr, job_ptr);
-				error_code = ESLURM_JOB_SUSPENDED;
-				goto fini;
-			}
-			if ((job_ptr->step_list != NULL) &&
-			    (list_count(job_ptr->step_list) != 0)) {
-				info("%s: Attempt to merge %pJ with active steps into %pJ",
-				     __func__, job_ptr, expand_job_ptr);
-				error_code = ESLURMD_STEP_EXISTS;
-				goto fini;
-			}
-			if (!_valid_license_job_expansion(job_ptr,
-							  expand_job_ptr)) {
-				info("%s: Cannot merge %pJ with %pJ - cannot mix AND and OR licenses (%s vs %s)",
-				     __func__, job_ptr, expand_job_ptr,
-				     job_ptr->licenses,
-				     expand_job_ptr->licenses);
-				error_code = ESLURM_INVALID_LICENSES;
-				goto fini;
-			}
-
-			sched_info("%s: killing %pJ and moving all resources to %pJ",
-				   __func__, job_ptr, expand_job_ptr);
-			job_pre_resize_acctg(job_ptr);
-			job_pre_resize_acctg(expand_job_ptr);
-			_send_job_kill(job_ptr);
-
-			xassert(job_ptr->job_resrcs);
-			xassert(job_ptr->job_resrcs->node_bitmap);
-			xassert(expand_job_ptr->job_resrcs->node_bitmap);
-			orig_job_node_bitmap = bit_copy(job_ptr->node_bitmap);
-			orig_jobx_node_bitmap = bit_copy(expand_job_ptr->
-							 job_resrcs->
-							 node_bitmap);
-			error_code = select_g_job_expand(job_ptr,
-							 expand_job_ptr);
-			if (error_code == SLURM_SUCCESS) {
-				_merge_job_licenses(job_ptr, expand_job_ptr);
-				FREE_NULL_BITMAP(job_ptr->node_bitmap);
-				job_ptr->node_bitmap = orig_job_node_bitmap;
-				orig_job_node_bitmap = NULL;
-				deallocate_nodes(job_ptr, false, false, false);
-				bit_clear_all(job_ptr->node_bitmap);
-				job_state_set(job_ptr, (JOB_COMPLETE |
-							(job_ptr->job_state &
-							 JOB_STATE_FLAGS)));
-				_realloc_nodes(expand_job_ptr,
-					       orig_jobx_node_bitmap);
-				rebuild_step_bitmaps(expand_job_ptr,
-						     orig_jobx_node_bitmap);
-				(void) gs_job_fini(job_ptr);
-				(void) gs_job_start(expand_job_ptr);
-			}
-			FREE_NULL_BITMAP(orig_job_node_bitmap);
-			FREE_NULL_BITMAP(orig_jobx_node_bitmap);
-			job_post_resize_acctg(job_ptr);
-			job_post_resize_acctg(expand_job_ptr);
+			error_code = job_expand_merge(job_ptr);
 			/*
 			 * Since job_post_resize_acctg will restart things,
 			 * don't do it again.
