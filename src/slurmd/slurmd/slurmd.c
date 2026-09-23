@@ -507,6 +507,13 @@ main (int argc, char **argv)
 
 	cred_state_init();
 
+	/*
+	 * Stamp the start time before any plugin initializes: the energy
+	 * plugins record it on every reading they take from here on, and the
+	 * registration message reports the same value.
+	 */
+	slurmd_start_time = time(NULL);
+
 	if (acct_gather_conf_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize acct_gather_conf");
 	if (jobacct_gather_init() != SLURM_SUCCESS)
@@ -1120,8 +1127,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	get_up_time(&conf->up_time);
 	msg->up_time     = conf->up_time;
-	if (slurmd_start_time == 0)
-		slurmd_start_time = time(NULL);
 	msg->slurmd_start_time = slurmd_start_time;
 
 	slurm_mutex_lock(&cached_features_mutex);
