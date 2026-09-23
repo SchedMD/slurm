@@ -112,6 +112,7 @@ static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
 static int _create_listeners(step_launch_state_t *sls, int num_nodes);
+static int _launch_msg(slurm_msg_t *msg, void *arg);
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
 static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg);
@@ -1462,10 +1463,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		   int unpack_rc, void *arg)
 {
 	conmgr_fd_ref_t *con = conmgr_args.ref;
-	step_launch_state_t *sls = arg;
 	uid_t uid = getuid();
-	srun_user_msg_t *um;
-	int rc = EINVAL;
 
 	if (!msg->auth.ids_set) {
 		error("%s: [%s] Security violation, rejecting unauthenticated slurm message",
@@ -1492,6 +1490,26 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
+
+	_launch_msg(msg, arg);
+
+	conmgr_con_queue_close(con);
+
+	FREE_NULL_MSG(msg);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Handle an RPC arriving once the step has launched.
+ * IN msg - received message
+ * IN arg - the launch state the listener was attached to
+ * RET SLURM_SUCCESS
+ */
+static int _launch_msg(slurm_msg_t *msg, void *arg)
+{
+	step_launch_state_t *sls = arg;
+	srun_user_msg_t *um;
+	int rc = EINVAL;
 
 	switch (msg->msg_type) {
 	case RESPONSE_LAUNCH_TASKS:
@@ -1548,9 +1566,6 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		break;
 	}
 
-	conmgr_con_queue_close(con);
-
-	FREE_NULL_MSG(msg);
 	return SLURM_SUCCESS;
 }
 
