@@ -61,7 +61,10 @@ used to define nodes in the slurm.conf. Specifying any of \fBCPUs\fR,
 option. \fBNodeName\fR and \fBPort\fR are not supported.
 This can also be used to specify a cloud node's topology, in which case
 the \fB\-Z\fR flag should not be used (e.g.,
-\-\-conf="topology=topo-switch:s1")
+\-\-conf="topology=topo-switch:s1").
+\fBHRES\fR may be given to add the dynamic node to hierarchical resource
+layers (e.g., \-\-conf 'HRES=[{"hres_name":"power","layer_name":"rack2"}]');
+see the \fBNodeName\fR \fBHRES\fR parameter in \fBslurm.conf\fR(5).
 
 .br
 For example if \fIslurmd \-C\fR reports

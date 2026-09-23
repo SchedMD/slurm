@@ -93,11 +93,13 @@ slurmd -Z --conf "RealMemory=80000 Gres=gpu:2 Feature=f1"
 <p>Create nodes using scontrol by specifying the same <b>NodeName</b>
 line that you would define in the slurm.conf. See slurm.conf
 <a href="slurm.conf.html#SECTION_NODE-CONFIGURATION">man</a> page for node
-options. Only <b>State=CLOUD</b> and <b>State=FUTURE</b> are supported. The
+options. Only <b>State=CLOUD</b>, <b>State=EXTERNAL</b> and
+<b>State=FUTURE</b> are supported. The
 node configuration should match what the slurmd will register with
-(e.g. slurmd -C) plus any additional attributes.
-</p>
-
+(e.g. slurmd -C) plus any additional attributes. Creation is all-or-nothing.
+If any node in the request cannot be created, the command fails, no node from
+the request is created, and every node that already existed &mdash; whether
+created dynamically or defined in slurm.conf &mdash; is left unchanged.
 </p>
 e.g.
 <pre>
@@ -144,6 +146,26 @@ reservation can be deleted.
 <p>
 Nodes can be dynamically added to and removed from topologies as described in
 the <a href="topology.html">Topology Guide</a>.
+</p>
+
+<h2 id="hres">Hierarchical Resources
+<a class="slurm_link" href="#hres"></a>
+</h2>
+<p>
+Dynamic nodes can join the layers of a
+<a href="hres.html">Hierarchical Resource</a> (HRES) with the <b>NodeName</b>
+parameter <a href="slurm.conf.html#OPT_HRES"><b>HRES</b></a>, a JSON list of
+<code>hres_name</code> and <code>layer_name</code> pairs. It is accepted by both
+creation methods:
+</p>
+<pre>
+scontrol create NodeName=d1 CPUs=16 RealMemory=31848 State=cloud HRES='[{"hres_name":"power","layer_name":"rack2"}]'
+slurmd -Z --conf 'RealMemory=80000 HRES=[{"hres_name":"power","layer_name":"rack2"}]'
+</pre>
+<p>
+Malformed JSON rejects the node. Naming a layer that does not exist or cannot
+accept the node creates the node without HRES membership and logs an error in
+slurmctld. Deleting the node removes it from all layers.
 </p>
 
 <h2 id="limitations">Limitations

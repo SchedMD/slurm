@@ -776,11 +776,44 @@ static void _rsmi_get_device_unique_id(uint32_t dv_ind, uint64_t *id)
 	const char *status_string;
 	rsmi_status_t rsmi_rc = rsmi_dev_unique_id_get(dv_ind, id);
 
-	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
-		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
-		error("RSMI: Failed to get Unique ID of the GPU: %s",
-		      status_string);
+	if (rsmi_rc == RSMI_STATUS_SUCCESS)
+		return;
+
+	*id = 0;
+
+	/*
+	 * Not every AMD GPU reports a unique ID. That is not an error: the
+	 * device just goes without a UUID and is identified by index.
+	 */
+	if (rsmi_rc == RSMI_STATUS_NOT_SUPPORTED) {
+		debug2("RSMI: GPU %u does not report a Unique ID", dv_ind);
+		return;
 	}
+
+	rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
+	error("RSMI: Failed to get Unique ID of the GPU: %s", status_string);
+}
+
+/*
+ * Build the UUID string for an AMD GPU from its 64-bit unique ID.
+ *
+ * The "GPU-<16 hex digits>" spelling is what the ROCr runtime expects in
+ * ROCR_VISIBLE_DEVICES, and matches what rocminfo prints for the device, so an
+ * admin can paste the reported value straight into a drain request.
+ *
+ * Returns NULL when the device reports no unique ID. A zero ID is treated as
+ * "none": it is what the failure path leaves behind, and every device claiming
+ * the same UUID would make the value useless for naming a device anyway.
+ */
+static char *_rsmi_get_device_uuid_str(uint32_t dv_ind)
+{
+	uint64_t id = 0;
+
+	_rsmi_get_device_unique_id(dv_ind, &id);
+	if (!id)
+		return NULL;
+
+	return xstrdup_printf("GPU-%016" PRIx64, id);
 }
 
 static bitstr_t *_rsmi_get_device_cpu_mask(uint32_t dv_ind)
@@ -859,7 +892,6 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		char device_name[RSMI_STRING_BUFFER_SIZE] = {0};
 		char device_brand[RSMI_STRING_BUFFER_SIZE] = {0};
 		rsmiPciInfo_t pci_info;
-		uint64_t uuid = 0;
 		char *cpu_aff_mac_range = NULL;
 		gres_slurmd_conf_t gres_slurmd_conf = {
 			.config_flags =
@@ -894,7 +926,7 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		_rsmi_get_device_minor_number(i, &minor_number);
 		pci_info.bdfid = 0;
 		_rsmi_get_device_pci_info(i, &pci_info);
-		_rsmi_get_device_unique_id(i, &uuid);
+		gres_slurmd_conf.unique_id = _rsmi_get_device_uuid_str(i);
 
 		/* Use links to record PCI bus ID order */
 		gres_slurmd_conf.links =
@@ -906,7 +938,7 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		debug2("GPU index %u:", i);
 		debug2("    Name: %s", device_name);
 		debug2("    Brand/Type: %s", device_brand);
-		debug2("    UUID: %lx", uuid);
+		debug2("    UUID: %s", gres_slurmd_conf.unique_id);
 		debug2("    PCI Domain/Bus/Device/Function: %u:%u:%u.%u",
 		       pci_info.domain,
 		       pci_info.bus, pci_info.device, pci_info.function);
@@ -937,6 +969,7 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		xfree(gres_slurmd_conf.cpus);
 		xfree(gres_slurmd_conf.file);
 		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.unique_id);
 	}
 
 	info("%u GPU system device(s) detected", device_count);

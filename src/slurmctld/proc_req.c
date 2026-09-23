@@ -408,6 +408,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->launch_params       = xstrdup(conf->launch_params);
 	conf_ptr->license_params = xstrdup(conf->license_params);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
+	conf_ptr->log_flags = conf->log_flags;
 	conf_ptr->log_fmt             = conf->log_fmt;
 
 	conf_ptr->mail_domain         = xstrdup(conf->mail_domain);
@@ -1859,6 +1860,53 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 
 	END_TIMER2(__func__);
 	debug2("%s %s", __func__, TIMER_STR());
+}
+
+static void _slurm_rpc_update_hres(slurm_msg_t *msg)
+{
+	int rc;
+	char *err_msg = NULL;
+	DEF_TIMERS;
+	slurmctld_lock_t ctld_locks = {
+		.conf = WRITE_LOCK,
+		.job = WRITE_LOCK,
+		.node = READ_LOCK,
+	};
+
+	START_TIMER;
+	if (!validate_super_user(msg->auth_uid)) {
+		error("Security violation, UPDATE_HRES RPC from uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+
+	/*
+	 * The job write lock is needed because nodes in the hres_select_t
+	 * structure can be modified.
+	 */
+	lock_slurmctld(ctld_locks);
+	rc = hres_update(msg->data, &err_msg);
+	/*
+	 * HRES updates will invalidate the current backfill plan. Force
+	 * backfill to break.
+	 */
+	if (rc == SLURM_SUCCESS)
+		slurm_conf.last_update = time(NULL);
+	unlock_slurmctld(ctld_locks);
+	END_TIMER2(__func__);
+
+	if (rc) {
+		debug2("%s %s", __func__, slurm_strerror(rc));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, rc, err_msg);
+		else
+			slurm_send_rc_msg(msg, rc);
+	} else {
+		debug2("%s success %s", __func__, TIMER_STR());
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+	xfree(err_msg);
 }
 
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
@@ -3340,8 +3388,17 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		job_ptr = find_het_job_record(job_info_msg->step_id.job_id,
 					      job_info_msg->het_job_offset);
 		if (job_ptr) {
+			uint32_t req_step_id = job_info_msg->step_id.step_id;
+			uint32_t req_step_het_comp =
+				job_info_msg->step_id.step_het_comp;
+
 			job_info_msg->step_id =
 				STEP_ID_FROM_JOB_RECORD(job_ptr);
+
+			/* recover obliterated fields needed for hetjob */
+			job_info_msg->step_id.step_id = req_step_id;
+			job_info_msg->step_id.step_het_comp = req_step_het_comp;
+
 			error_code = job_alloc_info(msg->auth_uid,
 						    &job_info_msg->step_id,
 						    &job_ptr);
@@ -4929,16 +4986,16 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 /* Check if prolog has already finished */
 static int _is_prolog_finished(slurm_step_id_t *step_id)
 {
-	int is_running = 0;
+	int is_finished = 0;
 	job_record_t *job_ptr;
 
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	lock_slurmctld(job_read_lock);
 	if ((job_ptr = find_job(step_id)))
-		is_running = (job_ptr->state_reason != WAIT_PROLOG);
+		is_finished = !is_prolog_running(job_ptr);
 	unlock_slurmctld(job_read_lock);
-	return is_running;
+	return is_finished;
 }
 
 /* get node select info plugin */
@@ -4976,6 +5033,8 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	job_record_t *job_ptr;
 	char *op;
+	/* job_suspend() and job_suspend2() send their own response. */
+	bool send_response = true;
 
 	START_TIMER;
 	switch (sus_ptr->op) {
@@ -5037,14 +5096,19 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		      job_ptr->fed_details->cluster_lock);
 		error_code = ESLURM_INVALID_CLUSTER_NAME;
 	} else if (sus_ptr->job_id_str) {
+		send_response = false;
 		error_code = job_suspend2(msg, sus_ptr, msg->auth_uid, true,
 					  msg->protocol_version);
 	} else {
+		send_response = false;
 		error_code = job_suspend(msg, sus_ptr, msg->auth_uid,
 					 true, msg->protocol_version);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
+
+	if (send_response)
+		slurm_send_rc_msg(msg, error_code);
 
 	if (!sus_ptr->job_id_str)
 		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
@@ -7036,6 +7100,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_END_TIME,
 		.func = _slurm_rpc_end_time,
+	},{
+		.msg_type = REQUEST_UPDATE_HRES,
+		.func = _slurm_rpc_update_hres,
 	},{
 		.msg_type = REQUEST_FED_INFO,
 		.func = _slurm_rpc_get_fed,

@@ -71,7 +71,6 @@ extern int is_pmi20(void);
 
 extern client_req_t *client_req_init(uint32_t len, char *buf);
 extern void client_req_free(client_req_t *req);
-extern int  client_req_parse_cmd(client_req_t *req);
 extern int  client_req_parse_body(client_req_t *req);
 extern bool  client_req_get_str(client_req_t *req, const char *key, char **val);
 extern bool  client_req_get_int(client_req_t *req, const char *key, int *val);

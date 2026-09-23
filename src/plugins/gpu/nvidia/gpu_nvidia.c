@@ -205,6 +205,7 @@ static list_t *_get_system_gpu_list_nvidia(node_config_load_t *node_conf)
 		xfree(gres_slurmd_conf.file);
 		xfree(gres_slurmd_conf.type_name);
 		xfree(gres_slurmd_conf.cpus);
+		xfree(gres_slurmd_conf.unique_id);
 	}
 	closedir(dr);
 

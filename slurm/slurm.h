@@ -651,6 +651,7 @@ enum job_state_reason {
 					    * (Unknown) */
 	WAIT_MAX_POWERED_NODES,            /* max_powered_nodes reached */
 	WAIT_MPI_PORTS_BUSY,		   /* MPI resv_ports busy */
+	WAIT_HRES_DISABLED, /* requested HRES is disabled */
 	REASON_END, /* end of table */
 };
 
@@ -3018,15 +3019,31 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
 
-#define LOG_FMT_ISO8601_MS      0
-#define LOG_FMT_ISO8601         1
-#define LOG_FMT_RFC5424_MS      2
-#define LOG_FMT_RFC5424         3
-#define LOG_FMT_CLOCK           4
-#define LOG_FMT_SHORT           5
-#define LOG_FMT_THREAD_ID       6
-#define LOG_FMT_RFC3339         7
-#define LOG_FMT_OMIT 8
+/* Timestamp format for LogTimeFormat. */
+typedef enum {
+	LOG_FMT_ISO8601_MS = 0,
+	LOG_FMT_ISO8601 = 1,
+	LOG_FMT_RFC5424_MS = 2,
+	LOG_FMT_RFC5424 = 3,
+	LOG_FMT_CLOCK = 4,
+	LOG_FMT_SHORT = 5,
+	/* Deprecated as a format, see LOG_FLAG_THREAD_ID */
+	LOG_FMT_THREAD_ID = 6,
+	LOG_FMT_RFC3339 = 7,
+	LOG_FMT_OMIT = 8,
+	LOG_FMT_RFC5424_US = 9,
+} log_fmt_t;
+
+/* Options accompanying the LogTimeFormat timestamp format. */
+typedef enum {
+	LOG_FLAGS_NONE = 0,
+	LOG_FLAG_THREAD_ID = SLURM_BIT(0),
+} log_flags_t;
+
+/* Default timestamp format */
+#define LOG_FMT_DEFAULT LOG_FMT_ISO8601_MS
+/* Default LogTimeFormat options */
+#define LOG_FLAGS_DEFAULT LOG_FLAGS_NONE
 
 /*
  * If adding to slurm_conf_t contents that need to be used in the slurmstepd
@@ -3150,6 +3167,7 @@ typedef struct {
 	char *launch_params;	/* step launcher plugin options */
 	char *license_params; /* license parameters */
 	char *licenses;		/* licenses available on this cluster */
+	log_flags_t log_flags; /* Log file timestamp options */
 	uint16_t log_fmt;       /* Log file timestamp format */
 	char *mail_domain;	/* default domain to append to usernames */
 	char *mail_prog;	/* pathname of mail program */
@@ -3522,12 +3540,19 @@ typedef struct trigger_info_msg {
 	trigger_info_t *trigger_array;	/* the trigger records */
 } trigger_info_msg_t;
 
+typedef struct {
+	char *name;
+	uint32_t value;
+} hres_variable_t;
 
 /* Individual license information
  */
 typedef struct slurm_license_info {
 	char *name;          /* license name */
-	uint32_t total;      /* total number of available licenses */
+	uint32_t base_usage; /* total usage of base */
+	uint32_t conf_total; /* total number of configured licenses */
+	uint32_t total;      /* total number of available licenses:
+			      *   configured - base_usage */
 	uint32_t in_use;     /* number of license in use */
 	uint32_t available;  /* number of available license */
 	uint8_t remote;      /* non-zero if remote license (not
@@ -3539,7 +3564,12 @@ typedef struct slurm_license_info {
 	uint32_t last_deficit;
 	time_t last_update;  /* last updated (for remote) */
 	uint8_t mode;
+	bool disable_hres;
+	bool disable_layer;
 	char *nodes;
+	char *layer_name;
+	char *parent_name;
+	list_t *base; /* list of hres_variable_t */
 } slurm_license_info_t;
 
 /* License information array as returned by the controller.
@@ -3549,6 +3579,16 @@ typedef struct license_info_msg {
 	uint32_t num_lic;
 	slurm_license_info_t *lic_array;
 } license_info_msg_t;
+
+typedef struct {
+	list_t *base; /* list of hres_variable_t */
+	uint32_t count;
+	uint16_t disable_hres; /* bool, NO_VAL16 for no change */
+	uint16_t disable_layer; /* bool, NO_VAL16 for no change */
+	char *hres_name;
+	char *layer_name;
+	char *nodes;
+} hres_update_msg_t;
 
 typedef struct {
 	uint32_t  job_array_count;
@@ -3823,6 +3863,13 @@ extern int slurm_sbcast_lookup(slurm_selected_step_t *selected_step,
 
 extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
 
+/*
+ * slurm_destroy_hres_variable - free one hres_variable_t, for use as the
+ *	destructor of the base list of hres_update_msg_t
+ * IN object - hres_variable_t to free
+ */
+extern void slurm_destroy_hres_variable(void *object);
+
 /* slurm_load_licenses()
  *
  * Retrieve license information from the controller.
@@ -3832,6 +3879,20 @@ extern void slurm_free_sbcast_cred_msg(job_sbcast_cred_msg_t *msg);
  */
 extern int slurm_load_licenses(time_t, license_info_msg_t **, uint16_t);
 extern void slurm_free_license_info_msg(license_info_msg_t *);
+
+/*
+ * slurm_init_hres_update_msg - initialize HRES update message with default
+ *	values
+ * OUT hres_msg - user defined HRES update descriptor
+ */
+extern void slurm_init_hres_update_msg(hres_update_msg_t *hres_msg);
+
+/*
+ * slurm_update_hres - issue RPC to update an HRES layer
+ * IN msg - HRES update descriptor
+ * RET SLURM_SUCCESS on success, otherwise a Slurm error code
+ */
+extern int slurm_update_hres(hres_update_msg_t *msg);
 
 /* get the running assoc_mgr info
  * IN assoc_mgr_info_request_msg_t: request filtering data returned

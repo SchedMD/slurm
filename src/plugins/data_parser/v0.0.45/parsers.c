@@ -7433,7 +7433,7 @@ static int _foreach_license(void *x, void *arg)
 	xassert(license);
 	xassert(resources);
 
-	if (!license->nodes)
+	if (license->mode == HRES_MODE_OFF)
 		return SLURM_SUCCESS; /* not a hierarchical resource - skip */
 
 	if (!*resources)

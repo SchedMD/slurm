@@ -79,8 +79,6 @@
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
-extern void __attribute__((weak)) hres_variable_free(void *x);
-
 #define SLURM_24_11_PROTOCOL_VERSION MAKE_SLURM_VER(42)
 
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
@@ -108,17 +106,17 @@ extern void __attribute__((weak)) hres_variable_free(void *x);
 #define DUMP_FUNC(type) _dump_##type
 #define NEW_FUNC(type) _openapi_new_##type
 #define FREE_FUNC(type) _openapi_free_##type
-#define PARSE_DISABLED(type)						\
+#define PARSE_DISABLED(type) \
 	static int PARSE_FUNC(type)(const parser_t *const parser, void *src, \
-				    data_t *dst, args_t *args,		\
-				    data_t *parent_path)		\
-	{								\
-		return PARSE_FUNC(disabled)(parser, src, dst, args,	\
-					    parent_path);		\
+				    data_t *dst, args_t *args, \
+				    data_t *parent_path) \
+	{ \
+		return PARSE_FUNC(disabled)(parser, src, dst, args, \
+					    parent_path); \
 	}
 
-#define parse_error(parser, args, parent_path, error, fmt, ...)		\
-	_parse_error_funcname(parser, args, parent_path, __func__,	\
+#define parse_error(parser, args, parent_path, error, fmt, ...) \
+	_parse_error_funcname(parser, args, parent_path, __func__, \
 			      XSTRINGIFY(__LINE__), error, fmt, ##__VA_ARGS__)
 
 static int PARSE_FUNC(disabled)(const parser_t *const parser, void *src,
@@ -348,15 +346,15 @@ static const struct {
 	size_t offset;
 } schedule_exit_map[] = {
 	{ SCHEDULE_EXIT_END, offsetof(schedule_exit_fields_t, end_job_queue) },
-	{ SCHEDULE_EXIT_MAX_DEPTH, offsetof(schedule_exit_fields_t,
-					    default_queue_depth) },
-	{ SCHEDULE_EXIT_MAX_JOB_START, offsetof(schedule_exit_fields_t,
-						max_job_start) },
+	{ SCHEDULE_EXIT_MAX_DEPTH,
+	  offsetof(schedule_exit_fields_t, default_queue_depth) },
+	{ SCHEDULE_EXIT_MAX_JOB_START,
+	  offsetof(schedule_exit_fields_t, max_job_start) },
 	{ SCHEDULE_EXIT_LIC, offsetof(schedule_exit_fields_t, licenses) },
-	{ SCHEDULE_EXIT_RPC_CNT, offsetof(schedule_exit_fields_t,
-					  max_rpc_cnt) },
-	{ SCHEDULE_EXIT_TIMEOUT, offsetof(schedule_exit_fields_t,
-					  max_sched_time) }
+	{ SCHEDULE_EXIT_RPC_CNT,
+	  offsetof(schedule_exit_fields_t, max_rpc_cnt) },
+	{ SCHEDULE_EXIT_TIMEOUT,
+	  offsetof(schedule_exit_fields_t, max_sched_time) }
 };
 
 typedef struct {
@@ -389,6 +387,13 @@ typedef struct {
 	int64_t number;
 } INT64_NO_VAL_t;
 
+typedef struct {
+	bool set;
+	bool infinite;
+	bool parent;
+	uint32_t number;
+} SHARES_t;
+
 typedef enum {
 	JOB_RES_CORE_INVALID = 0,
 	JOB_RES_CORE_UNALLOC = NO_VAL64,
@@ -409,14 +414,17 @@ typedef struct {
 typedef struct {
 	uint32_t index;
 	const char *name;
+
 	struct {
 		uint16_t count;
 		uint16_t used;
 	} cpus;
+
 	struct {
 		uint64_t used;
 		uint64_t allocated;
 	} memory;
+
 	JOB_RES_SOCKET_t *sockets;
 } JOB_RES_NODE_t;
 
@@ -449,6 +457,7 @@ typedef struct {
 } STATS_MSG_RPC_DUMP_t;
 
 #define KILL_JOBS_ARGS_MAGIC 0x08900abb
+
 typedef struct {
 	int magic; /* KILL_JOBS_ARGS_MAGIC */
 	int rc;
@@ -459,6 +468,7 @@ typedef struct {
 } foreach_kill_jobs_args_t;
 
 #define PARSE_KILL_JOBS_RESP_ARGS_MAGIC 0x18980fbb
+
 typedef struct {
 	int magic; /* PARSE_KILL_JOBS_RESP_ARGS_MAGIC */
 	kill_jobs_resp_msg_t *msg;
@@ -487,10 +497,14 @@ typedef struct {
 typedef struct {
 	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
+	bool disable_layer;
+	char *layer_name;
 	char *nodes;
+	char *parent_name;
 } hierarchy_layer_t;
 
 typedef struct {
+	bool disable_hres;
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
@@ -546,7 +560,7 @@ static bool is_overloaded_INFINITE(const void *ptr, const size_t bytes)
 		return *(uint64_t *) ptr == INFINITE64;
 	case 16:
 		return (*(uint64_t *) ptr == INFINITE64) &&
-			(*(((uint64_t *) ptr) + 1) == INFINITE64);
+		       (*(((uint64_t *) ptr) + 1) == INFINITE64);
 	}
 
 	fatal_abort("bytes is invalid???");
@@ -584,7 +598,7 @@ static bool is_overloaded_NO_VAL(const void *ptr, const size_t bytes,
 	case 16:
 		/* NOTE: Assumes big endian signed promotion */
 		return (*(uint64_t *) ptr == INFINITE64) &&
-			(*(((uint64_t *) ptr) + 1) == NO_VAL);
+		       (*(((uint64_t *) ptr) + 1) == NO_VAL);
 	}
 
 	fatal_abort("bytes is invalid???");
@@ -642,8 +656,8 @@ static int PARSE_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 		parse_error(parser, args, parent_path, rc,
 			    "Unable to resolve QOS %s of type %s",
 			    ((data_get_type(src) == DATA_TYPE_STRING) ?
-			     data_get_string(src) :
-			     ""),
+				     data_get_string(src) :
+				     ""),
 			    data_get_type_string(src));
 	}
 
@@ -848,8 +862,8 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 			continue;
 
 		if (!(ptr_qos =
-		      list_find_first(args->qos_list,
-				      slurmdb_find_qos_in_list, &i))) {
+			      list_find_first(args->qos_list,
+					      slurmdb_find_qos_in_list, &i))) {
 			int rc;
 			char *bits = bit_fmt_full(qos->preempt_bitstr);
 
@@ -863,7 +877,8 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 				DUMPING, parser->type, args, ESLURM_INVALID_QOS,
 				"list_find_first()->slurmdb_find_qos_in_list()",
 				__func__,
-				"Unable to resolve Preempt QOS (bit %u/%" PRId64 "[%s]) in QOS %s(%u)",
+				"Unable to resolve Preempt QOS (bit %u/%" PRId64
+				"[%s]) in QOS %s(%u)",
 				i, bit_size(qos->preempt_bitstr), bits,
 				qos->name, qos->id);
 
@@ -898,10 +913,11 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_FLOAT:
 		if (data_convert_type(src, DATA_TYPE_INT_64) !=
 		    DATA_TYPE_INT_64)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED,
-					   "Unable to convert %pd to integer for association id",
-					   src);
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Unable to convert %pd to integer for association id",
+				src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
 		return PARSE(UINT32, assoc->id, src, parent_path, args);
@@ -924,10 +940,9 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	}
 	case DATA_TYPE_LIST:
 	case DATA_TYPE_BOOL:
-		return parse_error(parser, args, parent_path,
-				   ESLURM_INVALID_ASSOC,
-				   "Expected numeric Association ID but got %pd",
-				   src);
+		return parse_error(
+			parser, args, parent_path, ESLURM_INVALID_ASSOC,
+			"Expected numeric Association ID but got %pd", src);
 	case DATA_TYPE_NONE:
 		/* fall through */
 	case DATA_TYPE_MAX:
@@ -1438,12 +1453,14 @@ static int set_plane_dist_envs(job_desc_msg_t *job,
 			       data_t *parent_path)
 {
 	if (setenvf(&job->environment, "SLURM_DISTRIBUTION", "plane"))
-		return parse_error(parser, args, parent_path, SLURM_ERROR,
-				   "Could not set SLURM_DISTRIBUTION in environment");
+		return parse_error(
+			parser, args, parent_path, SLURM_ERROR,
+			"Could not set SLURM_DISTRIBUTION in environment");
 	if (setenvf(&job->environment, "SLURM_DIST_PLANESIZE", "%u",
 		    job->plane_size))
-		return parse_error(parser, args, parent_path, SLURM_ERROR,
-				   "Could not set SLURM_DIST_PLANESIZE in environment");
+		return parse_error(
+			parser, args, parent_path, SLURM_ERROR,
+			"Could not set SLURM_DIST_PLANESIZE in environment");
 	job->env_size = envcount(job->environment);
 
 	return SLURM_SUCCESS;
@@ -1464,10 +1481,10 @@ static int PARSE_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
 
 	if (plane_tmp == NO_VAL16) {
 		if (dist == SLURM_DIST_PLANE) {
-			return parse_error(parser, args, parent_path,
-					   ESLURM_BAD_DIST,
-					   "Plane size left unset but distribution specifications specified %s",
-					   format_task_dist_states(dist));
+			return parse_error(
+				parser, args, parent_path, ESLURM_BAD_DIST,
+				"Plane size left unset but distribution specifications specified %s",
+				format_task_dist_states(dist));
 		}
 
 		/* ignore any other values as we can't reason about them here */
@@ -1477,15 +1494,16 @@ static int PARSE_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
 
 	if (job->task_dist != NO_VAL) {
 		if (dist != SLURM_DIST_PLANE) {
-			return parse_error(parser, args, parent_path,
-					   ESLURM_BAD_DIST,
-					   "Plane size distribution specifications cannot be combined with %s",
-					   format_task_dist_states(dist));
-		} else if ((job->plane_size != NO_VAL16) && (plane_tmp != job->plane_size)) {
-			return parse_error(parser, args, parent_path,
-					   ESLURM_BAD_DIST,
-					   "Plane size set by distribution_plane_size and distribution do not match. (%u != %u)",
-					   job->plane_size, plane_tmp);
+			return parse_error(
+				parser, args, parent_path, ESLURM_BAD_DIST,
+				"Plane size distribution specifications cannot be combined with %s",
+				format_task_dist_states(dist));
+		} else if ((job->plane_size != NO_VAL16) &&
+			   (plane_tmp != job->plane_size)) {
+			return parse_error(
+				parser, args, parent_path, ESLURM_BAD_DIST,
+				"Plane size set by distribution_plane_size and distribution do not match. (%u != %u)",
+				job->plane_size, plane_tmp);
 		}
 	}
 
@@ -1519,12 +1537,11 @@ static int DUMP_FUNC(JOB_DESC_MSG_PLANE_SIZE)(const parser_t *const parser,
 	return DUMP(UINT16_NO_VAL, plane_tmp, dst, args);
 }
 
-static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
-	const parser_t *const parser,
-	void *obj,
-	data_t *src,
-	args_t *args,
-	data_t *parent_path)
+static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(const parser_t *const
+							      parser,
+						      void *obj, data_t *src,
+						      args_t *args,
+						      data_t *parent_path)
 {
 	job_desc_msg_t *job = obj;
 	uint32_t dist_tmp, plane_tmp;
@@ -1553,15 +1570,16 @@ static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 
 	if ((dist_tmp & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) {
 		if (job->plane_size != NO_VAL16 && job->plane_size != plane_tmp)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_BAD_DIST,
-					   "Plane distribution set by distribution_plane_size and distribution do not match. (%u != %u)",
-					   job->plane_size, plane_tmp);
+			return parse_error(
+				parser, args, parent_path, ESLURM_BAD_DIST,
+				"Plane distribution set by distribution_plane_size and distribution do not match. (%u != %u)",
+				job->plane_size, plane_tmp);
 		job->plane_size = plane_tmp;
 	} else if (job->plane_size != NO_VAL16) {
 		/* plane distribution can't be with any other type */
-		return parse_error(parser, args, parent_path, ESLURM_BAD_DIST,
-				   "Plane size distribution specifications cannot be combined with other options");
+		return parse_error(
+			parser, args, parent_path, ESLURM_BAD_DIST,
+			"Plane size distribution specifications cannot be combined with other options");
 	}
 
 	job->task_dist = dist_tmp;
@@ -1571,32 +1589,32 @@ static int PARSE_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
 		return set_plane_dist_envs(job, parser, args, parent_path);
 	if ((dist_tmp & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
 		if (!job->req_nodes)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_BAD_DIST,
-					   "Arbitrary distribution needs required_nodes to be specified");
+			return parse_error(
+				parser, args, parent_path, ESLURM_BAD_DIST,
+				"Arbitrary distribution needs required_nodes to be specified");
 		if (setenvf(&job->environment, "SLURM_ARBITRARY_NODELIST", "%s",
 			    job->req_nodes))
-			return parse_error(parser, args, parent_path,
-					   SLURM_ERROR,
-					   "Could not set SLURM_DISTRIBUTION in environment");
+			return parse_error(
+				parser, args, parent_path, SLURM_ERROR,
+				"Could not set SLURM_DISTRIBUTION in environment");
 	}
 
 	set_distribution(dist_tmp, &new_dist_str);
 	if (setenvf(&job->environment, "SLURM_DISTRIBUTION", "%s",
 		    new_dist_str))
-		return parse_error(parser, args, parent_path, SLURM_ERROR,
-				   "Could not set SLURM_DISTRIBUTION in environment");
+		return parse_error(
+			parser, args, parent_path, SLURM_ERROR,
+			"Could not set SLURM_DISTRIBUTION in environment");
 	job->env_size = envcount(job->environment);
 
 	xfree(new_dist_str);
 	return SLURM_SUCCESS;
 }
 
-static int DUMP_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(
-	const parser_t *const parser,
-	void *obj,
-	data_t *dst,
-	args_t *args)
+static int DUMP_FUNC(JOB_DESC_MSG_TASK_DISTRIBUTION)(const parser_t *const
+							     parser,
+						     void *obj, data_t *dst,
+						     args_t *args)
 {
 	job_desc_msg_t *job = obj;
 	return DUMP(TASK_DISTRIBUTION, job->task_dist, dst, args);
@@ -1688,7 +1706,7 @@ static int PARSE_FUNC(SLURM_STEP_ID_STRING)(const parser_t *const parser,
 	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
-		slurm_selected_step_t step = {0};
+		slurm_selected_step_t step = { 0 };
 		int rc;
 
 		if ((rc = PARSE(SELECTED_STEP, step, src, parent_path, args)))
@@ -1727,7 +1745,7 @@ static int DUMP_FUNC(WCKEY_TAG)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	char **src = obj;
-	WCKEY_TAG_STRUCT_t tag = {0};
+	WCKEY_TAG_STRUCT_t tag = { 0 };
 
 	if (!*src) {
 		if (is_complex_mode(args)) {
@@ -1769,9 +1787,11 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_FLOAT:
 		if (data_convert_type(src, DATA_TYPE_INT_64) !=
 		    DATA_TYPE_INT_64)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED, "Unable to convert %pd to integer to resolve user",
-					   src);
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Unable to convert %pd to integer to resolve user",
+				src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
 	{
@@ -1795,8 +1815,7 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 			return SLURM_SUCCESS;
 		}
 
-		if ((rc = uid_from_string(data_get_string(src), &uid)))
-		{
+		if ((rc = uid_from_string(data_get_string(src), &uid))) {
 			if (rc == SLURM_ERROR)
 				rc = ESLURM_USER_ID_UNKNOWN;
 
@@ -1840,8 +1859,8 @@ static int DUMP_FUNC(NODE_REASON_USER_ID)(const parser_t *const parser,
 
 PARSE_DISABLED(NODE_REASON_USER_ID)
 
-static int DUMP_FUNC(SINFO_REASON_USER_ID)(const parser_t *const parser, void *obj,
-					   data_t *dst, args_t *args)
+static int DUMP_FUNC(SINFO_REASON_USER_ID)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
 {
 	sinfo_data_t *node = obj;
 	if (node->reason != NULL)
@@ -1853,7 +1872,6 @@ static int DUMP_FUNC(SINFO_REASON_USER_ID)(const parser_t *const parser, void *o
 
 PARSE_DISABLED(SINFO_REASON_USER_ID)
 
-
 static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -1864,9 +1882,11 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_FLOAT:
 		if (data_convert_type(src, DATA_TYPE_INT_64) !=
 		    DATA_TYPE_INT_64)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED, "Unable to convert %pd to integer to resolve group",
-					   src);
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Unable to convert %pd to integer to resolve group",
+				src);
 		/* fall through */
 	case DATA_TYPE_INT_64:
 	{
@@ -1890,8 +1910,7 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 			return SLURM_SUCCESS;
 		}
 
-		if ((rc = gid_from_string(data_get_string(src), &gid)))
-		{
+		if ((rc = gid_from_string(data_get_string(src), &gid))) {
 			if (rc == SLURM_ERROR)
 				rc = ESLURM_GROUP_ID_UNKNOWN;
 
@@ -2361,7 +2380,7 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	}
 	case DATA_TYPE_DICT:
 	{
-		FLOAT64_NO_VAL_t fstruct = {0};
+		FLOAT64_NO_VAL_t fstruct = { 0 };
 
 		if ((rc = PARSE(FLOAT64_NO_VAL_STRUCT, fstruct, src,
 				parent_path, args)))
@@ -2374,18 +2393,20 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 		else if (fstruct.set)
 			*dst = fstruct.number;
 		else
-			rc = parse_error(parser, args, parent_path,
-					 ESLURM_DATA_CONV_FAILED,
-					 "Expected \"number\" field when \"set\"=True but field not present");
+			rc = parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Expected \"number\" field when \"set\"=True but field not present");
 
 		return rc;
 	}
 	case DATA_TYPE_STRING:
 		if (data_convert_type(src, DATA_TYPE_FLOAT) != DATA_TYPE_FLOAT)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED,
-					   "Expected floating point number but got %pd",
-					   src);
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Expected floating point number but got %pd",
+				src);
 		/* fall through */
 	case DATA_TYPE_FLOAT:
 		*dst = data_get_float(src);
@@ -2409,7 +2430,7 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *dst, args_t *args)
 {
 	double *src = obj;
-	FLOAT64_NO_VAL_t fstruct = {0};
+	FLOAT64_NO_VAL_t fstruct = { 0 };
 
 	if (is_complex_mode(args)) {
 		if ((((uint32_t) *src) == INFINITE) || isinf(*src))
@@ -2516,7 +2537,8 @@ static int DUMP_FUNC(INT64)(const parser_t *const parser, void *obj,
 }
 
 static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
-				    data_t *src, args_t *args, data_t *parent_path)
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
 {
 	int64_t *dst = obj;
 
@@ -2545,7 +2567,7 @@ static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_DICT:
 	{
 		int rc;
-		INT64_NO_VAL_t istruct = {0};
+		INT64_NO_VAL_t istruct = { 0 };
 
 		if ((rc = PARSE(INT64_NO_VAL_STRUCT, istruct, src, parent_path,
 				args)))
@@ -2558,9 +2580,10 @@ static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 		else if (istruct.set)
 			*dst = istruct.number;
 		else
-			rc = parse_error(parser, args, parent_path,
-					 ESLURM_DATA_CONV_FAILED,
-					 "Expected \"number\" field when \"set\"=True but field not present");
+			rc = parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Expected \"number\" field when \"set\"=True but field not present");
 
 		return rc;
 	}
@@ -2592,7 +2615,7 @@ static int DUMP_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
 {
 	int64_t *src = obj;
 
-	INT64_NO_VAL_t istruct = {0};
+	INT64_NO_VAL_t istruct = { 0 };
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE64)
@@ -2696,7 +2719,7 @@ static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	uint16_t *src = obj;
-	UINT16_NO_VAL_t istruct = {0};
+	UINT16_NO_VAL_t istruct = { 0 };
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE16)
@@ -2751,7 +2774,7 @@ static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 	case DATA_TYPE_DICT:
 	{
 		int rc;
-		UINT64_NO_VAL_t istruct = {0};
+		UINT64_NO_VAL_t istruct = { 0 };
 
 		if ((rc = PARSE(UINT64_NO_VAL_STRUCT, istruct, src, parent_path,
 				args)))
@@ -2764,9 +2787,10 @@ static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 		else if (istruct.set)
 			*dst = istruct.number;
 		else
-			rc = parse_error(parser, args, parent_path,
-					 ESLURM_DATA_CONV_FAILED,
-					 "Expected \"number\" field when \"set\"=True but field not present");
+			rc = parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Expected \"number\" field when \"set\"=True but field not present");
 
 		return rc;
 	}
@@ -2798,7 +2822,7 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	uint64_t *src = obj;
-	UINT64_NO_VAL_t istruct = {0};
+	UINT64_NO_VAL_t istruct = { 0 };
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE64)
@@ -2955,7 +2979,7 @@ static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	uint32_t *src = obj;
-	UINT32_NO_VAL_t istruct = {0};
+	UINT32_NO_VAL_t istruct = { 0 };
 
 	if (is_complex_mode(args)) {
 		if (*src == INFINITE)
@@ -2977,6 +3001,84 @@ static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 	}
 
 	return DUMP(UINT32_NO_VAL_STRUCT, istruct, dst, args);
+}
+
+static int PARSE_FUNC(SHARES)(const parser_t *const parser, void *obj,
+			      data_t *src, args_t *args, data_t *parent_path)
+{
+	uint32_t *dst = obj;
+
+	switch (data_get_type(src)) {
+	case DATA_TYPE_DICT:
+	{
+		int rc;
+		SHARES_t istruct = { 0 };
+
+		if ((rc = PARSE(SHARES_STRUCT, istruct, src, parent_path,
+				args)))
+			return rc;
+
+		if (istruct.parent)
+			*dst = SLURMDB_FS_USE_PARENT;
+		else if (istruct.infinite)
+			*dst = INFINITE;
+		else if (!istruct.set)
+			*dst = NO_VAL;
+		else
+			*dst = istruct.number;
+
+		return rc;
+	}
+	case DATA_TYPE_STRING:
+		/* accept "parent" as sacctmgr does */
+		if (!xstrcasecmp(data_get_string(src), "parent")) {
+			*dst = SLURMDB_FS_USE_PARENT;
+			return SLURM_SUCCESS;
+		}
+		/* fall through */
+	default:
+		/*
+		 * Defer every other form (bare integer, null) to
+		 * UINT32_NO_VAL so clients written against the previous
+		 * integer-only schema keep working. Note this does not
+		 * accept the string "Infinity": UINT32_NO_VAL's string case
+		 * only accepts integers.
+		 */
+		return PARSE_FUNC(UINT32_NO_VAL)(parser, dst, src, args,
+						 parent_path);
+	}
+}
+
+static int DUMP_FUNC(SHARES)(const parser_t *const parser, void *obj,
+			     data_t *dst, args_t *args)
+{
+	uint32_t *src = obj;
+	SHARES_t istruct = { 0 };
+
+	if (is_complex_mode(args)) {
+		if (*src == SLURMDB_FS_USE_PARENT)
+			data_set_string(dst, "parent");
+		else if (*src == INFINITE)
+			data_set_string(dst, "Infinity");
+		else if (*src == NO_VAL)
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+		return SLURM_SUCCESS;
+	}
+
+	if (*src == SLURMDB_FS_USE_PARENT) {
+		istruct.parent = true;
+	} else if (*src == INFINITE) {
+		istruct.infinite = true;
+	} else if (*src == NO_VAL) {
+		/* nothing to do */
+	} else {
+		istruct.set = true;
+		istruct.number = *src;
+	}
+
+	return DUMP(SHARES_STRUCT, istruct, dst, args);
 }
 
 PARSE_DISABLED(STEP_NODES)
@@ -3212,7 +3314,7 @@ static int DUMP_FUNC(STATS_MSG_BF_EXIT)(const parser_t *const parser, void *obj,
 					data_t *dst, args_t *args)
 {
 	stats_info_response_msg_t *stats = obj;
-	bf_exit_fields_t fields = {0};
+	bf_exit_fields_t fields = { 0 };
 
 	/*
 	 * The size of the response bf_exit array (bf_exit_cnt) should always
@@ -3248,7 +3350,7 @@ static int DUMP_FUNC(STATS_MSG_SCHEDULE_EXIT)(const parser_t *const parser,
 					      args_t *args)
 {
 	stats_info_response_msg_t *stats = obj;
-	schedule_exit_fields_t fields = {0};
+	schedule_exit_fields_t fields = { 0 };
 
 	/*
 	 * The size of the response schedule_exit array (schedule_exit_cnt)
@@ -3393,7 +3495,7 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 		if ((stats->rpc_type_time[i] > 0) &&
 		    (stats->rpc_type_cnt[i] > 0))
 			rpc.average_time = stats->rpc_type_time[i] /
-				stats->rpc_type_cnt[i];
+					   stats->rpc_type_cnt[i];
 
 		rc = DUMP(STATS_MSG_RPC_TYPE, rpc, data_list_append(dst), args);
 	}
@@ -3426,7 +3528,7 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 		if ((stats->rpc_user_time[i] > 0) &&
 		    (stats->rpc_user_cnt[i] > 0))
 			rpc.average_time = stats->rpc_user_time[i] /
-				stats->rpc_user_cnt[i];
+					   stats->rpc_user_cnt[i];
 
 		rc = DUMP(STATS_MSG_RPC_USER, rpc, data_list_append(dst), args);
 	}
@@ -3553,10 +3655,10 @@ static int PARSE_FUNC(CSV_STRING)(const parser_t *const parser, void *obj,
 		*dst = xstrdup(data_get_string(src));
 		return SLURM_SUCCESS;
 	} else {
-		return parse_error(parser, args, parent_path,
-				   ESLURM_DATA_CONV_FAILED,
-				   "Expected dictionary or list or string for comma delimited list but got %pd",
-				   src);
+		return parse_error(
+			parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
+			"Expected dictionary or list or string for comma delimited list but got %pd",
+			src);
 	}
 
 	if (!pargs.rc)
@@ -3685,9 +3787,10 @@ static int PARSE_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
 
 		xfree(str);
 	} else {
-		parse_error(parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
-			    "Expected dictionary or list or string for comma delimited list but got %pd",
-			    src);
+		parse_error(
+			parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
+			"Expected dictionary or list or string for comma delimited list but got %pd",
+			src);
 	}
 
 cleanup:
@@ -3725,8 +3828,8 @@ static int DUMP_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
 
 	data_set_list(dst);
 
-	if (list_for_each_ro(*list_ptr, _dump_foreach_CSV_STRING_LIST,
-			     &pargs) < 0)
+	if (list_for_each_ro(*list_ptr, _dump_foreach_CSV_STRING_LIST, &pargs) <
+	    0)
 		return ESLURM_DATA_CONV_FAILED;
 
 	return SLURM_SUCCESS;
@@ -3800,10 +3903,10 @@ static int PARSE_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 	uint16_t *spec = obj;
 
 	if (data_convert_type(src, DATA_TYPE_INT_64) != DATA_TYPE_INT_64)
-		return parse_error(parser, args, parent_path,
-				   ESLURM_DATA_CONV_FAILED,
-				   "Expected integer for core specification but got %pd",
-				   src);
+		return parse_error(
+			parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
+			"Expected integer for core specification but got %pd",
+			src);
 
 	if (data_get_int(src) >= CORE_SPEC_THREAD)
 		return parse_error(parser, args, parent_path,
@@ -3843,10 +3946,10 @@ static int PARSE_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
 	uint16_t *spec = obj;
 
 	if (data_convert_type(src, DATA_TYPE_INT_64) != DATA_TYPE_INT_64)
-		return parse_error(parser, args, parent_path,
-				   ESLURM_DATA_CONV_FAILED,
-				   "Expected integer for thread specification but got %pd",
-				   src);
+		return parse_error(
+			parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
+			"Expected integer for thread specification but got %pd",
+			src);
 
 	if (data_get_int(src) >= CORE_SPEC_THREAD)
 		return parse_error(parser, args, parent_path,
@@ -3905,11 +4008,9 @@ static int PARSE_FUNC(NICE)(const parser_t *const parser, void *obj,
 
 	rc = PARSE(INT32, nice, src, parent_path, args);
 	if (rc == EINVAL || (!rc && (llabs(nice) > (NICE_OFFSET - 3)))) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_INVALID_NICE,
+		rc = on_error(PARSING, parser->type, args, ESLURM_INVALID_NICE,
 			      set_source_path(&path, args, parent_path),
-			      __func__,
-			      "Nice value not within +/- 2147483645");
+			      __func__, "Nice value not within +/- 2147483645");
 	} else if (!rc) {
 		*nice_ptr = nice + NICE_OFFSET;
 	}
@@ -4060,8 +4161,8 @@ static int _dump_node_res(data_t *dst, job_resources_t *j,
 		.memory.used = j->memory_used[node_inx],
 		.memory.allocated = j->memory_allocated[node_inx],
 	};
-	const uint32_t bit_reps = (j->sockets_per_node[sock_inx] *
-				   j->cores_per_socket[sock_inx]);
+	const uint32_t bit_reps =
+		(j->sockets_per_node[sock_inx] * j->cores_per_socket[sock_inx]);
 	int rc = SLURM_SUCCESS;
 
 	node.sockets = xcalloc((j->sockets_per_node[sock_inx] + 1),
@@ -4211,7 +4312,8 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 PARSE_DISABLED(CONTROLLER_PING_PRIMARY)
 
 static int DUMP_FUNC(CONTROLLER_PING_PRIMARY)(const parser_t *const parser,
-					      void *obj, data_t *dst, args_t *args)
+					      void *obj, data_t *dst,
+					      args_t *args)
 {
 	const int *mode_ptr = obj;
 	bool primary = (*mode_ptr == 0);
@@ -4386,7 +4488,6 @@ static int PARSE_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 	int rc;
 	char **host_list_str = obj;
 	hostlist_t *host_list = NULL;
-
 
 	if ((rc = PARSE_FUNC(HOSTLIST)(parser, &host_list, src, args,
 				       parent_path)))
@@ -4625,8 +4726,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 
 	if ((rc = data_get_string_converted(src, &str)))
 		return parse_error(parser, args, parent_path, rc,
-				   "string expected but got %pd",
-				   src);
+				   "string expected but got %pd", src);
 
 	if ((rc = cpu_freq_verify_cmdline(str, &job->cpu_freq_min,
 					  &job->cpu_freq_max,
@@ -4802,7 +4902,6 @@ static int PARSE_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
 		.parent_path = parent_path,
 	};
 
-
 	if (data_get_type(src) == DATA_TYPE_LIST) {
 		fargs.array = xcalloc(data_get_list_length(src) + 1,
 				      sizeof(*fargs.array));
@@ -4947,9 +5046,9 @@ static int DUMP_FUNC(BITSTR)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(JOB_DESC_MSG_NODES)(
-	const parser_t *const parser, void *obj,
-	data_t *src, args_t *args, data_t *parent_path)
+static int PARSE_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser,
+					  void *obj, data_t *src, args_t *args,
+					  data_t *parent_path)
 {
 	job_desc_msg_t *job = obj;
 
@@ -4958,9 +5057,10 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(
 
 		if (!data_get_list_length(src) ||
 		    (data_get_list_length(src) > 2)) {
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED,
-					   "Node count in format of a list must have a cardinality of 2 or 1");
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Node count in format of a list must have a cardinality of 2 or 1");
 		}
 
 		min = data_list_dequeue(src);
@@ -4971,16 +5071,18 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(
 
 		if (min && (data_convert_type(min, DATA_TYPE_INT_64) !=
 			    DATA_TYPE_INT_64))
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED,
-					   "Minimum nodes must be an integer instead of %s",
-					   data_get_type_string(min));
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Minimum nodes must be an integer instead of %s",
+				data_get_type_string(min));
 		if (max && (data_convert_type(max, DATA_TYPE_INT_64) !=
 			    DATA_TYPE_INT_64))
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED,
-					   "Maximum nodes must be an integer instead of %s",
-					   data_get_type_string(max));
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Maximum nodes must be an integer instead of %s",
+				data_get_type_string(max));
 
 		job->max_nodes = data_get_int(max);
 		if (min)
@@ -4991,10 +5093,11 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(
 
 		if (data_convert_type(src, DATA_TYPE_STRING) !=
 		    DATA_TYPE_STRING)
-			return parse_error(parser, args, parent_path,
-					   ESLURM_DATA_CONV_FAILED,
-					   "Expected string instead of %s for node counts",
-					   data_get_type_string(src));
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Expected string instead of %s for node counts",
+				data_get_type_string(src));
 
 		if (!verify_node_count(data_get_string(src), &min, &max,
 				       &job_size_str)) {
@@ -5015,9 +5118,8 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(
 	return SLURM_SUCCESS;
 }
 
-static int DUMP_FUNC(JOB_DESC_MSG_NODES)(
-	const parser_t *const parser, void *obj,
-	data_t *dst, args_t *args)
+static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
 {
 	job_desc_msg_t *job = obj;
 
@@ -6106,6 +6208,7 @@ static int _foreach_dump_ASSOC_SHARES_OBJ_LIST(void *x, void *arg)
 
 	return SLURM_SUCCESS;
 }
+
 static int DUMP_FUNC(ASSOC_SHARES_OBJ_LIST)(const parser_t *const parser,
 					    void *obj, data_t *dst,
 					    args_t *args)
@@ -6159,10 +6262,10 @@ static int _dump_uint64_shares_tres_list(const assoc_shares_object_wrap_t *wrap,
 	return rc;
 }
 
-static int _dump_float128_shares_tres_list(
-	const assoc_shares_object_wrap_t *wrap,
-	const long double *array,
-	data_t *dst, args_t *args)
+static int _dump_float128_shares_tres_list(const assoc_shares_object_wrap_t
+						   *wrap,
+					   const long double *array,
+					   data_t *dst, args_t *args)
 {
 	int rc;
 	list_t *list = list_create(xfree_ptr);
@@ -6183,37 +6286,37 @@ static int _dump_float128_shares_tres_list(
 
 PARSE_DISABLED(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS)
 
-static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS)(
-	const parser_t *const parser,
-	void *obj,
-	data_t *dst,
-	args_t *args)
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS)(const parser_t *const
+								  parser,
+							  void *obj,
+							  data_t *dst,
+							  args_t *args)
 {
 	assoc_shares_object_wrap_t *wrap = obj;
-	return _dump_uint64_shares_tres_list(wrap, wrap->obj.tres_run_secs,
-					     dst, args);
+	return _dump_uint64_shares_tres_list(wrap, wrap->obj.tres_run_secs, dst,
+					     args);
 }
 
 PARSE_DISABLED(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS)
 
-static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS)(
-	const parser_t *const parser,
-	void *obj,
-	data_t *dst,
-	args_t *args)
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS)(const parser_t *const
+								  parser,
+							  void *obj,
+							  data_t *dst,
+							  args_t *args)
 {
 	assoc_shares_object_wrap_t *wrap = obj;
-	return _dump_uint64_shares_tres_list(wrap, wrap->obj.tres_grp_mins,
-					     dst, args);
+	return _dump_uint64_shares_tres_list(wrap, wrap->obj.tres_grp_mins, dst,
+					     args);
 }
 
 PARSE_DISABLED(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW)
 
-static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW)(
-	const parser_t *const parser,
-	void *obj,
-	data_t *dst,
-	args_t *args)
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW)(const parser_t *const
+								   parser,
+							   void *obj,
+							   data_t *dst,
+							   args_t *args)
 {
 	assoc_shares_object_wrap_t *wrap = obj;
 	return _dump_float128_shares_tres_list(wrap, wrap->obj.usage_tres_raw,
@@ -6526,8 +6629,8 @@ static data_for_each_cmd_t _foreach_topo_array(data_t *src, void *arg)
 	xassert(fargs->array_size > fargs->index);
 
 	if ((*fargs->rc_ptr =
-	     fargs->parse_callback(fargs->array, fargs->index, src,
-				   fargs->args, fargs->parent_path)))
+		     fargs->parse_callback(fargs->array, fargs->index, src,
+					   fargs->args, fargs->parent_path)))
 		return DATA_FOR_EACH_FAIL;
 	fargs->index++;
 	return DATA_FOR_EACH_CONT;
@@ -7191,8 +7294,8 @@ static int DUMP_FUNC(TOPOLOGY_RING_CONFIG_ARRAY)(const parser_t *const parser,
 	return rc;
 }
 
-static int PARSE_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t
-							     *const parser,
+static int PARSE_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t *const
+							     parser,
 						     void *obj, data_t *src,
 						     args_t *args,
 						     data_t *parent_path)
@@ -7238,8 +7341,8 @@ static int PARSE_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t
 	return rc;
 }
 
-static int DUMP_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t
-							    *const parser,
+static int DUMP_FUNC(TOPOLOGY_TORUS3D_CONFIG_ARRAY)(const parser_t *const
+							    parser,
 						    void *obj, data_t *dst,
 						    args_t *args)
 {
@@ -7265,7 +7368,9 @@ static void FREE_FUNC(H_LAYER)(void *ptr)
 		return;
 
 	FREE_NULL_LIST(layer->base);
+	xfree(layer->layer_name);
 	xfree(layer->nodes);
+	xfree(layer->parent_name);
 	xfree(layer);
 }
 
@@ -7340,16 +7445,19 @@ static int _foreach_layer(void *x, void *arg)
 	license->name = xstrdup(args->resource->name);
 	license->mode = args->resource->mode;
 	license->nodes = xstrdup(layer->nodes);
+	license->hres_rec.layer_name = xstrdup(layer->layer_name);
+	license->hres_rec.parent_name = xstrdup(layer->parent_name);
 	license->hres_rec.total = layer->count;
+	license->hres_rec.disable_hres = args->resource->disable_hres;
+	license->hres_rec.disable_layer = layer->disable_layer;
 
-	if (((void *) hres_variable_free) && list_count(layer->base)) {
+	if (list_count(layer->base)) {
 		license->hres_rec.base = list_create(hres_variable_free);
 		list_for_each(layer->base, _foreach_variable,
 			      license->hres_rec.base);
 	}
 
-	if (((void *) hres_variable_free) && args->first_layer &&
-	    list_count(args->resource->variables)) {
+	if (args->first_layer && list_count(args->resource->variables)) {
 		license->hres_rec.variables = list_create(hres_variable_free);
 		list_for_each(args->resource->variables, _foreach_variable,
 			      license->hres_rec.variables);
@@ -7415,7 +7523,7 @@ static int _foreach_license(void *x, void *arg)
 	xassert(license);
 	xassert(resources);
 
-	if (!license->nodes)
+	if (license->mode == HRES_MODE_OFF)
 		return SLURM_SUCCESS; /* not a hierarchical resource - skip */
 
 	if (!*resources)
@@ -7428,11 +7536,11 @@ static int _foreach_license(void *x, void *arg)
 		resource = xmalloc(sizeof(*resource));
 		resource->name = xstrdup(license->name);
 		resource->mode = license->mode;
+		resource->disable_hres = license->hres_rec.disable_hres;
 		list_append(*resources, resource);
 	}
 
-	if (!resource->variables && ((void *) hres_variable_free) &&
-	    list_count(license->hres_rec.variables)) {
+	if (!resource->variables && list_count(license->hres_rec.variables)) {
 		resource->variables = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.variables, _foreach_variable,
 			      resource->variables);
@@ -7441,13 +7549,15 @@ static int _foreach_license(void *x, void *arg)
 	if (!resource->layers)
 		resource->layers = list_create(FREE_FUNC(H_LAYER));
 	layer = xmalloc(sizeof(*layer));
+	layer->layer_name = xstrdup(license->hres_rec.layer_name);
+	layer->parent_name = xstrdup(license->hres_rec.parent_name);
 	layer->nodes = xstrdup(license->nodes);
 	layer->count = license->hres_rec.total;
+	layer->disable_layer = license->hres_rec.disable_layer;
 	if (!resource->topology_name)
 		resource->topology_name =
 			xstrdup(license->hres_rec.topology_name);
-	if (((void *) hres_variable_free) &&
-	    list_count(license->hres_rec.base)) {
+	if (list_count(license->hres_rec.base)) {
 		layer->base = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.base, _foreach_variable,
 			      layer->base);
@@ -8318,7 +8428,7 @@ static const parser_t PARSER_ARRAY(ASSOC_REC_SET)[] = {
 	add_skip(partition),
 	add_parse(UINT32_NO_VAL, priority, "priority", "Association priority factor"),
 	add_parse(QOS_STRING_ID_LIST, qos_list, "qoslevel", "List of available QOS names"),
-	add_parse(UINT32, shares_raw, "fairshare", "Allocated shares used for fairshare calculation"),
+	add_parse(SHARES, shares_raw, "fairshare", "Allocated shares used for fairshare calculation (number of shares or \"parent\")"),
 	/* slurmdbd should never set uid - it should always be zero */
 	add_skip(uid),
 	/*
@@ -8382,7 +8492,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(STRING, partition, "partition", "Partition name"),
 	add_parse(UINT32_NO_VAL, priority, "priority", "Association priority factor"),
 	add_parse(QOS_STRING_ID_LIST, qos_list, "qos", "List of available QOS names"),
-	add_parse(UINT32, shares_raw, "shares_raw", "Allocated shares used for fairshare calculation"),
+	add_parse(SHARES, shares_raw, "shares_raw", "Allocated shares used for fairshare calculation"),
 	/* slurmdbd should never set uid - it should always be zero */
 	add_skip(uid),
 	add_skip(usage),
@@ -9395,7 +9505,9 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parser(slurm_license_info_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(STRING, name, "LicenseName", "Name of the license"),
-	add_parse(UINT32, total, "Total", "Total number of licenses present"),
+	add_parse(UINT32, conf_total, "ConfTotal", "Total number of licenses present before base usage"),
+	add_parse(UINT32, total, "Total", "Total number of licenses present after base usage"),
+	add_parse(UINT32, base_usage, "BaseUsage", "Sum of base usage"),
 	add_parse(UINT32, in_use, "Used", "Number of licenses in use"),
 	add_parse(UINT32, available, "Free", "Number of licenses currently available"),
 	add_parse(BOOL, remote, "Remote", "Indicates whether licenses are served by the database"),
@@ -9403,7 +9515,33 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, last_consumed, "LastConsumed", "Last known number of licenses that were consumed in the license manager (Remote Only)"),
 	add_parse(UINT32, last_deficit, "LastDeficit", "Number of \"missing licenses\" from the cluster's perspective"),
 	add_parse(TIMESTAMP, last_update, "LastUpdate", "When the license information was last updated (UNIX Timestamp)"),
+	add_parse(STRING, layer_name, "LayerName", "Name of HRES Layer"),
+	add_parse(STRING, parent_name, "ParentName", "Name of HRES Layer's parent"),
+	add_parse(BOOL, disable_hres, "DisableHRES", "If true, this HRES is disabled for scheduling. Jobs requesting this HRES will remain pending."),
+	add_parse(BOOL, disable_layer, "DisableLayer", "If true, this HRES layer is disabled for scheduling; jobs may still be scheduled on other layers in the same HRES."),
 	add_parse(STRING, nodes, "Nodes", "HRes nodes"),
+	add_parse(H_VARIABLE_LIST, base, "Base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer."),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(hres_update_msg_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(HRES_UPDATE_MSG)[] = {
+	add_parse(H_VARIABLE_LIST, base, "base", "A list of name/value pairs describing non-job-related (static) resource consumption in this layer"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource count for the layer; omit to leave unchanged"),
+	add_parse(BOOL16_NO_VAL, disable_hres, "disable_hres", "If true, disable this HRES for scheduling; jobs requesting this HRES remain pending. If false, enable this HRES for scheduling. Omit to leave unchanged."),
+	add_parse(BOOL16_NO_VAL, disable_layer, "disable_layer", "If true, disable this HRES layer for scheduling; jobs may still be scheduled on other layers in the same HRES. If false, enable this HRES layer for scheduling. Omit to leave unchanged."),
+	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update"),
+	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update"),
+	add_parse(STRING, nodes, "nodes", "Nodes assigned to the layer"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(node_hres_info_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NODE_HRES_INFO)[] = {
+	add_parse(STRING, hres_name, "hres_name", "Name of the HRES to update with node"),
+	add_parse(STRING, layer_name, "layer_name", "Name of the HRES layer to update with node"),
 };
 #undef add_parse
 
@@ -11029,7 +11167,7 @@ static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
 	add_parse(STRING, obj.parent, "parent", "Parent name"),
 	add_parse(STRING, obj.partition, "partition", "Partition name"),
 	add_parse(FLOAT64_NO_VAL, obj.shares_norm, "shares_normalized", "Normalized shares"),
-	add_parse(UINT32_NO_VAL, obj.shares_raw, "shares", "Number of shares allocated"),
+	add_parse(SHARES, obj.shares_raw, "shares", "Number of shares allocated, or inherited from the parent association"),
 	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, "tres/run_seconds", "Currently running tres-secs = grp_used_tres_run_secs"),
 	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, "tres/group_minutes", "TRES-minute limit"),
 	add_parse(FLOAT64_NO_VAL, obj.usage_efctv, "effective_usage", "Effective, normalized usage"),
@@ -11183,6 +11321,16 @@ static const parser_t PARSER_ARRAY(UINT64_NO_VAL_STRUCT)[] = {
 static const parser_t PARSER_ARRAY(UINT32_NO_VAL_STRUCT)[] = {
 	add_parse(BOOL, set, "set", "True if number has been set; False if number is unset"),
 	add_parse(BOOL, infinite, "infinite", "True if number has been set to infinite; \"set\" and \"number\" will be ignored"),
+	add_parse(UINT32, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(SHARES_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SHARES_STRUCT)[] = {
+	add_parse(BOOL, set, "set", "True if number has been set; Ignored if \"infinite\" or \"parent\" is True"),
+	add_parse(BOOL, infinite, "infinite", "True to reset fairshare to the default of 1 share, equivalent to sacctmgr's FairShare=-1; \"set\" and \"number\" will be ignored"),
+	add_parse(BOOL, parent, "parent", "True if fairshare is inherited from the parent association; \"set\", \"infinite\" and \"number\" will be ignored"),
 	add_parse(UINT32, number, "number", "If \"set\" is True the number will be set with value; otherwise ignore number contents"),
 };
 #undef add_parse
@@ -11509,9 +11657,12 @@ static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
 #define add_parse_req(mtype, field, path, desc)				\
 	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_LAYER)[] = {
-	add_parse_req(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
+	add_parse_req(STRING, layer_name, "layer_name", "Layer name. Must be unique (case insensitive)."),
+	add_parse(STRING, parent_name, "parent_name", "Name of parent layer. Only valid for mode 3, where it is required for every layer except the root."),
+	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
 	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
-	add_parse_req(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parse(BOOL, disable_layer, "disable_layer", "If true, disables this HRES layer for scheduling. Jobs may still be scheduled on other layers in the same HRES."),
 };
 #undef add_parse
 #undef add_parse_req
@@ -11526,6 +11677,7 @@ static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
 	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
 	add_parse(STRING, topology_name, "topology", "Name of topology associated to hierarchical resource"),
 	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
+	add_parse(BOOL, disable_hres, "disable_hres", "If true, disables this HRES for scheduling. Jobs requesting this HRES will remain pending."),
 };
 #undef add_parse_req
 #undef add_parse
@@ -11822,16 +11974,22 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIVATE_DATA)[] = {
 	add_flag_bit_desc(PRIVATE_DATA_USERS, "users", "Prevents users from viewing information of any user other than themselves."),
 };
 
-/* based on _logfmtstr() */
+/* based on _logfmtstr() log_opts[] */
+static const flag_bit_t PARSER_FLAG_ARRAY(LOG_FLAGS)[] = {
+	add_flag_bit_desc(LOG_FLAG_THREAD_ID, "thread_id", "Print the process ID and the current thread name and ID after the timestamp."),
+};
+
+/* based on _logfmtstr() log_fmts[] */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_TIME_FORMAT)[] = {
 	add_flag_equal_desc(LOG_FMT_ISO8601_MS, INFINITE64, "iso8601_ms", "ISO 8601 timestamp with millisecond precision."),
 	add_flag_equal_desc(LOG_FMT_ISO8601, INFINITE64, "iso8601", "ISO 8601 timestamp."),
 	add_flag_equal_desc(LOG_FMT_RFC5424_MS, INFINITE64, "rfc5424_ms", "RFC 5424 timestamp with millisecond precision. Same as iso8601_ms with timezone."),
+	add_flag_equal_desc(LOG_FMT_RFC5424_US, INFINITE64, "rfc5424_us", "RFC 5424 timestamp with microsecond precision, the most RFC 5424 allows."),
 	add_flag_equal_desc(LOG_FMT_RFC5424, INFINITE64, "rfc5424", "RFC 5424 timestamp. Same as iso8601 with timezone."),
 	add_flag_equal_desc(LOG_FMT_RFC3339, INFINITE64, "rfc3339", "RFC 3339 timestamp."),
 	add_flag_equal_desc(LOG_FMT_CLOCK, INFINITE64, "clock", "Timestamp in microseconds from C standard clock() function."),
 	add_flag_equal_desc(LOG_FMT_SHORT, INFINITE64, "short", "Short date and time format."),
-	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Timestamp in ctime() format without the year, with microseconds, process ID, and thread name and ID."),
+	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Legacy format: short date and time (non-standard fractional seconds), process ID, and thread name and ID. Deprecated — prefer the thread_id flag in LogTimeFormat instead."),
 	add_flag_equal_desc(LOG_FMT_OMIT, INFINITE64, "omit", "Omit the timestamp."),
 };
 
@@ -12042,6 +12200,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(CSV_STRING, launch_params, "LaunchParameters", "Step launcher plugin options"),
 	add_parse(CSV_STRING, licenses, "Licenses", "Licenses available on this cluster"),
 	add_parse(CSV_STRING, license_params, "LicenseParameters", "Options for licenses/HRES"),
+	add_parse(LOG_FLAGS, log_flags, "LogTimeFormatOptions", "Options accompanying the timestamp in slurmctld and slurmd log files"),
 	add_parse(LOG_TIME_FORMAT, log_fmt, "LogTimeFormat", "Format of the timestamp in slurmctld and slurmd log files"),
 	add_parse(STRING, mail_domain, "MailDomain", "Default domain to append to usernames"),
 	add_parse(STRING, mail_prog, "MailProg", "Pathname of mail program"),
@@ -12314,6 +12473,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(launch_params),
 	add_skip(licenses),
 	add_skip(license_params),
+	add_skip(log_flags),
 	add_skip(log_fmt),
 	add_skip(mail_domain),
 	add_skip(mail_prog),
@@ -13047,6 +13207,7 @@ static const parser_t parsers[] = {
 	addps(STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addpsp(UINT32_NO_VAL, UINT32_NO_VAL_STRUCT, uint32_t, NEED_NONE, "32 bit integer number with flags"),
+	addpsp(SHARES, SHARES_STRUCT, uint32_t, NEED_NONE, "32 bit shares number with flags"),
 	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL, NULL, NULL),
 	addpsp(UINT64_NO_VAL, UINT64_NO_VAL_STRUCT, uint64_t, NEED_NONE, "64 bit integer number with flags"),
 	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
@@ -13275,6 +13436,8 @@ static const parser_t parsers[] = {
 	addpap(STATS_MSG, stats_info_response_msg_t, NULL, NULL),
 	addpap(NODE, node_info_t, NULL, NULL),
 	addpap(LICENSE, slurm_license_info_t, NULL, NULL),
+	addpap(HRES_UPDATE_MSG, hres_update_msg_t, NULL, NULL),
+	addpap(NODE_HRES_INFO, node_hres_info_t, NULL, slurm_free_node_hres_info),
 	addpap(JOB_INFO, slurm_job_info_t, NULL, NULL),
 	addpap(JOB_RES, job_resources_t, NULL, NULL),
 	addpap(LISTJOBS_INFO, listjobs_info_t, NULL, NULL),
@@ -13338,6 +13501,7 @@ static const parser_t parsers[] = {
 	addpap(FLOAT64_NO_VAL_STRUCT, FLOAT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 	addpap(UINT32_NO_VAL_STRUCT, UINT32_NO_VAL_t, NULL, NULL),
+	addpap(SHARES_STRUCT, SHARES_t, NULL, NULL),
 	addpap(UINT16_NO_VAL_STRUCT, UINT16_NO_VAL_t, NULL, NULL),
 	addpap(INT64_NO_VAL_STRUCT, UINT64_NO_VAL_t, NULL, NULL),
 	addpap(JOB_RES_NODE, JOB_RES_NODE_t, NULL, NULL),
@@ -13499,6 +13663,7 @@ static const parser_t parsers[] = {
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfas(LOG_TIME_FORMAT, uint16_t),
+	addfa(LOG_FLAGS, log_flags_t),
 	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),
 	addfa(PRIVATE_DATA, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
@@ -13547,6 +13712,7 @@ static const parser_t parsers[] = {
 	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
 	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
+	addpl(NODE_HRES_INFO_LIST, NODE_HRES_INFO_PTR, NEED_NONE),
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),

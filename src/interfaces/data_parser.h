@@ -65,6 +65,9 @@ typedef enum {
 	DATA_PARSER_UINT32_NO_VAL, /* uint32_t - maybe NO_VAL or INFINITE*/
 	DATA_PARSER_UINT32_NO_VAL_STRUCT, /* UINT32_NO_VAL_t */
 	DATA_PARSER_UINT32_NO_VAL_STRUCT_PTR, /* UINT32_NO_VAL_t* */
+	DATA_PARSER_SHARES, /* uint32_t - may be NO_VAL, INFINITE or SLURMDB_FS_USE_PARENT */
+	DATA_PARSER_SHARES_STRUCT, /* SHARES_t */
+	DATA_PARSER_SHARES_STRUCT_PTR, /* SHARES_t* */
 	DATA_PARSER_UINT64, /* uint64_t */
 	DATA_PARSER_UINT64_NO_VAL, /* uint64_t - NO_VAL64 or INFINTE64 */
 	DATA_PARSER_UINT64_NO_VAL_STRUCT, /* UINT64_NO_VAL_t */
@@ -651,6 +654,11 @@ typedef enum {
 	DATA_PARSER_H_VARIABLE, /* hierarchy_layer_t */
 	DATA_PARSER_H_VARIABLE_PTR, /* hierarchy_layer_t* */
 	DATA_PARSER_H_VARIABLE_LIST, /* list_t* hierarchy_layer_t* */
+	DATA_PARSER_HRES_UPDATE_MSG, /* hres_update_msg_t */
+	DATA_PARSER_HRES_UPDATE_MSG_PTR, /* hres_update_msg_t* */
+	DATA_PARSER_NODE_HRES_INFO, /* node_hres_info_t */
+	DATA_PARSER_NODE_HRES_INFO_PTR, /* node_hres_info_t* */
+	DATA_PARSER_NODE_HRES_INFO_LIST, /* list_t* node_hres_info_t* */
 	DATA_PARSER_SLUID, /* sluid_t */
 	DATA_PARSER_SLUID_PTR, /* sluid_t* */
 	DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP, /* openapi_resp_resource_layout_t */
@@ -693,6 +701,7 @@ typedef enum {
 	DATA_PARSER_CPU_FREQ_GOVS, /* CPU_FREQ_* */
 	DATA_PARSER_DEBUG_FLAGS, /* uint64_t - DEBUG_FLAG_* */
 	DATA_PARSER_ENFORCE_PART_LIMITS, /* uint16_t - PARTITION_ENFORCE_* */
+	DATA_PARSER_LOG_FLAGS, /* log_flags_t - LOG_FLAG_* */
 	DATA_PARSER_LOG_TIME_FORMAT, /* uint16_t - LOG_FMT_* */
 	DATA_PARSER_HEALTH_CHECK_NODE_STATE, /* uint16_t - HEALTH_CHECK_NODE_* */
 	DATA_PARSER_PRIVATE_DATA, /* uint16_t - PRIVATE_DATA_* */

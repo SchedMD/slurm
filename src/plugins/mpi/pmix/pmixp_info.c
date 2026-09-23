@@ -230,20 +230,6 @@ extern int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 	_pmixp_job_info.task_dist =
 		slurm_step_layout_type_name(step->task_dist);
 
-#if 0
-	if ((step->het_job_id != 0) && (step->het_job_id != NO_VAL))
-		info("HET_JOB_ID:%u", _pmixp_job_info.step_id.job_id);
-	info("%ps", &_pmixp_job_info.step_id);
-	info("NODEID:%u", _pmixp_job_info.node_id);
-	info("NODE_TASKS:%u", _pmixp_job_info.node_tasks);
-	info("NTASKS:%u", _pmixp_job_info.ntasks);
-	info("NNODES:%u", _pmixp_job_info.nnodes);
-	for (i = 0; i < _pmixp_job_info.nnodes; i++)
-		info("TASK_CNT[%d]:%u", i,_pmixp_job_info.task_cnts[i]);
-	for (i = 0; i < step->node_tasks; i++)
-		info("GTIDS[%d]:%u", i, _pmixp_job_info.gtids[i]);
-#endif
-
 	_pmixp_job_info.hostname = xstrdup(step->node_name);
 
 	/* Setup job-wide info */
@@ -352,7 +338,6 @@ static int _resources_set(char ***env)
 						    _pmixp_job_info.hostname);
 
 	_pmixp_job_info.ntasks_job = _pmixp_job_info.ntasks;
-	_pmixp_job_info.ncpus_job = _pmixp_job_info.ntasks;
 
 	/* Save task-to-node mapping */
 	p = getenvp(*env, PMIXP_SLURM_MAPPING_ENV);
@@ -776,13 +761,6 @@ extern uint32_t pmixp_info_tasks(void)
 	return _pmixp_job_info.ntasks;
 }
 
-extern uint32_t pmixp_info_tasks_node(uint32_t nodeid)
-{
-	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
-	xassert(nodeid < _pmixp_job_info.nnodes);
-	return _pmixp_job_info.task_cnts[nodeid];
-}
-
 extern uint32_t *pmixp_info_tasks_cnts(void)
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
@@ -799,12 +777,6 @@ extern uint32_t pmixp_info_tasks_uni(void)
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.ntasks_job;
-}
-
-extern uint32_t pmixp_info_cpus(void)
-{
-	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
-	return _pmixp_job_info.ncpus_job;
 }
 
 extern uint32_t pmixp_info_taskid(uint32_t localid)
@@ -845,20 +817,6 @@ extern char *pmixp_info_task_map(void)
 extern hostlist_t *pmixp_info_step_hostlist(void)
 {
 	return _pmixp_job_info.step_hl;
-}
-
-extern char *pmixp_info_step_host(int nodeid)
-{
-	xassert(nodeid < _pmixp_job_info.nnodes);
-	char *p = hostlist_nth(_pmixp_job_info.step_hl, nodeid);
-	char *ret = xstrdup(p);
-	free(p);
-	return ret;
-}
-
-extern int pmixp_info_step_hostid(char *hostname)
-{
-	return hostlist_find(_pmixp_job_info.step_hl, hostname);
 }
 
 extern char *pmixp_info_job_host(int nodeid)

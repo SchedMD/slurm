@@ -277,10 +277,8 @@ test7.16   Verify that auth/munge credential is properly validated.
 test7.17   Test GRES APIs.
 test7.19   Test sbatch/srun/salloc path resolving
 test7.20   Test lua JobSubmitPlugin
-test7.21   Test SPANK plugins that link against libslurm
 test7.22   Test basic functionality of backfill scheduler
 test7.23   Test min_mem_per_{cpu,node} in lua JobSubmitPlugin
-test7.24   Test that SPANK plugins return codes are reported to user
 
 test8.#    Testing of advanced reservation functionality.
 =========================================================
@@ -427,7 +425,6 @@ test17.38  Test for sbatch --signal.
 test17.39  Validate dependency OR option.
 test17.40  Test of --thread-spec option.
 test17.41  Validate that sbatch, srun, salloc return partition error message.
-test17.42  Test of sbatch --wait option.
 test17.43  Test sbatch handling of very long lines in script
 test17.44  Validate that aftercorr dependency is enforced.
 test17.45  Test of sbatch --bbf option
@@ -672,7 +669,6 @@ test39.12  Test some valid combinations of srun --gpu and non-GPU GRES options
 test39.13  Validate proper GRES operation under heavy load (many jobs)
 test39.15  Test --gpus-per-tres with --overcommit option
 test39.16  Test --gpus-per-tres with --exclusive option
-test39.18  Test gres.conf and system GPU normalization and merging logic
 test39.20  Test GPU resource limits with various allocation options
 test39.22  Test heterogeneous job GPU allocations.
 test39.23  Test --gpus-per-task with implicit task count
@@ -745,6 +741,7 @@ test_105_9   Test sbatch --requeue=expedite option (success, failure, epilog fai
 test_105_10  Test --oom-kill-step option
 test_105_11  Test sbatch --parsable output format
 test_105_12  Test JobAcctGatherParams=OverMemoryKill enforcement
+test_105_15  Test sbatch --wait (-W) blocking and exit code propagation for normal and array jobs
 
 test_106_#   Testing of sbcast options.
 =======================================
@@ -896,6 +893,7 @@ test_116_61  Verify a pending synchronous step is assigned a real step ID at sub
 test_116_62  Verify a synchronous step pending on exhausted reserved ports gets a real step ID at submission
 test_116_63  Test MPI/PMIx abort propagation across hetjob components
 test_116_64  Test srun forced termination of a hetjob
+test_116_65  Test srun --bcast in a hetjob
 
 test_117_#   Testing of sstat options.
 ======================================
@@ -968,7 +966,12 @@ test_127_1   /parameters/slurm/Epilog/test_epilog.py
 test_128_#   Testing of PreemptType.
 ====================================
 test_128_1   /parameters/slurm/PreemptType/partition_prio/test_preemption_by_partition.py
-test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel"
+test_128_2   Test PreemptExemptTime for "suspend,gang","requeue", and "cancel", including at job start
+test_128_3   Test hetjob is exempt from preemption under SUSPEND,GANG
+test_128_4   Test hetjob REQUEUE/CANCEL preemption, as victim and as preemptor
+test_128_5   Test hetjob mixed-mode components resolve REQUEUE then CANCEL, and per-component GraceTime
+test_128_6   Test hetjob preemption under preempt/qos: SUSPEND exemption, mode resolution, component eligibility
+test_128_7   Test hetjob is excluded from oversubscription while GANG is enabled
 
 test_129_#   Testing of preserve-case slurmdbd parameters.
 ===========================================================
@@ -988,10 +991,7 @@ test_131_1   Test basic sshare --json
 test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
-
-test_133_#   Testing of TopologyParam.
-======================================
-test_133_1   python version of test33.1
+test_132_2   Test holds placed on a running job during its node prolog
 
 test_134_#   Testing of SwitchType.
 ===================================
@@ -1021,6 +1021,7 @@ test_139_#   Testing dynamic nodes.
 test_139_1   Test creation, registration, usage, and deletion of dynamic nodes.
 test_139_2   Test dynamic external node states don't go NOT_RESPONDING after update.
 test_139_3   Test dynamic future nodes get NodeAddr and NodeHostName from slurmd.
+test_139_4   Test dynamic node range creation and rollback of a failed create.
 
 test_140_#   Testing --tres options.
 ====================================
@@ -1056,6 +1057,9 @@ test_144_11  Test GRES reservation with node table changes
 test_144_12  Test dynamic-normal slurmd (`slurmd -Z`) GRES autofill
 test_144_13  Test CountOnly GRES does not alter per-socket core distribution
 test_144_14  Test overcommit with GRES tres-per-task
+test_144_15  Test gres.conf UUID supplies device UUIDs without AutoDetect
+test_144_16  Test gres.conf UUID merged with AutoDetect UUIDs
+test_144_17  Test GPU device merge/sort logic and gres.conf parsing/validation edge cases
 
 test_145_#   Testing --constraint.
 ==================================
@@ -1073,6 +1077,8 @@ test_147_#   Testing SPANK.
 ===========================
 test_147_1   Test SPANK contained when SlurmdParameters=contain_spank
 test_147_2   Test SPANK remote spank init failure modes
+test_147_3   Test that SPANK plugins return codes are reported to user
+test_147_4   Test SPANK plugins that link against libslurm
 
 test_149_#   Testing AcctGatherProfileType.
 ===========================================
@@ -1092,6 +1098,7 @@ test_150_7   Test topology preserved when a partial node update splits the confi
 test_150_8   Test overcommit with cpus-per-task across a topology cluster
 test_150_9   Test bad topology.yaml handling
 test_150_10  Test --contiguous node selection per topology plugin
+test_150_11  Test "--segment" with job-scoped GPU requests on topology/block
 
 test_151_#   Testing Oversubscribe
 ===========================================
@@ -1127,6 +1134,8 @@ test_157_#   Testing of JobSubmitPlugins.
 ============================================
 test_157_1   Test job_desc with JobSubmitPlugins=lua
 test_157_2   Test core_spec/thread_spec in job_desc with JobSubmitPlugins=lua
+test_157_3   Test clearing the supported job_desc string fields via job_submit/lua on modify
+test_157_4   Test job_submit/lua clear limits: submit path, unsupported fields, non-empty assignment
 
 test_158_#   Testing of Licenses
 ============================================
@@ -1145,6 +1154,7 @@ test_160_1   Test memory reduction on running jobs (scontrol and --mem-update)
 test_161_#   Testing topology/torus3d.
 ========================================
 test_161_1   Test topology/torus3d placements, constraints, and --segment
+test_161_2   Test "--segment" with job-scoped GPU requests on topology/torus3d
 
 test_162_#   Testing of swait and stepmgr/async-step integration.
 =================================================================
@@ -1185,3 +1195,7 @@ test_168_1   Validate sbatch heterogeneous job environment variables.
 test_168_2   Test job-global step ids with --stepmgr on heterogeneous jobs.
 test_168_3   Test sbcast and squeue against a --stepmgr heterogeneous job.
 test_168_4   Validate scontrol show job fields for heterogeneous job components.
+
+test_169_#   Testing of scrontab options.
+=========================================
+test_169_1   Test that scrontab builds a job description from a #SCRON line

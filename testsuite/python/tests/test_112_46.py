@@ -275,6 +275,25 @@ def dynamic_node(setup):
     atf.start_slurm()
 
 
+@pytest.fixture(scope="function")
+def cleanup_created_user2():
+    yield
+    atf.run_command(
+        f"sacctmgr -i delete user {user_name2} "
+        f"cluster={local_cluster_name} account={account_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
+@pytest.fixture(scope="function")
+def cleanup_created_account3():
+    yield
+    atf.run_command(
+        f"sacctmgr -i delete account {account3_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
 def test_loaded_versions():
     r = atf.request_slurmrestd("openapi/v3")
     assert r.status_code == 200
@@ -706,6 +725,9 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
     from openapi_client.models.v0046_assoc_short import V0046AssocShort
     from openapi_client.models.v0046_coord import V0046Coord
     from openapi_client.models.v0046_openapi_assocs_resp import V0046OpenapiAssocsResp
+    from openapi_client.models.v0046_shares_struct import (
+        V0046SharesStruct as V0046Shares,
+    )
     from openapi_client.models.v0046_uint32_no_val_struct import (
         V0046Uint32NoValStruct as V0046Uint32NoVal,
     )
@@ -740,7 +762,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
                 partition=partition_name,
                 priority=V0046Uint32NoVal(number=9, set=True),
                 qos=[qos_name, qos2_name],
-                shares_raw=23,
+                shares_raw=V0046Shares(set=True, number=23),
                 user=user_name,
             ),
             V0046Assoc(
@@ -768,7 +790,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
                 ),
                 priority=V0046Uint32NoVal(number=9, set=True),
                 qos=[qos_name, qos2_name],
-                shares_raw=23,
+                shares_raw=V0046Shares(set=True, number=23),
                 user=user_name,
             ),
             V0046Assoc(
@@ -797,7 +819,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
                 partition=partition_name,
                 priority=V0046Uint32NoVal(number=90, set=True),
                 qos=[qos2_name],
-                shares_raw=1012,
+                shares_raw=V0046Shares(set=True, number=1012),
                 user=user_name,
             ),
         ]
@@ -838,7 +860,9 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
         assert assoc.priority.number == 9
         for qos in assoc.qos:
             assert qos == qos_name or qos == qos2_name
-        assert assoc.shares_raw == 23
+        assert assoc.shares_raw.set
+        assert not assoc.shares_raw.parent
+        assert assoc.shares_raw.number == 23
 
     associations = V0046OpenapiAssocsResp(
         associations=[
@@ -860,7 +884,7 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
                     priority_threshold=V0046Uint32NoVal(set=True, number=100),
                 ),
                 priority=V0046Uint32NoVal(number=848, set=True),
-                shares_raw=230,
+                shares_raw=V0046Shares(set=True, number=230),
             )
         ]
     )
@@ -895,7 +919,55 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
         assert assoc.priority.number == 848
         for qos in assoc.qos:
             assert qos == qos2_name
-        assert assoc.shares_raw == 230
+        assert assoc.shares_raw.set
+        assert not assoc.shares_raw.parent
+        assert assoc.shares_raw.number == 230
+
+    # fairshare=parent (SLURMDB_FS_USE_PARENT) instead of a share count
+    associations = V0046OpenapiAssocsResp(
+        associations=[
+            V0046Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                partition=partition_name,
+                user=user_name,
+                shares_raw=V0046Shares(parent=True),
+            )
+        ]
+    )
+
+    resp = slurmdb.slurmdb_v0046_post_associations(
+        v0046_openapi_assocs_resp=associations
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0046_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+        partition=partition_name,
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+    for assoc in resp.associations:
+        assert assoc.shares_raw.parent
+        assert not assoc.shares_raw.set
+        # A fairshare-only POST must not clobber the other limits the previous
+        # modify set on this association (they survive because the parser leaves
+        # omitted fields at NO_VAL and slurmdbd skips NO_VAL).
+        assert assoc.cluster == local_cluster_name
+        assert assoc.account == account_name
+        assert assoc.user == user_name
+        assert assoc.partition == partition_name
+        assert assoc.default.qos == qos2_name
+        assert assoc.priority.set
+        assert assoc.priority.number == 848
+        assert assoc.max.jobs.per.wall_clock.set
+        assert assoc.max.jobs.per.wall_clock.number == 250
+        assert assoc.min.priority_threshold.set
+        assert assoc.min.priority_threshold.number == 100
 
     resp = slurmdb.slurmdb_v0046_delete_association(
         cluster=local_cluster_name,
@@ -948,6 +1020,316 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
     assert len(resp.warnings) > 0
     assert len(resp.errors) == 0
     assert not resp.associations
+
+
+def _slurmrestd_post(path, body, expect_status=200, expect_error=False):
+    """POST raw JSON to slurmrestd and return the decoded response.
+
+    Used for SHARES request shapes the generated OpenAPI client cannot
+    express: the bare string "parent" and a bare integer/null shares value (the
+    field's generated model is the V0046SharesStruct object).
+    """
+    r = requests.post(
+        f"{atf.properties['slurmrestd_url']}{path}",
+        headers=atf.properties["slurmrestd-headers"],
+        json=body,
+    )
+    if expect_error:
+        assert r.status_code >= 400, f"POST {path} -> {r.status_code}: {r.text[:300]}"
+    else:
+        assert (
+            r.status_code == expect_status
+        ), f"POST {path} -> {r.status_code}: {r.text[:300]}"
+    return r.json()
+
+
+def test_db_assoc_create_user_fairshare_parent(
+    slurmdb, create_accounts, admin_level, cleanup_created_user2
+):
+    """Creating a user association in fairshare=parent mode via POST
+    /users_association/ (ASSOC_REC_SET.fairshare) -- the creation path bug 25581
+    is about, which the modify-path coverage in test_db_assoc does not exercise.
+    """
+    from openapi_client.models.v0046_assoc_rec_set import V0046AssocRecSet
+    from openapi_client.models.v0046_openapi_users_add_cond_resp import (
+        V0046OpenapiUsersAddCondResp,
+    )
+    from openapi_client.models.v0046_shares_struct import V0046SharesStruct
+    from openapi_client.models.v0046_user_short import V0046UserShort
+    from openapi_client.models.v0046_users_add_cond import V0046UsersAddCond
+
+    req = V0046OpenapiUsersAddCondResp(
+        association_condition=V0046UsersAddCond(
+            accounts=[account_name],
+            clusters=[local_cluster_name],
+            users=[user_name2],
+            association=V0046AssocRecSet(fairshare=V0046SharesStruct(parent=True)),
+        ),
+        user=V0046UserShort(),
+    )
+    resp = slurmdb.slurmdb_v0046_post_users_association(
+        v0046_openapi_users_add_cond_resp=req
+    )
+    assert not resp.warnings, resp.warnings
+    assert len(resp.errors) == 0, resp.errors
+
+    got = slurmdb.slurmdb_v0046_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name2,
+    )
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "created user association was not returned"
+    for assoc in got.associations:
+        assert assoc.shares_raw.parent, "created assoc not in parent mode"
+        assert not assoc.shares_raw.set, "parent assoc must not set a share count"
+
+    # Cross-check through a second, independent interface: sacctmgr reads the
+    # stored value via assoc_mgr/DB, not the REST parse/dump, and prints the
+    # literal "parent" for SLURMDB_FS_USE_PARENT. This catches a symmetric
+    # parse<->dump mis-mapping the REST round-trip alone would hide (e.g. parent
+    # mapped onto INFINITE, which would persist as 1 share).
+    share = atf.run_command_output(
+        f"sacctmgr -n -P show assoc cluster={local_cluster_name} "
+        f"account={account_name} user={user_name2} format=Share",
+        fatal=True,
+    ).strip()
+    assert share == "parent", f"sacctmgr Share should be parent, got {share!r}"
+
+
+def test_db_assoc_create_user_fairshare_parent_string(
+    slurmdb, create_accounts, admin_level, cleanup_created_user2
+):
+    """Creating a user association with the bare string "parent" via POST
+    /users_association/ -- the exact payload reported in bug 25581. The
+    generated client cannot express it: the schema types fairshare as the
+    V0046SharesStruct object.
+    """
+    body = {
+        "association_condition": {
+            "accounts": [account_name],
+            "clusters": [local_cluster_name],
+            "users": [user_name2],
+            "association": {"fairshare": "parent"},
+        },
+        "user": {},
+    }
+    resp = _slurmrestd_post("/slurmdb/v0.0.46/users_association/", body)
+    assert not resp.get("errors"), resp.get("errors")
+    assert not resp.get("warnings"), resp.get("warnings")
+
+    got = slurmdb.slurmdb_v0046_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name2,
+    )
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "created user association was not returned"
+    for assoc in got.associations:
+        assert assoc.shares_raw.parent, "created assoc not in parent mode"
+        assert not assoc.shares_raw.set, "parent assoc must not set a share count"
+
+
+def test_db_assoc_create_account_fairshare_parent_string(
+    slurmdb, admin_level, cleanup_created_account3
+):
+    """Creating an account association via POST /accounts_association/ using the
+    bare string "parent" (the sacctmgr keyword form; the generated client can
+    only send the struct). Covers both the accounts creation endpoint and the
+    DATA_TYPE_STRING branch of PARSE_FUNC(SHARES).
+    """
+    body = {
+        "association_condition": {
+            "accounts": [account3_name],
+            "clusters": [local_cluster_name],
+            "association": {"fairshare": "parent"},
+        }
+    }
+    resp = _slurmrestd_post("/slurmdb/v0.0.46/accounts_association/", body)
+    assert not resp.get("errors"), resp.get("errors")
+    assert not resp.get("warnings"), resp.get("warnings")
+
+    got = slurmdb.slurmdb_v0046_get_association(
+        cluster=local_cluster_name,
+        account=account3_name,
+    )
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "created account association was not returned"
+    for assoc in got.associations:
+        assert assoc.shares_raw.parent, "created account assoc not in parent mode"
+        assert not assoc.shares_raw.set, "parent assoc must not set a share count"
+
+
+def test_db_assoc_shares_infinite_and_unset(slurmdb, create_users, admin_level):
+    """The accepted SHARES forms on ASSOC.shares_raw: a bare -1 resets shares to
+    1 (like sacctmgr FairShare=-1), null leaves the stored value unchanged (no
+    shares= clause emitted), the bare string "parent" selects parent mode, and
+    the struct discriminators resolve in the documented order parent > infinite
+    > set/number. The null case is the dangerous one -- a regression there
+    silently rewrites the share count of any association updated without
+    mentioning fairshare.
+    """
+    ident = {
+        "cluster": local_cluster_name,
+        "account": account_name,
+        "user": user_name,
+    }
+
+    def get_shares():
+        got = slurmdb.slurmdb_v0046_get_association(**ident)
+        assert len(got.errors) == 0, got.errors
+        assert (
+            len(got.associations) == 1
+        ), f"expected exactly one association, got {got.associations}"
+        return got.associations[0].shares_raw
+
+    def post_shares(value):
+        _slurmrestd_post(
+            "/slurmdb/v0.0.46/associations/",
+            {"associations": [{**ident, "shares_raw": value}]},
+        )
+
+    # Seed a known share count, then -1 must reset it to a single share.
+    post_shares(55)
+    shares = get_shares()
+    assert shares.set and shares.number == 55, "seed of 55 shares did not take"
+    post_shares(-1)
+    shares = get_shares()
+    assert shares.set and shares.number == 1, "fairshare=-1 should reset to 1 share"
+
+    # Re-seed, then null must leave the value untouched.
+    post_shares(77)
+    assert get_shares().number == 77, "re-seed of 77 shares did not take"
+    post_shares(None)
+    shares = get_shares()
+    assert shares.set and shares.number == 77, "shares=null must not change shares"
+
+    # Same two behaviors via the SHARES struct fields (distinct parser
+    # branches from the bare integer/null above): infinite=True resets to 1, and
+    # set=False leaves the value unchanged. These are the forms an OpenAPI client
+    # sending the generated V0046SharesStruct model actually uses.
+    post_shares(55)
+    post_shares({"infinite": True})
+    shares = get_shares()
+    assert shares.set and shares.number == 1, "shares={infinite} should reset to 1"
+    post_shares(88)
+    post_shares({"set": False})
+    assert get_shares().number == 88, "shares={set:false} must not change shares"
+
+    # An update that omits shares_raw entirely must also leave it unchanged (the
+    # field stays NO_VAL via slurmdb_init_assoc_rec), explicitly not reset to 0.
+    _slurmrestd_post(
+        "/slurmdb/v0.0.46/associations/",
+        {"associations": [{**ident, "priority": {"set": True, "number": 5}}]},
+    )
+    got = slurmdb.slurmdb_v0046_get_association(**ident)
+    assert len(got.errors) == 0, got.errors
+    assert got.associations, "association not found"
+    assert got.associations[0].priority.number == 5, "the modify did not land"
+    shares = got.associations[0].shares_raw
+    assert (
+        shares.set and shares.number == 88
+    ), "omitting fairshare must not change shares"
+
+    # The bare string form bug 25581 reported against this endpoint.
+    post_shares("parent")
+    shares = get_shares()
+    assert shares.parent, 'shares_raw="parent" should select parent mode'
+    assert not shares.set, "parent assoc must not set a share count"
+
+    # Precedence: "parent" outranks every other discriminator, and "infinite"
+    # outranks "set"/"number".
+    post_shares(99)
+    shares = get_shares()
+    assert (
+        shares.set and shares.number == 99 and not shares.parent
+    ), "a numeric POST must clear parent mode"
+    post_shares({"parent": True, "infinite": True, "set": True, "number": 42})
+    shares = get_shares()
+    assert shares.parent, "parent must outrank infinite and set/number"
+    assert not shares.set, "parent assoc must not set a share count"
+    post_shares(99)
+    post_shares({"infinite": True, "set": True, "number": 42})
+    shares = get_shares()
+    assert shares.set and shares.number == 1, "infinite must outrank set/number"
+
+
+def test_db_assoc_shares_rejects_invalid(slurmdb, create_users, admin_level):
+    """An unrecognized fairshare string is rejected and the stored share count
+    survives. sacctmgr.1 documents the value set as {<fairshare_number>|parent},
+    so anything outside it must not silently become a share count.
+    """
+    ident = {
+        "cluster": local_cluster_name,
+        "account": account_name,
+        "user": user_name,
+    }
+
+    def get_shares():
+        got = slurmdb.slurmdb_v0046_get_association(**ident)
+        assert len(got.errors) == 0, got.errors
+        assert (
+            len(got.associations) == 1
+        ), f"expected exactly one association, got {got.associations}"
+        return got.associations[0].shares_raw
+
+    _slurmrestd_post(
+        "/slurmdb/v0.0.46/associations/",
+        {"associations": [{**ident, "shares_raw": 33}]},
+    )
+    assert get_shares().number == 33, "seed of 33 shares did not take"
+
+    resp = _slurmrestd_post(
+        "/slurmdb/v0.0.46/associations/",
+        {"associations": [{**ident, "shares_raw": "parnet"}]},
+        expect_error=True,
+    )
+    assert resp["errors"], "an unrecognized fairshare string must be reported"
+
+    shares = get_shares()
+    assert shares.set and shares.number == 33, "rejected input must not change shares"
+
+
+def test_shares_render_parent(slurm, create_users, admin_level):
+    """GET /slurm/v0.0.46/shares renders an inherited shares value as "parent".
+    This is the third SHARES use-site (ASSOC_SHARES_OBJ_WRAP.shares_raw, a
+    parser instance distinct from the ASSOC and ASSOC_REC_SET write parsers),
+    so its dump of the parent sentinel is otherwise unobserved. Reads through
+    slurmctld's assoc_mgr, which updates asynchronously from slurmdbd.
+    """
+    atf.run_command(
+        f"sacctmgr -i modify account {account_name} where "
+        f"cluster={local_cluster_name} set fairshare=7",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i modify user {user_name} where cluster={local_cluster_name} "
+        f"account={account_name} set fairshare=parent",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    entry = None
+    account_entry = None
+    for _ in atf.timer(fatal=True):
+        resp = slurm.slurm_v0046_get_shares(accounts=account_name, users=user_name)
+        assert len(resp.errors) == 0, resp.errors
+        entry = next((s for s in resp.shares.shares if s.name == user_name), None)
+        account_entry = next(
+            (s for s in resp.shares.shares if s.name == account_name), None
+        )
+        if entry is not None and entry.shares.parent and account_entry is not None:
+            break
+
+    assert entry.shares.parent, "shares of a parent assoc must render parent"
+    assert not entry.shares.set, "parent assoc must not report a share count"
+
+    # The numeric account in the same response is the control: a dump stuck on
+    # parent would satisfy the user assertions above on its own.
+    assert account_entry.shares.set, "numeric assoc must report set"
+    assert not account_entry.shares.parent, "numeric assoc must not render parent"
+    assert account_entry.shares.number == 7, "numeric assoc must report its shares"
 
 
 def test_db_qos(slurmdb, create_coords, admin_level):

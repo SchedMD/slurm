@@ -60,6 +60,8 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 	list_itr_t *itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
+	char *new_local_list_uuid = NULL;
+	bool all_have_uuid = true;
 	int device_index = -1;
 	bool device_considered = false;
 	int local_inx = 0;
@@ -137,17 +139,21 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 		}
 
 		/*
+		 * Always build the index form; it is the only thing some
+		 * vendor runtimes understand.
+		 *
 		 * MIG devices always use UUID.
 		 * Non-MIG GPUs use UUID when env_uuid is set in gres.conf.
 		 * Both methods set GRES_CONF_UUID.
 		 */
+		xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
+			   gres_env->prefix, index);
 		if (gres_device->unique_id &&
 		    ((gres_env->gres_conf_flags & GRES_CONF_UUID)))
-			xstrfmtcat(new_local_list, "%s%s%s", local_prefix,
+			xstrfmtcat(new_local_list_uuid, "%s%s%s", local_prefix,
 				   gres_env->prefix, gres_device->unique_id);
 		else
-			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
-				   gres_env->prefix, index);
+			all_have_uuid = false;
 		xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
 			   gres_env->prefix, global_env_index);
 
@@ -165,19 +171,33 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 		xfree(gres_env->local_list);
 		gres_env->local_list = new_local_list;
 	}
+	/*
+	 * A partial UUID list would silently hide the devices that have no
+	 * UUID, so only offer it when every device in the list has one.
+	 */
+	if (new_local_list_uuid && all_have_uuid) {
+		xfree(gres_env->local_list_uuid);
+		gres_env->local_list_uuid = new_local_list_uuid;
+	} else {
+		xfree(new_local_list_uuid);
+	}
 
 	if (gres_env->flags & GRES_INTERNAL_FLAG_VERBOSE) {
 		char *usable_str;
 		char *alloc_str;
+
 		if (gres_env->usable_gres)
 			usable_str = bit_fmt_hexmask_trim(
 				gres_env->usable_gres);
 		else
 			usable_str = xstrdup("NULL");
 		alloc_str = bit_fmt_hexmask_trim(gres_env->bit_alloc);
-		fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
+		fprintf(stderr,
+			"gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s; local_list_uuid=%s\n",
 			usable_str, alloc_str, local_inx, gres_env->global_list,
-			gres_env->local_list);
+			gres_env->local_list,
+			gres_env->local_list_uuid ? gres_env->local_list_uuid :
+						    "NULL");
 		xfree(alloc_str);
 		xfree(usable_str);
 	}
@@ -190,7 +210,7 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 			    log_level_t log_lvl)
 {
 	log_var(log_lvl, "    GRES[%s] Type:%s Count:%"PRIu64" Cores(%d):%s  "
-		"Links:%s Flags:%s File:%s UniqueId:%s", gres_slurmd_conf->name,
+		"Links:%s Flags:%s File:%s UUID:%s", gres_slurmd_conf->name,
 		gres_slurmd_conf->type_name, gres_slurmd_conf->count,
 		gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
 		gres_slurmd_conf->links,
@@ -201,7 +221,7 @@ extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 
 /*
  * Print the gres.conf record in a parsable format
- * Do NOT change the format of this without also changing test39.18!
+ * Do NOT change the format of this without also changing test_144_17!
  */
 static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 				      log_level_t log_lvl)
@@ -300,14 +320,24 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 	}
 
 	if (gres_env->local_list) {
+		/*
+		 * Only the CUDA and ROCr runtimes accept a "GPU-<uuid>" in
+		 * their visible-devices list. ZE_AFFINITY_MASK takes a device
+		 * (or device.subdevice) index and GPU_DEVICE_ORDINAL takes an
+		 * ordinal; handing either of them a UUID makes the runtime see
+		 * no devices at all. So env_uuid only rewrites the two that
+		 * understand it, and the others always get indexes.
+		 */
+		char *uuid_list = gres_env->local_list_uuid ?
+					  gres_env->local_list_uuid :
+					  gres_env->local_list;
+
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_NVML)
 			env_array_overwrite(gres_env->env_ptr,
-					    "CUDA_VISIBLE_DEVICES",
-					    gres_env->local_list);
+					    "CUDA_VISIBLE_DEVICES", uuid_list);
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_RSMI)
 			env_array_overwrite(gres_env->env_ptr,
-					    "ROCR_VISIBLE_DEVICES",
-					    gres_env->local_list);
+					    "ROCR_VISIBLE_DEVICES", uuid_list);
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_ONEAPI)
 			env_array_overwrite(gres_env->env_ptr,
 					    "ZE_AFFINITY_MASK",
@@ -317,6 +347,7 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 					    "GPU_DEVICE_ORDINAL",
 					    gres_env->local_list);
 		xfree(gres_env->local_list);
+		xfree(gres_env->local_list_uuid);
 	} else if (!(gres_env->flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
 		if (gres_env->gres_conf_flags & GRES_CONF_ENV_NVML)
 			unsetenvp(*gres_env->env_ptr, "CUDA_VISIBLE_DEVICES");
@@ -342,9 +373,10 @@ extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 {
 	int dev_inx_first = -1, dev_inx_last, dev_inx;
 	gres_device_t *gres_device;
-	char *vendor_gpu_str = NULL;
+	char *uuid_gpu_str = NULL;
 	char *slurm_gpu_str = NULL;
 	char *sep = "";
+	bool all_have_uuid = true;
 
 	xassert(prep_env_ptr);
 
@@ -377,18 +409,21 @@ extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 			continue;
 		if ((gres_device =
 		     list_find_first(gres_devices, _match_dev_inx, &dev_inx))) {
-			if (gres_device->unique_id)
-				xstrfmtcat(vendor_gpu_str, "%s%s", sep,
+			if (gres_device->unique_id &&
+			    (gres_conf_flags & GRES_CONF_UUID))
+				xstrfmtcat(uuid_gpu_str, "%s%s", sep,
 					   gres_device->unique_id);
 			else
-				xstrfmtcat(vendor_gpu_str, "%s%d", sep,
-					   gres_device->index);
+				all_have_uuid = false;
 			xstrfmtcat(slurm_gpu_str, "%s%d", sep,
 				   gres_device->index);
 			sep = ",";
 		}
 	}
-	if (vendor_gpu_str) {
+	if (slurm_gpu_str) {
+		char *vendor_gpu_str =
+			all_have_uuid ? uuid_gpu_str : slurm_gpu_str;
+
 		if (gres_conf_flags & GRES_CONF_ENV_NVML)
 			env_array_overwrite(prep_env_ptr,
 					    "CUDA_VISIBLE_DEVICES",
@@ -398,15 +433,13 @@ extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 					    "ROCR_VISIBLE_DEVICES",
 					    vendor_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
-			env_array_overwrite(prep_env_ptr,
-					    "ZE_AFFINITY_MASK",
-					    vendor_gpu_str);
+			env_array_overwrite(prep_env_ptr, "ZE_AFFINITY_MASK",
+					    slurm_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
-			env_array_overwrite(prep_env_ptr,
-					    "GPU_DEVICE_ORDINAL",
-					    vendor_gpu_str);
-		xfree(vendor_gpu_str);
+			env_array_overwrite(prep_env_ptr, "GPU_DEVICE_ORDINAL",
+					    slurm_gpu_str);
 	}
+	xfree(uuid_gpu_str);
 	if (slurm_gpu_str) {
 		env_array_overwrite(prep_env_ptr, "SLURM_JOB_GPUS",
 				    slurm_gpu_str);

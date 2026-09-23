@@ -112,6 +112,7 @@ static s_p_options_t _gres_options[] = {
 	{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
 	{"Name",  S_P_STRING},	/* Gres name */
 	{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
+	{ "UUID", S_P_STRING }, /* Device UUID/unique identifier */
 	{NULL}
 };
 
@@ -288,7 +289,7 @@ typedef struct {
 typedef struct {
 	uint32_t config_flags;
 	int config_type_cnt;
-	uint32_t cpu_set_cnt;
+	bool has_topo_info;
 	uint64_t gres_cnt;
 	uint32_t plugin_id;
 	uint32_t rec_cnt;
@@ -373,6 +374,11 @@ typedef struct {
 	uint32_t magic;
 	uint16_t protocol_version;
 } pack_state_t;
+
+typedef struct {
+	gres_slurmd_conf_t *dup;
+	list_t *seen;
+} find_dup_unique_id_args_t;
 
 /* Local variables */
 static int gres_context_cnt = -1;
@@ -1118,7 +1124,7 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	}
 
 	if (p->cpus && (index != -1)) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Cores=%s CoreCnt=%u Links=%s Flags=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Cores=%s CoreCnt=%u Links=%s Flags=%s%s%s",
 		     p->name,
 		     p->type_name,
 		     p->count,
@@ -1128,9 +1134,11 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		     p->cpus,
 		     p->cpu_cnt,
 		     p->links,
-		     gres_flags2str(p->config_flags));
+		     gres_flags2str(p->config_flags),
+		     p->unique_id ? " UUID=" : "",
+		     p->unique_id ? p->unique_id : "");
 	} else if (index != -1) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Links=%s Flags=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Links=%s Flags=%s%s%s",
 		     p->name,
 		     p->type_name,
 		     p->count,
@@ -1138,16 +1146,20 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		     p->plugin_id,
 		     p->file,
 		     p->links,
-		     gres_flags2str(p->config_flags));
+		     gres_flags2str(p->config_flags),
+		     p->unique_id ? " UUID=" : "",
+		     p->unique_id ? p->unique_id : "");
 	} else if (p->file) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s Links=%s Flags=%s",
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s Links=%s Flags=%s%s%s",
 		     p->name,
 		     p->type_name,
 		     p->count,
 		     p->plugin_id,
 		     p->file,
 		     p->links,
-		     gres_flags2str(p->config_flags));
+		     gres_flags2str(p->config_flags),
+		     p->unique_id ? " UUID=" : "",
+		     p->unique_id ? p->unique_id : "");
 	} else {
 		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u Links=%s Flags=%s",
 		     p->name,
@@ -1172,7 +1184,7 @@ static int _post_plugin_gres_conf(void *x, void *arg)
 
 	if (gres_slurmd_conf->config_flags & GRES_CONF_UUID) {
 		if (!gres_slurmd_conf->unique_id) {
-			warning("Flags=env_uuid set but no GPU UUID available for device %s. Falling back to numeric indices.",
+			warning("Flags=env_uuid set but no GPU UUID available for device %s. Falling back to numeric indices. Use AutoDetect or set UUID in gres.conf to provide UUIDs.",
 				gres_slurmd_conf->file ? gres_slurmd_conf->file :
 				"(unknown)");
 			gres_slurmd_conf->config_flags &= ~GRES_CONF_UUID;
@@ -1650,6 +1662,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	uint64_t tmp_uint64, mult;
 	char *tmp_str, *last;
 	bool cores_flag = false, cpus_flag = false;
+	int file_dev_cnt = 0;
 	char *type_str = NULL;
 	char *autodetect_string = NULL;
 	bool autodetect = false, set_default_envs = true;
@@ -1739,7 +1752,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_string(&p->file, "File", tbl) ||
 	    s_p_get_string(&p->file, "Files", tbl)) {
-		p->count = _validate_file(p->file, p->name);
+		file_dev_cnt = _validate_file(p->file, p->name);
+		p->count = file_dev_cnt;
 		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
@@ -1748,6 +1762,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (p->config_flags & GRES_CONF_HAS_FILE)
 			fatal("File and MultipleFiles options are mutually exclusive");
 		p->count = 1;
+		/* All of the files together describe a single device */
+		file_dev_cnt = 1;
 		file_count = _validate_file(p->file, p->name);
 		if (file_count < 2)
 			fatal("MultipleFiles does not contain multiple files. Use File instead");
@@ -1827,6 +1843,19 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	}
 
+	if (s_p_get_string(&p->unique_id, "UUID", tbl)) {
+		if (!p->unique_id[0])
+			fatal("Invalid GRES record for %s, UUID is empty",
+			      p->name);
+		/*
+		 * A comma would split the value apart in the vendor env vars
+		 * set by Flags=env_uuid, which are comma-separated lists.
+		 */
+		if (xstrchr(p->unique_id, ','))
+			fatal("Invalid GRES record for %s, UUID (%s) may not contain a comma",
+			      p->name, p->unique_id);
+	}
+
 	_set_shared_flag(p->name, &p->config_flags);
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
@@ -1858,6 +1887,22 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		xfree(tmp_str);
 	} else if (p->count == 0)
 		p->count = 1;
+
+	/*
+	 * A UUID names one physical device, so the record it is on has to
+	 * resolve to exactly one. MultipleFiles is fine here: its files are all
+	 * part of a single device. A shared GRES (mps/shard) may still have a
+	 * count > 1, since that count is the number of shared TRES units
+	 * carved out of the one device.
+	 */
+	if (p->unique_id) {
+		if (!(p->config_flags & GRES_CONF_HAS_FILE))
+			fatal("Invalid GRES record for %s, UUID requires File or MultipleFiles",
+			      p->name);
+		if (file_dev_cnt > 1)
+			fatal("Invalid GRES record for %s, UUID requires a single device file, but File=%s has %d",
+			      p->name, p->file, file_dev_cnt);
+	}
 
 	s_p_hashtbl_destroy(tbl);
 
@@ -2723,7 +2768,7 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
 	gres_device->unique_id = xstrdup(unique_id);
 
 	if (_set_gres_device_desc(gres_device) != SLURM_SUCCESS) {
-		xfree(gres_device);
+		destroy_gres_device(gres_device);
 		return NULL;
 	}
 
@@ -2876,6 +2921,76 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 	return fill_in_gres_devices.rc;
 }
 
+static int _match_unique_id(void *x, void *key)
+{
+	gres_slurmd_conf_t *conf = x;
+	gres_slurmd_conf_t *match = key;
+
+	return (conf->plugin_id == match->plugin_id) &&
+	       !xstrcmp(conf->unique_id, match->unique_id);
+}
+
+static int _find_dup_unique_id(void *x, void *arg)
+{
+	gres_slurmd_conf_t *conf = x;
+	find_dup_unique_id_args_t *args = arg;
+
+	if (!conf->unique_id)
+		return 0;
+
+	if (!list_find_first(args->seen, _match_unique_id, conf)) {
+		list_append(args->seen, conf);
+		return 0;
+	}
+
+	args->dup = conf;
+
+	return -1;
+}
+
+extern gres_slurmd_conf_t *gres_find_duplicate_unique_id(list_t *gres_conf_list)
+{
+	find_dup_unique_id_args_t args = { 0 };
+
+	args.seen = list_create(NULL);
+	(void) list_for_each(gres_conf_list, _find_dup_unique_id, &args);
+	FREE_NULL_LIST(args.seen);
+
+	return args.dup;
+}
+
+/*
+ * Make sure no two gres.conf records of the same GRES name share a UUID.
+ * A duplicate would make a device impossible to name unambiguously, both for
+ * the vendor env vars and for drain/resume by UUID.
+ *
+ * Only gres.conf-supplied UUIDs are seen here; AutoDetect does not run
+ * until node_config_load(), well after this.
+ *
+ * RET SLURM_SUCCESS or ESLURM_UNSUPPORTED_GRES (duplicate found)
+ */
+static int _validate_unique_ids(list_t *gres_conf_list)
+{
+	gres_slurmd_conf_t *dup = gres_find_duplicate_unique_id(gres_conf_list);
+
+	if (!dup)
+		return SLURM_SUCCESS;
+
+	/*
+	 * This runs in slurmctld too (for cloud nodes), where fatal() would
+	 * kill the whole controller over one node's bad config. Reject just
+	 * that node there instead.
+	 */
+	if (!running_in_slurmctld())
+		fatal("Duplicate UUID=%s for GRES %s in gres.conf. Each device must have a unique UUID",
+		      dup->unique_id, dup->name);
+
+	error("Duplicate UUID=%s for GRES %s in gres.conf on node %s. Each device must have a unique UUID",
+	      dup->unique_id, dup->name, gres_node_name);
+
+	return ESLURM_UNSUPPORTED_GRES;
+}
+
 /*
  * Parse gres.conf into gres_conf_list and update autodetect_flags. Refreshes
  * gres_node_name to match node_name. Caller must hold gres_context_lock.
@@ -2951,6 +3066,10 @@ static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 		}
 		s_p_hashtbl_destroy(tbl);
 	}
+
+	rc = _validate_unique_ids(tmp_gres_conf_list);
+	if (rc != SLURM_SUCCESS)
+		goto fini;
 
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = tmp_gres_conf_list;
@@ -3158,7 +3277,7 @@ static int _add_to_gres_conf_list(gres_slurmd_conf_t *conf, char *node_name)
 	if (!conf->count)
 		goto empty;
 
-	log_flag(GRES, "Node:%s Gres:%s Type:%s UniqueId:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+	log_flag(GRES, "Node:%s Gres:%s Type:%s UUID:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
 		 node_name, conf->name, conf->type_name, conf->unique_id,
 		 gres_flags2str(conf->config_flags), conf->cpus, conf->cpu_cnt,
 		 conf->count, conf->links);
@@ -3764,8 +3883,9 @@ static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
 	slurmd_conf_tot->gres_cnt += gres_slurmd_conf->count;
 	slurmd_conf_tot->rec_cnt++;
 
-	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
-		slurmd_conf_tot->cpu_set_cnt++;
+	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name ||
+	    gres_slurmd_conf->unique_id)
+		slurmd_conf_tot->has_topo_info = true;
 
 	return 0;
 }
@@ -3789,7 +3909,7 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 	xassert(slurmd_conf_tot);
 
 	slurmd_conf_tot->config_flags = 0;
-	slurmd_conf_tot->cpu_set_cnt = 0;
+	slurmd_conf_tot->has_topo_info = false;
 	slurmd_conf_tot->config_type_cnt = 0;
 	slurmd_conf_tot->topo_cnt = 0;
 	slurmd_conf_tot->gres_cnt = 0;
@@ -4183,7 +4303,7 @@ static int _node_config_validate(node_record_t *node_ptr,
 	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
 
 	/* If the gres is sharing we need to have topo configured. */
-	if (slurmd_conf_tot.cpu_set_cnt ||
+	if (slurmd_conf_tot.has_topo_info ||
 	    (gres_id_sharing(slurmd_conf_tot.plugin_id) && gres_ns->alt_gres))
 		slurmd_conf_tot.topo_cnt = slurmd_conf_tot.rec_cnt;
 
@@ -10713,6 +10833,7 @@ static int _foreach_gres_init(void *x, void *arg)
 	if (!gres_js->gres_per_job)
 		return 0;
 	gres_js->total_gres = 0;
+	gres_js->gres_per_job_segment = 0;
 	*rc = true;
 
 	return 0;
@@ -10732,6 +10853,54 @@ extern bool gres_sched_init(list_t *job_gres_list)
 	(void) list_for_each(job_gres_list, _foreach_gres_init, &rc);
 
 	return rc;
+}
+
+static int _foreach_gres_reset(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (gres_js->gres_per_job)
+		gres_js->total_gres = 0;
+
+	return 0;
+}
+
+extern void gres_sched_reset(list_t *job_gres_list)
+{
+	if (!job_gres_list)
+		return;
+
+	(void) list_for_each(job_gres_list, _foreach_gres_reset, NULL);
+}
+
+static int _foreach_gres_segment_set(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	int segment_cnt = *(int *) arg;
+
+	if (!gres_js->gres_per_job)
+		return 0;
+	/*
+	 * On rejection (<0) earlier entries keep a non-zero
+	 * gres_per_job_segment, but the caller aborts the evaluation and the
+	 * next gres_sched_init() clears it before it can be used.
+	 */
+	if (gres_js->gres_per_job % segment_cnt)
+		return -1; /* Not evenly divisible */
+	gres_js->gres_per_job_segment = gres_js->gres_per_job / segment_cnt;
+
+	return 0;
+}
+
+extern bool gres_sched_segment_set(list_t *job_gres_list, int segment_cnt)
+{
+	if (!job_gres_list || (segment_cnt <= 1))
+		return true;
+
+	return (list_for_each(job_gres_list, _foreach_gres_segment_set,
+			      &segment_cnt) >= 0);
 }
 
 /*

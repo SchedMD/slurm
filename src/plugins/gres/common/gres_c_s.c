@@ -167,9 +167,25 @@ static int _merge_lists(list_t *gres_conf_list, list_t *sharing_conf_list,
 			xfree(shared_record->type_name);
 			shared_record->type_name =
 				xstrdup(sharing_record->type_name);
-			xfree(shared_record->unique_id);
-			shared_record->unique_id =
-				xstrdup(sharing_record->unique_id);
+			/*
+			 * gres/shared has no device of its own, so it
+			 * consumes gres/sharing's UUID. Adopt it only if
+			 * gres/shared didn't already configure its own; a
+			 * configured value that disagrees with gres/sharing's
+			 * is rejected rather than silently discarded.
+			 */
+			if (!shared_record->unique_id) {
+				shared_record->unique_id =
+					xstrdup(sharing_record->unique_id);
+			} else if (sharing_record->unique_id &&
+				   xstrcmp(shared_record->unique_id,
+					   sharing_record->unique_id)) {
+				fatal("Configured UUID=%s for gres/%s (File=%s) does not match UUID=%s of its gres/sharing device (File=%s)",
+				      shared_record->unique_id, shared_name,
+				      shared_record->file,
+				      sharing_record->unique_id,
+				      sharing_record->file);
+			}
 			list_append(gres_conf_list, shared_record);
 		} else {
 			/* Add gres/shared record to match gres/gps record */

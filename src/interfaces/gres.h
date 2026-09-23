@@ -207,7 +207,11 @@ typedef struct gres_slurmd_conf {
 	/* Type of this GRES (e.g. model name) */
 	char *type_name;
 
-	/* Used for GPU binding with MIGs */
+	/*
+	 * Device UUID. Used for GPU binding with MIGs, for the vendor env vars
+	 * when GRES_CONF_UUID is set, and to anchor GRES drains to a device.
+	 * Set by AutoDetect or by UUID in gres.conf.
+	 */
 	char *unique_id;
 
 	/* GRES ID number */
@@ -295,6 +299,10 @@ typedef struct gres_job_state {
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
 	uint64_t gres_per_job;
+	uint64_t gres_per_job_segment; /* Per-segment portion of gres_per_job,
+					* used as the scheduling target while
+					* selecting nodes for one segment.
+					* 0 when not segmenting. */
 	uint64_t gres_per_node;
 	uint64_t gres_per_socket;
 	uint64_t gres_per_task;
@@ -614,6 +622,21 @@ extern void gres_add(char *gres_name);
 extern int gres_node_config_load(list_t *gres_conf_list,
 				 node_config_load_t *config,
 				 list_t **gres_devices);
+
+/*
+ * Find the first record in gres_conf_list whose UUID duplicates that of an
+ * earlier record of the same GRES. Records without a UUID are skipped.
+ *
+ * Two devices sharing a UUID cannot be told apart, either for the vendor
+ * environment variables or for anchoring a GRES drain to a device. gres.conf
+ * and the merged AutoDetect list are both checked, so the scan lives here and
+ * each caller decides how to report what it finds.
+ *
+ * IN gres_conf_list - list of gres_slurmd_conf_t to check
+ * RET the offending record, owned by gres_conf_list and not to be freed by the
+ *     caller, or NULL if every UUID is unique
+ */
+extern gres_slurmd_conf_t *gres_find_duplicate_unique_id(list_t *gres_conf_list);
 
 
 /*
@@ -1017,6 +1040,21 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id);
  * Return TRUE if any gres_per_job constraints to satisfy
  */
 extern bool gres_sched_init(list_t *job_gres_list);
+
+/*
+ * Clear the accumulated GRES counter before selecting nodes for a new segment
+ * IN job_gres_list - job's GRES requirements
+ */
+extern void gres_sched_reset(list_t *job_gres_list);
+
+/*
+ * Set the per-segment GRES scheduling target (gres_per_job / segment_cnt) for
+ * all job-scoped GRES so node selection can be satisfied one segment at a time.
+ * IN job_gres_list - job's GRES requirements
+ * IN segment_cnt - number of segments the job is split into
+ * RET false if any gres_per_job is not evenly divisible by segment_cnt
+ */
+extern bool gres_sched_segment_set(list_t *job_gres_list, int segment_cnt);
 
 /*
  * Log a step's current gres state

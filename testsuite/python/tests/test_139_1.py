@@ -56,32 +56,25 @@ def create_node():
     created_nodes = []
 
     def scontrol_create_node(node_name, state, feature, xfail=False, fatal=False):
-        creation_exit_code = atf.run_command_exit(
-            f"scontrol create NodeName={node_name} State={state} Feature={feature}",
-            user="slurm",
+        command = f"scontrol create NodeName={node_name} State={state}"
+        command += f" Feature={feature}"
+
+        results = atf.run_command(
+            command,
+            user=atf.properties["slurm-user"],
             xfail=xfail,
             fatal=fatal,
         )
-        created = 0 == creation_exit_code
 
-        if created:
+        if results["exit_code"] == 0:
             created_nodes.append(node_name)
 
-        return created != xfail
+        return results
 
     yield scontrol_create_node
 
     # Delete the created nodes Slurm can see
-    for node_name in created_nodes:
-        # Node must have no jobs running to be deleted
-        atf.repeat_until(
-            lambda: atf.get_node_parameter(node_name, "state"),
-            lambda states: "ALLOCATED" not in states and "MIXED" not in states,
-            fatal=True,
-        )
-        atf.run_command(
-            f"scontrol delete NodeName={node_name}", fatal=True, user="slurm"
-        )
+    delete_nodes_or_fail(created_nodes, wait_for_idle=True)
 
 
 @pytest.fixture
@@ -144,6 +137,37 @@ def node_is_idle(node_name):
     return "IDLE" in atf.get_node_parameter(node_name, "state")
 
 
+# Delete every node that still exists, then report all the failures at once. A
+# fatal delete inside the loop would skip every node after it, leaking them
+# into the next test's MaxNodeCount budget.
+def delete_nodes_or_fail(node_names, wait_for_idle=False):
+    errors = []
+
+    for node_name in node_names:
+        if node_name not in atf.get_nodes(live=True, quiet=True):
+            continue
+
+        if wait_for_idle:
+            # Node must have no jobs running to be deleted
+            for _ in atf.timer():
+                states = atf.get_node_parameter(node_name, "state")
+                if "ALLOCATED" not in states and "MIXED" not in states:
+                    break
+            else:
+                errors.append(f"Node {node_name} never left ALLOCATED/MIXED")
+                continue
+
+        results = atf.run_command(
+            f"scontrol delete NodeName={node_name}",
+            user=atf.properties["slurm-user"],
+        )
+        if results["exit_code"] != 0:
+            errors.append(f"Failed to delete node {node_name}: {results['stderr']}")
+
+    if errors:
+        pytest.fail("; ".join(errors))
+
+
 # Tests
 # Ensure illegal dynamic node values are rejected
 @pytest.mark.parametrize(
@@ -154,7 +178,20 @@ def test_illegal_scontrol_creation_states(create_node, illegal_state):
 
 
 # Ensure legal dynamic node values are accepted
-@pytest.mark.parametrize("legal_state", ["CLOUD", "FUTURE"])
+@pytest.mark.parametrize(
+    "legal_state",
+    [
+        "CLOUD",
+        "FUTURE",
+        pytest.param(
+            "EXTERNAL",
+            marks=pytest.mark.skipif(
+                atf.get_version("bin/scontrol") < (25, 11),
+                reason="Issue 50689: scontrol omits NODE_STATE_EXTERNAL from --json output before 25.11",
+            ),
+        ),
+    ],
+)
 def test_legal_scontrol_creation_states(create_node, legal_state):
     create_node(f"{node_prefix}1", legal_state, "f1", fatal=True)
 

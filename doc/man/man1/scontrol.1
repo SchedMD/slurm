@@ -796,8 +796,8 @@ coordinator to \fBrelease\fR the job without admin intervention.
 
 .TP
 \fBupdate\fR <\fISPECIFICATION\fR>
-Update job, step, node, partition, or reservation configuration per
-the supplied specification. \fISPECIFICATION\fP is in the same format as the
+Update job, step, node, partition, reservation, or HRES layer configuration
+per the supplied specification. \fISPECIFICATION\fP is in the same format as the
 Slurm configuration file and the output of the \fIshow\fP command described
 above. It may be desirable to execute the \fIshow\fP command (described above)
 on the specific entity you want to update, then use cut\-and\-paste tools to
@@ -1718,8 +1718,12 @@ current time limit, the \fIStepId\fP specification must precede the
 .SH "NODES \- SPECIFICATIONS FOR CREATE COMMAND"
 
 Provide the same NodeName configuration as found in the slurm.conf. See
-slurm.conf man page for details. Only State=CLOUD and State=FUTURE nodes are
-allowed.
+slurm.conf man page for details. Only State=CLOUD, State=EXTERNAL and
+State=FUTURE nodes are allowed.
+Creation is all\-or\-nothing. If any node in the request cannot be created, the
+command fails, no node from the request is created, and every node that already
+existed \- whether created dynamically or defined in slurm.conf \- is left
+unchanged.
 
 .SH "NODES \- SPECIFICATIONS FOR UPDATE COMMAND"
 
@@ -2485,7 +2489,7 @@ requested to power down upon becoming IDLE. A power down request prevents
 further scheduling to the node until it has been put into power save mode by
 \fBSuspendProgram\fR.
 
-Also see \fBSuspendTime\fR.
+See \fBslurm.conf\fR(5) for more information. Also see \fBSuspendTime\fR.
 .IP
 
 .TP
@@ -2913,6 +2917,9 @@ nodes of the cluster) which are to be reserved.
 License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g. "Licenses=foo:4,bar").
+A hierarchical resource is reserved on one of its layers, named in parentheses
+after the resource, for example "Licenses=power(rack1):10". See
+\fBresources.yaml\fR(5).
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses.
 If a reservation includes Licenses, but no NodeCnt or Nodes, then the option
@@ -3129,6 +3136,66 @@ don't exist in its own system database.
 
 .IP
 
+.SH "HRES \- SPECIFICATIONS FOR UPDATE COMMAND"
+Update the nodes, count, base, or disabled state of a hierarchical resource
+(HRES) defined in \fBresources.yaml\fR(5). Only Administrators may update HRES,
+see \fBAUTHORIZATION\fR below. The change is lost on the next
+\fBscontrol reconfigure\fR or slurmctld restart, when \fBresources.yaml\fR is
+read again.
+
+.TP
+\fBHRESName\fR=<\fIname\fR>
+Name of the hierarchical resource. The name is matched case sensitively. This
+specification is required.
+.IP
+
+.TP
+\fBLayerName\fR=<\fIname\fR>
+Name of the layer to update. The name is matched case insensitively. This
+specification is required, except when \fBDisableHRES\fR is the only other
+specification given.
+.IP
+
+.TP
+\fBBase\fR=<\fIname\fR>:<\fIvalue\fR>[,<\fIname\fR>:<\fIvalue\fR>...]
+Replace the base of the layer, the resource consumption that is not
+attributable to jobs. The values are summed and subtracted from the count to
+obtain the available total. An empty value, or \fB(null)\fR as shown by
+\fBscontrol show license\fR, clears the base.
+.IP
+
+.TP
+\fBCount\fR=<\fIcount\fR>
+Configured count of the layer. \fB\-1\fR means INFINITE. The count must be
+greater than or equal to the \fBBaseUsage\fR of the layer, which in a Mode 3
+HRES also includes the base usage propagated up from its children.
+.IP
+
+.TP
+\fBDisableHRES\fR={\fBtrue\fR|\fBfalse\fR}
+Disable or enable the whole HRES for scheduling. Every layer of the HRES is
+affected, whether or not \fBLayerName\fR is given. Jobs may still request a
+disabled HRES, but they stay pending with reason \fBHRESDisabled\fR until it
+is enabled again. Running jobs keep the resources that they already hold.
+.IP
+
+.TP
+\fBDisableLayer\fR={\fBtrue\fR|\fBfalse\fR}
+Disable or enable one layer for scheduling. Only the layer named by
+\fBLayerName\fR is affected, so jobs may still be allocated resources from the
+other layers of the same HRES. A job left with no usable node
+pends with the reason \fBHRESDisabled\fR.
+.IP
+
+.TP
+\fBNodes\fR=[+|\-]<\fInode_list\fR>
+Nodes of the layer. Precede the list with \fB+\fR to add the nodes to the layer
+or with \fB\-\fR to remove them, otherwise the current nodes are replaced. In a
+Mode 3 HRES only leaf layers can be updated and the change is propagated to the
+parent layers. The resulting nodes may not overlap with another layer at the
+same level of a Mode 3 HRES.
+.IP
+
 .SH "PERFORMANCE"
 .PP
 Executing \fBscontrol\fR sends a remote procedure call to \fBslurmctld\fR. If
@@ -3293,6 +3360,9 @@ following table.
 \fBscontrol update node:       \fR Admin
 .br
 \fBscontrol delete node:       \fR Admin
+.br
+.sp
+\fBscontrol update hres:       \fR Admin
 .br
 .sp
 \fBscontrol create partition:  \fR Admin

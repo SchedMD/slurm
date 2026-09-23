@@ -59,8 +59,6 @@ typedef struct {
 	pthread_mutex_t lock;
 } pmixp_state_t;
 
-extern pmixp_state_t _pmixp_state;
-
 /*
  * General PMIx plugin state manipulation functions
  */
@@ -68,19 +66,11 @@ extern pmixp_state_t _pmixp_state;
 int pmixp_state_init(void);
 void pmixp_state_finalize(void);
 
-static inline void pmixp_state_sanity_check(void)
-{
-	xassert(_pmixp_state.magic == PMIXP_STATE_MAGIC);
-}
-
 /*
  * Collective state
  */
 
 pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
-				   const pmix_proc_t *ranges,
-				   size_t nranges);
-pmixp_coll_t *pmixp_state_coll_new(pmixp_coll_type_t type,
 				   const pmix_proc_t *ranges,
 				   size_t nranges);
 

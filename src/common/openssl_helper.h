@@ -1,8 +1,7 @@
 /*****************************************************************************\
- *  Figure out how many bits an unsigned integer is on this machine.
- *  Needed to test converting an array of unsigned longs into a bitmask.
+ *  openssl_helper.h
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,10 +33,29 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdio.h>
-int main(int argc, char *argv[])
-{
-    printf("%lu\n", sizeof(unsigned long)*8);
-    return 0;
-}
-// See https://unix.stackexchange.com/a/115244/303114
+#ifndef _OPENSSL_HELPER_H
+#define _OPENSSL_HELPER_H
+
+/*
+ * Disable OpenSSL atexit() cleanup, which tears down libcrypto global state.
+ *
+ * This is used to avoid running libcrypto's atexit() handler while another
+ * thread is still using libcrypto, since Slurm often calls exit() without
+ * joining all threads.
+ *
+ * A deliberate consequence is that libcrypto global state is never freed, and
+ * may show up as leaked memory in valgrind.
+ *
+ * Call this from a plugin's init() before any libcrypto use (e.g. before
+ * s2n_init()), so the atexit() handler is disabled before OpenSSL registers
+ * it. It resolves the caller's shared object from plugin_addr and searches its
+ * dependency tree for libcrypto.
+ *
+ * This is a no-op if the caller's object has no libcrypto dependency, or if
+ * libcrypto was already initialized before this call.
+ *
+ * IN plugin_addr - address of any symbol in the calling plugin's shared object
+ */
+extern void openssl_helper_disable_atexit(const void *plugin_addr);
+
+#endif

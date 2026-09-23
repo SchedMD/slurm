@@ -4241,6 +4241,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->launch_params, buffer);
 		packstr(conf->license_params, buffer);
 		packstr(conf->licenses, buffer);
+		pack16((uint16_t) conf->log_flags, buffer);
 		pack16(conf->log_fmt, buffer);
 
 		pack32(conf->max_array_sz, buffer);
@@ -5204,6 +5205,7 @@ static void _pack_slurm_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 			      const uint16_t protocol_version, buf_t *buffer)
 {
+	uint16_t uint16_tmp = 0;
 	uint32_t uint32_tmp = 0;
 	list_t *tmp_list = NULL;
 	slurm_conf_t *conf = xmalloc(sizeof(*conf));
@@ -5328,6 +5330,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->launch_params, buffer);
 		safe_unpackstr(&conf->license_params, buffer);
 		safe_unpackstr(&conf->licenses, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		conf->log_flags = uint16_tmp;
 		safe_unpack16(&conf->log_fmt, buffer);
 
 		safe_unpack32(&conf->max_array_sz, buffer);
@@ -12807,11 +12811,99 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurm_pack_hres_variable(void *object, uint16_t protocol_version,
+				     buf_t *buffer)
+{
+	hres_variable_t *var = object;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(var->name, buffer);
+		pack32(var->value, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_hres_variable(void **object, uint16_t protocol_version,
+				 buf_t *buffer)
+{
+	hres_variable_t *var = xmalloc(sizeof(*var));
+
+	*object = var;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&var->name, buffer);
+		safe_unpack32(&var->value, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	hres_variable_free(var);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	license_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->num_lic, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
+
+		safe_xcalloc(msg->lic_array, msg->num_lic,
+			     sizeof(slurm_license_info_t));
+
+		/* Decode individual license data */
+		for (int i = 0; i < msg->num_lic; i++) {
+			safe_unpackstr(&msg->lic_array[i].name, buffer);
+			safe_unpack32(&msg->lic_array[i].base_usage, buffer);
+			safe_unpack32(&msg->lic_array[i].conf_total, buffer);
+			safe_unpack32(&msg->lic_array[i].total, buffer);
+			safe_unpack32(&msg->lic_array[i].in_use, buffer);
+			safe_unpack32(&msg->lic_array[i].reserved, buffer);
+			safe_unpack8(&msg->lic_array[i].remote, buffer);
+			safe_unpack32(&msg->lic_array[i].last_consumed, buffer);
+			safe_unpack32(&msg->lic_array[i].last_deficit, buffer);
+			safe_unpack_time(&msg->lic_array[i].last_update,
+					 buffer);
+
+			/* The total number of licenses can decrease
+			 * at runtime.
+			 */
+			if (msg->lic_array[i].total == INFINITE)
+				msg->lic_array[i].available = INFINITE;
+			else if (msg->lic_array[i].total <
+				 (msg->lic_array[i].in_use +
+				  msg->lic_array[i].last_deficit))
+				msg->lic_array[i].available = 0;
+			else
+				msg->lic_array[i].available =
+					msg->lic_array[i].total -
+					msg->lic_array[i].in_use -
+					msg->lic_array[i].last_deficit;
+			safe_unpack8(&msg->lic_array[i].mode, buffer);
+			safe_unpackbool(&msg->lic_array[i].disable_hres,
+					buffer);
+			safe_unpackbool(&msg->lic_array[i].disable_layer,
+					buffer);
+			safe_unpackstr(&msg->lic_array[i].nodes, buffer);
+			safe_unpackstr(&msg->lic_array[i].layer_name, buffer);
+			safe_unpackstr(&msg->lic_array[i].parent_name, buffer);
+			if (slurm_unpack_list(&msg->lic_array[i].base,
+					      _unpack_hres_variable,
+					      hres_variable_free,
+					      buffer, smsg->protocol_version) !=
+			    SLURM_SUCCESS)
+				goto unpack_error;
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);
 		safe_unpack_time(&msg->last_update, buffer);
 
@@ -13777,6 +13869,54 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_update_hres_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	hres_update_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		slurm_pack_list(msg->base, slurm_pack_hres_variable, buffer,
+				smsg->protocol_version);
+		pack32(msg->count, buffer);
+		pack16(msg->disable_hres, buffer);
+		pack16(msg->disable_layer, buffer);
+		packstr(msg->hres_name, buffer);
+		packstr(msg->layer_name, buffer);
+		packstr(msg->nodes, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, smsg->protocol_version);
+	}
+}
+
+static int _unpack_update_hres_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	hres_update_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&msg->base, _unpack_hres_variable,
+				      hres_variable_free, buffer,
+				      smsg->protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&msg->count, buffer);
+		safe_unpack16(&msg->disable_hres, buffer);
+		safe_unpack16(&msg->disable_layer, buffer);
+		safe_unpackstr(&msg->hres_name, buffer);
+		safe_unpackstr(&msg->layer_name, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, smsg->protocol_version);
+		goto unpack_error;
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_hres_update_msg(msg);
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -14311,6 +14451,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case RESPONSE_NODE_ALIAS_ADDRS:
 		_pack_node_alias_addrs_resp_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_HRES:
+		_pack_update_hres_msg(msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -14878,6 +15021,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_NODE_ALIAS_ADDRS:
 		rc = _unpack_node_alias_addrs_resp_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_HRES:
+		rc = _unpack_update_hres_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);

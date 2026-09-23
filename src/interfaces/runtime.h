@@ -47,6 +47,12 @@ struct option;
 /* Forward declaration to avoid pulling slurmd.h into this header. */
 typedef struct slurmd_config slurmd_conf_t;
 
+/*
+ * Index into the arrays of loaded runtime plugins. Index 0 is a permanently
+ * empty placeholder, so a zero-initialized index means no runtime resolved.
+ */
+#define RUNTIME_IDX_INVALID 0
+
 typedef enum {
 	RUNTIME_CTXT_INVALID = 0,
 	RUNTIME_CTXT_SUBMIT, /* srun/salloc/sbatch/slurmrestd */
@@ -59,30 +65,55 @@ typedef enum {
  * Initialize the runtime plugin.
  * IN plugin_name - Plugin name or NULL for default
  * IN context - Calling context for plugin
+ * OUT idx_ptr - index of the loaded plugin, RUNTIME_IDX_INVALID on failure
  * RET SLURM_SUCCESS or error
  */
-extern int runtime_g_init(const char *plugin_name, runtime_context_t context);
+extern int runtime_g_init(const char *plugin_name, runtime_context_t context,
+			  int *idx_ptr);
 extern void runtime_g_fini(void);
 
-/* Set up the runtime for the step. Runs in slurmstepd. */
-extern int runtime_g_setup(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			   slurm_addr_t *cli, slurm_msg_t *msg);
+/*
+ * The accessors below read the plugin arrays without holding the interface's
+ * lock, while loading a plugin grows them with xrecalloc() under it, which may
+ * move them and free the block a reader is walking. Every plugin a caller
+ * intends to use must therefore be loaded before the first call to any of
+ * them. slurmstepd meets this by loading its one plugin in _init_from_slurmd()
+ * before any thread exists; a caller that wants to load plugins concurrently
+ * with these calls needs the arrays to stop moving first.
+ */
 
-/* Clean up the runtime for the step. Runs in slurmstepd. */
-extern void runtime_g_cleanup(slurmd_conf_t *conf, stepd_step_rec_t *step);
+/*
+ * Set up the runtime for the step. Runs in slurmstepd.
+ * IN idx - index of the loaded plugin to set up
+ */
+extern int runtime_g_setup(const int idx, slurmd_conf_t *conf,
+			   stepd_step_rec_t *step, slurm_addr_t *cli,
+			   slurm_msg_t *msg);
 
-/* Prepare the runtime for the specified task. Runs in slurmstepd. */
-extern void runtime_g_task_init(slurmd_conf_t *conf, stepd_step_rec_t *step,
+/*
+ * Clean up the runtime for the step. Runs in slurmstepd.
+ * IN idx - index of the loaded plugin to clean up
+ */
+extern void runtime_g_cleanup(const int idx, slurmd_conf_t *conf,
+			      stepd_step_rec_t *step);
+
+/*
+ * Prepare the runtime for the specified task. Runs in slurmstepd.
+ * IN idx - index of the loaded plugin to prepare
+ */
+extern void runtime_g_task_init(const int idx, slurmd_conf_t *conf,
+				stepd_step_rec_t *step,
 				stepd_step_task_info_t *task);
 
 /*
  * Run the specified task within the runtime. Runs in slurmstepd.
  * The plugin execs the task and only returns on failure, or returns
  * ESLURM_NOT_SUPPORTED without exec'ing to have the caller exec the task.
+ * IN idx - index of the loaded plugin to run the task within
  * RET ESLURM_NOT_SUPPORTED if the caller must exec the task, otherwise the
  *	errno from the failed exec
  */
-extern int runtime_g_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
-			 stepd_step_task_info_t *task);
+extern int runtime_g_run(const int idx, slurmd_conf_t *conf,
+			 stepd_step_rec_t *step, stepd_step_task_info_t *task);
 
 #endif

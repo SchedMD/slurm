@@ -56,6 +56,7 @@ A list of propagated options follows.</p>
 <li>--cluster-constraint</li>
 <li>--clusters</li>
 <li>--comment</li>
+<li>--container-id</li>
 <li>--deadline</li>
 <li>--delay-boot</li>
 <li>--dependency</li>
@@ -134,7 +135,14 @@ executes) using the default output file name.</p>
 
 <p>Environment variables used to specify default options for the job submit
 command will be applied to every component of the heterogeneous job
-(e.g. <i>SBATCH_ACCOUNT</i>).</p>
+(e.g. <i>SBATCH_ACCOUNT</i>). This holds even for options that are not
+propagated: each component reads the environment for itself, so a
+non-propagated option supplied through the environment is applied to every
+component, while the same option given on the command line applies only to
+the component it is written on. For example,
+<i>SBATCH_RUNTIME=oci sbatch -N1 : -N1</i> sets the runtime on both
+components, whereas <i>sbatch -N1 --runtime=oci : -N1</i> sets it only on
+the first.</p>
 
 <p>Batch job options can be included in the submitted script for multiple
 heterogeneous job components. Each component should be separated by a line
@@ -705,7 +713,10 @@ The more frequently executed scheduling logic only starts jobs on a first-in
 first-out (FIFO) basis and lacks logic for concurrently scheduling all
 components of a heterogeneous job.</p>
 
-<p>Heterogeneous jobs are not supported on GANG scheduling operations.</p>
+<p>A heterogeneous job is excluded from GANG scheduling operations,
+including <i>PreemptMode=SUSPEND</i>, and from oversubscription while
+<i>GANG</i> is enabled. See
+<a href="preempt.html#hetjob">heterogeneous job preemption</a>.</p>
 
 <p>Slurm's Perl APIs do not support heterogeneous jobs.</p>
 

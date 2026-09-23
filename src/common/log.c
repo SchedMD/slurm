@@ -76,6 +76,7 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
+#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -88,7 +89,8 @@
 #  define LINEBUFSIZE 256
 #endif
 
-#define NAMELEN 16
+/* Field width the thread name is padded to in the "%M" prefix */
+#define THREAD_NAME_WIDTH 12
 
 #define LOG_MACRO(level, sched, fmt) {				\
 	if ((level <= highest_log_level) ||			\
@@ -137,7 +139,8 @@ typedef struct {
 	log_facility_t facility;
 	log_options_t opt;
 	bool initialized;
-	uint16_t fmt;            /* Flag for specifying timestamp format */
+	log_flags_t flags; /* Options accompanying the timestamp format */
+	log_fmt_t fmt; /* Timestamp format */
 }	log_t;
 
 /* static variables */
@@ -232,6 +235,7 @@ size_t log_timestamp(char *s, size_t max)
 		return _make_timestamp(s, max, "%Y-%m-%dT%T");
 	switch (log->fmt) {
 	case LOG_FMT_RFC5424_MS:
+	case LOG_FMT_RFC5424_US:
 	case LOG_FMT_RFC5424:
 	{
 		size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
@@ -667,33 +671,31 @@ void log_oom(const char *file, int line, const char *func)
 	}
 }
 
-
-/* Set the timestamp format flag */
-void log_set_timefmt(unsigned fmtflag)
+/* Set the timestamp format flag and the options accompanying it */
+void log_set_timefmt(log_fmt_t fmt, log_flags_t flags)
 {
-	if (log) {
-		slurm_mutex_lock(&log_lock);
-		log->fmt = fmtflag;
-		slurm_mutex_unlock(&log_lock);
-	} else {
-		fprintf(stderr, "%s:%d: %s Slurm log not initialized\n",
-			__FILE__, __LINE__, __func__);
-	}
+	xassert(log);
+
+	if (!log)
+		return;
+
+	slurm_mutex_lock(&log_lock);
+	log->fmt = fmt;
+	log->flags = flags;
+	slurm_mutex_unlock(&log_lock);
 }
 
 /*
- * _set_idbuf()
- * Write in the input buffer the current time and milliseconds
- * the process id and the current thread id.
+ * Write the process id and the current thread name and id into buf
+ * IN/OUT buf - buffer holding whatever "%M" has rendered so far
+ * IN size - bytes available in buf
+ * IN used - bytes already written to buf, which a separator follows
  */
-static void _set_idbuf(char *idbuf, size_t size)
+static void _set_thread_id(char *buf, size_t size, size_t used)
 {
-	struct timeval now;
-	char time[25];
-	char thread_name[NAMELEN];
-	int max_len = 12; /* handles current longest thread name */
+	char thread_name[PRCTL_BUF_BYTES] = { 0 };
+	int max_len = THREAD_NAME_WIDTH;
 
-	gettimeofday(&now, NULL);
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_GET_NAME, thread_name, NULL, NULL, NULL) < 0) {
 		fprintf(stderr, "failed to get thread name: %m\n");
@@ -705,11 +707,173 @@ static void _set_idbuf(char *idbuf, size_t size)
 	max_len = 0;
 	thread_name[0] = '\0';
 #endif
-	slurm_ctime2_r(&now.tv_sec, time);
 
-	snprintf(idbuf, size, "%.15s.%-6d %5d %-*s %p",
-		 time + 4, (int) now.tv_usec, (int) getpid(), max_len,
-		 thread_name, (void *) pthread_self());
+	snprintf((buf + used), (size - used), "%s%5d %-*s %p",
+		 (used ? " " : ""), (int) getpid(), max_len, thread_name,
+		 (void *) pthread_self());
+}
+
+/*
+ * RET true if the "%M" specifier has anything to render, which is the only
+ *	thing the log line prefix holds
+ */
+static bool _have_timefmt(void)
+{
+	if (log->fmt != LOG_FMT_OMIT)
+		return true;
+
+	/* omit drops the timestamp, not everything printed beside it */
+	return (log->flags & LOG_FLAG_THREAD_ID);
+}
+
+/* Fractional second precision, which RFC 5424 allows no more of than usec */
+typedef enum {
+	RFC5424_NONE = 0,
+	RFC5424_MSEC = 3,
+	RFC5424_USEC = 6,
+} rfc5424_prec_t;
+
+/*
+ * Write what "%M" stands for into buf: the timestamp named by the
+ * LogTimeFormat timestamp format, and the process and thread when either the
+ * option or the deprecated format asks for them
+ * IN/OUT buf - buffer to write into
+ * IN size - bytes available in buf
+ *
+ * Note: every timestamp format is the same strftime() call with an optional
+ * fractional second and an optional timezone offset, so they share one
+ * renderer.
+ */
+static void _set_timestamp(char *buf, size_t size)
+{
+	const char *date_fmt = "%Y-%m-%dT%T";
+	const char *usec_fmt = ".%6.6d";
+	rfc5424_prec_t prec = RFC5424_NONE;
+	bool tz = false;
+	timespec_t ts = { 0 };
+	struct tm tm = { 0 };
+	size_t used = 0;
+
+	buf[0] = '\0';
+
+	switch (log->fmt) {
+	case LOG_FMT_ISO8601_MS:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff" */
+		prec = RFC5424_MSEC;
+		break;
+	case LOG_FMT_ISO8601:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss" */
+		break;
+	case LOG_FMT_RFC5424_MS:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
+		prec = RFC5424_MSEC;
+		tz = true;
+		break;
+	case LOG_FMT_RFC5424:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_RFC5424_US:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss.ffffff(+/-)hh:mm" */
+		prec = RFC5424_USEC;
+		tz = true;
+		break;
+	case LOG_FMT_RFC3339:
+		/* "%M" => "yyyy-mm-ddThh:mm:ss(+/-)hh:mm" */
+		tz = true;
+		break;
+	case LOG_FMT_CLOCK:
+		/* "%M" => "usec" */
+#if defined(__FreeBSD__)
+		used = snprintf(buf, size, "%d", clock());
+#else
+		used = snprintf(buf, size, "%ld", clock());
+#endif
+		if (used >= size)
+			used = (size - 1);
+
+		goto thread_id;
+	case LOG_FMT_SHORT:
+		/* "%M" => "Mon DD hh:mm:ss" */
+		date_fmt = "%b %d %T";
+		break;
+	case LOG_FMT_THREAD_ID:
+		/*
+		 * "%M" => "Mon DD hh:mm:ss.f     "
+		 *
+		 * The fraction is left justified rather than zero padded. That
+		 * is not a well formed fractional second, but it is what this
+		 * deprecated format has always printed, so keep it rather than
+		 * change what an existing configuration writes.
+		 */
+		date_fmt = "%b %d %T";
+		usec_fmt = ".%-6d";
+		prec = RFC5424_USEC;
+		break;
+	case LOG_FMT_OMIT:
+		/* omit drops the timestamp and nothing else */
+		goto thread_id;
+	}
+
+	ts = timespec_now();
+
+	if (!localtime_r(&ts.tv_sec, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (!(used = strftime(buf, size, date_fmt, &tm))) {
+		fprintf(stderr, "strftime() returned 0\n");
+		buf[0] = '\0';
+		goto thread_id;
+	}
+
+	switch (prec) {
+	case RFC5424_NONE:
+		break;
+	case RFC5424_MSEC:
+		used += snprintf((buf + used), (size - used), ".%3.3d",
+				 (int) (ts.tv_nsec / NSEC_IN_MSEC));
+		break;
+	case RFC5424_USEC:
+		used += snprintf((buf + used), (size - used), usec_fmt,
+				 (int) (ts.tv_nsec / NSEC_IN_USEC));
+		break;
+	}
+
+	/*
+	 * snprintf() returns the length it wanted to write, so a truncated
+	 * fraction would leave used past the end of buf.
+	 */
+	if (used >= size)
+		used = (size - 1);
+
+	if (tz) {
+		char z[12] = "";
+
+		/*
+		 * strftime() writes the offset as (+/-)hhmm where RFC 5424
+		 * writes it as (+/-)hh:mm, so shift the minutes one step back
+		 * and insert the colon.
+		 */
+		if (!strftime(z, sizeof(z), "%z", &tm))
+			fprintf(stderr, "strftime() returned 0\n");
+		z[5] = z[4];
+		z[4] = z[3];
+		z[3] = ':';
+
+		used += snprintf((buf + used), (size - used), "%s", z);
+
+		if (used >= size)
+			used = (size - 1);
+	}
+
+thread_id:
+	/*
+	 * The deprecated format prints the same fields as the option, so honor
+	 * either of them.
+	 */
+	if ((log->flags & LOG_FLAG_THREAD_ID) ||
+	    (log->fmt == LOG_FMT_THREAD_ID))
+		_set_thread_id(buf, size, used);
 }
 
 /*
@@ -844,18 +1008,304 @@ static char *_print_data_json(data_t *d, char *buffer, int size)
 	return buffer;
 }
 
+static void _vxstrfmt_on_our_p_fmt(const char **fmt_ptr, va_list ap, int *cnt,
+				   char **intermediate_fmt_ptr,
+				   char **intermediate_pos_ptr,
+				   char *substitute_on_stack,
+				   const int substitute_on_stack_bytes)
+{
+	*fmt_ptr += 1;
+	switch (**fmt_ptr) {
+	case 'A': /* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
+	{
+		void *ptr = NULL;
+		slurm_addr_t *addr_ptr;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		addr_ptr = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _addr2fmt(addr_ptr, substitute_on_stack,
+				    substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'd': /* "%pd" -> compact JSON serialized string */
+	{
+		data_t *d = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			d = va_arg(ap_copy, void *);
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _print_data_json(d, substitute_on_stack,
+					   substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'D': /* "%pD" -> data_type(0xDEADBEEF) */
+	{
+		data_t *d = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			d = va_arg(ap_copy, void *);
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _print_data_t(d, substitute_on_stack,
+					substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%pI" => "JobID=... SLUID=..." on a
+	 * slurm_step_id_t
+	 */
+	case 'I':
+	{
+		void *ptr = NULL;
+		slurm_step_id_t *step_id = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_id = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  log_build_job_id_str(step_id, substitute_on_stack,
+					       substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	case 'J': /* "%pJ" => "JobId=..." */
+	{
+		void *ptr = NULL;
+		job_record_t *job_ptr;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		job_ptr = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _jobid2fmt(job_ptr, substitute_on_stack,
+				     substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%ps" => "StepId=... " on a
+	 * slurm_step_id_t
+	 */
+	case 's':
+	{
+		void *ptr = NULL;
+		slurm_step_id_t *step_id = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_id = ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  log_build_step_id_str(step_id, substitute_on_stack,
+						substitute_on_stack_bytes,
+						STEP_ID_FLAG_PS));
+		va_end(ap_copy);
+		break;
+	}
+	/*
+	 * "%pS" => "JobId=... StepId=..." on a
+	 * step_record_t
+	 */
+	case 'S':
+	{
+		void *ptr = NULL;
+		step_record_t *step_ptr = NULL;
+		job_record_t *job_ptr = NULL;
+		va_list ap_copy;
+
+		va_copy(ap_copy, ap);
+		for (int i = 0; i < *cnt; i++)
+			ptr = va_arg(ap_copy, void *);
+		step_ptr = ptr;
+		if (step_ptr && (step_ptr->magic == STEP_MAGIC))
+			job_ptr = step_ptr->job_ptr;
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _jobid2fmt(job_ptr, substitute_on_stack,
+				     substitute_on_stack_bytes));
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+			  _stepid2fmt(step_ptr, substitute_on_stack,
+				      substitute_on_stack_bytes));
+		va_end(ap_copy);
+		break;
+	}
+	default:
+		/* Unknown */
+		break;
+	}
+}
+
+static void _vxstrfmt_on_our_fmt(const char **fmt_ptr, va_list ap,
+				 const char **p_ptr, int *cnt,
+				 char **intermediate_fmt_ptr,
+				 char **intermediate_pos_ptr)
+{
+	char *substitute = NULL;
+	char substitute_on_stack[256];
+	int should_xfree = 1;
+	const char *p = *p_ptr;
+	const char *fmt = *fmt_ptr;
+
+	/*
+	 * p points to the leading % of one of our formats;
+	 * append anything from fmt up to p to the intermediate
+	 * format string:
+	 */
+	xstrncatat(*intermediate_fmt_ptr, intermediate_pos_ptr, fmt, p - fmt);
+	*fmt_ptr = fmt = p + 1;
+
+	/*
+	 * fill the substitute buffer with whatever text we want
+	 * to substitute for the format sequence in question:
+	 */
+	switch (*fmt) {
+	case 'p':
+		_vxstrfmt_on_our_p_fmt(fmt_ptr, ap, cnt, intermediate_fmt_ptr,
+				       intermediate_pos_ptr,
+				       substitute_on_stack,
+				       sizeof(substitute_on_stack));
+		break;
+	case 'm': /* "%m" => strerror(errno) */
+		substitute = slurm_strerror(errno);
+		should_xfree = 0;
+		break;
+	case 't': /* "%t" => locally preferred date/time*/
+		xstrftimecat(substitute, "%x %X");
+		break;
+	case 'T': /* "%T" => "dd, Mon yyyy hh:mm:ss off" */
+		xstrftimecat(substitute, "%a, %d %b %Y %H:%M:%S %z");
+		break;
+	case 'M':
+		if (!log) {
+			xiso8601timecat(substitute, true);
+			break;
+		}
+		_set_timestamp(substitute_on_stack,
+			       sizeof(substitute_on_stack));
+		substitute = substitute_on_stack;
+		should_xfree = 0;
+		break;
+	}
+	fmt = (*fmt_ptr += 1);
+
+	if (substitute) {
+		char *s = substitute;
+
+		while (*s && (p = *p_ptr = strchr(s, '%'))) {
+			/* append up through the '%' */
+			xstrncatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+				   s, p - s);
+			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+				  "%%");
+			s = ((char *) p) + 1;
+		}
+		if (*s) {
+			/* append whatever's left of the substitution: */
+			xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr,
+				  s);
+		}
+
+		/* deallocate substitute if necessary: */
+		if (should_xfree) {
+			xfree(substitute);
+		}
+	}
+}
+
+static bool _vxstrfmt_on_fmt(const char **fmt_ptr, va_list ap,
+			     const char **p_ptr, int *cnt, bool *is_our_format,
+			     bool *found_other_formats,
+			     char **intermediate_fmt_ptr,
+			     char **intermediate_pos_ptr)
+{
+	const char *p = *p_ptr;
+	const char *fmt = *fmt_ptr;
+
+	/*
+	 * make sure it's one of our format specifiers, skipping
+	 * any that aren't:
+	 */
+	do {
+		switch (*(p + 1)) {
+		case 'm':
+		case 't':
+		case 'T':
+		case 'M':
+			*is_our_format = true;
+			break;
+		case 'p':
+			switch (*(p + 2)) {
+			case 'A':
+			case 'd':
+			case 'D':
+			case 'I':
+			case 'J':
+			case 's':
+			case 'S':
+				*is_our_format = true;
+				/*
+				 * Need to set found_other_formats to
+				 * still consume the %.0s if not other
+				 * format strings are included.
+				 */
+				*found_other_formats = true;
+				break;
+			default:
+				*found_other_formats = true;
+				break;
+			}
+			break;
+		default:
+			*found_other_formats = true;
+			break;
+		}
+		(*cnt)++;
+	} while (!*is_our_format && (p = (char *) strchr(p + 1, '%')));
+
+	*p_ptr = p;
+
+	if (*is_our_format) {
+		_vxstrfmt_on_our_fmt(fmt_ptr, ap, p_ptr, cnt,
+				     intermediate_fmt_ptr,
+				     intermediate_pos_ptr);
+	} else {
+		/*
+		 * no more format sequences for us, append the rest of
+		 * fmt and exit the loop:
+		 */
+		xstrcatat(*intermediate_fmt_ptr, intermediate_pos_ptr, fmt);
+		return true;
+	}
+
+	return false;
+}
+
 extern char *vxstrfmt(const char *fmt, va_list ap)
 {
 	char *intermediate_fmt = NULL, *intermediate_pos = NULL;
-	char	*out_string = NULL;
-	char	*p;
+	char *out_string = NULL;
+	const char *p = NULL;
 	bool found_other_formats = false;
-	int     cnt = 0;
+	int cnt = 0;
 
 	while (*fmt != '\0') {
 		bool is_our_format = false;
 
-		p = (char *)strchr(fmt, '%');
+		p = (char *) strchr(fmt, '%');
 		if (p == NULL) {
 			/*
 			 * no more format sequences, append the rest of
@@ -865,343 +1315,10 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			break;
 		}
 
-		/*
-		 * make sure it's one of our format specifiers, skipping
-		 * any that aren't:
-		 */
-		do {
-			switch (*(p + 1)) {
-			case 'm':
-			case 't':
-			case 'T':
-			case 'M':
-				is_our_format = true;
-				break;
-			case 'p':
-				switch (*(p + 2)) {
-				case 'A':
-				case 'd':
-				case 'D':
-				case 'I':
-				case 'J':
-				case 's':
-				case 'S':
-					is_our_format = true;
-					/*
-					 * Need to set found_other_formats to
-					 * still consume the %.0s if not other
-					 * format strings are included.
-					 */
-					found_other_formats = true;
-					break;
-				default:
-					found_other_formats = true;
-					break;
-				}
-				break;
-			default:
-				found_other_formats = true;
-				break;
-			}
-			cnt++;
-		} while (!is_our_format &&
-			 (p = (char *)strchr(p + 1, '%')));
-
-		if (is_our_format) {
-			char	*substitute = NULL;
-			char	substitute_on_stack[256];
-			int	should_xfree = 1;
-
-			/*
-			 * p points to the leading % of one of our formats;
-			 * append anything from fmt up to p to the intermediate
-			 * format string:
-			 */
-			xstrncatat(intermediate_fmt, &intermediate_pos,
-				   fmt, p - fmt);
-			fmt = p + 1;
-
-			/*
-			 * fill the substitute buffer with whatever text we want
-			 * to substitute for the format sequence in question:
-			 */
-			switch (*fmt) {
-			case 'p':
-				fmt++;
-				switch (*fmt) {
-				case 'A':	/* "%pA" -> "AAA.BBB.CCC.DDD:XXXX" */
-				{
-					void *ptr = NULL;
-					slurm_addr_t *addr_ptr;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					addr_ptr = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_addr2fmt(
-							addr_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				case 'd':	/* "%pd" -> compact JSON serialized string */
-				{
-					data_t *d = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++ )
-						d = va_arg(ap_copy, void *);
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_print_data_json(
-							d,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				case 'D':	/* "%pD" -> data_type(0xDEADBEEF) */
-				{
-					data_t *d = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++ )
-						d = va_arg(ap_copy, void *);
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_print_data_t(
-							d,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				/*
-				 * "%pI" => "JobID=... SLUID=..." on a
-				 * slurm_step_id_t
-				 */
-				case 'I':
-				{
-					void *ptr = NULL;
-					slurm_step_id_t *step_id = NULL;
-					va_list ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (int i = 0; i < cnt; i++)
-						ptr = va_arg(ap_copy, void *);
-					step_id = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						log_build_job_id_str(
-							step_id,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				case 'J':	/* "%pJ" => "JobId=..." */
-				{
-					int i;
-					void *ptr = NULL;
-					job_record_t *job_ptr;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					job_ptr = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_jobid2fmt(
-							job_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				/*
-				 * "%ps" => "StepId=... " on a
-				 * slurm_step_id_t
-				 */
-				case 's':
-				{
-					int i;
-					void *ptr = NULL;
-					slurm_step_id_t *step_id = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					step_id = ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						log_build_step_id_str(
-							step_id,
-							substitute_on_stack,
-							sizeof(substitute_on_stack),
-							STEP_ID_FLAG_PS));
-					va_end(ap_copy);
-					break;
-				}
-				/*
-				 * "%pS" => "JobId=... StepId=..." on a
-				 * step_record_t
-				 */
-				case 'S':
-				{
-					int i;
-					void *ptr = NULL;
-					step_record_t *step_ptr = NULL;
-					job_record_t *job_ptr = NULL;
-					va_list	ap_copy;
-
-					va_copy(ap_copy, ap);
-					for (i = 0; i < cnt; i++ )
-						ptr = va_arg(ap_copy, void *);
-					step_ptr = ptr;
-					if (step_ptr &&
-					    (step_ptr->magic == STEP_MAGIC))
-						job_ptr = step_ptr->job_ptr;
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_jobid2fmt(
-							job_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					xstrcatat(
-						intermediate_fmt,
-						&intermediate_pos,
-						_stepid2fmt(
-							step_ptr,
-							substitute_on_stack,
-							sizeof(substitute_on_stack)));
-					va_end(ap_copy);
-					break;
-				}
-				default:
-					/* Unknown */
-					break;
-				}
-				break;
-			case 'm':	/* "%m" => strerror(errno) */
-				substitute = slurm_strerror(errno);
-				should_xfree = 0;
-				break;
-			case 't': 	/* "%t" => locally preferred date/time*/
-				xstrftimecat(substitute,
-					     "%x %X");
-				break;
-			case 'T': 	/* "%T" => "dd, Mon yyyy hh:mm:ss off" */
-				xstrftimecat(substitute,
-					     "%a, %d %b %Y %H:%M:%S %z");
-				break;
-			case 'M':
-				if (!log) {
-					xiso8601timecat(substitute, true);
-					break;
-				}
-				switch (log->fmt) {
-				case LOG_FMT_ISO8601_MS:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-					xiso8601timecat(substitute, true);
-					break;
-				case LOG_FMT_ISO8601:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
-					xiso8601timecat(substitute, false);
-					break;
-				case LOG_FMT_RFC5424_MS:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-					xrfc5424timecat(substitute, true);
-					break;
-				case LOG_FMT_RFC5424:
-					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
-					xrfc5424timecat(substitute, false);
-					break;
-				case LOG_FMT_RFC3339:
-					/* "%M" => "yyyy-mm-ddThh:mm:ssZ" */
-					xrfc3339timecat(substitute);
-					break;
-				case LOG_FMT_CLOCK:
-					/* "%M" => "usec" */
-#if defined(__FreeBSD__)
-					snprintf(substitute_on_stack,
-						 sizeof(substitute_on_stack),
-						 "%d", clock());
-#else
-					snprintf(substitute_on_stack,
-						 sizeof(substitute_on_stack),
-						 "%ld", clock());
-#endif
-					substitute = substitute_on_stack;
-					should_xfree = 0;
-					break;
-				case LOG_FMT_SHORT:
-					/* "%M" => "Mon DD hh:mm:ss" */
-					xstrftimecat(substitute, "%b %d %T");
-					break;
-				case LOG_FMT_THREAD_ID:
-					_set_idbuf(substitute_on_stack,
-						   sizeof(substitute_on_stack));
-					substitute = substitute_on_stack;
-					should_xfree = 0;
-					break;
-				case LOG_FMT_OMIT:
-					/*
-					 * Nothing to substitute: the timestamp
-					 * is dropped at the log_msg() call
-					 * sites, so "%M" is never emitted in
-					 * this mode.
-					 */
-					break;
-				}
-				break;
-			}
-			fmt++;
-
-			if (substitute) {
-				char *s = substitute;
-
-				while (*s && (p = (char *)strchr(s, '%'))) {
-					/* append up through the '%' */
-					xstrncatat(intermediate_fmt,
-						   &intermediate_pos, s, p - s);
-					xstrcatat(intermediate_fmt,
-						  &intermediate_pos, "%%");
-					s = p + 1;
-				}
-				if (*s) {
-					/* append whatever's left of the substitution: */
-					xstrcatat(intermediate_fmt,
-						  &intermediate_pos, s);
-				}
-
-				/* deallocate substitute if necessary: */
-				if (should_xfree) {
-					xfree(substitute);
-				}
-			}
-		} else {
-			/*
-			 * no more format sequences for us, append the rest of
-			 * fmt and exit the loop:
-			 */
-			xstrcatat(intermediate_fmt, &intermediate_pos, fmt);
+		if (_vxstrfmt_on_fmt(&fmt, ap, &p, &cnt, &is_our_format,
+				     &found_other_formats, &intermediate_fmt,
+				     &intermediate_pos))
 			break;
-		}
 	}
 
 	if (intermediate_fmt && found_other_formats) {
@@ -1352,8 +1469,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
-		xlogfmtcat(&msgbuf,
-			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+		xlogfmtcat(&msgbuf, (_have_timefmt() ? "[%M] %s%s" : "%s%s"),
 			   sched_log->prefix, pfx);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s%s\n", msgbuf, buf);
@@ -1426,7 +1542,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		if (spank) {
 			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
 		} else if (running_in_daemon()) {
-			if (log->fmt == LOG_FMT_OMIT) {
+			if (!_have_timefmt()) {
 				_log_printf(log, log->buf, stderr, "%s%s%s",
 					    pfx, buf, eol);
 			} else {
@@ -1476,8 +1592,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 		fflush(log->logfp);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
-		xlogfmtcat(&msgbuf,
-			   ((log->fmt == LOG_FMT_OMIT) ? "%s%s" : "[%M] %s%s"),
+		xlogfmtcat(&msgbuf, (_have_timefmt() ? "[%M] %s%s" : "%s%s"),
 			   log->prefix, pfx);
 		_log_printf(log, log->fbuf, log->logfp, "%s%s\n", msgbuf, buf);
 		fflush(log->logfp);

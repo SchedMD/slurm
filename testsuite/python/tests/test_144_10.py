@@ -1,6 +1,8 @@
 ############################################################################
 # Copyright (C) SchedMD LLC.
 ############################################################################
+"""Verify UUID-based GPU environment variables from AutoDetect."""
+
 import re
 
 import pytest
@@ -13,10 +15,10 @@ gpu_uuid1 = "GPU-f9e8d7c6-b5a4-3210-fedc-ba9876543210"
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_auto_config("wants to set gres Flags and fake_gpus.conf")
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes("GresTypes", "gpu")
+    atf.require_config_parameter_includes("SlurmdParameters", "config_overrides")
     atf.require_tty(0)
     atf.require_tty(1)
     atf.require_config_parameter(
@@ -116,16 +118,41 @@ exit 1""",
     )
 
     atf.wait_for_job_state(job_id, "DONE", fatal=True)
-    atf.wait_for_file(job_output_file, fatal=True)
-    output = atf.run_command_output(f"cat {job_output_file}", fatal=True)
 
-    uuids = re.findall(
-        rf"CUDA_VISIBLE_DEVICES:({re.escape(gpu_uuid0)}|{re.escape(gpu_uuid1)})",
-        output,
+    uuid_pattern = (
+        rf"CUDA_VISIBLE_DEVICES:({re.escape(gpu_uuid0)}|{re.escape(gpu_uuid1)})"
     )
+    output = ""
+    uuids = []
+    for _ in atf.timer(fatal=True):
+        output = atf.run_command_output(f"cat {job_output_file}") or ""
+        uuids = re.findall(uuid_pattern, output)
+        if len(uuids) >= n_steps:
+            break
     assert (
         len(uuids) == n_steps
     ), f"Expected {n_steps} steps with GPU UUID, got {len(uuids)}: {output}"
     assert (
         len(set(uuids)) == n_steps
     ), f"Each step should get a different GPU UUID, but got duplicates: {uuids}"
+
+
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmd") < (26, 11),
+    reason="MR 4271: gpu-bind verbose reports local_list_uuid as of 26.11",
+)
+def test_gpu_bind_verbose_reports_both_forms():
+    """Verify --gpu-bind=verbose reports the index form and the UUID form."""
+
+    error = atf.run_job_error(
+        "-n1 --gpus=1 --gpu-bind=verbose,single:1 true", fatal=True
+    )
+    match = re.search(r"gpu-bind:.*local_list=(\S+); local_list_uuid=(\S+)", error)
+    assert match, f"no gpu-bind line in srun stderr: {error!r}"
+    assert re.fullmatch(
+        r"\d+", match.group(1)
+    ), f"local_list should be the index form, got: {match.group(1)!r}"
+    assert match.group(2) in (
+        gpu_uuid0,
+        gpu_uuid1,
+    ), f"local_list_uuid should name the device by UUID, got: {match.group(2)!r}"

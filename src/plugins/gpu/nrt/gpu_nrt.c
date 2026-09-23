@@ -44,9 +44,13 @@
 	NEURON_SYSFS_PREFIX "neuron%d/info/architecture/device_name"
 #define NEURON_SYSFS_CONNECTED_DEV_PREFIX \
 	NEURON_SYSFS_PREFIX "neuron%d/connected_devices"
+#define NEURON_SYSFS_SERIAL_NUMBER_PREFIX \
+	NEURON_SYSFS_PREFIX "neuron%d/info/serial_number"
 
 #define CONNECTED_DEVICES_SZ 100
 #define DEVICE_NAME_SZ 50
+/* The driver emits the serial number as 16 hex digits plus a newline */
+#define SERIAL_NUMBER_SZ 32
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "GPU NRT plugin";
@@ -96,6 +100,46 @@ static char *_get_device_name(unsigned int dev_inx)
 	xfree(sysfs_file);
 	fclose(fp);
 	return device_name;
+}
+
+/*
+ * Read a Neuron device's serial number, which the driver exposes as 16 hex
+ * digits and which is the only device-provided identifier available through the
+ * Neuron sysfs interface. Used as the device UUID so a GRES drain can be
+ * anchored to the physical device rather than to its index.
+ *
+ * Returns NULL when the attribute is missing (older neuron drivers do not
+ * expose it) or empty; the device then has no UUID and is identified by index.
+ */
+static char *_get_device_unique_id(unsigned int dev_inx)
+{
+	FILE *fp = NULL;
+	char *sysfs_file = NULL;
+	char *serial_number = NULL;
+
+	sysfs_file = xstrdup_printf(NEURON_SYSFS_SERIAL_NUMBER_PREFIX, dev_inx);
+	fp = fopen(sysfs_file, "r");
+	xfree(sysfs_file);
+	if (!fp) {
+		debug("Could not access serial number in Neuron sysfs interface");
+		return NULL;
+	}
+
+	serial_number = xmalloc(SERIAL_NUMBER_SZ);
+	if (!fgets(serial_number, SERIAL_NUMBER_SZ, fp)) {
+		debug("Could not read Neuron serial number");
+		xfree(serial_number);
+		fclose(fp);
+		return NULL;
+	}
+	fclose(fp);
+
+	/* Drop the trailing newline so the value can be matched exactly */
+	xstrtrim(serial_number);
+	if (!serial_number[0])
+		xfree(serial_number);
+
+	return serial_number;
 }
 
 static bool _is_link(int *link_nums, uint32_t dev_cnt, int dev_inx)
@@ -176,6 +220,7 @@ static list_t *_get_system_gpu_list_neuron(node_config_load_t *node_conf)
 			char *device_file = NULL;
 			char *links = NULL;
 			char *device_name = NULL;
+			char *unique_id = NULL;
 
 			gres_slurmd_conf_t gres_slurmd_conf = {
 				.config_flags = GRES_CONF_AUTODETECT,
@@ -187,15 +232,18 @@ static list_t *_get_system_gpu_list_neuron(node_config_load_t *node_conf)
 			xstrfmtcat(device_file, "/dev/neuron%u", dev_inx);
 			device_name = _get_device_name(dev_inx);
 			links = _get_connected_devices(dev_inx, dev_cnt);
+			unique_id = _get_device_unique_id(dev_inx);
 
 			debug2("GPU index %u:", dev_inx);
 			debug2("    Name: %s", device_name);
+			debug2("    UUID: %s", unique_id);
 			debug2("    Links: %s", links);
 			debug2("    Device File: %s", device_file);
 
 			gres_slurmd_conf.type_name = device_name;
 			gres_slurmd_conf.links = links;
 			gres_slurmd_conf.file = device_file;
+			gres_slurmd_conf.unique_id = unique_id;
 
 			if (!gres_list_system)
 				gres_list_system =
@@ -207,6 +255,7 @@ static list_t *_get_system_gpu_list_neuron(node_config_load_t *node_conf)
 			xfree(device_file);
 			xfree(links);
 			xfree(device_name);
+			xfree(unique_id);
 		}
 	}
 	closedir(dr);

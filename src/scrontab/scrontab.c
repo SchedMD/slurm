@@ -326,10 +326,22 @@ rwfail:
 
 static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 {
-	job_desc_msg_t *job = xmalloc(sizeof(*job));
+	job_desc_msg_t *job = slurm_opt_create_job_desc(&opt, true);
 
-	slurm_init_job_desc_msg(job);
-	fill_job_desc_from_opts(job);
+	/*
+	 * Nothing is consumed before this point, so the caller still owns the
+	 * entry and the script when the description cannot be built.
+	 */
+	if (!job)
+		return NULL;
+
+	/*
+	 * slurm_opt_create_job_desc() leaves the standard streams to its
+	 * callers, since each of them names the options differently.
+	 */
+	job->std_err = xstrdup(opt.efname);
+	job->std_in = xstrdup(opt.ifname);
+	job->std_out = xstrdup(opt.ofname);
 
 	job->crontab_entry = entry;
 
@@ -435,6 +447,7 @@ edit:
 	while ((line = lines[lineno])) {
 		char *pos = line;
 		cron_entry_t *entry;
+		job_desc_msg_t *job = NULL;
 
 		if (setup_next_entry) {
 			_reset_options();
@@ -511,7 +524,15 @@ edit:
 
 		entry->line_end = lineno;
 
-		list_append(jobs, _entry_to_job(entry, script));
+		if (!(job = _entry_to_job(entry, script))) {
+			badline = xstrdup_printf("%d-%d", entry->line_start,
+						 lineno);
+			free_cron_entry(entry);
+			xfree(script);
+			break;
+		}
+
+		list_append(jobs, job);
 		script = NULL;
 		setup_next_entry = true;
 		lineno++;

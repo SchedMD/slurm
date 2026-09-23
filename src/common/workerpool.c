@@ -81,6 +81,10 @@ static struct {
 	workq_allocator_t *alloc;
 
 	struct {
+		/*
+		 * Thread count explicitly set by the user or 0 if never set.
+		 * Never populated from the per daemon default thread count.
+		 */
 		int thread_count;
 	} config;
 } workerpool = {
@@ -93,12 +97,17 @@ static struct {
 	},
 };
 
-static void _parse_params(const int default_count, const char *params)
+static void _parse_params(const char *params)
 {
 	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
 
-	if (default_count > 0)
-		workerpool.config.thread_count = default_count;
+	/*
+	 * Only a thread count explicitly set by the user may ever be placed in
+	 * workerpool.config. The per daemon default thread count is
+	 * deliberately kept out to avoid ever blaming the user for a thread
+	 * count they never set and may not be able to change.
+	 */
+	workerpool.config.thread_count = 0;
 
 	if (!params)
 		return;
@@ -158,15 +167,26 @@ static int _resolve_thread_count(int count, const int default_count)
 {
 	const int detected_cpus = _detect_cpu_count();
 	const int auto_threads_max = (detected_cpus * CPU_THREAD_MULTIPLIER);
-	const int auto_threads = MIN(THREAD_AUTO_MAX, auto_threads_max);
+	const int auto_threads = MAX(WORKERPOOL_THREAD_COUNT_MIN,
+				     MIN(THREAD_AUTO_MAX, auto_threads_max));
 	const int detected_threads_high = (detected_cpus * CPU_THREAD_HIGH);
 	const int detected_threads_low = (detected_cpus / CPU_THREAD_LOW);
+	/*
+	 * Suggested range must always stay inside of the hard limits enforced
+	 * below to never suggest a thread count that would then be rejected.
+	 * The kernel may report as little as 1 CPU, or none at all, which would
+	 * otherwise suggest a nonsensical range such as [0, 2] or [2, 0].
+	 */
 	const int warn_max_threads =
-		MIN(WORKERPOOL_THREAD_COUNT_MAX, detected_threads_high);
+		MAX(WORKERPOOL_THREAD_COUNT_MIN,
+		    MIN(WORKERPOOL_THREAD_COUNT_MAX, detected_threads_high));
 	const int min_def_threads =
 		MIN(THREAD_AUTO_MAX,
 		    MAX(WORKERPOOL_THREAD_COUNT_MIN, default_count));
-	const int warn_min_threads = MIN(detected_threads_low, min_def_threads);
+	const int warn_min_threads =
+		MIN(warn_max_threads,
+		    MAX(WORKERPOOL_THREAD_COUNT_MIN,
+			MIN(detected_threads_low, min_def_threads)));
 
 	if (!count && (workerpool.config.thread_count > 0)) {
 		count = workerpool.config.thread_count;
@@ -280,7 +300,7 @@ extern void workerpool_init(const int thread_count,
 	if (!workerpool.workq)
 		probe_register("workerpool", _probe, NULL);
 
-	_parse_params(default_thread_count, params);
+	_parse_params(params);
 	workerpool.shutdown = false;
 	count = _resolve_thread_count(thread_count, default_thread_count);
 	workerpool.workq = workq_init(workerpool.workq, "workerpool");

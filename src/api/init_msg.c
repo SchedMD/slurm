@@ -177,3 +177,16 @@ void slurm_init_trigger_msg (trigger_info_t *trigger_info_msg)
 	memset(trigger_info_msg, 0, sizeof(trigger_info_t));
 	trigger_info_msg->user_id = NO_VAL;
 }
+
+/*
+ * slurm_init_hres_update_msg - initialize HRES update message with default
+ *	values
+ * OUT hres_msg - user defined HRES update descriptor
+ */
+extern void slurm_init_hres_update_msg(hres_update_msg_t *hres_msg)
+{
+	memset(hres_msg, 0, sizeof(*hres_msg));
+	hres_msg->count = NO_VAL;
+	hres_msg->disable_hres = NO_VAL16;
+	hres_msg->disable_layer = NO_VAL16;
+}

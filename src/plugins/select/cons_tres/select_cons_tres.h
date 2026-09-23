@@ -68,6 +68,8 @@
 #include "job_resources.h"
 #include "job_test.h"
 
+#include "gang_exempt.h"
+
 /* Global variables */
 extern bool     backfill_busy_nodes;
 extern int      bf_window_scale;

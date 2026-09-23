@@ -191,8 +191,9 @@ am_scontrol_OBJECTS = common.$(OBJEXT) create_res.$(OBJEXT) \
 	info_fed.$(OBJEXT) info_job.$(OBJEXT) info_lics.$(OBJEXT) \
 	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
 	power_node.$(OBJEXT) reboot_node.$(OBJEXT) scontrol.$(OBJEXT) \
-	update_job.$(OBJEXT) update_node.$(OBJEXT) \
-	update_part.$(OBJEXT) update_step.$(OBJEXT)
+	update_hres.$(OBJEXT) update_job.$(OBJEXT) \
+	update_node.$(OBJEXT) update_part.$(OBJEXT) \
+	update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 scontrol_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -219,9 +220,9 @@ am__depfiles_remade = ./$(DEPDIR)/common.Po ./$(DEPDIR)/create_res.Po \
 	./$(DEPDIR)/info_lics.Po ./$(DEPDIR)/info_node.Po \
 	./$(DEPDIR)/info_part.Po ./$(DEPDIR)/info_res.Po \
 	./$(DEPDIR)/power_node.Po ./$(DEPDIR)/reboot_node.Po \
-	./$(DEPDIR)/scontrol.Po ./$(DEPDIR)/update_job.Po \
-	./$(DEPDIR)/update_node.Po ./$(DEPDIR)/update_part.Po \
-	./$(DEPDIR)/update_step.Po
+	./$(DEPDIR)/scontrol.Po ./$(DEPDIR)/update_hres.Po \
+	./$(DEPDIR)/update_job.Po ./$(DEPDIR)/update_node.Po \
+	./$(DEPDIR)/update_part.Po ./$(DEPDIR)/update_step.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -544,6 +545,7 @@ scontrol_SOURCES = \
 	reboot_node.c	\
 	scontrol.c	\
 	scontrol.h	\
+	update_hres.c	\
 	update_job.c	\
 	update_node.c	\
 	update_part.c	\
@@ -676,6 +678,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_node.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reboot_node.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scontrol.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_hres.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_job.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_node.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_part.Po@am__quote@ # am--include-marker
@@ -822,6 +825,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/power_node.Po
 	-rm -f ./$(DEPDIR)/reboot_node.Po
 	-rm -f ./$(DEPDIR)/scontrol.Po
+	-rm -f ./$(DEPDIR)/update_hres.Po
 	-rm -f ./$(DEPDIR)/update_job.Po
 	-rm -f ./$(DEPDIR)/update_node.Po
 	-rm -f ./$(DEPDIR)/update_part.Po
@@ -884,6 +888,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/power_node.Po
 	-rm -f ./$(DEPDIR)/reboot_node.Po
 	-rm -f ./$(DEPDIR)/scontrol.Po
+	-rm -f ./$(DEPDIR)/update_hres.Po
 	-rm -f ./$(DEPDIR)/update_job.Po
 	-rm -f ./$(DEPDIR)/update_node.Po
 	-rm -f ./$(DEPDIR)/update_part.Po

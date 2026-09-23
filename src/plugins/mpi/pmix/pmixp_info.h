@@ -63,7 +63,6 @@ typedef struct {
 	uint32_t nnodes_job; /* number of nodes in current job */
 	uint32_t ntasks; /* total number of tasks in current step */
 	uint32_t ntasks_job; /* total possible number of tasks in job */
-	uint32_t ncpus_job; /* total possible number of cpus in job */
 	uint32_t *task_cnts; /* Number of tasks on each node in this step */
 	uint32_t app_ldr; /* first global rank of this het component */
 	int node_id; /* relative position of this node in this step */
@@ -131,19 +130,15 @@ extern uint32_t pmixp_info_nodeid_job(void);
 extern uint32_t pmixp_info_nodes(void);
 extern uint32_t pmixp_info_nodes_uni(void);
 extern uint32_t pmixp_info_tasks(void);
-extern uint32_t pmixp_info_tasks_node(uint32_t nodeid);
 extern uint32_t *pmixp_info_tasks_cnts(void);
 extern uint32_t pmixp_info_tasks_loc(void);
 extern uint32_t pmixp_info_tasks_uni(void);
 extern uint32_t pmixp_info_appldr(void);
-extern uint32_t pmixp_info_cpus(void);
 extern uint32_t pmixp_info_taskid(uint32_t localid);
 extern int pmixp_info_taskid2localid(uint32_t taskid);
 extern char *pmixp_info_task_dist(void);
 extern char *pmixp_info_task_map(void);
 extern hostlist_t *pmixp_info_step_hostlist(void);
-extern char *pmixp_info_step_host(int nodeid);
-extern int pmixp_info_step_hostid(char *hostname);
 extern char *pmixp_info_job_host(int nodeid);
 extern int pmixp_info_job_hostid(char *hostname);
 extern char *pmixp_info_nspace_usock(const char *nspace);

@@ -58,6 +58,20 @@ and hopefully remove them from the xfail list.
 
 # TODO: Remove xfail_tests.append() once their issue is fixed.
 if atf.get_version() < (26, 11):
+    xfail_tests.append(
+        (
+            "common/test_env.c",
+            "test_setenvfs_success",
+            "Issue #51135: setenvfs() uses putenv() before 26.11; the interposed setenv() is never triggered",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_env.c",
+            "test_setenvfs_setenv_failure",
+            "Issue #51135: setenvfs() uses putenv() before 26.11; fail_setenv has no effect so it always returns 0",
+        )
+    )
     skip_tests.append(
         (
             "common/test_http_router.c",
@@ -92,6 +106,12 @@ if atf.get_version() < (26, 11):
         (
             "common/test_xutf.c",
             "Issue 50192: xutf UTF-8 handler introduced in Slurm 26.11",
+        )
+    )
+    skip_tests.append(
+        (
+            "common/test_log.c",
+            "Issue #50192. LogTimeFormat options introduced in Slurm 26.11",
         )
     )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
@@ -163,6 +183,13 @@ if atf.get_version() < (26, 5):
             "conmgr/test_polling.c",
             "test_stale_revents_poll",
             "Ticket 25227: conmgr pollctl interrupt lost-wakeup fix lands in 26.05",
+        )
+    )
+    xfail_tests.append(
+        (
+            "topology/test_route_tree.c",
+            "test_disconnected_trunks",
+            "Ticket 25473: topology/tree leaf-relay fan-out fix lands in 26.05",
         )
     )
 if atf.get_version() < (25, 11):

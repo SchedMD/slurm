@@ -245,7 +245,6 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
 static int _job_resv_check(void *x, void *arg);
-static list_t *_list_dup(list_t *license_list);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version);
 static void _pick_nodes(resv_desc_msg_t *resv_desc_ptr,
@@ -604,30 +603,6 @@ static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt)
 	}
 }
 
-static int _foreach_list_dup(void *x, void *arg)
-{
-	licenses_t *license_src = x;
-	list_t *lic_list = arg;
-	licenses_t *license_dest = xmalloc(sizeof(licenses_t));
-
-	license_dest->name = xstrdup(license_src->name);
-	license_dest->used = license_src->used;
-	list_append(lic_list, license_dest);
-	return 0;
-}
-
-static list_t *_list_dup(list_t *license_list)
-{
-	list_t *lic_list = NULL;
-
-	if (!license_list)
-		return lic_list;
-
-	lic_list = list_create(license_free_rec);
-	list_for_each_ro(license_list, _foreach_list_dup, lic_list);
-	return lic_list;
-}
-
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 {
 	slurmctld_resv_t *resv_copy_ptr;
@@ -666,8 +641,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
 	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
 	resv_copy_ptr->licenses = xstrdup(resv_orig_ptr->licenses);
-	resv_copy_ptr->license_list = _list_dup(resv_orig_ptr->
-						license_list);
+	resv_copy_ptr->license_list = license_copy(resv_orig_ptr->license_list);
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	if (resv_orig_ptr->node_bitmap) {
@@ -3634,14 +3608,14 @@ static list_t *_license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 	}
 
 	license_list = license_validate(resv_desc_ptr->licenses, true, true,
-					true, NULL, valid, NULL);
+					HRES_SYNTAX_LAYERS, NULL, valid, NULL);
 	if (resv_desc_ptr->licenses == NULL)
 		return license_list;
 
 	merged_licenses = xstrdup(resv_desc_ptr->licenses);
 	list_for_each_ro(resv_list, _foreach_merge_licenses, &args);
-	merged_list = license_validate(merged_licenses, true, true, true, NULL,
-				       valid, NULL);
+	merged_list = license_validate(merged_licenses, true, true,
+				       HRES_SYNTAX_LAYERS, NULL, valid, NULL);
 	xfree(merged_licenses);
 	FREE_NULL_LIST(merged_list);
 	return license_list;
@@ -5282,14 +5256,25 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		bool fuzzy_match = false;
 
 		FREE_NULL_LIST(resv_ptr->license_list);
+		/*
+		 * HRES_SYNTAX_ANY is only needed for support reservations from
+		 * Slurm version <= 26.05, and then the syntax is automatically
+		 * converted to the new format. Replace HRES_SYNTAX_ANY with
+		 * HRES_SYNTAX_LAYERS after upgrading from
+		 * SLURM_26_05_PROTOCOL_VERSION is no longer supported, and
+		 * replace the
+		 * else { license_list_to_string() } with
+		 * else if (fuzzy_match) { license_list_to_string() }
+		 */
 		resv_ptr->license_list =
-			license_validate(resv_ptr->licenses, true, true, true,
-					 NULL, &valid, &fuzzy_match);
+			license_validate(resv_ptr->licenses, true, true,
+					 HRES_SYNTAX_ANY, NULL, &valid,
+					 &fuzzy_match);
 		if (!valid) {
 			error("Reservation %s has invalid licenses (%s)",
 			      resv_ptr->name, resv_ptr->licenses);
 			return false;
-		} else if (fuzzy_match) {
+		} else {
 			xfree(resv_ptr->licenses);
 			resv_ptr->licenses =
 				license_list_to_string(resv_ptr->license_list);

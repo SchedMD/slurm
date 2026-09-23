@@ -40,7 +40,7 @@
 #include "src/common/xstring.h"
 
 /*
- * test39.18.prog <etc_dir> <nodename> <conf_gres> [<debug_level>]
+ * test_144_17 <etc_dir> <nodename> <conf_gres> [<debug_level>]
  *
  * etc_dir	The directory containing slurm.conf, gres.conf, and
  * 		fake_gpus.conf.
@@ -51,9 +51,8 @@
  * 		should use. If unspecified, defaults to LOG_LEVEL_INFO.
  * 		LOG_LEVEL_INFO is the lowest log level allowed.
  * 		Note that debug, debug2, and debug3 may produce too much output
- * 		and cause expect to fail to parse things properly. This will
- * 		show up as a test failure. Only use debug+ when debugging and
- * 		developing tests, and NOT when running the tests in production.
+ * 		for the test log. Only use debug+ when debugging and developing
+ * 		tests, and NOT when running the tests in production.
  *
  * Note that slurm.conf only needs to specify the following fields:
  *	ControlMachine=test_machine

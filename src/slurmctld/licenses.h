@@ -59,7 +59,7 @@ typedef uint16_t path_idx_t[MAX_HIERARCHY_DEPTH];
 
 typedef struct {
 	uint32_t capacity;
-	bitstr_t *node_bitmap;
+	bitstr_t *node_bitmap; /* alias of licenses_t.node_bitmap, never free */
 	path_idx_t path_idx;
 } hres_leaf_t;
 
@@ -76,15 +76,20 @@ typedef struct {
 	int topology_idx;
 } hres_select_t;
 
+typedef struct slurm_licenses licenses_t;
 typedef struct {
-	list_t *base;
+	list_t *base; /* list of hres_variable_t */
 	uint32_t base_usage;
 	uint16_t depth; /* depth of layout */
+	bool disable_hres;
+	bool disable_layer;
 	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
+	char *layer_name;
 	uint16_t layers_cnt; /* count of layers, set only for root*/
 	uint16_t leaf_cnt; /* count of leafs, set only for root*/
 	uint16_t level; /* level - 0 for leaf */
-	uint16_t parent_id; /* lic_id of parent - NO_VAL16 for root */
+	licenses_t *parent; /* pointer to parent - NULL for root */
+	char *parent_name;
 	path_idx_t path_idx;
 	int topology_idx;
 	char *topology_name;
@@ -92,16 +97,36 @@ typedef struct {
 	list_t *variables; /* list of hres_variable_t */
 } hres_rec_t;
 
-typedef struct {
-	char *name;
-	uint32_t value;
-} hres_variable_t;
+/* How the "(...)" part of a license string is interpreted */
+typedef enum {
+	HRES_SYNTAX_NONE = 0, /* "(" is an ordinary character */
+	HRES_SYNTAX_LAYERS, /* "(layer[*node_cnt][,...])" */
+	HRES_SYNTAX_ANY, /* layer syntax, falling back to the node list form
+			  * written by Slurm 26.05 and older */
+} hres_syntax_t;
 
+/*
+ * One charge made against a layer of an HRES on behalf of a job or a
+ * reservation. The layers charged are recorded when the resource is acquired
+ * so that exactly the same amount is released later, even if the nodes of a
+ * layer changed in between.
+ */
 typedef struct {
+	licenses_id_t id; /* layer that was charged */
+	char *layer_name; /* hres_rec.layer_name of that layer */
+	uint16_t node_cnt; /* nodes of the job under this layer; 1 for modes
+			    * 1 and 2 */
+} hres_charge_t;
+
+struct slurm_licenses {
 	licenses_id_t id;
 	char *		name;		/* name associated with a license */
+	list_t *hres_charges; /* list of hres_charge_t. Set on job and
+			       * reservation records only, never on
+			       * cluster_license_list records. */
 	bool op_or; /* Whether the licenses were requested with AND or OR */
-	uint32_t	total;		/* total license configured */
+	uint32_t	total;		/* total licenses available:
+					 *   configured - base_usage */
 	uint32_t	used;		/* used licenses */
 	uint32_t	reserved;	/* currently reserved licenses */
 	uint8_t         remote;	        /* non-zero if remote (from database) */
@@ -111,8 +136,8 @@ typedef struct {
 	bitstr_t *node_bitmap;
 	char *nodes;
 	uint8_t mode;
-	hres_rec_t hres_rec; /* mode_3 specific structure*/
-} licenses_t;
+	hres_rec_t hres_rec;
+};
 
 /*
  * In the future this should change to a more performant data structure.
@@ -127,11 +152,45 @@ typedef struct {
 
 extern time_t last_license_update;
 
-/* Initialize licenses on this system based upon slurm.conf */
-extern int license_init(char *licenses);
+/* Initialize license parameters on this system. Does not load licenses. */
+extern void license_init(void);
 
 extern int hres_init(void);
+extern int hres_update(hres_update_msg_t *msg, char **err_msg);
+
+/*
+ * hres_add_nodes
+ * Add nodes to the specified HRES layers.
+ * Mode 3 restriction - Only allow adding nodes to a single leaf layer.
+ *
+ * IN hres_info - List of HRES layers to which the nodes will be added
+ * IN node_names - Names of nodes to add
+ * IN node_bitmap (optional) - Bitmap of nodes to add. If not given, it will be
+ *                             resolved from node_names.
+ * RET SLURM_SUCCESS or an error code
+ */
+extern int hres_add_nodes(list_t *hres_info, char *node_names,
+			  bitstr_t *node_bitmap);
+
+/*
+ * hres_rm_node
+ * Remove a node from all HRES layers.
+ *
+ * IN node_ptr - node to remove
+ */
+extern void hres_rm_node(node_record_t *node_ptr);
+
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
+
+/*
+ * Test whether disabled HRES layers alone leave a job no node to run on in a
+ * partition: a requested HRES disabled as a whole, or every candidate node
+ * served only by disabled layers.
+ * IN job_ptr - job whose license_list is examined
+ * IN part_ptr - partition being tried
+ * RET true if the job cannot run until layers are enabled again
+ */
+extern bool hres_job_disabled(job_record_t *job_ptr, part_record_t *part_ptr);
 
 extern bool hres_select_check(hres_select_t *hres_select,
 			      uint16_t hres_leaf_idx);
@@ -150,8 +209,6 @@ extern void hres_select_free(job_record_t *job_ptr);
 extern void hres_select_print(hres_select_t *hres_select);
 
 extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
-
-extern void hres_variable_free(void *x);
 
 extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
 				     bf_licenses_t *bf_licenses);
@@ -175,6 +232,9 @@ extern void license_free(void);
 
 /* Free a license_t record (for use by list_destroy) */
 extern void license_free_rec(void *x);
+
+/* Free an hres_charge_t record (for use by list_destroy) */
+extern void hres_charge_free(void *x);
 
 /*
  * license_copy - create a copy of license list
@@ -260,7 +320,8 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  * RET license_list, must be destroyed by caller
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
-				bool validate_existing, bool hres,
+				bool validate_existing,
+				hres_syntax_t hres_syntax,
 				uint64_t *tres_req_cnt, bool *valid,
 				bool *fuzzy_match);
 

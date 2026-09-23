@@ -276,6 +276,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->argv = xcalloc(sizeof(char *), opt.argc);
 	for (i = 0; i < opt.argc; i++)
 		opt_dup->argv[i] = xstrdup(opt.argv[i]);
+	sropt.bcast_exclude = NULL; /* Moved by memcpy */
 	sropt.bcast_file = NULL;	/* Moved by memcpy */
 	opt.burst_buffer = NULL;	/* Moved by memcpy */
 	opt_dup->c_constraint = xstrdup(opt.c_constraint);
@@ -283,6 +284,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 	opt_dup->comment = xstrdup(opt.comment);
 	opt.constraint = NULL;		/* Moved by memcpy */
+	opt.container = NULL; /* Moved by memcpy */
 	opt_dup->context = xstrdup(opt.context);
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 	opt_dup->chdir = xstrdup(opt.chdir);
@@ -317,6 +319,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
 	opt_dup->qos = xstrdup(opt.qos);
 	opt_dup->reservation = xstrdup(opt.reservation);
+	opt.runtime = NULL; /* Moved by memcpy */
 	opt.spank_job_env = NULL;	/* Moved by memcpy */
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
@@ -377,6 +380,12 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		/* initialize option defaults */
 		_opt_default();
+
+		/*
+		 * Record which component these options describe. _opt_copy()
+		 * carries it into the entry saved for this component.
+		 */
+		opt.het_job_inx = i;
 
 		/* do not set adjust defaults in an active allocation */
 		if (!is_step) {

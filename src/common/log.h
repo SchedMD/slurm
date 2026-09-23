@@ -228,8 +228,8 @@ FILE *log_fp(void);
 /* Log out of memory without message buffering */
 void log_oom(const char *file, int line, const char *func);
 
-/* Set the log timestamp format */
-void log_set_timefmt(unsigned);
+/* Set the log timestamp format and the options accompanying it */
+void log_set_timefmt(log_fmt_t fmt, log_flags_t flags);
 
 /*
  * Buffered log functions:

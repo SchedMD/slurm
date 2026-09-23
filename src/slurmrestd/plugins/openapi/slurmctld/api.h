@@ -53,6 +53,7 @@ extern int op_handler_reconfigure(openapi_ctxt_t *ctxt);
 extern int op_handler_diag(openapi_ctxt_t *ctxt);
 extern int op_handler_ping(openapi_ctxt_t *ctxt);
 extern int op_handler_licenses(openapi_ctxt_t *ctxt);
+extern int op_handler_hres(openapi_ctxt_t *ctxt);
 extern int op_handler_submit_job(openapi_ctxt_t *ctxt);
 extern int op_handler_alloc_job(openapi_ctxt_t *ctxt);
 extern int op_handler_job(openapi_ctxt_t *ctxt);

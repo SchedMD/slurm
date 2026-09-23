@@ -64,6 +64,7 @@
 #include "src/common/parse_value.h"
 #include "src/common/power_action.h"
 #include "src/common/read_config.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/state_save.h"
 #include "src/common/timers.h"
@@ -4934,6 +4935,11 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			  node_ptr->node_hostname);
 }
 
+/*
+ * Never delete a node here on error; create_nodes() rolls back the whole batch.
+ * Deleting the only node created so far would free config_ptr and its
+ * node_bitmap before that rollback reads them.
+ */
 static int _build_node_callback(char *alias, char *hostname, char *address,
 				char *bcast_address, uint16_t port,
 				int state_val, slurm_conf_node_t *conf_node,
@@ -4943,7 +4949,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 	node_record_t *node_ptr = NULL;
 
 	if ((rc = add_node_record(alias, config_ptr, &node_ptr)))
-		goto fini;
+		return rc;
 
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
@@ -4965,10 +4971,8 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 		node_ptr->features_act = xstrdup(config_ptr->feature);
 	}
 
-	if (node_ptr->topology_str && topology_g_add_rm_node(node_ptr)) {
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		goto fini;
-	}
+	if (node_ptr->topology_str && topology_g_add_rm_node(node_ptr))
+		return ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 
 	bit_clear(power_up_node_bitmap, node_ptr->index);
 	if (IS_NODE_FUTURE(node_ptr)) {
@@ -4997,7 +5001,7 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 							 node_ptr->name,
 							 node_ptr->gres_list,
 							 NULL, NULL))) {
-			goto fini;
+			return rc;
 		}
 
 		rc = gres_node_config_validate(node_ptr,
@@ -5009,10 +5013,6 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 						CONF_FLAG_OR),
 					       NULL);
 	}
-
-fini:
-	if (rc && node_ptr)
-		_delete_node_ptr(node_ptr);
 
 	return rc;
 }
@@ -5053,6 +5053,7 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	slurm_conf_node_t *conf_node;
 	config_record_t *config_ptr;
 	s_p_hashtbl_t *node_hashtbl = NULL;
+	list_t *hres_info = NULL;
 	slurmctld_lock_t write_lock = {
 		.conf = READ_LOCK,
 		.job = WRITE_LOCK,
@@ -5088,6 +5089,19 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	    != SLURM_SUCCESS)
 		goto fini;
 
+	if (conf_node->hres_str &&
+	    (rc = SERCLI_PARSE_STR(NODE_HRES_INFO_LIST, NULL, hres_info,
+				   conf_node->hres_str,
+				   strlen(conf_node->hres_str),
+				   MIME_TYPE_JSON))) {
+		*err_msg =
+			xstrdup_printf("Unable to parse node %s HRES=%s: %s",
+				       conf_node->nodenames,
+				       conf_node->hres_str, slurm_strerror(rc));
+		error("%s", *err_msg);
+		goto fini;
+	}
+
 	state_val = state_str2int(conf_node->state, conf_node->nodenames);
 	if ((state_val == NO_VAL) ||
 	    ((state_val != NODE_STATE_FUTURE) &&
@@ -5105,9 +5119,45 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 
 	if ((rc = expand_nodeline_info(conf_node, config_ptr, err_msg,
 				       _build_node_callback))) {
+		bitstr_t *created_bitmap = NULL;
+		node_record_t *node_ptr = NULL;
+		bool orphaned = false;
+
 		error("Failed to create a node in '%s': %s",
 		      conf_node->nodenames, *err_msg);
+
+		/*
+		 * add_node_record() only sets a bit for a node it created, so
+		 * this rolls back the batch without touching pre-existing
+		 * nodes. Iterate a copy: deleting the last node referencing
+		 * config_ptr frees it and node_bitmap with it.
+		 */
+		created_bitmap = bit_copy(config_ptr->node_bitmap);
+
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(created_bitmap, &i)); i++) {
+			if (_delete_node_ptr(node_ptr) != SLURM_SUCCESS)
+				orphaned = true;
+		}
+
+		if (orphaned)
+			error("Failed to roll back every node created from '%s'",
+			      conf_node->nodenames);
+
+		/* Nothing created means nothing ever referenced config_ptr. */
+		if (!bit_set_count(created_bitmap))
+			list_delete_ptr(config_list, config_ptr);
+		config_ptr = NULL;
+
+		FREE_NULL_BITMAP(created_bitmap);
+
 		goto fini;
+	}
+
+	if (hres_info && hres_add_nodes(hres_info, conf_node->nodenames,
+					config_ptr->node_bitmap)) {
+		error("%s: Ignoring invalid HRES specification for nodes %s: %s",
+		      __func__, conf_node->nodenames, conf_node->hres_str);
 	}
 
 	if (config_ptr->feature) {
@@ -5128,6 +5178,7 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 	select_g_reconfigure();
 
 fini:
+	FREE_NULL_LIST(hres_info);
 	s_p_hashtbl_destroy(node_hashtbl);
 	unlock_slurmctld(write_lock);
 
@@ -5148,6 +5199,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	s_p_hashtbl_t *node_hashtbl = NULL;
 	slurm_conf_node_t *conf_node = NULL;
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
+	list_t *hres_info = NULL;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -5174,6 +5226,18 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			return SLURM_ERROR;
 		}
 
+		if (conf_node->hres_str &&
+		    SERCLI_PARSE_STR(NODE_HRES_INFO_LIST, NULL, hres_info,
+				     conf_node->hres_str,
+				     strlen(conf_node->hres_str),
+				     MIME_TYPE_JSON)) {
+			s_p_hashtbl_destroy(node_hashtbl);
+			error("%s: Unable to parse node %s HRES=%s",
+			      __func__, conf_node->nodenames,
+			      conf_node->hres_str);
+			FREE_NULL_LIST(hres_info);
+			return SLURM_ERROR;
+		}
 		config_ptr = config_record_from_conf_node(conf_node,
 							  slurmctld_tres_cnt);
 		if (conf_node->state)
@@ -5197,6 +5261,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		error("%s (%s)", slurm_strerror(rc), reg_msg->node_name);
 		list_delete_ptr(config_list, config_ptr);
 		s_p_hashtbl_destroy(node_hashtbl);
+		FREE_NULL_LIST(hres_info);
 		return SLURM_ERROR;
 	}
 
@@ -5228,6 +5293,12 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		xfree(node_ptr->topology_str);
 		topology_g_add_rm_node(node_ptr);
 	}
+	if (hres_info && hres_add_nodes(hres_info, node_ptr->name,
+					config_ptr->node_bitmap)) {
+		error("%s: Ignoring invalid HRES specification for node %s: %s",
+		      __func__, node_ptr->name, conf_node->hres_str);
+	}
+	FREE_NULL_LIST(hres_info);
 
 	_queue_consolidate_config_list();
 
@@ -5316,6 +5387,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 	topology_g_add_rm_node(node_ptr);
 
 	_remove_node_from_all_bitmaps(node_ptr);
+	hres_rm_node(node_ptr);
 	_remove_node_from_features(node_ptr);
 	gres_node_remove(node_ptr);
 

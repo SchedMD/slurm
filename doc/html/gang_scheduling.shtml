@@ -34,7 +34,10 @@ resources for a <I>SchedulerTimeslice</I> interval.
 This will continue until one of the jobs terminates.
 </P>
 <P>
-<b>NOTE</b>: Heterogeneous jobs are excluded from gang scheduling operations.
+<b>NOTE</b>: A heterogeneous job is excluded from GANG scheduling operations,
+including <I>PreemptMode=SUSPEND</I>, and from oversubscription while
+<I>GANG</I> is enabled. See
+<a href="preempt.html#hetjob">heterogeneous job preemption</a>.
 </P>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
@@ -118,10 +121,7 @@ timeslice on the same resources, set <I>OverSubscribe=FORCE:2</I>.
 </UL>
 <P>
 In order to enable gang scheduling after making the configuration changes
-described above, restart Slurm if it is already running. Any change to the
-plugin settings in Slurm requires a full restart of the daemons. If you
-just change the partition <I>OverSubscribe</I> setting, this can be updated with
-<I>scontrol reconfig</I>.
+described above, restart or reconfigure Slurm.
 </P>
 
 <h2 id="time_slice">Timeslicer Design and Operation

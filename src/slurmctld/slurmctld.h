@@ -1590,6 +1590,13 @@ extern bool partition_in_use(char *part_name);
 extern int pick_batch_host(job_record_t *job_ptr);
 
 /*
+ * is_prolog_running - test whether any node prolog is still running for a job
+ * IN job_ptr - pointer to job table entry
+ * RET true while at least one node has not reported its prolog complete
+ */
+extern bool is_prolog_running(job_record_t *job_ptr);
+
+/*
  * prolog_complete - note the normal termination of the prolog
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list

@@ -770,7 +770,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			 * if not batch, can be cancelled directly. Batch jobs
 			 * are requeued later, so we don't need to worry here.
 			 */
-			if (job_ptr && (job_ptr->state_reason == WAIT_PROLOG) &&
+			if (job_ptr && is_prolog_running(job_ptr) &&
 			    job_ptr->prolog_launch_time &&
 			    !job_ptr->batch_flag) {
 				slurm_step_id_t step_id =
@@ -2492,10 +2492,9 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_DEFER_BATCH) &&
-	    (job_ptr->state_reason == WAIT_PROLOG)) {
-		if (job_ptr->node_bitmap_pr &&
-		    (slurm_conf.debug_flags &
-		     (DEBUG_FLAG_TRACE_JOBS | DEBUG_FLAG_AGENT))) {
+	    is_prolog_running(job_ptr)) {
+		if (slurm_conf.debug_flags &
+		    (DEBUG_FLAG_TRACE_JOBS | DEBUG_FLAG_AGENT)) {
 			char *tmp_pr;
 			tmp_pr = bitmap2node_name(job_ptr->node_bitmap_pr);
 			verbose("%s: JobId=%u still waiting on prologs on %s",
@@ -2557,7 +2556,7 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 		return -1;	/* job cancelled while waiting */
 	}
 
-	if (job_ptr->state_reason != WAIT_PROLOG)
+	if (!is_prolog_running(job_ptr))
 		return 0;
 
 	if (queued_req_ptr->first_attempt == 0) {

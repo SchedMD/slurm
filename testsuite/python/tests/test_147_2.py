@@ -40,21 +40,26 @@ def cleanup_state(setup):
     reason="Ticket 20604: Spank error codes were not properly propagated. Fixed in 25.05.",
 )
 @pytest.mark.parametrize("mode", ["job", "node"])
-def test_slurm_spank_init_failure_mode(mode, cleanup_state, spank_fail_lib):
+def test_slurm_spank_init_failure_mode(mode, cleanup_state, spank_plugin):
     """
     Test ESPANK_[JOB|NODE]_FAILURE
     """
 
     # Ensure the SPANK plugin is included in plugstack.conf
     atf.require_config_parameter(
-        "required",
-        f"{spank_fail_lib} slurm_spank_init remote {mode}",
-        delimiter=" ",
-        source="plugstack",
+        "required", spank_plugin, delimiter=" ", source="plugstack"
     )
 
     node = next(iter(atf.nodes))
-    job_id = atf.submit_job_sbatch(f"-w {node} --wrap 'srun true'", fatal=True)
+    job_id = atf.submit_job_sbatch(
+        f"-w {node} --wrap 'srun true'",
+        env_vars=(
+            "SPANK_FAIL_TEST_FUNC=slurm_spank_init "
+            "SPANK_FAIL_TEST_CTXT=remote "
+            f"SPANK_FAIL_TEST_MODE={mode}"
+        ),
+        fatal=True,
+    )
 
     if mode == "job":
         # The node should NOT be DRAIN

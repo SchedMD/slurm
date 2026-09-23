@@ -98,6 +98,7 @@ typedef struct {
 	uint32_t job_id;
 	uint16_t slurmctld_debug;
 	char *slurmctld_logfile;
+	log_flags_t log_flags;
 	uint16_t log_fmt;
 	char *plugindir;
 	char *slurm_user_name;

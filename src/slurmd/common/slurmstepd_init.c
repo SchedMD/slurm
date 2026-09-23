@@ -224,6 +224,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	pack16(slurm_conf.kill_wait, buffer);
 	packstr(slurm_conf.launch_params, buffer);
 	/* licenses */
+	pack16((uint16_t) slurm_conf.log_flags, buffer);
 	pack16(slurm_conf.log_fmt, buffer);
 	/* mail_domain */
 	/* mail_prog */
@@ -372,6 +373,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 {
 	uint16_t srun_port_min = 0, srun_port_max = 0;
+	uint16_t uint16_tmp = 0;
 
 	init_slurm_conf(&slurm_conf);
 	/* last_update */
@@ -463,6 +465,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	safe_unpack16(&slurm_conf.kill_wait, buffer);
 	safe_unpackstr(&slurm_conf.launch_params, buffer);
 	/* licenses */
+	safe_unpack16(&uint16_tmp, buffer);
+	slurm_conf.log_flags = uint16_tmp;
 	safe_unpack16(&slurm_conf.log_fmt, buffer);
 	/* mail_domain */
 	/* mail_prog */

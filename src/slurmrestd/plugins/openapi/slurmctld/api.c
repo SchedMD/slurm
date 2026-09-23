@@ -171,6 +171,27 @@ const openapi_path_binding_t openapi_paths[] = {
 		.flags = OP_FLAGS,
 	},
 	{
+		.path = "/slurm/{data_parser}/hres/",
+		.callback = op_handler_hres,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "Update HRES",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "Update HRES results",
+				},
+				.body = {
+					.type = DATA_PARSER_HRES_UPDATE_MSG,
+					.description = "HRES description",
+				},
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
+	{
 		.path = "/slurm/{data_parser}/job/submit",
 		.callback = op_handler_submit_job,
 		.methods = (openapi_path_binding_method_t[]) {

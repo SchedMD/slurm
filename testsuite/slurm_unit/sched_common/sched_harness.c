@@ -340,7 +340,8 @@ extern void sched_harness_init(char *log_name, int argc, char **argv)
 
 	resv_list = list_create(NULL);
 
-	license_init(slurm_conf.licenses);
+	license_init();
+	license_update(slurm_conf.licenses);
 
 	select_g_reconfigure();
 }

@@ -417,6 +417,9 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, false);
 
+	/* record which component these options describe */
+	opt.het_job_inx = het_job_inx;
+
 	/* cli_filter plugins can change the defaults */
 	if (cli_filter_g_setup_defaults(&opt, false)) {
 		error("cli_filter plugin terminated with error");

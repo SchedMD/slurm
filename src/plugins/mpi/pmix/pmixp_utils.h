@@ -46,15 +46,11 @@ void pmixp_free_buf(void *x);
 int pmixp_usock_create_srv(char *path);
 size_t pmixp_read_buf(int fd, void *buf, size_t count, int *shutdown,
 		      bool blocking);
-size_t pmixp_write_buf(int fd, void *buf, size_t count, int *shutdown,
-		       bool blocking);
 size_t pmixp_writev_buf(int sd, struct iovec *iov, size_t iovcnt,
 			size_t offset, int *shutdown);
 
 int pmixp_fd_set_nodelay(int fd);
 bool pmixp_fd_read_ready(int fd, int *shutdown);
-bool pmixp_fd_write_ready(int fd, int *shutdown);
-int pmixp_srun_send(slurm_addr_t *addr, uint32_t len, char *data);
 int pmixp_stepd_send(const char *nodelist, const char *address,
 		     const char *data, uint32_t len, unsigned int start_delay,
 		     unsigned int retry_cnt, int silent);
@@ -156,14 +152,6 @@ static inline void pmixp_list_init(pmixp_list_t *l)
 	pmixp_list_init_pre(l, pmixp_list_elem_new(), pmixp_list_elem_new());
 }
 
-static inline void pmixp_list_fini(pmixp_list_t *l)
-{
-	pmixp_list_elem_t *elem1, *elem2;
-	pmixp_list_fini_pre(l, &elem1, &elem2);
-	pmixp_list_elem_free(elem1);
-	pmixp_list_elem_free(elem2);
-}
-
 static inline void pmixp_list_enq(pmixp_list_t *l, pmixp_list_elem_t *elem)
 {
 #if PMIXP_LIST_DEBUG
@@ -236,32 +224,6 @@ static inline void pmixp_list_push(pmixp_list_t *l, pmixp_list_elem_t *elem)
 
 	/* reduce element count */
 	l->count++;
-}
-
-static inline pmixp_list_elem_t *pmixp_list_pop(pmixp_list_t *l)
-{
-	pmixp_list_elem_t *ret = NULL;
-
-#if PMIXP_LIST_DEBUG
-	xassert(l->head && l->tail);
-	xassert(!l->head->data && !l->tail->data);
-	xassert(!l->tail->next && !l->head->prev);
-	xassert (!pmixp_list_empty(l));
-#endif
-
-	/* user is responsible to ensure that
-	 * list is not empty */
-	ret = l->tail->prev;
-
-#if PMIXP_LIST_DEBUG
-	xassert(ret->lptr == l);
-#endif
-
-	l->tail->prev = ret->prev;
-	ret->prev->next = l->tail;
-	l->count--;
-
-	return ret;
 }
 
 static inline pmixp_list_elem_t *pmixp_list_rem(
@@ -398,22 +360,6 @@ static inline void pmixp_rlist_push(pmixp_rlist_t *l, void *ptr)
 	elem = __pmixp_rlist_get_free(l->src_list, l->pre_alloc);
 	PMIXP_LIST_VAL(elem) = ptr;
 	pmixp_list_push(&l->list, elem);
-}
-
-static inline void *pmixp_rlist_pop(pmixp_rlist_t *l)
-{
-	pmixp_list_elem_t *elem = NULL;
-	void *val = NULL;
-#if PMIXP_LIST_DEBUG
-	xassert(l);
-#endif
-	/* user is responsible to ensure that
-	 * list is not empty
-	 */
-	elem = pmixp_list_pop(&l->list);
-	val = PMIXP_LIST_VAL(elem);
-	pmixp_list_enq(l->src_list, elem);
-	return val;
 }
 
 static inline pmixp_list_elem_t *pmixp_rlist_begin(pmixp_rlist_t *l)

@@ -559,6 +559,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"Features", S_P_STRING},
 		{"Gres", S_P_STRING},
 		{"GresConf", S_P_STRING},
+		{"HRES", S_P_STRING},
 		{"MemSpecLimit", S_P_UINT64},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
@@ -668,6 +669,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);
 		s_p_get_string(&n->gres_conf, "GresConf", tbl);
+
+		if (!s_p_get_string(&n->hres_str, "HRES", tbl))
+			s_p_get_string(&n->hres_str, "HRES", dflt);
 
 		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl))
 			s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit",
@@ -941,6 +945,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->hostnames);
 	xfree(n->gres);
 	xfree(n->gres_conf);
+	xfree(n->hres_str);
 	xfree(n->nodenames);
 	xfree(n->parameters);
 	xfree(n->port_str);
@@ -4380,7 +4385,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
 	/* Default log format */
-	conf->log_fmt = LOG_FMT_ISO8601_MS;
+	conf->log_flags = LOG_FLAGS_DEFAULT;
+	conf->log_fmt = LOG_FMT_DEFAULT;
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
 		/*
 		 * If adding to this please update src/api/config_info.c to do
@@ -4392,6 +4398,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_ISO8601;
 		else if (xstrcasestr(temp_str, "rfc5424_ms"))
 			conf->log_fmt = LOG_FMT_RFC5424_MS;
+		else if (xstrcasestr(temp_str, "rfc5424_us"))
+			conf->log_fmt = LOG_FMT_RFC5424_US;
 		else if (xstrcasestr(temp_str, "rfc5424"))
 			conf->log_fmt = LOG_FMT_RFC5424;
 		else if (xstrcasestr(temp_str, "rfc3339"))
@@ -4400,10 +4408,18 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_CLOCK;
 		else if (xstrcasestr(temp_str, "short"))
 			conf->log_fmt = LOG_FMT_SHORT;
-		else if (xstrcasestr(temp_str, "thread_id"))
-			conf->log_fmt = LOG_FMT_THREAD_ID;
 		else if (xstrcasestr(temp_str, "omit"))
 			conf->log_fmt = LOG_FMT_OMIT;
+		else if (xstrcasestr(temp_str, "thread_id"))
+			conf->log_fmt = LOG_FMT_THREAD_ID;
+
+		/*
+		 * thread_id names the option whenever a timestamp format took
+		 * the value instead, so that it may accompany that format.
+		 */
+		if ((conf->log_fmt != LOG_FMT_THREAD_ID) &&
+		    xstrcasestr(temp_str, "thread_id"))
+			conf->log_flags |= LOG_FLAG_THREAD_ID;
 		xfree(temp_str);
 	}
 
