@@ -267,6 +267,10 @@ static void _opt_env(void)
 		e++;
 	}
 
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SBATCH, NULL, false))
+		exit(error_exit);
+
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
@@ -305,6 +309,9 @@ extern char *process_options_first_pass(int argc, char **argv)
 	 */
 	if (runtime_g_init(NULL, RUNTIME_CTXT_SBATCH, NULL))
 		fatal("failed to initialize runtime plugin");
+	if (!runtime_g_cli_process_env(RUNTIME_IDX_INVALID, NO_VAL,
+				       RUNTIME_CTXT_SBATCH, NULL, true))
+		exit(error_exit);
 
 	optz = slurm_option_table_create(&opt, &opt_string);
 
