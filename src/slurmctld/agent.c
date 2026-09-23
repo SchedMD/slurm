@@ -2187,7 +2187,9 @@ static void *_mail_proc(void *arg)
 {
 	mail_info_t *mi = (mail_info_t *) arg;
 
-	_run_mail_env(mi);
+	/* mail_job_info() is what keeps this off the queue when unset */
+	if (slurm_conf.mail_prog)
+		_run_mail_env(mi);
 
 	_mail_free(mi);
 	slurm_mutex_lock(&agent_cnt_mutex);
