@@ -240,7 +240,15 @@ static int _compute_local_id(char *dev_file_name)
 	return local_id;
 }
 
-static uint64_t _build_shared_dev_info(list_t *gres_conf_list)
+/*
+ * Collect the count of every device of one shared gres, keyed by the number at
+ * the end of its device file name.
+ * IN gres_conf_list - gres.conf records of the node
+ * IN plugin_id - shared gres to collect, the one of this plugin
+ * RET total count of the shared gres on the node
+ */
+static uint64_t _build_shared_dev_info(list_t *gres_conf_list,
+				       uint32_t plugin_id)
 {
 	uint64_t shared_count = 0;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -251,7 +259,13 @@ static uint64_t _build_shared_dev_info(list_t *gres_conf_list)
 	shared_info = list_create(xfree_ptr);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
-		if (!gres_id_shared(gres_slurmd_conf->config_flags))
+		/*
+		 * Every shared gres of the node reaches this list, and each
+		 * shared plugin holds its own copy of it, so the records of
+		 * the other shared gres are not this plugin's to collect.
+		 */
+		if (!gres_id_shared(gres_slurmd_conf->config_flags) ||
+		    (gres_slurmd_conf->plugin_id != plugin_id))
 			continue;
 		shared_conf = xmalloc(sizeof(shared_dev_info_t));
 		shared_conf->count = gres_slurmd_conf->count;
@@ -519,7 +533,9 @@ extern int gres_c_s_init_share_devices(list_t *gres_conf_list,
 
 	if (rc != SLURM_SUCCESS)
 		fatal("failed to load configuration");
-	if (!_build_shared_dev_info(gres_conf_list) && gres_conf_list)
+	if (!_build_shared_dev_info(gres_conf_list,
+				    gres_build_id(config->gres_name)) &&
+	    gres_conf_list)
 		(void) list_delete_all(gres_conf_list, _remove_shared_recs,
 				       config->gres_name);
 
