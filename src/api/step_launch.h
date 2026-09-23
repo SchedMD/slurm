@@ -131,4 +131,25 @@ int step_launch_clear_questionable_state(step_launch_state_t *sls,
  */
 extern const conmgr_timeouts_t *step_launch_listen_timeouts(void);
 
+/*
+ * Reject unauthenticated or malformed RPCs before any handler sees them.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * RET SLURM_SUCCESS if msg may be handled, else error (msg freed)
+ */
+extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
+				 slurm_msg_t *msg, int unpack_rc);
+
+/*
+ * Validate an RPC and dispatch it to the launch handler.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * IN arg - launch state to dispatch on
+ * RET SLURM_SUCCESS or an error to close the connection with
+ */
+extern int step_launch_on_msg(conmgr_callback_args_t conmgr_args,
+			      slurm_msg_t *msg, int unpack_rc, void *arg);
+
 #endif /* _STEP_LAUNCH_H */

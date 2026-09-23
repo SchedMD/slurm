@@ -114,8 +114,6 @@ static int    task_exit_signal = 0;
 static int _create_listeners(step_launch_state_t *sls, int num_nodes);
 static int _launch_msg(slurm_msg_t *msg, void *arg);
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
-static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
-		   int unpack_rc, void *arg);
 static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg);
 static void *_check_io_timeout(void *_sls);
 
@@ -1066,7 +1064,7 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 		.on_listen_connect = _on_listen_connect,
 		.on_listen_finish = _on_listen_finish,
 		.on_connection = _on_connection,
-		.on_msg = _on_msg,
+		.on_msg = step_launch_on_msg,
 		.on_finish = _on_finish,
 	};
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
@@ -1451,6 +1449,12 @@ static void _step_step_signal(step_launch_state_t *sls, slurm_msg_t *signal_msg)
 
 }
 
+/*
+ * Set a new connection up by relaying the listener's arg to it.
+ * IN conmgr_args - conmgr callback arguments
+ * IN arg - the launch state the listener was registered with
+ * RET the launch state
+ */
 static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	log_flag(NET, "%s: [%s] new connection",
@@ -1459,8 +1463,15 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	return arg;
 }
 
-static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
-		   int unpack_rc, void *arg)
+/*
+ * Reject unauthenticated or malformed RPCs before any handler sees them.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * RET SLURM_SUCCESS if msg may be handled, else error (msg freed)
+ */
+extern int step_launch_check_msg(conmgr_callback_args_t conmgr_args,
+				 slurm_msg_t *msg, int unpack_rc)
 {
 	conmgr_fd_ref_t *con = conmgr_args.ref;
 	uid_t uid = getuid();
@@ -1472,9 +1483,10 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
-	log_flag(AUDIT_RPCS, "step_launch _on_msg: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
-		 conmgr_con_get_name(con), rpc_num2string(msg->msg_type),
-		 msg->auth.uid, &msg->address, msg->protocol_version);
+	log_flag(AUDIT_RPCS, "%s: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 __func__, conmgr_con_get_name(con),
+		 rpc_num2string(msg->msg_type), msg->auth.uid, &msg->address,
+		 msg->protocol_version);
 
 	if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
@@ -1491,9 +1503,28 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Validate an RPC and dispatch it to the launch handler.
+ * IN conmgr_args - conmgr callback arguments
+ * IN msg - received message
+ * IN unpack_rc - return code from unpacking RPC
+ * IN arg - launch state to dispatch on
+ * RET SLURM_SUCCESS or an error to close the connection with
+ */
+extern int step_launch_on_msg(conmgr_callback_args_t conmgr_args,
+			      slurm_msg_t *msg, int unpack_rc, void *arg)
+{
+	int rc = step_launch_check_msg(conmgr_args, msg, unpack_rc);
+
+	if (rc)
+		return rc;
+
 	_launch_msg(msg, arg);
 
-	conmgr_con_queue_close(con);
+	conmgr_con_queue_close(conmgr_args.ref);
 
 	FREE_NULL_MSG(msg);
 	return SLURM_SUCCESS;
