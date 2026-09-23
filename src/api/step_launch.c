@@ -1035,19 +1035,8 @@ static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
 		 __func__, conmgr_con_get_name(con));
 }
 
-static int _create_listeners(step_launch_state_t *sls, int num_nodes)
+extern const conmgr_timeouts_t *step_launch_listen_timeouts(void)
 {
-	int sock = -1;
-	uint16_t port;
-	int i, rc = SLURM_SUCCESS;
-	static const conmgr_events_t events = {
-		.on_listen_connect = _on_listen_connect,
-		.on_listen_finish = _on_listen_finish,
-		.on_connection = _on_connection,
-		.on_msg = _on_msg,
-		.on_finish = _on_finish,
-	};
-	conmgr_con_flags_t flags = CON_FLAG_NONE;
 	static conmgr_timeouts_t timeouts = { { 0 } };
 
 	/*
@@ -1064,6 +1053,23 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 		};
 	}
 
+	return &timeouts;
+}
+
+static int _create_listeners(step_launch_state_t *sls, int num_nodes)
+{
+	int sock = -1;
+	uint16_t port;
+	int i, rc = SLURM_SUCCESS;
+	static const conmgr_events_t events = {
+		.on_listen_connect = _on_listen_connect,
+		.on_listen_finish = _on_listen_finish,
+		.on_connection = _on_connection,
+		.on_msg = _on_msg,
+		.on_finish = _on_finish,
+	};
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
+
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
 	sls->resp_port = xcalloc(sls->num_resp_port, sizeof(uint16_t));
 
@@ -1075,9 +1081,9 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 			return SLURM_ERROR;
 		}
 		sls->resp_port[i] = port;
-		if ((rc = conmgr_process_fd_listen(sock, CON_TYPE_RPC,
-						   &timeouts, &events, flags,
-						   sls))) {
+		if ((rc = conmgr_process_fd_listen(
+			     sock, CON_TYPE_RPC, step_launch_listen_timeouts(),
+			     &events, flags, sls))) {
 			fatal("conmgr_process_fd_listen() failed: %s",
 			      slurm_strerror(rc));
 		}
@@ -1085,9 +1091,10 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 	/* finally, add the listening port that we told the slurmctld about
 	 * earlier in the step context creation phase */
 	if (sls->slurmctld_socket_fd > -1) {
-		if ((rc = conmgr_process_fd_listen(sls->slurmctld_socket_fd,
-						   CON_TYPE_RPC, &timeouts,
-						   &events, flags, sls))) {
+		if ((rc = conmgr_process_fd_listen(
+			     sls->slurmctld_socket_fd, CON_TYPE_RPC,
+			     step_launch_listen_timeouts(), &events, flags,
+			     sls))) {
 			fatal("conmgr_process_fd_listen() failed for slurmctld socket: %s",
 			      slurm_strerror(rc));
 		}

@@ -49,6 +49,8 @@
 #include "src/common/events.h"
 #include "src/common/slurm_step_layout.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/mpi.h"
 
 #include "src/api/step_io.h"
@@ -123,5 +125,10 @@ int step_launch_notify_io_failure(step_launch_state_t *sls, int node_id);
 int step_launch_clear_questionable_state(step_launch_state_t *sls,
 					 int node_id);
 
+/*
+ * Get the conmgr timeouts for srun's RPC listeners.
+ * RET timeouts with read raised to 8 * MessageTimeout
+ */
+extern const conmgr_timeouts_t *step_launch_listen_timeouts(void);
 
 #endif /* _STEP_LAUNCH_H */
