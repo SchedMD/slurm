@@ -54,6 +54,7 @@ const char plugin_type[] = "runtime/lua";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static char *lua_script_path = NULL;
+static bool lua_inited = false;
 
 /* Functions that runtime.lua must provide */
 static const char *req_fxns[] = {
@@ -160,17 +161,78 @@ cleanup:
 	return rc;
 }
 
+/*
+ * Call a client-side hook in the script, if the script defines it.
+ * IN fxn - name of the function to call
+ * IN id - step id, or just the job id, the op is for, in the same form
+ *	_push_step_id() pushes, or NULL when not even the job is known yet.
+ *	Pushed as the first argument, or NIL. The task id is always NIL.
+ * OUT script_rc - value the script returned, only set on SLURM_SUCCESS
+ * RET SLURM_SUCCESS if the script ran or does not define fxn, or an error if
+ *	it could not be called
+ */
+static int _call_lua_hook(const char *fxn, const char *id, int *script_rc)
+{
+	int rc = EINVAL;
+	char *err = NULL;
+	lua_State *L = NULL;
+	time_t load_time = 0;
+
+	*script_rc = SLURM_SUCCESS;
+
+	if ((rc = slurm_lua_loadscript(&L, plugin_type, lua_script_path,
+				       req_fxns, &load_time, NULL, NULL)))
+		return rc;
+
+	if (!slurm_lua_is_function_defined(L, fxn)) {
+		lua_close(L);
+		return SLURM_SUCCESS;
+	}
+
+	lua_getglobal(L, fxn);
+	if (id)
+		lua_pushstring(L, id);
+	else
+		lua_pushnil(L);
+	lua_pushnil(L);
+
+	slurm_lua_stack_dump(plugin_type, "before lua_pcall", L);
+
+	if ((rc = slurm_lua_pcall(L, 2, 1, &err, __func__))) {
+		error("%s: %s: %s failed: %s", plugin_type, lua_script_path,
+		      fxn, err);
+		xfree(err);
+		lua_close(L);
+		return rc;
+	}
+
+	slurm_lua_stack_dump(plugin_type, "after lua_pcall", L);
+
+	if (lua_isnumber(L, -1)) {
+		*script_rc = lua_tonumber(L, -1);
+	} else {
+		error("%s: %s: %s returned a non-numeric value", plugin_type,
+		      lua_script_path, fxn);
+		rc = SLURM_ERROR;
+	}
+	lua_pop(L, 1);
+
+	lua_close(L);
+	return rc;
+}
+
 extern int runtime_p_init(const int idx, runtime_context_t context)
 {
 	int rc = SLURM_SUCCESS;
 	lua_State *L = NULL;
 	time_t load_time = (time_t) 0;
 
-	if ((rc = slurm_lua_init()))
-		return rc;
-
 	xfree(lua_script_path);
 	lua_script_path = get_extra_conf_path("runtime.lua");
+
+	if ((rc = slurm_lua_init()))
+		return rc;
+	lua_inited = true;
 
 	/*
 	 * Load the script once here so that a missing or broken runtime.lua is
@@ -188,7 +250,11 @@ extern int runtime_p_fini(void)
 {
 	xfree(lua_script_path);
 
-	slurm_lua_fini();
+	/* slurm_lua_fini() may resolve to the host process's own copy */
+	if (lua_inited) {
+		slurm_lua_fini();
+		lua_inited = false;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -265,8 +331,14 @@ extern int runtime_p_cli_apply_launch_params(const uint32_t het_job_inx,
 					     slurm_step_launch_params_t
 						     *launch_params)
 {
-	/* The runtime registers no arguments, so it has nothing to apply. */
-	return SLURM_SUCCESS;
+	int rc = EINVAL, script_rc = SLURM_SUCCESS;
+
+	/* launch_params does not carry the step id */
+	if (!(rc = _call_lua_hook("slurm_runtime_apply_launch_params", NULL,
+				  &script_rc)))
+		rc = script_rc;
+
+	return rc;
 }
 
 extern void runtime_p_cli_reset_args(const uint32_t het_job_inx)
@@ -278,16 +350,38 @@ extern int runtime_p_cli_apply_step_req(const uint32_t het_job_inx,
 					runtime_context_t context,
 					step_create_req_msg_t *step_req)
 {
-	/* The runtime registers no arguments, so it has nothing to apply. */
-	return SLURM_SUCCESS;
+	int rc = EINVAL, script_rc = SLURM_SUCCESS;
+	slurm_selected_step_t id = SLURM_SELECTED_STEP_INITIALIZER;
+	char *id_str = NULL;
+
+	id.step_id = step_req->step_id;
+	/* A step not created yet has no step id for its component to join */
+	if (id.step_id.step_id == NO_VAL)
+		id.step_id.step_het_comp = NO_VAL;
+	/* Leaves id_str NULL when not even the job is known */
+	(void) fmt_job_id_string(&id, &id_str);
+
+	if (!(rc = _call_lua_hook("slurm_runtime_apply_step_req", id_str,
+				  &script_rc)))
+		rc = script_rc;
+
+	xfree(id_str);
+
+	return rc;
 }
 
 extern int runtime_p_cli_apply_job_desc(const uint32_t het_job_inx,
 					runtime_context_t context,
 					job_desc_msg_t *job_desc)
 {
-	/* The runtime registers no arguments, so it has nothing to apply. */
-	return SLURM_SUCCESS;
+	int rc = EINVAL, script_rc = SLURM_SUCCESS;
+
+	/* The job has no id until it is submitted */
+	if (!(rc = _call_lua_hook("slurm_runtime_apply_job_desc", NULL,
+				  &script_rc)))
+		rc = script_rc;
+
+	return rc;
 }
 
 extern int runtime_p_cli_apply_env(const uint32_t het_job_inx,
@@ -295,13 +389,23 @@ extern int runtime_p_cli_apply_env(const uint32_t het_job_inx,
 				   runtime_context_t context, bool child,
 				   char ***envp)
 {
-	/* The runtime registers no arguments, so it has nothing to apply. */
-	return SLURM_SUCCESS;
+	int rc = EINVAL, script_rc = SLURM_SUCCESS;
+
+	if (!(rc = _call_lua_hook("slurm_runtime_apply_env", NULL, &script_rc)))
+		rc = script_rc;
+
+	return rc;
 }
 
 extern int runtime_p_cli_apply_interactive_step(const uint32_t het_job_inx,
 						runtime_context_t context,
 						char **command)
 {
-	return SLURM_SUCCESS;
+	int rc = EINVAL, script_rc = SLURM_SUCCESS;
+
+	if (!(rc = _call_lua_hook("slurm_runtime_apply_interactive_step", NULL,
+				  &script_rc)))
+		rc = script_rc;
+
+	return rc;
 }
