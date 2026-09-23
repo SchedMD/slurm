@@ -182,68 +182,40 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 	char *cred_hash = NULL;
 	uint32_t cred_hash_len = 0;
 	int rc;
-	static time_t config_update = (time_t) -1;
-	static bool block_null_hash = true;
-	static bool block_zero_hash = true;
 
 	/* No auth also means no hash to verify */
 	if (header->flags & SLURM_NO_AUTH_CRED)
 		return SLURM_SUCCESS;
-
-	if (config_update != slurm_conf.last_update) {
-		block_null_hash = (xstrcasestr(slurm_conf.comm_params,
-					       "block_null_hash"));
-		block_zero_hash = (xstrcasestr(slurm_conf.comm_params,
-					       "block_zero_hash"));
-		config_update = slurm_conf.last_update;
-	}
 
 	if (!slurm_get_plugin_hash_enable(msg->auth_index))
 		return SLURM_SUCCESS;
 
 	rc = auth_g_get_data(cred, &cred_hash, &cred_hash_len);
 	if (cred_hash_len) {
+		char *data;
+		uint32_t size = header->body_length;
+		slurm_hash_t hash = { 0 };
+		int h_len;
+		uint16_t msg_type = htons(msg->msg_type);
+
 		log_flag_hex(NET_RAW, cred_hash, cred_hash_len,
 			     "%s: cred_hash:", __func__);
-		if (cred_hash[0] == HASH_PLUGIN_NONE) {
-			/*
-			 * Unfortunately the older versions did not normalize
-			 * msg_type to network-byte order when this was added
-			 * to the payload, so the sequence may be flipped and
-			 * either ordering must be permitted.
-			 */
-			uint16_t msg_type_nb = htons(msg->msg_type);
-			char *type = (char *) &msg_type_nb;
 
-			if (block_zero_hash || (cred_hash_len != 3))
-				rc = SLURM_ERROR;
-			else if ((cred_hash[1] == type[0]) &&
-				 (cred_hash[2] == type[1]))
-				msg->hash_index = HASH_PLUGIN_NONE;
-			else
-				rc = SLURM_ERROR;
-		} else {
-			char *data;
-			uint32_t size = header->body_length;
-			slurm_hash_t hash = { 0 };
-			int h_len;
-			uint16_t msg_type = htons(msg->msg_type);
+		data = get_buf_data(buffer) + get_buf_offset(buffer);
+		hash.type = cred_hash[0];
 
-			data = get_buf_data(buffer) + get_buf_offset(buffer);
-			hash.type = cred_hash[0];
-
-			h_len = hash_g_compute(data, size, (char *) &msg_type,
-					       sizeof(msg_type), &hash);
-			if ((h_len + 1) != cred_hash_len ||
-			    memcmp(cred_hash + 1, hash.hash, h_len))
-				rc = SLURM_ERROR;
-			else
-				msg->hash_index = hash.type;
-			log_flag_hex(NET_RAW, &hash, sizeof(hash),
-				     "%s: hash:", __func__);
-		}
-	} else if (block_null_hash)
+		h_len = hash_g_compute(data, size, (char *) &msg_type,
+				       sizeof(msg_type), &hash);
+		if ((h_len + 1) != cred_hash_len ||
+		    memcmp(cred_hash + 1, hash.hash, h_len))
+			rc = SLURM_ERROR;
+		else
+			msg->hash_index = hash.type;
+		log_flag_hex(NET_RAW, &hash, sizeof(hash),
+			     "%s: hash:", __func__);
+	} else {
 		rc = SLURM_ERROR;
+	}
 
 	xfree(cred_hash);
 	return rc;
@@ -259,15 +231,10 @@ static int _compute_hash(buf_t *buffer, slurm_msg_t *msg, slurm_hash_t *hash)
 		if (msg->hash_index != HASH_PLUGIN_DEFAULT)
 			hash->type = msg->hash_index;
 
-		if (hash->type == HASH_PLUGIN_NONE) {
-			memcpy(hash->hash, &msg_type, sizeof(msg_type));
-			h_len = sizeof(msg->msg_type);
-		} else {
-			h_len = hash_g_compute(get_buf_data(buffer),
-					       get_buf_offset(buffer),
-					       (char *) &msg_type,
-					       sizeof(msg_type), hash);
-		}
+		h_len = hash_g_compute(get_buf_data(buffer),
+				       get_buf_offset(buffer),
+				       (char *) &msg_type, sizeof(msg_type),
+				       hash);
 
 		if (h_len < 0)
 			return h_len;
