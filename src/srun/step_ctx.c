@@ -386,6 +386,35 @@ static int _wait_pending_step(srun_job_t *job, uint32_t job_id, int timeout,
 }
 
 /*
+ * Build a launchable step context from a create response, recording the
+ * assigned step id (and array task's job id) on the request.
+ * IN/OUT step_req - the create request, updated with the assigned id
+ * IN step_resp - the create response; ownership transfers to the ctx
+ * RET the step context
+ */
+static struct slurm_step_ctx_struct *_step_ctx_from_resp(
+	job_step_create_request_msg_t *step_req,
+	job_step_create_response_msg_t *step_resp)
+{
+	struct slurm_step_ctx_struct *ctx = xmalloc(sizeof(*ctx));
+
+	ctx->magic = STEP_CTX_MAGIC;
+	ctx->job_id = step_req->step_id.job_id;
+	ctx->step_req = step_req;
+	/* Grab the step id if we don't already have it; the slurmd needs it. */
+	if (step_req->step_id.step_id == NO_VAL)
+		step_req->step_id.step_id = step_resp->step_id.step_id;
+	if (step_req->array_task_id != NO_VAL) {
+		step_req->step_id.job_id = step_resp->step_id.job_id;
+		ctx->job_id = step_resp->step_id.job_id;
+	}
+	ctx->step_resp = step_resp;
+	ctx->launch_state = step_launch_state_create(ctx);
+
+	return ctx;
+}
+
+/*
  * step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
@@ -470,25 +499,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 			return NULL;
 		}
 
-		ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
-		ctx->launch_state = NULL;
-		ctx->magic	= STEP_CTX_MAGIC;
-		ctx->job_id	= step_req->step_id.job_id;
-		ctx->step_req   = step_req;
-		/*
-		 * Grab the step id here if we don't already have it, we will
-		 * need to to send to the slurmd.
-		 */
-		if (step_req->step_id.step_id == NO_VAL)
-			step_req->step_id.step_id = step_resp->step_id.step_id;
-
-		if (step_req->array_task_id != NO_VAL) {
-			step_req->step_id.job_id = step_resp->step_id.job_id;
-			ctx->job_id = step_resp->step_id.job_id;
-		}
-
-		ctx->step_resp	= step_resp;
-		ctx->launch_state = step_launch_state_create(ctx);
+		ctx = _step_ctx_from_resp(step_req, step_resp);
 	}
 
 	return (slurm_step_ctx_t *) ctx;
