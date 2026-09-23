@@ -50,6 +50,11 @@
 
 #include "src/stepmgr/stepmgr.h"
 
+typedef struct {
+	srun_steps_drained_msg_t msg; /* template copied to each subscriber */
+	uint32_t user_id;
+} step_end_dispatch_t;
+
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for
  * defunct srun processes
@@ -97,8 +102,8 @@ extern void destroy_steps_drained_sub(void *x)
 
 	if (!sub)
 		return;
-	xfree(sub->host);
-	xfree(sub->tls_cert);
+	xfree(sub->req.host);
+	xfree(sub->req.tls_cert);
 	xfree(sub);
 }
 
@@ -130,11 +135,11 @@ typedef struct {
 } srun_node_fail_args_t;
 
 /*
- * list_delete_all callback: dispatch SRUN_STEPS_DRAINED (no body) to a
- * subscriber and consume the entry. Always returns 1 so list_delete_all
- * removes it after.
+ * list_delete_all callback: dispatch the whole-set drain terminator
+ * (SRUN_STEPS_DRAINED with a NO_VAL step_id sentinel) to a subscriber and
+ * consume the entry. Always returns 1 so list_delete_all removes it after.
  * IN x   - steps_drained_sub_t pointer
- * IN arg - owning job_record_t pointer (for the r_uid)
+ * IN arg - owning job_record_t pointer
  * RET 1 always
  */
 static int _dispatch_steps_drained(void *x, void *arg)
@@ -142,17 +147,88 @@ static int _dispatch_steps_drained(void *x, void *arg)
 	steps_drained_sub_t *sub = x;
 	job_record_t *job_ptr = arg;
 	slurm_addr_t *addr = NULL;
+	srun_steps_drained_msg_t *msg_arg = NULL;
 
-	xassert(sub->host);
-	xassert(sub->host[0]);
-	xassert(sub->port);
+	xassert(sub->req.host);
+	xassert(sub->req.host[0]);
+	xassert(sub->req.port);
 
 	addr = xmalloc(sizeof(*addr));
 	*addr = sub->addr;
 
-	_srun_agent_launch(addr, sub->tls_cert, sub->host, SRUN_STEPS_DRAINED,
-			   NULL, job_ptr->user_id, sub->protocol_version);
+	msg_arg = xmalloc(sizeof(*msg_arg));
+	msg_arg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	msg_arg->exit_code = NO_VAL;
+
+	_srun_agent_launch(addr, sub->req.tls_cert, sub->req.host,
+			   SRUN_STEPS_DRAINED, msg_arg, job_ptr->user_id,
+			   sub->protocol_version);
 	return 1;
+}
+
+/*
+ * list_delete_all callback: push one bodied SRUN_STEPS_DRAINED to a subscriber
+ * that wants this step's end.
+ * IN x   - steps_drained_sub_t pointer
+ * IN arg - step_end_dispatch_t with the ended step's terminal state
+ * RET 1 to consume the entry, 0 to retain it
+ */
+static int _dispatch_step_end(void *x, void *arg)
+{
+	steps_drained_sub_t *sub = x;
+	step_end_dispatch_t *dispatch = arg;
+	slurm_addr_t *addr = NULL;
+	srun_steps_drained_msg_t *msg = NULL;
+	int consume = 0;
+
+	if (sub->req.mode == STEPS_DRAINED_SUB_ALL)
+		consume = 0;
+	else if ((sub->req.mode == STEPS_DRAINED_SUB_STEP) &&
+		 verify_step_id(&dispatch->msg.step_id, &sub->req.step_id))
+		consume = 1;
+	else
+		return 0;
+
+	addr = xmalloc(sizeof(*addr));
+	*addr = sub->addr;
+	msg = xmalloc(sizeof(*msg));
+	*msg = dispatch->msg;
+
+	_srun_agent_launch(addr, sub->req.tls_cert, sub->req.host,
+			   SRUN_STEPS_DRAINED, msg, dispatch->user_id,
+			   sub->protocol_version);
+	return consume;
+}
+
+extern void srun_step_drained(step_record_t *step_ptr)
+{
+	job_record_t *job_ptr = step_ptr->job_ptr;
+	step_end_dispatch_t dispatch = { { 0 } };
+
+	if (step_ptr->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)
+		return; /* not a user step */
+	if (!job_ptr->steps_drained_subs ||
+	    !list_count(job_ptr->steps_drained_subs))
+		return;
+
+	dispatch.user_id = job_ptr->user_id;
+	dispatch.msg.exit_code = step_ptr->exit_code;
+	dispatch.msg.state = step_ptr->state & JOB_STATE_BASE;
+	dispatch.msg.step_id = step_ptr->step_id;
+
+	/*
+	 * A step is pushed mid-teardown and still reads PENDING or RUNNING;
+	 * report a terminal state. No exit code means it never launched.
+	 */
+	if (dispatch.msg.state <= JOB_COMPLETE) {
+		if (step_ptr->exit_code == NO_VAL)
+			dispatch.msg.state = JOB_FAILED;
+		else
+			dispatch.msg.state = JOB_COMPLETE;
+	}
+
+	list_delete_all(job_ptr->steps_drained_subs, _dispatch_step_end,
+			&dispatch);
 }
 
 slurm_addr_t *_srun_set_addr(step_record_t *step_ptr)

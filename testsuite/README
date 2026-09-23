@@ -269,7 +269,6 @@ test7.10   Test if we can trick Slurm into using the wrong user ID
 	   through an LD_PRELOAD option.
 test7.11   Test of SPANK plugin.
 test7.12   Test of slurm_job_step_stat() and slurm_load_job() API calls.
-test7.13   Verify the correct setting of a job's ExitCode
 test7.14   Verify the ability to modify the Derived Exit Code/String fields
 	   of a job record in the database
 test7.15   Verify signal mask of tasks have no ignored signals.
@@ -773,6 +772,8 @@ test_108_9   Test scontrol listpids with Job IDs and SLUIDs
 test_108_10  Submit and modify jobs using a mix of Job IDs and SLUIDs
 test_108_11  Test scontrol update NodeName=ALL with AvailableFeatures
 test_108_12  Test nodes join feature-based NodeSet partitions on update
+test_108_13  Test the ExitCode=<exit>:<signal> rendering shared by scontrol,
+	     squeue and sacct
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -1172,6 +1173,11 @@ test_162_1   Test swait against a stepmgr-enabled cluster
 test_162_2   Test swait's steps-drained push path
 test_162_3   Test scontrol visibility and reconfigure-survival of async steps
 test_162_4   Verify pending synchronous step id-at-submit holds under stepmgr
+test_162_5   Test swait per-step wait targets and their reported results
+test_162_6   Test swait reporting for steps ending in a terminal-failure state
+test_162_7   Test swait --follow and the whole-set drain
+test_162_8   Test swait --json/--yaml output and data_parser selection
+test_162_9   Test swait against a cluster without stepmgr enabled
 
 test_163_#   Testing jobacct_gather/cgroup memory accounting.
 =============================================================
@@ -1217,3 +1223,7 @@ test_170_1   Test TRESRunMins usage when a --time-min job's limit is trimmed.
 test_171_#   Testing of the runtime plugin interface.
 =====================================================
 test_171_1   Test runtime/lua does not break srun/sbatch/salloc job launch
+
+test_172_#   Testing of JobComp plugins.
+========================================
+test_172_1   Test the exit code jobcomp/filetxt records for a completed job

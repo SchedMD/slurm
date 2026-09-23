@@ -48,6 +48,7 @@
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/swait/opt.h"
 
@@ -56,6 +57,9 @@
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_AUTOCOMP 0x102
 #define OPT_LONG_TIMEOUT 0x103
+#define OPT_LONG_FOLLOW 0x104
+#define OPT_LONG_JSON 0x105
+#define OPT_LONG_YAML 0x106
 
 swait_opt_t opt = {
 	.array_job_id = NO_VAL,
@@ -96,13 +100,19 @@ static int _validate_selected_step(const slurm_selected_step_t *id,
 		error("%s: het-job offsets are not supported", src);
 		return SLURM_ERROR;
 	}
+	if (id->step_id.step_het_comp != NO_VAL) {
+		error("%s: het steps are not supported", src);
+		return SLURM_ERROR;
+	}
 	if (id->array_bitmap) {
 		error("%s: array-task ranges are not supported, pass one task offset",
 		      src);
 		return SLURM_ERROR;
 	}
-	if (id->step_id.step_id != NO_VAL) {
-		error("%s: swait operates on a job, not a step", src);
+	if ((id->step_id.step_id != NO_VAL) &&
+	    (id->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID)) {
+		error("%s: cannot wait on a special step (batch, extern, or interactive)",
+		      src);
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -119,11 +129,11 @@ static void _parse_jobid_or_die(const char *src, slurm_selected_step_t *id)
 	    SLURM_SUCCESS) {
 		error("%s: cannot parse job id", src);
 		FREE_NULL_BITMAP(id->array_bitmap);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	if (_validate_selected_step(id, src) != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(id->array_bitmap);
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 }
 
@@ -147,7 +157,7 @@ static void _resolve_target(const char *argv_jobid, slurm_selected_step_t *id)
 		;
 	} else {
 		error("no job id given and SLURM_JOB_SLUID/SLURM_JOB_ID are not set");
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 
 	_parse_jobid_or_die(src, id);
@@ -164,12 +174,15 @@ extern void parse_command_line(int argc, char **argv)
 	int opt_char = 0, option_index = 0;
 	static struct option long_options[] = {
 		{ "autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP },
+		{ "follow", no_argument, 0, OPT_LONG_FOLLOW },
 		{ "help", no_argument, 0, OPT_LONG_HELP },
+		{ "json", optional_argument, 0, OPT_LONG_JSON },
 		{ "quiet", no_argument, 0, 'Q' },
 		{ "timeout", required_argument, 0, OPT_LONG_TIMEOUT },
 		{ "usage", no_argument, 0, OPT_LONG_USAGE },
 		{ "verbose", no_argument, 0, 'v' },
 		{ "version", no_argument, 0, 'V' },
+		{ "yaml", optional_argument, 0, OPT_LONG_YAML },
 		{ NULL, 0, 0, 0 }
 	};
 
@@ -204,26 +217,46 @@ extern void parse_command_line(int argc, char **argv)
 			    parse_uint32(optarg, &opt.timeout)) {
 				error("--timeout: invalid value '%s' (must be a non-negative integer)",
 				      optarg ? optarg : "");
-				exit(2);
+				exit(SWAIT_RC_ERROR);
 			}
+			break;
+		case OPT_LONG_FOLLOW:
+			opt.follow = true;
+			break;
+		case OPT_LONG_JSON:
+			opt.json = true;
+			opt.data_parser = optarg;
+			break;
+		case OPT_LONG_YAML:
+			opt.yaml = true;
+			opt.data_parser = optarg;
 			break;
 		default:
 			info("Try \"swait --help\" for more information");
-			exit(2);
+			exit(SWAIT_RC_ERROR);
 		}
 	}
 
 	if (opt.quiet && opt.verbose) {
 		error("--verbose (-v) and --quiet (-Q) are mutually exclusive");
-		exit(2);
+		exit(SWAIT_RC_ERROR);
+	}
+
+	if (opt.json && opt.yaml) {
+		error("--json and --yaml are mutually exclusive");
+		exit(SWAIT_RC_ERROR);
 	}
 
 	if ((argc - optind) > 1) {
 		error("too many positional arguments (expected at most one job id)");
-		exit(2);
+		exit(SWAIT_RC_ERROR);
 	}
 	if ((argc - optind) == 1)
 		argv_jobid = argv[optind];
+
+	/* --json=list only prints the plugin list, so it needs no target. */
+	if ((opt.json || opt.yaml) && !xstrcasecmp(opt.data_parser, "list"))
+		return;
 
 	_resolve_target(argv_jobid, &id);
 	opt.target = id.step_id;
@@ -232,4 +265,15 @@ extern void parse_command_line(int argc, char **argv)
 		opt.array_task_id = id.array_task_id;
 	}
 	FREE_NULL_BITMAP(id.array_bitmap);
+
+	if (opt.follow && (opt.target.step_id != NO_VAL)) {
+		error("--follow waits on the whole job; do not combine it with a step id");
+		exit(SWAIT_RC_ERROR);
+	}
+	if (opt.follow)
+		opt.mode = STEPS_DRAINED_SUB_ALL;
+	else if (opt.target.step_id != NO_VAL)
+		opt.mode = STEPS_DRAINED_SUB_STEP;
+	else
+		opt.mode = STEPS_DRAINED_SUB_DRAIN;
 }

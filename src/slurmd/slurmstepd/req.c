@@ -666,15 +666,15 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 	}
 
 	sub = xmalloc(sizeof(*sub));
-	sub->host = xstrdup(request->host);
-	sub->port = request->port;
-	sub->tls_cert = xstrdup(request->tls_cert);
+	sub->req = *request;
+	request->host = NULL;
+	request->tls_cert = NULL;
 	sub->protocol_version = msg.protocol_version;
-	slurm_set_addr(&sub->addr, sub->port, sub->host);
+	slurm_set_addr(&sub->addr, sub->req.port, sub->req.host);
 
 	if (sub->addr.ss_family == AF_UNSPEC) {
 		error("REQUEST_STEPS_DRAINED_SUBSCRIBE: cannot resolve %s:%u",
-		      sub->host, sub->port);
+		      sub->req.host, sub->req.port);
 		destroy_steps_drained_sub(sub);
 		rc_msg.return_code = ESLURM_INVALID_NODE_NAME;
 		goto reply;
@@ -682,20 +682,38 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 
 	slurm_mutex_lock(&stepmgr_mutex);
 
-	if (!job_has_running_step(job_step_ptr) &&
-	    !job_step_ptr->pending_async_steps) {
-		slurm_mutex_unlock(&stepmgr_mutex);
-		destroy_steps_drained_sub(sub);
+	/*
+	 * Reject a subscription that can never be notified. A STEP request
+	 * needs its target step still present and not already completing; a
+	 * special step (batch/extern/interactive) is an unsupported target,
+	 * not a drained one. DRAIN and ALL need the job to still have
+	 * running or pending --async steps.
+	 */
+	if (request->mode == STEPS_DRAINED_SUB_STEP) {
+		step_record_t *step_ptr =
+			find_step_record(job_step_ptr, &request->step_id);
+		if (step_ptr && (step_ptr->step_id.step_het_comp != NO_VAL)) {
+			rc_msg.return_code = ESLURM_NOT_SUPPORTED;
+			goto unlock_reply;
+		}
+		if (request->step_id.step_id > SLURM_MAX_NORMAL_STEP_ID) {
+			rc_msg.return_code = ESLURM_NOT_SUPPORTED;
+			goto unlock_reply;
+		}
+		if (!step_ptr || (step_ptr->state & JOB_COMPLETING)) {
+			rc_msg.return_code = ESLURM_STEPS_DRAINED;
+			goto unlock_reply;
+		}
+	} else if (!job_has_running_step(job_step_ptr) &&
+		   !job_step_ptr->pending_async_steps) {
 		rc_msg.return_code = ESLURM_STEPS_DRAINED;
-		goto reply;
+		goto unlock_reply;
 	}
 
 	if (job_step_ptr->steps_drained_subs &&
 	    (list_count(job_step_ptr->steps_drained_subs) >= MAX_SUBSCRIBERS)) {
-		slurm_mutex_unlock(&stepmgr_mutex);
-		destroy_steps_drained_sub(sub);
 		rc_msg.return_code = EAGAIN;
-		goto reply;
+		goto unlock_reply;
 	}
 
 	if (!job_step_ptr->steps_drained_subs)
@@ -703,8 +721,11 @@ static int _handle_steps_drained_subscribe(int fd, uid_t uid, pid_t remote_pid)
 			list_create(destroy_steps_drained_sub);
 
 	list_append(job_step_ptr->steps_drained_subs, sub);
+	sub = NULL;
 
+unlock_reply:
 	slurm_mutex_unlock(&stepmgr_mutex);
+	destroy_steps_drained_sub(sub);
 
 reply:
 	stepd_proxy_send_resp_to_slurmd(fd, &msg, RESPONSE_SLURM_RC, &rc_msg);

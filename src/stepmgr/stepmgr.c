@@ -458,6 +458,8 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	step_ptr->state |= JOB_COMPLETING;
 
+	srun_step_drained(step_ptr);
+
 	_step_dealloc_lps(step_ptr);
 
 	/* Don't need to set state. Will be destroyed in next steps. */
@@ -711,6 +713,9 @@ static int _delete_pending_steps(void *x, void *arg)
 		if (step_ptr->flags & SSF_ASYNC)
 			jobacct_storage_g_step_complete(
 				stepmgr_ops->acct_db_conn, step_ptr);
+		/* The push reads state; force it terminal first. */
+		step_ptr->state = JOB_CANCELLED;
+		srun_step_drained(step_ptr);
 		return 1;
 	}
 
@@ -947,6 +952,7 @@ static int _wake_steps(void *x, void *arg)
 				jobacct_storage_g_step_complete(
 					stepmgr_ops->acct_db_conn,
 					pend_step_ptr);
+				srun_step_drained(pend_step_ptr);
 				return 1;
 			}
 
@@ -968,6 +974,7 @@ static int _wake_steps(void *x, void *arg)
 				jobacct_storage_g_step_complete(
 					stepmgr_ops->acct_db_conn,
 					pend_step_ptr);
+				srun_step_drained(pend_step_ptr);
 				return 1;
 			}
 			rc = _make_step_cred(new_step_ptr, &slurm_cred,

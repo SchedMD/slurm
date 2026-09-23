@@ -455,6 +455,7 @@
 /* slurm_protocol_defs.[ch] functions */
 #define preempt_mode_string	slurm_preempt_mode_string
 #define preempt_mode_num	slurm_preempt_mode_num
+#define exit_code_decode slurm_exit_code_decode
 #define job_share_string	slurm_job_share_string
 #define job_oversubscribe_string slurm_job_oversubscribe_string
 #define job_exclusive_display_string slurm_job_exclusive_display_string

@@ -11,12 +11,15 @@ TESTS =
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
-TESTS += slurm_addto_char_list-test \
+TESTS += exit_code_decode-test \
+	 slurm_addto_char_list-test \
 	 slurm_addto_id_char_list-test \
 	 slurm_addto_mode_char_list-test \
 	 slurm_addto_step_list-test \
 	 xlate_array_task_str-test
 
+exit_code_decode_test_CFLAGS = $(MYCFLAGS)
+exit_code_decode_test_LDADD  = $(LDADD) @CHECK_LIBS@
 slurm_addto_char_list_test_CFLAGS = $(MYCFLAGS)
 slurm_addto_char_list_test_LDADD  = $(LDADD) @CHECK_LIBS@
 slurm_addto_id_char_list_test_CFLAGS = $(MYCFLAGS)

@@ -376,7 +376,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 	char **env;
 	char *tz;
 	char time_str[32];
-	int tmp_int = 0, tmp_int2 = 0;
+	uint16_t exit_status = 0, term_sig = 0;
 	char sluid_str[SLUID_STR_BYTES];
 
 	env = xmalloc (1 * sizeof (*env));
@@ -392,21 +392,10 @@ static char ** _create_environment (struct jobcomp_info *job)
 		_env_append(&env, "ORIGINAL_SLUID", sluid_str);
 	}
 
-	if (job->exit_code != NO_VAL) {
-		if (WIFSIGNALED(job->exit_code))
-			tmp_int2 = WTERMSIG(job->exit_code);
-		else if (WIFEXITED(job->exit_code))
-			tmp_int = WEXITSTATUS(job->exit_code);
-	}
-	_env_append_fmt (&env, "EXITCODE", "%d:%d", tmp_int, tmp_int2);
-	tmp_int = tmp_int2 = 0;
-	if (job->derived_ec != NO_VAL) {
-		if (WIFSIGNALED(job->derived_ec))
-			tmp_int2 = WTERMSIG(job->derived_ec);
-		else if (WIFEXITED(job->derived_ec))
-			tmp_int = WEXITSTATUS(job->derived_ec);
-	}
-	_env_append_fmt (&env, "DERIVED_EC", "%d:%d", tmp_int, tmp_int2);
+	exit_code_decode(job->exit_code, &exit_status, &term_sig);
+	_env_append_fmt(&env, "EXITCODE", "%u:%u", exit_status, term_sig);
+	exit_code_decode(job->derived_ec, &exit_status, &term_sig);
+	_env_append_fmt(&env, "DERIVED_EC", "%u:%u", exit_status, term_sig);
 	_env_append_fmt (&env, "ARRAYJOBID", "%u", job->array_job_id);
 	_env_append_fmt (&env, "ARRAYTASKID", "%u", job->array_task_id);
 	if (job->het_job_id) {

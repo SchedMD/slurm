@@ -4955,6 +4955,151 @@ def get_job_parameter(job_id, parameter_name, default=None, **run_command_kwargs
         return default
 
 
+def get_stepmgr_host(job_id, **run_command_kwargs):
+    """Returns the host running a stepmgr-enabled job's step manager.
+
+    The stepmgr runs in the job's extern slurmstepd on its BatchHost, which
+    is the host commands such as swait talk to directly.
+
+    Args:
+        job_id (integer): The id of the job whose stepmgr host is requested.
+
+    Note:
+        fatal= is not honored: get_jobs() drops it. This function always
+        pytest.fail()s when the job has no BatchHost.
+
+    Returns:
+        The hostname of the job's stepmgr.
+
+    Example:
+        >>> get_stepmgr_host(12345)
+        'node1'
+    """
+
+    # get_jobs() pops fatal=, so get_job_parameter() cannot fail on a
+    # missing value; fail explicitly rather than returning None.
+    host = get_job_parameter(job_id, "BatchHost", **run_command_kwargs)
+    if not host:
+        pytest.fail(f"Job ({job_id}) has no BatchHost, so it has no stepmgr")
+
+    return host
+
+
+# swait -v logs this on stderr once the stepmgr has accepted its subscribe
+# request. swait(1) documents it under -v, so it is a contract, not an
+# incidental log line.
+SWAIT_SUBSCRIBED = "subscribed to stepmgr"
+
+# Script exit code meaning "the subscribe sentinel never appeared", kept
+# well clear of swait's own 0/1/2/3 so a harness timeout is not read as a
+# feature failure.
+SWAIT_SUBSCRIBE_TIMEOUT_RC = 90
+
+
+def swait_await_subscribe(out_file, quote="'"):
+    """Returns a shell fragment that blocks until a backgrounded swait -v
+    has subscribed.
+
+    Signalling a step before the subscribe lands makes the stepmgr
+    fast-return 0 with no output, which reads as a content failure rather
+    than the timing problem it is. The fragment exits
+    SWAIT_SUBSCRIBE_TIMEOUT_RC instead, so an exhausted poll names itself.
+
+    Args:
+        out_file (string): File the backgrounded swait -v writes stderr to.
+        quote (string): Quote character to wrap the sentinel in. Pass '"'
+            to embed the fragment in a single-quoted --wrap.
+
+    Returns:
+        The shell fragment, as a string.
+
+    Example:
+        >>> swait_await_subscribe("swait.out")
+        "for _ in $(seq 150); do grep -q 'subscribed to stepmgr' ..."
+    """
+
+    return (
+        f"for _ in $(seq 150); do "
+        f"grep -q {quote}{SWAIT_SUBSCRIBED}{quote} {out_file} 2>/dev/null "
+        f"&& break; "
+        f"sleep 0.2; "
+        f"done; "
+        f"grep -q {quote}{SWAIT_SUBSCRIBED}{quote} {out_file} 2>/dev/null || "
+        f"exit {SWAIT_SUBSCRIBE_TIMEOUT_RC}; "
+    )
+
+
+def get_pending_async_step(job_id):
+    """Returns the StepId of the job's pending --async step, or None.
+
+    Args:
+        job_id (integer): The id of the job to inspect.
+
+    Returns:
+        The StepId (e.g. '123.1'), or None if none appeared in time.
+
+    Example:
+        >>> get_pending_async_step(123)
+        '123.1'
+    """
+
+    for _ in timer(timeout=30, poll_interval=0.5, quiet=True):
+        for sid, info in get_steps(job_id, quiet=True).items():
+            # Skip .0: before it starts running it can itself read
+            # PENDING for an instant and shadow the async step we want.
+            if sid.endswith((".0", ".batch", ".extern", ".interactive")):
+                continue
+            if info.get("State") == "PENDING":
+                return sid
+    return None
+
+
+def get_data_parser_number(value):
+    """Returns the number carried by a data_parser no-val field.
+
+    A no-val field (UINT32_NO_VAL and friends) is a bare int under a
+    complex-mode data_parser and a {set, infinite, number} object under the
+    default one, so a test that reads one has to accept both shapes.
+
+    Args:
+        value: The field as parsed from the command's JSON or YAML output.
+
+    Returns:
+        The number the field carries, or None if it is unset.
+
+    Example:
+        >>> get_data_parser_number({'set': True, 'infinite': False, 'number': 7})
+        7
+        >>> get_data_parser_number({'set': False, 'infinite': False, 'number': 0})
+        None
+    """
+
+    if isinstance(value, dict):
+        return value["number"] if value.get("set") else None
+
+    return value
+
+
+def get_data_parser_flag(value):
+    """Returns the single flag carried by a data_parser flag field.
+
+    A flag field renders as a bare string or as a one-element list,
+    depending on the data_parser in use.
+
+    Args:
+        value: The field as parsed from the command's JSON or YAML output.
+
+    Returns:
+        The flag string.
+
+    Example:
+        >>> get_data_parser_flag(['SUCCESS'])
+        'SUCCESS'
+    """
+
+    return value[0] if isinstance(value, list) else value
+
+
 def get_job_id_from_array_task(array_job_id, array_task_id, fatal=False, quiet=True):
     """Returns the raw job id of a task of a job array.
 
@@ -4974,9 +5119,11 @@ def get_job_id_from_array_task(array_job_id, array_task_id, fatal=False, quiet=T
 
     jobs_dict = get_jobs(quiet=quiet)
     for job_id, job_values in jobs_dict.items():
+        # Non-array jobs left in the system by sibling tests carry neither
+        # key, so use .get() rather than raising on them.
         if (
-            job_values["ArrayJobId"] == array_job_id
-            and job_values["ArrayTaskId"] == array_task_id
+            job_values.get("ArrayJobId") == array_job_id
+            and job_values.get("ArrayTaskId") == array_task_id
         ):
             return job_id
 

@@ -420,7 +420,6 @@ expect/test1.17,expect,4.65,35
 python/tests/test_105_2.py,python,4.73,34
 expect/test5.10,expect,4.75,35
 expect/test7.19,expect,4.89,35
-expect/test7.13,expect,4.93,35
 python/tests/test_116_19.py,python,4.98,34
 expect/test1.33,expect,5.00,35
 expect/test14.9,expect,5.15,35

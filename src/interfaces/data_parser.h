@@ -769,6 +769,8 @@ typedef enum {
 	DATA_PARSER_TORUS3D_REGION_ARRAY, /* slurm_conf_torus3d_t regions */
 	DATA_PARSER_TOPOLOGY_FLAT_CONFIG, /* topology_flat_config_t */
 	DATA_PARSER_TOPOLOGY_FLAT_CONFIG_PTR, /* topology_flat_config_t* */
+	DATA_PARSER_SRUN_STEPS_DRAINED_MSG, /* srun_steps_drained_msg_t */
+	DATA_PARSER_SRUN_STEPS_DRAINED_MSG_PTR, /* srun_steps_drained_msg_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

@@ -1,15 +1,30 @@
 .TH swait "1" "Slurm Commands" "Slurm 26.11" "Slurm Commands"
 
 .SH "NAME"
-swait \- Block until a job's running steps and pending \-\-async steps complete
+swait \- Wait for a job's steps to complete
 
 .SH "SYNOPSIS"
-\fBswait\fR [\fIOPTIONS\fR] [\fIjobid\fR[_\fItask\fR] | \fBs\fR<\fIsluid\fR>]
+\fBswait\fR [\fIOPTIONS\fR]
+[[\fIjobid\fR[_\fItask\fR] | \fBs\fR<\fIsluid\fR>][.\fIstepid\fR]]
 
 .SH "DESCRIPTION"
 \fBswait\fR blocks until there are no running steps and no pending
 \fB\-\-async\fR steps. Use \fBswait\fR in a batch script to wait for
-all \fB\-\-async\fR steps to complete.
+all \fB\-\-async\fR steps to complete. With a
+\fIjobid\fR.\fIstepid\fR target it instead waits for that one step. With
+\fB\-\-follow\fR it reports every step's completion until there are no
+running steps or pending \fB\-\-async\fR steps.
+
+A \fIjobid\fR.\fIstepid\fR target that has already ended
+cannot be distinguished from one that never existed; both exit 3 with no
+output.
+
+A \fIjobid\fR.\fIstepid\fR target that is still queued is waited on only
+when the step was submitted with \fB\-\-async\fR. A pending
+\fB\-\-async\fR step holds the whole\-set wait open, so \fBswait\fR
+blocks until that step runs and ends. A queued synchronous step does not,
+so the set can drain before the step starts, and \fBswait\fR exits 3
+without waiting for it.
 
 \fBswait\fR talks directly to the stepmgr; it does not poll
 \fBslurmctld\fR. The target job must have stepmgr enabled (see
@@ -19,7 +34,22 @@ The positional argument is a numeric job ID, a single array task
 (e.g. \fI1000_3\fR), or a SLUID (e.g. \fIs4SNKN57XZTE00\fR). Task ranges,
 task lists, and het\-job component offsets (\fIjobid\fR+\fIoffset\fR) are
 not supported. When the target is an array job with more than one task,
-a specific task must be selected with \fIjobid\fR_\fItask\fR.
+a specific task must be selected with \fIjobid\fR_\fItask\fR. A
+\&.\fIstepid\fR suffix may also be appended to any of these target forms,
+and is mutually exclusive with \fB\-\-follow\fR. The target must be a
+regular step, not a special step (batch, extern, or interactive).
+
+Heterogeneous (het) step \fIstepid\fRs are not supported; \fBswait\fR
+exits 1, either when it parses the argument or when the stepmgr rejects
+the subscribe request. See
+<https://slurm.schedmd.com/heterogeneous_jobs.html>. However,
+\fB\-\-follow\fR reports completion of het step components. The
+human\-readable output does not distinguish one component from another;
+use \fB\-\-json\fR or \fB\-\-yaml\fR and read
+\fBstep_id.step_het_component\fR. That field is a no\-val object, that
+is, an object with \fBset\fR, \fBinfinite\fR, and \fBnumber\fR fields in
+which \fBnumber\fR is meaningful only when \fBset\fR is true. Its
+\fBset\fR field is false for a step that is not a het step component.
 
 With no positional argument, \fBswait\fR consults \fBSLURM_JOB_SLUID\fR
 first, and falls back to \fBSLURM_JOB_ID\fR. This lets \fBswait\fR run
@@ -28,23 +58,53 @@ automatically wait on the enclosing job's steps.
 
 .SH "OPTIONS"
 .TP
+\fB\-\-follow\fR
+Report every regular step as it ends, one record per completion, until
+the regular\-step set drains, rather than blocking on a single event. A
+final \fBJobId=\fR\fIjobid\fR \fBsteps drained\fR line is printed when
+the wait ends. Mutually exclusive with a \fIstepid\fR target.
+
+\fBNOTE\fR: Completions that arrive close to the drain are not
+guaranteed to be reported, and the order in which they are reported is
+not guaranteed either. \fBswait\fR exits as soon as the drain
+notification arrives, so any step\-completion notifications still in
+flight are lost. Wait on \fIjobid\fR.\fIstepid\fR when a specific step's
+result must not be missed.
+.IP
+
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help information and exit.
 .IP
 
 .TP
+\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
+Print completions as JSON, one object per line, using the default
+data_parser plugin or an explicit data_parser with parameters.
+\fIlist\fR prints the available plugins to stdout, with a header line on
+stderr, and exits 0. A plugin too old to know about step completions is
+rejected at startup with exit 1, before the job is looked up. Unlike
+other Slurm commands, each completion is printed as it arrives rather
+than wrapped in a single response object, so no
+\fBmeta\fR, \fBerrors\fR, or \fBwarnings\fR fields are emitted. Mutually
+exclusive with \fB\-\-yaml\fR.
+.IP
+
+.TP
 \fB\-Q\fR, \fB\-\-quiet\fR
-Suppress informational messages from appearing on stderr.
-Errors will still be displayed. Mutually exclusive with
-\fB\-\-verbose\fR.
+Suppress informational messages on stderr and step\-completion output on
+stdout. This covers the whole\-set \fBsteps drained\fR line as well, so
+stdout is empty even under \fB\-\-follow\fR. Errors will still be
+displayed. Mutually exclusive with \fB\-\-verbose\fR.
 .IP
 
 .TP
 \fB\-\-timeout\fR=\fISECS\fR
-Wait at most \fISECS\fR seconds for the job's steps to drain, then exit
-1. \fISECS\fR must be a non-negative integer. With no \fB\-\-timeout\fR,
-or with \fB\-\-timeout\fR=0, \fBswait\fR blocks indefinitely until the
-steps drain.
+Give up after \fISECS\fR seconds and exit 2. The wait completes when the
+job's steps drain, including under \fB\-\-follow\fR, or when a
+\fIjobid\fR.\fIstepid\fR target ends. \fISECS\fR must be a
+non\-negative integer. With no \fB\-\-timeout\fR, or with \fB\-\-timeout\fR=0,
+\fBswait\fR blocks indefinitely.
 .IP
 
 .TP
@@ -56,6 +116,11 @@ Print a short usage line and exit.
 \fB\-v\fR, \fB\-\-verbose\fR
 Increase verbosity; may be specified multiple times for more detail.
 Mutually exclusive with \fB\-\-quiet\fR.
+
+At \fB\-v\fR, \fBswait\fR logs \fBsubscribed to stepmgr\fR
+\fInode\fR on stderr once the stepmgr has accepted its subscribe
+request. A script that must not signal a step before \fBswait\fR is
+listening can wait for that line.
 .IP
 
 .TP
@@ -63,12 +128,100 @@ Mutually exclusive with \fB\-\-quiet\fR.
 Print version information and exit.
 .IP
 
+.TP
+\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
+Print completions as YAML documents (one per completion), using the
+default data_parser plugin or an explicit data_parser with parameters.
+Takes the same arguments as \fB\-\-json\fR. Mutually exclusive with
+\fB\-\-json\fR.
+.IP
+
+.SH "OUTPUT"
+Under \fB\-\-follow\fR or with a \fIjobid\fR.\fIstepid\fR target,
+unless \fB\-\-quiet\fR is given, each step completion is reported on
+stdout as one line:
+
+.nf
+StepId=\fIjobid\fR.\fIstepid\fR code=\fIexit\fR:\fIsig\fR [reason=\fISTATE\fR]
+StepId=\fIjobid\fR.\fIstepid\fR never\-launched reason=\fISTATE\fR
+.fi
+
+\fBcode=\fR carries the step's exit status and the signal that killed
+it, one of which is always 0. \fBreason=\fR is added only when the step
+reached a failure state such as \fBTIMEOUT\fR or \fBNODE_FAIL\fR; a step
+that ran to completion has none.
+
+A step killed by a signal reports that signal in \fBcode=\fR. It
+carries a \fBreason=\fR only when it also reached a failure state: a
+step killed at its time limit is in \fBTIMEOUT\fR and reports
+\fBreason=TIMEOUT\fR next to the signal, while a running step killed by
+\fBscancel\fR(1) reports the signal alone. A nonzero \fIsig\fR, not the
+presence of \fBreason=\fR, is therefore what identifies a signaled
+step. Do not read the leading \fB0\fR in \fBcode=0:9\fR as success.
+
+A step that never launched is reported as \fBnever\-launched\fR in place
+of \fBcode=\fR. Such a step is always in a failure state, so it always
+carries a \fBreason=\fR, normally \fBFAILED\fR or \fBCANCELLED\fR.
+
+When the wait ends a final line is printed:
+
+.nf
+JobId=\fIjobid\fR steps drained
+.fi
+
+This line is printed whenever a whole\-set wait completes, not just
+under \fB\-\-follow\fR. A \fIjobid\fR.\fIstepid\fR wait never prints
+it: it prints its target step's line instead, or nothing at all when
+the set drains without the target being reported, in which case only
+the exit code carries the outcome. \fB\-\-quiet\fR suppresses this line
+too.
+
+Nothing at all is printed when there is no wait to perform: when the job
+already has no running steps and no pending \fB\-\-async\fR steps, or
+when a \fIjobid\fR.\fIstepid\fR target has already ended. \fBswait\fR
+returns immediately in both cases: 0 for the whole\-set wait, which
+completed, and 3 for a per\-step target, whose result was never
+recorded.
+
+Under \fB\-\-json\fR or \fB\-\-yaml\fR the same events are emitted as
+one object or document per completion, carrying \fBstep_id\fR,
+\fBexit_code\fR, and \fBstate\fR (a list of job\-state strings, as in
+\fBreason=\fR above). The drain line becomes an object whose
+\fBstep_id.step_id\fR is \fBentire\fR and which has no \fBexit_code\fR
+or \fBstate\fR.
+
+\fBexit_code\fR is an object carrying \fBstatus\fR (a list of
+exit\-status strings such as \fBSUCCESS\fR, \fBERROR\fR, \fBSIGNALED\fR,
+or \fBPENDING\fR, which are not the \fBstate\fR values above),
+\fBreturn_code\fR, and \fBsignal\fR (an object with \fBid\fR
+and \fBname\fR). A step that never launched has \fBPENDING\fR in
+\fBstatus\fR and an unset \fBreturn_code\fR, which is what distinguishes
+it from a step that exited 0.
+
 .SH "REQUIREMENTS"
 The target job must have stepmgr enabled, either site\-wide via
 \fBSlurmctldParameters=enable_stepmgr\fR in \fBslurm.conf\fR(5), or
 per\-job via \fB\-\-stepmgr\fR to \fBsalloc\fR(1)/\fBsbatch\fR(1).
 This can be verified with \fBscontrol show job <jobid>\fR; look for
-\fBStepMgrEnabled=Yes\fR.
+\fBStepMgrEnabled=Yes\fR. Against a job without it, \fBswait\fR exits 1
+with \fBdoes not have stepmgr enabled\fR rather than waiting.
+
+A \fIjobid\fR.\fIstepid\fR target and \fB\-\-follow\fR additionally
+require the job's stepmgr, which runs in the job's extern
+\fBslurmstepd\fR(8) on the job's \fBBatchHost\fR (visible in
+\fBscontrol show job\fR), to be Slurm 26.11 or newer.
+Against an older stepmgr the subscribe request fails and \fBswait\fR
+exits 1; it does not fall back to a whole\-set wait. Note that
+\fBslurmd\fR(8) may already be upgraded while a running job's
+\fBslurmstepd\fR(8) is not, so the batch host's package version is not
+on its own sufficient.
+
+At most 64 \fBswait\fR processes may be subscribed to one job at a time.
+Beyond that \fBswait\fR exits 1 with \fBsubscriber slots full\fR.
+
+The target job must already be running. \fBswait\fR does not wait for a
+job to start; against a \fBPENDING\fR job it exits 1 with
+\fBis still pending\fR.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
@@ -85,7 +238,29 @@ Takes precedence over \fBSLURM_JOB_ID\fR.
 .TP
 \fBSLURM_JOB_ID\fR
 Used to identify the job to monitor when no positional argument is given and
-\fBSLURM_JOB_SLUID\fR is not set.
+\fBSLURM_JOB_SLUID\fR is not set. Also used, together with
+\fBSLURM_ARRAY_JOB_ID\fR and \fBSLURM_ARRAY_TASK_ID\fR, to confirm that
+\fBSLURM_STEPMGR\fR describes the target array task.
+.IP
+
+.TP
+\fBSLURM_STEPMGR\fR
+Hostname of the job's stepmgr. When it is set and the target job matches the
+job described by the environment, \fBswait\fR contacts that host directly and
+never queries \fBslurmctld\fR. Otherwise \fBswait\fR looks the stepmgr up
+through the controller.
+.IP
+
+.TP
+\fBSLURM_ARRAY_JOB_ID\fR
+Array master job ID of the enclosing job. Used together with
+\fBSLURM_ARRAY_TASK_ID\fR to confirm that \fBSLURM_STEPMGR\fR describes the
+target array task.
+.IP
+
+.TP
+\fBSLURM_ARRAY_TASK_ID\fR
+Array task offset of the enclosing job. See \fBSLURM_ARRAY_JOB_ID\fR.
 .IP
 
 .TP
@@ -96,23 +271,31 @@ Location of the Slurm configuration file.
 .SH "EXIT STATUS"
 .TP
 \fB0\fR
-.RS
-There are no running steps, and no pending async steps.
-.RE
+The wait completed: the step set drained, or the target step ended and
+was reported. This reflects only that the wait completed, not a
+\fIjobid\fR.\fIstepid\fR target's own result; see \fBcode=\fR in the
+completion output (or \fBexit_code\fR/\fBstate\fR under
+\fB\-\-json\fR/\fB\-\-yaml\fR) for the step's actual outcome.
 .IP
 
 .TP
 \fB1\fR
-.RS
-\fB\-\-timeout\fR elapsed before steps completed.
-.RE
+\fBswait\fR encountered an error.
 .IP
 
 .TP
 \fB2\fR
-.RS
-\fBswait\fR encountered an error.
-.RE
+\fB\-\-timeout\fR elapsed before the wait completed.
+.IP
+
+.TP
+\fB3\fR
+The step set drained without the \fIjobid\fR.\fIstepid\fR target being
+reported: no step with that ID exists in the job, or it ended and was
+reaped before \fBswait\fR subscribed, or it was still queued and
+synchronous when the set drained. No result was recorded, so no
+completion is printed. Use \fBsacct\fR(1) to retrieve the step's exit
+code after the fact. Only returned for a per\-step target.
 .IP
 
 .SH "EXAMPLES"
@@ -128,6 +311,60 @@ srun \-\-async \-n 8 ./solve_a
 srun \-\-async \-n 8 ./solve_b
 swait
 .fi
+
+Wait on one step and read its exit code. \fBsrun\fR \fB\-\-async\fR
+\fB\-\-parsable\fR prints the new step's \fIjobid\fR.\fIstepid\fR, which
+is the target \fBswait\fR expects.
+
+.nf
+#!/bin/bash
+#SBATCH \-n 16
+#SBATCH \-\-stepmgr
+step=$(srun \-\-async \-\-parsable \-n 8 ./solve_a)
+srun \-\-async \-n 8 ./solve_b
+swait "$step"   # prints solve_a's exit code if it is still running
+swait           # then wait for everything else
+.fi
+
+If \fB./solve_a\fR ends before \fBswait\fR subscribes, nothing is printed
+and \fBswait\fR exits 3; see the note on already\-ended step targets in
+\fBDESCRIPTION\fR.
+
+Follow every step as it ends.
+
+.nf
+$ swait \-\-follow 1234
+StepId=1234.0 code=0:0
+StepId=1234.1 code=7:0
+JobId=1234 steps drained
+.fi
+
+Read one step's result as JSON. The wait must be started while the step
+is still running, so take the target from \fBsrun\fR \fB\-\-async\fR
+\fB\-\-parsable\fR rather than waiting for the drain first. Each
+completion is a single\-line object in which \fBstep_id\fR and
+\fBexit_code\fR are themselves objects, and \fBreturn_code\fR is a
+no\-val object under the default data_parser, so read its \fBnumber\fR
+field.
+
+.nf
+step=$(srun \-\-async \-\-parsable \-n 8 ./solve_a)
+swait \-\-json "$step" |
+	jq '.exit_code.return_code | if .set then .number else null end'
+.fi
+
+For a step that was signaled or that never launched, \fBreturn_code\fR
+is unset. Under the default data_parser an unset no\-val object still
+carries \fBnumber\fR=0, so \fBset\fR must be tested before \fBnumber\fR
+is trusted; otherwise such a step is indistinguishable from an exit of
+0. Read \fBexit_code.status\fR and \fBexit_code.signal.name\fR to tell
+those cases apart.
+
+A \fIjobid\fR.\fIstepid\fR wait emits at most one object. If the set
+drains without the target ever being reported, nothing is emitted at
+all and \fBswait\fR exits 3, so read the exit code rather than waiting
+for a terminator. The \fBentire\fR drain object is emitted only under
+\fB\-\-follow\fR or for a whole\-set wait.
 
 \fBswait\fR is only for \fB\-\-async\fR steps; if a script merely
 backgrounds \fBsrun\fR commands with the shell, the shell's \fIwait\fR
@@ -164,4 +401,5 @@ details.
 
 .SH "SEE ALSO"
 \fBsacct\fR(1), \fBsalloc\fR(1), \fBsbatch\fR(1), \fBscancel\fR(1),
-\fBscontrol\fR(1), \fBsqueue\fR(1), \fBsrun\fR(1), \fBslurm.conf\fR(5)
+\fBscontrol\fR(1), \fBsqueue\fR(1), \fBsrun\fR(1), \fBslurm.conf\fR(5),
+\fBslurmd\fR(8), \fBslurmstepd\fR(8)

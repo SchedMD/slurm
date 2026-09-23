@@ -1070,10 +1070,10 @@ static void _parse_hierarchical_resources(list_t **license_list_ptr)
 		char *dump_str = NULL;
 		int rc_dump = EINVAL;
 
-		if ((rc_dump =
-			     SERCLI_DUMP_STR(H_RESOURCES_AS_LICENSE_LIST, NULL,
-					     *license_list_ptr, dump_str,
-					     MIME_TYPE_YAML, SER_FLAGS_NO_TAG)))
+		if ((rc_dump = SERCLI_DUMP_STR(H_RESOURCES_AS_LICENSE_LIST,
+					       NULL, *license_list_ptr,
+					       dump_str, MIME_TYPE_YAML,
+					       SER_FLAGS_NO_TAG, NULL)))
 			log_flag(LICENSE,
 				 "%s: Hierarchical resources dump failed: %s",
 				 __func__, slurm_strerror(rc_dump));
@@ -1565,7 +1565,8 @@ extern int hres_init(void)
 
 		if ((rc = SERCLI_DUMP_STR(H_RESOURCES_AS_LICENSE_LIST, NULL,
 					  cluster_license_list, dump_str,
-					  MIME_TYPE_YAML, SER_FLAGS_NO_TAG)))
+					  MIME_TYPE_YAML, SER_FLAGS_NO_TAG,
+					  NULL)))
 			log_flag(LICENSE, "%s: Hierarchical resources dump failed: %s",
 			      __func__, slurm_strerror(rc));
 		else

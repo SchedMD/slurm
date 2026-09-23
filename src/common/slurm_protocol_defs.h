@@ -508,12 +508,25 @@ typedef struct resv_info_request_msg {
         time_t last_update;
 } resv_info_request_msg_t;
 
+typedef enum {
+	STEPS_DRAINED_SUB_DRAIN = 0, /* one whole-set drain event */
+	STEPS_DRAINED_SUB_ALL, /* a bodied event on every user-step end */
+	STEPS_DRAINED_SUB_STEP, /* one bodied event for a target step */
+} steps_sub_mode_t;
+
 typedef struct steps_drained_sub_msg {
 	char *host; /* hostname the stepmgr should push to */
+	uint16_t mode; /* steps_sub_mode_t */
 	uint16_t port; /* listening port on host */
-	slurm_step_id_t step_id; /* job to watch */
+	slurm_step_id_t step_id; /* job/step to watch */
 	char *tls_cert; /* self-signed PEM cert, or NULL */
 } steps_drained_sub_msg_t;
+
+typedef struct {
+	uint32_t exit_code; /* step exit code; NO_VAL if unlaunched */
+	uint32_t state; /* terminal job state; see job_state_string() */
+	slurm_step_id_t step_id; /* step that ended, or NO_VAL terminator */
+} srun_steps_drained_msg_t;
 
 typedef struct complete_job_allocation {
 	uint32_t job_rc;
@@ -1764,6 +1777,7 @@ extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 extern void slurm_free_net_forward_msg(net_forward_msg_t *msg);
 extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
+extern void slurm_free_srun_steps_drained_msg(srun_steps_drained_msg_t *msg);
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 extern void slurm_free_srun_user_msg(srun_user_msg_t * msg);
 extern void slurm_free_steps_drained_sub_msg(steps_drained_sub_msg_t *msg);
@@ -1871,6 +1885,16 @@ extern uint16_t bb_state_num(char *tok);
 /* Convert HealthCheckNodeState numeric value to a string.
  * Caller must xfree() the return value */
 extern char *health_check_node_state_str(uint32_t node_state);
+
+/*
+ * Split a wait()-style exit code into its "exit_status:signal" parts. Either
+ * output pointer may be NULL.
+ * IN  exit_code   - wait()-style status, or NO_VAL if none was recorded
+ * OUT exit_status - WEXITSTATUS, or 0 when signaled or NO_VAL
+ * OUT term_sig    - WTERMSIG, or 0 when exited or NO_VAL
+ */
+extern void exit_code_decode(uint32_t exit_code, uint16_t *exit_status,
+			     uint16_t *term_sig);
 
 extern char *job_share_string(uint16_t shared);
 extern char *job_oversubscribe_string(uint16_t val);

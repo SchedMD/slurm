@@ -46,16 +46,14 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
- * Info for a steps-drained subscriber created from a
- * REQUEST_STEPS_DRAINED_SUBSCRIBE message; element type for
- * job_record_t.steps_drained_subs.
+ * A steps-drained subscriber; element type for
+ * job_record_t.steps_drained_subs. addr and protocol_version are derived once
+ * from the REQUEST_STEPS_DRAINED_SUBSCRIBE message that req is moved from.
  */
 typedef struct {
 	slurm_addr_t addr;
-	char *host;
-	uint16_t port;
 	uint16_t protocol_version;
-	char *tls_cert;
+	steps_drained_sub_msg_t req;
 } steps_drained_sub_t;
 
 /*
@@ -91,6 +89,12 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op);
  * IN step_ptr - pointer to the slurmctld job step record
  */
 extern void srun_step_complete(step_record_t *step_ptr);
+
+/*
+ * srun_step_drained - notify steps_drained_subs of one step's end.
+ * IN step_ptr - the step that ended
+ */
+extern void srun_step_drained(step_record_t *step_ptr);
 
 /*
  * srun_steps_drained - notify subscribers in steps_drained_subs that all

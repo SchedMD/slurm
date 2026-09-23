@@ -10256,7 +10256,13 @@ static void _pack_steps_drained_sub_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	steps_drained_sub_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->host, buffer);
+		pack16(msg->mode, buffer);
+		pack16(msg->port, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		packstr(msg->tls_cert, buffer);
+	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		packstr(msg->host, buffer);
 		pack16(msg->port, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -10268,7 +10274,14 @@ static int _unpack_steps_drained_sub_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	steps_drained_sub_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->host, buffer);
+		safe_unpack16(&msg->mode, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpackstr(&msg->tls_cert, buffer);
+	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->host, buffer);
 		safe_unpack16(&msg->port, buffer);
 		safe_unpack_step_id_members(&msg->step_id, buffer,
@@ -10281,6 +10294,44 @@ static int _unpack_steps_drained_sub_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 unpack_error:
 	slurm_free_steps_drained_sub_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_srun_steps_drained_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	srun_steps_drained_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->exit_code, buffer);
+		pack32(msg->state, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+	}
+}
+
+static int _unpack_srun_steps_drained_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	srun_steps_drained_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->state, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+	} else {
+		/*
+		 * A pre-26.11 (bodyless) peer sends no body; default to the
+		 * whole-set drain terminator so a consumer does not mistake the
+		 * zeroed struct for a real step (step_id 0) that exited 0.
+		 */
+		msg->step_id.step_id = NO_VAL;
+		msg->exit_code = NO_VAL;
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_srun_steps_drained_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14049,7 +14100,6 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
 	case SRUN_PING:
-	case SRUN_STEPS_DRAINED:
 	case REQUEST_CONTAINER_START:
 	case REQUEST_CONTAINER_STATE:
 	case REQUEST_CONTAINER_PTY:
@@ -14169,6 +14219,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_STEPS_DRAINED_SUBSCRIBE:
 		_pack_steps_drained_sub_msg(msg, buffer);
+		break;
+	case SRUN_STEPS_DRAINED:
+		_pack_srun_steps_drained_msg(msg, buffer);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
@@ -14590,7 +14643,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
 	case SRUN_PING:
-	case SRUN_STEPS_DRAINED:
 	case REQUEST_CONTAINER_START:
 	case REQUEST_CONTAINER_STATE:
 	case REQUEST_CONTAINER_PTY:
@@ -14712,6 +14764,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_STEPS_DRAINED_SUBSCRIBE:
 		rc = _unpack_steps_drained_sub_msg(msg, buffer);
+		break;
+	case SRUN_STEPS_DRAINED:
+		rc = _unpack_srun_steps_drained_msg(msg, buffer);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		rc = unpack_slurm_step_layout(

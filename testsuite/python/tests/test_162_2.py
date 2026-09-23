@@ -4,6 +4,8 @@
 # Verify swait's steps-drained push path (REQUEST_STEPS_DRAINED_SUBSCRIBE
 # subscribe + SRUN_STEPS_DRAINED push from stepmgr).
 ############################################################################
+import re
+
 import pytest
 
 import atf
@@ -32,6 +34,11 @@ def setup():
     atf.require_slurm_running()
 
 
+# 26.11 renumbered swait's exit codes: an error moved 2 -> 1 and --timeout
+# expiry 1 -> 2. This module runs against clients of both vintages, so name
+# the two codes rather than asserting a bare number.
+RC_ERROR, RC_TIMEOUT = (1, 2) if atf.get_version("bin/swait") >= (26, 11) else (2, 1)
+
 # Long enough that swait subscribes while the step is still running.
 LATENCY_SLEEP_SECS = 6
 # Catches latency regressions in the SRUN_STEPS_DRAINED wake path.
@@ -47,28 +54,22 @@ def _resolve_array_task_id(master_id, task_offset, timeout=60):
     observable in squeue. See test_162_1 for the rationale.
     """
 
-    state = {"id": 0}
-
-    def _try():
-        jobs = atf.get_jobs(quiet=True)
-        for raw_id, job in jobs.items():
-            if (
-                job.get("ArrayJobId") == master_id
-                and job.get("ArrayTaskId") == task_offset
-            ):
-                state["id"] = raw_id
-                return raw_id
-        return 0
-
-    if not atf.repeat_until(_try, lambda x: x != 0, timeout=timeout):
-        pytest.fail(f"Array task {master_id}_{task_offset} never appeared in squeue")
-    return state["id"]
+    # Poll every second rather than atf.timer()'s default of timeout/10.
+    # Callers race a step that only runs for LATENCY_SLEEP_SECS, so a
+    # coarse interval spends the whole wait window here and leaves swait
+    # nothing to block on.
+    job_id = 0
+    for _ in atf.timer(timeout=timeout, poll_interval=1, quiet=True, fatal=True):
+        job_id = atf.get_job_id_from_array_task(master_id, task_offset)
+        if job_id:
+            break
+    return job_id
 
 
 def _swait_push(swait_args, sleep_secs, time_limit="5:00", xfail=False):
     """Submit a job with one user step, then run swait on the env fast path.
 
-    Returns (exit_code, elapsed_seconds). Setting SLURM_STEPMGR forces
+    Returns (exit_code, elapsed_seconds, job_id, stdout). Setting SLURM_STEPMGR forces
     swait to take the push/fast path instead of the ctld discovery
     path; for a 1-node stepmgr job the stepmgr is the batch host.
 
@@ -89,13 +90,15 @@ def _swait_push(swait_args, sleep_secs, time_limit="5:00", xfail=False):
         timeout=180,
         xfail=xfail,
     )
-    return result["exit_code"], result["duration"]
+    return result["exit_code"], result["duration"], job_id, result["stdout"]
 
 
-def test_push_latency_user_step():
-    """swait exits within a few seconds of the user step ending."""
+@pytest.mark.parametrize("quiet", ["", "-Q"])
+def test_push_latency_user_step(quiet):
+    """swait exits within a few seconds of the user step ending, printing
+    the whole-set drain line unless -Q suppresses it."""
 
-    rc, elapsed = _swait_push("", LATENCY_SLEEP_SECS)
+    rc, elapsed, job_id, stdout = _swait_push(quiet, LATENCY_SLEEP_SECS)
     assert rc == 0, f"swait exited {rc}, expected 0"
     assert (
         elapsed >= LATENCY_FLOOR_SECS
@@ -103,14 +106,24 @@ def test_push_latency_user_step():
     assert (
         elapsed < LATENCY_CEILING_SECS
     ), f"swait took {elapsed:.1f}s; push path appears broken"
+    if quiet:
+        assert stdout == "", f"-Q must suppress the drain line; stdout: {stdout!r}"
+    elif atf.get_version("bin/swait") >= (26, 11):
+        # Before 26.11 swait printed nothing at all, so only the wait
+        # itself can be asserted there.
+        assert (
+            f"JobId={job_id} steps drained" in stdout
+        ), f"missing drain summary line; stdout: {stdout!r}"
 
 
 def test_timeout_granularity_short():
     """--timeout fires at the user's deadline within conmgr's timer granularity."""
 
     TIMEOUT_SECS = 5
-    rc, elapsed = _swait_push(f"--timeout {TIMEOUT_SECS}", sleep_secs=120, xfail=True)
-    assert rc == 1, f"swait exited {rc}, expected 1 for --timeout"
+    rc, elapsed, _, _ = _swait_push(
+        f"--timeout {TIMEOUT_SECS}", sleep_secs=120, xfail=True
+    )
+    assert rc == RC_TIMEOUT, f"swait exited {rc}, expected {RC_TIMEOUT} for --timeout"
     # Ceiling absorbs swait startup + conmgr init + subscribe RPC +
     # the timer + shutdown on loaded runners; match LATENCY_CEILING_SECS
     # budget (+8) to be consistent with other timing-bound tests.
@@ -120,20 +133,33 @@ def test_timeout_granularity_short():
     )
 
 
-def test_already_drained_returns_zero():
+@pytest.mark.parametrize("follow", ["", "--follow"])
+def test_already_drained_returns_zero(follow):
     """Subscribing to a job with no regular steps (only the batch
-    step) returns ESLURM_STEPS_DRAINED; swait fast-returns 0.
+    step) returns ESLURM_STEPS_DRAINED; swait fast-returns 0. ALL mode
+    (--follow) takes the same whole-set check as DRAIN.
     """
 
+    if follow:
+        atf.require_version(
+            (26, 11),
+            component="bin/swait",
+            reason="Issue 50928: --follow was added in 26.11",
+        )
+
+    # Long-lived: the job must outlast the check, or swait returns because the
+    # batch step ended rather than because it fast-returned.
     job_id = atf.submit_job_sbatch(
-        "-N1 --time=5:00 --job-name=test_162_2_drained --wrap 'sleep 15'",
+        "-N1 --time=5:00 --job-name=test_162_2_drained --wrap 'sleep infinity'",
         fatal=True,
     )
     atf.wait_for_job_state(job_id, "RUNNING", timeout=60, fatal=True)
     stepmgr = atf.get_job_parameter(job_id, "BatchHost")
     result = atf.run_command(
-        f"swait {job_id}",
+        f"swait {follow} {job_id}",
         env_vars=f"SLURM_STEPMGR={stepmgr}",
+        # Fail fast: the stepmgr must fast-return here, so a run that takes
+        # anywhere near this long has already failed the test.
         timeout=30,
     )
     assert (
@@ -142,6 +168,7 @@ def test_already_drained_returns_zero():
     assert (
         result["duration"] < 10
     ), f"swait took {result['duration']:.1f}s; expected immediate fast-return"
+    assert result["stdout"] == "", f"unexpected output: {result['stdout']!r}"
 
 
 def test_pending_async_step_blocks_swait():
@@ -281,13 +308,13 @@ def test_array_task_env_fast_path():
     ), f"swait returned in {result['duration']:.1f}s; expected to wait"
 
 
-def test_unreachable_stepmgr_exits_two():
-    """swait exits 2 when the stepmgr host cannot be resolved/reached.
+def test_unreachable_stepmgr_errors():
+    """swait exits RC_ERROR when the stepmgr host cannot be resolved/reached.
 
     Exercises the _setup_push failure path: an unresolvable
     SLURM_STEPMGR forces slurm_send_recv_node_msg() to fail before any
-    subscribe RPC is even attempted. Exit 1 is reserved for --timeout;
-    any other runtime/network failure exits 2.
+    subscribe RPC is even attempted. RC_TIMEOUT is reserved for --timeout;
+    any other runtime/network failure exits RC_ERROR.
     """
 
     # Below MAX_VAL (0xfffffff0) so swait's env fast-path is not
@@ -298,11 +325,97 @@ def test_unreachable_stepmgr_exits_two():
         f"swait {BOGUS_JOBID}",
         env_vars=f"SLURM_JOB_ID={BOGUS_JOBID} SLURM_STEPMGR={BOGUS_HOST}",
         xfail=True,
+        # Fail fast: this must be rejected outright, not waited on.
         timeout=30,
     )
     assert (
-        result["exit_code"] == 2
-    ), f"swait exited {result['exit_code']}, expected 2 (stderr: {result['stderr']!r})"
+        result["exit_code"] == RC_ERROR
+    ), f"swait exited {result['exit_code']}, expected {RC_ERROR} (stderr: {result['stderr']!r})"
     assert (
         "subscribe to stepmgr" in result["stderr"]
     ), f"unexpected stderr: {result['stderr']!r}"
+
+
+def test_stepmgr_env_mismatch_falls_back_to_ctld():
+    """A SLURM_STEPMGR that describes a different job is discarded.
+
+    swait(1) uses the env fast path only when the target matches the job the
+    environment describes; otherwise it looks the stepmgr up through the
+    controller. Point SLURM_STEPMGR at an unreachable host while naming a
+    different job, so taking the fast path would exit 1.
+    """
+
+    BOGUS_JOBID = 4000000000
+    BOGUS_HOST = "no-such-host.invalid"
+    job_id = atf.submit_job_sbatch(
+        # Long-lived: the job must outlast the check, or the ctld lookup
+        # fails on a job that is already gone rather than on the fallback.
+        "-N1 --time=5:00 --job-name=test_162_2_mismatch --wrap 'sleep infinity'",
+        fatal=True,
+    )
+    atf.wait_for_job_state(job_id, "RUNNING", timeout=60, fatal=True)
+    result = atf.run_command(
+        f"swait {job_id} --timeout 60",
+        env_vars=f"SLURM_JOB_ID={BOGUS_JOBID} SLURM_STEPMGR={BOGUS_HOST}",
+        timeout=120,
+    )
+    assert result["exit_code"] == 0, (
+        f"swait exited {result['exit_code']}; a mismatched SLURM_STEPMGR must "
+        f"be discarded in favour of the ctld lookup. stderr: {result['stderr']!r}"
+    )
+
+
+def test_bare_swait_in_batch_script_waits_for_async_steps():
+    """The documented idiom: two srun --async steps, then a bare swait.
+
+    swait(1) EXAMPLES leads with this and it is the reason the command
+    exists, but no test in the swait range asserted it. With no positional
+    argument swait resolves the enclosing job from SLURM_JOB_SLUID or
+    SLURM_JOB_ID, so it must block until both async steps drain.
+    """
+
+    SHORT_SECS = 3
+    LONG_SECS = 12
+    out_file = "bare_swait.out"
+    # A single task: this module's fixture only asks for 1 node, so a -n2
+    # allocation never gets scheduled on the default 1-CPU node. --overlap
+    # plus --mem=0 lets both async steps share that one CPU.
+    # Time the call in the script. Reaching COMPLETED proves only that swait
+    # returned, not that it waited: a fast return would look identical. The
+    # elapsed line is what makes this test meaningful on every release. Use
+    # date(1), not bash's SECONDS: the wrap script runs under /bin/sh, which
+    # need not be bash.
+    job_id = atf.submit_job_sbatch(
+        "-N1 --time=5:00 --job-name=test_162_2_bare "
+        "--wrap '"
+        f"srun --async -n1 --mem=0 --overlap sleep {SHORT_SECS}; "
+        f"srun --async -n1 --mem=0 --overlap sleep {LONG_SECS}; "
+        f"s=$(date +%s); swait > {out_file} 2>&1; rc=$?; "
+        f'echo "elapsed=$(( $(date +%s) - s )) rc=$rc" >> {out_file}\'',
+        fatal=True,
+    )
+    assert atf.wait_for_job_state(
+        job_id, "COMPLETED", timeout=180, fatal=False
+    ), "the batch script did not complete; bare swait may not have returned"
+
+    content = atf.run_command_output(f"cat {out_file}", fatal=True)
+    match = re.search(r"elapsed=(\d+) rc=(\d+)", content)
+    assert match, f"bare swait wrote no elapsed line: {content!r}"
+    elapsed, rc = int(match.group(1)), int(match.group(2))
+    assert rc == 0, f"bare swait exited {rc}: {content!r}"
+    # The second async step still has most of LONG_SECS to run when swait
+    # starts, so a swait that returns immediately fails here.
+    assert elapsed >= LONG_SECS - SHORT_SECS, (
+        f"bare swait returned after {elapsed}s; it must block until both "
+        f"async steps drain: {content!r}"
+    )
+
+    # Before 26.11 swait printed nothing at all, so only the wait itself
+    # can be asserted there.
+    if atf.get_version("bin/swait") >= (26, 11):
+        atf.assert_file_contents(
+            out_file,
+            f"JobId={job_id} steps drained",
+            contains=True,
+            message="bare swait did not report the whole-set drain",
+        )
