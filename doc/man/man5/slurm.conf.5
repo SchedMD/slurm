@@ -2415,6 +2415,14 @@ Translate PBS job submission options to Slurm equivalent (if possible).
 .TP
 \fBrequire_timelimit\fR
 Force job submissions to specify a timelimit.
+.IP
+
+.TP
+\fBresilience\fR
+Opt jobs into adaptive resilience on node failure when the job comment
+contains the token "resilience" or the job is submitted to a partition
+listed in \fBSchedulerParameters=resilience_partitions\fR. See the
+\fBresilience_min_health\fR \fBSchedulerParameters\fR option.
 .RE
 .IP
 
@@ -4951,6 +4959,23 @@ to 120 seconds.
 In the event that nodes fail to resume by \fBResumeTimeout\fR, all batch jobs
 will be requeued -- even if the jobs requested not to be requeued. This is
 similar to \fBPrologFlags=ForceRequeueOnFail\fR.
+.IP
+
+.TP
+\fBresilience_min_health\fR=#
+Minimum percentage (1\-100) of nodes that must be up for a running batch job
+that opted into adaptive resilience to be shrunk onto its surviving nodes
+when one of its allocated nodes fails. Below this threshold the job is
+requeued or killed as it would be without adaptive resilience. A job that
+was shrunk keeps running with the reason \fBResilienceRecovery\fR.
+The default value is 70.
+.IP
+
+.TP
+\fBresilience_partitions\fR=<\fIpartitions\fR>
+Comma separated list of partitions whose batch jobs are opted into adaptive
+resilience by the \fBjob_submit/resilience\fR plugin. Requires
+\fBJobSubmitPlugins=resilience\fR.
 .IP
 
 .TP
