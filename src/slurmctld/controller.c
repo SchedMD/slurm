@@ -632,7 +632,6 @@ int main(int argc, char **argv)
 {
 	int error_code = EINVAL;
 	struct timeval start, now;
-	struct stat stat_buf;
 	struct rlimit rlim;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
@@ -834,9 +833,6 @@ int main(int argc, char **argv)
 
 	if (daemonize || setwd)
 		_set_work_dir();
-
-	if (stat(slurm_conf.mail_prog, &stat_buf) != 0)
-		error("Configured MailProg is invalid");
 
 	if (!slurm_conf.accounting_storage_type) {
 		if (slurm_conf.job_acct_gather_type)

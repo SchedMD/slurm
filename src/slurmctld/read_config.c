@@ -625,6 +625,7 @@ static void _init_all_slurm_conf(void)
 
 	slurm_conf_reinit(conf_name);
 	xfree(conf_name);
+	mail_prog_resolve();
 
 	init_node_conf();
 	init_part_conf();
