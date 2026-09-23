@@ -274,6 +274,10 @@ static void _opt_env(void)
 		e++;
 	}
 
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SALLOC, NULL, false))
+		exit(error_exit);
+
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
