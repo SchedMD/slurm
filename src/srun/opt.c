@@ -362,6 +362,9 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	 */
 	if (runtime_g_init(NULL, RUNTIME_CTXT_SRUN, NULL))
 		fatal("failed to initialize runtime plugin");
+	if (!runtime_g_cli_process_env(RUNTIME_IDX_INVALID, NO_VAL,
+				       RUNTIME_CTXT_SRUN, NULL, true))
+		exit(error_exit);
 
 	het_grp_bits = _get_het_group(argc, argv, default_het_job_offset++,
 				      &opt_found);
@@ -698,6 +701,10 @@ static void _opt_env(int het_job_offset)
 		}
 		e++;
 	}
+
+	if (!runtime_g_cli_process_env(opt.runtime_idx, opt.het_job_inx,
+				       RUNTIME_CTXT_SRUN, NULL, false))
+		exit(error_exit);
 
 	/* Process spank env options */
 	if (spank_process_env_options())
