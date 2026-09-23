@@ -1581,6 +1581,68 @@ slurm_errtab_t slurm_errtab[] = {
 		"UTF-32LE encoding schema is unsupported",
 	},
 
+	/* JSON errors */
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_INVALID_CHAR),
+		"Invalid or unexpected JSON character",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_INVALID_ESCAPED),
+		"Invalid or unexpected JSON escape character",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_INVALID_COMMENT),
+		"Invalid or malformed JSON comment",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_UNEXPECTED_DICTIONARY_END),
+		"Invalid or unexpected JSON object ending",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_UNCLOSED_DICTIONARY),
+		"JSON object left unclosed",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_INVALID_DICTIONARY_KEY),
+		"Invalid or unexpected JSON object key",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_INVALID_DICTIONARY_COLON),
+		"Unexpected JSON object colon",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_UNEXPECTED_LIST_END),
+		"Invalid or unexpected JSON array ending",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_UNCLOSED_LIST),
+		"JSON array left unclosed",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_MISSING_COMMA),
+		"Unexpected missing JSON comma",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_UNEXPECTED_COMMA),
+		"Unexpected JSON comma",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_UNCLOSED_QUOTED_STRING),
+		"JSON quoted string not closed",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_PARSE_FAILED),
+		"Invalid or malformed JSON",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_PARSE_DEPTH_MAX),
+		"Rejecting JSON with too many object or arrays stacked",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_JSON_PARSE_DEPTH_MIN),
+		"Rejecting JSON document with no root value or with content after the root value",
+	},
+
 	/* container  errors */
 	{
 		ERRTAB_ENTRY(ESLURM_CONTAINER_NOT_CONFIGURED),

@@ -48,6 +48,7 @@ typedef enum {
 	SER_FLAGS_PRETTY = SLURM_BIT(1),
 	SER_FLAGS_COMPLEX = SLURM_BIT(2), /* Dump Infinity and NaN */
 	SER_FLAGS_NO_TAG = SLURM_BIT(3), /* don't dump YAML tags */
+	SER_FLAGS_JSON6 = SLURM_BIT(4),
 	/* Flags selecting an output layout. At most one may ever be set. */
 	SER_FLAGS_LAYOUT_MASK = (SER_FLAGS_COMPACT | SER_FLAGS_PRETTY),
 } serializer_flags_t;
@@ -71,6 +72,7 @@ typedef enum {
 #define ENV_CONFIG_JSON "SLURM_JSON"
 #define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
 #define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
+#define MIME_TYPE_XJSON_PLUGIN "serializer/xjson"
 
 /*
  * Serialize data in src into string dest
