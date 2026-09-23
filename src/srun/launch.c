@@ -1317,6 +1317,25 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 	      step_req->cpu_count, step_req->num_tasks,
 	      step_req->name, step_req->relative);
 
+	/*
+	 * Open the listener now so we can tell the controller which port to
+	 * use (async steps are fire and forget and need none).  Opened once
+	 * before the loop below, so a retry re-advertises the port the
+	 * controller was already told about.
+	 */
+	if (!srun_opt->async) {
+		uint16_t port = 0;
+
+		if ((rc = step_ctx_listener_create(job, &port))) {
+			error("unable to initialize step request socket: %s",
+			      slurm_strerror(rc));
+			_free_built_launch_params(step_req);
+			slurm_free_job_step_create_request_msg(step_req);
+			return SLURM_ERROR;
+		}
+		step_req->port = port;
+	}
+
 	for (i = 0;; i++) {
 		int retry_cause = SLURM_SUCCESS;
 
@@ -1348,7 +1367,8 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 			job->step_ctx =
 				step_ctx_create_timeout(step_req, step_wait,
-							srun_opt, &retry_cause);
+							srun_opt, job,
+							&retry_cause);
 		}
 		rc = errno;
 		if (job->step_ctx ||
@@ -1584,10 +1604,13 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 			rc = errno;
 			*local_global_rc = errno;
 			error("Application launch failed: %m");
+			step_ctx_publish_launch(job);
 			slurm_step_launch_abort(job->step_ctx);
 			slurm_step_launch_wait_finish(job->step_ctx);
 			goto cleanup;
 		}
+		/* Replay controller RPCs retained while creating and launching. */
+		step_ctx_publish_launch(job);
 	} else {
 		if (slurm_step_launch_add(job->step_ctx, job->step_ctx,
 					  &launch_params, job->nodelist)

@@ -37,11 +37,33 @@
 
 #include "src/common/step_ctx.h"
 
+typedef struct srun_job srun_job_t;
+
+/*
+ * step_ctx_listener_create - Open the listener srun tells the controller
+ *	about and hand it to conmgr. Retain RPCs until a pending-step wait
+ *	consumes them or the launch handler takes over.
+ * IN/OUT job - job whose listener state tracks the listener
+ * OUT port_ptr - port the listener is bound to
+ * RET SLURM_SUCCESS or error
+ */
+extern int step_ctx_listener_create(srun_job_t *job, uint16_t *port_ptr);
+
+/*
+ * step_ctx_publish_launch - Replay queued RPCs and hand over the listener.
+ *	Call after slurm_step_launch() returns, including on failure, before
+ *	waiting for tasks to finish.
+ * IN/OUT job - job whose launch state receives the RPCs
+ */
+extern void step_ctx_publish_launch(srun_job_t *job);
+
 /*
  * step_ctx_create_timeout - Create a job step and its context.
  * IN step_req - job step request
  * IN timeout - in milliseconds
  * IN srun_opt - srun options
+ * IN/OUT job - job the step is created for; its listener state receives the
+ *	queued step's RPCs while the step is pending
  * OUT retry_cause - why the step could not be created yet, so the caller can
  *	report it alongside ESLURM_STEP_TIMED_OUT
  * RET the step context or NULL on failure with slurm errno set
@@ -53,6 +75,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(job_step_create_request_msg_t
 							 *step_req,
 						 int timeout,
 						 srun_opt_t *srun_opt,
+						 srun_job_t *job,
 						 int *retry_cause);
 
 /*

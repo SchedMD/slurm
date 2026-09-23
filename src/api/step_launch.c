@@ -956,7 +956,6 @@ step_launch_state_t *step_launch_state_create(slurm_step_ctx_t *ctx)
 	int ii;
 
 	sls = xmalloc(sizeof(step_launch_state_t));
-	sls->slurmctld_socket_fd = -1;
 	sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
@@ -1017,23 +1016,6 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	conmgr_fd_ref_t *con = conmgr_args.ref;
-
-	log_flag(NET, "%s: [%s] Successfully opened step launch RPC listener",
-		 __func__, conmgr_con_get_name(con));
-
-	return arg;
-}
-
-static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	conmgr_fd_ref_t *con = conmgr_args.ref;
-	log_flag(NET, "%s: [%s] Step launch RPC listener closed",
-		 __func__, conmgr_con_get_name(con));
-}
-
 extern const conmgr_timeouts_t *step_launch_listen_timeouts(void)
 {
 	static conmgr_timeouts_t timeouts = { { 0 } };
@@ -1061,8 +1043,6 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 	uint16_t port;
 	int i, rc = SLURM_SUCCESS;
 	static const conmgr_events_t events = {
-		.on_listen_connect = _on_listen_connect,
-		.on_listen_finish = _on_listen_finish,
 		.on_connection = _on_connection,
 		.on_msg = step_launch_on_msg,
 		.on_finish = _on_finish,
@@ -1084,17 +1064,6 @@ static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 			     sock, CON_TYPE_RPC, step_launch_listen_timeouts(),
 			     &events, flags, sls))) {
 			fatal("conmgr_process_fd_listen() failed: %s",
-			      slurm_strerror(rc));
-		}
-	}
-	/* finally, add the listening port that we told the slurmctld about
-	 * earlier in the step context creation phase */
-	if (sls->slurmctld_socket_fd > -1) {
-		if ((rc = conmgr_process_fd_listen(
-			     sls->slurmctld_socket_fd, CON_TYPE_RPC,
-			     step_launch_listen_timeouts(), &events, flags,
-			     sls))) {
-			fatal("conmgr_process_fd_listen() failed for slurmctld socket: %s",
 			      slurm_strerror(rc));
 		}
 	}

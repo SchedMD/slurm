@@ -79,10 +79,6 @@ struct step_launch_state {
 	bool abort_action_taken;
 
 	uint32_t job_id;
-
-	/* set to -1 if step launch message handler should not attempt
-	   to handle */
-	int slurmctld_socket_fd;
 	uint16_t num_resp_port;
 	uint16_t *resp_port; /* array of message response ports */
 

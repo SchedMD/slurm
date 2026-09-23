@@ -128,6 +128,15 @@ typedef struct srun_job {
 	uint16_t ws_col;	/* window size, columns */
 	uint16_t ws_row;	/* window size, row count */
 	slurm_step_ctx_t *step_ctx;
+	/*
+	 * Step-create listener state.  The job outlives every conmgr callback
+	 * that can reference it: conmgr_fini() runs before step contexts are
+	 * destroyed, and jobs are never freed.  Protected by
+	 * srun_destroy_sig_lock.
+	 */
+	step_launch_state_t *step_launch_ready; /* set once launch takes over */
+	conmgr_fd_ref_t *step_listener; /* linked step-create listener con */
+	list_t *step_pending_msgs; /* RPCs awaiting create result or launch */
 	char *account;    /* account of this job */
 	char *qos;        /* job's qos */
 	char *resv_name;  /* reservation the job is using */
