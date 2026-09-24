@@ -219,6 +219,13 @@ extern bool hres_jobs_share_mode3(job_record_t *job1_ptr,
 extern bool hres_preempt_needed(job_record_t *preemptor,
 				job_record_t *preemptee);
 
+/*
+ * Release the HRES that hres_preempt_needed() reserved for a preemptee it
+ * reported as not needed, when that preemptee is preempted anyway.
+ */
+extern void hres_preempt_return(job_record_t *preemptor,
+				job_record_t *preemptee);
+
 extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
 				     bf_licenses_t *bf_licenses);
 

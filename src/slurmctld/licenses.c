@@ -2801,6 +2801,28 @@ extern bool hres_preempt_needed(job_record_t *preemptor,
 	return needed;
 }
 
+extern void hres_preempt_return(job_record_t *preemptor,
+				job_record_t *preemptee)
+{
+	hres_select_t *hres_select = preemptor->hres_select;
+	uint32_t hres_per_node;
+
+	if (!_jobs_share_mode3(preemptor, preemptee))
+		return;
+
+	hres_per_node = hres_select->hres_per_node;
+	hres_select->hres_per_node =
+		((hres_select_t *) preemptee->hres_select)->hres_per_node;
+
+	for (int i = 0; next_node_bitmap(preemptee->node_bitmap, &i); i++) {
+		uint16_t leaf_idx = hres_select_find_leaf(hres_select, i);
+		if (leaf_idx != NO_VAL16)
+			hres_select_return(hres_select, leaf_idx);
+	}
+
+	hres_select->hres_per_node = hres_per_node;
+}
+
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
 					  licenses_id_t id)
 {
