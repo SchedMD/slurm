@@ -1498,6 +1498,14 @@ Job tasks are handled by a \fBruntime.lua\fR script, read from the same
 directory as this file.
 The script is called for every task, whether or not \fB\-\-container\fR was
 requested.
+The commands that submit jobs and steps (\fBsrun\fR, \fBsbatch\fR,
+\fBsalloc\fR, \fBscrun\fR, and \fBscrontab\fR) also load it, as the user
+running them, to call its optional client-side \fBslurm_runtime_apply_*\fR
+functions, and \fBslurmrestd\fR loads it when it starts, so it must be
+readable on those hosts.
+They fail if they cannot read it.
+In configless mode (\fBSlurmctldParameters=enable_configless\fR),
+\fBslurmctld\fR sends it to those hosts.
 
 \fBNOTE\fR: The script is read by each task as the job user and so must be
 readable by them. Do not store anything in it that job users must not see:
