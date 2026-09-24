@@ -54,6 +54,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
@@ -145,6 +146,9 @@ void run_backup(void)
 	info("slurmctld running in background mode");
 	takeover = false;
 	last_controller_response = time(NULL);
+
+	/* Resolve MailProg as standby only checks at takeover. */
+	mail_prog_resolve();
 
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
@@ -564,6 +568,7 @@ extern int ping_controllers(bool active_controller)
 static void _backup_reconfig(void)
 {
 	slurm_conf_reinit(NULL);
+	mail_prog_resolve();
 	update_logging();
 	slurm_conf.last_update = time(NULL);
 }
