@@ -2253,6 +2253,58 @@ static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+static int PARSE_FUNC(DATA_DICT)(const parser_t *const parser, void *obj,
+				 data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc = EINVAL;
+	data_t **dst = obj;
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		FREE_NULL_DATA(*dst);
+		return SLURM_SUCCESS;
+	}
+
+	if (data_get_type(src) != DATA_TYPE_DICT)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_EXPECTED_DICT,
+				   "Rejecting %s when dictionary expected",
+				   data_get_type_string(src));
+
+	if ((rc = data_clone(src, *dst)))
+		return parse_error(parser, args, parent_path, rc,
+				   "Copying dictionary failed");
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(DATA_DICT)(const parser_t *const parser, void *obj,
+				data_t *dst, args_t *args)
+{
+	int rc = EINVAL;
+	data_t **src = obj;
+
+	if (!*src) {
+		if (!is_complex_mode(args))
+			data_set_dict(dst);
+		return SLURM_SUCCESS;
+	}
+
+	if (data_get_type(*src) != DATA_TYPE_DICT) {
+		if (!is_complex_mode(args))
+			data_set_dict(dst);
+		return on_error(DUMPING, parser->type, args,
+				ESLURM_DATA_EXPECTED_DICT, "data_t", __func__,
+				"Rejecting %s when dictionary expected",
+				data_get_type_string(*src));
+	}
+
+	if ((rc = data_clone(*src, dst)))
+		return on_error(DUMPING, parser->type, args, rc, "data_clone()",
+				__func__, "Copying dictionary failed");
+
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(FLOAT128)(const parser_t *const parser, void *obj,
 				data_t *str, args_t *args, data_t *parent_path)
 {
@@ -13644,6 +13696,7 @@ static const parser_t parsers[] = {
 	addpsp(TRES_STR_BY_TYPE, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(CSV_STRING_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
+	addps(DATA_DICT, data_t *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 	addpsa(LICENSES, LICENSE, license_info_msg_t, NEED_NONE, NULL),
 	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
