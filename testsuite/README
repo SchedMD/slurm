@@ -1050,6 +1050,10 @@ test_141_8   Test that a job launches promptly once its rebooted nodes register
 test_141_9   Test that a job launches promptly once its feature-rebooted nodes register
 test_141_10  Test that a job still launches on the periodic poll without the option
 
+test_142_#   Testing of select/cons_tres.
+=========================================
+test_142_1   Test ntasks-per-socket values submitted through the API
+
 test_143_#   Testing --switches.
 ================================
 test_143_1   Test switches with topology/tree + select/cons_tres
