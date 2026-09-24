@@ -3383,17 +3383,16 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		       select_part_record, select_node_usage, ctx.license_list,
 		       resv_exc_ptr, false, false, false, NULL);
 
+	/* Determine preempt mode of first job */
+	if (preemptee_candidates &&
+	    (tmp_job_ptr = list_peek(preemptee_candidates)))
+		mode = slurm_job_preempt_mode(tmp_job_ptr);
+
 	/* Don't try preempting for licenses if not enabled */
 	if ((rc == ESLURM_LICENSES_UNAVAILABLE) &&
 	    (!preempt_for_licenses || (mode == PREEMPT_MODE_SUSPEND)))
 		preemptee_candidates = NULL;
 
-	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
-		/* Determine QOS preempt mode of first job */
-		if ((tmp_job_ptr = list_peek(preemptee_candidates))) {
-			mode = slurm_job_preempt_mode(tmp_job_ptr);
-		}
-	}
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos &&
 	    (mode == PREEMPT_MODE_SUSPEND) && (job_ptr->priority != 0)) {
 		_run_now_suspend(&ctx);
