@@ -66,6 +66,8 @@ typedef struct http_con_s {
 	bool free_on_close;
 	/* True once a rejection response has been sent */
 	bool rejected;
+	/* True from first byte of a request until it is answered */
+	bool in_request;
 	const http_con_server_events_t *events;
 	void *arg; /* arbitrary pointer from caller */
 	http_parser_state_t *parser; /* http parser plugin state */
@@ -134,6 +136,17 @@ static void _request_reset(http_con_t *hcon)
 
 	_request_free_members(hcon);
 	_request_init(hcon);
+	hcon->in_request = false;
+}
+
+static int _on_message_begin(void *arg)
+{
+	http_con_t *hcon = arg;
+
+	xassert(hcon->magic == MAGIC);
+
+	hcon->in_request = true;
+	return SLURM_SUCCESS;
 }
 
 static int _on_request(const http_parser_request_t *req, void *arg)
@@ -739,6 +752,7 @@ extern int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	http_con_t *hcon = arg;
 	static const http_parser_callbacks_t callbacks = {
+		.on_message_begin = _on_message_begin,
 		.on_request = _on_request,
 		.on_header = _on_header,
 		.on_headers_complete = _on_headers_complete,
