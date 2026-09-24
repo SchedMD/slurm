@@ -115,6 +115,27 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 }
 
 /*
+ * Derive what an RPC received while a sync step is queued asks srun to do:
+ * SRUN_STEP_SIGNAL with a kill signal for the queued job is a cancel,
+ * anything else a wake (retry the create).
+ * IN msg - received message
+ * IN job_id - job the queued step belongs to
+ * RET the poke to record
+ */
+static step_poke_t _msg_to_poke(slurm_msg_t *msg, uint32_t job_id)
+{
+	if (msg->msg_type == SRUN_STEP_SIGNAL) {
+		job_step_kill_msg_t *kill_msg = msg->data;
+
+		if (kill_msg && kill_msg->signal &&
+		    (kill_msg->step_id.job_id == job_id))
+			return STEP_POKE_CANCEL;
+	}
+
+	return STEP_POKE_WAKE;
+}
+
+/*
  * Read a controller poke from the step request socket; signal 0 is a wake
  * (retry the create), a kill signal is a cancel.
  * IN sock - step request listener socket
@@ -151,15 +172,7 @@ static step_poke_t _read_step_poke(int sock, slurm_step_id_t *step_id,
 		goto fini;
 	}
 
-	poke = STEP_POKE_WAKE;
-
-	if (msg->msg_type == SRUN_STEP_SIGNAL) {
-		job_step_kill_msg_t *kill_msg = msg->data;
-
-		if (kill_msg && kill_msg->signal &&
-		    (kill_msg->step_id.job_id == step_id->job_id))
-			poke = STEP_POKE_CANCEL;
-	}
+	poke = _msg_to_poke(msg, step_id->job_id);
 
 fini:
 	slurm_free_msg(msg);
