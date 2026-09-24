@@ -563,7 +563,17 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 
 static int _on_message_begin(http_parser *parser)
 {
-	/* Do nothing successfully */
+	state_t *state = parser->data;
+
+	xassert(state->magic == STATE_MAGIC);
+
+	LOG_PARSE(state, "message begin");
+
+	if (state->callbacks->on_message_begin &&
+	    (state->rc =
+		     state->callbacks->on_message_begin(state->callback_arg)))
+		return 1;
+
 	return 0;
 }
 
