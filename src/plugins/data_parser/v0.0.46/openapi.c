@@ -348,6 +348,14 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			for (int i = 0; i < parser->field_count; i++)
 				_add_field(obj, required, parser,
 					   &parser->fields[i], sargs);
+
+			/*
+			 * OpenAPI 3.0.x takes "required" from JSON Schema
+			 * Wright Draft 00, which requires at least one element.
+			 * Omitting it is equivalent to an empty list.
+			 */
+			if (!data_get_list_length(required))
+				data_key_unset(obj, "required");
 		} else if (parser->model == PARSER_MODEL_REMOVED) {
 			/* do nothing */
 		} else if (!is_complex_mode(sargs->args)) {
