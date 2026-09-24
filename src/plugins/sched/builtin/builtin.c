@@ -146,7 +146,7 @@ static void _compute_start_times(void)
 	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes, time_limit;
 	time_t now = time(NULL), sched_start, last_job_alloc;
-	bool resv_overlap = false;
+	bool resv_overlap = false, resv_maint = false;
 	resv_exc_t resv_exc = { 0 };
 
 	sched_start = now;
@@ -189,8 +189,8 @@ static void _compute_start_times(void)
 			continue;
 		}
 
-		j = job_test_resv(job_ptr, &now, true, &avail_bitmap,
-				  &resv_exc, &resv_overlap, false);
+		j = job_test_resv(job_ptr, &now, true, &avail_bitmap, &resv_exc,
+				  &resv_maint, &resv_overlap, false);
 		if (j != SLURM_SUCCESS) {
 			FREE_NULL_BITMAP(avail_bitmap);
 			reservation_delete_resv_exc_parts(&resv_exc);

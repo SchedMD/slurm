@@ -210,6 +210,7 @@ typedef struct {
 	int *rc;
 	bool reboot;
 	resv_exc_t *resv_exc_ptr;
+	bool *resv_maint;
 	bool *resv_overlap;
 	time_t *when;
 } foreach_job_test_resv_t;
@@ -7997,6 +7998,8 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 	time_t now = time(NULL);
 	time_t start_relative, end_relative;
 	time_t job_end_time_use;
+	bitstr_t *steal_bitmap = NULL;
+	bool overlap_flex = false;
 
 	if (args->reboot)
 		job_end_time_use = args->job_end_time + res2_ptr->boot_time;
@@ -8005,14 +8008,57 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 
 	_get_rel_start_end(res2_ptr, now, &start_relative, &end_relative);
 
-	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-	    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
-	     !(res2_ptr->flags & RESERVE_FLAG_MAINT)) ||
-	    (res2_ptr == resv_ptr) ||
-	    !res2_ptr->node_bitmap ||
-	    (start_relative >= job_end_time_use) ||
+	/* Skip ourselves and reservations without nodes to exclude. */
+	if ((res2_ptr == resv_ptr) || !res2_ptr->node_bitmap)
+		return 0;
+
+	/* Jobs in a MAINT reservation can use any other reservation's nodes. */
+	if (resv_ptr->flags & RESERVE_FLAG_MAINT)
+		return 0;
+
+	/* Skip reservations not overlapping the job's time frame. */
+	if ((start_relative >= job_end_time_use) ||
 	    (end_relative <= args->job_start_time))
 		return 0;
+
+	/*
+	 * OVERLAP grants access to resources already in another non-MAINT
+	 * reservation.
+	 */
+	if ((resv_ptr->flags & RESERVE_FLAG_OVERLAP) &&
+	    !(res2_ptr->flags & RESERVE_FLAG_MAINT)) {
+		/*
+		 * Without FLEX the job cannot leave this reservation's nodes:
+		 * job_test_resv() initialized args->node_bitmap as a copy of
+		 * resv_ptr->node_bitmap, so any res2 nodes present in it are
+		 * shared ones that OVERLAP grants. A reservation holding no
+		 * nodes (ANY_NODES) instead starts from the whole cluster and
+		 * keeps the full OVERLAP grant, same as just below.
+		 */
+		if (!(resv_ptr->flags & RESERVE_FLAG_FLEX))
+			return 0;
+
+		/*
+		 * A reservation without nodes (e.g. ANY_NODES/license-only)
+		 * keeps the full OVERLAP grant: its jobs may use any nodes,
+		 * even those belonging to other reservations. Such a
+		 * reservation may carry either no bitmap at all or an
+		 * allocated but empty one, so test for both.
+		 */
+		if (!resv_ptr->node_bitmap ||
+		    (bit_ffs(resv_ptr->node_bitmap) == -1))
+			return 0;
+
+		/*
+		 * With FLEX, skip only when all of res2's nodes are part of
+		 * this reservation; otherwise fall through and exclude the
+		 * resources not shared with it.
+		 */
+		if (bit_super_set(res2_ptr->node_bitmap, resv_ptr->node_bitmap))
+			return 0;
+
+		overlap_flex = true;
+	}
 
 	if (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 		/*
@@ -8027,13 +8073,28 @@ static int _foreach_job_test_resv_overlap(void *x, void *arg)
 		return 0;
 	}
 
-	if (bit_overlap_any(*args->node_bitmap, res2_ptr->node_bitmap)) {
+	if (overlap_flex) {
+		/*
+		 * Resources reserved by other reservations remain excluded,
+		 * unless the reservation also has the OVERLAP flag and the
+		 * resources are part of both reservations.
+		 */
+		steal_bitmap = bit_copy(res2_ptr->node_bitmap);
+		bit_and_not(steal_bitmap, resv_ptr->node_bitmap);
+	} else {
+		steal_bitmap = res2_ptr->node_bitmap;
+	}
+	if (bit_overlap_any(*args->node_bitmap, steal_bitmap)) {
 		log_flag(RESERVATION, "%s: reservation %s overlaps %s with %u nodes",
 			 __func__, resv_ptr->name, res2_ptr->name,
-			 bit_overlap(*args->node_bitmap, res2_ptr->node_bitmap));
+			 bit_overlap(*args->node_bitmap, steal_bitmap));
 		*args->resv_overlap = true;
-		bit_and_not(*args->node_bitmap, res2_ptr->node_bitmap);
+		if (res2_ptr->flags & RESERVE_FLAG_MAINT)
+			*args->resv_maint = true;
+		bit_and_not(*args->node_bitmap, steal_bitmap);
 	}
+	if (steal_bitmap != res2_ptr->node_bitmap)
+		FREE_NULL_BITMAP(steal_bitmap);
 	return 0;
 }
 
@@ -8149,10 +8210,9 @@ static int _foreach_job_test_no_resv(void *x, void *arg)
 	return 0;
 }
 
-extern int job_test_resv(job_record_t *job_ptr, time_t *when,
-			 bool move_time, bitstr_t **node_bitmap,
-			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
-			 bool reboot)
+extern int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
+			 bitstr_t **node_bitmap, resv_exc_t *resv_exc_ptr,
+			 bool *resv_maint, bool *resv_overlap, bool reboot)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
 	time_t job_start_time, job_end_time, lic_resv_time;
@@ -8166,11 +8226,13 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		.rc = &rc,
 		.reboot = reboot,
 		.resv_exc_ptr = resv_exc_ptr,
+		.resv_maint = resv_maint,
 		.resv_overlap = resv_overlap,
 		.when = when,
 	};
 
 	*resv_overlap = false;	/* initialize to false */
+	*resv_maint = false;
 	job_start_time = *when;
 	job_end_time   = *when + _get_job_duration(job_ptr, reboot);
 	*node_bitmap = (bitstr_t *) NULL;

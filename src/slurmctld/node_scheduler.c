@@ -1084,7 +1084,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	list_t *preemptee_candidates = NULL;
 	bool old_feat_change = false;
 	bool has_xand = false;
-	bool resv_overlap = false;
+	bool resv_overlap = false, resv_maint = false;
 	resv_exc_t resv_exc = { 0 };
 	/*
 	 * Mark nodes reserved for other jobs as off limit for this job.
@@ -1095,7 +1095,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (job_ptr->resv_name == NULL) {
 		time_t start_res = time(NULL);
 		resv_rc = job_test_resv(job_ptr, &start_res, false,
-					&resv_bitmap, &resv_exc,
+					&resv_bitmap, &resv_exc, &resv_maint,
 					&resv_overlap, true);
 		if ((resv_rc == ESLURM_NODES_BUSY) ||
 		    (resv_rc == ESLURM_RESERVATION_MAINT)) {
@@ -1140,7 +1140,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		 * We are just interested in resv_exc being filled in
 		 */
 		(void) job_test_resv(job_ptr, &start_res, false, &resv_bitmap,
-				     &resv_exc, &resv_overlap, true);
+				     &resv_exc, &resv_maint, &resv_overlap,
+				     true);
 		FREE_NULL_BITMAP(resv_bitmap);
 	}
 
@@ -3793,7 +3794,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	bitstr_t *tmp_feature;
 	bitstr_t *grp_node_bitmap;
 	bool has_mor = false;
-	bool resv_overlap = false;
+	bool resv_overlap = false, resv_maint = false;
 	bitstr_t *node_maps[NM_TYPES] = { NULL, NULL, NULL, NULL, NULL, NULL };
 	bitstr_t *reboot_bitmap = NULL;
 
@@ -3805,8 +3806,8 @@ static int _build_node_list(job_record_t *job_ptr,
 		 */
 		time_t start_res = time(NULL);
 		rc = job_test_resv(job_ptr, &start_res, false,
-				   &usable_node_mask, NULL, &resv_overlap,
-				   true);
+				   &usable_node_mask, NULL, &resv_maint,
+				   &resv_overlap, true);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
@@ -3838,8 +3839,11 @@ static int _build_node_list(job_record_t *job_ptr,
 		if (resv_overlap && bit_ffs(usable_node_mask) < 0) {
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc,
-				   "ReqNodeNotAvail, Reserved for maintenance");
+			xstrfmtcat(
+				job_ptr->state_desc,
+				resv_maint ?
+					"ReqNodeNotAvail, Reserved for maintenance" :
+					"ReqNodeNotAvail, Reserved for other reservations");
 			FREE_NULL_BITMAP(usable_node_mask);
 			return ESLURM_RESERVATION_BUSY; /* All reserved */
 		}

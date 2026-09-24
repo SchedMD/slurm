@@ -461,7 +461,21 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST(REASON)
 size constraints of the reserved resources. With the <b>FLEX</b> flag jobs
 are able to start before the reservation begins or continue after it ends.
 They are also able to use the reserved node(s) along with additional nodes if
-required and available.
+required and available.</p>
+
+<p>Unless this reservation also has the <b>MAINT</b> flag, resources held by
+other reservations are still off limits. A reservation that reserves whole
+nodes keeps those nodes excluded, unless the <b>FLEX</b> reservation also has
+the <b>OVERLAP</b> flag and the nodes belong to both reservations. When the
+other reservation reserves only part of each node, its reserved cores are
+excluded instead of its nodes, so a job may still be allocated the unreserved
+cores on those nodes. <b>OVERLAP</b> never grants access to another reservation
+that has the <b>MAINT</b> flag: if it reserves whole nodes those nodes stay
+excluded, and if it reserves only part of each node its reserved cores do. A
+reservation that holds no nodes of its own (a license or
+burst buffer reservation created with <b>ANY_NODES</b>) and that also has the
+<b>OVERLAP</b> flag keeps the full <b>OVERLAP</b> grant: its jobs may use any
+node that is not in a <b>MAINT</b> reservation.</p>
 
 <p>The default behavior for jobs that request a reservation is that they must
 be able to run within the confines (time and space) of that reservation.
