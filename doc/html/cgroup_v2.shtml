@@ -308,21 +308,32 @@ There are other situations, and the fact that systemd developers and
 documentation claim that they are the unique single-writer to the tree, made
 SchedMD decide to be on the safe side and have Slurm coexist with systemd.
 </p>
-<p>It is worth noting that we added <i>IgnoreSystemd</i> and
-<i>IgnoreSystemdOnFailure</i> as cgroup.conf parameters which will avoid any
+<p>It is worth noting that we added <b>IgnoreSystemd</b> and
+<b>IgnoreSystemdOnFailure</b> as cgroup.conf parameters which will avoid any
 contact with systemd, and will just use a regular "mkdir" to create the same
-directory structures. These parameters are for development and testing
-purposes only.</p>
+directory structures. Slurm will detect when systemd is not the init process and
+set IgnoreSystemd automatically. This parameter can also be useful for testing
+purposes. See
+<a href="#distro_no_sysd">What happens with Linux distros without systemd?</a>.
+</p>
 
 <h3 id="distro_no_sysd">What happens with Linux distros without systemd?
 <a class="slurm_link" href="#distro_no_sysd"></a>
 </h3>
-<p>Slurm does not support them, but they can still work. The only
-requirements are to have libdbus, ebpf and systemd packages installed in
-the system to compile slurm. Then you can set the <i>IgnoreSystemd</i>
-parameter in cgroup.conf to manually create the
-<i>/sys/fs/cgroup/system.slice/</i> directory. With these requirements met,
-Slurm should work normally.</p>
+<p>Non-systemd Linux distributions have limited support, but they can work.
+The only requirements are to have libdbus, ebpf and systemd packages installed
+in the system to compile Slurm. With these requirements met, Slurm should work
+normally. The same applies to Slurm installations in containers.</p>
+
+<p>No extra cgroup configuration is needed for this to work, and nothing has to
+be set by hand. When slurmd starts, it checks whether systemd is the init
+system. If it is not, <b>IgnoreSystemd</b> defaults to yes, and the slurmstepd
+scope directory is prepared manually. With default configuration values that
+directory is <code>/sys/fs/cgroup/system.slice/slurmstepd.scope/</code>.</p>
+
+<p>This is only a default, so cgroup.conf can still override it. Setting
+<b>IgnoreSystemd=no</b> on a node without systemd is not supported, and slurmd
+will fail to start.</p>
 
 <h2 id="v2_overview">cgroup/v2 overview
 <a class="slurm_link" href="#v2_overview"></a>
@@ -662,9 +673,13 @@ this can be forced to the plugin version too.</p>
 <li><b>IgnoreSystemd=[yes|no]</b>: This option is used to avoid any call to dbus
 for contacting systemd. Instead of requesting the creation of a new scope when
 slurmd starts up, it will only use "mkdir" to prepare the cgroup directories for
-the slurmstepds. Use of this option in production systems with systemd is not
-supported for the reasons mentioned <a href="#consequences_nosysd">above</a>.
-This option can be useful for systems without systemd though.
+the slurmstepds. The default depends on the init system of each node: "no" where
+systemd is the init system, and "yes" where it is not. Setting it to "no" on a node
+without systemd is not supported and slurmd will fail to start. Setting it to
+"yes" on a node where systemd is the init system is only intended for development
+and testing, since systemd may then modify or remove cgroups that Slurm created
+for its jobs. See
+<a href="#distro_no_sysd">What happens with Linux distros without systemd?</a>.
 </li>
 <li><b>IgnoreSystemdOnFailure=[yes|no]</b>: This option will fallback to manual
 mode for creating the cgroup directories without creating a systemd "scope".

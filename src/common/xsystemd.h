@@ -36,7 +36,19 @@
 #ifndef _COMMON_XSYSTEMD_H
 #define _COMMON_XSYSTEMD_H
 
+#include <stdbool.h>
 #include <sys/types.h>
+
+/*
+ * Determine whether this host has been booted with systemd as its init system.
+ *
+ * Equivalent to using their library for:
+ * sd_booted();
+ *
+ * Note that just having the systemd binaries installed, or running systemd as
+ * a user manager, does not make this return true.
+ */
+extern bool xsystemd_booted(void);
 
 /*
  * Inform systemd of changed to mainpid.
