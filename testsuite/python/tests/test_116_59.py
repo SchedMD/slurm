@@ -86,25 +86,32 @@ def test_runtime_json_key_rename():
 
 
 def test_runtime_bogus_fails():
-    """An unknown runtime plugin fails when the step is launched.
+    """An unknown runtime plugin fails the submission.
 
-    Only srun is exercised: it launches a step under slurmstepd, which loads
-    the runtime plugin and fails. salloc and sbatch do not validate the
-    runtime plugin name at submission time, so they are not tested here.
+    srun loads the runtime plugin while it parses its options, so that the
+    options the plugin provides are in the table, and so rejects an unknown
+    plugin before any job or step exists.
     """
 
     error = atf.run_command_error("srun --runtime=bogus true", xfail=True, fatal=True)
     assert (
-        "launch failed" in error
-    ), "srun should report a step launch failure for an unknown runtime plugin"
+        "cannot create runtime context for runtime/bogus" in error
+    ), "srun should reject an unknown runtime plugin"
 
 
-def test_runtime_none_ignores_container():
-    """runtime/none runs tasks on the host, ignoring the --container value."""
+def test_runtime_none_rejects_container():
+    """runtime/none rejects --container, an option only runtime/oci provides.
 
-    # runtime/none ignores --container (even an invalid bundle) and runs the
-    # task directly on the host, exiting 0.
-    atf.run_command("srun --runtime=none --container=invalid hostname", fatal=True)
+    A runtime provides its own options, so naming a runtime and an option it
+    does not provide fails the submission rather than ignoring the value.
+    """
+
+    error = atf.run_command_error(
+        "srun --runtime=none --container=invalid hostname", xfail=True, fatal=True
+    )
+    assert (
+        "--container is not an option of runtime/none" in error
+    ), "runtime/none should reject --container, which only runtime/oci provides"
 
 
 @pytest.fixture
@@ -134,12 +141,11 @@ def oci_enabled():
 
 
 def test_runtime_oci_uses_container(oci_enabled):
-    """runtime/oci engages the --container value, unlike runtime/none.
+    """runtime/oci engages the --container value.
 
     runtime/oci does not ignore --container, so an invalid bundle fails the
-    step launch where runtime/none exits 0 on the same input. A full
-    containerized run additionally needs a valid OCI bundle and is out of scope
-    here.
+    step launch. A full containerized run additionally needs a valid OCI
+    bundle and is out of scope here.
     """
 
     atf.run_command_error(
@@ -281,15 +287,20 @@ def test_def_runtime_plugin_reported():
 def test_def_runtime_plugin_takes_effect(oci_enabled):
     """A job with no --runtime uses the configured DefRuntimePlugin.
 
-    With oci.conf enabled, DefRuntimePlugin=runtime/oci engages the
-    --container value and an invalid bundle fails the step launch, while
-    DefRuntimePlugin=runtime/none ignores --container and the same job
-    succeeds. The jobs request no --runtime, so the contrast proves the
-    configured default selects the plugin.
+    With oci.conf enabled, DefRuntimePlugin=runtime/oci takes the
+    SRUN_CONTAINER value and an invalid bundle fails the step launch, while
+    DefRuntimePlugin=runtime/none skips SRUN_CONTAINER, which it does not
+    provide, and the same job succeeds. The jobs request no --runtime, so the
+    contrast proves the configured default selects the plugin.
     """
 
     atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
-    atf.run_command_error("srun --container=invalid hostname", xfail=True, fatal=True)
+    atf.run_command_error(
+        "srun hostname",
+        env_vars="SRUN_CONTAINER=invalid",
+        xfail=True,
+        fatal=True,
+    )
 
     atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
-    atf.run_command("srun --container=invalid hostname", fatal=True)
+    atf.run_command("srun hostname", env_vars="SRUN_CONTAINER=invalid", fatal=True)
