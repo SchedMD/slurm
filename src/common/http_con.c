@@ -66,6 +66,8 @@ typedef struct http_con_s {
 	bool free_on_close;
 	/* True once a rejection response has been sent */
 	bool rejected;
+	/* True once quiesce requested to close after current request */
+	bool quiesced;
 	/* True from first byte of a request until it is answered */
 	bool in_request;
 	const http_con_server_events_t *events;
@@ -608,8 +610,10 @@ extern int http_con_send_response(http_con_t *hcon,
 
 	/*
 	 * RFC7230-6.6: a server closing the connection should say so in the
-	 * final response. The client asking to close is reason enough, so
-	 * honor it here where the headers are still being written.
+	 * final response. The client asking to close is reason enough, and so
+	 * is a quiesce requested while the request was underway (see
+	 * _on_quiesce()), so honor both here where the headers are still being
+	 * written.
 	 *
 	 * RFC7231-6.2 / RFC9112-9.3: a 1xx (informational) response is not
 	 * the final response to the request, and RFC9112-9.3 excuses every
@@ -617,15 +621,14 @@ extern int http_con_send_response(http_con_t *hcon,
 	 * that otherwise applies to all of them. A client that gets "100
 	 * Continue" is expected to keep sending the rest of the request
 	 * afterward -- that is the entire point of "Expect: 100-continue"
-	 * (RFC9110-10.1.1). Closing here on request->connection_close alone
-	 * would tear down the read side before that body arrives, so only an
-	 * explicit close_header (never requested for an interim response
-	 * today) can close on a 1xx.
+	 * (RFC9110-10.1.1). Closing here on request->connection_close or a
+	 * quiesce would tear down the read side before that body arrives, so
+	 * only an explicit close_header (never requested for an interim
+	 * response today) can close on a 1xx.
 	 */
-	if ((close_header ||
-	     (request->connection_close &&
-	      ((status_code < HTTP_STATUS_INFO_BEGIN) ||
-	       (status_code > HTTP_STATUS_INFO_END)))) &&
+	if ((close_header || ((request->connection_close || hcon->quiesced) &&
+			      ((status_code < HTTP_STATUS_INFO_BEGIN) ||
+			       (status_code > HTTP_STATUS_INFO_END)))) &&
 	    (rc = _send_http_connection_close(hcon)))
 		return rc;
 
@@ -740,7 +743,7 @@ static int _on_content_complete(void *arg)
 	 * connection is closing by http_con_send_response(). Writing a header
 	 * here would land after the body.
 	 */
-	if (request->connection_close)
+	if (request->connection_close || hcon->quiesced)
 		conmgr_con_queue_close(hcon->con);
 
 	_request_reset(hcon);
@@ -850,6 +853,32 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	CONMGR_CON_UNLINK(hcon_con);
 }
 
+/*
+ * A connection kept open for the client's next request would hold the quiesce
+ * until it times out, so close it now. A request already underway is answered
+ * first, and the connection is closed after that response.
+ */
+static int _on_quiesce(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	http_con_t *hcon = arg;
+
+	xassert(hcon->magic == MAGIC);
+
+	hcon->quiesced = true;
+
+	if (hcon->in_request) {
+		log_flag(NET, "%s: [%s] closing once pending request is answered for quiesce",
+			 __func__, conmgr_con_get_name(hcon->con));
+		return SLURM_SUCCESS;
+	}
+
+	log_flag(NET, "%s: [%s] closing idle connection for quiesce",
+		 __func__, conmgr_con_get_name(hcon->con));
+
+	conmgr_con_queue_close(hcon->con);
+	return SLURM_SUCCESS;
+}
+
 extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 				  const http_con_server_events_t *events,
 				  void *arg)
@@ -857,6 +886,7 @@ extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 	static const conmgr_events_t http_events = {
 		.on_data = _on_data,
 		.on_finish = _on_finish,
+		.on_quiesce = _on_quiesce,
 	};
 	const conmgr_events_t *prior_events = NULL;
 	void *prior_arg = NULL;
