@@ -606,6 +606,73 @@ START_TEST(test_data_dict_openapi_schema)
 }
 
 END_TEST
+
+START_TEST(test_job_desc_runtime_data)
+{
+	counts_t counts = { 0 };
+	data_parser_t *parser = NULL;
+	data_t *parent_path = data_set_list(data_new());
+	data_t *src = data_set_dict(data_new());
+	data_t *runtime_data =
+		data_set_dict(data_define_dict_path(src, "runtime/data"));
+	data_t *dumped = data_new(), *type = NULL;
+	job_desc_msg_t *job_desc = NULL;
+
+	data_set_string(data_list_append(parent_path), __func__);
+	data_set_string(data_define_dict_path(src, "runtime/type"),
+			"runtime/test");
+	data_set_string(data_key_set(runtime_data, "string"), "value");
+	data_set_int(data_key_set(runtime_data, "int"), 1234);
+	data_set_bool(data_key_set(data_set_dict(data_key_set(runtime_data,
+							      "dict")),
+				   "bool"),
+		      true);
+
+	/*
+	 * Dumping a job descriptor warns about placeholder values unrelated to
+	 * runtime_data, so count warnings instead of failing on them.
+	 */
+	parser = data_parser_g_new(_fail_on_error, _fail_on_error,
+				   _fail_on_error, NULL, _count_on_warn,
+				   _count_on_warn, _count_on_warn, &counts,
+				   SLURM_DATA_PARSER_VERSION, NULL, false);
+	ck_assert(parser);
+
+	/* parsing a job descriptor loads the TRES and QOS lists */
+	ck_assert(!data_parser_g_assign(parser, DATA_PARSER_ATTR_TRES_LIST,
+					list_create(slurmdb_destroy_tres_rec)));
+	ck_assert(!data_parser_g_assign(parser, DATA_PARSER_ATTR_QOS_LIST,
+					list_create(slurmdb_destroy_qos_rec)));
+
+	ck_assert(!DATA_PARSE(parser, JOB_DESC_MSG_PTR, job_desc, src,
+			      parent_path));
+	/* parsing runtime_data must not warn */
+	ck_assert(!counts.warnings);
+	ck_assert(job_desc);
+	/* runtime/type and runtime/data share the same runtime object */
+	ck_assert(!xstrcmp(job_desc->runtime, "runtime/test"));
+	ck_assert(job_desc->runtime_data);
+	ck_assert(job_desc->runtime_data != runtime_data);
+	ck_assert(data_check_match(runtime_data, job_desc->runtime_data,
+				   false));
+
+	ck_assert(!DATA_DUMP(parser, JOB_DESC_MSG_PTR, job_desc, dumped));
+	type = data_resolve_dict_path(dumped, "runtime/type");
+	ck_assert(data_get_type(type) == DATA_TYPE_STRING);
+	ck_assert(!xstrcmp(data_get_string(type), "runtime/test"));
+	ck_assert(data_check_match(runtime_data,
+				   data_resolve_dict_path(dumped,
+							  "runtime/data"),
+				   false));
+
+	slurm_free_job_desc_msg(job_desc);
+	FREE_NULL_DATA(dumped);
+	FREE_NULL_DATA(src);
+	FREE_NULL_DATA(parent_path);
+	FREE_NULL_DATA_PARSER(parser);
+}
+
+END_TEST
 #endif /* SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0) */
 
 extern int main(int argc, char **argv)
@@ -625,6 +692,7 @@ extern int main(int argc, char **argv)
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 	tcase_add_test(tcase, test_data_dict_reject);
 	tcase_add_test(tcase, test_data_dict_openapi_schema);
+	tcase_add_test(tcase, test_job_desc_runtime_data);
 #endif
 
 	Suite *suite = suite_create("data_parser");
