@@ -1464,6 +1464,7 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 		break;
 	case OPENAPI_FORMAT_BOOL:
 		data_set_bool(dst, false);
+		break;
 	case OPENAPI_FORMAT_OBJECT:
 		data_set_dict(dst);
 		break;
