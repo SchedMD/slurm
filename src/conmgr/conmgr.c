@@ -504,6 +504,22 @@ extern void conmgr_quiesce(const char *caller)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+static int _foreach_clear_on_quiesce_complete(void *x, void *arg)
+{
+	conmgr_fd_t *con = x;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	/* Connection quiesced individually stays quiesced until unquiesced */
+	if (!con_flag(con, FLAG_QUIESCE)) {
+		/* Quiesce only became active once it stopped waiting on con */
+		xassert(!con_flag(con, FLAG_WAIT_ON_QUIESCE));
+		con_unset_flag(con, FLAG_ON_QUIESCE_COMPLETE);
+	}
+
+	return 1;
+}
+
 extern void conmgr_unquiesce(const char *caller)
 {
 	slurm_mutex_lock(&mgr.mutex);
@@ -515,6 +531,12 @@ extern void conmgr_unquiesce(const char *caller)
 	mgr.quiesce.requested = false;
 	mgr.quiesce.active = false;
 	mgr.quiesce.start.tv_sec = 0;
+
+	/* Next conmgr_quiesce() must call on_quiesce() again */
+	(void) list_for_each(mgr.connections,
+			     _foreach_clear_on_quiesce_complete, NULL);
+	(void) list_for_each(mgr.listen_conns,
+			     _foreach_clear_on_quiesce_complete, NULL);
 
 	EVENT_BROADCAST(&mgr.quiesce.on_stop_quiesced);
 

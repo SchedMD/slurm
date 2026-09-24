@@ -342,8 +342,10 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 	}
 
 	/* un-quiesce if input is already closed to allow cleanup */
-	if (con_flag(con, FLAG_READ_EOF))
+	if (con_flag(con, FLAG_READ_EOF)) {
 		con_unset_flag(con, FLAG_QUIESCE);
+		con_unset_flag(con, FLAG_ON_QUIESCE_COMPLETE);
+	}
 
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
@@ -527,6 +529,68 @@ extern void queue_on_connection(conmgr_fd_t *con)
 	add_work_con_fifo(true, con, wrap_on_connection, con);
 
 	log_flag(CONMGR, "%s: [%s] Fully connected. Queuing on_connect() callback.",
+		 __func__, con->name);
+}
+
+static void _wrap_on_quiesce(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	STRUCT_FIELD_TYPEOF(conmgr_events_t, on_quiesce) callback = NULL;
+	void *con_arg = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con_flag(con, FLAG_WAIT_ON_QUIESCE));
+	/*
+	 * Connection may have changed since this work was queued. Skip if the
+	 * quiesce already ended, new events have no on_quiesce() or the
+	 * connection is closing or fully closed.
+	 */
+	if ((con_flag(con, FLAG_QUIESCE) || mgr.quiesce.requested) &&
+	    con->events->on_quiesce && !con_flag(con, FLAG_CLOSE_REQUESTED) &&
+	    !(con_flag(con, FLAG_READ_EOF) && con_flag(con, FLAG_WRITE_EOF))) {
+		callback = con->events->on_quiesce;
+		con_arg = con->arg;
+	}
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (!callback) {
+		log_flag(CONMGR, "%s: [%s] skipping on_quiesce() as quiesce ended, on_quiesce() was removed or connection is closing",
+			 __func__, con->name);
+	} else {
+		rc = callback(conmgr_args, con_arg);
+	}
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con_flag(con, FLAG_WAIT_ON_QUIESCE));
+	con_unset_flag(con, FLAG_WAIT_ON_QUIESCE);
+	/*
+	 * Only mark on_quiesce() as called while still quiesced. Otherwise, an
+	 * unquiesce during callback() would leave the flag set and skip
+	 * on_quiesce() for the next quiesce.
+	 */
+	if (callback && (con_flag(con, FLAG_QUIESCE) || mgr.quiesce.requested))
+		con_set_flag(con, FLAG_ON_QUIESCE_COMPLETE);
+	if (callback && rc) {
+		log_flag(CONMGR, "%s: [%s] closing due to on_quiesce() failure: %s",
+			 __func__, con->name, slurm_strerror(rc));
+		con_set_status_code(con, rc);
+		close_con(true, con);
+	}
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+/* caller must hold mgr->mutex lock */
+extern void queue_on_quiesce(conmgr_fd_t *con)
+{
+	if (!con->events->on_quiesce || con_flag(con, FLAG_WAIT_ON_QUIESCE) ||
+	    con_flag(con, FLAG_ON_QUIESCE_COMPLETE))
+		return;
+
+	con_set_flag(con, FLAG_WAIT_ON_QUIESCE);
+	add_work_con_fifo(true, con, _wrap_on_quiesce, NULL);
+
+	log_flag(CONMGR, "%s: [%s] Queuing on_quiesce() callback.",
 		 __func__, con->name);
 }
 
@@ -817,6 +881,28 @@ static int _handle_listener(conmgr_fd_t *con, handle_connection_args_t *args)
 }
 
 /*
+ * Check on_quiesce() flags are consistent
+ * NOTE: caller must hold mgr->mutex lock
+ */
+static void _check_on_quiesce_flags(const conmgr_fd_t *con)
+{
+#ifndef NDEBUG
+	/* on_quiesce() work is pending or running while queued */
+	if (con_flag(con, FLAG_WAIT_ON_QUIESCE))
+		xassert(con_flag(con, FLAG_WORK_ACTIVE) ||
+			!list_is_empty(con->work));
+
+	/* on_quiesce() is never queued again once called */
+	xassert(!con_flag(con, FLAG_WAIT_ON_QUIESCE) ||
+		!con_flag(con, FLAG_ON_QUIESCE_COMPLETE));
+
+	/* on_quiesce() is only marked as called while quiesced */
+	if (con_flag(con, FLAG_ON_QUIESCE_COMPLETE))
+		xassert(con_flag(con, FLAG_QUIESCE) || mgr.quiesce.requested);
+#endif /* !NDEBUG */
+}
+
+/*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
  *
@@ -839,6 +925,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		args = &local_args;
 	}
+
+	_check_on_quiesce_flags(con);
 
 	if (con_flag(con, FLAG_IS_LISTEN))
 		return _handle_listener(con, args);
@@ -1787,6 +1875,29 @@ static int _get_quiesced_waiter_count(void)
 	return waiters;
 }
 
+/*
+ * Queue on_quiesce() once per conmgr_quiesce() for each connection it waits on.
+ * Connections quiesced individually got theirs when quiesced. Skip connections
+ * already requested to close or fully closed as _wrap_on_quiesce() would not
+ * call on_quiesce() for them.
+ */
+static int _foreach_queue_on_quiesce(void *x, void *arg)
+{
+	conmgr_fd_t *con = x;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (!con->events->on_quiesce || con_flag(con, FLAG_QUIESCE) ||
+	    con_flag(con, FLAG_CLOSE_REQUESTED) ||
+	    (con_flag(con, FLAG_READ_EOF) && con_flag(con, FLAG_WRITE_EOF)) ||
+	    is_signal_connection(con))
+		return 1;
+
+	queue_on_quiesce(con);
+
+	return 1;
+}
+
 /* NOTE: must hold mgr.mutex except signal connection */
 static int _close_con_for_each(void *x, void *arg)
 {
@@ -1844,6 +1955,10 @@ static bool _watch_loop(void)
 
 		/* Cancel any delayed connection work to avoid waiting on it */
 		cancel_delayed_work(true);
+
+		/* Let each owner close its connection rather than wait on it */
+		(void) list_for_each(mgr.connections, _foreach_queue_on_quiesce,
+				     NULL);
 
 		if (signal_mgr_has_incoming()) {
 			/*

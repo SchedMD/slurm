@@ -271,6 +271,25 @@ typedef struct {
 	 */
 	int (*on_connect_timeout)(conmgr_callback_args_t conmgr_args,
 				  void *arg);
+
+	/*
+	 * Call back when a quiesce is requested for connection
+	 * Called when conmgr_quiesce() waits on the connection or when
+	 * conmgr_quiesce_fd() or conmgr_quiesce_con() quiesces it, at most once
+	 * until the connection is unquiesced, but never once the connection is
+	 * closing. Quiescing and unquiescing the connection any number of times
+	 * before on_quiesce() returns only results in a single call.
+	 * NOTE: may be called before on_connection() returns with arg=NULL
+	 *
+	 * If on_quiesce=NULL, the connection is left to complete.
+	 *
+	 * IN conmgr_args - Args relaying conmgr callback state
+	 * IN arg ptr to be handed return of on_connection() callback (or
+	 *	on_listen_connect() for listeners).
+	 * RET SLURM_SUCCESS to wait for connection to complete or error to
+	 *	kill connection
+	 */
+	int (*on_quiesce)(conmgr_callback_args_t conmgr_args, void *arg);
 } conmgr_events_t;
 
 typedef enum {

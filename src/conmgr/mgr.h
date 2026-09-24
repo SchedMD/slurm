@@ -621,6 +621,13 @@ extern void handle_connection(bool locked, conmgr_fd_t *con);
 extern void queue_on_connection(conmgr_fd_t *con);
 
 /*
+ * Queue up events->on_quiesce() callback if connection defines it and it is
+ * not already queued, running, or called for the current quiesce
+ * NOTE: caller must hold mgr->mutex lock
+ */
+extern void queue_on_quiesce(conmgr_fd_t *con);
+
+/*
  * Probe all connections to info()
  * NOTE: caller must not hold conmgr global lock
  */
