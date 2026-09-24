@@ -412,8 +412,7 @@ typedef struct {
 	char *prefer;			/* --prefer			*/
 	char *constraint;		/* --constraint			*/
 	char *c_constraint;		/* --cluster-constraint		*/
-	char *gres;			/* --gres			*/
-	char *container;		/* --container			*/
+	char *gres; /* --gres			*/
 	char *container_id;		/* --container-id		*/
 	char *runtime; /* --runtime			*/
 	int runtime_idx; /* RUNTIME_IDX_INVALID or idx */
