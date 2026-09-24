@@ -6754,7 +6754,148 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	if (!msg->wckey)
 		msg->bitflags |= USE_DEFAULT_WCKEY;
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack32(msg->site_factor, buffer);
+		packstr(msg->batch_features, buffer);
+		packstr(msg->cluster_features, buffer);
+		packstr(msg->clusters, buffer);
+		pack16(msg->contiguous, buffer);
+		packstr(msg->container, buffer);
+		packstr(msg->container_id, buffer);
+		packstr(msg->runtime, buffer);
+		pack16(msg->core_spec, buffer);
+		pack32(msg->task_dist, buffer);
+		pack16(msg->kill_on_node_fail, buffer);
+		packstr(msg->features, buffer);
+		pack64(msg->fed_siblings_active, buffer);
+		pack64(msg->fed_siblings_viable, buffer);
+		packstr(msg->job_id_str, buffer);
+		packstr(msg->name, buffer);
+
+		packstr(msg->alloc_node, buffer);
+		pack32(msg->alloc_sid, buffer);
+		packstr(msg->array_inx, buffer);
+		packstr(msg->burst_buffer, buffer);
+		pack16(msg->pn_min_cpus, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		pack16(msg->mem_update_delay, buffer);
+		pack16(msg->mem_update_margin, buffer);
+		pack16(msg->oom_kill_step, buffer);
+		pack32(msg->pn_min_tmp_disk, buffer);
+		packstr(msg->prefer, buffer);
+
+		pack32(msg->cpu_freq_min, buffer);
+		pack32(msg->cpu_freq_max, buffer);
+		pack32(msg->cpu_freq_gov, buffer);
+
+		packstr(msg->partition, buffer);
+		pack32(msg->priority, buffer);
+		packstr(msg->dependency, buffer);
+		packstr(msg->account, buffer);
+		packstr(msg->admin_comment, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->nice, buffer);
+		pack32(msg->profile, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->mcs_label, buffer);
+
+		packstr(msg->origin_cluster, buffer);
+		pack8(msg->open_mode, buffer);
+		pack8(msg->overcommit, buffer);
+		packstr(msg->acctg_freq, buffer);
+		pack32(msg->num_tasks, buffer);
+
+		packstr(msg->req_context, buffer);
+		packstr(msg->req_nodes, buffer);
+		packstr(msg->exc_nodes, buffer);
+		packstr_array(msg->environment, msg->env_size, buffer);
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		packstr(msg->script, buffer);
+		packstr_array(msg->argv, msg->argc, buffer);
+
+		packstr(msg->std_err, buffer);
+		packstr(msg->std_in, buffer);
+		packstr(msg->std_out, buffer);
+		packstr(msg->submit_line, buffer);
+		packstr(msg->work_dir, buffer);
+
+		pack16(msg->immediate, buffer);
+		pack16(msg->reboot, buffer);
+		pack16(msg->requeue, buffer);
+		pack16(msg->shared, buffer);
+		pack16(msg->cpus_per_task, buffer);
+		pack16(msg->ntasks_per_node, buffer);
+		pack16(msg->ntasks_per_board, buffer);
+		pack16(msg->ntasks_per_socket, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+
+		pack16(msg->plane_size, buffer);
+		pack16(msg->cpu_bind_type, buffer);
+		pack16(msg->mem_bind_type, buffer);
+		packstr(msg->cpu_bind, buffer);
+		packstr(msg->mem_bind, buffer);
+
+		pack32(msg->time_limit, buffer);
+		pack32(msg->time_min, buffer);
+		pack32(msg->min_cpus, buffer);
+		pack32(msg->max_cpus, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->max_nodes, buffer);
+		packstr(msg->job_size_str, buffer);
+		pack16(msg->boards_per_node, buffer);
+		pack16(msg->sockets_per_board, buffer);
+		pack16(msg->sockets_per_node, buffer);
+		pack16(msg->cores_per_socket, buffer);
+		pack16(msg->threads_per_core, buffer);
+		pack32(msg->user_id, buffer);
+		pack32(msg->group_id, buffer);
+
+		pack16(msg->alloc_resp_port, buffer);
+		packstr(msg->alloc_tls_cert, buffer);
+		packstr(msg->resp_host, buffer);
+		pack16(msg->other_port, buffer);
+		pack16(msg->resv_port_cnt, buffer);
+		packstr(msg->network, buffer);
+		pack_time(msg->begin_time, buffer);
+		pack_time(msg->end_time, buffer);
+		pack_time(msg->deadline, buffer);
+
+		packstr(msg->licenses, buffer);
+		pack16(msg->mail_type, buffer);
+		packstr(msg->mail_user, buffer);
+		packstr(msg->reservation, buffer);
+		pack16(msg->restart_cnt, buffer);
+		pack16(msg->warn_flags, buffer);
+		pack16(msg->warn_signal, buffer);
+		pack16(msg->warn_time, buffer);
+		packstr(msg->wckey, buffer);
+		pack32(msg->req_switch, buffer);
+		pack32(msg->wait4switch, buffer);
+
+		pack16(msg->wait_all_nodes, buffer);
+		pack64(msg->bitflags, buffer);
+		pack32(msg->delay_boot, buffer);
+		packstr(msg->extra, buffer);
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target, buffer);
+		pack16(msg->x11_target_port, buffer);
+
+		packstr(msg->cpus_per_tres, buffer);
+		packstr(msg->mem_per_tres, buffer);
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
+		packstr(msg->tres_per_job, buffer);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_socket, buffer);
+		packstr(msg->tres_per_task, buffer);
+		pack_cron_entry(msg->crontab_entry, smsg->protocol_version,
+				buffer);
+		pack16(msg->segment_size, buffer);
+	} else if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->site_factor, buffer);
 		packstr(msg->batch_features, buffer);
