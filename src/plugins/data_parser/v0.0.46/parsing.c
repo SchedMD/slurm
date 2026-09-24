@@ -436,6 +436,15 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 			     !data_get_list_length(src);
 
 	xassert(!*ptr);
+
+	if (parser->allow_null_pointer &&
+	    (data_get_type(src) == DATA_TYPE_NULL)) {
+		/* Mirror the dump side: a null source leaves *ptr NULL. */
+		free_parser_obj(parser, *ptr);
+		*ptr = NULL;
+		return SLURM_SUCCESS;
+	}
+
 	*ptr = alloc_parser_obj(parser);
 
 	if (is_empty_dict || is_empty_list) {
