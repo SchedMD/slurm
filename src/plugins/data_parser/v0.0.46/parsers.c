@@ -10906,6 +10906,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(BOOL16, requeue, "requeue", "Determines whether the job may be requeued"),
 	add_parse(STRING, reservation, "reservation", "Name of reservation to use"),
 	add_parse(STRING, runtime, "runtime/type", "Job runtime plugin type"),
+	add_parse(DATA_DICT, runtime_data, "runtime/data", "Job runtime plugin specific data"),
 	add_parse(STRING, script, "script", "Job batch script contents; only the first component in a HetJob is populated or honored"),
 	add_skip(script_buf),
 	add_skip(script_hash),
