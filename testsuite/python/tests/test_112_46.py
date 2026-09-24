@@ -334,6 +334,43 @@ def test_specification(openapi_spec):
     atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
 
 
+def test_specification_no_empty_required():
+    """No schema in the spec has an empty "required" list
+
+    The spec declares OpenAPI 3.0.3, which takes "required" from JSON Schema
+    Wright Draft 00: the list must have at least one element. An object with
+    no required fields has to omit the keyword instead.
+    """
+
+    r = atf.request_slurmrestd("openapi/v3")
+    assert r.status_code == 200, f"Unable to get the OpenAPI spec: {r.text}"
+
+    spec = r.json()
+
+    def _find_empty_required(oas, path):
+        """Returns the paths of every object in oas with "required": []"""
+
+        found = []
+        if type(oas) is dict:
+            if oas.get("required") == []:
+                found.append(path)
+            for key, value in oas.items():
+                found += _find_empty_required(value, f"{path}/{key}")
+        elif type(oas) is list:
+            for i, value in enumerate(oas):
+                found += _find_empty_required(value, f"{path}/{i}")
+
+        return found
+
+    empty = _find_empty_required(spec, "#")
+    assert not empty, f"Schemas with an empty required list: {empty}"
+
+    # Objects with required fields must keep their non-empty list
+    assert any(
+        schema.get("required") for schema in spec["components"]["schemas"].values()
+    ), "No schema has a non-empty required list"
+
+
 def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
     from openapi_client import ApiClient as Client
     from openapi_client import Configuration as Config
