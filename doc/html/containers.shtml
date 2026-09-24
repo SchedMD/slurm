@@ -445,6 +445,12 @@ configured and can be tested in Slurm.
 '--container' argument, which can be used to request container runtime
 execution. The requested job container will not be inherited by the steps
 called, excluding the batch and interactive steps.
+Steps started with <i>srun</i> from <i>salloc</i>'s interactive step
+(<b>LaunchParameters=use_interactive_step</b>) inherit the bundle through
+<b>SRUN_CONTAINER</b>, so they also run in the container, provided the
+interactive step's <i>srun</i> uses <i>runtime/oci</i>, which it does when that
+is the <b>DefRuntimePlugin</b>.
+For a heterogeneous job, only the first component's bundle is used.
 </p>
 
 <ul>

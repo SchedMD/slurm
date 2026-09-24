@@ -2545,6 +2545,9 @@ See \fB\-\-stepmgr\fR.
 \fB\-\-runtime\fR=<\fIname\fR>
 Runtime plugin to use for job. Specify \fBlist\fR to print the available
 runtime plugins and exit.
+Only one runtime may be selected for the job, or for each component of a
+heterogeneous job: repeating a name is accepted, a different name, on the
+command line or in a \fB#SBATCH\fR line, is an error.
 .IP
 
 .TP
@@ -3300,6 +3303,8 @@ Same as \fB\-\-reservation\fR
 .TP
 \fBSBATCH_RUNTIME\fR
 Same as \fB\-\-runtime\fR.
+Unlike most input environment variables, this does not override a
+\fB\-\-runtime\fR in the batch script.
 .IP
 
 .TP
