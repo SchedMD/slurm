@@ -459,6 +459,36 @@ def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
     assert not resp.accounts
 
 
+def test_db_accounts_null_meta(slurmdb, admin_level, cleanup_created_account3):
+    """Issue 51205: POST /accounts/ accepts an explicit "meta": null.
+
+    data_parser registers meta as a null-allowed pointer and dumps it as null
+    when unset (the OpenAPI schema does not mark it nullable), so a null must
+    parse back to an unset meta rather than be rejected. The generated client
+    cannot send this: it drops None-valued fields.
+    """
+    resp = slurmdb.slurmdb_v0046_get_account(account3_name)
+    assert not resp.accounts, f"account {account3_name} already exists"
+
+    body = {
+        "meta": None,
+        "accounts": [
+            {
+                "name": account3_name,
+                "description": "test description",
+                "organization": "test organization",
+            }
+        ],
+    }
+    resp = _slurmrestd_post("/slurmdb/v0.0.46/accounts/", body)
+    assert not resp.get("errors"), resp.get("errors")
+    assert not resp.get("warnings"), resp.get("warnings")
+
+    resp = slurmdb.slurmdb_v0046_get_account(account3_name)
+    assert len(resp.errors) == 0, resp.errors
+    assert resp.accounts, "account posted with a null meta was not created"
+
+
 def test_db_diag(slurmdb, admin_level):
     resp = slurmdb.slurmdb_v0046_get_diag()
     assert not resp.warnings
@@ -1025,9 +1055,10 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
 def _slurmrestd_post(path, body, expect_status=200, expect_error=False):
     """POST raw JSON to slurmrestd and return the decoded response.
 
-    Used for SHARES request shapes the generated OpenAPI client cannot
-    express: the bare string "parent" and a bare integer/null shares value (the
-    field's generated model is the V0046SharesStruct object).
+    Used for request shapes the generated OpenAPI client cannot express: the
+    bare string "parent" and a bare integer/null shares value (the field's
+    generated model is the V0046SharesStruct object), and an explicit null
+    meta (the client omits unset fields).
     """
     r = requests.post(
         f"{atf.properties['slurmrestd_url']}{path}",
