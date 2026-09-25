@@ -53,10 +53,13 @@
  * refused, because unpack_data() would refuse to read it back. The bound is
  * deeper than any payload this packs in practice.
  *
- * IN val - data to pack
+ * A NULL val is packed the same as a data_t holding null, so that a data_t
+ * pointer left NULL when unset can be packed directly. It unpacks as null.
+ *
+ * IN val - data to pack, or NULL to pack null
  * IN protocol_version - version of the peer this is packed for.
  * IN/OUT buffer - buffer to append the tag and value to
- * RET SLURM_SUCCESS, EINVAL on a NULL argument, ESLURM_DATA_TOO_LARGE when a
+ * RET SLURM_SUCCESS, EINVAL on a NULL buffer, ESLURM_DATA_TOO_LARGE when a
  *	string or an entry count is too large to pack, or SLURM_ERROR when the
  *	value is nested too deeply
  */

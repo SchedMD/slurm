@@ -659,8 +659,14 @@ static int _pack_data(const data_t *val, uint16_t protocol_version,
 {
 	data_type_t type = DATA_TYPE_NONE;
 
-	if (!val || !buffer)
+	if (!buffer)
 		return EINVAL;
+
+	/* Treat NULL the same as a data_t holding null */
+	if (!val) {
+		pack8(DATA_TAG_NULL, buffer);
+		return SLURM_SUCCESS;
+	}
 
 	type = data_get_type(val);
 
