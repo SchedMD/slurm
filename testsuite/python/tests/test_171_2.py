@@ -11,8 +11,8 @@ host without SLURM_CONTAINER. runtime/none and runtime/oci with no bundle both
 run tasks on the host, so this does not tell those two apart.
 
 salloc's interactive step is a separate srun that takes its container from its
-own options or environment, not the job's, so it is tested here too, as is the
-SLURM_CONTAINER salloc gives a command it runs.
+own options or environment, not the job's, so it is tested here too, as is what
+salloc exports to a command it runs.
 
 No real container runtime is needed. With IgnoreFileConfigJson, runtime/oci
 runs RunTimeRun as the job user without reading a config.json, so the one
@@ -218,5 +218,26 @@ def test_salloc_command_gets_container(bundles):
     assert result["exit_code"] == 0, f"salloc failed: {result['stderr']}"
     assert result["stdout"].splitlines() == [bundles["a"]], (
         f"the command should see SLURM_CONTAINER={bundles['a']}"
+        f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+    )
+
+
+def test_salloc_command_gets_no_runtime_inputs(bundles):
+    """salloc --container exports no runtime input variables to a command.
+
+    Only the interactive step's srun is given the bundle as a runtime input.
+    A command salloc runs must not get SRUN_CONTAINER, SBATCH_CONTAINER or
+    SALLOC_CONTAINER, or every srun, sbatch or salloc it starts would use the
+    bundle.
+    """
+
+    result = atf.run_command(
+        f"salloc -N1 --container={bundles['a']} /bin/sh -c "
+        "'printenv SRUN_CONTAINER SBATCH_CONTAINER SALLOC_CONTAINER; true'"
+    )
+    assert result["exit_code"] == 0, f"salloc failed: {result['stderr']}"
+    assert result["stdout"] == "", (
+        "the command should get none of SRUN_CONTAINER, SBATCH_CONTAINER or"
+        " SALLOC_CONTAINER"
         f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
     )
