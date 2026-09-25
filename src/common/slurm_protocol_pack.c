@@ -6737,9 +6737,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
+static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_desc_msg_t *msg = smsg->data;
+	int rc = SLURM_SUCCESS;
 
 	if (msg->script_buf) {
 		buf_t *buf = (buf_t *) msg->script_buf;
@@ -7319,6 +7320,8 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (msg->script_buf)
 		msg->script = NULL;
+
+	return rc;
 }
 
 static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
@@ -8053,7 +8056,7 @@ static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			.protocol_version = smsg->protocol_version,
 		};
 
-		_pack_job_desc_msg(&msg_wrapper, buffer);
+		(void) _pack_job_desc_msg(&msg_wrapper, buffer);
 	}
 	list_iterator_destroy(iter);
 }
@@ -14202,8 +14205,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_UPDATE_JOB:
-		_pack_job_desc_msg(msg, buffer);
-		break;
+		return _pack_job_desc_msg(msg, buffer);
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
 		_pack_job_desc_list_msg(msg, buffer);
