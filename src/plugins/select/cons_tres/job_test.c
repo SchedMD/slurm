@@ -2496,6 +2496,7 @@ static int _wrapper_job_res_rm_job(void *x, void *arg)
 
 static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 			   node_use_record_t *node_usage, list_t *license_list,
+			   list_t *preemptor_license_list,
 			   job_record_t *job_ptr, int action,
 			   bitstr_t *node_map)
 {
@@ -2507,7 +2508,7 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 		.node_map = node_map
 	};
 
-	if (!job_overlap_and_running(node_map, license_list, job_ptr))
+	if (!job_overlap_and_running(node_map, preemptor_license_list, job_ptr))
 		return 1;
 
 	if (!job_ptr->het_job_list)
@@ -2613,7 +2614,8 @@ static int _build_cr_job_list(void *x, void *arg)
 		}
 		/* Remove preemptable job now */
 		_job_res_rm_job(args->future_part, args->future_usage,
-				args->future_license_list, tmp_job_ptr, action,
+				args->future_license_list,
+				args->job_license_list, tmp_job_ptr, action,
 				args->orig_map);
 	}
 	return 0;
@@ -3172,7 +3174,11 @@ static int _foreach_suspend_preemptee(void *x, void *arg)
 
 	if (slurm_job_preempt_mode(tmp_job_ptr) != PREEMPT_MODE_SUSPEND)
 		return 0;
-	if (_job_res_rm_job(args->future_part, args->future_usage, NULL,
+	/*
+	 * A suspended job keeps its licenses, so license overlap is not a
+	 * reason to suspend it.
+	 */
+	if (_job_res_rm_job(args->future_part, args->future_usage, NULL, NULL,
 			    tmp_job_ptr, JOB_RES_ACTION_RESUME,
 			    ctx->orig_node_map))
 		return 0;
@@ -3250,8 +3256,8 @@ static int _foreach_cancel_preemptee(void *x, void *arg)
 	if ((mode != PREEMPT_MODE_REQUEUE) && (mode != PREEMPT_MODE_CANCEL))
 		return 0;
 	if (_job_res_rm_job(ctx->future_part, ctx->future_usage,
-			    ctx->license_list, tmp_job_ptr, 0,
-			    ctx->orig_node_map))
+			    ctx->license_list, ctx->job_ptr->license_list,
+			    tmp_job_ptr, 0, ctx->orig_node_map))
 		return 0;
 	bit_or(ctx->node_bitmap, ctx->orig_node_map);
 	*(ctx->rc) =
