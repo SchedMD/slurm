@@ -56,7 +56,7 @@ void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 
 int job_test_resv(job_record_t *job_ptr, time_t *when, bool move_time,
 		  bitstr_t **node_bitmap, resv_exc_t *resv_exc_ptr,
-		  bool *resv_overlap, bool reboot)
+		  bool *resv_maint, bool *resv_overlap, bool reboot)
 {
 	debug("%s %pJ", __func__, job_ptr);
 	*node_bitmap = node_conf_get_active_bitmap();

@@ -2249,7 +2249,7 @@ static void _attempt_backfill(void)
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
 	uint32_t job_no_reserve;
-	bool is_job_array_head, resv_overlap = false;
+	bool is_job_array_head, resv_overlap = false, resv_maint = false;
 	uint8_t save_share_res = 0, save_whole_node = 0;
 	int test_fini;
 	uint32_t qos_flags = 0;
@@ -2994,7 +2994,7 @@ TRY_LATER:
 			job_ptr->time_limit = orig_time_limit;
 		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
-				  &resv_exc, &resv_overlap, false);
+				  &resv_exc, &resv_maint, &resv_overlap, false);
 		if (j != SLURM_SUCCESS) {
 			log_flag(BACKFILL, "%pJ reservation defer",
 				 job_ptr);
@@ -3227,7 +3227,7 @@ later_start_set:
 			resv_end = 0;
 			j = job_test_resv(job_ptr, &start_res, false,
 					  &tmp_node_bitmap, &tmp_resv_exc,
-					  &resv_overlap, true);
+					  &resv_maint, &resv_overlap, true);
 			if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
 					    slurm_conf.preempt_mode)
 				job_ptr->time_limit = time_limit;
@@ -4626,7 +4626,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	het_job_rec_t *rec;
 	list_itr_t *iter;
 	int rc = SLURM_SUCCESS;
-	bool resv_overlap = false;
+	bool resv_overlap = false, resv_maint = false;
 	time_t now = time(NULL), start_res;
 	uint32_t hard_limit;
 	resv_exc_t resv_exc = { 0 };
@@ -4646,7 +4646,8 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 		 */
 		start_res = now;
 		rc = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
-				   &resv_exc, &resv_overlap, false);
+				   &resv_exc, &resv_maint, &resv_overlap,
+				   false);
 		reservation_delete_resv_exc_parts(&resv_exc);
 		if (rc != SLURM_SUCCESS) {
 			error("%pJ failed to start due to reservation",
