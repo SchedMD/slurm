@@ -11,7 +11,8 @@ host without SLURM_CONTAINER. runtime/none and runtime/oci with no bundle both
 run tasks on the host, so this does not tell those two apart.
 
 salloc's interactive step is a separate srun that takes its container from its
-own options or environment, not the job's, so it is tested here too.
+own options or environment, not the job's, so it is tested here too, as is the
+SLURM_CONTAINER salloc gives a command it runs.
 
 No real container runtime is needed. With IgnoreFileConfigJson, runtime/oci
 runs RunTimeRun as the job user without reading a config.json, so the one
@@ -176,3 +177,46 @@ def test_salloc_interactive_step_runs_in_bundle(bundles):
             f"the interactive step should print {expected!r}"
             f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
         )
+
+
+@pytest.fixture
+def no_interactive_step():
+    """Drops use_interactive_step for one test. The other tests need it, so it
+    is put back afterwards."""
+
+    atf.remove_config_parameter_value("LaunchParameters", "use_interactive_step")
+    yield
+    atf.add_config_parameter_value("LaunchParameters", "use_interactive_step")
+
+
+def test_salloc_container_requires_interactive_step(bundles, no_interactive_step):
+    """salloc refuses --container without use_interactive_step.
+
+    salloc has no step of its own to run in a bundle, so it needs an
+    interactive step to hand --container to.
+    """
+
+    result = atf.run_command(f"salloc -N1 --container={bundles['a']} true", xfail=True)
+
+    assert result["exit_code"] != 0, "salloc should refuse --container"
+    assert (
+        "--container requires LaunchParameters=use_interactive_step" in result["stderr"]
+    ), f"salloc should say why it refused --container: {result['stderr']!r}"
+
+
+def test_salloc_command_gets_container(bundles):
+    """salloc --container gives the command it runs SLURM_CONTAINER.
+
+    salloc(1) lists SLURM_CONTAINER among the variables it sets for the
+    executed program when --container is given. The command runs under salloc
+    itself, outside any step, so it sees salloc's own environment.
+    """
+
+    result = atf.run_command(
+        f"salloc -N1 --container={bundles['a']} printenv SLURM_CONTAINER"
+    )
+    assert result["exit_code"] == 0, f"salloc failed: {result['stderr']}"
+    assert result["stdout"].splitlines() == [bundles["a"]], (
+        f"the command should see SLURM_CONTAINER={bundles['a']}"
+        f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+    )
