@@ -13509,10 +13509,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
-					     buf_t *buffer)
+static int _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
 	crontab_update_request_msg_t *msg = smsg->data;
+	int rc = SLURM_SUCCESS;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		slurm_msg_t msg_wrapper = {
@@ -13521,10 +13522,13 @@ static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 		};
 
 		packstr(msg->crontab, buffer);
-		(void) _pack_job_desc_list_msg(&msg_wrapper, buffer);
+		if ((rc = _pack_job_desc_list_msg(&msg_wrapper, buffer)))
+			return rc;
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 	}
+
+	return rc;
 }
 
 static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
@@ -14632,8 +14636,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_crontab_response_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_CRONTAB:
-		_pack_crontab_update_request_msg(msg, buffer);
-		break;
+		return _pack_crontab_update_request_msg(msg, buffer);
 	case RESPONSE_UPDATE_CRONTAB:
 		_pack_crontab_update_response_msg(msg, buffer);
 		break;
