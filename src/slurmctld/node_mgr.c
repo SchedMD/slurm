@@ -3662,8 +3662,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	 * boot_time < last_response and are skipped, so admin overrides
 	 * via scontrol update node ... are not clobbered. last_response is
 	 * state-saved, so the gate also survives slurmctld restart.
+	 *
+	 * A node leaving power save is a new instance, but last_response
+	 * was already set to now above, so also test the power flags.
 	 */
-	if (node_ptr->boot_time > node_ptr->last_response) {
+	if ((node_ptr->boot_time > node_ptr->last_response) ||
+	    was_powering_up || was_powered_down) {
 		bool update_db = false;
 
 		if (reg_msg->extra) {
