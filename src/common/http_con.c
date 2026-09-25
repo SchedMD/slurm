@@ -147,6 +147,19 @@ static int _on_message_begin(void *arg)
 
 	xassert(hcon->magic == MAGIC);
 
+	/*
+	 * Once quiesced, the connection is closing, either after the response
+	 * that announced the close or right away when idle. Process no further
+	 * request: reject it with 503, close and stop the parser here. A
+	 * request underway when quiesced began before this and is answered.
+	 */
+	if (hcon->quiesced) {
+		int rc = _send_reject(hcon, SLURM_SHUTTING_DOWN);
+
+		conmgr_con_queue_close(hcon->con);
+		return rc;
+	}
+
 	hcon->in_request = true;
 	return SLURM_SUCCESS;
 }
@@ -801,6 +814,14 @@ extern int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 	if (rc) {
 		rc = _send_reject(hcon, rc);
+
+		/*
+		 * Rejecting a request that began once quiesced is expected as
+		 * the connection is closing (see _on_message_begin()), so
+		 * return success instead of failing the connection.
+		 */
+		if (hcon->quiesced && (rc == SLURM_SHUTTING_DOWN))
+			rc = SLURM_SUCCESS;
 	} else if (hcon->con && (bytes_parsed > 0) &&
 		   (rc = conmgr_con_mark_consumed_input_buffer(hcon->con,
 							       bytes_parsed))) {
@@ -856,7 +877,8 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 /*
  * A connection kept open for the client's next request would hold the quiesce
  * until it times out, so close it now. A request already underway is answered
- * first, and the connection is closed after that response.
+ * first, and the connection is closed after that response. Any request that
+ * begins after this is rejected by _on_message_begin().
  */
 static int _on_quiesce(conmgr_callback_args_t conmgr_args, void *arg)
 {
