@@ -8036,18 +8036,19 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
+static int _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	list_t *job_req_list = smsg->data;
 	job_desc_msg_t *req;
 	list_itr_t *iter;
 	uint16_t cnt = 0;
+	int rc = SLURM_SUCCESS;
 
 	if (job_req_list)
 		cnt = list_count(job_req_list);
 	pack16(cnt, buffer);
 	if (cnt == 0)
-		return;
+		return rc;
 
 	iter = list_iterator_create(job_req_list);
 	while ((req = list_next(iter))) {
@@ -8056,9 +8057,13 @@ static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			.protocol_version = smsg->protocol_version,
 		};
 
-		(void) _pack_job_desc_msg(&msg_wrapper, buffer);
+		/* A failed pack is never sent, so stop at the first error */
+		if ((rc = _pack_job_desc_msg(&msg_wrapper, buffer)))
+			break;
 	}
 	list_iterator_destroy(iter);
+
+	return rc;
 }
 
 static int _unpack_job_desc_list_msg(list_t **job_req_list, buf_t *buffer,
@@ -13516,7 +13521,7 @@ static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 		};
 
 		packstr(msg->crontab, buffer);
-		_pack_job_desc_list_msg(&msg_wrapper, buffer);
+		(void) _pack_job_desc_list_msg(&msg_wrapper, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 	}
@@ -14208,8 +14213,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		return _pack_job_desc_msg(msg, buffer);
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		_pack_job_desc_list_msg(msg, buffer);
-		break;
+		return _pack_job_desc_list_msg(msg, buffer);
 	case RESPONSE_HET_JOB_ALLOCATION:
 		_pack_job_info_list_msg(msg, buffer);
 		break;
