@@ -1111,6 +1111,20 @@ extern int destroy_mysql_db_info(mysql_db_info_t *db_info)
 	return SLURM_SUCCESS;
 }
 
+static void _init_mysql_conn(mysql_conn_t *mysql_conn, unsigned int timeout,
+			     mysql_db_info_t *db_info)
+{
+	if (!(mysql_conn->db_conn = mysql_init(mysql_conn->db_conn)))
+		fatal("mysql_init failed: %s",
+		      mysql_error(mysql_conn->db_conn));
+
+	mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
+		      (char *) &timeout);
+
+	/* ssl options must be (re)set after every mysql_init */
+	_set_mysql_ssl_opts(mysql_conn->db_conn, db_info->params);
+}
+
 extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				      mysql_db_info_t *db_info)
 {
@@ -1128,22 +1142,7 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 
 	slurm_mutex_lock(&mysql_conn->lock);
 
-	if (!(mysql_conn->db_conn = mysql_init(mysql_conn->db_conn))) {
-		slurm_mutex_unlock(&mysql_conn->lock);
-		fatal("mysql_init failed: %s",
-		      mysql_error(mysql_conn->db_conn));
-	}
-
-	/*
-	 * If this ever changes you will need to alter
-	 * src/common/slurmdbd_defs.c function _send_init_msg to
-	 * handle a different timeout when polling for the
-	 * response.
-	 */
-	mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
-		      (char *)&my_timeout);
-
-	_set_mysql_ssl_opts(mysql_conn->db_conn, db_info->params);
+	_init_mysql_conn(mysql_conn, my_timeout, db_info);
 
 	while (!storage_init) {
 		if (db_host)
