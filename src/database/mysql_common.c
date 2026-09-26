@@ -1167,12 +1167,14 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				rc = _create_db(db_name, db_info);
 
 				/*
-				 * When using ca, cert and key the next
-				 * connect will fail. Setting the options again
-				 * fixes it.
+				 * A failed connect clears all of the handle's
+				 * options (connect timeout, ssl, column limit),
+				 * so start over with a fresh handle.
 				 */
-				_set_mysql_ssl_opts(mysql_conn->db_conn,
-						    db_info->params);
+				mysql_close(mysql_conn->db_conn);
+				mysql_conn->db_conn = NULL;
+				_init_mysql_conn(mysql_conn, my_timeout,
+						 db_info);
 				continue;
 			}
 
