@@ -2051,6 +2051,16 @@ static int _select_and_set_node(void *x, void *arg)
 	gres_js->gres_bit_select[node_inx] = bit_alloc(gres_cnt);
 	gres_js->gres_cnt_node_select[node_inx] = 0;
 
+	*rc = gres_chunks_select(
+		sock_gres, job_ptr, node_ptr,
+		gres_js->gres_per_task ?
+			_get_task_cnt_node(tasks_per_node_socket[node_inx],
+					   node_ptr->tot_sockets) :
+			0,
+		args->used_cores_on_sock);
+	if (*rc != SLURM_SUCCESS)
+		return -1;
+
 	/*
 	 * A per-socket request has its socket count reconciled against the
 	 * sockets the job's allocation actually holds cores on, which changes
