@@ -296,7 +296,18 @@ typedef struct {
 	uint64_t topo_cnt;
 } tot_from_slurmd_conf_t;
 
+/* The chunk configuration of one Type, collected from its records */
 typedef struct {
+	bitstr_t *devs; /* Devices of the Type, NULL if it sets no ChunkSizes */
+	char *order; /* Borrowed from the Type's first record */
+	char *sizes; /* Borrowed from the Type's first record */
+	uint32_t type_id;
+} chunk_build_t;
+
+typedef struct {
+	int chunk_build_cnt;
+	chunk_build_t *chunk_builds; /* One per Type with devices */
+	bool chunk_mismatch; /* Set if the records of a Type disagree */
 	int core_cnt;
 	int cores_per_sock;
 	bool cpu_config_err;
@@ -4445,6 +4456,45 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Add a record to the chunk configuration of its Type. Every record of a Type
+ * must set the same ChunkSizes and ChunkOrder, or all set neither.
+ * IN gres_slurmd_conf - record with devices on this node
+ * IN/OUT rebuild_topo - collected chunk configuration
+ * RET devices of the record's Type to add to, NULL if it sets no ChunkSizes
+ */
+static bitstr_t *_add_chunk_build(gres_slurmd_conf_t *gres_slurmd_conf,
+				  rebuild_topo_t *rebuild_topo)
+{
+	uint32_t type_id = gres_build_id(gres_slurmd_conf->type_name);
+	chunk_build_t *build = NULL;
+
+	for (int i = 0; i < rebuild_topo->chunk_build_cnt; i++) {
+		if (rebuild_topo->chunk_builds[i].type_id == type_id) {
+			build = &rebuild_topo->chunk_builds[i];
+			break;
+		}
+	}
+
+	if (!build) {
+		xrecalloc(rebuild_topo->chunk_builds,
+			  (rebuild_topo->chunk_build_cnt + 1),
+			  sizeof(*rebuild_topo->chunk_builds));
+		build = &rebuild_topo->chunk_builds
+				 [rebuild_topo->chunk_build_cnt++];
+		build->type_id = type_id;
+		build->sizes = gres_slurmd_conf->chunk_sizes;
+		build->order = gres_slurmd_conf->chunk_order;
+		if (build->sizes)
+			build->devs = bit_alloc(rebuild_topo->dev_cnt);
+	} else if (xstrcmp(build->sizes, gres_slurmd_conf->chunk_sizes) ||
+		   xstrcmp(build->order, gres_slurmd_conf->chunk_order)) {
+		rebuild_topo->chunk_mismatch = true;
+	}
+
+	return build->devs;
+}
+
 static int _foreach_rebuild_topo(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -4452,6 +4502,7 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
 	int topo_cnt = rebuild_topo->topo_cnt;
+	bitstr_t *chunk_devs = NULL;
 
 	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 		return 0;
@@ -4506,6 +4557,14 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 			}
 		}
 	}
+
+	/*
+	 * A Type's domain can span several records, so collect it first. Skip
+	 * a node with no usable devices, which would give a zero-size bitmap.
+	 */
+	if (gres_slurmd_conf->count && rebuild_topo->dev_cnt)
+		chunk_devs = _add_chunk_build(gres_slurmd_conf, rebuild_topo);
+
 	if (gres_id_shared(gres_slurmd_conf->config_flags)) {
 		/* If running jobs recovered then already set */
 		if (!gres_ns->topo_gres_bitmap[topo_cnt]) {
@@ -4532,6 +4591,8 @@ static int _foreach_rebuild_topo(void *x, void *arg)
 			}
 			bit_set(gres_ns->topo_gres_bitmap[topo_cnt],
 				rebuild_topo->gres_inx);
+			if (chunk_devs)
+				bit_set(chunk_devs, rebuild_topo->gres_inx);
 			if (gres_ns->gres_bit_alloc &&
 			    bit_test(gres_ns->gres_bit_alloc,
 				     rebuild_topo->gres_inx)) {
@@ -4888,6 +4949,21 @@ static int _node_config_validate(node_record_t *node_ptr,
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
 				     &rebuild_topo);
 		rc = rebuild_topo.rc;
+
+		if (rebuild_topo.chunk_mismatch) {
+			char *tmp = xstrdup_printf("%s: every record of a Type must set the same ChunkSizes and ChunkOrder",
+				gres_ctx->gres_type);
+
+			error("%s: %s on node %s", __func__, tmp, node_name);
+			if (reason_down && !(*reason_down))
+				*reason_down = tmp;
+			else
+				xfree(tmp);
+			rc = EINVAL;
+		}
+		for (int i = 0; i < rebuild_topo.chunk_build_cnt; i++)
+			FREE_NULL_BITMAP(rebuild_topo.chunk_builds[i].devs);
+		xfree(rebuild_topo.chunk_builds);
 
 		if (rc)
 			gres_ns->topo_cnt = rebuild_topo.topo_cnt;
