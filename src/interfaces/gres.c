@@ -98,6 +98,7 @@ strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
 static s_p_options_t _gres_options[] = {
 	{ "AutoDetect", S_P_STRING },
+	{ "ChunkSizes", S_P_STRING }, /* Valid device chunk sizes */
 	{ "Count", S_P_STRING }, /* Number of Gres available */
 	{ "CPUs", S_P_STRING }, /* CPUs to bind to Gres resource
 				 * (deprecated, use Cores) */
@@ -2020,6 +2021,17 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("Invalid GRES record for %s, UUID (%s) may not contain a comma",
 			      p->name, p->unique_id);
 	}
+
+	if (s_p_get_string(&p->chunk_sizes, "ChunkSizes", tbl)) {
+		if (gres_chunk_sizes_parse(p->chunk_sizes, NULL, NULL) !=
+		    SLURM_SUCCESS)
+			fatal("Invalid GRES record for %s, invalid ChunkSizes %s",
+			      p->name, p->chunk_sizes);
+	}
+
+	if (p->chunk_sizes && !(p->config_flags & GRES_CONF_HAS_FILE))
+		fatal("Invalid GRES record for %s, ChunkSizes requires File or MultipleFiles",
+		      p->name);
 
 	_set_shared_flag(p->name, &p->config_flags);
 
