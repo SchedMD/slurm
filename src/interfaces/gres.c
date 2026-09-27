@@ -3745,6 +3745,10 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr(&conf->unique_id, buffer);
 		}
 
+		/* slurmd drops configured Links, this covers AutoDetect */
+		if (conf && conf->chunk_sizes)
+			xfree(conf->links);
+
 		if (conf && _add_to_gres_conf_list(conf, node_name))
 			destroy_gres_slurmd_conf(conf);
 		conf = NULL;
