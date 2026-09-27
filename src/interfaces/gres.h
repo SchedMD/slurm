@@ -220,7 +220,13 @@ typedef struct gres_search_key {
  * NOTE: Keep _copy_gres_slurmd_conf() in sync when adding pointer fields
  */
 typedef struct gres_slurmd_conf {
-	uint32_t config_flags;	/* See GRES_CONF_* values above */
+	/* Chunk position to device index map, NULL for identity map */
+	char *chunk_order;
+
+	/* Ascending list of valid device chunk sizes */
+	char *chunk_sizes;
+
+	uint32_t config_flags; /* See GRES_CONF_* values above */
 
 	/* Count of gres available in this configuration record */
 	uint64_t count;
@@ -266,7 +272,6 @@ typedef struct gres_slurmd_conf {
 	/* GRES ID number */
 	uint32_t plugin_id;
 } gres_slurmd_conf_t;
-
 
 /* Extra data and functions to be passed in to the node_config_load() */
 typedef struct {

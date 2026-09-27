@@ -3414,6 +3414,8 @@ static int _copy_gres_slurmd_conf(void *x, void *arg)
 	list_t *copy = arg;
 
 	*dst = *src;
+	dst->chunk_order = xstrdup(src->chunk_order);
+	dst->chunk_sizes = xstrdup(src->chunk_sizes);
 	dst->cpus = xstrdup(src->cpus);
 	if (src->cpus_bitmap)
 		dst->cpus_bitmap = bit_copy(src->cpus_bitmap);
@@ -11835,6 +11837,8 @@ extern void destroy_gres_slurmd_conf(void *x)
 	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
 
 	xassert(p);
+	xfree(p->chunk_order);
+	xfree(p->chunk_sizes);
 	xfree(p->cpus);
 	FREE_NULL_BITMAP(p->cpus_bitmap);
 	xfree(p->dmem_region);
@@ -12018,6 +12022,10 @@ extern void add_gres_to_list(list_t *gres_list,
 	gres_slurmd_conf->name = xstrdup(gres_slurmd_conf_in->name);
 	gres_slurmd_conf->file = xstrdup(gres_slurmd_conf_in->file);
 	gres_slurmd_conf->links = xstrdup(gres_slurmd_conf_in->links);
+	gres_slurmd_conf->chunk_order =
+		xstrdup(gres_slurmd_conf_in->chunk_order);
+	gres_slurmd_conf->chunk_sizes =
+		xstrdup(gres_slurmd_conf_in->chunk_sizes);
 	gres_slurmd_conf->unique_id = xstrdup(gres_slurmd_conf_in->unique_id);
 	gres_slurmd_conf->count = gres_slurmd_conf_in->count;
 	gres_slurmd_conf->plugin_id = gres_build_id(gres_slurmd_conf_in->name);
