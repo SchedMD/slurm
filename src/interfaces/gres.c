@@ -4338,7 +4338,7 @@ end_it:
 
 /*
  * Build the chunk domain of one Type on a node.
- * IN build - the Type's ChunkSizes and devices
+ * IN build - the Type's ChunkSizes, ChunkOrder and devices
  * IN node_name - node name, for logging
  * IN/OUT gres_ns - node state to add the domain to
  * OUT reason_down - failure reason, if not already set
@@ -4360,13 +4360,27 @@ static int _build_chunk_config(chunk_build_t *build, char *node_name,
 		goto end_it;
 	}
 
-	/* Chunk position is enumeration order */
-	order = xcalloc(dev_cnt, sizeof(int));
-	for (int i = 0; i < (int) dev_cnt; i++)
-		order[i] = i;
-	order_cnt = dev_cnt;
+	if (build->order) {
+		if (gres_chunk_order_parse(build->order, &order, &order_cnt) !=
+		    SLURM_SUCCESS) {
+			tmp = xstrdup_printf("Invalid ChunkOrder value (%s)",
+					     build->order);
+			goto end_it;
+		}
+		if ((uint64_t) order_cnt != dev_cnt) {
+			tmp = xstrdup_printf("ChunkOrder value (%s) has %d entries but %"PRIu64" devices are configured",
+				build->order, order_cnt, dev_cnt);
+			goto end_it;
+		}
+	} else {
+		/* No ChunkOrder, so chunk position is enumeration order */
+		order = xcalloc(dev_cnt, sizeof(int));
+		for (int i = 0; i < (int) dev_cnt; i++)
+			order[i] = i;
+		order_cnt = dev_cnt;
+	}
 
-	/* Positions number the Type's devices, so map them to indexes */
+	/* ChunkOrder numbers the Type's devices, so map them to indexes */
 	devs = xcalloc(order_cnt, sizeof(int));
 	for (int i = 0, inx = -1; i < order_cnt; i++)
 		devs[i] = inx = bit_ffs_from_bit(build->devs, inx + 1);
@@ -4385,8 +4399,9 @@ static int _build_chunk_config(chunk_build_t *build, char *node_name,
 	dom->sizes_str = xstrdup(build->sizes);
 	dom->order_str = xstrdup(build->order);
 
-	log_flag(GRES, "%s: node %s: built %d device chunks from ChunkSizes=%s",
-		 __func__, node_name, sizes_cnt, build->sizes);
+	log_flag(GRES, "%s: node %s: built %d device chunks from ChunkSizes=%s ChunkOrder=%s",
+		 __func__, node_name, sizes_cnt, build->sizes,
+		 build->order ? build->order : "(identity)");
 
 	return SLURM_SUCCESS;
 
