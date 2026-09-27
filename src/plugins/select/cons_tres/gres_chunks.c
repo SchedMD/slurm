@@ -270,6 +270,61 @@ static bitstr_t *_pick_chunk(bitstr_t *usable, gres_chunk_domain_t *dom,
 }
 
 /*
+ * Pick a free aligned chunk and narrow selection on this node to it.
+ * IN/OUT sock_gres - job/node GRES details, narrowed to the chunk
+ * IN gres_ns - node state for the GRES
+ * IN dom - the request's chunk domain
+ * IN gres_needed - a configured chunk size, or every device in the domain
+ * IN used_cores_on_sock - cores the job holds per socket, NULL to ignore
+ * RET SLURM_SUCCESS, or ESLURM_INVALID_GRES if no chunk is free
+ */
+static int _select_chunk(sock_gres_t *sock_gres, gres_node_state_t *gres_ns,
+			 gres_chunk_domain_t *dom, int gres_needed,
+			 uint32_t *used_cores_on_sock)
+{
+	bitstr_t *usable = NULL, *picked = NULL;
+
+	if (!(usable = _build_usable_dev_bitmap(sock_gres, gres_ns,
+						used_cores_on_sock)))
+		return ESLURM_INVALID_GRES;
+
+	picked = _pick_chunk(usable, dom, gres_needed);
+	FREE_NULL_BITMAP(usable);
+	if (!picked)
+		return ESLURM_INVALID_GRES;
+
+	/*
+	 * Narrow to the chunk so the selection below cannot pick outside it.
+	 * Counts are only lowered, so a socket remove_unusable zeroed for core
+	 * binding stays zeroed.
+	 */
+	if (sock_gres->bits_any_sock) {
+		bit_and(sock_gres->bits_any_sock, picked);
+		sock_gres->cnt_any_sock =
+			MIN(sock_gres->cnt_any_sock,
+			    bit_set_count(sock_gres->bits_any_sock));
+	}
+	if (sock_gres->bits_by_sock) {
+		for (int s = 0; s < sock_gres->sock_cnt; s++) {
+			if (!sock_gres->bits_by_sock[s])
+				continue;
+			bit_and(sock_gres->bits_by_sock[s], picked);
+			if (sock_gres->cnt_by_sock) {
+				int cnt = 0;
+
+				cnt = bit_set_count(sock_gres->bits_by_sock[s]);
+				sock_gres->cnt_by_sock[s] =
+					MIN(sock_gres->cnt_by_sock[s], cnt);
+			}
+		}
+	}
+	sock_gres->total_cnt = MIN(sock_gres->total_cnt, gres_needed);
+	FREE_NULL_BITMAP(picked);
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * Test whether the chunk rules govern this request. A typed request is
  * governed by its Type's domain, if it has one. An untyped request can draw
  * from any device on the node, so any domain on the node governs it, even when
@@ -499,6 +554,91 @@ extern int gres_chunks_filter(sock_gres_t *sock_gres, bool whole_node,
 	if ((chunk_gres != dev_cnt) && _have_dev_bitmaps(sock_gres))
 		_cap_at_free_chunk(sock_gres, gres_ns, dom, chunk_gres,
 				   enforce_binding, near_gres_cnt);
+
+	return SLURM_SUCCESS;
+}
+
+/* Narrow final selection to one chunk before per-request device assignment. */
+extern int gres_chunks_select(sock_gres_t *sock_gres, job_record_t *job_ptr,
+			      node_record_t *node_ptr, uint32_t task_cnt,
+			      uint32_t *used_cores_on_sock)
+{
+	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
+	gres_node_state_t *gres_ns = sock_gres->gres_state_node->gres_data;
+	gres_chunk_domain_t *dom = _find_domain(gres_js, gres_ns);
+	int gres_needed;
+	int rc = ESLURM_INVALID_GRES;
+
+	/* No ChunkSizes apply to this request */
+	if (!dom)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Skip nodes without the device bitmaps, matching the cap in
+	 * _foreach_remove_unusable(). A node that has not registered since the
+	 * controller started has none, and would fail here every cycle.
+	 */
+	if (!_have_dev_bitmaps(sock_gres))
+		return SLURM_SUCCESS;
+
+	/* Shared GRES are slices of one device, not chunks of devices */
+	if (gres_id_shared(sock_gres->gres_state_job->config_flags))
+		return SLURM_SUCCESS;
+
+	/*
+	 * A whole node job takes every device on the node, which is the whole
+	 * chunk domain and more, so there is no chunk to pick for it.
+	 */
+	if (job_ptr->details &&
+	    (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED))
+		return SLURM_SUCCESS;
+
+	gres_needed = dom->order_len;
+	if (gres_js->gres_per_node) {
+		gres_needed = gres_js->gres_per_node;
+	} else if (gres_js->gres_per_task) {
+		gres_needed = gres_js->gres_per_task * task_cnt;
+	}
+
+	/*
+	 * Recheck the chunk rules at final selection using the actual node and
+	 * task counts. A job spanning nodes must take every device on each.
+	 */
+	if ((bit_set_count(job_ptr->job_resrcs->node_bitmap) > 1) &&
+	    (gres_needed != dom->order_len)) {
+		log_flag(SELECT_TYPE, "%s: %pJ spans nodes, so it must request all %d %s devices on node %s rather than %d",
+			 __func__, job_ptr, dom->order_len,
+			 sock_gres->gres_state_node->gres_name, node_ptr->name,
+			 gres_needed);
+		return ESLURM_INVALID_GRES;
+	}
+
+	/* Otherwise it must take every device or exactly one chunk size */
+	if ((gres_needed != dom->order_len) &&
+	    !_is_chunk_size(dom, gres_needed)) {
+		log_flag(SELECT_TYPE, "%s: %pJ needs %d %s devices on node %s, which is not one of the configured ChunkSizes",
+			 __func__, job_ptr, gres_needed,
+			 sock_gres->gres_state_node->gres_name, node_ptr->name);
+		return ESLURM_INVALID_GRES;
+	}
+
+	/*
+	 * Commit to one chunk and narrow the socket bitmaps to it, so the
+	 * selection that follows works unchanged and cannot reach outside it.
+	 * Under enforce-binding _set_node_bits() only fills from sockets the
+	 * job holds cores on, so a chunk chosen anywhere else fails every
+	 * cycle. Keep the pick inside those sockets.
+	 */
+	rc = _select_chunk(sock_gres, gres_ns, dom, gres_needed,
+			   (job_ptr->bit_flags & GRES_ENFORCE_BIND) ?
+				   used_cores_on_sock :
+				   NULL);
+	if (rc != SLURM_SUCCESS) {
+		log_flag(SELECT_TYPE, "%s: %pJ found no free chunk of %d %s devices on node %s",
+			 __func__, job_ptr, gres_needed,
+			 sock_gres->gres_state_node->gres_name, node_ptr->name);
+		return rc;
+	}
 
 	return SLURM_SUCCESS;
 }

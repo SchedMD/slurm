@@ -73,4 +73,17 @@ extern int gres_chunks_filter(sock_gres_t *sock_gres, bool whole_node,
 			      bool enforce_binding, uint64_t *min_gres,
 			      uint64_t *near_gres_cnt);
 
+/*
+ * Recheck the placed job's count and restrict device selection to one chunk.
+ * IN/OUT sock_gres - per-socket bitmaps and counts, narrowed to the chunk
+ * IN job_ptr - job and its selected nodes
+ * IN node_ptr - node being assigned devices
+ * IN task_cnt - tasks assigned to this node
+ * IN used_cores_on_sock - allocated cores per socket; used for enforce-binding
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
+ */
+extern int gres_chunks_select(sock_gres_t *sock_gres, job_record_t *job_ptr,
+			      node_record_t *node_ptr, uint32_t task_cnt,
+			      uint32_t *used_cores_on_sock);
+
 #endif /* _GRES_CHUNKS_H */
