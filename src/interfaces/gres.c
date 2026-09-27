@@ -1171,6 +1171,13 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		     gres_flags2str(p->config_flags));
 	}
 
+	if (p->chunk_sizes)
+		info("Gres Name=%s Type=%s ChunkSizes=%s ChunkOrder=%s",
+		     p->name,
+		     p->type_name,
+		     p->chunk_sizes,
+		     p->chunk_order ? p->chunk_order : "(identity)");
+
 	return 0;
 }
 
