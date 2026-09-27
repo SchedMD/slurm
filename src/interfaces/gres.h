@@ -54,6 +54,12 @@
 /* Max devices a File-based GRES can track per node */
 #define MAX_GRES_BITMAP 1024
 
+/*
+ * Max chunk-scheduled GRES devices on a node. Above MAX_GRES_BITMAP the
+ * device count is clamped and the chunk layout would stop matching it.
+ */
+#define GRES_MAX_CHUNK_SIZE MAX_GRES_BITMAP
+
 enum {
 	GRES_VAL_TYPE_FOUND  = 0,
 	GRES_VAL_TYPE_CONFIG = 1,
@@ -1387,6 +1393,28 @@ extern char *gres_links_create_empty(unsigned int index,
  *     * there is more than one 'self' GPU identifier found
  */
 extern int gres_links_validate(char *links);
+
+/*
+ * Parse a gres.conf ChunkSizes string. Entries must be ascending, each a
+ * multiple of the one before it, so every size divides the larger ones.
+ * IN chunk_sizes - comma-delimited list
+ * OUT sizes - parsed sizes, caller must xfree(). May be NULL.
+ * OUT sizes_cnt - count of sizes. May be NULL.
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int gres_chunk_sizes_parse(char *chunk_sizes, uint32_t **sizes,
+				  int *sizes_cnt);
+
+/*
+ * Parse a gres.conf ChunkOrder string. Must be a permutation of 0..n-1,
+ * entry i holding the device index at chunk position i.
+ * IN chunk_order - comma-delimited permutation
+ * OUT order - parsed order, caller must xfree(). May be NULL.
+ * OUT order_cnt - count of order. May be NULL.
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int gres_chunk_order_parse(char *chunk_order, int **order,
+				  int *order_cnt);
 
 /* Determine if the gres should only allow allocation on the busy one */
 extern bool gres_use_busy_dev(gres_state_t *gres_state_node,

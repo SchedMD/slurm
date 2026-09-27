@@ -1339,6 +1339,161 @@ extern int gres_links_validate(char *links)
 	return rc;
 }
 
+/* Count comma-delimited entries in str, empty entries included */
+static int _comma_entry_cnt(char *str)
+{
+	int cnt = 1;
+
+	for (int i = 0; str[i]; i++) {
+		if (str[i] == ',')
+			cnt++;
+	}
+
+	return cnt;
+}
+
+extern int gres_chunk_sizes_parse(char *chunk_sizes, uint32_t **sizes,
+				  int *sizes_cnt)
+{
+	char *tmp = NULL, *tok = NULL, *save_ptr = NULL, *end_ptr = NULL;
+	uint32_t *tmp_sizes = NULL, prev = 0;
+	int cnt = 0, i = 0, rc = SLURM_SUCCESS;
+
+	if (sizes)
+		*sizes = NULL;
+	if (sizes_cnt)
+		*sizes_cnt = 0;
+
+	if (!chunk_sizes || !chunk_sizes[0]) {
+		error("%s: ChunkSizes is an empty string", __func__);
+		return SLURM_ERROR;
+	}
+
+	cnt = _comma_entry_cnt(chunk_sizes);
+	if (cnt > GRES_MAX_CHUNK_SIZE) {
+		error("%s: ChunkSizes string '%s' has too many entries",
+		      __func__, chunk_sizes);
+		return SLURM_ERROR;
+	}
+
+	tmp_sizes = xcalloc(cnt, sizeof(uint32_t));
+	tmp = xstrdup(chunk_sizes);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	for (i = 0; tok; i++) {
+		long int val = strtol(tok, &end_ptr, 10);
+
+		if ((val <= 0) || (val > GRES_MAX_CHUNK_SIZE) || end_ptr[0]) {
+			error("%s: Failed to parse token '%s' in ChunkSizes string '%s'",
+			      __func__, tok, chunk_sizes);
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (val <= (long int) prev) {
+			error("%s: ChunkSizes string '%s' is not strictly ascending",
+			      __func__, chunk_sizes);
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (prev && (val % (long int) prev)) {
+			error("%s: ChunkSizes value %ld in '%s' is not a multiple of %u",
+			      __func__, val, chunk_sizes, prev);
+			rc = SLURM_ERROR;
+			break;
+		}
+		prev = val;
+		tmp_sizes[i] = val;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	if (!rc && (i != cnt)) {
+		error("%s: ChunkSizes string '%s' has an empty entry",
+		      __func__, chunk_sizes);
+		rc = SLURM_ERROR;
+	}
+
+	if (rc || !sizes) {
+		xfree(tmp_sizes);
+		return rc;
+	}
+
+	*sizes = tmp_sizes;
+	if (sizes_cnt)
+		*sizes_cnt = cnt;
+
+	return rc;
+}
+
+extern int gres_chunk_order_parse(char *chunk_order, int **order,
+				  int *order_cnt)
+{
+	char *tmp = NULL, *tok = NULL, *save_ptr = NULL, *end_ptr = NULL;
+	int *tmp_order = NULL;
+	bitstr_t *seen = NULL;
+	int cnt = 0, i = 0, rc = SLURM_SUCCESS;
+
+	if (order)
+		*order = NULL;
+	if (order_cnt)
+		*order_cnt = 0;
+
+	if (!chunk_order || !chunk_order[0]) {
+		error("%s: ChunkOrder is an empty string", __func__);
+		return SLURM_ERROR;
+	}
+
+	cnt = _comma_entry_cnt(chunk_order);
+	if (cnt > GRES_MAX_CHUNK_SIZE) {
+		error("%s: ChunkOrder string '%s' has too many entries",
+		      __func__, chunk_order);
+		return SLURM_ERROR;
+	}
+
+	tmp_order = xcalloc(cnt, sizeof(int));
+	seen = bit_alloc(cnt);
+	tmp = xstrdup(chunk_order);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	for (i = 0; tok; i++) {
+		long int val = strtol(tok, &end_ptr, 10);
+
+		if ((val < 0) || (val >= cnt) || end_ptr[0]) {
+			error("%s: ChunkOrder value '%s' in '%s' is not in the range 0-%d",
+			      __func__, tok, chunk_order, (cnt - 1));
+			rc = SLURM_ERROR;
+			break;
+		}
+		if (bit_test(seen, val)) {
+			error("%s: ChunkOrder string '%s' has a duplicate value %ld",
+			      __func__, chunk_order, val);
+			rc = SLURM_ERROR;
+			break;
+		}
+		bit_set(seen, val);
+		tmp_order[i] = val;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+	FREE_NULL_BITMAP(seen);
+
+	/* Values were distinct and in range, so a full list is a permutation */
+	if (!rc && (i != cnt)) {
+		error("%s: ChunkOrder string '%s' has an empty entry",
+		      __func__, chunk_order);
+		rc = SLURM_ERROR;
+	}
+
+	if (rc || !order) {
+		xfree(tmp_order);
+		return rc;
+	}
+
+	*order = tmp_order;
+	if (order_cnt)
+		*order_cnt = cnt;
+
+	return rc;
+}
+
 static char *_get_autodetect_flags_str(void)
 {
 	char *flags = NULL;
