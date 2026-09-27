@@ -130,6 +130,9 @@ static int _foreach_remove_unusable(void *x, void *arg)
 	gres_js = sock_gres->gres_state_job->gres_data;
 	if (sock_gres->gres_state_node)
 		gres_ns = sock_gres->gres_state_node->gres_data;
+	if (!gres_js || !gres_ns)
+		return 0;
+
 	if (args->whole_node)
 		min_gres = sock_gres->total_cnt;
 	else if (gres_js->gres_per_node)
