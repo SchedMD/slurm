@@ -3801,6 +3801,19 @@ static void _gres_node_state_delete_topo(gres_node_state_t *gres_ns)
 	xfree(gres_ns->topo_type_name);
 }
 
+/* Drop any chunk state, so a removed or changed ChunkSizes is not kept */
+static void _clear_chunk_config(gres_node_state_t *gres_ns)
+{
+	for (int i = 0; i < gres_ns->chunk_domain_cnt; i++) {
+		xfree(gres_ns->chunk_domains[i].order);
+		xfree(gres_ns->chunk_domains[i].order_str);
+		xfree(gres_ns->chunk_domains[i].sizes);
+		xfree(gres_ns->chunk_domains[i].sizes_str);
+	}
+	xfree(gres_ns->chunk_domains);
+	gres_ns->chunk_domain_cnt = 0;
+}
+
 static void _gres_node_state_delete(gres_node_state_t *gres_ns)
 {
 	int i;
@@ -3812,6 +3825,7 @@ static void _gres_node_state_delete(gres_node_state_t *gres_ns)
 			xfree(gres_ns->links_cnt[i]);
 		xfree(gres_ns->links_cnt);
 	}
+	_clear_chunk_config(gres_ns);
 
 	_gres_node_state_delete_topo(gres_ns);
 
@@ -5337,6 +5351,13 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 
 	gres_ns->gres_cnt_avail = gres_ns->gres_cnt_config;
 
+	/*
+	 * The chunk layout names device indexes, so a changed count leaves it
+	 * pointing past the resized bitmaps. Only a registration can rebuild
+	 * it, so drop it until then rather than select from it.
+	 */
+	_clear_chunk_config(gres_ns);
+
 	if (gres_ctx->config_flags & GRES_CONF_HAS_FILE) {
 		if (gres_id_shared(gres_ctx->config_flags))
 			gres_bits = gres_ns->topo_cnt;
@@ -6112,6 +6133,30 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 		new_gres_ns->link_len = gres_ns->link_len;
 	}
 
+	if (gres_ns->chunk_domain_cnt) {
+		new_gres_ns->chunk_domains =
+			xcalloc(gres_ns->chunk_domain_cnt,
+				sizeof(*new_gres_ns->chunk_domains));
+		new_gres_ns->chunk_domain_cnt = gres_ns->chunk_domain_cnt;
+		for (i = 0; i < gres_ns->chunk_domain_cnt; i++) {
+			gres_chunk_domain_t *dom = &gres_ns->chunk_domains[i];
+			gres_chunk_domain_t *new_dom =
+				&new_gres_ns->chunk_domains[i];
+
+			*new_dom = *dom;
+			new_dom->sizes =
+				xcalloc(dom->sizes_cnt, sizeof(*dom->sizes));
+			memcpy(new_dom->sizes, dom->sizes,
+			       dom->sizes_cnt * sizeof(*dom->sizes));
+			new_dom->order =
+				xcalloc(dom->order_len, sizeof(*dom->order));
+			memcpy(new_dom->order, dom->order,
+			       dom->order_len * sizeof(*dom->order));
+			new_dom->order_str = xstrdup(dom->order_str);
+			new_dom->sizes_str = xstrdup(dom->sizes_str);
+		}
+	}
+
 	if (gres_ns->topo_cnt) {
 		new_gres_ns->topo_cnt         = gres_ns->topo_cnt;
 		new_gres_ns->topo_core_bitmap = xcalloc(gres_ns->topo_cnt,
@@ -6508,6 +6553,25 @@ static int _foreach_node_state_log(void *x, void *arg)
 			info("  links[%d]:%s", i, buf);
 			xfree(buf);
 		}
+	}
+
+	for (int d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+		gres_chunk_domain_t *dom = &gres_ns->chunk_domains[d];
+		char *pos = NULL;
+
+		sep = "";
+		for (i = 0; i < dom->sizes_cnt; i++) {
+			xstrfmtcatat(buf, &pos, "%s%u", sep, dom->sizes[i]);
+			sep = ",";
+		}
+		xstrcatat(buf, &pos, " order:");
+		sep = "";
+		for (i = 0; i < dom->order_len; i++) {
+			xstrfmtcatat(buf, &pos, "%s%d", sep, dom->order[i]);
+			sep = ",";
+		}
+		info("  chunks[%d]:type_id:%u sizes:%s", d, dom->type_id, buf);
+		xfree(buf);
 	}
 
 	for (i = 0; i < gres_ns->topo_cnt; i++) {

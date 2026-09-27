@@ -285,6 +285,20 @@ typedef struct {
 	int (*xcpuinfo_mac_to_abs) (char *mac, char **abs);
 } node_config_load_t;
 
+/*
+ * The devices of one Type, allocated in aligned chunks: size N starts only at
+ * a chunk position that is a multiple of N.
+ */
+typedef struct {
+	int *order; /* Chunk position to device index */
+	int order_len; /* Size of order, the devices in the domain */
+	char *order_str; /* ChunkOrder it was built from, NULL for identity */
+	uint32_t *sizes; /* Ascending valid chunk sizes */
+	int sizes_cnt; /* Size of sizes */
+	char *sizes_str; /* ChunkSizes it was built from */
+	uint32_t type_id; /* Type of the devices, 0 when untyped */
+} gres_chunk_domain_t;
+
 /* Current GRES state information managed by slurmctld daemon */
 typedef struct gres_node_state {
 	struct gres_state *alt_gres;
@@ -322,6 +336,11 @@ typedef struct gres_node_state {
 	uint16_t topo_cnt;		/* Size of topo_ arrays */
 	int link_len;			/* Size of link_cnt */
 	int **links_cnt;		/* Count of links between GRES */
+
+	/* One per Type that sets ChunkSizes=, NULL/0 without any */
+	gres_chunk_domain_t *chunk_domains;
+	int chunk_domain_cnt; /* Size of chunk_domains */
+
 	bitstr_t **topo_core_bitmap;
 	bitstr_t **topo_res_core_bitmap;
 	bitstr_t **topo_gres_bitmap;
