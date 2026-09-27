@@ -596,6 +596,17 @@ static int _merge_system_gres_conf(list_t *gres_list_conf,
 					xstrdup(gres_slurmd_conf->dmem_region);
 			}
 
+			/*
+			 * Chunk configuration can only come from gres.conf,
+			 * so carry it over from the record being replaced.
+			 */
+			xfree(gres_slurmd_conf_sys->chunk_order);
+			xfree(gres_slurmd_conf_sys->chunk_sizes);
+			gres_slurmd_conf_sys->chunk_order =
+				xstrdup(gres_slurmd_conf->chunk_order);
+			gres_slurmd_conf_sys->chunk_sizes =
+				xstrdup(gres_slurmd_conf->chunk_sizes);
+
 			list_remove(itr2);
 			list_append(gres_list_gpu, gres_slurmd_conf_sys);
 			continue;
