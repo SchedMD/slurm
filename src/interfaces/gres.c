@@ -5907,6 +5907,25 @@ static int _foreach_node_state_pack(void *x, void *arg)
 			     pack_state->buffer);
 		packstr_array(gres_ns->topo_type_name, gres_ns->topo_cnt,
 			      pack_state->buffer);
+
+		/*
+		 * Chunk state is only built on registration, so without this
+		 * a restored node allocates with the chunk rules switched off
+		 * until its slurmd checks in.
+		 */
+		pack32(gres_ns->chunk_domain_cnt, pack_state->buffer);
+		for (int d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+			gres_chunk_domain_t *dom = &gres_ns->chunk_domains[d];
+
+			pack32(dom->order_len, pack_state->buffer);
+			for (int i = 0; i < dom->order_len; i++)
+				pack32(dom->order[i], pack_state->buffer);
+			packstr(dom->order_str, pack_state->buffer);
+			pack32_array(dom->sizes, dom->sizes_cnt,
+				     pack_state->buffer);
+			packstr(dom->sizes_str, pack_state->buffer);
+			pack32(dom->type_id, pack_state->buffer);
+		}
 	} else if (pack_state->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(pack_state->magic, pack_state->buffer);
 		pack32(gres_state_node->plugin_id, pack_state->buffer);
@@ -6316,6 +6335,40 @@ extern int gres_node_state_unpack(list_t **gres_list, buf_t *buffer,
 					    buffer);
 			safe_unpackstr_array(&gres_ns->topo_type_name,
 					     &tmp_uint32, buffer);
+
+			safe_unpack32(&tmp_uint32, buffer);
+			if (tmp_uint32 > GRES_MAX_CHUNK_SIZE)
+				goto unpack_error;
+			if (tmp_uint32)
+				gres_ns->chunk_domains = xcalloc(
+					tmp_uint32,
+					sizeof(*gres_ns->chunk_domains));
+			for (int d = 0; d < tmp_uint32; d++) {
+				gres_chunk_domain_t *dom =
+					&gres_ns->chunk_domains[d];
+				uint32_t cnt;
+
+				/* Count it now so an error frees it */
+				gres_ns->chunk_domain_cnt++;
+				safe_unpack32(&cnt, buffer);
+				if (cnt > GRES_MAX_CHUNK_SIZE)
+					goto unpack_error;
+				dom->order_len = cnt;
+				if (dom->order_len)
+					dom->order = xcalloc(dom->order_len,
+							     sizeof(int));
+				for (int i = 0; i < dom->order_len; i++) {
+					safe_unpack32(&cnt, buffer);
+					dom->order[i] = cnt;
+				}
+				safe_unpackstr(&dom->order_str, buffer);
+				safe_unpack32_array(&dom->sizes, &cnt, buffer);
+				if (cnt > GRES_MAX_CHUNK_SIZE)
+					goto unpack_error;
+				dom->sizes_cnt = cnt;
+				safe_unpackstr(&dom->sizes_str, buffer);
+				safe_unpack32(&dom->type_id, buffer);
+			}
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
