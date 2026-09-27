@@ -57,4 +57,20 @@ extern bool gres_chunks_apply(gres_job_state_t *gres_js,
 extern int gres_chunks_request_validate(sock_gres_t *sock_gres,
 					bool whole_node);
 
+/*
+ * Validate the per-node chunk count and cap available GRES.
+ * IN/OUT sock_gres - per-socket availability, capped to the largest free chunk
+ * IN whole_node - whether the allocation requires the whole node
+ * IN single_node - the job cannot be spread over more than one node
+ * IN task_per_node - fixed tasks per node, or NO_VAL16
+ * IN enforce_binding - GRES must be co-allocated with cores
+ * IN/OUT min_gres - minimum GRES count required on this node
+ * IN/OUT near_gres_cnt - available GRES near usable cores
+ * RET SLURM_SUCCESS if feasible, SLURM_ERROR otherwise
+ */
+extern int gres_chunks_filter(sock_gres_t *sock_gres, bool whole_node,
+			      bool single_node, uint16_t task_per_node,
+			      bool enforce_binding, uint64_t *min_gres,
+			      uint64_t *near_gres_cnt);
+
 #endif /* _GRES_CHUNKS_H */

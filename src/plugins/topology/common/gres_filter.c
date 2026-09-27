@@ -39,10 +39,10 @@ static uint16_t *avail_cores_per_sock = NULL;
 
 /*
  * Drop one socket's GRES from the node's count. enforce-links caps total_cnt
- * to the largest linked set, below the sum of the per-socket counts, so
- * subtracting a socket's count would take total_cnt to 0, or past it, while
- * the remaining sockets still hold a linked set. Recompute it from what is
- * left instead.
+ * to the largest linked set, and GRES chunks to the largest free chunk, below
+ * the sum of the per-socket counts, so subtracting a socket's count would take
+ * total_cnt to 0, or past it, while the remaining sockets still hold such a
+ * set. Recompute it from what is left instead.
  * IN/OUT sock_gres - GRES availability counts
  * IN sock_inx - socket whose GRES are dropped
  */
