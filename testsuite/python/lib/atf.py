@@ -5878,6 +5878,68 @@ def get_data_parser_flag(value):
     return value[0] if isinstance(value, list) else value
 
 
+def get_job_gres_index_blocks(job_id, **run_command_kwargs):
+    """Returns the GRES device indexes of a running job, one set per block.
+
+    `scontrol show job -d` prints one IDX list per GRES record, and one block
+    per group of nodes that share an identical allocation. This returns those
+    lists separately, with any ranges expanded, so a caller can tell a job
+    holding {0,1} on one node and {2,3} on another from one holding {0,1,2,3}
+    on a single node.
+
+    Args:
+        job_id (integer): The id of the job whose device indexes are wanted.
+
+    Returns:
+        A list of sets of integer device indexes, in the order printed.
+
+    Example:
+        >>> get_job_gres_index_blocks(12345)
+        [{0, 1}]
+    """
+
+    run_command_kwargs.setdefault("fatal", True)
+    output = run_command_output(f"scontrol show job -d {job_id}", **run_command_kwargs)
+    matches = re.findall(r"IDX:([\d,\-]+)", output)
+    if not matches:
+        pytest.fail(f"Expected a GRES IDX list for job {job_id} in: {output}")
+
+    blocks = []
+    for match in matches:
+        indexes = set()
+        for part in match.split(","):
+            if "-" in part:
+                low, high = part.split("-")
+                indexes.update(range(int(low), int(high) + 1))
+            else:
+                indexes.add(int(part))
+        blocks.append(indexes)
+
+    return blocks
+
+
+def get_job_gres_indexes(job_id, **run_command_kwargs):
+    """Returns the set of GRES device indexes allocated to a running job.
+
+    This unions every block, so the result is only interpretable for a job on
+    a single node. Use get_job_gres_index_blocks() for a multi-node job, where
+    the union cannot tell which devices came from which node.
+
+    Args:
+        job_id (integer): The id of the job whose device indexes are wanted.
+
+    Returns:
+        A set of integer device indexes, unioned over every node and GRES
+        record of the job.
+
+    Example:
+        >>> get_job_gres_indexes(12345)
+        {0, 1}
+    """
+
+    return set().union(*get_job_gres_index_blocks(job_id, **run_command_kwargs))
+
+
 def get_job_id_from_array_task(array_job_id, array_task_id, fatal=False, quiet=True):
     """Returns the raw job id of a task of a job array.
 
@@ -6926,17 +6988,27 @@ def require_nodes(requested_node_count, requirements_list=[], require_hardware=F
                 if parameter_name.lower() in lower_node_dict:
                     gres_list = parameter_value.split(",")
                     for gres_value in gres_list:
-                        if match := re.search(r"^(\w+):(\d+)$", gres_value):
-                            (required_gres_name, required_gres_value) = (
+                        if match := re.search(r"^(\w+)(?::(\w+))?:(\d+)$", gres_value):
+                            (
+                                required_gres_name,
+                                required_gres_type,
+                                required_gres_value,
+                            ) = (
                                 match.group(1),
                                 match.group(2),
+                                match.group(3),
                             )
                         else:
                             pytest.fail(
-                                "Gres requirement must be of the form <name>:<count>"
+                                "Gres requirement must be of the form <name>[:<type>]:<count>"
                             )
+                        required_gres_key = required_gres_name
+                        if required_gres_type:
+                            required_gres_key += f":{required_gres_type}"
+                        # The node dict is casefolded, so the key must be too
+                        required_gres_key = re.escape(required_gres_key.lower())
                         if match := re.search(
-                            rf"{required_gres_name}:(\d+)",
+                            rf"{required_gres_key}:(\d+)",
                             lower_node_dict[parameter_name.lower()],
                         ):
                             if int(match.group(1)) < int(required_gres_value):

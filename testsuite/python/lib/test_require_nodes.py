@@ -20,6 +20,7 @@ def test_require_nodes_preserves_all_gres():
         ("gpu:1", "gpu:4,mps:8"),
         ("gpu:4", "gpu:4,mps:8"),
         ("mps:8", "gpu:4,mps:8"),
+        ("gpu:chunked:1", "gpu:chunked:4,gpu:other:2"),
         (None, "gpu:4,mps:8"),
     ]:
         template = {"Port": 7001}
