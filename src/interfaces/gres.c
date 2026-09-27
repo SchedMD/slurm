@@ -4219,7 +4219,7 @@ static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
 	slurmd_conf_tot->rec_cnt++;
 
 	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name ||
-	    gres_slurmd_conf->unique_id)
+	    gres_slurmd_conf->unique_id || gres_slurmd_conf->chunk_sizes)
 		slurmd_conf_tot->has_topo_info = true;
 
 	return 0;
