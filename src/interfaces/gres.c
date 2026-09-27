@@ -98,6 +98,7 @@ strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
 static s_p_options_t _gres_options[] = {
 	{ "AutoDetect", S_P_STRING },
+	{ "ChunkOrder", S_P_STRING }, /* Chunk position to device index map */
 	{ "ChunkSizes", S_P_STRING }, /* Valid device chunk sizes */
 	{ "Count", S_P_STRING }, /* Number of Gres available */
 	{ "CPUs", S_P_STRING }, /* CPUs to bind to Gres resource
@@ -2027,6 +2028,16 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		    SLURM_SUCCESS)
 			fatal("Invalid GRES record for %s, invalid ChunkSizes %s",
 			      p->name, p->chunk_sizes);
+	}
+
+	if (s_p_get_string(&p->chunk_order, "ChunkOrder", tbl)) {
+		if (!p->chunk_sizes)
+			fatal("Invalid GRES record for %s, ChunkOrder requires ChunkSizes",
+			      p->name);
+		if (gres_chunk_order_parse(p->chunk_order, NULL, NULL) !=
+		    SLURM_SUCCESS)
+			fatal("Invalid GRES record for %s, invalid ChunkOrder %s",
+			      p->name, p->chunk_order);
 	}
 
 	if (p->chunk_sizes && !(p->config_flags & GRES_CONF_HAS_FILE))
