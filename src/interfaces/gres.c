@@ -4354,6 +4354,15 @@ static int _build_chunk_config(chunk_build_t *build, char *node_name,
 	int *order = NULL, *devs = NULL, sizes_cnt = 0, order_cnt = 0;
 	uint64_t dev_cnt = bit_set_count(build->devs);
 
+	if (!dev_cnt) {
+		tmp = xstrdup("ChunkSizes is configured but no devices were found");
+		goto end_it;
+	}
+	if (dev_cnt > GRES_MAX_CHUNK_SIZE) {
+		tmp = xstrdup_printf("ChunkSizes supports at most %d devices, but %"PRIu64" are configured",
+			GRES_MAX_CHUNK_SIZE, dev_cnt);
+		goto end_it;
+	}
 	if (gres_chunk_sizes_parse(build->sizes, &sizes, &sizes_cnt) !=
 	    SLURM_SUCCESS) {
 		tmp = xstrdup_printf("Invalid ChunkSizes value (%s)",
