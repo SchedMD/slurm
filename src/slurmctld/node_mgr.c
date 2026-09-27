@@ -1123,7 +1123,7 @@ extern buf_t *pack_one_node(slurm_msg_t *msg, uint16_t show_flags,
 static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		       uint16_t protocol_version, uint16_t show_flags)
 {
-	char *gres_drain = NULL, *gres_used = NULL;
+	char *gres_chunks = NULL, *gres_drain = NULL, *gres_used = NULL;
 	node_select_stats_t *dump_node_stats;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -1195,13 +1195,17 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 
 		/* Gathering GRES details is slow, so don't by default */
 		if (show_flags & SHOW_DETAIL) {
+			gres_chunks =
+				gres_get_node_chunks(dump_node_ptr->gres_list);
 			gres_drain =
 				gres_get_node_drain(dump_node_ptr->gres_list);
 			gres_used =
 				gres_get_node_used(dump_node_ptr->gres_list);
 		}
+		packstr(gres_chunks, buffer);
 		packstr(gres_drain, buffer);
 		packstr(gres_used, buffer);
+		xfree(gres_chunks);
 		xfree(gres_drain);
 		xfree(gres_used);
 

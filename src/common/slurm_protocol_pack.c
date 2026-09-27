@@ -1808,6 +1808,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->features, buffer);
 		safe_unpackstr(&node->features_act, buffer);
 		safe_unpackstr(&node->gres, buffer);
+		safe_unpackstr(&node->gres_chunks, buffer);
 		safe_unpackstr(&node->gres_drain, buffer);
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
