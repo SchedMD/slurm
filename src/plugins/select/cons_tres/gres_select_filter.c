@@ -260,6 +260,11 @@ static int _foreach_remove_unusable(void *x, void *arg)
 		max_gres = args->avail_mem / mem_per_gres;
 		sock_gres->total_cnt = MIN(sock_gres->total_cnt, max_gres);
 	}
+	if (gres_chunks_filter(sock_gres, args->whole_node, args->single_node,
+			       args->task_per_node, args->enforce_binding,
+			       &min_gres, &near_gres_cnt))
+		return -1;
+
 	if ((sock_gres->total_cnt < min_gres) ||
 	    ((sock_gres->max_node_gres != 0) &&
 	     (sock_gres->max_node_gres < min_gres))) {
