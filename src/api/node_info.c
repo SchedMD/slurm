@@ -260,6 +260,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line (optional) ******/
+	if (node_ptr->gres_chunks) {
+		xstrfmtcat(out, "GresChunks=%s", node_ptr->gres_chunks);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line (optional) ******/
 	{
 		bool line_used = false;
 
