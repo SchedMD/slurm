@@ -4337,7 +4337,8 @@ end_it:
 }
 
 /*
- * Build the chunk domain of one Type on a node.
+ * Build the chunk domain of one Type on a node. Aligned chunks need a device
+ * count that the largest chunk size divides evenly.
  * IN build - the Type's ChunkSizes, ChunkOrder and devices
  * IN node_name - node name, for logging
  * IN/OUT gres_ns - node state to add the domain to
@@ -4357,6 +4358,16 @@ static int _build_chunk_config(chunk_build_t *build, char *node_name,
 	    SLURM_SUCCESS) {
 		tmp = xstrdup_printf("Invalid ChunkSizes value (%s)",
 				     build->sizes);
+		goto end_it;
+	}
+	if (sizes[sizes_cnt - 1] > dev_cnt) {
+		tmp = xstrdup_printf("ChunkSizes value (%s) is larger than the %"PRIu64" devices configured",
+			build->sizes, dev_cnt);
+		goto end_it;
+	}
+	if (dev_cnt % sizes[sizes_cnt - 1]) {
+		tmp = xstrdup_printf("ChunkSizes largest value %u does not divide the %"PRIu64" devices configured evenly",
+			sizes[sizes_cnt - 1], dev_cnt);
 		goto end_it;
 	}
 
