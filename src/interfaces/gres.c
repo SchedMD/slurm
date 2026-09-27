@@ -296,6 +296,12 @@ typedef struct {
 	uint64_t topo_cnt;
 } tot_from_slurmd_conf_t;
 
+typedef struct {
+	uint64_t *dev_cnt; /* Registered devices of each chunk domain's Type */
+	gres_node_state_t *gres_ns;
+	uint32_t plugin_id;
+} chunk_changed_args_t;
+
 /* The chunk configuration of one Type, collected from its records */
 typedef struct {
 	bitstr_t *devs; /* Devices of the Type, NULL if it sets no ChunkSizes */
@@ -4788,6 +4794,75 @@ static int _foreach_add_gres_info(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Compare a registered gres.conf record with the chunk domain of its Type.
+ * RET -1 if they differ, 0 otherwise
+ */
+static int _foreach_chunk_changed(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	chunk_changed_args_t *args = arg;
+	gres_node_state_t *gres_ns = args->gres_ns;
+	uint32_t type_id;
+	int d;
+
+	if ((gres_slurmd_conf->plugin_id != args->plugin_id) ||
+	    !gres_slurmd_conf->count)
+		return 0;
+
+	type_id = gres_build_id(gres_slurmd_conf->type_name);
+	for (d = 0; d < gres_ns->chunk_domain_cnt; d++) {
+		if (gres_ns->chunk_domains[d].type_id == type_id)
+			break;
+	}
+
+	/* A Type without a domain only differs if it now has chunks */
+	if (d == gres_ns->chunk_domain_cnt)
+		return gres_slurmd_conf->chunk_sizes ? -1 : 0;
+
+	if (xstrcmp(gres_ns->chunk_domains[d].sizes_str,
+		    gres_slurmd_conf->chunk_sizes) ||
+	    xstrcmp(gres_ns->chunk_domains[d].order_str,
+		    gres_slurmd_conf->chunk_order))
+		return -1;
+
+	args->dev_cnt[d] += gres_slurmd_conf->count;
+
+	return 0;
+}
+
+/*
+ * Test whether a node's registered chunk configuration differs from its chunk
+ * domains: a Type gained or lost ChunkSizes, changed ChunkSizes or ChunkOrder,
+ * or now has a different device count.
+ * IN gres_ns - node state holding the domains
+ * IN plugin_id - GRES the registered records are for
+ * RET true if the domains must be rebuilt
+ */
+static bool _chunk_config_changed(gres_node_state_t *gres_ns,
+				  uint32_t plugin_id)
+{
+	chunk_changed_args_t args = {
+		.gres_ns = gres_ns,
+		.plugin_id = plugin_id,
+	};
+	bool changed;
+
+	if (gres_ns->chunk_domain_cnt)
+		args.dev_cnt = xcalloc(gres_ns->chunk_domain_cnt,
+				       sizeof(*args.dev_cnt));
+
+	changed = (list_for_each(gres_conf_list, _foreach_chunk_changed,
+				 &args) < 0);
+	for (int d = 0; !changed && (d < gres_ns->chunk_domain_cnt); d++) {
+		if (args.dev_cnt[d] != gres_ns->chunk_domains[d].order_len)
+			changed = true;
+	}
+	xfree(args.dev_cnt);
+
+	return changed;
+}
+
 static int _node_config_validate(node_record_t *node_ptr,
 				 gres_state_t *gres_state_node, int cpu_cnt,
 				 int core_cnt, int sock_cnt, int cores_per_sock,
@@ -4923,6 +4998,17 @@ static int _node_config_validate(node_record_t *node_ptr,
 			break;
 		}
 	}
+
+	/*
+	 * Chunk settings can change without the device count changing, so
+	 * rebuild when they differ from the node's domains. Skip it when the
+	 * count above was refused, which leaves gres_cnt_found unchanged. Keep
+	 * it above the type check below, so that check can still stop the
+	 * rebuild while jobs use a removed type.
+	 */
+	if (_chunk_config_changed(gres_ns, gres_ctx->plugin_id) &&
+	    (gres_ns->gres_cnt_found == slurmd_conf_tot.gres_cnt))
+		updated_config = true;
 
 	if (!first_time && gres_ns->type_cnt && gres_ns->topo_cnt) {
 		for (i = 0; i < gres_ns->topo_cnt; i++) {
