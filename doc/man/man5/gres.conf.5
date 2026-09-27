@@ -136,6 +136,85 @@ drained and the job is handled as a resume failure (either requeued or killed).
 .IP
 
 .TP
+\fBChunkOrder\fR
+Controls how devices map onto chunk positions for chunk allocation; see
+\fBChunkSizes\fR for what chunks and the chunk domain are.
+A comma\-delimited permutation naming the device that occupies each chunk
+position, so that entry \fIi\fR is the device at chunk position \fIi\fR.
+Devices are numbered from 0 within their \fBType\fR, in the order
+\fBslurmd\fR lists them.
+Without \fBAutoDetect\fR, that is the order of the \fBFile\fR entries.
+With \fBAutoDetect\fR, it is normally PCI bus ID order, which need not match
+the device file numbers.
+The output of \fBslurmd \-G\fR lists the records in this order.
+Requires \fBChunkSizes\fR.
+The default is the identity mapping, meaning device enumeration order is chunk
+order.
+
+Chunks are aligned ranges of \fIchunk positions\fR, not of device numbers, so
+this is how an administrator describes a device enumeration order that does not
+already match the layout of the fabric. Slurm cannot verify that an aligned
+range of chunk positions is a physically meaningful group of devices. That is
+the administrator's responsibility. See
+<https://slurm.schedmd.com/gres.html#Chunks> for a worked example.
+.IP
+
+.TP
+\fBChunkSizes\fR
+A comma\-delimited, strictly ascending list of the device group sizes that may
+be allocated to a job, enabling chunk allocation of this GRES. Every entry must
+be a multiple of the one before it, so that each size divides the larger ones,
+and the number of devices in the chunk domain must be a multiple of the
+largest entry. Unset by default, which disables chunk allocation for this
+GRES.
+A job can only request one of these sizes or the whole chunk domain, so include
+1 if jobs that request a single device should run on the node.
+
+Devices are allocated in aligned chunks, so a chunk of \fIN\fR devices begins
+only at a chunk position that is a multiple of \fIN\fR. This keeps a node's
+free devices in whole chunks rather than fragmenting them into unusable pieces.
+It is intended for devices with a dedicated interconnect, such as a torus
+fabric, where the administrator arranges the chunks to match groups of
+connected devices (see \fBChunkOrder\fR); Slurm does not check that they do.
+This restricts what a job may request; see
+<https://slurm.schedmd.com/gres.html#Chunks> for those rules.
+
+Chunks are formed from the devices of one \fBName\fR and \fBType\fR, referred
+to as the chunk domain. Each \fBType\fR may set its own \fBChunkSizes\fR and
+\fBChunkOrder\fR, and every line of that \fBType\fR for any one node must set
+the same values. A \fBType\fR that sets no \fBChunkSizes\fR is allocated as
+usual.
+
+\fBType\fR is optional. Lines that set no \fBType\fR form a domain of their
+own.
+
+A request that names no type follows the chunk rules on a node whose devices
+are all of one chunked \fBType\fR. A node that mixes types and chunks any of
+them is not used for such a request.
+
+Requires \fBFile\fR or \fBMultipleFiles\fR, even under \fBAutoDetect\fR.
+The chunk domain may hold at most 1024 devices.
+Shared GRES (gres/shard, gres/mps) are not supported, nor is gres/gpu on a
+node that also configures gres/shard or gres/mps.
+
+An invalid \fBChunkSizes\fR or \fBChunkOrder\fR value stops \fBslurmd\fR when
+it starts.
+On \fBscontrol reconfigure\fR, a \fBslurmd\fR that runs as a daemon or under
+systemd keeps its previous configuration instead.
+Check the file with \fBslurmd \-G\fR before applying it.
+A layout that does not fit the node's devices, such as a device count that is
+not a multiple of the largest chunk size, or one of the shared GRES cases
+above, does not stop \fBslurmd\fR.
+The controller drains the node instead.
+.br
+See <https://slurm.schedmd.com/gres.html#Chunk_Requirements>.
+
+\fBLinks\fR is ignored on any record that sets \fBChunkSizes\fR, including link
+data produced by \fBAutoDetect\fR, since the two are different descriptions of
+the same device topology.
+.IP
+
+.TP
 \fBCount\fR
 Number of resources of this name/type available on this node.
 The default value is set to the number of \fBFile\fR values specified (if any),
@@ -404,6 +483,10 @@ file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
 device number/index. The device number is created by sorting the GPUs by PCI bus
 ID and then numbering them starting from the smallest bus ID.
 See \fIhttps://slurm.schedmd.com/gres.html#GPU_Management\fR
+
+\fBLinks\fR is ignored on any record that sets \fBChunkSizes\fR, since the two
+are different descriptions of the same device topology. Records of another
+\fBType\fR are unaffected.
 .IP
 
 .TP

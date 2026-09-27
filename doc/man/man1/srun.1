@@ -1525,6 +1525,11 @@ See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fBNOTE\fR: The allocation has to contain at least one GPU per node, or one of
 each GPU type per node if types are used. Use heterogeneous jobs if different
 nodes need different GPU types.
+
+\fBNOTE\fR: When srun creates the job allocation and \fBChunkSizes\fR is
+configured for this GRES (see \fBgres.conf\fR(5)), the requests allowed are
+restricted.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
 .IP
 
 .TP
@@ -1539,6 +1544,11 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-gres=gpu\fR.
+
+\fBNOTE\fR: When srun creates the job allocation and \fBChunkSizes\fR is
+configured for this GRES (see \fBgres.conf\fR(5)), the requests allowed are
+restricted.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
 .IP
 
 .TP
@@ -1553,6 +1563,11 @@ Requires job to specify a sockets per node count ( \-\-sockets\-per\-node).
 See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 \fB\-\-gpus\-per\-task\fR options.
 This option applies to job allocations.
+
+\fBNOTE\fR: When srun creates the job allocation and \fBChunkSizes\fR is
+configured for this GRES (see \fBgres.conf\fR(5)), the requests allowed are
+restricted.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
 .IP
 
 .TP
@@ -1570,6 +1585,11 @@ This option will implicitly set \-\-tres\-bind=gres/gpu:per_task:<gpus_per_task>
 or if multiple gpu types are specified
 \-\-tres\-bind=gres/gpu:per_task:<gpus_per_task_type_sum>. However, that can be
 overridden with an explicit \-\-tres\-bind=gres/gpu specification.
+
+\fBNOTE\fR: When srun creates the job allocation and \fBChunkSizes\fR is
+configured for this GRES (see \fBgres.conf\fR(5)), the requests allowed are
+restricted.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
 .IP
 
 .TP
@@ -1602,6 +1622,14 @@ resource OR set "\-\-gres=none" OR set the SLURM_STEP_GRES environment variable
 to "none".
 
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-gpus\-per\-node\fR.
+
+\fBNOTE\fR: If \fBChunkSizes\fR is configured for a GRES (see
+\fBgres.conf\fR(5)), its devices are allocated in aligned chunks and the
+requests allowed for it are restricted.
+This applies only when srun creates the job allocation. A step inside an
+existing allocation is not chunk\-allocated and may request any subset of
+the devices the job holds.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
 .IP
 
 .TP
@@ -1666,6 +1694,8 @@ describes connections within one node, so this applies only to the devices a
 job is given on a single node; for topology between nodes see the
 \fBtopology/block\fR plugin in \fBtopology.conf\fR(5). Mutually exclusive
 with \fBignore\-links\fR.
+Not applied to devices allocated in chunks with \fBChunkSizes\fR in
+\fBgres.conf\fR(5), which ignore \fBLinks\fR.
 
 Nodes that cannot supply a large enough linked set are not used, which may
 delay the job in exchange for faster communication between its devices. A
@@ -3530,6 +3560,11 @@ This can be overridden with an explicit \-\-tres\-bind specification.
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
 bb,billing,energy,fs,mem,node,pages,pids,vmem.
 .br
+
+\fBNOTE\fR: When srun creates the job allocation and \fBChunkSizes\fR is
+configured for a GRES (see \fBgres.conf\fR(5)), the requests allowed for it are
+restricted.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
 .IP
 
 .TP

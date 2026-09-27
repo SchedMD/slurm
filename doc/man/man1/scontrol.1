@@ -2081,6 +2081,16 @@ The total memory, in MiB, currently free on the node as reported by the OS.
 .IP
 
 .TP
+\fBGresChunks\fR
+For each GRES type on the node that has \fBChunkSizes\fR set, the allocatable
+chunk sizes and the chunk position to device mapping, with devices numbered
+from 0 within the type as in \fBChunkOrder\fR.
+Only displayed with the \fB\-d\fR, \fB\-\-details\fR option. Nodes that do not
+use chunk allocation have no \fBGresChunks\fR line.
+See <https://slurm.schedmd.com/gres.html#Chunks>.
+.IP
+
+.TP
 \fBGresUsed\fR
 The generic resources on the node that are currently allocated to jobs.
 Only displayed with the \fB\-d\fR, \fB\-\-details\fR option.
