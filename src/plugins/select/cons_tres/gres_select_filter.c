@@ -133,6 +133,9 @@ static int _foreach_remove_unusable(void *x, void *arg)
 	if (!gres_js || !gres_ns)
 		return 0;
 
+	if (gres_chunks_request_validate(sock_gres, args->whole_node))
+		return -1;
+
 	if (args->whole_node)
 		min_gres = sock_gres->total_cnt;
 	else if (gres_js->gres_per_node)
