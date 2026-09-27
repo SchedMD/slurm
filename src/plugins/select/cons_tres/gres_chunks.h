@@ -36,4 +36,25 @@
 #ifndef _GRES_CHUNKS_H
 #define _GRES_CHUNKS_H
 
+#include "src/interfaces/gres.h"
+
+/*
+ * Test whether the chunk rules govern a request. An untyped request is
+ * governed by any chunk domain on the node.
+ * IN gres_js - job state for the request
+ * IN gres_ns - node state for the GRES
+ * RET true if a chunk domain on this node governs the request
+ */
+extern bool gres_chunks_apply(gres_job_state_t *gres_js,
+			      gres_node_state_t *gres_ns);
+
+/*
+ * Reject request forms that cannot describe a per-node chunk.
+ * IN sock_gres - job/node GRES details
+ * IN whole_node - whether the allocation requires the whole node
+ * RET SLURM_SUCCESS for a supported request form, SLURM_ERROR otherwise
+ */
+extern int gres_chunks_request_validate(sock_gres_t *sock_gres,
+					bool whole_node);
+
 #endif /* _GRES_CHUNKS_H */
