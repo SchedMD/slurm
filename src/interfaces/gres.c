@@ -3553,6 +3553,8 @@ extern int gres_node_config_pack(buf_t *buffer)
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
 			pack32(gres_slurmd_conf->config_flags, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
+			packstr(gres_slurmd_conf->chunk_order, buffer);
+			packstr(gres_slurmd_conf->chunk_sizes, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 			packstr(gres_slurmd_conf->links, buffer);
 			packstr(gres_slurmd_conf->name, buffer);
@@ -3574,10 +3576,11 @@ static int _add_to_gres_conf_list(gres_slurmd_conf_t *conf, char *node_name)
 	if (!conf->count)
 		goto empty;
 
-	log_flag(GRES, "Node:%s Gres:%s Type:%s UUID:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+	log_flag(GRES, "Node:%s Gres:%s Type:%s UUID:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s ChunkSizes:%s ChunkOrder:%s",
 		 node_name, conf->name, conf->type_name, conf->unique_id,
 		 gres_flags2str(conf->config_flags), conf->cpus, conf->cpu_cnt,
-		 conf->count, conf->links);
+		 conf->count, conf->links, conf->chunk_sizes,
+		 conf->chunk_order);
 
 	if (!(gres_ctx = _find_context_by_id(conf->plugin_id))) {
 		/*
@@ -3718,6 +3721,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpack32(&conf->cpu_cnt, buffer);
 			safe_unpack32(&conf->config_flags, buffer);
 			safe_unpack32(&conf->plugin_id, buffer);
+			safe_unpackstr(&conf->chunk_order, buffer);
+			safe_unpackstr(&conf->chunk_sizes, buffer);
 			safe_unpackstr(&conf->cpus, buffer);
 			safe_unpackstr(&conf->links, buffer);
 			safe_unpackstr(&conf->name, buffer);
