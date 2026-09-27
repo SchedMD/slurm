@@ -4341,12 +4341,14 @@ end_it:
  * count that the largest chunk size divides evenly.
  * IN build - the Type's ChunkSizes, ChunkOrder and devices
  * IN node_name - node name, for logging
+ * IN is_shared - true for a shared GRES (gres/shard, gres/mps)
  * IN/OUT gres_ns - node state to add the domain to
  * OUT reason_down - failure reason, if not already set
  * RET SLURM_SUCCESS or SLURM_ERROR
  */
 static int _build_chunk_config(chunk_build_t *build, char *node_name,
-			       gres_node_state_t *gres_ns, char **reason_down)
+			       bool is_shared, gres_node_state_t *gres_ns,
+			       char **reason_down)
 {
 	gres_chunk_domain_t *dom = NULL;
 	char *tmp = NULL;
@@ -4354,6 +4356,16 @@ static int _build_chunk_config(chunk_build_t *build, char *node_name,
 	int *order = NULL, *devs = NULL, sizes_cnt = 0, order_cnt = 0;
 	uint64_t dev_cnt = bit_set_count(build->devs);
 
+	/*
+	 * alt_gres pairs a sharing GRES with its shared one. Shared
+	 * allocations are tracked on the shared state, so the chunk selection
+	 * cannot see the devices they consume and would hand out a chunk that
+	 * is already carved up.
+	 */
+	if (is_shared || gres_ns->alt_gres) {
+		tmp = xstrdup("ChunkSizes is not supported for shared GRES, or for a GRES that has one configured on it");
+		goto end_it;
+	}
 	if (!dev_cnt) {
 		tmp = xstrdup("ChunkSizes is configured but no devices were found");
 		goto end_it;
@@ -5078,9 +5090,10 @@ static int _node_config_validate(node_record_t *node_ptr,
 			chunk_build_t *build = &rebuild_topo.chunk_builds[i];
 
 			if (!chunk_err && build->devs &&
-			    (_build_chunk_config(build, node_name, gres_ns,
-						 reason_down) !=
-			     SLURM_SUCCESS)) {
+			    (_build_chunk_config(
+				     build, node_name,
+				     gres_id_shared(gres_ctx->config_flags),
+				     gres_ns, reason_down) != SLURM_SUCCESS)) {
 				chunk_err = true;
 				rc = EINVAL;
 			}
