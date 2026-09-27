@@ -6944,13 +6944,13 @@ def require_nodes(requested_node_count, requirements_list=[], require_hardware=F
                                     node_qualifies = False
                                     nonqualifying_node_count += 1
                                 if nonqualifying_node_count == 1:
-                                    augmentation_dict[parameter_name] = gres_value
+                                    augmentation_dict[parameter_name] = parameter_value
                         else:
                             if node_qualifies:
                                 node_qualifies = False
                                 nonqualifying_node_count += 1
                             if nonqualifying_node_count == 1:
-                                augmentation_dict[parameter_name] = gres_value
+                                augmentation_dict[parameter_name] = parameter_value
                 else:
                     if node_qualifies:
                         node_qualifies = False
