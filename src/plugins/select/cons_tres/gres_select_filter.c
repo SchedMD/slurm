@@ -40,6 +40,7 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "gres_chunks.h"
 #include "gres_links.h"
 #include "gres_select_filter.h"
 
@@ -217,10 +218,12 @@ static int _foreach_remove_unusable(void *x, void *arg)
 	 * Must run after the socket pruning above: dropping a socket can break
 	 * a linked set apart. A GRES with no topology has no links either, so
 	 * it is included and rejected rather than quietly handed out. Shared
-	 * GRES are slices of one device and have no links.
+	 * GRES are slices of one device and have no links. Chunks replace
+	 * links.
 	 */
 	if ((args->links_mode == GRES_LINKS_ENFORCE) && gres_ns &&
-	    !gres_id_shared(sock_gres->gres_state_job->config_flags))
+	    !gres_id_shared(sock_gres->gres_state_job->config_flags) &&
+	    !gres_chunks_apply(gres_js, gres_ns))
 		gres_links_filter(sock_gres, gres_ns, min_gres, &near_gres_cnt);
 
 	if (!args->whole_node) {
@@ -1759,6 +1762,9 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
+	/* Chunks replace links */
+	if (gres_chunks_apply(gres_js, gres_ns))
+		links_mode = GRES_LINKS_IGNORE;
 	gres_cnt = bit_size(gres_js->gres_bit_select[args->node_inx]);
 
 	if (_get_node_sock_specs(job_res, &sock_cnt,
@@ -1937,6 +1943,9 @@ static int _select_and_set_node(void *x, void *arg)
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	if (!gres_js || !gres_ns)
 		return 0;
+	/* Chunks replace links */
+	if (gres_chunks_apply(gres_js, gres_ns))
+		links_mode = GRES_LINKS_IGNORE;
 	if ((gres_js->gres_per_node ||
 	     gres_js->gres_per_socket ||
 	     gres_js->gres_per_job) && /* Data needed */
@@ -2139,6 +2148,10 @@ static int _foreach_set_job_bits2(void *x, void *arg)
 	/* Shared GRES have no links */
 	if (gres_id_shared(sock_gres->gres_state_job->config_flags))
 		links_mode = GRES_LINKS_PREFER;
+	/* Chunks replace links */
+	else if (gres_chunks_apply(sock_gres->gres_state_job->gres_data,
+				   sock_gres->gres_state_node->gres_data))
+		links_mode = GRES_LINKS_IGNORE;
 	tmp = _set_job_bits2(args->node_inx, args->job_node_inx, sock_gres,
 			     args->job_id, args->tres_mc_ptr, links_mode);
 	if (args->job_fini != 0)
