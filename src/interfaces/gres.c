@@ -2044,6 +2044,13 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		fatal("Invalid GRES record for %s, ChunkSizes requires File or MultipleFiles",
 		      p->name);
 
+	/* Chunks and links describe the same topology, so chunks win */
+	if (p->chunk_sizes && p->links) {
+		warning("gres.conf: Ignoring Links for Name=%s Type=%s, ChunkSizes takes precedence",
+			p->name, p->type_name);
+		xfree(p->links);
+	}
+
 	_set_shared_flag(p->name, &p->config_flags);
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
