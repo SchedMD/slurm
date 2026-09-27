@@ -4336,6 +4336,74 @@ end_it:
 	return rc;
 }
 
+/*
+ * Build the chunk domain of one Type on a node.
+ * IN build - the Type's ChunkSizes and devices
+ * IN node_name - node name, for logging
+ * IN/OUT gres_ns - node state to add the domain to
+ * OUT reason_down - failure reason, if not already set
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+static int _build_chunk_config(chunk_build_t *build, char *node_name,
+			       gres_node_state_t *gres_ns, char **reason_down)
+{
+	gres_chunk_domain_t *dom = NULL;
+	char *tmp = NULL;
+	uint32_t *sizes = NULL;
+	int *order = NULL, *devs = NULL, sizes_cnt = 0, order_cnt = 0;
+	uint64_t dev_cnt = bit_set_count(build->devs);
+
+	if (gres_chunk_sizes_parse(build->sizes, &sizes, &sizes_cnt) !=
+	    SLURM_SUCCESS) {
+		tmp = xstrdup_printf("Invalid ChunkSizes value (%s)",
+				     build->sizes);
+		goto end_it;
+	}
+
+	/* Chunk position is enumeration order */
+	order = xcalloc(dev_cnt, sizeof(int));
+	for (int i = 0; i < (int) dev_cnt; i++)
+		order[i] = i;
+	order_cnt = dev_cnt;
+
+	/* Positions number the Type's devices, so map them to indexes */
+	devs = xcalloc(order_cnt, sizeof(int));
+	for (int i = 0, inx = -1; i < order_cnt; i++)
+		devs[i] = inx = bit_ffs_from_bit(build->devs, inx + 1);
+	for (int i = 0; i < order_cnt; i++)
+		order[i] = devs[order[i]];
+	xfree(devs);
+
+	xrecalloc(gres_ns->chunk_domains, (gres_ns->chunk_domain_cnt + 1),
+		  sizeof(*gres_ns->chunk_domains));
+	dom = &gres_ns->chunk_domains[gres_ns->chunk_domain_cnt++];
+	dom->order = order;
+	dom->order_len = order_cnt;
+	dom->sizes = sizes;
+	dom->sizes_cnt = sizes_cnt;
+	dom->type_id = build->type_id;
+	dom->sizes_str = xstrdup(build->sizes);
+	dom->order_str = xstrdup(build->order);
+
+	log_flag(GRES, "%s: node %s: built %d device chunks from ChunkSizes=%s",
+		 __func__, node_name, sizes_cnt, build->sizes);
+
+	return SLURM_SUCCESS;
+
+end_it:
+	xfree(sizes);
+	xfree(order);
+	error("%s: %s on node %s", __func__, tmp, node_name);
+	if (reason_down && !(*reason_down)) {
+		*reason_down = tmp;
+		tmp = NULL;
+	} else {
+		xfree(tmp);
+	}
+
+	return SLURM_ERROR;
+}
+
 static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_ns,
 			      char **reason_down)
 {
@@ -4932,6 +5000,13 @@ static int _node_config_validate(node_record_t *node_ptr,
 		rebuild_topo = true;
 	}
 
+	/*
+	 * Drop it here rather than in the rebuild below, or a node that loses
+	 * every device keeps chunk state naming devices that are gone. The
+	 * rebuild below builds it again as configured.
+	 */
+	_clear_chunk_config(gres_ns);
+
 	if (rebuild_topo) {
 		rebuild_topo_t rebuild_topo = {
 			.core_cnt = core_cnt,
@@ -4946,11 +5021,14 @@ static int _node_config_validate(node_record_t *node_ptr,
 			.sock_cnt = sock_cnt,
 			.tot_gres_cnt = slurmd_conf_tot.gres_cnt,
 		};
+		bool chunk_err;
+
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
 				     &rebuild_topo);
 		rc = rebuild_topo.rc;
 
-		if (rebuild_topo.chunk_mismatch) {
+		chunk_err = rebuild_topo.chunk_mismatch;
+		if (chunk_err) {
 			char *tmp = xstrdup_printf("%s: every record of a Type must set the same ChunkSizes and ChunkOrder",
 				gres_ctx->gres_type);
 
@@ -4961,9 +5039,22 @@ static int _node_config_validate(node_record_t *node_ptr,
 				xfree(tmp);
 			rc = EINVAL;
 		}
-		for (int i = 0; i < rebuild_topo.chunk_build_cnt; i++)
-			FREE_NULL_BITMAP(rebuild_topo.chunk_builds[i].devs);
+		for (int i = 0; i < rebuild_topo.chunk_build_cnt; i++) {
+			chunk_build_t *build = &rebuild_topo.chunk_builds[i];
+
+			if (!chunk_err && build->devs &&
+			    (_build_chunk_config(build, node_name, gres_ns,
+						 reason_down) !=
+			     SLURM_SUCCESS)) {
+				chunk_err = true;
+				rc = EINVAL;
+			}
+			FREE_NULL_BITMAP(build->devs);
+		}
 		xfree(rebuild_topo.chunk_builds);
+		/* All or nothing: no Type is enforced on a half-built node */
+		if (chunk_err)
+			_clear_chunk_config(gres_ns);
 
 		if (rc)
 			gres_ns->topo_cnt = rebuild_topo.topo_cnt;
