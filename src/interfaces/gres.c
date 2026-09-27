@@ -3328,6 +3328,39 @@ extern int gres_parse_conf(char *node_name, uint32_t cpu_cnt)
 	return rc;
 }
 
+/* Match a gres.conf record that holds devices of the key's name and type */
+static int _find_same_type(void *x, void *key)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x, *other = key;
+
+	return (gres_slurmd_conf->count &&
+		(gres_slurmd_conf->plugin_id == other->plugin_id) &&
+		!xstrcmp(gres_slurmd_conf->type_name, other->type_name));
+}
+
+/*
+ * Every record of a name and type feeds one chunk domain, so they must all set
+ * the same ChunkSizes and ChunkOrder, or all set neither.
+ */
+static int _foreach_validate_chunk_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x, *first;
+
+	if (!gres_slurmd_conf->count)
+		return 0;
+
+	/* A record matches itself, so this always finds one */
+	first = list_find_first(arg, _find_same_type, gres_slurmd_conf);
+
+	if ((first == gres_slurmd_conf) ||
+	    (!xstrcmp(gres_slurmd_conf->chunk_sizes, first->chunk_sizes) &&
+	     !xstrcmp(gres_slurmd_conf->chunk_order, first->chunk_order)))
+		return 0;
+
+	fatal("Invalid GRES record name=%s type=%s: ChunkSizes and ChunkOrder must match the other records of the same GRES name and type on this node",
+	      gres_slurmd_conf->name, gres_slurmd_conf->type_name);
+}
+
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  *
@@ -3428,6 +3461,10 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		list_for_each(gres_conf_list, _post_plugin_gres_conf,
 			      &gres_context[i]);
 	}
+
+	/* Run last, so AutoDetect and the plugins have had their say */
+	list_for_each(gres_conf_list, _foreach_validate_chunk_conf,
+		      gres_conf_list);
 
 fini:
 	/*
