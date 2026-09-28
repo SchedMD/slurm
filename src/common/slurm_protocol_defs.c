@@ -4363,8 +4363,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->batch_host);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
-		env_array_free(msg->environment);
-		msg->environment = NULL;
+		FREE_NULL_ENV(msg->environment, NULL);
 		xfree(msg->group_name);
 		xfree(msg->job_submit_user_msg);
 		xfree(msg->node_list);
