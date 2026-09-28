@@ -1710,7 +1710,6 @@ static void _help(void)
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Container options:\n"
-"      --container=path        Container path\n"
 "      --container-id=id       Container identifier\n"
 "      --runtime=name          Runtime plugin type\n"
 "\n"
