@@ -29,8 +29,9 @@
 
 #include "config.h"
 
-#include "src/sview/sview.h"
 #include "src/common/parse_time.h"
+#include "src/interfaces/topology.h"
+#include "src/sview/sview.h"
 #include <gdk/gdkkeysyms.h>
 
 #define _DEBUG 0
@@ -50,11 +51,6 @@ typedef struct {
 
 static gboolean control_key_in_effect = false;
 static gboolean enter_key_in_effect = false;
-
-typedef struct topoinfo_tree {
-	uint32_t record_count;
-	topo_info_t *topo_array;
-} topoinfo_tree_t;
 
 static int _find_node_inx (char *name)
 {

@@ -201,4 +201,12 @@ extern int sercli_parse_str(data_parser_type_t type, void *db_conn, void *dst,
 extern data_parser_t *data_parser_cli_parser(const char *data_parser,
 					     void *arg);
 
+/* Externally to data_parser add an error to data_parser cli output */
+extern void data_parser_cli_on_error(data_parser_t *parser, int error_code,
+				     const char *source, const char *why, ...);
+
+/* Externally to data_parser add a warning to data_parser cli output */
+extern void data_parser_cli_on_warn(data_parser_t *parser, const char *source,
+				    const char *why, ...);
+
 #endif

@@ -202,9 +202,14 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	case TOPO_DATA_TOPOLOGY_PTR:
 	{
 		dynamic_plugin_data_t **topoinfo_pptr = data;
+		topology_flat_config_t *cfg = tctx;
+		topology_flat_config_t *topoinfo = xmalloc(sizeof(*topoinfo));
+
+		if (cfg)
+			topoinfo->alpha_step_rank = cfg->alpha_step_rank;
 
 		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
-		(*topoinfo_pptr)->data = NULL;
+		(*topoinfo_pptr)->data = topoinfo;
 		(*topoinfo_pptr)->plugin_id = plugin_id;
 
 		break;
@@ -230,26 +235,65 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 
 extern int topology_p_topoinfo_free(void *topoinfo_ptr)
 {
+	topology_flat_config_t *topo_flat_conf = topoinfo_ptr;
+	xfree(topo_flat_conf);
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
 				    uint16_t protocol_version)
 {
+	topology_flat_config_t *topoinfo = topoinfo_ptr;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packbool(topoinfo->alpha_step_rank, buffer);
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 				     char *unit, char **out)
 {
-	*out = NULL;
+	char *env, *line = NULL, *pos = NULL;
+	topology_flat_config_t *topoinfo = topoinfo_ptr;
+
+	if (!topoinfo) {
+		*out = NULL;
+		return SLURM_SUCCESS;
+	}
+
+	xstrfmtcatat(line, &pos, "AlphaStepRank=%s",
+		     (topoinfo->alpha_step_rank ? "true" : "false"));
+
+	if ((env = getenv("SLURM_TOPO_LEN")))
+		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
+	else
+		xstrfmtcat(*out, "%s\n", line);
+
+	xfree(line);
+
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
+	topology_flat_config_t *topoinfo_ptr = NULL;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		topoinfo_ptr = xmalloc(sizeof(*topoinfo_ptr));
+		*topoinfo_pptr = topoinfo_ptr;
+
+		safe_unpackbool(&topoinfo_ptr->alpha_step_rank, buffer);
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	topology_p_topoinfo_free(topoinfo_ptr);
+	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
 }
 
 extern void topology_p_jobinfo_free(

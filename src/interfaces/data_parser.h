@@ -769,6 +769,31 @@ typedef enum {
 	DATA_PARSER_TORUS3D_REGION_ARRAY, /* slurm_conf_torus3d_t regions */
 	DATA_PARSER_TOPOLOGY_FLAT_CONFIG, /* topology_flat_config_t */
 	DATA_PARSER_TOPOLOGY_FLAT_CONFIG_PTR, /* topology_flat_config_t* */
+	DATA_PARSER_TOPO_INFO_BLOCK_ARRAY, /* dynamic_plugin_data_t* -> topoinfo_bblock_t */
+	DATA_PARSER_TOPO_INFO_BLOCK_RECORD, /* topoinfo_bblock_t */
+	DATA_PARSER_TOPO_INFO_BLOCK_RECORD_PTR, /* topoinfo_bblock_t* */
+	DATA_PARSER_TOPO_INFO_TREE_ARRAY, /* dynamic_plugin_data_t* -> topoinfo_tree_t */
+	DATA_PARSER_TOPO_INFO_TREE_RECORD, /* topoinfo_switch_t */
+	DATA_PARSER_TOPO_INFO_TREE_RECORD_PTR, /* topoinfo_switch_t* */
+	DATA_PARSER_TOPO_INFO_RING_ARRAY, /* dynamic_plugin_data_t* -> topoinfo_rings_t */
+	DATA_PARSER_TOPO_INFO_RING_RECORD, /* topoinfo_ring_t */
+	DATA_PARSER_TOPO_INFO_RING_RECORD_PTR, /* topoinfo_ring_t* */
+	DATA_PARSER_TOPO_INFO_TORUS3D_PLACEMENT_SIZE, /* topoinfo_torus3d_placement_t */
+	DATA_PARSER_TOPO_INFO_TORUS3D_PLACEMENT_DIMS, /* topoinfo_torus3d_placement_t */
+	DATA_PARSER_TOPO_INFO_TORUS3D_PLACEMENT, /* topoinfo_torus3d_placement_t */
+	DATA_PARSER_TOPO_INFO_TORUS3D_PLACEMENT_PTR, /* topoinfo_torus3d_placement_t* */
+	DATA_PARSER_TOPO_INFO_TORUS3D_PLACEMENT_ARRAY, /* topoinfo_torus3d_record_t* */
+	DATA_PARSER_TOPO_INFO_TORUS3D_RECORD_DIMS, /* topoinfo_torus3d_record_t */
+	DATA_PARSER_TOPO_INFO_TORUS3D_RECORD, /* topoinfo_torus3d_record_t */
+	DATA_PARSER_TOPO_INFO_TORUS3D_RECORD_PTR, /* topoinfo_torus3d_record_t* */
+	DATA_PARSER_TOPO_INFO_TORUS3D_ARRAY, /* dynamic_plugin_data_t* -> topoinfo_torus3d_t* */
+	DATA_PARSER_TOPO_INFO_FLAT, /* dynamic_plugin_data_t* -> topology_flat_config_t* */
+	DATA_PARSER_TOPO_INFO, /* dynamic_plugin_data_t topo info */
+	DATA_PARSER_TOPO_INFO_PTR, /* dynamic_plugin_data_t* topo info */
+	DATA_PARSER_OPENAPI_TOPO_INFO_RESP, /* openapi_resp_topo_info_msg_t */
+	DATA_PARSER_OPENAPI_TOPO_INFO_RESP_PTR, /* openapi_resp_topo_info_msg_t* */
+	DATA_PARSER_OPENAPI_TOPO_INFO_PARAM, /* openapi_string_param_t */
+	DATA_PARSER_OPENAPI_TOPO_INFO_PARAM_PTR, /* openapi_string_param_t* */
 	DATA_PARSER_SRUN_STEPS_DRAINED_MSG, /* srun_steps_drained_msg_t */
 	DATA_PARSER_SRUN_STEPS_DRAINED_MSG_PTR, /* srun_steps_drained_msg_t* */
 	DATA_PARSER_TYPE_MAX

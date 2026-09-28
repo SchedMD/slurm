@@ -563,3 +563,19 @@ def test_arbitrary_keeps_hostfile_order(dynamic_nodes):
         f"SLURM_JOB_CPUS_PER_NODE {cpus_per_node} should be {expected_cpus} "
         f"for {distinct}"
     )
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/scontrol") < (26, 11),
+    reason="Issue 50235: scontrol show topology prints AlphaStepRank since 26.11",
+)
+@pytest.mark.parametrize(
+    "topology, alpha_step_rank", [("topo_alpha", "true"), ("topo_plain", "false")]
+)
+def test_show_topology_alpha_step_rank(topology, alpha_step_rank):
+    """Verify scontrol show topology reports AlphaStepRank for flat topologies"""
+
+    output = atf.run_command_output(f"scontrol show topology {topology}", fatal=True)
+    assert (
+        output.strip() == f"AlphaStepRank={alpha_step_rank}"
+    ), f"scontrol show topology {topology} did not report its AlphaStepRank: {output}"

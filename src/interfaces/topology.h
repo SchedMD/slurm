@@ -178,6 +178,60 @@ typedef struct topology_eval {
 	topology_ctx_t *tctx;
 } topology_eval_t;
 
+typedef topo_info_t topoinfo_switch_t;
+
+typedef struct topoinfo_tree {
+	uint32_t record_count; /* number of records */
+	topoinfo_switch_t *topo_array; /* the switch topology records */
+} topoinfo_tree_t;
+
+typedef struct topoinfo_bblock {
+	bool aggregated;
+	uint16_t block_index;
+	char *name;
+	char *nodes;
+	uint32_t size;
+} topoinfo_bblock_t;
+
+typedef struct topoinfo_block {
+	uint32_t record_count; /* number of records */
+	topoinfo_bblock_t *topo_array; /* the block topology records */
+} topoinfo_block_t;
+
+typedef struct topoinfo_ring {
+	char *name;
+	char *nodes;
+	uint16_t ring_index;
+	uint16_t size;
+} topoinfo_ring_t;
+
+typedef struct topoinfo_rings {
+	uint32_t record_count; /* number of records */
+	topoinfo_ring_t *topo_array; /* the ring topology records */
+} topoinfo_rings_t;
+
+typedef struct {
+	uint16_t x_size;
+	uint16_t y_size;
+	uint16_t z_size;
+	uint32_t anchor_count;
+} topoinfo_torus3d_placement_t;
+
+typedef struct {
+	char *name;
+	char *nodes;
+	uint16_t x_size;
+	uint16_t y_size;
+	uint16_t z_size;
+	uint32_t placement_count;
+	topoinfo_torus3d_placement_t *placements;
+} topoinfo_torus3d_record_t;
+
+typedef struct {
+	uint32_t record_count;
+	topoinfo_torus3d_record_t *topo_array;
+} topoinfo_torus3d_t;
+
 /* Upper bits of node_rank represent the topology unit id */
 #define TOPO_RANK_ID_SHIFT 16
 
@@ -191,6 +245,17 @@ typedef struct topology_eval {
  * Returns a Slurm errno.
  */
 extern int topology_g_init(void);
+
+/*
+ * Load all topology plugins, but do not load a configuration file.
+ *
+ * Only topology_g_topoinfo_*() and topology_g_fini() may be called
+ * afterwards. Every other topology_g_*() call, including topology_g_init(),
+ * will fatal_abort().
+ *
+ * Returns a Slurm errno.
+ */
+extern int topology_g_init_topoinfo(void);
 
 /*
  * Terminate the topology plugin.

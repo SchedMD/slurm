@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  api.h - Slurm REST API openapi operations handlers
+ *  topology.c - Slurm REST API topology http operations handlers
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,44 +33,54 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef OPENAPI_SLURMCTLD
-#define OPENAPI_SLURMCTLD
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-#include "src/common/data.h"
 #include "src/interfaces/data_parser.h"
-#include "src/slurmrestd/openapi.h"
 
-typedef openapi_ctxt_t ctxt_t;
+#include "src/slurmrestd/operations.h"
 
-#define resp_error(ctxt, error_code, source, why, ...) \
-	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
-#define resp_warn(ctxt, source, why, ...) \
-	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
+#include "api.h"
 
-extern const openapi_path_binding_t openapi_paths[];
-extern int op_handler_shares(openapi_ctxt_t *ctxt);
-extern int op_handler_reconfigure(openapi_ctxt_t *ctxt);
-extern int op_handler_diag(openapi_ctxt_t *ctxt);
-extern int op_handler_ping(openapi_ctxt_t *ctxt);
-extern int op_handler_licenses(openapi_ctxt_t *ctxt);
-extern int op_handler_hres(openapi_ctxt_t *ctxt);
-extern int op_handler_submit_job(openapi_ctxt_t *ctxt);
-extern int op_handler_alloc_job(openapi_ctxt_t *ctxt);
-extern int op_handler_job(openapi_ctxt_t *ctxt);
-extern int op_handler_jobs(openapi_ctxt_t *ctxt);
-extern int op_handler_job_states(openapi_ctxt_t *ctxt);
-extern int op_handler_create_node(openapi_ctxt_t *ctxt);
-extern int op_handler_nodes(openapi_ctxt_t *ctxt);
-extern int op_handler_node(openapi_ctxt_t *ctxt);
-extern int op_handler_partitions(openapi_ctxt_t *ctxt);
-extern int op_handler_partition(openapi_ctxt_t *ctxt);
-extern int op_handler_reservations(openapi_ctxt_t *ctxt);
-extern int op_handler_reservation(openapi_ctxt_t *ctxt);
-extern int op_handler_reservations_update(openapi_ctxt_t *ctxt);
-extern int op_handler_resources(openapi_ctxt_t *ctxt);
-extern int op_handler_config(openapi_ctxt_t *ctxt);
-extern int op_handler_job_requeue(openapi_ctxt_t *ctxt);
-extern int op_handler_jobs_requeue(openapi_ctxt_t *ctxt);
-extern int op_handler_topology(openapi_ctxt_t *ctxt);
+extern int op_handler_topology(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+	topo_info_response_msg_t *topo_info_msg = NULL;
+	openapi_string_param_t param = { 0 };
 
-#endif
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	} else if (ctxt->parameters &&
+		   DATA_PARSE(ctxt->parser, OPENAPI_TOPO_INFO_PARAM, param,
+			      ctxt->parameters, ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing parameters");
+	} else if (!(errno = 0) &&
+		   (rc = slurm_load_topo(&topo_info_msg, param.string))) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+		/*
+		 * The requested topology not being configured means the
+		 * client asked for something that does not exist, which is
+		 * only a "not found" for this lookup. Translate it here so
+		 * that the other RPCs returning this error (job submission,
+		 * node and partition updates) keep their HTTP status.
+		 */
+		if (rc == ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE)
+			rc = ESLURM_REST_TOPO_NOT_FOUND;
+		resp_error(ctxt, rc, __func__,
+			   "slurm_load_topo() failed to load topology");
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_TOPO_INFO_RESP,
+				 (topo_info_msg ? topo_info_msg->topo_info :
+						  NULL),
+				 ctxt);
+
+	slurm_free_topo_info_msg(topo_info_msg);
+	xfree(param.string);
+	return rc;
+}

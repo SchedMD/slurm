@@ -54,6 +54,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/interfaces/topology.h"
+
 #include "eval_nodes_tree.h"
 
 /* These are defined here so when we link with something other than
@@ -78,13 +80,6 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Required for topology plugins: */
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_TREE;
 const bool supports_exclusive_topo = false;
-
-typedef topo_info_t topoinfo_switch_t;
-
-typedef struct topoinfo_tree {
-	uint32_t record_count;		/* number of records */
-	topoinfo_switch_t *topo_array;	/* the switch topology records */
-} topoinfo_tree_t;
 
 extern int init(void)
 {

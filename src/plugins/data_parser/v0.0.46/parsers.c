@@ -6988,9 +6988,8 @@ static int DUMP_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
 	}
 
 	if (!tctx->config) {
-		/* No options: emit "flat: true" shorthand. */
-		bool tmp = true;
-		return DUMP(BOOL, tmp, dst, args);
+		topology_flat_config_t default_flat = { 0 };
+		return DUMP(TOPOLOGY_FLAT_CONFIG, default_flat, dst, args);
 	}
 
 	rc = DUMP(TOPOLOGY_FLAT_CONFIG_PTR, tctx->config, dst, args);
@@ -8170,6 +8169,212 @@ static int DUMP_FUNC(SLURM_CONF_CONTROLLERS)(const parser_t *const parser,
 
 	rc = DUMP(CONTROLLERS_ARRAY, controllers, dst, args);
 	xfree(controllers);
+	return rc;
+}
+
+PARSE_DISABLED(TOPO_INFO_BLOCK_ARRAY);
+
+static int DUMP_FUNC(TOPO_INFO_BLOCK_ARRAY)(const parser_t *const parser,
+					    void *obj,
+					    data_t *dst,
+					    args_t *args)
+{
+	dynamic_plugin_data_t *dpd = obj;
+	topoinfo_block_t *msg;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	if (!dpd || !dpd->data || (dpd->plugin_id != TOPOLOGY_PLUGIN_BLOCK))
+		return SLURM_SUCCESS;
+
+	msg = dpd->data;
+	for (uint32_t i = 0; !rc && i < msg->record_count; i++) {
+		if ((rc = DUMP(TOPO_INFO_BLOCK_RECORD, msg->topo_array[i],
+			       data_list_append(dst), args)))
+			break;
+	}
+	return rc;
+}
+
+PARSE_DISABLED(TOPO_INFO_RING_ARRAY);
+
+static int DUMP_FUNC(TOPO_INFO_RING_ARRAY)(const parser_t *const parser,
+					   void *obj,
+					   data_t *dst,
+					   args_t *args)
+{
+	dynamic_plugin_data_t *dpd = obj;
+	topoinfo_rings_t *msg;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	if (!dpd || !dpd->data || (dpd->plugin_id != TOPOLOGY_PLUGIN_RING))
+		return SLURM_SUCCESS;
+
+	msg = dpd->data;
+	for (uint32_t i = 0; !rc && i < msg->record_count; i++) {
+		if ((rc = DUMP(TOPO_INFO_RING_RECORD, msg->topo_array[i],
+			       data_list_append(dst), args)))
+			break;
+	}
+	return rc;
+}
+
+PARSE_DISABLED(TOPO_INFO_TREE_ARRAY);
+
+static int DUMP_FUNC(TOPO_INFO_TREE_ARRAY)(const parser_t *const parser,
+					   void *obj,
+					   data_t *dst,
+					   args_t *args)
+{
+	dynamic_plugin_data_t *dpd = obj;
+	topoinfo_tree_t *msg;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	if (!dpd || !dpd->data || (dpd->plugin_id != TOPOLOGY_PLUGIN_TREE))
+		return SLURM_SUCCESS;
+
+	msg = dpd->data;
+	for (uint32_t i = 0; !rc && i < msg->record_count; i++) {
+		if ((rc = DUMP(TOPO_INFO_TREE_RECORD, msg->topo_array[i],
+			       data_list_append(dst), args)))
+			break;
+	}
+	return rc;
+}
+
+PARSE_DISABLED(TOPO_INFO_TORUS3D_PLACEMENT_SIZE);
+
+static int DUMP_FUNC(TOPO_INFO_TORUS3D_PLACEMENT_SIZE)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	topoinfo_torus3d_placement_t *placement_ptr = obj;
+	uint32_t placement_size;
+
+	xassert(placement_ptr);
+
+	placement_size = (uint32_t) placement_ptr->x_size *
+			 placement_ptr->y_size * placement_ptr->z_size;
+	return DUMP(UINT32, placement_size, dst, args);
+}
+
+PARSE_DISABLED(TOPO_INFO_TORUS3D_PLACEMENT_DIMS);
+
+static int DUMP_FUNC(TOPO_INFO_TORUS3D_PLACEMENT_DIMS)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	topoinfo_torus3d_placement_t *placement_ptr = obj;
+	slurm_conf_torus3d_dims_t dims = { 0 };
+
+	xassert(placement_ptr);
+
+	dims.x = placement_ptr->x_size;
+	dims.y = placement_ptr->y_size;
+	dims.z = placement_ptr->z_size;
+
+	return DUMP(TORUS3D_DIMS, dims, dst, args);
+}
+
+PARSE_DISABLED(TOPO_INFO_TORUS3D_RECORD_DIMS);
+
+static int DUMP_FUNC(TOPO_INFO_TORUS3D_RECORD_DIMS)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	topoinfo_torus3d_record_t *torus3d_record_ptr = obj;
+	slurm_conf_torus3d_dims_t dims = { 0 };
+
+	xassert(torus3d_record_ptr);
+
+	dims.x = torus3d_record_ptr->x_size;
+	dims.y = torus3d_record_ptr->y_size;
+	dims.z = torus3d_record_ptr->z_size;
+
+	return DUMP(TORUS3D_DIMS, dims, dst, args);
+}
+
+PARSE_DISABLED(TOPO_INFO_TORUS3D_PLACEMENT_ARRAY);
+
+static int DUMP_FUNC(TOPO_INFO_TORUS3D_PLACEMENT_ARRAY)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	topoinfo_torus3d_record_t *torus3d_record_ptr = obj;
+
+	xassert(torus3d_record_ptr);
+
+	data_set_list(dst);
+
+	for (int i = 0; i < torus3d_record_ptr->placement_count; i++) {
+		if ((rc = DUMP(TOPO_INFO_TORUS3D_PLACEMENT,
+			       torus3d_record_ptr->placements[i],
+			       data_list_append(dst), args)))
+			break;
+	}
+
+	return rc;
+}
+
+PARSE_DISABLED(TOPO_INFO_TORUS3D_ARRAY);
+
+static int DUMP_FUNC(TOPO_INFO_TORUS3D_ARRAY)(const parser_t *const parser,
+					      void *obj,
+					      data_t *dst,
+					      args_t *args)
+{
+	dynamic_plugin_data_t *dpd = obj;
+	topoinfo_torus3d_t *msg;
+	int rc = SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	if (!dpd || !dpd->data || (dpd->plugin_id != TOPOLOGY_PLUGIN_3DTORUS))
+		return SLURM_SUCCESS;
+
+	msg = dpd->data;
+	for (uint32_t i = 0; !rc && i < msg->record_count; i++) {
+		if ((rc = DUMP(TOPO_INFO_TORUS3D_RECORD, msg->topo_array[i],
+			       data_list_append(dst), args)))
+			break;
+	}
+	return rc;
+}
+
+PARSE_DISABLED(TOPO_INFO_FLAT);
+
+static int DUMP_FUNC(TOPO_INFO_FLAT)(const parser_t *const parser,
+				     void *obj,
+				     data_t *dst,
+				     args_t *args)
+{
+	dynamic_plugin_data_t *dpd = obj;
+	topology_flat_config_t *msg;
+	int rc = SLURM_SUCCESS;
+
+	if (!dpd || !dpd->data || (dpd->plugin_id != TOPOLOGY_PLUGIN_FLAT)) {
+		data_set_dict(dst);
+		return SLURM_SUCCESS;
+	}
+
+	msg = dpd->data;
+
+	rc = DUMP(TOPOLOGY_FLAT_CONFIG_PTR, msg, dst, args);
+
 	return rc;
 }
 
@@ -11666,6 +11871,84 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 #undef add_cparse
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(topoinfo_bblock_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(TOPO_INFO_BLOCK_RECORD)[] = {
+	add_parse(BOOL, aggregated, "aggregated", "True if this is an aggregated block"),
+	add_parse(UINT16, block_index, "block_index", "Block index"),
+	add_parse(STRING, name, "name", "Block name"),
+	add_parse(STRING, nodes, "nodes", "Nodes in this block"),
+	add_parse(UINT32, size, "block_size", "Block size"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(topoinfo_switch_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(TOPO_INFO_TREE_RECORD)[] = {
+	add_parse(UINT16, level, "level", "Level in hierarchy (leaf=0)"),
+	add_parse(UINT32, link_speed, "link_speed", "Link speed (arbitrary units)"),
+	add_parse(STRING, name, "name", "Switch name"),
+	add_parse(STRING, nodes, "nodes", "Direct descendant nodes"),
+	add_parse(STRING, switches, "switches", "Direct descendant switches"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(topoinfo_torus3d_placement_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(topoinfo_torus3d_placement_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPO_INFO_TORUS3D_PLACEMENT)[] = {
+	add_cparse(TOPO_INFO_TORUS3D_PLACEMENT_DIMS, "dims", "Dimensions of the placement shape as an object with x, y, and z fields"),
+	add_cparse(TOPO_INFO_TORUS3D_PLACEMENT_SIZE, "placement_size", "The number of nodes in the placement"),
+	add_parse(UINT32, anchor_count, "anchors", "The number of anchors"),
+};
+#undef add_cparse
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(topoinfo_torus3d_record_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(topoinfo_torus3d_record_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPO_INFO_TORUS3D_RECORD)[] = {
+	add_parse(STRING, name, "name", "The name of the torus. This name is internal to Slurm and arbitrary."),
+	add_parse(STRING, nodes, "nodes", "Child nodes of the torus. Nodes are mapped to coordinates in x-major order (x varies fastest)."),
+	add_cparse(TOPO_INFO_TORUS3D_RECORD_DIMS, "dims", "The dimensions of the torus as an object with x, y, and z fields. The product x*y*z defines the total number of coordinate cells in the torus."),
+	add_cparse(TOPO_INFO_TORUS3D_PLACEMENT_ARRAY, "placements", "List of allowed placement shapes for this torus. Jobs requesting a number of nodes matching a placement size will be allocated as a contiguous sub-cube that may wrap around torus boundaries. Jobs that don't match any placement size will not receive an allocation."),
+};
+#undef add_cparse
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(topoinfo_ring_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(TOPO_INFO_RING_RECORD)[] = {
+	add_parse(STRING, name, "name", "Ring name"),
+	add_parse(STRING, nodes, "nodes", "Nodes in this ring"),
+	add_parse(UINT16, ring_index, "ring_index", "Ring index"),
+	add_parse(UINT16, size, "size", "Ring size"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(dynamic_plugin_data_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(dynamic_plugin_data_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPO_INFO)[] = {
+	add_cparse(TOPO_INFO_BLOCK_ARRAY, "block", "topology/block"),
+	add_cparse(TOPO_INFO_FLAT, "flat", "topology/flat"),
+	add_cparse(TOPO_INFO_RING_ARRAY, "ring", "topology/ring"),
+	add_cparse(TOPO_INFO_TORUS3D_ARRAY, "torus3d", "topology/torus3d"),
+	add_cparse(TOPO_INFO_TREE_ARRAY, "tree", "topology/tree"),
+};
+#undef add_parse
+#undef add_cparse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(openapi_string_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_TOPO_INFO_PARAM)[] = {
+	add_parse(STRING, string, "topology_name", "Name of a configured topology"),
+};
+#undef add_parse
+
 #define add_flag_eq(flag_value, flag_string, desc)                      \
 	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value), \
 			   flag_value, INFINITE8, XSTRINGIFY(INFINITE),	\
@@ -12742,6 +13025,7 @@ add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIS
 add_openapi_response_single(OPENAPI_JOB_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR, "status", "result of job requeue request");
 add_openapi_response_single(OPENAPI_JOBS_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR_LIST, "status", "result of batch job requeue request");
 add_openapi_response_single(OPENAPI_SLURMDBD_CONF_RESP, SLURMDBD_CONF_PTR, "slurmdbd_conf", "slurmdbd.conf");
+add_openapi_response_single(OPENAPI_TOPO_INFO_RESP, TOPO_INFO_PTR, "topology", "Topology records");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -13406,6 +13690,15 @@ static const parser_t parsers[] = {
 	addpcp(SLURM_CONF_PROLOG, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Prolog programs run by slurmd"),
 	addpcp(SLURM_CONF_PROLOG_SLURMCTLD, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Prolog programs run by slurmctld"),
 	addpcp(SLURM_CONF_CONTROLLERS, CONTROLLERS_ARRAY, slurm_conf_t, NEED_NONE, "List of slurmctld controllers"),
+	addpca(TOPO_INFO_BLOCK_ARRAY, TOPO_INFO_BLOCK_RECORD, dynamic_plugin_data_t, NEED_NONE, "Array of block descriptions"),
+	addpca(TOPO_INFO_RING_ARRAY, TOPO_INFO_RING_RECORD, dynamic_plugin_data_t, NEED_NONE, "Array of ring descriptions"),
+	addpca(TOPO_INFO_TREE_ARRAY, TOPO_INFO_TREE_RECORD, dynamic_plugin_data_t, NEED_NONE, "Array of switch descriptions"),
+	addpca(TOPO_INFO_TORUS3D_ARRAY, TOPO_INFO_TORUS3D_RECORD, dynamic_plugin_data_t, NEED_NONE, "Array of 3D torus definitions"),
+	addpcp(TOPO_INFO_TORUS3D_RECORD_DIMS, TORUS3D_DIMS, topoinfo_torus3d_record_t, NEED_NONE, "3D torus record dimensions"),
+	addpca(TOPO_INFO_TORUS3D_PLACEMENT_ARRAY, TOPO_INFO_TORUS3D_PLACEMENT, topoinfo_torus3d_record_t, NEED_NONE, "Array of placement descriptions"),
+	addpcp(TOPO_INFO_TORUS3D_PLACEMENT_DIMS, TORUS3D_DIMS, topoinfo_torus3d_placement_t, NEED_NONE, "Dimensions of the placement shape as an object with x, y, and z fields"),
+	addpcp(TOPO_INFO_TORUS3D_PLACEMENT_SIZE, UINT32, topoinfo_torus3d_placement_t, NEED_NONE, "The product of x*y*z defining the placement's size (number of nodes)"),
+	addpcp(TOPO_INFO_FLAT, TOPOLOGY_FLAT_CONFIG_PTR, dynamic_plugin_data_t, NEED_NONE, "Flat topology description"),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -13568,6 +13861,10 @@ static const parser_t parsers[] = {
 	addpap(TORUS3D_DIMS, slurm_conf_torus3d_dims_t, NULL, NULL),
 	addpap(TORUS3D_PLACEMENT, slurm_conf_torus3d_placement_t, NULL, NULL),
 	addpap(TORUS3D_REGION, slurm_conf_torus3d_region_t, NULL, NULL),
+	addpap(TOPO_INFO_BLOCK_RECORD, topoinfo_bblock_t, NULL, NULL),
+	addpap(TOPO_INFO_TREE_RECORD, topoinfo_switch_t, NULL, NULL),
+	addpap(TOPO_INFO_RING_RECORD, topoinfo_ring_t, NULL, NULL),
+	addpap(TOPO_INFO, dynamic_plugin_data_t, NULL, NULL),
 	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
 	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
@@ -13586,6 +13883,9 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_CONF_QUERY, openapi_config_query_t, NULL, NULL),
 	addpap(OPENAPI_JOB_REQUEUE_QUERY, openapi_job_requeue_query_t, NULL, NULL),
 	addpap(OPENAPI_JOBS_REQUEUE_QUERY, openapi_jobs_requeue_query_t, NULL, NULL),
+	addpap(TOPO_INFO_TORUS3D_RECORD, topoinfo_torus3d_record_t, NULL, NULL),
+	addpap(TOPO_INFO_TORUS3D_PLACEMENT, topoinfo_torus3d_placement_t, NULL, NULL),
+	addpap(OPENAPI_TOPO_INFO_PARAM, openapi_string_param_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -13639,6 +13939,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_CONF_RESP, openapi_resp_config_t, NULL, NULL),
 	addoar(OPENAPI_JOB_REQUEUE_RESP),
 	addoar(OPENAPI_JOBS_REQUEUE_RESP),
+	addoar(OPENAPI_TOPO_INFO_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),

@@ -47,6 +47,8 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/interfaces/topology.h"
+
 #include "../common/common_topo.h"
 #include "eval_nodes_ring.h"
 #include "ring_record.h"
@@ -92,18 +94,6 @@ const char plugin_type[] = "topology/ring";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_RING;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const bool supports_exclusive_topo = true;
-
-typedef struct topoinfo_ring {
-	char *name;
-	char *nodes;
-	uint16_t ring_index;
-	uint16_t size;
-} topoinfo_ring_t;
-
-typedef struct topoinfo_rings {
-	uint32_t record_count; /* number of records */
-	topoinfo_ring_t *topo_array; /* the ring topology records */
-} topoinfo_rings_t;
 
 static void _print_topo_record(topoinfo_ring_t *ring_ptr, char **out)
 {
