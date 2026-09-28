@@ -1247,7 +1247,6 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"
 "Container options:\n"
-"      --container=path        Container path\n"
 "      --container-id=id       Container identifier\n"
 "      --runtime=name          Runtime plugin type\n"
 "\n"
