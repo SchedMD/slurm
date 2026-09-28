@@ -22,7 +22,6 @@ def setup():
         component="sbin/slurmd",
         reason="REQUEST_STEPS_DRAINED_SUBSCRIBE relay lives in slurmd 26.05",
     )
-    atf.require_tool("swait")
     atf.require_version(
         (26, 5),
         component="bin/swait",
@@ -220,32 +219,60 @@ def test_queued_regular_step_does_not_block():
 
     Per the design, pending regular sruns are bystanders to swait;
     only running steps and pending async steps block it.
+
+    Both checks are ordering-based, not timing-based, and run inside the
+    job on the node that writes the markers, so a loaded runner or a
+    shared filesystem's caching cannot produce a false failure.
     """
 
-    STEP_SECS = 5
-    job_id = atf.submit_job_sbatch(
-        "-N1 --time=5:00 --job-name=test_162_2_reg_queue "
-        f"--wrap 'srun -n1 sleep {STEP_SECS} & "
-        f"srun -n1 sleep {STEP_SECS} & wait'",
-        fatal=True,
+    # Step 0 holds the only CPU long enough for swait to subscribe while it
+    # runs, even on a loaded runner.
+    STEP0_SECS = 10
+    # Far beyond swait's --timeout: a swait blocked on the queued step times
+    # out instead of returning 0.
+    STEP1_SECS = 120
+    SWAIT_TIMEOUT = STEP0_SECS + 60
+    script = "queued_regular.sh"
+    started = "step0.started"
+    done = "step0.done"
+    out_file = "queued_regular.out"
+    # Step 0 creates both markers itself, so "done" exists before step 0
+    # ends and therefore before swait can return. The second srun is
+    # launched only once step 0 runs, so it deterministically queues
+    # behind it.
+    atf.make_bash_script(
+        script,
+        f"""srun -n1 bash -c 'touch {started}; sleep {STEP0_SECS}; touch {done}' &
+until [ -e {started} ]; do sleep 0.1; done
+srun -n1 sleep {STEP1_SECS} &
+swait --timeout {SWAIT_TIMEOUT}
+rc=$?
+[ -e {done} ] && step0=done || step0=running
+echo "rc=$rc step0=$step0" > {out_file}
+""",
     )
-    atf.wait_for_step(job_id, 0, timeout=60, fatal=True)
-    stepmgr = atf.get_job_parameter(job_id, "BatchHost")
-    result = atf.run_command(
-        f"swait {job_id}",
-        env_vars=f"SLURM_STEPMGR={stepmgr}",
-        timeout=STEP_SECS * 2 + 30,
+    atf.submit_job_sbatch(
+        f"-N1 --time=5:00 --job-name=test_162_2_reg_queue {script}", fatal=True
     )
+
+    # Poll the content, not just the file: it may show up before the echo
+    # lands in it.
+    match = None
+    for _ in atf.timer(timeout=SWAIT_TIMEOUT + 60, quiet=True):
+        content = atf.run_command_output(f"cat {out_file}", quiet=True)
+        match = re.search(r"rc=(\d+) step0=(\w+)", content)
+        if match:
+            break
+    assert match, "the batch script should report swait's result, but it did not"
+    rc, step0 = int(match.group(1)), match.group(2)
+    assert rc != RC_TIMEOUT, (
+        f"swait should return when step 0 drains, but it timed out after "
+        f"{SWAIT_TIMEOUT}s (queued regular step must not block swait)"
+    )
+    assert rc == 0, f"swait should exit 0, but got {rc}"
     assert (
-        result["exit_code"] == 0
-    ), f"swait exited {result['exit_code']}; stderr: {result['stderr']!r}"
-    # Floor must remain a meaningful fraction of STEP_SECS so an
-    # instant-return regression (e.g., swait fast-returning while the
-    # queued placeholder is in the list) is caught.
-    assert STEP_SECS - 1 <= result["duration"] < STEP_SECS + 3, (
-        f"swait took {result['duration']:.1f}s; expected ~{STEP_SECS}s "
-        "(queued regular step must not block swait)"
-    )
+        step0 == "done"
+    ), "swait should return only after step 0 drains, but it was still running"
 
 
 def test_push_via_sluid_env():

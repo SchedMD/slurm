@@ -2094,6 +2094,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
     """Returns the version of the Slurm component as a tuple.
 
     It calls the component with -V and converts the output into a tuple.
+    It skips if the component doesn't exist in the current Slurm version.
 
     Args:
         component (string): The bin/ or sbin/ component of Slurm to check.
@@ -2104,6 +2105,19 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
     Returns:
         A tuple representing the version. E.g. (25.05.0).
     """
+    # Components that don't exist in all supported versions, with the version
+    # they were added in.
+    added_in = {
+        "bin/swait": (26, 5),
+    }
+    if component in added_in:
+        require_version(
+            added_in[component],
+            component="bin/scontrol",
+            slurm_prefix=slurm_prefix,
+            reason=f"{component} was added in {added_in[component]}",
+        )
+
     # TODO: Ticket 25155 - Remove fatal=False once 25.11 is not supported
     fatal = True
     if component == "bin/sh5util":
@@ -2361,7 +2375,7 @@ def require_version(
         reason = f"The version of {component} is {component_version}, required is {min_version}"
         if max_version:
             reason += f" up to {max_version} (not included)"
-    pytest.skip(reason)
+    pytest.skip(reason, allow_module_level=True)
 
 
 def request_slurmctld(request, user=None):

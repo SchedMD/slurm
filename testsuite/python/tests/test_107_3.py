@@ -565,8 +565,11 @@ def test_signal_job_ids():
     wait_for_jobs(other_jobs, "CANCELLED")
 
     # Sanity check that there are no running jobs
-    output = atf.run_command_output("squeue --noheader")
-    assert len(output) == 0
+    for t in atf.timer():
+        output = atf.run_command_output("squeue --noheader")
+        if output == "":
+            break
+    assert output == "", f"squeue should be empty, but got:\n{output}"
 
 
 # TODO: Test --user with another test user, and specific job ids.

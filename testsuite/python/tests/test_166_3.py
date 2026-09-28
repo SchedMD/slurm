@@ -44,9 +44,6 @@ SHORT_STEP_SECS = 10
 def setup():
     atf.require_tls()
     atf.require_tool("gcc")
-    atf.require_tool("swait")
-    # Must follow require_tool(): probing swait's version on a cluster without
-    # it is fatal, and a module-level skipif would run before that check.
     atf.require_version((26, 5, 4), component="bin/swait", reason=REASON)
     atf.require_nodes(1)
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
