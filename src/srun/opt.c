@@ -1587,8 +1587,9 @@ static void _usage(void)
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
-"            [--async] [--parsable]\n"
-"            executable [args...]\n");
+"            [--async] [--parsable]\n");
+	runtime_g_cli_print_usage(stdout, 12);
+	printf("            executable [args...]\n");
 
 }
 
