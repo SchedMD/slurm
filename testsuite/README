@@ -1240,3 +1240,4 @@ test_171_1   Test runtime/lua does not break srun/sbatch/salloc job launch
 test_172_#   Testing of JobComp plugins.
 ========================================
 test_172_1   Test the exit code jobcomp/filetxt records for a completed job
+test_172_2   Test jobcomp/kafka start and end records on separate topics
