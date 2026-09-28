@@ -177,8 +177,8 @@ any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.</li>
 
 <li><b>NoDecay</b> If set, this QOS will not have its GrpTRESMins,
-GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife
-or PriorityUsageResetPeriod settings.  This allows
+GrpWall and RawUsage decayed by the slurm.conf PriorityDecayHalfLife
+setting.  This allows
 a QOS to provide aggregate limits that, once consumed, will not be
 replenished automatically.  Such a QOS will act as a time-limited quota
 of resources for an association that has access to it.  Account/user
@@ -186,7 +186,13 @@ usage will still be decayed for associations using the QOS.  The QOS
 GrpTRESMins and GrpWall limits can be increased or
 the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
 with this QOS to run (if pending with QOSGrp{TRES}MinutesLimit or
-QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).</li>
+QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+Note that this flag does not affect PriorityUsageResetPeriod, which still
+zeroes these counters on its own schedule.
+This flag covers the whole QOS; to stop a single TRES decaying while the rest
+of the QOS carries on, see
+<a href="resource_limits.html#tresdecayhalflife">TresDecayHalfLife</a>, which
+this flag takes precedence over.</li>
 
 <li><b>NoReserve</b> If this flag is set and backfill scheduling is used,
 jobs using this QOS will not reserve resources in the backfill

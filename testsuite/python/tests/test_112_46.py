@@ -1104,6 +1104,102 @@ def test_db_assoc(slurmdb, create_coords, create_qos, admin_level):
     assert not resp.associations
 
 
+def test_db_assoc_and_qos_tres_decay_half_life(
+    slurmdb, create_coords, create_qos, admin_level
+):
+    """TresDecayHalfLife round-trips through the v0.0.46 assoc and QOS fields.
+
+    Ticket 50920: added tres/decay/half_life on the assoc and
+    limits/tres/decay/half_life on the QOS. A bare number is stored and read
+    back in seconds by both sacctmgr and the REST API
+    (test_102_17.py:210-212 pins that agreement on the sacctmgr side); this
+    is the REST half of that same claim. cpu=0 is included since it is the
+    value that actually matters -- it is what makes a GrpTRESMins quota
+    non-replenishing.
+    """
+    from openapi_client.models.v0046_assoc import V0046Assoc
+    from openapi_client.models.v0046_openapi_assocs_resp import V0046OpenapiAssocsResp
+    from openapi_client.models.v0046_openapi_slurmdbd_qos_resp import (
+        V0046OpenapiSlurmdbdQosResp,
+    )
+    from openapi_client.models.v0046_qos import V0046Qos
+    from openapi_client.models.v0046_tres import V0046Tres
+
+    associations = V0046OpenapiAssocsResp(
+        associations=[
+            V0046Assoc(
+                account=account_name,
+                cluster=local_cluster_name,
+                user=user_name,
+                tres=dict(
+                    decay=dict(
+                        half_life=[
+                            V0046Tres(type="cpu", count=0),
+                            V0046Tres(type="mem", count=1800),
+                        ],
+                    ),
+                ),
+            ),
+        ]
+    )
+    resp = slurmdb.slurmdb_v0046_post_associations(
+        v0046_openapi_assocs_resp=associations
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0046_get_association(
+        cluster=local_cluster_name,
+        account=account_name,
+        user=user_name,
+    )
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.associations
+    for assoc in resp.associations:
+        assert assoc.tres.decay.half_life
+        for tres in assoc.tres.decay.half_life:
+            assert tres.type == "cpu" or tres.type == "mem"
+            if tres.type == "cpu":
+                assert tres.count == 0
+            if tres.type == "mem":
+                assert tres.count == 1800
+
+    qos = V0046OpenapiSlurmdbdQosResp(
+        qos=[
+            V0046Qos(
+                name=qos_name,
+                limits=dict(
+                    tres=dict(
+                        decay=dict(
+                            half_life=[
+                                V0046Tres(type="cpu", count=0),
+                                V0046Tres(type="mem", count=1800),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        ]
+    )
+    resp = slurmdb.slurmdb_v0046_post_qos(v0046_openapi_slurmdbd_qos_resp=qos)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+
+    resp = slurmdb.slurmdb_v0046_get_single_qos(qos_name)
+    assert not resp.warnings
+    assert len(resp.errors) == 0
+    assert resp.qos
+    for qos in resp.qos:
+        assert qos.limits.tres.decay.half_life
+        for tres in qos.limits.tres.decay.half_life:
+            assert tres.type == "cpu" or tres.type == "mem"
+            if tres.type == "cpu":
+                assert tres.count == 0
+            if tres.type == "mem":
+                assert tres.count == 1800
+
+
 def _slurmrestd_post(path, body, expect_status=200, expect_error=False):
     """POST raw JSON to slurmrestd and return the decoded response.
 

@@ -144,11 +144,117 @@ typedef struct {
 	uid_t uid;
 } priority_factors_args_t;
 
+/*
+ * run_delta is fixed for a whole pass, so the factor for a given half-life is
+ * fixed with it. Sites configure a handful of distinct values, so remembering
+ * them beats a pow() per TRES per association.
+ */
+#define DECAY_CACHE_CNT 8
+
+typedef struct {
+	int cache_cnt;
+	double cache_factor[DECAY_CACHE_CNT];
+	uint64_t cache_hl[DECAY_CACHE_CNT];
+	int hl_cnt;	/* records with a half-life, counted this pass */
+	double real_decay;
+	double run_delta;
+} decay_args_t;
+
 /* variables defined in priority_multifactor.h */
 
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
 static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc);
 static void _set_norm_shares(list_t *children_list);
+
+static double _calc_decay_factor(uint64_t half_life, double run_delta)
+{
+	double decay_factor;
+
+	/* A half-life of 0 means this TRES never decays. */
+	if (!half_life)
+		return 1.0;
+
+	decay_factor = 1.0 - (0.693 / (double) half_life);
+
+	return pow(decay_factor, run_delta);
+}
+
+/*
+ * The decay factor for one TRES. NO_VAL64 is a TRES with no half-life of its
+ * own, which is where PriorityDecayHalfLife applies, so the factor already
+ * computed for it is reused rather than stored on every record.
+ */
+static double _tres_decay_factor(decay_args_t *args, uint64_t half_life)
+{
+	double factor;
+
+	if (half_life == NO_VAL64)
+		return args->real_decay;
+
+	for (int i = 0; i < args->cache_cnt; i++) {
+		if (args->cache_hl[i] == half_life)
+			return args->cache_factor[i];
+	}
+
+	factor = _calc_decay_factor(half_life, args->run_delta);
+
+	/* Past DECAY_CACHE_CNT distinct values fall back to recomputing. */
+	if (args->cache_cnt < DECAY_CACHE_CNT) {
+		args->cache_hl[args->cache_cnt] = half_life;
+		args->cache_factor[args->cache_cnt] = factor;
+		args->cache_cnt++;
+	}
+
+	return factor;
+}
+
+static void _decay_usage_tres_raw(long double *usage_tres_raw,
+				  uint64_t *hl_ctld, decay_args_t *args)
+{
+	if (!hl_ctld) {
+		for (int i = 0; i < slurmctld_tres_cnt; i++)
+			usage_tres_raw[i] *= args->real_decay;
+		return;
+	}
+
+	for (int i = 0; i < slurmctld_tres_cnt; i++)
+		usage_tres_raw[i] *= _tres_decay_factor(args, hl_ctld[i]);
+}
+
+/*
+ * GrpTRESMins usage accrued by a running job, decayed with each TRES's own
+ * half-life so live usage matches what the periodic pass produces for this
+ * record. run_decay and run_nodecay already carry the QoS usage factor.
+ */
+static void _calc_tres_run_decay(long double *tres_run_decay,
+				 job_record_t *job_ptr, uint64_t *hl_ctld,
+				 double run_decay, double run_nodecay,
+				 double run_delta)
+{
+	/*
+	 * With no half-life anywhere, every hl_ctld is NULL and this would
+	 * recompute exactly what the caller's own loop already stored, once
+	 * per TRES for the job QoS, the partition QoS and every association up
+	 * to root.
+	 */
+	if (!job_ptr->tres_alloc_cnt || !assoc_mgr_tres_decay_hl_in_use())
+		return;
+
+	for (int i = 0; i < slurmctld_tres_cnt; i++) {
+		double decay = run_decay;
+
+		if (!job_ptr->tres_alloc_cnt[i] ||
+		    (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64))
+			continue;
+
+		if (hl_ctld && (hl_ctld[i] != NO_VAL64))
+			decay = run_nodecay *
+				_calc_decay_factor(hl_ctld[i], run_delta);
+
+		tres_run_decay[i] = (long double) decay *
+			(long double) job_ptr->tres_alloc_cnt[i];
+	}
+}
 
 static void _destroy_priority_factors_obj_light(void *object)
 {
@@ -171,17 +277,25 @@ static void _destroy_priority_factors_obj_light(void *object)
 static int _foreach_decay_assoc(void *x, void *arg)
 {
 	slurmdb_assoc_rec_t *assoc = x;
-	double real_decay = *(double *) arg;
+	decay_args_t *args = arg;
+	double real_decay = args->real_decay;
 
+	if (assoc->tres_decay_hl_ctld)
+		args->hl_cnt++;
+
+	/*
+	 * Only the GrpTRESMins counter takes a per-TRES half-life. Fairshare
+	 * usage and GrpWall stay on PriorityDecayHalfLife.
+	 */
 	assoc->usage->usage_raw *= real_decay;
-	for (int i = 0; i < slurmctld_tres_cnt; i++)
-		assoc->usage->usage_tres_raw[i] *= real_decay;
+	_decay_usage_tres_raw(assoc->usage->usage_tres_raw,
+			      assoc->tres_decay_hl_ctld, args);
 	assoc->usage->grp_used_wall *= real_decay;
 
 	if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
 		assoc->leaf_usage->usage_raw *= real_decay;
-		for (int i = 0; i < slurmctld_tres_cnt; i++)
-			assoc->leaf_usage->usage_tres_raw[i] *= real_decay;
+		_decay_usage_tres_raw(assoc->leaf_usage->usage_tres_raw,
+				      assoc->tres_decay_hl_ctld, args);
 		assoc->leaf_usage->grp_used_wall *= real_decay;
 	}
 
@@ -191,29 +305,55 @@ static int _foreach_decay_assoc(void *x, void *arg)
 static int _foreach_decay_qos(void *x, void *arg)
 {
 	slurmdb_qos_rec_t *qos = x;
-	double real_decay = *(double *) arg;
+	decay_args_t *args = arg;
+	double real_decay = args->real_decay;
 
+	/*
+	 * Counted before the NoDecay check on purpose. Skipping it would drop
+	 * the count to 0 while a NoDecay QoS still holds a half-life, and then
+	 * clearing NoDecay would not bring the count back -- the array is
+	 * already built, so nothing increments it -- leaving that QoS on the
+	 * global rate for good.
+	 */
+	if (qos->tres_decay_hl_ctld)
+		args->hl_cnt++;
+
+	/* NoDecay is the whole record, so it wins over any half-life. */
 	if (qos->flags & QOS_FLAG_NO_DECAY)
 		return 0;
 	qos->usage->usage_raw *= real_decay;
-	for (int i = 0; i < slurmctld_tres_cnt; i++)
-		qos->usage->usage_tres_raw[i] *= real_decay;
+	_decay_usage_tres_raw(qos->usage->usage_tres_raw,
+			      qos->tres_decay_hl_ctld, args);
 	qos->usage->grp_used_wall *= real_decay;
 
 	return 0;
 }
 
-static int _apply_decay(double real_decay)
+static int _apply_decay(double real_decay, double run_delta)
 {
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
+	decay_args_t args = {
+		.real_decay = real_decay,
+		.run_delta = run_delta,
+	};
 
 	/* continue if real_decay is 0 or 1 since that doesn't help
 	   us at all. 1 means no decay and 0 will just zero
 	   everything out so don't waste time doing it */
 	if (!real_decay)
 		return SLURM_ERROR;
-	else if (!calc_fairshare || (real_decay == 1))
+	else if (!calc_fairshare)
+		return SLURM_SUCCESS;
+	/*
+	 * real_decay of 1 is PriorityDecayHalfLife=0. There is still work to
+	 * do if some TRES asked for a rate of its own, so only skip when
+	 * nothing does. Checked before the lock so the usual case of nobody
+	 * using this costs nothing. The count is read without a lock on
+	 * purpose: taking the assoc and QoS write locks just to read an int
+	 * would cost more than being one pass behind ever does.
+	 */
+	else if ((real_decay == 1) && !assoc_mgr_tres_decay_hl_in_use())
 		return SLURM_SUCCESS;
 
 	assoc_mgr_lock(&locks);
@@ -225,8 +365,14 @@ static int _apply_decay(double real_decay)
 	 * We want to do this to all associations including root.
 	 * All usage_raws are calculated from the bottom up.
 	 */
-	list_for_each_ro(assoc_mgr_assoc_list, _foreach_decay_assoc, &real_decay);
-	list_for_each_ro(assoc_mgr_qos_list, _foreach_decay_qos, &real_decay);
+	list_for_each_ro(assoc_mgr_assoc_list, _foreach_decay_assoc, &args);
+	list_for_each_ro(assoc_mgr_qos_list, _foreach_decay_qos, &args);
+
+	/*
+	 * Both lists were just walked under the lock, so this is the whole
+	 * population and the count can safely replace whatever it was.
+	 */
+	assoc_mgr_set_tres_decay_hl_cnt(args.hl_cnt);
 
 	assoc_mgr_unlock(&locks);
 
@@ -1231,6 +1377,9 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 			qos->usage->grp_used_wall += run_decay;
 			qos->usage->usage_raw += (long double)real_decay;
 
+			_calc_tres_run_decay(tres_run_decay, job_ptr,
+					     qos->tres_decay_hl_ctld,
+					     run_decay, run_nodecay, run_delta);
 			_handle_qos_tres_run_secs(tres_run_decay,
 						  tres_run_delta,
 						  job_ptr, qos);
@@ -1262,6 +1411,9 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 			qos->usage->grp_used_wall += run_decay;
 			qos->usage->usage_raw += (long double)real_decay;
 
+			_calc_tres_run_decay(tres_run_decay, job_ptr,
+					     qos->tres_decay_hl_ctld,
+					     run_decay, run_nodecay, run_delta);
 			_handle_qos_tres_run_secs(tres_run_decay,
 						  tres_run_delta,
 						  job_ptr, qos);
@@ -1281,6 +1433,9 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 			 real_decay, assoc->id, assoc->acct, assoc->user,
 			 assoc->partition, assoc->usage->usage_raw, run_decay,
 			 assoc->usage->grp_used_wall);
+		_calc_tres_run_decay(tres_run_decay, job_ptr,
+				     assoc->tres_decay_hl_ctld,
+				     run_decay, run_nodecay, run_delta);
 		_handle_assoc_tres_run_secs(tres_run_decay, tres_run_delta,
 					    job_ptr->job_id, assoc);
 
@@ -1451,7 +1606,7 @@ static void *_decay_thread(void *no_data)
 			 run_delta, decay_factor, real_decay);
 
 		/* first apply decay to used time */
-		if (_apply_decay(real_decay) != SLURM_SUCCESS) {
+		if (_apply_decay(real_decay, run_delta) != SLURM_SUCCESS) {
 			error("priority/multifactor: problem applying decay");
 			running_decay = 0;
 			slurm_mutex_unlock(&decay_lock);

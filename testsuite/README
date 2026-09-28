@@ -717,6 +717,7 @@ test_102_11  Test sacctmgr archive dump uses configured Purge*After when no dura
 test_102_12  Test sacctmgr load, confirm that typed GRES can get parsed correctly
 test_102_13  Test sacctmgr show assoc withsubaccounts matches the account
              lineage and not a partition named like the account
+test_102_17  Test sacctmgr TresDecayHalfLife set, show, inherit and dump/load
 
 test_103_#   Testing of salloc options.
 =======================================
@@ -993,6 +994,11 @@ test_130_2   multifactor plugin algo test for fairshare=parent
 test_130_3   /parameters/slurm/PriorityType/multifactor/test_priority.py
 test_130_4   Test TRESRunMins usage when a QOS UsageFactor is modified mid-run
 test_130_5   Test TRESRunMins give-back with priority/basic and a UsageFactor
+test_130_6   Test per-TRES decay of GrpTRESMins usage with TresDecayHalfLife
+test_130_7   Test TresDecayHalfLife with PriorityDecayHalfLife disabled
+test_130_8   Test a frozen GrpTRESMins quota keeps blocking jobs
+test_130_9   Test setting TresDecayHalfLife applies without a restart
+test_130_10  Test a PriorityDecayHalfLife reconfigure leaves overrides alone
 
 test_131_#   Testing of sshare options.
 ========================================

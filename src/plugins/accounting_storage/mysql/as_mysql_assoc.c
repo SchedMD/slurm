@@ -110,6 +110,7 @@ char *assoc_req_inx[] = {
 	"id_parent",
 	"lineage",
 	"flags",
+	"tres_decay_hl",
 };
 enum {
 	ASSOC_REQ_ID,
@@ -144,6 +145,7 @@ enum {
 	ASSOC_REQ_ID_PAR,
 	ASSOC_REQ_LINEAGE,
 	ASSOC_REQ_FLAGS,
+	ASSOC_REQ_TDHL,
 	ASSOC_REQ_COUNT
 };
 
@@ -161,6 +163,7 @@ enum {
 	ASSOC2_REQ_QOS,
 	ASSOC2_REQ_DELTA_QOS,
 	ASSOC2_REQ_PRIO,
+	ASSOC2_REQ_TDHL,
 };
 
 static char *massoc_req_inx[] = {
@@ -179,6 +182,7 @@ static char *massoc_req_inx[] = {
 	"max_tres_pn",
 	"lineage",
 	"flags",
+	"tres_decay_hl",
 };
 
 enum {
@@ -197,6 +201,7 @@ enum {
 	MASSOC_MTPN,
 	MASSOC_LINEAGE,
 	MASSOC_FLAGS,
+	MASSOC_TDHL,
 	MASSOC_COUNT
 };
 
@@ -528,6 +533,9 @@ static int _set_assoc_limits_for_add(
 	slurmdb_combine_tres_strings(
 		&assoc->max_tres_run_mins, row[ASSOC2_REQ_MTRM],
 		tres_str_flags);
+	slurmdb_combine_tres_strings(
+		&assoc->tres_decay_hl, row[ASSOC2_REQ_TDHL],
+		tres_str_flags);
 
 	if (assoc->qos_list) {
 		int set = 0;
@@ -659,6 +667,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		"qos",
 		"delta_qos",
 		"lineage",
+		"tres_decay_hl",
 	};
 
 	enum {
@@ -681,6 +690,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
 		ASSOC_LINEAGE,
+		ASSOC_TDHL,
 		ASSOC_COUNT
 	};
 
@@ -792,6 +802,16 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 				&tmp_char, assoc->max_tres_run_mins,
 				tres_str_flags);
 			mod_assoc->max_tres_run_mins = tmp_char;
+			tmp_char = NULL;
+			modified = 1;
+		}
+
+		if (assoc->tres_decay_hl) {
+			tmp_char = xstrdup(row[ASSOC_TDHL]);
+			slurmdb_combine_tres_strings(
+				&tmp_char, assoc->tres_decay_hl,
+				tres_str_flags);
+			mod_assoc->tres_decay_hl = tmp_char;
 			tmp_char = NULL;
 			modified = 1;
 		}
@@ -1384,6 +1404,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				if (row2[ASSOC2_REQ_MTRM][0])
 					alt_assoc.max_tres_run_mins =
 						row2[ASSOC2_REQ_MTRM];
+				if (row2[ASSOC2_REQ_TDHL][0])
+					alt_assoc.tres_decay_hl =
+						row2[ASSOC2_REQ_TDHL];
 			}
 		}
 		mod_assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -1517,6 +1540,12 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			     assoc->max_tres_run_mins, row[MASSOC_MTRM],
 			     alt_assoc.max_tres_run_mins, "max_tres_run_mins",
 			     &vals, mod_assoc->id, 1);
+
+		mod_tres_str(&mod_assoc->tres_decay_hl,
+			     assoc->tres_decay_hl, row[MASSOC_TDHL],
+			     alt_assoc.tres_decay_hl,
+			     "tres_decay_hl", &vals,
+			     mod_assoc->id, 1);
 
 		if (result2)
 			mysql_free_result(result2);
@@ -1963,6 +1992,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	char *parent_mtpn = NULL;
 	char *parent_mtmpj = NULL;
 	char *parent_mtrm = NULL;
+	char *parent_tdhl = NULL;
 	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
@@ -2159,6 +2189,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		else
 			assoc->shares_raw = 1;
 
+		if (row[ASSOC_REQ_TDHL][0])
+			assoc->tres_decay_hl = xstrdup(row[ASSOC_REQ_TDHL]);
+
 		if (!without_parent_info && parent_acct &&
 		    (!last_acct || !last_cluster
 		     || xstrcmp(parent_acct, last_acct)
@@ -2246,6 +2279,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 					parent_mtrm = xstrdup(
 						row2[ASSOC2_REQ_MTRM]);
 
+				xfree(parent_tdhl);
+				if (row2[ASSOC2_REQ_TDHL][0])
+					parent_tdhl = xstrdup(
+						row2[ASSOC2_REQ_TDHL]);
+
 				xfree(parent_qos);
 				if (row2[ASSOC2_REQ_QOS][0])
 					parent_qos =
@@ -2328,6 +2366,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			TRES_STR_FLAG_SORT_ID);
 		slurmdb_combine_tres_strings(
 			&assoc->max_tres_run_mins, parent_mtrm,
+			TRES_STR_FLAG_SORT_ID);
+		slurmdb_combine_tres_strings(
+			&assoc->tres_decay_hl, parent_tdhl,
 			TRES_STR_FLAG_SORT_ID);
 
 		assoc->qos_list = list_create(xfree_ptr);
@@ -2422,6 +2463,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	xfree(parent_mtpn);
 	xfree(parent_mtmpj);
 	xfree(parent_mtrm);
+	xfree(parent_tdhl);
 	mysql_free_result(result);
 
 	FREE_NULL_LIST(delta_qos_list);
@@ -2559,6 +2601,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		assoc->grp_tres = xstrdup(assoc_in->grp_tres);
 		assoc->grp_tres_mins = xstrdup(assoc_in->grp_tres_mins);
 		assoc->grp_tres_run_mins = xstrdup(assoc_in->grp_tres_run_mins);
+		assoc->tres_decay_hl = xstrdup(assoc_in->tres_decay_hl);
 
 		assoc->is_def = is_def;
 

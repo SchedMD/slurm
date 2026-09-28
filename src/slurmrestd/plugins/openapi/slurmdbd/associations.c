@@ -236,6 +236,10 @@ static slurmdb_assoc_rec_t *_diff_assoc(slurmdb_assoc_rec_t *assoc,
 
 	assoc->shares_raw = dst->shares_raw;
 
+	_diff_tres(&assoc->tres_decay_hl, dst->tres_decay_hl);
+
+	/* skip tres_decay_hl_ctld */
+
 	/* skip uid */
 	/* skip usage */
 

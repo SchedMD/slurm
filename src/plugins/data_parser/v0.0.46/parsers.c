@@ -8634,6 +8634,8 @@ static const parser_t PARSER_ARRAY(ASSOC_REC_SET)[] = {
 	add_parse(UINT32_NO_VAL, priority, "priority", "Association priority factor"),
 	add_parse(QOS_STRING_ID_LIST, qos_list, "qoslevel", "List of available QOS names"),
 	add_parse(SHARES, shares_raw, "fairshare", "Allocated shares used for fairshare calculation (number of shares or \"parent\")"),
+	add_parse(TRES_STR, tres_decay_hl, "tresdecayhalflife", "TresDecayHalfLife - Per-TRES half-life in seconds for the decay of GrpTRESMins usage; 0 means that TRES never decays and a TRES that is not listed follows PriorityDecayHalfLife"),
+	add_skip(tres_decay_hl_ctld),
 	/* slurmdbd should never set uid - it should always be zero */
 	add_skip(uid),
 	/*
@@ -8698,6 +8700,8 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(UINT32_NO_VAL, priority, "priority", "Association priority factor"),
 	add_parse(QOS_STRING_ID_LIST, qos_list, "qos", "List of available QOS names"),
 	add_parse(SHARES, shares_raw, "shares_raw", "Allocated shares used for fairshare calculation"),
+	add_parse(TRES_STR, tres_decay_hl, "tres/decay/half_life", "TresDecayHalfLife - Per-TRES half-life in seconds for the decay of GrpTRESMins usage; 0 means that TRES never decays and a TRES that is not listed follows PriorityDecayHalfLife"),
+	add_skip(tres_decay_hl_ctld),
 	/* slurmdbd should never set uid - it should always be zero */
 	add_skip(uid),
 	add_skip(usage),
@@ -9274,6 +9278,8 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(UINT32_NO_VAL, preempt_exempt_time, "preempt/exempt_time", "PreemptExemptTime - Specifies a minimum run time for jobs before they are considered for preemption"),
 	add_parse(UINT32_NO_VAL, priority, "priority", "Priority - QOS priority factor"),
 	add_skip(relative_tres_cnt),
+	add_parse(TRES_STR, tres_decay_hl, "limits/tres/decay/half_life", "TresDecayHalfLife - Per-TRES half-life in seconds for the decay of GrpTRESMins usage; 0 means that TRES never decays and a TRES that is not listed follows PriorityDecayHalfLife"),
+	add_skip(tres_decay_hl_ctld),
 	add_skip(usage), /* not packed */
 	add_parse(FLOAT64_NO_VAL, usage_factor, "usage_factor", "UsageFactor - A float that is factored into a job's TRES usage"),
 	add_parse(FLOAT64_NO_VAL, usage_thres, "usage_threshold", "UsageThreshold - A float representing the lowest fairshare of an association allowed to run a job"),

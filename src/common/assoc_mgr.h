@@ -548,6 +548,20 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 					bool relative,
 					uint64_t *relative_tres_cnt);
 
+/*
+ * Whether any association or QoS currently carries a TresDecayHalfLife. Lets
+ * the decay thread skip a pass when PriorityDecayHalfLife is 0.
+ * RET: true if any record carries one, false if none does
+ */
+extern bool assoc_mgr_tres_decay_hl_in_use(void);
+
+/*
+ * Set how many records carry a TresDecayHalfLife, counted by the decay thread's
+ * own walk. Nothing else is in a position to notice a record being destroyed.
+ * IN cnt - count from the decay thread's most recent full walk
+ */
+extern void assoc_mgr_set_tres_decay_hl_cnt(int cnt);
+
 /* Creates all the tres arrays for an association.
  * NOTE: The assoc_mgr tres read lock needs to be locked before this
  * is called. */

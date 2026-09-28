@@ -828,6 +828,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("TRES");
 		field->len = 20;
 		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("TresDecayHalfLife", object,
+				 MAX(command_len, 4))) {
+		field->type = PRINT_TRESDECAYHL;
+		field->name = xstrdup("TresDecayHalfLife");
+		field->len = 17;
+		field->print_routine = sacctmgr_print_tres_time;
 	} else if (!xstrncasecmp("Type", object, MAX(command_len, 2))) {
 		field->type = PRINT_TYPE;
 		field->name = xstrdup("Type");
@@ -1684,7 +1690,8 @@ extern void sacctmgr_print_coord_list(
 	xfree(print_this);
 }
 
-extern void sacctmgr_print_tres(print_field_t *field, void *input, int last)
+static void _print_tres(print_field_t *field, void *input, int last,
+			uint32_t convert_flags)
 {
 	int abs_len = abs(field->len);
 	char *print_this;
@@ -1696,7 +1703,7 @@ extern void sacctmgr_print_tres(print_field_t *field, void *input, int last)
 	sacctmgr_initialize_g_tres_list();
 
 	print_this = slurmdb_make_tres_string_from_simple(
-		value, g_tres_list, NO_VAL, CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		value, g_tres_list, NO_VAL, convert_flags, 0, NULL);
 
 	if (!print_this)
 		print_this = xstrdup("");
@@ -1716,6 +1723,22 @@ extern void sacctmgr_print_tres(print_field_t *field, void *input, int last)
 			printf("%-*.*s ", abs_len, abs_len, print_this);
 	}
 	xfree(print_this);
+}
+
+extern void sacctmgr_print_tres(print_field_t *field, void *input, int last)
+{
+	_print_tres(field, input, last, CONVERT_NUM_UNIT_EXACT);
+}
+
+extern void sacctmgr_print_tres_time(print_field_t *field, void *input,
+				     int last)
+{
+	/*
+	 * Raw, since these counts are seconds. The unit conversion would
+	 * print the memory TRES as megabytes, which would both mislead and
+	 * give 'sacctmgr load' a value it cannot read back.
+	 */
+	_print_tres(field, input, last, CONVERT_NUM_UNIT_RAW);
 }
 
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
@@ -1879,6 +1902,16 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 				slurmdb_qos_get(db_conn, NULL);
 		printf("  DefQOS        = %s\n",
 		       slurmdb_qos_str(g_qos_list, assoc->def_qos_id));
+	}
+
+	if (assoc->tres_decay_hl) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			assoc->tres_decay_hl, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_RAW, TRES_STR_FLAG_ALLOW_AMEND,
+			NULL);
+		printf("  TresDecayHalfLife = %s\n", tmp_char);
+		xfree(tmp_char);
 	}
 
 	/* This should be last because it might be long */
@@ -2180,6 +2213,15 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	else if (qos->priority != NO_VAL)
 		printf("  Priority                 = %d\n", qos->priority);
 
+	if (qos->tres_decay_hl) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->tres_decay_hl, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_RAW, 0, NULL);
+		printf("  TresDecayHalfLife        = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
+
 	if (qos->usage_factor == INFINITE)
 		printf("  UsageFactor              = NONE\n");
 	else if(qos->usage_factor != NO_VAL)
@@ -2314,4 +2356,121 @@ extern int sacctmgr_set_tres_rec_field(char **dest, char *value,
 	slurmdb_combine_tres_strings(dest, tmp_char, tres_flags);
 	xfree(tmp_char);
 	return 1;
+}
+
+/*
+ * Like sacctmgr_set_tres_rec_field(), for a TRES list whose values are
+ * durations rather than counts.
+ *
+ * A bare number is seconds, which is what the column holds, what is packed,
+ * and what slurmrestd takes, so the two clients cannot disagree. The
+ * time-string forms are converted here, before the generic parse, so
+ * everything downstream only ever sees seconds.
+ *
+ * RET 1 if something was set, 0 if there was nothing to set, -1 on error.
+ */
+extern int sacctmgr_set_tres_time_rec_field(char **dest, char *value,
+					    uint32_t tres_flags)
+{
+	char *converted = NULL, *pos = NULL;
+	char *tmp = NULL, *tok = NULL, *save_ptr = NULL;
+	int rc;
+
+	if (!value || !value[0])
+		return 0;
+
+	/*
+	 * 0 means never decay here, the opposite of every other TRES limit,
+	 * so the amend arithmetic is a trap in both directions. A '-=' that
+	 * underflows clamps to 0 and freezes the TRES forever, and a '+=' on
+	 * a TRES already at 0 quietly starts it decaying again. Neither says
+	 * what was meant, so take absolute values only.
+	 */
+	if (xstrstr(value, "-=") || xstrstr(value, "+=")) {
+		fprintf(stderr,
+			" '+=' and '-=' are not supported here, since 0 means never decay. Give an absolute value, or -1 to remove.\n");
+		return -1;
+	}
+
+	tmp = xstrdup(value);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		char *val = xstrchr(tok, '=');
+		int seconds;
+
+		if (!val) {
+			fprintf(stderr, " No value given for '%s'\n", tok);
+			xfree(tmp);
+			xfree(converted);
+			return -1;
+		}
+		*val++ = '\0';
+
+		if (!val[0]) {
+			fprintf(stderr, " No value given for '%s'\n", tok);
+			xfree(tmp);
+			xfree(converted);
+			return -1;
+		}
+
+		/*
+		 * INFINITE and UNLIMITED reach strtoull() as 0, which means
+		 * never decay - the most constrictive value the field has and
+		 * the reverse of what the words say. Refuse them rather than
+		 * store the opposite of what was asked for. -1 is the only
+		 * removal sentinel.
+		 */
+		if (!xstrcasecmp(val, "INFINITE") ||
+		    !xstrcasecmp(val, "UNLIMITED")) {
+			fprintf(stderr,
+				" '%s' is not supported here, since it would store 0, meaning never decay. Give an absolute value, or -1 to remove.\n",
+				val);
+			xfree(tmp);
+			xfree(converted);
+			return -1;
+		}
+
+		/*
+		 * time_str2secs() takes a leading '-' as the days separator, so
+		 * "-5" parses as -5 days and comes back as -432000 rather than
+		 * an error. strtoull() then wraps that to a count just short of
+		 * INFINITE64, which is close enough to never decay to round to
+		 * it but not equal to the removal sentinel, so it stores. -1 is
+		 * the only negative value that means anything here.
+		 */
+		if ((val[0] == '-') && xstrcmp(val, "-1")) {
+			fprintf(stderr,
+				" '%s' is not a valid half-life. Give an absolute value, or -1 to remove.\n",
+				val);
+			xfree(tmp);
+			xfree(converted);
+			return -1;
+		}
+
+		/*
+		 * Leave the removal sentinel and a plain number alone; only a
+		 * time string needs converting.
+		 */
+		if (!xstrcmp(val, "-1") ||
+		    (strspn(val, "0123456789") == strlen(val))) {
+			xstrfmtcatat(converted, &pos, "%s%s=%s",
+				     converted ? "," : "", tok, val);
+		} else if ((seconds = time_str2secs(val)) == NO_VAL) {
+			fprintf(stderr, " Bad time value '%s'\n", val);
+			xfree(tmp);
+			xfree(converted);
+			return -1;
+		} else {
+			xstrfmtcatat(converted, &pos, "%s%s=%d",
+				     converted ? "," : "", tok, seconds);
+		}
+
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	rc = sacctmgr_set_tres_rec_field(dest, converted, tres_flags);
+	xfree(converted);
+
+	return rc;
 }

@@ -647,6 +647,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "preempt_mode", "int default 0" },
 		{ "preempt_exempt_time", "int unsigned default NULL" },
 		{ "priority", "int unsigned default 0" },
+		{ "tres_decay_hl", "text not null default ''" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
                 { "limit_factor", "double default NULL"},
@@ -708,6 +709,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @mtpn = ''; "
 		"set @mtmpj = ''; "
 		"set @mtrm = ''; "
+		"set @tdhl = ''; "
 		"set @prio = NULL; "
 		"set @def_qos_id = NULL; "
 		"set @qos = ''; "
@@ -762,6 +764,9 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@mtrm := CONCAT(@mtrm, "
 		"if (@mtrm != \\\'\\\' and max_tres_run_mins != \\\'\\\', "
 		"\\\',\\\', \\\'\\\'), max_tres_run_mins), "
+		"@tdhl := CONCAT(@tdhl, "
+		"if (@tdhl != \\\'\\\' and tres_decay_hl != \\\'\\\', "
+		"\\\',\\\', \\\'\\\'), tres_decay_hl), "
 		"@my_acct_new := parent_acct from \"', "
 		"cluster, '_', my_table, '\" where "
 		"acct = \\\'', @my_acct, '\\\' and user=\\\'\\\''); "
@@ -772,7 +777,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"UNTIL without_limits or @my_acct = '' END REPEAT; "
 		"select @mj, @mja, @mpt, @msj, "
 		"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
-		"@def_qos_id, @qos, @delta_qos, @prio;"
+		"@def_qos_id, @qos, @delta_qos, @prio, @tdhl;"
 		"END;";
 	/*
 	 * When 25.05 is no longer supported we can remove get_lineage, it is
@@ -1225,6 +1230,7 @@ extern int create_cluster_assoc_table(
 		{ "def_qos_id", "int default NULL" },
 		{ "qos", "blob not null default ''" },
 		{ "delta_qos", "blob not null default ''" },
+		{ "tres_decay_hl", "text not null default ''" },
 		{ NULL, NULL}
 	};
 
@@ -1858,6 +1864,7 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xfree(assoc->max_tres_run_mins_ctld);
 		xfree(assoc->max_tres_ctld);
 		xfree(assoc->max_tres_pn_ctld);
+		xfree(assoc->tres_decay_hl_ctld);
 
 		if (assoc->leaf_usage != assoc->usage)
 			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
@@ -2171,6 +2178,19 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			   assoc->max_tres_run_mins);
 	}
 
+	if (assoc->tres_decay_hl) {
+		if (qos_level == QOS_LEVEL_MODIFY) {
+			xstrcat(*extra, "");
+			goto end_modify;
+		}
+		xstrcat(*cols, ", tres_decay_hl");
+		slurmdb_combine_tres_strings(
+			&assoc->tres_decay_hl, NULL, tres_str_flags);
+		xstrfmtcat(*vals, ", '%s'", assoc->tres_decay_hl);
+		xstrfmtcat(*extra, ", tres_decay_hl='%s'",
+			   assoc->tres_decay_hl);
+	}
+
 	if (assoc->qos_list && list_count(assoc->qos_list)) {
 		char *qos_type = "qos";
 		char *qos_val = NULL;
@@ -2425,6 +2445,7 @@ just_update:
 			       "grp_tres=DEFAULT, "
 			       "grp_tres_mins=DEFAULT, "
 			       "grp_tres_run_mins=DEFAULT, "
+			       "tres_decay_hl=DEFAULT, "
 			       "qos=DEFAULT, delta_qos=DEFAULT, "
 			       "priority=DEFAULT, is_def=DEFAULT, "
 			       "comment=DEFAULT, flags=DEFAULT "
@@ -2614,6 +2635,7 @@ extern int remove_common(remove_common_args_t *args)
 				"grp_jobs_accrue=DEFAULT, grp_tres=DEFAULT, "
 				"grp_tres_mins=DEFAULT, "
 				"grp_tres_run_mins=DEFAULT, "
+				"tres_decay_hl=DEFAULT, "
 				"grp_wall=DEFAULT, "
 				"preempt=DEFAULT, "
 				"preempt_exempt_time=DEFAULT, "

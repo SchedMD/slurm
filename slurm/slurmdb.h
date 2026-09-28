@@ -713,6 +713,14 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t shares_raw;	   /* number of shares allocated to
 				    * association */
+	char *tres_decay_hl; /* per-TRES half-life, in seconds, for the
+			      * decay of GrpTRESMins usage; 0 for a TRES
+			      * means that TRES never decays */
+	uint64_t *tres_decay_hl_ctld; /* tres_decay_hl broken out in an array
+				       * based off the ordering of the total
+				       * number of TRES in the system,
+				       * NO_VAL64 where the TRES has no
+				       * half-life of its own (DON'T PACK) */
 
 	uint32_t uid;		   /* user ID */
 	slurmdb_assoc_usage_t *usage;
@@ -1206,6 +1214,14 @@ typedef struct {
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
 	uint64_t *relative_tres_cnt; /* Only here for convenience DON'T PACK */
+	char *tres_decay_hl; /* per-TRES half-life, in seconds, for the
+			      * decay of GrpTRESMins usage; 0 for a TRES
+			      * means that TRES never decays */
+	uint64_t *tres_decay_hl_ctld; /* tres_decay_hl broken out in an array
+				       * based off the ordering of the total
+				       * number of TRES in the system,
+				       * NO_VAL64 where the TRES has no
+				       * half-life of its own (DON'T PACK) */
 	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	slurmdb_qos_usage_t *usage_het; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
