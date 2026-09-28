@@ -510,6 +510,21 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
         failures.append(reason)
         return
 
+    reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
+    component = "sbin/slurmrestd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/slurmrestd/openapi.c" in bt
+        and "_foreach_add_path" in bt
+        and "!data_key_get(spec->paths, path->path)" in bt
+    ):
+        if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Issue 50974: Known issue about slurmd stuck waiting for a completing job during shutdown. Seems fixed in 26.05+"
     component = "sbin/slurmd"
     if (

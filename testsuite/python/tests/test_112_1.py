@@ -47,6 +47,10 @@ def test_d():
     assert atf.run_command_exit("slurmrestd -d invalid_plugin") != 0
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmrestd") < (26, 5, 5),
+    reason="Issue 50192: repeated -d data_parser entries abort slurmrestd. Fixed in 26.05.5",
+)
 def test_d_repeated_plugin():
     """Verify a -d list naming one plugin more than once is accepted
 
