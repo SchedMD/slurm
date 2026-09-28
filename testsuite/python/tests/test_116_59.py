@@ -304,3 +304,46 @@ def test_def_runtime_plugin_takes_effect(oci_enabled):
 
     atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
     atf.run_command("srun hostname", env_vars="SRUN_CONTAINER=invalid", fatal=True)
+
+
+def test_runtime_options_in_help():
+    """--help and --usage list the options loaded runtime plugins provide.
+
+    DefRuntimePlugin is loaded before the options are parsed, so with
+    runtime/oci as the default, --help and --usage list its --container.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+    for command in ("salloc", "sbatch", "srun"):
+        output = atf.run_command_output(f"{command} --help", fatal=True)
+        assert (
+            "Options provided by runtime/oci:" in output
+        ), f"{command} --help should have a runtime/oci section"
+        assert (
+            "--container=path" in output
+        ), f"{command} --help should list runtime/oci's --container"
+
+        output = atf.run_command_output(f"{command} --usage", fatal=True)
+        assert (
+            "[--container=value]" in output
+        ), f"{command} --usage should list runtime/oci's --container"
+
+
+def test_runtime_options_in_help_follow_runtime():
+    """--help lists a runtime's options only once that runtime is loaded.
+
+    With DefRuntimePlugin=runtime/none nothing provides --container, until an
+    earlier --runtime=oci on the command line loads runtime/oci.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/none")
+    for command in ("salloc", "sbatch", "srun"):
+        output = atf.run_command_output(f"{command} --help", fatal=True)
+        assert (
+            "--container=path" not in output
+        ), f"{command} --help should not list --container under runtime/none"
+
+        output = atf.run_command_output(f"{command} --runtime=oci --help", fatal=True)
+        assert (
+            "--container=path" in output
+        ), f"{command} --runtime=oci --help should list --container"
