@@ -377,12 +377,7 @@ cleanup:
 	if (agent_arg_ptr->broadcast_class != BC_NONE) {
 		broadcast_end(agent_arg_ptr->broadcast_class);
 		ping_end();
-		/*
-		 * Wake _agent_nodes_update() rather than letting it wait out
-		 * its timer. Call only after ping_end(), since ping_end()
-		 * clears the flag that the drain's ping_nodes_update() sets
-		 * and is_ping_done() tests.
-		 */
+		/* Wake _agent_nodes_update() to apply queued responses. */
 		slurm_cond_signal(&update_nodes_cond);
 	}
 	purge_agent_args(agent_arg_ptr);
@@ -806,6 +801,13 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	}
 	if (retry_cnt && agent_ptr->retry)
 		_queue_agent_retry(agent_ptr, retry_cnt);
+
+	/* Apply health check responses before releasing the broadcast gate. */
+	if ((msg_type == REQUEST_HEALTH_CHECK) ||
+	    (msg_type == REQUEST_NODE_HEALTH_CHECK)) {
+		locked = true;
+		lock_slurmctld(node_write_lock);
+	}
 
 	/* Update last_response on responding nodes */
 	for (i = 0; i < agent_ptr->thread_count; i++) {
@@ -1581,7 +1583,6 @@ static void *_agent_nodes_update(void *arg)
 					_foreach_node_did_resp, NULL);
 			unlock_slurmctld(node_write_lock);
 		}
-		ping_nodes_update();
 	}
 
 	return NULL;
