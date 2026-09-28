@@ -115,6 +115,17 @@ def job_ids(prologs):
         prologs.release(job_id)
 
 
+def get_job_nodes(job_id, node_count):
+    """Return the allocated nodes of a job, asserting how many there are."""
+
+    node_list = atf.get_job_parameter(job_id, "NodeList", default="", quiet=True)
+    nodes = atf.node_range_to_list(node_list)
+    assert (
+        len(nodes) == node_count
+    ), f"Expected {node_count} nodes for job {job_id}, got {node_list}"
+    return nodes
+
+
 @pytest.mark.parametrize(
     "prolog_flags,expect_configuring",
     [
@@ -261,6 +272,59 @@ def test_state_while_prolog_runs_interactive(
         ), f"Expected RUNNING while the Prolog runs, got {state}"
 
     prologs.release(job_id)
+
+    assert atf.wait_for_job_state(job_id, "RUNNING"), "Job never reached RUNNING"
+    assert atf.wait_for_file(started_file), f"{command} never ran the command"
+
+
+@pytest.mark.parametrize("command", ["srun", "salloc"])
+def test_interactive_waits_for_every_node(prologs, job_ids, command):
+    """Verify a non-batch job waits for the Prolog on all of its nodes.
+
+    A batch job leaves CONFIGURING once its batch host finishes, but srun and
+    salloc must wait for every allocated node. At -N1 those two rules are
+    indistinguishable, so this allocates two nodes and releases them one at a
+    time.
+    """
+
+    started_file = "command_started"
+
+    atf.set_config_parameter("PrologFlags", "Alloc")
+
+    args = f"-N2 -t5 bash -c 'touch {started_file}; sleep 30'"
+    if command == "srun":
+        job_id = atf.submit_job_srun(args, background=True, fatal=True)
+    else:
+        job_id = atf.submit_job_salloc(args, background=True, fatal=True)
+    job_ids.append(job_id)
+
+    prologs.wait_started(job_id, 2)
+    assert (
+        atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True)
+        == "CONFIGURING"
+    ), "Job was not CONFIGURING while the Prolog ran"
+
+    # Release one node only. It does not matter which, as an interactive
+    # job has no batch host to single out.
+    first_node, second_node = get_job_nodes(job_id, 2)
+    prologs.release(job_id, first_node)
+    prologs.wait_finished(job_id, first_node)
+
+    # A window to watch, not a wait for success.
+    for _ in atf.timer(timeout=15, xfail=True, quiet=True):
+        state = atf.get_job_parameter(
+            job_id, "JobState", default="NOT_FOUND", quiet=True
+        )
+        if state != "CONFIGURING":
+            pytest.fail(
+                f"Job left CONFIGURING ({state}) after only {first_node} "
+                f"finished its Prolog"
+            )
+    assert not os.path.isfile(
+        started_file
+    ), f"{command} ran the command after only {first_node} finished its Prolog"
+
+    prologs.release(job_id, second_node)
 
     assert atf.wait_for_job_state(job_id, "RUNNING"), "Job never reached RUNNING"
     assert atf.wait_for_file(started_file), f"{command} never ran the command"
