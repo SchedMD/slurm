@@ -53,21 +53,21 @@ def test_spank_plugin_tmpfs(spank_tmp):
     srun hostname
 
     # Check if slurm_spank_user_init executed its functions and left behind a file
-    if [[ -f {spank_tmp}/slurm_spank_user_init_log ]]; then
+    if [[ -f {spank_tmp}/slurm_spank_user_init_remote_log ]]; then
         echo "Found log for hook slurm_spank_user_init"
     else
         echo "Couldn't find log for hook slurm_spank_user_init"
     fi
 
     # Check if slurm_spank_task_post_fork executed its functions and left behind a file
-    if [[ -f {spank_tmp}/slurm_spank_task_post_fork_log ]]; then
+    if [[ -f {spank_tmp}/slurm_spank_task_post_fork_remote_log ]]; then
         echo "Found log for hook slurm_spank_task_post_fork"
     else
         echo "Couldn't find log for hook slurm_spank_task_post_fork"
     fi
 
     # Check if slurm_spank_task_exit executed its functions and left behind a file
-    if [[ -f {spank_tmp}/slurm_spank_task_exit_log ]]; then
+    if [[ -f {spank_tmp}/slurm_spank_task_exit_remote_log ]]; then
         echo "Found log for hook slurm_spank_task_exit"
     else
         echo "Couldn't find log for hook slurm_spank_task_exit"
@@ -106,7 +106,7 @@ def test_spank_plugin_tmpfs(spank_tmp):
             "job_container/tmpfs created private mount" in content
         ), "job_container/tmpfs failed to create a private mount because we found a pre-existing file on the host when running a job"
         assert not (
-            os.path.isfile(f"{spank_tmp}/slurm_spank_user_init_log")
-            or os.path.isfile(f"{spank_tmp}/slurm_spank_task_post_fork_log")
-            or os.path.isfile(f"{spank_tmp}/slurm_spank_task_exit_log")
+            os.path.isfile(f"{spank_tmp}/slurm_spank_user_init_remote_log")
+            or os.path.isfile(f"{spank_tmp}/slurm_spank_task_post_fork_remote_log")
+            or os.path.isfile(f"{spank_tmp}/slurm_spank_task_exit_remote_log")
         ), "job_container/tmpfs failed to isolate private mount; files created in container appear on host"

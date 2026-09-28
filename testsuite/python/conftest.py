@@ -826,7 +826,8 @@ def spank_plugin(module_setup, spank_tmp):
       SPANK_FAIL_TEST_FUNC / SPANK_FAIL_TEST_CTXT / SPANK_FAIL_TEST_MODE
         -- failure injection (see test_147_2, test_147_3)
       SPANK_HOOK_CREATE_FILE
-        -- create {SPANK_TMP_DIR}/{hookname}_log for each hook that runs (see test_147_1)
+        -- append "job_id=<id> rc=<rc>" to {SPANK_TMP_DIR}/{hookname}_{context}_log
+           for each hook that runs (see test_147_1, test_147_3)
       SPANK_HOOK_LOG_JOB_INFO
         -- boolean; slurm_spank_task_init logs spank_get_item() and
            slurm_load_job() output to SPANK_TMP_DIR/spank_job_info.log (see test_147_4)

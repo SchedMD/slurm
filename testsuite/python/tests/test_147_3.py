@@ -15,6 +15,58 @@ ERROR_FILE = "./file.err"
 # See ESPANK_ERROR in slurm/slurm_errno.h.
 SPANK_ERROR_RC = -3000
 
+# Hooks (without the slurm_spank_ prefix) that spank.8 documents to be called
+# before each hook in the same context. Note that task_init_privileged and
+# task_post_fork "can run in parallel", and that the order of task_post_fork
+# and task_init is not documented.
+HOOKS_BEFORE = {
+    "local": {
+        "init": [],
+        "init_post_opt": ["init"],
+        "local_user_init": ["init", "init_post_opt"],
+        "exit": ["init", "init_post_opt", "local_user_init"],
+    },
+    "allocator": {
+        "init": [],
+        "init_post_opt": ["init"],
+        "exit": ["init", "init_post_opt"],
+    },
+    "remote": {
+        "init": [],
+        "init_post_opt": ["init"],
+        "user_init": ["init", "init_post_opt"],
+        "task_init_privileged": ["init", "init_post_opt", "user_init"],
+        "task_post_fork": ["init", "init_post_opt", "user_init"],
+        "task_init": ["init", "init_post_opt", "user_init", "task_init_privileged"],
+        "task_exit": [
+            "init",
+            "init_post_opt",
+            "user_init",
+            "task_init_privileged",
+            "task_post_fork",
+            "task_init",
+        ],
+        "exit": [
+            "init",
+            "init_post_opt",
+            "user_init",
+            "task_init_privileged",
+            "task_post_fork",
+            "task_init",
+            "task_exit",
+        ],
+    },
+}
+
+# The only hooks that spank.8 documents to be called in each context. Remote
+# context is not restricted.
+HOOKS_IN_CONTEXT = {
+    "local": {"init", "init_post_opt", "local_user_init", "exit"},
+    "allocator": {"init", "init_post_opt", "exit"},
+    "slurmd": {"init", "slurmd_exit"},
+    "job_script": {"job_prolog", "job_epilog"},
+}
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(spank_plugin):
@@ -60,6 +112,75 @@ def cleanup_between_tests():
     atf.run_command(f"rm -f {OUTPUT_FILE} {ERROR_FILE}")
 
 
+def get_hook_marker(spank_tmp, function, context):
+    """Return (job_id, rc) recorded by the plugin when the hook ran.
+
+    The plugin writes it to a file instead of stderr, where output of
+    different processes (srun, slurmstepd and its forked tasks) can interleave.
+    """
+    marker = f"{spank_tmp}/{function}_{context}_log"
+    atf.wait_for_file(marker, fatal=True)
+    for t in atf.timer():
+        content = atf.run_command_output(f'cat "{marker}"', fatal=True)
+        match = re.search(r"job_id=(\d+) rc=(-?\d+)", content)
+        if match:
+            return int(match.group(1)), int(match.group(2))
+    else:
+        assert False, f"SPANK plugin should record job_id and rc in {marker}"
+
+
+def get_hooks_run(spank_tmp):
+    """Return {(function, context): [rc, ...]} for every hook that ran.
+
+    Each hook appends one line to {function}_{context}_log per run.
+    """
+    hooks = {}
+    output = atf.run_command_output(
+        f"grep -H . {spank_tmp}/slurm_spank_*_log 2>/dev/null || true"
+    )
+    for line in output.splitlines():
+        match = re.search(
+            rf"{spank_tmp}/(slurm_spank_\w+)_(local|remote|allocator|slurmd|job_script)_log:job_id=\d+ rc=(-?\d+)",
+            line,
+        )
+        if match:
+            hook = (match.group(1), match.group(2))
+            hooks.setdefault(hook, []).append(int(match.group(3)))
+    logging.debug(f"SPANK hooks run: {hooks}")
+    return hooks
+
+
+def assert_hooks_run(spank_tmp, function, context, job_id):
+    """Assert the hooks that ran match what spank.8 documents.
+
+    - The hooks documented before the failing one, in its context, ran and
+      succeeded.
+    - No hook ran in a context where it's documented not to be called.
+
+    What runs after the failing hook is not documented, so it's not checked.
+    """
+    # Let every hook of the job run before checking them all
+    if job_id > 0:
+        atf.wait_for_job_state(job_id, "DONE", fatal=True)
+    hooks = get_hooks_run(spank_tmp)
+
+    short_function = function.replace("slurm_spank_", "")
+    for hook in HOOKS_BEFORE[context][short_function]:
+        rcs = hooks.get((f"slurm_spank_{hook}", context))
+        assert (
+            rcs
+        ), f"slurm_spank_{hook} should run before {function} in {context} context, but it didn't"
+        assert all(
+            rc == 0 for rc in rcs
+        ), f"slurm_spank_{hook} should return 0 in {context} context, but returned {rcs}"
+
+    for hook, ctx in hooks:
+        if ctx in HOOKS_IN_CONTEXT:
+            assert (
+                hook.replace("slurm_spank_", "") in HOOKS_IN_CONTEXT[ctx]
+            ), f"{hook} should not be called in {ctx} context, but it was"
+
+
 def assert_job_end_state(job_id, allowed_states):
     """Wait for the job to finish, then assert its final JobState.
 
@@ -93,14 +214,14 @@ def assert_job_end_state(job_id, allowed_states):
         ("slurm_spank_exit", "local", False, False, True, False),
     ],
 )
-def test_srun(function, context, xfail, drains, fails, jobid_assigned):
+def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned):
     """Validate srun behavior when SPANK callbacks fail."""
     logging.info("Testing srun command")
     logging.debug(f"Function {function}, xfail: {xfail}")
 
     result = atf.run_command(
         command=f"srun -K -I10 -W10 -w {test_node} -t1 true",
-        env_vars=f"SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
     )
     if xfail:
         assert (
@@ -111,31 +232,12 @@ def test_srun(function, context, xfail, drains, fails, jobid_assigned):
             result["exit_code"] == 0
         ), f"srun should succeed, but exited with {result['exit_code']}"
 
-    # Extract JobID and verify SPANK plugin printed logs
-    err = result["stderr"]
-    pattern = r"\[Job: (\d+)\] Found \(([^,]+),([^)]+)\)"
-    match = re.search(pattern, err)
-    if not match:
-        pytest.fail("SPANK plugin debug logs not found in output")
-    job_id = match.group(1)
-    found_function = match.group(2)
-    found_context = match.group(3)
-    logging.debug(
-        f"Found SPANK debug log - Job ID: {job_id}, Function: {found_function}, Context: {found_context}"
-    )
-    assert found_function == function
-    assert found_context == context
-
-    short_function = function.replace("slurm_spank_", "")
-
-    # Check for SPANK error message in output
-    pattern = rf"error: spank: required plugin \S+: {re.escape(short_function)}\(\) failed with rc=(-?\d+)"
-    match = re.search(pattern, err)
-    if not match:
-        pytest.fail("SPANK error message not found in output")
-    reported_rc = int(match.group(1))
-    logging.debug(f"Found SPANK error message with rc: {reported_rc}")
-    assert reported_rc == SPANK_ERROR_RC
+    # Extract JobID and verify the SPANK plugin failed the targeted callback
+    job_id, plugin_rc = get_hook_marker(spank_tmp, function, context)
+    logging.debug(f"SPANK plugin failed {function} ({context}) of job {job_id}")
+    assert (
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
 
     if jobid_assigned:
         assert int(job_id) > 0, "JobID should be assigned"
@@ -150,6 +252,8 @@ def test_srun(function, context, xfail, drains, fails, jobid_assigned):
         assert [
             "DRAIN"
         ] == node_state, f"Test node should be drained, but is in state {node_state}"
+
+    assert_hooks_run(spank_tmp, function, context, int(job_id))
 
 
 @pytest.mark.parametrize(
@@ -169,14 +273,14 @@ def test_srun(function, context, xfail, drains, fails, jobid_assigned):
         ("slurm_spank_exit", "allocator", False, False, True, False),
     ],
 )
-def test_salloc(function, context, xfail, drains, fails, jobid_assigned):
+def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assigned):
     """Validate salloc+srun behavior when SPANK callbacks fail."""
     logging.info("Testing salloc command")
     logging.debug(f"Function {function}, xfail: {xfail}")
 
     result = atf.run_command(
         command=f"salloc -K -I10 -w {test_node} -t1 srun -K -I10 -W10 -t1 true",
-        env_vars=f"SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
     )
     if xfail:
         assert (
@@ -187,37 +291,20 @@ def test_salloc(function, context, xfail, drains, fails, jobid_assigned):
             result["exit_code"] == 0
         ), f"salloc should succeed, but exited with {result['exit_code']}"
 
-    # Extract JobID and verify SPANK plugin printed logs
-    err = result["stderr"]
-    pattern = r"\[Job: (\d+)\] Found \(([^,]+),([^)]+)\)"
-    match = re.search(pattern, err)
-    if not match:
-        pytest.fail("SPANK plugin debug logs not found in output")
-    job_id = match.group(1)
-    found_function = match.group(2)
-    found_context = match.group(3)
-    logging.debug(
-        f"Found SPANK debug log - Job ID: {job_id}, Function: {found_function}, Context: {found_context}"
-    )
-    assert found_function == function
-    assert found_context == context
-
-    short_function = function.replace("slurm_spank_", "")
-
-    # Check for SPANK error message in output
-    pattern = rf"error: spank: required plugin \S+: {re.escape(short_function)}\(\) failed with rc=(-?\d+)"
-    match = re.search(pattern, err)
-    if not match:
-        pytest.fail("SPANK error message not found in output")
-    reported_rc = int(match.group(1))
-    logging.debug(f"Found SPANK error message with rc: {reported_rc}")
-    assert reported_rc == SPANK_ERROR_RC
+    # Extract JobID and verify the SPANK plugin failed the targeted callback
+    job_id, plugin_rc = get_hook_marker(spank_tmp, function, context)
+    logging.debug(f"SPANK plugin failed {function} ({context}) of job {job_id}")
+    assert (
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
 
     if jobid_assigned:
         assert int(job_id) > 0, "JobID should be assigned"
 
         if fails:
             assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
+
+    assert_hooks_run(spank_tmp, function, context, int(job_id))
 
 
 @pytest.mark.parametrize(
@@ -237,18 +324,16 @@ def test_salloc(function, context, xfail, drains, fails, jobid_assigned):
         ("slurm_spank_exit", "allocator", False, False, False, True, True),
     ],
 )
-def test_sbatch(function, context, xfail, drains, fails, jobid_assigned, outfile):
-    """Validate sbatch behavior when SPANK callbacks fail.
-
-    For allocator context we expect the error to be reported on sbatch stderr;
-    for local/remote contexts we expect it in the job's error file.
-    """
+def test_sbatch(
+    spank_tmp, function, context, xfail, drains, fails, jobid_assigned, outfile
+):
+    """Validate sbatch behavior when SPANK callbacks fail."""
     logging.info("Testing sbatch command")
     logging.debug(f"Function {function}, in context: {context}, xfail: {xfail}")
 
     result = atf.run_command(
         command=f"sbatch --no-requeue -W -w {test_node} -t1 -o {OUTPUT_FILE} -e {ERROR_FILE} --wrap=\"srun echo 'IT_RAN'\"",
-        env_vars=f"SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
     )
     if xfail:
         assert (
@@ -273,29 +358,11 @@ def test_sbatch(function, context, xfail, drains, fails, jobid_assigned, outfile
     else:
         assert int(job_id) == 0, "JobID should NOT be returned"
 
-    short_function = function.replace("slurm_spank_", "")
-    pattern = rf"error: spank: required plugin \S+: {re.escape(short_function)}\(\) failed with rc=(-?\d+)"
-
-    sbatch_reported = 0
-    if context == "allocator":
-        # In allocator context, API failure is expected on sbatch stderr
-        match = re.search(pattern, result["stderr"])
-        if match:
-            sbatch_reported = int(match.group(1))
-    else:
-        # In local/remote context, API failure is expected in the error file
-        atf.wait_for_file(ERROR_FILE, fatal=True)
-        for t in atf.timer():
-            content = atf.run_command_output(f'cat "{ERROR_FILE}"', fatal=True)
-            match = re.search(pattern, content)
-            if match:
-                sbatch_reported = int(match.group(1))
-                break
-
-    logging.info(f"Found SPANK output message with rc: {sbatch_reported}")
+    # Verify the SPANK plugin failed the targeted callback
+    _, plugin_rc = get_hook_marker(spank_tmp, function, context)
     assert (
-        sbatch_reported == SPANK_ERROR_RC
-    ), f"Expected sbatch reported rc {SPANK_ERROR_RC}, got {sbatch_reported}"
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
 
     if jobid_assigned and fails:
         assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
@@ -327,3 +394,5 @@ def test_sbatch(function, context, xfail, drains, fails, jobid_assigned, outfile
         assert (
             "DRAIN" in node_state
         ), f"Test node should be drained, but is in state {node_state}"
+
+    assert_hooks_run(spank_tmp, function, context, int(job_id))
