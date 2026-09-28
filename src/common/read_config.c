@@ -5159,6 +5159,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		}
 	}
 
+	if (conf->slurmd_user_id && (conf->slurmd_user_id != conf->slurm_user_id))
+		fatal("SlurmdUser must be either root or equal to SlurmUser");
+
 	(void) s_p_get_string(&conf->slurmctld_addr, "SlurmctldAddr",
 			      hashtbl);
 
