@@ -36,4 +36,46 @@
 #ifndef _GRES_LINKS_H
 #define _GRES_LINKS_H
 
+#include "src/interfaces/gres.h"
+
+/*
+ * Shrink the counts to the devices that can be part of a large enough linked
+ * set, leaving a node that cannot form one too short for the caller to accept.
+ * The counts are capped to the node's largest linked set either way.
+ * IN/OUT sock_gres - GRES availability counts, shrunk in place
+ * IN gres_ns - node GRES state providing the links_cnt matrix
+ * IN min_gres - smallest linked set that satisfies the request
+ * IN/OUT near_gres_cnt - GRES near allocated CPUs, shrunk to match
+ */
+extern void gres_links_filter(sock_gres_t *sock_gres,
+			      gres_node_state_t *gres_ns, uint64_t min_gres,
+			      uint64_t *near_gres_cnt);
+
+/*
+ * Test whether a pick has to be made from a linked set. A job that ends up with
+ * a single device on this node is not constrained, since a lone device has
+ * nothing to be linked to.
+ * IN sock_gres - GRES availability for this node
+ * IN node_inx - node index
+ * IN gres_needed - number of devices this call is to select
+ * RET true if the devices must be picked from a linked set
+ */
+extern bool gres_links_required(sock_gres_t *sock_gres, int node_inx,
+				uint64_t gres_needed);
+
+/*
+ * Select up to gres_needed devices for the job on this node, requiring every
+ * device to be linked to those already selected and to each other; picks fewer
+ * (failing the node) when no large enough linked set is available.
+ * IN sock_gres - GRES availability for this node
+ * IN node_inx - node index
+ * IN gres_needed - number of devices this call is to select
+ * IN sock_bits - devices this call may hand over, for a caller bound to one
+ *                socket, or NULL when it may hand over any of the node's. The
+ *                linked set is looked for over the whole node either way.
+ * RET count of devices selected
+ */
+extern uint64_t gres_links_select(sock_gres_t *sock_gres, int node_inx,
+				  uint64_t gres_needed, bitstr_t *sock_bits);
+
 #endif /* _GRES_LINKS_H */
