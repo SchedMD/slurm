@@ -1244,3 +1244,7 @@ test_172_#   Testing of JobComp plugins.
 ========================================
 test_172_1   Test the exit code jobcomp/filetxt records for a completed job
 test_172_2   Test jobcomp/kafka start and end records on separate topics
+
+test_173_#   Testing of DBD Agent
+========================================
+test_173_1   Test the DBD agent queue drains after a stranded requeue of a resized job
