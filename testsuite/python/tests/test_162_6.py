@@ -27,7 +27,6 @@ def setup():
         component="sbin/slurmd",
         reason="Issue 50928: per-step SRUN_STEPS_DRAINED dispatch lives in slurmd 26.11",
     )
-    atf.require_tool("swait")
     atf.require_version(
         (26, 11),
         component="bin/swait",
