@@ -70,7 +70,14 @@ fi
 @pytest.mark.parametrize(
     "num_nodes",
     [
-        pytest.param(1, id="single-node"),
+        pytest.param(
+            1,
+            id="single-node",
+            marks=pytest.mark.xfail(
+                atf.get_version("sbin/slurmd") < (26, 11),
+                reason="Ticket 25503: OOM detection in a non-first-finishing task fixed in 26.11",
+            ),
+        ),
         pytest.param(3, id="multi-node"),
     ],
 )
