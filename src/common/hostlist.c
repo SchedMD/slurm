@@ -370,8 +370,7 @@ static char * _next_tok(char *sep, char **str)
 
 	while (1) {
 		/* push str past token and leave pointing to first separator */
-		while ((**str != '\0') && (strchr(sep, **str) == NULL))
-			(*str)++;
+		*str += strcspn(*str, sep);
 
 		/* push str past pairs of brackets */
 bracket:
