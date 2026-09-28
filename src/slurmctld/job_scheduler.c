@@ -5096,6 +5096,35 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 				     job_id);
 }
 
+/*
+ * Finish a job's configuration and launch it if it is no longer waiting on
+ * anything.
+ */
+extern void job_scheduler_cf_test_fini(job_record_t *job_ptr)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
+
+	if (!IS_JOB_CONFIGURING(job_ptr))
+		return;
+
+	/* PrologSlurmctld or a burst buffer stage in is still running */
+	if (job_ptr->details && job_ptr->details->prolog_running)
+		return;
+
+	if (pick_batch_host(job_ptr) || !test_job_nodes_ready(job_ptr))
+		return;
+
+	info("%s: Configuration for %pJ is complete", __func__, job_ptr);
+	job_config_fini(job_ptr);
+
+	if (!job_ptr->batch_flag) {
+		if (job_ptr->het_job_id)
+			launch_het_job_leader(job_ptr);
+	} else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+		launch_job(job_ptr);
+}
+
 /* Decrement a job's prolog_running counter and launch the job if zero */
 extern void prolog_running_decr(job_record_t *job_ptr)
 {
@@ -5114,17 +5143,7 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 	if (job_ptr->job_state & JOB_REQUEUE_FED)
 		return;
 
-	if (IS_JOB_CONFIGURING(job_ptr) && !pick_batch_host(job_ptr) &&
-	    test_job_nodes_ready(job_ptr)) {
-		info("%s: Configuration for %pJ is complete",
-		     __func__, job_ptr);
-		job_config_fini(job_ptr);
-		if (!job_ptr->batch_flag) {
-			if (job_ptr->het_job_id)
-				launch_het_job_leader(job_ptr);
-		} else if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-			launch_job(job_ptr);
-	}
+	job_scheduler_cf_test_fini(job_ptr);
 }
 
 static int _foreach_feature_list_copy(void *x, void *arg)

@@ -120,7 +120,10 @@ def logged_times(pattern, since=None):
 def verify_launched_by_poll(job_id, nodes, since=None):
     """Verify job_time_limit() drove the launch, not the node registration."""
     registered = logged_times("Node (%s) now responding" % "|".join(nodes), since)
-    completed = logged_times(f"Configuration for JobId={job_id} complete", since)
+    # Pre-26.11 slurmctld logs "... complete"; 26.11 unified it on "... is
+    # complete". This module has no version gate because it covers the default
+    # poll path every release has, so it has to match either wording.
+    completed = logged_times(f"Configuration for JobId={job_id} (is )?complete", since)
     assert registered, "slurmctld never logged a node registration"
     assert completed, f"slurmctld never completed configuration for JobId={job_id}"
     polled = [

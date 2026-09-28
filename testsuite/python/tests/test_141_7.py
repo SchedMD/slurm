@@ -144,7 +144,7 @@ def verify_launched_on_registration(job_id, nodes, since=None):
     a poll landing between the two reads would look like a prompt launch.
     """
     registered = logged_times("Node (%s) now responding" % "|".join(nodes), since)
-    completed = logged_times(f"Configuration for JobId={job_id} complete", since)
+    completed = logged_times(f"Configuration for JobId={job_id} is complete", since)
     assert registered, "slurmctld never logged a node registration"
     assert completed, (
         f"JobId={job_id} was still configuring once its last node had "

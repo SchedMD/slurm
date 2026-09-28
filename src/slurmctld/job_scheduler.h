@@ -224,6 +224,13 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(job_record_t *job_ptr, const char *func);
 
+/*
+ * Finish a job's configuration and launch it if it is no longer waiting on
+ * anything. No-op unless the job is configuring and every prolog and node it
+ * was waiting on is ready.
+ */
+extern void job_scheduler_cf_test_fini(job_record_t *job_ptr);
+
 /* Decrement a job's prolog_running counter and launch the job if zero */
 extern void prolog_running_decr(job_record_t *job_ptr);
 

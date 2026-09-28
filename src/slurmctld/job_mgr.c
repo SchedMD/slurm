@@ -9520,29 +9520,6 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 	return true;
 }
 
-/*
- * Finish a configuring job's setup and launch it once all of its nodes are
- * ready.
- * IN job_ptr - the (potentially) configuring job to test
- */
-static void _test_job_config_complete(job_record_t *job_ptr)
-{
-	uint8_t prolog = 0;
-
-	if (job_ptr->details)
-		prolog = job_ptr->details->prolog_running;
-
-	if (!prolog && IS_JOB_CONFIGURING(job_ptr) &&
-	    !pick_batch_host(job_ptr) && test_job_nodes_ready(job_ptr)) {
-		info("%s: Configuration for %pJ complete", __func__, job_ptr);
-		job_config_fini(job_ptr);
-		if (job_ptr->batch_flag)
-			launch_job(job_ptr);
-		else if (job_ptr->het_job_id)
-			launch_het_job_leader(job_ptr);
-	}
-}
-
 static int _foreach_launch_ready_job(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
@@ -9554,7 +9531,7 @@ static int _foreach_launch_ready_job(void *x, void *arg)
 	    !bit_test(job_ptr->node_bitmap, node_ptr->index))
 		return 0;
 
-	_test_job_config_complete(job_ptr);
+	job_scheduler_cf_test_fini(job_ptr);
 
 	return 0;
 }
@@ -9662,7 +9639,7 @@ void job_time_limit(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_test_count++;
 
-		_test_job_config_complete(job_ptr);
+		job_scheduler_cf_test_fini(job_ptr);
 
 		/*
 		 * Features have been changed on some node, make job eligiable
