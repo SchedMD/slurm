@@ -1155,8 +1155,9 @@ static void _usage(void)
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
-"              [--oom-kill-step[=0|1]]\n"
-"              executable [args...]\n");
+"              [--oom-kill-step[=0|1]]\n");
+	runtime_g_cli_print_usage(stdout, 14);
+	printf("              executable [args...]\n");
 }
 
 static void _help(void)
