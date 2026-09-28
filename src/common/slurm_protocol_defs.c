@@ -1698,8 +1698,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->cpus_per_tres);
 		free_cron_entry(msg->crontab_entry);
 		xfree(msg->dependency);
-		env_array_free(msg->environment);
-		msg->environment = NULL;
+		FREE_NULL_ENV(msg->environment, NULL);
 		xfree(msg->extra);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
