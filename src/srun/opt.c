@@ -1768,6 +1768,7 @@ static void _help(void)
 	}
 	slurm_conf_unlock();
 
+	runtime_g_cli_print_help(stdout, 6, 30);
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
