@@ -126,6 +126,7 @@ strong_alias(spank_log,		slurm_spank_log);
 strong_alias(sched_error,	slurm_sched_error);
 strong_alias(sched_info,	slurm_sched_info);
 strong_alias(sched_verbose,	slurm_sched_verbose);
+strong_alias(vxstrfmt, slurm_vxstrfmt);
 
 /*
 ** struct defining a "log" type

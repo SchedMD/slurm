@@ -53,15 +53,29 @@
 #include "src/common/xstring.h"
 
 strong_alias(_data_set_string_own, slurm__data_set_string_own);
+strong_alias(data_convert_tree, slurm_data_convert_tree);
+strong_alias(data_convert_type, slurm_data_convert_type);
 strong_alias(data_dict_for_each_const, slurm_data_dict_for_each_const);
 strong_alias(data_free, slurm_data_free);
+strong_alias(data_get_bool, slurm_data_get_bool);
+strong_alias(data_get_dict_length, slurm_data_get_dict_length);
+strong_alias(data_get_float, slurm_data_get_float);
+strong_alias(data_get_int, slurm_data_get_int);
+strong_alias(data_get_int_converted, slurm_data_get_int_converted);
+strong_alias(data_get_list_length, slurm_data_get_list_length);
 strong_alias(data_get_string, slurm_data_get_string);
+strong_alias(data_get_string_converted, slurm_data_get_string_converted);
+strong_alias(data_get_type, slurm_data_get_type);
 strong_alias(data_key_get, slurm_data_key_get);
+strong_alias(data_key_get_const, slurm_data_key_get_const);
 strong_alias(data_key_set, slurm_data_key_set);
+strong_alias(data_list_append, slurm_data_list_append);
+strong_alias(data_list_for_each, slurm_data_list_for_each);
 strong_alias(data_list_for_each_const, slurm_data_list_for_each_const);
 strong_alias(data_list_get_at, slurm_data_list_get_at);
 strong_alias(data_list_insert_at, slurm_data_list_insert_at);
 strong_alias(data_list_remove_at, slurm_data_list_remove_at);
+strong_alias(data_move, slurm_data_move);
 strong_alias(data_new, slurm_data_new);
 strong_alias(data_set_bool, slurm_data_set_bool);
 strong_alias(data_set_dict, slurm_data_set_dict);
@@ -70,6 +84,7 @@ strong_alias(data_set_int, slurm_data_set_int);
 strong_alias(data_set_list, slurm_data_set_list);
 strong_alias(data_set_null, slurm_data_set_null);
 strong_alias(data_set_string, slurm_data_set_string);
+strong_alias(data_type_to_string, slurm_data_type_to_string);
 
 #define DATA_DEFINE_DICT_PATH_BUFFER_SIZE 1024
 #define DATA_MAGIC 0x1992189F

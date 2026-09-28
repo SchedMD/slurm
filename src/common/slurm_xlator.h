@@ -110,15 +110,29 @@
 
 /* data.[ch] functions */
 #define _data_set_string_own slurm__data_set_string_own
+#define data_convert_tree slurm_data_convert_tree
+#define data_convert_type slurm_data_convert_type
 #define data_dict_for_each_const slurm_data_dict_for_each_const
 #define data_free slurm_data_free
+#define data_get_bool slurm_data_get_bool
+#define data_get_dict_length slurm_data_get_dict_length
+#define data_get_float slurm_data_get_float
+#define data_get_int slurm_data_get_int
+#define data_get_int_converted slurm_data_get_int_converted
+#define data_get_list_length slurm_data_get_list_length
 #define data_get_string slurm_data_get_string
+#define data_get_string_converted slurm_data_get_string_converted
+#define data_get_type slurm_data_get_type
 #define data_key_get slurm_data_key_get
+#define data_key_get_const slurm_data_key_get_const
 #define data_key_set slurm_data_key_set
+#define data_list_append slurm_data_list_append
+#define data_list_for_each slurm_data_list_for_each
 #define data_list_for_each_const slurm_data_list_for_each_const
 #define data_list_get_at slurm_data_list_get_at
 #define data_list_insert_at slurm_data_list_insert_at
 #define data_list_remove_at slurm_data_list_remove_at
+#define data_move slurm_data_move
 #define data_new slurm_data_new
 #define data_set_bool slurm_data_set_bool
 #define data_set_dict slurm_data_set_dict
@@ -127,6 +141,7 @@
 #define data_set_list slurm_data_set_list
 #define data_set_null slurm_data_set_null
 #define data_set_string slurm_data_set_string
+#define data_type_to_string slurm_data_type_to_string
 
 /* fd.[ch] functions */
 #define closeall		slurm_closeall
@@ -258,6 +273,7 @@
 #define	sched_error		slurm_sched_error
 #define	sched_info		slurm_sched_info
 #define	sched_verbose		slurm_sched_verbose
+#define vxstrfmt slurm_vxstrfmt
 
 /* macros.h functions
  * None exported today.
@@ -276,11 +292,15 @@
 #define find_node_record	slurm_find_node_record
 
 /* pack.[ch] functions */
+#define buf_append_bytes slurm_buf_append_bytes
 #define	create_buf		slurm_create_buf
 #define	create_mmap_buf		slurm_create_mmap_buf
 #define	free_buf		slurm_free_buf
 #define grow_buf		slurm_grow_buf
 #define	init_buf		slurm_init_buf
+#define try_grow_buf slurm_try_grow_buf
+#define try_grow_buf_remaining slurm_try_grow_buf_remaining
+#define try_init_buf slurm_try_init_buf
 #define xfer_buf_data_ptr slurm_xfer_buf_data_ptr
 #define	pack_time		slurm_pack_time
 #define	unpack_time		slurm_unpack_time
