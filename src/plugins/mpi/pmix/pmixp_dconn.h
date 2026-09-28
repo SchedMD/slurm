@@ -185,7 +185,7 @@ static inline bool pmixp_dconn_require_connect(
 	case PMIXP_DIRECT_EP_SENT:{
 		switch (pmixp_dconn_connect_type()) {
 		case PMIXP_DCONN_CONN_TYPE_TWOSIDE: {
-			if( dconn->nodeid < pmixp_info_nodeid()){
+			if (dconn->nodeid < pmixp_info_nodeid_job()) {
 				*send_init = true;
 				return true;
 			} else {
