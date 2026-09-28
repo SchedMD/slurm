@@ -47,6 +47,7 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/gpu.h"
 #include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -62,6 +63,9 @@ static bool is_first_task = true;
 static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 {
 	cgroup_acct_t *cgroup_acct_data;
+	int gpumem_pos = -1;
+
+	gpu_get_tres_pos(&gpumem_pos, NULL);
 
 	cgroup_acct_data = cgroup_g_task_get_acct_data(taskid);
 
@@ -125,6 +129,15 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 		 */
 		prec->tres_data[TRES_ARRAY_MEM].size_write =
 			cgroup_acct_data->memory_peak;
+	}
+
+	/*
+	 * Device memory from the cgroup dmem controller. It overrides
+	 * any per-process value collected from the GPU NVML.
+	 */
+	if ((gpumem_pos != -1) && (cgroup_acct_data->total_dmem != NO_VAL64)) {
+		prec->tres_data[gpumem_pos].size_read =
+			cgroup_acct_data->total_dmem;
 	}
 
 	xfree(cgroup_acct_data);

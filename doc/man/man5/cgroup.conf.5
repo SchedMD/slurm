@@ -170,6 +170,25 @@ The default value is "no".
 .IP
 
 .TP
+\fBConstrainDeviceMemory\fR=<yes|no>
+If configured to "yes" then constrain the device memory of \fBshard\fR
+allocations using the dmem cgroup controller. Every shard of a GPU implicitly
+carries a proportional slice of the device memory (the detected capacity
+divided by the number of shards configured on the device), and a job or step
+is limited to its allocated shard count multiplied by that slice.
+Requires \fBConstrainDevices\fR=yes and cgroup/v2, with kernel 6.14 or
+later and a device driver exposing dmem cgroup regions. Devices without a
+matching dmem region are scheduled as before but their device memory is not
+enforced. The dmem controller must also be delegated to the Slurm cgroup. When
+systemd does not delegate it, set \fBEnableControllers\fR=yes.
+The default value is "no".
+
+\fBNOTE\fR: See the Sharding section of the GRES documentation
+<https://slurm.schedmd.com/gres.html#shard_device_memory> for the slice
+model, requirements, and limitations.
+.IP
+
+.TP
 \fBConstrainDevices\fR=<yes|no>
 If configured to "yes" then constrain the job's allowed devices based on GRES
 allocated resources. It uses the devices subsystem for that.

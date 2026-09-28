@@ -270,7 +270,7 @@ CASES = [
         "gpu:tesla:3,gpu:special:1,tmpdisk:100",
         "",
         "",
-        "\nGRES_PARSABLE[tmpdisk](100):(null)|4|(null)|(null)|(null)|CountOnly\n",
+        "\nGRES_PARSABLE[tmpdisk](100):(null)|4|(null)|(null)|(null)|CountOnly,GENERATED\n",
     ),
     _case(
         "a59",

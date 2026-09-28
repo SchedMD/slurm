@@ -932,6 +932,14 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		gres_slurmd_conf.links =
 			gres_links_create_empty(i, device_count);
 
+		if (pci_info.bdfid)
+			gres_slurmd_conf.pci_addr =
+				xstrdup_printf("%04x:%02x:%02x.%x",
+					       (uint32_t) pci_info.domain,
+					       (uint32_t) pci_info.bus,
+					       (uint32_t) pci_info.device,
+					       (uint32_t) pci_info.function);
+
 		xstrfmtcat(gres_slurmd_conf.file,
 			   "/dev/dri/renderD%u", minor_number);
 
@@ -969,6 +977,7 @@ static list_t *_get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		xfree(gres_slurmd_conf.cpus);
 		xfree(gres_slurmd_conf.file);
 		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.pci_addr);
 		xfree(gres_slurmd_conf.unique_id);
 	}
 

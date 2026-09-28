@@ -354,7 +354,9 @@ gres/gpu is not set.</p>
 
 <p>gres/gpumem and gres/gpuutil are only available for NVIDIA GPUs when using
 <code>AutoDetect=nvml</code>, and AMD GPUs when using
-<code>AutoDetect=rsmi</code>.</p>
+<code>AutoDetect=rsmi</code>. Devices under
+<a href="#shard_device_memory">shard device memory enforcement</a> feed
+gres/gpumem from the kernel instead, regardless of vendor.</p>
 
 <p>NVML does not support utilization metrics for MIGs, so Slurm does not
 provide gpumem or gpuutil accounting for MIG devices. See
@@ -501,13 +503,27 @@ For example, some GPUs on a node may be more powerful than others and thus be
 associated with a higher gres/mps count.
 Another use case would be to prevent some GPUs from being used for MPS (i.e.
 they would have an MPS count of zero).</li>
+<li>MPS configuration includes the <I>Name</I>, <I>Type</I> and <I>Count</I>
+parameters (no <I>File</I>): The <I>Count</I> is given to <b>every</b> GPU
+whose type matches the <I>Type</I> parameter (a case-insensitive substring of
+the GPU type; the most specific configuration wins). Unlike cases 1 and 2,
+the <I>Count</I> is per device, not a node total, so one line covers any
+number of GPUs of that model and one line per GPU type may be used to give
+different models different gres/mps counts. GPUs whose type matches no line
+get an MPS count of zero.
+With this form the <I>slurm.conf</I> "Gres=" specification should declare the
+gres/mps counts per type as node totals using the full GPU type names.
+An untyped total is accepted when it equals the sum of all the per-device
+counts.</li>
 </ol>
 
-<p>Note that <I>Type</I> and <I>Cores</I> parameters for gres/mps are ignored.
+<p>Note that the <I>Cores</I> parameter for gres/mps is ignored, and the
+<I>Type</I> parameter is ignored when <I>File</I> is also specified.
 That information is copied from the gres/gpu configuration.</p>
 
 <p>Note the <I>Count</I> parameter is translated to a percentage, so the value
-would typically be a multiple of 100.</p>
+would typically be a multiple of 100, or exactly 100 per device with the
+per-type form of case 4.</p>
 
 <p>Note that if NVIDIA's NVML library is installed, the GPU configuration
 (i.e. <I>Type</I>, <I>File</I>, <I>Cores</I> and <I>Links</I> data) will be
@@ -687,10 +703,13 @@ the MIG user guide</a>.</p>
 <p>
 Sharding provides a generic mechanism where GPUs can be
 shared by multiple jobs. While it does permit multiple jobs to run on a given
-GPU it does not fence the processes running on the GPU, it only allows the GPU
-to be shared. Sharding, therefore, works best with homogeneous workflows. It is
+GPU, by default it does not fence the processes running on the GPU nor
+constrain its device memory; it only allows the GPU to be shared. See
+<a href="#shard_device_memory">Shard device memory enforcement</a> for
+opt-in memory limits.
+Sharding, therefore, works best with homogeneous workflows. It is
 recommended to limit the number of shards on a node to equal the max possible
-jobs that can run simultaneously on the node (i.e. cores).
+jobs that can run simultaneously on the node (i.e. cores or memory).
 The total count of shards available on a node should be configured in
 the <I>slurm.conf</I> file (e.g. "NodeName=tux[1-16] Gres=gpu:2,shard:64").
 Several options are available for configuring shards in the <I>gres.conf</I> file
@@ -714,9 +733,24 @@ For example, some GPUs on a node may be more powerful than others and thus be
 associated with a higher gres/shard count.
 Another use case would be to prevent some GPUs from being used for sharding (i.e.
 they would have a shard count of zero).</li>
+<li>Shard configuration includes the <I>Name</I>, <I>Type</I> and <I>Count</I>
+parameters (no <I>File</I>): The <I>Count</I> is given to <b>every</b> GPU
+whose type matches the <I>Type</I> parameter (a case-insensitive substring of
+the GPU type, like GPU type matching; the most specific configuration wins).
+Unlike cases 1 and 2, the <I>Count</I> is per device, not a node total, so
+one line covers any number of GPUs of that model. One line per GPU type may
+be used to give different models different shard counts, e.g.
+"Name=shard Type=a100 Count=32" and "Name=shard Type=l40s Count=16".
+GPUs whose type matches no line get a shard count of zero.
+With this form the <I>slurm.conf</I> "Gres=" specification should declare the
+shards per type as node totals using the full GPU type names, e.g.
+"Gres=gpu:a100:2,gpu:l40s:2,shard:a100:64,shard:l40s:32".
+An untyped total (e.g. "shard:96") is accepted when it equals the sum of all
+the per-device counts.</li>
 </ol>
 
-<p>Note that <I>Type</I> and <I>Cores</I> parameters for gres/shard are ignored.
+<p>Note that the <I>Cores</I> parameter for gres/shard is ignored, and the
+<I>Type</I> parameter is ignored when <I>File</I> is also specified.
 That information is copied from the gres/gpu configuration.</p>
 
 <p>Note that if NVIDIA's NVML library is installed, the GPU configuration
@@ -793,6 +827,184 @@ which would be the same as if it were a GPU.
 
 <p>Steps with shards have<code class="commandline">SLURM_SHARDS_ON_NODE</code>
 set indicating the number of shards allocated.</p>
+
+<h3 id="shard_device_memory">Shard device memory enforcement
+<a class="slurm_link" href="#shard_device_memory"></a>
+</h3>
+
+<p>By default sharding does not fence anything: a job with one shard can
+allocate the whole memory of the GPU. When
+<a href="cgroup.conf.html#OPT_ConstrainDeviceMemory">
+<b>ConstrainDeviceMemory</b></a> is enabled in <i>cgroup.conf</i>, every shard
+implicitly carries a proportional slice of the device memory of its GPU: the
+detected memory capacity of the device divided by the number of shards
+configured on it. A job or step allocating <i>k</i> shards of a device is
+limited to <i>k</i> slices of device memory (<i>dmem.max</i>), which are
+also reserved for it (<i>dmem.min</i>), enforced by the kernel through
+the dmem cgroup controller. There are no new request options and scheduling
+is unaffected: the shard count is the memory accounting, so any placement
+that fits its shards fits its memory by construction.</p>
+
+<p>Requirements:</p>
+<ul>
+<li>Linux kernel 6.14 or later with cgroup/v2, and a device driver that
+registers dmem cgroup regions (amdgpu and xe since kernel 6.14, NVIDIA since
+driver release 610). This is detected automatically: a device without a
+usable region keeps today's unenforced behavior, reported once at slurmd
+startup.</li>
+<li><b>TaskPlugin=task/cgroup</b> with <b>ConstrainDevices=yes</b>, since
+without the device access filter the memory limits could be evaded through
+devices not allocated to the job. Enabling <b>ConstrainDeviceMemory</b>
+without them is rejected at startup.</li>
+<li>The dmem controller enabled down to the Slurm cgroup, e.g. with
+<b>EnableControllers=yes</b> in <i>cgroup.conf</i> when systemd does not
+delegate it.</li>
+</ul>
+
+<p>The slurmd logs one line per sharding device at startup showing the
+detected region, capacity, and per-shard slice, and whether enforcement is
+active, for example:</p>
+<pre>
+shard: /dev/nvidia0 shards=16 region=nvidia/0000:01:00/vidmem capacity=16013MiB slice=1000MiB dmem=enforced
+</pre>
+
+<p>Jobs with enforced shards have
+<code class="commandline">SLURM_SHARD_MEM_PER_GPU</code> set to a
+comma-separated list of <i>pci_addr</i>=<i>size</i>M pairs, one per allocated
+device, so applications can budget their allocations (e.g. resolving the
+device with <code class="commandline">cudaDeviceGetByPCIBusId()</code>).
+Exceeding the limit makes further device memory allocations of the job fail;
+the exact error observed by the application depends on the vendor driver. The
+<i>gres/gpumem</i> usage TRES is fed from the kernel counter on enforced
+devices, extending GPU memory usage accounting to any vendor with dmem
+regions.</p>
+
+<p>A specific device can be excluded from enforcement with
+<b>DmemRegion=off</b> on its <i>gres.conf</i> gpu record, and the region
+autodetection can be overridden with
+<a href="gres.conf.html#OPT_DmemRegion"><b>DmemRegion</b></a>. The regions
+available on the node are listed in
+<code class="commandline">/sys/fs/cgroup/dmem.capacity</code>.</p>
+
+<p>Limitations:</p>
+<ul>
+<li>Unified/managed memory is not charged: allocations made through
+unified memory interfaces (e.g.
+<code class="commandline">cudaMallocManaged()</code>) are handled by the
+NVIDIA UVM driver rather than the regular device memory allocator, so they
+do not count against the dmem limit and are effectively unconstrained.</li>
+<li>MIG instances stay unenforced: all instances carved out of a physical
+GPU share its single PCI device, so its dmem region is shared by every
+instance and cannot be attributed to one of them.</li>
+<li>Coherent platforms where GPU memory is exposed to the operating system
+as NUMA memory nodes are not reported by the dmem controller, as their
+GPU memory is managed as system memory, so this mechanism does not apply.</li>
+</ul>
+
+<p>Example of a node with one 16 GB GPU split into 16 shards:</p>
+<pre>
+# slurm.conf
+AccountingStorageTRES=gres/gpu,gres/shard,gres/gpumem
+GresTypes=gpu,shard
+NodeName=node1 Gres=gpu:1,shard:16
+ProctrackType=proctrack/cgroup
+TaskPlugin=task/cgroup,task/affinity
+
+# gres.conf
+AutoDetect=nvml
+Name=shard Count=16
+
+# cgroup.conf
+ConstrainDevices=yes
+ConstrainDeviceMemory=yes
+EnableControllers=yes
+</pre>
+
+<p>At startup the slurmd logs the detected region and the resulting
+per-shard slice for each sharding device:</p>
+<pre>
+shard: /dev/nvidia0 shards=16 region=nvidia/0000:01:00/vidmem capacity=16013MiB slice=1000MiB dmem=enforced
+</pre>
+
+<p>A job allocating three shards is limited to three slices. The limit is
+exported to the application through the environment and written to the
+dmem cgroup of the job and each of its steps (the job cgroup directory is
+named after the job SLUID, or after the job id with
+<b>CgroupJobIdPaths=yes</b>):</p>
+<pre>
+$ srun --gres=shard:3 sh -c 'echo $SLURM_SHARD_MEM_PER_GPU'
+0000:01:00.0=3002M
+
+$ srun --gres=shard:3 sh -c \
+    'cat /sys/fs/cgroup/system.slice/slurmstepd.scope/$SLURM_JOB_SLUID/dmem.max'
+nvidia/0000:01:00/vidmem 3148288512
+</pre>
+
+<p>Device memory allocations beyond the limit fail, while the rest of the
+device memory remains available to the other jobs sharding the GPU
+(<code class="commandline">alloc_vram</code> here is a small test program
+allocating the given number of MiB):</p>
+<pre>
+$ srun --gres=shard:3 ./alloc_vram 4000
+cudaMalloc failed: out of memory (after 3002 of 4000 MiB)
+</pre>
+
+<p>The device memory used by the job is accounted in the
+<i>gres/gpumem</i> TRES, visible while it runs and preserved after it
+completes:</p>
+<pre>
+$ sstat -a -j 42 --format=JobID,TRESUsageInMax%70
+JobID                                                                TRESUsageInMax
+------------ ----------------------------------------------------------------------
+42.extern                                                                  energy=0
+42.batch     cpu=00:00:00,energy=0,fs/disk=87713,gres/gpumem=2128M,gres/gpuutil=1,+
+
+$ sacct -j 42 --format=JobID,State,TRESUsageInTot%70
+JobID             State                                                         TRESUsageInTot
+------------ ---------- ----------------------------------------------------------------------
+42            COMPLETED
+42.batch      COMPLETED cpu=00:00:00,energy=0,fs/disk=87713,gres/gpumem=2128M,gres/gpuutil=1,+
+42.extern     COMPLETED                                                               energy=0
+</pre>
+
+<p>Example of a node with three different GPU models from two vendors
+(<i>cgroup.conf</i> as in the previous example):</p>
+<pre>
+# slurm.conf
+GresTypes=gpu,shard
+NodeName=node2 Gres=gpu:rtx_5090:1,gpu:rtx_5060_ti:1,gpu:amd_granite:1,shard:rtx_5090:16,shard:rtx_5060_ti:16,shard:amd_granite:4
+
+# gres.conf
+# nvml detects the two NVIDIA devices; the AMD one is configured explicitly
+AutoDetect=nvml
+Name=gpu Type=rtx_5060_ti File=/dev/nvidia1 DmemRegion=off
+Name=gpu Type=amd_granite File=/dev/dri/renderD128
+Name=shard Type=rtx_5090 Count=16
+Name=shard Type=rtx_5060_ti Count=16
+Name=shard Type=amd_granite Count=4
+</pre>
+
+<p>Each device gets its own slice from its own capacity and shard count.
+The excluded device logs its region with <i>dmem=off</i>:</p>
+<pre>
+shard: /dev/nvidia0 shards=16 region=nvidia/0000:17:00/vidmem capacity=32607MiB slice=2037MiB dmem=enforced
+shard: /dev/nvidia1 shards=16 region=nvidia/0000:b3:00/vidmem dmem=off
+shard: /dev/dri/renderD128 shards=4 region=drm/0000:79:00.0/vram capacity=4080MiB slice=1020MiB dmem=enforced
+</pre>
+
+<p>A job sharding the RTX 5090 is limited using the RTX 5090 slice:</p>
+<pre>
+$ srun --gres=shard:rtx_5090:4 sh -c 'echo $SLURM_SHARD_MEM_PER_GPU'
+0000:17:00.0=8151M
+</pre>
+
+<p>A job sharding the excluded RTX 5060 Ti behaves exactly as without
+enforcement: no environment variable is set and no dmem limits are
+written, while jobs on the other two devices of the node remain enforced:</p>
+<pre>
+$ srun --gres=shard:rtx_5060_ti:2 sh -c 'echo ${SLURM_SHARD_MEM_PER_GPU:-unset}'
+unset
+</pre>
 
 <h2 id="Shared_GRES_Usage">Shared GRES Usage
 <a class="slurm_link" href="#Shared_GRES_Usage"></a>

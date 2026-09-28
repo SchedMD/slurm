@@ -54,6 +54,7 @@ typedef struct {
 	uint64_t gres_cnt;
 	uint32_t gres_conf_flags;
 	list_t *gres_devices;
+	uint64_t *gres_per_bit;
 	bool is_job;
 	bool is_task;
 	char *local_list;

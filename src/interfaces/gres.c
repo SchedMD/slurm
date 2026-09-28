@@ -104,6 +104,7 @@ static s_p_options_t _gres_options[] = {
 	{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
 				 * (deprecated, use Cores) */
 	{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
+	{"DmemRegion", S_P_STRING}, /* dmem cgroup region of Gres device */
 	{"File",  S_P_STRING},	/* Path to Gres device */
 	{"Files", S_P_STRING},	/* Path to Gres device */
 	{"Flags", S_P_STRING},	/* GRES Flags */
@@ -123,19 +124,23 @@ typedef struct slurm_gres_ops {
 	void		(*job_set_env)		( char ***job_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
+						  uint64_t *gres_per_bit,
 						  gres_internal_flags_t flags);
 	void		(*step_set_env)		( char ***step_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
+						  uint64_t *gres_per_bit,
 						  gres_internal_flags_t flags);
 	void		(*task_set_env)		( char ***task_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
+						  uint64_t *gres_per_bit,
 						  bitstr_t *usable_gres,
 						  gres_internal_flags_t flags);
 	void		(*send_stepd)		( buf_t *buffer );
 	void		(*recv_stepd)		( buf_t *buffer );
 	list_t *(*get_devices)(void);
+	list_t *(*get_dmem_devices)(void);
 	void            (*step_hardware_init)	( bitstr_t *, char * );
 	void            (*step_hardware_fini)	( void );
 	gres_prep_t *(*prep_build_env)(gres_job_state_t *gres_js);
@@ -393,10 +398,10 @@ static bool use_local_index = false;
 static bool dev_index_mode_set = false;
 
 /* Local functions */
-static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
-				       int node_inx,
+static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js, int node_inx,
 				       bitstr_t **gres_bit_alloc,
-				       uint64_t *gres_cnt);
+				       uint64_t *gres_cnt,
+				       uint64_t **gres_per_bit);
 static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 					bitstr_t **gres_bit_alloc,
 					uint64_t *gres_cnt,
@@ -657,6 +662,7 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 		"gres_p_send_stepd",
 		"gres_p_recv_stepd",
 		"gres_p_get_devices",
+		"gres_p_get_dmem_devices",
 		"gres_p_step_hardware_init",
 		"gres_p_step_hardware_fini",
 		"gres_p_prep_build_env",
@@ -1766,6 +1772,12 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->config_flags |= GRES_CONF_HAS_MULT;
 	}
 
+	if (s_p_get_string(&p->dmem_region, "DmemRegion", tbl) &&
+	    ((p->count != 1) || (p->config_flags & GRES_CONF_HAS_MULT))) {
+		fatal("Invalid GRES record for %s, DmemRegion is bound to a single device File",
+		      p->name);
+	}
+
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
 		uint32_t env_flags = 0;
 		bool no_gpu_env = false;
@@ -2263,8 +2275,15 @@ static int _match_type(void *x, void *key)
 	 * stylings.
 	 */
 	if (!conf_cnt->type_name) {
-		xfree(gres_slurmd_conf->type_name);
-		gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+		/*
+		 * Don't remove the type of a shared gres without File.
+		 * Support entries like "Name=shard Type=rtx_5060_ti Count=16".
+		 */
+		if (!gres_id_shared(gres_slurmd_conf->config_flags) ||
+		    gres_slurmd_conf->file) {
+			xfree(gres_slurmd_conf->type_name);
+			gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+		}
 	} else if (xstrcasecmp(gres_slurmd_conf->type_name,
 			       conf_cnt->type_name))
 		return 0;
@@ -2341,8 +2360,10 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
 static void _merge_gres2(merge_gres_t *merge_gres,
 			 uint64_t count, char *type_name)
 {
+	bool per_dev_shared = false;
 	gres_slurmd_conf_t *match;
 	gres_slurmd_conf_t gres_slurmd_conf = {
+		.config_flags = GRES_CONF_GENERATED,
 		.cpu_cnt = merge_gres->cpu_cnt,
 		.name = merge_gres->gres_ctx->gres_name,
 		.type_name = type_name,
@@ -2369,6 +2390,22 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 		debug3("%s: From gres.conf, using %s:%s:%"PRIu64":%s", __func__,
 		       match->name, match->type_name, match->count,
 		       match->file);
+
+		/*
+		 * A shared record (mps or shard) without File and with Type,
+		 * applies Count to each device, not to each node. This
+		 * allows support for defining shards/mps for a specific model
+		 * of gpu. Never truncate it.
+		 */
+		if (!match->file && match->type_name &&
+		    gres_id_shared(match->config_flags)) {
+			if (type_name) {
+				count = 0;
+				break;
+			}
+			per_dev_shared = true;
+			continue;
+		}
 
 		/*
 		 * See if we need to merge with any more gres.conf records.
@@ -2404,7 +2441,8 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 			break;
 	}
 
-	if (count == 0)
+	/* Per-device records absorb the total: no untyped leftover. */
+	if (per_dev_shared || !count)
 		return;
 
 	/*
@@ -8662,10 +8700,10 @@ extern char *gres_sock_str(list_t *sock_gres_list, int sock_inx)
 	return foreach_sock_str.gres_str;
 }
 
-static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
-				       int node_inx,
+static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js, int node_inx,
 				       bitstr_t **gres_bit_alloc,
-				       uint64_t *gres_cnt)
+				       uint64_t *gres_cnt,
+				       uint64_t **gres_per_bit)
 {
 	if (gres_js->node_cnt <= node_inx) {
 		error("gres_job_state_t node count less than node_inx. This should never happen");
@@ -8684,6 +8722,18 @@ static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
 	}
 	if (gres_cnt && gres_js->gres_cnt_node_alloc)
 		*gres_cnt += gres_js->gres_cnt_node_alloc[node_inx];
+	if (gres_per_bit && gres_js->gres_per_bit_alloc &&
+	    gres_js->gres_per_bit_alloc[node_inx] && gres_js->gres_bit_alloc &&
+	    gres_js->gres_bit_alloc[node_inx]) {
+		int bit_cnt = bit_size(gres_js->gres_bit_alloc[node_inx]);
+
+		if (!*gres_per_bit)
+			*gres_per_bit = xcalloc(bit_cnt, sizeof(uint64_t));
+		for (int i = 0; i < bit_cnt; i++) {
+			(*gres_per_bit)[i] +=
+				gres_js->gres_per_bit_alloc[node_inx][i];
+		}
+	}
 }
 
 static int _accumulate_gres_device(void *x, void *arg)
@@ -8699,7 +8749,8 @@ static int _accumulate_gres_device(void *x, void *arg)
 			gres_ptr->gres_data,
 			foreach_gres_accumulate_device->node_inx,
 			foreach_gres_accumulate_device->gres_bit_alloc,
-			&foreach_gres_accumulate_device->gres_cnt);
+			&foreach_gres_accumulate_device->gres_cnt,
+			foreach_gres_accumulate_device->gres_per_bit);
 	} else {
 		_accumulate_step_gres_alloc(
 			gres_ptr,
@@ -8723,8 +8774,10 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 	int i;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
 	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
 		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
 		.is_job = true,
 		.node_inx = node_inx,
 	};
@@ -8760,17 +8813,17 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 			 * use all the job's gres.
 			 */
 			(*(gres_ctx->ops.step_set_env))(
-				&step->env,
-				gres_bit_alloc,
+				&step->env, gres_bit_alloc,
 				foreach_gres_accumulate_device.gres_cnt,
-				flags);
+				gres_per_bit, flags);
 		} else
-			(*(gres_ctx->ops.job_set_env))(
-				&step->env,
-				gres_bit_alloc,
-				foreach_gres_accumulate_device.gres_cnt,
-				flags);
+			(*(gres_ctx->ops
+				   .job_set_env))(&step->env, gres_bit_alloc,
+						  foreach_gres_accumulate_device
+							  .gres_cnt,
+						  gres_per_bit, flags);
 		foreach_gres_accumulate_device.gres_cnt = 0;
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -9145,12 +9198,55 @@ extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 		(void) list_for_each(gres_devices, _foreach_alloc_gres_device,
 				     &foreach_alloc_gres_device);
 
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return device_list;
+}
+
+extern list_t *gres_g_get_dmem_devices(void)
+{
+	list_t *dmem_devs = NULL;
+
+	xassert(gres_context_cnt >= 0);
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (int i = 0; i < gres_context_cnt; i++) {
+		if (!gres_context[i].ops.get_dmem_devices)
+			continue;
+		if ((dmem_devs = (*(gres_context[i].ops.get_dmem_devices))()))
+			break;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	return dmem_devs;
+}
+
+extern uint64_t *gres_get_per_bit_alloc(list_t *gres_list, bool is_job,
+					uint32_t plugin_id, int *bit_cnt)
+{
+	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
+	foreach_gres_accumulate_device_t arg = {
+		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
+		.is_job = is_job,
+		.plugin_id = plugin_id,
+	};
+
+	*bit_cnt = 0;
+	if (!gres_list)
+		return NULL;
+
+	(void) list_for_each(gres_list, _accumulate_gres_device, &arg);
+	if (gres_bit_alloc)
+		*bit_cnt = bit_size(gres_bit_alloc);
+	FREE_NULL_BITMAP(gres_bit_alloc);
+
+	return gres_per_bit;
 }
 
 static void _step_state_delete(void *gres_data)
@@ -10619,9 +10715,11 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 {
 	int i;
 	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 	foreach_gres_accumulate_device_t foreach_gres_accumulate_device = {
 		.gres_bit_alloc = &gres_bit_alloc,
+		.gres_per_bit = &gres_per_bit,
 		.is_job = false,
 	};
 
@@ -10633,8 +10731,9 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 			continue;	/* No plugin to call */
 		if (!step->step_gres_list) {
 			/* Clear GRES environment variables */
-			(*(gres_ctx->ops.step_set_env))(
-				&step->env, NULL, 0, GRES_INTERNAL_FLAG_NONE);
+			(*(gres_ctx->ops
+				   .step_set_env))(&step->env, NULL, 0, NULL,
+						   GRES_INTERNAL_FLAG_NONE);
 			continue;
 		}
 		foreach_gres_accumulate_device.plugin_id = gres_ctx->plugin_id;
@@ -10652,12 +10751,12 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.step_set_env))(
-			&step->env,
-			gres_bit_alloc,
-			foreach_gres_accumulate_device.gres_cnt,
-			flags);
+		(*(gres_ctx->ops.step_set_env))(&step->env, gres_bit_alloc,
+						foreach_gres_accumulate_device
+							.gres_cnt,
+						gres_per_bit, flags);
 		foreach_gres_accumulate_device.gres_cnt = 0;
+		xfree(gres_per_bit);
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -10691,9 +10790,10 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 			continue;	/* No plugin to call */
 		if (!step->step_gres_list) {
 			/* Clear GRES environment variables */
-			(*(gres_ctx->ops.task_set_env))(
-				&step->envtp->env, NULL, 0, NULL,
-				GRES_INTERNAL_FLAG_NONE);
+			(*(gres_ctx->ops
+				   .task_set_env))(&step->envtp->env, NULL, 0,
+						   NULL, NULL,
+						   GRES_INTERNAL_FLAG_NONE);
 			continue;
 		}
 		foreach_gres_accumulate_device.plugin_id = gres_ctx->plugin_id;
@@ -10717,11 +10817,12 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		    foreach_gres_accumulate_device.sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.task_set_env))(
-			&step->envtp->env,
-			gres_bit_alloc,
-			foreach_gres_accumulate_device.gres_cnt,
-			usable_gres, flags);
+		(*(gres_ctx->ops.task_set_env))(&step->envtp->env,
+						gres_bit_alloc,
+						foreach_gres_accumulate_device
+							.gres_cnt,
+						gres_per_bit, usable_gres,
+						flags);
 	next:
 		foreach_gres_accumulate_device.gres_cnt = 0;
 		xfree(gres_per_bit);
@@ -10990,6 +11091,16 @@ static void _gres_device_pack(
 	packstr(gres_device->path, buffer);
 	packstr(gres_device->unique_id, buffer);
 	pack32(gres_device->flags, buffer);
+	packstr(gres_device->pci_addr, buffer);
+	packbool((gres_device->dmem != NULL), buffer);
+	if (gres_device->dmem) {
+		pack64(gres_device->dmem->capacity, buffer);
+		packbool(gres_device->dmem->from_conf, buffer);
+		packstr(gres_device->dmem->region, buffer);
+		pack64(gres_device->dmem->shards, buffer);
+		pack64(gres_device->dmem->slice, buffer);
+		pack32((uint32_t) gres_device->dmem->state, buffer);
+	}
 }
 
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices)
@@ -11002,6 +11113,7 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 			       buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
+	bool has_dmem = false;
 	gres_device_t *gres_device = xmalloc(sizeof(gres_device_t));
 
 	safe_unpack32(&uint32_tmp, buffer);
@@ -11017,6 +11129,18 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 	safe_unpackstr(&gres_device->path, buffer);
 	safe_unpackstr(&gres_device->unique_id, buffer);
 	safe_unpack32(&gres_device->flags, buffer);
+	safe_unpackstr(&gres_device->pci_addr, buffer);
+	safe_unpackbool(&has_dmem, buffer);
+	if (has_dmem) {
+		gres_device->dmem = xmalloc(sizeof(*gres_device->dmem));
+		safe_unpack64(&gres_device->dmem->capacity, buffer);
+		safe_unpackbool(&gres_device->dmem->from_conf, buffer);
+		safe_unpackstr(&gres_device->dmem->region, buffer);
+		safe_unpack64(&gres_device->dmem->shards, buffer);
+		safe_unpack64(&gres_device->dmem->slice, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		gres_device->dmem->state = (gres_dmem_state_t) uint32_tmp;
+	}
 	/* info("adding %d %s %s", gres_device->dev_num, */
 	/*      gres_device->major, gres_device->path); */
 
@@ -11308,7 +11432,12 @@ extern void destroy_gres_device(void *gres_device_ptr)
 
 	if (!gres_device)
 		return;
+	if (gres_device->dmem) {
+		xfree(gres_device->dmem->region);
+		xfree(gres_device->dmem);
+	}
 	xfree(gres_device->path);
+	xfree(gres_device->pci_addr);
 	xfree(gres_device->unique_id);
 	xfree(gres_device);
 }
@@ -11321,9 +11450,11 @@ extern void destroy_gres_slurmd_conf(void *x)
 	xassert(p);
 	xfree(p->cpus);
 	FREE_NULL_BITMAP(p->cpus_bitmap);
+	xfree(p->dmem_region);
 	xfree(p->file);		/* Only used by slurmd */
 	xfree(p->links);
 	xfree(p->name);
+	xfree(p->pci_addr);
 	xfree(p->type_name);
 	xfree(p->unique_id);
 	xfree(p);
@@ -11335,7 +11466,7 @@ extern void destroy_gres_slurmd_conf(void *x)
  */
 extern char *gres_flags2str(uint32_t config_flags)
 {
-	static char flag_str[128];
+	static char flag_str[256];
 	char *sep = "";
 
 	flag_str[0] = '\0';
@@ -11423,6 +11554,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 		sep = ",";
 	}
 
+	if (config_flags & GRES_CONF_GENERATED) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "GENERATED");
+		sep = ",";
+	}
+
 	return flag_str;
 }
 
@@ -11487,6 +11624,9 @@ extern void add_gres_to_list(list_t *gres_list,
 	if (gres_slurmd_conf_in->type_name)
 		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_TYPE;
 	gres_slurmd_conf->cpus = xstrdup(gres_slurmd_conf_in->cpus);
+	gres_slurmd_conf->dmem_region =
+		xstrdup(gres_slurmd_conf_in->dmem_region);
+	gres_slurmd_conf->pci_addr = xstrdup(gres_slurmd_conf_in->pci_addr);
 	gres_slurmd_conf->type_name = xstrdup(gres_slurmd_conf_in->type_name);
 	gres_slurmd_conf->name = xstrdup(gres_slurmd_conf_in->name);
 	gres_slurmd_conf->file = xstrdup(gres_slurmd_conf_in->file);

@@ -327,13 +327,21 @@ static void _copy_matching_gres_per_bit(gres_job_state_t *gres_js,
 		gres_js_alloc->gres_per_bit_alloc = xcalloc(
 			gres_js_alloc->node_cnt, sizeof(uint64_t *));
 	}
-	gres_js_alloc->gres_per_bit_alloc[n] = xcalloc(
-		bit_size(gres_js_alloc->gres_bit_alloc[n]), sizeof(uint64_t));
+
+	/*
+	 * Several job gres records can feed one allocation record (e.g.
+	 * typed requests of a gres whose node record is untyped), so
+	 * accumulate instead of resetting what a previous record copied.
+	 */
+	if (!gres_js_alloc->gres_per_bit_alloc[n])
+		gres_js_alloc->gres_per_bit_alloc[n] =
+			xcalloc(bit_size(gres_js_alloc->gres_bit_alloc[n]),
+				sizeof(uint64_t));
 
 	for (int i = 0;
 	     (i = bit_ffs_from_bit(gres_js_alloc->gres_bit_alloc[n], i)) >= 0;
 	     i++) {
-		gres_js_alloc->gres_per_bit_alloc[n][i] =
+		gres_js_alloc->gres_per_bit_alloc[n][i] +=
 			gres_js->gres_per_bit_alloc[n][i];
 	}
 }
@@ -836,19 +844,34 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 				NO_CONSUME_VAL64;
 			gres_js_alloc->total_gres = NO_CONSUME_VAL64;
 		} else {
-			gres_js_alloc->gres_cnt_node_alloc[node_offset] =
+			/*
+			 * Accumulate: several job gres records can feed one
+			 * allocation record (e.g. a typed and an untyped
+			 * request of the same gres).
+			 */
+			gres_js_alloc->gres_cnt_node_alloc[node_offset] +=
 				gres_cnt;
 			gres_js_alloc->total_gres += gres_cnt;
 		}
 
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[node_offset]) {
+			bitstr_t *picked_bits;
+
 			if (shared_gres)
 				gres_cnt = _get_sharing_cnt_from_shared_cnt(
 					gres_js, left_over_bits, node_offset,
 					gres_cnt);
-			gres_js_alloc->gres_bit_alloc[node_offset] =
-				bit_pick_cnt(left_over_bits, gres_cnt);
+			picked_bits = bit_pick_cnt(left_over_bits, gres_cnt);
+			if (!gres_js_alloc->gres_bit_alloc[node_offset]) {
+				gres_js_alloc->gres_bit_alloc[node_offset] =
+					picked_bits;
+			} else {
+				bit_or(gres_js_alloc
+					       ->gres_bit_alloc[node_offset],
+				       picked_bits);
+				FREE_NULL_BITMAP(picked_bits);
+			}
 			bit_and_not(left_over_bits,
 				    gres_js_alloc->gres_bit_alloc[node_offset]);
 		}
@@ -872,15 +895,30 @@ static int _job_alloc(gres_state_t *gres_state_job, list_t *job_gres_list_alloc,
 				NO_CONSUME_VAL64;
 			gres_js_alloc->total_gres = NO_CONSUME_VAL64;
 		} else {
-			gres_js_alloc->gres_cnt_node_alloc[node_offset] =
+			/*
+			 * Several job gres records can feed this untyped
+			 * allocation record (e.g. typed requests of a gres
+			 * whose node record is untyped): accumulate so a
+			 * record does not overwrite what a previous one
+			 * allocated, which would also leak the overwritten
+			 * gres at deallocation.
+			 */
+			gres_js_alloc->gres_cnt_node_alloc[node_offset] +=
 				gres_cnt;
 			gres_js_alloc->total_gres += gres_cnt;
 		}
 
 		if (gres_js->gres_bit_alloc &&
-		    gres_js->gres_bit_alloc[node_offset])
-			gres_js_alloc->gres_bit_alloc[node_offset] = bit_copy(
-				gres_js->gres_bit_alloc[node_offset]);
+		    gres_js->gres_bit_alloc[node_offset]) {
+			if (!gres_js_alloc->gres_bit_alloc[node_offset])
+				gres_js_alloc->gres_bit_alloc[node_offset] =
+					bit_copy(gres_js->gres_bit_alloc
+							 [node_offset]);
+			else
+				bit_or(gres_js_alloc
+					       ->gres_bit_alloc[node_offset],
+				       gres_js->gres_bit_alloc[node_offset]);
+		}
 
 		if (gres_js->gres_per_bit_alloc &&
 		    gres_js->gres_per_bit_alloc[node_offset]) {

@@ -54,12 +54,13 @@ static xcgroup_ns_t g_cg_ns[CG_CTL_CNT];
 /* Internal cgroup structs */
 static xcgroup_t int_cg[CG_CTL_CNT][CG_LEVEL_CNT];
 
+/* No CG_DMEM entry: the dmem controller does not exist in cgroup v1 */
 const char *g_cg_name[CG_CTL_CNT] = {
-	"freezer",
-	"cpuset",
-	"memory",
-	"devices",
-	"cpuacct"
+	[CG_TRACK] = "freezer",
+	[CG_CPUS] = "cpuset",
+	[CG_MEMORY] = "memory",
+	[CG_DEVICES] = "devices",
+	[CG_CPUACCT] = "cpuacct",
 };
 
 /* Task tracking artifacts */
@@ -1320,6 +1321,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats = xmalloc(sizeof(*stats));
 	stats->usec = NO_VAL64;
 	stats->ssec = NO_VAL64;
+	stats->total_dmem = NO_VAL64; /* No dmem controller in cgroup v1 */
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
 	stats->total_vmem = NO_VAL64;
@@ -1384,6 +1386,11 @@ extern cgroup_acct_t *cgroup_p_job_get_acct_data(void)
 extern long int cgroup_p_get_acct_units(void)
 {
 	return jobacct_gather_get_clk_tck();
+}
+
+extern list_t *cgroup_p_get_dmem_regions(void)
+{
+	return NULL;
 }
 
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)

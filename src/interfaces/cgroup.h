@@ -100,6 +100,7 @@ typedef enum {
 	CG_MEMORY,
 	CG_DEVICES,
 	CG_CPUACCT,
+	CG_DMEM,
 	/* Below are extra controllers not explicitly tracked by Slurm. */
 	CG_IO,
 	CG_HUGETLB,
@@ -111,6 +112,7 @@ typedef enum {
 
 /* Current supported cgroup controller features */
 typedef enum {
+	CG_DMEM_MAX,
 	CG_FALSE_ROOT,
 	CG_MEMCG_OOMGROUP,
 	CG_MEMCG_PEAK,
@@ -149,6 +151,8 @@ typedef struct {
 	/* task devices */
 	bool allow_device;
 	gres_device_id_t device;
+	/* device memory (dmem) */
+	char *dmem_region;
 	/* jobacct memory */
 	uint64_t limit_in_bytes;
 	uint64_t soft_limit_in_bytes;
@@ -168,6 +172,7 @@ typedef struct {
 	uint64_t memory_peak;
 	uint64_t usec;
 	uint64_t ssec;
+	uint64_t total_dmem; /* device memory summed over all dmem regions */
 	uint64_t total_rss;
 	uint64_t total_pgmajfault;
 	uint64_t total_vmem;
@@ -183,6 +188,7 @@ typedef struct {
 	bool cgroup_job_id_paths;
 	char *cgroup_slice;
 	bool constrain_cores;
+	bool constrain_device_memory;
 	bool constrain_devices;
 	bool constrain_ram_space;
 	bool constrain_swap_space;
@@ -415,6 +421,16 @@ extern cgroup_acct_t *cgroup_g_job_get_acct_data(void);
  * RET hertz - USER_HZ of the system.
  */
 extern long int cgroup_g_get_acct_units(void);
+
+/*
+ * Get the device memory regions that the dmem cgroup controller exposes
+ * in dmem.capacity, with their total capacity in bytes.
+ *
+ * RET list of cgroup_limits_t, one entry per region with dmem_region set to the
+ *	region name and limit_in_bytes to its capacity. NULL when the controller
+ *	is not available. Caller must free the list.
+ */
+extern list_t *cgroup_g_get_dmem_regions(void);
 
 /*
  * Check if Cgroup has this feature available.

@@ -80,13 +80,33 @@ typedef struct {
 	gres_device_type_t type;
 } gres_device_id_t;
 
+typedef enum {
+	GRES_DMEM_NONE = 0, /* no dmem region matched this device */
+	GRES_DMEM_AMBIGUOUS, /* several dmem regions matched this device */
+	GRES_DMEM_SHARED, /* several devices matched the same region */
+	GRES_DMEM_EXCLUDED, /* DmemRegion=off in gres.conf */
+	GRES_DMEM_USABLE, /* region matched, slice computed */
+} gres_dmem_state_t;
+
+/* dmem cgroup (device memory) state of one sharing device */
+typedef struct {
+	uint64_t capacity; /* dmem region capacity in bytes */
+	bool from_conf; /* region explicitly set with DmemRegion= */
+	char *region; /* dmem region name, NULL if none matched */
+	uint64_t shards; /* shards configured on this device */
+	uint64_t slice; /* device memory bytes per shard */
+	gres_dmem_state_t state;
+} gres_dmem_dev_t;
+
 typedef struct {
 	int index; /* GRES bitmap index */
 	int alloc;
 	gres_device_id_t dev_desc;
 	int dev_num; /* Number at the end of the device filename */
+	gres_dmem_dev_t *dmem; /* device memory state, set by gres/shard */
 	uint32_t flags; /* See GRES_DEV_* */
 	char *path;
+	char *pci_addr; /* canonical PCI address, NULL if unresolved */
 	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
 
@@ -151,6 +171,9 @@ typedef struct {
 #define GRES_CONF_AUTODETECT SLURM_BIT(15) /* Conf was made with Autodetect */
 #define GRES_CONF_UPDATE_CONFIG SLURM_BIT(16) /* Flag to update gres config */
 #define GRES_CONF_MIG SLURM_BIT(17) /* GRES configuration is for NVIDIA MIG */
+#define GRES_CONF_GENERATED SLURM_BIT(18) /* Auto-generated record to cover a
+					      slurm.conf count that gres.conf
+					      did not describe. */
 
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
@@ -195,6 +218,12 @@ typedef struct gres_slurmd_conf {
 	/* machine/local/physical CPU mapping */
 	bitstr_t *cpus_bitmap;
 
+	/*
+	 * Optional dmem cgroup region bound to this device.
+	 * Only used within slurmd, never packed.
+	 */
+	char *dmem_region;
+
 	/* Device file associated with this configuration record */
 	char *file;
 
@@ -203,6 +232,12 @@ typedef struct gres_slurmd_conf {
 
 	/* Name of this gres */
 	char *name;
+
+	/*
+	 * PCI address of the device as reported by AutoDetect.
+	 * Only used within slurmd, never packed.
+	 */
+	char *pci_addr;
 
 	/* Type of this GRES (e.g. model name) */
 	char *type_name;
@@ -575,6 +610,28 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 extern list_t *gres_g_get_devices(list_t *gres_list, bool is_job,
 				  uint16_t accel_bind_type, char *tres_bind_str,
 				  int local_proc_id, stepd_step_rec_t *step);
+
+/*
+ * Get the list of sharing devices, each carrying its dmem cgroup state in
+ * the dmem member. Only gres/shard provides this list.
+ * RET list of gres_device_t owned by the plugin (do NOT free), or NULL
+ *	if no loaded plugin provides dmem state
+ */
+extern list_t *gres_g_get_dmem_devices(void);
+
+/*
+ * Accumulate the per-device (per gres bitmap index) allocated counts of a
+ * gres on this node. Only valid in the slurmstepd, where the job and step
+ * gres states hold a single-node view.
+ * IN gres_list - job or step gres list held by the slurmstepd
+ * IN is_job - true if gres_list is a job gres list
+ * IN plugin_id - gres plugin to accumulate
+ * OUT bit_cnt - number of entries in the returned array
+ * RET xcalloc'd array of counts indexed by gres bitmap index (caller must
+ *	xfree()), or NULL if the gres has no per-device counts allocated
+ */
+extern uint64_t *gres_get_per_bit_alloc(list_t *gres_list, bool is_job,
+					uint32_t plugin_id, int *bit_cnt);
 
 /* Pack GRES devices information into a buffer */
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices);
