@@ -494,7 +494,6 @@ test21.18  sacctmgr modify multiple users
 test21.19  sacctmgr add and delete coordinator
 test21.20  sacctmgr add and modify QoS
 test21.21  sacctmgr add an account to cluster; use with salloc, sbatch and srun
-test21.22  sacctmgr load file
 test21.23  sacctmgr wckey
 test21.24  sacctmgr dump file
 test21.25  sacctmgr show config
@@ -718,6 +717,10 @@ test_102_12  Test sacctmgr load, confirm that typed GRES can get parsed correctl
 test_102_13  Test sacctmgr show assoc withsubaccounts matches the account
              lineage and not a partition named like the account
 test_102_17  Test sacctmgr TresDecayHalfLife set, show, inherit and dump/load
+test_102_18  Test sacctmgr load and dump baseline functionality
+test_102_19  Test sacctmgr declarative load
+test_102_20  Test sacctmgr load clean=account and clean=qos (isolated)
+test_102_21  Test limits inherited from a parent account follow an account move
 
 test_103_#   Testing of salloc options.
 =======================================

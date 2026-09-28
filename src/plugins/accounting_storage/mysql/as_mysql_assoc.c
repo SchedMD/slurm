@@ -183,6 +183,13 @@ static char *massoc_req_inx[] = {
 	"lineage",
 	"flags",
 	"tres_decay_hl",
+	"max_jobs",
+	"max_jobs_accrue",
+	"min_prio_thresh",
+	"max_submit_jobs",
+	"max_wall_pj",
+	"priority",
+	"def_qos_id",
 };
 
 enum {
@@ -202,6 +209,13 @@ enum {
 	MASSOC_LINEAGE,
 	MASSOC_FLAGS,
 	MASSOC_TDHL,
+	MASSOC_MJ,
+	MASSOC_MJA,
+	MASSOC_MPT,
+	MASSOC_MSJ,
+	MASSOC_MWPJ,
+	MASSOC_PRIO,
+	MASSOC_DEF_QOS,
 	MASSOC_COUNT
 };
 
@@ -1130,6 +1144,41 @@ static bool _assoc_id_has_qos(mysql_conn_t *mysql_conn, char *cluster,
 }
 
 /*
+ * Whether the new parent's value for a limit should be sent to the controller.
+ *
+ * True when this request is clearing the limit, and also when the association
+ * is being moved and does not set that limit itself: what it inherits changes
+ * even though its own column does not, so the controller would otherwise go on
+ * enforcing the old parent's value.
+ *
+ * A request that sets the limit itself is not inheriting anything, so the
+ * value it asked for stands even when the same request moves the parent.
+ */
+static bool _inherits(uint32_t req_val, int moved_parent, char *own_val)
+{
+	if (req_val == INFINITE)
+		return true;
+
+	return moved_parent && (req_val == NO_VAL) && !own_val;
+}
+
+/*
+ * The value for a limit that the request itself asks for.
+ *
+ * Its own value, or the new parent's when the request is clearing the limit,
+ * since a clear asks for whatever the association goes on to inherit. NO_VAL
+ * when the request leaves the limit alone, including when the same request
+ * moves the association and what it inherits changes with it.
+ */
+static uint32_t _req_val(uint32_t req_val, uint32_t alt_val)
+{
+	if ((req_val == INFINITE) && (alt_val != NO_VAL))
+		return alt_val;
+
+	return req_val;
+}
+
+/*
  * If assoc_mgr_locked then the following READ_LOCKs need to be already owned:
  * ASSOC_LOCK, USER_LOCK, QOS_LOCK, TRES_LOCK
  */
@@ -1357,33 +1406,43 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			xfree(query);
 
 			if ((row2 = mysql_fetch_row(result2))) {
-				if (assoc->def_qos_id == INFINITE
-				    && row2[ASSOC2_REQ_DEF_QOS])
+				if (_inherits(assoc->def_qos_id, moved_parent,
+					      row[MASSOC_DEF_QOS]) &&
+				    row2[ASSOC2_REQ_DEF_QOS])
 					alt_assoc.def_qos_id = slurm_atoul(
 						row2[ASSOC2_REQ_DEF_QOS]);
 
-				if ((assoc->max_jobs == INFINITE)
-				    && row2[ASSOC2_REQ_MJ])
+				if (_inherits(assoc->max_jobs, moved_parent,
+					      row[MASSOC_MJ]) &&
+				    row2[ASSOC2_REQ_MJ])
 					alt_assoc.max_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MJ]);
-				if ((assoc->max_jobs_accrue == INFINITE)
-				    && row2[ASSOC2_REQ_MJA])
+				if (_inherits(assoc->max_jobs_accrue,
+					      moved_parent,
+					      row[MASSOC_MJA]) &&
+				    row2[ASSOC2_REQ_MJA])
 					alt_assoc.max_jobs_accrue = slurm_atoul(
 						row2[ASSOC2_REQ_MJA]);
-				if ((assoc->min_prio_thresh == INFINITE)
-				    && row2[ASSOC2_REQ_MPT])
+				if (_inherits(assoc->min_prio_thresh,
+					      moved_parent,
+					      row[MASSOC_MPT]) &&
+				    row2[ASSOC2_REQ_MPT])
 					alt_assoc.min_prio_thresh = slurm_atoul(
 						row2[ASSOC2_REQ_MPT]);
-				if ((assoc->max_submit_jobs == INFINITE)
-				    && row2[ASSOC2_REQ_MSJ])
+				if (_inherits(assoc->max_submit_jobs,
+					      moved_parent,
+					      row[MASSOC_MSJ]) &&
+				    row2[ASSOC2_REQ_MSJ])
 					alt_assoc.max_submit_jobs = slurm_atoul(
 						row2[ASSOC2_REQ_MSJ]);
-				if ((assoc->max_wall_pj == INFINITE)
-				    && row2[ASSOC2_REQ_MWPJ])
+				if (_inherits(assoc->max_wall_pj, moved_parent,
+					      row[MASSOC_MWPJ]) &&
+				    row2[ASSOC2_REQ_MWPJ])
 					alt_assoc.max_wall_pj = slurm_atoul(
 						row2[ASSOC2_REQ_MWPJ]);
-				if ((assoc->priority == INFINITE)
-				    && row2[ASSOC2_REQ_PRIO])
+				if (_inherits(assoc->priority, moved_parent,
+					      row[MASSOC_PRIO]) &&
+				    row2[ASSOC2_REQ_PRIO])
 					alt_assoc.priority = slurm_atoul(
 						row2[ASSOC2_REQ_PRIO]);
 
@@ -1550,30 +1609,25 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		if (result2)
 			mysql_free_result(result2);
 
-		if (alt_assoc.max_jobs != NO_VAL)
-			mod_assoc->max_jobs = alt_assoc.max_jobs;
-		else
-			mod_assoc->max_jobs = assoc->max_jobs;
-		if (alt_assoc.max_jobs_accrue != NO_VAL)
-			mod_assoc->max_jobs_accrue = alt_assoc.max_jobs_accrue;
-		else
-			mod_assoc->max_jobs_accrue = assoc->max_jobs_accrue;
-		if (alt_assoc.min_prio_thresh != NO_VAL)
-			mod_assoc->min_prio_thresh = alt_assoc.min_prio_thresh;
-		else
-			mod_assoc->min_prio_thresh = assoc->min_prio_thresh;
-		if (alt_assoc.max_submit_jobs != NO_VAL)
-			mod_assoc->max_submit_jobs = alt_assoc.max_submit_jobs;
-		else
-			mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
-		if (alt_assoc.max_wall_pj != NO_VAL)
-			mod_assoc->max_wall_pj = alt_assoc.max_wall_pj;
-		else
-			mod_assoc->max_wall_pj = assoc->max_wall_pj;
-		if (alt_assoc.priority != NO_VAL)
-			mod_assoc->priority = alt_assoc.priority;
-		else
-			mod_assoc->priority = assoc->priority;
+		/*
+		 * Only what the request asks for, so the coordinator check
+		 * below has nothing else to compare.
+		 */
+		mod_assoc->max_jobs = _req_val(assoc->max_jobs,
+					       alt_assoc.max_jobs);
+		mod_assoc->max_jobs_accrue =
+			_req_val(assoc->max_jobs_accrue,
+				 alt_assoc.max_jobs_accrue);
+		mod_assoc->min_prio_thresh =
+			_req_val(assoc->min_prio_thresh,
+				 alt_assoc.min_prio_thresh);
+		mod_assoc->max_submit_jobs =
+			_req_val(assoc->max_submit_jobs,
+				 alt_assoc.max_submit_jobs);
+		mod_assoc->max_wall_pj = _req_val(assoc->max_wall_pj,
+						  alt_assoc.max_wall_pj);
+		mod_assoc->priority = _req_val(assoc->priority,
+					       alt_assoc.priority);
 
 		if (is_coord &&
 		    assoc_mgr_check_assoc_lim_incr(mod_assoc, &str,
@@ -1586,6 +1640,25 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			rc = ESLURM_COORD_NO_INCREASE_JOB_LIMIT;
 			goto end_it;
 		}
+
+		/*
+		 * A move takes the new parent's limits without the request
+		 * asking for any of them (see _inherits()), so they go in
+		 * after the check: a coordinator of both parents may move an
+		 * account even when the new parent is the looser one.
+		 */
+		if (alt_assoc.max_jobs != NO_VAL)
+			mod_assoc->max_jobs = alt_assoc.max_jobs;
+		if (alt_assoc.max_jobs_accrue != NO_VAL)
+			mod_assoc->max_jobs_accrue = alt_assoc.max_jobs_accrue;
+		if (alt_assoc.min_prio_thresh != NO_VAL)
+			mod_assoc->min_prio_thresh = alt_assoc.min_prio_thresh;
+		if (alt_assoc.max_submit_jobs != NO_VAL)
+			mod_assoc->max_submit_jobs = alt_assoc.max_submit_jobs;
+		if (alt_assoc.max_wall_pj != NO_VAL)
+			mod_assoc->max_wall_pj = alt_assoc.max_wall_pj;
+		if (alt_assoc.priority != NO_VAL)
+			mod_assoc->priority = alt_assoc.priority;
 
 		if (assoc->qos_list && list_count(assoc->qos_list)) {
 			list_itr_t *new_qos_itr =

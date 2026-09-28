@@ -38,21 +38,16 @@ sacctmgr [<OPTION>] [<COMMAND>]
                               is display all.
      load <FILE> [<SPECS>]    read in the file to update the database
                               with the file contents. <SPECS> here consist
-                              of 'cluster=', and 'clean'.  The 'cluster='
-                              will override the cluster name given in the
-                              file.  The 'clean' option will remove what is
-                              already in the system for this cluster and
-                              replace it with the file. When 'clean' is used
-			      with no options only the cluster along with it's
-			      associations will be removed. No accounts, users,
-			      or QOS will be removed. THe 'clean' option also
-			      accepts a comma separated list of other options
-			      to remove. Those include 'account' and 'user'. If
-			      you would like to remove both accounts and users
-			      along with the cluster and associations give the
-			      input of `clean=account,user. If the 'clean'
-			      option is not given only new additions or
-                              modifications will be done, no deletions.
+                              of 'cluster=', 'clean', and 'declarative'.
+                              The 'cluster=' field will override the cluster
+                              name given in the file.  The 'clean' option will
+                              remove what is already in the system for this
+                              cluster and replace it with the file. Optional
+                              arguments control what entities are removed.
+                              The 'declarative' option updates each account,
+                              user, and QOS listed in the file to match the file
+                              exactly. The 'declarative' and 'clean' options
+                              are mutually exclusive.
      modify <ENTITY> <SPECS>  modify entity
      oneliner                 report output one record per line.
      parsable                 output will be | delimited with an ending '|'

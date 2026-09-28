@@ -3360,11 +3360,75 @@ This also accepts a comma\-separated list of other options to remove. Those
 include 'account', 'qos' and 'user'. If you would like to remove accounts, qos,
 and users along with the cluster and associations give the input of
 \fIclean=account,qos,user\fR.
+Mutually exclusive with \fBdeclarative\fR, which updates each entity listed in
+the file to match the file exactly.
 .IP
 
 .TP
 \fBCluster\fR=
 Specify a different name for the cluster than that which is in the file.
+.IP
+
+.TP
+\fBdeclarative\fR
+Update each entity listed in the file to match the file exactly, instead of only
+applying the options the file mentions.  Mutually exclusive with \fBclean\fR,
+which removes entities before loading the file's contents.  As with a normal
+load, a failure part way through leaves earlier changes already committed.
+
+Only accounts, users, and QOS named in the file are touched, and no entities
+are ever deleted.  Anything the file does not name, whether a QOS, account, user,
+cluster, or association, is left alone.  Entities that are listed but do not
+exist yet are created exactly as a normal load creates them.  Existing entities
+are modified in place, keeping their database ID and history.
+
+.IP
+The following entity attributes are reset to the respective built-in default
+if omitted:
+.RS
+.IP
+\[bu] For an account or user association: \fBDefaultQOS\fR, \fBFairshare\fR,
+\fBPriority\fR, \fBQOS\fR, \fBTresDecayHalfLife\fR, and the
+\fBGrp\fR/\fBMax\fR/\fBMin\fR limits
+.IP
+\[bu] For a QOS: \fBGraceTime\fR, \fBLimitFactor\fR, \fBPreempt\fR,
+\fBPreemptExemptTime\fR, \fBPreemptMode\fR, \fBPriority\fR,
+\fBTresDecayHalfLife\fR, \fBUsageFactor\fR, \fBUsageThreshold\fR, and the
+\fBGrp\fR/\fBMax\fR/\fBMin\fR limits
+.RE
+
+.IP
+The following entity attributes are left alone if omitted:
+.RS
+.IP
+\[bu] For an account: \fBDescription\fR and \fBOrganization\fR
+.IP
+\[bu] For an association: \fBComment\fR
+.IP
+\[bu] For a user: \fBAdminLevel\fR, \fBCoordinator\fR, \fBDefaultAccount\fR,
+\fBDefaultWCKey\fR, and \fBWCKey\fR
+.IP
+\[bu] For a QOS: \fBDescription\fR and \fBFlags\fR
+.RE
+
+.IP
+Note the following attribute-specific clarifications:
+.RS
+.IP
+\[bu] A \fBQOS\fR list written with a plain \fB=\fR and unsigned names replaces
+what is stored, while a \fBQOS\fR written with \fB+=\fR or \fB\-=\fR, or with a
+\fB+\fR or \fB\-\fR on the value, keeps its usual relative meaning.
+.IP
+\[bu] TRES limits follow the rules in the \fBTRES information\fR section above,
+including the per-TRES \fB+=\fR and \fB\-=\fR operators; any TRES IDs not listed
+are cleared.
+.IP
+\[bu] There is no special reset for \fBParent\fR; as with a normal load, an
+account listed with no preceding \fBParent \-\fR line is reparented to \fBroot\fR.
+.IP
+\[bu] Cluster lines keep their normal behavior: neither cluster metadata nor the
+root association is reset.
+.RE
 .IP
 
 .TP

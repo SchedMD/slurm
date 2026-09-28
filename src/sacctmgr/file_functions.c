@@ -80,6 +80,9 @@ typedef enum {
 #define SACCTMGR_CLEAN_USER SLURM_BIT(2)
 #define SACCTMGR_CLEAN_QOS SLURM_BIT(3)
 
+/* True when 'declarative' was given to sacctmgr load. */
+static bool declarative_load = false;
+
 static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 {
 	if (!file_opts)
@@ -629,10 +632,181 @@ static int _foreach_assoc_qos_merge_new(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * A declarative reset names each TRES id it is clearing with a count of
+ * INFINITE64, which is what makes the modify drop that id. Print those as -1,
+ * the way sacctmgr accepts them, rather than as the raw count.
+ */
+static void _print_change_info(char *change_info)
+{
+	char *info = xstrdup(change_info);
+	char *cleared = xstrdup_printf("=%"PRIu64, INFINITE64);
+
+	xstrsubstituteall(info, cleared, "=-1");
+	printf("%s", info);
+
+	xfree(cleared);
+	xfree(info);
+}
+
+/*
+ * A declarative load sends the complete desired TRES set. The modify path
+ * merges what it is sent over the stored string, keeping the first entry seen
+ * for each id, so ids being cleared have to be named explicitly.
+ *
+ * The removal sentinel is a count of INFINITE64 written as unsigned decimal.
+ * A literal "-1" would not do: the merge parses a leading '-' as an amend
+ * sign and subtracts 1 from the stored count instead of dropping the entry.
+ */
+static int _foreach_tres_removal(void *x, void *arg)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+	char **want = arg;
+	slurmdb_tres_rec_t *found;
+
+	if ((found = slurmdb_find_tres_in_string(*want, tres_rec->id))) {
+		slurmdb_destroy_tres_rec(found);
+		return 0;
+	}
+
+	xstrfmtcat(*want, "%s%u=%"PRIu64,
+		   *want ? "," : "", tres_rec->id, INFINITE64);
+
+	return 0;
+}
+
+static void _tres_add_removals(char **want, char *cur)
+{
+	list_t *cur_list = NULL;
+
+	if (!cur || !cur[0])
+		return;
+
+	slurmdb_tres_list_from_string(&cur_list, cur, TRES_STR_FLAG_NONE, NULL);
+	if (!cur_list)
+		return;
+
+	(void) list_for_each(cur_list, _foreach_tres_removal, want);
+	FREE_NULL_LIST(cur_list);
+}
+
+/* Blank entries are the "clear it" marker, not a QOS, so leave them out. */
+static int _foreach_copy_qos_entry(void *x, void *arg)
+{
+	char *qos_item = x;
+	list_t *dest = arg;
+
+	if (qos_item[0])
+		list_append(dest, xstrdup(qos_item));
+
+	return 0;
+}
+
+/* Sorted, comma joined entries so two QOS lists can be compared as sets. */
+static char *_qos_set_str(list_t *qos_list)
+{
+	list_t *entries;
+	char *str;
+
+	if (!qos_list || !list_count(qos_list))
+		return NULL;
+
+	entries = list_create(xfree_ptr);
+	(void) list_for_each_ro(qos_list, _foreach_copy_qos_entry, entries);
+	/* Sorts as well as joins. */
+	str = slurm_char_list_to_xstr(entries);
+	FREE_NULL_LIST(entries);
+
+	return str;
+}
+
+/*
+ * Declarative load sends the file's QOS entries as they were written. Bare ids
+ * make the modify write the qos column outright, "+id"/"-id" keep their usual
+ * relative meaning, and a lone empty entry clears the list.
+ */
+static bool _set_declarative_assoc_qos(slurmdb_assoc_rec_t *mod_assoc,
+				       list_t *want, list_t *cur)
+{
+	char *want_str = _qos_set_str(want);
+	char *cur_str = _qos_set_str(cur);
+	bool changed = xstrcmp(want_str, cur_str) ? true : false;
+
+	xfree(want_str);
+	xfree(cur_str);
+
+	if (!changed)
+		return false;
+
+	mod_assoc->qos_list = list_create(xfree_ptr);
+
+	if (want)
+		(void) list_for_each_ro(want, _foreach_copy_qos_entry,
+					mod_assoc->qos_list);
+
+	if (!list_count(mod_assoc->qos_list))
+		list_append(mod_assoc->qos_list, xstrdup(""));
+
+	return true;
+}
+
+/*
+ * Declarative load: every limit and QOS field sacctmgr dump writes for an
+ * association that the file left out goes back to its built-in default.
+ * Metadata is left alone even where dump does write it: association Comment,
+ * Parent and the user default-account flag are only ever set, never reset.
+ *
+ * Fairshare and DefaultQOS read back as 1 and 0 when unset but must be sent as
+ * INFINITE to clear, so they are only sent when something is actually stored.
+ */
+static void _set_declarative_assoc_defaults(sacctmgr_file_opts_t *file_opts,
+					    slurmdb_assoc_rec_t *assoc)
+{
+	slurmdb_assoc_rec_t *want = &file_opts->assoc_rec;
+
+	if ((want->shares_raw == NO_VAL) && (assoc->shares_raw != 1))
+		want->shares_raw = INFINITE;
+
+	if ((want->def_qos_id == NO_VAL) && assoc->def_qos_id &&
+	    (assoc->def_qos_id != INFINITE))
+		want->def_qos_id = INFINITE;
+
+	if (want->grp_jobs == NO_VAL)
+		want->grp_jobs = INFINITE;
+	if (want->grp_jobs_accrue == NO_VAL)
+		want->grp_jobs_accrue = INFINITE;
+	if (want->grp_submit_jobs == NO_VAL)
+		want->grp_submit_jobs = INFINITE;
+	if (want->grp_wall == NO_VAL)
+		want->grp_wall = INFINITE;
+	if (want->max_jobs == NO_VAL)
+		want->max_jobs = INFINITE;
+	if (want->max_jobs_accrue == NO_VAL)
+		want->max_jobs_accrue = INFINITE;
+	if (want->max_submit_jobs == NO_VAL)
+		want->max_submit_jobs = INFINITE;
+	if (want->max_wall_pj == NO_VAL)
+		want->max_wall_pj = INFINITE;
+	if (want->min_prio_thresh == NO_VAL)
+		want->min_prio_thresh = INFINITE;
+	if (want->priority == NO_VAL)
+		want->priority = INFINITE;
+
+	_tres_add_removals(&want->grp_tres, assoc->grp_tres);
+	_tres_add_removals(&want->grp_tres_mins, assoc->grp_tres_mins);
+	_tres_add_removals(&want->grp_tres_run_mins, assoc->grp_tres_run_mins);
+	_tres_add_removals(&want->max_tres_pj, assoc->max_tres_pj);
+	_tres_add_removals(&want->max_tres_pn, assoc->max_tres_pn);
+	_tres_add_removals(&want->max_tres_mins_pj, assoc->max_tres_mins_pj);
+	_tres_add_removals(&want->max_tres_run_mins, assoc->max_tres_run_mins);
+	_tres_add_removals(&want->tres_decay_hl, assoc->tres_decay_hl);
+}
+
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		      slurmdb_assoc_rec_t *assoc,
 		      sacctmgr_mod_type_t mod_type,
-		      char *parent)
+		      char *parent,
+		      bool declarative)
 {
 	int changed = 0;
 	slurmdb_assoc_rec_t mod_assoc;
@@ -658,6 +832,9 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		return 0;
 		break;
 	}
+	if (declarative)
+		_set_declarative_assoc_defaults(file_opts, assoc);
+
 	slurmdb_init_assoc_rec(&mod_assoc, 0);
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 
@@ -923,18 +1100,37 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 
 	if ((file_opts->assoc_rec.def_qos_id != NO_VAL) &&
 	    (assoc->def_qos_id != file_opts->assoc_rec.def_qos_id)) {
+		char *def_qos_str;
+
 		mod_assoc.def_qos_id = file_opts->assoc_rec.def_qos_id;
 		changed = 1;
 		if (!g_qos_list)
 			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+		def_qos_str = slurmdb_qos_str(g_qos_list,
+					      file_opts->assoc_rec.def_qos_id);
 		xstrfmtcat(my_info,
 			   "%-30.30s for %-7.7s %-10.10s %8s\n",
 			   " Set DefaultQOS",
 			   type, name,
-			   slurmdb_qos_str(g_qos_list, file_opts->assoc_rec.def_qos_id));
+			   def_qos_str ? def_qos_str : "");
 	}
 
-	if (assoc->qos_list && list_count(assoc->qos_list) &&
+	if (declarative) {
+		if (_set_declarative_assoc_qos(&mod_assoc,
+					       file_opts->assoc_rec.qos_list,
+					       assoc->qos_list)) {
+			char *new_qos = get_qos_complete_str(
+				g_qos_list, mod_assoc.qos_list);
+
+			xstrfmtcat(my_info,
+				   "%-30.30s for %-7.7s %-10.10s %8s\n",
+				   " Set QOS",
+				   type, name,
+				   new_qos);
+			xfree(new_qos);
+			changed = 1;
+		}
+	} else if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {
 		char *new_qos = NULL;
@@ -993,6 +1189,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 
 	if (changed) {
 		list_t *ret_list = NULL;
+		int mod_errno = 0;
 
 		assoc_cond.cluster_list = list_create(NULL);
 		list_push(assoc_cond.cluster_list, assoc->cluster);
@@ -1003,11 +1200,16 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		if (mod_type == MOD_USER) {
 			assoc_cond.user_list = list_create(NULL);
 			list_push(assoc_cond.user_list, assoc->user);
-			if (assoc->partition) {
-				assoc_cond.partition_list = list_create(NULL);
-				list_push(assoc_cond.partition_list,
-					  assoc->partition);
-			}
+			/*
+			 * Always scope to one partition. Leaving the list
+			 * empty matches every association for this user and
+			 * account, so a line with no Partition would modify
+			 * the partition specific ones too; '' is the stored
+			 * value for the association without a partition.
+			 */
+			assoc_cond.partition_list = list_create(NULL);
+			list_push(assoc_cond.partition_list,
+				  assoc->partition ? assoc->partition : "");
 		}
 
 		notice_thread_init();
@@ -1015,6 +1217,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			db_conn,
 			&assoc_cond,
 			&mod_assoc);
+		/* Grab errno before anything else can overwrite it. */
+		mod_errno = errno;
 		notice_thread_fini();
 
 		FREE_NULL_LIST(mod_assoc.qos_list);
@@ -1035,10 +1239,16 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 /* 		} */
 
 		if (ret_list) {
-			printf("%s", my_info);
+			_print_change_info(my_info);
 			FREE_NULL_LIST(ret_list);
-		} else
+		} else if (mod_errno == SLURM_NO_CHANGE_IN_DATA) {
 			changed = 0;
+		} else {
+			exit_code = 1;
+			fprintf(stderr, " Error modifying %s %s: %s\n",
+				type, name, slurm_strerror(mod_errno));
+			changed = SLURM_ERROR;
+		}
 		xfree(my_info);
 	}
 
@@ -1048,7 +1258,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 			slurmdb_cluster_rec_t *cluster, char *parent)
 {
-	int changed = 0;
+	int changed = 0, assoc_rc;
 	char *my_info = NULL;
 	slurmdb_cluster_rec_t mod_cluster;
 	slurmdb_cluster_cond_t cluster_cond;
@@ -1107,10 +1317,16 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 		exit(1);
 	}
 
-	changed += _mod_assoc(file_opts, cluster->root_assoc,
-			      MOD_CLUSTER, parent);
+	/*
+	 * Cluster metadata and root-association fields keep additive load
+	 * behavior, so never reset them here.
+	 */
+	assoc_rc = _mod_assoc(file_opts, cluster->root_assoc,
+			      MOD_CLUSTER, parent, false);
+	if (assoc_rc < 0)
+		return assoc_rc;
 
-	return changed;
+	return changed + assoc_rc;
 }
 
 static int _mod_acct(sacctmgr_file_opts_t *file_opts,
@@ -1207,8 +1423,100 @@ static void _destroy_local_mod_qos(void *x)
 	xfree(local_mod_qos);
 }
 
+/* INFINITE means "no limit" for these; show it as -1 rather than as a count. */
+static double _dbl_print(double val)
+{
+	if (fuzzy_equal(val, INFINITE))
+		return -1;
+
+	return val;
+}
+
+/*
+ * Declarative load: every field sacctmgr dump writes for a QOS that the file
+ * left out goes back to its built-in default. Description and Flags are left
+ * alone, the same way account Description and Organization are.
+ *
+ * GraceTime, Priority and UsageFactor read back as 0, 0 and 1 when unset but
+ * must be sent as INFINITE to clear, so they are only sent when something is
+ * actually stored.
+ */
+static void _set_declarative_qos_defaults(slurmdb_qos_rec_t *want,
+					  slurmdb_qos_rec_t *qos_rec)
+{
+	if ((want->grace_time == NO_VAL) && qos_rec->grace_time &&
+	    (qos_rec->grace_time != INFINITE))
+		want->grace_time = INFINITE;
+
+	if ((want->priority == NO_VAL) && qos_rec->priority &&
+	    (qos_rec->priority != INFINITE))
+		want->priority = INFINITE;
+
+	if (fuzzy_equal(want->usage_factor, NO_VAL) &&
+	    !fuzzy_equal(qos_rec->usage_factor, 1))
+		want->usage_factor = INFINITE;
+
+	if (want->preempt_mode == NO_VAL16)
+		want->preempt_mode = 0;
+
+	if (want->grp_jobs == NO_VAL)
+		want->grp_jobs = INFINITE;
+	if (want->grp_jobs_accrue == NO_VAL)
+		want->grp_jobs_accrue = INFINITE;
+	if (want->grp_submit_jobs == NO_VAL)
+		want->grp_submit_jobs = INFINITE;
+	if (want->grp_wall == NO_VAL)
+		want->grp_wall = INFINITE;
+	if (want->max_jobs_pa == NO_VAL)
+		want->max_jobs_pa = INFINITE;
+	if (want->max_jobs_pu == NO_VAL)
+		want->max_jobs_pu = INFINITE;
+	if (want->max_jobs_accrue_pa == NO_VAL)
+		want->max_jobs_accrue_pa = INFINITE;
+	if (want->max_jobs_accrue_pu == NO_VAL)
+		want->max_jobs_accrue_pu = INFINITE;
+	if (want->max_submit_jobs_pa == NO_VAL)
+		want->max_submit_jobs_pa = INFINITE;
+	if (want->max_submit_jobs_pu == NO_VAL)
+		want->max_submit_jobs_pu = INFINITE;
+	if (want->max_wall_pj == NO_VAL)
+		want->max_wall_pj = INFINITE;
+	if (want->min_prio_thresh == NO_VAL)
+		want->min_prio_thresh = INFINITE;
+	if (want->preempt_exempt_time == NO_VAL)
+		want->preempt_exempt_time = INFINITE;
+	if (fuzzy_equal(want->usage_thres, NO_VAL))
+		want->usage_thres = INFINITE;
+	if (fuzzy_equal(want->limit_factor, NO_VAL))
+		want->limit_factor = INFINITE;
+
+	_tres_add_removals(&want->grp_tres, qos_rec->grp_tres);
+	_tres_add_removals(&want->grp_tres_mins, qos_rec->grp_tres_mins);
+	_tres_add_removals(&want->grp_tres_run_mins,
+			   qos_rec->grp_tres_run_mins);
+	_tres_add_removals(&want->max_tres_mins_pj, qos_rec->max_tres_mins_pj);
+	_tres_add_removals(&want->max_tres_pa, qos_rec->max_tres_pa);
+	_tres_add_removals(&want->max_tres_pj, qos_rec->max_tres_pj);
+	_tres_add_removals(&want->max_tres_pn, qos_rec->max_tres_pn);
+	_tres_add_removals(&want->max_tres_pu, qos_rec->max_tres_pu);
+	_tres_add_removals(&want->max_tres_run_mins_pa,
+			   qos_rec->max_tres_run_mins_pa);
+	_tres_add_removals(&want->max_tres_run_mins_pu,
+			   qos_rec->max_tres_run_mins_pu);
+	_tres_add_removals(&want->min_tres_pj, qos_rec->min_tres_pj);
+	_tres_add_removals(&want->tres_decay_hl, qos_rec->tres_decay_hl);
+
+	/* Preempt is a char list on the modify; a lone empty entry clears it. */
+	if (!want->preempt_list && qos_rec->preempt_bitstr &&
+	    (bit_ffs(qos_rec->preempt_bitstr) != -1)) {
+		want->preempt_list = list_create(xfree_ptr);
+		list_append(want->preempt_list, xstrdup(""));
+	}
+}
+
 static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
-			    slurmdb_qos_rec_t *qos_rec)
+			    slurmdb_qos_rec_t *qos_rec,
+			    bool declarative)
 {
 	char *type = "QOS";
 	char *name = qos_rec->name;
@@ -1241,7 +1549,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grace_time != NO_VAL) &&
 	    (qos_rec->grace_time != qos_rec_in->grace_time)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GraceTime",
 			   type, name,
 			   qos_rec->grace_time,
@@ -1251,7 +1559,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_jobs_accrue != NO_VAL) &&
 	    (qos_rec->grp_jobs_accrue != qos_rec_in->grp_jobs_accrue)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpJobsAccrue",
 			   type, name,
 			   qos_rec->grp_jobs_accrue,
@@ -1261,7 +1569,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_jobs != NO_VAL) &&
 	    (qos_rec->grp_jobs != qos_rec_in->grp_jobs)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpJobs",
 			   type, name,
 			   qos_rec->grp_jobs,
@@ -1271,7 +1579,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_submit_jobs != NO_VAL) &&
 	    (qos_rec->grp_submit_jobs != qos_rec_in->grp_submit_jobs)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpSubmitJobs",
 			   type, name,
 			   qos_rec->grp_submit_jobs,
@@ -1314,7 +1622,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->grp_wall != NO_VAL) &&
 	    (qos_rec->grp_wall != qos_rec_in->grp_wall)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed GrpWallDuration",
 			   type, name,
 			   qos_rec->grp_wall,
@@ -1327,14 +1635,14 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
 			   " Changed LimitFactor",
 			   type, name,
-			   qos_rec->limit_factor,
-			   qos_rec_in->limit_factor);
+			   _dbl_print(qos_rec->limit_factor),
+			   _dbl_print(qos_rec_in->limit_factor));
 	}
 
 	if ((qos_rec_in->max_jobs_pa != NO_VAL) &&
 	    (qos_rec->max_jobs_pa != qos_rec_in->max_jobs_pa)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsPerAccount",
 			   type, name,
 			   qos_rec->max_jobs_pa,
@@ -1344,7 +1652,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_jobs_pu != NO_VAL) &&
 	    (qos_rec->max_jobs_pu != qos_rec_in->max_jobs_pu)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsPerUser",
 			   type, name,
 			   qos_rec->max_jobs_pu,
@@ -1354,7 +1662,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_jobs_accrue_pa != NO_VAL) &&
 	    (qos_rec->max_jobs_accrue_pa != qos_rec_in->max_jobs_accrue_pa)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsAccruePerAccount",
 			   type, name,
 			   qos_rec->max_jobs_accrue_pa,
@@ -1364,7 +1672,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_jobs_accrue_pu != NO_VAL) &&
 	    (qos_rec->max_jobs_accrue_pu != qos_rec_in->max_jobs_accrue_pu)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobsAccruePerUser",
 			   type, name,
 			   qos_rec->max_jobs_accrue_pu,
@@ -1374,7 +1682,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_submit_jobs_pa != NO_VAL) &&
 	    (qos_rec->max_submit_jobs_pa != qos_rec_in->max_submit_jobs_pa)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxSubmitJobsPerAccount",
 			   type, name,
 			   qos_rec->max_submit_jobs_pa,
@@ -1384,7 +1692,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_submit_jobs_pu != NO_VAL) &&
 	    (qos_rec->max_submit_jobs_pu != qos_rec_in->max_submit_jobs_pu)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxSubmitJobsPerUser",
 			   type, name,
 			   qos_rec->max_submit_jobs_pu,
@@ -1469,7 +1777,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->max_wall_pj != NO_VAL) &&
 	    (qos_rec->max_wall_pj != qos_rec_in->max_wall_pj)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob",
 			   type, name,
 			   qos_rec->max_wall_pj,
@@ -1479,7 +1787,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->min_prio_thresh != NO_VAL) &&
 	    (qos_rec->min_prio_thresh != qos_rec_in->min_prio_thresh)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MinPrioThresh",
 			   type, name,
 			   qos_rec->min_prio_thresh,
@@ -1495,6 +1803,35 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   type, name,
 			   qos_rec->min_tres_pj,
 			   qos_rec_in->min_tres_pj);
+	}
+
+	/*
+	 * A load file fills preempt_list, never preempt_bitstr, so the check
+	 * below never fires for it. Report off preempt_list for declarative
+	 * loads, where Preempt has to reset; additive load is left as is.
+	 */
+	if (declarative && qos_rec_in->preempt_list) {
+		char *preempt, *preempt_old;
+
+		if (!g_qos_list)
+			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+
+		preempt = get_qos_complete_str(g_qos_list,
+					       qos_rec_in->preempt_list);
+		preempt_old = get_qos_complete_str_bitstr(
+			g_qos_list, qos_rec->preempt_bitstr);
+
+		if (xstrcmp(preempt, preempt_old)) {
+			xstrfmtcat(my_info,
+				   "%-30.30s for %-7.7s %-10.10s "
+				   "%8s -> %s\n",
+				   " Changed Preempt",
+				   type, name,
+				   preempt_old,
+				   preempt);
+		}
+		xfree(preempt);
+		xfree(preempt_old);
 	}
 
 	if (qos_rec_in->preempt_bitstr) {
@@ -1541,7 +1878,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->preempt_exempt_time != NO_VAL) &&
 	    (qos_rec->preempt_exempt_time != qos_rec_in->preempt_exempt_time)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed PreemptExemptTime",
 			   type, name,
 			   qos_rec->preempt_exempt_time,
@@ -1551,7 +1888,7 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 	if ((qos_rec_in->priority != NO_VAL) &&
 	    (qos_rec->priority != qos_rec_in->priority)) {
 		xstrfmtcat(my_info,
-			   "%-30.30s for %-7.7s %-10.10s %8u -> %u\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed Priority",
 			   type, name,
 			   qos_rec->priority,
@@ -1575,8 +1912,8 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
 			   " Changed UsageFactor",
 			   type, name,
-			   qos_rec->usage_factor,
-			   qos_rec_in->usage_factor);
+			   _dbl_print(qos_rec->usage_factor),
+			   _dbl_print(qos_rec_in->usage_factor));
 	}
 
 	if (!fuzzy_equal(qos_rec_in->usage_thres, NO_VAL) &&
@@ -1585,8 +1922,8 @@ static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
 			   "%-30.30s for %-7.7s %-10.10s %8f -> %f\n",
 			   " Changed UsageThreshold",
 			   type, name,
-			   qos_rec->usage_thres,
-			   qos_rec_in->usage_thres);
+			   _dbl_print(qos_rec->usage_thres),
+			   _dbl_print(qos_rec_in->usage_thres));
 	}
 	return my_info;
 }
@@ -1619,7 +1956,7 @@ static int _mod_qos(void *x, void *arg)
 /* 	} */
 
 	if (ret_list) {
-		printf("%s", local_mod_qos->change_info);
+		_print_change_info(local_mod_qos->change_info);
 		FREE_NULL_LIST(ret_list);
 	}
 
@@ -2633,6 +2970,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	print_field_t *field = NULL;
 
 	int set = 0, command_len = 0;
+	int mod_rc = 0;
 
 	if (readonly_flag) {
 		exit_code = 1;
@@ -2642,6 +2980,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 
 	/* reset the connection to get the most recent stuff */
 	slurmdb_connection_commit(db_conn, 0);
+
+	declarative_load = false;
 
 	for (i = 0; i < argc; i++) {
 		int op_type;
@@ -2663,6 +3003,9 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				xfree(clean_types);
 			}
 			start_clean |= SACCTMGR_CLEAN_CLUSTER;
+		} else if (!end && !xstrncasecmp(argv[i], "Declarative",
+						 MAX(command_len, 4))) {
+			declarative_load = true;
 		} else if (!end || !xstrncasecmp(argv[i], "File",
 						 MAX(command_len, 1))) {
 			if (file_name) {
@@ -2688,6 +3031,25 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}
+	}
+
+	/*
+	 * A bad option leaves exit_code set. Stop here rather than loading the
+	 * file, since the options say what the load is meant to do.
+	 */
+	if (exit_code) {
+		xfree(cluster_name);
+		xfree(file_name);
+		return;
+	}
+
+	if (start_clean && declarative_load) {
+		exit_code = 1;
+		xfree(cluster_name);
+		xfree(file_name);
+		fprintf(stderr,
+			" 'clean' and 'declarative' can't be used together.\n");
+		return;
 	}
 
 	if (!file_name) {
@@ -2817,8 +3179,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				/* We haven't seen this one, add it. */
 				list_append(qos_list, qos_rec_in);
 			} else {
-				char *tmp_char = _check_mod_qos(qos_rec_in,
-								qos_rec);
+				char *tmp_char;
+
+				if (declarative_load)
+					_set_declarative_qos_defaults(
+						qos_rec_in, qos_rec);
+
+				tmp_char = _check_mod_qos(qos_rec_in, qos_rec,
+							  declarative_load);
 				if (tmp_char) {
 					local_mod_qos_t *local_mod_qos =
 						xmalloc(sizeof(*local_mod_qos));
@@ -3148,6 +3516,13 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			} else {
 				set = _mod_cluster(file_opts,
 						   cluster, parent);
+				if (set < 0) {
+					set = 0;
+					rc = SLURM_ERROR;
+					_destroy_sacctmgr_file_opts(file_opts);
+					file_opts = NULL;
+					break;
+				}
 			}
 
 			_destroy_sacctmgr_file_opts(file_opts);
@@ -3303,8 +3678,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					assoc2->acct = xstrdup(file_opts->name);
 					assoc2->parent_acct =
 						xstrdup(assoc->parent_acct);
-					if (_mod_assoc(file_opts,
-						       assoc, MOD_ACCT, parent))
+					mod_rc = _mod_assoc(
+						file_opts, assoc, MOD_ACCT,
+						parent, declarative_load);
+					if (mod_rc < 0) {
+						rc = SLURM_ERROR;
+						break;
+					}
+					if (mod_rc)
 						set = 1;
 				} else {
 					debug2("already modified this assoc");
@@ -3414,8 +3795,14 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					assoc2->user = xstrdup(file_opts->name);
 					assoc2->partition = xstrdup(
 						file_opts->assoc_rec.partition);
-					if (_mod_assoc(file_opts,
-						       assoc, MOD_USER, parent))
+					mod_rc = _mod_assoc(
+						file_opts, assoc, MOD_USER,
+						parent, declarative_load);
+					if (mod_rc < 0) {
+						rc = SLURM_ERROR;
+						break;
+					}
+					if (mod_rc)
 						set = 1;
 				} else {
 					debug2("already modified this assoc");
