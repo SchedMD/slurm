@@ -14,17 +14,22 @@
  *                              "node" -> ESPANK_NODE_FAILURE (default)
  *                              "job"  -> ESPANK_JOB_FAILURE
  *    If FUNC and CTXT are both unset the plugin is inert on this path.
- *    Every callback logs one of:
- *        [Job: <id>] Found (<target_func>,<target_ctx>)
- *        [Job: <id>] Looking for (<func>,<ctx>) but found (<func>,<ctx>). Continuing...
- *    The targeted callback returns -ESPANK_ERROR; others return ESPANK_SUCCESS.
+ *    The targeted callback returns -ESPANK_ERROR; others return
+ *    ESPANK_SUCCESS. Combine with SPANK_HOOK_CREATE_FILE to record which
+ *    callbacks ran and what they returned.
  *
  *  HOOK MARKER FILES
  *    SPANK_HOOK_CREATE_FILE -- boolean (any non-empty value enables). Each hook
- *                          that runs creates a file in SPANK_TMP_DIR named
- *                          {hookname}_log to signal it executed. SPANK_TMP_DIR
- *                          is baked in at compile time. Useful for verifying
- *                          hook isolation inside job containers (contain_spank).
+ *                          that runs appends one line to SPANK_TMP_DIR/
+ *                          {hookname}_{context}_log to signal it executed:
+ *                            job_id=<id> rc=<rc>
+ *                          where rc is what the hook returned. The context is
+ *                          part of the name because the same hook may run as
+ *                          different users (e.g. root in slurmstepd and the
+ *                          job user in srun), so they can't share a file.
+ *                          SPANK_TMP_DIR is baked in at compile time. Nothing
+ *                          is printed to the user's stderr, where it could
+ *                          interleave with output of other processes.
  *
  *  JOB INFO LOGGING
  *    SPANK_HOOK_LOG_JOB_INFO -- boolean (any non-empty value enables). Logs what
@@ -50,7 +55,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <pthread.h>
 #include <slurm/slurm.h>
 #include <slurm/spank.h>
 
@@ -62,17 +66,12 @@
 #error "SPANK_TMP_DIR must be defined at compile time (passed via -DSPANK_TMP_DIR=...)"
 #endif
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 SPANK_PLUGIN(PLUGIN_NAME, 1);
 
 #define MAX_PATH 4096
 #define MAX_LINE 1024
 
 int slurm_spank_init_failure_mode = ESPANK_NODE_FAILURE;
-
-static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char *current_context(void)
 {
@@ -119,24 +118,6 @@ static int _get_env(spank_t sp, const char *name, char *out, size_t outsz)
 }
 
 /*
- * Create SPANK_TMP_DIR/{hookname}_log as a marker that this hook executed.
- * The file content is irrelevant; existence is the signal.
- * SPANK_TMP_DIR is baked in at compile time by spank_plugin via spank_tmp.
- */
-static void _write_hook_marker(const char *func)
-{
-	char path[MAX_PATH + 64];
-	int fd;
-
-	snprintf(path, sizeof(path), SPANK_TMP_DIR "/%s_log", func);
-	if ((fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666)) < 0)
-		slurm_error("%s: unable to create %s: %m",
-			    TOSTRING(PLUGIN_NAME), path);
-	else
-		close(fd);
-}
-
-/*
  * Append one line with a single write(2) on an O_APPEND fd: lines are shorter
  * than PIPE_BUF, so concurrent tasks can't interleave them, while stdio buffers
  * would be lost when the task exec's right after slurm_spank_task_init().
@@ -165,6 +146,23 @@ static void _log_line(const char *path, const char *fmt, ...)
 		slurm_error("%s: unable to write to %s: %m", plugin_name, path);
 
 	close(fd);
+}
+
+/*
+ * Append to SPANK_TMP_DIR/{hookname}_{context}_log as a marker that this hook
+ * executed, recording the job and the rc the hook returns.
+ * SPANK_TMP_DIR is baked in at compile time by spank_plugin via spank_tmp.
+ */
+static void _write_hook_marker(spank_t sp, const char *func, int rc)
+{
+	char path[MAX_PATH + 64];
+	uint32_t jobid = 0;
+
+	spank_get_item(sp, S_JOB_ID, &jobid);
+
+	snprintf(path, sizeof(path), SPANK_TMP_DIR "/%s_%s_log", func,
+		 current_context());
+	_log_line(path, "job_id=%u rc=%d\n", jobid, rc);
 }
 
 static void _log_job_info(spank_t sp, const char *path, const char *caller)
@@ -244,9 +242,6 @@ static int _fail_if_targeted(spank_t sp, const char *func)
 	char target_func[256] = {0};
 	char target_ctxt[256] = {0};
 	char mode[32] = {0};
-	uint32_t jobid = 0;
-
-	spank_get_item(sp, S_JOB_ID, &jobid);
 
 	/* Both must be set to arm the failure injection path. */
 	if (_get_env(sp, "SPANK_FAIL_TEST_FUNC", target_func,
@@ -255,16 +250,8 @@ static int _fail_if_targeted(spank_t sp, const char *func)
 		     sizeof(target_ctxt)))
 		return ESPANK_SUCCESS;
 
-	if (strcmp(target_func, func) || strcmp(target_ctxt, current_context())) {
-		pthread_mutex_lock(&log_mutex);
-		slurm_spank_log(
-			"[Job: %u] Looking for (%s,%s) but found "
-			"(%s,%s). Continuing...",
-			jobid, target_func, target_ctxt, func,
-			current_context());
-		pthread_mutex_unlock(&log_mutex);
+	if (strcmp(target_func, func) || strcmp(target_ctxt, current_context()))
 		return ESPANK_SUCCESS;
-	}
 
 	/* This is the targeted callback. */
 	if (_get_env(sp, "SPANK_FAIL_TEST_MODE", mode, sizeof(mode)) == 0) {
@@ -274,21 +261,20 @@ static int _fail_if_targeted(spank_t sp, const char *func)
 			slurm_spank_init_failure_mode = ESPANK_NODE_FAILURE;
 	}
 
-	pthread_mutex_lock(&log_mutex);
-	slurm_spank_log("[Job: %u] Found (%s,%s)", jobid, target_func,
-			target_ctxt);
-	pthread_mutex_unlock(&log_mutex);
 	return -ESPANK_ERROR;
 }
 
 #define ENTRYPOINT(FUNC)                                                      \
 	extern int FUNC(spank_t sp, int ac, char **av)                        \
 	{                                                                     \
-		/* Create the log file if configured */                       \
+		/* Get the desired rc */                                      \
+		int _rc = _fail_if_targeted(sp, __func__);                    \
+		                                                              \
+		/* Create the log file with the desired rc if configured */   \
 		char _enabled[4] = {0};                                       \
 		if (_get_env(sp, "SPANK_HOOK_CREATE_FILE",                    \
 			     _enabled, sizeof(_enabled)) == 0)                \
-			_write_hook_marker(__func__);                         \
+			_write_hook_marker(sp, __func__, _rc);                \
 		                                                              \
 		/* Log job info in the log file if configured */              \
 		if (spank_context() == S_CTX_REMOTE) {                        \
@@ -302,7 +288,7 @@ static int _fail_if_targeted(spank_t sp, const char *func)
 		}                                                             \
 		                                                              \
 		/* Return failure if configured */                            \
-		return _fail_if_targeted(sp, __func__);                       \
+		return _rc;                                                   \
 	}
 
 ENTRYPOINT(slurm_spank_init)
