@@ -1548,7 +1548,7 @@ static void _usage(void)
 "            [--licenses=names] [--clusters=cluster_names]\n"
 "            [--qos=qos] [--time-min=minutes] [--contiguous]\n"
 "            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--max-pids=n|max]\n"
-"            [--container=path] [--container-id=id] [--runtime=name]\n"
+"            [--container-id=id] [--runtime=name]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid[+time]]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
