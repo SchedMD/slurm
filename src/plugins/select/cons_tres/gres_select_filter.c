@@ -40,6 +40,7 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "gres_links.h"
 #include "gres_select_filter.h"
 
 /* Used to indicate when sock_gres->bits_any_sock should be tested */
@@ -120,11 +121,14 @@ static int _foreach_remove_unusable(void *x, void *arg)
 	uint16_t cpus_per_gres;
 	uint64_t min_gres = 1, tmp_u64;
 	gres_job_state_t *gres_js = NULL;
+	gres_node_state_t *gres_ns = NULL;
 	int s;
 
 	xassert(sock_gres->gres_state_job);
 
 	gres_js = sock_gres->gres_state_job->gres_data;
+	if (sock_gres->gres_state_node)
+		gres_ns = sock_gres->gres_state_node->gres_data;
 	if (args->whole_node)
 		min_gres = sock_gres->total_cnt;
 	else if (gres_js->gres_per_node)
@@ -209,6 +213,16 @@ static int _foreach_remove_unusable(void *x, void *arg)
 		near_gres_cnt = sock_gres->total_cnt;
 	}
 
+	/*
+	 * Must run after the socket pruning above: dropping a socket can break
+	 * a linked set apart. A GRES with no topology has no links either, so
+	 * it is included and rejected rather than quietly handed out. Shared
+	 * GRES are slices of one device and have no links.
+	 */
+	if ((args->links_mode == GRES_LINKS_ENFORCE) && gres_ns &&
+	    !gres_id_shared(sock_gres->gres_state_job->config_flags))
+		gres_links_filter(sock_gres, gres_ns, min_gres, &near_gres_cnt);
+
 	if (!args->whole_node) {
 		/* If gres_per_node isn't set, try gres_per_job */
 		if (!_set_max_node_gres(sock_gres, gres_js->gres_per_node))
@@ -240,9 +254,12 @@ static int _foreach_remove_unusable(void *x, void *arg)
 	if ((sock_gres->total_cnt < min_gres) ||
 	    ((sock_gres->max_node_gres != 0) &&
 	     (sock_gres->max_node_gres < min_gres))) {
-		log_flag(SELECT_TYPE, "min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")",
+		log_flag(SELECT_TYPE, "min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")%s",
 			 min_gres, sock_gres->max_node_gres,
-			 sock_gres->total_cnt);
+			 sock_gres->total_cnt,
+			 (args->links_mode == GRES_LINKS_ENFORCE) ?
+			 " (counts limited to linked gres by enforce-links)" :
+			 "");
 		return -1;
 	}
 
@@ -654,6 +671,21 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
 			sock_bits = sock_gres->bits_by_sock[socket_index];
 		else
 			return 0;
+	}
+
+	/*
+	 * The loops above call in once per socket, so decide the requirement
+	 * from the node's whole allocation rather than one call's share.
+	 */
+	if ((links_mode == GRES_LINKS_ENFORCE) &&
+	    gres_links_required(sock_gres, node_inx, gres_needed)) {
+		bitstr_t *from = NULL;
+
+		if (sock_required)
+			from = sock_bits;
+
+		return gres_links_select(sock_gres, node_inx, gres_needed,
+					 from);
 	}
 
 	gres_still_needed = gres_needed;
@@ -1750,6 +1782,27 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 			_pick_gres_topo(sock_gres, gres_needed, args->node_inx,
 					socket_inx, sorted_gres, links_cnt,
 					links_mode, true);
+		if (gres_needed && (links_mode == GRES_LINKS_ENFORCE)) {
+			/*
+			 * The restricted cores the job has been charged tie it
+			 * to the devices of this socket, and no large enough
+			 * set of those is mutually linked. Both requirements
+			 * cannot be met here, and enforce-links is not the one
+			 * that gives way, so leave the node to another job
+			 * rather than hand this one a device whose restricted
+			 * cores it does not hold.
+			 */
+			log_flag(SELECT_TYPE, "%s: job %u needs %"PRIu64" more linked gres/%s on socket %d of node %s (node_inx %d), which is where its restricted cores are",
+				 __func__, args->job_ptr->job_id, gres_needed,
+				 sock_gres->gres_state_job->gres_name,
+				 socket_inx,
+				 node_record_table_ptr[args->node_inx]->name,
+				 args->node_inx);
+			xfree(links_cnt);
+			xfree(sorted_gres);
+			xfree(*res_gres_per_sock);
+			return ESLURM_INVALID_GRES;
+		}
 		if (gres_needed) {
 			(*res_gres_per_sock)[socket_inx] -= gres_needed;
 			error("%s: More restricted gpu cores allocated then should be possible for job %u on node %s (node_inx %d)",
@@ -1762,6 +1815,57 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 	xfree(sorted_gres);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Count the devices this job is to be given for this GRES on this node.
+ *
+ * enforce-links needs this before the first device is picked, to know the size
+ * of the linked set to look for and whether the job takes more than one device
+ * here at all. The selection loops below divide the node's request between the
+ * sockets holding the job's cores, so neither can be derived from what any one
+ * of their calls asks for. Mirrors the request-specific dispatch further down.
+ * IN sock_gres - job/node request specifications for this node
+ * IN args - per-node selection arguments
+ * IN node_inx - global node index
+ * IN rem_node_cnt - count of nodes remaining to place resources on
+ * IN used_sock_cnt - sockets the job is to be given devices on, as settled by
+ *                    _settle_used_socks()
+ * IN tasks_per_node_socket - per node task count for each socket, only built
+ *                            for a per-task request so NULL for the others
+ * RET device count, 0 when the request names no GRES counter
+ */
+static uint64_t _node_gres_cnt(sock_gres_t *sock_gres,
+			       select_and_set_args_t *args, int node_inx,
+			       int rem_node_cnt, uint32_t used_sock_cnt,
+			       uint32_t **tasks_per_node_socket)
+{
+	gres_job_state_t *gres_js = sock_gres->gres_state_job->gres_data;
+
+	if (gres_js->gres_per_node)
+		return gres_js->gres_per_node;
+	if (gres_js->gres_per_socket)
+		return used_sock_cnt * gres_js->gres_per_socket;
+	if (gres_js->gres_per_task) {
+		if (!tasks_per_node_socket || !tasks_per_node_socket[node_inx])
+			return 0;
+		return _get_task_cnt_node(tasks_per_node_socket[node_inx],
+					  sock_gres->sock_cnt) *
+		       gres_js->gres_per_task;
+	}
+	if (gres_js->gres_per_job) {
+		/*
+		 * The share of the per-job request this node is to carry,
+		 * worked out the way _set_job_bits1() will hand it out.
+		 */
+		int max_gres = _job_max_gres(sock_gres, args->tres_mc_ptr,
+					     args->node_ptr->tpc,
+					     args->used_core_cnt, rem_node_cnt);
+		/* Can fall below 1 when gres_per_job < the node count */
+		return MAX(max_gres, 0);
+	}
+
+	return 0;
 }
 
 static int _select_and_set_node(void *x, void *arg)
@@ -1873,6 +1977,23 @@ static int _select_and_set_node(void *x, void *arg)
 			gres_js->gres_cnt_node_select[node_inx] = _get_job_cnt(
 				sock_gres, gres_ns, rem_node_cnt);
 		}
+		/*
+		 * No per-device topology, so nothing here can be shown linked.
+		 * _foreach_remove_unusable() rejects the requests that name a
+		 * per-node count; catch the rest here.
+		 */
+		if ((links_mode == GRES_LINKS_ENFORCE) &&
+		    (gres_js->gres_cnt_node_select[node_inx] > 1)) {
+			log_flag(SELECT_TYPE, "%s: job %u needs %"PRIu64" gres/%s on node %s (node_inx %d), which has no device topology to enforce links against",
+				 __func__, job_id,
+				 gres_js->gres_cnt_node_select[node_inx],
+				 sock_gres->gres_state_job->gres_name,
+				 node_record_table_ptr[node_inx]->name,
+				 node_inx);
+			gres_js->gres_cnt_node_select[node_inx] = 0;
+			*rc = ESLURM_INVALID_GRES;
+			return -1;
+		}
 		gres_js->total_gres += gres_js->gres_cnt_node_select[node_inx];
 		return 0;
 	}
@@ -1902,6 +2023,16 @@ static int _select_and_set_node(void *x, void *arg)
 					   &used_sock_cnt);
 	if (settled_sock)
 		used_sock = settled_sock;
+
+	/*
+	 * Record what this node is to end up with before any device is picked,
+	 * so that the enforce-links passes below can size the linked set they
+	 * look for against the node rather than against their own share of it.
+	 */
+	if (links_mode == GRES_LINKS_ENFORCE)
+		sock_gres->links_node_gres =
+			_node_gres_cnt(sock_gres, args, node_inx, rem_node_cnt,
+				       used_sock_cnt, tasks_per_node_socket);
 
 	if (gres_js->res_gpu_cores && gres_js->res_gpu_cores[node_inx] &&
 	    !gres_id_shared(sock_gres->gres_state_job->config_flags) &&
