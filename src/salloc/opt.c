@@ -940,6 +940,7 @@ static void _help(void)
 "      --gpus-per-task=n       number of GPUs required per spawned task\n"
 "      --mem-per-gpu=n         real memory required per allocated GPU\n"
 		);
+	runtime_g_cli_print_help(stdout, 6, 30);
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
