@@ -218,22 +218,46 @@ def test_future_reservation_leaves_nodes_unreserved(nodes):
     # same unit.
     create_resv(res_name, nodes[:2], start="now+60", duration=5)
 
-    # Poll the reservation's own State field instead of sleeping a fixed
-    # amount of wall-clock time. That ties the negative check to slurmctld's
-    # own answer for whether the reservation is active yet, so a slow
-    # 'scontrol create' or a loaded controller cannot turn a *correct* late
-    # RESERVED flag into a false failure here.
+    # Poll the reservation's State instead of sleeping a fixed time, so a
+    # slow controller cannot turn a correct late RESERVED into a failure.
+
+    # Both ways out of the loop below skip the negative assertions: the break
+    # when the reservation starts mid-snapshot, and the condition reading false
+    # on the very first poll. Record that the negative window was sampled, so a
+    # run that never judged it fails instead of passing on the positive check
+    # at the end alone.
+    checked = False
     deadline = time.time() + 90
     while atf.get_reservation_parameter(res_name, "State") == "INACTIVE":
         assert time.time() < deadline, f"{res_name} never left the INACTIVE state"
+
+        # One snapshot, so the State re-check below brackets a single query.
+        nodes_now = atf.get_nodes(quiet=True)
+        states = {node: nodes_now[node]["state"] for node in nodes[:2]}
+        reservations = {node: nodes_now[node]["reservation"] for node in nodes[:2]}
+
+        # The reservation can start while the snapshot above is in flight, and
+        # the controller then sets these legitimately. State comes from the
+        # client's clock against a fixed start time, so a State that still
+        # reads INACTIVE here proves the snapshot predates the start time.
+        # Only judge the snapshot in that case.
+        if atf.get_reservation_parameter(res_name, "State") != "INACTIVE":
+            break
+
         for node in nodes[:2]:
-            assert "RESERVED" not in node_state(
-                node
+            assert (
+                "RESERVED" not in states[node]
             ), f"{node} must not get the RESERVED state before {res_name} starts"
-            assert not atf.get_node_parameter(
-                node, "reservation"
-            ), f"The reservation field on {node} must be empty before {res_name} starts"
+            assert not reservations[
+                node
+            ], f"The reservation field on {node} must be empty before {res_name} starts"
+        checked = True
         time.sleep(2)
+
+    assert checked, (
+        f"{res_name} was never observed INACTIVE, so the check that "
+        f"{nodes[:2]} stay unreserved before it starts never ran"
+    )
 
     # The reservation starts 60s after creation, past the default poll
     # timeout, so use a longer one.
