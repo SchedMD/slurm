@@ -1263,8 +1263,7 @@ static slurm_cli_opt_t slurm_opt_delay_boot = {
 
 static void arg_reset_environment(slurm_opt_t *opt)
 {
-	env_array_free(opt->environment);
-	opt->environment = NULL;
+	FREE_NULL_ENV(opt->environment, NULL);
 }
 static char *arg_get_environment(slurm_opt_t *opt)
 {
