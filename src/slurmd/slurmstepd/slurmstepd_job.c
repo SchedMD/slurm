@@ -656,10 +656,8 @@ extern void stepd_step_rec_destroy(void)
 {
 	int i;
 
-	env_array_free(step->env);
-	step->env = NULL;
-	env_array_free(step->argv);
-	step->argv = NULL;
+	FREE_NULL_ENV(step->env, NULL);
+	FREE_NULL_ENV(step->argv, &step->argc);
 
 	_task_info_array_destroy();
 	if (step->eio) {
