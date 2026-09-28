@@ -49,11 +49,29 @@ while [ ! -f {prologs.path("proceed")}.$SLURM_JOB_ID ] &&
     sleep 0.5
 done
 touch {prologs.path("finished")}.$SLURM_JOB_ID.$SLURMD_NODENAME
+
+# Let a case ask for a failing Prolog, either everywhere or on one node.
+if [ -f {prologs.path("fail")}.$SLURM_JOB_ID ] ||
+   [ -f {prologs.path("fail")}.$SLURM_JOB_ID.$SLURMD_NODENAME ]; then
+    exit 1
+fi
 """,
     )
 
     atf.set_config_parameter("Prolog", prolog_script)
     atf.require_slurm_running()
+
+
+@pytest.fixture
+def resume_nodes():
+    """Undrain any node a failing Prolog drained, so later cases still run."""
+
+    yield
+    atf.run_command(
+        "scontrol update nodename=ALL state=resume",
+        user=atf.properties["slurm-user"],
+        quiet=True,
+    )
 
 
 class Prologs:
@@ -84,6 +102,14 @@ class Prologs:
         assert atf.wait_for_file(
             self.path(f"finished.{job_id}.{node_name}")
         ), f"Prolog did not finish on {node_name} for job {job_id}"
+
+    def fail(self, job_id, node_name=None):
+        """Make the Prolog exit non-zero, either everywhere or on one node."""
+
+        marker = f"fail.{job_id}"
+        if node_name:
+            marker += f".{node_name}"
+        atf.run_command(f"touch {self.path(marker)}", fatal=True)
 
     def release(self, job_id, node_name=None):
         """Let the Prolog finish, either everywhere or on one node."""
@@ -328,3 +354,75 @@ def test_interactive_waits_for_every_node(prologs, job_ids, command):
 
     assert atf.wait_for_job_state(job_id, "RUNNING"), "Job never reached RUNNING"
     assert atf.wait_for_file(started_file), f"{command} never ran the command"
+
+
+@pytest.mark.parametrize(
+    "prolog_flags,fail_batch_host",
+    [
+        pytest.param("Alloc", True, id="alloc"),
+        pytest.param("Alloc,DeferBatch", True, id="alloc-deferbatch-batch-host"),
+        pytest.param("Alloc,DeferBatch", False, id="alloc-deferbatch-other-node"),
+    ],
+)
+def test_prolog_failure_while_configuring(
+    prologs, resume_nodes, job_ids, prolog_flags, fail_batch_host
+):
+    """Verify a job whose Prolog fails while CONFIGURING is not launched.
+
+    One of the two allocated nodes fails its Prolog, which requeues and holds
+    the job and drains that node. The other node finishes its Prolog only
+    after the drain, so by then the job is already requeued and its success is
+    ignored. This pins the requeue, hold and drain, not the case of a success
+    landing before the requeue, which test_132_6 covers.
+
+    Without DeferBatch only the batch host holds the job in CONFIGURING, so
+    the batch host is the one that fails. DeferBatch holds it for every node,
+    so either node failing is covered.
+    """
+
+    output_file = "job_output"
+
+    atf.set_config_parameter("PrologFlags", prolog_flags)
+
+    job_id = atf.submit_job_sbatch(
+        f"-N2 -t5 --wrap 'touch {output_file}; sleep 30'", fatal=True
+    )
+    job_ids.append(job_id)
+
+    prologs.wait_started(job_id, 2)
+    assert (
+        atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True)
+        == "CONFIGURING"
+    ), "Job was not CONFIGURING while the Prolog ran"
+
+    batch_host = atf.get_job_parameter(
+        job_id, "BatchHost", default=None, quiet=True, fatal=True
+    )
+    assert batch_host, f"Job {job_id} has no BatchHost"
+    node_a, node_b = get_job_nodes(job_id, 2)
+    other_node = node_b if node_a == batch_host else node_a
+
+    failed_node = batch_host if fail_batch_host else other_node
+    good_node = other_node if fail_batch_host else batch_host
+
+    prologs.fail(job_id, failed_node)
+    prologs.release(job_id, failed_node)
+
+    # slurmd sends the requeue before it re-registers the node as drained,
+    # so once the node reads DRAIN the job has already been requeued.
+    assert atf.wait_for_node_state(
+        failed_node, "DRAIN"
+    ), f"Node {failed_node} was not drained after its Prolog failed"
+
+    # Only now let the other node succeed. Its report arrives after the
+    # requeue, so this is deterministic but cannot reach the window where
+    # a success lands before the requeue; test_132_6 covers that.
+    prologs.release(job_id, good_node)
+
+    assert atf.wait_for_job_state(
+        job_id, "PENDING", desired_reason="launch_failed_requeued_held"
+    ), "Job was not requeued and held after its Prolog failed"
+
+    assert not os.path.isfile(
+        output_file
+    ), "Batch script ran even though the Prolog failed"
