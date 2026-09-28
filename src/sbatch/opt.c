@@ -1119,7 +1119,7 @@ static void _usage(void)
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--chdir=directory] [--oversubscribe] [-m dist] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--contiguous]\n"
-"              [--container=path] [--container-id=id] [--runtime=name]\n"
+"              [--container-id=id] [--runtime=name]\n"
 "              [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--max-pids=n|max]\n"
 "              [--account=name] [--dependency=type:jobid[+time]] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user] [--nice[=value]] [--wait]\n"
