@@ -1033,6 +1033,7 @@ test_132_#   Testing of Prolog.
 ===============================
 test_132_1   /parameters/slurm/Prolog/test_prolog.py
 test_132_2   Test holds placed on a running job during its node prolog
+test_132_3   Test job state while the Prolog runs with various PrologFlags
 
 test_134_#   Testing of SwitchType.
 ===================================
