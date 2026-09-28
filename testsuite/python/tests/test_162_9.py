@@ -26,7 +26,6 @@ def setup():
         (26, 5),
         reason="Issue 50928: swait was added in 26.05",
     )
-    atf.require_tool("swait")
     atf.require_nodes(1)
     # See the module docstring: the rejection only exists without stepmgr.
     atf.require_config_parameter_excludes("SlurmctldParameters", "enable_stepmgr")

@@ -22,7 +22,6 @@ def setup():
         component="sbin/slurmd",
         reason="REQUEST_STEPS_DRAINED_SUBSCRIBE relay lives in slurmd 26.05",
     )
-    atf.require_tool("swait")
     atf.require_version(
         (26, 5),
         component="bin/swait",

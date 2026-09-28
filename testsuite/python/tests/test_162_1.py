@@ -30,7 +30,6 @@ def setup():
         component="sbin/slurmd",
         reason="swait talks directly to the 26.05 stepmgr stepd",
     )
-    atf.require_tool("swait")
     atf.require_nodes(1)
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
     atf.require_config_parameter_includes("PrologFlags", "Contain")
