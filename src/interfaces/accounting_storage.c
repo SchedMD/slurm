@@ -1108,6 +1108,9 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
 extern int jobacct_storage_g_job_start(void *db_conn,
 				       job_record_t *job_ptr)
 {
+	int rc;
+	bool elig_infinite;
+
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
@@ -1115,6 +1118,15 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 
 	if (slurm_conf.accounting_storage_enforce & ACCOUNTING_ENFORCE_NO_JOBS)
 		return SLURM_SUCCESS;
+
+	/*
+	 * The accounting plugins store an INFINITE eligible time while the
+	 * reason is WAIT_ARRAY_TASK_LIMIT. Remember whether this job start
+	 * carried one so job_independent() can skip resending the same value.
+	 * Only trust it if the plugin accepted the message, otherwise the
+	 * record may still hold an older eligible time that needs correcting.
+	 */
+	elig_infinite = (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT);
 
 	/* A pending job's start_time is it's expected initiation time
 	 * (changed in slurm v2.1). Rather than changing a bunch of code
@@ -1125,15 +1137,17 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 	 * Pending + Completing is equivalent to Requeue.
 	 */
 	if (IS_JOB_PENDING(job_ptr) && !IS_JOB_COMPLETING(job_ptr)) {
-		int rc;
 		time_t orig_start_time = job_ptr->start_time;
 		job_ptr->start_time = (time_t) 0;
 		rc = (*(ops.job_start))(db_conn, job_ptr);
 		job_ptr->start_time = orig_start_time;
-		return rc;
+	} else {
+		rc = (*(ops.job_start))(db_conn, job_ptr);
 	}
 
-	return (*(ops.job_start))(db_conn, job_ptr);
+	job_ptr->db_elig_infinite = ((rc == SLURM_SUCCESS) && elig_infinite);
+
+	return rc;
 }
 
 /*
