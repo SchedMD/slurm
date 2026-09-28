@@ -490,6 +490,14 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
 	gres_state_t *gres_state_job; /* Pointer to job info, for limits */
 	gres_state_t *gres_state_node; /* Pointer to node info, for state */
+	uint64_t links_cap; /* Largest linked set enforce-links can hand over
+			     * on this node, capping total_cnt. Only set for
+			     * enforce-links, 0 otherwise */
+	uint64_t links_node_gres; /* Devices the job ends up with on this node,
+				   * sizing the linked set enforce-links looks
+				   * for. Only set for enforce-links, 0
+				   * otherwise */
+	bitstr_t *links_pick; /* enforce-links clique from feasibility */
 	uint64_t max_node_gres;	/* Maximum GRES permitted on this node */
 	int sock_cnt;		/* Socket count, size of bits_by_sock and
 				 * cnt_by_sock arrays */
