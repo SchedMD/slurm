@@ -220,7 +220,7 @@ to be attached to groups to store application defined properties.</p>
 
 <p>There are commodity programs, notably
 <a href="https://www.hdfgroup.org/download-hdfview/">
-HDFView</a>, for viewing and manipulating these files.
+HDFView</a>, for viewing and manipulating these files.</p>
 
 <p>Below is a screen shot from HDFView expanding the job tree and showing the
 attributes for a specific task.</p>
