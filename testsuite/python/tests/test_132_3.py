@@ -74,6 +74,28 @@ def resume_nodes():
     )
 
 
+def set_prolog_flags(prolog_flags):
+    """Set PrologFlags, skipping the cases the step manager can not run.
+
+    enable_stepmgr is only supported with PrologFlags=contain. slurmctld
+    refuses to reconfigure without it and keeps the previous flags instead,
+    so such a case would silently run against the wrong configuration.
+    RunInJob and X11 set Contain themselves, so they are allowed too.
+    """
+
+    flags = {flag.strip() for flag in (prolog_flags or "").casefold().split(",")}
+    if not flags & {"contain", "runinjob", "x11"}:
+        if atf.config_parameter_includes(
+            "SlurmctldParameters", "enable_stepmgr", live=False, quiet=True
+        ):
+            pytest.skip(
+                f"enable_stepmgr is only supported with PrologFlags=contain, "
+                f"which this case replaces with {prolog_flags}"
+            )
+
+    atf.set_config_parameter("PrologFlags", prolog_flags)
+
+
 class Prologs:
     """The sentinel files the Prolog script and the test cases pass through.
 
@@ -168,7 +190,7 @@ def test_state_while_prolog_runs(prologs, job_ids, prolog_flags, expect_configur
 
     output_file = "job_output"
 
-    atf.set_config_parameter("PrologFlags", prolog_flags)
+    set_prolog_flags(prolog_flags)
 
     job_id = atf.submit_job_sbatch(
         f"-N1 -t5 --wrap 'touch {output_file}; sleep 30'", fatal=True
@@ -214,7 +236,7 @@ def test_state_after_batch_host_prolog(
 
     output_file = "job_output"
 
-    atf.set_config_parameter("PrologFlags", prolog_flags)
+    set_prolog_flags(prolog_flags)
 
     job_id = atf.submit_job_sbatch(
         f"-N2 -t5 --wrap 'touch {output_file}; sleep 30'", fatal=True
@@ -271,7 +293,7 @@ def test_state_while_prolog_runs_interactive(
 
     started_file = "command_started"
 
-    atf.set_config_parameter("PrologFlags", prolog_flags)
+    set_prolog_flags(prolog_flags)
 
     # Submitted in the background so the job id is available while srun or
     # salloc is still waiting on the Prolog.
@@ -315,7 +337,7 @@ def test_interactive_waits_for_every_node(prologs, job_ids, command):
 
     started_file = "command_started"
 
-    atf.set_config_parameter("PrologFlags", "Alloc")
+    set_prolog_flags("Alloc")
 
     args = f"-N2 -t5 bash -c 'touch {started_file}; sleep 30'"
     if command == "srun":
@@ -382,7 +404,7 @@ def test_prolog_failure_while_configuring(
 
     output_file = "job_output"
 
-    atf.set_config_parameter("PrologFlags", prolog_flags)
+    set_prolog_flags(prolog_flags)
 
     job_id = atf.submit_job_sbatch(
         f"-N2 -t5 --wrap 'touch {output_file}; sleep 30'", fatal=True
