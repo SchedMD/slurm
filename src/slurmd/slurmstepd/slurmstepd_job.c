@@ -277,6 +277,8 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->state = SLURMSTEPD_STEP_STARTING;
 	slurm_cond_init(&step->state_cond, NULL);
 	slurm_mutex_init(&step->state_mutex);
+	slurm_cond_init(&step->io_cond, NULL);
+	slurm_mutex_init(&step->io_mutex);
 	step->node_tasks	= msg->tasks_to_launch[nodeid];
 	step->task_cnts  = xcalloc(msg->nnodes, sizeof(uint16_t));
 	memcpy(step->task_cnts, msg->tasks_to_launch,
@@ -507,6 +509,8 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->state = SLURMSTEPD_STEP_STARTING;
 	slurm_cond_init(&step->state_cond, NULL);
 	slurm_mutex_init(&step->state_mutex);
+	slurm_cond_init(&step->io_cond, NULL);
+	slurm_mutex_init(&step->io_mutex);
 	if (msg->cpus_per_node)
 		step->cpus    = msg->cpus_per_node[0];
 	step->node_tasks  = 1;
