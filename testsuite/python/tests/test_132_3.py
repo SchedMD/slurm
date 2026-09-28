@@ -48,6 +48,7 @@ while [ ! -f {prologs.path("proceed")}.$SLURM_JOB_ID ] &&
       [ ! -f {prologs.path("proceed")}.$SLURM_JOB_ID.$SLURMD_NODENAME ]; do
     sleep 0.5
 done
+touch {prologs.path("finished")}.$SLURM_JOB_ID.$SLURMD_NODENAME
 """,
     )
 
@@ -76,6 +77,13 @@ class Prologs:
                 break
         else:
             pytest.fail(f"Prolog did not start on {node_count} node(s) of job {job_id}")
+
+    def wait_finished(self, job_id, node_name):
+        """Wait until the Prolog has exited on node_name."""
+
+        assert atf.wait_for_file(
+            self.path(f"finished.{job_id}.{node_name}")
+        ), f"Prolog did not finish on {node_name} for job {job_id}"
 
     def release(self, job_id, node_name=None):
         """Let the Prolog finish, either everywhere or on one node."""
@@ -188,6 +196,11 @@ def test_state_after_batch_host_prolog(
     batch_host = atf.get_job_parameter(job_id, "BatchHost", default=None, quiet=True)
     assert batch_host, f"Job {job_id} has no BatchHost"
     prologs.release(job_id, batch_host)
+
+    # Wait for that Prolog to actually exit before judging the result, so
+    # that a release which never took effect fails here rather than
+    # reading as a successful deferral below.
+    prologs.wait_finished(job_id, batch_host)
 
     if expect_configuring:
         # A window to watch, not a wait for success.
