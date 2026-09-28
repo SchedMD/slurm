@@ -16939,6 +16939,12 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	job_ptr->total_cpus = 0;
 	job_ptr->pre_sus_time = 0;
 	job_ptr->preempt_time = 0;
+	/*
+	 * GraceTime has already ended (or never applied to this run). Do not
+	 * leave GRACE_PREEMPT set or a later normal completion can be forced
+	 * to requeue as if still in GraceTime.
+	 */
+	job_ptr->bit_flags &= (~GRACE_PREEMPT);
 	job_ptr->suspend_time = 0;
 	job_ptr->tot_sus_time = 0;
 	job_ptr->next_step_id = 0;
