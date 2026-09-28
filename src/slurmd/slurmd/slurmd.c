@@ -406,7 +406,7 @@ main (int argc, char **argv)
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	char *oom_value;
 	char time_stamp[256];
-	int pidfd;
+	int pidfd = -1;
 
 	if (getenv("SLURMD_RECONF"))
 		original = false;

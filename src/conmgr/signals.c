@@ -433,7 +433,7 @@ extern void signal_mgr_stop(void)
 
 	slurm_rwlock_unlock(&lock);
 
-	(void) close(fd);
+	fd_close(&fd);
 }
 
 extern void signal_mgr_fini(void)
