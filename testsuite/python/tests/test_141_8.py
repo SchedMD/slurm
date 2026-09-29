@@ -66,8 +66,8 @@ def setup():
     # logged_times() parses the bracketed ISO timestamp.
     atf.require_config_parameter("LogTimeFormat", "iso8601_ms")
     # A PrologSlurmctld still running when the last node registers defers the
-    # launch to prolog_running_decr(), which logs a different message than the
-    # one verify_launched_on_registration() matches.
+    # launch to prolog_running_decr(), so it would not come from the node
+    # registration that verify_launched_on_registration() times.
     atf.require_config_parameter("PrologSlurmctld", None)
     atf.require_nodes(2)
     # Rebooted nodes must come back into service on their own.
@@ -163,7 +163,7 @@ def verify_launched_on_registration(job_id, nodes, since=None):
     """Verify the registration drove the launch, not the periodic poll.
 
     job_time_limit() and launch_ready_jobs_on_node() both reach
-    _test_job_config_complete(), so its log message alone does not say which
+    job_scheduler_cf_test_fini(), so its log message alone does not say which
     one fired -- but the timing does. Comparing two controller-side timestamps
     also avoids the race in sampling node state and job state separately, where
     a poll landing between the two reads would look like a prompt launch.
