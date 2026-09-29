@@ -152,10 +152,12 @@ are not specified.
 \fB\-D\fR, \fB\-\-duplicates\fR
 Allow multiple job records for the same job ID or SLUID to be shown. By default,
 if multiple job records for the same job ID or SLUID match the request, only the
-most recent one will be shown. Duplicate records can result from requeues,
-federation, resizes or from jobs reaching the \fBMaxJobId\fR value and
-resetting. Such records can be distinguished by the \fBSubmit\fR time stamp,
-by the \fBOriginalSLUID\fR or by the \fBSLUID\fR fields.
+most recent one will be shown. Records left in the \fBRESIZING\fR
+state by a resize operation are also shown by default. Duplicate records can
+result from requeues, federation, resizes or from jobs reaching the
+\fBMaxJobId\fR value and resetting. Such records can be distinguished by the
+\fBSubmit\fR time stamp, by the \fBOriginalSLUID\fR or by the \fBSLUID\fR
+fields.
 .IP
 
 .TP
@@ -319,6 +321,7 @@ Displays information about the specified \fIjob\fR[.\fIstep\fR] or list of
 
 The \fIjob\fR[.\fIstep\fR]
 parameter is a comma\-separated list of jobs.
+A SLUID may also be used in place of a numeric job ID.
 Space characters are not permitted in this list.
 .br
 \fBNOTE\fR: A step id of 'batch' will display the information about the
