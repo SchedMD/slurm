@@ -94,7 +94,7 @@ static int _rebuild_port_array(const char *resv_ports,
 	if (!hl)
 		return SLURM_ERROR;
 
-	*resv_port_array = xcalloc(*resv_port_cnt, *resv_port_cnt);
+	*resv_port_array = xcalloc(*resv_port_cnt, sizeof(**resv_port_array));
 	*resv_port_cnt = 0;
 	while ((tmp_char = hostlist_shift(hl))) {
 		i = atoi(tmp_char);
