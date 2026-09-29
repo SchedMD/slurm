@@ -187,6 +187,22 @@ def assert_hooks_run(spank_tmp, function, context, job_id):
             ), f"{hook} should not be called in {ctx} context, but it was"
 
 
+def assert_node_drained(drains):
+    """Assert whether the test node was drained or not.
+
+    Call it once the job is done, so a drain can't happen after the check.
+    """
+    node_state = atf.get_node_parameter(test_node, "state")
+    if drains:
+        assert (
+            "DRAIN" in node_state
+        ), f"Test node should be drained, but is in state {node_state}"
+    else:
+        assert (
+            "DRAIN" not in node_state
+        ), f"Test node should not be drained, but is in state {node_state}"
+
+
 def assert_job_end_state(job_id, allowed_states):
     """Wait for the job to finish, then assert its final JobState.
 
@@ -258,13 +274,8 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
     else:
         assert int(job_id) == 0, "JobID should NOT be assigned"
 
-    if drains:
-        node_state = atf.get_node_parameter(test_node, "state")
-        assert [
-            "DRAIN"
-        ] == node_state, f"Test node should be drained, but is in state {node_state}"
-
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_node_drained(drains)
 
 
 @pytest.mark.parametrize(
@@ -317,6 +328,7 @@ def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assign
             assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
 
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_node_drained(drains)
 
 
 @pytest.mark.parametrize(
@@ -401,13 +413,8 @@ def test_sbatch(
             "IT_RAN" not in content
         ), f"Output file {OUTPUT_FILE} should not contain 'IT_RAN', but got: {content}"
 
-    if drains:
-        node_state = atf.get_node_parameter(test_node, "state")
-        assert (
-            "DRAIN" in node_state
-        ), f"Test node should be drained, but is in state {node_state}"
-
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_node_drained(drains)
 
 
 def test_sbatch_init_remote(spank_tmp):
