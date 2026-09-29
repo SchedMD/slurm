@@ -319,6 +319,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
             failures.append(reason)
         else:
             xfailures.append(reason)
+        return
     component = "sbin/slurmctld"
     if (
         component in bin_path
@@ -328,26 +329,6 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
         and "plugin_inited != PLUGIN_NOT_INITED" in bt
     ):
         if get_version(component, slurm_prefix=slurm_prefix) >= (25, 11, 7):
-            failures.append(reason)
-        else:
-            xfailures.append(reason)
-        return
-        return
-
-    reason = (
-        "Ticket 24822: Known issue shutting down slurmd/slurmctld/srun with OpenSSL"
-    )
-    components = ["sbin/slurmd", "sbin/slurmctld", "bin/srun"]
-    component_match = next((c for c in components if c in bin_path), None)
-    if (
-        component_match
-        and (
-            "Program terminated with signal SIGABRT" in bt
-            or "Program terminated with signal SIGSEGV" in bt
-        )
-        and "OPENSSL_cleanup" in bt
-    ):
-        if get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -497,19 +478,6 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
             xfailures.append(reason)
         return
 
-    reason = "Ticket 25193: Known issue with slurmd: SIGABRT: double free or corruption (fasttop)"
-    component = "sbin/slurmd"
-    if (
-        component in bin_path
-        and "Program terminated with signal SIGABRT" in bt
-        and "malloc/malloc.c" in bt
-        and "in malloc_printerr" in bt
-        and "double free or corruption (fasttop)" in bt
-    ):
-        # TODO: Add version when t25193 is fixed
-        failures.append(reason)
-        return
-
     reason = "Issue 50192: slurmrestd - SIGABRT in _foreach_add_path() on repeated -d data_parser. Fixed in 26.05.5+"
     component = "sbin/slurmrestd"
     if (
@@ -565,6 +533,28 @@ def classify_coredump(bin_path, bt_file, failures, xfailures, slurm_prefix=""):
         and "in slurm_job_step_create" in bt
     ):
         if get_version(component, slurm_prefix=slurm_prefix) >= (26, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
+    reason = "Issue 50979: OpenSSL atexit teardown race at shutdown (concurrent with OPENSSL_cleanup). Fixed in 26.11+."
+    signals = ["SIGABRT", "SIGSEGV"]
+    components = ["sbin/slurmd", "sbin/slurmctld", "bin/srun"]
+    component_match = next((c for c in components if bin_path.endswith(c)), None)
+    exit_handler_frames = (
+        "exit",
+        "__GI_exit",
+        "__run_exit_handlers",
+        "__funcs_on_exit",
+    )
+    if (
+        component_match
+        and any(f"Program terminated with signal {s}" in bt for s in signals)
+        and "OPENSSL_cleanup" in bt
+        and any(f"in {frame} (" in bt for frame in exit_handler_frames)
+    ):
+        if get_version(component_match, slurm_prefix=slurm_prefix) >= (26, 11):
             failures.append(reason)
         else:
             xfailures.append(reason)
