@@ -2584,7 +2584,6 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_federations(slurmdbd_conn->db_conn,
-							slurmdbd_conn->auth_uid,
 							get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);

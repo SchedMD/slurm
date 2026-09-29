@@ -71,10 +71,7 @@ extern list_t *slurmdb_federations_modify(void *db_conn,
 extern list_t *slurmdb_federations_remove(void *db_conn,
 					  slurmdb_federation_cond_t *fed_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_federations(db_conn, db_api_uid, fed_cond);
+	return acct_storage_g_remove_federations(db_conn, fed_cond);
 }
 
 /*

@@ -1300,9 +1300,9 @@ extern list_t *acct_storage_p_remove_assocs(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_remove_federations(
-	void *db_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_p_remove_federations(void *db_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond)
 {
 	persist_msg_t req = {0};
 	dbd_cond_msg_t get_msg;

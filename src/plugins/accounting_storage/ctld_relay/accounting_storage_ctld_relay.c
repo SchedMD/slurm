@@ -387,9 +387,9 @@ extern list_t *acct_storage_p_remove_assocs(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_remove_federations(
-	void *db_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_p_remove_federations(void *db_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond)
 {
 	return NULL;
 }

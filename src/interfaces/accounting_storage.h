@@ -344,8 +344,9 @@ extern list_t *acct_storage_g_remove_assocs(void *db_conn,
  * IN:  slurmdb_federation_cond_t *fed_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_federations(
-	void *db_conn, uint32_t uid, slurmdb_federation_cond_t *fed_cond);
+extern list_t *acct_storage_g_remove_federations(void *db_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond);
 
 /*
  * remove qos from accounting system

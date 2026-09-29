@@ -3505,11 +3505,12 @@ extern list_t *acct_storage_p_remove_assocs(mysql_conn_t *mysql_conn,
 				      assoc_cond);
 }
 
-extern list_t *acct_storage_p_remove_federations(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_p_remove_federations(mysql_conn_t *mysql_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond)
 {
-	return as_mysql_remove_federations(mysql_conn, uid, fed_cond);
+	return as_mysql_remove_federations(mysql_conn, mysql_conn->auth_uid,
+					   fed_cond);
 }
 
 extern list_t *acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
