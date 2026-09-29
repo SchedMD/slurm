@@ -99,8 +99,6 @@ const char *mime_types[] = { "application/json", "application/jsonrequest",
  */
 #define FMT_STR_BYTES ((MAX_DEPTH * 2) + 8)
 
-#define DUMP_BUF_GROW_BYTES BUF_SIZE
-
 /* Match serializer/json so both plugins serving application/json agree */
 #define SERIALIZER_XJSON_DEFAULT_FLAGS SER_FLAGS_PRETTY
 
@@ -2930,7 +2928,7 @@ extern int serialize_p_data_to_string(char **dest, size_t *length, data_t *src,
 		_dump(state);
 
 		if (((rc = state->rc) == ENOSPC) &&
-		    (rc = try_grow_buf(state->dst, DUMP_BUF_GROW_BYTES)))
+		    (rc = try_grow_buf(state->dst, INFINITE)))
 			break;
 	} while (state && (state->rc == ENOSPC));
 
