@@ -177,9 +177,10 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	parse_time.lo parse_value.lo part_record.lo persist_conn.lo \
 	plugin.lo plugrack.lo port_mgr.lo power_action.lo \
 	print_fields.lo probes.lo proc_args.lo read_config.lo \
-	reverse_tree.lo run_command.lo run_in_daemon.lo sack_api.lo \
-	sercli.lo serdes.lo setproctitle.lo sluid.lo slurm_errno.lo \
-	slurm_opt.lo slurm_protocol_api.lo slurm_protocol_defs.lo \
+	resctrl_conf.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo sack_api.lo sercli.lo serdes.lo \
+	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
+	slurm_protocol_api.lo slurm_protocol_defs.lo \
 	slurm_protocol_pack.lo slurm_protocol_socket.lo \
 	slurm_protocol_util.lo slurm_resolv.lo slurm_resource_info.lo \
 	slurm_rlimits_info.lo slurm_step_layout.lo slurm_time.lo \
@@ -250,12 +251,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/port_mgr.Plo ./$(DEPDIR)/power_action.Plo \
 	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/probes.Plo \
 	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
-	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/sack_api.Plo \
-	./$(DEPDIR)/sercli.Plo ./$(DEPDIR)/serdes.Plo \
-	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/sluid.Plo \
-	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
-	./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/resctrl_conf.Plo ./$(DEPDIR)/reverse_tree.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/sercli.Plo \
+	./$(DEPDIR)/serdes.Plo ./$(DEPDIR)/setproctitle.Plo \
+	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
+	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -718,6 +719,8 @@ libcommon_la_SOURCES = \
 	read_config.c				\
 	read_config.h				\
 	ref.h					\
+	resctrl_conf.c				\
+	resctrl_conf.h				\
 	reverse_tree.c				\
 	reverse_tree.h				\
 	run_command.c				\
@@ -956,6 +959,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probes.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resctrl_conf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
@@ -1199,6 +1203,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/probes.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
+	-rm -f ./$(DEPDIR)/resctrl_conf.Plo
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
@@ -1362,6 +1367,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/probes.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
+	-rm -f ./$(DEPDIR)/resctrl_conf.Plo
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
