@@ -113,8 +113,8 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*remove_users)(void *db_conn, slurmdb_user_cond_t *user_cond);
 	list_t *(*remove_coord)(void *db_conn, list_t *acct_list,
 				slurmdb_user_cond_t *user_cond);
-	list_t *(*remove_accts)    (void *db_conn, uint32_t uid,
-				    slurmdb_account_cond_t *acct_cond);
+	list_t *(*remove_accts)(void *db_conn,
+				slurmdb_account_cond_t *acct_cond);
 	list_t *(*remove_clusters) (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond);
 	list_t *(*remove_assocs)   (void *db_conn, uint32_t uid,
@@ -698,7 +698,7 @@ extern list_t *acct_storage_g_remove_coord(void *db_conn, list_t *acct_list,
 	return (*(ops.remove_coord))(db_conn, acct_list, user_cond);
 }
 
-extern list_t *acct_storage_g_remove_accts(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_remove_accts(void *db_conn,
 					   slurmdb_account_cond_t *acct_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -706,7 +706,7 @@ extern list_t *acct_storage_g_remove_accts(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.remove_accts))(db_conn, uid, acct_cond);
+	return (*(ops.remove_accts))(db_conn, acct_cond);
 }
 
 extern list_t *acct_storage_g_remove_clusters(

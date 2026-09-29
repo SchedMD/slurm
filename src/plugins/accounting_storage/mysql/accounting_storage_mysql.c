@@ -3484,10 +3484,10 @@ extern list_t *acct_storage_p_remove_coord(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_remove_accts(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
 					   slurmdb_account_cond_t *acct_cond)
 {
-	return as_mysql_remove_accts(mysql_conn, uid, acct_cond);
+	return as_mysql_remove_accts(mysql_conn, mysql_conn->auth_uid,
+				     acct_cond);
 }
 
 extern list_t *acct_storage_p_remove_clusters(

@@ -105,8 +105,5 @@ extern list_t *slurmdb_accounts_modify(void *db_conn,
 extern list_t *slurmdb_accounts_remove(void *db_conn,
 				       slurmdb_account_cond_t *acct_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_accts(db_conn, db_api_uid, acct_cond);
+	return acct_storage_g_remove_accts(db_conn, acct_cond);
 }

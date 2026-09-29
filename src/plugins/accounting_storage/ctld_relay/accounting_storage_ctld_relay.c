@@ -368,7 +368,7 @@ extern list_t *acct_storage_p_remove_coord(void *db_conn, list_t *acct_list,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_p_remove_accts(void *db_conn,
 					   slurmdb_account_cond_t *acct_cond)
 {
 	return NULL;
