@@ -1267,6 +1267,16 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			   " and ((time_start < %ld) "
 			   "and (time_end >= %ld or time_end = 0))",
 			   job_cond->usage_end, job_cond->usage_start);
+	} else if (job_cond->usage_end) {
+		/*
+		 * A caller that can't bound how far back it has to look can
+		 * still say how recent a snapshot could possibly be of use. One
+		 * that opened later than that describes the cluster after
+		 * anything being asked about, so leaving it out costs nothing
+		 * and keeps the whole node list history from being read.
+		 */
+		xstrfmtcat(query, " and (time_start < %ld)",
+			   job_cond->usage_end);
 	}
 
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);

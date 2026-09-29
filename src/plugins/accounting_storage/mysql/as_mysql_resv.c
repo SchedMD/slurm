@@ -671,7 +671,18 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 		slurmdb_job_cond_t job_cond;
 		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
 		job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
-		job_cond.usage_start = resv_cond->time_start;
+		/*
+		 * No usage start: the node_inx of each row is resolved against
+		 * the reservation's own time_start, and the period asked about
+		 * does not bound that. It selects reservations that overlap it,
+		 * so one that is still running started before it.
+		 *
+		 * The end of that period does bound it, in the one direction
+		 * that matters: a reservation selected by the period cannot
+		 * start after the period ends, so neither can the snapshot its
+		 * node_inx belongs to. Without that the whole node list history
+		 * of the cluster is read to answer one query.
+		 */
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
 		if (!resv_cond->cluster_list)
