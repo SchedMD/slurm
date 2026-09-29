@@ -2017,6 +2017,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.assocs = resv_ptr->assoc_list;
 	resv.tres_str = resv_ptr->tres_str;
 	resv.flags = resv_ptr->flags;
+	resv.name = resv_ptr->name;
 	resv.nodes = resv_ptr->node_list;
 	resv.comment = resv_ptr->comment;
 
