@@ -80,8 +80,7 @@ typedef struct slurm_acct_storage_ops {
 	int (*add_federations)(void *db_conn, list_t *federation_list);
 	int (*add_tres)(void *db_conn, list_t *tres_list_in);
 	int (*add_assocs)(void *db_conn, list_t *assoc_list);
-	int  (*add_qos)            (void *db_conn, uint32_t uid,
-				    list_t *qos_list);
+	int (*add_qos)(void *db_conn, list_t *qos_list);
 	int  (*add_res)            (void *db_conn, uint32_t uid,
 				    list_t *res_list);
 	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
@@ -523,15 +522,14 @@ extern int acct_storage_g_add_assocs(void *db_conn, list_t *assoc_list)
 	return (*(ops.add_assocs))(db_conn, assoc_list);
 }
 
-extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
-				  list_t *qos_list)
+extern int acct_storage_g_add_qos(void *db_conn, list_t *qos_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.add_qos))(db_conn, uid, qos_list);
+	return (*(ops.add_qos))(db_conn, qos_list);
 }
 
 extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,

@@ -264,8 +264,7 @@ extern int acct_storage_p_add_assocs(void *db_conn, list_t *assoc_list)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
-				  list_t *qos_list)
+extern int acct_storage_p_add_qos(void *db_conn, list_t *qos_list)
 {
 	return SLURM_SUCCESS;
 }

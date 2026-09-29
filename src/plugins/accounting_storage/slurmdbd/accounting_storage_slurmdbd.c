@@ -506,8 +506,7 @@ extern int acct_storage_p_add_assocs(void *db_conn, list_t *assoc_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
-				  list_t *qos_list)
+extern int acct_storage_p_add_qos(void *db_conn, list_t *qos_list)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;
