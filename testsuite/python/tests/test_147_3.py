@@ -88,6 +88,12 @@ def setup(spank_plugin):
     # TODO: Add support/parametric test cases for proctrack/pgid
     atf.require_config_parameter("ProctrackType", "proctrack/cgroup")
 
+    # Needed to requeue batch jobs on slurm_spank_init failures
+    # TODO: Remove DeferBatch requirement once issue #50628 is fixed
+    atf.require_config_parameter_excludes("PrologFlags", "DeferBatch")
+    atf.require_config_parameter_excludes("PrologFlags", "ForceRequeueOnFail")
+    atf.require_config_parameter("JobRequeue", "1")
+
     # Start Slurm
     logging.info("Starting Slurm daemons")
     atf.require_nodes(1)
@@ -402,3 +408,58 @@ def test_sbatch(
         ), f"Test node should be drained, but is in state {node_state}"
 
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+
+
+def test_sbatch_init_remote(spank_tmp):
+    """Validate sbatch behavior when slurm_spank_init fails in remote context.
+
+    With the default ESPANK_NODE_FAILURE mode the node is drained and the job
+    requeued instead of failed. So, unlike test_sbatch, this can't use
+    --no-requeue, that would fail the job, nor -W, that would wait forever for
+    the requeued job. The exit code is not checked: the job never terminates.
+
+    TODO: Check the exit code of the spank.8 Errors table once issue #51216
+          clarifies what it means for sbatch.
+    """
+    function = "slurm_spank_init"
+    context = "remote"
+
+    job_id = atf.submit_job_sbatch(
+        f"-w {test_node} -t1 -o {OUTPUT_FILE} -e {ERROR_FILE} --wrap=\"srun echo 'IT_RAN'\"",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+        fatal=True,
+    )
+
+    # Verify the SPANK plugin failed the targeted callback of the job
+    marker_job_id, plugin_rc = get_hook_marker(spank_tmp, function, context)
+    assert (
+        marker_job_id == job_id
+    ), f"SPANK plugin should fail {function} of job {job_id}, but it was job {marker_job_id}"
+    assert (
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
+
+    assert atf.repeat_until(
+        lambda: atf.get_node_parameter(test_node, "state"),
+        lambda state: "DRAIN" in state,
+    ), f"Test node should be drained, but is in state {atf.get_node_parameter(test_node, 'state')}"
+
+    # The job should be requeued, not failed
+    assert atf.wait_for_job_state(
+        job_id, "PENDING"
+    ), f"Job {job_id} should be requeued as PENDING, but is {atf.get_job_parameter(job_id, 'JobState')}"
+    assert atf.repeat_until(
+        lambda: int(atf.get_job_parameter(job_id, "Restarts", default=0)),
+        lambda restarts: restarts >= 1,
+    ), f"Job {job_id} should be requeued, but Restarts={atf.get_job_parameter(job_id, 'Restarts')}"
+
+    # The targeted callback failed before the wrapped command could run
+    content = atf.run_command_output(f'cat "{OUTPUT_FILE}" 2>/dev/null || true')
+    assert (
+        "IT_RAN" not in content
+    ), f"Output file {OUTPUT_FILE} should not contain 'IT_RAN', but got: {content}"
+
+    # The requeued job would never run on the drained node, cancel it before
+    # checking the hooks run, and before resuming the node on cleanup
+    atf.cancel_jobs([job_id], fatal=True)
+    assert_hooks_run(spank_tmp, function, context, job_id)
