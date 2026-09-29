@@ -548,8 +548,7 @@ extern int acct_storage_p_add_res(void *db_conn, list_t *res_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
-				     list_t *wckey_list)
+extern int acct_storage_p_add_wckeys(void *db_conn, list_t *wckey_list)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;

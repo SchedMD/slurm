@@ -3375,10 +3375,11 @@ extern int acct_storage_p_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 	return as_mysql_add_res(mysql_conn, mysql_conn->auth_uid, res_list);
 }
 
-extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn,
 				     list_t *wckey_list)
 {
-	return as_mysql_add_wckeys(mysql_conn, uid, wckey_list);
+	return as_mysql_add_wckeys(mysql_conn, mysql_conn->auth_uid,
+				   wckey_list);
 }
 
 extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,

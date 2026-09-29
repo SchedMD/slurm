@@ -82,8 +82,7 @@ typedef struct slurm_acct_storage_ops {
 	int (*add_assocs)(void *db_conn, list_t *assoc_list);
 	int (*add_qos)(void *db_conn, list_t *qos_list);
 	int (*add_res)(void *db_conn, list_t *res_list);
-	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
-				    list_t *wckey_list);
+	int (*add_wckeys)(void *db_conn, list_t *wckey_list);
 	int  (*add_reservation)    (void *db_conn,
 				    slurmdb_reservation_rec_t *resv);
 	list_t *(*modify_users)    (void *db_conn, uint32_t uid,
@@ -540,15 +539,15 @@ extern int acct_storage_g_add_res(void *db_conn, list_t *res_list)
 
 	return (*(ops.add_res))(db_conn, res_list);
 }
-extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
-				     list_t *wckey_list)
+
+extern int acct_storage_g_add_wckeys(void *db_conn, list_t *wckey_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.add_wckeys))(db_conn, uid, wckey_list);
+	return (*(ops.add_wckeys))(db_conn, wckey_list);
 }
 
 extern int acct_storage_g_add_reservation(void *db_conn,

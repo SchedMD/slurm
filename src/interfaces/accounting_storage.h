@@ -188,8 +188,7 @@ extern int acct_storage_g_add_res(void *db_conn, list_t *res_list);
  * IN:  wckey_list List of slurmdb_wckey_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
-				     list_t *wckey_list);
+extern int acct_storage_g_add_wckeys(void *db_conn, list_t *wckey_list);
 
 /*
  * add reservation's in accounting system

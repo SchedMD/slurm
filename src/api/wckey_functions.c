@@ -50,10 +50,7 @@
  */
 extern int slurmdb_wckeys_add(void *db_conn, list_t *wckey_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_wckeys(db_conn, db_api_uid, wckey_list);
+	return acct_storage_g_add_wckeys(db_conn, wckey_list);
 }
 
 /*

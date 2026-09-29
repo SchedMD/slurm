@@ -683,7 +683,6 @@ static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_wckeys(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid,
 				       get_msg->my_list);
 
 	*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,
