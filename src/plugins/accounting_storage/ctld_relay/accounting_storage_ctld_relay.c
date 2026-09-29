@@ -336,7 +336,7 @@ extern list_t *acct_storage_p_modify_qos(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_modify_res(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_p_modify_res(void *db_conn,
 					 slurmdb_res_cond_t *res_cond,
 					 slurmdb_res_rec_t *res)
 {

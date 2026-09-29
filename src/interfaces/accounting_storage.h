@@ -276,7 +276,7 @@ extern list_t *acct_storage_g_modify_qos(void *db_conn,
  * IN:  slurmdb_res_rec_t *res
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_res(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_res(void *db_conn,
 					 slurmdb_res_cond_t *res_cond,
 					 slurmdb_res_rec_t *res);
 

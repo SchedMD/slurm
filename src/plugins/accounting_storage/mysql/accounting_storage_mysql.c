@@ -3447,11 +3447,11 @@ extern list_t *acct_storage_p_modify_qos(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_modify_res(mysql_conn_t *mysql_conn,
-					 uint32_t uid,
 					 slurmdb_res_cond_t *res_cond,
 					 slurmdb_res_rec_t *res)
 {
-	return as_mysql_modify_res(mysql_conn, uid, res_cond, res);
+	return as_mysql_modify_res(mysql_conn, mysql_conn->auth_uid, res_cond,
+				   res);
 }
 
 extern list_t *acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,

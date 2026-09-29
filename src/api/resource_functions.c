@@ -77,10 +77,7 @@ extern list_t *slurmdb_res_modify(void *db_conn,
 				  slurmdb_res_cond_t *res_cond,
 				  slurmdb_res_rec_t *res)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_res(db_conn, db_api_uid, res_cond, res);
+	return acct_storage_g_modify_res(db_conn, res_cond, res);
 }
 
 /*
