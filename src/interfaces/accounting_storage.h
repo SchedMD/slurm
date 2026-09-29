@@ -118,10 +118,8 @@ extern char *acct_storage_g_add_users_cond(void *db_conn,
  * IN:  slurmdb_user_cond_t *user_cond
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
-				    list_t *acct_list,
+extern int acct_storage_g_add_coord(void *db_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond);
-
 
 /*
  * add accounts to accounting system

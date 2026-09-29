@@ -463,7 +463,6 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_coord(slurmdbd_conn->db_conn,
-				      slurmdbd_conn->auth_uid,
 				      get_msg->acct_list, get_msg->cond);
 
 	if (rc == ESLURM_ACCESS_DENIED)

@@ -345,8 +345,7 @@ extern char *acct_storage_p_add_users_cond(void *db_conn,
 	return ret_str;
 }
 
-extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
-				    list_t *acct_list,
+extern int acct_storage_p_add_coord(void *db_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
 	persist_msg_t req = {0};

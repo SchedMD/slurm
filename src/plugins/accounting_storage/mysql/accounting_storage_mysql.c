@@ -3317,11 +3317,11 @@ extern char *acct_storage_p_add_users_cond(mysql_conn_t *mysql_conn,
 				       add_assoc, user);
 }
 
-extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
-				    list_t *acct_list,
+extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_add_coord(mysql_conn, uid, acct_list, user_cond);
+	return as_mysql_add_coord(mysql_conn, mysql_conn->auth_uid, acct_list,
+				  user_cond);
 }
 
 extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
