@@ -50,10 +50,7 @@
  */
 extern int slurmdb_clusters_add(void *db_conn, list_t *cluster_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_clusters(db_conn, db_api_uid, cluster_list);
+	return acct_storage_g_add_clusters(db_conn, cluster_list);
 }
 
 /*

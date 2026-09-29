@@ -243,8 +243,7 @@ extern char *acct_storage_p_add_accts_cond(void *db_conn,
 	return NULL;
 }
 
-extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
-				       list_t *cluster_list)
+extern int acct_storage_p_add_clusters(void *db_conn, list_t *cluster_list)
 {
 	return SLURM_SUCCESS;
 }

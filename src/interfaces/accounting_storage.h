@@ -145,8 +145,7 @@ extern char *acct_storage_g_add_accts_cond(void *db_conn,
  * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
-				       list_t *cluster_list);
+extern int acct_storage_g_add_clusters(void *db_conn, list_t *cluster_list);
 
 /*
  * add federations to accounting system

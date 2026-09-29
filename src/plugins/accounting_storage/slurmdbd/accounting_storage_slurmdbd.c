@@ -415,8 +415,7 @@ extern char *acct_storage_p_add_accts_cond(void *db_conn,
 	return ret_str;
 }
 
-extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
-				       list_t *cluster_list)
+extern int acct_storage_p_add_clusters(void *db_conn, list_t *cluster_list)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;

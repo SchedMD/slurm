@@ -3337,10 +3337,11 @@ extern char *acct_storage_p_add_accts_cond(mysql_conn_t *mysql_conn,
 				       add_assoc, acct);
 }
 
-extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn,
 				       list_t *cluster_list)
 {
-	return as_mysql_add_clusters(mysql_conn, uid, cluster_list);
+	return as_mysql_add_clusters(mysql_conn, mysql_conn->auth_uid,
+				     cluster_list);
 }
 
 extern int acct_storage_p_add_federations(mysql_conn_t *mysql_conn,

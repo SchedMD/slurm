@@ -564,7 +564,6 @@ static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn,
-					 slurmdbd_conn->auth_uid,
 					 get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2410,7 +2409,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 		cluster.id = register_ctld_msg->cluster_id;
 
 		rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn,
-						 slurmdbd_conn->auth_uid,
 						 add_list);
 		if (rc == ESLURM_ACCESS_DENIED)
 			comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
