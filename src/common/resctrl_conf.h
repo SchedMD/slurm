@@ -40,6 +40,11 @@
 
 #define RESCTRL_CONF_FILE "resctrl.yaml"
 
+/* The groups resctrl.yaml must define; steps are placed into one of them */
+#define RESCTRL_GROUP_CPU_ONLY "cpu_only"
+#define RESCTRL_GROUP_GPU_ONE_PER_SOCKET "gpu_one_per_socket"
+#define RESCTRL_GROUP_GPU_TWO_PER_SOCKET "gpu_two_per_socket"
+
 /* One CTRL_MON group described in resctrl.yaml */
 typedef struct {
 	char *name; /* directory name under the resctrl mount point */
@@ -63,5 +68,23 @@ extern void resctrl_conf_group_free(resctrl_conf_group_t *group);
  * IN conf - configuration to free, may be NULL
  */
 extern void resctrl_conf_free(resctrl_conf_t *conf);
+
+/*
+ * Read and validate resctrl.yaml from the Slurm configuration directory.
+ * Every RESCTRL_GROUP_* must be defined exactly once, with a schemata, and
+ * no other group is accepted.
+ * OUT conf_out - the configuration, to free with resctrl_conf_free()
+ * RET SLURM_SUCCESS, ENOENT when the file does not exist, or an error
+ */
+extern int resctrl_conf_load(resctrl_conf_t **conf_out);
+
+/*
+ * Look up a group definition by name.
+ * IN conf - configuration returned by resctrl_conf_load()
+ * IN name - group name
+ * RET the group or NULL (do not free)
+ */
+extern resctrl_conf_group_t *resctrl_conf_find_group(resctrl_conf_t *conf,
+						     const char *name);
 
 #endif
