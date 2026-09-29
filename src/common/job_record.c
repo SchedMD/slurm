@@ -73,6 +73,7 @@ extern job_record_t *job_record_create(void)
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
+	job_ptr->booked_usage_factor = 1.0;
 
 	return job_ptr;
 }

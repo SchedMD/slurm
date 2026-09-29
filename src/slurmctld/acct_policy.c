@@ -972,10 +972,17 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 		 *
 		 * qos_ptr is set correctly if we have a qos_list here, no need
 		 * to do anything other than that.
+		 *
+		 * Remember the factor. The QOS can be modified while the job
+		 * runs, and this usage has to be given back with the same
+		 * factor it is being taken with here.
 		 */
+		job_ptr->booked_usage_factor = 1.0;
 		if (job_ptr->qos_ptr &&
 		    (job_ptr->qos_ptr->usage_factor >= 0))
-			time_limit_secs *= job_ptr->qos_ptr->usage_factor;
+			job_ptr->booked_usage_factor =
+				job_ptr->qos_ptr->usage_factor;
+		time_limit_secs *= job_ptr->booked_usage_factor;
 		for (i = 0; i < slurmctld_tres_cnt; i++) {
 			if (i == TRES_ARRAY_ENERGY)
 				continue;
@@ -3059,11 +3066,13 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 	time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
 	new_time_limit_secs = (uint64_t)new_time_limit * 60;
 
-	/* take into account usage factor */
-	if (job_ptr->qos_ptr && (job_ptr->qos_ptr->usage_factor >= 0)) {
-		time_limit_secs *= job_ptr->qos_ptr->usage_factor;
-		new_time_limit_secs *= job_ptr->qos_ptr->usage_factor;
-	}
+	/*
+	 * Take into account the usage factor the usage was booked at, not the
+	 * current one, since the QOS may have been modified since the job
+	 * started.
+	 */
+	time_limit_secs *= job_ptr->booked_usage_factor;
+	new_time_limit_secs *= job_ptr->booked_usage_factor;
 
 	/* clang needs these memset to avoid a warning */
 	memset(used_tres_run_secs, 0, sizeof(used_tres_run_secs));
