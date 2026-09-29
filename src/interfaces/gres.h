@@ -101,6 +101,7 @@ typedef struct {
 typedef struct {
 	int index; /* GRES bitmap index */
 	int alloc;
+	bitstr_t *cpus_bitmap; /* CPUs local to the device, from gres.conf */
 	gres_device_id_t dev_desc;
 	int dev_num; /* Number at the end of the device filename */
 	gres_dmem_dev_t *dmem; /* device memory state, set by gres/shard */
