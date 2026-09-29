@@ -69,7 +69,9 @@ and subsequent calls.
 .LP
 In local context, only the \fBinit\fR, \fBexit\fR, \fBinit_post_opt\fR, and
 \fBlocal_user_init\fR functions are called. In allocator context, only the
-\fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called.
+\fBinit\fR, \fBexit\fR, and \fBinit_post_opt\fR functions are called, except
+in \fBscrontab\fR, which loads plugins in allocator context but calls only
+\fBinit\fR and \fBexit\fR.
 Similarly, in slurmd context, only the \fBinit\fR and \fBslurmd_exit\fR
 callbacks are active, and in the job_script context, only the \fBjob_prolog\fR
 and \fBjob_epilog\fR callbacks are used.
