@@ -540,6 +540,20 @@ Job ID.</li>
 <li><b>SLURM_JOB_LICENSES</b>
 Name and count of any license(s) requested.</li>
 
+<li><b>SLURM_JOB_MEM_ON_NODE</b>
+Memory allocated to the job on the current node, in MiB.
+This is the effective allocation recorded by the select plugin, derived from
+the user's submission request (<code>--mem</code> or <code>--mem-per-*</code>)
+or the cluster's configuration (<b>DefMemPer*</b>). A per-CPU value is
+multiplied by the CPUs allocated on the node. If neither is present, the
+default of all available memory on the node will apply (with
+<b>select/cons_tres</b>, the node's real memory minus <b>MemSpecLimit</b>).
+Set when memory is a consumable resource (see
+<a href="slurm.conf.html#OPT_SelectTypeParameters">SelectTypeParameters</a>)
+and when the per-node allocation can be determined.
+Otherwise it will not be set.
+Available in Prolog only.</li>
+
 <li><b>SLURM_JOB_NAME</b>
 Name of the job.
 Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
