@@ -16291,7 +16291,6 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 	if (reg_msg->up_time <= now) {
 		node_ptr->up_time = reg_msg->up_time;
 		node_ptr->boot_time = now - reg_msg->up_time;
-		node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 	} else {
 		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
 		      (uint32_t) now);
