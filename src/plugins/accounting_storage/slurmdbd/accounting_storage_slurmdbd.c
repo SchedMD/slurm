@@ -389,7 +389,7 @@ extern int acct_storage_p_add_accts(void *db_conn, list_t *acct_list)
 	return rc;
 }
 
-extern char *acct_storage_p_add_accts_cond(void *db_conn, uint32_t uid,
+extern char *acct_storage_p_add_accts_cond(void *db_conn,
 					   slurmdb_add_assoc_cond_t *add_assoc,
 					   slurmdb_account_rec_t *acct)
 {

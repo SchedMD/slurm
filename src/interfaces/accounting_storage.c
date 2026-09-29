@@ -73,9 +73,9 @@ typedef struct slurm_acct_storage_ops {
 	int (*add_coord)(void *db_conn, list_t *acct_list,
 			 slurmdb_user_cond_t *user_cond);
 	int (*add_accts)(void *db_conn, list_t *acct_list);
-	char *(*add_accts_cond)    (void *db_conn, uint32_t uid,
-				    slurmdb_add_assoc_cond_t *add_assoc,
-				    slurmdb_account_rec_t *acct);
+	char *(*add_accts_cond)(void *db_conn,
+				slurmdb_add_assoc_cond_t *add_assoc,
+				slurmdb_account_rec_t *acct);
 	int  (*add_clusters)       (void *db_conn, uint32_t uid,
 				    list_t *cluster_list);
 	int  (*add_federations)    (void *db_conn, uint32_t uid,
@@ -474,7 +474,7 @@ extern int acct_storage_g_add_accts(void *db_conn, list_t *acct_list)
 	return (*(ops.add_accts))(db_conn, acct_list);
 }
 
-extern char *acct_storage_g_add_accts_cond(void *db_conn, uint32_t uid,
+extern char *acct_storage_g_add_accts_cond(void *db_conn,
 					   slurmdb_add_assoc_cond_t *add_assoc,
 					   slurmdb_account_rec_t *acct)
 {
@@ -483,7 +483,7 @@ extern char *acct_storage_g_add_accts_cond(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.add_accts_cond))(db_conn, uid, add_assoc, acct);
+	return (*(ops.add_accts_cond))(db_conn, add_assoc, acct);
 }
 
 extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,

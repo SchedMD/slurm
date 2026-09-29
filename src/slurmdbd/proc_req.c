@@ -411,7 +411,6 @@ static int _add_accounts_cond(slurmdbd_conn_t *slurmdbd_conn,
 	 */
 
 	if (!(comment = acct_storage_g_add_accts_cond(slurmdbd_conn->db_conn,
-						      slurmdbd_conn->auth_uid,
 						      modify_msg->cond,
 						      modify_msg->rec))) {
 		free_comment = false;
