@@ -2199,13 +2199,6 @@ truncated:
 	return -1;
 }
 
-/* convert 'in' polynomial of base 'base' to 'out' array of 'dim' dimensions */
-void hostlist_parse_int_to_array(int in, int *out, int dims, int base)
-{
-	for (; --dims >= 0; in /= base)
-		out[dims] = in % base;
-}
-
 /* this is used to set how many nodes are going to be on each branch
  * of the tree.
  * IN total       - total number of nodes to send to

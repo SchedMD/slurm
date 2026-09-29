@@ -283,9 +283,6 @@ void hostlist_uniq(hostlist_t *hl);
  */
 hostlist_t *hostlist_deduplicate(const char *hosts);
 
-/* given a int will parse it into sizes in each dimension */
-void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);
-
 /* Split a hostlist into a fanout tree */
 extern int hostlist_split_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
 				    int *count, uint16_t tree_width);
