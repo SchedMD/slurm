@@ -394,7 +394,6 @@ typedef struct dbd_node_state_msg {
 } dbd_node_state_msg_t;
 
 typedef struct dbd_register_ctld_msg {
-	uint16_t dimensions;    /* dimensions of system */
 	uint32_t flags;         /* flags for cluster */
 	uint16_t port;		/* slurmctld's comm port */
 	uint32_t cluster_id; /* cluster id of cluster making request */

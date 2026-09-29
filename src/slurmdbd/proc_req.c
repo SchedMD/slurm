@@ -1917,7 +1917,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	list_append(cluster_q.cluster_list, msg->pcon_ctx->cluster_name);
 	cluster.control_host = msg->pcon_ctx->rem_host;
 	cluster.control_port = register_ctld_msg->port;
-	cluster.dimensions = register_ctld_msg->dimensions;
 	cluster.flags = register_ctld_msg->flags;
 	cluster.rpc_version = msg->protocol_version;
 
