@@ -5895,6 +5895,45 @@ extern void hres_variable_free(void *x)
 
 strong_alias(hres_variable_free, slurm_destroy_hres_variable);
 
+extern void hres_config_free(void *x)
+{
+	hres_config_t *config = x;
+
+	if (config) {
+		xfree(config->name);
+		xfree(config->value);
+		xfree(config);
+	}
+}
+
+strong_alias(hres_config_free, slurm_destroy_hres_config);
+
+static int _foreach_hres_config_copy(void *x, void *arg)
+{
+	hres_config_t *config_src = x;
+	list_t *dest_list = arg;
+	hres_config_t *config_dest = xmalloc(sizeof(*config_dest));
+
+	config_dest->name = xstrdup(config_src->name);
+	config_dest->value = xstrdup(config_src->value);
+	list_append(dest_list, config_dest);
+
+	return 0;
+}
+
+extern list_t *hres_config_list_copy(list_t *src_list)
+{
+	list_t *dest_list;
+
+	if (!src_list)
+		return NULL;
+
+	dest_list = list_create(hres_config_free);
+	list_for_each_ro(src_list, _foreach_hres_config_copy, dest_list);
+
+	return dest_list;
+}
+
 /* slurm_free_license_info()
  *
  * Free the license info returned previously

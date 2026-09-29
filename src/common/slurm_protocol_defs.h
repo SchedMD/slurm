@@ -1931,6 +1931,8 @@ extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
 extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg);
 extern void slurm_free_hres_update_msg(hres_update_msg_t *msg);
 extern void hres_variable_free(void *x);
+extern void hres_config_free(void *x);
+extern list_t *hres_config_list_copy(list_t *src_list);
 extern void slurm_free_node_hres_info(void *x);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);

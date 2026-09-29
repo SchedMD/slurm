@@ -91,6 +91,7 @@ typedef struct {
 	licenses_t *parent; /* pointer to parent - NULL for root */
 	char *parent_name;
 	path_idx_t path_idx;
+	list_t *plugin_config; /* list of hres_config_t */
 	int topology_idx;
 	char *topology_name;
 	uint32_t total;
