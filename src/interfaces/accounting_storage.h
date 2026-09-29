@@ -286,7 +286,7 @@ extern list_t *acct_storage_g_modify_res(void *db_conn,
  * IN:  slurmdb_wckey_rec_t *wckey
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_wckeys(void *db_conn,
 					    slurmdb_wckey_cond_t *wckey_cond,
 					    slurmdb_wckey_rec_t *wckey);
 

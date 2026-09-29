@@ -79,11 +79,7 @@ extern list_t *slurmdb_wckeys_modify(void *db_conn,
 				     slurmdb_wckey_cond_t *wckey_cond,
 				     slurmdb_wckey_rec_t *wckey)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_wckeys(db_conn, db_api_uid,
-					    wckey_cond, wckey);
+	return acct_storage_g_modify_wckeys(db_conn, wckey_cond, wckey);
 }
 
 /*

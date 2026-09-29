@@ -343,7 +343,7 @@ extern list_t *acct_storage_p_modify_res(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_p_modify_wckeys(void *db_conn,
 					    slurmdb_wckey_cond_t *wckey_cond,
 					    slurmdb_wckey_rec_t *wckey)
 {

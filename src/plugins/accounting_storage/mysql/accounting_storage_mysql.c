@@ -3455,11 +3455,11 @@ extern list_t *acct_storage_p_modify_res(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
-					    uint32_t uid,
 					    slurmdb_wckey_cond_t *wckey_cond,
 					    slurmdb_wckey_rec_t *wckey)
 {
-	return as_mysql_modify_wckeys(mysql_conn, uid, wckey_cond, wckey);
+	return as_mysql_modify_wckeys(mysql_conn, mysql_conn->auth_uid,
+				      wckey_cond, wckey);
 }
 
 extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
