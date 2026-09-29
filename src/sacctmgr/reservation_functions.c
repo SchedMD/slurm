@@ -195,6 +195,16 @@ int sacctmgr_list_reservation(int argc, char **argv)
 		xfree(warning);
 	}
 
+	/*
+	 * A node_inx is an index into one cluster's node list, so it cannot be
+	 * resolved against several. Refuse here rather than ask the dbd.
+	 */
+	if (reservation_cond->nodes && reservation_cond->cluster_list &&
+	    (list_count(reservation_cond->cluster_list) > 1)) {
+		exit_code = 1;
+		fprintf(stderr, " A node filter is limited to one cluster.\n");
+	}
+
 	if (exit_code) {
 		slurmdb_destroy_reservation_cond(reservation_cond);
 		FREE_NULL_LIST(format_list);
