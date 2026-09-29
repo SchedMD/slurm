@@ -970,6 +970,7 @@ test_123_12  Test NodeCnt reservation with IGNORE_JOBS on busy partition nodes
 test_123_13  Test reservation node flag set and clear
 test_123_14  Test reservation access to other reservations' nodes and cores
 test_123_15  Test updates preserve INFINITE reservation duration
+test_123_16  Test reservation updates with jobs that already lost access
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
