@@ -2646,7 +2646,7 @@ static void _parse_state_free(parse_state_t **state_ptr, const int rc)
 static serialize_parse_state_t *_parse_state_new(buf_t *src)
 {
 	parse_state_t *state = try_xmalloc(sizeof(*state));
-	buf_t *string = try_init_buf(BUF_SIZE);
+	buf_t *string = try_init_buf(INFINITE);
 
 	if (!state || !string) {
 		FREE_NULL_BUFFER(string);
