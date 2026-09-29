@@ -88,6 +88,15 @@ def setup(spank_plugin):
     # TODO: Add support/parametric test cases for proctrack/pgid
     atf.require_config_parameter("ProctrackType", "proctrack/cgroup")
 
+    # Needed to requeue batch jobs on slurm_spank_init failures
+    # TODO: Remove DeferBatch requirement once issue #50628 is fixed
+    atf.require_config_parameter_excludes("PrologFlags", "DeferBatch")
+    atf.require_config_parameter_excludes("PrologFlags", "ForceRequeueOnFail")
+    atf.require_config_parameter("JobRequeue", "1")
+
+    # Needed by test_scrontab
+    atf.require_config_parameter_includes("ScronParameters", "enable")
+
     # Start Slurm
     logging.info("Starting Slurm daemons")
     atf.require_nodes(1)
@@ -150,11 +159,12 @@ def get_hooks_run(spank_tmp):
     return hooks
 
 
-def assert_hooks_run(spank_tmp, function, context, job_id):
+def assert_hooks_run(spank_tmp, function, context, job_id, not_called=()):
     """Assert the hooks that ran match what spank.8 documents.
 
     - The hooks documented before the failing one, in its context, ran and
-      succeeded.
+      succeeded, except the not_called ones (without slurm_spank_ prefix) that
+      the command doesn't call.
     - No hook ran in a context where it's documented not to be called.
 
     What runs after the failing hook is not documented, so it's not checked.
@@ -166,6 +176,8 @@ def assert_hooks_run(spank_tmp, function, context, job_id):
 
     short_function = function.replace("slurm_spank_", "")
     for hook in HOOKS_BEFORE[context][short_function]:
+        if hook in not_called:
+            continue
         rcs = hooks.get((f"slurm_spank_{hook}", context))
         assert (
             rcs
@@ -179,6 +191,22 @@ def assert_hooks_run(spank_tmp, function, context, job_id):
             assert (
                 hook.replace("slurm_spank_", "") in HOOKS_IN_CONTEXT[ctx]
             ), f"{hook} should not be called in {ctx} context, but it was"
+
+
+def assert_node_drained(drains):
+    """Assert whether the test node was drained or not.
+
+    Call it once the job is done, so a drain can't happen after the check.
+    """
+    node_state = atf.get_node_parameter(test_node, "state")
+    if drains:
+        assert (
+            "DRAIN" in node_state
+        ), f"Test node should be drained, but is in state {node_state}"
+    else:
+        assert (
+            "DRAIN" not in node_state
+        ), f"Test node should not be drained, but is in state {node_state}"
 
 
 def assert_job_end_state(job_id, allowed_states):
@@ -200,12 +228,17 @@ def assert_job_end_state(job_id, allowed_states):
     ), f"Job {job_id} should end in one of {allowed_states}, but ended in {state}"
 
 
+# TODO: The spank.8 Errors table documents exit code 0 and the job not failing
+#       for srun with slurm_spank_user_init and slurm_spank_task_post_fork in
+#       remote context, but srun fails as it does under salloc. Follow the docs
+#       once issue #51216 clarifies it.
 @pytest.mark.parametrize(
     "function, context, xfail, drains, fails, jobid_assigned",
     [
         ("slurm_spank_init", "local", True, False, True, False),
         ("slurm_spank_init_post_opt", "local", True, False, True, False),
         ("slurm_spank_local_user_init", "local", True, False, True, True),
+        ("slurm_spank_init", "remote", True, False, False, True),
         ("slurm_spank_user_init", "remote", True, False, True, True),
         ("slurm_spank_task_init_privileged", "remote", True, False, True, True),
         ("slurm_spank_task_post_fork", "remote", True, False, True, True),
@@ -247,13 +280,8 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
     else:
         assert int(job_id) == 0, "JobID should NOT be assigned"
 
-    if drains:
-        node_state = atf.get_node_parameter(test_node, "state")
-        assert [
-            "DRAIN"
-        ] == node_state, f"Test node should be drained, but is in state {node_state}"
-
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_node_drained(drains)
 
 
 @pytest.mark.parametrize(
@@ -264,6 +292,7 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
         ("slurm_spank_init", "local", True, False, True, False),
         ("slurm_spank_init_post_opt", "local", True, False, True, False),
         ("slurm_spank_local_user_init", "local", True, False, True, True),
+        ("slurm_spank_init", "remote", True, False, False, True),
         ("slurm_spank_user_init", "remote", True, False, True, True),
         ("slurm_spank_task_init_privileged", "remote", True, False, True, True),
         ("slurm_spank_task_post_fork", "remote", True, False, True, True),
@@ -305,6 +334,7 @@ def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assign
             assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
 
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_node_drained(drains)
 
 
 @pytest.mark.parametrize(
@@ -389,10 +419,123 @@ def test_sbatch(
             "IT_RAN" not in content
         ), f"Output file {OUTPUT_FILE} should not contain 'IT_RAN', but got: {content}"
 
-    if drains:
-        node_state = atf.get_node_parameter(test_node, "state")
-        assert (
-            "DRAIN" in node_state
-        ), f"Test node should be drained, but is in state {node_state}"
-
     assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_node_drained(drains)
+
+
+def test_sbatch_init_remote(spank_tmp):
+    """Validate sbatch behavior when slurm_spank_init fails in remote context.
+
+    With the default ESPANK_NODE_FAILURE mode the node is drained and the job
+    requeued instead of failed. So, unlike test_sbatch, this can't use
+    --no-requeue, that would fail the job, nor -W, that would wait forever for
+    the requeued job. The exit code is not checked: the job never terminates.
+
+    TODO: Check the exit code of the spank.8 Errors table once issue #51216
+          clarifies what it means for sbatch.
+    """
+    function = "slurm_spank_init"
+    context = "remote"
+
+    job_id = atf.submit_job_sbatch(
+        f"-w {test_node} -t1 -o {OUTPUT_FILE} -e {ERROR_FILE} --wrap=\"srun echo 'IT_RAN'\"",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+        fatal=True,
+    )
+
+    # Verify the SPANK plugin failed the targeted callback of the job
+    marker_job_id, plugin_rc = get_hook_marker(spank_tmp, function, context)
+    assert (
+        marker_job_id == job_id
+    ), f"SPANK plugin should fail {function} of job {job_id}, but it was job {marker_job_id}"
+    assert (
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
+
+    assert atf.repeat_until(
+        lambda: atf.get_node_parameter(test_node, "state"),
+        lambda state: "DRAIN" in state,
+    ), f"Test node should be drained, but is in state {atf.get_node_parameter(test_node, 'state')}"
+
+    # The job should be requeued, not failed
+    assert atf.wait_for_job_state(
+        job_id, "PENDING"
+    ), f"Job {job_id} should be requeued as PENDING, but is {atf.get_job_parameter(job_id, 'JobState')}"
+    assert atf.repeat_until(
+        lambda: int(atf.get_job_parameter(job_id, "Restarts", default=0)),
+        lambda restarts: restarts >= 1,
+    ), f"Job {job_id} should be requeued, but Restarts={atf.get_job_parameter(job_id, 'Restarts')}"
+
+    # The targeted callback failed before the wrapped command could run
+    content = atf.run_command_output(f'cat "{OUTPUT_FILE}" 2>/dev/null || true')
+    assert (
+        "IT_RAN" not in content
+    ), f"Output file {OUTPUT_FILE} should not contain 'IT_RAN', but got: {content}"
+
+    # The requeued job would never run on the drained node, cancel it before
+    # checking the hooks run, and before resuming the node on cleanup
+    atf.cancel_jobs([job_id], fatal=True)
+    assert_hooks_run(spank_tmp, function, context, job_id)
+
+
+@pytest.fixture
+def clean_crontab():
+    """Start and end without crontab. Removing it also cancels its jobs."""
+    atf.run_command("scrontab -r", quiet=True)
+    yield
+    atf.run_command("scrontab -r", quiet=True)
+
+
+@pytest.mark.parametrize(
+    "function, context, xfail, drains, fails",
+    [
+        ("slurm_spank_init", "allocator", True, False, False),
+        ("slurm_spank_exit", "allocator", False, False, False),
+    ],
+)
+def test_scrontab(spank_tmp, clean_crontab, function, context, xfail, drains, fails):
+    """Validate scrontab behavior when SPANK callbacks fail.
+
+    The cron job is scheduled once a year, so it stays PENDING and never runs.
+    """
+    logging.info("Testing scrontab command")
+    logging.debug(f"Function {function}, xfail: {xfail}")
+
+    job_name = "test_147_3_scrontab"
+    result = atf.run_command(
+        "scrontab -",
+        input=f"#SCRON --job-name={job_name}\n0 0 1 1 * true\n",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+    )
+    if xfail:
+        assert (
+            result["exit_code"] != 0
+        ), f"scrontab should fail, but exited with {result['exit_code']}"
+    else:
+        assert (
+            result["exit_code"] == 0
+        ), f"scrontab should succeed, but exited with {result['exit_code']}"
+
+    # Verify the SPANK plugin failed the targeted callback
+    _, plugin_rc = get_hook_marker(spank_tmp, function, context)
+    assert (
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
+
+    # A cron job, if any was submitted, should not fail
+    job_states = atf.run_command_output(
+        f"squeue --me --noheader --format=%T --name={job_name}", fatal=True
+    ).split()
+    logging.debug(f"Cron job states: {job_states}")
+    if not fails:
+        assert (
+            "FAILED" not in job_states
+        ), f"Cron job should not fail, but its state is {job_states}"
+
+    # The cron job never runs, so there's no job to wait for.
+    # spank.8 is ambiguous about init_post_opt in scrontab: it's documented for
+    # allocator context, but the Errors table only lists init and exit for
+    # scrontab, and scrontab doesn't call it.
+    # TODO: Remove not_called once issue #51216 is fixed
+    assert_hooks_run(spank_tmp, function, context, 0, not_called=("init_post_opt",))
+    assert_node_drained(drains)

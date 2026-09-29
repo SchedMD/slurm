@@ -1104,7 +1104,7 @@ test_147_#   Testing SPANK.
 ===========================
 test_147_1   Test SPANK contained when SlurmdParameters=contain_spank
 test_147_2   Test SPANK remote spank init failure modes
-test_147_3   Test that SPANK plugins return codes are reported to user
+test_147_3   Test SPANK hook failures match the spank.8 Errors table
 test_147_4   Test SPANK plugins that link against libslurm
 
 test_149_#   Testing AcctGatherProfileType.
