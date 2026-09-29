@@ -35,18 +35,27 @@
 
 #include "config.h"
 
+#include <sys/stat.h>
+
+#include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/read_config.h"
 #include "src/common/resctrl_conf.h"
 #include "src/common/run_in_daemon.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/gres.h"
 #include "src/interfaces/task.h"
+
+#include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/plugins/task/resctrl/resctrl_fs.h"
 
@@ -78,7 +87,14 @@ const char plugin_name[] = "task resctrl plugin";
 const char plugin_type[] = "task/resctrl";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+typedef struct {
+	uint64_t count_only; /* GPUs allocated without device files */
+	bitstr_t *gpus; /* GPU indexes allocated to the job on this node */
+} job_gpus_t;
+
 static resctrl_conf_t *resctrl_conf = NULL; /* slurmd: resctrl.yaml */
+static const char *step_group = NULL; /* slurmstepd: group of this step */
+static bool stepd_enabled = false; /* slurmstepd: groups exist on this node */
 
 /*
  * list_for_each() callback: count the existing groups resctrl.yaml does not
@@ -192,12 +208,260 @@ static int _slurmd_init(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * The stepd only needs to know whether slurmd manages the groups on this
+ * node, which it does when resctrl.yaml is present and the groups exist;
+ * the group names are fixed.
+ * RET SLURM_SUCCESS
+ */
+static int _stepd_init(void)
+{
+	char *path = get_extra_conf_path(RESCTRL_CONF_FILE);
+	struct stat st = { 0 };
+
+	stepd_enabled = (!stat(path, &st) && resctrl_fs_is_mounted() &&
+			 resctrl_fs_group_exists(RESCTRL_GROUP_CPU_ONLY));
+	xfree(path);
+	if (!stepd_enabled)
+		debug("resctrl groups are not managed on this node, steps are not confined");
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * RET true for the job gres that stand for GPUs: the sharing gres itself
+ * and the shared gres (mps, shard) carved out of it, whose bitmaps index the
+ * same devices.
+ * IN gres_state - job gres entry
+ */
+static bool _is_gpu_gres(gres_state_t *gres_state)
+{
+	return (gres_id_sharing(gres_state->plugin_id) ||
+		gres_id_shared(gres_state->config_flags));
+}
+
+/*
+ * list_for_each() callback: keep the GPU gres of the job.
+ * IN x - gres_state_t of the job
+ * IN/OUT arg - list the GPU gres are appended to
+ * RET 0
+ */
+static int _add_gpu_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state = x;
+	list_t *gpu_gres = arg;
+
+	if (_is_gpu_gres(gres_state))
+		list_append(gpu_gres, gres_state);
+
+	return 0;
+}
+
+/*
+ * list_for_each() callback: merge the GPU indexes the job was allocated on
+ * this node. GPUs configured without device files have no index and are
+ * only counted.
+ * IN x - gres_state_t of the job
+ * IN/OUT arg - job_gpus_t accumulator
+ * RET 0
+ */
+static int _collect_gpus(void *x, void *arg)
+{
+	gres_state_t *gres_state = x;
+	gres_job_state_t *gres_js = gres_state->gres_data;
+	job_gpus_t *job_gpus = arg;
+	bitstr_t *alloc = NULL;
+
+	if (!_is_gpu_gres(gres_state) || !gres_js->node_cnt)
+		return 0;
+
+	if (gres_js->gres_bit_alloc)
+		alloc = gres_js->gres_bit_alloc[0];
+
+	if (!alloc) {
+		/* The job may have none of this gres on this node. */
+		if (!gres_js->gres_cnt_node_alloc ||
+		    !gres_js->gres_cnt_node_alloc[0])
+			return 0;
+		if (gres_id_shared(gres_state->config_flags))
+			job_gpus->count_only++;
+		else
+			job_gpus->count_only += gres_js->gres_cnt_node_alloc[0];
+		return 0;
+	}
+
+	if (!job_gpus->gpus) {
+		job_gpus->gpus = bit_copy(alloc);
+	} else {
+		if (bit_size(job_gpus->gpus) < bit_size(alloc))
+			bit_realloc(job_gpus->gpus, bit_size(alloc));
+		bit_or(job_gpus->gpus, alloc);
+	}
+
+	return 0;
+}
+
+/*
+ * list_find_first() callback: an allocated device record of a GPU index.
+ * IN x - gres_device_t
+ * IN key - int GPU index
+ * RET 1 when the device is allocated and has that index, else 0
+ */
+static int _find_alloc_device(void *x, void *key)
+{
+	gres_device_t *device = x;
+	int *index = key;
+
+	return (device->alloc && (device->index == *index));
+}
+
+/*
+ * Mark the sockets a device is attached to, from the CPUs gres.conf ties it
+ * to. Machine CPU ids are mapped to the abstract numbering, which is socket
+ * major over the detected hardware, so the detected layout is used rather
+ * than the one in slurm.conf, which may differ. A device without CPUs, or
+ * whose CPUs cannot be placed, may be fed from any socket and is marked on
+ * all of them.
+ * IN device - device record, may be NULL
+ * OUT sockets - bitmap of the sockets, one bit per socket of the node
+ */
+static void _device_sockets(gres_device_t *device, bitstr_t *sockets)
+{
+	uint32_t cpus_per_socket = (conf->actual_cores * conf->actual_threads);
+
+	bit_clear_all(sockets);
+
+	if (!device || !device->cpus_bitmap || !cpus_per_socket) {
+		bit_set_all(sockets);
+		return;
+	}
+
+	for (int cpu = 0; cpu < bit_size(device->cpus_bitmap); cpu++) {
+		uint32_t abstract = cpu, socket = 0;
+
+		if (!bit_test(device->cpus_bitmap, cpu))
+			continue;
+		if (conf->block_map_inv && (cpu < conf->block_map_size))
+			abstract = conf->block_map_inv[cpu];
+		socket = (abstract / cpus_per_socket);
+		if (socket < bit_size(sockets))
+			bit_set(sockets, socket);
+	}
+
+	if (!bit_set_count(sockets))
+		bit_set_all(sockets);
+}
+
+/*
+ * Count one GPU on every socket it is attached to.
+ * IN device - device record, may be NULL
+ * IN sockets - scratch bitmap sized to the sockets of the node
+ * IN/OUT per_socket - GPUs counted on each socket
+ */
+static void _count_gpu(gres_device_t *device, bitstr_t *sockets,
+		       uint32_t *per_socket)
+{
+	_device_sockets(device, sockets);
+	for (int s = 0; s < bit_size(sockets); s++) {
+		if (bit_test(sockets, s))
+			per_socket[s]++;
+	}
+}
+
+/*
+ * Count the GPUs of the job on this node and the most of them attached to
+ * any one socket. Each GPU index counts once, whatever the number of device
+ * files or shared gres behind it.
+ * IN step - step record
+ * OUT gpus - GPUs of the job on this node
+ * OUT max_per_socket - most GPUs attached to one socket
+ */
+static void _count_gpus(stepd_step_rec_t *step, uint32_t *gpus,
+			uint32_t *max_per_socket)
+{
+	job_gpus_t job_gpus = { 0 };
+	list_t *gpu_gres = list_create(NULL);
+	list_t *devices = NULL;
+	uint32_t nsockets = MAX(conf->actual_sockets, 1);
+	uint32_t *per_socket = xcalloc(nsockets, sizeof(*per_socket));
+	bitstr_t *sockets = bit_alloc(nsockets);
+
+	*gpus = 0;
+	*max_per_socket = 0;
+
+	if (step->job_gres_list) {
+		list_for_each(step->job_gres_list, _collect_gpus, &job_gpus);
+		list_for_each(step->job_gres_list, _add_gpu_gres, gpu_gres);
+	}
+	if (job_gpus.gpus)
+		devices = gres_g_get_devices(gpu_gres, true, 0, NULL, 0, step);
+
+	for (int i = 0; job_gpus.gpus && (i < bit_size(job_gpus.gpus)); i++) {
+		gres_device_t *device = NULL;
+
+		if (!bit_test(job_gpus.gpus, i))
+			continue;
+		if (devices)
+			device = list_find_first(devices, _find_alloc_device,
+						 &i);
+		_count_gpu(device, sockets, per_socket);
+		(*gpus)++;
+	}
+	if (job_gpus.count_only) {
+		uint32_t extra = MIN(job_gpus.count_only, UINT32_MAX);
+
+		/* GPUs without device files may be attached to any socket. */
+		for (uint32_t s = 0; s < nsockets; s++)
+			per_socket[s] = MIN(((uint64_t) per_socket[s] + extra),
+					    UINT32_MAX);
+		*gpus = MIN(((uint64_t) *gpus + extra), UINT32_MAX);
+	}
+
+	for (uint32_t s = 0; s < nsockets; s++)
+		*max_per_socket = MAX(*max_per_socket, per_socket[s]);
+
+	FREE_NULL_LIST(devices);
+	FREE_NULL_LIST(gpu_gres);
+	FREE_NULL_BITMAP(job_gpus.gpus);
+	FREE_NULL_BITMAP(sockets);
+	xfree(per_socket);
+}
+
+/*
+ * Pick the group of a step from the shape of its job on this node.
+ * IN step - step record
+ * OUT gpus - GPUs of the job on this node
+ * OUT max_per_socket - most GPUs attached to one socket
+ * RET the group name, or NULL when the step is left where it is
+ */
+static const char *_select_group(stepd_step_rec_t *step, uint32_t *gpus,
+				 uint32_t *max_per_socket)
+{
+	*gpus = 0;
+	*max_per_socket = 0;
+
+	if ((step->job_exclusive == JOB_EXCLUSIVE_NODE) ||
+	    (step->job_exclusive == JOB_EXCLUSIVE_TOPO))
+		return NULL;
+
+	_count_gpus(step, gpus, max_per_socket);
+
+	if (!*gpus)
+		return RESCTRL_GROUP_CPU_ONLY;
+	if (*max_per_socket == 1)
+		return RESCTRL_GROUP_GPU_ONE_PER_SOCKET;
+
+	return RESCTRL_GROUP_GPU_TWO_PER_SOCKET;
+}
+
 extern int init(void)
 {
 	debug("%s loaded", plugin_name);
 
 	if (running_in_slurmd())
 		return _slurmd_init();
+	if (running_in_slurmstepd())
+		return _stepd_init();
 
 	return SLURM_SUCCESS;
 }
@@ -221,8 +485,44 @@ extern int task_p_slurmd_launch_request(launch_tasks_request_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * The thread that forks the tasks joins the group before doing so, so that
+ * every task inherits the membership.
+ */
 extern int task_p_pre_setuid(stepd_step_rec_t *step)
 {
+	uint32_t gpus = 0, max_per_socket = 0;
+	char *status = NULL;
+	int rc = EINVAL;
+
+	if (!stepd_enabled)
+		return SLURM_SUCCESS;
+
+	if (!(step_group = _select_group(step, &gpus, &max_per_socket))) {
+		info("%ps not confined, the job owns the whole node",
+		     &step->step_id);
+		return SLURM_SUCCESS;
+	}
+
+	if (!resctrl_fs_group_exists(step_group)) {
+		error("resctrl group %s is not present on this node",
+		      step_group);
+		return SLURM_ERROR;
+	}
+
+	/* Pid 0 is the calling thread (ourselves, slurmstepd). */
+	if ((rc = resctrl_fs_move_pid(step_group, 0))) {
+		status = resctrl_fs_last_cmd_status();
+		error("cannot move %ps into resctrl group %s: %s (%s)",
+		      &step->step_id, step_group, slurm_strerror(rc),
+		      (status ? status : "no status"));
+		xfree(status);
+		return SLURM_ERROR;
+	}
+
+	info("%ps confined to resctrl group %s, the job has %u GPU(s) on this node and at most %u on one socket",
+	     &step->step_id, step_group, gpus, max_per_socket);
+
 	return SLURM_SUCCESS;
 }
 
