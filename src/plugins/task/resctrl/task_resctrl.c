@@ -39,9 +39,16 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/resctrl_conf.h"
+#include "src/common/run_in_daemon.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/interfaces/task.h"
+
+#include "src/plugins/task/resctrl/resctrl_fs.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -71,15 +78,135 @@ const char plugin_name[] = "task resctrl plugin";
 const char plugin_type[] = "task/resctrl";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static resctrl_conf_t *resctrl_conf = NULL; /* slurmd: resctrl.yaml */
+
+/*
+ * list_for_each() callback: count the existing groups resctrl.yaml does not
+ * define.
+ * IN x - name of an existing group
+ * IN/OUT arg - uint32_t counter
+ * RET 0
+ */
+static int _count_foreign_groups(void *x, void *arg)
+{
+	char *name = x;
+	uint32_t *count = arg;
+
+	if (!resctrl_conf_find_group(resctrl_conf, name))
+		(*count)++;
+
+	return 0;
+}
+
+/*
+ * Check how many CLOSIDs this hardware supports, how many groups are already
+ * created, and fail if we have no room for our configured Slurm groups.
+ */
+static void _check_max_groups(void)
+{
+	uint32_t max_groups = resctrl_fs_max_groups();
+	uint32_t configured = list_count(resctrl_conf->groups);
+	uint32_t foreign = 0;
+	list_t *existing = NULL;
+
+	if (!max_groups) {
+		debug("cannot determine how many resctrl groups the hardware supports");
+		return;
+	}
+
+	existing = resctrl_fs_list_groups();
+	list_for_each(existing, _count_foreign_groups, &foreign);
+	FREE_NULL_LIST(existing);
+
+	if ((configured + foreign + 1) > max_groups)
+		fatal("%s configures %u resctrl groups, which with the root group and %u groups not managed by Slurm exceeds the %u groups the hardware supports",
+		      RESCTRL_CONF_FILE, configured, foreign, max_groups);
+}
+
+/*
+ * list_for_each() callback: make one configured group exist with its
+ * schemata. Existing directories are reused, whoever created them.
+ * IN x - resctrl_conf_group_t to apply
+ * IN arg - unused
+ * RET 0
+ */
+static int _apply_group(void *x, void *arg)
+{
+	resctrl_conf_group_t *group = x;
+	char *status = NULL;
+	int rc = EINVAL;
+
+	rc = resctrl_fs_group_create(group->name);
+	if (!rc) {
+		info("created resctrl group %s", group->name);
+	} else if (rc == EEXIST) {
+		info("using existing resctrl group %s", group->name);
+	} else {
+		status = resctrl_fs_last_cmd_status();
+		fatal("cannot create resctrl group %s: %s (%s)", group->name,
+		      slurm_strerror(rc), (status ? status : "no status"));
+	}
+
+	if ((rc = resctrl_fs_write_schemata(group->name, group->schemata))) {
+		status = resctrl_fs_last_cmd_status();
+		fatal("cannot apply the schemata of resctrl group %s: %s (%s)",
+		      group->name, slurm_strerror(rc),
+		      (status ? status : "no status"));
+	}
+
+	return 0;
+}
+
+/*
+ * Bring the resctrl filesystem in line with resctrl.yaml. Runs on every
+ * slurmd start, which includes every reconfigure as slurmd re-execs. On a
+ * node without kernel support for resctrl, without resctrl.yaml, or where
+ * the filesystem cannot be mounted the plugin does nothing.
+ * RET SLURM_SUCCESS
+ */
+static int _slurmd_init(void)
+{
+	int rc = EINVAL;
+
+	if (!resctrl_fs_supported()) {
+		info("the kernel does not support resctrl, resctrl groups are not managed on this node");
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = resctrl_conf_load(&resctrl_conf))) {
+		if (rc != ENOENT)
+			fatal("cannot load %s", RESCTRL_CONF_FILE);
+		info("%s not found, resctrl groups are not managed on this node",
+		     RESCTRL_CONF_FILE);
+		return SLURM_SUCCESS;
+	}
+
+	if (resctrl_fs_mount(resctrl_conf->mount_options)) {
+		error("resctrl groups are not managed on this node");
+		return SLURM_SUCCESS;
+	}
+
+	_check_max_groups();
+	list_for_each(resctrl_conf->groups, _apply_group, NULL);
+
+	return SLURM_SUCCESS;
+}
+
 extern int init(void)
 {
 	debug("%s loaded", plugin_name);
+
+	if (running_in_slurmd())
+		return _slurmd_init();
 
 	return SLURM_SUCCESS;
 }
 
 extern void fini(void)
 {
+	resctrl_conf_free(resctrl_conf);
+	resctrl_conf = NULL;
+
 	debug("%s unloaded", plugin_name);
 }
 
