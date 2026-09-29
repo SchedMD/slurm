@@ -248,7 +248,7 @@ extern int acct_storage_p_add_clusters(void *db_conn, list_t *cluster_list)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_federations(void *db_conn, uint32_t uid,
+extern int acct_storage_p_add_federations(void *db_conn,
 					  list_t *federation_list)
 {
 	return SLURM_SUCCESS;

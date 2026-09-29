@@ -152,7 +152,7 @@ extern int acct_storage_g_add_clusters(void *db_conn, list_t *cluster_list);
  * IN:  list List of slurmdb_federation_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
+extern int acct_storage_g_add_federations(void *db_conn,
 					  list_t *federation_list);
 
 /*

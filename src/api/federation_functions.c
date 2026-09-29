@@ -47,11 +47,7 @@
  */
 extern int slurmdb_federations_add(void *db_conn, list_t *federation_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_federations(db_conn, db_api_uid,
-					      federation_list);
+	return acct_storage_g_add_federations(db_conn, federation_list);
 }
 
 /*
