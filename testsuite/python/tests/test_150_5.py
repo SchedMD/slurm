@@ -8,9 +8,11 @@ Extra that its slurmd reports only when the node boots. Values set with
 scontrol update survive otherwise.
 
 The scenarios cover the first registration, slurmd pings and restarts, a
-slurmctld restart, and an unexpected reboot. Topology scenarios check both
-the node's Topology and the switch it is under in scontrol show topology.
+slurmctld restart, an unexpected reboot, scontrol reboot, and a power up.
+Topology scenarios check both the node's Topology and the switch it is
+under in scontrol show topology.
 """
+
 import re
 import time
 
@@ -43,6 +45,16 @@ def setup():
     # validate_node_specs(), which is skipped when ReturnToService=2
     # (RETURN_TO_SERVICE_ALL). Force a value that lets the branch fire.
     atf.require_config_parameter("ReturnToService", "1")
+
+    # Scenario q drives a node through a power save cycle.
+    atf.require_config_parameter("SuspendProgram", "/bin/true")
+    atf.require_config_parameter("ResumeProgram", "/bin/true")
+    atf.require_config_parameter("SuspendTime", "INFINITE")
+    atf.require_config_parameter("SuspendTimeout", 5)
+    atf.require_config_parameter("ResumeTimeout", 30)
+
+    # Scenario r reboots a node with scontrol reboot.
+    atf.require_config_parameter("RebootProgram", "/bin/true")
 
     # A tree topology with three named leaf switches, so the dynamic
     # node's --conf "Topology=tree_topo:sw_*" places it under that
@@ -603,3 +615,160 @@ def test_slurmd_reboot_applies_new_field(
         _assert_node_field(name, field, new)
     finally:
         _delete_dynamic_node(name)
+
+
+@pytest.fixture
+def delete_dynamic_nodes():
+    """Delete the dynamic nodes registered via the yielded callable."""
+    names = []
+    yield names.append
+    for name in names:
+        _delete_dynamic_node(name)
+
+
+@pytest.mark.parametrize(
+    "name,field,slurmd_flag,orig,resumed",
+    [
+        ("node25", "instance_id", "--instance-id", "id-orig", "id-resumed"),
+        ("node26", "instance_type", "--instance-type", "type-orig", "type-resumed"),
+        ("node27", "extra", "--extra", "extra-orig", "extra-resumed"),
+    ],
+)
+def test_power_up_applies_new_field(
+    delete_dynamic_nodes, name, field, slurmd_flag, orig, resumed
+):
+    """Scenario q: a node resumed from power save applies slurmd's values.
+
+    A resumed node is a new instance, so the value its slurmd reports
+    must win. Ticket 25914.
+
+    Simulated with POWER_DOWN_FORCE, POWER_UP, and a restart of the
+    node's slurmd with -b carrying a new value while the node is
+    POWERING_UP."""
+    port = PORT_BASE + 15 + ["instance_id", "instance_type", "extra"].index(field)
+    delete_dynamic_nodes(name)
+    _start_dynamic_slurmd(name, port, slurmd_args=f"{slurmd_flag}={orig}")
+    _assert_node_field(name, field, orig)
+
+    atf.stop_slurmd(name)
+    atf.run_command(
+        f"scontrol update NodeName={name} State=POWER_DOWN_FORCE",
+        user="slurm",
+        fatal=True,
+    )
+    assert atf.wait_for_node_state(
+        name, "POWERED_DOWN", fatal=True
+    ), f"{name} should reach POWERED_DOWN"
+
+    atf.run_command(
+        f"scontrol update NodeName={name} State=POWER_UP",
+        user="slurm",
+        fatal=True,
+    )
+    assert atf.wait_for_node_state(
+        name, "POWERING_UP", fatal=True
+    ), f"{name} should reach POWERING_UP"
+
+    atf.start_slurmd(
+        name,
+        _slurmd_args(port, slurmd_args=f"{slurmd_flag}={resumed} -b"),
+        wait="process",
+    )
+    assert atf.wait_for_node_state(
+        name, "POWERING_UP", reverse=True, fatal=True
+    ), f"{name} should finish POWERING_UP"
+    state = atf.get_node_parameter(name, "state")
+    assert "IDLE" in state and "DOWN" not in state, (
+        f"{name} should return IDLE after an expected power up, not be "
+        f"flagged as unexpectedly rebooted (state={state})"
+    )
+
+    _assert_node_field(name, field, resumed)
+
+
+def test_power_up_applies_new_topology(delete_dynamic_nodes):
+    """Scenario q (topology): a node resumed from power save applies the
+    Topology= slurmd reports via --conf, same as the other three fields.
+    Ticket 25914."""
+    name = "node29"
+    port = PORT_BASE + 19
+    delete_dynamic_nodes(name)
+    _start_dynamic_slurmd(name, port, conf_extra="Topology=tree_topo:sw_alpha")
+    _assert_topology(name, "tree_topo:sw_alpha")
+    _assert_node_under_switch(name, "sw_alpha")
+
+    atf.stop_slurmd(name)
+    atf.run_command(
+        f"scontrol update NodeName={name} State=POWER_DOWN_FORCE",
+        user="slurm",
+        fatal=True,
+    )
+    assert atf.wait_for_node_state(
+        name, "POWERED_DOWN", fatal=True
+    ), f"{name} should reach POWERED_DOWN"
+
+    atf.run_command(
+        f"scontrol update NodeName={name} State=POWER_UP",
+        user="slurm",
+        fatal=True,
+    )
+    assert atf.wait_for_node_state(
+        name, "POWERING_UP", fatal=True
+    ), f"{name} should reach POWERING_UP"
+
+    atf.start_slurmd(
+        name,
+        _slurmd_args(port, conf_extra="Topology=tree_topo:sw_gamma", slurmd_args="-b"),
+        wait="process",
+    )
+    assert atf.wait_for_node_state(
+        name, "POWERING_UP", reverse=True, fatal=True
+    ), f"{name} should finish POWERING_UP"
+    state = atf.get_node_parameter(name, "state")
+    assert "IDLE" in state and "DOWN" not in state, (
+        f"{name} should return IDLE after an expected power up, not be "
+        f"flagged as unexpectedly rebooted (state={state})"
+    )
+
+    _assert_topology(name, "tree_topo:sw_gamma")
+    _assert_node_under_switch(name, "sw_gamma")
+
+
+def test_requested_reboot_applies_new_fields(delete_dynamic_nodes):
+    """Scenario r: a reboot requested via scontrol reboot applies the new
+    instance_id, instance_type, and extra that slurmd reports on its
+    post-reboot registration, same as an unexpected reboot. Ticket 25914."""
+    name = "node28"
+    port = PORT_BASE + 18
+    delete_dynamic_nodes(name)
+    _start_dynamic_slurmd(
+        name,
+        port,
+        slurmd_args="--instance-id=id-orig --instance-type=type-orig --extra=extra-orig",
+    )
+    atf.run_command(
+        f"scontrol update NodeName={name} InstanceId=id-admin "
+        "InstanceType=type-admin Extra=extra-admin",
+        user="slurm",
+        fatal=True,
+    )
+    _assert_node_field(name, "instance_id", "id-admin")
+
+    atf.run_command(f"scontrol reboot {name}", user="slurm", fatal=True)
+    assert atf.wait_for_node_state(
+        name, "REBOOT_ISSUED", fatal=True
+    ), f"{name} should reach REBOOT_ISSUED"
+
+    old_start = _restart_dynamic_slurmd(
+        name,
+        port,
+        slurmd_args="--instance-id=id-new --instance-type=type-new --extra=extra-new -b",
+    )
+    _wait_for_slurmd_reregister(name, old_start)
+    assert atf.wait_for_node_state(
+        name, "REBOOT_ISSUED", reverse=True, fatal=True
+    ), f"{name} should finish rebooting"
+
+    _assert_node_field(name, "instance_id", "id-new")
+    _assert_node_field(name, "instance_type", "type-new")
+    _assert_node_field(name, "extra", "extra-new")
