@@ -3144,8 +3144,15 @@ extern void *acct_storage_p_get_connection(
 	return (void *)mysql_conn;
 }
 
-extern int acct_storage_p_auth_connection(void *db_conn, uid_t auth_uid)
+extern int acct_storage_p_auth_connection(mysql_conn_t *mysql_conn,
+					  uid_t auth_uid)
 {
+	if (!mysql_conn)
+		return SLURM_ERROR;
+
+	mysql_conn->auth_uid = auth_uid;
+	mysql_conn->auth_ids_set = true;
+
 	return SLURM_SUCCESS;
 }
 

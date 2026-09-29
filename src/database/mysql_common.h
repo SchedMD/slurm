@@ -69,6 +69,8 @@ typedef struct {
 	int conn;
 	uint64_t wsrep_trx_fragment_size_orig;
 	char *wsrep_trx_fragment_unit_orig;
+	bool auth_ids_set;
+	uid_t auth_uid;
 } mysql_conn_t;
 
 typedef enum {
