@@ -79,11 +79,7 @@ extern list_t *slurmdb_associations_modify(void *db_conn,
 					   slurmdb_assoc_cond_t *assoc_cond,
 					   slurmdb_assoc_rec_t *assoc)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_assocs(db_conn, db_api_uid,
-					    assoc_cond, assoc);
+	return acct_storage_g_modify_assocs(db_conn, assoc_cond, assoc);
 }
 
 /*

@@ -3413,12 +3413,12 @@ extern list_t *acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 					cluster_cond, cluster);
 }
 
-extern list_t *acct_storage_p_modify_assocs(
-	mysql_conn_t *mysql_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond,
-	slurmdb_assoc_rec_t *assoc)
+extern list_t *acct_storage_p_modify_assocs(mysql_conn_t *mysql_conn,
+					    slurmdb_assoc_cond_t *assoc_cond,
+					    slurmdb_assoc_rec_t *assoc)
 {
-	return as_mysql_modify_assocs(mysql_conn, uid, assoc_cond, assoc);
+	return as_mysql_modify_assocs(mysql_conn, mysql_conn->auth_uid,
+				      assoc_cond, assoc);
 }
 
 extern list_t *acct_storage_p_modify_federations(

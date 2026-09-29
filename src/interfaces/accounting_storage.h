@@ -235,10 +235,9 @@ extern list_t *acct_storage_g_modify_clusters(void *db_conn,
  * IN:  slurmdb_assoc_rec_t *assoc
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_assocs(
-	void *db_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond,
-	slurmdb_assoc_rec_t *assoc);
+extern list_t *acct_storage_g_modify_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond,
+					    slurmdb_assoc_rec_t *assoc);
 
 /*
  * modify existing federations in the accounting system

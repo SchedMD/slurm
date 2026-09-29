@@ -307,10 +307,9 @@ extern list_t *acct_storage_p_modify_clusters(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_modify_assocs(
-	void *db_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond,
-	slurmdb_assoc_rec_t *assoc)
+extern list_t *acct_storage_p_modify_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond,
+					    slurmdb_assoc_rec_t *assoc)
 {
 	return NULL;
 }

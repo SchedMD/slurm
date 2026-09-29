@@ -93,9 +93,9 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*modify_clusters)(void *db_conn,
 				   slurmdb_cluster_cond_t *cluster_cond,
 				   slurmdb_cluster_rec_t *cluster);
-	list_t *(*modify_assocs)   (void *db_conn, uint32_t uid,
-				    slurmdb_assoc_cond_t *assoc_cond,
-				    slurmdb_assoc_rec_t *assoc);
+	list_t *(*modify_assocs)(void *db_conn,
+				 slurmdb_assoc_cond_t *assoc_cond,
+				 slurmdb_assoc_rec_t *assoc);
 	list_t *(*modify_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond,
 				    slurmdb_federation_rec_t *fed);
@@ -597,17 +597,16 @@ extern list_t *acct_storage_g_modify_clusters(void *db_conn,
 	return (*(ops.modify_clusters))(db_conn, cluster_cond, cluster);
 }
 
-extern list_t *acct_storage_g_modify_assocs(
-	void *db_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond,
-	slurmdb_assoc_rec_t *assoc)
+extern list_t *acct_storage_g_modify_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond,
+					    slurmdb_assoc_rec_t *assoc)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.modify_assocs))(db_conn, uid, assoc_cond, assoc);
+	return (*(ops.modify_assocs))(db_conn, assoc_cond, assoc);
 }
 
 extern list_t *acct_storage_g_modify_federations(
