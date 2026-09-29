@@ -519,7 +519,11 @@ be taken so that a partially edited config file is not read by a
 launching job.
 
 .SH "Errors"
-When SPANK plugin results in a non-zero result, the following changes will result:
+When a SPANK function returns a non\-zero result, the following changes
+result. Where \fBslurm_spank_init\fR fails, the rows assume the default
+\fBslurm_spank_init_failure_mode\fR of \fBESPANK_NODE_FAILURE\fR. The
+\fBsbatch\fR remote rows assume a job that may be requeued; see the
+paragraphs after the table.
 
 .TS
 expand, allbox, tab (@);
@@ -550,10 +554,10 @@ salloc @slurm_spank_exit                 @allocator @0        @no          @no
 _
 sbatch @slurm_spank_init                 @allocator @1        @no          @yes
 sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
-sbatch @slurm_spank_init                 @remote    @1        @yes         @no
-sbatch @slurm_spank_user_init            @remote    @1        @yes         @yes
+sbatch @slurm_spank_init                 @remote    @n/a      @yes         @no
+sbatch @slurm_spank_user_init            @remote    @n/a      @yes         @no
 sbatch @slurm_spank_task_init_privileged @remote    @1        @no          @yes
-sbatch @slurm_spank_task_post_fork       @remote    @1        @yes         @yes
+sbatch @slurm_spank_task_post_fork       @remote    @n/a      @yes         @no
 sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
 sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
 sbatch @slurm_spank_exit                 @allocator @0        @no          @no
@@ -562,6 +566,24 @@ scrontab @slurm_spank_init               @allocator @1        @no          @no
 scrontab @slurm_spank_exit               @allocator @0        @no          @no
 .TE
 
+\fBExitcode\fR is the exit status of the client command, or \fBn/a\fR if the
+client command does not return a status for that failure. \fBsbatch\fR exits 0
+once the job script is accepted. Hooks that run after submission do not
+change that status. With \fB\-\-wait\fR, \fBsbatch\fR instead returns the
+exit code of the job, and only after the job terminates.
+.LP
+The \fBslurm_spank_init\fR, \fBslurm_spank_user_init\fR, and
+\fBslurm_spank_task_post_fork\fR rows for \fBsbatch\fR remote context all
+drain the node on failure, and, if the job may be requeued (see
+\fBJobRequeue\fR in \fBslurm.conf\fR(5) and \fB\-\-requeue\fR in
+\fBsbatch\fR(1)), requeue it instead of failing it. These three rows show that
+default result: Exitcode n/a, because \fBsbatch \-\-wait\fR does not return
+until the requeued job terminates, and Fails job no. If the job may not be
+requeued, for example with \fB\-\-no\-requeue\fR, the job fails instead, and
+\fBsbatch \-\-wait\fR returns Exitcode 1. Only \fBslurm_spank_init\fR consults
+\fBslurm_spank_init_failure_mode\fR above; the other two rows drain and
+requeue regardless of that variable.
+.LP
 \fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
 timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
 failure.
