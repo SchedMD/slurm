@@ -687,6 +687,17 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 		job_cond.used_nodes = resv_cond->nodes;
 		if (!resv_cond->cluster_list)
 			resv_cond->cluster_list = list_create(xfree_ptr);
+		else if (list_count(resv_cond->cluster_list) > 1) {
+			/*
+			 * A node_inx is an index into one cluster's node list,
+			 * so it cannot be resolved against several. The clients
+			 * refuse this before asking, so only a hand-built
+			 * request reaches here.
+			 */
+			error("A node filter is limited to one cluster.");
+			errno = EINVAL;
+			return NULL;
+		}
 		/*
 		 * If they didn't specify a cluster, give them the one they are
 		 * calling from.
@@ -695,8 +706,16 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 			list_append(resv_cond->cluster_list,
 				    xstrdup(mysql_conn->cluster_name));
 		job_cond.cluster_list = resv_cond->cluster_list;
+
 		local_cluster_list = setup_cluster_list_with_inx(
 			mysql_conn, &job_cond, (void **)&curr_cluster, true);
+		/*
+		 * No snapshot holds any of the asked nodes, so nothing can
+		 * match. Returning every reservation instead would answer a
+		 * different question than the one asked.
+		 */
+		if (!local_cluster_list)
+			return list_create(slurmdb_destroy_reservation_rec);
 	}
 
 	(void) _setup_resv_cond_limits(resv_cond, &extra);
