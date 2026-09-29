@@ -100,8 +100,5 @@ extern list_t *slurmdb_users_modify(void *db_conn,
 extern list_t *slurmdb_users_remove(void *db_conn,
 				    slurmdb_user_cond_t *user_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_users(db_conn, db_api_uid, user_cond);
+	return acct_storage_g_remove_users(db_conn, user_cond);
 }

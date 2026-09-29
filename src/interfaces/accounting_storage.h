@@ -302,7 +302,7 @@ extern int acct_storage_g_modify_reservation(void *db_conn,
  * IN:  slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_users(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_remove_users(void *db_conn,
 					   slurmdb_user_cond_t *user_cond);
 
 /*
