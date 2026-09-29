@@ -55,12 +55,6 @@
  * doesn't need to include the slurm.h in the header.
  */
 
-extern uint16_t slurmdb_setup_cluster_dims(void)
-{
-	return working_cluster_rec ?
-		working_cluster_rec->dimensions : 1;
-}
-
 extern uint32_t slurmdb_setup_cluster_flags(void)
 {
 	static uint32_t cluster_flags = NO_VAL;
