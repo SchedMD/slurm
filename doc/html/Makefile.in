@@ -536,6 +536,7 @@ generated_html = \
 	quickstart.html \
 	related_software.html \
 	release_notes.html \
+	resctrl.html \
 	reservations.html \
 	resource_binding.html \
 	resource_limits.html \

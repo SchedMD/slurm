@@ -1,0 +1,199 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Resctrl Task Plugin</h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>On non-exclusive jobs, the <b>task/resctrl</b> plugin confines the
+processes of every step to a Linux resource control (resctrl) group. Resctrl
+is the kernel interface to
+Arm MPAM (Memory System Resource Partitioning and Monitoring), Intel RDT
+(Resource Director Technology), and AMD PQoS (Platform Quality of Service),
+which partition memory bandwidth and cache capacity among groups of tasks. It
+is exposed as a filesystem mounted on <code>/sys/fs/resctrl</code>, where
+every directory is a group whose <code>schemata</code> file holds the limits
+applied to the tasks listed in its <code>tasks</code> file.</p>
+
+<p>The use case is a node shared between GPU jobs and CPU-only jobs, where the
+CPU-only jobs must not consume the memory bandwidth the GPU jobs depend on.
+The administrator sets the limits of three fixed groups in
+<a href="resctrl.yaml.html">resctrl.yaml</a>, slurmd creates them on the
+nodes, and slurmstepd places each step in the group matching the resources
+of its job on that node. Users have no control over the placement, and no
+option or environment variable exposes it. This plugin is experimental.</p>
+
+<h2 id="requirements">Requirements
+<a class="slurm_link" href="#requirements"></a></h2>
+
+<ul>
+<li>A kernel with resctrl support for the hardware. Arm MPAM is exposed through
+resctrl starting with Linux 7.1 (<code>CONFIG_ARM64_MPAM</code> together with
+<code>CONFIG_RESCTRL_FS</code>); Intel RDT and AMD PQoS have been supported for
+many releases (<code>CONFIG_X86_CPU_RESCTRL</code>). The filesystem type must
+appear in <code>/proc/filesystems</code>.</li>
+<li>The <b>serializer/yaml</b> plugin, which requires libyaml at build time,
+to read <code>resctrl.yaml</code>.</li>
+<li>GPUs with device files (<b>File</b>) and CPU affinity (<b>Cores</b>) in
+<a href="gres.conf.html">gres.conf</a>, or found by <b>AutoDetect</b>, so that
+the plugin can tell which socket each is attached to. The sockets are those
+slurmd detects, whatever the node definition in <code>slurm.conf</code>
+says.</li>
+<li>Tasks bound to the CPUs of their GPUs, with <b>task/cgroup</b> or
+<b>task/affinity</b> and cores allocated near the GPUs, so that the traffic of
+a job reaches the memory domain its group was sized for.</li>
+</ul>
+
+<h2 id="configuration">Configuration
+<a class="slurm_link" href="#configuration"></a></h2>
+
+<p>Add <b>task/resctrl</b> to
+<a href="slurm.conf.html#OPT_TaskPlugin">TaskPlugin</a> in
+<code>slurm.conf</code>, for example
+<code>TaskPlugin=task/cgroup,task/affinity,task/resctrl</code>, then set the
+limits of the three groups in <code>resctrl.yaml</code>, in the same directory
+as <code>slurm.conf</code>. In <a href="configless_slurm.html">configless</a>
+mode the file is kept on the slurmctld host, which sends it to the nodes with
+<code>slurm.conf</code>, and deleting it there deletes it from the nodes on
+their next reconfigure. This example is for nodes whose
+<code>/sys/fs/resctrl/schemata</code> lists the <code>MB</code> domains 0 and
+1:</p>
+
+<pre>
+groups:
+  # Jobs without GPUs
+  - name: cpu_only
+    schemata: |
+      MB:0=30;1=30
+  # Jobs with at most one GPU on a socket
+  - name: gpu_one_per_socket
+    schemata: |
+      MB:0=35;1=35
+  # Jobs with two or more GPUs on a socket
+  - name: gpu_two_per_socket
+    schemata: |
+      MB:0=70;1=70
+</pre>
+
+<p>All three groups must be defined and no other name is accepted. On every
+start, including the re-execution triggered by <code>scontrol
+reconfigure</code>, slurmd mounts the filesystem when it is not already
+mounted, creates the group directories under <code>/sys/fs/resctrl</code>,
+and writes their <code>schemata</code>. Slurm never unmounts the filesystem,
+so a changed <code>mount_options</code> takes effect only once
+<code>/sys/fs/resctrl</code> has been unmounted while no jobs run, for example
+by rebooting the node. Directories that already exist are
+reused, and Slurm never removes a group; to stop confining steps, remove
+<b>task/resctrl</b> from <b>TaskPlugin</b> or delete <code>resctrl.yaml</code>.
+The three groups, the root group, and any group created outside Slurm must fit
+in the smallest <code>/sys/fs/resctrl/info/*/num_closids</code>, or slurmd
+refuses to start. The attributes of the file are described in
+<a href="resctrl.yaml.html">resctrl.yaml</a>.</p>
+
+<p>On a node without kernel support for resctrl, without
+<code>resctrl.yaml</code>, or where the filesystem cannot be mounted on
+<code>/sys/fs/resctrl</code>, slurmd does not manage the groups, so
+<b>TaskPlugin</b> can be set cluster-wide.</p>
+
+<p><b>NOTE</b>: A changed <code>schemata</code> applies immediately to the
+jobs already running in the group. The groups are written in the order of the
+file, so when the <code>schemata</code> of one is rejected, the groups before
+it already have their new limits. A slurmd that fails to reconfigure keeps
+running only when it runs as a daemon or under systemd; in the foreground it
+exits. Either way it refuses to start again until the file is fixed. Testing
+changes on a single node before applying them cluster-wide is
+recommended.</p>
+
+<h3 id="schemata">Schemata values
+<a class="slurm_link" href="#schemata"></a></h3>
+
+<p>Slurm writes the <code>schemata</code> exactly as configured, so the
+values must follow the conventions of the hardware. They are documented in the
+kernel resctrl documentation and discoverable in
+<code>/sys/fs/resctrl/schemata</code> and under
+<code>/sys/fs/resctrl/info</code>. In particular:</p>
+
+<ul>
+<li>The memory bandwidth resource (<code>MB</code>) takes one value per memory
+domain. It is a percentage on Intel and Arm MPAM systems, rounded up to a
+multiple of <code>info/MB/bandwidth_gran</code>. A value below
+<code>info/MB/min_bandwidth</code> is rejected, not raised, and the rejected
+<code>schemata</code> is fatal to slurmd. On AMD systems the value is
+expressed in units of 1/8 GB/s rather than as a percentage. The
+<code>mba_MBps</code> mount option, where the kernel supports it, changes the
+unit to MiBps.</li>
+<li>A value is a limit for the group, not a reservation and not per job. On
+Intel without <code>mba_MBps</code> it throttles each core, so more jobs in a
+group draw more bandwidth. The values of all groups may add up to more than
+100 percent.</li>
+<li>A write only changes the resources and domains it lists: a line or domain
+left out keeps its previous limit, and a resource or domain the node does not
+have is rejected, so the file must match every node that reads it. A node with
+resctrl for cache allocation but no memory bandwidth control rejects an
+<code>MB</code> line, for example.</li>
+<li>Cache portion masks (<code>L3</code>, <code>L2</code>) may overlap between
+groups.</li>
+</ul>
+
+<h2 id="selection">Group selection
+<a class="slurm_link" href="#selection"></a></h2>
+
+<p>The group is chosen per job and node when a step starts, and depends on the
+GPUs the job was allocated on that node and the sockets they are attached to:
+</p>
+
+<table class="tlist">
+<tr><th>Job on the node</th><th>Group</th></tr>
+<tr><td>Owns the whole node (<code>--exclusive</code>,
+<code>--exclusive=topo</code>, <b>Exclusive=NODE</b>, or
+<b>Exclusive=TOPO</b>)</td><td>none; the step stays in the group of slurmd,
+normally the root group</td></tr>
+<tr><td>No GPU</td><td><code>cpu_only</code></td></tr>
+<tr><td>At most one GPU on any socket</td>
+<td><code>gpu_one_per_socket</code></td></tr>
+<tr><td>Two or more GPUs on one socket</td>
+<td><code>gpu_two_per_socket</code></td></tr>
+</table>
+
+<p>So on a node with two sockets and two GPUs each, a two-GPU job goes to
+<code>gpu_two_per_socket</code> when both GPUs share a socket, and to
+<code>gpu_one_per_socket</code> when they do not. A three- or four-GPU
+job always goes to <code>gpu_two_per_socket</code>. On a given node, every step
+of the job uses the same group, including the batch script and the external
+step, whatever the step itself requests.</p>
+
+<p>Jobs with <code>--exclusive=user</code> or <code>--exclusive=mcs</code> share
+the node and are placed like the others. So are <code>--exclusive</code> jobs
+in a partition with <b>OverSubscribe=FORCE</b> and a count above 1 (the default
+is 4), since that partition shares every node whatever the job requests.
+Shards and MPS slices count as the GPU
+they are carved out of, once per physical device. A GPU whose CPUs span several
+sockets counts on each of them, and a GPU without <b>File</b> or known CPUs
+counts on all.</p>
+
+<p>The slurmstepd thread that forks the tasks joins the group first, so the
+tasks inherit the membership. Processes that
+<a href="pam_slurm_adopt.html">pam_slurm_adopt</a> places in the external step
+are moved when they are adopted. Every placement is
+logged in the slurmd log file with the group, the number of GPUs, and the most
+GPUs on one socket.</p>
+
+<h2 id="limitations">Limitations
+<a class="slurm_link" href="#limitations"></a></h2>
+
+<ul>
+<li>CPU-only jobs are limited to the <code>cpu_only</code> value even when no
+GPU job runs on the node.</li>
+<li>A job with GPUs on several sockets is placed by its busiest socket, and
+the same limits apply on the other sockets.</li>
+<li>Only traffic issued by the CPUs is limited. Memory accesses initiated by
+the GPUs themselves are not tagged with the group of the job.</li>
+<li>Slurm does not collect monitoring data. The counters of a group in
+<code>/sys/fs/resctrl/&lt;group&gt;/mon_data</code> can be read by hand and
+cover all the jobs of the group together. Per-job monitoring, per-job groups,
+and the <code>cpus</code> file of the groups are not supported.</li>
+<li>Steps launched by an <b>srun</b> older than 26.05 are placed as if the
+job were not exclusive, because their credential does not carry the
+exclusivity of the job.</li>
+</ul>
+
+<!--#include virtual="footer.txt"-->
