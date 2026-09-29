@@ -1271,15 +1271,7 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn,
 	}
 
 	if (event_cond->node_list) {
-		int dims = 0;
-		hostlist_t *temp_hl = NULL;
-
-		if (get_cluster_dims(mysql_conn,
-				     (char *)list_peek(event_cond->cluster_list),
-				     &dims))
-			return NULL;
-
-		temp_hl = hostlist_create_dims(event_cond->node_list, dims);
+		hostlist_t *temp_hl = hostlist_create(event_cond->node_list);
 		if (hostlist_count(temp_hl) <= 0) {
 			error("we didn't get any real hosts to look for.");
 			FREE_NULL_HOSTLIST(temp_hl);
@@ -1679,17 +1671,7 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn,
 				       "instance_type", &where_clause);
 
 	if (instance_cond->node_list) {
-		int dims = 0;
-		hostlist_t *temp_hl = NULL;
-
-		if (get_cluster_dims(
-			    mysql_conn,
-			    (char *) list_peek(use_cluster_list),
-			    &dims)) {
-			goto end_it;
-		}
-
-		temp_hl = hostlist_create_dims(instance_cond->node_list, dims);
+		hostlist_t *temp_hl = hostlist_create(instance_cond->node_list);
 		if (hostlist_count(temp_hl) <= 0) {
 			error("we didn't get any real hosts to look for.");
 			FREE_NULL_HOSTLIST(temp_hl);

@@ -1231,7 +1231,6 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	hostlist_t *temp_hl = NULL;
 	hostlist_iterator_t *h_itr = NULL;
 	char *query = NULL;
-	int dims = 0;
 
 	if (!job_cond || !job_cond->used_nodes)
 		return NULL;
@@ -1244,12 +1243,7 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	if (get_cluster_dims(mysql_conn,
-			     (char *)list_peek(job_cond->cluster_list),
-			     &dims))
-		return NULL;
-
-	temp_hl = hostlist_create_dims(job_cond->used_nodes, dims);
+	temp_hl = hostlist_create(job_cond->used_nodes);
 	if (hostlist_count(temp_hl) <= 0) {
 		error("we didn't get any real hosts to look for.");
 		goto no_hosts;
@@ -1295,7 +1289,7 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		int loc = 0;
 		local_cluster_t *local_cluster =
 			xmalloc(sizeof(local_cluster_t));
-		local_cluster->hl = hostlist_create_dims(row[0], dims);
+		local_cluster->hl = hostlist_create(row[0]);
 		if (hostlist_count(local_cluster->hl) <= 0) {
 			error("%s: invalid cluster_nodes '%s'",
 			      __func__, row[0]);
@@ -1306,9 +1300,9 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		local_cluster->end   = slurm_atoul(row[2]);
 		local_cluster->asked_bitmap =
 			bit_alloc(hostlist_count(local_cluster->hl));
-		while ((host = hostlist_next_dims(h_itr, dims))) {
-			if ((loc = hostlist_find_dims(
-				     local_cluster->hl, host, dims)) != -1)
+		while ((host = hostlist_next(h_itr))) {
+			if ((loc = hostlist_find(local_cluster->hl,
+						 host)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);
 			free(host);
 		}

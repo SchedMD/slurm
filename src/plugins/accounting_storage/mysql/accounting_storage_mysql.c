@@ -3062,47 +3062,6 @@ extern void fini(void)
 	mysql_db_cleanup();
 }
 
-/*
- * Get the dimensions of this cluster so we know how to deal with the hostlists.
- *
- * IN mysql_conn - mysql connection
- * IN cluster_name - name of cluster to get dimensions for
- * OUT dims - dimensions of cluster
- *
- * RET return SLURM_SUCCESS on success, SLURM_FAILURE otherwise.
- */
-extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
-			    int *dims)
-{
-	char *query;
-	MYSQL_ROW row;
-	MYSQL_RES *result = NULL;
-
-	query = xstrdup_printf("select dimensions from %s where name='%s'",
-			       cluster_table, cluster_name);
-
-	debug4("%d(%s:%d) query\n%s",
-	       mysql_conn->conn, THIS_FILE, __LINE__, query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	if (!(row = mysql_fetch_row(result))) {
-		error("Couldn't get the dimensions of cluster '%s'.",
-		      cluster_name);
-		mysql_free_result(result);
-		return SLURM_ERROR;
-	}
-
-	*dims = atoi(row[0]);
-
-	mysql_free_result(result);
-
-	return SLURM_SUCCESS;
-}
-
 extern void *acct_storage_p_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name)
