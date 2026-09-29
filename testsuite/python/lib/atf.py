@@ -5508,8 +5508,10 @@ def wait_for_step(job_id, step_id, state="RUNNING", **repeat_until_kwargs):
     occurs.
 
     Args:
-        job_id (integer): The id of the job.
-        step_id (integer): The id of the step within the job.
+        job_id (integer or string): The id of the job. For an array task,
+            either its raw job id or "<array_job_id>_<task_id>".
+        step_id (integer or string): The id of the step within the job, or
+            the name of a special step such as "batch".
         state (string): The step state to wait for, or None to wait only for
             the step to exist. Defaults to RUNNING. Existence alone is not
             enough: a step queued waiting for resources is already listed by
@@ -5525,17 +5527,58 @@ def wait_for_step(job_id, step_id, state="RUNNING", **repeat_until_kwargs):
         True
         >>> wait_for_step(5678, 1, timeout=30)
         False
+        >>> wait_for_step("5678_3", 0, timeout=30)
+        True
     """
 
-    step_str = f"{job_id}.{step_id}"
-    # A het step is rendered "<job>.<step>+<comp>" on some releases, so end the
-    # id at a separator rather than requiring whitespace.
-    pattern = rf"StepId={re.escape(step_str)}(?=[\s+]|$)"
-    if state is not None:
-        pattern += rf".*\bState={state}\b"
+    # The JSON "id" is always the raw "<job_id>.<step_id>", with "+<comp>" for
+    # a het step, and array tasks carry their ids separately under "array".
+    array_job_id, _, task_id = str(job_id).partition("_")
+    if task_id:
+        # Unless stepmgr is used, scontrol only sends "<array_job_id>.<step_id>"
+        # to the controller for "<array_job_id>_<task_id>.<step_id>", which only
+        # matches the task whose raw job id is <array_job_id>, so filter here.
+        query = array_job_id
+
+        def _is_step(step):
+            return (
+                step["array"]["job_id"] == int(array_job_id)
+                and step["array"]["task_id"] == int(task_id)
+                and step["id"].split("+")[0].split(".", 1)[1] == str(step_id)
+            )
+
+    else:
+        query = f"{job_id}.{step_id}"
+
+        def _is_step(step):
+            return step["id"].split("+")[0] == query
+
+    def _get_steps():
+        out = run_command_output(f"scontrol --json show step {query}", quiet=True)
+        try:
+            steps = json.loads(out)["steps"]
+        except (json.JSONDecodeError, KeyError):
+            logging.debug(f"Unable to parse scontrol output: {out}")
+            return []
+        # Keep only the fields used here in repeat_until logs.
+        return [
+            {
+                "id": step["id"],
+                "array": {
+                    "job_id": step["array"]["job_id"],
+                    "task_id": step["array"]["task_id"],
+                },
+                "state": step["state"],
+            }
+            for step in steps
+        ]
+
     return repeat_until(
-        lambda: run_command_output(f"scontrol -o show step {step_str}"),
-        lambda out: re.search(pattern, out) is not None,
+        _get_steps,
+        lambda steps: any(
+            _is_step(step) and (state is None or state in step["state"])
+            for step in steps
+        ),
         **repeat_until_kwargs,
     )
 
