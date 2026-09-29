@@ -314,10 +314,10 @@ extern list_t *acct_storage_p_modify_assocs(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_modify_federations(
-	void *db_conn, uint32_t uid,
-	slurmdb_federation_cond_t *fed_cond,
-	slurmdb_federation_rec_t *fed)
+extern list_t *acct_storage_p_modify_federations(void *db_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond,
+						 slurmdb_federation_rec_t *fed)
 {
 	return NULL;
 }

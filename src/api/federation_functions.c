@@ -60,11 +60,7 @@ extern list_t *slurmdb_federations_modify(void *db_conn,
 					  slurmdb_federation_cond_t *fed_cond,
 					  slurmdb_federation_rec_t *fed)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_federations(db_conn, db_api_uid, fed_cond,
-						 fed);
+	return acct_storage_g_modify_federations(db_conn, fed_cond, fed);
 }
 
 /*

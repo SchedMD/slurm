@@ -1865,7 +1865,6 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_federations(slurmdbd_conn->db_conn,
-							slurmdbd_conn->auth_uid,
 							get_msg->cond,
 							get_msg->rec))) {
 		rc = errno;

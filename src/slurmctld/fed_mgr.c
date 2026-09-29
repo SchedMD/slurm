@@ -570,9 +570,8 @@ static void _remove_self_from_federation(void)
 	fed_rec.cluster_list = list_create(NULL);
 	list_append(fed_rec.cluster_list, &cluster_rec);
 
-	ret_list = acct_storage_g_modify_federations(acct_db_conn,
-	                                             slurm_conf.slurm_user_id,
-	                                             &fed_cond, &fed_rec);
+	ret_list = acct_storage_g_modify_federations(acct_db_conn, &fed_cond,
+						     &fed_rec);
 	if (!ret_list || !list_count(ret_list)) {
 		error("Failed to remove federation from list");
 	}
