@@ -660,6 +660,11 @@ typedef enum {
 	DATA_PARSER_NODE_HRES_INFO, /* node_hres_info_t */
 	DATA_PARSER_NODE_HRES_INFO_PTR, /* node_hres_info_t* */
 	DATA_PARSER_NODE_HRES_INFO_LIST, /* list_t* node_hres_info_t* */
+	DATA_PARSER_HRES_PLUGIN_CONFIG, /* hres_config_t */
+	DATA_PARSER_HRES_PLUGIN_CONFIG_PTR, /* hres_config_t* */
+	DATA_PARSER_HRES_PLUGIN_CONFIG_LIST, /* list_t* of hres_config_t* */
+	DATA_PARSER_HRES_PLUGIN, /* hres_plugin_t */
+	DATA_PARSER_HRES_PLUGIN_PTR, /* hres_plugin_t* */
 	DATA_PARSER_SLUID, /* sluid_t */
 	DATA_PARSER_SLUID_PTR, /* sluid_t* */
 	DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP, /* openapi_resp_resource_layout_t */
