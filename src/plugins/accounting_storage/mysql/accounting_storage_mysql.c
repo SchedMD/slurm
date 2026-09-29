@@ -1096,7 +1096,12 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 		error("We need a connection to run this");
 		errno = ESLURM_DB_CONNECTION;
 		return ESLURM_DB_CONNECTION;
-	} else if (mysql_db_ping(mysql_conn) != 0) {
+	}
+
+	if (!mysql_conn->auth_ids_set)
+		fatal_abort("%s: auth_ids_set should never be false", __func__);
+
+	if (mysql_db_ping(mysql_conn) != 0) {
 		int rc;
 		/* avoid memory leak and end thread */
 		mysql_db_close_db_connection(mysql_conn);
