@@ -342,8 +342,7 @@ static int _resv_port_alloc(uint16_t resv_port_cnt,
 {
 	int i;
 	int *port_array = NULL;
-	char port_str[16];
-	hostlist_t *hl;
+	bitstr_t *port_bitmap = NULL;
 	static int last_port_alloc = 0;
 
 	xassert(!*resv_ports);
@@ -372,17 +371,14 @@ static int _resv_port_alloc(uint16_t resv_port_cnt,
 	}
 
 	/* Reserve selected ports */
-	hl = hostlist_create(NULL);
+	port_bitmap = bit_alloc(port_resv_min + port_resv_cnt);
 	for (i=0; i < *port_inx; i++) {
 		bit_or(port_resv_table[port_array[i]], node_bitmap);
 		port_array[i] += port_resv_min;
-		snprintf(port_str, sizeof(port_str), "%d", port_array[i]);
-		hostlist_push_host(hl, port_str);
+		bit_set(port_bitmap, port_array[i]);
 	}
-	hostlist_sort(hl);
-	/* get the ranged string with no brackets on it */
-	*resv_ports = hostlist_ranged_string_xmalloc_dims(hl, 1, 0);
-	hostlist_destroy(hl);
+	*resv_ports = bit_fmt_full(port_bitmap);
+	FREE_NULL_BITMAP(port_bitmap);
 	*resv_port_array = port_array;
 
 	return SLURM_SUCCESS;
