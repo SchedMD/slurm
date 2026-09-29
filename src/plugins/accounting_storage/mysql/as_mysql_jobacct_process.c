@@ -1296,6 +1296,12 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		local_cluster_t *local_cluster =
 			xmalloc(sizeof(local_cluster_t));
 		local_cluster->hl = hostlist_create_dims(row[0], dims);
+		if (hostlist_count(local_cluster->hl) <= 0) {
+			error("%s: invalid cluster_nodes '%s'",
+			      __func__, row[0]);
+			_destroy_local_cluster(local_cluster);
+			continue;
+		}
 		local_cluster->start = slurm_atoul(row[1]);
 		local_cluster->end   = slurm_atoul(row[2]);
 		local_cluster->asked_bitmap =
