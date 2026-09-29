@@ -161,6 +161,11 @@ typedef struct {
 	bool found_allowed;
 } foreach_check_assoc_access_t;
 
+typedef struct {
+	slurmctld_resv_t *resv_backup;
+	slurmctld_resv_t *resv_ptr;
+} validate_reservation_access_update_t;
+
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -4163,7 +4168,9 @@ static int _validate_reservation_access_update(void *x, void *y)
 {
 	bool job_use_reservation = false;
 	job_record_t *job_ptr = (job_record_t *) x;
-	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) y;
+	validate_reservation_access_update_t *args = y;
+	slurmctld_resv_t *resv_backup = args->resv_backup;
+	slurmctld_resv_t *resv_ptr = args->resv_ptr;
 
 	if (job_ptr->resv_name == NULL)
 		return 0;
@@ -4183,7 +4190,16 @@ static int _validate_reservation_access_update(void *x, void *y)
 	if (!job_use_reservation)
 		return 0;
 
-	if (_valid_job_access_resv(job_ptr, resv_ptr, false) != SLURM_SUCCESS) {
+	/*
+	 * Reject the update only if it removes the job's access: the job
+	 * has access before the update (resv_backup) but not after it
+	 * (resv_ptr). A job that already lost access must not block every
+	 * later update of the reservation.
+	 */
+	if ((_valid_job_access_resv(job_ptr, resv_ptr, false) !=
+	     SLURM_SUCCESS) &&
+	    (_valid_job_access_resv(job_ptr, resv_backup, false) ==
+	     SLURM_SUCCESS)) {
 		info("Rejecting update of reservation %s, because it's in use by %pJ",
 		     resv_ptr->name, job_ptr);
 		return 1;
@@ -4213,6 +4229,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_backup, *resv_ptr;
+	validate_reservation_access_update_t resv_args = { 0 };
 	resv_desc_msg_t resv_desc;
 	int error_code = SLURM_SUCCESS, rc;
 	bool skip_it = false;
@@ -4783,9 +4800,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	 * the reservation, that lose access to the reservation by the update.
 	 * This has to happen after _set_access
 	 */
+	resv_args.resv_backup = resv_backup;
+	resv_args.resv_ptr = resv_ptr;
 	if ((job_ptr = list_find_first(job_list,
 				       _validate_reservation_access_update,
-				       resv_ptr))) {
+				       &resv_args))) {
 		if (err_msg)
 			xstrfmtcat(*err_msg,
 				   "Reservation update rejected because of JobId=%u",
