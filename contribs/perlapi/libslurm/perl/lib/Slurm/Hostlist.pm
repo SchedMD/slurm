@@ -37,8 +37,6 @@ Create a new hostlist from a string representation. Returns an opaque hostlist o
 
 The string representation ($str) may contain one or more hostnames or bracketed hostlists separated by either `,' or whitespace. A bracketed hostlist is denoted by a common prefix followed by a list of numeric ranges contained within brackets: e.g. "tux[0-5,12,20-25]".
 
-To support systems with 3-D topography, a rectangular prism may be described using two three digit numbers separated by "x": e.g. "bgl[123x456]". This selects all nodes between 1 and 4 inclusive in the first dimension, between 2 and 5 in the second, and between 3 and 6 in the third dimension for a total of 4*4*4=64 nodes.
-
 If $str is omitted, and empty hostlist is created and returned.
 
 =head2 $cnt = $hl->count();
