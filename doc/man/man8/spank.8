@@ -485,9 +485,11 @@ The format of each non\-comment line in the configuration file is:
   optional /usr/lib/slurm/test.so
 .fi
 Tells \fBslurmd\fR to load the plugin \fBtest.so\fR passing no arguments.
-If a \fBSPANK\fR plugin is \fIrequired\fR, then failure of any of the
-plugin's functions will cause \fBslurmd\fR, or the job allocator command to
-terminate the job, while \fIoptional\fR plugins only cause a warning.
+If a \fBSPANK\fR plugin is \fIrequired\fR, a non\-zero return from one of
+its functions is an error. See the \fBErrors\fR section for the effect on
+the client, the node, and the job. A failure of \fBslurm_spank_exit\fR
+does not fail the job. Failures in \fIoptional\fR plugins only cause a
+warning.
 .LP
 If a fully\-qualified path is not specified for a plugin, then the
 currently configured \fIPluginDir\fR in \fBslurm.conf\fR(5) is searched.
@@ -532,7 +534,7 @@ srun   @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 srun   @slurm_spank_task_post_fork       @remote    @0        @no          @no
 srun   @slurm_spank_task_init            @remote    @1        @no          @yes
 srun   @slurm_spank_task_exit            @remote    @0        @no          @no
-srun   @slurm_spank_exit                 @local     @0        @no          @yes
+srun   @slurm_spank_exit                 @local     @0        @no          @no
 _
 salloc @slurm_spank_init                 @allocator @1        @no          @yes
 salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
@@ -542,7 +544,7 @@ salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
 salloc @slurm_spank_task_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_exit            @remote    @0        @no          @no
-salloc @slurm_spank_exit                 @allocator @0        @no          @yes
+salloc @slurm_spank_exit                 @allocator @0        @no          @no
 _
 sbatch @slurm_spank_init                 @allocator @1        @no          @yes
 sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
