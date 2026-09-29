@@ -94,6 +94,9 @@ def setup(spank_plugin):
     atf.require_config_parameter_excludes("PrologFlags", "ForceRequeueOnFail")
     atf.require_config_parameter("JobRequeue", "1")
 
+    # Needed by test_scrontab
+    atf.require_config_parameter_includes("ScronParameters", "enable")
+
     # Start Slurm
     logging.info("Starting Slurm daemons")
     atf.require_nodes(1)
@@ -156,11 +159,12 @@ def get_hooks_run(spank_tmp):
     return hooks
 
 
-def assert_hooks_run(spank_tmp, function, context, job_id):
+def assert_hooks_run(spank_tmp, function, context, job_id, not_called=()):
     """Assert the hooks that ran match what spank.8 documents.
 
     - The hooks documented before the failing one, in its context, ran and
-      succeeded.
+      succeeded, except the not_called ones (without slurm_spank_ prefix) that
+      the command doesn't call.
     - No hook ran in a context where it's documented not to be called.
 
     What runs after the failing hook is not documented, so it's not checked.
@@ -172,6 +176,8 @@ def assert_hooks_run(spank_tmp, function, context, job_id):
 
     short_function = function.replace("slurm_spank_", "")
     for hook in HOOKS_BEFORE[context][short_function]:
+        if hook in not_called:
+            continue
         rcs = hooks.get((f"slurm_spank_{hook}", context))
         assert (
             rcs
@@ -470,3 +476,66 @@ def test_sbatch_init_remote(spank_tmp):
     # checking the hooks run, and before resuming the node on cleanup
     atf.cancel_jobs([job_id], fatal=True)
     assert_hooks_run(spank_tmp, function, context, job_id)
+
+
+@pytest.fixture
+def clean_crontab():
+    """Start and end without crontab. Removing it also cancels its jobs."""
+    atf.run_command("scrontab -r", quiet=True)
+    yield
+    atf.run_command("scrontab -r", quiet=True)
+
+
+@pytest.mark.parametrize(
+    "function, context, xfail, drains, fails",
+    [
+        ("slurm_spank_init", "allocator", True, False, False),
+        ("slurm_spank_exit", "allocator", False, False, False),
+    ],
+)
+def test_scrontab(spank_tmp, clean_crontab, function, context, xfail, drains, fails):
+    """Validate scrontab behavior when SPANK callbacks fail.
+
+    The cron job is scheduled once a year, so it stays PENDING and never runs.
+    """
+    logging.info("Testing scrontab command")
+    logging.debug(f"Function {function}, xfail: {xfail}")
+
+    job_name = "test_147_3_scrontab"
+    result = atf.run_command(
+        "scrontab -",
+        input=f"#SCRON --job-name={job_name}\n0 0 1 1 * true\n",
+        env_vars=f"SPANK_HOOK_CREATE_FILE=1 SPANK_FAIL_TEST_FUNC={function} SPANK_FAIL_TEST_CTXT={context}",
+    )
+    if xfail:
+        assert (
+            result["exit_code"] != 0
+        ), f"scrontab should fail, but exited with {result['exit_code']}"
+    else:
+        assert (
+            result["exit_code"] == 0
+        ), f"scrontab should succeed, but exited with {result['exit_code']}"
+
+    # Verify the SPANK plugin failed the targeted callback
+    _, plugin_rc = get_hook_marker(spank_tmp, function, context)
+    assert (
+        plugin_rc == SPANK_ERROR_RC
+    ), f"SPANK plugin should return {SPANK_ERROR_RC}, but returned {plugin_rc}"
+
+    # A cron job, if any was submitted, should not fail
+    job_states = atf.run_command_output(
+        f"squeue --me --noheader --format=%T --name={job_name}", fatal=True
+    ).split()
+    logging.debug(f"Cron job states: {job_states}")
+    if not fails:
+        assert (
+            "FAILED" not in job_states
+        ), f"Cron job should not fail, but its state is {job_states}"
+
+    # The cron job never runs, so there's no job to wait for.
+    # spank.8 is ambiguous about init_post_opt in scrontab: it's documented for
+    # allocator context, but the Errors table only lists init and exit for
+    # scrontab, and scrontab doesn't call it.
+    # TODO: Remove not_called once issue #51216 is fixed
+    assert_hooks_run(spank_tmp, function, context, 0, not_called=("init_post_opt",))
+    assert_node_drained(drains)
