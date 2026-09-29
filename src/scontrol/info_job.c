@@ -2416,7 +2416,7 @@ scontrol_print_hosts (char * node_list)
 		fprintf(stderr, "Invalid hostlist: %s\n", node_list);
 		return;
 	}
-	while ((host = hostlist_shift_dims(hl, 0))) {
+	while ((host = hostlist_shift(hl))) {
 		printf("%s\n", host);
 		free(host);
 	}
