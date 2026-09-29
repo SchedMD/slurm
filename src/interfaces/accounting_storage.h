@@ -160,8 +160,7 @@ extern int acct_storage_g_add_federations(void *db_conn,
  * IN:  tres_list List of slurmdb_tres_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
-				   list_t *tres_list_in);
+extern int acct_storage_g_add_tres(void *db_conn, list_t *tres_list_in);
 
 /*
  * add associations to accounting system

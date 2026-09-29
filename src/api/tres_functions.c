@@ -50,10 +50,7 @@
  */
 extern int slurmdb_tres_add(void *db_conn, list_t *tres_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_tres(db_conn, db_api_uid, tres_list);
+	return acct_storage_g_add_tres(db_conn, tres_list);
 }
 
 /*

@@ -2470,9 +2470,8 @@ static int _init_tres(void)
 	FREE_NULL_LIST(char_list);
 
 	if (add_list) {
-		if (acct_storage_g_add_tres(acct_db_conn,
-		                            slurm_conf.slurm_user_id,
-		                            add_list) != SLURM_SUCCESS)
+		if (acct_storage_g_add_tres(acct_db_conn, add_list) !=
+		    SLURM_SUCCESS)
 			fatal("Problem adding tres to the database, "
 			      "can't continue until database is able to "
 			      "make new tres");

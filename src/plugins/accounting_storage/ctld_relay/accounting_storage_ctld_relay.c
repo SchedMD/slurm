@@ -254,8 +254,7 @@ extern int acct_storage_p_add_federations(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_tres(void *db_conn,
-				   uint32_t uid, list_t *tres_list_in)
+extern int acct_storage_p_add_tres(void *db_conn, list_t *tres_list_in)
 {
 	return SLURM_SUCCESS;
 }

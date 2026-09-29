@@ -460,8 +460,7 @@ extern int acct_storage_p_add_federations(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_add_tres(void *db_conn,
-				   uint32_t uid, list_t *tres_list_in)
+extern int acct_storage_p_add_tres(void *db_conn, list_t *tres_list_in)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;

@@ -3351,10 +3351,11 @@ extern int acct_storage_p_add_federations(mysql_conn_t *mysql_conn,
 					federation_list);
 }
 
-extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn, uint32_t uid,
+extern int acct_storage_p_add_tres(mysql_conn_t *mysql_conn,
 				   list_t *tres_list_in)
 {
-	return as_mysql_add_tres(mysql_conn, uid, tres_list_in);
+	return as_mysql_add_tres(mysql_conn, mysql_conn->auth_uid,
+				 tres_list_in);
 }
 
 extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
