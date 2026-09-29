@@ -176,6 +176,13 @@ if atf.get_version() < (26, 11):
             "A host number of ULONG_MAX is rejected starting at 26.11",
         )
     )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "create_range_trailing_chars_is_rejected",
+            "A range start with trailing characters is rejected starting at 26.11",
+        )
+    )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
     skip_tests.append(
         (

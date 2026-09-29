@@ -585,6 +585,30 @@ START_TEST(create_unclosed_bracket_is_rejected)
 
 END_TEST
 
+START_TEST(create_box_notation_is_rejected)
+{
+	/* two corners joined by "x" are not a range */
+	ck_assert(slurm_hostlist_create("bgl[000x133]") == NULL);
+}
+
+END_TEST
+
+START_TEST(create_range_trailing_chars_is_rejected)
+{
+	/* no characters may follow the first number of a range */
+	ck_assert(slurm_hostlist_create("n[1a-3]") == NULL);
+}
+
+END_TEST
+
+START_TEST(create_range_end_trailing_chars_is_rejected)
+{
+	/* no characters may follow the last number of a range */
+	ck_assert(slurm_hostlist_create("n[1-3a]") == NULL);
+}
+
+END_TEST
+
 START_TEST(create_oversized_number_in_bracket_is_rejected)
 {
 	/* a number too large to hold is not a range */
@@ -783,6 +807,9 @@ extern int main(int argc, char **argv)
 	tcase_add_test(tc_create, create_separator_inside_bracket);
 	tcase_add_test(tc_create, create_two_bracket_groups_in_one_token);
 	tcase_add_test(tc_create, create_unclosed_bracket_is_rejected);
+	tcase_add_test(tc_create, create_box_notation_is_rejected);
+	tcase_add_test(tc_create, create_range_trailing_chars_is_rejected);
+	tcase_add_test(tc_create, create_range_end_trailing_chars_is_rejected);
 	tcase_add_test(tc_create,
 		       create_oversized_number_in_bracket_is_rejected);
 	tcase_add_test(tc_create, create_oversized_range_end_is_rejected);
