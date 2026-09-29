@@ -48,7 +48,6 @@ START_TEST(pack_back2_null_rec)
 	ck_assert(unpack_rec->root_assoc == NULL);
 
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
-	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
 	ck_assert(pack_rec.flags            == unpack_rec->flags);
@@ -72,7 +71,6 @@ START_TEST(pack_back2_rec)
 
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = xstrdup("control_host");
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -104,7 +102,6 @@ START_TEST(pack_back2_rec)
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(list_count(pack_rec.accounting_list) == list_count(unpack_rec->accounting_list));
 	ck_assert(pack_rec.classification == unpack_rec->classification);
-	ck_assert(pack_rec.dimensions == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.id == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state == unpack_rec->fed.state);
 	ck_assert(pack_rec.flags == unpack_rec->flags);
@@ -147,7 +144,6 @@ START_TEST(pack_back2_rec_null_ptrs)
 	pack_rec.accounting_list  = NULL;
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = NULL;
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -170,7 +166,6 @@ START_TEST(pack_back2_rec_null_ptrs)
 	ck_assert(pack_rec.accounting_list  == unpack_rec->accounting_list);
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
 	ck_assert(pack_rec.control_host     == unpack_rec->control_host);
-	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.name         == unpack_rec->fed.name);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
@@ -218,7 +213,6 @@ START_TEST(pack_back1_null_rec)
 	ck_assert(!unpack_rec->root_assoc);
 
 	ck_assert(!unpack_rec->classification);
-	ck_assert(!unpack_rec->dimensions);
 	ck_assert(!unpack_rec->fed.id);
 	ck_assert(unpack_rec->fed.state == NO_VAL);
 	ck_assert(unpack_rec->flags == NO_VAL);
@@ -242,7 +236,6 @@ START_TEST(pack_back1_rec)
 
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = xstrdup("control_host");
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = xstrdup("fed_name");
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -274,7 +267,6 @@ START_TEST(pack_back1_rec)
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(list_count(pack_rec.accounting_list) == list_count(unpack_rec->accounting_list));
 	ck_assert(pack_rec.classification == unpack_rec->classification);
-	ck_assert(pack_rec.dimensions == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.id == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state == unpack_rec->fed.state);
 	ck_assert(pack_rec.flags == unpack_rec->flags);
@@ -317,7 +309,6 @@ START_TEST(pack_back1_rec_null_ptrs)
 	pack_rec.accounting_list  = NULL;
 	pack_rec.classification   = 2;
 	pack_rec.control_host     = NULL;
-	pack_rec.dimensions       = 3;
 	pack_rec.fed.name         = NULL;
 	pack_rec.fed.id           = 4;
 	pack_rec.fed.state        = 5;
@@ -340,7 +331,6 @@ START_TEST(pack_back1_rec_null_ptrs)
 	ck_assert(pack_rec.accounting_list  == unpack_rec->accounting_list);
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
 	ck_assert(pack_rec.control_host     == unpack_rec->control_host);
-	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);
 	ck_assert(pack_rec.fed.name         == unpack_rec->fed.name);
 	ck_assert(pack_rec.fed.id           == unpack_rec->fed.id);
 	ck_assert(pack_rec.fed.state        == unpack_rec->fed.state);
