@@ -550,6 +550,33 @@ extern int task_p_post_step(stepd_step_rec_t *step)
 
 extern int task_p_add_pid(pid_t pid)
 {
+	char *status = NULL;
+	int rc = EINVAL;
+
+	if (!stepd_enabled || !step_group)
+		return SLURM_SUCCESS;
+
+	if (!resctrl_fs_group_exists(step_group)) {
+		error("resctrl group %s is not present on this node",
+		      step_group);
+		return SLURM_ERROR;
+	}
+
+	rc = resctrl_fs_move_pid(step_group, pid);
+
+	if ((rc == ESRCH) || (rc == ENOENT))
+		return SLURM_SUCCESS;
+	if (rc) {
+		status = resctrl_fs_last_cmd_status();
+		error("cannot move pid %d into resctrl group %s: %s (%s)",
+		      (int) pid, step_group, slurm_strerror(rc),
+		      (status ? status : "no status"));
+		xfree(status);
+		return SLURM_ERROR;
+	}
+
+	debug("moved pid %d into resctrl group %s", (int) pid, step_group);
+
 	return SLURM_SUCCESS;
 }
 
