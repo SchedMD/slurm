@@ -194,14 +194,22 @@ A plugin may also define the following variables that will be used by Slurm:
 
 .TP
 \fBslurm_spank_init_failure_mode\fR
-When a slurm_spank_init call fails, change how that failure is handled by Slurm.
+When \fBslurm_spank_init\fR fails, this variable selects how Slurm handles
+that failure. It applies only to \fBslurm_spank_init\fR.
 Recognized values are:
 .IP
 .RS
 .TP
 \fBESPANK_NODE_FAILURE\fR
-Slurm considers the node to be at fault and marks it as drained. The job may be
-requeued. This is the default.
+When \fBslurm_spank_init\fR fails in the batch step (the step that runs
+the batch script), Slurm considers the node to be at fault and drains it.
+This is the default. If the job may be requeued (see \fBJobRequeue\fR in
+\fBslurm.conf\fR(5) and \fB\-\-requeue\fR in \fBsbatch\fR(1)), the job is
+also requeued; otherwise it is marked as failed. No other step drains the node.
+When \fBPrologFlags=Contain\fR is set (see \fBslurm.conf\fR(5)), a failure in
+the extern step requeues a batch job and cancels a non\-batch job. A failure
+in any other step, including an \fBsrun\fR step inside a batch job, only
+fails that step.
 .IP
 
 .TP
