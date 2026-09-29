@@ -63,6 +63,7 @@ uid_t db_api_uid = -1;
 typedef struct slurm_acct_storage_ops {
 	void *(*get_conn)          (int conn_num, uint16_t *persist_conn_flags,
 				    bool rollback, char *cluster_name);
+	int (*auth_conn)(void *db_conn, uid_t auth_uid);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
 	int  (*add_users)          (void *db_conn, uint32_t uid,
@@ -228,6 +229,7 @@ typedef struct slurm_acct_storage_ops {
  */
 static const char *syms[] = {
 	"acct_storage_p_get_connection",
+	"acct_storage_p_auth_connection",
 	"acct_storage_p_close_connection",
 	"acct_storage_p_commit",
 	"acct_storage_p_add_users",
@@ -400,6 +402,16 @@ extern void *acct_storage_g_get_connection(
 
 	return (*(ops.get_conn))(conn_num, persist_conn_flags,
 				 rollback, cluster_name);
+}
+
+extern int acct_storage_g_auth_connection(void *db_conn, uid_t auth_uid)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
+	return (*(ops.auth_conn))(db_conn, auth_uid);
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)
