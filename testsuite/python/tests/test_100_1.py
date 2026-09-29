@@ -120,6 +120,62 @@ if atf.get_version() < (26, 11):
             "Issue #50528: conmgr/workerpool added in 26.11+",
         )
     )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "push_oversized_number_is_rejected",
+            "A host name whose number does not fit is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "create_oversized_number_is_rejected",
+            "A host name whose number does not fit is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "create_oversized_number_in_list_is_rejected",
+            "A host name whose number does not fit is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "create_oversized_number_in_bracket_is_rejected",
+            "A bracketed number that does not fit is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "create_oversized_range_end_is_rejected",
+            "A range end that does not fit is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "find_oversized_number_is_not_found",
+            "A host name whose number does not fit is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "push_ulong_max_is_rejected",
+            "A host number of ULONG_MAX is rejected starting at 26.11",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_hostlist_name.c",
+            "create_range_to_ulong_max_is_rejected",
+            "A host number of ULONG_MAX is rejected starting at 26.11",
+        )
+    )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
     skip_tests.append(
         (

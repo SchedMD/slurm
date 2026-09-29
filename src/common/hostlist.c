@@ -273,7 +273,6 @@ static char * _next_tok(char *, char **);
 static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);
 
-static int           host_prefix_end(const char *, int dims);
 static hostname_t *hostname_create(const char *);
 static void hostname_destroy(hostname_t *);
 static int hostname_suffix_is_valid(hostname_t *);
@@ -371,12 +370,12 @@ static char * _next_tok(char *sep, char **str)
 
 	while (1) {
 		/* push str past token and leave pointing to first separator */
-		while ((**str != '\0') && (strchr(sep, **str) == NULL))
-			(*str)++;
+		*str += strcspn(*str, sep);
 
 		/* push str past pairs of brackets */
-bracket: 	open_bracket = strchr(parse, '[');
-		if ((open_bracket == NULL) || (open_bracket > *str))
+bracket:
+		open_bracket = memchr(parse, '[', *str - parse);
+		if (open_bracket == NULL)
 			break;
 		close_bracket = strchr(parse, ']');
 		if ((close_bracket == NULL) || (close_bracket < open_bracket))
@@ -449,16 +448,9 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
 /*
  * return the location of the last char in the hostname prefix
  */
-static int host_prefix_end(const char *hostname, int dims)
+static int _prefix_end_len(const char *hostname, int len, int dims)
 {
-	int idx;
-
-	xassert(hostname);
-
-	if (!dims)
-		dims = slurmdb_setup_cluster_dims();
-
-	idx = strlen(hostname) - 1;
+	int idx = len - 1;
 
 	if (dims > 1) {
 		while ((idx >= 0) &&
@@ -473,42 +465,70 @@ static int host_prefix_end(const char *hostname, int dims)
 	return idx;
 }
 
+/*
+ * Read the numeric suffix of a hostname that holds len characters. plen gets
+ * the length of the prefix in front of it, num the value of the suffix and
+ * width the number of characters it was written in.
+ *
+ * Returns -1 when the suffix is ULONG_MAX or larger, 0 when the name holds no
+ * suffix or has other characters after the digits, and 1 when the suffix is
+ * read. plen is always set, num and width only when the suffix is read.
+ * ULONG_MAX is refused because a range can not end on it.
+ */
+static int _parse_hostname_len(const char *hostname, int len, int dims,
+			       int *plen, unsigned long *num, int *width)
+{
+	int base = hostlist_get_base(dims);
+	unsigned long val;
+	char *p;
+	int slen;
+
+	*plen = _prefix_end_len(hostname, len, dims) + 1;
+	slen = len - *plen;
+
+	if (!slen)
+		return 0;
+
+	if ((dims > 1) && (slen != dims))
+		base = 10;
+
+	val = strtoul(hostname + *plen, &p, base);
+	if (*p)
+		return 0;
+	if (val == ULONG_MAX)
+		return -1;
+
+	*num = val;
+	*width = slen;
+
+	return 1;
+}
+
 static hostname_t *hostname_create_dims(const char *hostname, int dims)
 {
-	hostname_t *hn = NULL;
-	char *p;
-	int idx = 0;
-	int hostlist_base;
+	hostname_t *hn;
+	unsigned long num = 0;
+	int len, plen, width, rc;
 
 	xassert(hostname);
 
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
-	hostlist_base = hostlist_get_base(dims);
+
+	len = strlen(hostname);
+
+	if ((rc = _parse_hostname_len(hostname, len, dims, &plen, &num,
+				      &width)) < 0)
+		return NULL;
 
 	hn = xmalloc(sizeof(*hn));
 
-	idx = host_prefix_end(hostname, dims);
-
 	hn->hostname = xstrdup(hostname);
+	hn->num = num;
 
-	hn->num = 0;
-	hn->prefix = NULL;
-	hn->suffix = NULL;
-	if (idx == (strlen(hostname) - 1)) {
-		hn->prefix = xstrdup(hostname);
-		return hn;
-	}
-
-	hn->suffix = hn->hostname + idx + 1;
-
-	if ((dims > 1) && (strlen(hn->suffix) != dims))
-		hostlist_base = 10;
-
-	hn->num = strtoul(hn->suffix, &p, hostlist_base);
-
-	if (*p == '\0') {
-		hn->prefix = xstrndup(hostname, (idx + 1));
+	if (rc) {
+		hn->prefix = xstrndup(hostname, plen);
+		hn->suffix = hn->hostname + plen;
 	} else {
 		hn->prefix = xstrdup(hostname);
 		hn->suffix = NULL;
@@ -714,7 +734,11 @@ static int hostrange_prefix_cmp(hostrange_t *h1, hostrange_t *h2)
 	if (h2 == NULL)
 		return -1;
 
-	retval = strnatcmp(h1->prefix, h2->prefix);
+	if (!xstrcmp(h1->prefix, h2->prefix))
+		retval = 0;
+	else /* natural order puts rack2 before rack10 */
+		retval = strnatcmp(h1->prefix, h2->prefix);
+
 	return retval == 0 ? h2->singlehost - h1->singlehost : retval;
 }
 
@@ -1584,7 +1608,7 @@ static int _parse_single_range(char *str, struct _range *range, int dims)
 
 	range->hi = (p && *p) ? strtoul(p, &q, hostlist_base) : range->lo;
 
-	if (q == p || *q != '\0') {
+	if ((q == p) || *q || (range->hi == ULONG_MAX)) {
 		error("%s: Invalid range: `%s'", __func__, orig);
 		free(orig);
 		return 0;
@@ -1768,7 +1792,8 @@ static hostlist_t *_hostlist_create_bracketed(const char *hostlist, char *sep,
 				goto error;
 			}
 		} else {
-			hostlist_push_host_dims(new, tok, dims);
+			if (!hostlist_push_host_dims(new, tok, dims))
+				goto error;
 		}
 	}
 	xfree(ranges);
@@ -1893,8 +1918,11 @@ int hostlist_push(hostlist_t *hl, const char *hosts)
 
 int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 {
-	hostrange_t *hr;
-	hostname_t *hn;
+	/* hostlist_push_range() folds or copies, so it keeps no pointer here. */
+	hostrange_t hr = { .singlehost = 1 };
+	char prefix_buf[HOST_NAME_MAX + 1];
+	char *prefix = prefix_buf;
+	int len, plen, rc;
 
 	if (!str || !hl)
 		return 0;
@@ -1902,18 +1930,30 @@ int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims)
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
 
-	hn = hostname_create_dims(str, dims);
+	len = strlen(str);
 
-	if (hostname_suffix_is_valid(hn))
-		hr = hostrange_create(hn->prefix, hn->num, hn->num,
-				      hostname_suffix_width(hn));
-	else
-		hr = hostrange_create_single(str);
+	rc = _parse_hostname_len(str, len, dims, &plen, &hr.lo, &hr.width);
+	if (rc < 0) {
+		error("%s: Invalid host name: `%s'", __func__, str);
+		return 0;
+	}
 
-	hostlist_push_range(hl, hr);
+	if (rc) {
+		if ((size_t) plen >= sizeof(prefix_buf))
+			prefix = xmalloc(plen + 1);
+		memcpy(prefix, str, plen);
+		prefix[plen] = '\0';
+		hr.hi = hr.lo;
+		hr.prefix = prefix;
+		hr.singlehost = 0;
+	} else {
+		hr.prefix = (char *) str;
+	}
 
-	hostrange_destroy(hr);
-	hostname_destroy(hn);
+	hostlist_push_range(hl, &hr);
+
+	if (prefix != prefix_buf)
+		xfree(prefix);
 
 	return 1;
 }
@@ -2221,7 +2261,8 @@ int hostlist_find_dims(hostlist_t *hl, const char *hostname, int dims)
 	if (!dims)
 		dims = slurmdb_setup_cluster_dims();
 
-	hn = hostname_create_dims(hostname, dims);
+	if (!(hn = hostname_create_dims(hostname, dims)))
+		return -1;
 
 	LOCK_HOSTLIST(hl);
 
@@ -3488,7 +3529,8 @@ static int hostset_find_host(hostset_t *set, const char *host)
 	int retval = 0;
 	hostname_t *hn;
 	LOCK_HOSTLIST(set->hl);
-	hn = hostname_create(host);
+	if (!(hn = hostname_create(host)))
+		goto done;
 	for (i = 0; i < set->hl->nranges; i++) {
 		/*
 		 * FIXME: THIS WILL NOT ALWAYS WORK CORRECTLY IF CALLED FROM A
