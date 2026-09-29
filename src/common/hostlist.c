@@ -1610,7 +1610,7 @@ static int _parse_single_range(char *str, struct _range *range, int dims)
 	}
 	range->lo = strtoul(str, &q, hostlist_base);
 
-	if (q == str) {
+	if ((q == str) || *q) {
 		error("%s: Invalid range: `%s'", __func__, orig);
 		free(orig);
 		return 0;
