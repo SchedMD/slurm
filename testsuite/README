@@ -1425,6 +1425,7 @@ test_166_4   Test slurmdbd closes connections that are not TLS wrapped
 test_167_#   Testing of HealthCheckProgram.
 ===========================================
 test_167_1   Test SLURM_NODE_IS_HEALTHY reporting to HealthCheckProgram
+test_167_2   Test per-class broadcast gating, restart recovery, DOWN detection
 
 test_168_#   Testing of heterogeneous jobs.
 ===========================================
