@@ -121,8 +121,7 @@ typedef struct slurm_acct_storage_ops {
 				 slurmdb_assoc_cond_t *assoc_cond);
 	list_t *(*remove_federations)(void *db_conn,
 				      slurmdb_federation_cond_t *fed_cond);
-	list_t *(*remove_qos)      (void *db_conn, uint32_t uid,
-				    slurmdb_qos_cond_t *qos_cond);
+	list_t *(*remove_qos)(void *db_conn, slurmdb_qos_cond_t *qos_cond);
 	list_t *(*remove_res)      (void *db_conn, uint32_t uid,
 				    slurmdb_res_cond_t *res_cond);
 	list_t *(*remove_wckeys)   (void *db_conn, uint32_t uid,
@@ -744,7 +743,7 @@ extern list_t *acct_storage_g_remove_federations(void *db_conn,
 	return (*(ops.remove_federations))(db_conn, fed_cond);
 }
 
-extern list_t *acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_remove_qos(void *db_conn,
 					 slurmdb_qos_cond_t *qos_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -752,7 +751,7 @@ extern list_t *acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.remove_qos))(db_conn, uid, qos_cond);
+	return (*(ops.remove_qos))(db_conn, qos_cond);
 }
 
 extern list_t *acct_storage_g_remove_res(void *db_conn, uint32_t uid,

@@ -3513,10 +3513,10 @@ extern list_t *acct_storage_p_remove_federations(mysql_conn_t *mysql_conn,
 					   fed_cond);
 }
 
-extern list_t *acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *acct_storage_p_remove_qos(mysql_conn_t *mysql_conn,
 					 slurmdb_qos_cond_t *qos_cond)
 {
-	return as_mysql_remove_qos(mysql_conn, uid, qos_cond);
+	return as_mysql_remove_qos(mysql_conn, mysql_conn->auth_uid, qos_cond);
 }
 
 extern list_t *acct_storage_p_remove_res(mysql_conn_t *mysql_conn,

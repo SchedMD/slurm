@@ -394,9 +394,8 @@ extern list_t *acct_storage_p_remove_federations(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_remove_qos(
-	void *db_conn, uint32_t uid,
-	slurmdb_qos_cond_t *qos_cond)
+extern list_t *acct_storage_p_remove_qos(void *db_conn,
+					 slurmdb_qos_cond_t *qos_cond)
 {
 	return NULL;
 }
