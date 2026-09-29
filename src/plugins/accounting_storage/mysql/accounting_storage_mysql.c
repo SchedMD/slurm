@@ -3526,10 +3526,10 @@ extern list_t *acct_storage_p_remove_res(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
-					    uint32_t uid,
 					    slurmdb_wckey_cond_t *wckey_cond)
 {
-	return as_mysql_remove_wckeys(mysql_conn, uid, wckey_cond);
+	return as_mysql_remove_wckeys(mysql_conn, mysql_conn->auth_uid,
+				      wckey_cond);
 }
 
 extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,

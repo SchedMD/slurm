@@ -1435,9 +1435,8 @@ extern list_t *acct_storage_p_remove_res(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_remove_wckeys(
-	void *db_conn, uint32_t uid,
-	slurmdb_wckey_cond_t *wckey_cond)
+extern list_t *acct_storage_p_remove_wckeys(void *db_conn,
+					    slurmdb_wckey_cond_t *wckey_cond)
 {
 	persist_msg_t req = {0};
 	dbd_cond_msg_t get_msg;

@@ -123,8 +123,8 @@ typedef struct slurm_acct_storage_ops {
 				      slurmdb_federation_cond_t *fed_cond);
 	list_t *(*remove_qos)(void *db_conn, slurmdb_qos_cond_t *qos_cond);
 	list_t *(*remove_res)(void *db_conn, slurmdb_res_cond_t *res_cond);
-	list_t *(*remove_wckeys)   (void *db_conn, uint32_t uid,
-				    slurmdb_wckey_cond_t *wckey_cond);
+	list_t *(*remove_wckeys)(void *db_conn,
+				 slurmdb_wckey_cond_t *wckey_cond);
 	int  (*remove_reservation) (void *db_conn,
 				    slurmdb_reservation_rec_t *resv);
 	list_t *(*get_users)       (void *db_conn, uint32_t uid,
@@ -764,7 +764,7 @@ extern list_t *acct_storage_g_remove_res(void *db_conn,
 	return (*(ops.remove_res))(db_conn, res_cond);
 }
 
-extern list_t *acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_remove_wckeys(void *db_conn,
 					    slurmdb_wckey_cond_t *wckey_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -772,7 +772,7 @@ extern list_t *acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.remove_wckeys))(db_conn, uid, wckey_cond);
+	return (*(ops.remove_wckeys))(db_conn, wckey_cond);
 }
 
 extern int acct_storage_g_remove_reservation(void *db_conn,

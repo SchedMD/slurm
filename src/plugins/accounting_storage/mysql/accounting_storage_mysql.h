@@ -226,8 +226,4 @@ extern int clusteracct_storage_p_get_usage(
 	slurmdb_cluster_rec_t *cluster_rec,  slurmdbd_msg_type_t type,
 	time_t start, time_t end);
 
-extern list_t *acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
-					    uint32_t uid,
-					    slurmdb_wckey_cond_t *wckey_cond);
-
 #endif

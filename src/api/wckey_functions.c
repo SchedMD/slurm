@@ -91,8 +91,5 @@ extern list_t *slurmdb_wckeys_modify(void *db_conn,
 extern list_t *slurmdb_wckeys_remove(void *db_conn,
 				     slurmdb_wckey_cond_t *wckey_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_wckeys(db_conn, db_api_uid, wckey_cond);
+	return acct_storage_g_remove_wckeys(db_conn, wckey_cond);
 }
