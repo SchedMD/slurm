@@ -302,4 +302,11 @@
 /* Macro to stringify bool for logging */
 #define BOOL_STRINGIFY(s) ((s) ? "True" : "False")
 
+/* True if ptr is a void pointer */
+#define IS_VOID_PTR(ptr) \
+	(__builtin_types_compatible_p(__typeof__(ptr), void *) || \
+	 __builtin_types_compatible_p(__typeof__(ptr), const void *) || \
+	 __builtin_types_compatible_p(__typeof__(ptr), volatile void *) || \
+	 __builtin_types_compatible_p(__typeof__(ptr), const volatile void *))
+
 #endif /* !_MACROS_H */
