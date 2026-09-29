@@ -1768,7 +1768,6 @@ static int _modify_accounts(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_accts(slurmdbd_conn->db_conn,
-						  slurmdbd_conn->auth_uid,
 						  get_msg->cond,
 						  get_msg->rec))) {
 		rc = errno;

@@ -292,7 +292,7 @@ extern list_t *acct_storage_p_modify_users(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_p_modify_accts(void *db_conn,
 					   slurmdb_account_cond_t *acct_cond,
 					   slurmdb_account_rec_t *acct)
 {

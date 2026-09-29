@@ -87,9 +87,9 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_reservation_rec_t *resv);
 	list_t *(*modify_users)(void *db_conn, slurmdb_user_cond_t *user_cond,
 				slurmdb_user_rec_t *user);
-	list_t *(*modify_accts)    (void *db_conn, uint32_t uid,
-				    slurmdb_account_cond_t *acct_cond,
-				    slurmdb_account_rec_t *acct);
+	list_t *(*modify_accts)(void *db_conn,
+				slurmdb_account_cond_t *acct_cond,
+				slurmdb_account_rec_t *acct);
 	list_t *(*modify_clusters) (void *db_conn, uint32_t uid,
 				    slurmdb_cluster_cond_t *cluster_cond,
 				    slurmdb_cluster_rec_t *cluster);
@@ -572,7 +572,7 @@ extern list_t *acct_storage_g_modify_users(void *db_conn,
 	return (*(ops.modify_users))(db_conn, user_cond, user);
 }
 
-extern list_t *acct_storage_g_modify_accts(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_accts(void *db_conn,
 					   slurmdb_account_cond_t *acct_cond,
 					   slurmdb_account_rec_t *acct)
 {
@@ -581,7 +581,7 @@ extern list_t *acct_storage_g_modify_accts(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.modify_accts))(db_conn, uid, acct_cond, acct);
+	return (*(ops.modify_accts))(db_conn, acct_cond, acct);
 }
 
 extern list_t *acct_storage_g_modify_clusters(

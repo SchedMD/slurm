@@ -214,7 +214,7 @@ extern list_t *acct_storage_g_modify_users(void *db_conn,
  * IN:  slurmdb_account_rec_t *acct
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_accts(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_accts(void *db_conn,
 					   slurmdb_account_cond_t *acct_cond,
 					   slurmdb_account_rec_t *acct);
 

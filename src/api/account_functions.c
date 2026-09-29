@@ -94,11 +94,7 @@ extern list_t *slurmdb_accounts_modify(void *db_conn,
 				       slurmdb_account_cond_t *acct_cond,
 				       slurmdb_account_rec_t *acct)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_accts(db_conn, db_api_uid, acct_cond,
-					   acct);
+	return acct_storage_g_modify_accts(db_conn, acct_cond, acct);
 }
 
 /*
