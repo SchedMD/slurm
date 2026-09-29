@@ -1838,7 +1838,6 @@ static int _modify_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_clusters(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->cond,
 						     get_msg->rec))) {
 		rc = errno;
@@ -2422,7 +2421,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	list_msg.my_list =
 		acct_storage_g_modify_clusters(slurmdbd_conn->db_conn,
-					       slurmdbd_conn->auth_uid,
 					       &cluster_q, &cluster);
 	if (errno == EFAULT) {
 		comment = "Request to register was incomplete";

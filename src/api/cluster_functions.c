@@ -79,11 +79,7 @@ extern list_t *slurmdb_clusters_modify(void *db_conn,
 				       slurmdb_cluster_cond_t *cluster_cond,
 				       slurmdb_cluster_rec_t *cluster)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_clusters(db_conn, db_api_uid,
-					      cluster_cond, cluster);
+	return acct_storage_g_modify_clusters(db_conn, cluster_cond, cluster);
 }
 
 /*

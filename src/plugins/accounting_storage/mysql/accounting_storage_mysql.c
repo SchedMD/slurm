@@ -3405,11 +3405,12 @@ extern list_t *acct_storage_p_modify_accts(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
-					      uint32_t uid,
-					      slurmdb_cluster_cond_t *cluster_cond,
+					      slurmdb_cluster_cond_t
+						      *cluster_cond,
 					      slurmdb_cluster_rec_t *cluster)
 {
-	return as_mysql_modify_clusters(mysql_conn, uid, cluster_cond, cluster);
+	return as_mysql_modify_clusters(mysql_conn, mysql_conn->auth_uid,
+					cluster_cond, cluster);
 }
 
 extern list_t *acct_storage_p_modify_assocs(

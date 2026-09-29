@@ -539,9 +539,8 @@ static void _mark_self_as_drained(void)
 	cluster_rec.fed.state = CLUSTER_FED_STATE_INACTIVE |
 		(fed_mgr_cluster_rec->fed.state & ~CLUSTER_FED_STATE_BASE);
 
-	ret_list = acct_storage_g_modify_clusters(acct_db_conn,
-	                                          slurm_conf.slurm_user_id,
-	                                          &cluster_cond, &cluster_rec);
+	ret_list = acct_storage_g_modify_clusters(acct_db_conn, &cluster_cond,
+						  &cluster_rec);
 	if (!ret_list || !list_count(ret_list)) {
 		error("Failed to set cluster state to drained");
 	}

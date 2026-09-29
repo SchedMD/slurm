@@ -90,9 +90,9 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*modify_accts)(void *db_conn,
 				slurmdb_account_cond_t *acct_cond,
 				slurmdb_account_rec_t *acct);
-	list_t *(*modify_clusters) (void *db_conn, uint32_t uid,
-				    slurmdb_cluster_cond_t *cluster_cond,
-				    slurmdb_cluster_rec_t *cluster);
+	list_t *(*modify_clusters)(void *db_conn,
+				   slurmdb_cluster_cond_t *cluster_cond,
+				   slurmdb_cluster_rec_t *cluster);
 	list_t *(*modify_assocs)   (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond,
 				    slurmdb_assoc_rec_t *assoc);
@@ -584,16 +584,17 @@ extern list_t *acct_storage_g_modify_accts(void *db_conn,
 	return (*(ops.modify_accts))(db_conn, acct_cond, acct);
 }
 
-extern list_t *acct_storage_g_modify_clusters(
-	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond,
-	slurmdb_cluster_rec_t *cluster)
+extern list_t *acct_storage_g_modify_clusters(void *db_conn,
+					      slurmdb_cluster_cond_t
+						      *cluster_cond,
+					      slurmdb_cluster_rec_t *cluster)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.modify_clusters))(db_conn, uid, cluster_cond, cluster);
+	return (*(ops.modify_clusters))(db_conn, cluster_cond, cluster);
 }
 
 extern list_t *acct_storage_g_modify_assocs(

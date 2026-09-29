@@ -696,8 +696,9 @@ extern list_t *acct_storage_p_modify_accts(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
-					      slurmdb_cluster_cond_t *cluster_cond,
+extern list_t *acct_storage_p_modify_clusters(void *db_conn,
+					      slurmdb_cluster_cond_t
+						      *cluster_cond,
 					      slurmdb_cluster_rec_t *cluster)
 {
 	persist_msg_t req = {0};
