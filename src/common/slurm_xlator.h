@@ -140,7 +140,6 @@
 #define rmdir_recursive		slurm_rmdir_recursive
 
 /* hostlist.[ch] functions */
-#define	hostlist_create_dims	slurm_hostlist_create_dims
 #define	hostlist_create		slurm_hostlist_create
 #define	hostlist_create_client	slurm_hostlist_create_client
 #define	hostlist_copy		slurm_hostlist_copy
@@ -148,11 +147,7 @@
 #define	hostlist_delete		slurm_hostlist_delete
 #define	hostlist_delete_host	slurm_hostlist_delete_host
 #define	hostlist_delete_nth	slurm_hostlist_delete_nth
-#define	hostlist_deranged_string_dims \
-				slurm_hostlist_deranged_string_dims
 #define	hostlist_deranged_string slurm_hostlist_deranged_string
-#define	hostlist_deranged_string_xmalloc_dims \
-				slurm_hostlist_deranged_string_xmalloc_dims
 #define	hostlist_deranged_string_xmalloc \
 				slurm_hostlist_deranged_string_xmalloc
 #define	hostlist_destroy	slurm_hostlist_destroy
@@ -165,19 +160,13 @@
 #define hostlist_drop slurm_hostlist_drop
 #define	hostlist_pop            slurm_hostlist_pop
 #define	hostlist_push		slurm_hostlist_push
-#define	hostlist_push_host_dims	slurm_hostlist_push_host_dims
 #define	hostlist_push_host	slurm_hostlist_push_host
 #define	hostlist_push_list	slurm_hostlist_push_list
-#define hostlist_ranged_string_dims \
-				slurm_hostlist_ranged_string_dims
 #define	hostlist_ranged_string	slurm_hostlist_ranged_string
-#define	hostlist_ranged_string_xmalloc_dims \
-				slurm_hostlist_ranged_string_xmalloc_dims
 #define	hostlist_ranged_string_xmalloc \
 				slurm_hostlist_ranged_string_xmalloc
 #define	hostlist_remove		slurm_hostlist_remove
 #define	hostlist_shift		slurm_hostlist_shift
-#define	hostlist_shift_dims	slurm_hostlist_shift_dims
 #define	hostlist_sort		slurm_hostlist_sort
 #define	hostlist_split_treewidth \
 				slurm_hostlist_split_treewidth
