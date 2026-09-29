@@ -327,8 +327,9 @@ extern list_t *acct_storage_g_remove_accts(void *db_conn,
  * IN:  slurmdb_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_clusters(
-	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
+extern list_t *acct_storage_g_remove_clusters(void *db_conn,
+					      slurmdb_cluster_cond_t
+						      *cluster_cond);
 
 /*
  * remove associations from accounting system

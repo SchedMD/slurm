@@ -90,9 +90,5 @@ extern list_t *slurmdb_clusters_modify(void *db_conn,
 extern list_t *slurmdb_clusters_remove(void *db_conn,
 				       slurmdb_cluster_cond_t *cluster_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_clusters(
-		db_conn, db_api_uid, cluster_cond);
+	return acct_storage_g_remove_clusters(db_conn, cluster_cond);
 }

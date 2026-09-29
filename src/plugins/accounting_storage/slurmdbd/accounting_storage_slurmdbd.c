@@ -1207,8 +1207,9 @@ extern list_t *acct_storage_p_remove_accts(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
-					      slurmdb_account_cond_t *cluster_cond)
+extern list_t *acct_storage_p_remove_clusters(void *db_conn,
+					      slurmdb_account_cond_t
+						      *cluster_cond)
 {
 	persist_msg_t req = {0};
 	dbd_cond_msg_t get_msg;
