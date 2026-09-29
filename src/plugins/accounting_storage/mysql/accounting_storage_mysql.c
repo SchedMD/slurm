@@ -3370,10 +3370,9 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, list_t *qos_list)
 	return as_mysql_add_qos(mysql_conn, mysql_conn->auth_uid, qos_list);
 }
 
-extern int acct_storage_p_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
-				  list_t *res_list)
+extern int acct_storage_p_add_res(mysql_conn_t *mysql_conn, list_t *res_list)
 {
-	return as_mysql_add_res(mysql_conn, uid, res_list);
+	return as_mysql_add_res(mysql_conn, mysql_conn->auth_uid, res_list);
 }
 
 extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,

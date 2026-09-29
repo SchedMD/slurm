@@ -181,8 +181,7 @@ extern int acct_storage_g_add_qos(void *db_conn, list_t *qos_list);
  * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
-				  list_t *res_list);
+extern int acct_storage_g_add_res(void *db_conn, list_t *res_list);
 
 /*
  * add wckey's to accounting system
