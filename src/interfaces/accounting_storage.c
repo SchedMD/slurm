@@ -101,9 +101,8 @@ typedef struct slurm_acct_storage_ops {
 				      slurmdb_federation_rec_t *fed);
 	list_t *(*modify_job)(void *db_conn, slurmdb_job_cond_t *job_cond,
 			      slurmdb_job_rec_t *job);
-	list_t *(*modify_qos)      (void *db_conn, uint32_t uid,
-				    slurmdb_qos_cond_t *qos_cond,
-				    slurmdb_qos_rec_t *qos);
+	list_t *(*modify_qos)(void *db_conn, slurmdb_qos_cond_t *qos_cond,
+			      slurmdb_qos_rec_t *qos);
 	list_t *(*modify_res)      (void *db_conn, uint32_t uid,
 				    slurmdb_res_cond_t *res_cond,
 				    slurmdb_res_rec_t *res);
@@ -633,7 +632,7 @@ extern list_t *acct_storage_g_modify_job(void *db_conn,
 	return (*(ops.modify_job))(db_conn, job_cond, job);
 }
 
-extern list_t *acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_qos(void *db_conn,
 					 slurmdb_qos_cond_t *qos_cond,
 					 slurmdb_qos_rec_t *qos)
 {
@@ -642,7 +641,7 @@ extern list_t *acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.modify_qos))(db_conn, uid, qos_cond, qos);
+	return (*(ops.modify_qos))(db_conn, qos_cond, qos);
 }
 
 extern list_t *acct_storage_g_modify_res(void *db_conn, uint32_t uid,

@@ -78,10 +78,7 @@ extern list_t *slurmdb_qos_modify(void *db_conn,
 				  slurmdb_qos_cond_t *qos_cond,
 				  slurmdb_qos_rec_t *qos)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_qos(db_conn, db_api_uid, qos_cond, qos);
+	return acct_storage_g_modify_qos(db_conn, qos_cond, qos);
 }
 
 /*
