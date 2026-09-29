@@ -90,8 +90,5 @@ extern list_t *slurmdb_associations_modify(void *db_conn,
 extern list_t *slurmdb_associations_remove(
 	void *db_conn, slurmdb_assoc_cond_t *assoc_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_assocs(db_conn, db_api_uid, assoc_cond);
+	return acct_storage_g_remove_assocs(db_conn, assoc_cond);
 }

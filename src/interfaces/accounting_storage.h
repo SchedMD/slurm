@@ -336,8 +336,8 @@ extern list_t *acct_storage_g_remove_clusters(void *db_conn,
  * IN:  slurmdb_assoc_cond_t *assoc_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_assocs(
-	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
+extern list_t *acct_storage_g_remove_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond);
 
 /*
  * remove federations from accounting system

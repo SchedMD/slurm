@@ -381,9 +381,8 @@ extern list_t *acct_storage_p_remove_clusters(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_remove_assocs(
-	void *db_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *acct_storage_p_remove_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond)
 {
 	return NULL;
 }
