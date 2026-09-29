@@ -325,8 +325,6 @@ static char * _replace_double_quotes(char *option)
 static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 			    persist_init_req_msg_t *init_msg)
 {
-	int rc = SLURM_SUCCESS;
-
 #if HAVE_SYS_PRCTL_H
 	{
 	char *name = xstrdup_printf("p-%s", init_msg->cluster_name);
@@ -354,9 +352,10 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	/* Mirror to pcon: persist_conn.c packs/unpacks with it. */
 	slurmdbd_conn->pcon->version = init_msg->version;
 	if (errno)
-		rc = errno;
+		return errno;
 
-	return rc;
+	return acct_storage_g_auth_connection(slurmdbd_conn->db_conn,
+					      slurmdbd_conn->auth_uid);
 }
 
 static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
