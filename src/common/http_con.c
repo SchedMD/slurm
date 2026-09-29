@@ -417,18 +417,31 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 			     const char *value)
 {
-	char buffer[MAX_HEADER_BYTES] = { 0 };
-	int wrote = -1;
+	/*
+	 * Try to build header as nearly every header fits in MAX_HEADER_BYTES
+	 * before taking performance penalty for allocating on heap.
+	 */
+	char stack_buffer[MAX_HEADER_BYTES];
+	char *heap_buffer = NULL;
+	const char *buffer = stack_buffer;
+	int rc = EINVAL, wrote = -1;
 
-	if ((wrote = snprintf(buffer, sizeof(buffer), "%s: %s%s", name, value,
-			      CRLF)) >= sizeof(buffer)) {
-		log_flag_hex(NET, value, strlen(value), "%s: [%s] header \"%s\" too large: %d/%d bytes",
-			 __func__, conmgr_con_get_name(con), name, wrote,
-			 sizeof(buffer));
-		return ENOMEM;
+	if ((wrote = snprintf(stack_buffer, sizeof(stack_buffer), "%s: %s%s",
+			      name, value, CRLF)) < 0)
+		return EINVAL;
+
+	if (wrote >= sizeof(stack_buffer)) {
+		if (!(heap_buffer = try_xstrdup_printf("%s: %s%s", name, value,
+						       CRLF)))
+			return ENOMEM;
+
+		buffer = heap_buffer;
 	}
 
-	return conmgr_con_queue_write_data(con, buffer, wrote);
+	rc = conmgr_con_queue_write_data(con, buffer, wrote);
+
+	xfree(heap_buffer);
+	return rc;
 }
 
 /*

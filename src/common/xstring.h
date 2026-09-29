@@ -136,6 +136,14 @@ char *xstrdup(const char *str);
 char *xstrdup_printf(const char *fmt, ...)
   __attribute__ ((format (printf, 1, 2)));
 
+/*
+ * strdup formatted which uses try_xmalloc() routines
+ * IN fmt - format of string and args if any
+ * RET copy of formatted string or NULL on allocation failure
+ */
+char *try_xstrdup_printf(const char *fmt, ...)
+	__attribute__((format(printf, 1, 2)));
+
 size_t _xstrdup_vprintf(char **str, const char *_fmt, va_list _ap);
 
 /*

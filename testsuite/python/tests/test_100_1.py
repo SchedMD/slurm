@@ -114,6 +114,12 @@ if atf.get_version() < (26, 11):
             "Issue #50192. LogTimeFormat options introduced in Slurm 26.11",
         )
     )
+    skip_tests.append(
+        (
+            "common/test_http_con.c",
+            "Issue #50528: conmgr/workerpool added in 26.11+",
+        )
+    )
 if atf.get_version() < (25, 5) or (26, 11) < atf.get_version()[:2]:
     skip_tests.append(
         (
@@ -240,6 +246,11 @@ for test in test_files:
 
             # Run the libcheck tests and get the xml parsed results
             test_results = atf.run_check_test(src, build_args="-Wl,--export-dynamic")
+
+            if "test" not in test_results:
+                pytest.fail(
+                    f"{src}: zero tests ran; the suite's setup fixture probably failed"
+                )
 
             # Get a list of test cases (ensure it's a list)
             test_cases = test_results["test"]
