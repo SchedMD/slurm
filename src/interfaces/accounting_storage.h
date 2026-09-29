@@ -167,8 +167,7 @@ extern int acct_storage_g_add_tres(void *db_conn, list_t *tres_list_in);
  * IN:  assoc_list List of slurmdb_assoc_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
-				     list_t *assoc_list);
+extern int acct_storage_g_add_assocs(void *db_conn, list_t *assoc_list);
 
 /*
  * add qos's to accounting system

@@ -547,7 +547,6 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	}
 
 	rc = acct_storage_g_add_assocs(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid,
 				       get_msg->my_list);
 end_it:
 	*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,

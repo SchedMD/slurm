@@ -50,10 +50,7 @@
  */
 extern int slurmdb_associations_add(void *db_conn, list_t *assoc_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_assocs(db_conn, db_api_uid, assoc_list);
+	return acct_storage_g_add_assocs(db_conn, assoc_list);
 }
 
 /*
