@@ -247,6 +247,7 @@ typedef struct {
 	char          *tres_bind;	/* TRES binding */
 	char          *tres_freq;	/* TRES frequency */
 	time_t job_end_time;            /* job end time */
+	uint16_t job_exclusive; /* JOB_EXCLUSIVE_* of the job */
 	char *job_licenses;		/* Licenses allocated to job */
 	uint16_t job_restart_cnt;
 	time_t job_start_time;          /* job start time */
