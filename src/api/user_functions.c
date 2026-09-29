@@ -88,11 +88,7 @@ extern list_t *slurmdb_users_modify(void *db_conn,
 				    slurmdb_user_cond_t *user_cond,
 				    slurmdb_user_rec_t *user)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_users(db_conn, db_api_uid,
-					   user_cond, user);
+	return acct_storage_g_modify_users(db_conn, user_cond, user);
 }
 
 /*

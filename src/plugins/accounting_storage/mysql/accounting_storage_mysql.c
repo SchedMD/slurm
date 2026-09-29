@@ -3389,11 +3389,11 @@ extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_modify_users(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
 					   slurmdb_user_cond_t *user_cond,
 					   slurmdb_user_rec_t *user)
 {
-	return as_mysql_modify_users(mysql_conn, uid, user_cond, user);
+	return as_mysql_modify_users(mysql_conn, mysql_conn->auth_uid,
+				     user_cond, user);
 }
 
 extern list_t *acct_storage_p_modify_accts(mysql_conn_t *mysql_conn,

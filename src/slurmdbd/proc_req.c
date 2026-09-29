@@ -2045,7 +2045,6 @@ is_same_user:
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_users(slurmdbd_conn->db_conn,
-						  slurmdbd_conn->auth_uid,
 						  user_cond, user_rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
