@@ -89,8 +89,5 @@ extern list_t *slurmdb_res_modify(void *db_conn,
 extern list_t *slurmdb_res_remove(void *db_conn,
 				  slurmdb_res_cond_t *res_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_res(db_conn, db_api_uid, res_cond);
+	return acct_storage_g_remove_res(db_conn, res_cond);
 }

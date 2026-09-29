@@ -361,8 +361,8 @@ extern list_t *acct_storage_g_remove_qos(void *db_conn,
  * IN:  slurmdb_res_cond_t *res_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_res(
-	void *db_conn, uint32_t uid, slurmdb_res_cond_t *res_cond);
+extern list_t *acct_storage_g_remove_res(void *db_conn,
+					 slurmdb_res_cond_t *res_cond);
 
 /*
  * remove wckey from accounting system
