@@ -670,7 +670,6 @@ static int _add_users_cond(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	 */
 
 	if (!(comment = acct_storage_g_add_users_cond(slurmdbd_conn->db_conn,
-						      slurmdbd_conn->auth_uid,
 						      modify_msg->cond,
 						      modify_msg->rec))) {
 		free_comment = false;

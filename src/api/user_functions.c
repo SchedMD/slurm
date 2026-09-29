@@ -59,11 +59,7 @@ extern char *slurmdb_users_add_cond(void *db_conn,
 {
 	xassert(add_assoc);
 
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_users_cond(
-		db_conn, db_api_uid, add_assoc, user);
+	return acct_storage_g_add_users_cond(db_conn, add_assoc, user);
 }
 
 /*

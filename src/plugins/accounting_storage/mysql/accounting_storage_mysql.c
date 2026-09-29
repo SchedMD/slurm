@@ -3309,11 +3309,12 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, list_t *user_list)
 	return as_mysql_add_users(mysql_conn, mysql_conn->auth_uid, user_list);
 }
 
-extern char *acct_storage_p_add_users_cond(void *mysql_conn, uint32_t uid,
+extern char *acct_storage_p_add_users_cond(mysql_conn_t *mysql_conn,
 					   slurmdb_add_assoc_cond_t *add_assoc,
 					   slurmdb_user_rec_t *user)
 {
-	return as_mysql_add_users_cond(mysql_conn, uid, add_assoc, user);
+	return as_mysql_add_users_cond(mysql_conn, mysql_conn->auth_uid,
+				       add_assoc, user);
 }
 
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,

@@ -218,7 +218,7 @@ extern int acct_storage_p_add_users(void *db_conn, list_t *user_list)
 	return SLURM_SUCCESS;
 }
 
-extern char *acct_storage_p_add_users_cond(void *db_conn, uint32_t uid,
+extern char *acct_storage_p_add_users_cond(void *db_conn,
 					   slurmdb_add_assoc_cond_t *add_assoc,
 					   slurmdb_user_rec_t *user)
 {

@@ -108,10 +108,9 @@ extern int acct_storage_g_add_users(void *db_conn, list_t *user_list);
  * RET: Return char * to print out of what was added or NULL and errno set on
  *      error.
  */
-extern char *acct_storage_g_add_users_cond(
-	void *db_conn, uint32_t uid,
-	slurmdb_add_assoc_cond_t *add_assoc,
-	slurmdb_user_rec_t *user);
+extern char *acct_storage_g_add_users_cond(void *db_conn,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_user_rec_t *user);
 
 /*
  * add users as account coordinators
