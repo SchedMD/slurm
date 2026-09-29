@@ -3351,6 +3351,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	time_t now = time(NULL);
 	bool orig_node_avail;
 	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
+	bool slurmd_restarted;
+	time_t orig_last_response = 0;
 	static int node_features_cnt = -1;
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
@@ -3636,6 +3638,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		last_node_update = now;
 	}
 
+	orig_last_response = node_ptr->last_response;
+	slurmd_restarted =
+		(node_ptr->slurmd_start_time != reg_msg->slurmd_start_time);
+	node_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
+
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
 	    IS_NODE_POWERING_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -3688,18 +3695,19 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	/*
-	 * Apply slurmd-supplied fields (extra, instance_id, instance_type,
-	 * topology) when slurmd's reported boot_time is later than the
-	 * last time we successfully heard from the node. This fires on the
-	 * first registration (last_response == 0) and on an actual node
-	 * reboot (the same condition the reboot-detection branch below
-	 * uses to mark the node "unexpectedly rebooted"). Steady-state
-	 * pings and slurmd restarts without an actual reboot have
-	 * boot_time < last_response and are skipped, so admin overrides
-	 * via scontrol update node ... are not clobbered. last_response is
-	 * state-saved, so the gate also survives slurmctld restart.
+	 * Apply the slurmd-supplied extra, instance_id, instance_type and
+	 * topology only when the node booted since it last responded and
+	 * slurmd restarted since its last registration. That is true on the
+	 * first registration and after a real reboot or power up. A slurmd
+	 * restart does not boot the node, and a rebootless feature change does
+	 * not restart slurmd, so values set with scontrol update stay.
+	 * last_response is state-saved, so this also holds across a slurmctld
+	 * restart. Compare against last_response from before this
+	 * registration, because it is set to now above for a node leaving
+	 * power save. Compare slurmd start times only with each other, because
+	 * they come from the node's clock.
 	 */
-	if (node_ptr->boot_time > node_ptr->last_response) {
+	if ((node_ptr->boot_time > orig_last_response) && slurmd_restarted) {
 		bool update_db = false;
 
 		if (reg_msg->extra) {
