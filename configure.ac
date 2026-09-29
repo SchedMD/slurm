@@ -600,6 +600,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile
+		 src/plugins/task/resctrl/Makefile
 		 src/plugins/tls/Makefile
 		 src/plugins/tls/none/Makefile
 		 src/plugins/tls/s2n/Makefile
