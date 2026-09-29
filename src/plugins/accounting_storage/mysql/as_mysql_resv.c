@@ -685,7 +685,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn,
 				    xstrdup(mysql_conn->cluster_name));
 		job_cond.cluster_list = resv_cond->cluster_list;
 		local_cluster_list = setup_cluster_list_with_inx(
-			mysql_conn, &job_cond, (void **)&curr_cluster);
+			mysql_conn, &job_cond, (void **)&curr_cluster, true);
 	}
 
 	(void) _setup_resv_cond_limits(resv_cond, &extra);

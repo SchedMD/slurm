@@ -45,9 +45,21 @@
 
 #include "accounting_storage_mysql.h"
 
+/*
+ * Load the node snapshots a node_inx can be resolved against. The snapshots
+ * are limited to job_cond->usage_start through usage_end when a start is
+ * given, so a caller whose records are not bound by that period must leave it
+ * unset.
+ *
+ * future_starts - let the open snapshot match a record that starts later than
+ *	now. A job has always started by the time it is recorded, so the open
+ *	snapshot can end at now. A reservation can be recorded before it
+ *	starts, and ending the snapshot at now would exclude it.
+ */
 extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 					   slurmdb_job_cond_t *job_cond,
-					   void **curr_cluster);
+					   void **curr_cluster,
+					   bool future_starts);
 extern int good_nodes_from_inx(list_t *local_cluster_list,
 			       void **object, char *node_inx,
 			       int submit);
