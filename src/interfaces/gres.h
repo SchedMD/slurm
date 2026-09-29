@@ -1064,6 +1064,9 @@ extern uint64_t gres_step_count(list_t *step_gres_list, char *gres_name);
 /*
  * Configure the GRES hardware allocated to the current step while privileged
  *
+ * The devices of every record of a GRES allocated to the step on this node
+ * are set up together. A GRES with no such device is skipped.
+ *
  * IN step_gres_list - Step's GRES specification
  * IN settings       - string containing configuration settings for the hardware
  */

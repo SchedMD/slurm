@@ -10212,40 +10212,51 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 /*
  * Configure the GRES hardware allocated to the current step while privileged
  *
+ * The devices of every record of a GRES allocated to the step on this node
+ * are set up together. A GRES with no such device is skipped.
+ *
  * IN step_gres_list - Step's GRES specification
  * IN settings       - string containing configuration settings for the hardware
  */
 extern void gres_g_step_hardware_init(list_t *step_gres_list,
 				      char *settings)
 {
-	int i;
-	gres_state_t *gres_state_step;
-	gres_step_state_t *gres_ss;
-	bitstr_t *devices;
-
 	if (!step_gres_list)
 		return;
 
 	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; i < gres_context_cnt; i++) {
+	for (int i = 0; i < gres_context_cnt; i++) {
+		bitstr_t *devices = NULL;
+		foreach_gres_accumulate_device_t arg = {
+			.gres_bit_alloc = &devices,
+			.is_job = false,
+			.plugin_id = gres_context[i].plugin_id,
+		};
+		int device_cnt = 0;
+
 		if (gres_context[i].ops.step_hardware_init == NULL)
 			continue;
 
-		gres_state_step = list_find_first(step_gres_list, gres_find_id,
-						  &gres_context[i].plugin_id);
-		if (!gres_state_step || !gres_state_step->gres_data)
-			continue;
-		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
-		if ((gres_ss->node_cnt != 1) ||
-		    !gres_ss->gres_bit_alloc ||
-		    !gres_ss->gres_bit_alloc[0])
+		(void) list_for_each(step_gres_list, _accumulate_gres_device,
+				     &arg);
+		if (!devices)
 			continue;
 
-		devices = gres_ss->gres_bit_alloc[0];
+		device_cnt = bit_set_count(devices);
+		if (!device_cnt) {
+			log_flag(GRES, "%s: no gres/%s device is allocated to the step on this node, skipping its hardware setup",
+				 __func__, gres_context[i].gres_name);
+			FREE_NULL_BITMAP(devices);
+			continue;
+		}
+
+		log_flag(GRES, "%s: setting up %d gres/%s device(s) allocated to the step on this node",
+			 __func__, device_cnt, gres_context[i].gres_name);
 		if (settings)
 			debug2("settings: %s", settings);
 		(*(gres_context[i].ops.step_hardware_init))(devices, settings);
+		FREE_NULL_BITMAP(devices);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
