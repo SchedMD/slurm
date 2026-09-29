@@ -311,8 +311,7 @@ extern list_t *acct_storage_g_remove_users(void *db_conn,
  * IN: slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
-					   list_t *acct_list,
+extern list_t *acct_storage_g_remove_coord(void *db_conn, list_t *acct_list,
 					   slurmdb_user_cond_t *user_cond);
 
 /*

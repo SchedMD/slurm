@@ -2494,7 +2494,6 @@ static int _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_coord(slurmdbd_conn->db_conn,
-						  slurmdbd_conn->auth_uid,
 						  get_msg->acct_list,
 						  get_msg->cond))) {
 		rc = errno;

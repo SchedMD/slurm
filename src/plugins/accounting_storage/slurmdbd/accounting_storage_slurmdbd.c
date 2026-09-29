@@ -1116,8 +1116,7 @@ extern list_t *acct_storage_p_remove_users(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
-					   list_t *acct_list,
+extern list_t *acct_storage_p_remove_coord(void *db_conn, list_t *acct_list,
 					   slurmdb_user_cond_t *user_cond)
 {
 	persist_msg_t req = {0};
