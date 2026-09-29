@@ -231,8 +231,7 @@ extern int acct_storage_p_add_coord(void *db_conn, list_t *acct_list,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
-				    list_t *acct_list)
+extern int acct_storage_p_add_accts(void *db_conn, list_t *acct_list)
 {
 	return SLURM_SUCCESS;
 }

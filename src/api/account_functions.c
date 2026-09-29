@@ -50,9 +50,7 @@
  */
 extern int slurmdb_accounts_add(void *db_conn, list_t *acct_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-	return acct_storage_g_add_accts(db_conn, db_api_uid, acct_list);
+	return acct_storage_g_add_accts(db_conn, acct_list);
 }
 
 extern char *slurmdb_accounts_add_cond(void *db_conn,

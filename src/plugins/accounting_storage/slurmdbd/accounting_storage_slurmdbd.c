@@ -368,8 +368,7 @@ extern int acct_storage_p_add_coord(void *db_conn, list_t *acct_list,
 	return rc;
 }
 
-extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
-				    list_t *acct_list)
+extern int acct_storage_p_add_accts(void *db_conn, list_t *acct_list)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;
