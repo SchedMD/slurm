@@ -5601,16 +5601,17 @@ The \fBurl\-encoded\fR plugin is required by \fBslurmrestd\fR. The \fByaml\fR
 plugin is required wherever a YAML configuration file is read, not just by
 \fBslurmctld\fR: \fBtopology.yaml\fR is read by \fBslurmctld\fR, \fBslurmd\fR,
 \fBslurmstepd\fR, and clients such as \fBscontrol show topology\fR;
-\fBnamespace.yaml\fR by \fBslurmd\fR and \fBslurmstepd\fR (configless mode
-ships both files to the nodes); and \fBresources.yaml\fR and
-\fBrpc_queue.yaml\fR by \fBslurmctld\fR alone. It is also required by
-\fBslurmrestd\fR when \fBSLURMRESTD_YAML\fR is set in its environment, by the
-Lua helpers \fBslurm.to_yaml\fR and \fBslurm.from_yaml\fR, and by the
-\fB\-\-yaml\fR option of \fBsacct\fR, \fBsacctmgr\fR, \fBscontrol\fR,
-\fBsdiag\fR, \fBsinfo\fR, \fBsqueue\fR, and \fBsshare\fR. Omitting \fByaml\fR
-is fatal to whichever of these are in use: where a \fBtopology.yaml\fR exists,
-no \fBslurmd\fR would start and no job step would run, so keep \fByaml\fR
-listed unless the build has no YAML plugin. To select \fBxjson\fR use:
+\fBnamespace.yaml\fR by \fBslurmd\fR and \fBslurmstepd\fR; \fBresctrl.yaml\fR
+by \fBslurmd\fR (configless mode ships these three files to the nodes); and
+\fBresources.yaml\fR and \fBrpc_queue.yaml\fR by \fBslurmctld\fR alone. It is
+also required by \fBslurmrestd\fR when \fBSLURMRESTD_YAML\fR is set in its
+environment, by the Lua helpers \fBslurm.to_yaml\fR and \fBslurm.from_yaml\fR,
+and by the \fB\-\-yaml\fR option of \fBsacct\fR, \fBsacctmgr\fR,
+\fBscontrol\fR, \fBsdiag\fR, \fBsinfo\fR, \fBsqueue\fR, and \fBsshare\fR.
+Omitting \fByaml\fR is fatal to whichever of these are in use: where a
+\fBtopology.yaml\fR exists, no \fBslurmd\fR would start and no job step would
+run, so keep \fByaml\fR listed unless the build has no YAML plugin. To select
+\fBxjson\fR use:
 .IP
 .nf
 SerializerPlugins=xjson,yaml,url\-encoded
@@ -7136,6 +7137,14 @@ This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 enables process containment to specified resources using Cgroups cpuset
 interface. This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 \fBNOTE\fR: see "man cgroup.conf" for configuration details.
+.IP
+
+.TP
+\fBtask/resctrl\fR
+on non\-exclusive jobs, confines the processes of every step to one of the
+Linux resource control (resctrl) groups defined in \fBresctrl.yaml\fR(5),
+chosen from the GPUs the job has on each socket of the node. This plugin is
+experimental.
 .RE
 .IP
 
