@@ -663,11 +663,6 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn,
 		fed_update = true;
 	}
 
-	if (cluster->dimensions) {
-		xstrfmtcat(vals, ", dimensions=%u", cluster->dimensions);
-		clust_reg = true;
-	}
-
 	if (cluster->flags != NO_VAL) {
 		xstrfmtcat(vals, ", flags=%u", cluster->flags);
 		clust_reg = true;
@@ -1010,7 +1005,6 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn,
 		"fed_id",
 		"fed_state",
 		"rpc_version",
-		"dimensions",
 		"flags",
 	};
 	enum {
@@ -1025,7 +1019,6 @@ extern list_t *as_mysql_get_clusters(mysql_conn_t *mysql_conn,
 		CLUSTER_REQ_FEDID,
 		CLUSTER_REQ_FEDSTATE,
 		CLUSTER_REQ_VERSION,
-		CLUSTER_REQ_DIMS,
 		CLUSTER_REQ_FLAGS,
 		CLUSTER_REQ_COUNT
 	};
@@ -1106,7 +1099,6 @@ empty:
 		cluster->fed.id       = slurm_atoul(row[CLUSTER_REQ_FEDID]);
 		cluster->fed.state    = slurm_atoul(row[CLUSTER_REQ_FEDSTATE]);
 		cluster->rpc_version = slurm_atoul(row[CLUSTER_REQ_VERSION]);
-		cluster->dimensions = slurm_atoul(row[CLUSTER_REQ_DIMS]);
 		cluster->flags = slurm_atoul(row[CLUSTER_REQ_FLAGS]);
 
 		if (row[CLUSTER_REQ_DELETED] &&

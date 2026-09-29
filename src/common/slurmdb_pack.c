@@ -698,7 +698,6 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack16(object->classification, buffer);
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
-		pack16(object->dimensions, buffer);
 
 		slurm_pack_list(object->fed.feature_list, packstr_func, buffer,
 				protocol_version);
@@ -738,7 +737,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack16(object->classification, buffer);
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
-		pack16(object->dimensions, buffer);
+		pack16(1, buffer); /* was dimensions */
 
 		slurm_pack_list(object->fed.feature_list,
 				packstr_func,
@@ -776,6 +775,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				      buf_t *buffer)
 {
 	uint8_t uint8_tmp;
+	uint16_t uint16_tmp;
 	slurmdb_cluster_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_cluster_rec_t));
 	persist_conn_t *pcon;
@@ -799,7 +799,6 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpackstr(&object_ptr->control_host, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
-		safe_unpack16(&object_ptr->dimensions, buffer);
 
 		if (slurm_unpack_list(&object_ptr->fed.feature_list,
 				      safe_unpackstr_func, xfree_ptr, buffer,
@@ -852,7 +851,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack16(&object_ptr->classification, buffer);
 		safe_unpackstr(&object_ptr->control_host, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
-		safe_unpack16(&object_ptr->dimensions, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was dimensions */
 
 		if (slurm_unpack_list(&object_ptr->fed.feature_list,
 				      safe_unpackstr_func,

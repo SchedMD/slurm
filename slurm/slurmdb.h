@@ -851,7 +851,6 @@ struct slurmdb_cluster_rec {
 				    * DOESN'T GET PACKED */
 	char *control_host;
 	uint32_t control_port;
-	uint16_t dimensions; /* number of dimensions this cluster is */
 	uint16_t id; /* unique id */
 	slurmdb_cluster_fed_t fed; /* Federation information */
 	slurmdb_cluster_flags_t flags;

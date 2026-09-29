@@ -3570,7 +3570,6 @@ extern void slurmdb_copy_cluster_rec(slurmdb_cluster_rec_t *out,
 	xfree(out->control_host);
 	out->control_host     = xstrdup(in->control_host);
 	out->control_port     = in->control_port;
-	out->dimensions       = in->dimensions;
 	xfree(out->fed.name);
 	out->fed.name         = xstrdup(in->fed.name);
 	out->fed.id           = in->fed.id;

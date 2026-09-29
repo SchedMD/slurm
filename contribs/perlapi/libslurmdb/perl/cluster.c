@@ -423,7 +423,6 @@ cluster_rec_to_hv(slurmdb_cluster_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, classification, uint16_t);
     STORE_FIELD(hv, rec, control_host,   charp);
     STORE_FIELD(hv, rec, control_port,   uint32_t);
-    STORE_FIELD(hv, rec, dimensions,     uint16_t);
     STORE_FIELD(hv, rec, flags,          uint32_t);
     STORE_FIELD(hv, rec, name,           charp);
     STORE_FIELD(hv, rec, nodes,          charp);
