@@ -228,10 +228,6 @@ def assert_job_end_state(job_id, allowed_states):
     ), f"Job {job_id} should end in one of {allowed_states}, but ended in {state}"
 
 
-# TODO: The spank.8 Errors table documents exit code 0 and the job not failing
-#       for srun with slurm_spank_user_init and slurm_spank_task_post_fork in
-#       remote context, but srun fails as it does under salloc. Follow the docs
-#       once issue #51216 clarifies it.
 @pytest.mark.parametrize(
     "function, context, xfail, drains, fails, jobid_assigned",
     [
@@ -244,7 +240,7 @@ def assert_job_end_state(job_id, allowed_states):
         ("slurm_spank_task_post_fork", "remote", True, False, True, True),
         ("slurm_spank_task_init", "remote", True, False, True, True),
         ("slurm_spank_task_exit", "remote", False, False, False, True),
-        ("slurm_spank_exit", "local", False, False, True, False),
+        ("slurm_spank_exit", "local", False, False, False, False),
     ],
 )
 def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned):
@@ -292,14 +288,14 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
         ("slurm_spank_init", "local", True, False, True, False),
         ("slurm_spank_init_post_opt", "local", True, False, True, False),
         ("slurm_spank_local_user_init", "local", True, False, True, True),
-        ("slurm_spank_init", "remote", True, False, False, True),
+        ("slurm_spank_init", "remote", True, False, True, True),
         ("slurm_spank_user_init", "remote", True, False, True, True),
         ("slurm_spank_task_init_privileged", "remote", True, False, True, True),
         ("slurm_spank_task_post_fork", "remote", True, False, True, True),
         ("slurm_spank_task_init", "remote", True, False, True, True),
         ("slurm_spank_task_exit", "remote", False, False, False, True),
-        ("slurm_spank_exit", "local", False, False, True, False),
-        ("slurm_spank_exit", "allocator", False, False, True, False),
+        ("slurm_spank_exit", "local", False, False, False, False),
+        ("slurm_spank_exit", "allocator", False, False, False, False),
     ],
 )
 def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assigned):
@@ -430,9 +426,6 @@ def test_sbatch_init_remote(spank_tmp):
     requeued instead of failed. So, unlike test_sbatch, this can't use
     --no-requeue, that would fail the job, nor -W, that would wait forever for
     the requeued job. The exit code is not checked: the job never terminates.
-
-    TODO: Check the exit code of the spank.8 Errors table once issue #51216
-          clarifies what it means for sbatch.
     """
     function = "slurm_spank_init"
     context = "remote"
@@ -533,9 +526,6 @@ def test_scrontab(spank_tmp, clean_crontab, function, context, xfail, drains, fa
         ), f"Cron job should not fail, but its state is {job_states}"
 
     # The cron job never runs, so there's no job to wait for.
-    # spank.8 is ambiguous about init_post_opt in scrontab: it's documented for
-    # allocator context, but the Errors table only lists init and exit for
-    # scrontab, and scrontab doesn't call it.
-    # TODO: Remove not_called once issue #51216 is fixed
+    # scrontab does not call init_post_opt.
     assert_hooks_run(spank_tmp, function, context, 0, not_called=("init_post_opt",))
     assert_node_drained(drains)
