@@ -309,4 +309,24 @@
 	 __builtin_types_compatible_p(__typeof__(ptr), volatile void *) || \
 	 __builtin_types_compatible_p(__typeof__(ptr), const volatile void *))
 
+/*
+ * Zero the value ptr points to, or do nothing if ptr is NULL.
+ * Unlike explicit_bzero(), the compiler may optimize the zeroing away.
+ * Void pointers are rejected at compile time unless they are a NULL constant.
+ */
+#define ZERO_PTR_VALUE(ptr) \
+	do { \
+		_Static_assert(!IS_VOID_PTR(ptr) || __builtin_constant_p(ptr), \
+			       "can not zero void pointers"); \
+		const size_t zptr_bytes = __builtin_choose_expr( \
+			IS_VOID_PTR(ptr), 0, \
+			sizeof(*__builtin_choose_expr(IS_VOID_PTR(ptr), \
+						      (char *) NULL, (ptr)))); \
+		void *const zptr = \
+			__builtin_choose_expr(IS_VOID_PTR(ptr), \
+					      (void *) INFINITE64, (ptr)); \
+		if (zptr && zptr_bytes) \
+			(void) memset(zptr, 0, zptr_bytes); \
+	} while (0)
+
 #endif /* !_MACROS_H */
