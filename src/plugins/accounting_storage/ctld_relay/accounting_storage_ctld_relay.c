@@ -322,7 +322,7 @@ extern list_t *acct_storage_p_modify_federations(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_modify_job(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_p_modify_job(void *db_conn,
 					 slurmdb_job_cond_t *job_cond,
 					 slurmdb_job_rec_t *job)
 {

@@ -256,7 +256,7 @@ extern list_t *acct_storage_g_modify_federations(void *db_conn,
  * IN:  slurmdb_job_rec_t *job
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_job(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_job(void *db_conn,
 					 slurmdb_job_cond_t *job_cond,
 					 slurmdb_job_rec_t *job);
 

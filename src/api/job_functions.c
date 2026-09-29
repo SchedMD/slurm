@@ -50,10 +50,7 @@ extern list_t *slurmdb_job_modify(void *db_conn,
 				  slurmdb_job_cond_t *job_cond,
 				  slurmdb_job_rec_t *job)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_job(db_conn, db_api_uid, job_cond, job);
+	return acct_storage_g_modify_job(db_conn, job_cond, job);
 }
 
 /*

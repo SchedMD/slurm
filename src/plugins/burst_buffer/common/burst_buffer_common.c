@@ -2013,9 +2013,8 @@ extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
 
 		job_rec.system_comment = job_ptr->system_comment;
 
-		ret_list = acct_storage_g_modify_job(acct_db_conn,
-		                                     slurm_conf.slurm_user_id,
-		                                     &job_cond, &job_rec);
+		ret_list = acct_storage_g_modify_job(acct_db_conn, &job_cond,
+						     &job_rec);
 
 		FREE_NULL_LIST(job_cond.cluster_list);
 		FREE_NULL_LIST(job_cond.step_list);

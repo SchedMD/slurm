@@ -3430,11 +3430,12 @@ extern list_t *acct_storage_p_modify_federations(mysql_conn_t *mysql_conn,
 					   fed_cond, fed);
 }
 
-extern list_t *acct_storage_p_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
+extern list_t *acct_storage_p_modify_job(mysql_conn_t *mysql_conn,
 					 slurmdb_job_cond_t *job_cond,
 					 slurmdb_job_rec_t *job)
 {
-	return as_mysql_modify_job(mysql_conn, uid, job_cond, job);
+	return as_mysql_modify_job(mysql_conn, mysql_conn->auth_uid, job_cond,
+				   job);
 }
 
 extern list_t *acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
