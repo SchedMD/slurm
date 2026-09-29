@@ -66,8 +66,7 @@ typedef struct slurm_acct_storage_ops {
 	int (*auth_conn)(void *db_conn, uid_t auth_uid);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
-	int  (*add_users)          (void *db_conn, uint32_t uid,
-				    list_t *user_list);
+	int (*add_users)(void *db_conn, list_t *user_list);
 	char *(*add_users_cond)    (void *db_conn, uint32_t uid,
 				    slurmdb_add_assoc_cond_t *add_assoc,
 				    slurmdb_user_rec_t *user);
@@ -434,15 +433,14 @@ extern int acct_storage_g_commit(void *db_conn, bool commit)
 	return (*(ops.commit))(db_conn, commit);
 }
 
-extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
-				    list_t *user_list)
+extern int acct_storage_g_add_users(void *db_conn, list_t *user_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.add_users))(db_conn, uid, user_list);
+	return (*(ops.add_users))(db_conn, user_list);
 }
 
 extern char *acct_storage_g_add_users_cond(

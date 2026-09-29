@@ -298,8 +298,7 @@ extern int acct_storage_p_commit(void *db_conn, bool commit)
 	return rc;
 }
 
-extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
-				    list_t *user_list)
+extern int acct_storage_p_add_users(void *db_conn, list_t *user_list)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;

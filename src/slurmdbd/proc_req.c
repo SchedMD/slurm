@@ -645,9 +645,7 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_add_users(slurmdbd_conn->db_conn,
-				      slurmdbd_conn->auth_uid,
-				      get_msg->my_list);
+	rc = acct_storage_g_add_users(slurmdbd_conn->db_conn, get_msg->my_list);
 
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);

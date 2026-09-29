@@ -213,8 +213,7 @@ extern int acct_storage_p_commit(void *db_conn, bool commit)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
-				    list_t *user_list)
+extern int acct_storage_p_add_users(void *db_conn, list_t *user_list)
 {
 	return SLURM_SUCCESS;
 }

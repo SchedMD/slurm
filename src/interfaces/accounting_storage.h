@@ -98,8 +98,7 @@ extern int acct_storage_g_commit(void *db_conn, bool commit);
  * IN:  user_list List of slurmdb_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
-				    list_t *user_list);
+extern int acct_storage_g_add_users(void *db_conn, list_t *user_list);
 
 /*
  * add users to accounting system

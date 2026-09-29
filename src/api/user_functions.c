@@ -50,10 +50,7 @@
  */
 extern int slurmdb_users_add(void *db_conn, list_t *user_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_users(db_conn, db_api_uid, user_list);
+	return acct_storage_g_add_users(db_conn, user_list);
 }
 
 extern char *slurmdb_users_add_cond(void *db_conn,
