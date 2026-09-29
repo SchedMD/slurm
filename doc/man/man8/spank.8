@@ -544,22 +544,30 @@ srun   @slurm_spank_exit                 @local     @0        @no          @no
 _
 salloc @slurm_spank_init                 @allocator @1        @no          @yes
 salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+salloc @slurm_spank_init                 @local     @1        @no          @yes
+salloc @slurm_spank_init_post_opt        @local     @1        @no          @yes
+salloc @slurm_spank_local_user_init      @local     @1        @no          @yes
 salloc @slurm_spank_init                 @remote    @1        @no          @no
 salloc @slurm_spank_user_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
 salloc @slurm_spank_task_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_exit            @remote    @0        @no          @no
+salloc @slurm_spank_exit                 @local     @0        @no          @no
 salloc @slurm_spank_exit                 @allocator @0        @no          @no
 _
 sbatch @slurm_spank_init                 @allocator @1        @no          @yes
 sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+sbatch @slurm_spank_init                 @local     @1        @no          @yes
+sbatch @slurm_spank_init_post_opt        @local     @1        @no          @yes
+sbatch @slurm_spank_local_user_init      @local     @1        @no          @yes
 sbatch @slurm_spank_init                 @remote    @n/a      @yes         @no
 sbatch @slurm_spank_user_init            @remote    @n/a      @yes         @no
 sbatch @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 sbatch @slurm_spank_task_post_fork       @remote    @n/a      @yes         @no
 sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
 sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
+sbatch @slurm_spank_exit                 @local     @0        @no          @no
 sbatch @slurm_spank_exit                 @allocator @0        @no          @no
 _
 scrontab @slurm_spank_init               @allocator @1        @no          @no
@@ -583,6 +591,14 @@ requeued, for example with \fB\-\-no\-requeue\fR, the job fails instead, and
 \fBsbatch \-\-wait\fR returns Exitcode 1. Only \fBslurm_spank_init\fR consults
 \fBslurm_spank_init_failure_mode\fR above; the other two rows drain and
 requeue regardless of that variable.
+.LP
+For \fBlocal\fR rows under \fBsalloc\fR and \fBsbatch\fR, the hook runs in
+an \fBsrun\fR command inside the allocation, so the Exitcode and Fails job
+cells assume that \fBsrun\fR's exit status reaches the client and the job.
+\fBsalloc\fR returns that status directly. \fBsbatch\fR returns it only
+with \fB\-\-wait\fR, and otherwise still exits 0. The job fails only if the
+enclosing command or batch script propagates \fBsrun\fR's exit status; a
+batch script that discards it completes normally.
 .LP
 \fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
 timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
