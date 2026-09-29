@@ -7845,7 +7845,6 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_skip(control_addr), /* not packed */
 	add_parse(STRING, control_host, "controller/host", "ControlHost"),
 	add_parse(UINT32, control_port, "controller/port", "ControlPort"),
-	add_skip(dim_size), /* BG deprecated */
 	add_skip(fed), /* federation not supported */
 	add_parse(CLUSTER_REC_FLAGS, flags, "flags", "Flags"),
 	add_skip(lock), /* not packed */
