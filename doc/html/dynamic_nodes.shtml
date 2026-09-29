@@ -124,11 +124,12 @@ the slurmd will automatically detect and register GPUs when:
 <li><b>gres.conf</b> does not contain <b>AutoDetect=off</b></li>
 </ul>
 <p>
-If <a hreg="gres.conf.html#OPT_AutoDetect"><b>AutoDetect</b></a> in
+If <a href="gres.conf.html#OPT_AutoDetect">AutoDetect</a> in
 <b>gres.conf</b> specifies a particular detection mechanism (e.g.,
 <b>NVML</b>, <b>NVIDIA</b>, <b>RSMI</b>, <b>oneAPI</b>, <b>NRT</b>), it will
-use that mechanism to try to detect a GPU. Otherwise, <b>slurmd</b> defaults
-to the <a href="gres.conf.html#OPT_AutoDetect">full</a> gpu detection method.
+use that mechanism to try to detect a GPU. Otherwise, <b>slurmd</b>
+defaults to the <a href="gres.conf.html#OPT_full">AutoDetect=full</a> GPU
+detection method.
 </p>
 
 <h2 id="delete">Deleting Nodes

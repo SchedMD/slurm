@@ -956,18 +956,37 @@ Request that GPUs allocated to the job are configured with specific frequency
 values.
 This option can be used to independently configure the GPU and its memory
 frequencies.
-After the job is completed, the frequencies of all affected GPUs will be reset
-to the highest possible values.
+A GPU plugin that supports frequency control applies the requested frequency
+when each regular step starts.
+After a regular step completes, the frequencies of all GPUs allocated
+to it are reset to their hardware defaults.
 In some cases, system power caps may override the requested values.
 The field \fItype\fR can be "memory".
 If \fItype\fR is not specified, the GPU frequency is implied.
 The \fIvalue\fR field can either be "low", "medium", "high", "highm1" or
 a numeric value in megahertz (MHz).
-If the specified numeric value is not possible, a value as close as
-possible will be used. See below for definition of the values.
+If the specified numeric value lies between two available frequencies, it is
+rounded up to the higher of the two.
+A value outside the available range is limited to the closest end of that
+range, either the highest or the lowest frequency.
+See below for definition of the values.
 The \fIverbose\fR option causes current GPU frequency information to be logged.
 Examples of use include "\-\-gpu\-freq=medium,memory=high" and
 "\-\-gpu\-freq=450".
+
+\fBNOTE\fR: Batch, interactive, and extern steps skip GPU frequency setup, so
+Slurm does not apply the frequency setting to GPU work run directly in a batch
+script or an interactive shell.
+No diagnostic is emitted in that case.
+
+\fBNOTE\fR: The reset is best effort, so one or more frequency settings may
+remain in effect after the step ends if a reset operation fails.
+The failure is reported in the \fBslurmd\fR log on the affected node, not in
+the step's output.
+
+\fBNOTE\fR: Frequency settings are not arbitrated between steps.
+When two steps share a GPU, the later request overrides the earlier one, and
+the first step to end resets the GPU while the other is still running.
 
 Supported \fIvalue\fR definitions:
 .IP
