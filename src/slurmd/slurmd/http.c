@@ -112,7 +112,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 
 	if (!xstrcasecmp(request->url.query, "verbose") &&
 	    !slurm_conf.private_data)
-		body = init_buf(BUF_SIZE);
+		body = init_buf(INFINITE);
 
 	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
 		if (body && (get_buf_offset(body) > 0))

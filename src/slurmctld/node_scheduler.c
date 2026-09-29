@@ -3365,16 +3365,16 @@ extern void launch_prolog(job_record_t *job_ptr)
 		 * copies of job_ptr and job_node_array since the agent queue
 		 * doesn't pack until sending.
 		 */
-		prolog_msg_ptr->job_ptr_buf = init_buf(BUF_SIZE);
+		prolog_msg_ptr->job_ptr_buf = init_buf(INFINITE);
 		job_record_pack(job_ptr, slurmctld_tres_cnt,
 				prolog_msg_ptr->job_ptr_buf, protocol_version);
 
-		prolog_msg_ptr->job_node_array_buf = init_buf(BUF_SIZE);
+		prolog_msg_ptr->job_node_array_buf = init_buf(INFINITE);
 		slurm_pack_list(job_node_array, node_record_pack,
 				prolog_msg_ptr->job_node_array_buf,
 				protocol_version);
 
-		prolog_msg_ptr->part_ptr_buf = init_buf(BUF_SIZE);
+		prolog_msg_ptr->part_ptr_buf = init_buf(INFINITE);
 		part_record_pack(job_ptr->part_ptr,
 				 prolog_msg_ptr->part_ptr_buf,
 				 protocol_version);

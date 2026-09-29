@@ -975,7 +975,7 @@ extern buf_t *pack_all_part(uint16_t show_flags, uid_t uid,
 	time_t now = time(NULL);
 	bool privileged = validate_operator(uid);
 	_foreach_pack_part_info_t pack_info = {
-		.buffer = init_buf(BUF_SIZE),
+		.buffer = init_buf(INFINITE),
 		.parts_packed = 0,
 		.privileged = privileged,
 		.protocol_version = protocol_version,

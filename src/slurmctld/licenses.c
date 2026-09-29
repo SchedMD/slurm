@@ -3952,7 +3952,7 @@ extern buf_t *get_all_license_info(uint16_t protocol_version)
 
 	debug2("%s: calling for all licenses", __func__);
 
-	args.buffer = init_buf(BUF_SIZE);
+	args.buffer = init_buf(INFINITE);
 
 	/* write header: version and time */
 	pack32(args.lics_packed, args.buffer);

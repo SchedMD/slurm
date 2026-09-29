@@ -325,7 +325,7 @@ extern char *cred_p_get_signature_key(char *signature)
 extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 {
 	char *signature;
-	buf_t *buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(INFINITE);
 
 	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
 

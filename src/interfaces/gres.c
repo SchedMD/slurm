@@ -11224,6 +11224,11 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 
 	safe_read(fd, &len, sizeof(int));
 
+	if ((len <= 0) || (len > MAX_MSG_SIZE)) {
+		error("%s: invalid context length %d", __func__, len);
+		goto rwfail;
+	}
+
 	buffer = init_buf(len);
 	safe_read(fd, buffer->head, len);
 
@@ -11252,6 +11257,12 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	/* Recv the merged slurm.conf/gres.conf and autodetect data */
 	if (slurm_cred_get(cred, check)) {
 		safe_read(fd, &len, sizeof(int));
+
+		if ((len <= 0) || (len > MAX_MSG_SIZE)) {
+			error("%s: invalid gres.conf length %d",
+			      __func__, len);
+			goto rwfail;
+		}
 
 		buffer = init_buf(len);
 		safe_read(fd, buffer->head, len);

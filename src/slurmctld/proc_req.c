@@ -2703,7 +2703,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 			(request->show_flags & SHOW_ALL) || privileged;
 		pack_step_args_t args = {0};
 
-		buffer = init_buf(BUF_SIZE);
+		buffer = init_buf(INFINITE);
 
 		args.step_id = &request->step_id,
 		args.show_flags = request->show_flags,
@@ -4997,7 +4997,7 @@ static void _slurm_rpc_burst_buffer_info(slurm_msg_t *msg)
 	DEF_TIMERS;
 
 	START_TIMER;
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if (validate_super_user(msg->auth_uid))
 		uid = 0;
 	error_code = bb_g_state_pack(uid, buffer, msg->protocol_version);

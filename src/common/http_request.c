@@ -220,7 +220,7 @@ extern int http_request_reply(http_request_event_t *event, int rc,
 		xassert(breq->reply_type > DATA_PARSER_TYPE_INVALID);
 		xassert(breq->reply_type < DATA_PARSER_TYPE_MAX);
 
-		if (!(buffer = try_init_buf(BUF_SIZE)))
+		if (!(buffer = try_init_buf(INFINITE)))
 			return _on_error(event, ENOMEM);
 
 		if ((rc = serdes_dump_buf(parser, breq->reply_type, reply,

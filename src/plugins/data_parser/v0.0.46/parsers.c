@@ -12296,6 +12296,14 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIVATE_DATA)[] = {
 	add_flag_bit_desc(PRIVATE_DATA_USERS, "users", "Prevents users from viewing information of any user other than themselves."),
 };
 
+/* based on _validate_buffer_alloc() CommunicationParameters=buffer_alloc_* */
+static const flag_bit_t PARSER_FLAG_ARRAY(BUF_ALLOC_TYPE)[] = {
+	add_flag_equal_desc(BUF_ALLOC_DEFAULT, INFINITE64, "default", "Internal buffers grow by the built in increment."),
+	add_flag_equal_desc(BUF_ALLOC_LINEAR, INFINITE64, "buffer_alloc_linear", "Internal buffers grow by BufferAllocBytes each time they must be enlarged."),
+	add_flag_equal_desc(BUF_ALLOC_GEOMETRIC, INFINITE64, "buffer_alloc_geometric", "Internal buffers grow by a factor of e (approximately 2.718) each time they must be enlarged."),
+	add_flag_equal_desc(BUF_ALLOC_EXPONENTIAL, INFINITE64, "buffer_alloc_exponential", "Internal buffers double in size each time they must be enlarged."),
+};
+
 /* based on _logfmtstr() log_opts[] */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_FLAGS)[] = {
 	add_flag_bit_desc(LOG_FLAG_THREAD_ID, "thread_id", "Print the process ID and the current thread name and ID after the timestamp."),
@@ -12442,6 +12450,8 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(CSV_STRING, bcast_exclude, "BcastExclude", "Bcast exclude library paths"),
 	add_parse(CSV_STRING, bcast_parameters, "BcastParameters", "Bcast options"),
 	add_skip(boot_time),
+	add_parse(UINT32, buffer_alloc_bytes, "BufferAllocBytes", "Bytes an internal buffer starts at, and grows by when BufferAllocType is buffer_alloc_linear"),
+	add_parse(BUF_ALLOC_TYPE, buffer_alloc_type, "BufferAllocType", "How an internal buffer is enlarged when it runs out of room"),
 	add_parse(CSV_STRING, certgen_params, "CertgenParameters", "Certgen parameters"),
 	add_parse(STRING, certgen_type, "CertgenType", "Certgen type"),
 	add_parse(STRING, certmgr_params, "CertmgrParameters", "Certmgr parameters"),
@@ -12723,6 +12733,8 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(bcast_exclude),
 	add_skip(bcast_parameters),
 	add_parse(TIMESTAMP, boot_time, "BOOT_TIME", "Time slurmctld last booted"),
+	add_skip(buffer_alloc_bytes),
+	add_skip(buffer_alloc_type),
 	add_skip(certgen_params),
 	add_skip(certgen_type),
 	add_skip(certmgr_params),
@@ -14004,6 +14016,7 @@ static const parser_t parsers[] = {
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
+	addfas(BUF_ALLOC_TYPE, buf_alloc_type_t),
 	addfas(LOG_TIME_FORMAT, uint16_t),
 	addfa(LOG_FLAGS, log_flags_t),
 	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),

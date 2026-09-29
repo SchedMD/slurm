@@ -1196,7 +1196,7 @@ extern buf_t *slurm_persist_msg_pack(persist_conn_t *persist_conn,
 		msg.msg_type  = req_msg->msg_type;
 		msg.protocol_version = persist_conn->version;
 
-		buffer = init_buf(BUF_SIZE);
+		buffer = init_buf(INFINITE);
 
 		pack16(req_msg->msg_type, buffer);
 		if (pack_msg(&msg, buffer) != SLURM_SUCCESS) {

@@ -194,6 +194,7 @@ static void _internal_conf_remove_node(char *node_name);
 static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl);
 static int _validate_bcast_exclude(slurm_conf_t *conf);
+static void _validate_buffer_alloc(slurm_conf_t *conf);
 static uint16_t *_parse_srun_ports(const char *);
 static void _parse_slurmctld_params(const char *slurmctld_params);
 
@@ -2931,6 +2932,8 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	xfree(conf->bb_type);
 	xfree(conf->bcast_exclude);
 	xfree(conf->bcast_parameters);
+	conf->buffer_alloc_bytes = 0;
+	conf->buffer_alloc_type = BUF_ALLOC_DEFAULT;
 	xfree(conf->certgen_params);
 	xfree(conf->certgen_type);
 	xfree(conf->certmgr_params);
@@ -3331,6 +3334,11 @@ extern void read_conf_recv_stepd(int fd)
 
 	safe_read(fd, &len, sizeof(int));
 
+	if ((len <= 0) || (len > MAX_MSG_SIZE)) {
+		error("%s: invalid conf length %d", __func__, len);
+		goto rwfail;
+	}
+
 	conf_buf = init_buf(len);
 	safe_read(fd, conf_buf->head, len);
 	conf_hashtbl = s_p_unpack_hashtbl_full(conf_buf,
@@ -3667,6 +3675,95 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 	xfree(tmp_str);
 
 	return rc;
+}
+
+/*
+ * Pull one buffer_alloc_* option out of CommunicationParameters.
+ *
+ * IN params - CommunicationParameters value
+ * IN key - option name, with no trailing '='
+ * OUT bytes - size the option selected, if it was present and usable
+ * RET true if the option was present with a usable size
+ *
+ * The size is optional. Written bare the option takes the built in BUF_SIZE;
+ * written with "=<bytes>" it names the size a buffer starts at, and for
+ * buffer_alloc_linear the size it grows by as well.
+ */
+static bool _get_buffer_alloc_bytes(const char *params, const char *key,
+				    uint32_t *bytes)
+{
+	char *ptr = NULL;
+	long tmp_val;
+
+	if (!(ptr = xstrcasestr(params, key)))
+		return false;
+
+	ptr += strlen(key);
+
+	if (*ptr != '=') {
+		*bytes = BUF_SIZE;
+		return true;
+	}
+
+	tmp_val = strtol(ptr + 1, NULL, 10);
+
+	if ((tmp_val <= 0) || (tmp_val > INT_MAX)) {
+		error("CommunicationParameters option %s=%ld is invalid, ignored",
+		      key, tmp_val);
+		return false;
+	}
+
+	/*
+	 * A size under MIN_BUF_SIZE would mean an xrealloc() per handful of
+	 * bytes
+	 */
+	if (tmp_val < MIN_BUF_SIZE) {
+		error_in_daemon(
+			"CommunicationParameters option %s=%ld is too small, using %d instead",
+			key, tmp_val, MIN_BUF_SIZE);
+		tmp_val = MIN_BUF_SIZE;
+	}
+
+	*bytes = tmp_val;
+	return true;
+}
+
+/*
+ * Set how an internal buf_t is sized and enlarged from
+ * CommunicationParameters.
+ *
+ * A bad or unusable value is logged and replaced rather than rejected: this
+ * only tunes allocation behavior and is not worth refusing the whole
+ * configuration over.
+ */
+static void _validate_buffer_alloc(slurm_conf_t *conf)
+{
+	uint32_t bytes = 0;
+
+	conf->buffer_alloc_type = BUF_ALLOC_DEFAULT;
+	conf->buffer_alloc_bytes = 0;
+
+	if (_get_buffer_alloc_bytes(conf->comm_params, "buffer_alloc_linear",
+				    &bytes)) {
+		conf->buffer_alloc_type = BUF_ALLOC_LINEAR;
+		conf->buffer_alloc_bytes = bytes;
+	}
+
+	if (_get_buffer_alloc_bytes(conf->comm_params, "buffer_alloc_geometric",
+				    &bytes)) {
+		if (conf->buffer_alloc_type != BUF_ALLOC_DEFAULT)
+			error("CommunicationParameters buffer_alloc_* options are mutually exclusive, using buffer_alloc_geometric");
+		conf->buffer_alloc_type = BUF_ALLOC_GEOMETRIC;
+		conf->buffer_alloc_bytes = bytes;
+	}
+
+	if (_get_buffer_alloc_bytes(conf->comm_params,
+				    "buffer_alloc_exponential", &bytes)) {
+		if (conf->buffer_alloc_type != BUF_ALLOC_DEFAULT)
+			error("CommunicationParameters buffer_alloc_* options are mutually exclusive, using buffer_alloc_exponential");
+		conf->buffer_alloc_type = BUF_ALLOC_EXPONENTIAL;
+		conf->buffer_alloc_bytes = bytes;
+	}
 }
 
 static int _validate_bcast_exclude(slurm_conf_t *conf)
@@ -4022,6 +4119,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			error("CommunicationParameters option host_unreach_retry_count=%ld is invalid, ignored",
 			      tmp_val);
 	}
+
+	_validate_buffer_alloc(conf);
 
 	(void) s_p_get_string(&conf->cli_filter_params, "CliFilterParameters",
 			      hashtbl);

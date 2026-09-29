@@ -78,7 +78,7 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 				    &slurmdbd_queue_size) != SLURM_SUCCESS)
 		slurmdbd_queue_size = 0;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_time(now, buffer);
 		debug3("%s: time = %lu", __func__, last_proc_req_start);

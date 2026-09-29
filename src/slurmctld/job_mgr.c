@@ -10481,7 +10481,7 @@ static int _foreach_pack_jobid(void *object, void *arg)
  */
 static buf_t *_pack_init_job_info(uint16_t protocol_version)
 {
-	buf_t *buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(INFINITE);
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */

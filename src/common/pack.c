@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
@@ -195,10 +196,69 @@ void free_buf(buf_t *my_buf)
 	xfree(my_buf);
 }
 
-/* Grow a buffer by the specified amount */
+/*
+ * Resolve how many bytes to grow a buffer by.
+ *
+ * IN buffer - buffer about to be grown
+ * IN size - caller's minimum requirement, or INFINITE to let the configured
+ *	policy pick the amount on its own
+ * RET bytes to add to buffer->size
+ *
+ * The policy only ever supplies headroom. A caller naming a concrete size is
+ * always given at least that many bytes, so the growth contract never depends
+ * on how the cluster happens to be configured.
+ *
+ * slurm_conf is zeroed until slurm.conf is read, and BUF_ALLOC_DEFAULT is 0,
+ * so a process that never loaded a configuration grows by BUF_SIZE just as it
+ * always has.
+ */
+static uint64_t _grow_byte_count(const buf_t *buffer, uint32_t size)
+{
+	uint64_t bytes;
+
+	switch (slurm_conf.buffer_alloc_type) {
+	case BUF_ALLOC_EXPONENTIAL:
+		/* double: growing by the current size gives 2x */
+		bytes = buffer->size;
+		break;
+	case BUF_ALLOC_GEOMETRIC:
+		/* multiply by e: growing by the difference gives e times */
+		bytes = (uint64_t) (buffer->size * (M_E - 1.0));
+		break;
+	case BUF_ALLOC_LINEAR:
+		bytes = slurm_conf.buffer_alloc_bytes;
+		break;
+	case BUF_ALLOC_DEFAULT:
+	default:
+		bytes = BUF_SIZE;
+		break;
+	}
+
+	/*
+	 * Scaling a small buffer, or a strategy added later, can land under
+	 * MIN_BUF_SIZE. Grow by at least that much so a buffer being filled a
+	 * few bytes at a time does not take an xrealloc() per append.
+	 */
+	if (bytes < MIN_BUF_SIZE)
+		bytes = MIN_BUF_SIZE;
+
+	/*
+	 * Force increase to always be at least the configured increment to
+	 * reduce number of successive xrealloc()s that get called while
+	 * packing larger RPCs
+	 */
+	if ((size != INFINITE) && (size >= bytes))
+		bytes += size;
+
+	xassert(bytes >= MIN_BUF_SIZE);
+
+	return bytes;
+}
+
+/* Grow a buffer by the specified amount, or by INFINITE to auto size it */
 void grow_buf(buf_t *buffer, uint32_t size)
 {
-	uint64_t new_size = (uint64_t) size + buffer->size;
+	uint64_t new_size = 0;
 
 	xassert(buffer->magic == BUF_MAGIC);
 
@@ -206,6 +266,20 @@ void grow_buf(buf_t *buffer, uint32_t size)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");
 	if (buffer->shadow)
 		fatal_abort("attempt to grow shadow buffer not supported");
+
+	if (size == INFINITE) {
+		if (buffer->size >= MAX_BUF_SIZE)
+			fatal_abort("%s: Buffer size limit exceeded (%u >= %u)",
+				    __func__, buffer->size, MAX_BUF_SIZE);
+
+		new_size = buffer->size + _grow_byte_count(buffer, size);
+		if (new_size > MAX_BUF_SIZE)
+			new_size = MAX_BUF_SIZE;
+	} else {
+		/* Named sizes grow by exactly the amount requested */
+		new_size = (uint64_t) size + buffer->size;
+	}
+
 	if (new_size > MAX_BUF_SIZE)
 		fatal_abort("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
 			    __func__, new_size, MAX_BUF_SIZE);
@@ -216,23 +290,31 @@ void grow_buf(buf_t *buffer, uint32_t size)
 
 extern int try_grow_buf(buf_t *buffer, uint32_t size)
 {
-	uint64_t new_size = buffer->size + BUF_SIZE;
+	uint64_t new_size = 0;
 
 	xassert(buffer->magic == BUF_MAGIC);
 
-	/*
-	 * Force increase to always be at least BUF_SIZE to reduce number of
-	 * successive xrealloc()s that get called while packing larger RPCs
-	 */
-	if (size >= BUF_SIZE)
-		new_size += size;
-
 	if (buffer->mmaped || buffer->shadow)
 		return EINVAL;
+
+	new_size = buffer->size + _grow_byte_count(buffer, size);
+
 	if (new_size > MAX_BUF_SIZE) {
-		error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
-		      __func__, new_size, MAX_BUF_SIZE);
-		return ESLURM_DATA_TOO_LARGE;
+		/*
+		 * Only the headroom ran past the limit. Clamp to it rather
+		 * than fail while the caller can still be given what it asked
+		 * for.
+		 */
+		uint64_t needed = (uint64_t) buffer->size +
+				  ((size == INFINITE) ? 1 : size);
+
+		if (needed > MAX_BUF_SIZE) {
+			error("%s: Buffer size limit exceeded (%"PRIu64" > %u)",
+			      __func__, needed, MAX_BUF_SIZE);
+			return ESLURM_DATA_TOO_LARGE;
+		}
+
+		new_size = MAX_BUF_SIZE;
 	}
 
 	if (!try_xrealloc(buffer->head, new_size))
@@ -247,7 +329,11 @@ extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size)
 {
 	xassert(buffer->magic == BUF_MAGIC);
 
-	if (remaining_buf(buffer) < size)
+	/*
+	 * INFINITE gives no threshold to test against: the caller wants more
+	 * room without knowing how much, so always grow.
+	 */
+	if ((size == INFINITE) || (remaining_buf(buffer) < size))
 		return try_grow_buf(buffer, size);
 
 	return SLURM_SUCCESS;
@@ -306,17 +392,58 @@ extern int buf_append_str(buf_t *buf, const char *str)
 	return SLURM_SUCCESS;
 }
 
-/* init_buf - create an empty buffer of the given size */
+/*
+ * Resolve the size a new buffer starts at.
+ *
+ * IN size - bytes the caller needs, or 0 or INFINITE to take the starting
+ *	size set by CommunicationParameters
+ * RET bytes to allocate
+ *
+ * The configured size is clamped rather than trusted. init_buf() aborts on an
+ * oversize request, so a value that could reach that limit must not get that
+ * far, and a start under MIN_BUF_SIZE would take an xrealloc() per handful of
+ * bytes - the same floor _grow_byte_count() applies to a growth.
+ *
+ * slurm_conf is zeroed until slurm.conf is read and 0 is never a configured
+ * size, so a process that never loaded a configuration starts at BUF_SIZE
+ * just as it always has.
+ */
+static uint32_t _init_byte_count(uint32_t size)
+{
+	if (size && (size != INFINITE))
+		return size;
+
+	if (!slurm_conf.buffer_alloc_bytes)
+		return BUF_SIZE;
+
+	if (slurm_conf.buffer_alloc_bytes < MIN_BUF_SIZE)
+		return MIN_BUF_SIZE;
+
+	/*
+	 * Unreachable from slurm.conf, which caps the value well below this.
+	 * Kept because init_buf() aborts rather than failing on an oversize
+	 * request, so the configured size must never be able to reach it.
+	 */
+	if (slurm_conf.buffer_alloc_bytes > MAX_BUF_SIZE)
+		return MAX_BUF_SIZE;
+
+	return slurm_conf.buffer_alloc_bytes;
+}
+
+/*
+ * init_buf - create an empty buffer of the given size, or of the size set by
+ * CommunicationParameters for 0 or INFINITE
+ */
 buf_t *init_buf(uint32_t size)
 {
 	buf_t *my_buf;
+
+	size = _init_byte_count(size);
 
 	if (size > MAX_BUF_SIZE)
 		fatal_abort("%s: Buffer size limit exceeded (%u > %u)",
 			    __func__, size, MAX_BUF_SIZE);
 
-	if (size <= 0)
-		size = BUF_SIZE;
 	my_buf = xmalloc(sizeof(*my_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
@@ -355,8 +482,7 @@ extern buf_t *try_init_buf(uint32_t size)
 {
 	buf_t *buf;
 
-	if (!size)
-		size = BUF_SIZE;
+	size = _init_byte_count(size);
 
 	if (size > MAX_BUF_SIZE) {
 		error("%s: Buffer size limit exceeded (%u > %u)",

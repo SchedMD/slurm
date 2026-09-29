@@ -376,7 +376,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 			return _send_reject(hcon, ESLURM_HTTP_UNEXPECTED_BODY);
 
 		if (!request->content &&
-		    !(request->content = try_init_buf(BUF_SIZE)))
+		    !(request->content = try_init_buf(INFINITE)))
 			return _send_reject(hcon, ENOMEM);
 
 		/* Always include 1 extra byte for NULL terminator */

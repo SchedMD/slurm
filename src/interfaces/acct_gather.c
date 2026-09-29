@@ -187,6 +187,11 @@ extern int acct_gather_read_conf(int fd)
 
 	safe_read(fd, &len, sizeof(int));
 
+	if ((len <= 0) || (len > MAX_MSG_SIZE)) {
+		error("%s: invalid acct_gather.conf length %d", __func__, len);
+		goto rwfail;
+	}
+
 	/* Free struct pre-initialized in acct_gather_conf_init() */
 	FREE_NULL_BUFFER(acct_gather_options_buf);
 

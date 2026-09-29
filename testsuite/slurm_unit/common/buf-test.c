@@ -36,6 +36,7 @@
 #include <check.h>
 #include <errno.h>
 #include <limits.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
@@ -560,10 +562,393 @@ START_TEST(test_xfer_buf_data)
 
 END_TEST
 
+/*
+ * CommunicationParameters selects how much a buffer grows by. Each test
+ * restores the default so the rest of the suite is unaffected.
+ */
+static void _set_alloc(buf_alloc_type_t type, uint32_t bytes)
+{
+	slurm_conf.buffer_alloc_type = type;
+	slurm_conf.buffer_alloc_bytes = bytes;
+}
+
+/*
+ * A failed ck_assert() leaves the test body immediately, so the policy has to
+ * be restored from a fixture or it would leak into every later test when the
+ * suite runs without forking.
+ */
+static void _reset_alloc(void)
+{
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+START_TEST(test_init_buf_conf)
+{
+	buf_t *buf;
+
+	/*
+	 * 0 and INFINITE both say the caller has no size of its own, so the
+	 * two must always resolve alike. Unconfigured that is BUF_SIZE.
+	 */
+	ck_assert_int_eq(slurm_conf.buffer_alloc_bytes, 0);
+
+	buf = init_buf(0);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	/* every strategy starts a buffer at the size it was given */
+	_set_alloc(BUF_ALLOC_LINEAR, 4096);
+
+	buf = init_buf(0);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_GEOMETRIC, (2 * BUF_SIZE));
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, (2 * BUF_SIZE));
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, MIN_BUF_SIZE);
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, MIN_BUF_SIZE);
+	free_buf(buf);
+
+	/* a named size is never taken from the configuration */
+	buf = init_buf(128);
+	_check_empty_buf(buf, 128);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
+START_TEST(test_try_init_buf_conf)
+{
+	buf_t *buf;
+
+	/* try_init_buf() must resolve a size exactly as init_buf() does */
+	ck_assert_int_eq(slurm_conf.buffer_alloc_bytes, 0);
+
+	buf = try_init_buf(0);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, BUF_SIZE);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 4096);
+
+	buf = try_init_buf(0);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	/* a named size is never taken from the configuration */
+	buf = try_init_buf(128);
+	_check_empty_buf(buf, 128);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
+START_TEST(test_init_buf_conf_floor)
+{
+	buf_t *buf;
+
+	/*
+	 * A start under MIN_BUF_SIZE would mean an xrealloc() per handful of
+	 * bytes, so it is raised rather than used as given. slurm.conf raises
+	 * it too, but a buffer must not depend on having been asked nicely.
+	 */
+	_set_alloc(BUF_ALLOC_LINEAR, (MIN_BUF_SIZE - 1));
+
+	buf = init_buf(INFINITE);
+	_check_empty_buf(buf, MIN_BUF_SIZE);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_GEOMETRIC, 1);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, MIN_BUF_SIZE);
+	free_buf(buf);
+
+	/*
+	 * The matching ceiling is deliberately not exercised. It is unreachable
+	 * from slurm.conf, which caps the size at INT_MAX, so it exists only to
+	 * keep a configured size from reaching init_buf()'s fatal_abort() -
+	 * try_init_buf() shares _init_byte_count() but returns NULL instead.
+	 *
+	 * Reaching it means asking for close to 4GiB. That costs nothing under
+	 * glibc, where try_xmalloc()'s calloc() is satisfied by a fresh
+	 * mmap() zeroed lazily by the kernel, but valgrind and ASan replace
+	 * calloc() and write the whole range for real, and the reservation can
+	 * fail outright under strict overcommit or a container memory cap. So
+	 * the test would be host dependent rather than expensive everywhere.
+	 */
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
+START_TEST(test_init_buf_sentinel_band)
+{
+	buf_t *buf;
+
+	/*
+	 * INFINITE is the only value above MAX_BUF_SIZE that means anything.
+	 * Every other size in that band was refused before the sentinel was
+	 * given a meaning and has to stay refused, or a length that came from
+	 * somewhere else is quietly handed a buffer of the wrong size instead.
+	 * NO_VAL sits immediately below the sentinel.
+	 */
+	ck_assert(try_init_buf(MAX_BUF_SIZE + 1) == NULL);
+	ck_assert(try_init_buf(0xfffff000) == NULL);
+	ck_assert(try_init_buf(NO_VAL) == NULL);
+
+	/* the band stays shut once a size is configured */
+	_set_alloc(BUF_ALLOC_LINEAR, 4096);
+
+	ck_assert(try_init_buf(MAX_BUF_SIZE + 1) == NULL);
+	ck_assert(try_init_buf(NO_VAL) == NULL);
+
+	buf = try_init_buf(INFINITE);
+	_check_empty_buf(buf, 4096);
+	free_buf(buf);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_infinite)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	/*
+	 * INFINITE lets the configuration pick the amount. Unconfigured, that
+	 * is the same BUF_SIZE increment used for a smaller named size.
+	 */
+	ck_assert_int_eq(slurm_conf.buffer_alloc_type, BUF_ALLOC_DEFAULT);
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (2 * BUF_SIZE));
+	ck_assert_int_eq(get_buf_offset(buf), 0);
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (3 * BUF_SIZE));
+
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_exponential)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+	/* buffer with no memory to avoid allocating MAX_BUF_SIZE bytes */
+	buf_t full_buf = {
+		.magic = BUF_MAGIC,
+		.size = MAX_BUF_SIZE,
+	};
+
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 0);
+
+	/* INFINITE doubles the capacity */
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (2 * BUF_SIZE));
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (4 * BUF_SIZE));
+
+	/* a named size is still honored in full, whatever the policy */
+	ck_assert_int_eq(try_grow_buf(buf, (16 * BUF_SIZE)), SLURM_SUCCESS);
+	ck_assert_int_ge(size_buf(buf), (20 * BUF_SIZE));
+
+	/*
+	 * At the limit there is no headroom left to hand out, so INFINITE has
+	 * to fail rather than return success without growing
+	 */
+	ck_assert_int_eq(try_grow_buf(&full_buf, INFINITE),
+			 ESLURM_DATA_TOO_LARGE);
+	ck_assert_int_eq(size_buf(&full_buf), MAX_BUF_SIZE);
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_geometric)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	_set_alloc(BUF_ALLOC_GEOMETRIC, 0);
+
+	/*
+	 * INFINITE multiplies the capacity by e. Allow a byte of slack rather
+	 * than restating the implementation's rounding.
+	 */
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_msg((size_buf(buf) >= ((BUF_SIZE * M_E) - 1)) &&
+			      (size_buf(buf) <= ((BUF_SIZE * M_E) + 1)),
+		      "expected about %f, got %u", (BUF_SIZE * M_E),
+		      size_buf(buf));
+
+	/* and again, compounding from the new size */
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_msg((size_buf(buf) >= ((BUF_SIZE * M_E * M_E) - 4)) &&
+			      (size_buf(buf) <= ((BUF_SIZE * M_E * M_E) + 4)),
+		      "expected about %f, got %u", (BUF_SIZE * M_E * M_E),
+		      size_buf(buf));
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_linear)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	_set_alloc(BUF_ALLOC_LINEAR, 4096);
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (BUF_SIZE + 4096));
+
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (BUF_SIZE + (2 * 4096)));
+
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_min_size)
+{
+	buf_t *buf = init_buf(16);
+
+	/* doubling 16 bytes lands under the floor, so the floor applies */
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 0);
+	ck_assert_int_eq(try_grow_buf(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), (16 + MIN_BUF_SIZE));
+
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_grow_buf_infinite)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+
+	/* grow_buf() takes the amount from the configuration too */
+	_set_alloc(BUF_ALLOC_EXPONENTIAL, 0);
+	grow_buf(buf, INFINITE);
+	ck_assert_int_eq(size_buf(buf), (2 * BUF_SIZE));
+
+	/* a named size still grows by exactly that much */
+	_set_alloc(BUF_ALLOC_DEFAULT, 0);
+	grow_buf(buf, 16);
+	ck_assert_int_eq(size_buf(buf), ((2 * BUF_SIZE) + 16));
+
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_remaining_infinite)
+{
+	buf_t *buf = init_buf(BUF_SIZE);
+	uint32_t before;
+
+	/*
+	 * INFINITE gives no threshold to compare against, so it must grow even
+	 * with the whole buffer still free
+	 */
+	ck_assert_int_eq(remaining_buf(buf), BUF_SIZE);
+
+	before = size_buf(buf);
+	ck_assert_int_eq(try_grow_buf_remaining(buf, INFINITE), SLURM_SUCCESS);
+	ck_assert_int_gt(size_buf(buf), before);
+	ck_assert_int_eq(get_buf_offset(buf), 0);
+
+	/* a named size that already fits must still not grow */
+	before = size_buf(buf);
+	ck_assert_int_eq(try_grow_buf_remaining(buf, 1), SLURM_SUCCESS);
+	ck_assert_int_eq(size_buf(buf), before);
+
+	free_buf(buf);
+}
+
+END_TEST
+
+START_TEST(test_try_grow_buf_remaining_policy)
+{
+	static const uint32_t requests[] = {
+		1, 100, BUF_SIZE, (BUF_SIZE + 1), (1024 * 1024),
+	};
+	static const buf_alloc_type_t types[] = {
+		BUF_ALLOC_DEFAULT,
+		BUF_ALLOC_EXPONENTIAL,
+		BUF_ALLOC_GEOMETRIC,
+		BUF_ALLOC_LINEAR,
+	};
+
+	/*
+	 * Callers write the number of bytes they asked for immediately after
+	 * this returns, so the promised free space must never depend on how
+	 * the cluster happens to be configured
+	 */
+	for (size_t t = 0; t < ARRAY_SIZE(types); t++) {
+		for (size_t i = 0; i < ARRAY_SIZE(requests); i++) {
+			buf_t *buf = init_buf(BUF_SIZE);
+			uint32_t need = requests[i];
+
+			_set_alloc(types[t], 4096);
+
+			/* leave only a few bytes free */
+			set_buf_offset(buf, (BUF_SIZE - 16));
+
+			ck_assert_int_eq(try_grow_buf_remaining(buf, need),
+					 SLURM_SUCCESS);
+			ck_assert_msg((remaining_buf(buf) >= need),
+				      "type %d: asked %u free bytes, got %u",
+				      types[t], need, remaining_buf(buf));
+
+			_set_alloc(BUF_ALLOC_DEFAULT, 0);
+			free_buf(buf);
+		}
+	}
+}
+
+END_TEST
+
 static Suite *suite_buf(void)
 {
 	Suite *s = suite_create("buf");
 	TCase *tc_core = tcase_create("buf");
+
+	tcase_add_checked_fixture(tc_core, _reset_alloc, _reset_alloc);
 
 	tcase_add_test(tc_core, test_init_buf);
 	tcase_add_test(tc_core, test_try_init_buf);
@@ -575,6 +960,18 @@ static Suite *suite_buf(void)
 	tcase_add_test(tc_core, test_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf);
 	tcase_add_test(tc_core, test_try_grow_buf_remaining);
+	tcase_add_test(tc_core, test_init_buf_conf);
+	tcase_add_test(tc_core, test_try_init_buf_conf);
+	tcase_add_test(tc_core, test_init_buf_conf_floor);
+	tcase_add_test(tc_core, test_init_buf_sentinel_band);
+	tcase_add_test(tc_core, test_try_grow_buf_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_exponential);
+	tcase_add_test(tc_core, test_try_grow_buf_geometric);
+	tcase_add_test(tc_core, test_try_grow_buf_linear);
+	tcase_add_test(tc_core, test_try_grow_buf_min_size);
+	tcase_add_test(tc_core, test_grow_buf_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_remaining_infinite);
+	tcase_add_test(tc_core, test_try_grow_buf_remaining_policy);
 	tcase_add_test(tc_core, test_buf_append_bytes);
 	tcase_add_test(tc_core, test_buf_append_bytes_grow);
 	tcase_add_test(tc_core, test_buf_append_bytes_too_large);

@@ -3887,7 +3887,7 @@ extern buf_t *assoc_mgr_info_get_pack_msg(
 	}
 
 	/* This is where we start to pack */
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	state.buffer = buffer;
 
 	packstr_array(assoc_mgr_tres_name_array, g_tres_count, buffer);

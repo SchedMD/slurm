@@ -57,6 +57,7 @@
 
 #define BUF_MAGIC 0x42554545
 #define BUF_SIZE (16 * 1024)
+#define MIN_BUF_SIZE (512) /* smallest sane growth increment */
 #define MAX_BUF_SIZE ((uint32_t) 0xffff0000)	/* avoid going over 32-bits */
 #define REASONABLE_BUF_SIZE ((uint32_t) 0xbfff4000) /* three-quarters of max */
 #define FLOAT_MULT 1000000
@@ -100,6 +101,14 @@ extern buf_t *create_buf(char *data, uint32_t size);
 extern buf_t *create_mmap_buf(const char *file);
 extern buf_t *create_shadow_buf(char *data, uint32_t size);
 extern void free_buf(buf_t *my_buf);
+/*
+ * Create buffer of the given number of bytes.
+ * IN size - number of bytes in buffer, or 0 or INFINITE to start at the size
+ *	set by CommunicationParameters
+ * RET ptr to buffer
+ * WARNING: a caller passing a length from an untrusted source must bound it
+ *	first. Only a named size is honored as given.
+ */
 extern buf_t *init_buf(uint32_t size);
 
 /*
@@ -111,25 +120,46 @@ extern buf_t *init_buf(uint32_t size);
 extern void assign_buf(buf_t *buf, char **data_ptr, uint32_t bytes);
 /*
  * Try to create buffer by given number of bytes.
- * IN size - number of bytes in buffer
+ * IN size - number of bytes in buffer, or 0 or INFINITE to start at the size
+ *	set by CommunicationParameters
  * RET ptr to buffer or NULL on error
+ * WARNING: a caller passing a length from an untrusted source must bound it
+ *	first. Only a named size is honored as given.
  */
 extern buf_t *try_init_buf(uint32_t size);
+/*
+ * Grow buffer by given number of bytes.
+ * IN my_buf - pointer to buffer
+ * IN size - number of bytes to grow buffer by, or INFINITE to grow by the
+ *	amount set by CommunicationParameters
+ * WARNING: with INFINITE the amount added is unspecified, and near
+ *	MAX_BUF_SIZE it is clamped to whatever is left. This fatal_abort()s if
+ *	the buffer is already at MAX_BUF_SIZE.
+ */
 extern void grow_buf(buf_t *my_buf, uint32_t size);
 /*
  * Try to grow buffer by given number of bytes.
  * Buffer's head pointer may be resized or replaced.
  * IN my_buf - pointer to buffer
- * IN size - number of bytes to grow buffer by
+ * IN size - number of bytes to grow buffer by, or INFINITE to let
+ *	CommunicationParameters pick the amount. A named size is always
+ *	honored; the configuration only adds headroom on top of it.
  * RET SLURM_SUCCESS or error
+ * WARNING: with INFINITE the amount added is unspecified. It is at least one
+ *	byte, but near MAX_BUF_SIZE that is all it may be, so a caller that
+ *	needs a known number of bytes must name it rather than pass INFINITE.
  */
 extern int try_grow_buf(buf_t *buffer, uint32_t size);
 /*
  * Ensure buffer has enough remaining bytes
  * Note: Buffer's head pointer may be resized or replaced.
  * IN my_buf - pointer to buffer
- * IN size - number of bytes to grow buffer by
+ * IN size - number of bytes that must be free in the buffer, or INFINITE to
+ *	unconditionally grow by the amount set by CommunicationParameters
  * RET SLURM_SUCCESS or error
+ * WARNING: a named size is guaranteed free on success. INFINITE guarantees
+ *	only that the buffer grew, by an unspecified amount, so re-check
+ *	remaining_buf() before writing a known number of bytes.
  */
 extern int try_grow_buf_remaining(buf_t *buffer, uint32_t size);
 

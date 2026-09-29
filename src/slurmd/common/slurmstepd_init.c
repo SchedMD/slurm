@@ -162,6 +162,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* bcast_exclude */
 	/* bcast_parameters */
 	/* boot_time */
+	pack32(slurm_conf.buffer_alloc_bytes, buffer);
+	pack16(slurm_conf.buffer_alloc_type, buffer);
 	/* cgroup_conf */
 	/* cli_filter_plugins */
 	packstr(slurm_conf.cluster_name, buffer);
@@ -374,6 +376,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 {
 	uint16_t srun_port_min = 0, srun_port_max = 0;
 	uint16_t uint16_tmp = 0;
+	uint16_t buffer_alloc_type = 0;
 
 	init_slurm_conf(&slurm_conf);
 	/* last_update */
@@ -401,6 +404,9 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* bcast_exclude */
 	/* bcast_parameters */
 	/* boot_time */
+	safe_unpack32(&slurm_conf.buffer_alloc_bytes, buffer);
+	safe_unpack16(&buffer_alloc_type, buffer);
+	slurm_conf.buffer_alloc_type = buffer_alloc_type;
 	/* cgroup_conf */
 	/* cli_filter_plugins */
 	safe_unpackstr(&slurm_conf.cluster_name, buffer);

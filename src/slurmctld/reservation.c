@@ -5122,7 +5122,7 @@ extern buf_t *show_resv(uid_t uid, uint16_t protocol_version)
 	START_TIMER;
 	_create_resv_lists(false);
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	pack_args.buffer = buffer;
 
 	/* write header: version and time */
@@ -5185,7 +5185,7 @@ extern int dump_all_resv_state(void)
 		.conf = READ_LOCK,
 		.node = READ_LOCK,
 	};
-	buf_t *buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(INFINITE);
 	DEF_TIMERS;
 
 	START_TIMER;

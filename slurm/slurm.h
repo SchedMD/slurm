@@ -3020,6 +3020,14 @@ typedef struct reservation_name_msg {
 #define CONF_FLAG_DISABLE_HTTP	SLURM_BIT(17) /* CommunicationParameters=disable_http */
 #define CONF_FLAG_HC_REPORT_HEALTH SLURM_BIT(18) /* SlurmctldParameters=health_check_report */
 
+/* How an internal buf_t is enlarged, from CommunicationParameters */
+typedef enum {
+	BUF_ALLOC_DEFAULT = 0, /* built in increment */
+	BUF_ALLOC_LINEAR, /* add a fixed number of bytes */
+	BUF_ALLOC_GEOMETRIC, /* multiply the current size by e */
+	BUF_ALLOC_EXPONENTIAL, /* double the current size */
+} buf_alloc_type_t;
+
 /* Timestamp format for LogTimeFormat. */
 typedef enum {
 	LOG_FMT_ISO8601_MS = 0,
@@ -3080,6 +3088,10 @@ typedef struct {
 	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
+	uint32_t buffer_alloc_bytes; /* bytes a buf_t starts at, and grows by
+				      * when buffer_alloc_type is
+				      * BUF_ALLOC_LINEAR. 0 when unset */
+	buf_alloc_type_t buffer_alloc_type; /* how to grow a buf_t */
 	char *certgen_params;	/* certgen parameters */
 	char *certgen_type;	/* certgen type */
 	char *certmgr_params;	/* certmgr parameters */

@@ -677,6 +677,11 @@ extern int mpi_conf_recv_stepd(int fd)
 	safe_read(fd, &len, sizeof(len));
 	len = ntohl(len);
 
+	if (len > MAX_BUF_SIZE) {
+		error("%s: invalid plugin conf length %u", __func__, len);
+		goto rwfail;
+	}
+
 	/* We have no conf for this specific plugin. Sender sent empty buffer */
 	if (len) {
 		buf = init_buf(len);

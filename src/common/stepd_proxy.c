@@ -75,7 +75,7 @@ static int _slurmd_pack_msg_to_stepd(slurm_msg_t *resp, buf_t *out)
 
 static int _slurmd_send_resp_to_stepd(conmgr_fd_t *con, slurm_msg_t *resp)
 {
-	buf_t *out = init_buf(BUF_SIZE);
+	buf_t *out = init_buf(INFINITE);
 	int rc = SLURM_SUCCESS;
 
 	if (_slurmd_pack_msg_to_stepd(resp, out)) {
@@ -327,7 +327,7 @@ static int _stepd_send_to_slurmd(int fd, slurm_msg_t *req, int timeout,
 				 uint16_t proxy_type)
 {
 	uint32_t length_position, end_position;
-	buf_t *buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(INFINITE);
 
 	pack16(SLURM_PROTOCOL_VERSION, buffer);
 
@@ -385,8 +385,11 @@ static int _stepd_recv_from_slurmd(int fd, slurm_msg_t *resp)
 
 	/* read response from slurmd */
 	safe_read(fd, &len, sizeof(uint32_t));
-	if (!(len = ntohl(len)))
+	len = ntohl(len);
+	if (!len || (len > MAX_BUF_SIZE)) {
+		error("%s: invalid response length %u", __func__, len);
 		goto rwfail;
+	}
 	buffer = init_buf(len);
 	safe_read(fd, buffer->head, len);
 

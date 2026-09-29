@@ -903,7 +903,7 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	tmp_msg.data             = data;
 	tmp_msg.protocol_version = conn->rpc_version;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if ((rc = pack_msg(&tmp_msg, buffer))) {
 		error("%s: packing %s for %s failed: %s", __func__,
 		      rpc_num2string(tmp_msg.msg_type), conn->name,
@@ -1160,7 +1160,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	tmp_msg.data             = &kill_req;
 	tmp_msg.protocol_version = conn->rpc_version;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if ((rc = pack_msg(&tmp_msg, buffer))) {
 		error("%s: packing %s for %s failed: %s", __func__,
 		      rpc_num2string(tmp_msg.msg_type), conn->name,
@@ -1216,7 +1216,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 	tmp_msg.data             = &requeue_req;
 	tmp_msg.protocol_version = conn->rpc_version;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if ((rc = pack_msg(&tmp_msg, buffer))) {
 		error("%s: packing %s for %s failed: %s", __func__,
 		      rpc_num2string(tmp_msg.msg_type), conn->name,
@@ -2155,7 +2155,7 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 	job_msg.msg_type         = RESPONSE_JOB_INFO;
 	job_msg.data = job_buffer;
 
-	buffer = init_buf(BUF_SIZE);
+	buffer = init_buf(INFINITE);
 	if ((rc = pack_msg(&job_msg, buffer))) {
 		error("%s: packing %s for %s failed: %s", __func__,
 		      rpc_num2string(job_msg.msg_type), sib_name,
@@ -3799,7 +3799,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		    (last_rpc_version != sibling->rpc_version)) {
 			FREE_NULL_BUFFER(buffer);
 			msg->protocol_version = sibling->rpc_version;
-			buffer = init_buf(BUF_SIZE);
+			buffer = init_buf(INFINITE);
 			if ((rc = pack_msg(msg, buffer))) {
 				error("%s: packing %s for %s failed: %s",
 				      __func__, rpc_num2string(msg->msg_type),
@@ -3849,7 +3849,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 				FREE_NULL_BUFFER(buffer);
 
 				tmp_msg.protocol_version = sibling->rpc_version;
-				buffer = init_buf(BUF_SIZE);
+				buffer = init_buf(INFINITE);
 				if ((rc = pack_msg(&tmp_msg, buffer))) {
 					error("%s: packing %s for %s failed: %s",
 					      __func__,

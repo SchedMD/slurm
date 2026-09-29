@@ -100,6 +100,39 @@ Disabling storing accounting records by not setting this plugin.
 Turning accounting off provides minimal improvement in performance.
 If using the SlurmDBD increased speedup can be achieved by setting the
 CommitDelay option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
+<li><b>CommunicationParameters</b>:
+The <b>buffer_alloc_linear</b>, <b>buffer_alloc_geometric</b>, and
+<b>buffer_alloc_exponential</b> options control how the internal buffers used
+to assemble RPCs, HTTP request bodies, and responses are sized and enlarged.
+These options are mutually exclusive; at most one of them should be set. If
+more than one is set, an error is logged and <b>buffer_alloc_exponential</b>
+takes precedence over <b>buffer_alloc_geometric</b>, which takes precedence
+over <b>buffer_alloc_linear</b>.
+<ul>
+<li>Each option accepts an optional size, as in
+<b>buffer_alloc_exponential=65536</b>, which is the number of bytes a buffer
+starts at. The default is 16384, and values below 512 are raised to 512. A
+value outside the range 1 to 2147483647 is logged as invalid and the option is
+ignored. A buffer that starts large enough to hold a typical message never has
+to be enlarged at all, which is the cheapest outcome.</li>
+<li>When a buffer does have to grow, the option chosen decides by how much.
+<b>buffer_alloc_linear</b> adds the configured number of bytes,
+<b>buffer_alloc_exponential</b> doubles the current size, and
+<b>buffer_alloc_geometric</b> multiplies the current size by e
+(approximately 2.718). Growing by a larger factor reallocates fewer times
+while assembling a large message, at the cost of overshooting the size
+actually needed.</li>
+<li>The trade off is memory. The starting size is paid by every buffer in
+flight, not once per cluster, so it multiplies by the number of connections
+being served at once. Sites raising this should account for it alongside
+<b>conmgr_max_connections</b>, which already reserves memory per connection to
+buffer inbound and outbound data, and should watch for <i>Out of Memory</i>
+events after the change.</li>
+<li>Sites handling large messages, such as slurmrestd responses covering many
+jobs or nodes, benefit the most. Sites whose messages comfortably fit in the
+default starting size have little to gain and should leave these options
+unset.</li>
+</ul></li>
 <li><b>JobAcctGatherType</b>:
 Disabling the collection of job accounting information will improve job
 throughput. Disable collection of accounting by using the
