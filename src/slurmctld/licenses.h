@@ -88,10 +88,13 @@ typedef struct {
 	uint16_t layers_cnt; /* count of layers, set only for root*/
 	uint16_t leaf_cnt; /* count of leafs, set only for root*/
 	uint16_t level; /* level - 0 for leaf */
+	uint32_t maintenance_cycle; /* seconds between maintenance runs */
+	uint32_t maintenance_timeout; /* max seconds for a maintenance run */
 	licenses_t *parent; /* pointer to parent - NULL for root */
 	char *parent_name;
 	path_idx_t path_idx;
 	list_t *plugin_config; /* list of hres_config_t */
+	char *plugin_type; /* plugin type */
 	int topology_idx;
 	char *topology_name;
 	uint32_t total;

@@ -408,6 +408,7 @@ extern void license_free_rec(void *x)
 		xfree(license_entry->hres_rec.layer_name);
 		xfree(license_entry->hres_rec.parent_name);
 		FREE_NULL_LIST(license_entry->hres_rec.plugin_config);
+		xfree(license_entry->hres_rec.plugin_type);
 		xfree(license_entry->hres_rec.topology_name);
 		FREE_NULL_LIST(license_entry->hres_rec.variables);
 		xfree(license_entry);
