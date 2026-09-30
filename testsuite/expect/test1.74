@@ -64,37 +64,37 @@ proc cleanup { } {
 }
 
 proc srun_test {exp_cnt account} {
-	global srun acct node_cnt number bin_printenv
+	global srun acct node_cnt number bin_printenv bin_cat test_dir
 
 	set job_id 0
 	set count 0
+	set output_file "$test_dir/srun_test.out"
+	file delete $output_file
 
-	spawn $srun -l -t1 -A $account -N1-$node_cnt $bin_printenv SLURM_JOB_ID
-	expect {
-		-re "$number: ($number)" {
-			incr count
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		-re "($number)-($number):($number)" {
-#			NOTE: POE format
-			incr count [expr $expect_out(2,string) - $expect_out(1,string) + 1]
-			set job_id $expect_out(3,string)
-			exp_continue
-		}
-		-re "$number:($number)" {
-#			NOTE: POE format
-			incr count
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "srun is not responding"
-		}
-		eof {
-			wait
+	run_command -fail "$srun -l -t1 -A $account -N1-$node_cnt --output=$output_file $bin_printenv SLURM_JOB_ID"
+
+	wait_for {$count == $exp_cnt} {
+		set job_id 0
+		set count 0
+		if {[file exists $output_file]} {
+			set output [run_command_output "$bin_cat $output_file"]
+			foreach line [split $output "\n"] {
+				if {[regexp "^$number: ($number)$" $line - jid]} {
+					incr count
+					set job_id $jid
+				} elseif {[regexp "^($number)-($number):($number)$" $line - lo hi jid]} {
+#					NOTE: POE format
+					incr count [expr $hi - $lo + 1]
+					set job_id $jid
+				} elseif {[regexp "^$number:($number)$" $line - jid]} {
+#					NOTE: POE format
+					incr count
+					set job_id $jid
+				}
+			}
 		}
 	}
+
 	if {$job_id == 0} {
 		if {$exp_cnt != 0} {
 			fail "Did not get job id"
