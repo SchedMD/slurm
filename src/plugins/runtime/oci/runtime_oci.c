@@ -1460,6 +1460,52 @@ extern int runtime_p_init(const int idx, runtime_context_t context)
 	return SLURM_SUCCESS;
 }
 
+extern int runtime_p_cli_apply_launch_params(const uint32_t het_job_inx,
+					     runtime_context_t context,
+					     slurm_step_launch_params_t
+						     *launch_params)
+{
+	/* No argument value is kept yet, so there is nothing to apply. */
+	return SLURM_SUCCESS;
+}
+
+extern void runtime_p_cli_reset_args(const uint32_t het_job_inx)
+{
+	/* No argument value is kept yet, so there is nothing to drop. */
+}
+
+extern int runtime_p_cli_apply_step_req(const uint32_t het_job_inx,
+					runtime_context_t context,
+					step_create_req_msg_t *step_req)
+{
+	/* No argument value is kept yet, so there is nothing to apply. */
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_cli_apply_job_desc(const uint32_t het_job_inx,
+					runtime_context_t context,
+					job_desc_msg_t *job_desc)
+{
+	/* No argument value is kept yet, so there is nothing to apply. */
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_cli_apply_env(const uint32_t het_job_inx,
+				   const uint32_t het_job_offset,
+				   runtime_context_t context, bool child,
+				   char ***envp)
+{
+	/* No argument value is kept yet, so there is nothing to apply. */
+	return SLURM_SUCCESS;
+}
+
+extern int runtime_p_cli_apply_interactive_step(const uint32_t het_job_inx,
+						runtime_context_t context,
+						char **command)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int runtime_p_fini(void)
 {
 	return SLURM_SUCCESS;
