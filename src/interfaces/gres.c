@@ -7079,6 +7079,7 @@ extern int gres_job_state_validate(gres_job_state_validate_t *gres_js_val)
 				cnt *= (*gres_js_val->min_nodes *
 					*gres_js_val->sockets_per_node);
 			} else if ((*gres_js_val->num_tasks != NO_VAL) &&
+				   *gres_js_val->ntasks_per_socket &&
 				   (*gres_js_val->ntasks_per_socket !=
 				    NO_VAL16)) {
 				cnt *= ROUNDUP(*gres_js_val->num_tasks,
