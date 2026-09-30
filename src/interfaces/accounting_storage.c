@@ -55,7 +55,6 @@
 #include "src/interfaces/select.h"
 #include "src/slurmctld/slurmctld.h"
 
-uid_t db_api_uid = -1;
 /*
  * Local data
  */

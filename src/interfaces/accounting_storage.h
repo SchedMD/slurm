@@ -57,8 +57,6 @@ typedef enum {
 	ACCT_STORAGE_INFO_AGENT_COUNT
 } acct_storage_info_t;
 
-extern uid_t db_api_uid;
-
 extern int acct_storage_g_init(void); /* load the plugin */
 extern int acct_storage_g_fini(void); /* unload the plugin */
 
