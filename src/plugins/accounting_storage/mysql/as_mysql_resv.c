@@ -463,8 +463,6 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		xfree(query);
 	}
 
-	/* check differences here */
-
 	if (!resv->name
 	    && row[RESV_NAME] && row[RESV_NAME][0])
 		// if this changes we just update the
@@ -473,6 +471,17 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		// reservation accounting wise
 		resv->name = slurm_add_slash_to_quotes(row[RESV_NAME]);
 
+	if (!resv->time_end)
+		resv->time_end = slurm_atoul(row[RESV_END]);
+
+	/*
+	 * This needs to happen before the differences are checked below, as it
+	 * puts resv->assocs into the form that is stored in the table.
+	 */
+	_setup_resv_limits(resv, &cols, &vals, &extra);
+
+	/* check differences here */
+
 	if (xstrcmp(resv->assocs, row[RESV_ASSOCS]) ||
 	    (resv->flags != slurm_atoul(row[RESV_FLAGS])) ||
 	    xstrcmp(resv->nodes, row[RESV_NODES]) ||
@@ -480,17 +489,19 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	    xstrcmp(resv->comment, row[RESV_COMMENT]))
 		set = 1;
 
-	if (!resv->time_end)
-		resv->time_end = slurm_atoul(row[RESV_END]);
-
 	mysql_free_result(result);
 
-	_setup_resv_limits(resv, &cols, &vals, &extra);
-	/* use start below instead of resv->time_start_prev
-	 * just in case we have a different one from being out
-	 * of sync
+	/*
+	 * Use start below instead of resv->time_start_prev just in case we
+	 * have a different one from being out of sync.
+	 *
+	 * A record that has started can only be updated in place if it keeps
+	 * its start. slurmctld moves the start to now for some changes that
+	 * aren't stored here, such as a change to the users a reservation
+	 * denies, and updating in place would then move the start of the
+	 * record forward, losing the time it had already covered.
 	 */
-	if ((start > now) || !set) {
+	if ((start > now) || (!set && (resv->time_start == start))) {
 		/* we haven't started the reservation yet, or
 		   we are changing the associations or end
 		   time which we can just update it */
