@@ -170,7 +170,7 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_res_cond_t *res_cond);
 	list_t *(*get_wckeys)      (void *db_conn, uint32_t uid,
 				    slurmdb_wckey_cond_t *wckey_cond);
-	list_t *(*get_resvs)       (void *db_conn, uint32_t uid,
+	list_t *(*get_reservations)(void *db_conn, uint32_t uid,
 				    slurmdb_reservation_cond_t *resv_cond);
 	list_t *(*get_txn)         (void *db_conn, uint32_t uid,
 				    slurmdb_txn_cond_t *txn_cond);
@@ -968,7 +968,7 @@ extern list_t *acct_storage_g_get_reservations(
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.get_resvs))(db_conn, uid, resv_cond);
+	return (*(ops.get_reservations))(db_conn, uid, resv_cond);
 }
 
 extern list_t *acct_storage_g_get_txn(void *db_conn, uint32_t uid,
