@@ -198,8 +198,8 @@ static int _lua_remote_command(lua_State *L)
 		print_multi_line_string(out, -1, LOG_LEVEL_DEBUG2);
 
 	/* same free pattern as environ */
-	env_array_free(argvl);
-	env_array_free(run.env);
+	FREE_NULL_ENV(argvl, NULL);
+	FREE_NULL_ENV(run.env, NULL);
 
 	lua_pushnumber(L, WEXITSTATUS(status));
 	lua_pushstring(L, out);
