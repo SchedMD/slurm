@@ -95,7 +95,7 @@ START_TEST(test_set_env_array)
 	/* the process environment must not have been touched */
 	ck_assert_ptr_null(getenv(TEST_NAME));
 
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 }
 
 END_TEST
