@@ -532,8 +532,6 @@ static int _dump_str_fmt(dump_state_t *state, const char *fmt, ...)
 		const utf8_t *str = (fstr->str + fstr->offset);
 		int rc = EINVAL;
 
-		xassert(bytes >= 0);
-
 		if ((rc = buf_append_bytes(state->dst, str, bytes)))
 			return rc;
 
