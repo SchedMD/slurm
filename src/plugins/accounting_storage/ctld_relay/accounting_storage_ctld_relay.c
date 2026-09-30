@@ -424,7 +424,7 @@ extern list_t *acct_storage_p_get_users(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_accts(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_accts(void *db_conn,
 					slurmdb_account_cond_t *acct_cond)
 {
 	return NULL;
