@@ -238,6 +238,11 @@ extern int reserve_port_config(char *mpi_params, list_t *job_list)
 	}
 	tmp_e++;
 	p_max = strtol(tmp_e, NULL, 10);
+	if (p_max > UINT16_MAX) {
+		error("MpiParams ports= range ends at %d, capping it at %d",
+		      p_max, UINT16_MAX);
+		p_max = UINT16_MAX;
+	}
 	if (p_max < p_min) {
 		info("invalid MpiParams: %s", mpi_params);
 		return SLURM_ERROR;
