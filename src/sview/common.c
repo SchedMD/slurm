@@ -593,7 +593,7 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	/*spin hostlist and map nodes into a bitmap*/
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_inx = _find_node_inx(this_node_name);
-		free(this_node_name);
+		xfree(this_node_name);
 
 		if (node_inx == -1)
 			continue;

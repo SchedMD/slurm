@@ -487,10 +487,8 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 		ptr2 = "";
 
 	diff = xstrcmp(ptr1, ptr2);
-	if (val1)
-		free(val1);
-	if (val2)
-		free(val2);
+	xfree(val1);
+	xfree(val2);
 #else
 	/*
 	 * The hostlist in sinfo_data_t should each only have one hostrange, and

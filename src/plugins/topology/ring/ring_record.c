@@ -226,7 +226,7 @@ extern int ring_record_validate(topology_ctx_t *tctx)
 					hostlist_push_host(invalid_hl,
 							   node_name);
 				}
-				free(node_name);
+				xfree(node_name);
 			}
 			ring_ptr->nodes =
 				hostlist_ranged_string_xmalloc(host_list_out);

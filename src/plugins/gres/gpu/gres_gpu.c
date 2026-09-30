@@ -480,7 +480,7 @@ static int _merge_system_gres_conf(list_t *gres_list_conf,
 			 */
 			add_gres_to_list(gres_list_conf_single,
 					 gres_slurmd_conf);
-			free(hl_name);
+			xfree(hl_name);
 			gres_slurmd_conf->file = NULL;
 		}
 		hostlist_destroy(hl);

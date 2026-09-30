@@ -490,7 +490,7 @@ int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t **hl)
 	/* compute the next absolute id of the neighbor */
 	p = hostlist_nth(*hl, (rel_id + 1) % coll->peers_cnt);
 	ring->next_peerid = pmixp_info_job_hostid(p);
-	free(p);
+	xfree(p);
 
 	ring->fwrd_buf_pool = list_create(pmixp_free_buf);
 	ring->ring_buf_pool = list_create(pmixp_free_buf);

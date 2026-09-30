@@ -298,12 +298,12 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 						   this_node_name);
 			info("%s: invalid node name %s in partition",
 			     __func__, this_node_name);
-			free(this_node_name);
+			xfree(this_node_name);
 			rc = ESLURM_INVALID_NODE_NAME;
 			continue;
 		}
 		_add_node_to_part(part_ptr, node_ptr, old_bitmap);
-		free(this_node_name);
+		xfree(this_node_name);
 	}
 	hostlist_destroy(host_list);
 

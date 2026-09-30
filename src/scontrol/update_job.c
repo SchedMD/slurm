@@ -133,10 +133,8 @@ static char *_next_job_id(void)
 	if (hl) {
 		/* Process job ID regular expression using previously
 		 * established hostlist data structure */
-		tmp_str = hostlist_shift(hl);
-		if (tmp_str) {
-			next_job_id = xstrdup(tmp_str);
-			free(tmp_str);
+		next_job_id = hostlist_shift(hl);
+		if (next_job_id) {
 			if (task_id_spec) {
 				xstrcat(next_job_id, "_");
 				xstrcat(next_job_id, task_id_spec);
@@ -186,14 +184,12 @@ static char *_next_job_id(void)
 			goto fini;
 		}
 		xfree(tmp_str);
-		tmp_str = hostlist_shift(hl);
-		if (!tmp_str) {
+		next_job_id = hostlist_shift(hl);
+		if (!next_job_id) {
 			error("Invalid job id: %s", job_id_str);
 			FREE_NULL_HOSTLIST(hl);
 			goto fini;
 		}
-		next_job_id = xstrdup(tmp_str);
-		free(tmp_str);
 	} else if (under_ptr) {
 		under_ptr[0] = '\0';
 		next_job_id = xstrdup(job_id_str);

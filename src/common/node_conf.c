@@ -575,27 +575,23 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 	while ((alias = hostlist_shift(alias_list))) {
 		if (address_count > 0) {
 			address_count--;
-			if (address)
-				free(address);
+			xfree(address);
 			address = hostlist_shift(address_list);
 		}
 		if (bcast_count > 0) {
 			bcast_count--;
-			if (bcast_address)
-				free(bcast_address);
+			xfree(bcast_address);
 			bcast_address = hostlist_shift(bcast_list);
 		}
 		if (hostname_count > 0) {
 			hostname_count--;
-			if (hostname)
-				free(hostname);
+			xfree(hostname);
 			hostname = hostlist_shift(hostname_list);
 		}
 		if (port_count > 0) {
 			int port_int;
 			port_count--;
-			if (port_str)
-				free(port_str);
+			xfree(port_str);
 			port_str = hostlist_shift(port_list);
 			port_int = atoi(port_str);
 			if ((port_int <= 0) || (port_int > 0xffff))
@@ -612,21 +608,17 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 							  slurm_strerror(rc),
 							  alias);
 			}
-			free(alias);
+			xfree(alias);
 			break;
 		}
 
-		free(alias);
+		xfree(alias);
 	}
 	/* free allocated storage */
-	if (address)
-		free(address);
-	if (bcast_address)
-		free(bcast_address);
-	if (hostname)
-		free(hostname);
-	if (port_str)
-		free(port_str);
+	xfree(address);
+	xfree(bcast_address);
+	xfree(hostname);
+	xfree(port_str);
 	FREE_NULL_HOSTLIST(address_list);
 	FREE_NULL_HOSTLIST(alias_list);
 	FREE_NULL_HOSTLIST(bcast_list);
@@ -1264,7 +1256,7 @@ extern int parse_hostlist_functions(hostlist_t **hostlist)
 		} else {
 			hostlist_push_host(new_hostlist, host);
 		}
-		free(host);
+		xfree(host);
 	}
 	hostlist_destroy(*hostlist);
 	*hostlist = new_hostlist;
@@ -1343,7 +1335,7 @@ extern int node_name2bitmap(char *node_names, bool test_alias,
 						       test_alias, *bitmap,
 						       invalid_hostlist)))
 			rc = tmp_rc;
-		free(this_node_name);
+		xfree(this_node_name);
 	}
 	hostlist_destroy(host_list);
 
@@ -1374,7 +1366,7 @@ extern int hostlist2bitmap(hostlist_t *hl, bool test_alias, bitstr_t **bitmap)
 		if ((tmp_rc = _single_node_name2bitmap(name, test_alias,
 						       *bitmap, NULL)))
 			rc = tmp_rc;
-		free(name);
+		xfree(name);
 	}
 
 	hostlist_iterator_destroy(hi);
@@ -1587,17 +1579,13 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
 extern char *find_hostname(uint32_t pos, char *hosts)
 {
 	hostlist_t *hostlist = NULL;
-	char *temp = NULL, *host = NULL;
+	char *host = NULL;
 
 	if (!hosts || (pos == NO_VAL) || (pos == INFINITE))
 		return NULL;
 
 	hostlist = hostlist_create(hosts);
-	temp = hostlist_nth(hostlist, pos);
-	if (temp) {
-		host = xstrdup(temp);
-		free(temp);
-	}
+	host = hostlist_nth(hostlist, pos);
 	hostlist_destroy(hostlist);
 	return host;
 }

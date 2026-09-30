@@ -556,10 +556,8 @@ static int _sort_by_nodelist_nodeaddr_hostnames(void *void1, void *void2,
 	} else
 		ptr2 = "";
 	diff = xstrcmp(ptr1, ptr2);
-	if (val1)
-		free(val1);
-	if (val2)
-		free(val2);
+	xfree(val1);
+	xfree(val2);
 #else
 	/*
 	 * The hostlist in sinfo_data_t should each only have one hostrange, and

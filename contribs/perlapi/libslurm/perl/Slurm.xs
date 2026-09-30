@@ -1436,7 +1436,7 @@ char_xfree *slurm_hostlist_ranged_string(hostlist_t *hl)
 	OUTPUT:
 		RETVAL
 
-char_free *slurm_hostlist_shift(hostlist_t *hl = NULL)
+char_xfree *slurm_hostlist_shift(hostlist_t *hl = NULL)
 	CODE:
 		RETVAL = slurm_hostlist_shift(hl);
 		if (RETVAL == NULL) {

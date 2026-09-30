@@ -74,7 +74,7 @@ extern void scontrol_getaddrs(char *node_list)
 				       hostname, addrbuf, port);
 			else
 				printf("%s: %s:%d\n", hostname, addrbuf, port);
-			free(hostname);
+			xfree(hostname);
 		}
 
 		hostlist_destroy(host_list);
@@ -281,7 +281,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 					break;
 				}
 
-				free(node_name);
+				xfree(node_name);
 
 				if (count >= node_info_ptr->record_count)
 					break;
@@ -299,7 +299,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 			while ((node_name = hostlist_shift(host_list))) {
 				scontrol_print_node(node_name, node_info_ptr);
-				free(node_name);
+				xfree(node_name);
 			}
 		}
 

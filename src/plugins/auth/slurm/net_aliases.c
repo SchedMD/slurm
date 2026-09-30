@@ -116,7 +116,7 @@ extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases)
 		data_set_int(data_key_set(addr_dict, "port"),
 			     slurm_get_port(&aliases->node_addrs[i]));
 
-		free(node_name);
+		xfree(node_name);
 	}
 
 	serialize_g_data_to_string(&json, NULL, data, MIME_TYPE_JSON,

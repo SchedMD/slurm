@@ -1474,10 +1474,10 @@ extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t *hl);
  * slurm_hostlist_shift():
  *
  * Returns the string representation of the first host in the hostlist
- * or NULL if the hostlist is empty or there was an error allocating memory.
+ * or NULL if the hostlist is empty.
  * The host is removed from the hostlist.
  *
- * Note: Caller is responsible for freeing the returned memory.
+ * Note: Caller must free the result with slurm_xfree_ptr().
  */
 extern char *slurm_hostlist_shift(hostlist_t *hl);
 

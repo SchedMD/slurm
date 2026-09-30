@@ -1562,13 +1562,13 @@ static void _filter_nodes(void)
 	/* Map all node names specified with -w, if known to any controller. */
 	while ((name = hostset_shift(params.nodes))) {
 		if (!(nodename = _map_node_name(clusters_nodes, name))) {
-			free(name);
+			xfree(name);
 			hostset_destroy(params.nodes);
 			FREE_NULL_LIST(clusters_nodes);
 			exit(1);
 		}
 		hostset_insert(nodenames, nodename);
-		free(name);
+		xfree(name);
 		xfree(nodename);
 	}
 	FREE_NULL_LIST(clusters_nodes);

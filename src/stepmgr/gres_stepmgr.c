@@ -2235,10 +2235,10 @@ static char *_build_shared_gres_details(char *nodes, int node_index,
 
 	if (!(node_ptr = find_node_record(node))) {
 		error("Could not find record for node '%s'", node);
-		free(node);
+		xfree(node);
 		return NULL;
 	}
-	free(node);
+	xfree(node);
 
 	/* Find gres_state_node with plugin_id that matches gres_state_job */
 	gres_state_node = list_find_first(node_ptr->gres_list, gres_find_id,

@@ -659,7 +659,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 		node_rec = find_node_record(alias);
 		if (node_rec == NULL) {
 			error("DownNode \"%s\" does not exist!", alias);
-			free(alias);
+			xfree(alias);
 			continue;
 		}
 
@@ -672,7 +672,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 			node_rec->reason_time = time(NULL);
 			node_rec->reason_uid = slurm_conf.slurm_user_id;
 		}
-		free(alias);
+		xfree(alias);
 	}
 
 cleanup:
@@ -1210,7 +1210,7 @@ static void _validate_het_jobs(void)
 				list_append(job_ptr->het_job_list,
 					    het_job_ptr);
 			}
-			free(job_id_str);
+			xfree(job_id_str);
 		}
 		hostset_destroy(hs);
 		if (het_job_valid) {

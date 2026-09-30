@@ -752,7 +752,7 @@ static bitstr_t *_get_het_group(const int argc, char **argv,
 			exit(error_exit);
 		}
 		bit_set(het_grp_bits, i);
-		free(tmp);
+		xfree(tmp);
 	}
 	hostlist_destroy(hl);
 	if (bit_ffs(het_grp_bits) == -1) {	/* No bits set */

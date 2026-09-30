@@ -434,7 +434,7 @@ static int _find_channel(
 				 channel->id);
 			rc = 1;
 		}
-		free(node_name);
+		xfree(node_name);
 
 		if (rc)
 			break;

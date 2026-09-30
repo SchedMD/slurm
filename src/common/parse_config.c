@@ -1699,22 +1699,21 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 		/* Extract the string representation of the proper value(s)
 		 * from the expanded one (if not already done) */
 		if (item_count > 1) {
-			if (item_str)
-				free(item_str);
+			xfree(item_str);
 			if (items_per_record > 1) {
 				/* multiple items per table,
 				 * extract the consecutive set for this table */
 				item_str = hostlist_nth(item_hl, items_idx++);
 				sub_item_hl = hostlist_create(item_str);
 				for (j = 1; j < items_per_record; j++) {
-					free(item_str);
+					xfree(item_str);
 					item_str = hostlist_nth(item_hl,
 								items_idx++);
 					hostlist_push_host(sub_item_hl,
 							   item_str);
 				}
-				free(item_str);
-				item_str = hostlist_ranged_string_malloc(
+				xfree(item_str);
+				item_str = hostlist_ranged_string_xmalloc(
 					sub_item_hl);
 				hostlist_destroy(sub_item_hl);
 			} else {
@@ -1740,13 +1739,12 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 					    item->operator)) {
 			error("parsing %s=%s after expansion.", item->key,
 			      item_str);
-			free(item_str);
+			xfree(item_str);
 			return 0;
 		}
 	}
 
-	if (item_str)
-		free(item_str);
+	xfree(item_str);
 	return 1;
 }
 
@@ -1796,7 +1794,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 	 */
 	tables = xcalloc(tables_count, sizeof(s_p_hashtbl_t *));
 	for (i = 0; i < tables_count; i++) {
-		free(value_str);
+		xfree(value_str);
 		value_str = hostlist_shift(value_hl);
 		tables[i] = _hashtbl_copy_keys(hashtbl);
 		_hashtbl_plain_to_string(tables[i]);
@@ -1823,8 +1821,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 	status = SLURM_SUCCESS;
 
 cleanup:
-	if (value_str)
-		free(value_str);
+	xfree(value_str);
 	FREE_NULL_HOSTLIST(value_hl);
 	s_p_hashtbl_destroy(strtbl);
 

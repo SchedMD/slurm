@@ -279,7 +279,7 @@ static void _set_procdatas(list_t *lresp)
 		nodename = hostlist_nth(nsptr->hl, nodeid);
 		PMIXP_KVP_CREATE(kvp, PMIX_HOSTNAME, nodename, PMIX_STRING);
 		list_append(rankinfo, kvp);
-		free(nodename);
+		xfree(nodename);
 
 		PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nodeid, PMIX_UINT32);
 		list_append(rankinfo, kvp);

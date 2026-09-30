@@ -347,7 +347,7 @@ extern srun_job_t *job_step_create_allocation(
 					goto error;
 				}
 			}
-			free(node_name);
+			xfree(node_name);
 		}
 		hostlist_destroy(exc_hl);
 
@@ -395,7 +395,7 @@ extern srun_job_t *job_step_create_allocation(
 				while ((i < diff) &&
 				       (node_name = hostlist_shift(tmp_hl))) {
 					hostlist_push_host(inc_hl, node_name);
-					free(node_name);
+					xfree(node_name);
 					i++;
 				}
 				hostlist_destroy(tmp_hl);
@@ -858,7 +858,7 @@ static int _handle_het_step_exclude(srun_job_t *job, slurm_opt_t *opt_local,
 				rc = SLURM_ERROR;
 				break;
 			}
-			free(node_name);
+			xfree(node_name);
 		}
 		FREE_NULL_HOSTLIST(inc_hl);
 	}
@@ -1147,7 +1147,7 @@ static char *_compress_het_job_nodelist(list_t *used_resp_list)
 			break;
 		}
 		list_iterator_destroy(resp_iter);
-		free(node_name);
+		xfree(node_name);
 	}
 
 	cpu_inx++;

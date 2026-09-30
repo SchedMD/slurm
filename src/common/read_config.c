@@ -6706,7 +6706,7 @@ extern int slurm_conf_resolve_addrs(const char *nodelist)
 	while ((name = hostlist_next(itr))) {
 		if (slurm_conf_get_addr(name, &addr, 0))
 			hostlist_push_host(missing, name);
-		free(name);
+		xfree(name);
 	}
 	hostlist_iterator_destroy(itr);
 	hostlist_destroy(nodes);
@@ -6766,7 +6766,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 		_internal_conf_remove_node(hostname);
 		_push_to_hashtbls(hostname, hostname, NULL, NULL, 0,
 				  &node_addrs[i++], true, true, false);
-		free(hostname);
+		xfree(hostname);
 	}
 	slurm_conf_unlock();
 

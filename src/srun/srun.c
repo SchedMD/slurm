@@ -380,12 +380,12 @@ static void _reorder_het_job_recs(char **in_node_list, uint16_t **in_task_cnts,
 		if (j == -1) {
 			error("%s: Invalid hostlist(%s) parsing", __func__,
 			      *in_node_list);
-			free(hostname);
+			xfree(hostname);
 			break;
 		}
 		out_task_cnts[i] = in_task_cnts[0][j];
 		out_tids[i] = in_tids[0][j];
-		free(hostname);
+		xfree(hostname);
 	}
 
 	if (i >= total_nnodes) {	/* Success */

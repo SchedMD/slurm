@@ -182,26 +182,26 @@ extern void hostlist_drop(hostlist_t *hl);
 /* hostlist_pop():
  *
  * Returns the string representation of the last host pushed onto the list
- * or NULL if hostlist is empty or there was an error allocating memory.
+ * or NULL if hostlist is empty.
  * The host is removed from the hostlist.
  *
- * Note: Caller is responsible for freeing the returned memory.
+ * Note: Caller must free the result with xfree().
  */
 char *hostlist_pop(hostlist_t *hl);
 
 /*
  * Return n-th element from hostlist
- * Release memory using free()
+ * Free the result with xfree()
  */
 char *hostlist_nth(hostlist_t *hl, int n);
 
 /* hostlist_shift():
  *
  * Returns the string representation of the first host in the hostlist
- * or NULL if the hostlist is empty or there was an error allocating memory.
+ * or NULL if the hostlist is empty.
  * The host is removed from the hostlist.
  *
- * Note: Caller is responsible for freeing the returned memory.
+ * Note: Caller must free the result with xfree().
  */
 char *hostlist_shift(hostlist_t *hl);
 
@@ -305,11 +305,6 @@ extern int hostlist_split_treewidth(hostlist_t *hl, hostlist_t ***sp_hl,
 ssize_t hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf);
 
 /* Variant of hostlist_ranged_string().
- * Returns the buffer which must be released using free() or NULL on failure.
- */
-char *hostlist_ranged_string_malloc(hostlist_t *hl);
-
-/* Variant of hostlist_ranged_string().
  * Returns the buffer which must be released using xfree().
  */
 char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
@@ -372,7 +367,7 @@ void hostlist_iterator_reset(hostlist_iterator_t *i);
  * Returns a pointer to the  next hostname on the hostlist
  * or NULL at the end of the list
  *
- * The caller is responsible for freeing the returned memory.
+ * Caller must free the result with xfree().
  */
 char *hostlist_next(hostlist_iterator_t *i);
 
@@ -449,7 +444,7 @@ int hostset_find(hostset_t *set, const char *hostname);
 
 /*
  * Return n-th element from hostset
- * Release memory using free()
+ * Free the result with xfree()
  */
 char *hostset_nth(hostset_t *set, int n);
 

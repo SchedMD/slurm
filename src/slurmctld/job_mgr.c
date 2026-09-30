@@ -19683,7 +19683,7 @@ static bitstr_t *_make_requeue_array(char *conf_buf)
 			error("%s: exit values: %s (%s)",
 			      __func__, conf_buf, tok);
 		}
-		free(tok);
+		xfree(tok);
 	}
 	hostset_destroy(hs);
 

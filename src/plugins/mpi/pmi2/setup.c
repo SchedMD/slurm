@@ -221,9 +221,7 @@ _setup_stepd_tree_info(char ***env)
 	memset(&tree_info, 0, sizeof(tree_info));
 
 	hl = hostlist_create(job_info.step_nodelist);
-	p = hostlist_nth(hl, job_info.nodeid); /* strdup-ed */
-	tree_info.this_node = xstrdup(p);
-	free(p);
+	tree_info.this_node = hostlist_nth(hl, job_info.nodeid);
 
 	/* this only controls the upward communication tree width */
 	p = getenvp(*env, PMI2_TREE_WIDTH_ENV);
@@ -252,9 +250,7 @@ _setup_stepd_tree_info(char ***env)
 	if (tree_info.parent_id < 0) {	/* parent is srun */
 		tree_info.parent_node = NULL;
 	} else {
-		p = hostlist_nth(hl, tree_info.parent_id);
-		tree_info.parent_node = xstrdup(p);
-		free(p);
+		tree_info.parent_node = hostlist_nth(hl, tree_info.parent_id);
 	}
 	hostlist_destroy(hl);
 

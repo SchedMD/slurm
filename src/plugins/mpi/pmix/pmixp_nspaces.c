@@ -149,7 +149,7 @@ hostlist_t *pmixp_nspace_rankhosts(pmixp_namespace_t *nsptr,
 		int node = nsptr->task_map[rank];
 		char *node_s = hostlist_nth(nsptr->hl, node);
 		hostlist_push(hl, node_s);
-		free(node_s);
+		xfree(node_s);
 	}
 	hostlist_uniq(hl);
 	return hl;

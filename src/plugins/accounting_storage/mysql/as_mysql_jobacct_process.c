@@ -1315,7 +1315,7 @@ extern list_t *setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 			if ((loc = hostlist_find(local_cluster->hl,
 						 host)) != -1)
 				bit_set(local_cluster->asked_bitmap, loc);
-			free(host);
+			xfree(host);
 		}
 		hostlist_iterator_reset(h_itr);
 		if (bit_ffs(local_cluster->asked_bitmap) != -1) {

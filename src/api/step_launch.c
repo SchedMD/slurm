@@ -884,7 +884,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 
 		if (active)
 			hostlist_push_host(hl, host);
-		free(host);
+		xfree(host);
 	}
 	hostlist_destroy(node_hl);
 
@@ -1237,10 +1237,10 @@ static void _node_fail_handler(step_launch_state_t *sls, slurm_msg_t *fail_msg)
 		if (node_id < 0) {
 			error(  "Internal error: bad SRUN_NODE_FAIL message. "
 				"Node %s not part of this job step", node);
-			free(node);
+			xfree(node);
 			continue;
 		}
-		free(node);
+		xfree(node);
 
 		/* find all of the tasks that should run on this node and
 		 * mark them as having started and exited.  If they haven't
@@ -1324,10 +1324,10 @@ static void _step_missing_handler(step_launch_state_t *sls,
 		if (node_id < 0) {
 			error("Internal error: bad SRUN_STEP_MISSING message. "
 			      "Node %s not part of this job step", node);
-			free(node);
+			xfree(node);
 			continue;
 		}
-		free(node);
+		xfree(node);
 
 		/*
 		 * If all tasks for this node have either not started or already
@@ -1693,7 +1693,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		int i = 0;
 		while ((name = hostlist_shift(hl))) {
 			_print_launch_msg(launch_msg, name, i++);
-			free(name);
+			xfree(name);
 		}
 		hostlist_destroy(hl);
 	}

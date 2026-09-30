@@ -285,7 +285,7 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 				  step_layout1->node_cnt,
 				  sizeof(uint32_t *));
 		}
-		free(host);
+		xfree(host);
 
 		/* set the end position of the array */
 		node_task_cnt = step_layout1->tasks[pos];
@@ -598,7 +598,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	step_inx = 0;
 	while((host = hostlist_next(itr_task))) {
 		step_hosts_ptrs[step_inx++] = find_node_record_no_alias(host);
-		free(host);
+		xfree(host);
 	}
 
 	while((host = hostlist_next(itr))) {
@@ -631,8 +631,8 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				break;
 		}
 		i++;
-	reset_hosts:
-		free(host);
+reset_hosts:
+		xfree(host);
 		if (i > step_layout->task_cnt)
 			break;
 	}

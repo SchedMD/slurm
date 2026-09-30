@@ -336,7 +336,7 @@ static void print_layout_info(slurm_step_layout_t *layout)
 			printf("%d ", layout->tids[i][j]);
 		}
 		printf("\n");
-		free(name);
+		xfree(name);
 	}
 	hostlist_destroy(nl);
 }

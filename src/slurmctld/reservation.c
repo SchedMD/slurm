@@ -3693,11 +3693,11 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 			if (!node_ptr) {
 				info("Reservation %s request has bad node name given (%s)",
 				     resv_ptr->name, node_name);
-				free(node_name);
+				xfree(node_name);
 				FREE_NULL_BITMAP(node_bitmap);
 				break;
 			}
-			free(node_name);
+			xfree(node_name);
 
 			if (!node_bitmap)
 				node_bitmap = bit_copy(resv_ptr->node_bitmap);

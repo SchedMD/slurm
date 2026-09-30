@@ -649,7 +649,7 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 
 			xfree(cpustr);
 			hostlist_push_host(hl_last, host);
-			free(host);
+			xfree(host);
 
 			if (bit_inx > last)
 				break;
@@ -2418,7 +2418,7 @@ scontrol_print_hosts (char * node_list)
 	}
 	while ((host = hostlist_shift(hl))) {
 		printf("%s\n", host);
-		free(host);
+		xfree(host);
 	}
 	hostlist_destroy(hl);
 }
