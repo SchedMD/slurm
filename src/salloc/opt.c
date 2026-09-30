@@ -90,6 +90,7 @@ slurm_opt_t opt = {
 int error_exit = 1;
 bool first_pass = true;
 int immediate_exit = 1;
+bool interactive_step = false;
 
 /*---- forward declarations of static functions  ----*/
 
@@ -367,8 +368,8 @@ static void _salloc_default_command(int *argcp, char **argvp[])
 		else
 			*command = '\0';
 		xstrcat(command, "srun ");
-
 		xstrcat(command, slurm_conf.interactive_step_opts);
+		interactive_step = true;
 
 		*argcp = 3;
 		*argvp = xcalloc(4, sizeof (char *));
@@ -461,6 +462,11 @@ static bool _opt_verify(void)
 	if (opt.oom_kill_step != NO_VAL16 && !getenv("SLURM_OOM_KILL_STEP"))
 		setenvf(NULL, "SLURM_OOM_KILL_STEP", "%u", opt.oom_kill_step);
 
+	/*
+	 * Only the component that gives the command decides if it is the
+	 * step
+	 */
+	interactive_step = false;
 	if ((saopt.no_shell == false) && (opt.argc == 0))
 		_salloc_default_command(&opt.argc, &opt.argv);
 

@@ -55,6 +55,7 @@ extern slurm_opt_t opt;
 extern salloc_opt_t saopt;
 extern int error_exit;		/* exit code for slurm errors */
 extern int immediate_exit;	/* exit code for --immediate option & busy */
+extern bool interactive_step; /* command is the interactive step */
 
 /*
  * process options:
