@@ -71,10 +71,7 @@ extern char *slurmdb_users_add_cond(void *db_conn,
  */
 extern list_t *slurmdb_users_get(void *db_conn, slurmdb_user_cond_t *user_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_users(db_conn, db_api_uid, user_cond);
+	return acct_storage_g_get_users(db_conn, user_cond);
 }
 
 /*

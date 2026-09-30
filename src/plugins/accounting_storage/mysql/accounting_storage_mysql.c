@@ -3538,10 +3538,10 @@ extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
 	return as_mysql_remove_resv(mysql_conn, resv);
 }
 
-extern list_t *acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 					slurmdb_user_cond_t *user_cond)
 {
-	return as_mysql_get_users(mysql_conn, uid, user_cond);
+	return as_mysql_get_users(mysql_conn, mysql_conn->auth_uid, user_cond);
 }
 
 extern list_t *acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,

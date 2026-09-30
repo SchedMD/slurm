@@ -1520,7 +1520,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 	return rc;
 }
 
-extern list_t *acct_storage_p_get_users(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_users(void *db_conn,
 					slurmdb_user_cond_t *user_cond)
 {
 	persist_msg_t req = {0}, resp = {0};

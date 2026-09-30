@@ -1949,13 +1949,12 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = {
 		.assoc = WRITE_LOCK, /* for updating cached user_rec in assoc */
 		.user = WRITE_LOCK,
 	};
 
-	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
+	current_users = acct_storage_g_get_users(db_conn, &user_q);
 
 	assoc_mgr_lock(&locks);
 
@@ -2223,13 +2222,12 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = {
 		.assoc = WRITE_LOCK, /* for updating cached user_rec in assoc */
 		.user = WRITE_LOCK,
 	};
 
-	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
+	current_users = acct_storage_g_get_users(db_conn, &user_q);
 
 	if (!current_users) {
 		error("%s: no new list given back keeping cached one.",

@@ -97,7 +97,7 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 	user_cond->assoc_cond->usage_start = start_time;
 	user_cond->assoc_cond->usage_end = end_time;
 
-	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
+	user_list = acct_storage_g_get_users(db_conn, user_cond);
 	if (!user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with user query.\n");

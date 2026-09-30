@@ -418,7 +418,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern list_t *acct_storage_p_get_users(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_users(void *db_conn,
 					slurmdb_user_cond_t *user_cond)
 {
 	return NULL;

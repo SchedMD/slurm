@@ -386,7 +386,7 @@ extern int acct_storage_g_remove_reservation(void *db_conn,
  * returns List of slurmdb_user_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_users(void *db_conn,  uint32_t uid,
+extern list_t *acct_storage_g_get_users(void *db_conn,
 					slurmdb_user_cond_t *user_cond);
 
 /*

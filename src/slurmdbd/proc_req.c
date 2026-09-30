@@ -1399,8 +1399,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	}
 
 	list_msg.my_list =
-		acct_storage_g_get_users(slurmdbd_conn->db_conn,
-					 slurmdbd_conn->auth_uid, user_cond);
+		acct_storage_g_get_users(slurmdbd_conn->db_conn, user_cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)

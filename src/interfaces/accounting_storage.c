@@ -127,8 +127,7 @@ typedef struct slurm_acct_storage_ops {
 				 slurmdb_wckey_cond_t *wckey_cond);
 	int  (*remove_reservation) (void *db_conn,
 				    slurmdb_reservation_rec_t *resv);
-	list_t *(*get_users)       (void *db_conn, uint32_t uid,
-				    slurmdb_user_cond_t *user_cond);
+	list_t *(*get_users)(void *db_conn, slurmdb_user_cond_t *user_cond);
 	list_t *(*get_accts)       (void *db_conn, uint32_t uid,
 				    slurmdb_account_cond_t *acct_cond);
 	list_t *(*get_clusters)    (void *db_conn, uint32_t uid,
@@ -786,15 +785,15 @@ extern int acct_storage_g_remove_reservation(void *db_conn,
 	return (*(ops.remove_reservation))(db_conn, resv);
 }
 
-extern list_t *acct_storage_g_get_users(
-	void *db_conn, uint32_t uid, slurmdb_user_cond_t *user_cond)
+extern list_t *acct_storage_g_get_users(void *db_conn,
+					slurmdb_user_cond_t *user_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.get_users))(db_conn, uid, user_cond);
+	return (*(ops.get_users))(db_conn, user_cond);
 }
 
 extern list_t *acct_storage_g_get_accts(void *db_conn, uint32_t uid,
