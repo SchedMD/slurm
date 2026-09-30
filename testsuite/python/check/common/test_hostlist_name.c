@@ -333,7 +333,7 @@ START_TEST(push_shift_round_trip)
 
 		ck_assert(host != NULL);
 		ck_assert_str_eq(host, hosts[i]);
-		free(host);
+		xfree(host);
 	}
 	ck_assert_int_eq(slurm_hostlist_count(hl), 0);
 
