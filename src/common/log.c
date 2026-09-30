@@ -1955,8 +1955,8 @@ extern char *log_build_step_id_str(
 	return buf;
 }
 
-extern void _log_flag_hex(const void *data, size_t len, ssize_t start,
-			  ssize_t end, const char *fmt, ...)
+extern void slurm_log_flag_hex(const void *data, size_t len, ssize_t start,
+			       ssize_t end, const char *fmt, ...)
 {
 	va_list ap;
 	char *prepend;
