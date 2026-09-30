@@ -137,8 +137,8 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*get_tres)(void *db_conn, slurmdb_tres_cond_t *tres_cond);
 	list_t *(*get_assocs)(void *db_conn, slurmdb_assoc_cond_t *assoc_cond);
 	list_t *(*get_events)(void *db_conn, slurmdb_event_cond_t *event_cond);
-	list_t *(*get_instances)   (void *db_conn, uint32_t uid,
-				    slurmdb_instance_cond_t *instance_cond);
+	list_t *(*get_instances)(void *db_conn,
+				 slurmdb_instance_cond_t *instance_cond);
 	list_t *(*get_problems)    (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
 	list_t *(*get_qos)         (void *db_conn, uint32_t uid,
@@ -870,15 +870,16 @@ extern list_t *acct_storage_g_get_events(void *db_conn,
 	return (*(ops.get_events))(db_conn, event_cond);
 }
 
-extern list_t *acct_storage_g_get_instances(
-	void *db_conn, uint32_t uid, slurmdb_instance_cond_t *instance_cond)
+extern list_t *acct_storage_g_get_instances(void *db_conn,
+					    slurmdb_instance_cond_t
+						    *instance_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.get_instances))(db_conn, uid, instance_cond);
+	return (*(ops.get_instances))(db_conn, instance_cond);
 }
 
 extern list_t *acct_storage_g_get_problems(void *db_conn, uint32_t uid,

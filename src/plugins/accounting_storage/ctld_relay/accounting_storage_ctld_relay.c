@@ -467,9 +467,9 @@ extern list_t *acct_storage_p_get_events(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_instances(
-	void *db_conn, uint32_t uid,
-	slurmdb_instance_cond_t *instance_cond)
+extern list_t *acct_storage_p_get_instances(void *db_conn,
+					    slurmdb_instance_cond_t
+						    *instance_cond)
 {
 	return NULL;
 }
