@@ -12878,6 +12878,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	detail_ptr = job_ptr->details;
 	if (detail_ptr)
 		mc_ptr = detail_ptr->mc_ptr;
+
+	/*
+	 * Reject a SegmentSize change for a non-pending job up front, before any
+	 * other requested change is applied to the job.
+	 */
+	if ((job_desc->segment_size != NO_VAL16) &&
+	    (!IS_JOB_PENDING(job_ptr) || !detail_ptr))
+		return ESLURM_JOB_NOT_PENDING;
+
 	last_job_update = now;
 
 	/*
@@ -14048,9 +14057,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		goto fini;
 
 	if (job_desc->segment_size != NO_VAL16) {
-		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
-			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (job_desc->segment_size) {
+		/* Non-pending jobs were rejected up front. */
+		if (job_desc->segment_size) {
 			uint32_t nodes_cnt;
 
 			if (detail_ptr->job_size_bitmap)
