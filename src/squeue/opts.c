@@ -1113,13 +1113,10 @@ static void _print_options(void)
 	uint32_t *user;
 	uint32_t *state_id;
 	squeue_job_step_t *job_step_id;
-	char hostlist[8192];
+	char *hostlist = NULL;
 
-	if (params.nodes) {
-		hostset_ranged_string(params.nodes, sizeof(hostlist)-1,
-				      hostlist);
-	} else
-		hostlist[0] = '\0';
+	if (params.nodes)
+		hostlist = hostset_ranged_string_xmalloc(params.nodes);
 
 	printf( "-----------------------------\n" );
 	printf( "all         = %s\n", params.all_flag ? "true" : "false");
@@ -1132,7 +1129,7 @@ static void _print_options(void)
 	printf( "licenses    = %s\n", params.licenses );
 	printf( "local       = %s\n", params.local_flag ? "true" : "false");
 	printf( "names       = %s\n", params.names );
-	printf( "nodes       = %s\n", hostlist ) ;
+	printf("nodes       = %s\n", hostlist ? hostlist : "");
 	printf( "only_job_state = %s\n", params.only_state ? "true" : "false");
 	printf( "partitions  = %s\n", params.partitions ) ;
 	printf( "priority    = %s\n", params.priority_flag ? "true" : "false");
@@ -1241,6 +1238,7 @@ static void _print_options(void)
 	}
 endit:
 	printf( "-----------------------------\n\n\n" );
+	xfree(hostlist);
 } ;
 
 
