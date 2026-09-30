@@ -637,7 +637,7 @@ static void _free_built_launch_params(job_step_create_request_msg_t *req)
 {
 	if (!req || !req->launch_params)
 		return;
-	env_array_free(req->launch_params->env);
+	FREE_NULL_ENV(req->launch_params->env, &req->launch_params->envc);
 	xfree(req->launch_params->error_filename);
 	xfree(req->launch_params->output_filename);
 	xfree(req->launch_params->input_filename);
