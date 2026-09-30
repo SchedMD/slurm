@@ -1980,8 +1980,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 {
-	slurmdb_wckey_cond_t wckey_q = {0};
-	uid_t uid = getuid();
+	slurmdb_wckey_cond_t wckey_q = { 0 };
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 //	DEF_TIMERS;
@@ -1997,9 +1996,8 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 	}
 
 //	START_TIMER;
-	assoc_mgr_wckey_list =
-		acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
-//	END_TIMER2("get_wckeys");
+	assoc_mgr_wckey_list = acct_storage_g_get_wckeys(db_conn, &wckey_q);
+	//	END_TIMER2("get_wckeys");
 
 	FREE_NULL_LIST(wckey_q.cluster_list);
 
@@ -2249,7 +2247,6 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 {
 	slurmdb_wckey_cond_t wckey_q = {0};
 	list_t *current_wckeys = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	if (!slurmdbd_conf) {
@@ -2260,7 +2257,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 		      __func__);
 	}
 
-	current_wckeys = acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
+	current_wckeys = acct_storage_g_get_wckeys(db_conn, &wckey_q);
 
 	FREE_NULL_LIST(wckey_q.cluster_list);
 

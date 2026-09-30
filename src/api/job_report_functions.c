@@ -277,8 +277,7 @@ static list_t *_process_grouped_report(
 		wckey_cond.name_list = job_cond->wckey_list;
 		wckey_cond.cluster_list = job_cond->cluster_list;
 
-		object2_list = acct_storage_g_get_wckeys(db_conn, my_uid,
-							 &wckey_cond);
+		object2_list = acct_storage_g_get_wckeys(db_conn, &wckey_cond);
 		if (!object_list) {
 			object_list = object2_list;
 			object2_list = NULL;

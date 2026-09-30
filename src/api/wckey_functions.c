@@ -62,10 +62,7 @@ extern int slurmdb_wckeys_add(void *db_conn, list_t *wckey_list)
 extern list_t *slurmdb_wckeys_get(void *db_conn,
 				  slurmdb_wckey_cond_t *wckey_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_wckeys(db_conn, db_api_uid, wckey_cond);
+	return acct_storage_g_get_wckeys(db_conn, wckey_cond);
 }
 
 /*

@@ -492,7 +492,7 @@ extern list_t *acct_storage_p_get_res(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_wckeys(void *db_conn,
 					 slurmdb_wckey_cond_t *wckey_cond)
 {
 	return NULL;

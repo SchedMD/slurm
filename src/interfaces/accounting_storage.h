@@ -501,7 +501,7 @@ extern list_t *acct_storage_g_get_res(void *db_conn,
  * RET: List of slurmdb_wckey_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_get_wckeys(void *db_conn,
 					 slurmdb_wckey_cond_t *wckey_cond);
 
 /*
