@@ -467,7 +467,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 			env_array_exclude((const char **) env, &exclude);
 
 		regfree(&exclude);
-		env_array_free(env);
+		FREE_NULL_ENV(env, NULL);
 	} else if (!xstrcasecmp(opt.export_env, "ALL")) {
 		env_array_merge(&desc->environment, (const char **) environ);
 	} else if (!xstrcasecmp(opt.export_env, "NIL")) {
