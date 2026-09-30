@@ -102,6 +102,8 @@ static void *_cluster_rollup_usage(void *arg)
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
 	slurm_mutex_init(&mysql_conn.lock);
 
+	acct_storage_p_auth_connection(&mysql_conn, slurm_conf.slurm_user_id);
+
 	/* Each thread needs it's own connection we can't use the one
 	 * sent from the parent thread. */
 	rc = check_connection(&mysql_conn);

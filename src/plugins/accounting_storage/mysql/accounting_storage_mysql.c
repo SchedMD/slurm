@@ -3020,6 +3020,11 @@ extern int init(void)
 		sleep(5);
 	}
 
+	/*
+	 * Avoid issues during other initial slurmdbd setup.
+	 */
+	acct_storage_p_auth_connection(mysql_conn, slurm_conf.slurm_user_id);
+
 	if (slurmdbd_conf->flags & DBD_CONF_FLAG_GET_DBVER)
 		exit(as_mysql_print_dbver(mysql_conn));
 

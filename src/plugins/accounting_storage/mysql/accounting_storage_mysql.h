@@ -206,6 +206,8 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 			    int *dims);
 
 /*local api functions */
+extern int acct_storage_p_auth_connection(mysql_conn_t *mysql_conn,
+					  uid_t auth_uid);
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
 extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
