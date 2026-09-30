@@ -801,7 +801,7 @@ static int _delete_ns(uint32_t job_id)
 							 NULL, ns_holder);
 		log_flag(NAMESPACE, "Running CloneNSEpilog");
 		result = run_command(&run_command_args);
-		env_array_free(run_command_args.env);
+		FREE_NULL_ENV(run_command_args.env, NULL);
 		log_flag(NAMESPACE, "CloneNSEpilog rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);
