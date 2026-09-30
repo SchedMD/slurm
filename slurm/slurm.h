@@ -3812,7 +3812,7 @@ extern int slurm_het_job_lookup(slurm_step_id_t step_id, list_t **resp);
  * RET - a string representing the hostlist.  Returns NULL if there are
  *	fewer than "n" hostnames in the file, or if an error occurs.
  *
- * NOTE: Returned string must be freed with free().
+ * NOTE: Returned string must be freed with slurm_xfree_ptr().
  */
 extern char *slurm_read_hostfile(const char *filename, int n);
 

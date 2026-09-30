@@ -13,7 +13,6 @@
 
 /* Custom typemap that free's memory after copying to perl stack. */
 typedef char char_xfree;
-typedef char char_free;
 
 struct slurm {
 };
@@ -258,7 +257,7 @@ slurm_accounting_enforce_string(slurm_t self, uint16_t enforce)
 # 	RESOURCE ALLOCATION FUNCTIONS
 ######################################################################
 
-char_free *
+char_xfree *
 slurm_read_hostfile(slurm_t self, char *filename, int n)
 	CODE:
 		if (self); /* this is needed to avoid a warning about

@@ -5903,8 +5903,7 @@ static void _validate_nodelist(slurm_opt_t *opt)
 			error("Invalid --nodefile node file");
 			exit(-1);
 		}
-		opt->nodelist = xstrdup(tmp);
-		free(tmp);
+		opt->nodelist = tmp;
 	}
 
 	if (!opt->nodelist) {
