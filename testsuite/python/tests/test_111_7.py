@@ -1021,6 +1021,45 @@ def test_default_grouping_separates_by_partition(node0_partitions):
         ], f"Each row should hold only {node_list[0]}, got {rows}"
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/sinfo") < (26, 11, 0),
+    reason="Ticket 25633: %h and -O OverSubscribe did not compare "
+    "OverSubscribe before 26.11.0",
+)
+@pytest.mark.parametrize(
+    "fmt", ["-o '%h %N'", "-O 'OverSubscribe,NodeList'"], ids=["%h", "-O"]
+)
+def test_oversubscribe_splits_rows(node0_partitions, fmt):
+    """Test that a displayed OverSubscribe field splits rows.
+
+    node_list[0] is in a second partition with an OverSubscribe setting of
+    its own. With no partition field displayed, the node must still get one
+    row per distinct OverSubscribe value, not one merged row.
+    """
+    atf.run_command(
+        f"scontrol update partitionname={extra_part_name} oversubscribe=FORCE:3",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    # %P splits rows by partition, so this gives each partition's value
+    partitions = ",".join(node0_partitions)
+    expected = {
+        oversubscribe
+        for _, oversubscribe in _sinfo_rows(
+            f"sinfo -h -n '{node_list[0]}' -p {partitions} -o '%P %h'", 2
+        )
+    }
+    assert (
+        len(expected) > 1
+    ), f"{node_list[0]} should see more than one OverSubscribe value, got {expected}"
+
+    rows = _sinfo_rows(f"sinfo -h -n '{node_list[0]}' -p {partitions} {fmt}", 2)
+
+    assert {
+        oversubscribe for oversubscribe, _ in rows
+    } == expected, f"Expected one row per OverSubscribe value {expected}, got {rows}"
+
+
 def test_empty_partition_still_shown(extra_partition):
     """Test that a partition with zero matching nodes still gets its own row.
 
