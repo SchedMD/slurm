@@ -4770,6 +4770,29 @@ static void _init_state(slurm_opt_t *opt)
 			     sizeof(slurm_opt_state_t));
 }
 
+static runtime_context_t _runtime_context(slurm_opt_t *opt)
+{
+	xassert(opt);
+
+	if (opt->scrun)
+		return RUNTIME_CTXT_SCRUN;
+
+	if (opt->salloc_opt)
+		return RUNTIME_CTXT_SALLOC;
+
+	if (opt->sbatch_opt)
+		return RUNTIME_CTXT_SBATCH;
+
+	if (opt->scron_opt)
+		return RUNTIME_CTXT_SCRONTAB;
+
+	if (opt->srun_opt)
+		return RUNTIME_CTXT_SRUN;
+
+	xassert(false);
+	return RUNTIME_CTXT_INVALID;
+}
+
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 			 bool set_by_env, bool early_pass)
 {
@@ -6419,6 +6442,12 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		rc = gres_job_state_validate(&gres_js_val);
 		FREE_NULL_LIST(tmp_gres_list);
 	}
+
+	if (!rc)
+		rc = runtime_g_cli_apply_job_desc(opt_local->runtime_idx,
+						  opt_local->het_job_inx,
+						  _runtime_context(opt_local),
+						  job_desc);
 
 	if (rc) {
 		error("%s", slurm_strerror(rc));
