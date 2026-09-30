@@ -1054,6 +1054,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	FREE_NULL_LIST(tmp_gres_list);
 	if (rc) {
 		error("%s", slurm_strerror(rc));
+		/* name aliases opt_local/srun_opt, which retain ownership */
+		step_req->name = NULL;
 		slurm_free_job_step_create_request_msg(step_req);
 		return NULL;
 	}
