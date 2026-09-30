@@ -331,8 +331,8 @@ extern list_t *acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
  * IN:  slurmdb_account_cond_t *acct_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
-					      slurmdb_account_cond_t *acct_cond);
+extern list_t *acct_storage_g_remove_accts(void *db_conn, uint32_t uid,
+					   slurmdb_account_cond_t *acct_cond);
 
 /*
  * remove clusters from accounting system

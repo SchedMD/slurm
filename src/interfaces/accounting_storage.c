@@ -725,8 +725,8 @@ extern list_t *acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
 	return (*(ops.remove_coord))(db_conn, uid, acct_list, user_cond);
 }
 
-extern list_t *acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
-					      slurmdb_account_cond_t *acct_cond)
+extern list_t *acct_storage_g_remove_accts(void *db_conn, uint32_t uid,
+					   slurmdb_account_cond_t *acct_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
