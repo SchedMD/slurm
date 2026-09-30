@@ -1000,7 +1000,6 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	list_msg.my_list =
 		acct_storage_g_get_federations(slurmdbd_conn->db_conn,
-					       slurmdbd_conn->auth_uid,
 					       get_msg->cond);
 
 	if (!errno) {

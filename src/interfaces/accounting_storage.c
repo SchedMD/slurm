@@ -131,8 +131,8 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*get_accts)(void *db_conn, slurmdb_account_cond_t *acct_cond);
 	list_t *(*get_clusters)(void *db_conn,
 				slurmdb_cluster_cond_t *cluster_cond);
-	list_t *(*get_federations) (void *db_conn, uint32_t uid,
-				    slurmdb_federation_cond_t *fed_cond);
+	list_t *(*get_federations)(void *db_conn,
+				   slurmdb_federation_cond_t *fed_cond);
 	int (*get_config)(void *db_conn, slurmdbd_conf_t **slurmdbd_conf_ptr);
 	list_t *(*get_tres)        (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
@@ -817,15 +817,16 @@ extern list_t *acct_storage_g_get_clusters(void *db_conn,
 	return (*(ops.get_clusters))(db_conn, cluster_cond);
 }
 
-extern list_t *acct_storage_g_get_federations(void *db_conn, uint32_t uid,
-					      slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_g_get_federations(void *db_conn,
+					      slurmdb_federation_cond_t
+						      *fed_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.get_federations))(db_conn, uid, fed_cond);
+	return (*(ops.get_federations))(db_conn, fed_cond);
 }
 
 extern int acct_storage_g_get_config(void *db_conn,

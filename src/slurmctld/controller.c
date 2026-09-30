@@ -4369,9 +4369,7 @@ static void _get_fed_updates(void)
 	fed_cond.cluster_list = list_create(NULL);
 	list_append(fed_cond.cluster_list, slurm_conf.cluster_name);
 
-	fed_list = acct_storage_g_get_federations(acct_db_conn,
-	                                          slurm_conf.slurm_user_id,
-	                                          &fed_cond);
+	fed_list = acct_storage_g_get_federations(acct_db_conn, &fed_cond);
 	FREE_NULL_LIST(fed_cond.cluster_list);
 
 	if (fed_list) {

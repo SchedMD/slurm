@@ -436,8 +436,9 @@ extern list_t *acct_storage_p_get_clusters(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
-					      slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_p_get_federations(void *db_conn,
+					      slurmdb_federation_cond_t
+						      *fed_cond)
 {
 	return NULL;
 }

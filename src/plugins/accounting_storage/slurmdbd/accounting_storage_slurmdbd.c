@@ -1648,8 +1648,9 @@ extern list_t *acct_storage_p_get_clusters(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
-					      slurmdb_federation_cond_t *fed_cond)
+extern list_t *acct_storage_p_get_federations(void *db_conn,
+					      slurmdb_federation_cond_t
+						      *fed_cond)
 {
 	persist_msg_t req = {0}, resp = {0};
 	dbd_cond_msg_t get_msg;
