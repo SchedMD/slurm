@@ -268,8 +268,7 @@ static list_t *_process_grouped_report(
 			    list_count(job_cond->acct_list))
 				assoc_cond.acct_list = job_cond->acct_list;
 		}
-		object_list = acct_storage_g_get_assocs(db_conn, my_uid,
-							&assoc_cond);
+		object_list = acct_storage_g_get_assocs(db_conn, &assoc_cond);
 	}
 
 	if (wckey_type || both) {

@@ -62,10 +62,7 @@ extern int slurmdb_associations_add(void *db_conn, list_t *assoc_list)
 extern list_t *slurmdb_associations_get(void *db_conn,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_assocs(db_conn, db_api_uid, assoc_cond);
+	return acct_storage_g_get_assocs(db_conn, assoc_cond);
 }
 
 

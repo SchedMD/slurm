@@ -210,10 +210,6 @@ extern int acct_storage_p_auth_connection(mysql_conn_t *mysql_conn,
 					  uid_t auth_uid);
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
-extern list_t *acct_storage_p_get_assocs(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_assoc_cond_t *assoc_cond);
-
 extern list_t *acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 					 slurmdb_wckey_cond_t *wckey_cond);
 

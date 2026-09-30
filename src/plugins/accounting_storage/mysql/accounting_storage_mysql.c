@@ -3572,11 +3572,11 @@ extern list_t *acct_storage_p_get_tres(mysql_conn_t *mysql_conn,
 	return as_mysql_get_tres(mysql_conn, mysql_conn->auth_uid, tres_cond);
 }
 
-extern list_t *acct_storage_p_get_assocs(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *acct_storage_p_get_assocs(mysql_conn_t *mysql_conn,
+					 slurmdb_assoc_cond_t *assoc_cond)
 {
-	return as_mysql_get_assocs(mysql_conn, uid, assoc_cond);
+	return as_mysql_get_assocs(mysql_conn, mysql_conn->auth_uid,
+				   assoc_cond);
 }
 
 extern list_t *acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,

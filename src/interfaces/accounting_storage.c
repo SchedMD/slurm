@@ -135,8 +135,7 @@ typedef struct slurm_acct_storage_ops {
 				   slurmdb_federation_cond_t *fed_cond);
 	int (*get_config)(void *db_conn, slurmdbd_conf_t **slurmdbd_conf_ptr);
 	list_t *(*get_tres)(void *db_conn, slurmdb_tres_cond_t *tres_cond);
-	list_t *(*get_assocs)      (void *db_conn, uint32_t uid,
-				    slurmdb_assoc_cond_t *assoc_cond);
+	list_t *(*get_assocs)(void *db_conn, slurmdb_assoc_cond_t *assoc_cond);
 	list_t *(*get_events)      (void *db_conn, uint32_t uid,
 				    slurmdb_event_cond_t *event_cond);
 	list_t *(*get_instances)   (void *db_conn, uint32_t uid,
@@ -850,16 +849,15 @@ extern list_t *acct_storage_g_get_tres(void *db_conn,
 	return (*(ops.get_tres))(db_conn, tres_cond);
 }
 
-extern list_t *acct_storage_g_get_assocs(
-	void *db_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *acct_storage_g_get_assocs(void *db_conn,
+					 slurmdb_assoc_cond_t *assoc_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.get_assocs))(db_conn, uid, assoc_cond);
+	return (*(ops.get_assocs))(db_conn, assoc_cond);
 }
 
 extern list_t *acct_storage_g_get_events(void *db_conn, uint32_t uid,

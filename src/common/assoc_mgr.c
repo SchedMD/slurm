@@ -1802,8 +1802,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
-	slurmdb_assoc_cond_t assoc_q = {0};
-	uid_t uid = getuid();
+	slurmdb_assoc_cond_t assoc_q = { 0 };
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 
@@ -1820,9 +1819,8 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	}
 
 //	START_TIMER;
-	assoc_mgr_assoc_list =
-		acct_storage_g_get_assocs(db_conn, uid, &assoc_q);
-//	END_TIMER2("get_assocs");
+	assoc_mgr_assoc_list = acct_storage_g_get_assocs(db_conn, &assoc_q);
+	//	END_TIMER2("get_assocs");
 
 	FREE_NULL_LIST(assoc_q.cluster_list);
 
@@ -2066,7 +2064,6 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
 	slurmdb_assoc_cond_t assoc_q = {0};
 	list_t *current_assocs = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 //	DEF_TIMERS;
@@ -2084,9 +2081,8 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	current_assocs = assoc_mgr_assoc_list;
 
 //	START_TIMER;
-	assoc_mgr_assoc_list =
-		acct_storage_g_get_assocs(db_conn, uid, &assoc_q);
-//	END_TIMER2("get_assocs");
+	assoc_mgr_assoc_list = acct_storage_g_get_assocs(db_conn, &assoc_q);
+	//	END_TIMER2("get_assocs");
 
 	FREE_NULL_LIST(assoc_q.cluster_list);
 

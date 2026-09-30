@@ -455,8 +455,8 @@ extern list_t *acct_storage_p_get_tres(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_assocs(
-	void *db_conn, uid_t uid, slurmdb_assoc_cond_t *assoc_cond)
+extern list_t *acct_storage_p_get_assocs(void *db_conn,
+					 slurmdb_assoc_cond_t *assoc_cond)
 {
 	return NULL;
 }

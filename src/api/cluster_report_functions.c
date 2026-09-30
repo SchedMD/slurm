@@ -440,8 +440,7 @@ static list_t *_process_util_by_report(void *db_conn, char *calling_name,
 	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
 		((slurmdb_assoc_cond_t *)cond)->usage_start = start_time;
 		((slurmdb_assoc_cond_t *)cond)->usage_end = end_time;
-		type_list = acct_storage_g_get_assocs(
-			db_conn, my_uid, cond);
+		type_list = acct_storage_g_get_assocs(db_conn, cond);
 	} else if ((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
 		((slurmdb_wckey_cond_t *)cond)->usage_start = start_time;
 		((slurmdb_wckey_cond_t *)cond)->usage_end = end_time;
