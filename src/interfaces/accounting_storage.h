@@ -406,8 +406,8 @@ extern list_t *acct_storage_g_get_users(void *db_conn,  uint32_t uid,
  * returns List of slurmdb_account_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
-					   slurmdb_account_cond_t *acct_cond);
+extern list_t *acct_storage_g_get_accts(void *db_conn, uint32_t uid,
+					slurmdb_account_cond_t *acct_cond);
 
 /*
  * get info from the storage

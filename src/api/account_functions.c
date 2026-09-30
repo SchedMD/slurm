@@ -87,7 +87,7 @@ extern list_t *slurmdb_accounts_get(void *db_conn,
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
 
-	return acct_storage_g_get_accounts(db_conn, db_api_uid, acct_cond);
+	return acct_storage_g_get_accts(db_conn, db_api_uid, acct_cond);
 }
 
 /*

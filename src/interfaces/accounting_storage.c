@@ -826,8 +826,8 @@ extern list_t *acct_storage_g_get_users(
 	return (*(ops.get_users))(db_conn, uid, user_cond);
 }
 
-extern list_t *acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
-					   slurmdb_account_cond_t *acct_cond)
+extern list_t *acct_storage_g_get_accts(void *db_conn, uint32_t uid,
+					slurmdb_account_cond_t *acct_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
