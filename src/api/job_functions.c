@@ -73,10 +73,7 @@ extern list_t *slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
  */
 extern int slurmdb_jobs_fix_runaway(void *db_conn, list_t *jobs)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_fix_runaway_jobs(db_conn, db_api_uid, jobs);
+	return acct_storage_g_fix_runaway_jobs(db_conn, jobs);
 }
 
 /* initialization of job completion logging */

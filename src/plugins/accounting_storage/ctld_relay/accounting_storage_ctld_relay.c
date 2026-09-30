@@ -526,8 +526,7 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,
-					   list_t *jobs)
+extern int acct_storage_p_fix_runaway_jobs(void *db_conn, list_t *jobs)
 {
 	return SLURM_SUCCESS;
 }

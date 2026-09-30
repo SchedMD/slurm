@@ -153,7 +153,7 @@ typedef struct slurm_acct_storage_ops {
 				    time_t sent_start, time_t sent_end,
 				    uint16_t archive_data,
 				    list_t **rollup_stats_list_in);
-	int  (*fix_runaway_jobs)   (void *db_conn, uint32_t uid, list_t *jobs);
+	int (*fix_runaway_jobs)(void *db_conn, list_t *jobs);
 	int  (*node_down)          (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time, char *reason,
 				    uint32_t reason_uid);
@@ -968,15 +968,14 @@ extern int acct_storage_g_roll_usage(void *db_conn,
 				   rollup_stats_list_in);
 }
 
-extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
-					   uint32_t uid, list_t *jobs)
+extern int acct_storage_g_fix_runaway_jobs(void *db_conn, list_t *jobs)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.fix_runaway_jobs))(db_conn, uid, jobs);
+	return (*(ops.fix_runaway_jobs))(db_conn, jobs);
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,

@@ -2318,8 +2318,7 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,
-					   list_t *jobs)
+extern int acct_storage_p_fix_runaway_jobs(void *db_conn, list_t *jobs)
 {
 	persist_msg_t req = {0};
 	dbd_list_msg_t get_msg;

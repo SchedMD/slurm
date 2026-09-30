@@ -437,7 +437,6 @@ static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		rc = ESLURM_ACCESS_DENIED;
 	else
 		rc = acct_storage_g_fix_runaway_jobs(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->my_list);
 
 	if (rc == ESLURM_ACCESS_DENIED) {

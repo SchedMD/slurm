@@ -3685,10 +3685,11 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 				   archive_data, rollup_stats_list_in);
 }
 
-extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,
+extern int acct_storage_p_fix_runaway_jobs(mysql_conn_t *mysql_conn,
 					   list_t *jobs)
 {
-	return as_mysql_fix_runaway_jobs(db_conn, uid, jobs);
+	return as_mysql_fix_runaway_jobs(mysql_conn, mysql_conn->auth_uid,
+					 jobs);
 }
 
 extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
