@@ -36,8 +36,6 @@ def setup(safe_port_range):
         "bin/srun",
         reason="Issue 50938: pending-step id-at-submit requires 26.11+",
     )
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     # Under stepmgr the whole job pre-reserves ports at admission (2 *
     # tasks-per-node + 1 = 5 for this job), which both exceeds the 2-port
     # pool below (the job would never be admitted) and, if the pool were

@@ -8,8 +8,6 @@ running (SchedMD ticket 25226): allocation on the second start, and hold when
 the license request no longer matches configured Licenses= (e.g. count reduced
 below the job's request after reconfigure).
 
-Requires: slurm.conf Licenses= entry for the test license, select/cons_tres,
-and a node able to run a simple srun step.
 
 SchedulerParameters includes requeue_delay=0 (minimum delay before a requeued
 batch job may start again; default would follow cred_expire and take much
@@ -44,8 +42,6 @@ _NO_SECOND_RUN_TIMEOUT = 15
 def setup():
     atf.require_auto_config("Inject Licenses= for batch requeue license test")
     atf.require_nodes(1, [("CPUs", 4)])
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes(
         "Licenses", f"{LIC_NAME}:{LIC_TOTAL}", source="slurm"
     )

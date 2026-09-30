@@ -37,8 +37,6 @@ def setup():
         reason="Ticket 25110: _require_node_reg() sets NO_RESPOND on"
         " POWERED_DOWN nodes before 26.05.5",
     )
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("TreeWidth", 65533)
     # /bin/true never actually brings the node up, so the resume always
     # fails and the node falls back to POWERED_DOWN at ResumeTimeout.

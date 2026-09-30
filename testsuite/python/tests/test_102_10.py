@@ -214,8 +214,6 @@ hyphen_data_ids = [d[0] for d in hyphen_data]
 def setup_gres_hyphen():
     """Configure a GRES type whose name contains a hyphen (ticket 24836)."""
     atf.require_auto_config("wants to configure a GRES type with a hyphen")
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter_includes("GresTypes", hyphen_gres)
     atf.require_config_parameter_includes("AccountingStorageTRES", hyphen_tres)
     atf.require_slurm_running()

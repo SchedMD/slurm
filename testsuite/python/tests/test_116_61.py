@@ -49,8 +49,6 @@ pytestmark = pytest.mark.slow
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     # Two nodes (each 2 CPUs): the single-node tests use one; the out-of-order
     # test needs a second, free node to launch a later step ahead of a pending.
     atf.require_nodes(2, [("CPUs", 2)])
