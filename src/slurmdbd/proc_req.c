@@ -1226,8 +1226,7 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_qos(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid, cond_msg->cond);
+		acct_storage_g_get_qos(slurmdbd_conn->db_conn, cond_msg->cond);
 
 	if (errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
 		list_msg.my_list = list_create(NULL);

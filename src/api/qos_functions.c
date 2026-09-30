@@ -61,10 +61,7 @@ extern int slurmdb_qos_add(void *db_conn, list_t *qos_list)
  */
 extern list_t *slurmdb_qos_get(void *db_conn, slurmdb_qos_cond_t *qos_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_qos(db_conn, db_api_uid, qos_cond);
+	return acct_storage_g_get_qos(db_conn, qos_cond);
 }
 
 /*

@@ -483,7 +483,7 @@ extern list_t *acct_storage_g_get_problems(void *db_conn,
  * RET: List of slurmdb_qos_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_qos(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_get_qos(void *db_conn,
 				      slurmdb_qos_cond_t *qos_cond);
 
 /*

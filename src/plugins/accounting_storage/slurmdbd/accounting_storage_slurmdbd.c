@@ -1961,7 +1961,7 @@ extern list_t *acct_storage_p_get_problems(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_qos(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_qos(void *db_conn,
 				      slurmdb_qos_cond_t *qos_cond)
 {
 	persist_msg_t req = {0}, resp = {0};

@@ -1888,11 +1888,10 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
-	uid_t uid = getuid();
 	list_t *new_list = NULL;
 	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
-	new_list = acct_storage_g_get_qos(db_conn, uid, NULL);
+	new_list = acct_storage_g_get_qos(db_conn, NULL);
 
 	if (!new_list) {
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
@@ -2180,10 +2179,9 @@ static int _foreach_qos_steal_usage(void *x, void *arg)
 static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	list_t *current_qos = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
-	current_qos = acct_storage_g_get_qos(db_conn, uid, NULL);
+	current_qos = acct_storage_g_get_qos(db_conn, NULL);
 
 	if (!current_qos) {
 		error("%s: no new list given back keeping cached one.",
