@@ -47,7 +47,7 @@ wait_for_job -fail ${job_id}_0 "RUNNING"
 # We want to see the array task limit increased up to the array size
 # and the running array elements increase to match until all are running.
 wait_for -subtest -timeout 60 {$task_limit == $array_size && $run_count == $array_size} {
-	set output [run_command_output -fail "$squeue --state=RUNNING --job $job_id --format %i --noheader"]
+	set output [run_command_output -fail "$squeue --state=RUNNING --jobs=$job_id --format %i --noheader"]
 	set run_count [regexp -all -line "^${job_id}_\\d+" $output]
 	log_debug "Array task limit: $task_limit, running job array elements: $run_count"
 

@@ -57,7 +57,6 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_DELIMITER 0x100
 #define OPT_LONG_LOCAL     0x101
-#define OPT_LONG_NAME      0x102
 #define OPT_LONG_NOCONVERT 0x103
 #define OPT_LONG_UNITS     0x104
 #define OPT_LONG_FEDR      0x105
@@ -477,7 +476,9 @@ extern void parse_command_line(int argc, char **argv)
                 {"group",          required_argument, 0,    'g'},
                 {"help",           no_argument,       0,    'h'},
                 {"local",          no_argument,       0,    OPT_LONG_LOCAL},
-                {"name",           required_argument, 0,    OPT_LONG_NAME},
+                {"job",            required_argument, 0,    'j'},
+                {"job-name",       required_argument, 0,    'J'},
+                {"name",           required_argument, 0,    'J'},
                 {"nnodes",         required_argument, 0,    'i'},
                 {"ncpus",          required_argument, 0,    'I'},
                 {"jobs",           required_argument, 0,    'j'},
@@ -532,7 +533,7 @@ extern void parse_command_line(int argc, char **argv)
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(
 			argc, argv,
-			"aA:bBcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:R:s:S:Ttu:UvVW:x:X",
+			"aA:bBcC:DeE:f:F:g:hi:I:j:J:k:K:lLM:nN:o:pPq:r:R:s:S:Ttu:UvVW:x:X",
 			long_options, &option_index);
 		if (c == -1)
 			break;
@@ -662,6 +663,11 @@ extern void parse_command_line(int argc, char **argv)
 			if (!list_count(job_cond->step_list))
 				FREE_NULL_LIST(job_cond->step_list);
 			break;
+		case 'J':
+			if (!job_cond->jobname_list)
+				job_cond->jobname_list = list_create(xfree_ptr);
+			slurm_addto_char_list(job_cond->jobname_list, optarg);
+			break;
 		case 'k':
 			job_cond->timelimit_min = time_str2mins(optarg);
 			if (((int32_t)job_cond->timelimit_min <= 0)
@@ -709,11 +715,6 @@ extern void parse_command_line(int argc, char **argv)
 				break;
 			}
 			job_cond->used_nodes = xstrdup(optarg);
-			break;
-		case OPT_LONG_NAME:
-			if (!job_cond->jobname_list)
-				job_cond->jobname_list = list_create(xfree_ptr);
-			slurm_addto_char_list(job_cond->jobname_list, optarg);
 			break;
 		case 'o':
 			xstrfmtcat(params.opt_field_list, "%s,", optarg);

@@ -50,7 +50,7 @@ def check_accounted_gpus(
 
     def _get_job_with_sacct(job_id):
         output = atf.run_command_output(
-            f"sacct --job={job_id} --json --start=now-15minutes",
+            f"sacct --jobs={job_id} --json --start=now-15minutes",
             fatal=True,
             quiet=True,
         )

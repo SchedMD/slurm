@@ -106,7 +106,7 @@ if {$dep_id == 0} {
 
 # Check that dependent job is pending
 set match 0
-spawn $squeue --job=$dep_id -o"%t|%r" --noheader
+spawn $squeue --jobs=$dep_id -o"%t|%r" --noheader
 expect {
 	-re "PD|Dependency" {
 		incr match 1

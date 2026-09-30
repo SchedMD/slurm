@@ -254,7 +254,7 @@ set cnt 0
 foreach option [array names sq_format] {
 	incr cnt 1
 	set this_match 0
-	spawn $squeue --job=$job_id --noheader -O$option:256
+	spawn $squeue --jobs=$job_id --noheader -O$option:256
 	expect {
 		-re "$sq_format($option)" {
 			incr match 1
@@ -273,7 +273,7 @@ foreach option [array names sq_format] {
 subtest {$match == $cnt} "Verify all expected job format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
 
 set match 0
-spawn $squeue --job=$job_id --noheader -Ocomment:4
+spawn $squeue --jobs=$job_id --noheader -Ocomment:4
 expect {
 	-re "12345" {
 		fail "Field width control failure"

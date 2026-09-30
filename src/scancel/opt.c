@@ -381,9 +381,10 @@ static void _opt_args(int argc, char **argv)
 		{"interactive", no_argument,       0, 'i'},
 		{"cluster",     required_argument, 0, 'M'},
 		{"clusters",    required_argument, 0, 'M'},
-		{"jobname",     required_argument, 0, 'n'},
+		{"job-name",    required_argument, 0, 'J'},
+		{"jobname",     required_argument, 0, 'J'},
 		{"me",		no_argument,       0, OPT_LONG_ME},
-		{"name",        required_argument, 0, 'n'},
+		{"name",        required_argument, 0, 'J'},
 		{"nodelist",    required_argument, 0, 'w'},
 		{"partition",   required_argument, 0, 'p'},
 		{"qos",         required_argument, 0, 'q'},
@@ -401,7 +402,7 @@ static void _opt_args(int argc, char **argv)
 	};
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:bcfHiM:n:p:Qq:R:s:t:u:vVw:",
+				       "A:bcfHiJ:M:n:p:Qq:R:s:t:u:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -433,16 +434,17 @@ static void _opt_args(int argc, char **argv)
 		case (int)'i':
 			opt.interactive = true;
 			break;
+		case (int) 'J':
+		case (int) 'n': /* backwards compatibility */
+			xfree(opt.job_name);
+			opt.job_name = xstrdup(optarg);
+			break;
 		case (int)'M':
 			_opt_clusters(optarg);
 			break;
 		case OPT_LONG_ME:
 			xfree(opt.user_name);
 			opt.user_name = xstrdup_printf("%u", getuid());
-			break;
-		case (int)'n':
-			xfree(opt.job_name);
-			opt.job_name = xstrdup(optarg);
 			break;
 		case (int)'p':
 			xfree(opt.partition);
@@ -794,7 +796,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-A account] [--batch] [--ctld] [--full] [--interactive] [-n job_name]\n");
+	printf("Usage: scancel [-A account] [--batch] [--ctld] [--full] [--interactive] [-J job_name]\n");
 	printf("               [-p partition] [-Q] [-q qos] [-R reservation] [-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [--hurry] [-V] [-v] [-w hosts...] [--wckey=wckey]\n");
@@ -812,9 +814,9 @@ static void _help(void)
 	printf("  -f, --full                      signal batch shell and all steps for specified job\n");
 	printf("  -H, --hurry                     avoid burst buffer stage out\n");
 	printf("  -i, --interactive               require response from user for each job\n");
+	printf("  -J, --job-name=job_name         act only on jobs with this name\n");
 	printf("  -M, --clusters                  clusters to issue commands to.\n");
 	printf("                                  NOTE: SlurmDBD must be up.\n");
-	printf("  -n, --name=job_name             act only on jobs with this name\n");
 	printf("  -p, --partition=partition       act only on jobs in this partition\n");
 	printf("  -Q, --quiet                     disable warnings\n");
 	printf("  -q, --qos=qos                   act only on jobs with this quality of service\n");

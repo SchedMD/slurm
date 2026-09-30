@@ -142,8 +142,11 @@ Interactive mode. Confirm each job_id.step_id before performing the cancel opera
 .IP
 
 .TP
-\fB\-n\fR, \fB\-\-jobname\fR=\fIjob_name\fR, \fB\-\-name\fR=\fIjob_name\fR
+\fB\-J\fR, \fB\-\-job\-name\fR=\fIjob_name\fR
 Restrict the scancel operation to jobs with this job name.
+Only a single name may be given.
+A comma separated list is not split; it is matched as one literal name.
+The name is matched case sensitively.
 .IP
 
 .TP
@@ -333,7 +336,7 @@ environment variables, along with their corresponding options, are listed below.
 
 .TP
 \fBSCANCEL_NAME\fR
-\fB\-n\fR, \fB\-\-name\fR=\fIjob_name\fR
+\fB\-J\fR, \fB\-\-job\-name\fR=\fIjob_name\fR
 .IP
 
 .TP
@@ -385,8 +388,9 @@ variable takes precedence over the setting in the slurm.conf.
 
 .SH "NOTES"
 .LP
-If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR)
-only the jobs satisfying all of the filtering options will be signaled.
+If multiple filters are supplied (e.g. \fB\-\-partition\fR and
+\fB\-\-job\-name\fR) only the jobs satisfying all of the filtering options
+will be signaled.
 .LP
 Cancelling a job step will not result in the job being terminated.
 The job must be cancelled to release a resource allocation.

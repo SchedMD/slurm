@@ -294,7 +294,7 @@ component (note: the first component has a <i>het_job_offset</i> value of 0).</p
 of a heterogeneous job (i.e. the "heterogeneous job leader") will return
 information about all components of that job. For example:</p>
 <pre>
-$ squeue --job=93
+$ squeue --jobs=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+0     debug  bash  adam  R 18:18      1 nid00001
  93+1     debug  bash  adam  R 18:18      1 nid00011
@@ -306,18 +306,18 @@ all components of that heterogeneous job. A request to cancel a specific compone
 the heterogeneous job using the "#+#" notation will apply only to that specific component.
 For example:</p>
 <pre>
-$ squeue --job=93
+$ squeue --jobs=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+0     debug  bash  adam  R 19:18      1 nid00001
  93+1     debug  bash  adam  R 19:18      1 nid00011
  93+2     debug  bash  adam  R 19:18      1 nid00021
 $ scancel 93+1
-$ squeue --job=93
+$ squeue --jobs=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+0     debug  bash  adam  R 19:38      1 nid00001
  93+2     debug  bash  adam  R 19:38      1 nid00021
 $ scancel 93
-$ squeue --job=93
+$ squeue --jobs=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 </pre>
 
@@ -380,7 +380,7 @@ SchedulerParameters=whole_hetjob is configured, otherwise only job 93+1 will be
 cancelled. If a specific heterogeneous job component is specified (e.g. "scancel
 93+1"), then only that one component will be effected.</p>
 <pre>
-$ squeue --job=93
+$ squeue --jobs=93
 JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
  93+0     debug  bash  adam  R 19:18      1 nid00001
  93+1     debug  bash  adam  R 19:18      1 nid00011

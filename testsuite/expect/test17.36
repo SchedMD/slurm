@@ -144,7 +144,7 @@ proc check_job { exp_num_jobs } {
 		wait_for {$job_cnt == $exp_num_jobs} {
 			set job_cnt [
 				regexp -all $input_file_name [
-					run_command_output -fail "$squeue --job=$job_id --state=RUNNING,SUSPENDED -Oname --noheader"
+					run_command_output -fail "$squeue --jobs=$job_id --state=RUNNING,SUSPENDED -Oname --noheader"
 				]
 			]
 		}

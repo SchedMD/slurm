@@ -63,7 +63,7 @@ proc check_step { num } {
 
 	set steps -1
 	wait_for {$num == $steps} {
-		set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=now-15minutes --noheader --format=jobid -P"]
+		set output [run_command_output -fail "$sacct --jobs=$job_id\.batch -D --start=now-15minutes --noheader --format=jobid -P"]
 		set steps [regexp -all "batch" $output]
 	}
 	subtest {$num == $steps} "Check number of steps" "$steps != $num"
@@ -107,7 +107,7 @@ set fail_count 0
 set canc_count 0
 set pend_count 0
 wait_for {$fail_count == 1 && $canc_count == 1 && $pend_count == 1} {
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+	set output [run_command_output -fail "$sacct --jobs=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
 
 	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
 	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
@@ -127,7 +127,7 @@ set fail_count 0
 set canc_count 0
 set run_count 0
 wait_for {$fail_count == 1 && $canc_count == 1 && $run_count == 2} {
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+	set output [run_command_output -fail "$sacct --jobs=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
 
 	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
 	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
@@ -151,7 +151,7 @@ set canc_count 0
 set pend_count 0
 set req_count 0
 wait_for {$fail_count == 1 && $canc_count == 2 && $pend_count == 1 && $req_count == 1} {
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+	set output [run_command_output -fail "$sacct --jobs=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
 
 	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
 	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
@@ -177,7 +177,7 @@ set canc_count 0
 set req_count 0
 set run_count 0
 wait_for {$fail_count == 1 && $canc_count == 2 && $req_count == 1 && $run_count == 2} {
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+	set output [run_command_output -fail "$sacct --jobs=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
 
 	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
 	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]
@@ -200,7 +200,7 @@ set canc_count 0
 set comp_count 0
 set req_count 0
 wait_for {$fail_count == 1 && $canc_count == 2 && $comp_count == 2 && $req_count == 1} {
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
+	set output [run_command_output -fail "$sacct --jobs=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
 
 	# Skip "extern" job container optionally spawned by "PrologFlags=contain"
 	set fail_count [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|NODE_FAIL" $output]

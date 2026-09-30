@@ -132,6 +132,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"helpFormat", no_argument,       0, OPT_LONG_HELPFORMAT2},
 		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",    required_argument, 0, 'i'},
+		{"job",        optional_argument, 0, 'j'},
+		{"job-name",   required_argument, 0, 'J'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"local",      no_argument,       0, OPT_LONG_LOCAL},
 		{"long",       no_argument,       0, 'l'},
@@ -194,7 +196,7 @@ extern void parse_command_line(int argc, char **argv)
 	if (getenv("SQUEUE_SIB") || getenv("SQUEUE_SIBLING"))
 		params.sibling_flag = true;
 	while ((opt_char = getopt_long(argc, argv,
-				       "A:ahi:j::lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
+				       "A:ahi:j::J:lL:n:M:O:o:p:Pq:R:rs::S:t:u:U:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -231,6 +233,12 @@ extern void parse_command_line(int argc, char **argv)
 			}
 			params.job_flag = true;
 			break;
+		case (int) 'J':
+		case (int) 'n': /* backwards compatibility */
+			xfree(params.names);
+			params.names = xstrdup(optarg);
+			params.name_list = _build_str_list(params.names);
+			break;
 		case (int) 'l':
 			params.long_list = true;
 			override_format_env = true;
@@ -244,11 +252,6 @@ extern void parse_command_line(int argc, char **argv)
 			xfree(params.cluster_names);
 			params.cluster_names = xstrdup(optarg);
 			params.local_flag = true;
-			break;
-		case (int) 'n':
-			xfree(params.names);
-			params.names = xstrdup(optarg);
-			params.name_list = _build_str_list( params.names );
 			break;
 		case (int) 'O':
 			xfree(params.format_long);

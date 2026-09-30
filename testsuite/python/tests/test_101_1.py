@@ -19,7 +19,7 @@ def setup():
 def test_help(opt):
     """Verify sacct --help displays the help page"""
 
-    output = atf.run_command_output("sacct --help", fatal=True)
+    output = atf.run_command_output(f"sacct {opt}", fatal=True)
 
     assert re.search(r"sacct \[<OPTION>\]", output) is not None
     assert re.search(r"Valid <OPTION> values are:", output) is not None
@@ -28,13 +28,18 @@ def test_help(opt):
     assert re.search(r"-s, --state:", output) is not None
     assert re.search(r"-S, --starttime:", output) is not None
     assert re.search(r"valid start/end time formats are...", output) is not None
+    # TODO: Ticket 25236 - remove once 26.11 is the oldest supported version
+    if atf.get_version("bin/sacct") >= (26, 11):
+        assert (
+            "-J, --job-name" in output
+        ), "sacct --help should advertise -J, --job-name (ticket 25236)"
 
 
 @pytest.mark.parametrize("opt", ["--helpformat", "-e"])
 def test_helpformat(opt):
     """Verify sacct --helpformat displays the expected fields"""
 
-    output = atf.run_command_output("sacct --helpformat", fatal=True)
+    output = atf.run_command_output(f"sacct {opt}", fatal=True)
 
     assert re.search(r"Account", output) is not None
     assert re.search(r"ExitCode", output) is not None

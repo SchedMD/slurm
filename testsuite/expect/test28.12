@@ -75,7 +75,7 @@ sleep 65
 
 # check that head job still exists
 set match 0
-spawn $squeue -tall --job=$job_id
+spawn $squeue -tall --jobs=$job_id
 expect {
 	-re "${job_id}_4" {
 		incr match

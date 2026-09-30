@@ -1371,6 +1371,13 @@ By default, prints a time stamp with the header.
 .IP
 
 .TP
+\fB\-J\fR, \fB\-\-job\-name\fR=<\fIname_list\fR>
+Request jobs having one of the specified names.
+The list consists of a comma separated list of job names.
+Names are matched case insensitively.
+.IP
+
+.TP
 \fB\-j\fR, \fB\-\-jobs\fR[=<\fIjob_id_list\fR>]
 Specify a comma separated list of job IDs to display. Defaults to all jobs.
 The \fB\-\-jobs\fR=<\fIjob_id_list\fR> option may be used in conjunction with
@@ -1417,12 +1424,6 @@ subject to any constraints specified.
 .TP
 \fB\-\-me\fR
 Equivalent to \fB\-\-user=<my username>\fR.
-.IP
-
-.TP
-\fB\-n\fR, \fB\-\-name\fR=<\fIname_list\fR>
-Request jobs or job steps having one of the specified names. The
-list consists of a comma separated list of job names.
 .IP
 
 .TP
@@ -2037,7 +2038,7 @@ Control YAML serialization:
 
 .TP
 \fBSQUEUE_NAMES\fR
-\fB\-\-name=<name_list>\fR
+\fB\-J <name_list>, \-\-job\-name=<name_list>\fR
 .IP
 
 .TP

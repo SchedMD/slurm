@@ -65,6 +65,9 @@ sacct [<OPTION>]
                    jobs. Adding .step will display the specific job step of
                    that job. (A step id of 'batch' will display the
                    information about the batch step.)
+     -J, --job-name:
+                   Display jobs that have any of these names. The list
+                   consists of a comma separated list of job names.
      --json[=data_parser]
                    Produce JSON output
      -k, --timelimit-min:
@@ -111,8 +114,6 @@ sacct [<OPTION>]
      -N, --nodelist:
                    Display jobs that ran on any of these nodes,
                    can be one or more using a ranged string.
-     --name:
-                   Display jobs that have any of these name(s).
      -o, --format:
                    Comma separated list of fields. (use "--helpformat"
                    for a list of available fields).

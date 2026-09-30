@@ -66,7 +66,7 @@ wait_for_job -fail ${job_id}_2 "DONE"
 sleep 5
 
 # check job array states
-spawn $squeue -tall --job=$job_id
+spawn $squeue -tall --jobs=$job_id
 expect {
 	-re "error" {
 		fail "Error running squeue"
@@ -96,7 +96,7 @@ sleep 5
 
 # check requeued job array states
 set match 0
-spawn $squeue -tall --job=$job_id
+spawn $squeue -tall --jobs=$job_id
 expect {
 	-re " PD " {
 		incr match
