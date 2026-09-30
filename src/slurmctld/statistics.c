@@ -40,6 +40,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/hostlist.h"
 #include "src/common/id_util.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
@@ -252,6 +253,7 @@ extern void reset_stats(int level)
 static void _free_job_stats(job_stats_t *j)
 {
 	FREE_NULL_BITMAP(j->node_bitmap);
+	xfree(j->nodes);
 	xfree(j->user_name);
 	xfree(j->partition);
 	xfree(j->account);
@@ -566,6 +568,7 @@ static int _fill_jobs_statistics(void *x, void *arg)
 					     0);
 		if (j->node_bitmap)
 			new->node_bitmap = bit_copy(j->node_bitmap);
+		new->nodes = xstrdup(j->nodes);
 
 		if ((gpu_tres_pos >= 0) && j->tres_alloc_cnt)
 			new->gpus_alloc = j->tres_alloc_cnt[gpu_tres_pos];
@@ -681,6 +684,15 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 			/* Update the metric with the new count, O(1) cost. */
 			s->nodes_alloc = bit_set_count(s->node_bitmap);
 		}
+		/* Union of the nodes of the active jobs, mirroring node_bitmap
+		 * above. Ranges are merged and the string built once per user
+		 * or account at the end of statistics_get_users_accounts(),
+		 * keeping the aggregation linear in the number of jobs. */
+		if (j->nodes) {
+			if (!s->nodes_hl)
+				s->nodes_hl = hostlist_create(NULL);
+			hostlist_push(s->nodes_hl, j->nodes);
+		}
 	}
 
 	s->job_cnt++;
@@ -710,6 +722,20 @@ static int _get_users_accts(void *x, void *args)
 
 	_aggregate_job_to_jobs(us->s, j);
 	_aggregate_job_to_jobs(as->s, j);
+
+	return SLURM_SUCCESS;
+}
+
+static int _finalize_ua_nodes(void *x, void *arg)
+{
+	ua_stats_t *ua = x;
+
+	if (ua->s->nodes_hl) {
+		hostlist_uniq(ua->s->nodes_hl);
+		ua->s->nodes =
+			hostlist_ranged_string_xmalloc(ua->s->nodes_hl);
+		FREE_NULL_HOSTLIST(ua->s->nodes_hl);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -968,12 +994,19 @@ extern users_accts_stats_t *statistics_get_users_accounts(jobs_stats_t *js)
 
 	list_for_each(js->jobs, _get_users_accts, ua);
 
+	/* Materialize the uniq'd node unions now that all jobs are
+	 * aggregated. */
+	list_for_each_ro(ua->users, _finalize_ua_nodes, NULL);
+	list_for_each_ro(ua->accounts, _finalize_ua_nodes, NULL);
+
 	return ua;
 }
 
 extern void statistics_free_jobs(jobs_stats_t *s)
 {
 	FREE_NULL_BITMAP(s->node_bitmap);
+	FREE_NULL_HOSTLIST(s->nodes_hl);
+	xfree(s->nodes);
 	FREE_NULL_LIST(s->jobs);
 	xfree(s);
 }

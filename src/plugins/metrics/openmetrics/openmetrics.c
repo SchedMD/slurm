@@ -40,6 +40,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/xassert.h"
@@ -77,6 +78,11 @@ typedef struct foreach_stats_parse_metric {
 	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
 			   sizeof(data), pfx, XSTRINGIFY(name), desc, \
 			   METRIC_TYPE_##otype, key, val)
+
+#define ADD_METRIC_KVS_PFX(set, type, data, pfx, name, desc, otype, kv) \
+	_metrics_create_kvs(set, DATA_PARSER_##type, (void *) &(data), \
+			   sizeof(data), pfx, XSTRINGIFY(name), desc, \
+			   METRIC_TYPE_##otype, kv)
 
 #define ADD_METRIC_KEYVAL(set, type, data, name, desc, otype, key, val) \
 	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
@@ -335,15 +341,37 @@ extern int metrics_p_dump(metric_set_t *set, char **buf)
 	return SLURM_SUCCESS;
 }
 
+static void _metrics_create_kvs(metric_set_t *set, data_parser_type_t type,
+				void *data, ssize_t sz_data, char *pfx,
+				char *name, char *desc,
+				openmetrics_type_t ometric_type,
+				metric_keyval_t **kv)
+{
+	metric_t *metric;
+	char *pfx_name = NULL;
+
+	if (pfx) {
+		xstrfmtcat(pfx_name, "slurm_%s_%s", pfx, name);
+		name = pfx_name;
+	}
+	metric = metrics_create_metric(set, type, data, sz_data, name, desc,
+				       ometric_type, kv);
+	if (_metrics_add(set, metric)) {
+		error("Cannot add metric %s", (char *) metric->id);
+		metrics_free_metric(metric);
+	} else {
+		log_flag(METRICS, "Added metric %s", (char *) metric->id);
+	}
+	xfree(pfx_name);
+}
+
 static void _metrics_create_kv(metric_set_t *set, data_parser_type_t type,
 			       void *data, ssize_t sz_data, char *pfx,
 			       char *name, char *desc,
 			       openmetrics_type_t ometric_type, char *key,
 			       char *val)
 {
-	metric_t *metric;
 	metric_keyval_t **kv = NULL;
-	char *pfx_name = NULL;
 
 	if ((key && val) && (*key && *val)) {
 		kv = xcalloc(2, sizeof(*kv));
@@ -356,26 +384,8 @@ static void _metrics_create_kv(metric_set_t *set, data_parser_type_t type,
 		kv[1]->val = NULL;
 	}
 
-	if (pfx) {
-		xstrfmtcat(pfx_name, "slurm_%s_%s", pfx, name);
-		name = pfx_name;
-	}
-	metric = metrics_create_metric(set, type, data, sz_data, name, desc,
-				       ometric_type, kv);
-	if (_metrics_add(set, metric)) {
-		if (key)
-			error("Cannot add metric %s{%s=%s}", name, key, val);
-		else
-			error("Cannot add metric %s", name);
-		metrics_free_metric(metric);
-	} else {
-		if (key)
-			log_flag(METRICS, "Added metric %s{%s=%s}",
-				 name, key, val);
-		else
-			log_flag(METRICS, "Added metric %s", name);
-	}
-	xfree(pfx_name);
+	_metrics_create_kvs(set, type, data, sz_data, pfx, name, desc,
+			    ometric_type, kv);
 }
 
 extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
@@ -570,6 +580,29 @@ extern metric_set_t *metrics_p_parse_parts_metrics(partitions_stats_t *stats)
 	return set;
 }
 
+/*
+ * Emit one slurm_<user|account>_node_active{<key>=<val>, node=<node>} = 1
+ * series per node the user or account has an active job on.
+ */
+static void _add_node_active_metric(metric_set_t *set, char *pfx, char *key,
+				    char *val, char *node)
+{
+	uint32_t active = 1;
+	metric_keyval_t **kv = xcalloc(3, sizeof(*kv));
+
+	/* {<key>=<val>, node=<node>} plus sentinel */
+	for (int i = 0; i < 3; i++)
+		kv[i] = xmalloc(sizeof(**kv));
+	kv[0]->key = xstrdup(key);
+	kv[0]->val = xstrdup(val);
+	kv[1]->key = xstrdup("node");
+	kv[1]->val = xstrdup(node);
+
+	ADD_METRIC_KVS_PFX(set, UINT32, active, pfx, node_active,
+			   "1 if this user or account has an active job on this node",
+			   GAUGE, kv);
+}
+
 static int _ua_stats_to_metric(void *x, void *arg)
 {
 	ua_stats_t *ua = x;
@@ -610,6 +643,25 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->suspended, pfx, jobs_suspended, "Number of jobs in Suspended state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->timeout, pfx, jobs_timeout, "Number of jobs in Timeout state", GAUGE, key, ua->name);
 	// clang-format on
+
+	/* One node_active series per node with an active job. js->nodes is
+	 * the uniq'd union built by the controller, so every node expands to
+	 * exactly one series; if that contract is ever broken, the set
+	 * rejects the duplicate series itself. ua->name is NULL for jobs
+	 * with no account. */
+	if (js->nodes && ua->name) {
+		hostlist_t *hl = hostlist_create(js->nodes);
+		char *node;
+
+		if (hl) {
+			while ((node = hostlist_shift(hl))) {
+				_add_node_active_metric(set, pfx, key,
+							ua->name, node);
+				free(node); /* hostlist_shift() uses malloc() */
+			}
+			hostlist_destroy(hl);
+		}
+	}
 
 	return SLURM_SUCCESS;
 }

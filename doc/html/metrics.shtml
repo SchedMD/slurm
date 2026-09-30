@@ -178,6 +178,10 @@ Examples include:</p>
  - Pending jobs for user "john"</li>
 <li><code>slurm_account_jobs_pending{account="smith"}</code>
  - Pending jobs for account "smith"</li>
+<li><code>slurm_user_node_active{username="john",node="node01"}</code>
+ - 1 if user "john" has a running or suspended job on "node01"</li>
+<li><code>slurm_account_node_active{account="smith",node="node01"}</code>
+ - 1 if account "smith" has a running or suspended job on "node01"</li>
 </ul>
 
 <h3 id="node_metrics">Node Metrics
