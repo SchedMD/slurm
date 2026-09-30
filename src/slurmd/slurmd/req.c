@@ -2845,7 +2845,7 @@ _rpc_reboot(slurm_msg_t *msg)
 		for (int i = 0; (i < argc) && argv[i]; i++)
 			xfree(argv[i]);
 		xfree(argv);
-		env_array_free(env);
+		FREE_NULL_ENV(env, NULL);
 
 		/*
 		 * Explicitly shutdown the slurmd. This is usually
