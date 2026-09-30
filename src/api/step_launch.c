@@ -288,7 +288,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 				   0,
 			   preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
-	env_array_free(mpi_env);
+	FREE_NULL_ENV(mpi_env, NULL);
 
 	launch.envc = envcount(env);
 	launch.env = env;
@@ -458,7 +458,7 @@ fail1:
 	xfree(launch.runtime);
 	xfree(launch.stepmgr);
 	xfree(launch.alloc_tls_cert);
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 	FREE_NULL_LIST(launch.options);
 	return rc;
 }
