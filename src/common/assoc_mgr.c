@@ -1850,7 +1850,6 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 {
 	slurmdb_res_cond_t res_q;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
@@ -1866,7 +1865,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 		      __func__);
 	}
 
-	assoc_mgr_res_list = acct_storage_g_get_res(db_conn, uid, &res_q);
+	assoc_mgr_res_list = acct_storage_g_get_res(db_conn, &res_q);
 
 	FREE_NULL_LIST(res_q.cluster_list);
 
@@ -2121,7 +2120,6 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 {
 	slurmdb_res_cond_t res_q;
 	list_t *current_res = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	slurmdb_init_res_cond(&res_q, 0);
@@ -2134,7 +2132,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 		      __func__);
 	}
 
-	current_res = acct_storage_g_get_res(db_conn, uid, &res_q);
+	current_res = acct_storage_g_get_res(db_conn, &res_q);
 
 	FREE_NULL_LIST(res_q.cluster_list);
 

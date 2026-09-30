@@ -60,10 +60,7 @@ extern int slurmdb_res_add(void *db_conn, list_t *res_list)
  */
 extern list_t *slurmdb_res_get(void *db_conn, slurmdb_res_cond_t *res_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_res(db_conn, db_api_uid, res_cond);
+	return acct_storage_g_get_res(db_conn, res_cond);
 }
 
 /*
