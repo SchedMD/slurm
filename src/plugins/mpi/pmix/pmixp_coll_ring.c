@@ -612,6 +612,7 @@ int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 		nodename = pmixp_info_job_host(hdr->nodeid);
 		PMIXP_ERROR("%p: unexpected contrib from %s:%u, expected is %d",
 			    coll, nodename, hdr->nodeid, _ring_prev_id(coll));
+		xfree(nodename);
 		return SLURM_ERROR;
 	}
 	rc = pmixp_coll_check(coll, hdr->seq);
@@ -629,7 +630,6 @@ int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 		return SLURM_SUCCESS;
 	} else if (PMIXP_COLL_REQ_SKIP == rc) {
 #ifdef PMIXP_COLL_DEBUG
-		nodename = pmixp_info_job_host(hdr->nodeid);
 		PMIXP_ERROR("Wrong collective seq. #%d from nodeid %u, current is %d, skip this message",
 			    hdr->seq, hdr->nodeid, coll->seq);
 #endif

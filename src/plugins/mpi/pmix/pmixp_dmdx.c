@@ -226,6 +226,7 @@ static void _dmdx_pmix_cb(int status, char *data, size_t sz,
 		/* not much we can do here. Caller will react by timeout */
 		PMIXP_ERROR("Cannot send direct modex response to %s",
 			    nodename);
+		xfree(nodename);
 	}
 	_dmdx_free_caddy(caddy);
 }
