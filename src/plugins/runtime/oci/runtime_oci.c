@@ -1162,7 +1162,7 @@ static void _container_run(slurmd_conf_t *conf, stepd_step_rec_t *step,
 		char **env = env_array_exclude((const char **) step->env,
 					       &oci_conf->env_exclude);
 #ifdef MEMORY_LEAK_DEBUG
-		env_array_free(step->env);
+		FREE_NULL_ENV(step->env, NULL);
 #endif
 		step->env = env;
 	}
