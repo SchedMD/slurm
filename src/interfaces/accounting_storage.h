@@ -474,8 +474,8 @@ extern list_t *acct_storage_g_get_instances(void *db_conn,
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_problems(
-	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
+extern list_t *acct_storage_g_get_problems(void *db_conn,
+					   slurmdb_assoc_cond_t *assoc_cond);
 
 /*
  * get info from the storage

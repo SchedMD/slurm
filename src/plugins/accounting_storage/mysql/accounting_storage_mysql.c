@@ -3595,7 +3595,6 @@ extern list_t *acct_storage_p_get_instances(mysql_conn_t *mysql_conn,
 }
 
 extern list_t *acct_storage_p_get_problems(mysql_conn_t *mysql_conn,
-					   uint32_t uid,
 					   slurmdb_assoc_cond_t *assoc_cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -3604,7 +3603,8 @@ extern list_t *acct_storage_p_get_problems(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+	if (!is_user_min_admin_level(mysql_conn, mysql_conn->auth_uid,
+				     SLURMDB_ADMIN_OPERATOR)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
