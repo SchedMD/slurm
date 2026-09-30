@@ -281,6 +281,12 @@ if atf.get_version() < (25, 5):
             "conmgr test doesn't compile for versions < 25.05",
         )
     )
+    skip_tests.append(
+        (
+            "interfaces/test_gres_node_config.c",
+            "gres_get_node_conf_list() is added in 25.05+",
+        )
+    )
 
 # Create a test_function() for all test file in the testsuite_check_dir.
 # All the test_function()s will be run by pytest as if actually defined here.
