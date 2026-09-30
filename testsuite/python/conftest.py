@@ -482,8 +482,9 @@ def module_teardown(request=None):
                     xfailures,
                 )
 
-        # Restore the Slurm database
-        atf.restore_accounting_database(atf.properties["sql-db-backup"])
+        # Restore the Slurm database.
+        for failure in atf.restore_accounting_database(atf.properties["sql-db-backup"]):
+            atf.classify_teardown_failure(failure, xfail_teardowns, failures, xfailures)
 
         # Restore StateSaveLocation for auto-config
         atf.run_command(
@@ -642,29 +643,31 @@ def module_teardown(request=None):
         # Restore upgrade setup
         if atf.properties.get("forced_upgrade_setup"):
             logging.debug("Restoring upgrade setup...")
-            if not os.path.exists(f"{atf.module_tmp_path}/upgrade-sbin"):
-                pytest.fail(
-                    f"Can't restore upgrade setup, {atf.module_tmp_path}/upgrade-sbin doesn't exists."
+            upgrade_sbin = f"{atf.module_tmp_path}/upgrade-sbin"
+            upgrade_bin = f"{atf.module_tmp_path}/upgrade-bin"
+            if not os.path.exists(upgrade_sbin) or not os.path.exists(upgrade_bin):
+                atf.classify_teardown_failure(
+                    f"Can't restore upgrade setup, {upgrade_sbin} or "
+                    f"{upgrade_bin} doesn't exist.",
+                    xfail_teardowns,
+                    failures,
+                    xfailures,
                 )
-            if not os.path.exists(f"{atf.module_tmp_path}/upgrade-bin"):
-                pytest.fail(
-                    f"Can't restore upgrade setup, {atf.module_tmp_path}/upgrade-bin doesn't exists."
-                )
-            atf.run_command(
-                f"sudo rm -rf {atf.properties['slurm-sbin-dir']} {atf.properties['slurm-bin-dir']}",
-                quiet=True,
-                fatal=True,
-            )
-            atf.run_command(
-                f"sudo mv {atf.module_tmp_path}/upgrade-sbin {atf.properties['slurm-sbin-dir']}",
-                quiet=True,
-                fatal=True,
-            )
-            atf.run_command(
-                f"sudo mv {atf.module_tmp_path}/upgrade-bin {atf.properties['slurm-bin-dir']}",
-                quiet=True,
-                fatal=True,
-            )
+            else:
+                for cmd in (
+                    f"sudo rm -rf {atf.properties['slurm-sbin-dir']} {atf.properties['slurm-bin-dir']}",
+                    f"sudo mv {upgrade_sbin} {atf.properties['slurm-sbin-dir']}",
+                    f"sudo mv {upgrade_bin} {atf.properties['slurm-bin-dir']}",
+                ):
+                    result = atf.run_command(cmd, quiet=True)
+                    if result["exit_code"] != 0:
+                        atf.classify_teardown_failure(
+                            f"Failed to restore upgrade setup with '{cmd}': "
+                            f"{result['stderr'] or result['stdout']}",
+                            xfail_teardowns,
+                            failures,
+                            xfailures,
+                        )
 
         # Clean influxdb
         if atf.properties["influxdb-started"]:
