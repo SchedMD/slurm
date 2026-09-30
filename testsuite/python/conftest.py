@@ -482,8 +482,9 @@ def module_teardown(request=None):
                     xfailures,
                 )
 
-        # Restore the Slurm database
-        atf.restore_accounting_database(atf.properties["sql-db-backup"])
+        # Restore the Slurm database.
+        for failure in atf.restore_accounting_database(atf.properties["sql-db-backup"]):
+            atf.classify_teardown_failure(failure, xfail_teardowns, failures, xfailures)
 
         # Restore StateSaveLocation for auto-config
         atf.run_command(

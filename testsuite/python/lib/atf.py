@@ -6147,25 +6147,33 @@ def restore_accounting_database(src):
     This function may only be used in auto-config mode. The dump file is
     removed after a successful restore.
 
+    This behaves like a teardown/finally step: it never aborts but returns
+    a list of failures for the caller to handle.
+
     Args:
         src (string): Source dump file path (gzipped, as produced by
             dump_accounting_database).
 
     Returns:
-        None
+        list[str]: One message per step that failed (empty if the restore
+            completed cleanly).
 
     Example:
         >>> restore_accounting_database(properties["sql-db-backup"])
+        []
     """
 
+    failures = []
+
     if not properties["auto-config"]:
-        return
+        return failures
 
     mysql_path = shutil.which("mysql")
     if mysql_path is None:
-        pytest.fail(
+        failures.append(
             "Unable to restore the accounting database. mysql was not found in your path"
         )
+        return failures
 
     slurmdbd_dict = get_config(live=False, source="slurmdbd", quiet=True)
     database_host, database_port, database_name, database_user, database_password = (
@@ -6196,12 +6204,16 @@ def restore_accounting_database(src):
     # If DB exists, drop it and try to restore the dump file
     mysql_command = f"{base_command} -e \"USE '{database_name}'\""
     if run_command_exit(mysql_command, quiet=True) == 0:
-        run_command(
+        result = run_command(
             f'{base_command} -e "drop database {database_name}"',
-            fatal=True,
             quiet=False,
             timeout=default_sql_cmd_timeout,
         )
+        if result["exit_code"] != 0:
+            failures.append(
+                f"Failed to drop the accounting database ({database_name}): "
+                f"{result['stderr'] or result['stdout']}"
+            )
 
     # If the dump file doesn't exist, it has probably already been
     # restored by a previous call to restore_accounting_database
@@ -6209,24 +6221,39 @@ def restore_accounting_database(src):
         logging.debug(
             f"Slurm accounting database backup ({src}) is not present. It has probably already been restored."
         )
-        return
+        return failures
 
     dump_stat = os.stat(src)
     if not (dump_stat.st_size == 0 and dump_stat.st_mode & stat.S_ISVTX):
-        run_command(
+        result = run_command(
             f'{base_command} -e "create database {database_name}"',
-            fatal=True,
             quiet=False,
         )
-        run_command(
+        if result["exit_code"] != 0:
+            failures.append(
+                f"Failed to create the accounting database ({database_name}): "
+                f"{result['stderr'] or result['stdout']}"
+            )
+        result = run_command(
             f"gunzip -c {src} | {base_command} {database_name}",
-            fatal=True,
             quiet=False,
             timeout=default_sql_cmd_timeout,
         )
+        if result["exit_code"] != 0:
+            failures.append(
+                f"Failed to restore the accounting database dump ({src}): "
+                f"{result['stderr'] or result['stdout']}"
+            )
 
     # In either case, remove the dump file
-    run_command(f"rm -f {src}", fatal=True, quiet=False)
+    result = run_command(f"rm -f {src}", quiet=False)
+    if result["exit_code"] != 0:
+        failures.append(
+            f"Failed to remove the accounting database dump ({src}): "
+            f"{result['stderr'] or result['stdout']}"
+        )
+
+    return failures
 
 
 def run_check_test(source_file, build_args=""):
