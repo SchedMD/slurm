@@ -122,6 +122,22 @@ typedef struct {
 			    * 1 and 2 */
 } hres_charge_t;
 
+/*
+ * One layer of a hierarchical resource, as the controller sees it now. Handed
+ * to the create_context and maintenance callbacks. After maintenance,
+ * disable_layer and down are applied to the layer, clearing disable_layer
+ * returns it to service.
+ */
+typedef struct {
+	bool disable_layer; /* plugin sets: disable this layer */
+	bool down; /* plugin sets: down this layer */
+	licenses_id_t id; /* which layer; not exposed to the plugin */
+	char *name; /* layer name */
+	char *nodes; /* nodes the layer covers */
+	uint32_t total; /* schedulable count, base already reserved */
+	uint32_t used; /* count in use */
+} hres_layer_t;
+
 struct slurm_licenses {
 	licenses_id_t id;
 	char *		name;		/* name associated with a license */
@@ -183,6 +199,25 @@ extern int hres_add_nodes(list_t *hres_info, char *node_names,
  * IN node_ptr - node to remove
  */
 extern void hres_rm_node(node_record_t *node_ptr);
+
+/*
+ * Snapshot the current per-layer state of one hierarchical resource for its
+ * plugin's create_context and maintenance callbacks.
+ * IN hres_id - resource to snapshot
+ * IN locked - true if the caller already holds license_mutex
+ * RET list of hres_layer_t, caller must FREE_NULL_LIST()
+ */
+extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked);
+
+/*
+ * Set disable_layer on one hierarchical resource layer, so the scheduler stops
+ * allocating against it, or clear it to return the layer to service.
+ * IN id - the layer to update
+ * IN disable - new state
+ * IN locked - true if the caller already holds license_mutex
+ */
+extern void hres_layer_set_disabled(licenses_id_t id, bool disable,
+				    bool locked);
 
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
@@ -255,6 +290,9 @@ extern void license_free_rec(void *x);
 
 /* Free an hres_charge_t record (for use by list_destroy) */
 extern void hres_charge_free(void *x);
+
+/* Free an hres_layer_t record (for use by list_destroy) */
+extern void hres_layer_free(void *x);
 
 /*
  * license_copy - create a copy of license list

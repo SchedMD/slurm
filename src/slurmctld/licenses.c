@@ -291,6 +291,11 @@ typedef struct {
 	slurmctld_resv_t *job_resv_ptr;
 } find_diff_hres_in_list_args_t;
 
+typedef struct {
+	uint16_t hres_id;
+	list_t *layers;
+} foreach_hres_snapshot_t;
+
 static void _print_path(path_idx_t path_idx, uint16_t depth)
 {
 	for (int i = 0; i < depth; i++) {
@@ -392,6 +397,19 @@ extern void hres_charge_free(void *x)
 
 	xfree(charge->layer_name);
 	xfree(charge);
+}
+
+/* Free an hres_layer_t record (for use by FREE_NULL_LIST) */
+extern void hres_layer_free(void *x)
+{
+	hres_layer_t *layer = x;
+
+	if (!layer)
+		return;
+
+	xfree(layer->name);
+	xfree(layer->nodes);
+	xfree(layer);
 }
 
 /* Free a license_t record (for use by FREE_NULL_LIST) */
@@ -1508,6 +1526,63 @@ static int _foreach_license_set_mode3_nodes(void *x, void *arg)
 			bit_or(parent->node_bitmap, license->node_bitmap);
 	}
 	return 0;
+}
+
+static int _foreach_hres_snapshot(void *x, void *arg)
+{
+	licenses_t *license = x;
+	foreach_hres_snapshot_t *args = arg;
+	hres_layer_t *layer;
+
+	if (license->id.hres_id != args->hres_id)
+		return 0;
+
+	layer = xmalloc(sizeof(*layer));
+	layer->disable_layer = license->hres_rec.disable_layer;
+	layer->id = license->id;
+	layer->name = xstrdup(license->hres_rec.layer_name);
+	layer->nodes = xstrdup(license->nodes);
+	layer->total = license->total;
+	layer->used = license->used;
+
+	list_append(args->layers, layer);
+
+	return 0;
+}
+
+extern list_t *hres_layers_snapshot(uint16_t hres_id, bool locked)
+{
+	foreach_hres_snapshot_t args = {
+		.hres_id = hres_id,
+	};
+
+	if (!locked)
+		slurm_mutex_lock(&license_mutex);
+
+	args.layers = list_create(hres_layer_free);
+	list_for_each_ro(cluster_license_list, _foreach_hres_snapshot, &args);
+
+	if (!locked)
+		slurm_mutex_unlock(&license_mutex);
+
+	return args.layers;
+}
+
+extern void hres_layer_set_disabled(licenses_id_t id, bool disable, bool locked)
+{
+	licenses_t *layer;
+
+	if (!locked)
+		slurm_mutex_lock(&license_mutex);
+
+	layer = license_find_rec_by_id(cluster_license_list, id);
+	if (layer && (layer->hres_rec.disable_layer != disable)) {
+		layer->hres_rec.disable_layer = disable;
+		last_license_update = time(NULL);
+	}
+
+	if (!locked)
+		slurm_mutex_unlock(&license_mutex);
 }
 
 extern int hres_init(void)
