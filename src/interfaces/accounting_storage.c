@@ -146,8 +146,7 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*get_wckeys)(void *db_conn, slurmdb_wckey_cond_t *wckey_cond);
 	list_t *(*get_reservations)(void *db_conn,
 				    slurmdb_reservation_cond_t *resv_cond);
-	list_t *(*get_txn)         (void *db_conn, uint32_t uid,
-				    slurmdb_txn_cond_t *txn_cond);
+	list_t *(*get_txn)(void *db_conn, slurmdb_txn_cond_t *txn_cond);
 	int  (*get_usage)          (void *db_conn, uint32_t uid,
 				    void *in, int type,
 				    time_t start,
@@ -935,7 +934,7 @@ extern list_t *acct_storage_g_get_reservations(void *db_conn,
 	return (*(ops.get_reservations))(db_conn, resv_cond);
 }
 
-extern list_t *acct_storage_g_get_txn(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_get_txn(void *db_conn,
 				      slurmdb_txn_cond_t *txn_cond)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -943,7 +942,7 @@ extern list_t *acct_storage_g_get_txn(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.get_txn))(db_conn, uid, txn_cond);
+	return (*(ops.get_txn))(db_conn, txn_cond);
 }
 
 extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,

@@ -1286,8 +1286,7 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_txn(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid, cond_msg->cond);
+		acct_storage_g_get_txn(slurmdbd_conn->db_conn, cond_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)

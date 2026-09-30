@@ -3662,10 +3662,10 @@ extern list_t *acct_storage_p_get_reservations(mysql_conn_t *mysql_conn,
 	return as_mysql_get_resvs(mysql_conn, mysql_conn->auth_uid, resv_cond);
 }
 
-extern list_t *acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
 				      slurmdb_txn_cond_t *txn_cond)
 {
-	return as_mysql_get_txn(mysql_conn, uid, txn_cond);
+	return as_mysql_get_txn(mysql_conn, mysql_conn->auth_uid, txn_cond);
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,

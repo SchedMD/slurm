@@ -520,7 +520,7 @@ extern list_t *acct_storage_g_get_reservations(void *db_conn,
  * RET: List of slurmdb_txn_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
+extern list_t *acct_storage_g_get_txn(void *db_conn,
 				      slurmdb_txn_cond_t *txn_cond);
 
 /*

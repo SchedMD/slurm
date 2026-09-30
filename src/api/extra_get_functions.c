@@ -376,10 +376,7 @@ extern list_t *slurmdb_reservations_get(void *db_conn,
  */
 extern list_t *slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_txn(db_conn, db_api_uid, txn_cond);
+	return acct_storage_g_get_txn(db_conn, txn_cond);
 }
 
 /*
