@@ -147,10 +147,8 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*get_reservations)(void *db_conn,
 				    slurmdb_reservation_cond_t *resv_cond);
 	list_t *(*get_txn)(void *db_conn, slurmdb_txn_cond_t *txn_cond);
-	int  (*get_usage)          (void *db_conn, uint32_t uid,
-				    void *in, int type,
-				    time_t start,
-				    time_t end);
+	int (*get_usage)(void *db_conn, void *in, int type, time_t start,
+			 time_t end);
 	int (*roll_usage)          (void *db_conn,
 				    time_t sent_start, time_t sent_end,
 				    uint16_t archive_data,
@@ -945,8 +943,7 @@ extern list_t *acct_storage_g_get_txn(void *db_conn,
 	return (*(ops.get_txn))(db_conn, txn_cond);
 }
 
-extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
-				    void *in, int type,
+extern int acct_storage_g_get_usage(void *db_conn, void *in, int type,
 				    time_t start, time_t end)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
@@ -954,7 +951,7 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	return (*(ops.get_usage))(db_conn, uid, in, type, start, end);
+	return (*(ops.get_usage))(db_conn, in, type, start, end);
 }
 
 extern int acct_storage_g_roll_usage(void *db_conn,

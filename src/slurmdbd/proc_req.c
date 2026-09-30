@@ -1340,8 +1340,7 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 		return SLURM_ERROR;
 	}
 
-	rc = acct_storage_g_get_usage(slurmdbd_conn->db_conn,
-				      slurmdbd_conn->auth_uid, get_msg->rec,
+	rc = acct_storage_g_get_usage(slurmdbd_conn->db_conn, get_msg->rec,
 				      msg->msg_type, get_msg->start,
 				      get_msg->end);
 

@@ -532,9 +532,8 @@ extern list_t *acct_storage_g_get_txn(void *db_conn,
  * IN:  end time stamp for records <=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_usage(
-	void *db_conn,  uint32_t uid, void *in, int type,
-	time_t start, time_t end);
+extern int acct_storage_g_get_usage(void *db_conn, void *in, int type,
+				    time_t start, time_t end);
 
 /*
  * roll up data in the storage

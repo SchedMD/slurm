@@ -2200,9 +2200,9 @@ extern list_t *acct_storage_p_get_txn(void *db_conn,
 	return ret_list;
 }
 
-extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
-				    void *in, slurmdbd_msg_type_t type,
-				    time_t start, time_t end)
+extern int acct_storage_p_get_usage(void *db_conn, void *in,
+				    slurmdbd_msg_type_t type, time_t start,
+				    time_t end)
 {
 	persist_msg_t req = {0}, resp = {0};
 	dbd_usage_msg_t get_msg;
