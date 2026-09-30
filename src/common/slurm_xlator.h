@@ -146,8 +146,7 @@
 #define	hostlist_count		slurm_hostlist_count
 #define	hostlist_delete		slurm_hostlist_delete
 #define	hostlist_delete_host	slurm_hostlist_delete_host
-#define	hostlist_delete_nth	slurm_hostlist_delete_nth
-#define	hostlist_deranged_string slurm_hostlist_deranged_string
+#define hostlist_delete_nth slurm_hostlist_delete_nth
 #define	hostlist_deranged_string_xmalloc \
 				slurm_hostlist_deranged_string_xmalloc
 #define	hostlist_destroy	slurm_hostlist_destroy
@@ -161,8 +160,7 @@
 #define	hostlist_pop            slurm_hostlist_pop
 #define	hostlist_push		slurm_hostlist_push
 #define	hostlist_push_host	slurm_hostlist_push_host
-#define	hostlist_push_list	slurm_hostlist_push_list
-#define	hostlist_ranged_string	slurm_hostlist_ranged_string
+#define hostlist_push_list slurm_hostlist_push_list
 #define	hostlist_ranged_string_xmalloc \
 				slurm_hostlist_ranged_string_xmalloc
 #define	hostlist_remove		slurm_hostlist_remove

@@ -1447,24 +1447,10 @@ extern int slurm_hostlist_push(hostlist_t *hl, const char *hosts);
  */
 extern int slurm_hostlist_push_host(hostlist_t *hl, const char *host);
 
-/* slurm_hostlist_ranged_string():
+/* slurm_hostlist_ranged_string_xmalloc():
  *
- * Write the string representation of the hostlist hl into buf,
- * writing at most n chars. Returns the number of bytes written,
- * or -1 if truncation occurred.
- *
- * The result will be NULL terminated.
- *
- * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
- * where possible.
- */
-extern ssize_t slurm_hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf);
-
-/* hostlist_ranged_string_xmalloc():
- *
- * Wrapper of hostlist_ranged_string(), with result buffer dynamically
- * allocated using xmalloc().
- * The result will be NULL on failure (out of memory).
+ * Returns the string representation of the hostlist hl, bracketed where
+ * possible.
  *
  * Caller must free the result with slurm_xfree_ptr().
  */

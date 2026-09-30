@@ -68,8 +68,7 @@ strong_alias(hostlist_copy,		slurm_hostlist_copy);
 strong_alias(hostlist_count,		slurm_hostlist_count);
 strong_alias(hostlist_delete,		slurm_hostlist_delete);
 strong_alias(hostlist_delete_host,	slurm_hostlist_delete_host);
-strong_alias(hostlist_delete_nth,	slurm_hostlist_delete_nth);
-strong_alias(hostlist_deranged_string,	slurm_hostlist_deranged_string);
+strong_alias(hostlist_delete_nth, slurm_hostlist_delete_nth);
 strong_alias(hostlist_deranged_string_xmalloc,
 					slurm_hostlist_deranged_string_xmalloc);
 strong_alias(hostlist_destroy,		slurm_hostlist_destroy);
@@ -83,8 +82,7 @@ strong_alias(hostlist_drop, slurm_hostlist_drop);
 strong_alias(hostlist_pop,		slurm_hostlist_pop);
 strong_alias(hostlist_push,		slurm_hostlist_push);
 strong_alias(hostlist_push_host,	slurm_hostlist_push_host);
-strong_alias(hostlist_push_list,	slurm_hostlist_push_list);
-strong_alias(hostlist_ranged_string,	slurm_hostlist_ranged_string);
+strong_alias(hostlist_push_list, slurm_hostlist_push_list);
 strong_alias(hostlist_ranged_string_xmalloc,
 					slurm_hostlist_ranged_string_xmalloc);
 strong_alias(hostlist_remove,		slurm_hostlist_remove);
@@ -225,8 +223,6 @@ static char *hostrange_shift(hostrange_t *);
 static int hostrange_join(hostrange_t *, hostrange_t *);
 static hostrange_t *hostrange_intersect(hostrange_t *, hostrange_t *);
 static int hostrange_hn_within(hostrange_t *, hostname_t *);
-static size_t hostrange_to_string(hostrange_t *hr, size_t, char *, char *);
-static size_t hostrange_numstr(hostrange_t *, size_t, char *);
 
 static hostlist_t *hostlist_new(void);
 static hostlist_t *_hostlist_create_bracketed(const char *, char *, char *);
@@ -925,75 +921,6 @@ static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn)
 
 	return 0;
 }
-
-
-/* copy a string representation of the hostrange hr into buffer buf,
- * writing at most n chars including NUL termination
- */
-static size_t hostrange_to_string(hostrange_t *hr, size_t n, char *buf,
-				  char *separator)
-{
-	unsigned long i;
-	int ret, len = 0;
-	char sep = separator == NULL ? ',' : separator[0];
-
-	if (n == 0)
-		return 0;
-
-	xassert(hr);
-
-	if (hr->singlehost) {
-		ret = snprintf(buf, n, "%s", hr->prefix);
-		if (ret < 0 || ret >= n)
-			goto truncated;
-		return ret;
-	}
-
-	for (i = hr->lo; i <= hr->hi; i++) {
-		if (i > hr->lo)
-			buf[len++] = sep;
-		if (len >= n)
-			goto truncated;
-
-		ret = snprintf(buf + len, n - len, "%s%0*lu", hr->prefix,
-			       hr->width, i);
-		if ((ret < 0) || ((len += ret) >= n))
-			goto truncated;
-	}
-
-	buf[len] = '\0';
-	return len;
-truncated:
-	buf[n-1] = '\0';
-	return -1;
-}
-
-/* Place the string representation of the numeric part of hostrange into buf
- * writing at most n chars including NUL termination.
- */
-static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf)
-{
-	int len = 0;
-
-	xassert(buf && hr);
-
-	if (hr->singlehost || n == 0)
-		return 0;
-
-	len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
-	if ((len < 0) || (len >= n))
-		return -1;
-
-	if (hr->lo < hr->hi) {
-		int len2 = snprintf(buf + len, n - len, "-%0*lu", hr->width,
-				    hr->hi);
-		if ((len2 < 0) || ((len += len2) >= n))
-			return -1;
-	}
-
-	return len;
-}
-
 
 /* ----[ hostlist functions ]---- */
 
@@ -2195,30 +2122,6 @@ char *hostlist_deranged_string_xmalloc(hostlist_t *hl)
 	return str;
 }
 
-ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf)
-{
-	int i;
-	int len = 0, ret;
-
-	LOCK_HOSTLIST(hl);
-	for (i = 0; i < hl->nranges && len < n; i++) {
-		if (i)
-			buf[len++] = ',';
-		if (len >= n)
-			goto truncated;
-		ret = hostrange_to_string(hl->hr[i], n - len, buf + len, ",");
-		if (ret < 0)
-			goto truncated;
-		len += ret;
-	}
-	UNLOCK_HOSTLIST(hl);
-	return len;
-truncated:
-	UNLOCK_HOSTLIST(hl);
-	buf[n-1] = '\0';
-	return -1;
-}
-
 /* this is used to set how many nodes are going to be on each branch
  * of the tree.
  * IN total       - total number of nodes to send to
@@ -2364,45 +2267,6 @@ static int _is_bracket_needed(hostlist_t *hl, int i)
 	return hostrange_count(h1) > 1 || hostrange_within_range(h1, h2);
 }
 
-/* write the next bracketed hostlist, i.e. prefix[n-m,k,...]
- * into buf, writing at most n chars including the terminating '\0'
- *
- * leaves start pointing to one past last range object in bracketed list,
- * and returns the number of bytes written into buf.
- *
- * Assumes hostlist is locked.
- */
-static int _get_bracketed_list(hostlist_t *hl, int *start, const size_t n,
-			       char *buf)
-{
-	hostrange_t **hr = hl->hr;
-	int i = *start;
-	int m, len = 0;
-	int bracket_needed = _is_bracket_needed(hl, i);
-
-	len = snprintf(buf, n, "%s", hr[i]->prefix);
-	if (len < 0 || len + 4 >= n)	/* min: '[', <digit>, ']', '\0' */
-		return n;		/* truncated, buffer filled */
-
-	if (bracket_needed)
-		buf[len++] = '[';
-
-	do {
-		if (i > *start)
-			buf[len++] = ',';
-		m = hostrange_numstr(hr[i], n - len, buf + len);
-		if (m < 0 || (len += m) >= n - 1)	/* insufficient space */
-			return n;
-	} while (++i < hl->nranges && hostrange_within_range(hr[i], hr[i-1]));
-
-	if (bracket_needed)
-		buf[len++] = ']';
-
-	buf[len] = '\0';
-	*start = i;
-	return len;
-}
-
 char *hostlist_ranged_string_xmalloc(hostlist_t *hl)
 {
 	char *str = NULL, *pos = NULL;
@@ -2434,33 +2298,6 @@ char *hostlist_ranged_string_xmalloc(hostlist_t *hl)
 	if (!str)
 		str = xstrdup("");
 	return str;
-}
-
-ssize_t hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf)
-{
-	int len = 0;
-	bool truncated = false;
-
-	LOCK_HOSTLIST(hl);
-
-	for (int i = 0; (i < hl->nranges) && (len < n);) {
-		if (i)
-			buf[len++] = ',';
-		len += _get_bracketed_list(hl, &i, n - len, buf + len);
-	}
-
-	UNLOCK_HOSTLIST(hl);
-
-	/* NULL terminate */
-	if (len >= n) {
-		truncated = true;
-		if (n > 0)
-			buf[n - 1] = '\0';
-	} else {
-		buf[len] = '\0';
-	}
-
-	return truncated ? -1 : len;
 }
 
 /* ----[ hostlist iterator functions ]---- */
@@ -2764,16 +2601,6 @@ char *hostset_pop(hostset_t *set)
 int hostset_count(hostset_t *set)
 {
 	return hostlist_count(set->hl);
-}
-
-ssize_t hostset_ranged_string(hostset_t *set, size_t n, char *buf)
-{
-	return hostlist_ranged_string(set->hl, n, buf);
-}
-
-ssize_t hostset_deranged_string(hostset_t *set, size_t n, char *buf)
-{
-	return hostlist_deranged_string(set->hl, n, buf);
 }
 
 char *hostset_deranged_string_xmalloc(hostset_t *set)
