@@ -9274,7 +9274,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 					MAX(min_cpus, job_desc_msg->max_cpus);
 			}
 			cpus_per_node = MAX(cpus_per_node, min_cpus);
-			if (job_desc_msg->ntasks_per_node != NO_VAL16) {
+			if (job_desc_msg->ntasks_per_node &&
+			    (job_desc_msg->ntasks_per_node != NO_VAL16)) {
 				job_desc_msg->cpus_per_task =
 					ROUNDUP(job_desc_msg->pn_min_cpus,
 						job_desc_msg->ntasks_per_node);
