@@ -988,12 +988,9 @@ static size_t hostrange_numstr(hostrange_t *hr, size_t n, char *buf)
 
 /* ----[ hostlist functions ]---- */
 
-/* Create a new hostlist object.
- * Returns an empty hostlist, or NULL if memory allocation fails.
- */
+/* Create a new, empty hostlist object. */
 static hostlist_t *hostlist_new(void)
 {
-	int i;
 	hostlist_t *new = xmalloc(sizeof(*new));
 
 	new->magic = HOSTLIST_MAGIC;
@@ -1001,17 +998,12 @@ static hostlist_t *hostlist_new(void)
 
 	new->hr = xcalloc(HOSTLIST_CHUNK, sizeof(hostrange_t *));
 
-	/* set entries in hostrange array to NULL */
-	for (i = 0; i < HOSTLIST_CHUNK; i++)
-		new->hr[i] = NULL;
-
 	new->size = HOSTLIST_CHUNK;
 	new->nranges = 0;
 	new->nhosts = 0;
 	new->ilist = NULL;
 	return new;
 }
-
 
 /* Resize the internal array used to store the list of hostrange objects.
  *
