@@ -21,7 +21,7 @@ def setup():
     )
 
     atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter_includes("SelectTypeParameters", "CR_Core_Memory")
+    atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
     atf.require_config_parameter_includes("GresTypes", "gpu")
     atf.require_config_parameter_includes("GresTypes", "shard")
 
