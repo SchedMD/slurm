@@ -2145,6 +2145,27 @@ hostlist_t *hostlist_deduplicate(const char *hosts)
 	return uniq_hl;
 }
 
+/* Append "lo" or "lo-hi", each zero padded to width, at *pos in *str */
+static void _xstrcat_range(char **str, char **pos, unsigned long lo,
+			   unsigned long hi, int width)
+{
+	char buf[64];
+	int len;
+
+	if (lo < hi)
+		len = snprintf(buf, sizeof(buf), "%0*lu-%0*lu", width, lo,
+			       width, hi);
+	else
+		len = snprintf(buf, sizeof(buf), "%0*lu", width, lo);
+
+	if (len < sizeof(buf))
+		xstrncatat(*str, pos, buf, len);
+	else if (lo < hi)
+		xstrfmtcatat(*str, pos, "%0*lu-%0*lu", width, lo, width, hi);
+	else
+		xstrfmtcatat(*str, pos, "%0*lu", width, lo);
+}
+
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl)
 {
 	int buf_size = 8192;
@@ -2367,14 +2388,35 @@ static int _get_bracketed_list(hostlist_t *hl, int *start, const size_t n,
 
 char *hostlist_ranged_string_xmalloc(hostlist_t *hl)
 {
-	int buf_size = 8192;
-	char *buf = xmalloc_nz(buf_size);
+	char *str = NULL, *pos = NULL;
 
-	while (hostlist_ranged_string(hl, buf_size, buf) < 0) {
-		buf_size *= 2;
-		xrealloc_nz(buf, buf_size);
+	LOCK_HOSTLIST(hl);
+	for (int i = 0; i < hl->nranges;) {
+		hostrange_t **hr = hl->hr;
+		int start = i;
+		int bracket_needed = _is_bracket_needed(hl, i);
+
+		if (i)
+			xstrcatat(str, &pos, ",");
+		xstrcatat(str, &pos, hr[i]->prefix);
+		if (bracket_needed)
+			xstrcatat(str, &pos, "[");
+		do {
+			if (i > start)
+				xstrcatat(str, &pos, ",");
+			if (!hr[i]->singlehost)
+				_xstrcat_range(&str, &pos, hr[i]->lo, hr[i]->hi,
+					       hr[i]->width);
+		} while ((++i < hl->nranges) &&
+			 hostrange_within_range(hr[i], hr[i - 1]));
+		if (bracket_needed)
+			xstrcatat(str, &pos, "]");
 	}
-	return buf;
+	UNLOCK_HOSTLIST(hl);
+
+	if (!str)
+		str = xstrdup("");
+	return str;
 }
 
 ssize_t hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf)
