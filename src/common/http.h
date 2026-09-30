@@ -215,6 +215,14 @@ extern int url_path_walk(const char *path, bool allow_templates,
 			 on_url_path_entry_t on_entry, void *arg);
 
 /*
+ * Check if character is an rfc3986 unreserved character that can pass
+ * without decoding
+ * IN c - character to check
+ * RET true if unreserved
+ */
+extern bool url_is_unreserved_char(const char c);
+
+/*
  * Decodes URL escape sequence (denoted via %XX)
  * IN ptr - pointing to % character
  * RET \0 on error or decoded character

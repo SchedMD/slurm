@@ -293,14 +293,11 @@ extern const char *url_get_scheme_string(const url_scheme_t scheme)
 	fatal_abort("should never happen");
 }
 
-/*
- * chars that can pass without decoding.
- * rfc3986: unreserved characters.
- */
-static bool _is_valid_url_char(char buffer)
+extern bool url_is_unreserved_char(const char c)
 {
-	return (isxdigit(buffer) || isalpha(buffer) || buffer == '~' ||
-		buffer == '-' || buffer == '.' || buffer == '_');
+	return ((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'z')) ||
+	       ((c >= 'A') && (c <= 'Z')) || (c == '~') || (c == '-') ||
+	       (c == '.') || (c == '_');
 }
 
 extern unsigned char url_decode_escape_seq(const char *ptr, const char *ptr_end)
@@ -396,7 +393,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 		 * Accept literal spaces even though rfc3986 does not, as
 		 * entries are kept exactly as given, including any spaces
 		 */
-		if (_is_valid_url_char(*ptr) || (*ptr == ' ')) {
+		if (url_is_unreserved_char(*ptr) || (*ptr == ' ')) {
 			char str[2] = { *ptr, '\0' };
 			xstrcatat(buffer, &buffer_at, str);
 			continue;
