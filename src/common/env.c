@@ -2312,7 +2312,7 @@ char **env_array_user_default(const char *username)
 		}
 	}
 	close(fildes[0]);
-	env_array_free(child_args.tmp_env);
+	FREE_NULL_ENV(child_args.tmp_env, NULL);
 
 	for (config_timeout=0; ; config_timeout++) {
 		kill(child, SIGKILL); /* Typically a no-op */
@@ -2390,7 +2390,7 @@ char **env_array_user_default(const char *username)
 	xfree(buffer);
 	if (!found) {
 		error("Failed to get all user environment variables");
-		env_array_free(env);
+		FREE_NULL_ENV(env, NULL);
 		return NULL;
 	}
 
