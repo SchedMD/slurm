@@ -62,7 +62,7 @@ START_TEST(test_invalid_name)
 	ck_assert_int_eq(setenvf(&env, NULL, "%s", "value"), EINVAL);
 	ck_assert_int_eq(setenvf(&env, "", "%s", "value"), EINVAL);
 
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 }
 
 END_TEST
