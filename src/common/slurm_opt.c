@@ -6488,6 +6488,15 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		FREE_NULL_LIST(tmp_gres_list);
 	}
 
+	/*
+	 * Resolve the plugin from opt->runtime, which a cli_filter may have
+	 * changed. A job that named no --runtime gets DefRuntimePlugin.
+	 */
+	if (!rc)
+		rc = runtime_g_init(opt_local->runtime,
+				    _runtime_context(opt_local),
+				    &opt_local->runtime_idx);
+
 	if (!rc)
 		rc = runtime_g_cli_apply_job_desc(opt_local->runtime_idx,
 						  opt_local->het_job_inx,
