@@ -160,8 +160,6 @@ static list_t *_process_grouped_report(
 	bool individual = 0;
 	uint32_t tres_id = TRES_CPU;
 
-	uid_t my_uid = getuid();
-
 	/* we don't want to actually query by accounts in the jobs
 	   here since we may be looking for sub accounts of a specific
 	   account.
@@ -184,7 +182,7 @@ static list_t *_process_grouped_report(
 	job_cond->flags |= JOBCOND_FLAG_DUP;
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 
-	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
+	job_list = jobacct_storage_g_get_jobs_cond(db_conn, job_cond);
 	if (!flat_view) {
 		job_cond->acct_list = tmp_acct_list;
 		tmp_acct_list = NULL;

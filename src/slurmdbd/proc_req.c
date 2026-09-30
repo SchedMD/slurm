@@ -1158,7 +1158,6 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	list_msg.my_list =
 		jobacct_storage_g_get_jobs_cond(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						job_cond);
 
 	if (!errno) {

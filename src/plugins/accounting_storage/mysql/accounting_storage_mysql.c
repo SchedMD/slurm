@@ -3876,17 +3876,14 @@ extern int jobacct_storage_p_job_suspend(mysql_conn_t *mysql_conn,
  * note list needs to be freed when called
  */
 extern list_t *jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
-					       uid_t uid,
 					       slurmdb_job_cond_t *job_cond)
 {
-	list_t *job_list = NULL;
-
-	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	}
-	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);
 
-	return job_list;
+	return as_mysql_jobacct_process_get_jobs(mysql_conn,
+						 mysql_conn->auth_uid,
+						 job_cond);
 }
 
 /*

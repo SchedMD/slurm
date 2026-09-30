@@ -694,7 +694,7 @@ extern int jobacct_storage_g_job_suspend(void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
+extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn,
 					       slurmdb_job_cond_t *job_cond);
 
 /*

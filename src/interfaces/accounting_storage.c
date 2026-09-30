@@ -175,8 +175,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*step_start)         (void *db_conn, step_record_t *step_ptr);
 	int  (*step_complete)      (void *db_conn, step_record_t *step_ptr);
 	int  (*job_suspend)        (void *db_conn, job_record_t *job_ptr);
-	list_t *(*get_jobs_cond)   (void *db_conn, uint32_t uid,
-				    slurmdb_job_cond_t *job_cond);
+	list_t *(*get_jobs_cond)(void *db_conn, slurmdb_job_cond_t *job_cond);
 	int (*archive_dump)        (void *db_conn,
 				    slurmdb_archive_cond_t *arch_cond);
 	int (*archive_load)        (void *db_conn,
@@ -1225,7 +1224,7 @@ static int _sort_desc_submit_time(void *x, void *y)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
+extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn,
 					       slurmdb_job_cond_t *job_cond)
 {
 	list_t *ret_list;
@@ -1235,7 +1234,7 @@ extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
 
-	ret_list = (*(ops.get_jobs_cond))(db_conn, uid, job_cond);
+	ret_list = (*(ops.get_jobs_cond))(db_conn, job_cond);
 
 	/* If multiple clusters were requested, the jobs are grouped together by
 	 * cluster -- each group sorted by submit time. Sort all the jobs by
