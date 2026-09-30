@@ -613,6 +613,23 @@ extern void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_BILLING:
+		case PRINT_BILLING_RAW:
+			switch (type) {
+			case JOB:
+				tmp_uint64 = slurmdb_find_tres_count_in_string(
+					job->tres_alloc_str, TRES_BILLING);
+				if (tmp_uint64 == INFINITE64)
+					tmp_uint64 = 0;
+				else
+					tmp_uint64 *= job->elapsed;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, &tmp_uint64,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_BLOCKID:
 			switch(type) {
 			case JOB:
