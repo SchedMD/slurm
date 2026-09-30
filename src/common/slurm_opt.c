@@ -4796,12 +4796,57 @@ static runtime_context_t _runtime_context(slurm_opt_t *opt)
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 			 bool set_by_env, bool early_pass)
 {
-	int i;
+	int i = -1;
+	int rc = EINVAL;
 	const char *setarg = arg;
 	bool set = true;
 
-	if (!opt)
-		fatal("%s: missing slurm_opt_t struct", __func__);
+	xassert(opt);
+
+	/* "list" names no plugin, arg_set_runtime() prints them instead */
+	if ((optval == LONG_OPT_RUNTIME) && xstrcasecmp(arg, "list")) {
+		int runtime_idx = RUNTIME_IDX_INVALID;
+
+		if ((rc = runtime_g_init(arg, _runtime_context(opt),
+					 &runtime_idx))) {
+			error("Loading runtime plugin failed: %s",
+			      slurm_strerror(rc));
+			return SLURM_ERROR;
+		}
+
+		xassert(runtime_idx != RUNTIME_IDX_INVALID);
+
+		if (early_pass) {
+			/*
+			 * The early pass runs before the component is known and
+			 * only needs the plugin's arguments in the option
+			 * table.
+			 */
+		} else if (opt->runtime_idx == RUNTIME_IDX_INVALID) {
+			opt->runtime_idx = runtime_idx;
+			debug2("%s: loaded --runtime=%s", __func__, arg);
+		} else if (set_by_env &&
+			   !slurm_option_set_by_env(opt, LONG_OPT_RUNTIME)) {
+			debug2("%s: ignoring environment --runtime=%s",
+			       __func__, arg);
+			return SLURM_SUCCESS;
+		} else if (opt->runtime_idx == runtime_idx) {
+			debug3("%s: ignoring duplicated --runtime=%s",
+			       __func__, arg);
+		} else if (slurm_option_set_by_env(opt, LONG_OPT_RUNTIME)) {
+			opt->runtime_idx = runtime_idx;
+			debug2("%s: --runtime=%s overrides the environment",
+			       __func__, arg);
+		} else {
+			error("--runtime may only be given once");
+			return SLURM_ERROR;
+		}
+	} else if ((rc = runtime_g_cli_process_arg(opt->runtime_idx,
+						   opt->het_job_inx, optval,
+						   arg, set_by_env,
+						   early_pass)) != ENOENT) {
+		return (rc ? SLURM_ERROR : SLURM_SUCCESS);
+	}
 
 	for (i = 0; common_options[i]; i++) {
 		if (common_options[i]->val != optval)
