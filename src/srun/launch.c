@@ -101,19 +101,16 @@ static int _step_signal(int signal)
 
 static char *_hostset_to_string(hostset_t *hs)
 {
-	size_t n = 1024;
 	size_t maxsize = 1024 * 64;
-	char *str = NULL;
-
-	do {
-		str = xrealloc(str, n);
-	} while ((hostset_ranged_string(hs, n*=2, str) < 0) && (n < maxsize));
+	char *str = hostset_ranged_string_xmalloc(hs);
 
 	/*
 	 *  If string was truncated, indicate this with a '+' suffix.
 	 */
-	if (n >= maxsize)
-		strcpy(str + (maxsize - 2), "+");
+	if (strlen(str) >= maxsize) {
+		str[maxsize - 2] = '+';
+		str[maxsize - 1] = '\0';
+	}
 
 	return str;
 }
