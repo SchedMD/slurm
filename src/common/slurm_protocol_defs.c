@@ -2185,7 +2185,7 @@ extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params)
 	if (!params)
 		return;
 	xfree_array(params->argv);
-	env_array_free(params->env);
+	FREE_NULL_ENV(params->env, &params->envc);
 	xfree(params->container);
 	xfree(params->runtime);
 	xfree(params->cwd);
