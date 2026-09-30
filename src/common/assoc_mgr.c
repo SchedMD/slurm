@@ -1759,8 +1759,7 @@ extern int assoc_mgr_post_tres_list(list_t *new_list)
 
 static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 {
-	slurmdb_tres_cond_t tres_q = {0};
-	uid_t uid = getuid();
+	slurmdb_tres_cond_t tres_q = { 0 };
 	list_t *new_list = NULL;
 	int changed;
 	assoc_mgr_lock_t locks =
@@ -1774,8 +1773,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 		slurm_addto_char_list(tres_q.type_list,
 				      slurm_conf.accounting_storage_tres);
 	}
-	new_list = acct_storage_g_get_tres(
-		db_conn, uid, &tres_q);
+	new_list = acct_storage_g_get_tres(db_conn, &tres_q);
 
 	FREE_NULL_LIST(tres_q.type_list);
 

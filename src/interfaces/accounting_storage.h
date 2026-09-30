@@ -436,8 +436,8 @@ extern int acct_storage_g_get_config(void *db_conn,
  * RET: List of slurmdb_tres_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_tres(
-	void *db_conn, uint32_t uid, slurmdb_tres_cond_t *tres_cond);
+extern list_t *acct_storage_g_get_tres(void *db_conn,
+				       slurmdb_tres_cond_t *tres_cond);
 
 /*
  * get info from the storage

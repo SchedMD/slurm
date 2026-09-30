@@ -449,7 +449,7 @@ extern int acct_storage_p_get_config(void *db_conn,
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern list_t *acct_storage_p_get_tres(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_tres(void *db_conn,
 				       slurmdb_tres_cond_t *tres_cond)
 {
 	return NULL;

@@ -910,8 +910,7 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_tres(slurmdbd_conn->db_conn,
-					slurmdbd_conn->auth_uid, get_msg->cond);
+		acct_storage_g_get_tres(slurmdbd_conn->db_conn, get_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
