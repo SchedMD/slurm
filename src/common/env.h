@@ -250,6 +250,7 @@ char **env_array_copy(const char **array);
 
 /*
  * Free the memory used by an environment variable array.
+ * WARNING: Use FREE_NULL_ENV() instead to avoid a dangling pointer.
  */
 void env_array_free(char **env_array);
 
