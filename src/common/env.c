@@ -1693,7 +1693,7 @@ extern void env_opts_free(env_t **envtp)
 	xfree((*envtp)->account);
 	/* xfree((*envtp)->cli); DON'T FREE - ref only */
 	xfree((*envtp)->cpu_bind);
-	env_array_free((*envtp)->env);
+	FREE_NULL_ENV((*envtp)->env, NULL);
 	xfree((*envtp)->group_name);
 	xfree((*envtp)->job_licenses);
 	xfree((*envtp)->job_name);
