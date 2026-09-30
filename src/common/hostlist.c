@@ -2168,14 +2168,31 @@ static void _xstrcat_range(char **str, char **pos, unsigned long lo,
 
 char *hostlist_deranged_string_xmalloc(hostlist_t *hl)
 {
-	int buf_size = 8192;
-	char *buf = xmalloc_nz(buf_size);
+	char *str = NULL, *pos = NULL;
 
-	while (hostlist_deranged_string(hl, buf_size, buf) < 0) {
-		buf_size *= 2;
-		xrealloc_nz(buf, buf_size);
+	LOCK_HOSTLIST(hl);
+	for (int i = 0; i < hl->nranges; i++) {
+		hostrange_t *hr = hl->hr[i];
+
+		if (hr->singlehost) {
+			if (i)
+				xstrcatat(str, &pos, ",");
+			xstrcatat(str, &pos, hr->prefix);
+			continue;
+		}
+
+		for (unsigned long num = hr->lo; num <= hr->hi; num++) {
+			if (i || (num > hr->lo))
+				xstrcatat(str, &pos, ",");
+			xstrcatat(str, &pos, hr->prefix);
+			_xstrcat_range(&str, &pos, num, num, hr->width);
+		}
 	}
-	return buf;
+	UNLOCK_HOSTLIST(hl);
+
+	if (!str)
+		str = xstrdup("");
+	return str;
 }
 
 ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf)
