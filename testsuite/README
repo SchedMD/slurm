@@ -701,6 +701,7 @@ test_101_5   Test sacct Restarts and Start are per-run after a requeue
 test_101_6   Test sacct job name filtering options
 test_101_7   Test sacct Reservation resolution at reservation window boundaries
 test_101_8   Test sacct Timelimit and TimelimitRaw report a step's own limit
+test_101_9   Test sacct BillingRaw and --json billing_raw against sshare RawUsage
 
 test_102_#   Testing of sacctmgr options.
 =========================================
