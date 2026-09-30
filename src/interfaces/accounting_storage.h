@@ -57,8 +57,6 @@ typedef enum {
 	ACCT_STORAGE_INFO_AGENT_COUNT
 } acct_storage_info_t;
 
-extern uid_t db_api_uid;
-
 extern int acct_storage_g_init(void); /* load the plugin */
 extern int acct_storage_g_fini(void); /* unload the plugin */
 
@@ -74,6 +72,8 @@ extern int acct_storage_g_fini(void); /* unload the plugin */
 extern void *acct_storage_g_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name);
+
+extern int acct_storage_g_auth_connection(void *db_conn, uid_t auth_uid);
 
 /*
  * release connection to the storage unit
@@ -96,8 +96,7 @@ extern int acct_storage_g_commit(void *db_conn, bool commit);
  * IN:  user_list List of slurmdb_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
-				    list_t *user_list);
+extern int acct_storage_g_add_users(void *db_conn, list_t *user_list);
 
 /*
  * add users to accounting system
@@ -107,10 +106,9 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
  * RET: Return char * to print out of what was added or NULL and errno set on
  *      error.
  */
-extern char *acct_storage_g_add_users_cond(
-	void *db_conn, uint32_t uid,
-	slurmdb_add_assoc_cond_t *add_assoc,
-	slurmdb_user_rec_t *user);
+extern char *acct_storage_g_add_users_cond(void *db_conn,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_user_rec_t *user);
 
 /*
  * add users as account coordinators
@@ -118,18 +116,15 @@ extern char *acct_storage_g_add_users_cond(
  * IN:  slurmdb_user_cond_t *user_cond
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
-				    list_t *acct_list,
+extern int acct_storage_g_add_coord(void *db_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond);
-
 
 /*
  * add accounts to accounting system
  * IN:  account_list List of slurmdb_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
-				       list_t *acct_list);
+extern int acct_storage_g_add_accts(void *db_conn, list_t *acct_list);
 
 /*
  * add accounts to accounting system
@@ -139,25 +134,23 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
  * RET: Return char * to print out of what was added or NULL and errno set on
  *      error.
  */
-extern char *acct_storage_g_add_accounts_cond(
-	void *db_conn, uint32_t uid,
-	slurmdb_add_assoc_cond_t *add_assoc,
-	slurmdb_account_rec_t *acct);
+extern char *acct_storage_g_add_accts_cond(void *db_conn,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_account_rec_t *acct);
 
 /*
  * add clusters to accounting system
  * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
-				       list_t *cluster_list);
+extern int acct_storage_g_add_clusters(void *db_conn, list_t *cluster_list);
 
 /*
  * add federations to accounting system
  * IN:  list List of slurmdb_federation_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
+extern int acct_storage_g_add_federations(void *db_conn,
 					  list_t *federation_list);
 
 /*
@@ -165,40 +158,35 @@ extern int acct_storage_g_add_federations(void *db_conn, uint32_t uid,
  * IN:  tres_list List of slurmdb_tres_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_tres(void *db_conn, uint32_t uid,
-				   list_t *tres_list_in);
+extern int acct_storage_g_add_tres(void *db_conn, list_t *tres_list_in);
 
 /*
  * add associations to accounting system
  * IN:  assoc_list List of slurmdb_assoc_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_assocs(void *db_conn, uint32_t uid,
-				     list_t *assoc_list);
+extern int acct_storage_g_add_assocs(void *db_conn, list_t *assoc_list);
 
 /*
  * add qos's to accounting system
  * IN:  qos_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
-				  list_t *qos_list);
+extern int acct_storage_g_add_qos(void *db_conn, list_t *qos_list);
 
 /*
  * add res's to accounting system
  * IN:  res_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_res(void *db_conn, uint32_t uid,
-				  list_t *res_list);
+extern int acct_storage_g_add_res(void *db_conn, list_t *res_list);
 
 /*
  * add wckey's to accounting system
  * IN:  wckey_list List of slurmdb_wckey_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
-				     list_t *wckey_list);
+extern int acct_storage_g_add_wckeys(void *db_conn, list_t *wckey_list);
 
 /*
  * add reservation's in accounting system
@@ -214,7 +202,7 @@ extern int acct_storage_g_add_reservation(void *db_conn,
  * IN:  slurmdb_user_rec_t *user
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_users(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_users(void *db_conn,
 					   slurmdb_user_cond_t *user_cond,
 					   slurmdb_user_rec_t *user);
 
@@ -224,9 +212,9 @@ extern list_t *acct_storage_g_modify_users(void *db_conn, uint32_t uid,
  * IN:  slurmdb_account_rec_t *acct
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
-					      slurmdb_account_cond_t *acct_cond,
-					      slurmdb_account_rec_t *acct);
+extern list_t *acct_storage_g_modify_accts(void *db_conn,
+					   slurmdb_account_cond_t *acct_cond,
+					   slurmdb_account_rec_t *acct);
 
 /*
  * modify existing clusters in the accounting system
@@ -234,8 +222,9 @@ extern list_t *acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
  * IN:  slurmdb_cluster_rec_t *cluster
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
-					      slurmdb_cluster_cond_t *cluster_cond,
+extern list_t *acct_storage_g_modify_clusters(void *db_conn,
+					      slurmdb_cluster_cond_t
+						      *cluster_cond,
 					      slurmdb_cluster_rec_t *cluster);
 
 /*
@@ -244,10 +233,9 @@ extern list_t *acct_storage_g_modify_clusters(void *db_conn, uint32_t uid,
  * IN:  slurmdb_assoc_rec_t *assoc
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_assocs(
-	void *db_conn, uint32_t uid,
-	slurmdb_assoc_cond_t *assoc_cond,
-	slurmdb_assoc_rec_t *assoc);
+extern list_t *acct_storage_g_modify_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond,
+					    slurmdb_assoc_rec_t *assoc);
 
 /*
  * modify existing federations in the accounting system
@@ -255,10 +243,10 @@ extern list_t *acct_storage_g_modify_assocs(
  * IN:  slurmdb_federation_rec_t  *fed
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_federations(
-				void *db_conn, uint32_t uid,
-				slurmdb_federation_cond_t *fed_cond,
-				slurmdb_federation_rec_t *fed);
+extern list_t *acct_storage_g_modify_federations(void *db_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond,
+						 slurmdb_federation_rec_t *fed);
 
 /*
  * modify existing job in the accounting system
@@ -266,7 +254,7 @@ extern list_t *acct_storage_g_modify_federations(
  * IN:  slurmdb_job_rec_t *job
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_job(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_job(void *db_conn,
 					 slurmdb_job_cond_t *job_cond,
 					 slurmdb_job_rec_t *job);
 
@@ -276,7 +264,7 @@ extern list_t *acct_storage_g_modify_job(void *db_conn, uint32_t uid,
  * IN:  slurmdb_qos_rec_t *qos
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_qos(void *db_conn,
 					 slurmdb_qos_cond_t *qos_cond,
 					 slurmdb_qos_rec_t *qos);
 
@@ -286,7 +274,7 @@ extern list_t *acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
  * IN:  slurmdb_res_rec_t *res
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_res(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_res(void *db_conn,
 					 slurmdb_res_cond_t *res_cond,
 					 slurmdb_res_rec_t *res);
 
@@ -296,7 +284,7 @@ extern list_t *acct_storage_g_modify_res(void *db_conn, uint32_t uid,
  * IN:  slurmdb_wckey_rec_t *wckey
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_modify_wckeys(void *db_conn,
 					    slurmdb_wckey_cond_t *wckey_cond,
 					    slurmdb_wckey_rec_t *wckey);
 
@@ -312,7 +300,7 @@ extern int acct_storage_g_modify_reservation(void *db_conn,
  * IN:  slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_users(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_remove_users(void *db_conn,
 					   slurmdb_user_cond_t *user_cond);
 
 /*
@@ -321,8 +309,7 @@ extern list_t *acct_storage_g_remove_users(void *db_conn, uint32_t uid,
  * IN: slurmdb_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
-					   list_t *acct_list,
+extern list_t *acct_storage_g_remove_coord(void *db_conn, list_t *acct_list,
 					   slurmdb_user_cond_t *user_cond);
 
 /*
@@ -330,56 +317,58 @@ extern list_t *acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
  * IN:  slurmdb_account_cond_t *acct_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
-					      slurmdb_account_cond_t *acct_cond);
+extern list_t *acct_storage_g_remove_accts(void *db_conn,
+					   slurmdb_account_cond_t *acct_cond);
 
 /*
  * remove clusters from accounting system
  * IN:  slurmdb_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_clusters(
-	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
+extern list_t *acct_storage_g_remove_clusters(void *db_conn,
+					      slurmdb_cluster_cond_t
+						      *cluster_cond);
 
 /*
  * remove associations from accounting system
  * IN:  slurmdb_assoc_cond_t *assoc_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_assocs(
-	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
+extern list_t *acct_storage_g_remove_assocs(void *db_conn,
+					    slurmdb_assoc_cond_t *assoc_cond);
 
 /*
  * remove federations from accounting system
  * IN:  slurmdb_federation_cond_t *fed_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_federations(
-	void *db_conn, uint32_t uid, slurmdb_federation_cond_t *fed_cond);
+extern list_t *acct_storage_g_remove_federations(void *db_conn,
+						 slurmdb_federation_cond_t
+							 *fed_cond);
 
 /*
  * remove qos from accounting system
  * IN:  slurmdb_qos_cond_t *qos_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_qos(
-	void *db_conn, uint32_t uid, slurmdb_qos_cond_t *qos_cond);
+extern list_t *acct_storage_g_remove_qos(void *db_conn,
+					 slurmdb_qos_cond_t *qos_cond);
 
 /*
  * remove res from accounting system
  * IN:  slurmdb_res_cond_t *res_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_res(
-	void *db_conn, uint32_t uid, slurmdb_res_cond_t *res_cond);
+extern list_t *acct_storage_g_remove_res(void *db_conn,
+					 slurmdb_res_cond_t *res_cond);
 
 /*
  * remove wckey from accounting system
  * IN:  slurmdb_wckey_cond_t *assoc_wckey
  * RET: List containing (char *'s) else NULL on error
  */
-extern list_t *acct_storage_g_remove_wckeys(
-	void *db_conn, uint32_t uid, slurmdb_wckey_cond_t *wckey_cond);
+extern list_t *acct_storage_g_remove_wckeys(void *db_conn,
+					    slurmdb_wckey_cond_t *wckey_cond);
 
 /*
  * remove reservation's in accounting system
@@ -395,7 +384,7 @@ extern int acct_storage_g_remove_reservation(void *db_conn,
  * returns List of slurmdb_user_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_users(void *db_conn,  uint32_t uid,
+extern list_t *acct_storage_g_get_users(void *db_conn,
 					slurmdb_user_cond_t *user_cond);
 
 /*
@@ -405,8 +394,8 @@ extern list_t *acct_storage_g_get_users(void *db_conn,  uint32_t uid,
  * returns List of slurmdb_account_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
-					   slurmdb_account_cond_t *acct_cond);
+extern list_t *acct_storage_g_get_accts(void *db_conn,
+					slurmdb_account_cond_t *acct_cond);
 
 /*
  * get info from the storage
@@ -415,8 +404,9 @@ extern list_t *acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
  * returns List of slurmdb_cluster_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_clusters(
-	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
+extern list_t *acct_storage_g_get_clusters(void *db_conn,
+					   slurmdb_cluster_cond_t
+						   *cluster_cond);
 
 /*
  * get info from the storage
@@ -424,8 +414,9 @@ extern list_t *acct_storage_g_get_clusters(
  * RET: returns List of slurmdb_federation_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_federations(
-	void *db_conn, uint32_t uid, slurmdb_federation_cond_t *fed_cond);
+extern list_t *acct_storage_g_get_federations(void *db_conn,
+					      slurmdb_federation_cond_t
+						      *fed_cond);
 
 /*
  * Get config from slurmdbd
@@ -443,8 +434,8 @@ extern int acct_storage_g_get_config(void *db_conn,
  * RET: List of slurmdb_tres_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_tres(
-	void *db_conn, uint32_t uid, slurmdb_tres_cond_t *tres_cond);
+extern list_t *acct_storage_g_get_tres(void *db_conn,
+				       slurmdb_tres_cond_t *tres_cond);
 
 /*
  * get info from the storage
@@ -452,8 +443,8 @@ extern list_t *acct_storage_g_get_tres(
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_assocs(
-	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
+extern list_t *acct_storage_g_get_assocs(void *db_conn,
+					 slurmdb_assoc_cond_t *assoc_cond);
 
 /*
  * get info from the storage
@@ -461,8 +452,8 @@ extern list_t *acct_storage_g_get_assocs(
  * RET: List of slurmdb_event_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_events(
-	void *db_conn,  uint32_t uid, slurmdb_event_cond_t *event_cond);
+extern list_t *acct_storage_g_get_events(void *db_conn,
+					 slurmdb_event_cond_t *event_cond);
 
 /*
  * get instances from storage
@@ -471,8 +462,9 @@ extern list_t *acct_storage_g_get_events(
  * RET: List of slurmdb_instance_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_instances(
-	void *db_conn, uint32_t uid, slurmdb_instance_cond_t *instance_cond);
+extern list_t *acct_storage_g_get_instances(void *db_conn,
+					    slurmdb_instance_cond_t
+						    *instance_cond);
 
 /*
  * get info from the storage
@@ -480,8 +472,8 @@ extern list_t *acct_storage_g_get_instances(
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_problems(
-	void *db_conn, uint32_t uid, slurmdb_assoc_cond_t *assoc_cond);
+extern list_t *acct_storage_g_get_problems(void *db_conn,
+					   slurmdb_assoc_cond_t *assoc_cond);
 
 /*
  * get info from the storage
@@ -489,7 +481,7 @@ extern list_t *acct_storage_g_get_problems(
  * RET: List of slurmdb_qos_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_qos(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_get_qos(void *db_conn,
 				      slurmdb_qos_cond_t *qos_cond);
 
 /*
@@ -498,7 +490,7 @@ extern list_t *acct_storage_g_get_qos(void *db_conn, uint32_t uid,
  * RET: List of slurmdb_res_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_res(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_get_res(void *db_conn,
 				      slurmdb_res_cond_t *res_cond);
 
 /*
@@ -507,7 +499,7 @@ extern list_t *acct_storage_g_get_res(void *db_conn, uint32_t uid,
  * RET: List of slurmdb_wckey_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
+extern list_t *acct_storage_g_get_wckeys(void *db_conn,
 					 slurmdb_wckey_cond_t *wckey_cond);
 
 /*
@@ -516,9 +508,9 @@ extern list_t *acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
  * RET: List of slurmdb_reservation_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_reservations(
-	void *db_conn, uint32_t uid,
-	slurmdb_reservation_cond_t *resv_cond);
+extern list_t *acct_storage_g_get_reservations(void *db_conn,
+					       slurmdb_reservation_cond_t
+						       *resv_cond);
 
 /*
  * get info from the storage
@@ -526,7 +518,7 @@ extern list_t *acct_storage_g_get_reservations(
  * RET: List of slurmdb_txn_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
+extern list_t *acct_storage_g_get_txn(void *db_conn,
 				      slurmdb_txn_cond_t *txn_cond);
 
 /*
@@ -538,9 +530,8 @@ extern list_t *acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
  * IN:  end time stamp for records <=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_usage(
-	void *db_conn,  uint32_t uid, void *in, int type,
-	time_t start, time_t end);
+extern int acct_storage_g_get_usage(void *db_conn, void *in, int type,
+				    time_t start, time_t end);
 
 /*
  * roll up data in the storage
@@ -560,8 +551,7 @@ extern int acct_storage_g_roll_usage(void *db_conn,
  * IN: jobs, a list of all the runaway jobs
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
-					   uint32_t uid, list_t *jobs);
+extern int acct_storage_g_fix_runaway_jobs(void *db_conn, list_t *jobs);
 
 /*
  * record shares used information for backup in case slurmctld restarts
@@ -702,7 +692,7 @@ extern int jobacct_storage_g_job_suspend(void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
+extern list_t *jobacct_storage_g_get_jobs_cond(void *db_conn,
 					       slurmdb_job_cond_t *job_cond);
 
 /*

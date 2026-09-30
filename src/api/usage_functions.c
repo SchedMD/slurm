@@ -56,11 +56,7 @@
 extern int slurmdb_usage_get(void *db_conn, void *in, int type,
 			     time_t start, time_t end)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_usage(db_conn, db_api_uid,
-					in, type, start, end);
+	return acct_storage_g_get_usage(db_conn, in, type, start, end);
 }
 
 /*

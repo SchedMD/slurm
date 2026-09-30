@@ -328,10 +328,7 @@ extern int slurmdb_config_get(void *db_conn,
 extern list_t *slurmdb_events_get(void *db_conn,
 				  slurmdb_event_cond_t *event_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_events(db_conn, db_api_uid, event_cond);
+	return acct_storage_g_get_events(db_conn, event_cond);
 }
 
 /*
@@ -344,10 +341,7 @@ extern list_t *slurmdb_events_get(void *db_conn,
 extern list_t *slurmdb_instances_get(void *db_conn,
 				     slurmdb_instance_cond_t *instance_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_instances(db_conn, db_api_uid, instance_cond);
+	return acct_storage_g_get_instances(db_conn, instance_cond);
 }
 
 /*
@@ -359,10 +353,7 @@ extern list_t *slurmdb_instances_get(void *db_conn,
 extern list_t *slurmdb_problems_get(void *db_conn,
 				    slurmdb_assoc_cond_t *assoc_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_problems(db_conn, db_api_uid, assoc_cond);
+	return acct_storage_g_get_problems(db_conn, assoc_cond);
 }
 
 /*
@@ -374,10 +365,7 @@ extern list_t *slurmdb_problems_get(void *db_conn,
 extern list_t *slurmdb_reservations_get(void *db_conn,
 					slurmdb_reservation_cond_t *resv_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_reservations(db_conn, db_api_uid, resv_cond);
+	return acct_storage_g_get_reservations(db_conn, resv_cond);
 }
 
 /*
@@ -388,10 +376,7 @@ extern list_t *slurmdb_reservations_get(void *db_conn,
  */
 extern list_t *slurmdb_txn_get(void *db_conn, slurmdb_txn_cond_t *txn_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_txn(db_conn, db_api_uid, txn_cond);
+	return acct_storage_g_get_txn(db_conn, txn_cond);
 }
 
 /*

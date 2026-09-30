@@ -396,7 +396,6 @@ static list_t *_process_util_by_report(void *db_conn, char *calling_name,
 
 	int exit_code = 0;
 
-	uid_t my_uid = getuid();
 	list_t *ret_list = list_create(slurmdb_destroy_report_cluster_rec);
 
 	slurmdb_init_cluster_cond(&cluster_cond, 0);
@@ -428,9 +427,7 @@ static list_t *_process_util_by_report(void *db_conn, char *calling_name,
 	cluster_cond.usage_end = end_time;
 	cluster_cond.usage_start = start_time;
 
-
-	cluster_list = acct_storage_g_get_clusters(
-		db_conn, my_uid, &cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
 
 	if (!cluster_list) {
 		exit_code=1;
@@ -442,13 +439,11 @@ static list_t *_process_util_by_report(void *db_conn, char *calling_name,
 	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
 		((slurmdb_assoc_cond_t *)cond)->usage_start = start_time;
 		((slurmdb_assoc_cond_t *)cond)->usage_end = end_time;
-		type_list = acct_storage_g_get_assocs(
-			db_conn, my_uid, cond);
+		type_list = acct_storage_g_get_assocs(db_conn, cond);
 	} else if ((type == CLUSTER_REPORT_UW) || (type == CLUSTER_REPORT_WU)) {
 		((slurmdb_wckey_cond_t *)cond)->usage_start = start_time;
 		((slurmdb_wckey_cond_t *)cond)->usage_end = end_time;
-		type_list = acct_storage_g_get_wckeys(
-			db_conn, my_uid, cond);
+		type_list = acct_storage_g_get_wckeys(db_conn, cond);
 	}
 
 	if (!type_list) {

@@ -61,7 +61,6 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
-	uid_t my_uid = getuid();
 	bool delete_user_cond = 0, delete_assoc_cond = 0,
 		delete_cluster_list = 0;
 	time_t start_time, end_time;
@@ -97,7 +96,7 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 	user_cond->assoc_cond->usage_start = start_time;
 	user_cond->assoc_cond->usage_end = end_time;
 
-	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
+	user_list = acct_storage_g_get_users(db_conn, user_cond);
 	if (!user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with user query.\n");
@@ -115,8 +114,8 @@ extern list_t *slurmdb_report_user_top_usage(void *db_conn,
 	cluster_cond.usage_start = user_cond->assoc_cond->usage_start;
 	cluster_cond.cluster_list = user_cond->assoc_cond->cluster_list;
 
-	usage_cluster_list = acct_storage_g_get_clusters(
-		db_conn, my_uid, &cluster_cond);
+	usage_cluster_list =
+		acct_storage_g_get_clusters(db_conn, &cluster_cond);
 	if (!usage_cluster_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with cluster query.\n");

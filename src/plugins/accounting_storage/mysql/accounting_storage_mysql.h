@@ -206,36 +206,13 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 			    int *dims);
 
 /*local api functions */
+extern int acct_storage_p_auth_connection(mysql_conn_t *mysql_conn,
+					  uid_t auth_uid);
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
-
-extern int acct_storage_p_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
-				     list_t *assoc_list);
-
-extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
-				     list_t *wckey_list);
-
-extern list_t *acct_storage_p_get_assocs(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_assoc_cond_t *assoc_cond);
-
-extern list_t *acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
-					 slurmdb_wckey_cond_t *wckey_cond);
-
-extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
-				    void *in, slurmdbd_msg_type_t type,
-				    time_t start, time_t end);
 
 extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
 	slurmdb_cluster_rec_t *cluster_rec,  slurmdbd_msg_type_t type,
 	time_t start, time_t end);
-
-extern list_t *acct_storage_p_remove_coord(mysql_conn_t *mysql_conn,
-					   uint32_t uid, list_t *acct_list,
-					   slurmdb_user_cond_t *user_cond);
-
-extern list_t *acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
-					    uint32_t uid,
-					    slurmdb_wckey_cond_t *wckey_cond);
 
 #endif

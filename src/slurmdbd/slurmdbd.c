@@ -319,6 +319,7 @@ int main(int argc, char **argv)
 		ASSOC_MGR_CACHE_WCKEY;
 
 	db_conn = acct_storage_g_get_connection(0, NULL, true, NULL);
+	acct_storage_g_auth_connection(db_conn, slurm_conf.slurm_user_id);
 	if (assoc_mgr_init(db_conn, &assoc_init_arg, errno) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
@@ -868,8 +869,7 @@ static void _set_work_dir(void)
 
 static void _request_registrations(void *db_conn)
 {
-	list_t *cluster_list = acct_storage_g_get_clusters(
-		db_conn, getuid(), NULL);
+	list_t *cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
 	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 

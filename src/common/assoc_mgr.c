@@ -1759,8 +1759,7 @@ extern int assoc_mgr_post_tres_list(list_t *new_list)
 
 static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 {
-	slurmdb_tres_cond_t tres_q = {0};
-	uid_t uid = getuid();
+	slurmdb_tres_cond_t tres_q = { 0 };
 	list_t *new_list = NULL;
 	int changed;
 	assoc_mgr_lock_t locks =
@@ -1774,8 +1773,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 		slurm_addto_char_list(tres_q.type_list,
 				      slurm_conf.accounting_storage_tres);
 	}
-	new_list = acct_storage_g_get_tres(
-		db_conn, uid, &tres_q);
+	new_list = acct_storage_g_get_tres(db_conn, &tres_q);
 
 	FREE_NULL_LIST(tres_q.type_list);
 
@@ -1804,8 +1802,7 @@ static int _get_assoc_mgr_tres_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
-	slurmdb_assoc_cond_t assoc_q = {0};
-	uid_t uid = getuid();
+	slurmdb_assoc_cond_t assoc_q = { 0 };
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 
@@ -1822,9 +1819,8 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	}
 
 //	START_TIMER;
-	assoc_mgr_assoc_list =
-		acct_storage_g_get_assocs(db_conn, uid, &assoc_q);
-//	END_TIMER2("get_assocs");
+	assoc_mgr_assoc_list = acct_storage_g_get_assocs(db_conn, &assoc_q);
+	//	END_TIMER2("get_assocs");
 
 	FREE_NULL_LIST(assoc_q.cluster_list);
 
@@ -1854,7 +1850,6 @@ static int _get_assoc_mgr_assoc_list(void *db_conn, int enforce)
 static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 {
 	slurmdb_res_cond_t res_q;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	assoc_mgr_lock(&locks);
@@ -1870,7 +1865,7 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 		      __func__);
 	}
 
-	assoc_mgr_res_list = acct_storage_g_get_res(db_conn, uid, &res_q);
+	assoc_mgr_res_list = acct_storage_g_get_res(db_conn, &res_q);
 
 	FREE_NULL_LIST(res_q.cluster_list);
 
@@ -1892,11 +1887,10 @@ static int _get_assoc_mgr_res_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
-	uid_t uid = getuid();
 	list_t *new_list = NULL;
 	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
-	new_list = acct_storage_g_get_qos(db_conn, uid, NULL);
+	new_list = acct_storage_g_get_qos(db_conn, NULL);
 
 	if (!new_list) {
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
@@ -1949,13 +1943,12 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = {
 		.assoc = WRITE_LOCK, /* for updating cached user_rec in assoc */
 		.user = WRITE_LOCK,
 	};
 
-	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
+	current_users = acct_storage_g_get_users(db_conn, &user_q);
 
 	assoc_mgr_lock(&locks);
 
@@ -1987,8 +1980,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 {
-	slurmdb_wckey_cond_t wckey_q = {0};
-	uid_t uid = getuid();
+	slurmdb_wckey_cond_t wckey_q = { 0 };
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 //	DEF_TIMERS;
@@ -2004,9 +1996,8 @@ static int _get_assoc_mgr_wckey_list(void *db_conn, int enforce)
 	}
 
 //	START_TIMER;
-	assoc_mgr_wckey_list =
-		acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
-//	END_TIMER2("get_wckeys");
+	assoc_mgr_wckey_list = acct_storage_g_get_wckeys(db_conn, &wckey_q);
+	//	END_TIMER2("get_wckeys");
 
 	FREE_NULL_LIST(wckey_q.cluster_list);
 
@@ -2069,7 +2060,6 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 {
 	slurmdb_assoc_cond_t assoc_q = {0};
 	list_t *current_assocs = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = READ_LOCK,
 				   .tres = READ_LOCK, .user = WRITE_LOCK };
 //	DEF_TIMERS;
@@ -2087,9 +2077,8 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	current_assocs = assoc_mgr_assoc_list;
 
 //	START_TIMER;
-	assoc_mgr_assoc_list =
-		acct_storage_g_get_assocs(db_conn, uid, &assoc_q);
-//	END_TIMER2("get_assocs");
+	assoc_mgr_assoc_list = acct_storage_g_get_assocs(db_conn, &assoc_q);
+	//	END_TIMER2("get_assocs");
 
 	FREE_NULL_LIST(assoc_q.cluster_list);
 
@@ -2129,7 +2118,6 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 {
 	slurmdb_res_cond_t res_q;
 	list_t *current_res = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .res = WRITE_LOCK };
 
 	slurmdb_init_res_cond(&res_q, 0);
@@ -2142,7 +2130,7 @@ static int _refresh_assoc_mgr_res_list(void *db_conn, int enforce)
 		      __func__);
 	}
 
-	current_res = acct_storage_g_get_res(db_conn, uid, &res_q);
+	current_res = acct_storage_g_get_res(db_conn, &res_q);
 
 	FREE_NULL_LIST(res_q.cluster_list);
 
@@ -2187,10 +2175,9 @@ static int _foreach_qos_steal_usage(void *x, void *arg)
 static int _refresh_assoc_mgr_qos_list(void *db_conn, int enforce)
 {
 	list_t *current_qos = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
 
-	current_qos = acct_storage_g_get_qos(db_conn, uid, NULL);
+	current_qos = acct_storage_g_get_qos(db_conn, NULL);
 
 	if (!current_qos) {
 		error("%s: no new list given back keeping cached one.",
@@ -2223,13 +2210,12 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 {
 	list_t *current_users = NULL;
 	slurmdb_user_cond_t user_q = { .with_coords = 1 };
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = {
 		.assoc = WRITE_LOCK, /* for updating cached user_rec in assoc */
 		.user = WRITE_LOCK,
 	};
 
-	current_users = acct_storage_g_get_users(db_conn, uid, &user_q);
+	current_users = acct_storage_g_get_users(db_conn, &user_q);
 
 	if (!current_users) {
 		error("%s: no new list given back keeping cached one.",
@@ -2261,7 +2247,6 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 {
 	slurmdb_wckey_cond_t wckey_q = {0};
 	list_t *current_wckeys = NULL;
-	uid_t uid = getuid();
 	assoc_mgr_lock_t locks = { .user = WRITE_LOCK, .wckey = WRITE_LOCK };
 
 	if (!slurmdbd_conf) {
@@ -2272,7 +2257,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 		      __func__);
 	}
 
-	current_wckeys = acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
+	current_wckeys = acct_storage_g_get_wckeys(db_conn, &wckey_q);
 
 	FREE_NULL_LIST(wckey_q.cluster_list);
 

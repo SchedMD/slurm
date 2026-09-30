@@ -50,10 +50,7 @@ extern list_t *slurmdb_job_modify(void *db_conn,
 				  slurmdb_job_cond_t *job_cond,
 				  slurmdb_job_rec_t *job)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_job(db_conn, db_api_uid, job_cond, job);
+	return acct_storage_g_modify_job(db_conn, job_cond, job);
 }
 
 /*
@@ -63,10 +60,7 @@ extern list_t *slurmdb_job_modify(void *db_conn,
  */
 extern list_t *slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return jobacct_storage_g_get_jobs_cond(db_conn, db_api_uid, job_cond);
+	return jobacct_storage_g_get_jobs_cond(db_conn, job_cond);
 }
 
 /*
@@ -76,10 +70,7 @@ extern list_t *slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond)
  */
 extern int slurmdb_jobs_fix_runaway(void *db_conn, list_t *jobs)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_fix_runaway_jobs(db_conn, db_api_uid, jobs);
+	return acct_storage_g_fix_runaway_jobs(db_conn, jobs);
 }
 
 /* initialization of job completion logging */

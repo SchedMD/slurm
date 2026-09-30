@@ -52,11 +52,7 @@
 extern int slurmdb_coord_add(void *db_conn, list_t *acct_list,
 			     slurmdb_user_cond_t *user_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_coord(db_conn, db_api_uid,
-					acct_list, user_cond);
+	return acct_storage_g_add_coord(db_conn, acct_list, user_cond);
 }
 
 /*
@@ -68,9 +64,5 @@ extern int slurmdb_coord_add(void *db_conn, list_t *acct_list,
 extern list_t *slurmdb_coord_remove(void *db_conn, list_t *acct_list,
 				    slurmdb_user_cond_t *user_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_coord(db_conn, db_api_uid,
-					   acct_list, user_cond);
+	return acct_storage_g_remove_coord(db_conn, acct_list, user_cond);
 }

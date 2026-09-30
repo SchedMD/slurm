@@ -1353,7 +1353,6 @@ static void _send_future_cloud_to_db(void)
 						   NODE_STATE_POWERED_DOWN));
 
 			event_list = acct_storage_g_get_events(acct_db_conn,
-							       getuid(),
 							       &event_cond);
 			if (!event_list)
 				check_db = false;
@@ -2470,9 +2469,8 @@ static int _init_tres(void)
 	FREE_NULL_LIST(char_list);
 
 	if (add_list) {
-		if (acct_storage_g_add_tres(acct_db_conn,
-		                            slurm_conf.slurm_user_id,
-		                            add_list) != SLURM_SUCCESS)
+		if (acct_storage_g_add_tres(acct_db_conn, add_list) !=
+		    SLURM_SUCCESS)
 			fatal("Problem adding tres to the database, "
 			      "can't continue until database is able to "
 			      "make new tres");
@@ -4370,9 +4368,7 @@ static void _get_fed_updates(void)
 	fed_cond.cluster_list = list_create(NULL);
 	list_append(fed_cond.cluster_list, slurm_conf.cluster_name);
 
-	fed_list = acct_storage_g_get_federations(acct_db_conn,
-	                                          slurm_conf.slurm_user_id,
-	                                          &fed_cond);
+	fed_list = acct_storage_g_get_federations(acct_db_conn, &fed_cond);
 	FREE_NULL_LIST(fed_cond.cluster_list);
 
 	if (fed_list) {

@@ -325,8 +325,6 @@ static char * _replace_double_quotes(char *option)
 static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 			    persist_init_req_msg_t *init_msg)
 {
-	int rc = SLURM_SUCCESS;
-
 #if HAVE_SYS_PRCTL_H
 	{
 	char *name = xstrdup_printf("p-%s", init_msg->cluster_name);
@@ -354,9 +352,10 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 	/* Mirror to pcon: persist_conn.c packs/unpacks with it. */
 	slurmdbd_conn->pcon->version = init_msg->version;
 	if (errno)
-		rc = errno;
+		return errno;
 
-	return rc;
+	return acct_storage_g_auth_connection(slurmdbd_conn->db_conn,
+					      slurmdbd_conn->auth_uid);
 }
 
 static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
@@ -389,9 +388,7 @@ static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_add_accounts(slurmdbd_conn->db_conn,
-					 slurmdbd_conn->auth_uid,
-					 get_msg->my_list);
+	rc = acct_storage_g_add_accts(slurmdbd_conn->db_conn, get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 	*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,
@@ -413,11 +410,9 @@ static int _add_accounts_cond(slurmdbd_conn_t *slurmdbd_conn,
 	 * until we process it through the database.
 	 */
 
-	if (!(comment =
-		      acct_storage_g_add_accounts_cond(slurmdbd_conn->db_conn,
-						       slurmdbd_conn->auth_uid,
-						       modify_msg->cond,
-						       modify_msg->rec))) {
+	if (!(comment = acct_storage_g_add_accts_cond(slurmdbd_conn->db_conn,
+						      modify_msg->cond,
+						      modify_msg->rec))) {
 		free_comment = false;
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, true);
@@ -442,7 +437,6 @@ static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		rc = ESLURM_ACCESS_DENIED;
 	else
 		rc = acct_storage_g_fix_runaway_jobs(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->my_list);
 
 	if (rc == ESLURM_ACCESS_DENIED) {
@@ -465,7 +459,6 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_coord(slurmdbd_conn->db_conn,
-				      slurmdbd_conn->auth_uid,
 				      get_msg->acct_list, get_msg->cond);
 
 	if (rc == ESLURM_ACCESS_DENIED)
@@ -483,8 +476,7 @@ static int _add_tres(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_add_tres(slurmdbd_conn->db_conn,
-				     slurmdbd_conn->auth_uid, get_msg->my_list);
+	rc = acct_storage_g_add_tres(slurmdbd_conn->db_conn, get_msg->my_list);
 
 	*out_buffer =
 		slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment, DBD_ADD_TRES);
@@ -554,7 +546,6 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	}
 
 	rc = acct_storage_g_add_assocs(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid,
 				       get_msg->my_list);
 end_it:
 	*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,
@@ -570,7 +561,6 @@ static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn,
-					 slurmdbd_conn->auth_uid,
 					 get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -590,7 +580,6 @@ static int _add_federations(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_federations(slurmdbd_conn->db_conn,
-					    slurmdbd_conn->auth_uid,
 					    get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -609,8 +598,7 @@ static int _add_qos(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_add_qos(slurmdbd_conn->db_conn,
-				    slurmdbd_conn->auth_uid, get_msg->my_list);
+	rc = acct_storage_g_add_qos(slurmdbd_conn->db_conn, get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 	else if (rc != SLURM_SUCCESS)
@@ -628,8 +616,7 @@ static int _add_res(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_add_res(slurmdbd_conn->db_conn,
-				    slurmdbd_conn->auth_uid, get_msg->my_list);
+	rc = acct_storage_g_add_res(slurmdbd_conn->db_conn, get_msg->my_list);
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 	else if (rc != SLURM_SUCCESS)
@@ -647,9 +634,7 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_add_users(slurmdbd_conn->db_conn,
-				      slurmdbd_conn->auth_uid,
-				      get_msg->my_list);
+	rc = acct_storage_g_add_users(slurmdbd_conn->db_conn, get_msg->my_list);
 
 	if (rc == ESLURM_ACCESS_DENIED)
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -674,7 +659,6 @@ static int _add_users_cond(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	 */
 
 	if (!(comment = acct_storage_g_add_users_cond(slurmdbd_conn->db_conn,
-						      slurmdbd_conn->auth_uid,
 						      modify_msg->cond,
 						      modify_msg->rec))) {
 		free_comment = false;
@@ -698,7 +682,6 @@ static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	rc = acct_storage_g_add_wckeys(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid,
 				       get_msg->my_list);
 
 	*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,
@@ -896,9 +879,8 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
 
-	list_msg.my_list = acct_storage_g_get_accounts(slurmdbd_conn->db_conn,
-						       slurmdbd_conn->auth_uid,
-						       get_msg->cond);
+	list_msg.my_list =
+		acct_storage_g_get_accts(slurmdbd_conn->db_conn, get_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
@@ -927,8 +909,7 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_tres(slurmdbd_conn->db_conn,
-					slurmdbd_conn->auth_uid, get_msg->cond);
+		acct_storage_g_get_tres(slurmdbd_conn->db_conn, get_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
@@ -957,7 +938,6 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list = acct_storage_g_get_assocs(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->cond);
 
 	if (!errno) {
@@ -987,7 +967,6 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list = acct_storage_g_get_clusters(slurmdbd_conn->db_conn,
-						       slurmdbd_conn->auth_uid,
 						       get_msg->cond);
 
 	if (!errno) {
@@ -1018,7 +997,6 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	list_msg.my_list =
 		acct_storage_g_get_federations(slurmdbd_conn->db_conn,
-					       slurmdbd_conn->auth_uid,
 					       get_msg->cond);
 
 	if (!errno) {
@@ -1086,7 +1064,6 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list = acct_storage_g_get_events(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->cond);
 
 	if (!errno) {
@@ -1116,7 +1093,6 @@ static int _get_instances(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list = acct_storage_g_get_instances(slurmdbd_conn->db_conn,
-							slurmdbd_conn->auth_uid,
 							get_msg->cond);
 
 	if (!errno) {
@@ -1182,7 +1158,6 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	list_msg.my_list =
 		jobacct_storage_g_get_jobs_cond(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						job_cond);
 
 	if (!errno) {
@@ -1220,7 +1195,6 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list = acct_storage_g_get_problems(slurmdbd_conn->db_conn,
-						       slurmdbd_conn->auth_uid,
 						       get_msg->cond);
 
 	if (!errno) {
@@ -1250,8 +1224,7 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_qos(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid, cond_msg->cond);
+		acct_storage_g_get_qos(slurmdbd_conn->db_conn, cond_msg->cond);
 
 	if (errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
 		list_msg.my_list = list_create(NULL);
@@ -1283,8 +1256,7 @@ static int _get_res(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_res(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid, get_msg->cond);
+		acct_storage_g_get_res(slurmdbd_conn->db_conn, get_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
@@ -1312,8 +1284,7 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list =
-		acct_storage_g_get_txn(slurmdbd_conn->db_conn,
-				       slurmdbd_conn->auth_uid, cond_msg->cond);
+		acct_storage_g_get_txn(slurmdbd_conn->db_conn, cond_msg->cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
@@ -1367,8 +1338,7 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 		return SLURM_ERROR;
 	}
 
-	rc = acct_storage_g_get_usage(slurmdbd_conn->db_conn,
-				      slurmdbd_conn->auth_uid, get_msg->rec,
+	rc = acct_storage_g_get_usage(slurmdbd_conn->db_conn, get_msg->rec,
 				      msg->msg_type, get_msg->start,
 				      get_msg->end);
 
@@ -1415,8 +1385,7 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	}
 
 	list_msg.my_list =
-		acct_storage_g_get_users(slurmdbd_conn->db_conn,
-					 slurmdbd_conn->auth_uid, user_cond);
+		acct_storage_g_get_users(slurmdbd_conn->db_conn, user_cond);
 
 	if (!errno) {
 		if (!list_msg.my_list)
@@ -1457,7 +1426,6 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	}
 
 	list_msg.my_list = acct_storage_g_get_wckeys(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->cond);
 
 	if (!errno) {
@@ -1488,7 +1456,6 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 
 	list_msg.my_list =
 		acct_storage_g_get_reservations(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond);
 
 	if (!errno) {
@@ -1783,10 +1750,9 @@ static int _modify_accounts(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	if (!(list_msg.my_list =
-		      acct_storage_g_modify_accounts(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
-						     get_msg->cond,
-						     get_msg->rec))) {
+		      acct_storage_g_modify_accts(slurmdbd_conn->db_conn,
+						  get_msg->cond,
+						  get_msg->rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 		*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,
@@ -1818,7 +1784,6 @@ static int _modify_assocs(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_assocs(slurmdbd_conn->db_conn,
-						   slurmdbd_conn->auth_uid,
 						   get_msg->cond,
 						   get_msg->rec)) ||
 	    (errno != SLURM_SUCCESS)) {
@@ -1855,7 +1820,6 @@ static int _modify_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_clusters(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->cond,
 						     get_msg->rec))) {
 		rc = errno;
@@ -1884,7 +1848,6 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_federations(slurmdbd_conn->db_conn,
-							slurmdbd_conn->auth_uid,
 							get_msg->cond,
 							get_msg->rec))) {
 		rc = errno;
@@ -1913,7 +1876,6 @@ static int _modify_job(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_job(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond, get_msg->rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -1949,7 +1911,6 @@ static int _modify_qos(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_qos(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond, get_msg->rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -1977,7 +1938,6 @@ static int _modify_res(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_res(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond, get_msg->rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2061,7 +2021,6 @@ is_same_user:
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_users(slurmdbd_conn->db_conn,
-						  slurmdbd_conn->auth_uid,
 						  user_cond, user_rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2089,7 +2048,6 @@ static int _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_modify_wckeys(slurmdbd_conn->db_conn,
-						   slurmdbd_conn->auth_uid,
 						   get_msg->cond,
 						   get_msg->rec))) {
 		rc = errno;
@@ -2404,9 +2362,8 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	if ((cluster.flags != NO_VAL) && (cluster.flags & CLUSTER_FLAG_EXT))
 		slurmdbd_conn->flags |= PERSIST_FLAG_EXT_DBD;
 
-	cluster_list = acct_storage_g_get_clusters(slurmdbd_conn->db_conn,
-						   slurmdbd_conn->auth_uid,
-						   &cluster_q);
+	cluster_list =
+		acct_storage_g_get_clusters(slurmdbd_conn->db_conn, &cluster_q);
 	if (!cluster_list || errno) {
 		comment = slurm_strerror(errno);
 		rc = errno;
@@ -2419,7 +2376,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 		cluster.id = register_ctld_msg->cluster_id;
 
 		rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn,
-						 slurmdbd_conn->auth_uid,
 						 add_list);
 		if (rc == ESLURM_ACCESS_DENIED)
 			comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2441,7 +2397,6 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	list_msg.my_list =
 		acct_storage_g_modify_clusters(slurmdbd_conn->db_conn,
-					       slurmdbd_conn->auth_uid,
 					       &cluster_q, &cluster);
 	if (errno == EFAULT) {
 		comment = "Request to register was incomplete";
@@ -2486,9 +2441,8 @@ static int _remove_accounts(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	if (!(list_msg.my_list =
-		      acct_storage_g_remove_accounts(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
-						     get_msg->cond))) {
+		      acct_storage_g_remove_accts(slurmdbd_conn->db_conn,
+						  get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 		*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,
@@ -2521,7 +2475,6 @@ static int _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_coord(slurmdbd_conn->db_conn,
-						  slurmdbd_conn->auth_uid,
 						  get_msg->acct_list,
 						  get_msg->cond))) {
 		rc = errno;
@@ -2556,7 +2509,6 @@ static int _remove_assocs(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_assocs(slurmdbd_conn->db_conn,
-						   slurmdbd_conn->auth_uid,
 						   get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2586,7 +2538,6 @@ static int _remove_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_clusters(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
 						     get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2615,7 +2566,6 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_federations(slurmdbd_conn->db_conn,
-							slurmdbd_conn->auth_uid,
 							get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2644,7 +2594,6 @@ static int _remove_qos(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_qos(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2673,7 +2622,6 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_res(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2701,7 +2649,6 @@ static int _remove_users(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_users(slurmdbd_conn->db_conn,
-						  slurmdbd_conn->auth_uid,
 						  get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
@@ -2730,7 +2677,6 @@ static int _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 
 	if (!(list_msg.my_list =
 		      acct_storage_g_remove_wckeys(slurmdbd_conn->db_conn,
-						   slurmdbd_conn->auth_uid,
 						   get_msg->cond))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);

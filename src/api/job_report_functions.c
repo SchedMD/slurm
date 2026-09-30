@@ -160,8 +160,6 @@ static list_t *_process_grouped_report(
 	bool individual = 0;
 	uint32_t tres_id = TRES_CPU;
 
-	uid_t my_uid = getuid();
-
 	/* we don't want to actually query by accounts in the jobs
 	   here since we may be looking for sub accounts of a specific
 	   account.
@@ -184,7 +182,7 @@ static list_t *_process_grouped_report(
 	job_cond->flags |= JOBCOND_FLAG_DUP;
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 
-	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
+	job_list = jobacct_storage_g_get_jobs_cond(db_conn, job_cond);
 	if (!flat_view) {
 		job_cond->acct_list = tmp_acct_list;
 		tmp_acct_list = NULL;
@@ -268,8 +266,7 @@ static list_t *_process_grouped_report(
 			    list_count(job_cond->acct_list))
 				assoc_cond.acct_list = job_cond->acct_list;
 		}
-		object_list = acct_storage_g_get_assocs(db_conn, my_uid,
-							&assoc_cond);
+		object_list = acct_storage_g_get_assocs(db_conn, &assoc_cond);
 	}
 
 	if (wckey_type || both) {
@@ -278,8 +275,7 @@ static list_t *_process_grouped_report(
 		wckey_cond.name_list = job_cond->wckey_list;
 		wckey_cond.cluster_list = job_cond->cluster_list;
 
-		object2_list = acct_storage_g_get_wckeys(db_conn, my_uid,
-							 &wckey_cond);
+		object2_list = acct_storage_g_get_wckeys(db_conn, &wckey_cond);
 		if (!object_list) {
 			object_list = object2_list;
 			object2_list = NULL;

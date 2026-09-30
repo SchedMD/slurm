@@ -539,9 +539,8 @@ static void _mark_self_as_drained(void)
 	cluster_rec.fed.state = CLUSTER_FED_STATE_INACTIVE |
 		(fed_mgr_cluster_rec->fed.state & ~CLUSTER_FED_STATE_BASE);
 
-	ret_list = acct_storage_g_modify_clusters(acct_db_conn,
-	                                          slurm_conf.slurm_user_id,
-	                                          &cluster_cond, &cluster_rec);
+	ret_list = acct_storage_g_modify_clusters(acct_db_conn, &cluster_cond,
+						  &cluster_rec);
 	if (!ret_list || !list_count(ret_list)) {
 		error("Failed to set cluster state to drained");
 	}
@@ -571,9 +570,8 @@ static void _remove_self_from_federation(void)
 	fed_rec.cluster_list = list_create(NULL);
 	list_append(fed_rec.cluster_list, &cluster_rec);
 
-	ret_list = acct_storage_g_modify_federations(acct_db_conn,
-	                                             slurm_conf.slurm_user_id,
-	                                             &fed_cond, &fed_rec);
+	ret_list = acct_storage_g_modify_federations(acct_db_conn, &fed_cond,
+						     &fed_rec);
 	if (!ret_list || !list_count(ret_list)) {
 		error("Failed to remove federation from list");
 	}
@@ -2868,8 +2866,7 @@ extern int fed_mgr_init(void *db_conn)
 		fed_cond.cluster_list = list_create(NULL);
 		list_append(fed_cond.cluster_list, slurm_conf.cluster_name);
 
-		fed_list = acct_storage_g_get_federations(
-			db_conn, slurm_conf.slurm_user_id, &fed_cond);
+		fed_list = acct_storage_g_get_federations(db_conn, &fed_cond);
 		FREE_NULL_LIST(fed_cond.cluster_list);
 		if (!fed_list) {
 			error("failed to get a federation list");

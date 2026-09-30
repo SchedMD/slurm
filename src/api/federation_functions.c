@@ -47,11 +47,7 @@
  */
 extern int slurmdb_federations_add(void *db_conn, list_t *federation_list)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_add_federations(db_conn, db_api_uid,
-					      federation_list);
+	return acct_storage_g_add_federations(db_conn, federation_list);
 }
 
 /*
@@ -64,11 +60,7 @@ extern list_t *slurmdb_federations_modify(void *db_conn,
 					  slurmdb_federation_cond_t *fed_cond,
 					  slurmdb_federation_rec_t *fed)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_modify_federations(db_conn, db_api_uid, fed_cond,
-						 fed);
+	return acct_storage_g_modify_federations(db_conn, fed_cond, fed);
 }
 
 /*
@@ -79,10 +71,7 @@ extern list_t *slurmdb_federations_modify(void *db_conn,
 extern list_t *slurmdb_federations_remove(void *db_conn,
 					  slurmdb_federation_cond_t *fed_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_remove_federations(db_conn, db_api_uid, fed_cond);
+	return acct_storage_g_remove_federations(db_conn, fed_cond);
 }
 
 /*
@@ -94,8 +83,5 @@ extern list_t *slurmdb_federations_remove(void *db_conn,
 extern list_t *slurmdb_federations_get(void *db_conn,
 				       slurmdb_federation_cond_t *fed_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_federations(db_conn, db_api_uid, fed_cond);
+	return acct_storage_g_get_federations(db_conn, fed_cond);
 }
