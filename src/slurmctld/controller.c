@@ -1353,7 +1353,6 @@ static void _send_future_cloud_to_db(void)
 						   NODE_STATE_POWERED_DOWN));
 
 			event_list = acct_storage_g_get_events(acct_db_conn,
-							       getuid(),
 							       &event_cond);
 			if (!event_list)
 				check_db = false;

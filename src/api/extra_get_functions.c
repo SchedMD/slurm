@@ -328,10 +328,7 @@ extern int slurmdb_config_get(void *db_conn,
 extern list_t *slurmdb_events_get(void *db_conn,
 				  slurmdb_event_cond_t *event_cond)
 {
-	if (db_api_uid == -1)
-		db_api_uid = getuid();
-
-	return acct_storage_g_get_events(db_conn, db_api_uid, event_cond);
+	return acct_storage_g_get_events(db_conn, event_cond);
 }
 
 /*

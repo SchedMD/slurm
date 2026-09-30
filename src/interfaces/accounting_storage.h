@@ -454,8 +454,8 @@ extern list_t *acct_storage_g_get_assocs(void *db_conn,
  * RET: List of slurmdb_event_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_events(
-	void *db_conn,  uint32_t uid, slurmdb_event_cond_t *event_cond);
+extern list_t *acct_storage_g_get_events(void *db_conn,
+					 slurmdb_event_cond_t *event_cond);
 
 /*
  * get instances from storage
