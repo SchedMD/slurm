@@ -45,7 +45,7 @@ def test_modify_job_tres_in_accounting():
     atf.wait_for_job_state(job_id, "DONE")
 
     # Wait for job done also in the DB
-    atf.wait_for_job_accounted(job_id, field="End", fatal=True)
+    atf.wait_for_job_accounted(job_id, field="State", value="COMPLETED", fatal=True)
     energy = next(
         alloc_tres["count"]
         for alloc_tres in atf.get_jobs(dbd=True)[job_id]["tres"]["allocated"]
