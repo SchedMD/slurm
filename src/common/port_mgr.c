@@ -41,7 +41,6 @@
 #include <string.h>
 
 #include "src/common/bitstring.h"
-#include "src/common/hostlist.h"
 #include "src/common/job_record.h"
 #include "src/common/node_conf.h"
 #include "src/common/xmalloc.h"
@@ -84,27 +83,35 @@ static int _rebuild_port_array(const char *resv_ports,
 			       uint16_t *resv_port_cnt,
 			       int **resv_port_array)
 {
-	int i;
-	char *tmp_char;
-	hostlist_t *hl;
+	bitstr_t *port_bitmap = NULL;
+	int32_t *ranges = NULL;
+	int cnt = 0;
 
-	tmp_char = xstrdup_printf("[%s]", resv_ports);
-	hl = hostlist_create(tmp_char);
-	xfree(tmp_char);
-	if (!hl)
+	if (!(ranges = bitfmt2int(resv_ports)))
 		return SLURM_ERROR;
 
-	*resv_port_array = xcalloc(*resv_port_cnt, sizeof(**resv_port_array));
-	*resv_port_cnt = 0;
-	while ((tmp_char = hostlist_shift(hl))) {
-		i = atoi(tmp_char);
-		if (i > 0)
-			(*resv_port_array)[(*resv_port_cnt)++]=i;
-		free(tmp_char);
+	port_bitmap = bit_alloc(UINT16_MAX + 1);
+	for (int32_t *range = ranges; *range != -1; range += 2) {
+		if ((range[0] < 0) || (range[0] > UINT16_MAX) ||
+		    (range[1] < range[0]))
+			continue;
+		bit_nset(port_bitmap, range[0], MIN(range[1], UINT16_MAX));
 	}
-	hostlist_destroy(hl);
-	if (*resv_port_cnt == 0)
+	xfree(ranges);
+	bit_clear(port_bitmap, 0);
+
+	*resv_port_cnt = bit_set_count(port_bitmap);
+	if (!*resv_port_cnt) {
+		FREE_NULL_BITMAP(port_bitmap);
 		return ESLURM_PORTS_INVALID;
+	}
+
+	*resv_port_array = xcalloc(*resv_port_cnt, sizeof(**resv_port_array));
+	for (int port = bit_ffs(port_bitmap); cnt < *resv_port_cnt; port++) {
+		if (bit_test(port_bitmap, port))
+			(*resv_port_array)[cnt++] = port;
+	}
+	FREE_NULL_BITMAP(port_bitmap);
 
 	return SLURM_SUCCESS;
 }
