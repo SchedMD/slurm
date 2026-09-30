@@ -470,8 +470,8 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 	return (*(ops.add_coord))(db_conn, uid, acct_list, user_cond);
 }
 
-extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
-				       list_t *acct_list)
+extern int acct_storage_g_add_accts(void *db_conn, uint32_t uid,
+				    list_t *acct_list)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 

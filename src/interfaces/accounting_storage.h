@@ -130,8 +130,8 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
  * IN:  account_list List of slurmdb_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
-				       list_t *acct_list);
+extern int acct_storage_g_add_accts(void *db_conn, uint32_t uid,
+				    list_t *acct_list);
 
 /*
  * add accounts to accounting system
