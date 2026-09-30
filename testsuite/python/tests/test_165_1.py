@@ -27,8 +27,6 @@ PARTITIONS = {
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(2, [("CPUs", 1)])
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("PartitionName", PARTITIONS)
     atf.require_accounting(modify=True)
     atf.require_slurm_running()

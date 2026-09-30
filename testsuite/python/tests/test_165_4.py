@@ -16,8 +16,6 @@ import atf
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(1, [("CPUs", 1)])
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_slurm_running()
 
 

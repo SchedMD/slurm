@@ -30,8 +30,6 @@ def setup():
         reason="Ticket 25564: slurmctld must not set SLURM_STEPMGR before"
         " batch_host is known",
     )
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("TreeWidth", 65533)
     atf.require_config_parameter("ResumeProgram", "/bin/true")
     atf.require_config_parameter("SuspendProgram", "/bin/true")

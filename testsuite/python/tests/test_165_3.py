@@ -30,8 +30,6 @@ PARTITIONS = {
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(3, [("CPUs", 1)])
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     # Define the partitions in slurm.conf rather than with 'scontrol create' so
     # they survive the slurmctld restart some of these tests perform (runtime
     # created partitions are not recovered on restart).

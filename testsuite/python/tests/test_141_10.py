@@ -53,8 +53,6 @@ def setup():
     # launch to prolog_running_decr(), which logs a different message than the
     # one verify_launched_by_poll() matches.
     atf.require_config_parameter("PrologSlurmctld", None)
-    atf.require_config_parameter("SelectType", "select/cons_tres")
-    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("ResumeProgram", "/bin/true")
     atf.require_config_parameter("SuspendProgram", "/bin/true")
     atf.require_config_parameter("SuspendTime", suspend_time)

@@ -103,7 +103,9 @@ def setup():
     atf.require_config_parameter("PriorityUsageResetPeriod", "NONE")
     atf.require_config_parameter_includes("AccountingStorageEnforce", "limits")
     # mem only accrues GrpTRESMins usage when it is a consumable resource.
-    atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
+    atf.require_config_parameter_includes(
+        "SelectTypeParameters", ["CR_Core_Memory", "CR_Memory"]
+    )
     atf.require_accounting(modify=True)
     atf.require_nodes(len(ACCTS), [("CPUs", JOB_CPUS), ("RealMemory", JOB_MEM_MB)])
     atf.require_slurm_running()
