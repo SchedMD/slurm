@@ -997,18 +997,13 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			 * Merge numeric values into single range
 			 * (e.g. "10-12,13-15,16-18" -> "10-18")
 			 */
-			hostset_t *hs;
-			char *tmp = NULL, *sep;
-			xstrfmtcat(tmp, "[%s]", resv_ports);
-			hs = hostset_create(tmp);
-			hostset_ranged_string(hs, strlen(tmp) + 1, tmp);
-			sep = strchr(tmp, ']');
-			if (sep)
-				sep[0] = '\0';
-			xfree(resv_ports);
-			resv_ports = xstrdup(tmp + 1);
-			xfree(tmp);
-			hostset_destroy(hs);
+			bitstr_t *port_bitmap = bit_alloc(UINT16_MAX + 1);
+
+			if (!bit_unfmt(port_bitmap, resv_ports)) {
+				xfree(resv_ports);
+				resv_ports = bit_fmt_full(port_bitmap);
+			}
+			FREE_NULL_BITMAP(port_bitmap);
 
 			list_iterator_reset(job_iter);
 			while ((job = list_next(job_iter))) {
