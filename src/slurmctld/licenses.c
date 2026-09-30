@@ -56,6 +56,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/topology.h"
 
@@ -1657,6 +1658,10 @@ extern int hres_init(void)
 
 		xfree(dump_str);
 	}
+
+	hres_g_init(cluster_license_list);
+	hres_g_create_context(cluster_license_list);
+
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }

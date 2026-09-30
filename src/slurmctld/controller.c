@@ -104,6 +104,7 @@
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/hres.h"
 #include "src/interfaces/job_submit.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
@@ -1269,6 +1270,8 @@ int main(int argc, char **argv)
 	/* purge remaining data structures */
 	group_cache_purge();
 	getnameinfo_cache_purge();
+	hres_g_destroy_context();
+	hres_g_fini();
 	license_free();
 	FREE_NULL_LIST(slurmctld_config.acct_update_list);
 	cred_g_fini();

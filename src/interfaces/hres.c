@@ -34,10 +34,13 @@
 \*****************************************************************************/
 
 #include <pthread.h>
+#include <time.h>
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
+#include "src/common/threadpool.h"
+#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -45,24 +48,31 @@
 #include "src/interfaces/hres.h"
 
 #include "src/slurmctld/licenses.h"
+#include "src/slurmctld/locks.h"
 
 /*
  * hres_layers_snapshot() and hres_layer_set_disabled() live in the
- * controller's licenses.c. This interface is linked into slurmd/slurmstepd
- * too, where those symbols are absent and the maintenance/create paths never
- * run, so reference them weakly.
+ * controller's licenses.c, lock_slurmctld() and unlock_slurmctld() in its
+ * locks.c. This interface is linked into slurmd/slurmstepd too, where those
+ * symbols are absent and the maintenance/create paths never run, so reference
+ * them weakly.
  */
 extern list_t *__attribute__((weak)) hres_layers_snapshot(uint16_t hres_id,
 							  bool locked);
 extern void __attribute__((weak)) hres_layer_set_disabled(licenses_id_t id,
 							  bool disable,
 							  bool locked);
+extern void __attribute__((weak)) lock_slurmctld(slurmctld_lock_t lock_levels);
+extern void __attribute__((weak)) unlock_slurmctld(slurmctld_lock_t
+							   lock_levels);
 
 typedef struct slurm_hres_ops {
 	uint32_t(*plugin_id);
 	char(*plugin_type);
+	int (*controller_stop)(void);
 	int (*create_context)(hres_ctx_t *ctx, list_t *layers);
 	int (*destroy_context)(hres_ctx_t *ctx);
+	int (*maintenance)(hres_ctx_t *ctx, list_t *layers);
 } slurm_hres_ops_t;
 
 /*
@@ -71,8 +81,10 @@ typedef struct slurm_hres_ops {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
+	"hres_p_controller_stop",
 	"hres_p_create_context",
 	"hres_p_destroy_context",
+	"hres_p_maintenance",
 };
 
 static slurm_hres_ops_t *ops = NULL;
@@ -82,6 +94,14 @@ static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static hres_ctx_t *hctx = NULL;
 static int hctx_num = 0;
+
+/* Maintenance thread wakes on this interval to check each context. */
+#define HRES_MAINTENANCE_INTERVAL 5
+
+static pthread_t maintenance_tid = 0;
+static bool maintenance_running = false;
+static pthread_mutex_t maintenance_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t maintenance_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * Index into ops[]/g_context[] of the already loaded plugin of the given type,
@@ -200,7 +220,7 @@ static int _foreach_add_ctx(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-/* g_context_lock must be held. */
+/* g_context_lock must be held. The maintenance thread must not be running. */
 static void _destroy_all_ctx(void)
 {
 	for (int i = 0; i < hctx_num; i++) {
@@ -210,6 +230,105 @@ static void _destroy_all_ctx(void)
 
 	xfree(hctx);
 	hctx_num = 0;
+}
+
+/* Apply a plugin's per-layer verdict from a maintenance run to the licenses. */
+static int _foreach_apply_layer_state(void *x, void *arg)
+{
+	hres_layer_t *layer = x;
+
+	/*
+	 * FIXME: down should also cancel or requeue the jobs using this layer;
+	 * for now it only stops further allocation, like disable_layer.
+	 */
+	hres_layer_set_disabled(layer->id, layer->down || layer->disable_layer,
+				false);
+
+	return 0;
+}
+
+/*
+ * Periodically invoke each context's plugin maintenance callback.
+ */
+static void *_maintenance_thread(void *arg)
+{
+	slurmctld_lock_t config_write_lock = {
+		.conf = WRITE_LOCK,
+	};
+
+	slurm_mutex_lock(&maintenance_lock);
+	while (maintenance_running) {
+		time_t now = time(NULL);
+		struct timespec ts = { 0 };
+
+		for (int i = 0; i < hctx_num; i++) {
+			DEF_TIMERS;
+			int rc;
+			list_t *layers;
+
+			/* No cycle configured, no periodic maintenance. */
+			if (!hctx[i].maintenance_cycle)
+				continue;
+
+			if ((now - hctx[i].last_maintenance) <
+			    hctx[i].maintenance_cycle)
+				continue;
+
+			/*
+			 * The callback runs a plugin, so drop maintenance_lock
+			 * around it. hctx/ops are stable because a stop joins
+			 * this thread before any teardown. license_mutex must
+			 * never be taken under maintenance_lock, so snapshot
+			 * the layers here too.
+			 */
+			slurm_mutex_unlock(&maintenance_lock);
+			layers = hres_layers_snapshot(hctx[i].hres_id, false);
+
+			START_TIMER;
+			/*
+			 * The return code is only logged, the plugin disables
+			 * or downs layers through the layer list.
+			 */
+			rc = (*(ops[hctx[i].idx].maintenance))(&hctx[i],
+							       layers);
+			END_TIMER3(ops[hctx[i].idx].plugin_type,
+				   ((int64_t) hctx[i].maintenance_timeout *
+				    USEC_IN_SEC));
+
+			/*
+			 * Apply the plugin's per-layer disable/down verdict.
+			 * Every select_nodes() caller holds the conf read lock,
+			 * so a disable cannot land between hres_filter() and
+			 * hres_job_resolve().
+			 */
+			lock_slurmctld(config_write_lock);
+			list_for_each_ro(layers, _foreach_apply_layer_state,
+					 NULL);
+			unlock_slurmctld(config_write_lock);
+			FREE_NULL_LIST(layers);
+
+			if (rc)
+				error("%s: maintenance for HRES %u returned %s",
+				      __func__, hctx[i].hres_id,
+				      slurm_strerror(rc));
+
+			slurm_mutex_lock(&maintenance_lock);
+			hctx[i].last_maintenance = now;
+
+			if (!maintenance_running)
+				break;
+		}
+
+		if (!maintenance_running)
+			break;
+
+		/* Wait from now, the callbacks may have taken a while. */
+		ts.tv_sec = time(NULL) + HRES_MAINTENANCE_INTERVAL;
+		slurm_cond_timedwait(&maintenance_cond, &maintenance_lock, &ts);
+	}
+	slurm_mutex_unlock(&maintenance_lock);
+
+	return NULL;
 }
 
 extern int hres_g_init(list_t *hres_recs)
@@ -241,6 +360,12 @@ extern int hres_g_create_context(list_t *hres_recs)
 	slurm_mutex_lock(&g_context_lock);
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
+	/*
+	 * Already stopped by the caller, a join here needs license_mutex and
+	 * the conf lock.
+	 */
+	hres_g_maintenance_stop();
+
 	_destroy_all_ctx();
 
 	if (hres_recs)
@@ -261,6 +386,7 @@ extern int hres_g_destroy_context(void)
 		return SLURM_SUCCESS;
 	}
 
+	hres_g_maintenance_stop();
 	_destroy_all_ctx();
 
 	slurm_mutex_unlock(&g_context_lock);
@@ -273,6 +399,13 @@ extern int hres_g_fini(void)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
+
+	/*
+	 * Stop the thread before tearing down the contexts it reads. Safe to
+	 * join while holding g_context_lock: the maintenance thread only takes
+	 * maintenance_lock, never g_context_lock.
+	 */
+	hres_g_maintenance_stop();
 
 	_destroy_all_ctx();
 
@@ -292,6 +425,65 @@ extern int hres_g_fini(void)
 	plugin_inited = PLUGIN_NOT_INITED;
 
 	slurm_mutex_unlock(&g_context_lock);
+
+	return rc;
+}
+
+extern int hres_g_maintenance_start(void)
+{
+	slurm_mutex_lock(&maintenance_lock);
+
+	if (maintenance_running || (hctx_num <= 0)) {
+		slurm_mutex_unlock(&maintenance_lock);
+		return SLURM_SUCCESS;
+	}
+
+	maintenance_running = true;
+	slurm_thread_create(NULL, &maintenance_tid, _maintenance_thread, NULL);
+
+	slurm_mutex_unlock(&maintenance_lock);
+
+	return SLURM_SUCCESS;
+}
+
+extern int hres_g_maintenance_stop(void)
+{
+	slurm_mutex_lock(&maintenance_lock);
+
+	if (!maintenance_running) {
+		slurm_mutex_unlock(&maintenance_lock);
+		return SLURM_SUCCESS;
+	}
+
+	maintenance_running = false;
+	slurm_cond_signal(&maintenance_cond);
+
+	slurm_mutex_unlock(&maintenance_lock);
+
+	slurm_thread_join(maintenance_tid);
+
+	return SLURM_SUCCESS;
+}
+
+extern int hres_g_controller_stop(void)
+{
+	int rc = SLURM_SUCCESS;
+
+	hres_g_maintenance_stop();
+
+	/*
+	 * Without g_context_lock, the plugins may need it to finish their work.
+	 * ops only change in init and fini, on this same thread.
+	 */
+	for (int i = 0; i < g_context_num; i++) {
+		int rc2 = (*(ops[i].controller_stop))();
+
+		if (rc2 != SLURM_SUCCESS) {
+			error("%s: %s failed: %s", __func__,
+			      ops[i].plugin_type, slurm_strerror(rc2));
+			rc = rc2;
+		}
+	}
 
 	return rc;
 }

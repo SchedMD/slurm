@@ -49,6 +49,7 @@ typedef struct {
 	list_t *config; /* list of hres_config_t, read-only for plugin */
 	uint16_t hres_id; /* HRES this context serves */
 	int idx; /* index into ops[]/g_context[] */
+	time_t last_maintenance; /* time of last maintenance run, 0 if never */
 	uint32_t maintenance_cycle; /* seconds between maintenance runs */
 	uint32_t maintenance_timeout; /* max seconds for a maintenance run */
 	void *plugin_ctx; /* per-context state, alloc/free'd by the plugin */
@@ -92,5 +93,30 @@ extern int hres_g_destroy_context(void);
  * RET SLURM_SUCCESS or a Slurm errno
  */
 extern int hres_g_fini(void);
+
+/*
+ * Start the maintenance thread that periodically invokes each context's
+ * plugin maintenance callback. A no-op when no context is configured.
+ *
+ * RET SLURM_SUCCESS or a Slurm errno
+ */
+extern int hres_g_maintenance_start(void);
+
+/*
+ * Stop and join the maintenance thread. Safe to call when not running.
+ *
+ * RET SLURM_SUCCESS or a Slurm errno
+ */
+extern int hres_g_maintenance_stop(void);
+
+/*
+ * Stop the maintenance thread and wait until the background work of every
+ * plugin has finished and been applied to slurmctld state. No controller
+ * callback may start after this. Must be called without slurmctld locks, the
+ * plugins may need them to finish.
+ *
+ * RET SLURM_SUCCESS or a Slurm errno
+ */
+extern int hres_g_controller_stop(void);
 
 #endif /* !_INTERFACES_HRES_H */
