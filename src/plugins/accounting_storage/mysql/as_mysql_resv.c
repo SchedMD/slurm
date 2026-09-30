@@ -47,48 +47,41 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 	/* strip off the action item from the flags */
 
 	if (resv->assocs) {
-		int start = 0;
-		int len = strlen(resv->assocs)-1;
+		int i = 0, i2 = 0;
+		int len = strlen(resv->assocs);
 
-		if (strchr(resv->assocs, '-')) {
-			int i = 0, i2 = 0;
-			char *assocs = xmalloc(len);
-			/* We will remove the negative's here.  This
-			   is here so if we only have negatives in the
-			   reservation we don't want to keep track of
-			   every other id so don't keep track of any
-			   since everyone except a few can use it.
-			   These id's are only used to divide up idle
-			   time so it isn't that important.
-			*/
-			while (i < len) {
-				if (resv->assocs[i] == ',' &&
-				    resv->assocs[i+1] == '-') {
-					i+=2;
-					while (i < len) {
-						i++;
-						if (resv->assocs[i] == ',')
-							break;
-					}
-					continue;
-				}
-				assocs[i2++] = resv->assocs[i++];
+		/*
+		 * Put the record in the form the assoclist column stores, so
+		 * that a caller comparing resv->assocs to a stored assoclist
+		 * is comparing the same thing. Two things come off: the commas
+		 * the list is wrapped in (e.g. ",1,2,"), and the negative ids.
+		 *
+		 * The negatives are dropped so that a reservation which only
+		 * denies ids doesn't have to keep track of every other id.
+		 * These ids are only used to divide up idle time, so it isn't
+		 * that important.
+		 *
+		 * Nothing is ever added, so the index written to never passes
+		 * the one read from and this can be done in place.
+		 */
+		while (i < len) {
+			if ((resv->assocs[i] == ',') &&
+			    (resv->assocs[i + 1] == '-')) {
+				i += 2;
+				while ((i < len) && (resv->assocs[i] != ','))
+					i++;
+			} else if ((resv->assocs[i] == ',') &&
+				   ((i == 0) || (i == (len - 1)))) {
+				i++;
+			} else {
+				resv->assocs[i2++] = resv->assocs[i++];
 			}
-			xfree(resv->assocs);
-			len = i2-1;
-			resv->assocs = assocs;
-			assocs = NULL;
 		}
-
-		/* strip off extra ,'s */
-		if (resv->assocs[0] == ',')
-			start = 1;
-		if (resv->assocs[len] == ',')
-			resv->assocs[len] = '\0';
+		resv->assocs[i2] = '\0';
 
 		xstrcat(*cols, ", assoclist");
-		xstrfmtcat(*vals, ", '%s'", resv->assocs+start);
-		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs+start);
+		xstrfmtcat(*vals, ", '%s'", resv->assocs);
+		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs);
 	}
 
 	if (resv->flags != NO_VAL64) {
