@@ -140,7 +140,7 @@ START_TEST(test_length_boundary)
 	ck_assert_int_eq(strlen(getenvp(env, TEST_NAME)), TEST_MAX_VALUE_LEN);
 
 	xfree(value);
-	env_array_free(env);
+	FREE_NULL_ENV(env, NULL);
 }
 
 END_TEST
