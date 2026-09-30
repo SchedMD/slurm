@@ -1781,10 +1781,10 @@ static int _modify_accounts(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	char *comment = NULL;
 
 	if (!(list_msg.my_list =
-		      acct_storage_g_modify_accounts(slurmdbd_conn->db_conn,
-						     slurmdbd_conn->auth_uid,
-						     get_msg->cond,
-						     get_msg->rec))) {
+		      acct_storage_g_modify_accts(slurmdbd_conn->db_conn,
+						  slurmdbd_conn->auth_uid,
+						  get_msg->cond,
+						  get_msg->rec))) {
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
 		*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment,

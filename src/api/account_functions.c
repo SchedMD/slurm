@@ -103,8 +103,8 @@ extern list_t *slurmdb_accounts_modify(void *db_conn,
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
 
-	return acct_storage_g_modify_accounts(db_conn, db_api_uid,
-					      acct_cond, acct);
+	return acct_storage_g_modify_accts(db_conn, db_api_uid, acct_cond,
+					   acct);
 }
 
 /*

@@ -592,9 +592,9 @@ extern list_t *acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 	return (*(ops.modify_users))(db_conn, uid, user_cond, user);
 }
 
-extern list_t *acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,
-					      slurmdb_account_cond_t *acct_cond,
-					      slurmdb_account_rec_t *acct)
+extern list_t *acct_storage_g_modify_accts(void *db_conn, uint32_t uid,
+					   slurmdb_account_cond_t *acct_cond,
+					   slurmdb_account_rec_t *acct)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
