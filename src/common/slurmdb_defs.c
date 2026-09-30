@@ -1494,8 +1494,8 @@ extern list_t *slurmdb_get_info_cluster(char *cluster_names)
 		slurm_addto_char_list(cluster_cond.cluster_list, cluster_names);
 	}
 
-	if (!(temp_list = acct_storage_g_get_clusters(db_conn, getuid(),
-						      &cluster_cond))) {
+	if (!(temp_list =
+		      acct_storage_g_get_clusters(db_conn, &cluster_cond))) {
 		error("Problem talking to database");
 		goto end_it;
 	}

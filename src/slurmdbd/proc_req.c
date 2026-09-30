@@ -970,7 +970,6 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 
 	list_msg.my_list = acct_storage_g_get_clusters(slurmdbd_conn->db_conn,
-						       slurmdbd_conn->auth_uid,
 						       get_msg->cond);
 
 	if (!errno) {
@@ -2377,9 +2376,8 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	if ((cluster.flags != NO_VAL) && (cluster.flags & CLUSTER_FLAG_EXT))
 		slurmdbd_conn->flags |= PERSIST_FLAG_EXT_DBD;
 
-	cluster_list = acct_storage_g_get_clusters(slurmdbd_conn->db_conn,
-						   slurmdbd_conn->auth_uid,
-						   &cluster_q);
+	cluster_list =
+		acct_storage_g_get_clusters(slurmdbd_conn->db_conn, &cluster_q);
 	if (!cluster_list || errno) {
 		comment = slurm_strerror(errno);
 		rc = errno;

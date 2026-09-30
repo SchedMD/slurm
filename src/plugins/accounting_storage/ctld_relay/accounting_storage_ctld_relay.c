@@ -430,7 +430,7 @@ extern list_t *acct_storage_p_get_accts(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_clusters(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_clusters(void *db_conn,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
 	return NULL;

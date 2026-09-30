@@ -428,9 +428,7 @@ static list_t *_process_util_by_report(void *db_conn, char *calling_name,
 	cluster_cond.usage_end = end_time;
 	cluster_cond.usage_start = start_time;
 
-
-	cluster_list = acct_storage_g_get_clusters(
-		db_conn, my_uid, &cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
 
 	if (!cluster_list) {
 		exit_code=1;

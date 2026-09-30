@@ -1605,7 +1605,7 @@ extern list_t *acct_storage_p_get_accts(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_clusters(void *db_conn, uid_t uid,
+extern list_t *acct_storage_p_get_clusters(void *db_conn,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
 	persist_msg_t req = {0}, resp = {0};

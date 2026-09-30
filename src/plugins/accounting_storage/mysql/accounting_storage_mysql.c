@@ -3550,10 +3550,11 @@ extern list_t *acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	return as_mysql_get_accts(mysql_conn, mysql_conn->auth_uid, acct_cond);
 }
 
-extern list_t *acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
+extern list_t *acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 					   slurmdb_cluster_cond_t *cluster_cond)
 {
-	return as_mysql_get_clusters(mysql_conn, uid, cluster_cond);
+	return as_mysql_get_clusters(mysql_conn, mysql_conn->auth_uid,
+				     cluster_cond);
 }
 
 extern list_t *acct_storage_p_get_federations(

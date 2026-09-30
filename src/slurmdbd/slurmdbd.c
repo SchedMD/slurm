@@ -869,8 +869,7 @@ static void _set_work_dir(void)
 
 static void _request_registrations(void *db_conn)
 {
-	list_t *cluster_list = acct_storage_g_get_clusters(
-		db_conn, getuid(), NULL);
+	list_t *cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
 	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster_rec = NULL;
 

@@ -406,8 +406,9 @@ extern list_t *acct_storage_g_get_accts(void *db_conn,
  * returns List of slurmdb_cluster_rec_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_clusters(
-	void *db_conn, uint32_t uid, slurmdb_cluster_cond_t *cluster_cond);
+extern list_t *acct_storage_g_get_clusters(void *db_conn,
+					   slurmdb_cluster_cond_t
+						   *cluster_cond);
 
 /*
  * get info from the storage
