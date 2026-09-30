@@ -1182,7 +1182,7 @@ hostlist_t *_hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	hostlist_t *new = hostlist_new();
 
-	orig = str = strdup(hostlist);
+	orig = str = xstrdup(hostlist);
 
 	/* return an empty list if an empty string was passed in */
 	if (str == NULL || strlen(str) == 0)
@@ -1295,8 +1295,7 @@ hostlist_t *_hostlist_create(const char *hostlist, char *sep, char *r_op)
 	}
 
 done:
-	if (orig)
-		free(orig);
+	xfree(orig);
 
 	return new;
 }
@@ -1336,16 +1335,16 @@ static int _grow_ranges(struct _range * *ranges,	/* in/out */
 static int _parse_single_range(char *str, struct _range *range)
 {
 	char *p, *q;
-	char *orig = strdup(str);
+	char *orig = try_xstrdup(str);
 
 	if (!orig)
-		seterrno_ret(ENOMEM, 0);
+		return 0;
 
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-') {   /* do NOT allow negative numbers */
 			error("%s: Invalid range: `%s'", __func__, orig);
-			free(orig);
+			xfree(orig);
 			return 0;
 		}
 	}
@@ -1355,7 +1354,7 @@ static int _parse_single_range(char *str, struct _range *range)
 
 	if ((q == str) || *q) {
 		error("%s: Invalid range: `%s'", __func__, orig);
-		free(orig);
+		xfree(orig);
 		return 0;
 	}
 
@@ -1363,23 +1362,23 @@ static int _parse_single_range(char *str, struct _range *range)
 
 	if ((q == p) || *q || (range->hi == ULONG_MAX)) {
 		error("%s: Invalid range: `%s'", __func__, orig);
-		free(orig);
+		xfree(orig);
 		return 0;
 	}
 
 	if (range->lo > range->hi) {
 		error("%s: Invalid range: `%s'", __func__, orig);
-		free(orig);
+		xfree(orig);
 		return 0;
 	}
 
 	if (range->hi - range->lo + 1 > MAX_RANGE) {
 		error("%s: Too many hosts in range `%s'", __func__, orig);
-		free(orig);
+		xfree(orig);
 		return 0;
 	}
 
-	free(orig);
+	xfree(orig);
 	return 1;
 }
 
@@ -1504,7 +1503,7 @@ static hostlist_t *_hostlist_create_bracketed(const char *hostlist, char *sep,
 	if (hostlist == NULL)
 		return new;
 
-	if (!(orig = str = strdup(hostlist))) {
+	if (!(orig = str = try_xstrdup(hostlist))) {
 		hostlist_destroy(new);
 		return NULL;
 	}
@@ -1537,14 +1536,14 @@ static hostlist_t *_hostlist_create_bracketed(const char *hostlist, char *sep,
 	}
 	xfree(ranges);
 
-	free(orig);
+	xfree(orig);
 	return new;
 
 error:
 	err = errno = EINVAL;
 	hostlist_destroy(new);
 	xfree(ranges);
-	free(orig);
+	xfree(orig);
 	seterrno_ret(err, NULL);
 }
 
