@@ -1728,7 +1728,7 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 
 	env_array_merge(&new_env,
 			(const char **) req->environment);
-	env_array_free(req->environment);
+	FREE_NULL_ENV(req->environment, &req->envc);
 	req->environment = new_env;
 	req->envc = envcount(new_env);
 
