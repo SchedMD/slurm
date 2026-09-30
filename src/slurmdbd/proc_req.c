@@ -1460,7 +1460,6 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 
 	list_msg.my_list =
 		acct_storage_g_get_reservations(slurmdbd_conn->db_conn,
-						slurmdbd_conn->auth_uid,
 						get_msg->cond);
 
 	if (!errno) {

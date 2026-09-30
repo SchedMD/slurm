@@ -2108,9 +2108,9 @@ extern list_t *acct_storage_p_get_wckeys(void *db_conn,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_reservations(
-	void *db_conn, uid_t uid,
-	slurmdb_reservation_cond_t *resv_cond)
+extern list_t *acct_storage_p_get_reservations(void *db_conn,
+					       slurmdb_reservation_cond_t
+						       *resv_cond)
 {
 	persist_msg_t req = {0}, resp = {0};
 	dbd_cond_msg_t get_msg;

@@ -3655,11 +3655,11 @@ extern list_t *acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn,
 				   wckey_cond);
 }
 
-extern list_t *acct_storage_p_get_reservations(
-	mysql_conn_t *mysql_conn, uid_t uid,
-	slurmdb_reservation_cond_t *resv_cond)
+extern list_t *acct_storage_p_get_reservations(mysql_conn_t *mysql_conn,
+					       slurmdb_reservation_cond_t
+						       *resv_cond)
 {
-	return as_mysql_get_resvs(mysql_conn, uid, resv_cond);
+	return as_mysql_get_resvs(mysql_conn, mysql_conn->auth_uid, resv_cond);
 }
 
 extern list_t *acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,

@@ -498,9 +498,9 @@ extern list_t *acct_storage_p_get_wckeys(void *db_conn,
 	return NULL;
 }
 
-extern list_t *acct_storage_p_get_reservations(
-	void *db_conn, uid_t uid,
-	slurmdb_reservation_cond_t *resv_cond)
+extern list_t *acct_storage_p_get_reservations(void *db_conn,
+					       slurmdb_reservation_cond_t
+						       *resv_cond)
 {
 	return NULL;
 }
