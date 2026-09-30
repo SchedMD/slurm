@@ -297,7 +297,7 @@ static const char *syms[] = {
 	"jobacct_storage_p_job_complete",
 	"jobacct_storage_p_step_start",
 	"jobacct_storage_p_step_complete",
-	"jobacct_storage_p_suspend",
+	"jobacct_storage_p_job_suspend",
 	"jobacct_storage_p_get_jobs_cond",
 	"jobacct_storage_p_archive",
 	"jobacct_storage_p_archive_load",

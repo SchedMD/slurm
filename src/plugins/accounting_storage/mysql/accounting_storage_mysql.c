@@ -3849,8 +3849,8 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 /*
  * load into the storage a suspension of a job
  */
-extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
-				     job_record_t *job_ptr)
+extern int jobacct_storage_p_job_suspend(mysql_conn_t *mysql_conn,
+					 job_record_t *job_ptr)
 {
 	return as_mysql_suspend(mysql_conn, 0, job_ptr);
 }

@@ -671,7 +671,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 /*
  * load into the storage a suspension of a job
  */
-extern int jobacct_storage_p_suspend(void *db_conn, job_record_t *job_ptr)
+extern int jobacct_storage_p_job_suspend(void *db_conn, job_record_t *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
