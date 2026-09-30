@@ -752,7 +752,7 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 		result = run_command(&run_command_args);
 		log_flag(NAMESPACE, "UserNSScript rc: %d, stdout: %s",
 			 rc, result);
-		env_array_free(run_command_args.env);
+		FREE_NULL_ENV(run_command_args.env, NULL);
 		xfree(result);
 
 		if (rc)
