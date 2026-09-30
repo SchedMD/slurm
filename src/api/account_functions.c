@@ -70,8 +70,8 @@ extern char *slurmdb_accounts_add_cond(void *db_conn,
 	if (db_api_uid == -1)
 		db_api_uid = getuid();
 
-	return acct_storage_g_add_accounts_cond(
-		db_conn, db_api_uid, add_assoc, acct);
+	return acct_storage_g_add_accts_cond(db_conn, db_api_uid, add_assoc,
+					     acct);
 }
 
 /*

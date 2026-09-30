@@ -412,11 +412,10 @@ static int _add_accounts_cond(slurmdbd_conn_t *slurmdbd_conn,
 	 * until we process it through the database.
 	 */
 
-	if (!(comment =
-		      acct_storage_g_add_accounts_cond(slurmdbd_conn->db_conn,
-						       slurmdbd_conn->auth_uid,
-						       modify_msg->cond,
-						       modify_msg->rec))) {
+	if (!(comment = acct_storage_g_add_accts_cond(slurmdbd_conn->db_conn,
+						      slurmdbd_conn->auth_uid,
+						      modify_msg->cond,
+						      modify_msg->rec))) {
 		free_comment = false;
 		rc = errno;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, true);

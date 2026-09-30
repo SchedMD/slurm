@@ -481,10 +481,9 @@ extern int acct_storage_g_add_accts(void *db_conn, uint32_t uid,
 	return (*(ops.add_accts))(db_conn, uid, acct_list);
 }
 
-extern char *acct_storage_g_add_accounts_cond(
-	void *db_conn, uint32_t uid,
-	slurmdb_add_assoc_cond_t *add_assoc,
-	slurmdb_account_rec_t *acct)
+extern char *acct_storage_g_add_accts_cond(void *db_conn, uint32_t uid,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_account_rec_t *acct)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
