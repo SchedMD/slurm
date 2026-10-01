@@ -1961,6 +1961,17 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	return buffer;
 }
 
+extern int slurmdbd_pack_rpc_body(slurmdbd_msg_type_t type, void *body,
+				  uint16_t rpc_version, buf_t *buffer)
+{
+	slurmdbd_msg_t req = {
+		.msg_type = type,
+		.data = body,
+	};
+
+	return _pack_slurmdbd_body(&req, rpc_version, buffer);
+}
+
 static int _unpack_slurmdbd_body(slurmdbd_msg_t *resp, uint16_t rpc_version,
 				 buf_t *buffer)
 {
@@ -2191,4 +2202,23 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 
 unpack_error:
 	return SLURM_ERROR;
+}
+
+extern int slurmdbd_unpack_rpc_body(slurmdbd_msg_type_t type, void **body,
+				    uint16_t rpc_version, buf_t *buffer)
+{
+	slurmdbd_msg_t resp = {
+		.msg_type = type,
+	};
+	int rc = _unpack_slurmdbd_body(&resp, rpc_version, buffer);
+
+	xassert(!*body);
+	*body = NULL;
+
+	if (!rc)
+		*body = resp.data;
+	else
+		slurmdbd_free_msg(&resp);
+
+	return rc;
 }
