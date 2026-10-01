@@ -1004,6 +1004,7 @@ typedef struct {
 	uint32_t het_job_offset;
 	uint32_t jobid;
 	char	*jobname;
+	char *layout; /* comma-separated key=value pairs */
 	char *lineage;		   /* Complete path up the hierarchy to the root
 				    * association */
 	char *licenses;

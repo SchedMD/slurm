@@ -1082,7 +1082,14 @@ extern void print_fields(type_t type, void *object)
 		{
 			char *name = NULL;
 
+			/*
+			 * A job row shows the layout the job asked for, a step
+			 * row how the step's tasks were distributed.
+			 */
 			switch(type) {
+			case JOB:
+				name = xstrdup(job->layout);
+				break;
 			case JOBSTEP:
 				name = slurm_step_layout_type_name(
 					step->task_dist);

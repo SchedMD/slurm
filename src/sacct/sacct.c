@@ -82,7 +82,7 @@ print_field_t fields[] = {
 	{-12, "JobID", print_fields_str, PRINT_JOBID},
 	{-12, "JobIDRaw", print_fields_str, PRINT_JOBIDRAW},
 	{10, "JobName", print_fields_str, PRINT_JOBNAME},
-	{9,  "Layout", print_fields_str, PRINT_LAYOUT},
+	{20, "Layout", print_fields_str, PRINT_LAYOUT},
 	{10, "Licenses", print_fields_str, PRINT_LICENSES},
 	{12, "MaxDiskRead", print_fields_str, PRINT_MAXDISKREAD},
 	{15, "MaxDiskReadNode", print_fields_str, PRINT_MAXDISKREADNODE},
