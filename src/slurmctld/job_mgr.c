@@ -15382,6 +15382,30 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	if (job_desc->layout) {
+		/* An empty layout clears it */
+		char *layout = job_desc->layout[0] ? job_desc->layout : NULL;
+
+		if (!xstrcmp(layout, job_ptr->layout)) {
+			sched_debug("%s: new layout identical to old layout %s",
+				    __func__, job_ptr->layout);
+		} else if (!IS_JOB_PENDING(job_ptr)) {
+			/*
+			 * The layout already went out in the credential, so a
+			 * change would be recorded but never reach the prolog,
+			 * the switch plugin or the steps.
+			 */
+			error_code = ESLURM_JOB_NOT_PENDING;
+			goto fini;
+		} else {
+			xfree(job_ptr->layout);
+			job_ptr->layout = xstrdup(layout);
+			sched_info("%s: setting Layout to %s for %pJ",
+				   __func__, job_ptr->layout, job_ptr);
+			update_accounting = true;
+		}
+	}
+
 	if (job_desc->fed_siblings_viable) {
 		if (!job_ptr->fed_details) {
 			error_code = ESLURM_JOB_NOT_FEDERATED;

@@ -4040,6 +4040,7 @@ function __scontrol_update_jobid() {
 		"gres="
 		"jobid="   # meta
 		"jobname=" # meta
+		"layout="
 		"licenses="
 		"mailtype="
 		"mailuser="
