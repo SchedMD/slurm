@@ -14246,6 +14246,15 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		msg->protocol_version = SLURM_PROTOCOL_VERSION;
 	}
 
+	if ((msg->msg_type > SLURM_DBD_MESSAGES_START) &&
+	    (msg->msg_type < SLURM_DBD_MESSAGES_END) &&
+	    (msg->msg_type != SLURM_PERSIST_RC)) {
+		/* PERSIST_RC is handled by its own case below. */
+		/* slurmdbd message: body only, no DBD type. */
+		return slurmdbd_pack_rpc_body(msg->msg_type, msg->data,
+					      msg->protocol_version, buffer);
+	}
+
 	switch (msg->msg_type) {
 	case RESPONSE_ASSOC_MGR_INFO:
 	case RESPONSE_BURST_BUFFER_INFO:
