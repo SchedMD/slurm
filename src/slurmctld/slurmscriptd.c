@@ -42,6 +42,7 @@
 #endif
 
 #include <fcntl.h>
+#include <limits.h>
 #include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -607,11 +608,16 @@ static int _run_script(run_command_args_t *run_command_args,
 	bool killed = false;
 	int tmp_fd = 0;
 	uint32_t job_id = script_msg->job_id;
-	int timeout = script_msg->timeout;
+	uint32_t timeout = script_msg->timeout;
 	char *tmp_file_env_name = script_msg->tmp_file_env_name;
 	char *tmp_file_str = script_msg->tmp_file_str;
 
-	if ((timeout <= 0) || (timeout == NO_VAL16))
+	/*
+	 * run_command() takes milliseconds as an int. Wait indefinitely for
+	 * timeouts that do not fit, such as INFINITE.
+	 */
+	if (!timeout || (timeout == NO_VAL16) ||
+	    (timeout > (INT_MAX / MSEC_IN_SEC)))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
 	else
 		ms_timeout = timeout * MSEC_IN_SEC;
