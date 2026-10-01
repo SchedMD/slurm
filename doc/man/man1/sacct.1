@@ -912,8 +912,12 @@ in place of the space.
 
 .TP
 \f3Layout\fP
-What the layout of a step was when it was running. This can be used
-to give you an idea of which node ran which rank in your job.
+Means different things on job rows and step rows.
+On a job row, it is the layout given to the job with \fB\-\-layout\fR or
+\fBscontrol update\fR, a comma\-separated list of key=value pairs.
+It is empty if the job has no layout.
+On a step row, it is how the tasks of the step were distributed when it ran,
+such as Block or Cyclic, which shows which node ran which rank.
 .IP
 
 .TP
