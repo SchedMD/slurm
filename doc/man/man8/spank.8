@@ -555,7 +555,7 @@ salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
 salloc @slurm_spank_init                 @local     @1        @no          @yes
 salloc @slurm_spank_init_post_opt        @local     @1        @no          @yes
 salloc @slurm_spank_local_user_init      @local     @1        @no          @yes
-salloc @slurm_spank_init                 @remote    @1        @no          @no
+salloc @slurm_spank_init                 @remote    @1        @no          @yes
 salloc @slurm_spank_user_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
 salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
@@ -607,6 +607,11 @@ cells assume that \fBsrun\fR's exit status reaches the client and the job.
 with \fB\-\-wait\fR, and otherwise still exits 0. The job fails only if the
 enclosing command or batch script propagates \fBsrun\fR's exit status; a
 batch script that discards it completes normally.
+.LP
+A failure of \fBslurm_spank_init\fR in remote context only fails the step.
+Under \fBsrun\fR the job is not failed. Under \fBsalloc\fR the job fails only
+if the command that \fBsalloc\fR runs exits non\-zero, as it does when that
+command is an \fBsrun\fR whose step failed.
 .LP
 \fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
 timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
