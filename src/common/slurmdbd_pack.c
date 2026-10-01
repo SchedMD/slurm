@@ -1961,20 +1961,11 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	return buffer;
 }
 
-extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
-			       buf_t *buffer)
+static int _unpack_slurmdbd_body(slurmdbd_msg_t *resp, uint16_t rpc_version,
+				 buf_t *buffer)
 {
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t msg;
-
-	safe_unpack16(&resp->msg_type, buffer);
-
-	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("slurmdbd: Invalid message version=%hu, type:%s",
-		      rpc_version,
-		      slurmdbd_msg_type_2_str(resp->msg_type, true));
-		return SLURM_ERROR;
-	}
 
 	switch (resp->msg_type) {
 	case PERSIST_RC:
@@ -2182,6 +2173,21 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 		return SLURM_ERROR;
 	}
 	return rc;
+}
+
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
+			       buf_t *buffer)
+{
+	safe_unpack16(&resp->msg_type, buffer);
+
+	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("slurmdbd: Invalid message version=%hu, type:%s",
+		      rpc_version,
+		      slurmdbd_msg_type_2_str(resp->msg_type, true));
+		return SLURM_ERROR;
+	}
+
+	return _unpack_slurmdbd_body(resp, rpc_version, buffer);
 
 unpack_error:
 	return SLURM_ERROR;
