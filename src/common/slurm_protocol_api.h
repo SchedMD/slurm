@@ -420,11 +420,11 @@ extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
  * Handles creating response slurm_msg_t and sending based on source_msg.
  *
  * IN source_msg - Message to send response about
- * IN msg_type - RPC message type
+ * IN msg_type - RPC message type (slurm_msg_type_t or slurmdbd_msg_type_t)
  * IN data - pointer to message data which corresponds to msg_type
  * RET SLURM_SUCCESS or error
  */
-extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+extern int send_msg_response(slurm_msg_t *source_msg, uint16_t msg_type,
 			     void *data);
 
 /* slurm_send_rc_msg

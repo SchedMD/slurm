@@ -2024,7 +2024,7 @@ extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	resp_msg->flags |= SLURM_NO_AUTH_CRED;
 }
 
-extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
+extern int send_msg_response(slurm_msg_t *source_msg, uint16_t msg_type,
 			     void *data)
 {
 	int rc;
