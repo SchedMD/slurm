@@ -138,6 +138,7 @@ typedef struct {
 	char *job_db_inx;
 	char *jobid;
 	char *kill_requid;
+	char *layout;
 	char *licenses;
 	char *mcs_label;
 	char *mod_time;
@@ -222,6 +223,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->job_db_inx);
 		xfree(object->jobid);
 		xfree(object->kill_requid);
+		xfree(object->layout);
 		xfree(object->licenses);
 		xfree(object->mcs_label);
 		xfree(object->mod_time);
@@ -598,6 +600,7 @@ static char *job_req_inx[] = {
 	"job_db_inx",
 	"id_job",
 	"kill_requid",
+	"layout",
 	"licenses",
 	"mcs_label",
 	"mod_time",
@@ -666,6 +669,7 @@ enum {
 	JOB_REQ_DB_INX,
 	JOB_REQ_JOBID,
 	JOB_REQ_KILL_REQUID,
+	JOB_REQ_LAYOUT,
 	JOB_REQ_LICENSES,
 	JOB_REQ_MCS_LABEL,
 	JOB_REQ_MOD_TIME,
@@ -1083,6 +1087,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->job_db_inx, buffer);
 	packstr(object->jobid, buffer);
 	packstr(object->kill_requid, buffer);
+	packstr(object->layout, buffer);
 	packstr(object->licenses, buffer);
 	packstr(object->mcs_label, buffer);
 	packstr(object->mod_time, buffer);
@@ -1160,6 +1165,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->job_db_inx, buffer);
 		safe_unpackstr(&object->jobid, buffer);
 		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr(&object->layout, buffer);
 		safe_unpackstr(&object->licenses, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);
 		safe_unpackstr(&object->mod_time, buffer);
@@ -3927,6 +3933,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.job_db_inx = row[JOB_REQ_DB_INX];
 		job.jobid = row[JOB_REQ_JOBID];
 		job.kill_requid = row[JOB_REQ_KILL_REQUID];
+		job.layout = row[JOB_REQ_LAYOUT];
 		job.licenses = row[JOB_REQ_LICENSES];
 		job.mcs_label = row[JOB_REQ_MCS_LABEL];
 		job.mod_time = row[JOB_REQ_MOD_TIME];
@@ -4035,6 +4042,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_EXCLUSIVE,
 		JOB_REQ_EXTRA,
 		JOB_REQ_KILL_REQUID,
+		JOB_REQ_LAYOUT,
 		JOB_REQ_LICENSES,
 		JOB_REQ_MCS_LABEL,
 		JOB_REQ_NODELIST,
@@ -4115,6 +4123,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.kill_requid == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+		if (!object.layout)
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
@@ -4224,6 +4236,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.extra,
 			     (object.kill_requid == NULL) ?
 			     "NULL" : object.kill_requid,
+			     !object.layout ? "NULL" : object.layout,
 			     (object.licenses == NULL) ?
 			     "NULL" : object.licenses,
 			     (object.mcs_label == NULL) ?
