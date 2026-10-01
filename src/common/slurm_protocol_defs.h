@@ -243,6 +243,7 @@
 #define RESV_FREE_STR_COMMENT   SLURM_BIT(7)
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
 #define RESV_FREE_STR_TRES      SLURM_BIT(9)
+#define RESV_FREE_STR_KV SLURM_BIT(10)
 
 #ifndef __job_record_t_defined
 #  define __job_record_t_defined

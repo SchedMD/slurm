@@ -64,6 +64,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/parse_time.h"
 #include "src/common/run_command.h"
 #include "src/common/slurm_time.h"
@@ -619,6 +620,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->accounts = xstrdup(resv_orig_ptr->accounts);
 	resv_copy_ptr->boot_time = resv_orig_ptr->boot_time;
 	resv_copy_ptr->burst_buffer = xstrdup(resv_orig_ptr->burst_buffer);
+	(void) data_clone(resv_orig_ptr->kv, resv_copy_ptr->kv);
 	resv_copy_ptr->account_cnt = resv_orig_ptr->account_cnt;
 	resv_copy_ptr->account_list = xcalloc(resv_orig_ptr->account_cnt,
 					      sizeof(char *));
@@ -717,6 +719,10 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	xfree(dest_resv->burst_buffer);
 	dest_resv->burst_buffer = src_resv->burst_buffer;
 	src_resv->burst_buffer = NULL;
+
+	FREE_NULL_DATA(dest_resv->kv);
+	dest_resv->kv = src_resv->kv;
+	src_resv->kv = NULL;
 
 	FREE_NULL_BITMAP(dest_resv->core_bitmap);
 	dest_resv->core_bitmap = src_resv->core_bitmap;
@@ -847,6 +853,7 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->burst_buffer);
+		FREE_NULL_DATA(resv_ptr->kv);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		free_job_resources(&resv_ptr->core_resrcs);
 		xfree(resv_ptr->features);
@@ -2831,6 +2838,8 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		packstr(resv_ptr->accounts,	buffer);
 		packstr(resv_ptr->burst_buffer,	buffer);
 		packstr(resv_ptr->comment,	buffer);
+		if (pack_data(resv_ptr->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		pack32(resv_ptr->core_cnt,	buffer);
 		pack_time(end_relative,		buffer);
 		packstr(resv_ptr->features,	buffer);
@@ -3059,6 +3068,8 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpackstr(&resv_ptr->accounts, buffer);
 		safe_unpackstr(&resv_ptr->burst_buffer, buffer);
 		safe_unpackstr(&resv_ptr->comment, buffer);
+		resv_ptr->kv = data_new();
+		safe_unpack_data(resv_ptr->kv, protocol_version, buffer);
 		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
 		safe_unpackstr(&resv_ptr->features, buffer);

@@ -2225,6 +2225,8 @@ static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	resv_desc_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		packstr(msg->name, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time, buffer);
@@ -2245,6 +2247,9 @@ static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->burst_buffer, buffer);
 		packstr(msg->groups, buffer);
 		packstr(msg->comment, buffer);
+		if (pack_data(msg->kv, smsg->protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		pack16(kv_op, buffer);
 		packstr(msg->tres_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
@@ -2298,6 +2303,8 @@ static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 	resv_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpackstr(&msg->name, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpack_time(&msg->end_time, buffer);
@@ -2321,6 +2328,10 @@ static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->burst_buffer, buffer);
 		safe_unpackstr(&msg->groups, buffer);
 		safe_unpackstr(&msg->comment, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpackstr(&msg->tres_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->name, buffer);
@@ -3675,6 +3686,8 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
 		safe_unpackstr(&resv->comment, buffer);
+		resv->kv = data_new();
+		safe_unpack_data(resv->kv, protocol_version, buffer);
 		safe_unpack32(&resv->core_cnt, buffer);
 		safe_unpack_time(&resv->end_time, buffer);
 		safe_unpackstr(&resv->features, buffer);

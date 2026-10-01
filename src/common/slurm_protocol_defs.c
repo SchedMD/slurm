@@ -2148,6 +2148,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
+	if (res_free_flags & RESV_FREE_STR_KV)
+		FREE_NULL_DATA(msg->kv);
 	if (res_free_flags & RESV_FREE_STR_ALLOWED_PARTS)
 		xfree(msg->allowed_parts);
 	if (res_free_flags & RESV_FREE_STR_QOS)
@@ -4745,6 +4747,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 		xfree(resv->allowed_parts);
 		xfree(resv->burst_buffer);
 		xfree(resv->comment);
+		FREE_NULL_DATA(resv->kv);
 		if (resv->core_spec) {
 			for (i = 0; i < resv->core_spec_cnt; i++) {
 				xfree(resv->core_spec[i].node_name);
