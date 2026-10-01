@@ -14789,6 +14789,16 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		return SLURM_ERROR;
 	}
 
+	if ((msg->msg_type > SLURM_DBD_MESSAGES_START) &&
+	    (msg->msg_type < SLURM_DBD_MESSAGES_END) &&
+	    (msg->msg_type != SLURM_PERSIST_RC)) {
+		/* PERSIST_RC is handled by its own case below. */
+		/* slurmdbd message: body only, no DBD type. */
+		rc = slurmdbd_unpack_rpc_body(msg->msg_type, &msg->data,
+					      msg->protocol_version, buffer);
+		goto cleanup;
+	}
+
 	switch (msg->msg_type) {
 	case REQUEST_NODE_INFO:
 		rc = _unpack_node_info_request_msg(msg, buffer);
@@ -15339,6 +15349,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	}
 
+cleanup:
 	if (rc) {
 		error("Malformed RPC of type %s(%u) received",
 		      rpc_num2string(msg->msg_type), msg->msg_type);
