@@ -1464,6 +1464,7 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 		break;
 	case OPENAPI_FORMAT_BOOL:
 		data_set_bool(dst, false);
+		break;
 	case OPENAPI_FORMAT_OBJECT:
 		data_set_dict(dst);
 		break;
@@ -1475,7 +1476,8 @@ static void _dump_removed(const parser_t *parser, data_t *dst, args_t *args)
 		/* Should never happen but avoid crashing clients */
 		xassert(false);
 		data_set_null(dst);
-	};
+		break;
+	}
 }
 
 static int _dump_linked(args_t *args, const parser_t *const array,
