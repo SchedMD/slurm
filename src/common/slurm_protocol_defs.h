@@ -350,6 +350,12 @@ typedef struct slurm_msg {
 				 * with the connection before sending the
 				 * message so that it is handled correctly. */
 	conmgr_fd_ref_t *conmgr_con; /* msg originates from conmgr connection */
+	/*
+	 * DON'T PACK OR FREE! If set, send_msg_response() stores the packed
+	 * response here instead of sending it on the connection, as for a
+	 * request batched inside another (DBD_SEND_MULT_MSG). NULL otherwise.
+	 */
+	buf_t **resp_buf;
 	void *data;
 	header_flags_t flags;
 	uint8_t hash_index;	/* DON'T PACK: zero for normal communication.

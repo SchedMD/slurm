@@ -2037,6 +2037,34 @@ extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	resp_msg->flags |= SLURM_NO_AUTH_CRED;
 }
 
+/* Pack resp as a persistent-connection payload [msg_type][body]. */
+static int _pack_persist_payload(slurm_msg_t *resp, buf_t **payload)
+{
+	msg_bufs_t buffers = { 0 };
+	int rc = EINVAL;
+
+	xassert(!*payload);
+
+	if ((rc = slurm_buffers_pack_msg(resp, &buffers, false)))
+		goto cleanup;
+
+	if (!(*payload = try_init_buf(INFINITE))) {
+		rc = ENOMEM;
+		goto cleanup;
+	}
+
+	if (!(rc = buf_append_buf(*payload, buffers.header)))
+		rc = buf_append_buf(*payload, buffers.body);
+
+cleanup:
+	FREE_NULL_MSG_BUFS_MEMBERS(buffers);
+
+	if (rc)
+		FREE_NULL_BUFFER(*payload);
+
+	return rc;
+}
+
 extern int send_msg_response(slurm_msg_t *source_msg, uint16_t msg_type,
 			     void *data)
 {
@@ -2044,6 +2072,13 @@ extern int send_msg_response(slurm_msg_t *source_msg, uint16_t msg_type,
 	slurm_msg_t resp_msg;
 
 	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
+
+	/* Store the packed response instead of sending it. */
+	if (source_msg->resp_buf) {
+		xassert(source_msg->flags & SLURM_PERSIST_MSG);
+		xassert(!*source_msg->resp_buf);
+		return _pack_persist_payload(&resp_msg, source_msg->resp_buf);
+	}
 
 	if (source_msg->conmgr_con) {
 		rc = conmgr_con_queue_write_msg(source_msg->conmgr_con,
