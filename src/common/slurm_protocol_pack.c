@@ -2077,10 +2077,15 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	xassert(msg);
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
 		packstr(msg->allow_qos, buffer);
+		if (pack_data(msg->kv, smsg->protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		pack16(kv_op, buffer);
 		packstr(msg->alternate, buffer);
 		packstr(msg->billing_weights_str, buffer);
 
@@ -2154,10 +2159,16 @@ static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 	partition_info_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpackstr(&msg->allow_accounts, buffer);
 		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
 		safe_unpackstr(&msg->allow_groups, buffer);
 		safe_unpackstr(&msg->allow_qos, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpackstr(&msg->alternate, buffer);
 		safe_unpackstr(&msg->billing_weights_str, buffer);
 
@@ -3586,6 +3597,8 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpackstr(&part->allow_groups, buffer);
 		safe_unpackstr(&part->allow_alloc_nodes, buffer);
 		safe_unpackstr(&part->allow_qos, buffer);
+		part->kv = data_new();
+		safe_unpack_data(part->kv, protocol_version, buffer);
 		safe_unpackstr(&part->qos_char, buffer);
 		safe_unpackstr(&part->alternate, buffer);
 		safe_unpackstr(&part->deny_accounts, buffer);

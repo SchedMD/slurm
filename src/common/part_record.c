@@ -33,6 +33,7 @@
 
 #include "part_record.h"
 
+#include "src/common/pack_data.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 
@@ -117,6 +118,7 @@ extern void part_record_delete(part_record_t *part_ptr)
 	xfree(part_ptr->deny_qos);
 	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
 	FREE_NULL_LIST(part_ptr->job_defaults_list);
+	FREE_NULL_DATA(part_ptr->kv);
 	xfree(part_ptr->name);
 	xfree(part_ptr->orig_nodes);
 	xfree(part_ptr->nodes);
@@ -159,6 +161,8 @@ extern void part_record_pack(part_record_t *part_ptr,
 		packstr(part_ptr->allow_accounts, buffer);
 		packstr(part_ptr->allow_groups, buffer);
 		packstr(part_ptr->allow_qos, buffer);
+		if (pack_data(part_ptr->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		packstr(part_ptr->qos_char, buffer);
 		packstr(part_ptr->allow_alloc_nodes, buffer);
 		packstr(part_ptr->alternate, buffer);
@@ -235,6 +239,8 @@ extern int part_record_unpack(part_record_t **part,
 		safe_unpackstr(&part_ptr->allow_accounts, buffer);
 		safe_unpackstr(&part_ptr->allow_groups, buffer);
 		safe_unpackstr(&part_ptr->allow_qos, buffer);
+		part_ptr->kv = data_new();
+		safe_unpack_data(part_ptr->kv, protocol_version, buffer);
 		safe_unpackstr(&part_ptr->qos_char, buffer);
 		safe_unpackstr(&part_ptr->allow_alloc_nodes, buffer);
 		safe_unpackstr(&part_ptr->alternate, buffer);

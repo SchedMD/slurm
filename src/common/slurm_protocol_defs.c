@@ -4692,6 +4692,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->allow_accounts);
 		xfree(part->allow_groups);
 		xfree(part->allow_qos);
+		FREE_NULL_DATA(part->kv);
 		xfree(part->alternate);
 		xfree(part->billing_weights_str);
 		xfree(part->cluster_name);
