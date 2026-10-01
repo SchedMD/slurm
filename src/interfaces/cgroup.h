@@ -101,10 +101,10 @@ typedef enum {
 	CG_DEVICES,
 	CG_CPUACCT,
 	CG_DMEM,
+	CG_PIDS,
 	/* Below are extra controllers not explicitly tracked by Slurm. */
 	CG_IO,
 	CG_HUGETLB,
-	CG_PIDS,
 	CG_RDMA,
 	CG_MISC,
 	CG_CTL_CNT
@@ -158,6 +158,8 @@ typedef struct {
 	uint64_t soft_limit_in_bytes;
 	uint64_t memsw_limit_in_bytes;
 	uint64_t swappiness;
+	/* task pids */
+	uint32_t max_npids;
 } cgroup_limits_t;
 
 typedef struct {

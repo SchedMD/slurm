@@ -617,6 +617,7 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
 	limits->soft_limit_in_bytes = NO_VAL64;
 	limits->memsw_limit_in_bytes = NO_VAL64;
 	limits->swappiness = NO_VAL64;
+	limits->max_npids = NO_VAL;
 }
 
 /*
