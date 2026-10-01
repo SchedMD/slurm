@@ -1989,6 +1989,7 @@ typedef struct job_info {
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */
+	data_t *kv; /* KV metadata document */
 	time_t last_sched_eval; /* last time job was evaluated for scheduling */
 	char *layout; /* comma-separated key=value pairs */
 	char *licenses;		/* licenses required by the job */
