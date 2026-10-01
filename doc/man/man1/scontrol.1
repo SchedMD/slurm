@@ -1189,6 +1189,15 @@ individual job, the form <\fIArrayJobID\fP>_<\fIArrayTaskId\fP> must be used.
 .IP
 
 .TP
+\fBLayout\fR=<\fIkey\fR>=<\fIvalue\fR>[,<\fIkey\fR>=<\fIvalue\fR>...]
+The job's layout, as described for \fB\-\-layout\fR in \fBsalloc\fR(1),
+\fBsbatch\fR(1), and \fBsrun\fR(1).
+Only a pending job's layout can be changed, since a running job was given its
+layout when it started.
+An empty value clears the layout.
+.IP
+
+.TP
 \fBLicenses\fR=<\fIname\fR>
 Specification of licenses (or other resources available on all nodes
 of the cluster) as described in salloc/sbatch/srun man pages.
