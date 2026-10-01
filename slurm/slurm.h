@@ -2678,6 +2678,8 @@ typedef struct partition_info {
 	uint32_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
 	list_t *job_defaults_list; /* List of job_defaults_t elements */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* partition update operation */
 	char *job_defaults_str;	/* String of job defaults,
 				 * used only for partition update RPC */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
