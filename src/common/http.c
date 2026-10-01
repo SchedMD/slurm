@@ -392,7 +392,11 @@ extern int url_path_walk(const char *path, bool allow_templates,
 
 	/* extract each word */
 	for (const char *ptr = path; !rc && (*ptr != '\0'); ptr++) {
-		if (_is_valid_url_char(*ptr)) {
+		/*
+		 * Accept literal spaces even though rfc3986 does not, as
+		 * entries are kept exactly as given, including any spaces
+		 */
+		if (_is_valid_url_char(*ptr) || (*ptr == ' ')) {
 			char str[2] = { *ptr, '\0' };
 			xstrcatat(buffer, &buffer_at, str);
 			continue;

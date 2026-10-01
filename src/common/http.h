@@ -204,6 +204,7 @@ typedef int (*on_url_path_entry_t)(const char *entry, bool template, void *arg);
 
 /*
  * Walk each entry/dir in a URL path
+ * Entries are not trimmed and may contain literal spaces.
  * IN path - URL path to walk by each entry
  * IN allow_templates - Allow {variable} template entries
  * IN on_entry - Callback on each entry to call
