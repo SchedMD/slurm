@@ -2873,6 +2873,7 @@ typedef struct reserve_info {
 	char *allowed_parts; /* names of partitions permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document */
 	uint32_t core_cnt;	/* count of cores required */
 	uint32_t core_spec_cnt;	/* count of core_spec records */
 	resv_core_spec_t *core_spec; /* reserved cores specification */
