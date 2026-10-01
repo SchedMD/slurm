@@ -1706,6 +1706,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		FREE_NULL_IDENTITY(msg->id);
 		xfree(msg->job_id_str);
 		xfree(msg->job_size_str);
+		xfree(msg->layout);
 		xfree(msg->licenses);
 		xfree(msg->licenses_tot);
 		xfree(msg->mail_user);
@@ -1912,6 +1913,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		}
 		xfree(job->het_job_id_set);
 		xfree(job->job_size_str);
+		xfree(job->layout);
 		xfree(job->licenses);
 		xfree(job->licenses_allocated);
 		xfree(job->mail_user);

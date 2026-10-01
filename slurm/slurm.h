@@ -1753,6 +1753,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *job_size_str;
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
 				     * 0 otherwise,default=1 */
+	char *layout; /* comma-separated key=value pairs */
 	char *licenses;		/* licenses required by the job */
 	char *licenses_tot;	/* total licenses required by the job included
 				 * from tres requests as well, NOT PACKED */
@@ -1954,6 +1955,7 @@ typedef struct job_info {
 	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */
 	time_t last_sched_eval; /* last time job was evaluated for scheduling */
+	char *layout; /* comma-separated key=value pairs */
 	char *licenses;		/* licenses required by the job */
 	char *licenses_allocated; /* licenses allocated to the job */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */

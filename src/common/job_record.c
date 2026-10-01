@@ -272,6 +272,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	FREE_NULL_IDENTITY(job_ptr->id);
+	xfree(job_ptr->layout);
 	xfree(job_ptr->licenses);
 	xfree(job_ptr->licenses_allocated);
 	xfree(job_ptr->lic_req);
@@ -2352,6 +2353,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		pack32(dump_job_ptr->job_state, buffer);
 
 		pack_time(dump_job_ptr->last_sched_eval, buffer);
+		packstr(dump_job_ptr->layout, buffer);
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->licenses_allocated, buffer);
 
@@ -2729,6 +2731,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->job_state, buffer);
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
+		safe_unpackstr(&job_ptr->layout, buffer);
 		safe_unpackstr(&job_ptr->licenses, buffer);
 		safe_unpackstr(&job_ptr->licenses_allocated, buffer);
 

@@ -3605,6 +3605,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
+		safe_unpackstr(&job->layout, buffer);
 		safe_unpackstr(&job->licenses, buffer);
 		safe_unpackstr(&job->licenses_allocated, buffer);
 
@@ -7170,6 +7171,7 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack64(msg->bitflags, buffer);
 		pack32(msg->delay_boot, buffer);
 		packstr(msg->extra, buffer);
+		packstr(msg->layout, buffer);
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
 		packstr(msg->x11_target, buffer);
@@ -7764,6 +7766,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack64(&msg->bitflags, buffer);
 		safe_unpack32(&msg->delay_boot, buffer);
 		safe_unpackstr(&msg->extra, buffer);
+		safe_unpackstr(&msg->layout, buffer);
 		safe_unpack16(&msg->x11, buffer);
 		safe_unpackstr(&msg->x11_magic_cookie, buffer);
 		safe_unpackstr(&msg->x11_target, buffer);

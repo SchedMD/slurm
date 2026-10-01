@@ -3729,6 +3729,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->job_resrcs = NULL;
 
 	job_ptr_pend->id = copy_identity(job_ptr->id);
+	job_ptr_pend->layout = xstrdup(job_ptr->layout);
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_pend->licenses_allocated = NULL;
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
@@ -8926,6 +8927,9 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	job_ptr->extra = xstrdup(job_desc->extra);
+	/* An empty layout, as from --layout=, means none */
+	if (job_desc->layout && job_desc->layout[0])
+		job_ptr->layout = xstrdup(job_desc->layout);
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->runtime = xstrdup(job_desc->runtime);
@@ -19133,6 +19137,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
+	job_desc->layout = xstrdup(job_ptr->layout);
 	job_desc->licenses          = xstrdup(job_ptr->lic_req);
 	job_desc->mail_type         = job_ptr->mail_type;
 	job_desc->mail_user         = xstrdup(job_ptr->mail_user);
