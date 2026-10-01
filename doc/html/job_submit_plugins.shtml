@@ -261,6 +261,7 @@ to them:</p>
 <li><span class="commandline">features</span></li>
 <li><span class="commandline">gres</span> &mdash; legacy alias; clears
 <span class="commandline">tres_per_node</span>.</li>
+<li><span class="commandline">layout</span></li>
 <li><span class="commandline">licenses</span></li>
 <li><span class="commandline">mem_per_tres</span></li>
 <li><span class="commandline">prefer</span></li>
