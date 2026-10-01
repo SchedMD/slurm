@@ -1771,6 +1771,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *job_size_str;
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
 				     * 0 otherwise,default=1 */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv */
 	char *layout; /* comma-separated key=value pairs */
 	char *licenses;		/* licenses required by the job */
 	char *licenses_tot;	/* total licenses required by the job included
