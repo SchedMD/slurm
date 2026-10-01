@@ -362,6 +362,12 @@ NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 .TP
 \fB\-\-container\fR=<\fIpath_to_container\fR>
 Absolute path to OCI container bundle.
+The equal sign is required.
+Provided by the \fBruntime/oci\fR plugin.
+Requires \fBLaunchParameters=use_interactive_step\fR.
+The bundle applies to the interactive step; a command given to \fBsalloc\fR
+does not run in it and only receives \fBSLURM_CONTAINER\fR.
+A heterogeneous job uses only the first component's bundle.
 .IP
 
 .TP
@@ -2668,7 +2674,8 @@ Same as \fB\-C\fR, \fB\-\-constraint\fR
 
 .TP
 \fBSALLOC_CONTAINER\fR
-Same as \-\-container\fR.
+Same as \fB\-\-container\fR.
+Ignored when the job's runtime does not provide \fB\-\-container\fR.
 .IP
 
 .TP
@@ -2938,6 +2945,8 @@ Name of the cluster on which the job is executing.
 \fBSLURM_CONTAINER\fR
 OCI Bundle for job.
 Only set if \fB\-\-container\fR is specified.
+For a heterogeneous job, only \fBSLURM_CONTAINER_HET_GROUP_0\fR is set, from
+the first component.
 .IP
 
 .TP

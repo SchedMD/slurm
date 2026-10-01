@@ -471,6 +471,8 @@ This option applies to job and step allocations.
 .TP
 \fB\-\-container\fR=<\fIpath_to_container\fR>
 Absolute path to OCI container bundle.
+The equal sign is required.
+Provided by the \fBruntime/oci\fR plugin.
 .IP
 
 .TP
@@ -4435,6 +4437,7 @@ Same as \fB\-\-slurmd\-debug\fR.
 .TP
 \fBSRUN_CONTAINER\fR
 Same as \fB\-\-container\fR.
+Ignored when the job's runtime does not provide \fB\-\-container\fR.
 .IP
 
 .TP

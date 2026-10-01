@@ -441,40 +441,44 @@ configured and can be tested in Slurm.
 <a class="slurm_link" href="#request"></a>
 </h2>
 <p>
-<i>salloc</i>, <i>srun</i> and <i>sbatch</i> (in Slurm 21.08+) have the
-'--container' argument, which can be used to request container runtime
-execution. The requested job container will not be inherited by the steps
-called, excluding the batch and interactive steps.
-Steps started with <i>srun</i> from <i>salloc</i>'s interactive step
-(<b>LaunchParameters=use_interactive_step</b>) inherit the bundle through
-<b>SRUN_CONTAINER</b>, so they also run in the container, provided the
-interactive step's <i>srun</i> uses <i>runtime/oci</i>, which it does when that
-is the <b>DefRuntimePlugin</b>.
-For a heterogeneous job, only the first component's bundle is used.
+<i>salloc</i>, <i>srun</i> and <i>sbatch</i> have the '--container' argument,
+provided by the <i>runtime/oci</i> plugin, which can be used to request
+container runtime execution.
+The batch step and <i>salloc</i>'s interactive step run in the job's container.
+Any other step runs in a container only when it is given one, with its own
+'--container' or through <b>SRUN_CONTAINER</b>.
+Steps that <i>srun</i> starts inside <i>salloc</i>'s interactive step
+(<b>LaunchParameters=use_interactive_step</b>) inherit <b>SRUN_CONTAINER</b>
+from it, so they also run in the container, when that <i>srun</i> uses
+<i>runtime/oci</i>, as it does when that is the <b>DefRuntimePlugin</b>.
+That <i>srun</i> runs inside the container, so the image must provide it,
+along with the Slurm configuration and authentication it needs.
+For a heterogeneous job, <i>salloc</i> and the batch step use only the first
+component's bundle.
 </p>
 
 <ul>
 <li>Batch step inside of container:
-<pre>sbatch --container $ABS_PATH_TO_BUNDLE --wrap 'bash -c "cat /etc/*rel*"'
+<pre>sbatch --container="$ABS_PATH_TO_BUNDLE" --wrap 'bash -c "cat /etc/*rel*"'
 </pre></li>
 
 <li>Batch job with step 0 inside of container:
 <pre>
-sbatch --wrap 'srun bash -c "--container $ABS_PATH_TO_BUNDLE cat /etc/*rel*"'
+sbatch --wrap 'srun --container="$ABS_PATH_TO_BUNDLE" bash -c "cat /etc/*rel*"'
 </pre></li>
 
 <li>Interactive step inside of container:
-<pre>salloc --container $ABS_PATH_TO_BUNDLE bash -c "cat /etc/*rel*"</pre></li>
+<pre>salloc --container="$ABS_PATH_TO_BUNDLE"</pre></li>
 
 <li>Interactive job step 0 inside of container:
-<pre>salloc srun --container $ABS_PATH_TO_BUNDLE bash -c "cat /etc/*rel*"
+<pre>salloc srun --container="$ABS_PATH_TO_BUNDLE" bash -c "cat /etc/*rel*"
 </pre></li>
 
 <li>Job with step 0 inside of container:
-<pre>srun --container $ABS_PATH_TO_BUNDLE bash -c "cat /etc/*rel*"</pre></li>
+<pre>srun --container="$ABS_PATH_TO_BUNDLE" bash -c "cat /etc/*rel*"</pre></li>
 
 <li>Job with step 1 inside of container:
-<pre>srun srun --container $ABS_PATH_TO_BUNDLE bash -c "cat /etc/*rel*"
+<pre>srun srun --container="$ABS_PATH_TO_BUNDLE" bash -c "cat /etc/*rel*"
 </pre></li>
 </ul>
 
@@ -483,7 +487,7 @@ through PATH <i>before</i> they are sent to the container. If the container has
 a unique file structure, it may be necessary to give the full path to the
 command or specify <code>--export=NONE</code> to have the container define the
 PATH to be used:
-<pre>srun --container $ABS_PATH_TO_BUNDLE --export=NONE bash -c "cat /etc/*rel*"
+<pre>srun --container="$ABS_PATH_TO_BUNDLE" --export=NONE bash -c "cat /etc/*rel*"
 </pre></p>
 
 <h2 id="docker-scrun">Integration with Rootless Docker (Docker Engine v20.10+ & Slurm-23.02+)
@@ -894,7 +898,7 @@ runc --rootless=true spec --rootless</pre>
 	    </li>
 	    <li>Test running image:</li>
 	    <pre>
-srun --container ~/oci_images/alpine/ uptime</pre>
+srun --container="$HOME/oci_images/alpine/" uptime</pre>
 	    </li>
 	</ul>
     </ol>
@@ -907,7 +911,7 @@ mkdir -p ~/oci_images/
 cd ~/oci_images/
 skopeo copy docker://alpine:latest oci:alpine:latest
 umoci unpack --rootless --image alpine ~/oci_images/alpine
-srun --container ~/oci_images/alpine uptime</pre>
+srun --container="$HOME/oci_images/alpine" uptime</pre>
     </li>
 
     <li>
@@ -920,7 +924,7 @@ singularity pull alpine
 sudo singularity oci mount ~/oci_images/alpine/alpine_latest.sif ~/oci_images/alpine
 mv config.json singularity_config.json
 runc spec --rootless
-srun --container ~/oci_images/alpine/ uptime</pre>
+srun --container="$HOME/oci_images/alpine/" uptime</pre>
     </li>
 </ul>
 

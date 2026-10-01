@@ -418,6 +418,8 @@ NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 .TP
 \fB\-\-container\fR=<\fIpath_to_container\fR>
 Absolute path to OCI container bundle.
+The equal sign is required.
+Provided by the \fBruntime/oci\fR plugin.
 .IP
 
 .TP
@@ -3106,6 +3108,7 @@ Same as \fB\-C\fR, \fB\-\-constraint\fR
 .TP
 \fBSBATCH_CONTAINER\fR
 Same as \fB\-\-container\fR.
+Ignored when the job's runtime does not provide \fB\-\-container\fR.
 .IP
 
 .TP
