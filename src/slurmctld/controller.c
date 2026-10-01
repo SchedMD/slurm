@@ -1112,6 +1112,9 @@ int main(int argc, char **argv)
 				    &slurmctld_config.thread_id_acct_update,
 				    _acct_update_thread, NULL);
 
+		/* Start once the jobs holding HRES have been restored. */
+		hres_g_maintenance_start();
+
 		/*
 		 * If reconfiguring, we need to restart the gang scheduler.
 		 * Otherwise, gang scheduling was already started by
@@ -1136,6 +1139,12 @@ int main(int argc, char **argv)
 		_slurmctld_background(NULL);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
+		/*
+		 * Before agent_fini(), finishing plugin work may still launch
+		 * jobs. Before saving state, so HRES usage cannot change
+		 * mid-save.
+		 */
+		hres_g_controller_stop();
 		agent_fini();
 		/* kill all scripts running by the slurmctld */
 		track_script_flush();
