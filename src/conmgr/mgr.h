@@ -149,6 +149,8 @@ typedef enum {
 	FLAG_IS_TLS_SHUTTING_DOWN = SLURM_BIT(25),
 	/* True if TLS shutdown is ready to start */
 	FLAG_INITIATE_TLS_SHUTDOWN = SLURM_BIT(26),
+	/* True if on_quiesce() is queued or running */
+	FLAG_WAIT_ON_QUIESCE = SLURM_BIT(27),
 } con_flags_t;
 
 /* Mask over flags that track connection state */
@@ -158,7 +160,8 @@ typedef enum {
 	 FLAG_READ_EOF | FLAG_WRITE_EOF | FLAG_IS_CONNECTED | \
 	 FLAG_WORK_ACTIVE | FLAG_CAN_QUERY_OUTPUT_BUFFER | FLAG_IS_FIFO | \
 	 FLAG_IS_CHR | FLAG_IS_TLS_SHUTTING_DOWN | \
-	 FLAG_INITIATE_TLS_SHUTDOWN | FLAG_CLOSE_REQUESTED)
+	 FLAG_INITIATE_TLS_SHUTDOWN | FLAG_CLOSE_REQUESTED | \
+	 FLAG_WAIT_ON_QUIESCE)
 
 /* con_flags_t macro helpers to test, set, and unset flags */
 #define con_flag(con, flag) ((con)->flags & (flag))
