@@ -2051,6 +2051,16 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->selinux_context);
 	} else if (!xstrcmp(name, "site_factor")) {
 		lua_pushinteger(L, job_info->site_factor);
+	} else if (!xstrcmp(name, "sluid")) {
+		if (job_info->step_id.sluid) {
+			char sluid_str[SLUID_STR_BYTES];
+
+			print_sluid(job_info->step_id.sluid, sluid_str,
+				    sizeof(sluid_str));
+			lua_pushstring(L, sluid_str);
+		} else {
+			lua_pushnil(L);
+		}
 	} else if (!xstrcmp(name, "slurm_rc")) {
 		lua_pushinteger(L, job_info->job_exit_rc.rc);
 	} else if (!xstrcmp(name, "sockets_per_board")) {
