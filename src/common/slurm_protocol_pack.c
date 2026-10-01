@@ -2152,7 +2152,29 @@ static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	resv_desc_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->name, buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->end_time, buffer);
+		pack32(msg->duration, buffer);
+		pack64(msg->flags, buffer);
+		pack32(msg->node_cnt, buffer);
+		pack32(msg->core_cnt, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->licenses, buffer);
+		pack32(msg->max_start_delay, buffer);
+		packstr(msg->partition, buffer);
+		pack32(msg->purge_comp_time, buffer);
+		packstr(msg->allowed_parts, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->users, buffer);
+		packstr(msg->accounts, buffer);
+		packstr(msg->burst_buffer, buffer);
+		packstr(msg->groups, buffer);
+		packstr(msg->comment, buffer);
+		packstr(msg->tres_str, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time, buffer);
@@ -2203,7 +2225,32 @@ static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t uint32_tmp = 0;
 	resv_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack32(&msg->duration, buffer);
+		safe_unpack64(&msg->flags, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
+		safe_unpack32(&msg->core_cnt, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->licenses, buffer);
+
+		safe_unpack32(&msg->max_start_delay, buffer);
+
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->purge_comp_time, buffer);
+
+		safe_unpackstr(&msg->allowed_parts, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->users, buffer);
+		safe_unpackstr(&msg->accounts, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpackstr(&msg->groups, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpackstr(&msg->tres_str, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->name, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpack_time(&msg->end_time, buffer);
@@ -3501,7 +3548,41 @@ static int
 _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 			     uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&resv->accounts, buffer);
+		safe_unpackstr(&resv->burst_buffer,buffer);
+		safe_unpackstr(&resv->comment, buffer);
+		safe_unpack32(&resv->core_cnt, buffer);
+		safe_unpack_time(&resv->end_time, buffer);
+		safe_unpackstr(&resv->features, buffer);
+		safe_unpack64(&resv->flags, buffer);
+		safe_unpackstr(&resv->licenses, buffer);
+		safe_unpack32(&resv->max_start_delay, buffer);
+		safe_unpackstr(&resv->name, buffer);
+		safe_unpack32(&resv->node_cnt, buffer);
+		safe_unpackstr(&resv->node_list, buffer);
+		safe_unpackstr(&resv->partition, buffer);
+		safe_unpack32(&resv->purge_comp_time, buffer);
+		safe_unpack_time(&resv->start_time, buffer);
+
+		safe_unpackstr(&resv->tres_str, buffer);
+		safe_unpackstr(&resv->users, buffer);
+		safe_unpackstr(&resv->groups, buffer);
+		safe_unpackstr(&resv->qos, buffer);
+		safe_unpackstr(&resv->allowed_parts, buffer);
+
+		unpack_bit_str_hex_as_inx(&resv->node_inx, buffer);
+
+		safe_unpack32(&resv->core_spec_cnt, buffer);
+		if (resv->core_spec_cnt > 0) {
+			safe_xcalloc(resv->core_spec, resv->core_spec_cnt,
+				     sizeof(resv_core_spec_t));
+		}
+		for (int i = 0; i < resv->core_spec_cnt; i++) {
+			safe_unpackstr(&resv->core_spec[i].node_name, buffer);
+			safe_unpackstr(&resv->core_spec[i].core_id, buffer);
+		}
+	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
 		safe_unpackstr(&resv->comment, buffer);
