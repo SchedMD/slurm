@@ -1628,6 +1628,12 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	 */
 	buffers->body = init_buf(INFINITE);
 	if ((rc = pack_msg(msg, buffers->body))) {
+		/* A list too large for one reply fails while packing. */
+		if ((msg->flags & SLURM_PERSIST_MSG) &&
+		    (rc == ESLURM_RESULT_TOO_LARGE)) {
+			FREE_NULL_BUFFER(buffers->body);
+			return ESLURM_RESULT_TOO_LARGE;
+		}
 		error("%s: packing %s failed: %s", __func__,
 		      rpc_num2string(msg->msg_type), slurm_strerror(rc));
 		/* pack_msg() can return SLURM_ERROR, which is not an errno */
@@ -1637,6 +1643,13 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	log_flag_hex(NET_RAW, get_buf_data(buffers->body),
 		     get_buf_offset(buffers->body),
 		     "%s: packed body", __func__);
+
+	/* The session authenticated at REQUEST_PERSIST_INIT. */
+	if (msg->flags & SLURM_PERSIST_MSG) {
+		buffers->header = init_buf(INFINITE);
+		pack16(msg->msg_type, buffers->header);
+		return SLURM_SUCCESS;
+	}
 
 	if (msg->flags & SLURM_NO_AUTH_CRED)
 		goto skip_auth1;
