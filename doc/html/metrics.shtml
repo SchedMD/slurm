@@ -157,7 +157,7 @@ job counts. Examples include:</p>
 <li><code>slurm_jobs_running</code> - Number of running jobs</li>
 <li><code>slurm_jobs_pending</code> - Number of pending jobs (see note)</li>
 <li><code>slurm_jobs_cpus_alloc</code> - Total CPUs allocated to jobs</li>
-<li><code>slurm_jobs_memory_alloc</code> - Total memory allocated to jobs</li>
+<li><code>slurm_jobs_memory_alloc</code> - Total memory allocated to jobs (MiB)</li>
 </ul>
 
 <p><b>NOTE</b>: In Slurm, pending jobs include both jobs waiting for resources
@@ -178,6 +178,10 @@ Examples include:</p>
  - Pending jobs for user "john"</li>
 <li><code>slurm_account_jobs_pending{account="smith"}</code>
  - Pending jobs for account "smith"</li>
+<li><code>slurm_user_jobs_memory_alloc{username="john"}</code>
+ - Total memory allocated to jobs for user "john" (MiB)</li>
+<li><code>slurm_account_jobs_memory_alloc{account="smith"}</code>
+ - Total memory allocated to jobs for account "smith" (MiB)</li>
 </ul>
 
 <h3 id="node_metrics">Node Metrics
@@ -210,7 +214,26 @@ partitions. Examples include:</p>
  - Jobs on the specified partition</li>
 <li><code>slurm_partition_nodes{partition="name"}</code>
  - Nodes on the specified partition</li>
+<li><code>slurm_partition_jobs_memory_alloc{partition="name"}</code>
+ - Total memory allocated to jobs in the specified partition (MiB)</li>
+<li><code>slurm_partition_nodes_mem_alloc{partition="name"}</code>
+ - Allocated memory of all nodes in the specified partition (MiB)</li>
+<li><code>slurm_partition_nodes_mem_avail{partition="name"}</code>
+ - Available memory of all nodes in the specified partition (MiB)</li>
+<li><code>slurm_partition_nodes_mem_free{partition="name"}</code>
+ - Free memory of all nodes in the specified partition (MiB)</li>
+<li><code>slurm_partition_nodes_mem_tot{partition="name"}</code>
+ - Total memory of all nodes in the specified partition (MiB)</li>
 </ul>
+
+<p><b>NOTE</b>: The partition node memory metrics above are reported in MiB,
+while the per-node memory metrics (<code>slurm_node_memory_bytes</code>,
+<code>slurm_node_memory_alloc_bytes</code>,
+<code>slurm_node_memory_effective_bytes</code> and
+<code>slurm_node_memory_free_bytes</code>) are reported in bytes. Both sum the
+same underlying node memory, so <code>sum(slurm_node_memory_bytes)</code> over
+the nodes of a partition is 1048576 times
+<code>slurm_partition_nodes_mem_tot</code> for that partition.</p>
 
 <p>The following metrics might be useful for
 <a href="https://slurm.schedmd.com/slinky.html">Slinky</a> or other systems
@@ -236,8 +259,10 @@ pending jobs that are not held in the partition.</li>
 Examples include:</p>
 
 <ul>
-<li><code>slurm_sched_cycle_cnt</code> - Scheduling cycle count</li>
-<li><code>slurm_sched_cycle_last</code> - Last scheduling cycle time</li>
+<li><code>slurm_schedule_cycle_cnt</code> - Scheduling cycle count</li>
+<li><code>slurm_schedule_cycle_last</code> - Last scheduling cycle time</li>
+<li><code>slurm_schedule_cycle_tot</code>
+ - Sum of all scheduling cycle times in microseconds</li>
 <li><code>slurm_bf_cycle_cnt</code> - Backfill cycle count</li>
 <li><code>slurm_bf_active</code>
  - Whether the backfill scheduler is currently running</li>

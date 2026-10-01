@@ -169,6 +169,14 @@ def test_alloc_metrics_jobs():
         pytest.fail("Unable to get metrics/jobs")
 
     jobs_output = atf.request_slurmctld("metrics/jobs").text
+    if atf.get_version() >= (26, 11):
+        # Ticket 25659: HELP text corrected to MiB in 26.11; an older
+        # slurmctld in a mixed-version run still emits the pre-fix
+        # "Total memory bytes allocated by jobs" text.
+        assert (
+            "# HELP slurm_jobs_memory_alloc Total memory allocated by jobs in MiB"
+            in jobs_output
+        ), f"Expected MiB HELP text for slurm_jobs_memory_alloc in output:\n{jobs_output}"
     assert_metric(
         jobs_output,
         "slurm_jobs_cpus_alloc",

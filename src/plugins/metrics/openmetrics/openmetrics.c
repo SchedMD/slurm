@@ -55,6 +55,7 @@ const char plugin_type[] = "metrics/openmetrics";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define PLUGIN_ID 0xcafebeef
+#define MIB_IN_BYTES (1024 * 1024)
 
 typedef struct openmetrics_set {
 	xhash_t *full_hash; /* metrics table exact {name,[key,val]*} lookup */
@@ -387,6 +388,10 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		if (!stats->node_stats_table[i])
 			continue;
 		node_stats_t *n = stats->node_stats_table[i];
+		uint64_t mem_alloc_bytes = n->mem_alloc * MIB_IN_BYTES;
+		uint64_t mem_avail_bytes = n->mem_avail * MIB_IN_BYTES;
+		uint64_t mem_free_bytes = n->mem_free * MIB_IN_BYTES;
+		uint64_t mem_total_bytes = n->mem_total * MIB_IN_BYTES;
 		// clang-format off
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_total, node_cpus, "Total number of cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_alloc, node_cpus_alloc, "Allocated cpus in the node", GAUGE, "node", n->name);
@@ -394,10 +399,10 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_idle, node_cpus_idle, "Idle cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->gpus_total, node_gpus, "Total number of GPUs in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->gpus_alloc, node_gpus_alloc, "Number of GPUs currently allocated by jobs on the node", GAUGE, "node", n->name);
-		ADD_METRIC_KEYVAL(set, UINT64, n->mem_alloc, node_memory_alloc_bytes, "Bytes allocated to jobs in the node", GAUGE, "node", n->name);
-		ADD_METRIC_KEYVAL(set, UINT64, n->mem_avail, node_memory_effective_bytes, "Memory allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
-		ADD_METRIC_KEYVAL(set, UINT64, n->mem_free, node_memory_free_bytes, "Free memory in bytes of the node", GAUGE, "node", n->name);
-		ADD_METRIC_KEYVAL(set, UINT64, n->mem_total, node_memory_bytes, "Total memory in bytes of the node", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, mem_alloc_bytes, node_memory_alloc_bytes, "Bytes allocated to jobs in the node", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, mem_avail_bytes, node_memory_effective_bytes, "Memory in bytes allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, mem_free_bytes, node_memory_free_bytes, "Free memory in bytes of the node", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, mem_total_bytes, node_memory_bytes, "Total memory in bytes of the node", GAUGE, "node", n->name);
 		// clang-format on
 		total_node_cnt++;
 	}
@@ -455,7 +460,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT64, stats->gpus_alloc, jobs_gpus_alloc, "Total number of GPUs allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->hold, jobs_hold, "Number of jobs in Hold state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->job_cnt, jobs, "Total number of jobs", GAUGE);
-	ADD_METRIC(set, UINT64, stats->memory_alloc, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE);
+	ADD_METRIC(set, UINT64, stats->memory_alloc, jobs_memory_alloc, "Total memory allocated by jobs in MiB", GAUGE);
 	ADD_METRIC(set, UINT32, stats->node_failed, jobs_node_failed, "Number of jobs in Node Failed state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->nodes_alloc, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->oom, jobs_outofmemory, "Number of jobs in Out of Memory state", GAUGE);
@@ -498,7 +503,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_hold, partition_jobs_hold, "Number of jobs in Hold state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_max_job_nodes, partition_jobs_max_job_nodes, "Max of the max_nodes required of all pending jobs in that partition", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_max_job_nodes_nohold, partition_jobs_max_job_nodes_nohold, "Max of the max_nodes required of all pending jobs in that partition excluding Held jobs", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->jobs_memory_alloc, partition_jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->jobs_memory_alloc, partition_jobs_memory_alloc, "Total memory allocated by jobs in MiB", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_min_job_nodes, partition_jobs_min_job_nodes, "Max of the min_nodes required of all pending jobs in that partition", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_min_job_nodes_nohold, partition_jobs_min_job_nodes_nohold, "Max of the min_nodes required of all pending jobs in that partition excluding Held jobs", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_node_failed, partition_jobs_node_failed, "Number of jobs in Node Failed state", GAUGE, "partition", ps->name);
@@ -535,10 +540,10 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_idle, partition_nodes_idle, "Nodes in Idle state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_invalid_reg, partition_nodes_invalid_reg, "Number of nodes with Invalid Registration flag", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_maint, partition_nodes_maint, "Nodes in maintenance state", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_alloc, partition_nodes_mem_alloc, "Amount of allocated memory of all nodes", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_avail, partition_nodes_mem_avail, "Amount of available memory of all nodes", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_free, partition_nodes_mem_free, "Amount of free memory in all nodes", GAUGE, "partition", ps->name);
-	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_total, partition_nodes_mem_tot, "Total amount of memory of all nodes", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_alloc, partition_nodes_mem_alloc, "Amount of allocated memory of all nodes in MiB", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_avail, partition_nodes_mem_avail, "Amount of available memory of all nodes in MiB", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_free, partition_nodes_mem_free, "Amount of free memory in all nodes in MiB", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_total, partition_nodes_mem_tot, "Total amount of memory of all nodes in MiB", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_mixed, partition_nodes_mixed, "Nodes in Mixed state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_no_resp, partition_nodes_no_resp, "Nodes in Not Responding state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->nodes_planned, partition_nodes_planned, "Nodes in Planned state", GAUGE, "partition", ps->name);
@@ -593,7 +598,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->gpus_alloc, pfx, jobs_gpus_alloc, "Total number of GPUs allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->hold, pfx, jobs_hold, "Number of jobs in Hold state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->job_cnt, pfx, jobs, "Total number of jobs", GAUGE, key, ua->name);
-	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->memory_alloc, pfx, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT64, js->memory_alloc, pfx, jobs_memory_alloc, "Total memory allocated by jobs in MiB", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->node_failed, pfx, jobs_node_failed, "Number of jobs in Node Failed state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->nodes_alloc, pfx, jobs_nodes_alloc, "Total number of nodes allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->oom, pfx, jobs_outofmemory, "Number of jobs in Out of Memory state", GAUGE, key, ua->name);
