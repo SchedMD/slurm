@@ -4956,6 +4956,7 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 	 * plugin Id.
 	 */
 	opt->runtime_idx = RUNTIME_IDX_INVALID;
+	runtime_g_cli_reset_args(opt->het_job_inx);
 }
 
 /*
