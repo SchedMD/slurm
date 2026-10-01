@@ -130,6 +130,7 @@ enum {
 	LONG_OPT_LINUX_IMAGE,
 	LONG_OPT_MAIL_TYPE,
 	LONG_OPT_MAIL_USER,
+	LONG_OPT_MAX_PIDS,
 	LONG_OPT_MCS_LABEL,
 	LONG_OPT_MEM,
 	LONG_OPT_MEM_BIND,
@@ -398,6 +399,7 @@ typedef struct {
 	char *gpus_per_task;		/* --gpus_per_task		*/
 
 	int pn_min_cpus;		/* --mincpus			*/
+	uint32_t max_npids;		/* --max-pids			*/
 	uint64_t mem_per_cpu;		/* --mem-per-cpu		*/
 	uint64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	uint64_t pn_min_memory;		/* --mem			*/
