@@ -262,6 +262,7 @@ typedef struct dbd_job_comp_msg {
 	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
+	data_t *kv; /* job KV metadata document */
 	char *   nodes;		/* hosts allocated to the job */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* job start time */
