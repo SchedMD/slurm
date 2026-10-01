@@ -885,6 +885,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		}
 	} else if (!xstrcmp(name, "job_state")) {
 		lua_pushnumber(L, job_ptr->job_state);
+	} else if (!xstrcmp(name, "layout")) {
+		lua_pushstring(L, job_ptr->layout);
 	} else if (!xstrcmp(name, "licenses")) {
 		lua_pushstring(L, job_ptr->licenses);
 	} else if (!xstrcmp(name, "max_cpus")) {
