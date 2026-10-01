@@ -5198,6 +5198,20 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	if ((uint16_t)type == NO_VAL16)
 		return;
 
+	if (((uint16_t) type > SLURM_DBD_MESSAGES_START) &&
+	    ((uint16_t) type < SLURM_DBD_MESSAGES_END) &&
+	    (type != PERSIST_RC)) {
+		/* PERSIST_RC is handled by its own case below. */
+		/* slurmdbd message body, see pack_msg() */
+		slurmdbd_msg_t dbd_msg = {
+			.msg_type = type,
+			.data = data,
+		};
+
+		slurmdbd_free_msg(&dbd_msg);
+		return;
+	}
+
 	switch (type) {
 	case RESPONSE_LAUNCH_TASKS:
 		slurm_free_launch_tasks_response_msg(data);
