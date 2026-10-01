@@ -74,6 +74,7 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mcs.h"
+#include "src/interfaces/mpi.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
@@ -1001,6 +1002,13 @@ static int _wake_steps(void *x, void *arg)
 				job_ptr->start_protocol_ver;
 			step_req->use_protocol_ver =
 				job_ptr->start_protocol_ver;
+			/*
+			 * Set to "none" when not set, to prevent
+			 * mpi_g_client_init() setting to MpiDefault.
+			 */
+			if (!step_req->launch_params->mpi_plugin_name)
+				step_req->launch_params->mpi_plugin_name =
+					xstrdup("none");
 
 			ctx = _step_ctx_create_stepmgr(step_req, step_resp,
 						       new_step_ptr);
@@ -5819,7 +5827,9 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	if ((req_step_msg->flags & SSF_ASYNC) &&
 	    (running_in_slurmctld() || req_step_msg->immediate ||
 	     !req_step_msg->launch_params || req_step_msg->launch_params->pty ||
-	     job_ptr->het_job_id)) {
+	     job_ptr->het_job_id ||
+	     !mpi_is_none_plugin(req_step_msg->launch_params
+					 ->mpi_plugin_name))) {
 		error("Invalid async step create request");
 		error_code = ESLURM_INVALID_FEATURE;
 		goto end_it;
@@ -5936,6 +5946,13 @@ end_it:
 
 			req_step_msg->use_protocol_ver =
 				step_rec->start_protocol_ver;
+			/*
+			 * Set to "none" when not set, to prevent
+			 * mpi_g_client_init() setting to MpiDefault.
+			 */
+			if (!req_step_msg->launch_params->mpi_plugin_name)
+				req_step_msg->launch_params->mpi_plugin_name =
+					xstrdup("none");
 			ctx = _step_ctx_create_stepmgr(req_step_msg,
 						       &job_step_resp,
 						       step_rec);
