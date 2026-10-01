@@ -1530,6 +1530,7 @@ function __slurm_comp_common_flags() {
 	--kill-command) __slurm_compreply "$(__slurm_signals)" ;;
 	--kill-on-bad-exit) __slurm_compreply "${binary[*]}" ;;
 	--kill-on-invalid-dep) __slurm_compreply "$(__slurm_boolean)" ;;
+	--layout) return 1 ;;
 	-L | --license?(s)) __slurm_compreply_count "$(__slurm_licenses)" ;;
 	--mail-type) __slurm_compreply_list "${mail_types[*]}" ;;
 	--mail-user) __slurm_compreply "$(__slurm_users)" ;;

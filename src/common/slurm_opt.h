@@ -127,6 +127,7 @@ enum {
 	LONG_OPT_KILL_INV_DEP,
 	LONG_OPT_LAUNCH_CMD,
 	LONG_OPT_LAUNCHER_OPTS,
+	LONG_OPT_LAYOUT,
 	LONG_OPT_LINUX_IMAGE,
 	LONG_OPT_MAIL_TYPE,
 	LONG_OPT_MAIL_USER,
@@ -384,6 +385,7 @@ typedef struct {
 	char *acctg_freq;		/* --acctg-freq=<type1>=<freq1>,... */
 	bool overcommit;		/* --overcommit			*/
 	uint16_t shared;		/* --share			*/
+	char *layout; /* --layout */
 	char *licenses;			/* --licenses			*/
 	char *network;			/* --network			*/
 	int quiet;
