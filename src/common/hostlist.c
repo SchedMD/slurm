@@ -713,7 +713,8 @@ static int hostrange_cmp(hostrange_t *h1, hostrange_t *h2)
 
 	if ((retval = hostrange_prefix_cmp(h1, h2)) == 0)
 		retval = hostrange_width_combine(h1, h2) ?
-			h1->lo - h2->lo : h1->width - h2->width;
+				 ((h1->lo > h2->lo) - (h1->lo < h2->lo)) :
+				 h1->width - h2->width;
 
 	return retval;
 }
