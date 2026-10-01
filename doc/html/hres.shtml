@@ -274,9 +274,10 @@ later gain or lose nodes. The job releases exactly what it took, so changing
 the nodes of a layer under a running job does not distort the usage counts.
 The layers a job holds are shown by the <b>LicensesAlloc</b> field of
 <code>scontrol show job</code>, for example
-<code>power(rack1,row1,datacenter):1000</code>. In <b>Mode 3</b> a layer that
-the job holds on several of its nodes is followed by that node count, as in
-<code>rack1*2</code>.</p>
+<code>power(rack1*1000,row1*1000,datacenter*1000):1000</code>, each layer
+followed by the amount charged on it. In <b>Mode 3</b> that amount grows with
+the number of the job's nodes under the layer, as in <code>rack1*2000</code>
+for two nodes.</p>
 
 <pre>
 scontrol update HRESName=power LayerName=rack2 Nodes=+node[33-36] Count=45000

@@ -860,18 +860,14 @@ static int _foreach_hres_charge_to_string(void *x, void *arg)
 	hres_charge_t *charge = x;
 	license_list_to_string_args_t *args = arg;
 
-	xstrfmtcat(args->layers, "%s%s", (args->layers ? "," : ""),
-		   charge->layer_name);
-	if (charge->node_cnt > 1)
-		xstrfmtcat(args->layers, "*%u", charge->node_cnt);
+	xstrfmtcat(args->layers, "%s%s*%u", (args->layers ? "," : ""),
+		   charge->layer_name, charge->count);
 
 	return 0;
 }
 
 /*
- * Build the layer part of an HRES entry: "(layer[*node_cnt][,...])". The
- * node_cnt is only meaningful for mode 3, where a job consumes the count once
- * per node of the layer, so it is left out when it is one.
+ * Build the layer part of an HRES entry: "(layer*count[,...])".
  */
 static char *_hres_charges_to_string(list_t *hres_charges)
 {
@@ -3200,19 +3196,19 @@ extern void license_free(void)
 }
 
 /*
- * Record that node_cnt * license_entry->total was charged against the layer,
- * so that license_job_return() can release exactly that amount later. The
- * nodes of a layer may change while the job runs, so the amount cannot be
- * derived again from node overlap at that point.
+ * Record that count was charged against the layer, so that
+ * license_job_return() can release exactly that amount later. The nodes of a
+ * layer may change while the job runs, so the amount cannot be derived again
+ * from node overlap at that point.
  */
 static void _add_hres_charge(licenses_t *license_entry, licenses_t *match,
-			     uint16_t node_cnt)
+			     uint32_t count)
 {
 	hres_charge_t *charge = xmalloc(sizeof(*charge));
 
 	charge->id = match->id;
 	charge->layer_name = xstrdup(match->hres_rec.layer_name);
-	charge->node_cnt = node_cnt;
+	charge->count = count;
 
 	if (!license_entry->hres_charges)
 		license_entry->hres_charges = list_create(hres_charge_free);
@@ -3220,7 +3216,7 @@ static void _add_hres_charge(licenses_t *license_entry, licenses_t *match,
 }
 
 /*
- * Resolve "(layer[*node_cnt][,...])" into the charge list of the entry.
+ * Resolve "(layer[*count][,...])" into the charge list of the entry.
  * RET the cluster record to take the id and mode from, or NULL if any layer
  *     could not be resolved, in which case the entry is left untouched.
  */
@@ -3236,16 +3232,16 @@ static licenses_t *_resolve_hres_layers(licenses_t *license_entry)
 		licenses_find_layer_t find_layer = {
 			.hres_name = license_entry->name,
 		};
-		long node_cnt = 1;
+		long count = license_entry->total;
 		char *mult = xstrchr(tok, '*');
 
 		if (mult) {
 			char *end_num = NULL;
 
 			*mult = '\0';
-			node_cnt = strtol(mult + 1, &end_num, 10);
+			count = strtol(mult + 1, &end_num, 10);
 			if ((end_num == (mult + 1)) || (*end_num != '\0') ||
-			    (node_cnt < 1) || (node_cnt >= NO_VAL16)) {
+			    (count < 1) || (count >= NO_VAL)) {
 				valid = false;
 				break;
 			}
@@ -3259,7 +3255,7 @@ static licenses_t *_resolve_hres_layers(licenses_t *license_entry)
 			break;
 		}
 
-		_add_hres_charge(license_entry, match, node_cnt);
+		_add_hres_charge(license_entry, match, count);
 	}
 	xfree(tmp_str);
 
@@ -3317,7 +3313,7 @@ static int _foreach_license_validate(void *x, void *arg)
 				if (match) {
 					xfree(license_entry->nodes);
 					_add_hres_charge(license_entry, match,
-							 1);
+							 license_entry->total);
 				}
 			}
 		} else if (xstrchr(license_entry->name, '@') ||
@@ -3804,6 +3800,7 @@ static int _foreach_hres_job_get(void *x, void *arg)
 {
 	licenses_t *match = x;
 	foreach_get_hres_t *args = arg;
+	uint32_t count = args->license_entry->total;
 
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
@@ -3814,8 +3811,9 @@ static int _foreach_hres_job_get(void *x, void *arg)
 		if (!used)
 			return 0;
 
-		match->used += used * args->license_entry->total;
-		_add_hres_charge(args->license_entry, match, used);
+		count *= used;
+		match->used += count;
+		_add_hres_charge(args->license_entry, match, count);
 		return 0;
 	}
 
@@ -3839,12 +3837,12 @@ static int _foreach_hres_job_get(void *x, void *arg)
 		if (!_sufficient_licenses(args->license_entry, match,
 					  resv_licenses))
 			return 0;
-		match->used += args->license_entry->total;
-		_add_hres_charge(args->license_entry, match, 1);
+		match->used += count;
+		_add_hres_charge(args->license_entry, match, count);
 		return -1;
 	} else if (args->license_entry->mode == HRES_MODE_2) {
-		match->used += args->license_entry->total;
-		_add_hres_charge(args->license_entry, match, 1);
+		match->used += count;
+		_add_hres_charge(args->license_entry, match, count);
 		return 0;
 	}
 
@@ -3870,7 +3868,7 @@ static int _foreach_hres_charge_restore(void *x, void *arg)
 		return 0;
 	}
 
-	match->used += charge->node_cnt * args->license_entry->total;
+	match->used += charge->count;
 
 	return 0;
 }
@@ -3989,7 +3987,7 @@ static int _foreach_hres_charge_return(void *x, void *arg)
 	foreach_hres_return_t *args = arg;
 	licenses_t *match =
 		license_find_rec_by_id(args->license_list, charge->id);
-	uint32_t used = charge->node_cnt * args->license_entry->total;
+	uint32_t used = charge->count;
 
 	if (!match) {
 		/*

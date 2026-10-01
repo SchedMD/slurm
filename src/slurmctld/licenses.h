@@ -104,7 +104,7 @@ typedef struct {
 /* How the "(...)" part of a license string is interpreted */
 typedef enum {
 	HRES_SYNTAX_NONE = 0, /* "(" is an ordinary character */
-	HRES_SYNTAX_LAYERS, /* "(layer[*node_cnt][,...])" */
+	HRES_SYNTAX_LAYERS, /* "(layer[*count][,...])" */
 	HRES_SYNTAX_ANY, /* layer syntax, falling back to the node list form
 			  * written by Slurm 26.05 and older */
 } hres_syntax_t;
@@ -118,8 +118,7 @@ typedef enum {
 typedef struct {
 	licenses_id_t id; /* layer that was charged */
 	char *layer_name; /* hres_rec.layer_name of that layer */
-	uint16_t node_cnt; /* nodes of the job under this layer; 1 for modes
-			    * 1 and 2 */
+	uint32_t count; /* amount charged against this layer */
 } hres_charge_t;
 
 /*
