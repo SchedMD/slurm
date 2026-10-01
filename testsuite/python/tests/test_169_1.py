@@ -328,3 +328,77 @@ def test_invalid_cron_spec_is_rejected():
     assert "no crontab" in atf.run_command_output(
         "scrontab -l", xfail=True
     ), "A rejected crontab should not be installed"
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/sbatch") < (26, 11),
+    reason="Issue 50190: --runtime plugin ownership added in 26.11",
+)
+def test_runtime_mix_across_entries():
+    """Each #SCRON entry records its own --runtime and --container.
+
+    One crontab mixes runtime/none, runtime/oci with a bundle, no runtime, and
+    a bundle with no runtime. An entry names its runtime for itself only: what
+    the entry before it asked for does not carry over, so the entry after a
+    runtime/oci bundle records neither.
+    """
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    entries = [
+        ("cron_rt_none", "--runtime=none", "runtime/none", None),
+        (
+            "cron_rt_oci",
+            "--runtime=oci --container=/nonexistent/a",
+            "runtime/oci",
+            "/nonexistent/a",
+        ),
+        ("cron_rt_unset", "", None, None),
+        ("cron_rt_bundle", "--container=/nonexistent/b", None, "/nonexistent/b"),
+        ("cron_rt_none_again", "--runtime none", "runtime/none", None),
+    ]
+    lines = []
+    for name, options, _, _ in entries:
+        lines += [f"#SCRON --job-name={name} {options}".rstrip(), f"{schedule} sleep 1"]
+    result = install_crontab(*lines)
+    assert result["exit_code"] == 0, f"scrontab should accept the crontab: {result}"
+
+    for name, options, runtime, container in entries:
+        job_id = get_cron_job_id(name)
+        assert (
+            atf.get_job_parameter(job_id, "Runtime") == runtime
+        ), f"{name} ({options!r}) should record Runtime={runtime}"
+        assert (
+            atf.get_job_parameter(job_id, "Container") == container
+        ), f"{name} ({options!r}) should record Container={container}"
+
+
+@pytest.mark.skipif(
+    atf.get_version("bin/sbatch") < (26, 11),
+    reason="Issue 50190: --runtime plugin ownership added in 26.11",
+)
+@pytest.mark.parametrize(
+    "options, error",
+    [
+        ("--runtime=none --container=/nonexistent/bundle", "is not an option of"),
+        ("--runtime=oci --runtime=none", "--runtime may only be given once"),
+        ("--runtime=bogus", "cannot create runtime context for runtime/bogus"),
+    ],
+    ids=["none-with-container", "two-runtimes", "unknown-runtime"],
+)
+def test_runtime_errors_reject_the_crontab(options, error):
+    """An #SCRON runtime error fails the whole crontab, and leaves no crontab
+    behind, however many valid entries come before it."""
+
+    result = install_crontab(
+        "#SCRON --job-name=cron_rt_valid --runtime=oci",
+        f"{schedule} sleep 1",
+        f"#SCRON {options}",
+        f"{schedule} sleep 1",
+    )
+
+    assert result["exit_code"] != 0, f"scrontab should reject #SCRON {options}"
+    assert error in result["stderr"], f"scrontab should report {error!r}"
+    assert "no crontab" in atf.run_command_output(
+        "scrontab -l", xfail=True
+    ), "A rejected crontab should not be installed"
