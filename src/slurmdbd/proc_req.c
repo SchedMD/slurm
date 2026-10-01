@@ -1789,6 +1789,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg,
 	job.het_job_offset = job_start_msg->het_job_offset;
 	job.job_id = job_start_msg->job_id;
 	job.job_state = job_start_msg->job_state;
+	job.layout = job_start_msg->layout;
 	job.licenses = _replace_double_quotes(job_start_msg->licenses);
 	job.mcs_label = _replace_double_quotes(job_start_msg->mcs_label);
 	job.name = _replace_double_quotes(job_start_msg->name);

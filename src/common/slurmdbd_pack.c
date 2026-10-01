@@ -471,6 +471,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->state_reason_prev, buffer);
+		packstr(msg->layout, buffer);
 		packstr(msg->licenses, buffer);
 		packstr(msg->mcs_label, buffer);
 		packstr(msg->name, buffer);
@@ -639,6 +640,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpack32(&msg_ptr->state_reason_prev, buffer);
+		safe_unpackstr(&msg_ptr->layout, buffer);
 		safe_unpackstr(&msg_ptr->licenses, buffer);
 		safe_unpackstr(&msg_ptr->mcs_label, buffer);
 		safe_unpackstr(&msg_ptr->name, buffer);

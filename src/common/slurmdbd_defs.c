@@ -1206,6 +1206,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->container);
 		xfree(msg->env_hash);
 		xfree(msg->gres_used);
+		xfree(msg->layout);
 		xfree(msg->licenses);
 		xfree(msg->mcs_label);
 		xfree(msg->name);

@@ -609,6 +609,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			xstrcatat(query, &pos, ", submit_line");
 		if (job_ptr->container)
 			xstrcatat(query, &pos, ", container");
+		if (job_ptr->layout)
+			xstrcatat(query, &pos, ", layout");
 		if (job_ptr->licenses)
 			xstrcatat(query, &pos, ", licenses");
 		if (job_ptr->details->resv_req)
@@ -685,6 +687,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->container);
+		if (job_ptr->layout)
+			xstrfmtcatat(query, &pos, ", '%s'",
+				     job_ptr->layout);
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", '%s'",
 				     job_ptr->licenses);
@@ -782,6 +787,12 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, ", container='%s'",
 				     job_ptr->container);
+		/* Always set, so a cleared layout is recorded too */
+		if (job_ptr->layout)
+			xstrfmtcatat(query, &pos, ", layout='%s'",
+				     job_ptr->layout);
+		else
+			xstrcatat(query, &pos, ", layout=NULL");
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, ", licenses='%s'",
 				     job_ptr->licenses);
@@ -851,6 +862,12 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (job_ptr->container)
 			xstrfmtcatat(query, &pos, "container='%s', ",
 				     job_ptr->container);
+		/* Always set, so a cleared layout is recorded too */
+		if (job_ptr->layout)
+			xstrfmtcatat(query, &pos, "layout='%s', ",
+				     job_ptr->layout);
+		else
+			xstrcatat(query, &pos, "layout=NULL, ");
 		if (job_ptr->licenses)
 			xstrfmtcatat(query, &pos, "licenses='%s', ",
 				     job_ptr->licenses);
