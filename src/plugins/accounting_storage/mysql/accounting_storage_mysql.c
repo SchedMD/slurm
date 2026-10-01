@@ -2970,10 +2970,14 @@ static void _check_database_collations(mysql_conn_t *mysql_conn)
 	mysql_free_result(result);
 }
 
+/* x is a persist_conn_ctx_t from registered_clusters, see slurmdbd. */
 static int _send_ctld_update(void *x, void *arg)
 {
-	slurmdbd_conn_t *dbd_conn = x;
+	persist_conn_ctx_t *pcon_ctx = x;
+	slurmdbd_conn_t *dbd_conn = pcon_ctx->arg;
 	list_t *update_list = arg;
+
+	xassert(pcon_ctx->magic == PERSIST_CONN_CTX_MAGIC);
 
 	if ((dbd_conn->flags & PERSIST_FLAG_EXT_DBD) ||
 	    (dbd_conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
@@ -2983,7 +2987,7 @@ static int _send_ctld_update(void *x, void *arg)
 
 	if (!dbd_conn->pcon_send) {
 		debug("slurmctld for cluster %s left at the moment we were about to send to it.",
-		      dbd_conn->cluster_name);
+		      pcon_ctx->cluster_name);
 		slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 		return 0;
 	}
