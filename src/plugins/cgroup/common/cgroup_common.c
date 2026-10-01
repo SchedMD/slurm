@@ -82,29 +82,6 @@ static char *_cgroup_procs_writable_path(xcgroup_t *cg)
 	return _cgroup_procs_check(cg, S_IWUSR);
 }
 
-static int _set_uint32_param(xcgroup_t *cg, char *param, uint32_t value)
-{
-	int fstatus = SLURM_ERROR;
-	char file_path[PATH_MAX];
-	char *cpath = cg->path;
-
-	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		log_flag(CGROUP, "unable to build filepath for '%s' and parameter '%s' : %m",
-			 cpath, param);
-		return fstatus;
-	}
-
-	fstatus = common_file_write_uint32s(file_path, &value, 1);
-	if (fstatus != SLURM_SUCCESS)
-		log_flag(CGROUP, "unable to set parameter '%s' to '%u' for '%s'",
-			 param, value, cpath);
-	else
-		log_flag(CGROUP, "parameter '%s' set to '%u' for '%s'",
-			 param, value, cpath);
-
-	return fstatus;
-}
-
 static bool _is_empty_dir(const char *dirpath)
 {
 	DIR *d;
@@ -425,7 +402,7 @@ extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid)
 
 	xfree(path);
 
-	return _set_uint32_param(cg, "cgroup.procs", pid);
+	return common_cgroup_set_uint32_param(cg, "cgroup.procs", pid);
 }
 
 extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
@@ -599,6 +576,30 @@ extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
 			log_flag(CGROUP, "unable to get parameter '%s' for '%s'",
 				 param, cpath);
 	}
+	return fstatus;
+}
+
+extern int common_cgroup_set_uint32_param(xcgroup_t *cg, char *param,
+					  uint32_t value)
+{
+	int fstatus = SLURM_ERROR;
+	char file_path[PATH_MAX];
+	char *cpath = cg->path;
+
+	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
+		log_flag(CGROUP, "unable to build filepath for '%s' and parameter '%s' : %m",
+			 cpath, param);
+		return fstatus;
+	}
+
+	fstatus = common_file_write_uint32s(file_path, &value, 1);
+	if (fstatus != SLURM_SUCCESS)
+		log_flag(CGROUP, "unable to set parameter '%s' to '%u' for '%s'",
+			 param, value, cpath);
+	else
+		log_flag(CGROUP, "parameter '%s' set to '%u' for '%s'",
+			 param, value, cpath);
+
 	return fstatus;
 }
 

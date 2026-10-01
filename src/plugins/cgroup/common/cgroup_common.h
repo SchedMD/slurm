@@ -192,6 +192,21 @@ extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
 				   size_t *csize);
 
 /*
+ * set a cgroup parameter in the form of a uint32_t
+ *
+ * param must correspond to a file of the cgroup that
+ * will be written with the uint32_t value
+ *
+ * i.e. common_cgroup_set_uint32_param(&cf, "memory.swappiness", value);
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_set_uint32_param(xcgroup_t *cg, char *parameter,
+					  uint32_t value);
+
+/*
  * set a cgroup parameter in the form of a uint64_t
  *
  * param must correspond to a file of the cgroup that
