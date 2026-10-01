@@ -2087,6 +2087,10 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 		.return_code = rc,
 	};
 
+	/* Persistent connections reply with PERSIST_RC. */
+	if (msg->flags & SLURM_PERSIST_MSG)
+		return slurm_send_rc_err_msg(msg, rc, NULL);
+
 	if ((rc = send_msg_response(msg, RESPONSE_SLURM_RC, &rc_msg))) {
 		errno = rc;
 		return SLURM_ERROR;
