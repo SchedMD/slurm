@@ -307,3 +307,60 @@ def test_sbatch_batch_step_uses_first_component(bundles, components, bundle):
         assert (
             f"SLURM_CONTAINER={bundles[bundle]}" in lines
         ), f"the batch step should see SLURM_CONTAINER={bundles[bundle]}: {lines}"
+
+
+# Each case is (components, expected bundle of the interactive step or None).
+# salloc starts one srun for its interactive step, and that srun runs in the
+# first component, so salloc hands it only that component's bundle. The
+# bundles of the others are ignored, whatever runtime they name. A component
+# that names no --runtime takes DefRuntimePlugin, runtime/oci here.
+salloc_mixes = {
+    "default_a,default_b": (["--container={a}", "--container={b}"], "a"),
+    "nothing,default_b": (["", "--container={b}"], None),
+    "oci,none": (["--runtime=oci --container={a}", "--runtime=none"], "a"),
+    "none,oci": (["--runtime=none", "--runtime=oci --container={b}"], None),
+    "oci,oci": (
+        ["--runtime=oci --container={a}", "--runtime=oci --container={b}"],
+        "a",
+    ),
+    "none,oci,oci": (
+        [
+            "--runtime=none",
+            "--runtime=oci --container={a}",
+            "--runtime=oci --container={b}",
+        ],
+        None,
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    "components, bundle", salloc_mixes.values(), ids=salloc_mixes.keys()
+)
+def test_salloc_het_interactive_step_uses_first_component(bundles, components, bundle):
+    """The interactive step of a het salloc runs in its first component's
+    bundle, with SLURM_CONTAINER naming it, or on the host when that
+    component has none. The bundles of the other components are ignored."""
+
+    args = " : ".join(f"-N1 {c.format(**bundles)}" for c in components)
+    result = atf.run_command(f"salloc {args}")
+    assert result["exit_code"] == 0, f"salloc failed: {result['stderr']}"
+
+    lines = result["stdout"].splitlines()
+    assert task_marker in lines, (
+        "the interactive step should have run"
+        f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+    )
+    # Only RunTimeRun prints SLURM_CONTAINER, so it cannot be checked on the host.
+    if bundle:
+        containers = [line for line in lines if line.startswith("SLURM_CONTAINER=")]
+        assert containers == [f"SLURM_CONTAINER={bundles[bundle]}"], (
+            f"the interactive step should see SLURM_CONTAINER={bundles[bundle]}"
+            f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+        )
+    expected = [f"in_rootfs_{bundle}"] if bundle else []
+    assert _markers(result["stdout"]) == expected, (
+        f"the interactive step should use the first component's bundle,"
+        f" expected {expected}"
+        f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+    )
