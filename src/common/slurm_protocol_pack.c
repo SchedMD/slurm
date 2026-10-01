@@ -4158,6 +4158,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->het_job_offset, buffer);
 
 		safe_unpack32(&job->job_state, buffer);
+		job->kv = data_new();
+		safe_unpack_data(job->kv, protocol_version, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
 		safe_unpackstr(&job->layout, buffer);

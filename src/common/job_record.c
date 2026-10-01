@@ -2492,6 +2492,8 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		pack32(dump_job_ptr->het_job_offset, buffer);
 
 		pack32(dump_job_ptr->job_state, buffer);
+		if (pack_data(dump_job_ptr->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 
 		pack_time(dump_job_ptr->last_sched_eval, buffer);
 		packstr(dump_job_ptr->layout, buffer);
@@ -2871,6 +2873,8 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->het_job_offset, buffer);
 
 		safe_unpack32(&job_ptr->job_state, buffer);
+		job_ptr->kv = data_new();
+		safe_unpack_data(job_ptr->kv, protocol_version, buffer);
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
 		safe_unpackstr(&job_ptr->layout, buffer);
