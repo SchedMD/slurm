@@ -2914,6 +2914,8 @@ typedef struct resv_desc_msg {
 	char *allowed_parts; /* names of partitions permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv */
 	uint32_t core_cnt;	/* Count of cores required */
 	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
