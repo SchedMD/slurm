@@ -163,6 +163,7 @@ typedef struct {
 typedef struct {
 	const data_t *a;
 	const data_t *b;
+	bool exact;
 } find_dict_match_t;
 
 typedef struct {
@@ -2198,7 +2199,7 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	find_dict_match_t *p = arg;
 	const data_t *b = data_key_get_const(p->b, key);
 
-	rc = data_check_match(a, b);
+	rc = data_check_match(a, b, p->exact);
 
 	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
 		 key, (uintptr_t) p->a, _type_to_string(a->type), (uintptr_t) a,
@@ -2209,11 +2210,12 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
 }
 
-static bool _data_match_dict(const data_t *a, const data_t *b)
+static bool _data_match_dict(const data_t *a, const data_t *b, const bool exact)
 {
 	find_dict_match_t p = {
 		.a = a,
 		.b = b,
+		.exact = exact,
 	};
 
 	if (!a || (a->type != TYPE_DICT))
@@ -2232,7 +2234,8 @@ static bool _data_match_dict(const data_t *a, const data_t *b)
 	return (data_dict_for_each_const(a, _find_dict_match, &p) >= 0);
 }
 
-static bool _data_match_lists(const data_t *a, const data_t *b)
+static bool _data_match_lists(const data_t *a, const data_t *b,
+			      const bool exact)
 {
 	bool fail = false;
 	const data_list_node_t *ptr_a;
@@ -2255,7 +2258,7 @@ static bool _data_match_lists(const data_t *a, const data_t *b)
 	while (ptr_a && !fail) {
 		_check_data_list_node_magic(ptr_a);
 		_check_data_list_node_magic(ptr_b);
-		if (data_check_match(ptr_a->data, ptr_b->data)) {
+		if (data_check_match(ptr_a->data, ptr_b->data, exact)) {
 			ptr_a = ptr_a->next;
 			ptr_b = ptr_b->next;
 		} else
@@ -2265,7 +2268,43 @@ static bool _data_match_lists(const data_t *a, const data_t *b)
 	return !fail;
 }
 
-extern bool data_check_match(const data_t *a, const data_t *b)
+/* compare an integer and a float without rounding the integer to a double */
+static bool _match_int_float_exact(int64_t i, double f)
+{
+	int64_t fi;
+
+	/*
+	 * INT64_MIN is exact as a double. INT64_MAX is not and rounds up to
+	 * 2^63, one past the largest int64_t, so it is an exclusive bound.
+	 */
+	if (isnan(f) || (f < (double) INT64_MIN) || (f >= (double) INT64_MAX))
+		return false;
+
+	fi = (int64_t) f;
+
+	/* a fractional float can never equal an integer */
+	if ((double) fi != f)
+		return false;
+
+	return (fi == i);
+}
+
+/*
+ * JSON has a single number type, so an integer and a float holding the same
+ * value are the same number. Every other type mismatch is a mismatch: no
+ * conversion is attempted.
+ */
+static bool _match_type_mismatch_exact(const data_t *a, const data_t *b)
+{
+	if ((a->type == TYPE_INT_64) && (b->type == TYPE_FLOAT))
+		return _match_int_float_exact(a->data.int_u, b->data.float_u);
+	if ((a->type == TYPE_FLOAT) && (b->type == TYPE_INT_64))
+		return _match_int_float_exact(b->data.int_u, a->data.float_u);
+
+	return false;
+}
+
+extern bool data_check_match(const data_t *a, const data_t *b, const bool exact)
 {
 	bool rc;
 
@@ -2277,6 +2316,13 @@ extern bool data_check_match(const data_t *a, const data_t *b)
 
 	_check_magic(a);
 	_check_magic(b);
+
+	if (exact && (data_get_type(a) != data_get_type(b))) {
+		rc = _match_type_mismatch_exact(a, b);
+		log_flag(DATA, "exact compare: %pD %s %pD",
+			 a, (rc ? "=" : "!="), b);
+		return rc;
+	}
 
 	if (data_get_type(a) != data_get_type(b)) {
 		data_t *conv = NULL;
@@ -2293,7 +2339,7 @@ extern bool data_check_match(const data_t *a, const data_t *b)
 			return false;
 		}
 
-		rc = data_check_match(a, conv);
+		rc = data_check_match(a, conv, exact);
 		log_flag(DATA, "compare: %pD %s %pD (converted from %pD)",
 		         a, (rc ? "=" : "!="), conv, b);
 
@@ -2342,13 +2388,16 @@ extern bool data_check_match(const data_t *a, const data_t *b)
 		/*
 		 * NaN never compares equal to itself, so it has to be matched
 		 * explicitly. Infinities only match when they share a sign.
-		 * Everything else matches exactly or within tolerance.
+		 * Everything else matches exactly or, unless exact is set,
+		 * within tolerance.
 		 */
 		if (isnan(x) || isnan(y))
 			rc = (isnan(x) && isnan(y));
 		else if (isinf(x) || isinf(y))
 			rc = (isinf(x) && isinf(y) &&
 			      (signbit(x) == signbit(y)));
+		else if (exact)
+			rc = (x == y);
 		else
 			rc = ((x == y) || fuzzy_equal(x, y));
 
@@ -2359,7 +2408,7 @@ extern bool data_check_match(const data_t *a, const data_t *b)
 		return rc;
 	}
 	case TYPE_DICT:
-		rc = _data_match_dict(a, b);
+		rc = _data_match_dict(a, b, exact);
 		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_dict_length(a), (rc ? "=" : "!="),
@@ -2367,7 +2416,7 @@ extern bool data_check_match(const data_t *a, const data_t *b)
 			 data_get_dict_length(b));
 		return rc;
 	case TYPE_LIST:
-		rc = _data_match_lists(a, b);
+		rc = _data_match_lists(a, b, exact);
 		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_list_length(a), (rc ? "=" : "!="),

@@ -613,12 +613,17 @@ extern bool data_key_unset(data_t *data, const char *key);
 
 /*
  * attempt to match two data by type and values
- * Warning: order matters as b is converted to the type of a before comparing
+ * Warning: unless exact, order matters as b is converted to the type of a
  * IN a - data source a to check
  * IN b - data source b to verify a against
+ * IN exact - match with JSON equality rules instead. No type conversion is
+ * 	attempted and floats are compared exactly instead of within
+ * 	FUZZY_EPSILON, so "22" does not match 22 and 1.0 does not match
+ * 	1.000001. An integer still matches a float holding the same value.
  * RET true on match, false otherwise
  */
-extern bool data_check_match(const data_t *a, const data_t *b);
+extern bool data_check_match(const data_t *a, const data_t *b,
+			     const bool exact);
 
 /*
  * resolve out path based on data object full of dictionary keys

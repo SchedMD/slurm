@@ -690,7 +690,7 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 
 		fpath = data_new();
 		(void) data_list_split_str(fpath, parser->key, "/");
-		match = data_check_match(fpath, cargs.path);
+		match = data_check_match(fpath, cargs.path, false);
 		FREE_NULL_DATA(fpath);
 
 		if (match) {
@@ -741,7 +741,8 @@ static int _is_duplicate_linked_parser_value(args_t *args,
 		    !xstrcmp(array->fields[i].field_name, parser->field_name) &&
 		    !data_check_match(src,
 				      data_key_get(src_obj,
-						   array->fields[i].key))) {
+						   array->fields[i].key),
+				      false)) {
 			return false;
 		}
 	}

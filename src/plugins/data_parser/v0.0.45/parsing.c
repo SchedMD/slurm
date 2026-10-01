@@ -660,7 +660,7 @@ static bool _match_array_path(const parser_t *const parser, data_t *path)
 	};
 
 	(void) url_path_walk(parser->key, false, _on_marray_append_path, &args);
-	match = data_check_match(fpath, path);
+	match = data_check_match(fpath, path, false);
 
 	FREE_NULL_DATA(fpath);
 	return match;
@@ -769,7 +769,8 @@ static int _is_duplicate_linked_parser_value(args_t *args,
 		    !xstrcmp(array->fields[i].field_name, parser->field_name) &&
 		    !data_check_match(src,
 				      data_key_get(src_obj,
-						   array->fields[i].key))) {
+						   array->fields[i].key),
+				      false)) {
 			return false;
 		}
 	}
