@@ -2615,9 +2615,12 @@ Slurm build time.
 
 .TP
 \fB\-\-overlap\fR
-Specifying \-\-overlap allows steps to share all resources (CPUs, memory, and
-GRES) with all other steps. A step using this option will overlap all other
-steps, even those that did not specify \-\-overlap.
+Specifying \fB\-\-overlap\fR allows steps to share all resources (CPUs, memory,
+and GRES) with all other steps.  A step using this option will overlap all other
+steps, even those that did not specify \fB\-\-overlap\fR.
+This overlapping behavior is implied for only memory if \fB\-\-mem=0\fR or
+\fB\-\-mem\-per\-cpu=0\fR is set.
+Refer to those options' descriptions for further details.
 
 By default steps do not share resources with other parallel steps.
 This option applies to step allocations.
