@@ -832,6 +832,20 @@ typedef enum {
 } update_mode_t;
 
 /*
+ * How an update request wants an object's KV metadata document changed.
+ *
+ * The document itself is always a JSON object. KV_OP_NONE is the zero value
+ * so a memset() initialized request means "leave KV alone".
+ */
+typedef enum {
+	KV_OP_NONE = 0, /* no KV change requested */
+	KV_OP_SET, /* replace the whole document */
+	KV_OP_MERGE, /* RFC 7386 JSON Merge Patch */
+	KV_OP_PATCH, /* RFC 6902 JSON Patch */
+	KV_OP_INVALID, /* bounds checking only */
+} kv_op_t;
+
+/*
  * Task distribution states/methods
  *
  * Symbol format is SLURM_DIST_<node>_<socket>_<core>
