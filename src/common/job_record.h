@@ -162,6 +162,8 @@ typedef struct {
 	uint64_t orig_pn_min_memory;	/* requested value of pn_min_memory */
 	uint16_t oom_kill_step;		/* Kill whole step in case of OOM */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
+	uint32_t max_npids;		/* maximum number of PIDs allowed for
+					 * the job, NO_VAL if unlimited */
 	list_t *prefer_list;		/* soft features with node counts */
 	char *prefer;			/* soft features */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is

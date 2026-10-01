@@ -70,6 +70,7 @@ extern job_record_t *job_record_create(void)
 
 	detail_ptr->magic = DETAILS_MAGIC;
 	detail_ptr->submit_time = time(NULL);
+	detail_ptr->max_npids = NO_VAL;
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
@@ -605,6 +606,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack64(detail_ptr->orig_pn_min_memory, buffer);
 		pack16(detail_ptr->oom_kill_step, buffer);
 		pack32(detail_ptr->pn_min_tmp_disk, buffer);
+		pack32(detail_ptr->max_npids, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
 		packstr(detail_ptr->resv_req, buffer);
@@ -1745,6 +1747,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t pn_min_cpus, orig_pn_min_cpus, pn_min_tmp_disk;
 	uint64_t pn_min_memory, orig_pn_min_memory,
 		pn_min_memory_pre_resize = 0;
+	uint32_t max_npids = NO_VAL;
 	uint16_t oom_kill_step = NO_VAL16;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
@@ -1824,6 +1827,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack64(&orig_pn_min_memory, buffer);
 		safe_unpack16(&oom_kill_step, buffer);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&max_npids, buffer);
 
 		safe_unpackstr(&req_nodes, buffer);
 		safe_unpackstr(&resv_req, buffer);
@@ -2146,6 +2150,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->oom_kill_step = oom_kill_step;
 	job_ptr->details->orig_pn_min_memory = orig_pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
+	job_ptr->details->max_npids = max_npids;
 	job_ptr->details->max_cpus = max_cpus;
 	job_ptr->details->orig_max_cpus = orig_max_cpus;
 	job_ptr->details->max_nodes = max_nodes;
