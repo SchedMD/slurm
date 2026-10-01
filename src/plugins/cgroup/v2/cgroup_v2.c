@@ -546,6 +546,22 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 	}
 	xfree(buf);
 
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Report the controllers Slurm expects but that are not enabled in a cgroup.
+ * IN path - cgroup to check
+ */
+static void _log_missing_controllers(char *path)
+{
+	bitstr_t *ctl_bitmap = bit_alloc(CG_CTL_CNT);
+
+	if (_get_controllers(path, ctl_bitmap) != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(ctl_bitmap);
+		return;
+	}
+
 	for (int i = 0; i < CG_CTL_CNT; i++) {
 		/*
 		 * dmem only exists on kernels >= 6.14, freezer is core of v2
@@ -553,11 +569,12 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 		 */
 		if ((i == CG_DEVICES) || (i == CG_DMEM) || (i == CG_TRACK))
 			continue;
-		if (invoc_id && !bit_test(ctl_bitmap, i) &&
-		    xstrcmp(ctl_names[i], ""))
-			error("Controller %s is not enabled!", ctl_names[i]);
+		if (bit_test(ctl_bitmap, i) || !xstrcmp(ctl_names[i], ""))
+			continue;
+		error("Controller %s is not enabled in %s", ctl_names[i], path);
 	}
-	return SLURM_SUCCESS;
+
+	FREE_NULL_BITMAP(ctl_bitmap);
 }
 
 /*
@@ -1778,6 +1795,9 @@ extern int cgroup_p_setup_scope(char *scope_path)
 			      int_cg[CG_LEVEL_ROOT].path);
 			return SLURM_ERROR;
 		}
+
+		_log_missing_controllers(int_cg_ns.mnt_point);
+		_log_missing_controllers(stepd_scope_path);
 	}
 
 	if (running_in_slurmstepd()) {
