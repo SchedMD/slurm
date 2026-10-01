@@ -126,6 +126,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_name(job_info_t * job, int width, bool right_justify,
 			char* suffix);
+int _print_job_layout(job_info_t *job, int width, bool right, char *suffix);
 int _print_job_licenses(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_licenses_alloc(job_info_t *job, int width, bool right,
