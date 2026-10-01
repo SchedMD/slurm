@@ -1745,23 +1745,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
+static int _pack_slurmdbd_body(slurmdbd_msg_t *req, uint16_t rpc_version,
+			       buf_t *buffer)
 {
-	buf_t *buffer;
-
-	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("slurmdbd: Invalid message version=%hu, type:%s",
-		      rpc_version, slurmdbd_msg_type_2_str(req->msg_type,true));
-		return NULL;
-	}
-
-	log_flag(NET, "%s: packing msg_type=%s rpc_version=%hu",
-		 __func__, slurmdbd_msg_type_2_str(req->msg_type, true),
-		 rpc_version);
-
-	buffer = init_buf(MAX_DBD_MSG_LEN);
-	pack16(req->msg_type, buffer);
-
 	switch (req->msg_type) {
 	case REQUEST_PERSIST_INIT:
 		pack_persist_init_req_msg(req->data, buffer);
@@ -1947,9 +1933,31 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		      req->msg_type,
 		      slurmdbd_msg_type_2_str(req->msg_type, 1),
 		      req->msg_type);
-		FREE_NULL_BUFFER(buffer);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
+extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
+{
+	buf_t *buffer;
+
+	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("slurmdbd: Invalid message version=%hu, type:%s",
+		      rpc_version, slurmdbd_msg_type_2_str(req->msg_type,true));
 		return NULL;
 	}
+
+	log_flag(NET, "%s: packing msg_type=%s rpc_version=%hu",
+		 __func__, slurmdbd_msg_type_2_str(req->msg_type, true),
+		 rpc_version);
+
+	buffer = init_buf(MAX_DBD_MSG_LEN);
+	pack16(req->msg_type, buffer);
+
+	if (_pack_slurmdbd_body(req, rpc_version, buffer))
+		FREE_NULL_BUFFER(buffer);
+
 	return buffer;
 }
 
