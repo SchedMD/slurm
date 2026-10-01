@@ -1874,6 +1874,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 						  sizeof(uint32_t *));
 	launch_req->ifname		= "/dev/null";
 	launch_req->job_mem_lim		= req->job_mem_limit;
+	launch_req->max_npids		= NO_VAL;
 	launch_req->nnodes		= req->nnodes;
 	launch_req->ntasks		= req->nnodes;
 	launch_req->ofname		= "/dev/null";

@@ -2306,6 +2306,7 @@ typedef struct {
 	char *mem_bind;
 	uint16_t accel_bind_type; /* --accel-bind= */
 
+	uint32_t max_npids; /* Maximum PIDs per step */
 	uint16_t max_sockets;
 	uint16_t max_cores;
 	uint16_t max_threads;
