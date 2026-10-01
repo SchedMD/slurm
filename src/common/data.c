@@ -804,6 +804,22 @@ extern data_t *data_list_get_at(data_t *data, size_t index)
 	return n->data;
 }
 
+extern const data_t *data_list_get_at_const(const data_t *data, size_t index)
+{
+	const data_list_node_t *n = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	if (!(n = _data_list_node_at(data->data.list_u, index)))
+		return NULL;
+
+	return n->data;
+}
+
 static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)
 {
 	data_t *dst = (data_t *) arg;
