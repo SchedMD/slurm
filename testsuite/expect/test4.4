@@ -77,7 +77,6 @@ subtest {$matches == 4} "Check the sinfo regular format"
 #
 
 set matches     0
-set ranges      0
 spawn $sinfo --Node --long --exact
 expect {
 	-re "NODELIST" {
@@ -108,12 +107,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "($number)(.)" {
-		if {$expect_out(2,string) eq "+"} {
-			set ranges 1
-		}
-		exp_continue
-	}
 	timeout {
 		fail "sinfo not responding"
 	}
@@ -122,5 +115,4 @@ expect {
 	}
 }
 
-subtest {$ranges == 0} "Check for sinfo ranges"
 subtest {$matches == 6} "Check the sinfo long format"

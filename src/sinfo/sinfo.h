@@ -111,6 +111,14 @@ typedef struct {
 	char *cpu_spec_list;
 	uint64_t mem_spec_limit;
 
+	/*
+	 * Composite grouping key for the O(1) hash lookup, and its length.
+	 * Must outlive this record's membership in the hash: xhash retains the
+	 * pointer rather than copying the key.
+	 */
+	char *match_key;
+	uint32_t match_key_len;
+
 	hostlist_t *hostnames;
 	hostlist_t *node_addr;
 	hostlist_t *nodes;

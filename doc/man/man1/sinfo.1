@@ -37,10 +37,30 @@ nodes in a POWERED_DOWN state since they are expected to be down.
 .TP
 \fB\-e\fR, \fB\-\-exact\fR
 If set, do not group node information on multiple nodes unless
-their configurations to be reported are identical. Otherwise
-cpu count, memory size, and disk space for nodes will be listed
-with the minimum value followed by a "+" for nodes with the
-same partition and state (e.g. "250+").
+their configurations to be reported are identical. Only fields included
+in the output format are compared, so a field below only affects
+grouping when it is also displayed (e.g. with \fB\-o\fR,
+\fB\-\-format\fR or \fB\-O\fR, \fB\-\-Format\fR). Some fields, including
+port, are only available through \fB\-O\fR, \fB\-\-Format\fR.
+When this option is set, the following additional fields
+are also compared: CPU count,
+sockets, cores, threads, the combined socket:core:thread field
+(\fB%z\fR), temporary disk space, memory size, weight, CPU load, free
+memory, port, and slurmd version. Most other displayed fields are
+compared whether or not this option is set; the exceptions never
+compared are the node counts \fB%A\fR, \fB%D\fR and \fB%F\fR, the node
+list \fB%N\fR, AllocNodes \fB%S\fR and the cluster name \fB%V\fR. With
+\fB\-R\fR no partition field is compared even when one is displayed.
+
+Otherwise those fields are aggregated across the grouped nodes. CPU
+count, sockets, cores, threads, socket:core:thread, temporary disk
+space, memory size and weight show the minimum value followed by a "+"
+for nodes that are otherwise grouped onto the same line (e.g. "250+"),
+and \fB%z\fR applies that to each of its three parts, so "2+:1:1" rather
+than "2:1:1+". CPU load and free memory show the range as
+"minimum\-maximum" (e.g. "0.50\-2.00"). Port and slurmd version have no
+such indicator; the value from one of the grouped nodes is shown. An
+indicator appears only where the grouped nodes differ.
 .IP
 
 .TP
@@ -87,7 +107,7 @@ options are:
 
 .TP
 .I "\-\-long \-\-Node"
-"%#N %.6D %#P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E"
+"%#N %.6D %#P %.11T %4c %.8z %.6m %.8d %.6w %.8f %20E"
 .IP
 
 .TP
@@ -331,7 +351,8 @@ Print the user name and uid of who set the reason a node is unavailable.
 .TP
 \fB%v\fR
 Print the running slurmd version. If reporting on a node list, print the
-version of the first node in the list.
+version of one of the nodes in the list. Use \fB\-\-exact\fR to ensure that all
+nodes on a line report the same version.
 .IP
 
 .TP
@@ -561,7 +582,9 @@ Partition name, also see \fB%P\fR.
 
 .TP
 \fBPort\fR
-Node TCP port.
+Node TCP port. If reporting on a node list, print the port of one of the
+nodes in the list. Use \fB\-\-exact\fR to ensure that all nodes on a line
+report the same port.
 .IP
 
 .TP
@@ -647,7 +670,8 @@ Print the user name and uid of who set the reason a node is unavailable.
 .TP
 \fBVersion\fR
 Print the running slurmd version. If reporting on a node list, print the
-version of the first node in the list.
+version of one of the nodes in the list. Use \fB\-\-exact\fR to ensure that all
+nodes on a line report the same version.
 .IP
 
 .TP
@@ -726,7 +750,9 @@ line for each node\-partition pair will be shown.
 If \fB\-\-partition\fR is also specified, then only one line per node in this
 partition is shown.
 The default is to print information in a partition\-oriented format.
-This is ignored if the \fB\-\-format\fR option is specified.
+If \fB\-\-format\fR or \fB\-\-Format\fR is specified, the default
+node\-oriented format listed under \fB\-o\fR, \fB\-\-format\fR above is
+not used, but the one\-line\-per\-node\-partition grouping still applies.
 .IP
 
 .TP
@@ -746,7 +772,10 @@ Do not print a header on the output.
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition\fR>
 Print information about the node(s) in the specified partition(s).
-Multiple partitions are separated by commas.
+Multiple partitions are separated by commas. A partition with no nodes
+matching the current filters is still listed, with a node count of 0, as
+long as the partition name is part of the output format (\fB%P\fR or
+\fB%R\fR) and \fB\-N\fR is not used.
 .IP
 
 .TP
@@ -918,7 +947,9 @@ default partition.
 
 .TP
 \fBPORT\fR
-Local TCP port used by slurmd on the node.
+Local TCP port used by slurmd on the node. If reporting on a node list,
+print the port of one of the nodes in the list. Use \fB\-\-exact\fR to
+ensure that all nodes on a line report the same port.
 .IP
 
 .TP
@@ -1329,17 +1360,56 @@ debug*    up        2     30:00 drain  adev[6\-7]
 .fi
 
 .TP
-Report node\-oriented information with details and exact matches:
+Report node\-oriented information with details:
 .IP
 .nf
-$ sinfo \-Nel
-NODELIST    NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
-adev[0\-1]       2 debug*    idle      2   3448    38536     16 (null)   (null)
-adev[2,4\-7]     5 debug*    idle      2   3384    38536     16 (null)   (null)
-adev3           1 debug*    idle      2   3394    38536     16 (null)   (null)
-adev[8\-9]       2 batch     allocated 2    246    82306     16 (null)   (null)
-adev[10\-15]     6 batch     idle      2    246    82306     16 (null)   (null)
+$ sinfo \-Nl
+NODELIST   NODES PARTITION       STATE CPUS    S:C:T MEMORY TMP_DISK WEIGHT AVAIL_FE REASON
+adev0          1    debug*        idle 2       2:1:1   3448    38536     16   (null) none
+adev1          1    debug*        idle 2       2:1:1   3448    38536     16   (null) none
+adev2          1    debug*        idle 2       2:1:1   3384    38536     16   (null) none
+adev3          1    debug*        idle 2       2:1:1   3394    38536     16   (null) none
+adev4          1    debug*        idle 2       2:1:1   3384    38536     16   (null) none
+adev5          1    debug*        idle 2       2:1:1   3384    38536     16   (null) none
+adev6          1    debug*        idle 2       2:1:1   3384    38536     16   (null) none
+adev7          1    debug*        idle 2       2:1:1   3384    38536     16   (null) none
+adev8          1     batch   allocated 2       2:1:1    246    82306     16   (null) none
+adev9          1     batch   allocated 2       2:1:1    246    82306     16   (null) none
+adev10         1     batch        idle 2       2:1:1    246    82306     16   (null) none
+adev11         1     batch        idle 2       2:1:1    246    82306     16   (null) none
+adev12         1     batch        idle 2       2:1:1    246    82306     16   (null) none
+adev13         1     batch        idle 2       2:1:1    246    82306     16   (null) none
+adev14         1     batch        idle 2       2:1:1    246    82306     16   (null) none
+adev15         1     batch        idle 2       2:1:1    246    82306     16   (null) none
 .fi
+
+Because \fB\-N\fR prints one line per node\-partition pair, the NODES
+column is always 1. Omit \fB\-N\fR to group nodes that share the
+reported fields.
+.IP
+
+.TP
+Compare the default grouping with \fB\-\-exact\fR grouping:
+.IP
+.nf
+$ sinfo \-o "%9P %6D %8z %8m %N"
+PARTITION NODES  S:C:T    MEMORY   NODELIST
+batch     8      2:1:1    246      adev[8\-15]
+debug*    8      2:1:1    3384+    adev[0\-7]
+
+$ sinfo \-e \-o "%9P %6D %8z %8m %N"
+PARTITION NODES  S:C:T    MEMORY   NODELIST
+batch     8      2:1:1    246      adev[8\-15]
+debug*    2      2:1:1    3448     adev[0\-1]
+debug*    5      2:1:1    3384     adev[2,4\-7]
+debug*    1      2:1:1    3394     adev3
+.fi
+
+Only the fields included in the output format are compared, so the
+\fBbatch\fR nodes remain on one line in both commands even though some
+are allocated and some are idle. Add \fB%t\fR to the format string to
+split rows by state as well.
+.IP
 
 .TP
 Report only down, drained and draining nodes and their reason field:

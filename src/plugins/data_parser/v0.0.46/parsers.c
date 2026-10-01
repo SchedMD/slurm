@@ -10374,6 +10374,8 @@ static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
 	add_parse(STRING, cpu_spec_list, "resource_spec/cpus", "CpuSpecList - Comma-separated list of Slurm abstract CPU IDs reserved for system use"),
 	add_parse(UINT64, mem_spec_limit, "resource_spec/memory", "MemSpecLimit - Amount of RealMemory in megabytes reserved for system use"),
 	add_skip(version), /* already in meta */
+	add_skip(match_key),
+	add_skip(match_key_len),
 	add_parse(HOSTLIST, hostnames, "nodes/hostnames", "NodeHost - List of node hostnames"),
 	add_parse(HOSTLIST, node_addr, "nodes/addresses", "NodeAddr - List of node communication addresses"),
 	add_parse(HOSTLIST, nodes, "nodes/nodes", "NodeList - List of node names"),

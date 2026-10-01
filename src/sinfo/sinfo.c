@@ -38,12 +38,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <inttypes.h>
+
 #include "slurm/slurmdb.h"
 
 #include "src/common/macros.h"
 #include "src/common/sercli.h"
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
+#include "src/common/xhash.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/data_parser.h"
@@ -57,8 +60,10 @@
  ********************/
 typedef struct build_part_info {
 	node_info_msg_t *node_msg;
-	uint16_t part_num;
+	bool *part_has_nodes;
+	int part_num;
 	partition_info_t *part_ptr;
+	xhash_t *sinfo_hash;
 	list_t *sinfo_list;
 } build_part_info_t;
 
@@ -89,17 +94,16 @@ static int _build_sinfo_data(list_t *sinfo_list,
 			     node_info_msg_t *node_msg);
 static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 				   uint16_t part_inx, node_info_t *node_ptr);
+static char *_build_part_match_key(partition_info_t *part_ptr);
 static int  _find_part_list(void *x, void *key);
 static bool _filter_out(node_info_t *node_ptr);
 static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 		     char *cluster_name, data_parser_t *parser);
-static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
-			    partition_info_t *part_ptr,
+static int _insert_node_ptr(list_t *sinfo_list, xhash_t *sinfo_hash,
+			    bool *part_has_nodes, int part_num,
+			    const char *part_key, partition_info_t *part_ptr,
 			    node_info_t *node_ptr);
-static int  _load_resv(reserve_info_msg_t ** reserv_pptr, bool clear_old);
-static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
-static bool _match_part_data(sinfo_data_t *sinfo_ptr,
-			     partition_info_t* part_ptr);
+static int _load_resv(reserve_info_msg_t **reserv_pptr, bool clear_old);
 static int _multi_cluster(list_t *clusters, data_parser_t *parser);
 static void _node_list_delete(void *data);
 static void _part_list_delete(void *data);
@@ -107,8 +111,7 @@ static list_t *_query_fed_servers(slurmdb_federation_rec_t *fed,
 				  list_t *node_info_msg_list,
 				  list_t *part_info_msg_list);
 static list_t *_query_server(bool clear_old);
-static int  _reservation_report(reserve_info_msg_t *resv_ptr);
-static bool _serial_part_data(void);
+static int _reservation_report(reserve_info_msg_t *resv_ptr);
 static void _sinfo_list_delete(void *data);
 static void _sort_hostlist(list_t *sinfo_list);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
@@ -526,24 +529,223 @@ static list_t *_query_fed_servers(slurmdb_federation_rec_t *fed,
 	return resp_msg_list;
 }
 
+static void _sinfo_hash_idfunc(void *item, const void **key, uint32_t *key_len)
+{
+	sinfo_data_t *sinfo_ptr = item;
+	*key = sinfo_ptr->match_key;
+	*key_len = sinfo_ptr->match_key_len;
+}
+
+/*
+ * Append a length-prefixed "tag:len:value|" segment to *key so that
+ * free-form strings (which may themselves contain ':' or '|') cannot
+ * be crafted to make two distinct field combinations collide.
+ */
+static void _key_add_str(char **key, char **pos, const char *tag,
+			 const char *val)
+{
+	/*
+	 * Keep NULL apart from "". sinfo prints them differently, as "(null)"
+	 * and as nothing, and the xstrcmp() comparison this key replaces never
+	 * treated them as equal. A length is always digits, so "-" cannot
+	 * collide with one.
+	 */
+	if (!val)
+		xstrfmtcatat(*key, pos, "%s:-|", tag);
+	else
+		xstrfmtcatat(*key, pos, "%s:%zu:%s|", tag, strlen(val), val);
+}
+
+/*
+ * Build the partition half of the match key.  Every node reached through a
+ * given partition shares this prefix, so build it once per partition and let
+ * _build_match_key() append the node half to a copy.
+ */
+static char *_build_part_match_key(partition_info_t *part_ptr)
+{
+	char *key = NULL;
+	char *pos = NULL;
+
+	/*
+	 * Guarantee a non-NULL, non-empty key even when list_reasons is
+	 * set and no match flags are active.  xhash_get_str() returns NULL
+	 * immediately for a NULL key, so a NULL key would make every lookup
+	 * miss and emit one row per node instead of grouping them.
+	 */
+	xstrfmtcatat(key, &pos, "k|");
+
+	/* Partition data: not considered at all if list_reasons */
+	if (!params.list_reasons) {
+		/* Partition-level match fields */
+		if (params.match_flags & MATCH_FLAG_PARTITION) {
+			xstrfmtcatat(key, &pos, "%" PRIxPTR "|",
+				     (uintptr_t) part_ptr);
+			_key_add_str(&key, &pos, "pn", part_ptr->name);
+		}
+		if (params.match_flags & MATCH_FLAG_AVAIL)
+			xstrfmtcatat(key, &pos, "av:%u|", part_ptr->state_up);
+		if (params.match_flags & MATCH_FLAG_GROUPS)
+			_key_add_str(&key, &pos, "pg", part_ptr->allow_groups);
+		if (params.match_flags & MATCH_FLAG_JOB_SIZE)
+			xstrfmtcatat(key, &pos, "js:%u:%u|",
+				     part_ptr->min_nodes, part_ptr->max_nodes);
+		if (params.match_flags & MATCH_FLAG_DEFAULT_TIME)
+			xstrfmtcatat(key, &pos, "dt:%u|",
+				     part_ptr->default_time);
+		if (params.match_flags & MATCH_FLAG_MAX_TIME)
+			xstrfmtcatat(key, &pos, "mt:%u|", part_ptr->max_time);
+		if (params.match_flags & MATCH_FLAG_ROOT)
+			xstrfmtcatat(key, &pos, "ro:%d|",
+				     !!(part_ptr->flags & PART_FLAG_ROOT_ONLY));
+		if (params.match_flags & MATCH_FLAG_OVERSUBSCRIBE)
+			xstrfmtcatat(key, &pos, "os:%u|", part_ptr->max_share);
+		if (params.match_flags & MATCH_FLAG_PREEMPT_MODE)
+			xstrfmtcatat(key, &pos, "pm:%u|",
+				     part_ptr->preempt_mode);
+		if (params.match_flags & MATCH_FLAG_PRIORITY_TIER)
+			xstrfmtcatat(key, &pos, "pt:%u|",
+				     part_ptr->priority_tier);
+		if (params.match_flags & MATCH_FLAG_PRIORITY_JOB_FACTOR)
+			xstrfmtcatat(key, &pos, "pjf:%u|",
+				     part_ptr->priority_job_factor);
+		if (params.match_flags & MATCH_FLAG_MAX_CPUS_PER_NODE)
+			xstrfmtcatat(key, &pos, "mc:%u|",
+				     part_ptr->max_cpus_per_node);
+	}
+
+	return key;
+}
+
+/*
+ * Build a composite string key encoding all active match criteria for a
+ * (part_ptr, node_ptr) pair.  Two nodes that would be grouped together by
+ * partition and node data produce identical keys.
+ *
+ * part_key IN - prefix from _build_part_match_key() for this node's partition
+ */
+static char *_build_match_key(const char *part_key, node_info_t *node_ptr,
+			      uint32_t *key_len)
+{
+	char *key = xstrdup(part_key);
+	char *pos = NULL;
+
+	/* Node-level match fields (always checked) */
+	if (params.match_flags & MATCH_FLAG_HOSTNAMES)
+		_key_add_str(&key, &pos, "hn", node_ptr->node_hostname);
+	if (params.match_flags & MATCH_FLAG_NODE_ADDR)
+		_key_add_str(&key, &pos, "na", node_ptr->node_addr);
+	if (params.match_flags & MATCH_FLAG_EXTRA)
+		_key_add_str(&key, &pos, "ex", node_ptr->extra);
+	if (params.match_flags & MATCH_FLAG_FEATURES)
+		_key_add_str(&key, &pos, "ft", node_ptr->features);
+	if (params.match_flags & MATCH_FLAG_FEATURES_ACT)
+		_key_add_str(&key, &pos, "fa", node_ptr->features_act);
+	if (params.match_flags & MATCH_FLAG_GRES)
+		_key_add_str(&key, &pos, "gr", node_ptr->gres);
+	if (params.match_flags & MATCH_FLAG_GRES_USED)
+		_key_add_str(&key, &pos, "gu", node_ptr->gres_used);
+	if (params.match_flags & MATCH_FLAG_COMMENT)
+		_key_add_str(&key, &pos, "co", node_ptr->comment);
+	if (params.match_flags & MATCH_FLAG_REASON)
+		_key_add_str(&key, &pos, "re", node_ptr->reason);
+	if (params.match_flags & MATCH_FLAG_REASON_TIMESTAMP)
+		xstrfmtcatat(key, &pos, "rt:%" PRId64 "|",
+			     (int64_t) node_ptr->reason_time);
+	if (params.match_flags & MATCH_FLAG_REASON_USER)
+		xstrfmtcatat(key, &pos, "ru:%" PRIu32 "|",
+			     node_ptr->reason_uid);
+	if (params.match_flags & MATCH_FLAG_RESV_NAME)
+		_key_add_str(&key, &pos, "rn", node_ptr->resv_name);
+	if (params.match_flags & MATCH_FLAG_STATE)
+		_key_add_str(&key, &pos, "st",
+			     node_state_string(node_ptr->node_state));
+	if (params.match_flags & MATCH_FLAG_STATE_COMPLETE) {
+		char *state = node_state_string_complete(node_ptr->node_state);
+		_key_add_str(&key, &pos, "sc", state);
+		xfree(state);
+	}
+	if (params.match_flags & MATCH_FLAG_ALLOC_MEM)
+		xstrfmtcatat(key, &pos, "am:%" PRIu64 "|",
+			     node_ptr->alloc_memory);
+
+	/* Node-level match fields (exact match only) */
+	if (params.exact_match) {
+		if (params.match_flags & MATCH_FLAG_CPUS)
+			xstrfmtcatat(key, &pos, "cp:%" PRIu16 "|",
+				     node_ptr->cpus);
+		if (params.match_flags & MATCH_FLAG_SOCKETS)
+			xstrfmtcatat(key, &pos, "so:%" PRIu16 "|",
+				     node_ptr->sockets);
+		if (params.match_flags & MATCH_FLAG_CORES)
+			xstrfmtcatat(key, &pos, "cr:%" PRIu16 "|",
+				     node_ptr->cores);
+		if (params.match_flags & MATCH_FLAG_THREADS)
+			xstrfmtcatat(key, &pos, "th:%" PRIu16 "|",
+				     node_ptr->threads);
+		if (params.match_flags & MATCH_FLAG_SCT)
+			xstrfmtcatat(key, &pos,
+				     "sct:%" PRIu16 ":%" PRIu16 ":%" PRIu16 "|",
+				     node_ptr->sockets, node_ptr->cores,
+				     node_ptr->threads);
+		if (params.match_flags & MATCH_FLAG_DISK)
+			xstrfmtcatat(key, &pos, "dk:%" PRIu32 "|",
+				     node_ptr->tmp_disk);
+		if (params.match_flags & MATCH_FLAG_MEMORY)
+			xstrfmtcatat(key, &pos, "me:%" PRIu64 "|",
+				     node_ptr->real_memory);
+		if (params.match_flags & MATCH_FLAG_WEIGHT)
+			xstrfmtcatat(key, &pos, "wt:%" PRIu32 "|",
+				     node_ptr->weight);
+		if (params.match_flags & MATCH_FLAG_CPU_LOAD)
+			xstrfmtcatat(key, &pos, "cl:%" PRIu32 "|",
+				     node_ptr->cpu_load);
+		if (params.match_flags & MATCH_FLAG_FREE_MEM)
+			xstrfmtcatat(key, &pos, "fm:%" PRIu64 "|",
+				     node_ptr->free_mem);
+		if (params.match_flags & MATCH_FLAG_PORT)
+			xstrfmtcatat(key, &pos, "po:%" PRIu16 "|",
+				     node_ptr->port);
+		if (params.match_flags & MATCH_FLAG_VERSION)
+			_key_add_str(&key, &pos, "ve", node_ptr->version);
+	}
+
+	/*
+	 * pos trails the last append, so the length is already known; the
+	 * hash idfunc would otherwise walk the key again on every lookup.
+	 */
+	*key_len = pos ? (uint32_t) (pos - key) : (uint32_t) strlen(key);
+	return key;
+}
+
 /* Build information about a partition using one pthread per partition */
 void *_build_part_info(void *args)
 {
 	build_part_info_t *build_struct_ptr;
 	list_t *sinfo_list;
+	xhash_t *sinfo_hash;
+	bool *part_has_nodes;
 	partition_info_t *part_ptr;
 	node_info_msg_t *node_msg;
 	node_info_t *node_ptr = NULL;
-	uint16_t part_num;
+	char *part_key;
+	int part_num;
 	int j = 0;
 
-	if (_serial_part_data())
-		slurm_mutex_lock(&sinfo_list_mutex);
 	build_struct_ptr = (build_part_info_t *) args;
 	sinfo_list = build_struct_ptr->sinfo_list;
+	sinfo_hash = build_struct_ptr->sinfo_hash;
+	part_has_nodes = build_struct_ptr->part_has_nodes;
 	part_num = build_struct_ptr->part_num;
 	part_ptr = build_struct_ptr->part_ptr;
 	node_msg = build_struct_ptr->node_msg;
+
+	/*
+	 * Every node this thread handles is reached through the same
+	 * partition, so the partition half of the key is identical for all of
+	 * them.  Build it once here rather than reformatting a dozen fields
+	 * per node in the innermost loop.
+	 */
+	part_key = _build_part_match_key(part_ptr);
 
 	while (part_ptr->node_inx[j] >= 0) {
 		int i = 0;
@@ -556,16 +758,15 @@ void *_build_part_info(void *args)
 			node_ptr = &(node_msg->node_array[i]);
 			if (node_ptr->name == NULL)
 				continue;
-
-			_insert_node_ptr(sinfo_list, part_num,
-					 part_ptr, node_ptr);
+			_insert_node_ptr(sinfo_list, sinfo_hash, part_has_nodes,
+					 part_num, part_key, part_ptr,
+					 node_ptr);
 		}
 		j += 2;
 	}
 
+	xfree(part_key);
 	xfree(args);
-	if (_serial_part_data())
-		slurm_mutex_unlock(&sinfo_list_mutex);
 	slurm_mutex_lock(&sinfo_cnt_mutex);
 	if (sinfo_cnt > 0) {
 		sinfo_cnt--;
@@ -593,22 +794,13 @@ static int _build_sinfo_data(list_t *sinfo_list,
 	build_part_info_t *build_struct_ptr;
 	node_info_t *node_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
+	xhash_t *sinfo_hash;
+	bool *part_has_nodes;
+	char *part_key;
 	int j;
 
-	/* by default every partition is shown, even if no nodes */
-	if ((!params.node_flag) && (params.match_flags & MATCH_FLAG_PARTITION)){
-		part_ptr = partition_msg->partition_array;
-		for (j = 0; j < partition_msg->record_count; j++, part_ptr++) {
-			if ((!params.part_list) ||
-			    (list_find_first(params.part_list,
-					     _find_part_list,
-					     part_ptr->name))) {
-				list_append(sinfo_list, _create_sinfo(
-						    part_ptr, (uint16_t) j,
-						    NULL));
-			}
-		}
-	}
+	sinfo_hash = xhash_init(_sinfo_hash_idfunc, NULL);
+	part_has_nodes = xcalloc(partition_msg->record_count, sizeof(bool));
 
 	if (params.filtering) {
 		for (j = 0; j < node_msg->record_count; j++) {
@@ -640,17 +832,21 @@ static int _build_sinfo_data(list_t *sinfo_list,
 			hostlist_destroy(hl);
 			if (pos < 0)
 				continue;
-			_insert_node_ptr(sinfo_list, (uint16_t) j,
-					 part_ptr, node_ptr);
+			part_key = _build_part_match_key(part_ptr);
+			_insert_node_ptr(sinfo_list, sinfo_hash, part_has_nodes,
+					 j, part_key, part_ptr, node_ptr);
+			xfree(part_key);
 			continue;
 		}
 
 		/* Process each partition using a separate thread */
 		build_struct_ptr = xmalloc(sizeof(build_part_info_t));
 		build_struct_ptr->node_msg   = node_msg;
-		build_struct_ptr->part_num   = (uint16_t) j;
+		build_struct_ptr->part_num = j;
 		build_struct_ptr->part_ptr   = part_ptr;
 		build_struct_ptr->sinfo_list = sinfo_list;
+		build_struct_ptr->sinfo_hash = sinfo_hash;
+		build_struct_ptr->part_has_nodes = part_has_nodes;
 
 		slurm_mutex_lock(&sinfo_cnt_mutex);
 		sinfo_cnt++;
@@ -666,6 +862,30 @@ static int _build_sinfo_data(list_t *sinfo_list,
 	}
 	slurm_mutex_unlock(&sinfo_cnt_mutex);
 
+	xhash_free(sinfo_hash);
+
+	/*
+	 * Show every partition, even if it ended up with zero nodes -
+	 * either because it has none, or because all of its nodes were
+	 * filtered out (part_has_nodes is set only when a node was
+	 * actually inserted, unlike part_ptr->node_inx which reflects the
+	 * unfiltered RPC data).
+	 */
+	if (!params.node_flag && (params.match_flags & MATCH_FLAG_PARTITION)) {
+		for (j = 0, part_ptr = partition_msg->partition_array;
+		     j < partition_msg->record_count; j++, part_ptr++) {
+			if (params.filtering && params.part_list &&
+			    !list_find_first(params.part_list, _find_part_list,
+					     part_ptr->name))
+				continue;
+			if (!part_has_nodes[j])
+				list_append(sinfo_list,
+					    _create_sinfo(part_ptr,
+							  (uint16_t) j, NULL));
+		}
+	}
+
+	xfree(part_has_nodes);
 	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
 }
@@ -778,228 +998,6 @@ static void _sort_hostlist(list_t *sinfo_list)
 	while ((sinfo_ptr = list_next(i)))
 		hostlist_sort(sinfo_ptr->nodes);
 	list_iterator_destroy(i);
-}
-
-/* Return false if this node's data needs to be added to sinfo's table of
- * data to print. Return true if it is duplicate/redundant data. */
-static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
-{
-	if (params.node_flag)
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_HOSTNAMES) &&
-	    (hostlist_find(sinfo_ptr->hostnames,
-			   node_ptr->node_hostname) == -1))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_NODE_ADDR) &&
-	    (hostlist_find(sinfo_ptr->node_addr, node_ptr->node_addr) == -1))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_EXTRA) &&
-	    (xstrcmp(node_ptr->extra, sinfo_ptr->extra)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_FEATURES) &&
-	    (xstrcmp(node_ptr->features, sinfo_ptr->features)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_FEATURES_ACT) &&
-	    (xstrcmp(node_ptr->features_act, sinfo_ptr->features_act)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_GRES) &&
-	    (xstrcmp(node_ptr->gres, sinfo_ptr->gres)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_GRES_USED) &&
-	    (xstrcmp(node_ptr->gres_used, sinfo_ptr->gres_used)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_COMMENT) &&
-	    (xstrcmp(node_ptr->comment, sinfo_ptr->comment)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_REASON) &&
-	    (xstrcmp(node_ptr->reason, sinfo_ptr->reason)))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_REASON_TIMESTAMP) &&
-	    (node_ptr->reason_time != sinfo_ptr->reason_time))
-		return false;
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_REASON_USER) &&
-	    node_ptr->reason_uid != sinfo_ptr->reason_uid) {
-		return false;
-	}
-
-	if (sinfo_ptr->nodes &&
-	    (params.match_flags & MATCH_FLAG_RESV_NAME) &&
-	    xstrcmp(node_ptr->resv_name, sinfo_ptr->resv_name))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_STATE)) {
-		char *state1, *state2;
-		state1 = node_state_string(node_ptr->node_state);
-		state2 = node_state_string(sinfo_ptr->node_state);
-		if (xstrcmp(state1, state2))
-			return false;
-	}
-
-	if ((params.match_flags & MATCH_FLAG_STATE_COMPLETE)) {
-		char *state1, *state2;
-		int rc = true;
-		state1 = node_state_string_complete(node_ptr->node_state);
-		state2 = node_state_string_complete(sinfo_ptr->node_state);
-		rc = xstrcmp(state1, state2);
-		xfree(state1);
-		xfree(state2);
-
-		if (rc)
-			return false;
-	}
-
-	if ((params.match_flags & MATCH_FLAG_ALLOC_MEM) &&
-	    (node_ptr->alloc_memory != sinfo_ptr->alloc_memory))
-		return false;
-
-	/* If no need to exactly match sizes, just return here
-	 * otherwise check cpus, disk, memory and weight individually */
-	if (!params.exact_match)
-		return true;
-
-	if ((params.match_flags & MATCH_FLAG_CPUS) &&
-	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_SOCKETS) &&
-	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_CORES) &&
-	    (node_ptr->cores       != sinfo_ptr->min_cores))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_THREADS) &&
-	    (node_ptr->threads     != sinfo_ptr->min_threads))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_SCT) &&
-	    ((node_ptr->sockets     != sinfo_ptr->min_sockets) ||
-	     (node_ptr->cores       != sinfo_ptr->min_cores) ||
-	     (node_ptr->threads     != sinfo_ptr->min_threads)))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_DISK) &&
-	    (node_ptr->tmp_disk    != sinfo_ptr->min_disk))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_MEMORY) &&
-	    (node_ptr->real_memory != sinfo_ptr->min_mem))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_WEIGHT) &&
-	    (node_ptr->weight      != sinfo_ptr->min_weight))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_CPU_LOAD) &&
-	    (node_ptr->cpu_load        != sinfo_ptr->min_cpu_load))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_FREE_MEM) &&
-	    (node_ptr->free_mem        != sinfo_ptr->min_free_mem))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_PORT) &&
-	    (node_ptr->port != sinfo_ptr->port))
-		return false;
-	if ((params.match_flags & MATCH_FLAG_VERSION) &&
-	    (node_ptr->version     != sinfo_ptr->version))
-		return false;
-
-	return true;
-}
-
-/* Return true if the processing of partition data must be serialized. In that
- * case, multiple partitions can write into the same sinfo data structure
- * entries. The logic here is similar to that in _match_part_data() below. */
-static bool _serial_part_data(void)
-{
-	if (params.list_reasons)	/* Don't care about partition */
-		return true;
-	/* Match partition name */
-	if ((params.match_flags & MATCH_FLAG_PARTITION))
-		return false;
-	return true;
-}
-
-static bool _match_part_data(sinfo_data_t *sinfo_ptr,
-			     partition_info_t* part_ptr)
-{
-	if (params.list_reasons)	/* Don't care about partition */
-		return true;
-	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
-		return true;
-	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_PARTITION)
-	    && (xstrcmp(part_ptr->name, sinfo_ptr->part_info->name)))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_AVAIL) &&
-	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_GROUPS) &&
-	    (xstrcmp(part_ptr->allow_groups,
-		     sinfo_ptr->part_info->allow_groups)))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_JOB_SIZE) &&
-	    (part_ptr->min_nodes != sinfo_ptr->part_info->min_nodes))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_JOB_SIZE) &&
-	    (part_ptr->max_nodes != sinfo_ptr->part_info->max_nodes))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_DEFAULT_TIME) &&
-	    (part_ptr->default_time != sinfo_ptr->part_info->default_time))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_MAX_TIME) &&
-	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_ROOT) &&
-	    ((part_ptr->flags & PART_FLAG_ROOT_ONLY) !=
-	     (sinfo_ptr->part_info->flags & PART_FLAG_ROOT_ONLY)))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_OVERSUBSCRIBE) &&
-	    (part_ptr->max_share != sinfo_ptr->part_info->max_share))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_PREEMPT_MODE) &&
-	    (part_ptr->preempt_mode != sinfo_ptr->part_info->preempt_mode))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_PRIORITY_TIER) &&
-	    (part_ptr->priority_tier != sinfo_ptr->part_info->priority_tier))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_PRIORITY_JOB_FACTOR) &&
-	    (part_ptr->priority_job_factor !=
-	     sinfo_ptr->part_info->priority_job_factor))
-		return false;
-
-	if ((params.match_flags & MATCH_FLAG_MAX_CPUS_PER_NODE) &&
-	    (part_ptr->max_cpus_per_node !=
-	     sinfo_ptr->part_info->max_cpus_per_node))
-		return false;
-
-	return true;
 }
 
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
@@ -1132,33 +1130,51 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->cpus_idle += total_cpus;
 }
 
-static int _insert_node_ptr(list_t *sinfo_list, uint16_t part_num,
-			    partition_info_t *part_ptr,
+static int _insert_node_ptr(list_t *sinfo_list, xhash_t *sinfo_hash,
+			    bool *part_has_nodes, int part_num,
+			    const char *part_key, partition_info_t *part_ptr,
 			    node_info_t *node_ptr)
 {
-	int rc = SLURM_SUCCESS;
 	sinfo_data_t *sinfo_ptr = NULL;
-	list_itr_t *itr = NULL;
+	char *key;
+	uint32_t key_len = 0;
 
-	itr = list_iterator_create(sinfo_list);
-	while ((sinfo_ptr = list_next(itr))) {
-		if (!_match_part_data(sinfo_ptr, part_ptr))
-			continue;
-		if (sinfo_ptr->nodes_total &&
-		    (!_match_node_data(sinfo_ptr, node_ptr)))
-			continue;
-		_update_sinfo(sinfo_ptr, node_ptr);
-		break;
-	}
-	list_iterator_destroy(itr);
-
-	/* if no match, create new sinfo_data entry */
-	if (!sinfo_ptr) {
+	/*
+	 * -N asks for one line per node-partition pair, so nothing is ever
+	 * grouped and a lookup could only ever miss. Skip the hash entirely.
+	 */
+	if (params.node_flag) {
+		slurm_mutex_lock(&sinfo_list_mutex);
+		part_has_nodes[part_num] = true;
 		list_append(sinfo_list,
-			    _create_sinfo(part_ptr, part_num, node_ptr));
+			    _create_sinfo(part_ptr, (uint16_t) part_num,
+					  node_ptr));
+		slurm_mutex_unlock(&sinfo_list_mutex);
+		return SLURM_SUCCESS;
 	}
 
-	return rc;
+	key = _build_match_key(part_key, node_ptr, &key_len);
+
+	slurm_mutex_lock(&sinfo_list_mutex);
+
+	part_has_nodes[part_num] = true;
+
+	sinfo_ptr = xhash_get(sinfo_hash, key, key_len);
+	if (sinfo_ptr) {
+		_update_sinfo(sinfo_ptr, node_ptr);
+		slurm_mutex_unlock(&sinfo_list_mutex);
+		xfree(key);
+		return SLURM_SUCCESS;
+	}
+
+	sinfo_ptr = _create_sinfo(part_ptr, (uint16_t) part_num, node_ptr);
+	sinfo_ptr->match_key = key;
+	sinfo_ptr->match_key_len = key_len;
+	list_append(sinfo_list, sinfo_ptr);
+	xhash_add(sinfo_hash, sinfo_ptr);
+
+	slurm_mutex_unlock(&sinfo_list_mutex);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1205,6 +1221,7 @@ static void _sinfo_list_delete(void *data)
 {
 	sinfo_data_t *sinfo_ptr = data;
 
+	xfree(sinfo_ptr->match_key);
 	hostlist_destroy(sinfo_ptr->nodes);
 	hostlist_destroy(sinfo_ptr->node_addr);
 	hostlist_destroy(sinfo_ptr->hostnames);
