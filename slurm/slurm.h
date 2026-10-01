@@ -3441,6 +3441,8 @@ typedef struct submit_response_msg {
  * and include an equal number of node_names */
 typedef struct slurm_update_node_msg {
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document, or patch selected by kv_op */
+	kv_op_t kv_op; /* what to do with kv */
 	uint32_t cpu_bind;	/* default CPU binding type */
 	char *cert_token;	/* node's unique token for certmgr validation */
 	char *extra;		/* arbitrary string */
