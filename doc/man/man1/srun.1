@@ -2006,12 +2006,15 @@ are allocated to jobs (\fBSelectType=select/cons_tres\fR).
 If resources are allocated by core, socket, or whole nodes, then the number
 of CPUs allocated to a job may be higher than the task count and the value
 of \fB\-\-mem\-per\-cpu\fR should be adjusted accordingly.
-Specifying a memory limit of zero for a job step will restrict the job step
-to the amount of memory allocated to the job, but not remove any of the job's
-memory allocation from being available to other job steps.
 Also see \fB\-\-mem\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
+
+\fBNOTE\fR: A memory size specification of zero (\fB\-\-mem\-per\-cpu=0\fR) is
+a special case that grants a new job access to all of the memory on each node
+and grants a new step all of the job's memory allocation on each node.
+When specified on a job step, a zero value will still allow that memory to be
+used by other steps, like the \fB\-\-overlap\fR option but for only memory.
 
 \fBNOTE\fR: If the final amount of memory requested by a job
 can't be satisfied by any of the nodes configured in the
