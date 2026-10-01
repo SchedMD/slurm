@@ -767,6 +767,17 @@ static int _build_launch_params(slurm_step_launch_params_t *launch_params,
 	return rc;
 }
 
+/* Tell stepmgr or slurmctld that a step that was never launched is done */
+static void _complete_step(srun_job_t *job, uint32_t step_rc)
+{
+	slurm_step_ctx_t *ctx = job->step_ctx;
+
+	(void) step_launch_complete_nodes(&job->step_id,
+					  ctx->step_resp->stepmgr,
+					  ctx->step_req->use_protocol_ver, 0,
+					  job->nhosts - 1, step_rc);
+}
+
 static step_create_req_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
@@ -1643,8 +1654,17 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	}
 
 	if ((rc = _build_launch_params(&launch_params, job, opt_local))) {
+		slurm_mutex_lock(&launch_lock);
+
 		/* Nothing launched: record it as a launch failure */
-		*local_global_rc = W_EXITCODE(1, 0);
+		if (!*local_global_rc)
+			*local_global_rc = W_EXITCODE(1, 0);
+
+		slurm_mutex_unlock(&launch_lock);
+
+		/* No slurmstepd will complete the step, so complete it here */
+		if (first_launch)
+			_complete_step(job, *local_global_rc);
 		goto cleanup;
 	}
 
