@@ -60,6 +60,7 @@ strong_alias(data_key_get, slurm_data_key_get);
 strong_alias(data_key_set, slurm_data_key_set);
 strong_alias(data_list_for_each_const, slurm_data_list_for_each_const);
 strong_alias(data_list_get_at, slurm_data_list_get_at);
+strong_alias(data_list_insert_at, slurm_data_list_insert_at);
 strong_alias(data_new, slurm_data_new);
 strong_alias(data_set_bool, slurm_data_set_bool);
 strong_alias(data_set_dict, slurm_data_set_dict);
@@ -818,6 +819,54 @@ extern const data_t *data_list_get_at_const(const data_t *data, size_t index)
 		return NULL;
 
 	return n->data;
+}
+
+extern data_t *data_list_insert_at(data_t *data, size_t index)
+{
+	data_list_t *dl = NULL;
+	data_list_node_t *n = NULL, *prev = NULL;
+	data_t *ndata = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	dl = data->data.list_u;
+	_check_data_list_magic(dl);
+
+	/* inserting at the length appends, anything past it is out of range */
+	if (index > dl->count) {
+		error("%s: index %zu is past the end of %pD[%zu]",
+		      __func__, index, data, dl->count);
+		return NULL;
+	}
+
+	if (index == dl->count)
+		return data_list_append(data);
+
+	if (!index) {
+		ndata = data_list_prepend(data);
+		log_flag(DATA, "%s: inserted %pD[%zu]=%pD",
+			 __func__, data, index, ndata);
+		return ndata;
+	}
+
+	/* insert after the node before index, which always exists here */
+	prev = _data_list_node_at(dl, index - 1);
+	xassert(prev);
+
+	ndata = data_new();
+	n = _new_data_list_node(ndata, NULL);
+	n->next = prev->next;
+	prev->next = n;
+	dl->count++;
+
+	log_flag(DATA, "%s: inserted %pD[%zu]=%pD",
+		 __func__, data, index, ndata);
+
+	return ndata;
 }
 
 static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)

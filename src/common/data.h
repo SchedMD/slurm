@@ -479,6 +479,20 @@ extern data_t *data_list_get_at(data_t *data, size_t index);
 extern const data_t *data_list_get_at_const(const data_t *data, size_t index);
 
 /*
+ * Insert new NULL data at given index in list
+ *
+ * Entries at and after index are shifted one place towards the end. Existing
+ * entries keep their identity: no data_t ptr into the list is invalidated.
+ *
+ * IN data data object (list type only)
+ * IN index 0 based offset to insert at. Must be <= list length; passing the
+ * 	length appends.
+ * RET new data object at index or NULL if index is out of range
+ * 	Entry is owned by data and must not be free'd
+ */
+extern data_t *data_list_insert_at(data_t *data, size_t index);
+
+/*
  * Copy and join array of data into a single list.
  * IN data - array of data objects (list type only) to copy/merge into a single
  * data list. Last entry must be NULL.
