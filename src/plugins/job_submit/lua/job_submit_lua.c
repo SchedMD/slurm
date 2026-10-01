@@ -612,6 +612,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->max_cpus);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		lua_pushnumber(L, job_desc->max_nodes);
+	} else if (!xstrcmp(name, "max_npids")) {
+		lua_pushnumber(L, job_desc->max_npids);
 	} else if (!xstrcmp(name, "mcs_label")) {
 		lua_pushstring(L, job_desc->mcs_label);
 	} else if (!xstrcmp(name, "mem_per_tres")) {
@@ -908,6 +910,8 @@ static int _set_job_req_field(lua_State *L)
 		job_desc->max_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "max_nodes")) {
 		job_desc->max_nodes = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "max_npids")) {
+		job_desc->max_npids = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "mcs_label")) {
 		SET_JOB_STRING(mcs_label, false);
 	} else if (!xstrcmp(name, "mem_per_tres")) {
