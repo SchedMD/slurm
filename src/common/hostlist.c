@@ -1687,7 +1687,7 @@ static int _parse_range_list(char *str,
 static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
 			    struct _range *range, int n, int dims)
 {
-	int i, k, nr, rc = 0, rc1;
+	int i, k, nr;
 	char *p, *q;
 	char *new_prefix = NULL;
 
@@ -1721,11 +1721,14 @@ static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
 				xstrfmtcat(new_prefix, "%s%0*lu%s",
 					   prefix, pre_range->width, j, q);
 				if (recurse) {
-					rc1 = _push_range_list(hl, new_prefix,
-							       suffix,
-							       saved_range,
-							       n, dims);
-					rc = MAX(rc, rc1);
+					if (_push_range_list(hl, new_prefix,
+							     suffix,
+							     saved_range, n,
+							     dims)) {
+						xfree(new_prefix);
+						xfree(prefix_range);
+						return -1;
+					}
 				} else {
 					range = saved_range;
 					for (k = 0; k < n; k++) {
@@ -1742,7 +1745,7 @@ static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
 			pre_range++;
 		}
 		xfree(prefix_range);
-		return rc;
+		return 0;
 	}
 
 	for (k = 0; k < n; k++) {
