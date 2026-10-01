@@ -983,6 +983,7 @@ extern void slurmdb_destroy_reservation_rec(void *object)
 		xfree(slurmdb_resv->assocs);
 		xfree(slurmdb_resv->cluster);
 		xfree(slurmdb_resv->comment);
+		FREE_NULL_DATA(slurmdb_resv->kv);
 		xfree(slurmdb_resv->name);
 		xfree(slurmdb_resv->nodes);
 		xfree(slurmdb_resv->node_inx);
