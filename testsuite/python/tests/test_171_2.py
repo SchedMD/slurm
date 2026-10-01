@@ -364,3 +364,38 @@ def test_salloc_het_interactive_step_uses_first_component(bundles, components, b
         f" expected {expected}"
         f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
     )
+
+
+def test_srun_runtime_env_mixes_with_options(bundles):
+    """SRUN_RUNTIME applies to the components that name no --runtime, and a
+    component that names one overrides it.
+
+    The first component takes runtime/none from SRUN_RUNTIME, which ignores
+    SRUN_CONTAINER, so it runs on the host rather than in bundle b as
+    DefRuntimePlugin would. The second names runtime/oci and bundle a, so it
+    runs in it.
+    """
+
+    result = atf.run_command(
+        f"srun -l -N1 : -N1 --runtime=oci --container={bundles['a']}"
+        f" /bin/sh -c 'echo {task_marker}'",
+        env_vars=f"SRUN_RUNTIME=none SRUN_CONTAINER={bundles['b']}",
+    )
+    assert result["exit_code"] == 0, f"srun failed: {result['stderr']}"
+
+    lines = collections.defaultdict(list)
+    for line in result["stdout"].splitlines():
+        match = re.match(r"^\s*(\d+): (.*)$", line)
+        if match:
+            lines[int(match.group(1))].append(match.group(2))
+    assert sorted(lines[0]) == [task_marker], (
+        "the first component should run on the host, not in bundle b, under"
+        " SRUN_RUNTIME=none"
+        f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+    )
+    assert sorted(lines[1]) == sorted(
+        ["in_rootfs_a", f"SLURM_CONTAINER={bundles['a']}", task_marker]
+    ), (
+        "the second component's --runtime=oci should beat SRUN_RUNTIME=none"
+        f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
+    )
