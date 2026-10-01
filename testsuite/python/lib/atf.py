@@ -2157,6 +2157,71 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
     return tuple(int(n) for p in version_str.split(".") for n in [p.split("-")[0]])
 
 
+def get_build_config(name, fatal=False):
+    """Returns the value the config.h of the Slurm build defines name to.
+
+    Assumes upgrade setups build the old and new Slurm with the same config.h.
+
+    Args:
+        name (string): The config.h macro to look up.
+        fatal (bool): Fail when config.h is missing. Otherwise, log a warning.
+
+    Returns:
+        The value name is defined to, an empty string if it is defined without
+        a value, or None if it is not defined or config.h is missing.
+
+    Example:
+        >>> get_build_config("HAVE_NUMA")
+        '1'
+        >>> get_build_config("HAVE_NO_SUCH_FEATURE")
+        None
+    """
+    header = pathlib.Path(f"{properties['slurm-build-dir']}/config.h")
+    if not header.exists():
+        msg = f"Unable to access {header} to check for {name}"
+        if fatal:
+            pytest.fail(msg)
+        logging.warning(msg)
+        return None
+
+    for line in header.read_text().splitlines():
+        if not line.startswith("#"):
+            continue
+        # Autoconf indents some directives, e.g. "#  define WORDS_BIGENDIAN 1"
+        words = line[1:].split(maxsplit=2)
+        if words[:2] == ["define", name]:
+            return words[2].strip() if len(words) > 2 else ""
+    return None
+
+
+def require_build_config(name, value=None, reason=None):
+    """Skips unless the config.h of the Slurm build defines name.
+
+    Fails if config.h is missing, since that is a misconfigured testsuite
+    rather than a build without the feature.
+
+    Args:
+        name (string): The config.h macro to require.
+        value (string or None): If value is a string match the macro exactly, if
+                                value is None allow any defined macro as #ifdef.
+        reason (string): The reason the macro is required.
+
+    Returns:
+        None
+
+    Example:
+        >>> require_build_config("HAVE_NUMA")
+    """
+    macro_value = get_build_config(name, fatal=True)
+    equal = value is not None
+    if (equal and macro_value != value) or (not equal and macro_value is None):
+        if not reason:
+            reason = f"This test requires Slurm built with {name}"
+            if equal:
+                reason = f"{reason} {value}"
+        pytest.skip(reason, allow_module_level=True)
+
+
 # Unique PS1 sentinel used to synchronize on the shell prompt with pexpect.
 # The set form uses '\$' (literal backslash + dollar) so the *echoed input*
 # of the PS1 assignment does not match the *expect regex* below, which has
