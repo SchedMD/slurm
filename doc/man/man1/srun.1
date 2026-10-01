@@ -1844,9 +1844,6 @@ Default value is \fBDefMemPerNode\fR and the maximum value is
 seen using the \fBscontrol show config\fR command.
 This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
-Specifying a memory limit of zero for a job step will restrict the job step
-to the amount of memory allocated to the job, but not remove any of the job's
-memory allocation from being available to other job steps.
 Also see \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive. If \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR or
@@ -1854,9 +1851,11 @@ options are mutually exclusive. If \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR or
 take precedence over the environment (potentially inherited from \fBsalloc\fR
 or \fBsbatch\fR).
 
-\fBNOTE\fR: A memory size specification of zero is treated as a special case and
-grants the job access to all of the memory on each node for newly submitted jobs
-and all available job memory to new job steps.
+\fBNOTE\fR: A memory size specification of zero (\fB\-\-mem=0\fR) is a special
+case that grants a new job access to all of the memory on each node and
+grants a new step all of the job's memory allocation on each node.
+When specified on a job step, a zero value will still allow that memory to be
+used by other steps, like the \fB\-\-overlap\fR option but for only memory.
 
 \fBNOTE\fR: The memory used by each slurmstepd process is included in the job's
 total memory usage. It typically consumes between 20MiB and 200MiB, though this
