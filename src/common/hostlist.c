@@ -1304,8 +1304,13 @@ static int hostlist_insert_range(hostlist_t *hl, hostrange_t *hr, int n)
 
 	/* adjust hostlist iterators if needed */
 	for (hli = hl->ilist; hli; hli = hli->next) {
-		if (hli->idx >= n)
-			hli->hr = hli->hl->hr[++hli->idx];
+		if (hli->idx >= n) {
+			hli->idx++;
+			if (hli->idx < hl->nranges)
+				hli->hr = hl->hr[hli->idx];
+			else
+				hli->hr = NULL;
+		}
 	}
 
 	return 1;
