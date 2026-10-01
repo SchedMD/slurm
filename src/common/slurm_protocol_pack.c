@@ -6785,6 +6785,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->mem_update_margin, buffer);
 		pack16(msg->oom_kill_step, buffer);
 		pack32(msg->pn_min_tmp_disk, buffer);
+		pack32(msg->max_npids, buffer);
 		packstr(msg->prefer, buffer);
 
 		pack32(msg->cpu_freq_min, buffer);
@@ -7325,6 +7326,9 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t start, script_len;
 	job_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	msg->max_npids = NO_VAL;
+
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
@@ -7355,6 +7359,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->mem_update_margin, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
+		safe_unpack32(&msg->max_npids, buffer);
 
 		safe_unpackstr(&msg->prefer, buffer);
 		safe_unpack32(&msg->cpu_freq_min, buffer);
