@@ -5546,6 +5546,13 @@ static void _slurm_rpc_set_suspend_exc_nodes(slurm_msg_t *msg)
 	suspend_exc_update_msg_t *update_msg = msg->data;
 	char *new_str;
 
+	if (!update_msg->update_str) {
+		error("set SuspendExcNodes request from uid=%u has no value",
+		      msg->auth.uid);
+		slurm_send_rc_msg(msg, EINVAL);
+		return;
+	}
+
 	if ((update_msg->mode != UPDATE_SET) &&
 	    (xstrchr(slurm_conf.suspend_exc_nodes, ':') ||
 	     xstrchr(update_msg->update_str, ':'))) {
@@ -5576,6 +5583,13 @@ static void _slurm_rpc_set_suspend_exc_parts(slurm_msg_t *msg)
 	suspend_exc_update_msg_t *update_msg = msg->data;
 	char *new_str;
 
+	if (!update_msg->update_str) {
+		error("set SuspendExcParts request from uid=%u has no value",
+		      msg->auth.uid);
+		slurm_send_rc_msg(msg, EINVAL);
+		return;
+	}
+
 	new_str = _update_string_from_mode(update_msg->update_str,
 					   update_msg->mode,
 					   slurm_conf.suspend_exc_parts, false);
@@ -5597,6 +5611,13 @@ static void _slurm_rpc_set_suspend_exc_states(slurm_msg_t *msg)
 {
 	suspend_exc_update_msg_t *update_msg = msg->data;
 	char *new_str;
+
+	if (!update_msg->update_str) {
+		error("set SuspendExcStates request from uid=%u has no value",
+		      msg->auth.uid);
+		slurm_send_rc_msg(msg, EINVAL);
+		return;
+	}
 
 	new_str = _update_string_from_mode(update_msg->update_str,
 					   update_msg->mode,
