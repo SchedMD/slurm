@@ -115,16 +115,9 @@ def oci_enabled():
 @pytest.mark.parametrize(
     "options,parameter,expected,inherited",
     [
-        ("--runtime=oci", "Runtime", "runtime/oci", None),
-        (
-            "--container=/nonexistent/bundle",
-            "Container",
-            "/nonexistent/bundle",
-            None,
-        ),
         ("--container-id=abc123", "ContainerID", "abc123", "abc123"),
     ],
-    ids=["runtime", "container", "container-id"],
+    ids=["container-id"],
 )
 def test_hetjob_component_option_propagation(
     command, options, parameter, expected, inherited
@@ -133,17 +126,17 @@ def test_hetjob_component_option_propagation(
     option's propagation rule says, not whatever the previous component
     asked for.
 
-    --runtime and --container are reset for each component, so the second
-    records neither. --container-id is propagated, so the second inherits
-    it. heterogeneous_jobs.html lists which options fall on which side.
+    --container-id is propagated, so the second inherits it. --runtime and
+    --container are reset for each component instead, which
+    test_hetjob_runtime_mix_recorded covers. heterogeneous_jobs.html lists
+    which options fall on which side.
 
     Only an omitted option can inherit. A component that names the option
     explicitly always wins, so giving every component its own value would
     prove nothing either way.
 
     The job is held and never launched, so this asserts on the submitted job
-    records. A component that asked for neither records neither - the runtime
-    falls back to DefRuntimePlugin later, when slurmstepd loads the plugin.
+    records.
     """
 
     if command == "sbatch":
@@ -534,3 +527,77 @@ def test_sbatch_script_runtime_rules(directives, options, env, error, expected):
         assert (
             atf.get_job_parameter(job_id, parameter) == value
         ), f"{command} should record {parameter}={value}"
+
+
+# Each component is (options, expected Runtime, expected Container). A
+# component with no --runtime records none, whatever the one before it asked.
+het_mixes = {
+    "issue-50190": [
+        ("", None, None),
+        ("--runtime=none", "runtime/none", None),
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+        ("--runtime none", "runtime/none", None),
+        ("--container=/nonexistent/b", None, "/nonexistent/b"),
+    ],
+    "none-then-oci": [
+        ("--runtime=none", "runtime/none", None),
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+    ],
+    "oci-then-none": [
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+        ("--runtime=none", "runtime/none", None),
+    ],
+    "oci-then-nothing": [
+        ("--runtime=oci --container=/nonexistent/a", "runtime/oci", "/nonexistent/a"),
+        ("", None, None),
+    ],
+    "default-container-then-nothing": [
+        ("--container=/nonexistent/a", None, "/nonexistent/a"),
+        ("", None, None),
+    ],
+}
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize("components", het_mixes.values(), ids=het_mixes.keys())
+def test_hetjob_runtime_mix_recorded(command, components):
+    """Each component of a het job records its own --runtime and --container,
+    however the components mix runtime/none, runtime/oci and the default."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    args = " : ".join(f"-N1 --hold {options}" for options, _, _ in components)
+    if command == "sbatch":
+        job_id = atf.submit_job_sbatch(f"{args} --wrap=true", fatal=True)
+    else:
+        job_id = atf.submit_job(command, args, "true", background=True, fatal=True)
+    jobs = atf.get_jobs(job_id, fatal=True).values()
+    records = {job["HetJobOffset"]: job for job in jobs}
+    assert len(records) == len(components), "one job record per component"
+    for offset, (options, runtime, container) in enumerate(components):
+        assert records[offset].get("Runtime") == runtime, (
+            f"component {offset} ({options!r}) should record Runtime={runtime},"
+            f" got {records[offset].get('Runtime')}"
+        )
+        assert records[offset].get("Container") == container, (
+            f"component {offset} ({options!r}) should record Container={container},"
+            f" got {records[offset].get('Container')}"
+        )
+
+
+@pytest.mark.parametrize("command", ["salloc", "sbatch", "srun"])
+@pytest.mark.parametrize(
+    "later, error",
+    [
+        ("--runtime=none --container=/nonexistent/bundle", "is not an option of"),
+        ("--runtime=oci --runtime=none", "--runtime may only be given once"),
+        ("--runtime=bogus", "cannot create runtime context for runtime/bogus"),
+    ],
+    ids=["none-with-container", "two-runtimes", "unknown-runtime"],
+)
+def test_hetjob_later_component_runtime_rejected(command, later, error):
+    """A component after the first is held to the same rules as the first."""
+
+    atf.set_config_parameter("DefRuntimePlugin", "runtime/oci")
+
+    assert error in _rejected(command, f"-N1 : -N1 {later}"), f"{command} {later!r}"
