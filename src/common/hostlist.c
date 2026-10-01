@@ -3343,7 +3343,11 @@ static void _iterator_advance(hostlist_iterator_t *i)
 
 	if (++(i->depth) > (i->hr->hi - i->hr->lo)) {
 		i->depth = 0;
-		i->hr = i->hl->hr[++i->idx];
+		i->idx++;
+		if (i->idx < i->hl->nranges)
+			i->hr = i->hl->hr[i->idx];
+		else
+			i->hr = NULL;
 	}
 }
 
