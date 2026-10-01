@@ -2113,6 +2113,21 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 		.err_msg = err_msg,
 	};
 
+	/* Persistent connections reply with PERSIST_RC. */
+	if (msg->flags & SLURM_PERSIST_MSG) {
+		persist_rc_msg_t persist_rc = {
+			.comment = err_msg,
+			.rc = rc,
+			.ret_info = msg->msg_type,
+		};
+
+		if ((rc = send_msg_response(msg, PERSIST_RC, &persist_rc))) {
+			errno = rc;
+			return SLURM_ERROR;
+		}
+		return SLURM_SUCCESS;
+	}
+
 	if ((rc = send_msg_response(msg, RESPONSE_SLURM_RC_MSG, &rc_msg))) {
 		errno = rc;
 		return SLURM_ERROR;
