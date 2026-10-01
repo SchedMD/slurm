@@ -2211,7 +2211,7 @@ char *hostlist_nth(hostlist_t *hl, int n)
 
 int hostlist_delete_nth(hostlist_t *hl, int n)
 {
-	int i, count;
+	int i, count, rc = 0;
 
 	if (!hl)
 		return -1;
@@ -2236,16 +2236,16 @@ int hostlist_delete_nth(hostlist_t *hl, int n)
 			} else if (hostrange_empty(hr))
 				hostlist_delete_range(hl, i);
 
-			goto done;
+			hl->nhosts--;
+			rc = 1;
+			break;
 		} else
 			count += num_in_range;
 
 	}
 
-done:
 	UNLOCK_HOSTLIST(hl);
-	hl->nhosts--;
-	return 1;
+	return rc;
 }
 
 int hostlist_count(hostlist_t *hl)
