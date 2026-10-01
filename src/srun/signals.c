@@ -80,8 +80,9 @@ extern bool srun_sig_is_handled(int signo)
 /*
  * SIGALRM, SIGCONT, and SIGPIPE are excluded on purpose:
  *  - SIGALRM is used internally by srun for the --wait (max_wait) timer.
- *  - SIGCONT's handler is load-bearing for wake-up semantics; ignoring it
- *    is effectively a no-op at the kernel level but we keep it reserved.
+ *  - SIGCONT is never forwarded to the job; _forward_signal() only logs it.
+ *    Allowing it in --ignore-signals would only suppress that log line, so
+ *    it stays reserved.
  *  - SIGPIPE triggers the I/O teardown path; ignoring it leaves srun with
  *    a dead stdio socket and no cleanup.
  */
@@ -204,13 +205,16 @@ static void _on_signal(int signo)
 
 	/*
 	 * When not forwarding signals to a running job, all signals in
-	 * SRUN_SIGNALS except for SIGCONT indicate completion.
+	 * SRUN_SIGNALS except for SIGCONT indicate completion. SIGCONT must
+	 * not write srun_sig_eventfd either. Nothing drains it, so every later
+	 * allocation or step wait would return immediately.
 	 */
-	if (signo != SIGCONT) {
-		slurm_mutex_lock(&srun_destroy_sig_lock);
-		srun_destroy_sig = signo;
-		slurm_mutex_unlock(&srun_destroy_sig_lock);
-	}
+	if (signo == SIGCONT)
+		return;
+
+	slurm_mutex_lock(&srun_destroy_sig_lock);
+	srun_destroy_sig = signo;
+	slurm_mutex_unlock(&srun_destroy_sig_lock);
 
 	/*
 	 * Write event on srun_sig_eventfd to wake up any thread that may be
@@ -224,9 +228,6 @@ static void _on_signal(int signo)
 rwfail:
 	if (write_rc != SLURM_SUCCESS)
 		error("Failed to write event to srun_sig_eventfd");
-
-	if (signo == SIGCONT)
-		return;
 
 	debug("Got signal %d", signo);
 
