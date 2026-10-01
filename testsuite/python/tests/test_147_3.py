@@ -159,6 +159,20 @@ def get_hooks_run(spank_tmp):
     return hooks
 
 
+def get_job_id(spank_tmp):
+    """Return the job id recorded by any hook marker, or 0 if there is none.
+
+    Some hooks (e.g. slurm_spank_exit in local and allocator context) don't have
+    a job id of their own, but the job did exist, and the hooks that ran
+    in remote context (inside the job) recorded it.
+    """
+    output = atf.run_command_output(
+        f"grep -h -o 'job_id=[0-9]*' {spank_tmp}/slurm_spank_*_log 2>/dev/null || true"
+    )
+    job_ids = [int(job_id) for job_id in re.findall(r"job_id=(\d+)", output)]
+    return max(job_ids, default=0)
+
+
 def assert_hooks_run(spank_tmp, function, context, job_id, not_called=()):
     """Assert the hooks that ran match what spank.8 documents.
 
@@ -223,9 +237,18 @@ def assert_job_end_state(job_id, allowed_states):
         job_id, "DONE", fatal=True
     ), f"Job {job_id} should reach a terminal state, but did not"
     state = atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND")
+
+    # Log why the job ended that way: a non-zero ExitCode with no Reason means
+    # the client reported its own exit status when it released the allocation,
+    # while a launch failure sets a Reason.
+    details = {
+        name: atf.get_job_parameter(job_id, name, default="NOT_FOUND")
+        for name in ("Reason", "ExitCode", "DerivedExitCode", "Restarts")
+    }
+    logging.debug(f"Job {job_id} ended in {state}: {details}")
     assert (
         state in allowed_states
-    ), f"Job {job_id} should end in one of {allowed_states}, but ended in {state}"
+    ), f"Job {job_id} should end in one of {allowed_states}, but ended in {state} ({details})"
 
 
 @pytest.mark.parametrize(
@@ -270,13 +293,19 @@ def test_srun(spank_tmp, function, context, xfail, drains, fails, jobid_assigned
 
     if jobid_assigned:
         assert int(job_id) > 0, "JobID should be assigned"
-
-        if fails:
-            assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
     else:
         assert int(job_id) == 0, "JobID should NOT be assigned"
 
-    assert_hooks_run(spank_tmp, function, context, int(job_id))
+    # The failing hook may not know the job id (e.g. slurm_spank_exit), but the
+    # job existed if any other hook recorded it. Check whether it failed.
+    job_id = get_job_id(spank_tmp)
+    if job_id > 0:
+        if fails:
+            assert_job_end_state(job_id, ("FAILED", "CANCELLED"))
+        else:
+            assert_job_end_state(job_id, ("COMPLETED",))
+
+    assert_hooks_run(spank_tmp, function, context, job_id)
     assert_node_drained(drains)
 
 
@@ -326,10 +355,16 @@ def test_salloc(spank_tmp, function, context, xfail, drains, fails, jobid_assign
     if jobid_assigned:
         assert int(job_id) > 0, "JobID should be assigned"
 
+    # The failing hook may not know the job id (e.g. slurm_spank_exit), but the
+    # job existed if any other hook recorded it. Check whether it failed.
+    job_id = get_job_id(spank_tmp)
+    if job_id > 0:
         if fails:
-            assert_job_end_state(int(job_id), ("FAILED", "CANCELLED"))
+            assert_job_end_state(job_id, ("FAILED", "CANCELLED"))
+        else:
+            assert_job_end_state(job_id, ("COMPLETED",))
 
-    assert_hooks_run(spank_tmp, function, context, int(job_id))
+    assert_hooks_run(spank_tmp, function, context, job_id)
     assert_node_drained(drains)
 
 
