@@ -999,6 +999,7 @@ typedef struct {
 	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t jobid;
 	char	*jobname;
+	data_t *kv; /* KV metadata document */
 	char *layout; /* comma-separated key=value pairs */
 	char *lineage;		   /* Complete path up the hierarchy to the root
 				    * association */
