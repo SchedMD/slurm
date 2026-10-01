@@ -19947,6 +19947,9 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	if (job_ptr->extra)
 		setenvf(&my_env, "SLURM_JOB_EXTRA", "%s", job_ptr->extra);
 
+	if (job_ptr->layout)
+		setenvf(&my_env, "SLURM_JOB_LAYOUT", "%s", job_ptr->layout);
+
 	if (job_ptr->het_job_id) {
 		/* Continue support for old hetjob terminology. */
 		setenvf(&my_env, "SLURM_PACK_JOB_ID", "%u",
