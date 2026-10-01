@@ -49,6 +49,7 @@
 #include <sys/wait.h>
 
 #include "src/common/cron.h"
+#include "src/common/data.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/job_record.h"
@@ -1715,6 +1716,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		FREE_NULL_IDENTITY(msg->id);
 		xfree(msg->job_id_str);
 		xfree(msg->job_size_str);
+		FREE_NULL_DATA(msg->kv);
 		xfree(msg->layout);
 		xfree(msg->licenses);
 		xfree(msg->licenses_tot);
@@ -1922,6 +1924,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		}
 		xfree(job->het_job_id_set);
 		xfree(job->job_size_str);
+		FREE_NULL_DATA(job->kv);
 		xfree(job->layout);
 		xfree(job->licenses);
 		xfree(job->licenses_allocated);

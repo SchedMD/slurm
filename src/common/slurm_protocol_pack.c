@@ -53,6 +53,7 @@
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/part_record.h"
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
@@ -7699,6 +7700,8 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		msg->bitflags |= USE_DEFAULT_WCKEY;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->site_factor, buffer);
 		packstr(msg->batch_features, buffer);
@@ -7711,6 +7714,9 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->core_spec, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->kill_on_node_fail, buffer);
+		if ((rc = pack_data(msg->kv, smsg->protocol_version, buffer)))
+			goto cleanup;
+		pack16(kv_op, buffer);
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
@@ -8260,6 +8266,7 @@ static int _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->segment_size, buffer);
 	}
 
+cleanup:
 	if (msg->script_buf)
 		msg->script = NULL;
 
@@ -8275,6 +8282,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 	msg->max_npids = NO_VAL;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->site_factor, buffer);
@@ -8288,6 +8297,10 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->core_spec, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->kill_on_node_fail, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);

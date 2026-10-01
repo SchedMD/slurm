@@ -35,8 +35,9 @@
 
 #include "job_record.h"
 
-#include "src/common/port_mgr.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/pack_data.h"
+#include "src/common/port_mgr.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"
 
@@ -268,6 +269,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	FREE_NULL_IDENTITY(job_ptr->id);
+	FREE_NULL_DATA(job_ptr->kv);
 	xfree(job_ptr->layout);
 	xfree(job_ptr->licenses);
 	xfree(job_ptr->licenses_allocated);
