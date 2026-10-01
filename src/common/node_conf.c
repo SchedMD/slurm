@@ -61,6 +61,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
@@ -1408,6 +1409,7 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr->arch);
 	xfree(node_ptr->cert_token);
 	xfree(node_ptr->comment);
+	FREE_NULL_DATA(node_ptr->kv);
 	xfree(node_ptr->comm_name);
 	xfree(node_ptr->cpu_spec_list);
 	xfree(node_ptr->extra);
@@ -1707,6 +1709,8 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		packstr(object->name, buffer);
 		packstr(object->node_hostname, buffer);
 		packstr(object->comment, buffer);
+		if (pack_data(object->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		packstr(object->extra, buffer);
 		packstr(object->reason, buffer);
 		packstr(object->features, buffer);
@@ -1942,6 +1946,8 @@ extern int node_record_unpack(void **out,
 		safe_unpackstr(&object->name, buffer);
 		safe_unpackstr(&object->node_hostname, buffer);
 		safe_unpackstr(&object->comment, buffer);
+		object->kv = data_new();
+		safe_unpack_data(object->kv, protocol_version, buffer);
 		safe_unpackstr(&object->extra, buffer);
 		safe_unpackstr(&object->reason, buffer);
 		safe_unpackstr(&object->features, buffer);

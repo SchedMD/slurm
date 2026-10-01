@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/pack.h"
+#include "src/common/pack_data.h"
 #include "src/common/parse_time.h"
 #include "src/common/parse_value.h"
 #include "src/common/power_action.h"
@@ -619,6 +620,11 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->comment = NULL;
 			}
 
+			if (!node_ptr->kv) {
+				node_ptr->kv = node_state_rec->kv;
+				node_state_rec->kv = NULL;
+			}
+
 			if (!node_ptr->instance_id) {
 				node_ptr->instance_id =
 					node_state_rec->instance_id;
@@ -670,6 +676,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->comment);
 			node_ptr->comment = node_state_rec->comment;
 			node_state_rec->comment = NULL;
+			FREE_NULL_DATA(node_ptr->kv);
+			node_ptr->kv = node_state_rec->kv;
+			node_state_rec->kv = NULL;
 			xfree(node_ptr->instance_id);
 			node_ptr->instance_id = node_state_rec->instance_id;
 			node_state_rec->instance_id = NULL;
@@ -1220,6 +1229,8 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->comment, buffer);
+		if (pack_data(dump_node_ptr->kv, protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
 		packstr(dump_node_ptr->extra, buffer);
 		packstr(dump_node_ptr->instance_id, buffer);
 		packstr(dump_node_ptr->instance_type, buffer);

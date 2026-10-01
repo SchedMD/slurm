@@ -843,8 +843,13 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	update_node_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = msg->kv_op;
+
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
+		if (pack_data(msg->kv, smsg->protocol_version, buffer))
+			fatal_abort("%s: Invalid KV data", __func__);
+		pack16(kv_op, buffer);
 		pack32(msg->cpu_bind, buffer);
 		packstr(msg->extra, buffer);
 		packstr(msg->features, buffer);
@@ -909,8 +914,14 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 	slurm_init_update_node_msg(msg);
 
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		uint16_t kv_op = 0;
+
 		safe_unpackstr(&msg->cert_token, buffer);
 		safe_unpackstr(&msg->comment, buffer);
+		msg->kv = data_new();
+		safe_unpack_data(msg->kv, smsg->protocol_version, buffer);
+		safe_unpack16(&kv_op, buffer);
+		msg->kv_op = (kv_op_t) kv_op;
 		safe_unpack32(&msg->cpu_bind, buffer);
 		safe_unpackstr(&msg->extra, buffer);
 		safe_unpackstr(&msg->features, buffer);
@@ -1835,6 +1846,8 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->gres_used, buffer);
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
+		node->kv = data_new();
+		safe_unpack_data(node->kv, protocol_version, buffer);
 		safe_unpackstr(&node->extra, buffer);
 		safe_unpackstr(&node->instance_id, buffer);
 		safe_unpackstr(&node->instance_type, buffer);

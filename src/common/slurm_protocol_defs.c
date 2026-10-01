@@ -2092,6 +2092,7 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	if (msg) {
 		xfree(msg->cert_token);
 		xfree(msg->comment);
+		FREE_NULL_DATA(msg->kv);
 		xfree(msg->extra);
 		xfree(msg->features);
 		xfree(msg->features_act);
@@ -4624,6 +4625,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->bcast_address);
 		xfree(node->cluster_name);
 		xfree(node->comment);
+		FREE_NULL_DATA(node->kv);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
 		xfree(node->extra);
