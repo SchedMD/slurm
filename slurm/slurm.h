@@ -2539,6 +2539,7 @@ typedef struct node_info {
 				     * to only GPU jobs */
 	char *gpu_spec;         /* node's cores reserved for GPU jobs */
 	char *comment;		/* arbitrary comment */
+	data_t *kv; /* KV metadata document */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	time_t reason_time;	/* Time stamp when reason was set, ignore if
 				 * no reason is set. */
