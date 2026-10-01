@@ -660,6 +660,7 @@ rwfail:
 	error("%s: failed: %m", __func__);
 fail:
 	FREE_NULL_BUFFER(buffer);
+	free(parent_alias);
 	return errno;
 }
 
