@@ -94,6 +94,7 @@ check_PROGRAMS = $(am__EXEEXT_3)
 TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 buf-test \
+@HAVE_CHECK_TRUE@	 persist_conn-test \
 @HAVE_CHECK_TRUE@	 data-test \
 @HAVE_CHECK_TRUE@	 dns-test \
 @HAVE_CHECK_TRUE@	 http-test \
@@ -171,9 +172,10 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) buf-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	data-test$(EXEEXT) dns-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	http-test$(EXEEXT) sluid-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	xbase64-test$(EXEEXT) xstring-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	persist_conn-test$(EXEEXT) data-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	dns-test$(EXEEXT) http-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	sluid-test$(EXEEXT) xbase64-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) pack-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xahash-test$(EXEEXT)
@@ -234,6 +236,15 @@ parse_time_test_OBJECTS = parse_time_test-parse_time-test.$(OBJEXT)
 parse_time_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(parse_time_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
+persist_conn_test_SOURCES = persist_conn-test.c
+persist_conn_test_OBJECTS =  \
+	persist_conn_test-persist_conn-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@persist_conn_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+persist_conn_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(persist_conn_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 reverse_tree_test_SOURCES = reverse_tree-test.c
 reverse_tree_test_OBJECTS =  \
@@ -296,6 +307,7 @@ am__depfiles_remade = ./$(DEPDIR)/buf_test-buf-test.Po \
 	./$(DEPDIR)/lua_test-lua-test.Po \
 	./$(DEPDIR)/pack_test-pack-test.Po \
 	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
+	./$(DEPDIR)/persist_conn_test-persist_conn-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
 	./$(DEPDIR)/sluid_test-sluid-test.Po \
 	./$(DEPDIR)/xahash_test-xahash-test.Po \
@@ -322,9 +334,9 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = buf-test.c data-test.c dns-test.c http-test.c log-test.c \
-	lua-test.c pack-test.c parse_time-test.c reverse_tree-test.c \
-	sluid-test.c xahash-test.c xbase64-test.c xhash-test.c \
-	xstring-test.c
+	lua-test.c pack-test.c parse_time-test.c persist_conn-test.c \
+	reverse_tree-test.c sluid-test.c xahash-test.c xbase64-test.c \
+	xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -853,6 +865,10 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@xahash_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@buf_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@buf_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@persist_conn_test_CFLAGS = $(MYCFLAGS) \
+@HAVE_CHECK_TRUE@	-DTEST_PLUGIN_DIR=\"$(abs_top_builddir)/src/plugins/url_parser/internal/.libs:$(abs_top_builddir)/src/plugins/auth/none/.libs:$(abs_top_builddir)/src/plugins/hash/k12/.libs\"
+
+@HAVE_CHECK_TRUE@persist_conn_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@data_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@data_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@dns_test_CFLAGS = $(MYCFLAGS)
@@ -949,6 +965,10 @@ parse_time-test$(EXEEXT): $(parse_time_test_OBJECTS) $(parse_time_test_DEPENDENC
 	@rm -f parse_time-test$(EXEEXT)
 	$(AM_V_CCLD)$(parse_time_test_LINK) $(parse_time_test_OBJECTS) $(parse_time_test_LDADD) $(LIBS)
 
+persist_conn-test$(EXEEXT): $(persist_conn_test_OBJECTS) $(persist_conn_test_DEPENDENCIES) $(EXTRA_persist_conn_test_DEPENDENCIES) 
+	@rm -f persist_conn-test$(EXEEXT)
+	$(AM_V_CCLD)$(persist_conn_test_LINK) $(persist_conn_test_OBJECTS) $(persist_conn_test_LDADD) $(LIBS)
+
 reverse_tree-test$(EXEEXT): $(reverse_tree_test_OBJECTS) $(reverse_tree_test_DEPENDENCIES) $(EXTRA_reverse_tree_test_DEPENDENCIES) 
 	@rm -f reverse_tree-test$(EXEEXT)
 	$(AM_V_CCLD)$(reverse_tree_test_LINK) $(reverse_tree_test_OBJECTS) $(reverse_tree_test_LDADD) $(LIBS)
@@ -987,6 +1007,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lua_test-lua-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_test-pack-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time_test-parse_time-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/persist_conn_test-persist_conn-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sluid_test-sluid-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xahash_test-xahash-test.Po@am__quote@ # am--include-marker
@@ -1118,6 +1139,20 @@ parse_time_test-parse_time-test.obj: parse_time-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parse_time-test.c' object='parse_time_test-parse_time-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parse_time_test_CFLAGS) $(CFLAGS) -c -o parse_time_test-parse_time-test.obj `if test -f 'parse_time-test.c'; then $(CYGPATH_W) 'parse_time-test.c'; else $(CYGPATH_W) '$(srcdir)/parse_time-test.c'; fi`
+
+persist_conn_test-persist_conn-test.o: persist_conn-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(persist_conn_test_CFLAGS) $(CFLAGS) -MT persist_conn_test-persist_conn-test.o -MD -MP -MF $(DEPDIR)/persist_conn_test-persist_conn-test.Tpo -c -o persist_conn_test-persist_conn-test.o `test -f 'persist_conn-test.c' || echo '$(srcdir)/'`persist_conn-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/persist_conn_test-persist_conn-test.Tpo $(DEPDIR)/persist_conn_test-persist_conn-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='persist_conn-test.c' object='persist_conn_test-persist_conn-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(persist_conn_test_CFLAGS) $(CFLAGS) -c -o persist_conn_test-persist_conn-test.o `test -f 'persist_conn-test.c' || echo '$(srcdir)/'`persist_conn-test.c
+
+persist_conn_test-persist_conn-test.obj: persist_conn-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(persist_conn_test_CFLAGS) $(CFLAGS) -MT persist_conn_test-persist_conn-test.obj -MD -MP -MF $(DEPDIR)/persist_conn_test-persist_conn-test.Tpo -c -o persist_conn_test-persist_conn-test.obj `if test -f 'persist_conn-test.c'; then $(CYGPATH_W) 'persist_conn-test.c'; else $(CYGPATH_W) '$(srcdir)/persist_conn-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/persist_conn_test-persist_conn-test.Tpo $(DEPDIR)/persist_conn_test-persist_conn-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='persist_conn-test.c' object='persist_conn_test-persist_conn-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(persist_conn_test_CFLAGS) $(CFLAGS) -c -o persist_conn_test-persist_conn-test.obj `if test -f 'persist_conn-test.c'; then $(CYGPATH_W) 'persist_conn-test.c'; else $(CYGPATH_W) '$(srcdir)/persist_conn-test.c'; fi`
 
 reverse_tree_test-reverse_tree-test.o: reverse_tree-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reverse_tree_test_CFLAGS) $(CFLAGS) -MT reverse_tree_test-reverse_tree-test.o -MD -MP -MF $(DEPDIR)/reverse_tree_test-reverse_tree-test.Tpo -c -o reverse_tree_test-reverse_tree-test.o `test -f 'reverse_tree-test.c' || echo '$(srcdir)/'`reverse_tree-test.c
@@ -1495,6 +1530,13 @@ buf-test.log: buf-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+persist_conn-test.log: persist_conn-test$(EXEEXT)
+	@p='persist_conn-test$(EXEEXT)'; \
+	b='persist_conn-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 data-test.log: data-test$(EXEEXT)
 	@p='data-test$(EXEEXT)'; \
 	b='data-test'; \
@@ -1640,6 +1682,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/lua_test-lua-test.Po
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
+	-rm -f ./$(DEPDIR)/persist_conn_test-persist_conn-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
@@ -1699,6 +1742,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/lua_test-lua-test.Po
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
+	-rm -f ./$(DEPDIR)/persist_conn_test-persist_conn-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/sluid_test-sluid-test.Po
 	-rm -f ./$(DEPDIR)/xahash_test-xahash-test.Po
