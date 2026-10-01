@@ -114,6 +114,12 @@ typedef enum {
 	CTLD_QUEUE_PROCESSING = SLURM_BIT(5),
 	SLURM_NO_AUTH_CRED = SLURM_BIT(6),
 	SLURM_PACK_ADDRS = SLURM_BIT(7),
+	/*
+	 * Message on a persistent connection after REQUEST_PERSIST_INIT: the
+	 * header is only the uint16_t message type and there is no auth
+	 * credential. Never sent in a header.
+	 */
+	SLURM_PERSIST_MSG = SLURM_BIT(8),
 } header_flags_t;
 
 #endif
