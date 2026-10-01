@@ -493,6 +493,15 @@ extern const data_t *data_list_get_at_const(const data_t *data, size_t index);
 extern data_t *data_list_insert_at(data_t *data, size_t index);
 
 /*
+ * Extract data at given index in list
+ * IN data data object (list type only)
+ * IN index 0 based offset into list
+ * RET entry at index or NULL if index is out of range
+ * 	Result must be free'd up with FREE_NULL_DATA()
+ */
+extern data_t *data_list_remove_at(data_t *data, size_t index);
+
+/*
  * Copy and join array of data into a single list.
  * IN data - array of data objects (list type only) to copy/merge into a single
  * data list. Last entry must be NULL.

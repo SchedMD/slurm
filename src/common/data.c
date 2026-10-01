@@ -61,6 +61,7 @@ strong_alias(data_key_set, slurm_data_key_set);
 strong_alias(data_list_for_each_const, slurm_data_list_for_each_const);
 strong_alias(data_list_get_at, slurm_data_list_get_at);
 strong_alias(data_list_insert_at, slurm_data_list_insert_at);
+strong_alias(data_list_remove_at, slurm_data_list_remove_at);
 strong_alias(data_new, slurm_data_new);
 strong_alias(data_set_bool, slurm_data_set_bool);
 strong_alias(data_set_dict, slurm_data_set_dict);
@@ -867,6 +868,31 @@ extern data_t *data_list_insert_at(data_t *data, size_t index)
 		 __func__, data, index, ndata);
 
 	return ndata;
+}
+
+extern data_t *data_list_remove_at(data_t *data, size_t index)
+{
+	data_list_node_t *n = NULL;
+	data_t *ret = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	if (!(n = _data_list_node_at(data->data.list_u, index)))
+		return NULL;
+
+	/* extract out data for caller before the node is released */
+	SWAP(ret, n->data);
+
+	_release_data_list_node(data->data.list_u, n);
+
+	log_flag(DATA, "%s: removed %pD[%zu]=%pD",
+		 __func__, data, index, ret);
+
+	return ret;
 }
 
 static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)
