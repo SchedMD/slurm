@@ -114,6 +114,7 @@ typedef struct {
 				     * or when not known at cred create
 				     * time */
 	char *job_hostlist;		/* list of nodes allocated to JOB */
+	char *job_layout; /* comma-separated key=value pairs */
 	char *job_licenses;		/* Licenses allocated to job */
 	uint32_t job_max_npids; /* max PIDs for the JOB, NO_VAL if unlimited */
 	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */

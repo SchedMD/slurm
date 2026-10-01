@@ -226,6 +226,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 
 	step->job_end_time = cred_arg->job_end_time;
 	step->job_exclusive = cred_arg->job_exclusive;
+	step->job_layout = xstrdup(cred_arg->job_layout);
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
 	step->job_max_npids = cred_arg->job_max_npids;
 	step->job_restart_cnt = cred_arg->job_restart_cnt;
@@ -697,6 +698,7 @@ extern void stepd_step_rec_destroy(void)
 			xfree(step->gr_names[i]);
 		xfree(step->gr_names);
 	}
+	xfree(step->job_layout);
 	xfree(step->job_licenses);
 	xfree(step->pw_gecos);
 	xfree(step->pw_dir);
