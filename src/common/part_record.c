@@ -82,7 +82,7 @@ static void _init_part_record(part_record_t *part_ptr)
 	part_ptr->preempt_mode = NO_VAL16;
 	part_ptr->priority_job_factor = 1;
 	part_ptr->priority_tier = 1;
-	part_ptr->resume_timeout = NO_VAL16;
+	part_ptr->resume_timeout = NO_VAL;
 	part_ptr->state_up = PARTITION_UP;
 	part_ptr->suspend_time = NO_VAL;
 	part_ptr->suspend_timeout = NO_VAL16;

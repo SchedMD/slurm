@@ -475,6 +475,7 @@ typedef enum {
 	DATA_PARSER_PARTITION_PREEMPT_MODES, /* uint16_t */
 	DATA_PARSER_PARTITION_OVERSUBSCRIBE, /* partition_info_t OverSubscribe display */
 	DATA_PARSER_PARTITION_EXCLUSIVE, /* partition_info_t Exclusive display */
+	DATA_PARSER_PARTITION_INFO_RESUME_TIMEOUT, /* Remove when 26.05 is no longer supported: uint16_t schema */
 	DATA_PARSER_UPDATE_PARTITION_MSG_LIST, /* list_t* of partition_info_t* */
 	DATA_PARSER_EXT_SENSORS_DATA, /* Remove when 25.11 is no longer supported: ext_sensors_data_t */
 	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* Remove when 25.11 is no longer supported: ext_sensors_data_t* */
@@ -737,6 +738,7 @@ typedef enum {
 	DATA_PARSER_SLURM_CONF_EPILOG_SLURMCTLD, /* slurm_conf_t->epilog_slurmctld,epilog_slurmctld_cnt */
 	DATA_PARSER_SLURM_CONF_PROLOG, /* slurm_conf_t->prolog,prolog_cnt */
 	DATA_PARSER_SLURM_CONF_PROLOG_SLURMCTLD, /* slurm_conf_t->prolog_slurmctld,prolog_slurmctld_cnt */
+	DATA_PARSER_SLURM_CONF_RESUME_TIMEOUT, /* Remove when 26.05 is no longer supported: uint16_t schema */
 	DATA_PARSER_CONTROLLER, /* controllers_t */
 	DATA_PARSER_CONTROLLER_PTR, /* controllers_t* */
 	DATA_PARSER_CONTROLLERS_ARRAY, /* controllers_t[] (null terminated) */

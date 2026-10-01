@@ -458,11 +458,10 @@ void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
 			fprintf(fp, " TRESBillingWeights=%s",
 			        p[i].billing_weights_str);
 
-		if (p[i].resume_timeout == INFINITE16)
-	                fprintf(fp, " ResumeTimeout=INFINITE");
-		else if (p[i].resume_timeout != NO_VAL16)
-	                fprintf(fp, " ResumeTimeout=%d",
-				p[i].resume_timeout);
+		if (p[i].resume_timeout == INFINITE)
+			fprintf(fp, " ResumeTimeout=INFINITE");
+		else if (p[i].resume_timeout != NO_VAL)
+			fprintf(fp, " ResumeTimeout=%u", p[i].resume_timeout);
 
 		if (p[i].suspend_timeout == INFINITE16)
 	                fprintf(fp, " SuspendTimeout=INFINITE");
@@ -1078,7 +1077,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "ResumeRate", "%u nodes/min",
 		     conf->resume_rate);
 
-	if (conf->resume_timeout == INFINITE16)
+	if (conf->resume_timeout == INFINITE)
 		add_key_pair(ret_list, "ResumeTimeout", "INFINITE");
 	else
 		add_key_pair(ret_list, "ResumeTimeout", "%u sec",

@@ -141,6 +141,26 @@ static void _set_min_memory_tres(char *mem_per_tres, uint64_t *min_memory)
 	}
 }
 
+extern uint16_t xlate_resume_timeout_new2old(uint32_t resume_timeout)
+{
+	if (resume_timeout == NO_VAL)
+		return NO_VAL16;
+	if (resume_timeout == INFINITE)
+		return INFINITE16;
+	if (resume_timeout >= NO_VAL16)
+		return NO_VAL16 - 1;
+	return resume_timeout;
+}
+
+extern uint32_t xlate_resume_timeout_old2new(uint16_t resume_timeout)
+{
+	if (resume_timeout == NO_VAL16)
+		return NO_VAL;
+	if (resume_timeout == INFINITE16)
+		return INFINITE;
+	return resume_timeout;
+}
+
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -3364,7 +3384,7 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpack16(&part->priority_tier, buffer);
 		safe_unpack16(&part->state_up, buffer);
 		safe_unpack16(&part->cr_type, buffer);
-		safe_unpack16(&part->resume_timeout, buffer);
+		safe_unpack32(&part->resume_timeout, buffer);
 		safe_unpack16(&part->suspend_timeout, buffer);
 		safe_unpack32(&part->suspend_time, buffer);
 
@@ -3389,6 +3409,8 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp = 0;
+
 		safe_unpackstr(&part->name, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1); /* part->name = "" implicit */
@@ -3412,7 +3434,8 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpack16(&part->priority_tier, buffer);
 		safe_unpack16(&part->state_up, buffer);
 		safe_unpack16(&part->cr_type, buffer);
-		safe_unpack16(&part->resume_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		part->resume_timeout = xlate_resume_timeout_old2new(uint16_tmp);
 		safe_unpack16(&part->suspend_timeout, buffer);
 		safe_unpack32(&part->suspend_time, buffer);
 
@@ -4939,7 +4962,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->resume_fail_program, buffer);
 		packstr(conf->resume_program, buffer);
 		pack16(conf->resume_rate, buffer);
-		pack16(conf->resume_timeout, buffer);
+		pack32(conf->resume_timeout, buffer);
 		packstr(conf->resv_epilog, buffer);
 		pack16(conf->resv_over_run, buffer);
 		packstr(conf->resv_prolog, buffer);
@@ -5209,7 +5232,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->resume_fail_program, buffer);
 		packstr(conf->resume_program, buffer);
 		pack16(conf->resume_rate, buffer);
-		pack16(conf->resume_timeout, buffer);
+		pack16(xlate_resume_timeout_new2old(conf->resume_timeout),
+		       buffer);
 		packstr(conf->resv_epilog, buffer);
 		pack16(conf->resv_over_run, buffer);
 		packstr(conf->resv_prolog, buffer);
@@ -5473,7 +5497,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->resume_fail_program, buffer);
 		packstr(conf->resume_program, buffer);
 		pack16(conf->resume_rate, buffer);
-		pack16(conf->resume_timeout, buffer);
+		pack16(xlate_resume_timeout_new2old(conf->resume_timeout),
+		       buffer);
 		packstr(conf->resv_epilog, buffer);
 		pack16(conf->resv_over_run, buffer);
 		packstr(conf->resv_prolog, buffer);
@@ -5731,7 +5756,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->resume_fail_program, buffer);
 		packstr(conf->resume_program, buffer);
 		pack16(conf->resume_rate, buffer);
-		pack16(conf->resume_timeout, buffer);
+		pack16(xlate_resume_timeout_new2old(conf->resume_timeout),
+		       buffer);
 		packstr(conf->resv_epilog, buffer);
 		pack16(conf->resv_over_run, buffer);
 		packstr(conf->resv_prolog, buffer);
@@ -6033,7 +6059,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->resume_fail_program, buffer);
 		safe_unpackstr(&conf->resume_program, buffer);
 		safe_unpack16(&conf->resume_rate, buffer);
-		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpack32(&conf->resume_timeout, buffer);
 		safe_unpackstr(&conf->resv_epilog, buffer);
 		safe_unpack16(&conf->resv_over_run, buffer);
 		safe_unpackstr(&conf->resv_prolog, buffer);
@@ -6321,7 +6347,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->resume_fail_program, buffer);
 		safe_unpackstr(&conf->resume_program, buffer);
 		safe_unpack16(&conf->resume_rate, buffer);
-		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		conf->resume_timeout = xlate_resume_timeout_old2new(uint16_tmp);
 		safe_unpackstr(&conf->resv_epilog, buffer);
 		safe_unpack16(&conf->resv_over_run, buffer);
 		safe_unpackstr(&conf->resv_prolog, buffer);
@@ -6607,7 +6634,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->resume_fail_program, buffer);
 		safe_unpackstr(&conf->resume_program, buffer);
 		safe_unpack16(&conf->resume_rate, buffer);
-		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		conf->resume_timeout = xlate_resume_timeout_old2new(uint16_tmp);
 		safe_unpackstr(&conf->resv_epilog, buffer);
 		safe_unpack16(&conf->resv_over_run, buffer);
 		safe_unpackstr(&conf->resv_prolog, buffer);
@@ -6888,7 +6916,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpackstr(&conf->resume_fail_program, buffer);
 		safe_unpackstr(&conf->resume_program, buffer);
 		safe_unpack16(&conf->resume_rate, buffer);
-		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		conf->resume_timeout = xlate_resume_timeout_old2new(uint16_tmp);
 		safe_unpackstr(&conf->resv_epilog, buffer);
 		safe_unpack16(&conf->resv_over_run, buffer);
 		safe_unpackstr(&conf->resv_prolog, buffer);

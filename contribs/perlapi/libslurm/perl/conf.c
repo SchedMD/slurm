@@ -238,7 +238,7 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->resume_program)
 		STORE_FIELD(hv, conf, resume_program, charp);
 	STORE_FIELD(hv, conf, resume_rate, uint16_t);
-	STORE_FIELD(hv, conf, resume_timeout, uint16_t);
+	STORE_FIELD(hv, conf, resume_timeout, uint32_t);
 
 	if (conf->resv_epilog)
 		STORE_FIELD(hv, conf, resv_epilog, charp);
@@ -497,7 +497,7 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, resume_fail_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, resume_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, resume_rate, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, resume_timeout, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, resume_timeout, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, resv_epilog, charp, FALSE);
 	FETCH_FIELD(hv, conf, resv_over_run, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, resv_prolog, charp, FALSE);

@@ -266,7 +266,7 @@ typedef struct slurm_conf_partition {
 	char    *qos_char;      /* Name of QOS associated with partition */
 	bool     req_resv_flag; /* 1 if partition can only be used in a
 				 * reservation */
-	uint16_t resume_timeout; /* time required in order to perform a node
+	uint32_t resume_timeout; /* time required in order to perform a node
 				  * resume operation */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
 				   issued by user root */

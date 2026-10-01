@@ -4229,6 +4229,29 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(PARTITION_INFO_RESUME_TIMEOUT)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *src,
+	args_t *args,
+	data_t *parent_path)
+{
+	uint32_t *timeout = obj;
+
+	return PARSE(UINT32_NO_VAL, *timeout, src, parent_path, args);
+}
+
+static int DUMP_FUNC(PARTITION_INFO_RESUME_TIMEOUT)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	uint32_t *timeout = obj;
+
+	return DUMP(UINT32_NO_VAL, *timeout, dst, args);
+}
+
 PARSE_DISABLED(PARTITION_INFO_MSG)
 
 static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
@@ -8325,7 +8348,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT16, priority_job_factor, "priority/job_factor", "PriorityJobFactor - Partition factor used by priority/multifactor plugin in calculating job priority"),
 	add_parse(UINT16, priority_tier, "priority/tier", "PriorityTier - Controls the order in which the scheduler evaluates jobs from different partitions"),
 	add_parse(STRING, qos_char, "qos/assigned", "QOS - QOS name containing limits that will apply to all jobs in this partition"),
-	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (GLOBAL if both set and infinite are false)"),
+	add_parse(PARTITION_INFO_RESUME_TIMEOUT, resume_timeout, "timeouts/resume", "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (GLOBAL if both set and infinite are false)"),
 	add_parse(STRING, topology_name, "topology", "Topology - Name of the topology, defined in topology.yaml, used by jobs in this partition"),
 	add_parse(PARTITION_STATES, state_up, "partition/state", "Current state(s)"),
 	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", "SuspendTime - Nodes which remain idle or down for this number of seconds will be placed into power save mode (GLOBAL if both set and infinite are false)"),
@@ -10395,6 +10418,7 @@ static const parser_t parsers[] = {
 	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_DESC_MSG_PLANE_SIZE, UINT16_NO_VAL, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_TASK_DISTRIBUTION, job_desc_msg_t, NEED_NONE, STRING, NULL),
+	addpsp(PARTITION_INFO_RESUME_TIMEOUT, UINT16_NO_VAL, uint32_t, NEED_NONE, NULL),
 	addpc(JOB_INFO_STDIN_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDOUT_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDERR_EXP, slurm_job_info_t, NEED_NONE, STRING, NULL),

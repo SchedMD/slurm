@@ -2144,6 +2144,29 @@ static int DUMP_FUNC(PARTITION_EXCLUSIVE)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(PARTITION_INFO_RESUME_TIMEOUT)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *src,
+	args_t *args,
+	data_t *parent_path)
+{
+	uint32_t *timeout = obj;
+
+	return PARSE(UINT32_NO_VAL, *timeout, src, parent_path, args);
+}
+
+static int DUMP_FUNC(PARTITION_INFO_RESUME_TIMEOUT)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	uint32_t *timeout = obj;
+
+	return DUMP(UINT32_NO_VAL, *timeout, dst, args);
+}
+
 static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 					   void *obj, data_t *src, args_t *args,
 					   data_t *parent_path)
@@ -8012,6 +8035,38 @@ static int DUMP_FUNC(SLURM_CONF_PROLOG_SLURMCTLD)(const parser_t *const parser,
 	return rc;
 }
 
+/*
+ * ResumeTimeout was a uint16_t when this version was released. Keep using
+ * INFINITE16 (65535) for INFINITE so existing clients see the same values.
+ */
+static int PARSE_FUNC(SLURM_CONF_RESUME_TIMEOUT)(const parser_t *const parser,
+						 void *obj, data_t *src,
+						 args_t *args,
+						 data_t *parent_path)
+{
+	uint32_t *timeout = obj;
+	int rc = PARSE(UINT32, *timeout, src, parent_path, args);
+
+	if (!rc && (*timeout == INFINITE16))
+		*timeout = INFINITE;
+
+	return rc;
+}
+
+static int DUMP_FUNC(SLURM_CONF_RESUME_TIMEOUT)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	uint32_t *timeout = obj;
+
+	if (*timeout == INFINITE)
+		(void) data_set_int(dst, INFINITE16);
+	else
+		(void) data_set_int(dst, *timeout);
+
+	return SLURM_SUCCESS;
+}
+
 static void FREE_FUNC(CONTROLLER)(void *ptr)
 {
 	controller_t *controller = ptr;
@@ -9966,7 +10021,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT16, priority_job_factor, "priority/job_factor", "PriorityJobFactor - Partition factor used by priority/multifactor plugin in calculating job priority"),
 	add_parse(UINT16, priority_tier, "priority/tier", "PriorityTier - Controls the order in which the scheduler evaluates jobs from different partitions"),
 	add_parse(STRING, qos_char, "qos/assigned", "QOS - QOS name containing limits that will apply to all jobs in this partition"),
-	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (read-only; GLOBAL if both set and infinite are false)."),
+	add_parse(PARTITION_INFO_RESUME_TIMEOUT, resume_timeout, "timeouts/resume", "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (read-only; GLOBAL if both set and infinite are false)."),
 	add_parse(STRING, topology_name, "topology", "Topology - Name of the topology, defined in topology.yaml, used by jobs in this partition"),
 	add_parse(PARTITION_STATES, state_up, "partition/state", "Current state(s)"),
 	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", "SuspendTime - Nodes which remain idle or down for this number of seconds will be placed into power save mode (read-only; GLOBAL if both set and infinite are false)."),
@@ -12139,7 +12194,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(STRING, resume_fail_program, "ResumeFailProgram", "Program executed when nodes fail to resume by ResumeTimeout"),
 	add_parse(STRING, resume_program, "ResumeProgram", "Program to bring nodes out of power save mode when assigned work"),
 	add_parse(UINT16, resume_rate, "ResumeRate", "Rate at which nodes are resumed from power save mode per minute"),
-	add_parse(UINT16, resume_timeout, "ResumeTimeout", "Max seconds between a resume request and node availability"),
+	add_parse(SLURM_CONF_RESUME_TIMEOUT, resume_timeout, "ResumeTimeout", "Max seconds between a resume request and node availability"),
 	add_parse(STRING, resv_epilog, "ResvEpilog", "Path of reservation epilog run by slurmctld"),
 	add_parse(UINT16, resv_over_run, "ResvOverRun", "Minutes a running job can continue after its reservation ends"),
 	add_parse(STRING, resv_prolog, "ResvProlog", "Path of reservation prolog run by slurmctld"),
@@ -13173,6 +13228,7 @@ static const parser_t parsers[] = {
 	addpca(STEP_INFO_MSG, STEP_INFO, job_step_info_response_msg_t, NEED_TRES, NULL),
 	addpca(PARTITION_INFO_MSG, PARTITION_INFO, partition_info_msg_t, NEED_TRES, NULL),
 	addpc(PARTITION_EXCLUSIVE, partition_info_t, NEED_NONE, STRING, NULL),
+	addpsp(PARTITION_INFO_RESUME_TIMEOUT, UINT16_NO_VAL, uint32_t, NEED_NONE, NULL),
 	addpca(RESERVATION_INFO_MSG, RESERVATION_INFO, reserve_info_msg_t, NEED_NONE, NULL),
 	addpca(RESERVATION_INFO_CORE_SPEC, RESERVATION_CORE_SPEC, reserve_info_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_ARGV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
@@ -13224,6 +13280,7 @@ static const parser_t parsers[] = {
 	addpcp(SLURM_CONF_EPILOG_SLURMCTLD, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Epilog programs run by slurmctld"),
 	addpcp(SLURM_CONF_PROLOG, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Prolog programs run by slurmd"),
 	addpcp(SLURM_CONF_PROLOG_SLURMCTLD, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Prolog programs run by slurmctld"),
+	addpsp(SLURM_CONF_RESUME_TIMEOUT, UINT16, uint32_t, NEED_NONE, NULL),
 	addpcp(SLURM_CONF_CONTROLLERS, CONTROLLERS_ARRAY, slurm_conf_t, NEED_NONE, "List of slurmctld controllers"),
 
 	/* NULL terminated model parsers */
