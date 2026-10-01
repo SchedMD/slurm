@@ -116,6 +116,7 @@
 #define data_key_get slurm_data_key_get
 #define data_key_set slurm_data_key_set
 #define data_list_for_each_const slurm_data_list_for_each_const
+#define data_list_get_at slurm_data_list_get_at
 #define data_new slurm_data_new
 #define data_set_bool slurm_data_set_bool
 #define data_set_dict slurm_data_set_dict

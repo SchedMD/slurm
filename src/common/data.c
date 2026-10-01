@@ -59,6 +59,7 @@ strong_alias(data_get_string, slurm_data_get_string);
 strong_alias(data_key_get, slurm_data_key_get);
 strong_alias(data_key_set, slurm_data_key_set);
 strong_alias(data_list_for_each_const, slurm_data_list_for_each_const);
+strong_alias(data_list_get_at, slurm_data_list_get_at);
 strong_alias(data_new, slurm_data_new);
 strong_alias(data_set_bool, slurm_data_set_bool);
 strong_alias(data_set_dict, slurm_data_set_dict);
@@ -762,6 +763,45 @@ extern data_t *data_list_dequeue(data_t *data)
 		 __func__, data, data->data.list_u->count, ret);
 
 	return ret;
+}
+
+/*
+ * Walk to the node at index.
+ * RET node at index or NULL if index is out of range
+ */
+static data_list_node_t *_data_list_node_at(const data_list_t *dl, size_t index)
+{
+	data_list_node_t *n = dl->begin;
+
+	_check_data_list_magic(dl);
+
+	if (index >= dl->count)
+		return NULL;
+
+	for (size_t i = 0; i < index; i++) {
+		_check_data_list_node_magic(n);
+		n = n->next;
+	}
+
+	_check_data_list_node_magic(n);
+
+	return n;
+}
+
+extern data_t *data_list_get_at(data_t *data, size_t index)
+{
+	data_list_node_t *n = NULL;
+
+	_check_magic(data);
+
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || (data->type != TYPE_LIST))
+		return NULL;
+
+	if (!(n = _data_list_node_at(data->data.list_u, index)))
+		return NULL;
+
+	return n->data;
 }
 
 static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)

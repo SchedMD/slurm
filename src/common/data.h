@@ -462,6 +462,15 @@ extern data_t *data_list_prepend(data_t *data);
 extern data_t *data_list_dequeue(data_t *data);
 
 /*
+ * Get entry at given index in list
+ * IN data data object (list type only)
+ * IN index 0 based offset into list
+ * RET ptr to entry or NULL if index is out of range
+ * 	Entry is owned by data and must not be free'd
+ */
+extern data_t *data_list_get_at(data_t *data, size_t index);
+
+/*
  * Copy and join array of data into a single list.
  * IN data - array of data objects (list type only) to copy/merge into a single
  * data list. Last entry must be NULL.
