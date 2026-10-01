@@ -245,6 +245,9 @@ typedef struct job_record job_record_t;
 typedef struct conmgr_fd_s conmgr_fd_t;
 typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
+/* Prototype for persistent connection state, see persist_conn.h. */
+typedef struct persist_conn_ctx_s persist_conn_ctx_t;
+
 /*****************************************************************************\
  * core api configuration struct
 \*****************************************************************************/
@@ -350,6 +353,13 @@ typedef struct slurm_msg {
 				 * with the connection before sending the
 				 * message so that it is handled correctly. */
 	conmgr_fd_ref_t *conmgr_con; /* msg originates from conmgr connection */
+	/*
+	 * DON'T PACK OR FREE! Set only on requests from a persistent session
+	 * (see persist_conn_msg_init()), NULL otherwise: the peer and
+	 * REQUEST_PERSIST_INIT details, and the daemon's session state at
+	 * pcon_ctx->arg. Copies of msg share it.
+	 */
+	persist_conn_ctx_t *pcon_ctx;
 	/*
 	 * DON'T PACK OR FREE! If set, send_msg_response() stores the packed
 	 * response here instead of sending it on the connection, as for a

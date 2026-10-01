@@ -36,14 +36,17 @@
 
 #include "config.h"
 
+#include <arpa/inet.h>
 #include <poll.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/persist_conn.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
@@ -1300,4 +1303,387 @@ extern buf_t *slurm_persist_make_rc_msg_flags(persist_conn_t *persist_conn,
 	resp.data = &msg;
 
 	return slurm_persist_msg_pack(persist_conn, &resp);
+}
+
+/*
+ * Parse and dispatch the frame at the start of data.
+ * IN ref - connection
+ * IN handler - called with the borrowed payload
+ * IN arg - passed to handler
+ * IN data - buffered input, starting at a frame header
+ * IN available - bytes buffered at data
+ * OUT consumed - bytes of the frame handled; 0 while the frame is incomplete
+ * RET SLURM_SUCCESS, or the parser or handler error (the frame is consumed
+ *	even when the handler fails)
+ */
+static int _parse_frame(conmgr_fd_ref_t *ref,
+			persist_conn_frame_handler_t handler, void *arg,
+			const void *data, size_t available, size_t *consumed)
+{
+	uint32_t msglen;
+	size_t frame_bytes;
+	buf_t frame;
+	int rc;
+
+	*consumed = 0;
+
+	/* The length may arrive across reads like the rest. */
+	if (available < sizeof(msglen)) {
+		log_flag(NET, "%s: [%s] partial frame header buffered (%zu of %zu bytes); awaiting remainder",
+			 __func__, conmgr_con_get_name(ref), available,
+			 sizeof(msglen));
+		return SLURM_SUCCESS;
+	}
+
+	memcpy(&msglen, data, sizeof(msglen));
+	msglen = ntohl(msglen);
+
+	if ((msglen < 2) || (msglen > MAX_MSG_SIZE)) {
+		error("%s: [%s] invalid persist frame length: %u",
+		      __func__, conmgr_con_get_name(ref), msglen);
+		return SLURM_PROTOCOL_INSANE_MSG_LENGTH;
+	}
+
+	frame_bytes = sizeof(msglen) + msglen;
+
+	if (available < frame_bytes) {
+		log_flag(NET, "%s: [%s] partial frame buffered (%zu of %zu bytes); awaiting remainder",
+			 __func__, conmgr_con_get_name(ref), available,
+			 frame_bytes);
+		return SLURM_SUCCESS;
+	}
+
+	frame = (buf_t) SHADOW_BUF_INITIALIZER((char *) data + sizeof(msglen),
+					       msglen);
+
+	set_buf_offset(&frame, 0);
+
+	log_flag_hex(NET_RAW, get_buf_data(&frame), size_buf(&frame),
+		     "%s: [%s] dispatching persist frame",
+		     __func__, conmgr_con_get_name(ref));
+
+	rc = handler(ref, &frame, arg);
+
+	*consumed = frame_bytes;
+
+	if (rc != SLURM_SUCCESS)
+		log_flag(NET, "%s: [%s] handler returned %s; aborting parse",
+			 __func__, conmgr_con_get_name(ref),
+			 slurm_strerror(rc));
+
+	return rc;
+}
+
+extern int persist_conn_parse(conmgr_fd_ref_t *ref,
+			      persist_conn_frame_handler_t handler, void *arg)
+{
+	const void *base_data = NULL;
+	size_t total = 0;
+	size_t consumed = 0;
+	int rc = SLURM_SUCCESS;
+
+	xassert(ref);
+	xassert(handler);
+
+	/* Track consumption locally; conmgr reports the full buffer. */
+	if ((rc = conmgr_con_get_input_buffer(ref, &base_data, &total)))
+		return rc;
+
+	while (consumed < total) {
+		size_t frame_consumed = 0;
+
+		rc = _parse_frame(ref, handler, arg,
+				  (const char *) base_data + consumed,
+				  total - consumed, &frame_consumed);
+		consumed += frame_consumed;
+
+		/* Stop on error, or until the rest of a frame arrives. */
+		if (rc || !frame_consumed)
+			break;
+	}
+
+	if (consumed > 0)
+		(void) conmgr_con_mark_consumed_input_buffer(ref, consumed);
+
+	return rc;
+}
+
+/* Initialize msg on conn, before or after it is authenticated. */
+static void _msg_init(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
+{
+	slurm_msg_t_init(msg);
+	msg->auth = pcon_ctx->auth;
+	msg->protocol_version = pcon_ctx->version;
+	msg->conmgr_con = conmgr_con_link(pcon_ctx->ref);
+	msg->pcon_ctx = pcon_ctx;
+	/* The session authenticated at REQUEST_PERSIST_INIT. */
+	msg->flags |= SLURM_PERSIST_MSG;
+	slurm_msg_set_r_uid(msg, SLURM_AUTH_UID_ANY);
+}
+
+extern void persist_conn_msg_init(persist_conn_ctx_t *pcon_ctx,
+				  slurm_msg_t *msg)
+{
+	xassert(pcon_ctx->auth.ids_set);
+
+	_msg_init(pcon_ctx, msg);
+}
+
+/*
+ * Reply to the session with a PERSIST_RC when there is no request to reply
+ * through, such as for a frame that cannot be unpacked.
+ * IN ret_info - message type (or version for init) this replies to
+ */
+static void _reply_rc(persist_conn_ctx_t *pcon_ctx, uint32_t rc,
+		      const char *comment, uint16_t ret_info)
+{
+	slurm_msg_t msg;
+
+	_msg_init(pcon_ctx, &msg);
+	msg.msg_type = ret_info;
+	(void) slurm_send_rc_err_msg(&msg, rc, (char *) comment);
+	CONMGR_CON_UNLINK(msg.conmgr_con);
+}
+
+/*
+ * Unpack [msg_type][body]. Only DBD clients send REQUEST_PERSIST_INIT this
+ * way: [REQUEST_PERSIST_INIT][authenticated Slurm message].
+ */
+static int _unpack(persist_conn_ctx_t *pcon_ctx, buf_t *frame,
+		   uint16_t *msg_type, void **data)
+{
+	uint16_t type = 0;
+	int rc;
+
+	if (unpack16(&type, frame))
+		return SLURM_ERROR;
+	*msg_type = type;
+
+	if (pcon_ctx->ops->flags & PERSIST_FLAG_DBD) {
+		slurmdbd_msg_t msg = { 0 };
+
+		/* unpack_slurmdbd_msg() reads the type itself. */
+		set_buf_offset(frame, 0);
+		rc = unpack_slurmdbd_msg(&msg, pcon_ctx->version, frame);
+		*data = msg.data;
+		return rc;
+	} else {
+		slurm_msg_t msg;
+
+		slurm_msg_t_init(&msg);
+		msg.msg_type = type;
+		msg.protocol_version = pcon_ctx->version;
+		rc = unpack_msg(&msg, frame);
+		*data = msg.data;
+		return rc;
+	}
+}
+
+static void _free_data(persist_conn_ctx_t *pcon_ctx, uint16_t msg_type,
+		       void *data)
+{
+	if (!data)
+		return;
+
+	if (pcon_ctx->ops->flags & PERSIST_FLAG_DBD) {
+		slurmdbd_msg_t msg = {
+			.msg_type = msg_type,
+			.data = data,
+		};
+
+		slurmdbd_free_msg(&msg);
+	} else {
+		slurm_free_msg_data(msg_type, data);
+	}
+}
+
+/* Validate and accept REQUEST_PERSIST_INIT, caching its identity. */
+static int _init(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
+{
+	persist_init_req_msg_t *req = msg->data;
+	persist_rc_msg_t reply = { 0 };
+	const char *comment = NULL;
+	slurm_msg_t init;
+	int rc;
+
+	if (pcon_ctx->auth.ids_set) {
+		comment =
+			"REQUEST_PERSIST_INIT sent after connection established";
+	} else if (!msg->auth.ids_set) {
+		/* SLURM_NO_AUTH_CRED can unpack without an identity. */
+		comment = "REQUEST_PERSIST_INIT not authenticated";
+	}
+
+	if (comment) {
+		error("[%s] %s", conmgr_con_get_name(pcon_ctx->ref), comment);
+		_reply_rc(pcon_ctx, SLURM_PROTOCOL_AUTHENTICATION_ERROR,
+			  comment, REQUEST_PERSIST_INIT);
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	}
+
+	pcon_ctx->auth_cred = msg->auth_cred;
+	pcon_ctx->auth = msg->auth;
+	msg->auth_cred = NULL;
+
+	/* Replies use the version the client asked for. */
+	pcon_ctx->version = req->version;
+	pcon_ctx->cluster_name = xstrdup(req->cluster_name);
+	pcon_ctx->persist_type = req->persist_type;
+
+	reply.ret_info = pcon_ctx->version;
+
+	persist_conn_msg_init(pcon_ctx, &init);
+	init.msg_type = REQUEST_PERSIST_INIT;
+	init.data = req;
+	rc = pcon_ctx->ops->on_init(pcon_ctx, &init, &reply.flags);
+
+	/* The reply carries the negotiated version in ret_info. */
+	reply.rc = rc;
+	if (rc)
+		reply.comment = slurm_strerror(rc);
+	(void) send_msg_response(&init, PERSIST_RC, &reply);
+	CONMGR_CON_UNLINK(init.conmgr_con);
+
+	return rc;
+}
+
+/* Errors that end the connection after their reply. */
+static bool _close_on_rc(int rc)
+{
+	return ((rc == ESLURM_ACCESS_DENIED) ||
+		(rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
+		(rc == SLURM_PROTOCOL_VERSION_ERROR));
+}
+
+static int _on_frame(conmgr_fd_ref_t *ref, buf_t *frame, void *arg)
+{
+	persist_conn_ctx_t *pcon_ctx = arg;
+	uint16_t msg_type = 0;
+	void *data = NULL;
+	slurm_msg_t msg;
+	int rc;
+
+	xassert(pcon_ctx->magic == PERSIST_CONN_CTX_MAGIC);
+
+	log_flag(NET, "%s: [%s] received %u byte frame",
+		 __func__, conmgr_con_get_name(ref), size_buf(frame));
+
+	if ((rc = _unpack(pcon_ctx, frame, &msg_type, &data))) {
+		char *comment =
+			xstrdup_printf("Failed to unpack %s message",
+				       slurmdbd_msg_type_2_str(msg_type, true));
+
+		error("[%s] %s", conmgr_con_get_name(ref), comment);
+		_reply_rc(pcon_ctx, rc, comment, msg_type);
+		xfree(comment);
+		_free_data(pcon_ctx, msg_type, data);
+		goto done;
+	}
+
+	log_flag(NET, "%s: [%s] dispatching msg_type=%s",
+		 __func__, conmgr_con_get_name(ref),
+		 slurmdbd_msg_type_2_str(msg_type, true));
+
+	persist_conn_msg_init(pcon_ctx, &msg);
+	msg.msg_type = msg_type;
+	msg.data = data;
+	rc = pcon_ctx->ops->on_msg(pcon_ctx, &msg);
+	xassert(msg.data == data);
+	CONMGR_CON_UNLINK(msg.conmgr_con);
+
+	_free_data(pcon_ctx, msg_type, data);
+
+done:
+	/* Close on auth or version errors. */
+	if (_close_on_rc(rc))
+		return rc;
+
+	return SLURM_SUCCESS;
+}
+
+static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	return persist_conn_parse(conmgr_args.ref, _on_frame, arg);
+}
+
+static void _free_conn(persist_conn_ctx_t *pcon_ctx)
+{
+	xassert(pcon_ctx->magic == PERSIST_CONN_CTX_MAGIC);
+
+	if (pcon_ctx->auth_cred)
+		auth_g_destroy(pcon_ctx->auth_cred);
+	xfree(pcon_ctx->cluster_name);
+	xfree(pcon_ctx->rem_host);
+	CONMGR_CON_UNLINK(pcon_ctx->ref);
+
+	pcon_ctx->magic = ~PERSIST_CONN_CTX_MAGIC;
+	xfree(pcon_ctx);
+}
+
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	persist_conn_ctx_t *pcon_ctx = arg;
+
+	xassert(pcon_ctx->magic == PERSIST_CONN_CTX_MAGIC);
+
+	if (pcon_ctx->ops->on_fini)
+		pcon_ctx->ops->on_fini(pcon_ctx);
+
+	_free_conn(pcon_ctx);
+}
+
+static const conmgr_events_t events = {
+	.on_data = _on_data,
+	.on_finish = _on_finish,
+};
+
+extern int persist_conn_assign(conmgr_fd_ref_t *ref,
+			       const persist_conn_ops_t *ops,
+			       const conmgr_timeouts_t *timeouts, void *arg,
+			       slurm_msg_t *init)
+{
+	persist_conn_ctx_t *pcon_ctx = xmalloc(sizeof(*pcon_ctx));
+	slurm_addr_t addr = { 0 };
+	int rc;
+
+	xassert(ops && ops->on_init && ops->on_msg);
+
+	*pcon_ctx = (persist_conn_ctx_t) {
+		.magic = PERSIST_CONN_CTX_MAGIC,
+		.ref = conmgr_con_link(ref),
+		.ops = ops,
+		.fd = -1,
+		.rem_host = xmalloc(INET6_ADDRSTRLEN),
+		.auth.uid = SLURM_AUTH_NOBODY,
+		.auth.gid = SLURM_AUTH_NOBODY,
+		.version = SLURM_MIN_PROTOCOL_VERSION,
+		.arg = arg,
+	};
+
+	(void) conmgr_con_get_input_fd(pcon_ctx->ref, &pcon_ctx->fd);
+	if (!slurm_get_peer_addr(pcon_ctx->fd, &addr))
+		slurm_get_ip_str(&addr, pcon_ctx->rem_host, INET6_ADDRSTRLEN);
+
+	if ((rc = conmgr_con_set_events(ref, &events, pcon_ctx, __func__))) {
+		_on_finish((conmgr_callback_args_t) { 0 }, pcon_ctx);
+		return rc;
+	}
+
+	/* pcon_ctx now belongs to the connection; _on_finish() frees it. */
+	if ((timeouts &&
+	     (rc = conmgr_con_set_timeouts(ref, timeouts, __func__))) ||
+	    (rc = conmgr_con_change_mode(ref, CON_TYPE_RAW))) {
+		conmgr_con_queue_close(ref);
+		return rc;
+	}
+
+	log_flag(NET, "%s: [%s] persistent connection from %s",
+		 __func__, conmgr_con_get_name(ref), pcon_ctx->rem_host);
+
+	xassert(init && (init->msg_type == REQUEST_PERSIST_INIT));
+
+	if ((rc = _init(pcon_ctx, init)))
+		conmgr_con_queue_close(ref);
+
+	return rc;
 }
