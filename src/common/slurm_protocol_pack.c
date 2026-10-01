@@ -2061,7 +2061,42 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	partition_info_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(msg->allow_accounts, buffer);
+		packstr(msg->allow_alloc_nodes, buffer);
+		packstr(msg->allow_groups, buffer);
+		packstr(msg->allow_qos, buffer);
+		packstr(msg->alternate, buffer);
+		packstr(msg->billing_weights_str, buffer);
+
+		pack32(msg->cpu_bind, buffer);
+		pack64(msg->def_mem_per_cpu, buffer);
+		pack32(msg->default_time, buffer);
+		packstr(msg->deny_accounts, buffer);
+		packstr(msg->deny_qos, buffer);
+		pack32(msg->flags, buffer);
+		packstr(msg->job_defaults_str, buffer);
+		pack32(msg->grace_time, buffer);
+
+		pack32(msg->max_cpus_per_node, buffer);
+		pack32(msg->max_cpus_per_socket, buffer);
+		pack64(msg->max_mem_per_cpu, buffer);
+		pack32(msg->max_nodes, buffer);
+		pack16(msg->max_share, buffer);
+		pack32(msg->max_time, buffer);
+		pack32(msg->min_nodes, buffer);
+
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
+
+		pack16(msg->over_time_limit, buffer);
+		pack16(msg->preempt_mode, buffer);
+		pack16(msg->priority_job_factor, buffer);
+		pack16(msg->priority_tier, buffer);
+		packstr(msg->qos_char, buffer);
+		pack16(msg->state_up, buffer);
+		packstr(msg->topology_name, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
@@ -2103,7 +2138,42 @@ static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	partition_info_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->allow_accounts, buffer);
+		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
+		safe_unpackstr(&msg->allow_groups, buffer);
+		safe_unpackstr(&msg->allow_qos, buffer);
+		safe_unpackstr(&msg->alternate, buffer);
+		safe_unpackstr(&msg->billing_weights_str, buffer);
+
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpack64(&msg->def_mem_per_cpu, buffer);
+		safe_unpack32(&msg->default_time, buffer);
+		safe_unpackstr(&msg->deny_accounts, buffer);
+		safe_unpackstr(&msg->deny_qos, buffer);
+		safe_unpack32(&msg->flags, buffer);
+		safe_unpackstr(&msg->job_defaults_str, buffer);
+		safe_unpack32(&msg->grace_time, buffer);
+
+		safe_unpack32(&msg->max_cpus_per_node, buffer);
+		safe_unpack32(&msg->max_cpus_per_socket, buffer);
+		safe_unpack64(&msg->max_mem_per_cpu, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpack16(&msg->max_share, buffer);
+		safe_unpack32(&msg->max_time, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
+
+		safe_unpack16(&msg->over_time_limit, buffer);
+		safe_unpack16(&msg->preempt_mode, buffer);
+		safe_unpack16(&msg->priority_job_factor, buffer);
+		safe_unpack16(&msg->priority_tier, buffer);
+		safe_unpackstr(&msg->qos_char, buffer);
+		safe_unpack16(&msg->state_up, buffer);
+		safe_unpackstr(&msg->topology_name, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->allow_accounts, buffer);
 		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
 		safe_unpackstr(&msg->allow_groups, buffer);
