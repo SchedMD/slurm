@@ -39,6 +39,7 @@
 #include <stdlib.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/persist_conn.h"
@@ -901,6 +902,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->extra);
 		xfree(job->failed_node);
 		xfree(job->jobname);
+		FREE_NULL_DATA(job->kv);
 		xfree(job->layout);
 		xfree(job->licenses);
 		xfree(job->lineage);
