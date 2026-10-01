@@ -241,3 +241,69 @@ def test_salloc_command_gets_no_runtime_inputs(bundles):
         " SALLOC_CONTAINER"
         f" (stdout {result['stdout']!r}, stderr {result['stderr']!r})"
     )
+
+
+def _markers(output):
+    """The bundle markers runtime/oci's RunTimeRun printed, one per run."""
+
+    return [line for line in output.splitlines() if line.startswith("in_rootfs_")]
+
+
+# Each case is (batch components, bundle of the batch step or None, id). The
+# batch step runs once, in the first component, so only that component's
+# runtime and bundle apply to it. The batch script then runs a step of its own,
+# which takes no bundle from the job.
+batch_cases = {
+    "oci": (["--runtime=oci --container={a}"], "a"),
+    "default": (["--container={a}"], "a"),
+    "none": (["--runtime=none"], None),
+    "oci,oci": (
+        ["--runtime=oci --container={a}", "--runtime=oci --container={b}"],
+        "a",
+    ),
+    "oci,none": (["--runtime=oci --container={a}", "--runtime=none"], "a"),
+    "none,oci": (["--runtime=none", "--runtime=oci --container={b}"], None),
+    "default,oci": (["--container={a}", "--runtime=oci --container={b}"], "a"),
+    "none,oci,oci": (
+        [
+            "--runtime=none",
+            "--runtime=oci --container={a}",
+            "--runtime=oci --container={b}",
+        ],
+        None,
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    "components, bundle", batch_cases.values(), ids=batch_cases.keys()
+)
+def test_sbatch_batch_step_uses_first_component(bundles, components, bundle):
+    """The batch step of an sbatch job runs in its first component's bundle.
+
+    A heterogeneous batch job runs one batch script, in its first component, so
+    the runtime of any other component does not apply to it. A step the script
+    starts takes no bundle from the job, so it runs on the host.
+    """
+
+    script = "batch_runtime.sh"
+    atf.make_bash_script(
+        script, f"echo {task_marker}\nsrun -N1 /bin/sh -c 'echo step_ran'\n"
+    )
+    output = "batch_runtime.out"
+    args = " : ".join(f"-N1 {c.format(**bundles)}" for c in components)
+    job_id = atf.submit_job_sbatch(f"{args} --output={output} {script}", fatal=True)
+    atf.wait_for_job_state(job_id, "COMPLETED", fatal=True)
+
+    lines = atf.run_command_output(f"cat {output}", fatal=True).splitlines()
+    for expected in (task_marker, "step_ran"):
+        assert expected in lines, f"the batch job should print {expected!r}: {lines}"
+    expected_markers = [f"in_rootfs_{bundle}"] if bundle else []
+    assert _markers("\n".join(lines)) == expected_markers, (
+        f"only the batch step should run in the first component's bundle,"
+        f" expected {expected_markers}, got {lines}"
+    )
+    if bundle:
+        assert (
+            f"SLURM_CONTAINER={bundles[bundle]}" in lines
+        ), f"the batch step should see SLURM_CONTAINER={bundles[bundle]}: {lines}"
