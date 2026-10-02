@@ -1782,6 +1782,7 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
+	case DBD_GOT_INSTANCES:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -1851,6 +1852,8 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
 	case DBD_GET_WCKEY_USAGE:
@@ -1930,6 +1933,9 @@ extern buf_t *pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_GET_CONFIG:
 		_pack_config_name(rpc_version, req->msg_type, buffer);
+		break;
+	case DBD_GOT_STATS:
+		slurmdb_pack_stats_msg(req->data, rpc_version, buffer);
 		break;
 	case DBD_RECONFIG:
 	case DBD_GET_STATS:
@@ -2063,6 +2069,8 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, uint16_t rpc_version,
 		break;
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
 	case DBD_GET_WCKEY_USAGE:

@@ -1002,6 +1002,8 @@ extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
 		break;
 	case DBD_GET_ASSOC_USAGE:
 	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_QOS_USAGE:
+	case DBD_GOT_QOS_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
 	case DBD_GET_WCKEY_USAGE:
@@ -1366,6 +1368,8 @@ extern void slurmdbd_free_usage_msg(dbd_usage_msg_t *msg,
 	void (*destroy_rec) (void *object);
 	if (msg) {
 		switch (type) {
+		case DBD_GET_QOS_USAGE:
+		case DBD_GOT_QOS_USAGE:
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GOT_ASSOC_USAGE:
 			destroy_rec = slurmdb_destroy_assoc_rec;
