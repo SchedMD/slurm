@@ -40,6 +40,8 @@
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/node_conf.h"
 #include "src/common/threadpool.h"
 
 #include "src/interfaces/acct_gather_energy.h"
@@ -77,6 +79,10 @@ static bitstr_t	*saved_usable_gpus = NULL;
 static gpu_status_t *gpus = NULL;
 static uint16_t gpus_len = 0;
 static uint64_t *start_current_energies = NULL;
+/* Per sensor, the step energy already charged when the step re-anchored. */
+static uint64_t *restart_last_energies = NULL;
+/* Per sensor, true once start_current_energies holds a reading. */
+static bool *sensor_baselined = NULL;
 
 static int dataset_id = -1; // id of the dataset for profile data
 
@@ -198,6 +204,7 @@ static void _update_energy(gpu_status_t *gpu, uint32_t readings)
 		e->current_watts = gpu->last_update_watt;
 	}
 	e->poll_time = time(NULL);
+	e->slurmd_start_time = slurmd_start_time;
 }
 
 /*
@@ -363,9 +370,55 @@ static void _get_node_energy(acct_gather_energy_t *energy)
 	memset(energy, 0, sizeof(acct_gather_energy_t));
 	for (i = 0; i < gpus_len; i++)
 		_add_energy(energy, &gpus[i].energy, i);
+
+	/* This value tells whether slurmd has been restarted. */
+	energy->slurmd_start_time = slurmd_start_time;
 	log_flag(ENERGY, "current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
 		 energy->current_watts, energy->consumed_energy,
 		 energy->base_consumed_energy, energy->ave_watts);
+}
+
+/*
+ * _reanchor_sensor re-anchors a step's sensor on this poll's reading: the
+ * count no longer measures from the old anchor, so the anchor moves here,
+ * the step keeps what it already consumed, and this poll charges nothing.
+ * sensor (IN) Ordinal of the sensor being re-anchored
+ * old (IN/OUT) The sensor's cached state, its adjustment cleared
+ * new (IN/OUT) This poll's reading, anchored with nothing charged
+ * adjustment (IN) This poll's extrapolation past the reading
+ */
+static void _reanchor_sensor(uint16_t sensor, acct_gather_energy_t *old,
+			     acct_gather_energy_t *new, uint64_t adjustment)
+{
+	xassert(old);
+	xassert(new);
+
+	start_current_energies[sensor] = new->consumed_energy + adjustment;
+	restart_last_energies[sensor] = old->consumed_energy;
+	old->last_adjustment = 0;
+	new->base_consumed_energy = 0;
+	new->last_adjustment = 0;
+
+	log_flag(ENERGY, "sensor %u re-anchored at %"PRIu64" Joules, step keeps the %"PRIu64" Joules already charged",
+		 sensor, start_current_energies[sensor],
+		 restart_last_energies[sensor]);
+}
+
+/*
+ * _sensor_count_restarted tells whether a sensor's energy count fell below
+ * the step's anchor for that sensor. The anchor holds a reading plus the
+ * extrapolation made when it was taken, so a lower later reading can also
+ * mean the card's power fell since, not only that the count restarted.
+ * Either way the anchor no longer describes this count, and the caller
+ * re-anchors on the reading. Charging against a lowered anchor instead
+ * would bill the step for what the card drew before the step started.
+ * sensor (IN) Ordinal of the sensor the reading belongs to
+ * reading (IN) Sensor energy plus this poll's extrapolation
+ * RET true when the reading is below the anchor
+ */
+static bool _sensor_count_restarted(uint16_t sensor, uint64_t reading)
+{
+	return (reading < start_current_energies[sensor]);
 }
 
 /* Get the energy in joules for a job
@@ -405,6 +458,9 @@ static int _get_joules_task(uint16_t delta)
 		gpus_len = gpu_cnt;
 		gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 		start_current_energies = xcalloc(sizeof(uint64_t), gpus_len);
+		restart_last_energies =
+			xcalloc(gpus_len, sizeof(*restart_last_energies));
+		sensor_baselined = xcalloc(gpus_len, sizeof(*sensor_baselined));
 	}
 
 	if (gpu_cnt != gpus_len) {
@@ -419,36 +475,67 @@ static int _get_joules_task(uint16_t delta)
 		old = &gpus[i].energy;
 		new->previous_consumed_energy = old->consumed_energy;
 
-		adjustment = _get_additional_consumption(
-			new->poll_time, time(NULL),
-			new->current_watts,
-			new->current_watts);
+		if (new->current_watts == NO_VAL)
+			adjustment = 0;
+		else
+			adjustment =
+				_get_additional_consumption(new->poll_time,
+							    time(NULL),
+							    new->current_watts,
+							    new->current_watts);
 
-		if (!stepd_first) {
-			/* if slurmd is reloaded while the step is alive */
-			if (old->consumed_energy > new->consumed_energy)
-				new->base_consumed_energy =
-					new->consumed_energy + adjustment;
-			else {
-				new->consumed_energy -=
-					start_current_energies[i];
-				new->base_consumed_energy =
-					adjustment +
-					(new->consumed_energy -
-					 old->consumed_energy);
-			}
-		} else {
+		if (!sensor_baselined[i]) {
 			/*
 			 * This is just for the step, so take all the previous
-			 * consumption out of the mix.
+			 * consumption out of the mix. A sensor whose power read
+			 * failed reports NO_VAL watts, and slurmd zeroes its
+			 * count on the next good read, so an anchor taken now
+			 * would sit above every later reading: hold that
+			 * sensor's start energy back until it reads again.
 			 */
-			start_current_energies[i] =
-				new->consumed_energy + adjustment;
+			if (new->current_watts != NO_VAL) {
+				start_current_energies[i] =
+					new->consumed_energy + adjustment;
+				sensor_baselined[i] = true;
+			}
 			new->base_consumed_energy = 0;
+			new->last_adjustment = 0;
+		} else if (old->slurmd_start_time != new->slurmd_start_time) {
+			/*
+			 * The sensor counts from zero again, so anchor the step
+			 * on this reading, keep what it consumed before the
+			 * restart, and charge nothing for this poll.
+			 */
+			log_flag(ENERGY, "slurmd restart detected, resetting initial energies.");
+			_reanchor_sensor(i, old, new, adjustment);
+		} else if (_sensor_count_restarted(i, new->consumed_energy +
+							      adjustment) ||
+			   ((new->consumed_energy + adjustment +
+			     old->last_adjustment - start_current_energies[i]) <
+			    (old->consumed_energy -
+			     restart_last_energies[i]))) {
+			/*
+			 * The sensor reads below the step's start energy under
+			 * the same slurmd, or a reset counter has climbed back
+			 * past the anchor, which shows as the step's charge
+			 * running backwards. Anchor the step here as well,
+			 * since charging this poll against the old anchor
+			 * wraps the step's counter.
+			 */
+			_reanchor_sensor(i, old, new, adjustment);
+		} else {
+			new->consumed_energy -= start_current_energies[i];
+			new->base_consumed_energy =
+				adjustment +
+				(new->consumed_energy -
+				 (old->consumed_energy - old->last_adjustment -
+				  restart_last_energies[i]));
+			new->last_adjustment = adjustment;
 		}
 
-		new->consumed_energy = new->previous_consumed_energy
-			+ new->base_consumed_energy;
+		new->consumed_energy = new->previous_consumed_energy -
+				       old->last_adjustment +
+				       new->base_consumed_energy;
 		memcpy(old, new, sizeof(acct_gather_energy_t));
 
 		log_flag(ENERGY, "consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
@@ -488,6 +575,8 @@ extern void fini(void)
 
 	xfree(gpus);
 	xfree(start_current_energies);
+	xfree(restart_last_energies);
+	xfree(sensor_baselined);
 	saved_usable_gpus = NULL;
 }
 
