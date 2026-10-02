@@ -579,7 +579,7 @@ static const gres_case_t cases[] = {
 			{ 0 },
 		},
 		.log_regex =
-			"warning: A line in gres.conf for GRES [^[:space:]]+ has [0-9]+ more configured than expected in slurm.conf",
+			"warning: A line in gres.conf for GRES [^[:space:]]+ has [0-9]+ more configured than expected in slurm.conf\\. Ignoring extra GRES\\.",
 		.log_cnt = 1,
 	},
 	{
@@ -617,7 +617,7 @@ static const gres_case_t cases[] = {
 			"tesla|4|0-1|-1|DEV_PREFIX1\n"
 			"tesla|4|0-1|-1|DEV_PREFIX2\n",
 		.log_regex =
-			"warning: A line in gres.conf for GRES [^[:space:]]+ has [0-9]+ more configured than expected in slurm.conf",
+			"warning: A line in gres.conf for GRES [^[:space:]]+ has [0-9]+ more configured than expected in slurm.conf\\. Ignoring extra GRES\\.",
 		.log_cnt = 2,
 	},
 	{
@@ -655,7 +655,7 @@ static const gres_case_t cases[] = {
 			{ 0 },
 		},
 		.log_regex =
-			"warning: A line in gres.conf for GRES [^[:space:]]+ has [0-9]+ more configured than expected in slurm.conf",
+			"warning: A line in gres.conf for GRES [^[:space:]]+ has [0-9]+ more configured than expected in slurm.conf\\. Ignoring extra GRES\\.",
 		.log_cnt = 5,
 	},
 	{
