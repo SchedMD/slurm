@@ -3594,7 +3594,7 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	add_assoc_cond.assoc_mgr_locked = true;
 	add_assoc_cond.flags = ASSOC_FLAG_USER_COORD;
 
-	if (!is_user_min_admin_level_locked(mysql_conn, uid,
+	if (!is_user_min_admin_level_locked(mysql_conn,
 					    SLURMDB_ADMIN_OPERATOR)) {
 		slurmdb_user_rec_t user;
 

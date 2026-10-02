@@ -431,7 +431,7 @@ extern bool is_user_min_admin_level(void *db_conn,
 	return _is_user_min_admin_level(db_conn, min_level, false);
 }
 
-extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
+extern bool is_user_min_admin_level_locked(void *db_conn,
 					   slurmdb_admin_level_t min_level)
 {
 	return _is_user_min_admin_level(db_conn, min_level, true);

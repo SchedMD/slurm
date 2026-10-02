@@ -51,7 +51,7 @@ extern int set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 
 extern bool is_user_min_admin_level(void *db_conn,
 				    slurmdb_admin_level_t min_level);
-extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
+extern bool is_user_min_admin_level_locked(void *db_conn,
 					   slurmdb_admin_level_t min_level);
 
 extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user);
