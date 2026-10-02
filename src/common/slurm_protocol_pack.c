@@ -3751,6 +3751,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 	uint32_t uint32_tmp;
 	bool need_unpack = false;
 
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	job->max_npids = NO_VAL;
+
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		/* job_record_pack_common */
 		safe_unpack_step_id_members(&job->step_id, buffer,
@@ -3946,6 +3949,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack64(&job->pn_min_memory, buffer);
 		safe_unpack32(&job->pn_min_tmp_disk, buffer);
 		safe_unpack16(&job->oom_kill_step, buffer);
+		safe_unpack32(&job->max_npids, buffer);
 		safe_unpackstr(&job->req_nodes, buffer);
 
 		unpack_bit_str_hex_as_inx(&job->req_node_inx, buffer);
