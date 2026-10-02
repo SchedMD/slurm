@@ -55,6 +55,47 @@ typedef struct {
 	char *name; /* hierarchical resource name */
 	void *plugin_ctx; /* per-context state, alloc/free'd by the plugin */
 } hres_ctx_t;
+
+/* One layer a job holds, as sent to its nodes. */
+typedef struct {
+	uint32_t count; /* amount charged against this layer */
+	char *layer_name;
+	char *nodes; /* job's nodes under this layer, frozen at prep build */
+} hres_prep_layer_t;
+
+/*
+ * Everything a node needs to run a job's callbacks for one hierarchical
+ * resource. resources.yaml is only read by the controller, so this travels in
+ * the job credential.
+ */
+typedef struct {
+	list_t *config; /* list of hres_config_t, the plugin configuration */
+	uint16_t hres_id; /* DON'T PACK, only meaningful to the controller */
+	list_t *layers; /* list of hres_prep_layer_t the job holds */
+	char *name; /* hierarchical resource name */
+	void *payload; /* opaque blob from the controller pre-run */
+	uint32_t payload_size;
+	uint32_t plugin_id; /* plugin serving the HRES, routes node callbacks */
+} hres_prep_t;
+
+/* Free a hres_prep_layer_t, suitable as a list destructor. */
+extern void hres_prep_layer_free(void *x);
+
+/* Free a hres_prep_t, suitable as a list destructor. */
+extern void hres_prep_free(void *x);
+
+/* Pack a list of hres_prep_t. */
+extern int hres_prep_pack_list(list_t *in, buf_t *buffer,
+			       uint16_t protocol_version);
+
+/*
+ * Unpack a list of hres_prep_t packed by hres_prep_pack_list().
+ *
+ * OUT out - list of hres_prep_t, caller must FREE_NULL_LIST()
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
+				 uint16_t protocol_version);
 /*
  * Initialize the HRES plugin interface and load the plugins. May be called
  * again to load plugin types referenced by a new configuration.

@@ -39,6 +39,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/threadpool.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
@@ -159,6 +160,158 @@ static int _foreach_load_ctx_plugin(void *x, void *arg)
 		_load_plugin_by_type(license->hres_rec.plugin_type);
 
 	return SLURM_SUCCESS;
+}
+
+extern void hres_prep_layer_free(void *x)
+{
+	hres_prep_layer_t *layer = x;
+
+	xfree(layer->layer_name);
+	xfree(layer->nodes);
+	xfree(layer);
+}
+
+extern void hres_prep_free(void *x)
+{
+	hres_prep_t *prep = x;
+
+	if (!prep)
+		return;
+
+	FREE_NULL_LIST(prep->config);
+	FREE_NULL_LIST(prep->layers);
+	xfree(prep->name);
+	xfree(prep->payload);
+	xfree(prep);
+}
+
+static void _config_pack(void *in, uint16_t protocol_version, buf_t *buffer)
+{
+	hres_config_t *config = in;
+
+	packstr(config->name, buffer);
+	packstr(config->value, buffer);
+}
+
+static int _config_unpack(void **object, uint16_t protocol_version,
+			  buf_t *buffer)
+{
+	hres_config_t *config = xmalloc(sizeof(*config));
+
+	*object = config;
+
+	safe_unpackstr(&config->name, buffer);
+	safe_unpackstr(&config->value, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	hres_config_free(config);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+static void _prep_layer_pack(void *in, uint16_t protocol_version, buf_t *buffer)
+{
+	hres_prep_layer_t *layer = in;
+
+	pack32(layer->count, buffer);
+	packstr(layer->layer_name, buffer);
+	packstr(layer->nodes, buffer);
+}
+
+static int _prep_layer_unpack(void **object, uint16_t protocol_version,
+			      buf_t *buffer)
+{
+	hres_prep_layer_t *layer = xmalloc(sizeof(*layer));
+
+	*object = layer;
+
+	safe_unpack32(&layer->count, buffer);
+	safe_unpackstr(&layer->layer_name, buffer);
+	safe_unpackstr(&layer->nodes, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	hres_prep_layer_free(layer);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+static void _hres_prep_pack(void *in, uint16_t protocol_version, buf_t *buffer)
+{
+	hres_prep_t *prep = in;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		packstr(prep->name, buffer);
+		pack32(prep->plugin_id, buffer);
+		(void) slurm_pack_list(prep->config, _config_pack, buffer,
+				       protocol_version);
+		(void) slurm_pack_list(prep->layers, _prep_layer_pack, buffer,
+				       protocol_version);
+		packmem(prep->payload, prep->payload_size, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
+	}
+}
+
+extern int hres_prep_pack_list(list_t *in, buf_t *buffer,
+			       uint16_t protocol_version)
+{
+	return slurm_pack_list(in, _hres_prep_pack, buffer, protocol_version);
+}
+
+static int _hres_prep_unpack(void **object, uint16_t protocol_version,
+			     buf_t *buffer)
+{
+	hres_prep_t *prep = xmalloc(sizeof(*prep));
+
+	*object = prep;
+	/* The id is not on the wire, the controller resolves it by name. */
+	prep->hres_id = NO_VAL16;
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&prep->name, buffer);
+		safe_unpack32(&prep->plugin_id, buffer);
+
+		if (slurm_unpack_list(&prep->config, _config_unpack,
+				      hres_config_free, buffer,
+				      protocol_version))
+			goto unpack_error;
+
+		if (slurm_unpack_list(&prep->layers, _prep_layer_unpack,
+				      hres_prep_layer_free, buffer,
+				      protocol_version))
+			goto unpack_error;
+
+		safe_unpackmem_xmalloc((char **) &prep->payload,
+				       &prep->payload_size, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	hres_prep_free(prep);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+extern int hres_prep_unpack_list(list_t **out, buf_t *buffer,
+				 uint16_t protocol_version)
+{
+	int rc;
+
+	if ((rc = slurm_unpack_list(out, _hres_prep_unpack, hres_prep_free,
+				    buffer, protocol_version)))
+		FREE_NULL_LIST(*out);
+
+	return rc;
 }
 
 /* license_mutex must be held. */
