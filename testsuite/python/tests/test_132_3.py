@@ -448,3 +448,45 @@ def test_prolog_failure_while_configuring(
     assert not os.path.isfile(
         output_file
     ), "Batch script ran even though the Prolog failed"
+
+
+def test_prolog_failure_after_launch(prologs, resume_nodes, job_ids):
+    """Verify a Prolog failing after the batch host launched the job.
+
+    Without DeferBatch the batch script starts as soon as the batch host
+    finishes its Prolog, so another node can still fail its Prolog after the
+    job is running. That failure must still drain the node and requeue and
+    hold the job.
+    """
+
+    output_file = "job_output"
+
+    set_prolog_flags("Alloc")
+
+    job_id = atf.submit_job_sbatch(
+        f"-N2 -t5 --wrap 'touch {output_file}; sleep 30'", fatal=True
+    )
+    job_ids.append(job_id)
+
+    prologs.wait_started(job_id, 2)
+    batch_host = atf.get_job_parameter(
+        job_id, "BatchHost", default=None, quiet=True, fatal=True
+    )
+    assert batch_host, f"Job {job_id} has no BatchHost"
+    other_node = next(n for n in get_job_nodes(job_id, 2) if n != batch_host)
+
+    prologs.release(job_id, batch_host)
+    assert atf.wait_for_file(
+        output_file
+    ), "Batch script did not start once the batch host finished its Prolog"
+
+    prologs.fail(job_id, other_node)
+    prologs.release(job_id, other_node)
+
+    assert atf.wait_for_job_state(
+        job_id, "PENDING", desired_reason="launch_failed_requeued_held"
+    ), f"Job was not requeued and held after {other_node} failed its Prolog"
+
+    assert atf.wait_for_node_state(
+        other_node, "DRAIN"
+    ), f"Node {other_node} was not drained after its Prolog failed"
