@@ -708,6 +708,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"LicensesAlloc", 0, _print_job_licenses_alloc, 0},
 	{"MaxCPUs", 0, _print_job_max_cpus, 0},
 	{"MaxNodes", 0, _print_job_max_nodes, 0},
+	{ "MaxPids", 0, _print_job_max_npids, 0 },
 	{"mem-per-tres", 0, _print_job_mem_per_tres, 0},
 	{"MCSLabel", 0, _print_job_mcs_label, 0},
 	{"MinCPUs", 'c', _print_pn_min_cpus, 0},

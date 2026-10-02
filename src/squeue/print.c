@@ -2034,6 +2034,23 @@ int _print_job_max_nodes(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_max_npids(job_info_t *job, int width, bool right_justify,
+			 char *suffix)
+{
+	if (!job) /* Print the Header instead */
+		_print_str("MAX_PIDS", width, right_justify, true);
+	else if (job->max_npids == INFINITE)
+		_print_str("UNLIMITED", width, right_justify, true);
+	else if (job->max_npids != NO_VAL)
+		_print_uint(job->max_npids, width, right_justify, true);
+	else
+		_print_str("N/A", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_network(job_info_t * job, int width, bool right_justify,
 		    char* suffix)
 {
