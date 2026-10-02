@@ -195,6 +195,7 @@ static int _foreach_add_ctx(void *x, void *arg)
 	hctx[hctx_num].maintenance_cycle = license->hres_rec.maintenance_cycle;
 	hctx[hctx_num].maintenance_timeout =
 		license->hres_rec.maintenance_timeout;
+	hctx[hctx_num].name = xstrdup(license->name);
 
 	/* Called under license_mutex from hres_init(), so locked. */
 	layers = hres_layers_snapshot(license->id.hres_id, true);
@@ -226,6 +227,7 @@ static void _destroy_all_ctx(void)
 	for (int i = 0; i < hctx_num; i++) {
 		(void) (*(ops[hctx[i].idx].destroy_context))(&hctx[i]);
 		FREE_NULL_LIST(hctx[i].config);
+		xfree(hctx[i].name);
 	}
 
 	xfree(hctx);
@@ -308,8 +310,8 @@ static void *_maintenance_thread(void *arg)
 			FREE_NULL_LIST(layers);
 
 			if (rc)
-				error("%s: maintenance for HRES %u returned %s",
-				      __func__, hctx[i].hres_id,
+				error("%s: maintenance for HRES %s returned %s",
+				      __func__, hctx[i].name,
 				      slurm_strerror(rc));
 
 			slurm_mutex_lock(&maintenance_lock);

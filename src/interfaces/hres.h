@@ -52,6 +52,7 @@ typedef struct {
 	time_t last_maintenance; /* time of last maintenance run, 0 if never */
 	uint32_t maintenance_cycle; /* seconds between maintenance runs */
 	uint32_t maintenance_timeout; /* max seconds for a maintenance run */
+	char *name; /* hierarchical resource name */
 	void *plugin_ctx; /* per-context state, alloc/free'd by the plugin */
 } hres_ctx_t;
 /*
