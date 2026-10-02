@@ -66,8 +66,10 @@
 
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
 #define A58_FLAGS "CountOnly,GENERATED"
+#define B4_MISMATCH "Cores, Links or UUID"
 #else
 #define A58_FLAGS "CountOnly"
+#define B4_MISMATCH "Cores or Links"
 #endif
 
 /*
@@ -738,7 +740,7 @@ static const gres_case_t cases[] = {
 			{ 0 },
 		},
 		.log_regex =
-			"error: This GPU specified in .*conf has mismatching Cores",
+			"error: This GPU specified in .*conf has mismatching " B4_MISMATCH,
 		.log_cnt = 3,
 	},
 	{
@@ -1622,6 +1624,158 @@ static const gres_case_t cases[] = {
 			  "HAS_FILE,HAS_TYPE,ENV_RSMI" },
 			{ "gpu", "d100", 1, 4, "0-1", NULL, "DEV_PREFIX3", NULL,
 			  "HAS_FILE,HAS_TYPE,ENV_RSMI" },
+			{ 0 },
+		},
+	},
+	{
+		/* gres.conf.5 Flags: intel_gpu_env sets ZE_AFFINITY_MASK */
+		.id = "e1",
+		.node_gres = "gpu:a100:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Cores=0-1 Flags=intel_gpu_env\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "gpu", "a100", 1, 4, "0-1", NULL, "DEV_PREFIX0", NULL,
+			  "HAS_FILE,HAS_TYPE,ENV_ONEAPI" },
+			{ 0 },
+		},
+	},
+	{
+		/* gres.conf.5 Flags: opencl_env sets GPU_DEVICE_ORDINAL */
+		.id = "e2",
+		.node_gres = "gpu:a100:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Cores=0-1 Flags=opencl_env\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "gpu", "a100", 1, 4, "0-1", NULL, "DEV_PREFIX0", NULL,
+			  "HAS_FILE,HAS_TYPE,ENV_OPENCL" },
+			{ 0 },
+		},
+	},
+	{
+		/*
+		 * gres.conf.5 Flags: no_gpu_env is mutually exclusive to all
+		 * other environment-related flags.
+		 */
+		.id = "e3",
+		.node_gres = "gpu:a100:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Cores=0-1 Flags=no_gpu_env,nvidia_gpu_env\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex =
+			"fatal: .*contains \"no_gpu_env\", which must be mutually exclusive",
+		.log_cnt = 1,
+	},
+	{
+		/*
+		 * gres.conf.5 File: if File is specified then Count must be
+		 * either set to the number of file names specified or not set.
+		 */
+		.id = "e4",
+		.node_gres = "gpu:3",
+		.gres_conf = "Name=gpu File=DEV_PREFIX[0-1] Count=3\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex = "fatal: .*count does not match File value",
+		.log_cnt = 1,
+	},
+	{
+		/*
+		 * gres.conf.5 MultipleFiles: several device files managed as a
+		 * single generic resource.
+		 */
+		.id = "e5",
+		.node_gres = "gpu:1",
+		.gres_conf = "Name=gpu MultipleFiles=DEV_PREFIX[0-1]\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "gpu", NULL, 1, 4, NULL, NULL, "DEV_PREFIX[0-1]", NULL,
+			  "HAS_FILE," ENV_ALL },
+			{ 0 },
+		},
+	},
+	{
+		/* gres.conf.5: File and MultipleFiles are mutually exclusive */
+		.id = "e6",
+		.node_gres = "gpu:2",
+		.gres_conf =
+			"Name=gpu File=DEV_PREFIX0 MultipleFiles=DEV_PREFIX[1-2]\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex =
+			"fatal: File and MultipleFiles options are mutually exclusive",
+		.log_cnt = 1,
+	},
+	{
+		/* Same as e3, with amd_gpu_env */
+		.id = "e7",
+		.node_gres = "gpu:a100:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Cores=0-1 Flags=no_gpu_env,amd_gpu_env\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex =
+			"fatal: .*contains \"no_gpu_env\", which must be mutually exclusive",
+		.log_cnt = 1,
+	},
+	{
+		/* Same as e3, with intel_gpu_env */
+		.id = "e8",
+		.node_gres = "gpu:a100:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Cores=0-1 Flags=no_gpu_env,intel_gpu_env\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex =
+			"fatal: .*contains \"no_gpu_env\", which must be mutually exclusive",
+		.log_cnt = 1,
+	},
+	{
+		/* Same as e3, with opencl_env */
+		.id = "e9",
+		.node_gres = "gpu:a100:1",
+		.gres_conf =
+			"Name=gpu Type=a100 File=DEV_PREFIX0 Cores=0-1 Flags=no_gpu_env,opencl_env\n",
+		.fake_gpus_conf = "",
+		.fail = true,
+		.log_regex =
+			"fatal: .*contains \"no_gpu_env\", which must be mutually exclusive",
+		.log_cnt = 1,
+	},
+	{
+		/*
+		 * gres.conf.5 Count and slurm.conf.5 Gres: a suffix of K, M, G,
+		 * T or P multiplies by 1024, 1048576, 1073741824, etc.
+		 * CountOnly is configured as in the gres.conf.5 example.
+		 */
+		.id = "e10",
+		.node_gres = "nic:1K,mic:1M,tmpdisk:1T",
+		.gres_conf =
+			"Name=nic Count=1K Flags=CountOnly\n"
+			"Name=mic Count=1M Flags=CountOnly\n"
+			"Name=tmpdisk Count=1T Flags=CountOnly\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "nic", NULL, 1024ULL, 4, NULL, NULL, NULL, NULL,
+			  "CountOnly" },
+			{ "mic", NULL, 1048576ULL, 4, NULL, NULL, NULL, NULL,
+			  "CountOnly" },
+			{ "tmpdisk", NULL, 1099511627776ULL, 4, NULL, NULL, NULL,
+			  NULL, "CountOnly" },
+			{ 0 },
+		},
+	},
+	{
+		/* Same as e10 for the P suffix */
+		.id = "e11",
+		.node_gres = "tmpdisk:1P",
+		.gres_conf = "Name=tmpdisk Count=1P Flags=CountOnly\n",
+		.fake_gpus_conf = "",
+		.expected = (exp_rec_t[]) {
+			{ "tmpdisk", NULL, 1125899906842624ULL, 4, NULL, NULL,
+			  NULL, NULL, "CountOnly" },
 			{ 0 },
 		},
 	},
