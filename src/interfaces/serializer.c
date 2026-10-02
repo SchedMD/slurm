@@ -311,9 +311,6 @@ extern const char *resolve_mime_type(const char *mime_type,
  * editing that list is a real fix. Every plugin is explicitly named whenever
  * SerializerPlugins is set, as load_plugins() then builds the plugin list from
  * that string alone.
- *
- * slurmstepd is never sent SerializerPlugins (see slurmstepd_init.c), so it
- * always takes the quiet path no matter what is configured.
  */
 static void _log_skipped_mime_type(const char *mime_type, size_t holder,
 				   size_t skipped)
