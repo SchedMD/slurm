@@ -169,7 +169,8 @@ def test_max_pids_zero_is_rejected():
 def test_job_max_pids_applies_to_every_step():
     """Verify the sbatch value is the default of every step and a ceiling for srun
 
-    srun may lower it. A larger value, and max, are rejected.
+    srun may lower it. A larger value, and max, are rejected. The step records
+    in slurmctld carry the effective value of every step.
     """
 
     file_out = atf.module_tmp_path / "job_max_pids.out"
@@ -199,6 +200,8 @@ if srun -n1 --max-pids=max true 2> /dev/null; then
 else
     echo "max=rejected"
 fi
+echo "batchrec=$(scontrol show step $SLURM_JOB_ID.batch | grep -o 'MaxPids=[^ ]*')"
+echo "steprec=$(srun -n1 --max-pids={JOB_MAX_PIDS - 10} bash -c 'scontrol show step $SLURM_JOB_ID.$SLURM_STEP_ID | grep -o "MaxPids=[^ ]*"')"
 """,
     )
 
@@ -217,6 +220,8 @@ fi
         "raised=rejected",
         "message=found",
         "max=rejected",
+        f"batchrec=MaxPids={JOB_MAX_PIDS}",
+        f"steprec=MaxPids={JOB_MAX_PIDS - 10}",
     ]
     for line in expected:
         assert line in output.split(
