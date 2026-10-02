@@ -4004,7 +4004,6 @@ static int _foreach_license_job_get(void *x, void *arg)
 					 _foreach_hres_job_get, &hres_arg);
 		}
 
-		license_entry->used += license_entry->total;
 		return 0;
 	}
 
@@ -4036,7 +4035,6 @@ static int _foreach_license_job_get(void *x, void *arg)
 	}
 
 	match->used += license_entry->total;
-	license_entry->used += license_entry->total;
 	if (match->remote && args->restore) {
 		if (license_entry->total > match->last_deficit)
 			match->last_deficit = 0;
@@ -4127,8 +4125,6 @@ static int _foreach_license_job_return(void *x, void *arg)
 		if (!args->locked)
 			slurm_mutex_unlock(&license_mutex);
 
-		if (!args->future)
-			license_entry->used = 0;
 		return 0;
 	}
 
@@ -4142,8 +4138,6 @@ static int _foreach_license_job_return(void *x, void *arg)
 			      __func__, match->id.lic_id);
 			match->used = 0;
 		}
-		if (!args->future)
-			license_entry->used = 0;
 	} else {
 		/* This can happen after a reconfiguration */
 		error("%s: job returning unknown license lic_id=%u",
