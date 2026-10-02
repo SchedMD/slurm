@@ -196,7 +196,9 @@ static const persist_conn_ops_t persist_ops = {
 
 /*
  * Make a connection a persistent slurmdbd session.
- * IN init - REQUEST_PERSIST_INIT received as an RPC
+ * IN init - REQUEST_PERSIST_INIT received as an RPC, or NULL if it is still
+ *	to be read as a frame (remove NULL case when 26.05 is no longer
+ *	supported)
  */
 static int _assign(conmgr_fd_ref_t *ref, slurm_msg_t *init)
 {
@@ -208,6 +210,27 @@ static int _assign(conmgr_fd_ref_t *ref, slurm_msg_t *init)
 	return persist_conn_assign(ref, &persist_ops, &rpc_timeouts, dbd_conn,
 				   init);
 }
+
+#ifdef SLURM_26_05_PROTOCOL_VERSION
+/*
+ * DBD clients through 26.05 frame REQUEST_PERSIST_INIT as
+ * [length][REQUEST_PERSIST_INIT][message] instead of a standard RPC.
+ * Assign those connections before http_switch sees them; persist_conn
+ * then reads that first frame itself.
+ */
+static bool _is_legacy_persist_init(conmgr_fd_ref_t *ref)
+{
+	const void *data = NULL;
+	size_t bytes = 0;
+	uint16_t type;
+
+	if (conmgr_con_get_input_buffer(ref, &data, &bytes) ||
+	    (bytes < (sizeof(uint32_t) + sizeof(type))))
+		return false;
+	memcpy(&type, (const char *) data + sizeof(uint32_t), sizeof(type));
+	return (ntohs(type) == REQUEST_PERSIST_INIT);
+}
+#endif
 
 /* HTTP is not served yet. */
 static int _on_http(conmgr_fd_t *con)
@@ -228,6 +251,11 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 
 static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
+#ifdef SLURM_26_05_PROTOCOL_VERSION
+	if (_is_legacy_persist_init(conmgr_args.ref))
+		return _assign(conmgr_args.ref, NULL);
+#endif
+
 	return http_switch_on_data(conmgr_args, _on_http);
 }
 
