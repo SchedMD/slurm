@@ -3216,6 +3216,10 @@ static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
 		.func = _get_usage,
 	},
 	{
+		.msg_type = DBD_GET_QOS_USAGE,
+		.func = _get_usage,
+	},
+	{
 		.msg_type = DBD_GET_CLUSTERS,
 		.func = _get_clusters,
 	},
