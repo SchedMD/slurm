@@ -3118,6 +3118,324 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 	return rc;
 }
 
+static const slurmdbd_rpc_t slurmdbd_rpcs[] = {
+	{
+		.msg_type = REQUEST_PERSIST_INIT,
+		.func = _unpack_persist_init,
+	},
+	{
+		.msg_type = DBD_ADD_ACCOUNTS,
+		.func = _add_accounts,
+	},
+	{
+		.msg_type = DBD_ADD_ACCOUNTS_COND,
+		.func = _add_accounts_cond,
+	},
+	{
+		.msg_type = DBD_ADD_ACCOUNT_COORDS,
+		.func = _add_account_coords,
+	},
+	{
+		.msg_type = DBD_ADD_TRES,
+		.func = _add_tres,
+	},
+	{
+		.msg_type = DBD_ADD_ASSOCS,
+		.func = _add_assocs,
+	},
+	{
+		.msg_type = DBD_ADD_CLUSTERS,
+		.func = _add_clusters,
+	},
+	{
+		.msg_type = DBD_ADD_FEDERATIONS,
+		.func = _add_federations,
+	},
+	{
+		.msg_type = DBD_ADD_QOS,
+		.func = _add_qos,
+	},
+	{
+		.msg_type = DBD_ADD_RES,
+		.func = _add_res,
+	},
+	{
+		.msg_type = DBD_ADD_USERS,
+		.func = _add_users,
+	},
+	{
+		.msg_type = DBD_ADD_USERS_COND,
+		.func = _add_users_cond,
+	},
+	{
+		.msg_type = DBD_ADD_WCKEYS,
+		.func = _add_wckeys,
+	},
+	{
+		.msg_type = DBD_ADD_RESV,
+		.func = _add_reservation,
+	},
+	{
+		.msg_type = DBD_ARCHIVE_DUMP,
+		.func = _archive_dump,
+	},
+	{
+		.msg_type = DBD_ARCHIVE_LOAD,
+		.func = _archive_load,
+	},
+	{
+		.msg_type = DBD_CLUSTER_TRES,
+		.func = _cluster_tres,
+	},
+	{
+		.msg_type = DBD_GET_ACCOUNTS,
+		.func = _get_accounts,
+	},
+	{
+		.msg_type = DBD_GET_TRES,
+		.func = _get_tres,
+	},
+	{
+		.msg_type = DBD_GET_ASSOCS,
+		.func = _get_assocs,
+	},
+	{
+		.msg_type = DBD_GET_ASSOC_USAGE,
+		.func = _get_usage,
+	},
+	{
+		.msg_type = DBD_GET_WCKEY_USAGE,
+		.func = _get_usage,
+	},
+	{
+		.msg_type = DBD_GET_ASSOC_NG_USAGE,
+		.func = _get_usage,
+	},
+	{
+		.msg_type = DBD_GET_CLUSTER_USAGE,
+		.func = _get_usage,
+	},
+	{
+		.msg_type = DBD_GET_CLUSTERS,
+		.func = _get_clusters,
+	},
+	{
+		.msg_type = DBD_GET_FEDERATIONS,
+		.func = _get_federations,
+	},
+	{
+		.msg_type = DBD_GET_CONFIG,
+		.func = _get_config,
+	},
+	{
+		.msg_type = DBD_GET_EVENTS,
+		.func = _get_events,
+	},
+	{
+		.msg_type = DBD_GET_INSTANCES,
+		.func = _get_instances,
+	},
+	{
+		.msg_type = DBD_GET_JOBS_COND,
+		.func = _get_jobs_cond,
+	},
+	{
+		.msg_type = DBD_GET_PROBS,
+		.func = _get_probs,
+	},
+	{
+		.msg_type = DBD_GET_QOS,
+		.func = _get_qos,
+	},
+	{
+		.msg_type = DBD_GET_RES,
+		.func = _get_res,
+	},
+	{
+		.msg_type = DBD_GET_TXN,
+		.func = _get_txn,
+	},
+	{
+		.msg_type = DBD_GET_WCKEYS,
+		.func = _get_wckeys,
+	},
+	{
+		.msg_type = DBD_GET_RESVS,
+		.func = _get_reservations,
+	},
+	{
+		.msg_type = DBD_GET_USERS,
+		.func = _get_users,
+	},
+	{
+		.msg_type = DBD_FLUSH_JOBS,
+		.func = _flush_jobs,
+	},
+	{
+		.msg_type = DBD_FINI,
+		.func = _fini_conn,
+	},
+	{
+		.msg_type = DBD_JOB_COMPLETE,
+		.func = _job_complete,
+	},
+	{
+		.msg_type = DBD_JOB_START,
+		.func = _job_start,
+	},
+	{
+		.msg_type = DBD_JOB_HEAVY,
+		.func = _job_heavy,
+	},
+	{
+		.msg_type = DBD_JOB_SUSPEND,
+		.func = _job_suspend,
+	},
+	{
+		.msg_type = DBD_MODIFY_ACCOUNTS,
+		.func = _modify_accounts,
+	},
+	{
+		.msg_type = DBD_MODIFY_ASSOCS,
+		.func = _modify_assocs,
+	},
+	{
+		.msg_type = DBD_MODIFY_CLUSTERS,
+		.func = _modify_clusters,
+	},
+	{
+		.msg_type = DBD_MODIFY_FEDERATIONS,
+		.func = _modify_federations,
+	},
+	{
+		.msg_type = DBD_MODIFY_JOB,
+		.func = _modify_job,
+	},
+	{
+		.msg_type = DBD_MODIFY_QOS,
+		.func = _modify_qos,
+	},
+	{
+		.msg_type = DBD_MODIFY_RES,
+		.func = _modify_res,
+	},
+	{
+		.msg_type = DBD_MODIFY_USERS,
+		.func = _modify_users,
+	},
+	{
+		.msg_type = DBD_MODIFY_WCKEYS,
+		.func = _modify_wckeys,
+	},
+	{
+		.msg_type = DBD_MODIFY_RESV,
+		.func = _modify_reservation,
+	},
+	{
+		.msg_type = DBD_NODE_STATE,
+		.func = _node_state,
+	},
+	{
+		.msg_type = DBD_RECONFIG,
+		.func = _reconfig,
+	},
+	{
+		.msg_type = DBD_REGISTER_CTLD,
+		.func = _register_ctld,
+	},
+	{
+		.msg_type = DBD_REMOVE_ACCOUNTS,
+		.func = _remove_accounts,
+	},
+	{
+		.msg_type = DBD_REMOVE_ACCOUNT_COORDS,
+		.func = _remove_account_coords,
+	},
+	{
+		.msg_type = DBD_REMOVE_ASSOCS,
+		.func = _remove_assocs,
+	},
+	{
+		.msg_type = DBD_REMOVE_CLUSTERS,
+		.func = _remove_clusters,
+	},
+	{
+		.msg_type = DBD_REMOVE_FEDERATIONS,
+		.func = _remove_federations,
+	},
+	{
+		.msg_type = DBD_REMOVE_QOS,
+		.func = _remove_qos,
+	},
+	{
+		.msg_type = DBD_REMOVE_RES,
+		.func = _remove_res,
+	},
+	{
+		.msg_type = DBD_REMOVE_USERS,
+		.func = _remove_users,
+	},
+	{
+		.msg_type = DBD_REMOVE_WCKEYS,
+		.func = _remove_wckeys,
+	},
+	{
+		.msg_type = DBD_REMOVE_RESV,
+		.func = _remove_reservation,
+	},
+	{
+		.msg_type = DBD_ROLL_USAGE,
+		.func = _roll_usage,
+	},
+	{
+		.msg_type = DBD_SEND_MULT_JOB_START,
+		.func = _send_mult_job_start,
+	},
+	{
+		.msg_type = DBD_SEND_MULT_MSG,
+		.func = _send_mult_msg,
+	},
+	{
+		.msg_type = DBD_STEP_COMPLETE,
+		.func = _step_complete,
+	},
+	{
+		.msg_type = DBD_STEP_START,
+		.func = _step_start,
+	},
+	{
+		.msg_type = DBD_FIX_RUNAWAY_JOB,
+		.func = _fix_runaway_jobs,
+	},
+	{
+		.msg_type = DBD_GET_STATS,
+		.func = _get_stats,
+	},
+	{
+		.msg_type = DBD_CLEAR_STATS,
+		.func = _clear_stats,
+	},
+	{
+		.msg_type = DBD_SHUTDOWN,
+		.func = _shutdown,
+	},
+	{
+		/* terminate list */
+	}
+};
+
+extern const slurmdbd_rpc_t *const find_rpc(uint16_t msg_type)
+{
+	for (const slurmdbd_rpc_t *q = slurmdbd_rpcs; q->msg_type; q++) {
+		if (q->msg_type == msg_type) {
+			xassert(q->func);
+			return q;
+		}
+	}
+
+	return NULL;
+}
+
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the conn.fd set before
  *       calling and db_conn and conn.version will be filled in with the init.
@@ -3130,6 +3448,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
 extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer)
 {
 	slurmdbd_conn_t *slurmdbd_conn = conn;
+	const slurmdbd_rpc_t *this_rpc = NULL;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 	slurmdb_rpc_obj_t *rpc_obj;
@@ -3165,228 +3484,9 @@ extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer)
 			 &cli_addr, slurmdbd_conn->version);
 	}
 
-	switch (msg->msg_type) {
-	case REQUEST_PERSIST_INIT:
-		rc = _unpack_persist_init(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_ACCOUNTS:
-		rc = _add_accounts(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_ACCOUNTS_COND:
-		rc = _add_accounts_cond(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_ACCOUNT_COORDS:
-		rc = _add_account_coords(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_TRES:
-		rc = _add_tres(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_ASSOCS:
-		rc = _add_assocs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_CLUSTERS:
-		rc = _add_clusters(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_FEDERATIONS:
-		rc = _add_federations(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_QOS:
-		rc = _add_qos(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_RES:
-		rc = _add_res(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_USERS:
-		rc = _add_users(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_USERS_COND:
-		rc = _add_users_cond(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_WCKEYS:
-		rc = _add_wckeys(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ADD_RESV:
-		rc = _add_reservation(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ARCHIVE_DUMP:
-		rc = _archive_dump(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ARCHIVE_LOAD:
-		rc = _archive_load(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_CLUSTER_TRES:
-		rc = _cluster_tres(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_ACCOUNTS:
-		rc = _get_accounts(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_TRES:
-		rc = _get_tres(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_ASSOCS:
-		rc = _get_assocs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_ASSOC_USAGE:
-	case DBD_GET_WCKEY_USAGE:
-	case DBD_GET_ASSOC_NG_USAGE:
-	case DBD_GET_CLUSTER_USAGE:
-		rc = _get_usage(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_CLUSTERS:
-		rc = _get_clusters(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_FEDERATIONS:
-		rc = _get_federations(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_CONFIG:
-		rc = _get_config(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_EVENTS:
-		rc = _get_events(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_INSTANCES:
-		rc = _get_instances(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_JOBS_COND:
-		rc = _get_jobs_cond(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_PROBS:
-		rc = _get_probs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_QOS:
-		rc = _get_qos(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_RES:
-		rc = _get_res(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_TXN:
-		rc = _get_txn(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_WCKEYS:
-		rc = _get_wckeys(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_RESVS:
-		rc = _get_reservations(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_USERS:
-		rc = _get_users(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_FLUSH_JOBS:
-		rc = _flush_jobs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_FINI:
-		rc = _fini_conn(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_JOB_COMPLETE:
-		rc = _job_complete(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_JOB_START:
-		rc = _job_start(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_JOB_HEAVY:
-		rc = _job_heavy(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_JOB_SUSPEND:
-		rc = _job_suspend(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_ACCOUNTS:
-		rc = _modify_accounts(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_ASSOCS:
-		rc = _modify_assocs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_CLUSTERS:
-		rc = _modify_clusters(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_FEDERATIONS:
-		rc = _modify_federations(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_JOB:
-		rc = _modify_job(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_QOS:
-		rc = _modify_qos(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_RES:
-		rc = _modify_res(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_USERS:
-		rc = _modify_users(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_WCKEYS:
-		rc = _modify_wckeys(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_MODIFY_RESV:
-		rc = _modify_reservation(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_NODE_STATE:
-		rc = _node_state(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_RECONFIG:
-		/* handle reconfig */
-		rc = _reconfig(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REGISTER_CTLD:
-		rc = _register_ctld(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_ACCOUNTS:
-		rc = _remove_accounts(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_ACCOUNT_COORDS:
-		rc = _remove_account_coords(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_ASSOCS:
-		rc = _remove_assocs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_CLUSTERS:
-		rc = _remove_clusters(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_FEDERATIONS:
-		rc = _remove_federations(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_QOS:
-		rc = _remove_qos(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_RES:
-		rc = _remove_res(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_USERS:
-		rc = _remove_users(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_WCKEYS:
-		rc = _remove_wckeys(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_REMOVE_RESV:
-		rc = _remove_reservation(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_ROLL_USAGE:
-		rc = _roll_usage(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_SEND_MULT_JOB_START:
-		rc = _send_mult_job_start(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_SEND_MULT_MSG:
-		rc = _send_mult_msg(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_STEP_COMPLETE:
-		rc = _step_complete(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_STEP_START:
-		rc = _step_start(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_FIX_RUNAWAY_JOB:
-		rc = _fix_runaway_jobs(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_GET_STATS:
-		rc = _get_stats(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_CLEAR_STATS:
-		rc = _clear_stats(slurmdbd_conn, msg, out_buffer);
-		break;
-	case DBD_SHUTDOWN:
-		rc = _shutdown(slurmdbd_conn, msg, out_buffer);
-		break;
-	default:
+	if ((this_rpc = find_rpc(msg->msg_type))) {
+		rc = this_rpc->func(slurmdbd_conn, msg, out_buffer);
+	} else {
 		comment = "Invalid RPC";
 		error("CONN:%d %s msg_type=%s",
 		      slurmdbd_conn->fd, comment,
@@ -3394,7 +3494,6 @@ extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer)
 		rc = EINVAL;
 		*out_buffer =
 			slurmdbd_make_rc_msg(slurmdbd_conn, rc, comment, 0);
-		break;
 	}
 
 	if (rc == ESLURM_ACCESS_DENIED)

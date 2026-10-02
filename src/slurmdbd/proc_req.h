@@ -133,6 +133,15 @@ extern buf_t *slurmdbd_make_rc_msg_flags(slurmdbd_conn_t *sc, uint32_t rc,
 extern buf_t *slurmdbd_make_rc_msg(slurmdbd_conn_t *sc, uint32_t rc,
 				   char *comment, uint16_t ret_info);
 
+typedef struct {
+	uint16_t msg_type;
+	int (*func)(slurmdbd_conn_t *slurmdbd_conn, slurmdbd_msg_t *msg,
+		    buf_t **out_buffer);
+} slurmdbd_rpc_t;
+
+/* Find the handler for msg_type, or NULL. */
+extern const slurmdbd_rpc_t *const find_rpc(uint16_t msg_type);
+
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
  *       calling and db_conn and rpc_version will be filled in with the init.
