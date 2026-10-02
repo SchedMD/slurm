@@ -1755,6 +1755,14 @@ static int _pack_slurmdbd_body(slurmdbd_msg_t *req, uint16_t rpc_version,
 	case PERSIST_RC:
 		pack_persist_rc_msg(req->data, buffer, rpc_version);
 		break;
+	case DBD_GOT_JOBS:
+		slurmdbd_pack_list_msg(req->data, rpc_version, req->msg_type,
+				       buffer);
+		/* Fail rather than send a truncated job list. */
+		if (((dbd_list_msg_t *) req->data)->return_code ==
+		    ESLURM_RESULT_TOO_LARGE)
+			return ESLURM_RESULT_TOO_LARGE;
+		break;
 	case DBD_ADD_ACCOUNTS:
 	case DBD_ADD_TRES:
 	case DBD_ADD_ASSOCS:
@@ -1769,7 +1777,6 @@ static int _pack_slurmdbd_body(slurmdbd_msg_t *req, uint16_t rpc_version,
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
 	case DBD_GOT_INSTANCES:
-	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
 	case DBD_GOT_RES:
