@@ -1466,6 +1466,17 @@ static int _schedule(bool full_queue)
 	while (1) {
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
+			/*
+			 * Restore features in case the previous iteration
+			 * evaluated this job with "preferred" features
+			 * (use_prefer). features_use/feature_list_use must
+			 * never be left pointing at the prefer constraints
+			 * after the job's scheduling attempt ends, otherwise
+			 * the preferred features would act as hard constraints
+			 * in subsequent scheduling cycles or other partitions.
+			 */
+			if (job_ptr->details)
+				_set_features(job_ptr, false);
 			job_resv_clear_magnetic_flag(job_ptr);
 			fill_array_reasons(job_ptr, reject_array_job);
 		}
@@ -1929,6 +1940,22 @@ skip_start:
 			reject_array_part = NULL;
 			reject_array_resv = NULL;
 
+			/*
+			 * The allocation succeeded. If this was a "preferred"
+			 * attempt (use_prefer), features_use/feature_list_use
+			 * still point at the prefer constraints. Restore the
+			 * real --constraint features NOW, before the job record
+			 * is consumed by srun_allocate()/launch_job() (which
+			 * pack the record, build step credentials, and set the
+			 * displayed Features string). Otherwise a successful
+			 * complex/multi-feature --prefer (containing '&' or '|')
+			 * permanently bakes the prefer string into the running
+			 * job's active record, wiping out the mandatory hard
+			 * constraints from the job metadata.
+			 */
+			if (job_ptr->details)
+				_set_features(job_ptr, false);
+
 			sched_info("Allocate %pJ NodeList=%s #CPUs=%u Partition=%s",
 				   job_ptr, job_ptr->nodes,
 				   job_ptr->total_cpus,
@@ -1943,6 +1970,14 @@ skip_start:
 			    (job_ptr->array_task_id != NO_VAL)) {
 				/* Try starting another task of the job array */
 				job_record_t *tmp = job_ptr;
+				/*
+				 * Restore features on the array element we
+				 * just finished with before switching to the
+				 * master record, so its prefer constraints
+				 * do not leak into later scheduling cycles.
+				 */
+				if (tmp->details)
+					_set_features(tmp, false);
 				job_ptr = find_job_record(job_ptr->array_job_id);
 				if (job_ptr && (job_ptr != tmp) &&
 				    IS_JOB_PENDING(job_ptr) &&
