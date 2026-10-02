@@ -3849,6 +3849,103 @@ static int _foreach_hres_job_get(void *x, void *arg)
 	return 0;
 }
 
+/*
+ * Record the HRES layers a job draws from as hres_charges on its license
+ * entry, based on its allocated nodes and the resource mode. Does not modify
+ * usage counters.
+ */
+static int _foreach_hres_job_resolve(void *x, void *arg)
+{
+	licenses_t *match = x;
+	foreach_get_hres_t *args = arg;
+	uint32_t count = args->license_entry->total;
+
+	if (match->id.hres_id != args->license_entry->id.hres_id)
+		return 0;
+
+	if (args->license_entry->mode == HRES_MODE_3) {
+		int32_t used = bit_overlap(match->node_bitmap,
+					   args->job_ptr->node_bitmap);
+		if (!used)
+			return 0;
+
+		count *= used;
+		_add_hres_charge(args->license_entry, match, count);
+		return 0;
+	}
+
+	if (!bit_overlap_any(match->node_bitmap, args->job_ptr->node_bitmap))
+		return 0;
+
+	if (args->license_entry->mode == HRES_MODE_1) {
+		int resv_licenses;
+
+		/*
+		 * A disabled layer must not be the one the job is charged to.
+		 * _foreach_hres_filter_mode1() does the same check.
+		 */
+		if (match->hres_rec.disable_hres ||
+		    match->hres_rec.disable_layer)
+			return 0;
+
+		resv_licenses = job_test_lic_resv(args->job_ptr, match->id,
+						  args->when, false);
+
+		if (!_sufficient_licenses(args->license_entry, match,
+					  resv_licenses))
+			return 0;
+		_add_hres_charge(args->license_entry, match, count);
+		return -1;
+	} else if (args->license_entry->mode == HRES_MODE_2) {
+		_add_hres_charge(args->license_entry, match, count);
+		return 0;
+	}
+
+	return 0;
+}
+
+static int _foreach_license_job_resolve(void *x, void *arg)
+{
+	licenses_t *license_entry = x;
+	foreach_get_hres_t *hres_arg = arg;
+
+	if (license_entry->id.hres_id == NO_VAL16)
+		return 0;
+
+	/* Drop charges resolved for an earlier allocation. */
+	FREE_NULL_LIST(license_entry->hres_charges);
+	hres_arg->license_entry = license_entry;
+	list_for_each_ro(cluster_license_list, _foreach_hres_job_resolve,
+			 hres_arg);
+
+	return 0;
+}
+
+/*
+ * hres_job_resolve - Resolve which HRES layers a job will use and record them
+ *	as hres_charges on its license entries. Must run after the job's nodes
+ *	are selected and before license_job_get() commits usage.
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */
+extern int hres_job_resolve(job_record_t *job_ptr)
+{
+	foreach_get_hres_t hres_arg = {
+		.job_ptr = job_ptr,
+		.when = time(NULL),
+	};
+
+	if (!job_ptr->license_list)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&license_mutex);
+	list_for_each_ro(job_ptr->license_list, _foreach_license_job_resolve,
+			 &hres_arg);
+	slurm_mutex_unlock(&license_mutex);
+
+	return SLURM_SUCCESS;
+}
+
 /* Charge the layers that a restored job already recorded as charged. */
 static int _foreach_hres_charge_restore(void *x, void *arg)
 {

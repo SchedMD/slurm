@@ -221,6 +221,15 @@ extern void hres_layer_set_disabled(licenses_id_t id, bool disable,
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
 /*
+ * hres_job_resolve - Resolve which HRES layers a job will use and record them
+ *	as hres_charges on its license entries. Run after the job's nodes are
+ *	selected and before license_job_get().
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */
+extern int hres_job_resolve(job_record_t *job_ptr);
+
+/*
  * Test whether disabled HRES layers alone leave a job no node to run on in a
  * partition: a requested HRES disabled as a whole, or every candidate node
  * served only by disabled layers.
