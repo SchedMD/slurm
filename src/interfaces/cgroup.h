@@ -117,7 +117,8 @@ typedef enum {
 	CG_MEMCG_OOMGROUP,
 	CG_MEMCG_PEAK,
 	CG_MEMCG_SWAP,
-	CG_KILL_BUTTON
+	CG_KILL_BUTTON,
+	CG_PIDS_CONTROLLER,
 } cgroup_ctl_feature_t;
 
 typedef enum {
