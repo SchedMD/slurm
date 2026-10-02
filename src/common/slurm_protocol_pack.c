@@ -3447,6 +3447,9 @@ static int
 _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 			      uint16_t protocol_version)
 {
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	step->max_npids = NO_VAL;
+
 	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
@@ -3457,6 +3460,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpack32(&step->cpu_freq_min, buffer);
 		safe_unpack32(&step->cpu_freq_max, buffer);
 		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->max_npids, buffer);
 		safe_unpack32(&step->num_tasks, buffer);
 		safe_unpack32(&step->task_dist, buffer);
 		safe_unpack32(&step->time_limit, buffer);
