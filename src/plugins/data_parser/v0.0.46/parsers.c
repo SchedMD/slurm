@@ -9991,6 +9991,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, mail_user, "mail_user", "User to receive email notifications"),
 	add_parse(UINT32_NO_VAL, max_cpus, "max_cpus", "Maximum number of CPUs usable by the job"),
 	add_parse(UINT32_NO_VAL, max_nodes, "max_nodes", "Maximum number of nodes usable by the job"),
+	add_parse(UINT32_NO_VAL, max_npids, "max_pids", "Maximum number of PIDs allowed in each step of the job on each node"),
 	add_parse(STRING, mcs_label, "mcs_label", "Multi-Category Security label on the job"),
 	add_parse(STRING, mem_per_tres, "memory_per_tres", "Semicolon delimited list of TRES=# values indicating how much memory in megabytes should be allocated for each specified TRES (currently only used for gres/gpu)"),
 	add_parse(UINT16, mem_update_delay, "memory_update_delay", "Auto-reduce memory delay in minutes"),
