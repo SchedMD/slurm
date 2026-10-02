@@ -3601,32 +3601,6 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 	return rc;
 }
 
-static int _foreach_hres_charge_copy(void *x, void *arg)
-{
-	hres_charge_t *charge_src = x;
-	list_t *dest_list = arg;
-	hres_charge_t *charge_dest = xmalloc(sizeof(*charge_dest));
-
-	*charge_dest = *charge_src;
-	charge_dest->layer_name = xstrdup(charge_src->layer_name);
-	list_append(dest_list, charge_dest);
-
-	return 0;
-}
-
-static list_t *_hres_charge_list_copy(list_t *src_list)
-{
-	list_t *dest_list = NULL;
-
-	if (!src_list)
-		return NULL;
-
-	dest_list = list_create(hres_charge_free);
-	list_for_each_ro(src_list, _foreach_hres_charge_copy, dest_list);
-
-	return dest_list;
-}
-
 static int _foreach_hres_variable_copy(void *x, void *arg)
 {
 	hres_variable_t *var_src = x;
@@ -3669,8 +3643,8 @@ static int _foreach_license_copy(void *x, void *arg)
 	memcpy(license_entry_dest, license_entry_src,
 	       sizeof(*license_entry_dest));
 	license_entry_dest->name = xstrdup(license_entry_src->name);
-	license_entry_dest->hres_charges =
-		_hres_charge_list_copy(license_entry_src->hres_charges);
+	/* Charges belong to the source allocation. */
+	license_entry_dest->hres_charges = NULL;
 	license_entry_dest->nodes = xstrdup(license_entry_src->nodes);
 	if (license_entry_src->node_bitmap)
 		license_entry_dest->node_bitmap =
