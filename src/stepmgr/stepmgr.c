@@ -4285,6 +4285,12 @@ static int _step_create(job_record_t *job_ptr,
 	if (ret_code)
 		return ret_code;
 
+	if ((step_specs->max_npids != NO_VAL) &&
+	    (!step_specs->max_npids ||
+	     ((job_ptr->details->max_npids != NO_VAL) &&
+	      (step_specs->max_npids > job_ptr->details->max_npids))))
+		return ESLURM_INVALID_MAX_PIDS;
+
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);
 		*new_step_record = _build_interactive_step(job_ptr, step_specs,
