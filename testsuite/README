@@ -1291,3 +1291,4 @@ test_175_1   Test that MailProg=None disables mail notifications
 test_176_#   Testing slurmdbd connection handling.
 ===================================================
 test_176_1   Test slurmdbd read timeouts and short-header timeouts
+test_176_2   Test slurmdbd TLS negotiation timeouts
