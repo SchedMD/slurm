@@ -2691,6 +2691,7 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
 		pack32(msg->max_nodes, buffer);
+		pack32(msg->max_npids, buffer);
 		packstr(msg->container, buffer);
 		packstr(msg->container_id, buffer);
 		packstr(msg->runtime, buffer);
@@ -2848,6 +2849,9 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_step_create_request_msg_t *msg = xmalloc(sizeof(*msg));
 
+	/* Only packed by SLURM_26_11_PROTOCOL_VERSION and newer. */
+	msg->max_npids = NO_VAL;
+
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
@@ -2855,6 +2859,7 @@ extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->user_id, buffer);
 		safe_unpack32(&msg->min_nodes, buffer);
 		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpack32(&msg->max_npids, buffer);
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
 		safe_unpackstr(&msg->runtime, buffer);
