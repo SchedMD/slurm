@@ -701,6 +701,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrfmtcat(out, " MemUpdate=%u%%@%umin",
 			   job_ptr->mem_update_margin,
 			   job_ptr->mem_update_delay);
+	if (job_ptr->max_npids == INFINITE)
+		xstrcat(out, " MaxPids=max");
+	else if (job_ptr->max_npids != NO_VAL)
+		xstrfmtcat(out, " MaxPids=%u", job_ptr->max_npids);
 	xstrcat(out, line_end);
 
 	/****** Line ******/
