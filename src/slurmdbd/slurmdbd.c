@@ -100,6 +100,7 @@ static log_options_t log_opts = 	/* Log to stderr & syslog */
 static int new_nice = 0;
 static pthread_t rollup_handler_thread = 0; /* thread ID for rollup handler */
 static pthread_t commit_handler_thread = 0; /* thread ID for commit handler */
+pthread_rwlock_t reconfig_lock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_cond_t rollup_handler_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool restart_backup = false;
@@ -162,7 +163,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("Reconfigure signal (SIGHUP) received");
-	slurm_thread_create_detached(NULL, reconfig, NULL);
+	reconfig();
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -438,12 +439,15 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
-extern void *reconfig(void *arg)
+extern void reconfig(void)
 {
-	char *prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
-	char *prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
+	char *prev_ser_params, *prev_ser_plugins;
 
-	conmgr_quiesce(__func__);
+	/* Waits only for RPCs in progress, not for idle connections. */
+	slurm_rwlock_wrlock(&reconfig_lock);
+
+	prev_ser_params = xstrdup(slurmdbd_conf->serializer_params);
+	prev_ser_plugins = xstrdup(slurmdbd_conf->serializer_plugins);
 
 	read_slurmdbd_conf();
 	assoc_mgr_set_missing_uids(NULL);
@@ -463,9 +467,7 @@ extern void *reconfig(void *arg)
 	xfree(prev_ser_params);
 	xfree(prev_ser_plugins);
 
-	conmgr_unquiesce(__func__);
-
-	return NULL;
+	slurm_rwlock_unlock(&reconfig_lock);
 }
 
 extern void handle_rollup_stats(list_t *rollup_stats_list,

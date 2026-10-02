@@ -114,6 +114,29 @@ static void _remove_session(persist_conn_ctx_t *pcon_ctx)
 	slurm_mutex_unlock(&sessions_mutex);
 }
 
+/*
+ * Process an RPC, excluding reconfig() while it runs. DBD_RECONFIG takes
+ * reconfig_lock for writing itself.
+ *
+ * Lock here, not in proc_req(): _send_mult_msg() calls proc_req()
+ * recursively for batched RPCs, which run under this read lock. Recursive
+ * read locks can deadlock, and a batched DBD_RECONFIG would deadlock
+ * waiting for the write lock.
+ */
+static int _proc_req(slurmdbd_conn_t *dbd_conn, slurm_msg_t *msg)
+{
+	int rc;
+
+	if (msg->msg_type == DBD_RECONFIG)
+		return proc_req(dbd_conn, msg);
+
+	slurm_rwlock_rdlock(&reconfig_lock);
+	rc = proc_req(dbd_conn, msg);
+	slurm_rwlock_unlock(&reconfig_lock);
+
+	return rc;
+}
+
 /* persist_conn authenticated REQUEST_PERSIST_INIT; authorize and open. */
 static int _on_init(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg,
 		    uint16_t *reply_flags)
@@ -132,15 +155,17 @@ static int _on_init(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg,
 	/* Publish the verified identity for proc_req() and its validators. */
 	((slurmdbd_conn_t *) pcon_ctx->arg)->auth = msg->auth;
 
+	slurm_rwlock_rdlock(&reconfig_lock);
 	rc = proc_req(pcon_ctx->arg, msg);
 	*reply_flags = slurmdbd_conf->persist_conn_rc_flags;
+	slurm_rwlock_unlock(&reconfig_lock);
 
 	return rc;
 }
 
 static int _on_msg(persist_conn_ctx_t *pcon_ctx, slurm_msg_t *msg)
 {
-	return proc_req(pcon_ctx->arg, msg);
+	return _proc_req(pcon_ctx->arg, msg);
 }
 
 static void _on_fini(persist_conn_ctx_t *pcon_ctx)

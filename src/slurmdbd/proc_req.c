@@ -52,7 +52,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
-#include "src/common/threadpool.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -2000,7 +1999,7 @@ static int _reconfig(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 	}
 
 	info("Reconfigure request received");
-	slurm_thread_create_detached(NULL, reconfig, NULL);
+	reconfig();
 
 	slurm_send_rc_err_msg(msg, rc, comment);
 	return rc;
