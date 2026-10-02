@@ -312,6 +312,7 @@ typedef struct {
 	sbatch_opt_t *sbatch_opt;
 	scron_opt_t *scron_opt;
 	srun_opt_t *srun_opt;
+	bool scrun;
 
 	slurm_opt_state_t *state;
 
