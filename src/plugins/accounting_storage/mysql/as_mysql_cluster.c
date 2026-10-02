@@ -41,6 +41,7 @@
 #include "as_mysql_cluster.h"
 #include "as_mysql_federation.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 #include "src/interfaces/select.h"

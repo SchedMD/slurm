@@ -42,6 +42,7 @@
 \*****************************************************************************/
 
 #include "as_mysql_jobacct_process.h"
+#include "as_mysql_util.h"
 
 typedef struct {
 	hostlist_t *hl;

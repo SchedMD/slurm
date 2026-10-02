@@ -35,6 +35,7 @@
 
 #include "as_mysql_tres.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "src/common/xstring.h"
 
 extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,

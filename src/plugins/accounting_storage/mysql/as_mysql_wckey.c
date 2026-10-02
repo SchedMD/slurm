@@ -38,6 +38,7 @@
 
 #include "as_mysql_wckey.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 
 typedef struct {
 	char *cluster_name;

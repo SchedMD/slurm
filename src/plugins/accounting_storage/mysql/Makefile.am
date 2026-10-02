@@ -25,6 +25,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_txn.c as_mysql_txn.h \
 		as_mysql_usage.c as_mysql_usage.h \
 		as_mysql_user.c as_mysql_user.h \
+		as_mysql_util.c as_mysql_util.h \
 		as_mysql_wckey.c as_mysql_wckey.h
 
 if WITH_MYSQL

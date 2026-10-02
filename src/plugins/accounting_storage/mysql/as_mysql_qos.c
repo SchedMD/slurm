@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "as_mysql_qos.h"
+#include "as_mysql_util.h"
 
 static char *mqos_req_inx[] = {
 	"id",

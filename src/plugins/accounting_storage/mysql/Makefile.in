@@ -208,6 +208,7 @@ am__objects_1 =  \
 	accounting_storage_mysql_la-as_mysql_txn.lo \
 	accounting_storage_mysql_la-as_mysql_usage.lo \
 	accounting_storage_mysql_la-as_mysql_user.lo \
+	accounting_storage_mysql_la-as_mysql_util.lo \
 	accounting_storage_mysql_la-as_mysql_wckey.lo
 @WITH_MYSQL_TRUE@am_accounting_storage_mysql_la_OBJECTS =  \
 @WITH_MYSQL_TRUE@	$(am__objects_1)
@@ -257,6 +258,7 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage_mysql_la-accounting_storage
 	./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_txn.Plo \
 	./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_usage.Plo \
 	./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_user.Plo \
+	./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Plo \
 	./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -586,6 +588,7 @@ AS_MYSQL_SOURCES = accounting_storage_mysql.c accounting_storage_mysql.h \
 		as_mysql_txn.c as_mysql_txn.h \
 		as_mysql_usage.c as_mysql_usage.h \
 		as_mysql_user.c as_mysql_user.h \
+		as_mysql_util.c as_mysql_util.h \
 		as_mysql_wckey.c as_mysql_wckey.h
 
 @WITH_MYSQL_TRUE@pkglib_LTLIBRARIES = accounting_storage_mysql.la
@@ -694,6 +697,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_txn.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_usage.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_user.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -856,6 +860,13 @@ accounting_storage_mysql_la-as_mysql_user.lo: as_mysql_user.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_mysql_la-as_mysql_user.lo `test -f 'as_mysql_user.c' || echo '$(srcdir)/'`as_mysql_user.c
 
+accounting_storage_mysql_la-as_mysql_util.lo: as_mysql_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_mysql_la-as_mysql_util.lo -MD -MP -MF $(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Tpo -c -o accounting_storage_mysql_la-as_mysql_util.lo `test -f 'as_mysql_util.c' || echo '$(srcdir)/'`as_mysql_util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Tpo $(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='as_mysql_util.c' object='accounting_storage_mysql_la-as_mysql_util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_mysql_la-as_mysql_util.lo `test -f 'as_mysql_util.c' || echo '$(srcdir)/'`as_mysql_util.c
+
 accounting_storage_mysql_la-as_mysql_wckey.lo: as_mysql_wckey.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_mysql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_mysql_la-as_mysql_wckey.lo -MD -MP -MF $(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Tpo -c -o accounting_storage_mysql_la-as_mysql_wckey.lo `test -f 'as_mysql_wckey.c' || echo '$(srcdir)/'`as_mysql_wckey.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Tpo $(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Plo
@@ -982,6 +993,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_txn.Plo
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_usage.Plo
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_user.Plo
+	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Plo
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1047,6 +1059,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_txn.Plo
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_usage.Plo
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_user.Plo
+	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_util.Plo
 	-rm -f ./$(DEPDIR)/accounting_storage_mysql_la-as_mysql_wckey.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

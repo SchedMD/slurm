@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include "as_mysql_archive.h"
+#include "as_mysql_util.h"
 #include "src/common/env.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_time.h"

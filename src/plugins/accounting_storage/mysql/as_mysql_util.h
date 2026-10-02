@@ -36,14 +36,43 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_COMMON_AS_H
-#define _HAVE_COMMON_AS_H
+#ifndef _HAVE_AS_MYSQL_UTIL_H
+#define _HAVE_AS_MYSQL_UTIL_H
 
 #include "src/common/assoc_mgr.h"
 
-extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
-				   step_record_t *step_ptr);
-extern int as_build_step_comp_msg(dbd_step_comp_msg_t *req,
-				  step_record_t *step_ptr);
+extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
+			     void *object);
+
+extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version);
+
+extern int set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
+				 time_t *usage_start, time_t *usage_end);
+
+extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
+				    slurmdb_admin_level_t min_level);
+extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
+					   slurmdb_admin_level_t min_level);
+
+extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user);
+
+/*
+ * is_user_any_coord - is the user coord of any account
+ *
+ * IN pg_conn: database connection
+ * IN/OUT user: user record, which will be filled in
+ * RET: 1 if the user is coord of some account, 0 else
+ */
+extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user);
+
+extern char *acct_get_db_name(void);
+
+extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge);
+extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
+			      char *cluster_name, time_t last_submit);
+extern int archive_write_file(buf_t *buffer, char *cluster_name,
+			      time_t period_start, time_t period_end,
+			      char *arch_dir, char *arch_type,
+			      uint32_t archive_period);
 
 #endif

@@ -39,6 +39,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_acct.h"
 #include "as_mysql_user.h"
+#include "as_mysql_util.h"
 
 typedef struct {
 	slurmdb_account_rec_t *acct_in;

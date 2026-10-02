@@ -63,6 +63,7 @@
 #include "as_mysql_txn.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_user.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 #include "src/common/persist_conn.h"

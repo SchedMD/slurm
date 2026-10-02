@@ -38,6 +38,7 @@
 
 #include "as_mysql_assoc.h"
 #include "as_mysql_user.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 typedef struct {

@@ -38,6 +38,7 @@
 
 #include "as_mysql_resv.h"
 #include "as_mysql_jobacct_process.h"
+#include "as_mysql_util.h"
 
 static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 			      char **cols, char **vals,

@@ -39,6 +39,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_user.h"
+#include "as_mysql_util.h"
 
 #define ADD_ASSOC_FLAG_STR_ERR SLURM_BIT(0)
 #define ADD_ASSOC_FLAG_ADDED SLURM_BIT(1)

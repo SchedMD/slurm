@@ -39,6 +39,7 @@
 #include "as_mysql_job.h"
 #include "as_mysql_jobacct_process.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 #include "src/common/assoc_mgr.h"

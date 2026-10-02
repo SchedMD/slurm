@@ -35,6 +35,7 @@
 
 #include "as_mysql_fix_runaway_jobs.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "src/common/list.h"
 #include "src/common/slurmdb_defs.h"
 

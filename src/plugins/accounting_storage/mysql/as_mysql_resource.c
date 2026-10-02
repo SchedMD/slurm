@@ -39,6 +39,7 @@
 #include "as_mysql_assoc.h"
 #include "as_mysql_resource.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_util.h"
 #include "as_mysql_wckey.h"
 
 #include "src/interfaces/select.h"

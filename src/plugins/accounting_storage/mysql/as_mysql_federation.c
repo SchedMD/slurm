@@ -35,6 +35,7 @@
 
 #include "as_mysql_federation.h"
 #include "as_mysql_cluster.h"
+#include "as_mysql_util.h"
 
 char *fed_req_inx[] = {
 	"t1.name",

@@ -39,6 +39,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_cluster.h"
 #include "as_mysql_rollup.h"
+#include "as_mysql_util.h"
 
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
