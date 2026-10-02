@@ -2477,7 +2477,15 @@ static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, slurm_msg_t *msg)
 		FREE_NULL_BUFFER(shadow);
 
 		if ((rc == SLURM_SUCCESS) &&
-		    (sub_msg.msg_type == REQUEST_PERSIST_INIT)) {
+		    (sub_msg.msg_type == DBD_RECONFIG)) {
+			/* Batched RPCs hold reconfig_lock for reading. */
+			rc = EINVAL;
+			sub_req.msg_type = DBD_RECONFIG;
+			slurm_send_rc_err_msg(&sub_req, rc,
+					      "DBD_RECONFIG cannot be batched");
+			slurmdbd_free_msg(&sub_msg);
+		} else if ((rc == SLURM_SUCCESS) &&
+			   (sub_msg.msg_type == REQUEST_PERSIST_INIT)) {
 			/* Only the first top-level RPC may initialize. */
 			comment =
 				"REQUEST_PERSIST_INIT sent after connection established";
