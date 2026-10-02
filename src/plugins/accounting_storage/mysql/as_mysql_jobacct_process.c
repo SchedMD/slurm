@@ -583,17 +583,17 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       "left join \"%s_%s\" as t3 "
 			       "on t1.id_resv=t3.id_resv and "
 			       "((t1.time_start and "
-			       "(t3.time_start < t1.time_start and "
-			       "(t3.time_end >= t1.time_start or "
+			       "(t3.time_start <= t1.time_start and "
+			       "(t3.time_end > t1.time_start or "
 			       "t3.time_end = 0))) or "
 			       "(t1.time_start = 0 and "
-			       "((t3.time_start < t1.time_submit and "
-			       "(t3.time_end >= t1.time_submit or "
+			       "((t3.time_start <= t1.time_submit and "
+			       "(t3.time_end > t1.time_submit or "
 			       "t3.time_end = 0)) or "
 			       "(t3.time_start > t1.time_submit))))",
 			       job_fields, cluster_name, job_table,
-			       cluster_name, assoc_table,
-			       cluster_name, resv_table);
+			       cluster_name, assoc_table, cluster_name,
+			       resv_table);
 
 	if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
 		xstrfmtcat(query,
