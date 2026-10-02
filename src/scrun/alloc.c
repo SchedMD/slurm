@@ -513,6 +513,7 @@ static void _alloc_job(void)
 	salloc_opt_t aopt = { 0 };
 	slurm_opt_t opt = {
 		.salloc_opt = &aopt,
+		.scrun = true,
 	};
 	char *opt_string = NULL;
 	struct option *spanked = slurm_option_table_create(&opt, &opt_string);
