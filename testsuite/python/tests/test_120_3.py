@@ -244,3 +244,29 @@ def test_max_pids_above_kernel_limit_is_unlimited():
     assert (
         pids_max == "max"
     ), f"Expected pids.max 'max' above task cgroup {cgroup}, got: {pids_max}"
+
+
+@pytest.mark.parametrize(
+    "sbatch_arg,scontrol_value,squeue_value",
+    [
+        (f"--max-pids={JOB_MAX_PIDS}", JOB_MAX_PIDS, str(JOB_MAX_PIDS)),
+        ("--max-pids=max", "max", "UNLIMITED"),
+        ("", None, "N/A"),
+    ],
+)
+def test_job_max_pids_is_shown(sbatch_arg, scontrol_value, squeue_value):
+    """Verify scontrol show job and squeue -O MaxPids report the job limit"""
+
+    job_id = atf.submit_job_sbatch(
+        f"{sbatch_arg} --hold -N1 -t1 -J test_120_3 --wrap=true", fatal=True
+    )
+    shown = atf.get_job_parameter(job_id, "MaxPids")
+    assert (
+        shown == scontrol_value
+    ), f"Expected scontrol MaxPids={scontrol_value}, got: {shown}"
+    shown = atf.run_command_output(
+        f"squeue -h -O MaxPids -j {job_id}", fatal=True
+    ).strip()
+    assert (
+        shown == squeue_value
+    ), f"Expected squeue MaxPids {squeue_value}, got: {shown}"
