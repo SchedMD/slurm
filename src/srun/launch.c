@@ -646,7 +646,8 @@ static void _free_built_launch_params(step_create_req_msg_t *req)
 
 /*
  * RET SLURM_SUCCESS, or an error when the runtime rejects the launch
- *	parameters, in which case the step must not be launched
+ *	parameters or their environment, in which case the step must not be
+ *	launched
  */
 static int _build_launch_params(slurm_step_launch_params_t *launch_params,
 				srun_job_t *job, slurm_opt_t *opt_local)
@@ -757,12 +758,24 @@ static int _build_launch_params(slurm_step_launch_params_t *launch_params,
 	/* Resolved when the step request was built */
 	xassert(opt_local->runtime_idx != RUNTIME_IDX_INVALID);
 
+	/*
+	 * The launch environment belongs to this component's tasks alone, so
+	 * the runtime exports its plain names there.
+	 */
 	if ((rc = runtime_g_cli_apply_launch_params(opt_local->runtime_idx,
 						    opt_local->het_job_inx,
 						    RUNTIME_CTXT_SRUN,
 						    launch_params)))
 		error("runtime_g_cli_apply_launch_params() failed: %s",
 		      slurm_strerror(rc));
+	else if ((rc = runtime_g_cli_apply_env(opt_local->runtime_idx,
+					       opt_local->het_job_inx, NO_VAL,
+					       RUNTIME_CTXT_SRUN, true,
+					       &launch_params->env)))
+		error("runtime_g_cli_apply_env() failed: %s",
+		      slurm_strerror(rc));
+	else
+		launch_params->envc = envcount(launch_params->env);
 
 	return rc;
 }
