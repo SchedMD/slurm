@@ -886,6 +886,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 		pack32(step_ptr->cpu_freq_min, buffer);
 		pack32(step_ptr->cpu_freq_max, buffer);
 		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(step_ptr->max_npids, buffer);
 
 		pack_time(step_ptr->start_time, buffer);
 		pack_time(step_ptr->pre_sus_time, buffer);
@@ -1191,6 +1192,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t *cpu_alloc_reps = NULL;
 	uint16_t *cpu_alloc_values = NULL;
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
+	uint32_t max_npids = NO_VAL;
 	uint32_t tmp32;
 	uint64_t pn_min_memory;
 	uint64_t *memory_allocated = NULL;
@@ -1245,6 +1247,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&cpu_freq_min, buffer);
 		safe_unpack32(&cpu_freq_max, buffer);
 		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack32(&max_npids, buffer);
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
@@ -1587,6 +1590,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->cpu_freq_min = cpu_freq_min;
 	step_ptr->cpu_freq_max = cpu_freq_max;
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
+	step_ptr->max_npids = max_npids;
 	step_ptr->state        = state;
 
 	step_ptr->start_protocol_ver = start_protocol_ver;
@@ -4402,6 +4406,7 @@ extern step_record_t *create_step_record(job_record_t *job_ptr,
 	step_ptr->job_ptr    = job_ptr;
 	step_ptr->step_id.step_id = NO_VAL;
 	step_ptr->exit_code  = NO_VAL;
+	step_ptr->max_npids = NO_VAL;
 	step_ptr->time_limit = INFINITE;
 	step_ptr->jobacct    = jobacctinfo_create(NULL);
 	step_ptr->requid     = -1;

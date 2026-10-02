@@ -670,6 +670,7 @@ typedef struct {
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
 					 * step */
 	bool launch_sent; /* batch launch RPC has been sent */
+	uint32_t max_npids; /* maximum number of PIDs per step on each node */
 	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
 	uint64_t *memory_allocated;	/* per node array of memory allocated */
 	char *name;			/* name of job step */
