@@ -1292,3 +1292,4 @@ test_176_#   Testing slurmdbd connection handling.
 ===================================================
 test_176_1   Test slurmdbd read timeouts and short-header timeouts
 test_176_2   Test slurmdbd TLS negotiation timeouts
+test_176_3   Test batched DBD_SEND_MULT_MSG delivery
