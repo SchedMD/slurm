@@ -59,11 +59,14 @@ static int _sort_update_object_dec(void *a, void *b)
 	return 0;
 }
 
-static bool _is_user_min_admin_level(void *db_conn, uid_t uid,
+static bool _is_user_min_admin_level(mysql_conn_t *db_conn,
 				     slurmdb_admin_level_t min_level,
 				     bool locked)
 {
 	bool is_admin = 1;
+	uid_t uid = db_conn->auth_uid;
+
+	xassert(db_conn->auth_ids_set);
 
 	/*
 	 * We have to check the authentication here in the
@@ -425,13 +428,13 @@ extern int set_usage_information(char **usage_table,
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 				    slurmdb_admin_level_t min_level)
 {
-	return _is_user_min_admin_level(db_conn, uid, min_level, false);
+	return _is_user_min_admin_level(db_conn, min_level, false);
 }
 
 extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
 					   slurmdb_admin_level_t min_level)
 {
-	return _is_user_min_admin_level(db_conn, uid, min_level, true);
+	return _is_user_min_admin_level(db_conn, min_level, true);
 }
 
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
