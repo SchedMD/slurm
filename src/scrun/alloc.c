@@ -511,6 +511,7 @@ extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 static void _alloc_job(void)
 {
 	int rc;
+	char **runtime_env = NULL;
 	resource_allocation_response_msg_t *alloc = NULL;
 	salloc_opt_t aopt = { 0 };
 	slurm_opt_t opt = {
@@ -579,6 +580,17 @@ static void _alloc_job(void)
 	desc->name = xstrdup("scrun");
 	desc->other_port = _setup_listener();
 
+	/*
+	 * What the srun calls of the container inherit from the runtime. Ask
+	 * before the job exists, so a runtime that refuses leaves no job
+	 * behind.
+	 */
+	if ((rc = runtime_g_cli_apply_env(opt.runtime_idx, opt.het_job_inx,
+					  NO_VAL, RUNTIME_CTXT_SCRUN, true,
+					  &runtime_env)))
+		fatal("%s: runtime_g_cli_apply_env() failed: %s", __func__,
+		      slurm_strerror(rc));
+
 	debug("%s: requesting allocation with %u tasks and %u hosts",
 	      __func__, (desc->num_tasks == NO_VAL ? 1 : desc->num_tasks),
 	      (desc->min_nodes == NO_VAL ? 1 : desc->min_nodes));
@@ -634,6 +646,8 @@ static void _alloc_job(void)
 	xassert(state.group_id != SLURM_AUTH_NOBODY);
 
 	env_array_for_job(&state.job_env, alloc, desc, -1);
+	env_array_merge(&state.job_env, (const char **) runtime_env);
+	FREE_NULL_ENV(runtime_env, NULL);
 	unlock_state();
 
 	slurm_free_job_desc_msg(desc);
