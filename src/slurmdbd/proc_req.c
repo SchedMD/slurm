@@ -2412,6 +2412,12 @@ end_it:
 
 	*out_buffer = slurmdbd_make_rc_msg(slurmdbd_conn, id_rc, comment,
 					   DBD_REGISTER_CTLD);
+
+	/*
+	 * We don't want/need to send updates to this cluster that just
+	 * registered since it's rpc manager might not be up yet.
+	 */
+	slurmdbd_conn->flags |= PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 	return rc;
 }
 
@@ -3322,11 +3328,6 @@ extern int proc_req(void *conn, slurmdbd_msg_t *msg, buf_t **out_buffer)
 		break;
 	case DBD_REGISTER_CTLD:
 		rc = _register_ctld(slurmdbd_conn, msg, out_buffer);
-		/*
-		 * We don't want/need to send updates to this cluster that just
-		 * registered since it's rpc manager might not be up yet.
-		 */
-		slurmdbd_conn->flags |= PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 		break;
 	case DBD_REMOVE_ACCOUNTS:
 		rc = _remove_accounts(slurmdbd_conn, msg, out_buffer);
