@@ -4030,7 +4030,7 @@ static int _foreach_license_job_return(void *x, void *arg)
 	license_return_args_t *args = arg;
 	licenses_t *match;
 
-	if (license_entry->hres_charges) {
+	if (license_entry->id.hres_id != NO_VAL16) {
 		foreach_hres_return_t arg2 = {
 			.license_entry = license_entry,
 			.license_list = args->license_list,
@@ -4038,8 +4038,10 @@ static int _foreach_license_job_return(void *x, void *arg)
 
 		if (!args->locked)
 			slurm_mutex_lock(&license_mutex);
-		list_for_each_ro(license_entry->hres_charges,
-				 _foreach_hres_charge_return, &arg2);
+		/* HRES usage is only charged through hres_charges. */
+		if (license_entry->hres_charges)
+			list_for_each_ro(license_entry->hres_charges,
+					 _foreach_hres_charge_return, &arg2);
 		if (!args->locked)
 			slurm_mutex_unlock(&license_mutex);
 
