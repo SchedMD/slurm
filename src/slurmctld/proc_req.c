@@ -412,7 +412,8 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->log_fmt             = conf->log_fmt;
 
 	conf_ptr->mail_domain         = xstrdup(conf->mail_domain);
-	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
+	conf_ptr->mail_prog =
+		xstrdup(conf->mail_prog ? conf->mail_prog : "None");
 	conf_ptr->max_array_sz        = conf->max_array_sz;
 	conf_ptr->max_batch_requeue   = conf->max_batch_requeue;
 	conf_ptr->max_dbd_msgs        = conf->max_dbd_msgs;

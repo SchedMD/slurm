@@ -217,6 +217,7 @@ static void  _mail_free(void *arg);
 static void *_mail_proc(void *arg);
 static char *_mail_type_str(uint16_t mail_type);
 static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type);
+static void _run_mail_env(mail_info_t *mi);
 
 static pthread_mutex_t defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
@@ -2162,14 +2163,12 @@ static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type)
 	return my_env;
 }
 
-/* process an email request and free the record */
-static void *_mail_proc(void *arg)
+static void _run_mail_env(mail_info_t *mi)
 {
-	mail_info_t *mi = (mail_info_t *) arg;
 	int status;
 	char *result = NULL;
-	char *argv[5] = {
-		slurm_conf.mail_prog, "-s", mi->message, mi->user_name, NULL};
+	char *argv[5] = { slurm_conf.mail_prog, "-s", mi->message,
+			  mi->user_name, NULL };
 
 	status = slurmscriptd_run_mail(slurm_conf.mail_prog, 5, argv,
 				       mi->environment, MAIL_PROG_TIMEOUT,
@@ -2181,6 +2180,17 @@ static void *_mail_proc(void *arg)
 	else
 		debug2("No output from MailProg, exit code=%d", status);
 	xfree(result);
+}
+
+/* process an email request and free the record */
+static void *_mail_proc(void *arg)
+{
+	mail_info_t *mi = (mail_info_t *) arg;
+
+	/* mail_job_info() is what keeps this off the queue when unset */
+	if (slurm_conf.mail_prog)
+		_run_mail_env(mi);
+
 	_mail_free(mi);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	slurm_mutex_lock(&mail_mutex);
@@ -2368,6 +2378,12 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 {
 	char job_time[128], term_msg[128];
 	mail_info_t *mi;
+
+	if (!slurm_conf.mail_prog) {
+		debug2("%s: MailProg is disabled, not sending %s mail for %pJ",
+		       __func__, _mail_type_str(mail_type), job_ptr);
+		return;
+	}
 
 	/*
 	 * Send mail only for first component (leader) of a hetjob,

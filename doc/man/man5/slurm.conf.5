@@ -2724,12 +2724,24 @@ local address itself. Changes to MailDomain will only affect new jobs.
 
 .TP
 \fBMailProg\fR
-Fully qualified pathname to the program used to send email per user request.
+Absolute pathname to the mailer program used to send email per user request.
 The default value is "/bin/mail" (or "/usr/bin/mail" if "/bin/mail" does not
 exist but "/usr/bin/mail" does exist).
+
+Set to "None" (not case sensitive), or an empty string (MailProg=""), to
+disable email notifications entirely.
+No program is executed and all mail requests made with the "\-\-mail\-type"
+option are discarded.
+
 The program is called with arguments suitable for the default mail command,
 however additional information about the job is passed in the form of
 environment variables.
+The mailer program is checked when \fBslurmctld\fR reads its configuration.
+If the program cannot be found, \fBslurmctld\fR logs an error and disables
+mail the same way as MailProg=None.
+\fBscontrol show config\fR then reports MailProg as "None".
+Mail stays disabled for the life of the process.
+To re-enable mail, reconfigure or restart \fBslurmctld\fR.
 
 Additional variables are the same as those passed to \fIPrologSlurmctld\fR and
 \fIEpilogSlurmctld\fR with additional variables in the following contexts:
@@ -9251,6 +9263,7 @@ The file must be accessible by the primary and backup control machines.
 Must be executable by user \fBSlurmUser\fR.
 Must not be writable by regular users.
 The file must be accessible by the primary and backup control machines.
+These requirements do not apply if it is set to "None" or an empty string.
 .IP
 
 .TP

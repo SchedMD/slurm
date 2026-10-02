@@ -4532,14 +4532,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->mail_domain, "MailDomain", hashtbl);
 
-	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl)) {
-		struct stat stat_buf;
-		if ((stat(DEFAULT_MAIL_PROG,     &stat_buf) == 0) ||
-		    (stat(DEFAULT_MAIL_PROG_ALT, &stat_buf) != 0))
-			conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);
-		else
-			conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG_ALT);
-	}
+	(void) s_p_get_string(&conf->mail_prog, "MailProg", hashtbl);
 
 	if (!s_p_get_uint32(&conf->max_array_sz, "MaxArraySize", hashtbl))
 		conf->max_array_sz = DEFAULT_MAX_ARRAY_SIZE;
@@ -5696,6 +5689,34 @@ extern char *slurm_conf_expand_slurmd_path(const char *path,
 	xstrsubstitute(dir, "%n", node_name);
 
 	return dir;
+}
+
+extern void mail_prog_resolve(void)
+{
+	struct stat stat_buf = { 0 };
+
+	if (slurm_conf.mail_prog &&
+	    (!slurm_conf.mail_prog[0] ||
+	     !xstrcasecmp(slurm_conf.mail_prog, "None"))) {
+		debug3("MailProg=\"%s\" disables mail", slurm_conf.mail_prog);
+		xfree(slurm_conf.mail_prog);
+		return;
+	}
+
+	if (!slurm_conf.mail_prog) {
+		if ((stat(DEFAULT_MAIL_PROG, &stat_buf) == 0) ||
+		    (stat(DEFAULT_MAIL_PROG_ALT, &stat_buf) != 0))
+			slurm_conf.mail_prog = xstrdup(DEFAULT_MAIL_PROG);
+		else
+			slurm_conf.mail_prog = xstrdup(DEFAULT_MAIL_PROG_ALT);
+	}
+
+	/* Known TOCTOU: a configuration check, not a security check */
+	if (stat(slurm_conf.mail_prog, &stat_buf) != 0) {
+		error("Configured MailProg is invalid, disabling mail: %s: %m",
+		      slurm_conf.mail_prog);
+		xfree(slurm_conf.mail_prog);
+	}
 }
 
 /*
