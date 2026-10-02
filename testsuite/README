@@ -1036,6 +1036,7 @@ test_132_1   /parameters/slurm/Prolog/test_prolog.py
 test_132_2   Test holds placed on a running job during its node prolog
 test_132_3   Test job state while the Prolog runs with various PrologFlags
 test_132_4   Test job state while PrologSlurmctld and the Prolog run
+test_132_5   Test a job requeued by a failed Prolog runs when retried
 
 test_134_#   Testing of SwitchType.
 ===================================
