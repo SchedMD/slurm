@@ -15425,6 +15425,7 @@ static int _update_job(slurm_msg_t *msg, job_record_t *job_ptr,
 			if (job_desc->licenses && *job_desc->licenses)
 				job_ptr->licenses = xstrdup(job_desc->licenses);
 			xfree(job_ptr->licenses_allocated);
+			hres_job_resolve(job_ptr);
 			license_job_get(job_ptr, false);
 		} else {
 			/*

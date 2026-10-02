@@ -3057,6 +3057,8 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
+	hres_job_resolve(job_ptr);
+
 	job_ptr->db_flags &= ~SLURMDB_JOB_CLEAR_SCHED;
 	job_ptr->db_flags |= scheduler_type;
 

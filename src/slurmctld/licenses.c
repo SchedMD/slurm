@@ -3796,59 +3796,6 @@ static int _set_licenses_alloc(job_record_t *job_ptr, bool lic_or,
 	return SLURM_SUCCESS;
 }
 
-static int _foreach_hres_job_get(void *x, void *arg)
-{
-	licenses_t *match = x;
-	foreach_get_hres_t *args = arg;
-	uint32_t count = args->license_entry->total;
-
-	if (match->id.hres_id != args->license_entry->id.hres_id)
-		return 0;
-
-	if (args->license_entry->mode == HRES_MODE_3) {
-		int32_t used = bit_overlap(match->node_bitmap,
-					   args->job_ptr->node_bitmap);
-		if (!used)
-			return 0;
-
-		count *= used;
-		match->used += count;
-		_add_hres_charge(args->license_entry, match, count);
-		return 0;
-	}
-
-	if (!bit_overlap_any(match->node_bitmap, args->job_ptr->node_bitmap))
-		return 0;
-
-	if (args->license_entry->mode == HRES_MODE_1) {
-		int resv_licenses;
-
-		/*
-		 * A disabled layer must not be the one the job is charged to.
-		 * _foreach_hres_filter_mode1() does the same check.
-		 */
-		if (match->hres_rec.disable_hres ||
-		    match->hres_rec.disable_layer)
-			return 0;
-
-		resv_licenses = job_test_lic_resv(args->job_ptr, match->id,
-						  args->when, false);
-
-		if (!_sufficient_licenses(args->license_entry, match,
-					  resv_licenses))
-			return 0;
-		match->used += count;
-		_add_hres_charge(args->license_entry, match, count);
-		return -1;
-	} else if (args->license_entry->mode == HRES_MODE_2) {
-		match->used += count;
-		_add_hres_charge(args->license_entry, match, count);
-		return 0;
-	}
-
-	return 0;
-}
-
 /*
  * Record the HRES layers a job draws from as hres_charges on its license
  * entry, based on its allocated nodes and the resource mode. Does not modify
@@ -3946,8 +3893,8 @@ extern int hres_job_resolve(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Charge the layers that a restored job already recorded as charged. */
-static int _foreach_hres_charge_restore(void *x, void *arg)
+/* Charge the layers recorded by hres_job_resolve(). */
+static int _foreach_hres_charge_get(void *x, void *arg)
 {
 	hres_charge_t *charge = x;
 	foreach_get_hres_t *args = arg;
@@ -3989,20 +3936,17 @@ static int _foreach_license_job_get(void *x, void *arg)
 		};
 
 		/*
-		 * A restored job already knows which layers it charged. Replay
-		 * that record instead of matching nodes again, which would
-		 * charge the wrong layers if any layer changed nodes while
-		 * slurmctld was down.
+		 * State saved by Slurm 26.05 and older has no mode 2 and 3
+		 * charges. Remove after upgrading from
+		 * SLURM_26_05_PROTOCOL_VERSION is no longer supported.
 		 */
-		if (args->restore && license_entry->hres_charges) {
-			list_for_each_ro(license_entry->hres_charges,
-					 _foreach_hres_charge_restore,
-					 &hres_arg);
-		} else {
-			FREE_NULL_LIST(license_entry->hres_charges);
+		if (args->restore && !license_entry->hres_charges)
 			list_for_each_ro(cluster_license_list,
-					 _foreach_hres_job_get, &hres_arg);
-		}
+					 _foreach_hres_job_resolve, &hres_arg);
+
+		if (license_entry->hres_charges)
+			list_for_each_ro(license_entry->hres_charges,
+					 _foreach_hres_charge_get, &hres_arg);
 
 		return 0;
 	}
