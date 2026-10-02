@@ -411,6 +411,8 @@ int _print_step_num_cpus(job_step_info_t * step, int width, bool right,
 			 char* suffix);
 int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 			 char* suffix);
+int _print_step_max_npids(job_step_info_t *step, int width, bool right,
+			  char *suffix);
 int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix);
 int _print_step_state(job_step_info_t * step, int width, bool right,

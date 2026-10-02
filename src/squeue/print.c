@@ -2946,6 +2946,23 @@ int _print_step_cpu_freq(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_step_max_npids(job_step_info_t *step, int width, bool right,
+			  char *suffix)
+{
+	if (!step)
+		_print_str("MAX_PIDS", width, right, true);
+	else if (step->max_npids == INFINITE)
+		_print_str("UNLIMITED", width, right, true);
+	else if (step->max_npids != NO_VAL)
+		_print_uint(step->max_npids, width, right, true);
+	else
+		_print_str("N/A", width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_step_resv_ports(job_step_info_t * step, int width, bool right,
 			   char* suffix)
 {
