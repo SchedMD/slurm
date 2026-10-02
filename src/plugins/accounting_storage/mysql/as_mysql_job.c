@@ -961,8 +961,7 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	id_switch_t *id_switch;
 	bool is_admin;
 
-	is_admin = is_user_min_admin_level(mysql_conn, uid,
-					   SLURMDB_ADMIN_OPERATOR);
+	is_admin = is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_OPERATOR);
 
 	if (!job_cond || !job) {
 		error("we need something to change");

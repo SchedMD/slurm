@@ -297,7 +297,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
 	if (!cluster_list || !list_count(cluster_list)) {
@@ -628,8 +628,7 @@ extern list_t *as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(mysql_conn, uid,
-				     SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -868,8 +867,7 @@ extern list_t *as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if (!is_user_min_admin_level(
-		    mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER)) {
+	if (!is_user_min_admin_level(mysql_conn, SLURMDB_ADMIN_SUPER_USER)) {
 		errno = ESLURM_ACCESS_DENIED;
 		return NULL;
 	}
@@ -1216,8 +1214,8 @@ extern list_t *as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t ui
 	user.uid = uid;
 
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
-		if (!is_user_min_admin_level(
-			    mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		if (!is_user_min_admin_level(mysql_conn,
+					     SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
 			      uid);
 			errno = ESLURM_ACCESS_DENIED;
@@ -1622,7 +1620,7 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 	user.uid = uid;
 
 	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
-		if (!is_user_min_admin_level(mysql_conn, uid,
+		if (!is_user_min_admin_level(mysql_conn,
 					     SLURMDB_ADMIN_OPERATOR)) {
 			error("UID %u tried to access events, only administrators can look at events",
 			      uid);

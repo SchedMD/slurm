@@ -656,7 +656,7 @@ extern list_t *as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (slurm_conf.private_data & PRIVATE_DATA_RESERVATIONS) {
 		if (!(is_admin = is_user_min_admin_level(
-			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
+			      mysql_conn, SLURMDB_ADMIN_OPERATOR))) {
 			error("Only admins can look at reservations");
 			errno = ESLURM_ACCESS_DENIED;
 			return NULL;
